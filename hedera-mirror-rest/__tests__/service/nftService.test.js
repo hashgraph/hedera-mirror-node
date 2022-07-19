@@ -18,12 +18,13 @@
  * ‍
  */
 
-'use strict';
-
 import {filterKeys} from '../../constants';
-import {opsMap} from '../../utils';
-import {assertSqlQueryEqual} from '../testutils';
 import {NftService} from '../../service';
+import {assertSqlQueryEqual} from '../testutils';
+import {opsMap} from '../../utils';
+
+const {SERIAL_NUMBER, SPENDER_ID, TOKEN_ID} = filterKeys;
+const {eq, gt, gte, lt, lte} = opsMap;
 
 describe('getQuery', () => {
   const defaultQuery = {

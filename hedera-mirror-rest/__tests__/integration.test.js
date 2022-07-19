@@ -18,8 +18,6 @@
  * ‍
  */
 
-'use strict';
-
 /**
  * Integration tests for the rest-api and postgresql database.
  * Tests will be performed using either a docker postgres instance managed by the testContainers module or
@@ -42,19 +40,21 @@
  */
 // external libraries
 import S3 from 'aws-sdk/clients/s3';
-
 import crypto from 'crypto';
 import fs from 'fs';
+import {jest} from '@jest/globals';
 import _ from 'lodash';
 import path from 'path';
 import request from 'supertest';
+
 import integrationDbOps from './integrationDbOps';
 import integrationDomainOps from './integrationDomainOps';
-import {S3Ops} from './integrationS3Ops';
+import S3Ops from './integrationS3Ops';
 import config from '../config';
 import {cloudProviders} from '../constants';
 import EntityId from '../entityId';
 import server from '../server';
+import {getModuleDirname} from './testutils';
 import transactions from '../transactions';
 import {JSONParse} from '../utils';
 
@@ -96,7 +96,7 @@ const defaultRealm = 15;
  * Setup test data in the postgres instance.
  */
 const setupData = async () => {
-  const testDataPath = path.join(__dirname, 'integration_test_data.json');
+  const testDataPath = path.join(getModuleDirname(import.meta), 'integration_test_data.json');
   const testData = fs.readFileSync(testDataPath);
   const testDataJson = JSONParse(testData);
 
@@ -283,7 +283,7 @@ test('DB integration test - transactions.reqToSql - Account range filtered trans
 
 describe('DB integration test - spec based', () => {
   const bucketName = 'hedera-demo-streams';
-  const s3TestDataRoot = path.join(__dirname, 'data', 's3');
+  const s3TestDataRoot = path.join(getModuleDirname(import.meta), 'data', 's3');
 
   let configOverridden = false;
   let configClone;
@@ -377,7 +377,7 @@ describe('DB integration test - spec based', () => {
     }
 
     for (const sqlScript of sqlScripts) {
-      const sqlScriptPath = path.join(__dirname, pathPrefix || '', sqlScript);
+      const sqlScriptPath = path.join(getModuleDirname(import.meta), pathPrefix || '', sqlScript);
       const script = fs.readFileSync(sqlScriptPath, 'utf8');
       logger.debug(`loading sql script ${sqlScript}`);
       await integrationDbOps.runSqlQuery(dbConfig.sqlConnection, script);
@@ -391,7 +391,7 @@ describe('DB integration test - spec based', () => {
 
     for (const sqlFunc of sqlFuncs) {
       // path.join returns normalized path, the sqlFunc is a local js file so add './'
-      const func = require(`./${path.join(pathPrefix || '', sqlFunc)}`);
+      const func = (await import(`./${path.join(pathPrefix || '', sqlFunc)}`)).default;
       logger.debug(`running sql func in ${sqlFunc}`);
       await func.apply(null, [dbConfig.sqlConnection]);
     }
@@ -471,10 +471,11 @@ describe('DB integration test - spec based', () => {
     );
   };
 
-  const specPath = path.join(__dirname, 'specs');
+  const specPath = path.join(getModuleDirname(import.meta), 'specs');
   // process applicable .json spec files
   fs.readdirSync(specPath)
     .filter((f) => f.endsWith('.json'))
+    // .filter((f) => f.startsWith('blocks-0'))
     .forEach((file) => {
       const p = path.join(specPath, file);
       const specText = fs.readFileSync(p, 'utf8');

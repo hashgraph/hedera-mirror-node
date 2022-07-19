@@ -18,8 +18,6 @@
  * ‍
  */
 
-'use strict';
-
 import {exec} from 'child_process';
 
 const isDockerInstalled = function () {
@@ -30,6 +28,4 @@ const isDockerInstalled = function () {
   });
 };
 
-export default {
-  isDockerInstalled,
-};
+export {isDockerInstalled};

@@ -20,6 +20,8 @@
 
 import log4js from 'log4js';
 import config from '../config';
+import path from 'path';
+import {fileURLToPath} from 'url';
 
 const invalidBase32Strs = [
   // A base32 group without padding can have 2, 4, 5, 7 or 8 characters from its alphabet
@@ -67,6 +69,11 @@ const formatSqlQueryString = (query) => {
 
 const getAllAccountAliases = (alias) => [alias, `0.${alias}`, `0.0.${alias}`];
 
+const getBuffer = (inputBytes, defaultBytes) => {
+  return inputBytes != null ? Buffer.from(inputBytes) : defaultBytes;
+};
+
+const getModuleDirname = (importMeta) => path.dirname(fileURLToPath(importMeta.url));
 /**
  * Parse the sql query with positional parameters and an array of corresponding
  * values to extracts the filter clauses of the query (e.g. consensus_timestamp < xyz)
@@ -253,10 +260,6 @@ const configureLogger = () => {
   global.logger = log4js.getLogger();
 };
 
-const getBuffer = (inputBytes, defaultBytes) => {
-  return inputBytes != null ? Buffer.from(inputBytes) : defaultBytes;
-};
-
 configureLogger();
 
 export {
@@ -266,6 +269,7 @@ export {
   formatSqlQueryString,
   getAllAccountAliases,
   getBuffer,
+  getModuleDirname,
   invalidBase32Strs,
   parseSqlQueryAndParams,
   testBadParams,

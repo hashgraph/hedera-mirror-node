@@ -18,10 +18,8 @@
  * ‍
  */
 
-'use strict';
-
-import CustomFee from '../../model/customFee';
-import CustomFeeViewModel from '../../viewmodel/customFeeViewModel';
+import {CustomFee} from '../../model';
+import {CustomFeeViewModel} from '../../viewmodel';
 
 describe('CustomFeeViewModel', () => {
   const fixedFeeTestSpecs = [

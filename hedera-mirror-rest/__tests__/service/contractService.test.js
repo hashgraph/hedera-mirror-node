@@ -18,15 +18,16 @@
  * ‍
  */
 
-'use strict';
-
+import {jest} from '@jest/globals';
 import _ from 'lodash';
+
 import {ContractService} from '../../service';
 import {assertSqlQueryEqual} from '../testutils';
 import integrationDbOps from '../integrationDbOps';
 import integrationDomainOps from '../integrationDomainOps';
-import {NotFoundError} from '../../errors/notFoundError';
-import {defaultMochaStatements} from './defaultMochaStatements';
+import {NotFoundError} from '../../errors';
+import defaultMochaStatements from './defaultMochaStatements';
+
 defaultMochaStatements(jest, integrationDbOps, integrationDomainOps);
 
 describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {

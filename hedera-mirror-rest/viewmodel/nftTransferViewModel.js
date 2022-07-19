@@ -19,7 +19,7 @@
  */
 
 import _ from 'lodash';
-import EntityId from '../entityId.js';
+import EntityId from '../entityId';
 
 /**
  * Nft transfer view model

@@ -18,13 +18,14 @@
  * ‍
  */
 
-'use strict';
+import {jest} from '@jest/globals';
 
 import {NetworkNodeService} from '../../service';
 import {assertSqlQueryEqual} from '../testutils';
 import integrationDbOps from '../integrationDbOps';
 import integrationDomainOps from '../integrationDomainOps';
-import {defaultMochaStatements} from './defaultMochaStatements';
+import defaultMochaStatements from './defaultMochaStatements';
+
 defaultMochaStatements(jest, integrationDbOps, integrationDomainOps);
 
 const defaultNodeFilter = 'abe.node_id = $2';

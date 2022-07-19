@@ -18,8 +18,8 @@
  * ‍
  */
 
-import ExchangeRateViewModel from './exchangeRateViewModel.js';
-import {nsToSecNs} from '../utils.js';
+import ExchangeRateViewModel from './exchangeRateViewModel';
+import {nsToSecNs} from '../utils';
 
 /**
  * Exchange rate set view model

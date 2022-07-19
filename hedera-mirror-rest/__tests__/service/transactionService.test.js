@@ -18,15 +18,12 @@
  * ‍
  */
 
-'use strict';
-
+import {jest} from '@jest/globals';
 import _ from 'lodash';
+
 import TransactionId from '../../transactionId';
 import {TransactionService} from '../../service';
 import {TransactionResult, TransactionType} from '../../model';
-
-// add logger configuration support
-import '../testutils';
 
 import integrationDbOps from '../integrationDbOps';
 import integrationDomainOps from '../integrationDomainOps';
@@ -38,7 +35,7 @@ const duplicateTransactionResult = TransactionResult.getProtoId('DUPLICATE_TRANS
 const successTransactionResult = TransactionResult.getProtoId('SUCCESS');
 const wrongNonceTransactionResult = TransactionResult.getProtoId('WRONG_NONCE');
 
-import {defaultMochaStatements} from './defaultMochaStatements';
+import defaultMochaStatements from './defaultMochaStatements';
 defaultMochaStatements(jest, integrationDbOps, integrationDomainOps);
 
 describe('TransactionService.getTransactionDetailsFromTimestamp tests', () => {

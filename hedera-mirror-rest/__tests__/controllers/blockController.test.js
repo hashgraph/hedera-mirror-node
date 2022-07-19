@@ -18,11 +18,11 @@
  * ‍
  */
 
-'use strict';
-
-import {response} from '../../config';
-import constants from '../../constants';
+import {getResponseLimit} from '../../config';
+import * as constants from '../../constants';
 import {BlockController} from '../../controllers';
+
+const {default: defaultLimit, max: maxLimit} = getResponseLimit();
 
 describe('Block Controller', () => {
   test('Verify extractOrderFromFilters', async () => {

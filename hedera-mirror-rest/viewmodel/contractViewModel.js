@@ -18,8 +18,8 @@
  * ‍
  */
 
-import EntityId from '../entityId.js';
-import * as utils from '../utils.js';
+import EntityId from '../entityId';
+import * as utils from '../utils';
 
 /**
  * Contract view model

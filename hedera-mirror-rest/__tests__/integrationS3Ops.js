@@ -18,8 +18,6 @@
  * ‍
  */
 
-'use strict';
-
 import axios from 'axios';
 import {GenericContainer} from 'testcontainers';
 import {isDockerInstalled} from './integrationUtils';
@@ -85,6 +83,4 @@ class S3Ops {
   }
 }
 
-export default {
-  S3Ops,
-};
+export default S3Ops;

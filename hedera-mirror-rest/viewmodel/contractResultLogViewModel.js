@@ -18,9 +18,9 @@
  * ‍
  */
 
-import EntityId from '../entityId.js';
-import {filterKeys} from '../constants.js';
-import {toHexString} from '../utils.js';
+import EntityId from '../entityId';
+import {filterKeys} from '../constants';
+import {toHexString} from '../utils';
 
 /**
  * Contract results log view model

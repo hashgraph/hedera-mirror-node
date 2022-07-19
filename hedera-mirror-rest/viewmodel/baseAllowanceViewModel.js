@@ -18,8 +18,8 @@
  * ‍
  */
 
-import EntityId from '../entityId.js';
-import {nsToSecNs} from '../utils.js';
+import EntityId from '../entityId';
+import {nsToSecNs} from '../utils';
 
 /**
  * BaseAllowance view model, captures the common fields of the allowance view model classes

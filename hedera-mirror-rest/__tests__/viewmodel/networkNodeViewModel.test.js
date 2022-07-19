@@ -18,9 +18,7 @@
  * ‍
  */
 
-'use strict';
-
-import NetworkNodeViewModel from '../../viewmodel/networkNodeViewModel';
+import {NetworkNodeViewModel} from '../../viewmodel';
 
 describe('NetworkNodeViewModel', () => {
   const defaultNetworkNode = {

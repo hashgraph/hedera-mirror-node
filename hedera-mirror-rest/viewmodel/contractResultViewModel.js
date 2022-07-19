@@ -19,8 +19,8 @@
  */
 
 import _ from 'lodash';
-import EntityId from '../entityId.js';
-import {nsToSecNs, toHexString} from '../utils.js';
+import EntityId from '../entityId';
+import {nsToSecNs, toHexString} from '../utils';
 
 /**
  * Contract results view model

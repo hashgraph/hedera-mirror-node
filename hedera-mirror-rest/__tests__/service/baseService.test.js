@@ -18,8 +18,6 @@
  * ‍
  */
 
-'use strict';
-
 import BaseService from '../../service/baseService';
 import {OrderSpec} from '../../sql';
 

@@ -20,9 +20,9 @@
 
 import _ from 'lodash';
 
-import AddressBookServiceEndpointViewModel from './addressBookServiceEndpointViewModel.js';
-import EntityId from '../entityId.js';
-import * as utils from '../utils.js';
+import AddressBookServiceEndpointViewModel from './addressBookServiceEndpointViewModel';
+import EntityId from '../entityId';
+import * as utils from '../utils';
 
 /**
  * Network node view model

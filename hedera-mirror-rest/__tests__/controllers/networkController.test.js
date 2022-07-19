@@ -18,13 +18,11 @@
  * ‍
  */
 
-'use strict';
-
-import constants from '../../constants';
+import * as constants from '../../constants';
 import {NetworkController} from '../../controllers';
 import {FileData} from '../../model';
 import networkCtrl from '../../controllers/networkController';
-import utils from '../../utils';
+import * as utils from '../../utils';
 
 describe('extractNetworkNodesQuery', () => {
   const defaultExpected = {

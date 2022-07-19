@@ -18,17 +18,18 @@
  * ‍
  */
 
-'use strict';
-
 import {Range} from 'pg-range';
-import {response} from '../../config';
-import constants from '../../constants';
+
+import {getResponseLimit} from '../../config';
+import * as constants from '../../constants';
 import contracts from '../../controllers/contractController';
 import {assertSqlQueryEqual} from '../testutils';
-import utils from '../../utils';
+import * as utils from '../../utils';
 import {Contract} from '../../model';
 import {FileDataService} from '../../service';
 import Bound from '../../controllers/bound';
+
+const {default: defaultLimit} = getResponseLimit();
 
 const contractFields = [
   Contract.AUTO_RENEW_ACCOUNT_ID,

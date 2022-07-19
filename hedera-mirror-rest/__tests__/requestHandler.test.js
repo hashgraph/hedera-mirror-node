@@ -18,8 +18,6 @@
  * ‍
  */
 
-'use strict';
-
 import {requestQueryParser} from '../middleware/requestHandler';
 
 describe('qs tests', () => {

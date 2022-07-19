@@ -18,12 +18,12 @@
  * ‍
  */
 
-'use strict';
-
-import {response} from '../../config';
-import constants from '../../constants';
+import {getResponseLimit} from '../../config';
+import * as constants from '../../constants';
 import {CryptoAllowanceController} from '../../controllers';
-import utils from '../../utils';
+import * as utils from '../../utils';
+
+const {default: defaultLimit} = getResponseLimit();
 
 const ownerIdFilter = 'owner = $1';
 describe('extractCryptoAllowancesQuery', () => {

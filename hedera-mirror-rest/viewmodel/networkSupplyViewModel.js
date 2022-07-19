@@ -18,7 +18,7 @@
  * ‍
  */
 
-import {nsToSecNs} from '../utils.js';
+import {nsToSecNs} from '../utils';
 
 /**
  * Network supply view model

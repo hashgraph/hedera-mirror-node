@@ -19,7 +19,6 @@
  */
 
 import fs from 'fs';
-
 import path from 'path';
 
 describe('npm dependency check for packaging', () => {

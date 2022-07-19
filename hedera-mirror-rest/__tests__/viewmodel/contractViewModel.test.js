@@ -18,10 +18,8 @@
  * ‍
  */
 
-'use strict';
-
 import {Range} from 'pg-range';
-import ContractViewModel from '../../viewmodel/contractViewModel';
+import {ContractViewModel} from '../../viewmodel';
 
 describe('ContractViewModel', () => {
   const defaultContract = {

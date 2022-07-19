@@ -20,9 +20,9 @@
 
 import _ from 'lodash';
 
-import EntityId from '../entityId.js';
-import {createTransactionId, nsToSecNs} from '../utils.js';
-import {TransactionType} from '../model/index.js';
+import EntityId from '../entityId';
+import {createTransactionId, nsToSecNs} from '../utils';
+import {TransactionType} from '../model';
 
 /**
  * Nft transaction history transfer view model

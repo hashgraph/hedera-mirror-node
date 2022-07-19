@@ -18,8 +18,6 @@
  * ‍
  */
 
-'use strict';
-
 import {ContractLogViewModel} from '../../viewmodel';
 
 describe('ContractLogViewModel', () => {

@@ -19,6 +19,7 @@
  */
 
 import AWSMock from 'aws-sdk-mock';
+import {jest} from '@jest/globals';
 import querystring from 'querystring';
 
 import config from '../config';

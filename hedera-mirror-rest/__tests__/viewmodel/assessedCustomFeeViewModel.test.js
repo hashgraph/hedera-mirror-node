@@ -18,10 +18,8 @@
  * ‍
  */
 
-'use strict';
-
-import AssessedCustomFee from '../../model/assessedCustomFee';
-import AssessedCustomFeeViewModel from '../../viewmodel/assessedCustomFeeViewModel';
+import {AssessedCustomFee} from '../../model';
+import {AssessedCustomFeeViewModel} from '../../viewmodel';
 
 describe('AssessedCustomFeeViewModel', () => {
   const effectivePayersTestSpecs = [

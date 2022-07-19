@@ -29,7 +29,7 @@ import {RecordFileService} from '../service';
 import * as utils from '../utils';
 import {BlockViewModel} from '../viewmodel';
 
-const {default: defaultLimit} = getResponseLimit();
+const {default: defaultLimit, max: maxLimit} = getResponseLimit();
 
 const validateHashOrNumber = (hashOrNumber) => {
   if (utils.isValidBlockHash(hashOrNumber)) {
@@ -52,7 +52,6 @@ class BlockController extends BaseController {
 
   extractLimitFromFilters = (filters) => {
     const limit = _.findLast(filters, {key: filterKeys.LIMIT});
-
     return limit ? (limit.value > maxLimit ? defaultLimit : limit.value) : defaultLimit;
   };
 

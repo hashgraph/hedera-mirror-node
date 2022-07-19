@@ -18,8 +18,6 @@
  * ‍
  */
 
-'use strict';
-
 import {TopicMessageViewModel} from '../../viewmodel';
 
 describe('topicMessageViewModel tests', () => {

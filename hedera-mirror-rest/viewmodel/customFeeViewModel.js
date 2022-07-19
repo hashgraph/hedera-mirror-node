@@ -18,7 +18,7 @@
  * ‍
  */
 
-import EntityId from '../entityId.js';
+import EntityId from '../entityId';
 
 /**
  * Custom fee view model

@@ -18,7 +18,7 @@
  * ‍
  */
 
-import BaseAllowanceViewModel from './baseAllowanceViewModel.js';
+import BaseAllowanceViewModel from './baseAllowanceViewModel';
 
 /**
  * CryptoAllowance view model

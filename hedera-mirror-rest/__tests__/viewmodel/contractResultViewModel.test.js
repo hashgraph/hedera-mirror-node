@@ -18,9 +18,7 @@
  * ‍
  */
 
-'use strict';
-
-import ContractResultViewModel from '../../viewmodel/contractResultViewModel';
+import {ContractResultViewModel} from '../../viewmodel';
 
 describe('ContractResultViewModel', () => {
   const defaultContractResult = {

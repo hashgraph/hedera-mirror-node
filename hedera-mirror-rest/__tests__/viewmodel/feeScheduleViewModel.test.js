@@ -18,9 +18,7 @@
  * ‍
  */
 
-'use strict';
-
-import FeeScheduleViewModel from '../../viewmodel/feeScheduleViewModel';
+import {FeeScheduleViewModel} from '../../viewmodel';
 
 describe('FeeScheduleViewModel', () => {
   const exchangeRate = {

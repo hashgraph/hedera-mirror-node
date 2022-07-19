@@ -18,11 +18,11 @@
  * ‍
  */
 
-'use strict';
+import {getResponseLimit} from '../../config';
+import * as constants from '../../constants';
+import * as utils from '../../utils';
 
-import {response} from '../../config';
-import constants from '../../constants';
-import utils from '../../utils';
+const {default: defaultLimit} = getResponseLimit();
 
 const {
   filterKeys: {SERIAL_NUMBER, SPENDER_ID, TOKEN_ID, ORDER, LIMIT},

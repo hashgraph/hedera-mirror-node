@@ -18,9 +18,9 @@
  * ‍
  */
 
-import {filterKeys} from '../constants.js';
-import EntityId from '../entityId.js';
-import {toHexString} from '../utils.js';
+import {filterKeys} from '../constants';
+import EntityId from '../entityId';
+import {toHexString} from '../utils';
 
 /**
  * Contract result state change view model

@@ -18,7 +18,7 @@
  * ‍
  */
 
-import {nsToSecNs, toHexString} from '../utils.js';
+import {addHexPrefix, nsToSecNs, toHexString} from '../utils';
 
 /**
  * Block view model
@@ -32,10 +32,10 @@ class BlockViewModel {
   constructor(recordFile) {
     this.count = recordFile.count;
     this.hapi_version = recordFile.getFullHapiVersion();
-    this.hash = utils.addHexPrefix(recordFile.hash);
+    this.hash = addHexPrefix(recordFile.hash);
     this.name = recordFile.name;
     this.number = recordFile.index;
-    this.previous_hash = utils.addHexPrefix(recordFile.prevHash);
+    this.previous_hash = addHexPrefix(recordFile.prevHash);
     this.size = recordFile.size;
     this.timestamp = {
       from: nsToSecNs(recordFile.consensusStart),

@@ -18,8 +18,8 @@
  * ‍
  */
 
-import ContractLogResultsViewModel from './contractResultLogViewModel.js';
-import EntityId from '../entityId.js';
+import ContractLogResultsViewModel from './contractResultLogViewModel';
+import EntityId from '../entityId';
 import {nsToSecNs} from '../utils';
 
 /**

@@ -18,16 +18,15 @@
  * ‍
  */
 
-'use strict';
-
 import _ from 'lodash';
-import math from 'mathjs';
+import * as math from 'mathjs';
 import pgformat from 'pg-format';
+
 import base32 from '../base32';
 import config from '../config';
-import constants from '../constants';
+import * as constants from '../constants';
 import EntityId from '../entityId';
-import testUtils from './testutils';
+import * as testUtils from './testutils';
 
 const NETWORK_FEE = 1n;
 const NODE_FEE = 2n;

@@ -33,7 +33,6 @@ import EntityId from './entityId';
 import config from './config';
 import ed25519 from './ed25519';
 import {DbError, InvalidArgumentError, InvalidClauseError} from './errors';
-import mockPool from './__tests__/mockpool';
 import {FeeSchedule, TransactionResult, TransactionType} from './model';
 
 const JSONBig = JSONBigFactory({useNativeBigInt: true});
@@ -1232,8 +1231,8 @@ const ipMask = (ip) => {
  *
  * @param {boolean} mock
  */
-const getPoolClass = (mock = false) => {
-  const Pool = mock ? mockPool : pg.Pool;
+const getPoolClass = async (mock = false) => {
+  const Pool = mock ? (await import('./__tests__/mockpool')).default : pg.Pool;
   Pool.prototype.queryQuietly = async function (query, params = [], preQueryHint = undefined) {
     let client;
     let result;

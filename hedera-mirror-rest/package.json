@@ -9,7 +9,7 @@
     "node": ">=16.13.0 < 17"
   },
   "scripts": {
-    "dev": "nodemon server.js",
+    "dev": "nodemon --experimental-specifier-resolution=node server.js",
     "integrationtest": "node --experimental-vm-modules node_modules/jest/bin/jest --testPathPattern='/__tests__/integration.test.js|/__tests__/service/.*\\.test\\.js' --collectCoverage=false",
     "lint": "eslint --ignore-pattern node_modules/ --fix .",
     "postinstall": "node ./npm_scripts/postinstall.js",
@@ -99,7 +99,6 @@
     "jest-circus": "^28.1.2",
     "jest-extended": "^3.0.0",
     "jest-junit": "^14.0.0",
-    "mock-req-res": "^1.2.0",
     "node-flywaydb": "^3.0.7",
     "nodemon": "^2.0.19",
     "pg-format": "^1.0.4",

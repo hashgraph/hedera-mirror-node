@@ -21,8 +21,8 @@
 import _ from 'lodash';
 import {proto} from '@hashgraph/proto';
 
-import {orderFilterValues} from '../constants.js';
-import {convertGasPriceToTinyBars, nsToSecNs} from '../utils.js';
+import {orderFilterValues} from '../constants';
+import {convertGasPriceToTinyBars, nsToSecNs} from '../utils';
 
 /**
  * Fee schedule view model
