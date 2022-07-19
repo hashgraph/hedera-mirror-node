@@ -168,7 +168,6 @@ describe('Load environment configuration:', () => {
   test('Max Timestamp Range invalid', async () => {
     process.env = {HEDERA_MIRROR_REST_MAXTIMESTAMPRANGE: '3x'};
     await expect(loadConfig()).rejects.toThrowErrorMatchingSnapshot();
-    // expect(() => require('../config')).toThrowErrorMatchingSnapshot();
   });
 
   test('Max Timestamp Range null', async () => {
@@ -178,10 +177,10 @@ describe('Load environment configuration:', () => {
 });
 
 describe('Custom CONFIG_NAME:', () => {
-  const loadConfigFromCustomObject = async (custom) => {
-    fs.writeFileSync(path.join(tempDir, 'config.yml'), yaml.dump(custom));
+  const loadConfigFromCustomObject = async (customConfig) => {
+    fs.writeFileSync(path.join(tempDir, 'config.yml'), yaml.dump(customConfig));
     process.env = {CONFIG_NAME: 'config', CONFIG_PATH: tempDir};
-    return await loadConfig();
+    return loadConfig();
   };
 
   test('CONFIG_PATH/CONFIG_NAME.yml', async () => {
@@ -203,7 +202,7 @@ describe('Override stateproof config', () => {
     };
     fs.writeFileSync(path.join(tempDir, 'application.yml'), yaml.dump(customConfig));
     process.env = {CONFIG_PATH: tempDir};
-    return await loadConfig();
+    return loadConfig();
   };
 
   const getExpectedStreamsConfig = (override) => {
@@ -332,7 +331,7 @@ describe('Override db pool config', () => {
       process.env = {CONFIG_PATH: tempDir};
     }
 
-    return await loadConfig();
+    return loadConfig();
   };
 
   const testSpecs = [

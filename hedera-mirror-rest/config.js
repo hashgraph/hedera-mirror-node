@@ -173,9 +173,9 @@ const parseMaxTimestampRange = () => {
 if (!loaded) {
   const configName = process.env.CONFIG_NAME || defaultConfigName;
   // always load the default configuration
-  const __dirname = path.dirname(fileURLToPath(import.meta.url));
-  load(path.join(__dirname, 'config'), defaultConfigName);
-  load(__dirname, configName);
+  const moduleDirname = path.dirname(fileURLToPath(import.meta.url));
+  load(path.join(moduleDirname, 'config'), defaultConfigName);
+  load(moduleDirname, configName);
   load(process.env.CONFIG_PATH, configName);
   loadEnvironment();
   parseDbPoolConfig();

@@ -23,7 +23,7 @@ import request from 'supertest';
 import * as constants from '../constants';
 import server from '../server';
 import * as testutils from './testutils';
-import transactions from '../transactions';
+import subject from '../transactions';
 import * as utils from '../utils';
 
 const {
@@ -33,7 +33,7 @@ const {
   createNftTransferList,
   createTransferLists,
   extractSqlFromTransactionsByIdRequest,
-} = transactions;
+} = subject;
 
 const timeNow = Math.floor(new Date().getTime() / 1000);
 const timeOneHourAgo = timeNow - 60 * 60;

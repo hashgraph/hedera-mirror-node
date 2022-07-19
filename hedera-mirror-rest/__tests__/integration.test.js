@@ -475,7 +475,6 @@ describe('DB integration test - spec based', () => {
   // process applicable .json spec files
   fs.readdirSync(specPath)
     .filter((f) => f.endsWith('.json'))
-    // .filter((f) => f.startsWith('blocks-0'))
     .forEach((file) => {
       const p = path.join(specPath, file);
       const specText = fs.readFileSync(p, 'utf8');

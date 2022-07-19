@@ -23,7 +23,6 @@ import * as utils from '../utils';
 import config from '../config';
 import * as constants from '../constants';
 import {InvalidArgumentError, InvalidClauseError} from '../errors';
-import {TransactionType} from '../model';
 
 const ecdsaKey = '02b5ffadf88d625cd9074fa01e5280b773a60ed2de55b0d6f94460c0b5a001a258';
 const ecdsaProtoKey = {ECDSASecp256k1: Buffer.from(ecdsaKey, 'hex')};
