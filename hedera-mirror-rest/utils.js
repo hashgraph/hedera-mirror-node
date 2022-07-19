@@ -1211,8 +1211,16 @@ const parseTransactionTypeParam = (parsedQueryParams) => {
   if (_.isNil(transactionType)) {
     return '';
   }
-  const protoId = TransactionType.getProtoId(transactionType);
-  return `${constants.transactionColumns.TYPE}${opsMap.eq}${protoId}`;
+
+  const transactionTypes = !_.isArray(transactionType) ? [transactionType] : transactionType;
+  const protoIds = transactionTypes
+    .map((t) => TransactionType.getProtoId(t))
+    .reduce((result, protoId) => {
+      result.add(protoId);
+      return result;
+    }, new Set());
+
+  return `${constants.transactionColumns.TYPE} in (${Array.from(protoIds)})`;
 };
 
 const isTestEnv = () => process.env.NODE_ENV === 'test';

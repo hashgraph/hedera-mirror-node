@@ -1054,7 +1054,7 @@ tags:
     description: The tokens object represents the information associated with a token entity and returns a list of token information.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.61.0-SNAPSHOT
+  version: 0.62.0-SNAPSHOT
   license:
     name: Apache-2.0
     url: 'https://www.apache.org/licenses/LICENSE-2.0.html'
@@ -1905,8 +1905,9 @@ components:
       type: object
       properties:
         next:
-          example: null
+          example: "/api/v1/transactions?timestamp=lt:1657598275.517984411"
           nullable: true
+          type: string
     NetworkNode:
       type: object
       required:
@@ -2468,6 +2469,7 @@ components:
         - FILEUPDATE
         - FREEZE
         - NODESTAKEUPDATE
+        - PRNG
         - SCHEDULECREATE
         - SCHEDULEDELETE
         - SCHEDULESIGN
@@ -2555,7 +2557,9 @@ components:
         max_fee:
           type: string
         memo_base64:
+          format: byte
           nullable: true
+          type: string
         name:
           $ref: '#/components/schemas/TransactionTypes'
         node:

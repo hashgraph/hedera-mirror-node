@@ -52,7 +52,7 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
         ns.max_stake,
         ns.min_stake,
         ns.reward_rate,
-        ns.stake,
+        coalesce(ns.stake,abe.stake) as stake,
         ns.stake_not_rewarded,
         ns.stake_rewarded,
         ns.stake_total,
@@ -100,7 +100,7 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
       ns.max_stake,
       ns.min_stake,
       ns.reward_rate,
-      ns.stake,
+      coalesce(ns.stake,abe.stake) as stake,
       ns.stake_not_rewarded,
       ns.stake_rewarded,
       ns.stake_total,
@@ -146,6 +146,7 @@ const defaultInputAddressBookEntries = [
     node_account_id: 3,
     node_cert_hash: '[0,)',
     description: 'desc 1',
+    stake: 0,
   },
   {
     consensus_timestamp: 1,
@@ -154,6 +155,7 @@ const defaultInputAddressBookEntries = [
     node_account_id: 4,
     node_cert_hash: '[0,)',
     description: 'desc 2',
+    stake: 1000,
   },
   {
     consensus_timestamp: 2,
@@ -162,6 +164,7 @@ const defaultInputAddressBookEntries = [
     node_account_id: 3,
     node_cert_hash: '[0,)',
     description: 'desc 3',
+    stake: 1000,
   },
   {
     consensus_timestamp: 2,
@@ -170,6 +173,7 @@ const defaultInputAddressBookEntries = [
     node_account_id: 4,
     node_cert_hash: '[0,)',
     description: 'desc 4',
+    stake: null,
   },
 ];
 
@@ -397,7 +401,7 @@ const defaultExpectedNetworkNodeEmptyNodeStake = [
     ],
     nodeStake: {
       rewardRate: null,
-      stake: null,
+      stake: 1000,
       stakeRewarded: null,
       stakeTotal: null,
       stakingPeriod: null,

@@ -1256,18 +1256,35 @@ describe('Utils test - utils.parseTransactionTypeParam', () => {
   });
   test('Verify applicable TOKENCREATION transaction type query', () => {
     expect(utils.parseTransactionTypeParam({[constants.filterKeys.TRANSACTION_TYPE]: 'TOKENCREATION'})).toBe(
-      `type = ${TransactionType.getProtoId('TOKENCREATION')}`
+      `type in (29)`
     );
   });
   test('Verify applicable TOKENASSOCIATE transaction type query', () => {
     expect(utils.parseTransactionTypeParam({[constants.filterKeys.TRANSACTION_TYPE]: 'TOKENASSOCIATE'})).toBe(
-      `type = ${TransactionType.getProtoId('TOKENASSOCIATE')}`
+      `type in (40)`
     );
   });
   test('Verify applicable consensussubmitmessage transaction type query', () => {
     expect(utils.parseTransactionTypeParam({[constants.filterKeys.TRANSACTION_TYPE]: 'consensussubmitmessage'})).toBe(
-      `type = ${TransactionType.getProtoId('CONSENSUSSUBMITMESSAGE')}`
+      `type in (27)`
     );
+  });
+  test('Verify multiple transactiontype query params', () => {
+    expect(
+      utils.parseTransactionTypeParam({[constants.filterKeys.TRANSACTION_TYPE]: ['TOKENCREATION', 'TOKENASSOCIATE']})
+    ).toBe(`type in (29,40)`);
+  });
+  test('Verify multiple transactiontype query params reversed', () => {
+    expect(
+      utils.parseTransactionTypeParam({[constants.filterKeys.TRANSACTION_TYPE]: ['TOKENASSOCIATE', 'TOKENCREATION']})
+    ).toBe('type in (40,29)');
+  });
+  test('Verify multiple transactiontype query params with duplicates', () => {
+    expect(
+      utils.parseTransactionTypeParam({
+        [constants.filterKeys.TRANSACTION_TYPE]: ['TOKENASSOCIATE', 'TOKENCREATION', 'TOKENASSOCIATE', 'TOKENCREATION'],
+      })
+    ).toBe('type in (40,29)');
   });
 });
 

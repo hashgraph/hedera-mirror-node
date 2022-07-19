@@ -94,6 +94,7 @@ import com.hedera.mirror.importer.repository.NodeStakeRepository;
 import com.hedera.mirror.importer.repository.PrngRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.ScheduleRepository;
+import com.hedera.mirror.importer.repository.SidecarFileRepository;
 import com.hedera.mirror.importer.repository.StakingRewardTransferRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
@@ -127,6 +128,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     private final NodeStakeRepository nodeStakeRepository;
     private final PrngRepository prngRepository;
     private final RecordFileRepository recordFileRepository;
+    private final SidecarFileRepository sidecarFileRepository;
     private final ScheduleRepository scheduleRepository;
     private final SqlEntityListener sqlEntityListener;
     private final SqlProperties sqlProperties;
@@ -145,8 +147,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     private static Stream<Arguments> provideParamsContractHistory() {
-        Consumer<Contract.ContractBuilder> emptyCustomizer = c -> {
-        };
+        Consumer<Contract.ContractBuilder> emptyCustomizer = c -> {};
         Consumer<Contract.ContractBuilder> initcodeCustomizer = c -> c.fileId(null).initcode(new byte[] {1, 2, 3, 4});
         return Stream.of(
                 Arguments.of("fileId", emptyCustomizer, 1),
@@ -496,6 +497,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     void onEndNull() {
         sqlEntityListener.onEnd(null);
         assertThat(recordFileRepository.count()).isZero();
+        assertThat(sidecarFileRepository.count()).isZero();
     }
 
     @Test
@@ -1157,8 +1159,8 @@ class SqlEntityListenerTest extends IntegrationTest {
         var prng = domainBuilder.prng().get();
         var prng2 = domainBuilder.prng()
                 .customize(r -> r.range(0)
-                .prngNumber(null)
-                .prngBytes(domainBuilder.bytes(382))).get();
+                        .prngNumber(null)
+                        .prngBytes(domainBuilder.bytes(382))).get();
 
         sqlEntityListener.onPrng(prng);
         sqlEntityListener.onPrng(prng2);
@@ -1690,7 +1692,9 @@ class SqlEntityListenerTest extends IntegrationTest {
     private void completeFileAndCommit() {
         RecordFile recordFile = domainBuilder.recordFile().persist();
         transactionTemplate.executeWithoutResult(status -> sqlEntityListener.onEnd(recordFile));
+
         assertThat(recordFileRepository.findAll()).contains(recordFile);
+        assertThat(sidecarFileRepository.findAll()).containsAll(recordFile.getSidecars());
     }
 
     @SneakyThrows

@@ -39,21 +39,6 @@ the data, and triggering the business logic services.
 
 ## Getting Started
 
-### Hedera Managed Endpoints
-
-Hedera runs a number of Rosetta API endpoints that can be used in lieu of running your own Rosetta server:
-
-Mainnet: https://mainnet-public.mirrornode.hedera.com/rosetta
-
-Testnet: https://testnet.mirrornode.hedera.com/rosetta
-
-Previewnet: https://previewnet.mirrornode.hedera.com/rosetta
-
-In order to run construction API tests, you'll need a Hedera testnet or previewnet account. You can follow the
-[account creation guide](https://help.hedera.com/hc/en-us/articles/360000664678-How-do-I-create-an-account-on-the-Hedera-testnet-)
-to get an account. Note you can also create a previewnet account at the [Hedera Portal](https://portal.hedera.com) by
-selecting 'Previewnet' from the dropdown menu.
-
 ### Running Locally
 
 The recommended way to run Rosetta locally is to use the all-in-one docker image. Below are the steps to build the image
@@ -178,6 +163,9 @@ testnet accounts with the private keys and set `prefunded_accounts` in `testnet/
 }
 ```
 
+Note you can follow the [account creation guide](https://help.hedera.com/hc/en-us/articles/360000664678) to get testnet
+accounts.
+
 After updating the `validation.json` file run
 
 `./run-validation.sh testnet construction`
@@ -206,3 +194,22 @@ docker run --rm -v "${PWD}/hedera-mirror-rosetta/scripts/validation/postman/rose
 ```
 
 _Note:_ To test against an instance running on the same machine as Docker use your local IP instead of 127.0.0.1.
+
+## Data Retention
+
+Data retention is enabled by default in the rosetta docker image with the following defaults:
+
+```shell
+export DATA_RETENTION_BATCHPERIOD=1d
+export DATA_RETENTION_ENABLED=true
+export DATA_RETENTION_FREQUENCY=7d
+export DATA_RETENTION_PERIOD=90d
+```
+
+The configuration can be overridden when creating the rosetta container, for example, to set data retention period to
+30 days,
+
+```shell
+docker run -d -e MODE=online -e NETWORK=testnet -e DATA_RETENTION_PERIOD=30d \
+  -p 5432:5432 -p 5700:5700 hedera-mirror-rosetta:0.49.1
+```

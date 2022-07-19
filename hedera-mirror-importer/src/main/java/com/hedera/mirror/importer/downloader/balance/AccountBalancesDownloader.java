@@ -40,16 +40,15 @@ import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
 @Named
 public class AccountBalancesDownloader extends Downloader<AccountBalanceFile> {
 
-    public AccountBalancesDownloader(
-            S3AsyncClient s3Client, AddressBookService addressBookService,
-            BalanceDownloaderProperties downloaderProperties,
-            MeterRegistry meterRegistry, NodeSignatureVerifier nodeSignatureVerifier,
-            SignatureFileReader signatureFileReader, BalanceFileReader balanceFileReader,
-            StreamFileNotifier streamFileNotifier,
-            MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor) {
-        super(s3Client, addressBookService, downloaderProperties,
-                meterRegistry, nodeSignatureVerifier, signatureFileReader, balanceFileReader, streamFileNotifier,
-                mirrorDateRangePropertiesProcessor);
+    public AccountBalancesDownloader(AddressBookService addressBookService,
+                                     BalanceDownloaderProperties downloaderProperties,
+                                     MeterRegistry meterRegistry,
+                                     MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor,
+                                     NodeSignatureVerifier nodeSignatureVerifier, S3AsyncClient s3Client,
+                                     SignatureFileReader signatureFileReader, BalanceFileReader balanceFileReader,
+                                     StreamFileNotifier streamFileNotifier) {
+        super(addressBookService, downloaderProperties, meterRegistry, mirrorDateRangePropertiesProcessor,
+                nodeSignatureVerifier, s3Client, signatureFileReader, balanceFileReader, streamFileNotifier);
     }
 
     @Override

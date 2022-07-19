@@ -23,6 +23,8 @@ package com.hedera.mirror.common.domain.transaction;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
 import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
@@ -119,6 +121,14 @@ public class RecordFile implements StreamFile<RecordItem> {
     @Column(name = "prev_hash")
     @ToString.Exclude
     private String previousHash;
+
+    private int sidecarCount;
+
+    @Builder.Default
+    @EqualsAndHashCode.Exclude
+    @ToString.Exclude
+    @Transient
+    private List<SidecarFile> sidecars = Collections.emptyList();
 
     private Integer size;
 
