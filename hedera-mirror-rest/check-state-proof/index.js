@@ -21,7 +21,7 @@
 
 import log4js from 'log4js';
 
-import startUpScreen from './startUp';
+import startUpScreen from './startUpScreen';
 import StateProofHandler from './stateProofHandler';
 import {getAPIResponse, readJSONFile} from './utils';
 

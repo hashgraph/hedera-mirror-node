@@ -38,4 +38,4 @@ const calculateRunningHash = (runningHashObject, nextHashObject, algorithm) => {
     .digest();
 };
 
-export default calculateRunningHash;
+export {calculateRunningHash};

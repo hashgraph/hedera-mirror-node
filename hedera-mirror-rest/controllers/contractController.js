@@ -1094,7 +1094,7 @@ const exportControllerMethods = (methods = []) => {
   }, {});
 };
 
-const exports = exportControllerMethods([
+const contractController = exportControllerMethods([
   'getContractById',
   'getContracts',
   'getContractLogsById',
@@ -1107,7 +1107,7 @@ const exports = exportControllerMethods([
 
 if (utils.isTestEnv()) {
   Object.assign(
-    exports,
+    contractController,
     exportControllerMethods(['extractContractResultsByIdQuery', 'extractContractLogsMultiUnionQuery']),
     {
       checkTimestampsForTopics,
@@ -1124,4 +1124,4 @@ if (utils.isTestEnv()) {
   );
 }
 
-export default exports;
+export default contractController;

@@ -19,7 +19,7 @@
  */
 
 import HashObject from '../../stream/hashObject';
-import calculateRunningHash from '../../stream/runningHash';
+import {calculateRunningHash} from '../../stream/runningHash';
 
 test('calculateRunningHash', () => {
   const header = Buffer.from([0xde, 0xad, 0xbe, 0xef]);

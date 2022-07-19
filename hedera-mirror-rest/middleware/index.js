@@ -18,7 +18,7 @@
  * ‍
  */
 
-export {default as handleError} from './httpErrorHandler';
+export {handleError} from './httpErrorHandler';
 export * from './metricsHandler';
 export {openApiValidator, serveSwaggerDocs} from './openapiHandler';
 export * from './requestHandler';

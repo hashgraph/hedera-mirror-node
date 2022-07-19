@@ -71,15 +71,15 @@ const getAccountContractUnionQueryWithOrder = (...orderOptions) => {
   `;
 };
 
-const exports = {
+const accountContract = {
   getAccountContractUnionQueryWithOrder,
 };
 
 if (isTestEnv()) {
-  Object.assign(exports, {
+  Object.assign(accountContract, {
     accountFields,
     contractFields,
   });
 }
 
-export default exports;
+export default accountContract;

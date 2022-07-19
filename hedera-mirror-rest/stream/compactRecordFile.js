@@ -21,11 +21,11 @@
 import crypto from 'crypto';
 import _ from 'lodash';
 
-import {INT_SIZE} from './constants.js';
-import HashObject from './hashObject.js';
-import RecordFile from './recordFile.js';
-import RecordStreamObject from './recordStreamObject.js';
-import calculateRunningHash from './runningHash.js';
+import {INT_SIZE} from './constants';
+import HashObject from './hashObject';
+import RecordFile from './recordFile';
+import RecordStreamObject from './recordStreamObject';
+import {calculateRunningHash} from './runningHash';
 
 const COMPACT_OBJECT_FIELDS = [
   'head',

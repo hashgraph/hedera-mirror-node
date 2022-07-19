@@ -117,101 +117,104 @@ pool.on('error', (error) => {
 global.pool = pool;
 
 // Express configuration. Prior to v0.5 all sets should be configured before use or they won't be picked up
-const app = addAsync(express());
+const server = addAsync(express());
 const apiPrefix = '/api/v1';
 
-app.disable('x-powered-by');
-app.set('trust proxy', true);
-app.set('port', port);
-app.set('query parser', requestQueryParser);
+server.disable('x-powered-by');
+server.set('trust proxy', true);
+server.set('port', port);
+server.set('query parser', requestQueryParser);
 
-serveSwaggerDocs(app);
+serveSwaggerDocs(server);
 if (isTestEnv()) {
-  openApiValidator(app);
+  openApiValidator(server);
 }
 
 // middleware functions, Prior to v0.5 define after sets
-app.use(
+server.use(
   bodyParser.urlencoded({
     extended: false,
   })
 );
-app.use(bodyParser.json());
-app.use(cors());
+server.use(bodyParser.json());
+server.use(cors());
 
 if (config.response.compression) {
   logger.info('Response compression is enabled');
-  app.use(compression());
+  server.use(compression());
 }
 
 // logging middleware
-app.use(httpContext.middleware);
-app.useAsync(requestLogger);
+server.use(httpContext.middleware);
+server.useAsync(requestLogger);
 
 // metrics middleware
 if (config.metrics.enabled) {
-  app.use(metricsHandler());
+  server.use(metricsHandler());
 }
 
 // accounts routes
-app.getAsync(`${apiPrefix}/accounts`, accounts.getAccounts);
-app.getAsync(`${apiPrefix}/accounts/:${constants.filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS}`, accounts.getOneAccount);
-app.useAsync(`${apiPrefix}/${AccountRoutes.resource}`, AccountRoutes.router);
+server.getAsync(`${apiPrefix}/accounts`, accounts.getAccounts);
+server.getAsync(`${apiPrefix}/accounts/:${constants.filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS}`, accounts.getOneAccount);
+server.useAsync(`${apiPrefix}/${AccountRoutes.resource}`, AccountRoutes.router);
 
 // balances routes
-app.getAsync(`${apiPrefix}/balances`, balances.getBalances);
+server.getAsync(`${apiPrefix}/balances`, balances.getBalances);
 
 // contracts routes
-app.useAsync(`${apiPrefix}/${ContractRoutes.resource}`, ContractRoutes.router);
+server.useAsync(`${apiPrefix}/${ContractRoutes.resource}`, ContractRoutes.router);
 
 // network routes
-app.useAsync(`${apiPrefix}/${NetworkRoutes.resource}`, NetworkRoutes.router);
+server.useAsync(`${apiPrefix}/${NetworkRoutes.resource}`, NetworkRoutes.router);
 
 // block routes
-app.useAsync(`${apiPrefix}/${BlockRoutes.resource}`, BlockRoutes.router);
+server.useAsync(`${apiPrefix}/${BlockRoutes.resource}`, BlockRoutes.router);
 
 // schedules routes
-app.getAsync(`${apiPrefix}/schedules`, schedules.getSchedules);
-app.getAsync(`${apiPrefix}/schedules/:scheduleId`, schedules.getScheduleById);
+server.getAsync(`${apiPrefix}/schedules`, schedules.getSchedules);
+server.getAsync(`${apiPrefix}/schedules/:scheduleId`, schedules.getScheduleById);
 
 // stateproof route
 if (config.stateproof.enabled || isTestEnv()) {
   logger.info('stateproof REST API is enabled, install handler');
-  app.getAsync(`${apiPrefix}/transactions/:transactionId/stateproof`, stateproof.getStateProofForTransaction);
+  server.getAsync(`${apiPrefix}/transactions/:transactionId/stateproof`, stateproof.getStateProofForTransaction);
 } else {
   logger.info('stateproof REST API is disabled');
 }
 
 // tokens routes
-app.getAsync(`${apiPrefix}/tokens`, tokens.getTokensRequest);
-app.getAsync(`${apiPrefix}/tokens/:tokenId`, tokens.getTokenInfoRequest);
-app.getAsync(`${apiPrefix}/tokens/:tokenId/balances`, tokens.getTokenBalances);
-app.getAsync(`${apiPrefix}/tokens/:tokenId/nfts`, tokens.getNftTokensRequest);
-app.getAsync(`${apiPrefix}/tokens/:tokenId/nfts/:serialNumber`, tokens.getNftTokenInfoRequest);
-app.getAsync(`${apiPrefix}/tokens/:tokenId/nfts/:serialNumber/transactions`, tokens.getNftTransferHistoryRequest);
+server.getAsync(`${apiPrefix}/tokens`, tokens.getTokensRequest);
+server.getAsync(`${apiPrefix}/tokens/:tokenId`, tokens.getTokenInfoRequest);
+server.getAsync(`${apiPrefix}/tokens/:tokenId/balances`, tokens.getTokenBalances);
+server.getAsync(`${apiPrefix}/tokens/:tokenId/nfts`, tokens.getNftTokensRequest);
+server.getAsync(`${apiPrefix}/tokens/:tokenId/nfts/:serialNumber`, tokens.getNftTokenInfoRequest);
+server.getAsync(`${apiPrefix}/tokens/:tokenId/nfts/:serialNumber/transactions`, tokens.getNftTransferHistoryRequest);
 
 // topics routes
-app.getAsync(`${apiPrefix}/topics/:topicId/messages`, topicmessage.getTopicMessages);
-app.getAsync(`${apiPrefix}/topics/:topicId/messages/:sequenceNumber`, topicmessage.getMessageByTopicAndSequenceRequest);
-app.getAsync(`${apiPrefix}/topics/messages/:consensusTimestamp`, topicmessage.getMessageByConsensusTimestamp);
+server.getAsync(`${apiPrefix}/topics/:topicId/messages`, topicmessage.getTopicMessages);
+server.getAsync(
+  `${apiPrefix}/topics/:topicId/messages/:sequenceNumber`,
+  topicmessage.getMessageByTopicAndSequenceRequest
+);
+server.getAsync(`${apiPrefix}/topics/messages/:consensusTimestamp`, topicmessage.getMessageByConsensusTimestamp);
 
 // transactions routes
-app.getAsync(`${apiPrefix}/transactions`, transactions.getTransactions);
-app.getAsync(`${apiPrefix}/transactions/:transactionId`, transactions.getTransactionsById);
+server.getAsync(`${apiPrefix}/transactions`, transactions.getTransactions);
+server.getAsync(`${apiPrefix}/transactions/:transactionId`, transactions.getTransactionsById);
 
 // record ip metrics if enabled
 if (config.metrics.ipMetrics) {
-  app.useAsync(recordIpAndEndpoint);
+  server.useAsync(recordIpAndEndpoint);
 }
 
 // response data handling middleware
-app.useAsync(responseHandler);
+server.useAsync(responseHandler);
 
 // response error handling middleware
-app.useAsync(handleError);
+server.useAsync(handleError);
 
 if (!isTestEnv()) {
-  const server = app.listen(port, () => {
+  const server = server.listen(port, () => {
     logger.info(`Server running on port: ${port}`);
   });
 
@@ -225,4 +228,4 @@ if (!isTestEnv()) {
   });
 }
 
-export default app;
+export default server;

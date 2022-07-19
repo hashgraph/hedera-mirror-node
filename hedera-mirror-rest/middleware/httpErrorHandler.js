@@ -73,4 +73,4 @@ const errorMessageFormat = (errorMessages) => {
   };
 };
 
-export default handleError;
+export {handleError};
