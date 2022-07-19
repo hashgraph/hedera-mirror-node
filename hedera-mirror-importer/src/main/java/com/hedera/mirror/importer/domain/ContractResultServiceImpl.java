@@ -133,12 +133,16 @@ public class ContractResultServiceImpl implements ContractResultService {
             }
 
             ByteString resultData;
-            if(!action.getError().isEmpty()) {
-                resultData = action.getError();
-            } else if(!action.getRevertReason().isEmpty()) {
-                resultData = action.getRevertReason();
-            } else {
-                resultData = action.getOutput();
+            switch (action.getResultDataCase()) {
+                case ERROR ->
+                        resultData = action.getError();
+                case REVERT_REASON ->
+                        resultData = action.getRevertReason();
+                case OUTPUT ->
+                        resultData = action.getOutput();
+                default ->
+                    throw new InvalidDatasetException("Invalid result data case for contract action: " +
+                            action.getResultDataCase());
             }
 
             contractAction.setCallDepth(action.getCallDepth());

@@ -102,6 +102,7 @@ create table if not exists contract
     proxy_account_id                 bigint                         null,
     public_key                       character varying              null,
     realm                            bigint                         not null,
+    runtime_bytecode                 bytea                           null,
     shard                            bigint                         not null,
     staked_account_id                bigint                         null,
     staked_node_id                   bigint      default -1         null,

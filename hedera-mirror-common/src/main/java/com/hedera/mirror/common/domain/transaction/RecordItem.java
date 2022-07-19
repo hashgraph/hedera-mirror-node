@@ -174,7 +174,7 @@ public class RecordItem implements StreamItem {
 
     public List<ContractBytecode> getContractBytecode(long contractId) {
         var contractBytecode = new ArrayList<ContractBytecode>();
-        for(int i = 0; i < sidecarRecords.size(); i++) {
+        for (int i = 0; i < sidecarRecords.size(); i++) {
             var sidecarRecord = sidecarRecords.get(i);
             if (sidecarRecord.hasBytecode() && contractId == sidecarRecord.getBytecode().getContractId().getContractNum()) {
                 contractBytecode.add(sidecarRecord.getBytecode());
@@ -213,7 +213,7 @@ public class RecordItem implements StreamItem {
     public Pair<List<ContractAction>, List<ContractStateChange>> getSidecarLists() {
         var contractActions = new ArrayList<ContractAction>();
         var contractStateChanges = new ArrayList<ContractStateChange>();
-        for(int i = 0; i < sidecarRecords.size(); i++) {
+        for (int i = 0; i < sidecarRecords.size(); i++) {
             var sidecarRecord = sidecarRecords.get(i);
             if (sidecarRecord.hasStateChanges()) {
                 var stateChanges = sidecarRecord.getStateChanges();
