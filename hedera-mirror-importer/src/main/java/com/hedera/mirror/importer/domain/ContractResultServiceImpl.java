@@ -132,14 +132,13 @@ public class ContractResultServiceImpl implements ContractResultService {
                             action.getRecipientCase());
             }
 
-            ByteString resultData;
             switch (action.getResultDataCase()) {
                 case ERROR ->
-                        resultData = action.getError();
+                        contractAction.setResultData(DomainUtils.toBytes(action.getError()));
                 case REVERT_REASON ->
-                        resultData = action.getRevertReason();
+                        contractAction.setResultData(DomainUtils.toBytes(action.getRevertReason()));
                 case OUTPUT ->
-                        resultData = action.getOutput();
+                        contractAction.setResultData(DomainUtils.toBytes(action.getOutput()));
                 default ->
                     throw new InvalidDatasetException("Invalid result data case for contract action: " +
                             action.getResultDataCase());
@@ -152,7 +151,6 @@ public class ContractResultServiceImpl implements ContractResultService {
             contractAction.setGasUsed(action.getGasUsed());
             contractAction.setIndex(index);
             contractAction.setInput(DomainUtils.toBytes(action.getInput()));
-            contractAction.setResultData(DomainUtils.toBytes(resultData));
             contractAction.setResultDataType(action.getResultDataCase().getNumber());
             contractAction.setValue(action.getValue());
 
