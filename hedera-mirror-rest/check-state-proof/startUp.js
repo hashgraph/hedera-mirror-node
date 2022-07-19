@@ -23,6 +23,7 @@ import chalk from 'chalk'; //  pretty up request info
 import boxen from 'boxen'; //  emphasize request info
 import log4js from 'log4js';
 import yargs from 'yargs'; //  simplify user input
+import {hideBin} from 'yargs/helpers';
 
 const logger = log4js.getLogger();
 
@@ -34,7 +35,7 @@ const boxenOptions = {
   backgroundColor: '#555555',
 };
 
-const options = yargs
+const options = yargs(hideBin(process.argv))
   .usage('Usage: -t <transactionId> -e <env>')
   .option('transactionId', {
     alias: 't',
