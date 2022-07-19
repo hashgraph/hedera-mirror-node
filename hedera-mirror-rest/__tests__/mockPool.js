@@ -193,38 +193,38 @@ class MockPool {
 
     // Sanity check on the numbers
     [accountNum, timestamp, limit].forEach((pVar) => {
-      pVar = this.sanityCheck(pVar);
+      this.sanityCheck(pVar);
     });
 
     // Create a mock response based on the sql query parameters
     let rows = [];
     for (let i = 0; i < limit.high; i++) {
-      const row = {};
-      row.payer_account_id = EntityId.of(0n, 0n, BigInt(i)).getEncodedId();
-      row.memo = Buffer.from(`Test memo ${i}`);
-      row.consensus_timestamp = this.toNs(this.timeNow - i);
-      row.valid_start_ns = this.toNs(this.timeNow - i - 1);
-      row.result = 'SUCCESS';
-      row.type = 14;
-      row.name = 'CRYPTOTRANSFER';
-      row.node_account_id = EntityId.of(0n, 0n, BigInt(i % this.NUM_NODES)).getEncodedId();
-      row.nonce = 0;
-
       const accountNumValue = this.getAccountId(accountNum, i);
+      const row = {
+        payer_account_id: EntityId.of(0n, 0n, BigInt(i)).getEncodedId(),
+        memo: Buffer.from(`Test memo ${i}`),
+        consensus_timestamp: this.toNs(this.timeNow - i),
+        valid_start_ns: this.toNs(this.timeNow - i - 1),
+        result: 'SUCCESS',
+        type: 14,
+        name: 'CRYPTOTRANSFER',
+        node_account_id: EntityId.of(0n, 0n, BigInt(i % this.NUM_NODES)).getEncodedId(),
+        nonce: 0,
+        crypto_transfer_list: [
+          {
+            amount: i * 1000,
+            entity_id: EntityId.of(0n, 0n, BigInt(accountNumValue)).getEncodedId(),
+          },
+        ],
+        charged_tx_fee: 100 + i,
+        entity_id: null,
+        max_fee: i,
+        scheduled: false,
+        transaction_bytes: '',
+        transaction_hash: '',
+        valid_duration_seconds: i,
+      };
 
-      row.crypto_transfer_list = [
-        {
-          amount: i * 1000,
-          entity_id: EntityId.of(0n, 0n, BigInt(accountNumValue)).getEncodedId(),
-        },
-      ];
-      row.charged_tx_fee = 100 + i;
-      row.entity_id = null;
-      row.max_fee = i;
-      row.scheduled = false;
-      row.transaction_bytes = '';
-      row.transaction_hash = '';
-      row.valid_duration_seconds = i;
       rows.push(row);
     }
     if (['asc', 'ASC'].includes(order)) {
@@ -286,7 +286,7 @@ class MockPool {
 
     // Sanity check on the numbers
     [accountNum, timestamp, balance, limit].forEach((pVar) => {
-      pVar = this.sanityCheck(pVar);
+      this.sanityCheck(pVar);
     });
 
     // Create a mock response based on the sql query parameters
@@ -348,7 +348,7 @@ class MockPool {
 
     // Sanity check on the numbers
     [accountNum, balance, limit].forEach((pVar) => {
-      pVar = this.sanityCheck(pVar);
+      this.sanityCheck(pVar);
     });
 
     // Create a mock response based on the sql query parameters
