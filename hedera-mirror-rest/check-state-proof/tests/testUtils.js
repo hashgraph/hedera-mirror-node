@@ -18,11 +18,9 @@
  * ‍
  */
 
-'use strict';
-
-const glob = require('glob');
-const path = require('path');
-const {readJSONFile} = require('../utils');
+import glob from 'glob';
+import path from 'path';
+import {readJSONFile} from '../utils';
 
 const loadStateProofSamples = () => {
   const getVersionFromPath = (filepath) => {
@@ -40,6 +38,6 @@ const loadStateProofSamples = () => {
   });
 };
 
-module.exports = {
+export default {
   loadStateProofSamples,
 };

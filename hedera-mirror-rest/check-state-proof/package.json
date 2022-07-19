@@ -2,10 +2,11 @@
   "name": "@hashgraph/check-state-proof",
   "version": "1.0.0",
   "description": "An example implementation of a state proof flow for a transaction utilizing the mirror node.",
+  "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "jest --testPathPattern='tests/.*\\.test\\.js'",
-    "start": "node index.js"
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js jest --testPathPattern='tests/.*\\.test\\.js'",
+    "start": "node --experimental-specifier-resolution=node index.js"
   },
   "repository": {
     "type": "git",

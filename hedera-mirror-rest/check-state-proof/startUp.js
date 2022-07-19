@@ -18,14 +18,11 @@
  * ‍
  */
 
-'use strict';
-
-// external libraries
-const _ = require('lodash');
-const chalk = require('chalk'); //  pretty up request info
-const boxen = require('boxen'); //  emphasize request info
-const log4js = require('log4js');
-const yargs = require('yargs'); //  simplify user input
+import _ from 'lodash';
+import chalk from 'chalk'; //  pretty up request info
+import boxen from 'boxen'; //  emphasize request info
+import log4js from 'log4js';
+import yargs from 'yargs'; //  simplify user input
 
 const logger = log4js.getLogger();
 
@@ -123,4 +120,4 @@ const startUpScreen = () => {
   return {transactionId, nonce, scheduled, url, storedFile};
 };
 
-module.exports = startUpScreen;
+export default startUpScreen;

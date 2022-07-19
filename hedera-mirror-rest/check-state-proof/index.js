@@ -19,14 +19,11 @@
  * ‍
  */
 
-'use strict';
+import log4js from 'log4js';
 
-// external libraries
-const log4js = require('log4js');
-
-const startUpScreen = require('./startUp');
-const StateProofHandler = require('./stateProofHandler');
-const {getAPIResponse, readJSONFile} = require('./utils');
+import startUpScreen from './startUp';
+import StateProofHandler from './stateProofHandler';
+import {getAPIResponse, readJSONFile} from './utils';
 
 const logger = log4js
   .configure({
