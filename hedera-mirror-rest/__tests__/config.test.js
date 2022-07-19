@@ -396,6 +396,18 @@ describe('Override db pool config', () => {
   });
 });
 
+describe('getResponseLimit', () => {
+  test('default', async () => {
+    const func = (await import('../config')).getResponseLimit;
+    expect(func()).toEqual({default: 25, max: 100});
+  });
+  test('custom response limit', async () => {
+    const module = await import('../config');
+    module.default.response.limit = {default: 10, max: 200};
+    expect(module.getResponseLimit()).toEqual({default: 10, max: 200});
+  });
+});
+
 function unlink(file) {
   if (fs.existsSync(file)) {
     fs.unlinkSync(file);
