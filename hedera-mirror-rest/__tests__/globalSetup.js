@@ -18,13 +18,12 @@
  * ‍
  */
 
-import {exec} from 'child_process';
 import crypto from 'crypto';
 import pg from 'pg';
 import {GenericContainer} from 'testcontainers';
 
-const POSTGRES_PORT = 5432;
 const DEFAULT_DB_NAME = 'mirror_node_integration';
+const POSTGRES_PORT = 5432;
 
 const v1DockerImageConfig = {
   imageName: 'postgres',
@@ -36,29 +35,16 @@ const v2DockerImageConfig = {
   tagName: '10.2.2-alpine',
 };
 
-// if v2 schema is set in env use it, else default to v1
-const dockerImageConfig = process.env.MIRROR_NODE_SCHEMA === 'v2' ? v2DockerImageConfig : v1DockerImageConfig;
-
-const isDockerInstalled = function () {
-  return new Promise((resolve) => {
-    exec('docker --version', (err) => {
-      resolve(!err);
-    });
-  });
-};
+const isV2Schema = () => process.env.MIRROR_NODE_SCHEMA === 'v2';
 
 const createDbContainer = async (maxWorkers) => {
-  if (!(await isDockerInstalled())) {
-    throw new Error('Docker not found');
-  }
-
   const dbAdminUser = 'mirror_api_admin';
   const dbAdminPassword = crypto.randomBytes(16).toString('hex');
+  const dockerImageConfig = isV2Schema() ? v2DockerImageConfig : v1DockerImageConfig;
   const image = `${dockerImageConfig.imageName}:${dockerImageConfig.tagName}`;
   console.info(`Starting PostgreSQL docker container with image ${image}`);
 
   const dockerDb = await new GenericContainer(image)
-    // .withEnv('POSTGRES_DB', dbSessionConfig.name)
     .withEnv('POSTGRES_USER', dbAdminUser)
     .withEnv('POSTGRES_PASSWORD', dbAdminPassword)
     .withExposedPorts(POSTGRES_PORT)
@@ -69,23 +55,31 @@ const createDbContainer = async (maxWorkers) => {
 
   process.env.INTEGRATION_DATABASE_URL = `postgresql://${dbAdminUser}:${dbAdminPassword}@${host}:${port}`;
 
-  const pool = new pg.Pool({
+  const poolConfig = {
     user: dbAdminUser,
     host,
     database: 'postgres',
     password: dbAdminPassword,
     port,
     sslmode: 'DISABLE',
-  });
+  };
+  const pool = new pg.Pool(poolConfig);
 
   for (let i = 1; i <= maxWorkers; i++) {
     // JEST_WORKER_ID starts from 1
     const dbName = `${DEFAULT_DB_NAME}_${i}`;
     await pool.query(`create database ${dbName} with owner ${dbAdminUser}`);
+
+    if (isV2Schema()) {
+      // create citus extension
+      const workerPool = new pg.Pool({...poolConfig, database: dbName});
+      await workerPool.query('create extension if not exists citus');
+      await workerPool.end();
+    }
   }
-  console.info(`Created separate databases for each of ${maxWorkers} jest workers`);
 
   await pool.end();
+  console.info(`Created separate databases for each of ${maxWorkers} jest workers`);
 };
 
 export default async function (globalConfig) {

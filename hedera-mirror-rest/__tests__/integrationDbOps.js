@@ -26,30 +26,18 @@ import path from 'path';
 import config from '../config';
 import {getModuleDirname} from './testutils';
 import {getPoolClass} from '../utils';
-import {DEFAULT_DB_NAME} from './global.setup';
+import {DEFAULT_DB_NAME} from './globalSetup';
 
 const {db: defaultDbConfig} = config;
 const Pool = await getPoolClass();
 
 const v1SchemaConfigs = {
-  docker: {
-    imageName: 'postgres',
-    tagName: '14-alpine',
-  },
-  flyway: {
-    baselineVersion: '0',
-    locations: 'hedera-mirror-importer/src/main/resources/db/migration/v1',
-  },
+  baselineVersion: '0',
+  locations: 'hedera-mirror-importer/src/main/resources/db/migration/v1',
 };
 const v2SchemaConfigs = {
-  docker: {
-    imageName: 'citusdata/citus',
-    tagName: '10.2.2-alpine',
-  },
-  flyway: {
-    baselineVersion: '1.999.999',
-    locations: 'hedera-mirror-importer/src/main/resources/db/migration/v2',
-  },
+  baselineVersion: '1.999.999',
+  locations: 'hedera-mirror-importer/src/main/resources/db/migration/v2',
 };
 
 // if v2 schema is set in env use it, else default to v1
@@ -92,10 +80,10 @@ const flywayMigrate = async () => {
   const exePath = path.join('.', 'node_modules', 'node-flywaydb', 'bin', 'flyway');
   const flywayDataPath = '.node-flywaydb';
   const flywayConfigPath = path.join(os.tmpdir(), `config_worker_${workerId}.json`); // store configs in temp dir
-  const locations = path.join('..', schemaConfigs.flyway.locations);
+  const locations = path.join('..', schemaConfigs.locations);
   const flywayConfig = `{
     "flywayArgs": {
-      "baselineVersion": "${schemaConfigs.flyway.baselineVersion}",
+      "baselineVersion": "${schemaConfigs.baselineVersion}",
       "locations": "filesystem:${locations}",
       "password": "${dbConnectionParams.password}",
       "placeholders.api-password": "${defaultDbConfig.password}",
@@ -130,7 +118,6 @@ const flywayMigrate = async () => {
   while (retries > 0) {
     retries--;
     try {
-      // execSync(`node ${exePath} -c ${flywayConfigPath} clean`, {stdio: 'inherit'});
       execSync(`node ${exePath} -c ${flywayConfigPath} info`, {stdio: 'ignore'});
     } catch (e) {
       logger.debug(`Error running flyway info, error: ${e}. Retries left ${retries}. Waiting 2s before retrying.`);
@@ -161,7 +148,6 @@ const cleanUp = async () => pool.query(cleanupSql);
 
 export default {
   cleanUp,
-  // createDbContainer,
   createPool,
   flywayMigrate,
 };

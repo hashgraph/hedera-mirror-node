@@ -115,14 +115,14 @@
     "coveragePathIgnorePatterns": [
       "<rootDir>/__tests__/"
     ],
-    "globalSetup": "./__tests__/global.setup.js",
+    "globalSetup": "./__tests__/globalSetup.js",
     "maxWorkers": "50%",
     "reporters": [
       "default",
       "jest-junit"
     ],
     "setupFilesAfterEnv": [
-      "./__tests__/jest.setup.js"
+      "./__tests__/jestSetup.js"
     ],
     "testEnvironment": "node",
     "testRunner": "jest-circus/runner",
