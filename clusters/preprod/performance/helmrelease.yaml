@@ -22,7 +22,7 @@ spec:
   interval: 90s
   test:
     enable: true
-    timeout: 16m
+    timeout: 25m
   upgrade:
     cleanupOnFail: true
     crds: CreateReplace
