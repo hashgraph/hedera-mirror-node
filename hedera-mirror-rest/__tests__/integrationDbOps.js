@@ -18,26 +18,18 @@
  * ‍
  */
 
-import crypto from 'crypto';
 import {execSync} from 'child_process';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import {GenericContainer} from 'testcontainers';
 
 import config from '../config';
-import {isDockerInstalled} from './integrationUtils';
 import {getModuleDirname} from './testutils';
 import {getPoolClass} from '../utils';
+import {DEFAULT_DB_NAME} from './global.setup';
 
 const {db: defaultDbConfig} = config;
 const Pool = await getPoolClass();
-
-let oldPool;
-
-defaultDbConfig.name = process.env.POSTGRES_DB || 'mirror_node_integration';
-const dbAdminUser = process.env.POSTGRES_USER || `${defaultDbConfig.username}_admin`;
-const dbAdminPassword = process.env.POSTGRES_PASSWORD || crypto.randomBytes(16).toString('hex');
 
 const v1SchemaConfigs = {
   docker: {
@@ -63,78 +55,51 @@ const v2SchemaConfigs = {
 // if v2 schema is set in env use it, else default to v1
 const schemaConfigs = process.env.MIRROR_NODE_SCHEMA === 'v2' ? v2SchemaConfigs : v1SchemaConfigs;
 
-const getConnection = (dbSessionConfig) => {
-  logger.info(
-    `sqlConnection will use postgresql://${dbSessionConfig.host}:${dbSessionConfig.port}/${dbSessionConfig.name}?sslmode=${dbSessionConfig.sslMode}`
-  );
-  const sqlConnection = new Pool({
-    user: dbAdminUser,
-    host: dbSessionConfig.host,
-    database: dbSessionConfig.name,
-    password: dbAdminPassword,
-    port: dbSessionConfig.port,
-    sslmode: dbSessionConfig.sslMode,
-  });
+const dbUrlRegex = /^postgresql:\/\/(.*):(.*)@(.*):(\d+)/;
 
-  // Until "server", "pool" and everything else is made non-static...
-  oldPool = global.pool;
-  global.pool = sqlConnection;
-
-  return sqlConnection;
+const extractDbConnectionParams = (url) => {
+  const found = url.match(dbUrlRegex);
+  return {
+    username: found[1],
+    password: found[2],
+    host: found[3],
+    port: found[4],
+  };
 };
 
-/**
- * Instantiate sqlConnection by either pointing at a DB specified by environment variables or instantiating a
- * testContainers/dockerized postgresql instance.
- * Returns a dbConfig object for db state orchestration by test classes
- * @return {Promise<Object>} {dbSessionConfig, dockerContainer, sqlConnection} Db session details, dockerContainerInstance and sql connection
- */
-const instantiateDatabase = async () => {
-  if (!(await isDockerInstalled())) {
-    throw new Error('Docker not found');
-  }
-
-  const image = `${schemaConfigs.docker.imageName}:${schemaConfigs.docker.tagName}`;
-  logger.info(`Starting PostgreSQL docker container with image ${image}`);
-  const dbSessionConfig = {...defaultDbConfig};
-  const dockerDb = await new GenericContainer(image)
-    .withEnv('POSTGRES_DB', dbSessionConfig.name)
-    .withEnv('POSTGRES_USER', dbAdminUser)
-    .withEnv('POSTGRES_PASSWORD', dbAdminPassword)
-    .withExposedPorts(dbSessionConfig.port)
-    .start();
-  dbSessionConfig.port = dockerDb.getMappedPort(defaultDbConfig.port);
-  dbSessionConfig.host = dockerDb.getHost();
-  logger.info(`Started dockerized PostgreSQL at ${dbSessionConfig.host}:${dbSessionConfig.port}`);
-
-  return flywayMigrate(dbSessionConfig).then(() => {
-    return {
-      dbSessionConfig: dbSessionConfig,
-      dockerContainer: dockerDb,
-      sqlConnection: getConnection(dbSessionConfig),
-    };
+const createPool = () => {
+  const dbName = `${DEFAULT_DB_NAME}_${process.env.JEST_WORKER_ID}`;
+  const {username, password, host, port} = extractDbConnectionParams(process.env.INTEGRATION_DATABASE_URL);
+  global.pool = new Pool({
+    user: username,
+    host,
+    database: dbName,
+    password: password,
+    port,
+    sslmode: 'DISABLE',
   });
 };
 
 /**
  * Run the SQL (non-java) based migrations stored in the Importer project against the target database.
  */
-const flywayMigrate = async (dbSessionConfig) => {
-  logger.info('Using flyway CLI to construct schema');
-  logger.info(
-    `flywayMigrate will connect using postgresql://${dbSessionConfig.host}:${dbSessionConfig.port}/${dbSessionConfig.name}`
-  );
+const flywayMigrate = async () => {
+  const workerId = process.env.JEST_WORKER_ID;
+  logger.info(`Using flyway CLI to construct schema for jest worker ${workerId}`);
+  const dbConnectionParams = extractDbConnectionParams(process.env.INTEGRATION_DATABASE_URL);
+  const apiUsername = `${defaultDbConfig.username}_${workerId}`;
+  const dbName = `${DEFAULT_DB_NAME}_${workerId}`;
   const exePath = path.join('.', 'node_modules', 'node-flywaydb', 'bin', 'flyway');
   const flywayDataPath = '.node-flywaydb';
-  const flywayConfigPath = path.join(os.tmpdir(), `config_${dbSessionConfig.port}.json`); // store configs in temp dir
+  const flywayConfigPath = path.join(os.tmpdir(), `config_worker_${workerId}.json`); // store configs in temp dir
   const locations = path.join('..', schemaConfigs.flyway.locations);
   const flywayConfig = `{
     "flywayArgs": {
       "baselineVersion": "${schemaConfigs.flyway.baselineVersion}",
       "locations": "filesystem:${locations}",
-      "password": "${dbAdminPassword}",
-      "placeholders.api-password": "${dbSessionConfig.password}",
-      "placeholders.api-user": "${dbSessionConfig.username}",
+      "password": "${dbConnectionParams.password}",
+      "placeholders.api-password": "${defaultDbConfig.password}",
+      "placeholders.api-user": "${apiUsername}",
       "placeholders.autovacuumFreezeMaxAgeInsertOnly": 100000,
       "placeholders.autovacuumVacuumInsertThresholdCryptoTransfer": 18000000,
       "placeholders.autovacuumVacuumInsertThresholdTokenTransfer": 2000,
@@ -142,12 +107,12 @@ const flywayMigrate = async (dbSessionConfig) => {
       "placeholders.chunkIdInterval": 10000,
       "placeholders.chunkTimeInterval": 604800000000000,
       "placeholders.compressionAge": 9007199254740991,
-      "placeholders.db-name": "${dbSessionConfig.name}",
-      "placeholders.db-user": "${dbAdminUser}",
+      "placeholders.db-name": "${dbName}",
+      "placeholders.db-user": "${dbConnectionParams.username}",
       "placeholders.topicRunningHashV2AddedTimestamp": 0,
       "target": "latest",
-      "url": "jdbc:postgresql://${dbSessionConfig.host}:${dbSessionConfig.port}/${dbSessionConfig.name}",
-      "user": "${dbAdminUser}"
+      "url": "jdbc:postgresql://${dbConnectionParams.host}:${dbConnectionParams.port}/${dbName}",
+      "user": "${dbConnectionParams.username}"
     },
     "version": "8.5.9",
     "downloads": {
@@ -165,27 +130,15 @@ const flywayMigrate = async (dbSessionConfig) => {
   while (retries > 0) {
     retries--;
     try {
-      execSync(`node ${exePath} -c ${flywayConfigPath} clean`, {stdio: 'inherit'});
+      // execSync(`node ${exePath} -c ${flywayConfigPath} clean`, {stdio: 'inherit'});
+      execSync(`node ${exePath} -c ${flywayConfigPath} info`, {stdio: 'ignore'});
     } catch (e) {
-      logger.debug(`Error running flyway cleanup, error: ${e}. Retries left ${retries}. Waiting 2s before retrying.`);
+      logger.debug(`Error running flyway info, error: ${e}. Retries left ${retries}. Waiting 2s before retrying.`);
       await new Promise((resolve) => setTimeout(resolve, retryMsDelay));
     }
   }
 
   execSync(`node ${exePath} -c ${flywayConfigPath} migrate`, {stdio: 'inherit'});
-};
-
-const closeConnection = async (dbConfig) => {
-  if (dbConfig.sqlConnection) {
-    await dbConfig.sqlConnection.end();
-  }
-  if (dbConfig.dockerContainer) {
-    await dbConfig.dockerContainer.stop();
-  }
-  if (oldPool) {
-    global.pool = oldPool;
-    oldPool = null;
-  }
 };
 
 const cleanupSql = fs.readFileSync(
@@ -204,20 +157,11 @@ const cleanupSql = fs.readFileSync(
   'utf8'
 );
 
-const cleanUp = async (sqlConnection) => {
-  if (sqlConnection) {
-    await sqlConnection.query(cleanupSql);
-  }
-};
-
-const runSqlQuery = async (sqlConnection, query, params) => {
-  return sqlConnection.query(query, params);
-};
+const cleanUp = async () => pool.query(cleanupSql);
 
 export default {
   cleanUp,
-  closeConnection,
-  getConnection,
-  instantiateDatabase,
-  runSqlQuery,
+  // createDbContainer,
+  createPool,
+  flywayMigrate,
 };

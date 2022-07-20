@@ -27,7 +27,7 @@ const recordFilename = '2021-03-05T05_23_04.299486999Z.rcd';
 const recordFilePath = path.join(getModuleDirname(import.meta), recordFilename);
 const data = fs.readFileSync(recordFilePath);
 
-export default async (sqlConnection) => {
+export default async () => {
   const fields = [
     'name',
     'load_start',
@@ -68,5 +68,5 @@ export default async (sqlConnection) => {
     data,
     4085,
   ];
-  await sqlConnection.query(query, params);
+  await pool.query(query, params);
 };

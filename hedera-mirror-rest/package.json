@@ -115,6 +115,7 @@
     "coveragePathIgnorePatterns": [
       "<rootDir>/__tests__/"
     ],
+    "globalSetup": "./__tests__/global.setup.js",
     "maxWorkers": "50%",
     "reporters": [
       "default",

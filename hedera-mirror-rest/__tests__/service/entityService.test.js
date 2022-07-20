@@ -21,9 +21,9 @@
 import {EntityService} from '../../service';
 import AccountAlias from '../../accountAlias';
 import integrationDomainOps from '../integrationDomainOps';
-import defaultMochaStatements from './defaultMochaStatements';
+import {setupIntegrationTest} from '../integrationUtils';
 
-defaultMochaStatements();
+setupIntegrationTest();
 
 const defaultEntityAlias = new AccountAlias('1', '2', 'KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ');
 const defaultInputEntity = [
