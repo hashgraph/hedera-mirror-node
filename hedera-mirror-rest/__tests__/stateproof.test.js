@@ -26,15 +26,7 @@ import config from '../config';
 import * as constants from '../constants';
 import EntityId from '../entityId';
 import s3client from '../s3client';
-import {
-  getAddressBooksAndNodeAccountIdsByConsensusNs,
-  getQueryParamValues,
-  getRCDFileInfoByConsensusNs,
-  getSuccessfulTransactionConsensusNs,
-  downloadRecordStreamFilesFromObjectStorage,
-  canReachConsensus,
-  formatCompactableRecordFile,
-} from '../stateproof';
+import stateproof from '../stateproof';
 import {CompositeRecordFile} from '../stream';
 import TransactionId from '../transactionId';
 import {opsMap} from '../utils';
@@ -45,6 +37,16 @@ afterEach(() => {
   global.pool = {};
   sinon.restore();
 });
+
+const {
+  canReachConsensus,
+  downloadRecordStreamFilesFromObjectStorage,
+  formatCompactableRecordFile,
+  getAddressBooksAndNodeAccountIdsByConsensusNs,
+  getQueryParamValues,
+  getRCDFileInfoByConsensusNs,
+  getSuccessfulTransactionConsensusNs,
+} = stateproof;
 
 const emptyQueryResult = {
   rows: [],
