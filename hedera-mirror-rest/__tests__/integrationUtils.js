@@ -40,7 +40,7 @@ const setupIntegrationTest = () => {
 
   beforeAll(async () => {
     await integrationDbOps.flywayMigrate();
-    await integrationDbOps.createPool();
+    return integrationDbOps.createPool();
   }, defaultBeforeAllTimeoutMillis);
 
   afterAll(async () => pool.end());

@@ -61,32 +61,6 @@ import {defaultBeforeAllTimeoutMillis, setupIntegrationTest} from './integration
 
 setupIntegrationTest();
 
-// jest.setTimeout(40000);
-
-// let dbConfig;
-//
-// // set a large timeout for beforeAll as downloading docker image if not exists can take quite some time. Note
-// // it's 12 minutes for CI to workaround possible DockerHub rate limit.
-// const defaultBeforeAllTimeoutMillis = process.env.CI ? 12 * 60 * 1000 : 4 * 60 * 1000;
-//
-// beforeAll(async () => {
-//   dbConfig = await integrationDbOps.instantiateDatabase();
-// }, defaultBeforeAllTimeoutMillis);
-//
-// afterAll(async () => {
-//   await integrationDbOps.closeConnection(dbConfig);
-// });
-//
-// beforeEach(async () => {
-//   if (!dbConfig.sqlConnection) {
-//     logger.warn(`sqlConnection undefined, acquire new connection`);
-//     dbConfig.sqlConnection = integrationDbOps.getConnection(dbConfig.dbSessionConfig);
-//   }
-//
-//   await integrationDbOps.cleanUp(dbConfig.sqlConnection);
-//   await setupData();
-// });
-
 beforeEach(async () => {
   await setupData();
 });
