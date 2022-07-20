@@ -18,9 +18,7 @@
  * ‍
  */
 
-'use strict';
-
-const {InvalidArgumentError} = require('../errors/invalidArgumentError');
+import {InvalidArgumentError} from '../errors';
 
 class TokenFreezeStatus {
   static STATUSES = ['NOT_APPLICABLE', 'FROZEN', 'UNFROZEN'];
@@ -45,4 +43,4 @@ class TokenFreezeStatus {
   }
 }
 
-module.exports = TokenFreezeStatus;
+export default TokenFreezeStatus;

@@ -18,9 +18,7 @@
  * ‍
  */
 
-'use strict';
-
-const asn1js = require('asn1js');
+import asn1js from 'asn1js';
 
 const BLOCK_NAME = 'ObjectIdentifierValueBlock';
 const ID = '1.3.101.112'; // per RFC 8410 https://tools.ietf.org/html/rfc8410#section-9
@@ -50,6 +48,6 @@ const derToEd25519 = function (der) {
   }
 };
 
-module.exports = {
+export default {
   derToEd25519,
 };

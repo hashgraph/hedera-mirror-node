@@ -18,9 +18,7 @@
  * ‍
  */
 
-'use strict';
-
-const constants = require('../constants');
+import {filterKeys} from '../constants';
 
 class CustomFee {
   /**
@@ -56,7 +54,7 @@ class CustomFee {
   static TOKEN_ID = `token_id`;
 
   static FILTER_MAP = {
-    [constants.filterKeys.TIMESTAMP]: CustomFee.getFullName(CustomFee.CREATED_TIMESTAMP),
+    [filterKeys.TIMESTAMP]: CustomFee.getFullName(CustomFee.CREATED_TIMESTAMP),
   };
 
   /**
@@ -70,4 +68,4 @@ class CustomFee {
   }
 }
 
-module.exports = CustomFee;
+export default CustomFee;

@@ -18,8 +18,6 @@
  * ‍
  */
 
-'use strict';
-
 const InvalidConfigErrorMessage = 'Invalid config';
 
 class InvalidConfigError extends Error {
@@ -29,6 +27,4 @@ class InvalidConfigError extends Error {
   }
 }
 
-module.exports = {
-  InvalidConfigError,
-};
+export default InvalidConfigError;

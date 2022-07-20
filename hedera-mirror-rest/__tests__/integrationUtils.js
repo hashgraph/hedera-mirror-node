@@ -18,9 +18,7 @@
  * ‍
  */
 
-'use strict';
-
-const {exec} = require('child_process');
+import {exec} from 'child_process';
 
 const isDockerInstalled = function () {
   return new Promise((resolve) => {
@@ -30,6 +28,4 @@ const isDockerInstalled = function () {
   });
 };
 
-module.exports = {
-  isDockerInstalled,
-};
+export {isDockerInstalled};

@@ -18,11 +18,9 @@
  * ‍
  */
 
-'use strict';
-
-const {AddressBook, AddressBookEntry, AddressBookServiceEndpoint, NetworkNode, NodeStake} = require('../model');
-const BaseService = require('./baseService');
-const {OrderSpec} = require('../sql');
+import BaseService from './baseService';
+import {AddressBook, AddressBookEntry, AddressBookServiceEndpoint, NetworkNode, NodeStake} from '../model';
+import {OrderSpec} from '../sql';
 
 /**
  * Network node business model
@@ -99,4 +97,4 @@ class NetworkNodeService extends BaseService {
   };
 }
 
-module.exports = new NetworkNodeService();
+export default new NetworkNodeService();

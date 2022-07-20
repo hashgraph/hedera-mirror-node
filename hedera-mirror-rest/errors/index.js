@@ -18,13 +18,20 @@
  * ‍
  */
 
-const InvalidClauseErrorMessage = 'Invalid clause produced after parsing query parameters';
+import DbError from './dbError.js';
+import FileDecodeError from './fileDecodeError.js';
+import FileDownloadError from './fileDownloadError.js';
+import InvalidArgumentError from './invalidArgumentError.js';
+import InvalidClauseError from './invalidClauseError.js';
+import InvalidConfigError from './invalidConfigError.js';
+import NotFoundError from './notFoundError.js';
 
-class InvalidClauseError extends Error {
-  constructor(errorMessage) {
-    super();
-    this.message = errorMessage === undefined ? InvalidClauseErrorMessage : errorMessage;
-  }
-}
-
-export default InvalidClauseError;
+export {
+  DbError,
+  FileDecodeError,
+  FileDownloadError,
+  InvalidArgumentError,
+  InvalidClauseError,
+  InvalidConfigError,
+  NotFoundError,
+};

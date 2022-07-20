@@ -18,10 +18,8 @@
  * ‍
  */
 
-'use strict';
-
-const _ = require('lodash');
-const {InvalidArgumentError} = require('../errors/invalidArgumentError');
+import _ from 'lodash';
+import {InvalidArgumentError} from '../errors';
 
 const protoToName = {
   7: 'CONTRACTCALL',
@@ -98,7 +96,7 @@ const isValid = (name) => {
   return nameToProto[name.toUpperCase()] !== undefined;
 };
 
-module.exports = {
+export default {
   isValid,
   getName,
   getProtoId,

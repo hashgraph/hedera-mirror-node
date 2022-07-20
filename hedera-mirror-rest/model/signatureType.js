@@ -18,8 +18,6 @@
  * ‍
  */
 
-'use strict';
-
 const protoToName = {
   2: 'CONTRACT',
   3: 'ED25519',
@@ -34,6 +32,6 @@ const getName = (protoId) => {
   return protoToName[protoId] || UNKNOWN;
 };
 
-module.exports = {
+export default {
   getName,
 };

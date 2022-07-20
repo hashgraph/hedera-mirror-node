@@ -18,8 +18,6 @@
  * ‍
  */
 
-'use strict';
-
 class TransactionId {
   constructor(payerAccountId, validStartTimestamp, nonce, scheduled) {
     this.payerAccountId = payerAccountId;
@@ -29,4 +27,4 @@ class TransactionId {
   }
 }
 
-module.exports = TransactionId;
+export default TransactionId;

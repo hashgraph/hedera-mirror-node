@@ -18,19 +18,12 @@
  * ‍
  */
 
-'use strict';
+import {EntityService} from '../../service';
+import AccountAlias from '../../accountAlias';
+import integrationDomainOps from '../integrationDomainOps';
+import defaultMochaStatements from './defaultMochaStatements';
 
-const {EntityService} = require('../../service');
-const AccountAlias = require('../../accountAlias');
-
-// add logger configuration support
-require('../testutils');
-
-const integrationDbOps = require('../integrationDbOps');
-const integrationDomainOps = require('../integrationDomainOps');
-
-const {defaultMochaStatements} = require('./defaultMochaStatements');
-defaultMochaStatements(jest, integrationDbOps, integrationDomainOps);
+defaultMochaStatements();
 
 const defaultEntityAlias = new AccountAlias('1', '2', 'KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ');
 const defaultInputEntity = [

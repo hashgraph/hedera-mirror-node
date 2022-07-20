@@ -18,22 +18,20 @@
  * ‍
  */
 
-'use strict';
+import crypto from 'crypto';
+import {execSync} from 'child_process';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
+import {GenericContainer} from 'testcontainers';
 
-const crypto = require('crypto');
-const {execSync} = require('child_process');
-const fs = require('fs');
-const log4js = require('log4js');
-const path = require('path');
-const {GenericContainer} = require('testcontainers');
-const {db: defaultDbConfig} = require('../config');
-const {isDockerInstalled} = require('./integrationUtils');
-const {getPoolClass} = require('../utils');
-const os = require('os');
+import config from '../config';
+import {isDockerInstalled} from './integrationUtils';
+import {getModuleDirname} from './testutils';
+import {getPoolClass} from '../utils';
 
-const logger = log4js.getLogger();
-
-const Pool = getPoolClass();
+const {db: defaultDbConfig} = config;
+const Pool = await getPoolClass();
 
 let oldPool;
 
@@ -192,7 +190,7 @@ const closeConnection = async (dbConfig) => {
 
 const cleanupSql = fs.readFileSync(
   path.join(
-    __dirname,
+    getModuleDirname(import.meta),
     '..',
     '..',
     'hedera-mirror-importer',
@@ -216,7 +214,7 @@ const runSqlQuery = async (sqlConnection, query, params) => {
   return sqlConnection.query(query, params);
 };
 
-module.exports = {
+export default {
   cleanUp,
   closeConnection,
   getConnection,

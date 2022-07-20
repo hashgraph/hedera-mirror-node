@@ -18,11 +18,10 @@
  * ‍
  */
 
-'use strict';
-
 // external libraries
-const {Router} = require('@awaitjs/express');
-const {ContractController} = require('../controllers');
+import {Router} from '@awaitjs/express';
+
+import {ContractController} from '../controllers';
 
 const router = Router();
 
@@ -36,7 +35,7 @@ router.getAsync('/results', ContractController.getContractResults);
 router.getAsync('/results/logs', ContractController.getContractLogs);
 router.getAsync('/results/:transactionIdOrHash', ContractController.getContractResultsByTransactionIdOrHash);
 
-module.exports = {
+export default {
   resource,
   router,
 };

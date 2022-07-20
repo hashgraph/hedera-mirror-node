@@ -18,11 +18,10 @@
  * ‍
  */
 
-'use strict';
+import {FileDecodeError} from '../../errors';
 
-const {FileDecodeError} = require('../../errors/fileDecodeError');
 // models
-const {FeeSchedule} = require('../../model');
+import {FeeSchedule} from '../../model';
 
 describe('fee schedule proto parse', () => {
   const input = {

@@ -18,18 +18,11 @@
  * ‍
  */
 
-'use strict';
-
-const {proto} = require('@hashgraph/proto');
-
-const utils = require('../utils.js');
-const config = require('../config.js');
-const constants = require('../constants.js');
-const {InvalidArgumentError} = require('../errors/invalidArgumentError');
-const {InvalidClauseError} = require('../errors/invalidClauseError');
-const {TransactionType} = require('../model');
-const {getLimitParamValue} = require('../utils');
-const {keyTypes} = require('../constants');
+import {proto} from '@hashgraph/proto';
+import * as utils from '../utils';
+import config from '../config';
+import * as constants from '../constants';
+import {InvalidArgumentError, InvalidClauseError} from '../errors';
 
 const ecdsaKey = '02b5ffadf88d625cd9074fa01e5280b773a60ed2de55b0d6f94460c0b5a001a258';
 const ecdsaProtoKey = {ECDSASecp256k1: Buffer.from(ecdsaKey, 'hex')};
@@ -182,7 +175,7 @@ describe('Utils encodeKey', () => {
       name: 'Empty',
       input: [],
       expected: {
-        _type: keyTypes.PROTOBUF,
+        _type: constants.keyTypes.PROTOBUF,
         key: '',
       },
     },
@@ -190,7 +183,7 @@ describe('Utils encodeKey', () => {
       name: 'Protobuf',
       input: Buffer.from('abcdef', 'hex'),
       expected: {
-        _type: keyTypes.PROTOBUF,
+        _type: constants.keyTypes.PROTOBUF,
         key: 'abcdef',
       },
     },
@@ -198,7 +191,7 @@ describe('Utils encodeKey', () => {
       name: 'ECDSA(secp256k1) primitive',
       input: getPrimitiveKeyBytes(ecdsaProtoKey),
       expected: {
-        _type: keyTypes.ECDSA_SECP256K1,
+        _type: constants.keyTypes.ECDSA_SECP256K1,
         key: ecdsaKey,
       },
     },
@@ -206,7 +199,7 @@ describe('Utils encodeKey', () => {
       name: 'ECDSA(secp256k1) keylist',
       input: getKeyListBytes(ecdsaProtoKey),
       expected: {
-        _type: keyTypes.ECDSA_SECP256K1,
+        _type: constants.keyTypes.ECDSA_SECP256K1,
         key: ecdsaKey,
       },
     },
@@ -214,7 +207,7 @@ describe('Utils encodeKey', () => {
       name: 'ECDSA(secp256k1) threshold',
       input: getThresholdKeyBytes(ecdsaProtoKey),
       expected: {
-        _type: keyTypes.ECDSA_SECP256K1,
+        _type: constants.keyTypes.ECDSA_SECP256K1,
         key: ecdsaKey,
       },
     },
@@ -222,7 +215,7 @@ describe('Utils encodeKey', () => {
       name: 'ED25519 primitive',
       input: getPrimitiveKeyBytes(ed25519ProtoKey),
       expected: {
-        _type: keyTypes.ED25519,
+        _type: constants.keyTypes.ED25519,
         key: ed25519Key,
       },
     },
@@ -230,7 +223,7 @@ describe('Utils encodeKey', () => {
       name: 'ED25519 keylist',
       input: getKeyListBytes(ed25519ProtoKey),
       expected: {
-        _type: keyTypes.ED25519,
+        _type: constants.keyTypes.ED25519,
         key: ed25519Key,
       },
     },
@@ -238,7 +231,7 @@ describe('Utils encodeKey', () => {
       name: 'ED25519 threshold',
       input: getThresholdKeyBytes(ed25519ProtoKey),
       expected: {
-        _type: keyTypes.ED25519,
+        _type: constants.keyTypes.ED25519,
         key: ed25519Key,
       },
     },
@@ -1224,19 +1217,19 @@ describe('Utils toHexStringNonQuantity and toHexStringQuantity tests', () => {
 
 describe('Utils getLimitParamValue', () => {
   test('undefined', () => {
-    expect(getLimitParamValue(undefined)).toEqual(responseLimit.default);
+    expect(utils.getLimitParamValue(undefined)).toEqual(responseLimit.default);
   });
 
   test('larger than max', () => {
-    expect(getLimitParamValue(`${responseLimit.max + 1}`)).toEqual(responseLimit.max);
+    expect(utils.getLimitParamValue(`${responseLimit.max + 1}`)).toEqual(responseLimit.max);
   });
 
   test('max signed long', () => {
-    expect(getLimitParamValue('9223372036854775807')).toEqual(responseLimit.max);
+    expect(utils.getLimitParamValue('9223372036854775807')).toEqual(responseLimit.max);
   });
 
   test('values array', () => {
-    expect(getLimitParamValue(['1', '50'])).toEqual(50);
+    expect(utils.getLimitParamValue(['1', '50'])).toEqual(50);
   });
 });
 

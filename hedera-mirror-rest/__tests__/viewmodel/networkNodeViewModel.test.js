@@ -18,9 +18,7 @@
  * ‍
  */
 
-'use strict';
-
-const NetworkNodeViewModel = require('../../viewmodel/networkNodeViewModel');
+import {NetworkNodeViewModel} from '../../viewmodel';
 
 describe('NetworkNodeViewModel', () => {
   const defaultNetworkNode = {
