@@ -232,12 +232,19 @@ const getMessages = async (pgSqlQuery, pgSqlParams, preQueryHint) => {
   return rows.map((row) => new TopicMessage(row));
 };
 
-export default {
-  extractSqlFromTopicMessagesRequest,
+const topicmessage = {
   getMessageByConsensusTimestamp,
   getMessageByTopicAndSequenceRequest,
   getTopicMessages,
-  validateConsensusTimestampParam,
-  validateGetSequenceMessageParams,
-  validateGetTopicMessagesParams,
 };
+
+if (utils.isTestEnv()) {
+  Object.assign(topicmessage, {
+    extractSqlFromTopicMessagesRequest,
+    validateConsensusTimestampParam,
+    validateGetSequenceMessageParams,
+    validateGetTopicMessagesParams,
+  });
+}
+
+export default topicmessage;

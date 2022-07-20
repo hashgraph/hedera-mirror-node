@@ -939,31 +939,38 @@ const getNftTransferHistoryRequest = async (req, res) => {
   }
 };
 
-export default {
-  entityIdJoinQuery,
-  extractSqlFromNftTokenInfoRequest,
-  extractSqlFromNftTokensRequest,
-  extractSqlFromNftTransferHistoryRequest,
-  extractSqlFromTokenBalancesRequest,
-  extractSqlFromTokenInfoRequest,
-  extractSqlFromTokenRequest,
-  formatNftHistoryRow,
-  formatTokenBalanceRow,
-  formatTokenInfoRow,
-  formatTokenRow,
+const tokens = {
   getNftTokenInfoRequest,
   getNftTokensRequest,
   getNftTransferHistoryRequest,
   getTokenBalances,
   getTokenInfoRequest,
   getTokensRequest,
-  nftSelectQuery,
-  tokenAccountCte,
-  tokenAccountJoinQuery,
-  tokenBalancesSelectQuery,
-  tokensSelectQuery,
-  validateSerialNumberParam,
-  validateTokenIdParam,
-  validateTokenInfoFilter,
-  validateTokenQueryFilter,
 };
+
+if (utils.isTestEnv()) {
+  Object.assign(tokens, {
+    entityIdJoinQuery,
+    extractSqlFromNftTokenInfoRequest,
+    extractSqlFromNftTokensRequest,
+    extractSqlFromNftTransferHistoryRequest,
+    extractSqlFromTokenBalancesRequest,
+    extractSqlFromTokenInfoRequest,
+    extractSqlFromTokenRequest,
+    formatNftHistoryRow,
+    formatTokenBalanceRow,
+    formatTokenInfoRow,
+    formatTokenRow,
+    nftSelectQuery,
+    tokenAccountCte,
+    tokenAccountJoinQuery,
+    tokenBalancesSelectQuery,
+    tokensSelectQuery,
+    validateSerialNumberParam,
+    validateTokenIdParam,
+    validateTokenInfoFilter,
+    validateTokenQueryFilter,
+  });
+}
+
+export default tokens;

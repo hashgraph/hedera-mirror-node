@@ -254,9 +254,16 @@ const getSchedules = async (req, res) => {
   res.locals[constants.responseDataLabel] = schedulesResponse;
 };
 
-export default {
-  extractSqlFromScheduleFilters,
-  formatScheduleRow,
+const schedules = {
   getScheduleById,
   getSchedules,
 };
+
+if (utils.isTestEnv()) {
+  Object.assign(schedules, {
+    extractSqlFromScheduleFilters,
+    formatScheduleRow,
+  });
+}
+
+export default schedules;

@@ -686,17 +686,24 @@ const getTransactionsById = async (req, res) => {
   };
 };
 
-export default {
-  buildWhereClause,
-  createAssessedCustomFeeList,
-  createCryptoTransferList,
-  createNftTransferList,
-  createTokenTransferList,
+const transactions = {
   createTransferLists,
-  extractSqlFromTransactionsByIdRequest,
   getTransactions,
   getTransactionsById,
   getTransactionsInnerQuery,
   getTransactionsOuterQuery,
-  reqToSql,
 };
+
+if (utils.isTestEnv()) {
+  Object.assign(transactions, {
+    buildWhereClause,
+    createAssessedCustomFeeList,
+    createCryptoTransferList,
+    createNftTransferList,
+    createTokenTransferList,
+    extractSqlFromTransactionsByIdRequest,
+    reqToSql,
+  });
+}
+
+export default transactions;

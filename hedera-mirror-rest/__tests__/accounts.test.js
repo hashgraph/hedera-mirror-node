@@ -20,7 +20,7 @@
 
 import request from 'supertest';
 
-import {getBalanceParamValue, processRow} from '../accounts';
+import subject from '../accounts';
 import base32 from '../base32';
 import * as constants from '../constants';
 import server from '../server';
@@ -405,7 +405,7 @@ describe('processRow', () => {
   };
 
   test('with balance', () => {
-    expect(processRow(inputAccount)).toEqual(expectedAccount);
+    expect(subject.processRow(inputAccount)).toEqual(expectedAccount);
   });
 
   test('undefined balance', () => {
@@ -419,7 +419,7 @@ describe('processRow', () => {
       ...expectedAccount,
       balance: null,
     };
-    expect(processRow(inputBalanceUndefined)).toEqual(expectedNoBalance);
+    expect(subject.processRow(inputBalanceUndefined)).toEqual(expectedNoBalance);
   });
 
   test('null balance', () => {
@@ -437,50 +437,50 @@ describe('processRow', () => {
         tokens: [],
       },
     };
-    expect(processRow(inputNullBalance)).toEqual(expectedNullBalance);
+    expect(subject.processRow(inputNullBalance)).toEqual(expectedNullBalance);
   });
 
   test('null auto_renew_period', () => {
-    expect(processRow({...inputAccount, auto_renew_period: null})).toEqual({
+    expect(subject.processRow({...inputAccount, auto_renew_period: null})).toEqual({
       ...expectedAccount,
       auto_renew_period: null,
     });
   });
 
   test('null key', () => {
-    expect(processRow({...inputAccount, key: null})).toEqual({...expectedAccount, key: null});
+    expect(subject.processRow({...inputAccount, key: null})).toEqual({...expectedAccount, key: null});
   });
 
   test('null alias', () => {
-    expect(processRow({...inputAccount, alias: null})).toEqual({...expectedAccount, alias: null});
+    expect(subject.processRow({...inputAccount, alias: null})).toEqual({...expectedAccount, alias: null});
   });
 
   test('staked account id', () => {
-    expect(processRow({...inputAccount, staked_account_id: 10})).toEqual({
+    expect(subject.processRow({...inputAccount, staked_account_id: 10})).toEqual({
       ...expectedAccount,
       staked_account_id: '0.0.10',
     });
   });
 
   test('staked account id and stake period start', () => {
-    expect(processRow({...inputAccount, staked_account_id: 10, stake_period_start: 30})).toEqual({
+    expect(subject.processRow({...inputAccount, staked_account_id: 10, stake_period_start: 30})).toEqual({
       ...expectedAccount,
       staked_account_id: '0.0.10',
     });
   });
 
   test('null staked account id', () => {
-    expect(processRow({...inputAccount, staked_account_id: null})).toEqual(expectedAccount);
+    expect(subject.processRow({...inputAccount, staked_account_id: null})).toEqual(expectedAccount);
   });
 
   test('staked node id', () => {
-    expect(processRow({...inputAccount, staked_node_id: 2, stake_period_start: 30})).toEqual({
+    expect(subject.processRow({...inputAccount, staked_node_id: 2, stake_period_start: 30})).toEqual({
       ...expectedAccount,
       staked_node_id: 2,
       stake_period_start: '2592000.000000000',
     });
 
-    expect(processRow({...inputAccount, staked_node_id: 2, stake_period_start: 19162})).toEqual({
+    expect(subject.processRow({...inputAccount, staked_node_id: 2, stake_period_start: 19162})).toEqual({
       ...expectedAccount,
       staked_node_id: 2,
       stake_period_start: '1655596800.000000000',
@@ -488,11 +488,11 @@ describe('processRow', () => {
   });
 
   test('default contract', () => {
-    expect(processRow(inputContract)).toEqual(expectedContract);
+    expect(subject.processRow(inputContract)).toEqual(expectedContract);
   });
 
   test('contract with parsable evm address', () => {
-    expect(processRow({...inputContract, evm_address: null})).toEqual({
+    expect(subject.processRow({...inputContract, evm_address: null})).toEqual({
       ...expectedContract,
       evm_address: '0x00000000000000000000000000000000000004e2',
     });
@@ -502,18 +502,18 @@ describe('processRow', () => {
 describe('getBalanceParamValue', () => {
   const key = constants.filterKeys.BALANCE;
   test('default', () => {
-    expect(getBalanceParamValue({})).toBeTrue();
+    expect(subject.getBalanceParamValue({})).toBeTrue();
   });
   test('single value true', () => {
-    expect(getBalanceParamValue({[key]: 'true'})).toBeTrue();
+    expect(subject.getBalanceParamValue({[key]: 'true'})).toBeTrue();
   });
   test('single value false', () => {
-    expect(getBalanceParamValue({[key]: 'false'})).toBeFalse();
+    expect(subject.getBalanceParamValue({[key]: 'false'})).toBeFalse();
   });
   test('array last value true', () => {
-    expect(getBalanceParamValue({[key]: ['false', 'true']})).toBeTrue();
+    expect(subject.getBalanceParamValue({[key]: ['false', 'true']})).toBeTrue();
   });
   test('array last value false', () => {
-    expect(getBalanceParamValue({[key]: ['true', 'false']})).toBeFalse();
+    expect(subject.getBalanceParamValue({[key]: ['true', 'false']})).toBeFalse();
   });
 });

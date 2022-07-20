@@ -493,9 +493,16 @@ const getOneAccount = async (req, res) => {
   res.locals[constants.responseDataLabel] = ret;
 };
 
-export default {
+const accounts = {
   getAccounts,
   getOneAccount,
 };
 
-export {getBalanceParamValue, processRow};
+if (utils.isTestEnv()) {
+  Object.assign(accounts, {
+    getBalanceParamValue,
+    processRow,
+  });
+}
+
+export default accounts;
