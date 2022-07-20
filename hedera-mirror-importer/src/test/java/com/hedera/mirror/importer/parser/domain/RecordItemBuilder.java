@@ -24,6 +24,7 @@ import static com.hedera.mirror.common.domain.DomainBuilder.KEY_LENGTH_ECDSA;
 import static com.hedera.mirror.common.domain.DomainBuilder.KEY_LENGTH_ED25519;
 import static com.hedera.mirror.common.util.DomainUtils.TINYBARS_IN_ONE_HBAR;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
@@ -33,6 +34,7 @@ import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
@@ -45,6 +47,7 @@ import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -116,6 +119,14 @@ public class RecordItemBuilder {
     private final Instant now = Instant.now();
     private final SecureRandom random = new SecureRandom();
 
+    public Builder<ConsensusSubmitMessageTransactionBody.Builder> consensusSubmitMessage() {
+        var transactionBody = ConsensusSubmitMessageTransactionBody.newBuilder()
+                .setMessage(bytes(128))
+                .setTopicID(topicId());
+        return new Builder<>(TransactionType.CONSENSUSSUBMITMESSAGE, transactionBody)
+                .receipt(r -> r.setTopicSequenceNumber(id()));
+    }
+
     public Builder<ConsensusUpdateTopicTransactionBody.Builder> consensusUpdateTopic() {
         var transactionBody = ConsensusUpdateTopicTransactionBody.newBuilder()
                 .setAdminKey(key())
@@ -141,7 +152,7 @@ public class RecordItemBuilder {
 
         return new Builder<>(TransactionType.CONTRACTCALL, transactionBody)
                 .receipt(r -> r.setContractID(contractId))
-                .record(r -> r.setContractCallResult(contractFunctionResult(contractId)));
+                .record(r -> r.setContractCallResult(contractFunctionResult(contractId).clearCreatedContractIDs()));
     }
 
     public Builder<ContractCreateTransactionBody.Builder> contractCreate() {
@@ -291,6 +302,13 @@ public class RecordItemBuilder {
                 .receipt(r -> r.setAccountID(accountId()));
     }
 
+    public Builder<CryptoDeleteTransactionBody.Builder> cryptoDelete() {
+        var builder = CryptoDeleteTransactionBody.newBuilder()
+                .setDeleteAccountID(accountId())
+                .setTransferAccountID(accountId());
+        return new Builder<>(TransactionType.CRYPTODELETE, builder);
+    }
+
     public Builder<CryptoDeleteAllowanceTransactionBody.Builder> cryptoDeleteAllowance() {
         var builder = CryptoDeleteAllowanceTransactionBody.newBuilder()
                 .addNftAllowances(NftRemoveAllowance.newBuilder()
@@ -324,6 +342,10 @@ public class RecordItemBuilder {
                 .receipt(r -> r.setAccountID(accountId));
     }
 
+    public Builder<EthereumTransactionBody.Builder> ethereumTransaction() {
+        return ethereumTransaction(false);
+    }
+
     @SneakyThrows
     public Builder<EthereumTransactionBody.Builder> ethereumTransaction(boolean create) {
         var transactionBytes = Hex.decodeHex(LONDON_RAW_TX);
@@ -354,6 +376,10 @@ public class RecordItemBuilder {
         return new Builder<>(TransactionType.NODESTAKEUPDATE, builder);
     }
 
+    public Builder<PrngTransactionBody.Builder> prng() {
+        return prng(0);
+    }
+
     public Builder<PrngTransactionBody.Builder> prng(int range) {
         var builder = PrngTransactionBody.newBuilder().setRange(range);
         var transactionBodyBuilder = new Builder<>(TransactionType.PRNG, builder);
@@ -379,6 +405,10 @@ public class RecordItemBuilder {
                 .setExpirationTime(timestamp())
                 .setWaitForExpiry(true);
         return new Builder<>(TransactionType.SCHEDULECREATE, builder);
+    }
+
+    public Builder<TokenMintTransactionBody.Builder> tokenMint() {
+        return tokenMint(NON_FUNGIBLE_UNIQUE);
     }
 
     public Builder<TokenMintTransactionBody.Builder> tokenMint(TokenType tokenType) {
@@ -480,7 +510,6 @@ public class RecordItemBuilder {
                 .setStake(stake)
                 .setStakeNotRewarded(TINYBARS_IN_ONE_HBAR)
                 .setStakeRewarded(stake - TINYBARS_IN_ONE_HBAR);
-
     }
 
     public ScheduleID scheduleId() {

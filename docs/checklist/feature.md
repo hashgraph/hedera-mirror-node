@@ -27,6 +27,7 @@ aims to document the required changes associated with any new feature.
 - [ ] `TransactionHandler`
 - [ ] Tests for each of the above
 - [ ] `RecordItemBuilder`
+- [ ] `RecordFileBuilder`
 - [ ] `EntityRecordItemListener*Test`
 - [ ] `PubSubMessageTest` updated for `TransactionRecord` changes
 - [ ] `pub-sub-messages.txt`
