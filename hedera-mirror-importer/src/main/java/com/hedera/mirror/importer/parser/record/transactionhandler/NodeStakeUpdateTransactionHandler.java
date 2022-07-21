@@ -24,6 +24,7 @@ import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
+import com.hedera.mirror.common.domain.addressbook.NetworkStake;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
@@ -55,8 +56,8 @@ class NodeStakeUpdateTransactionHandler implements TransactionHandler {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         if (!recordItem.isSuccessful()) {
             var record = recordItem.getRecord();
-            log.warn("NodeStakeUpdateTransaction at consensus timestamp {} failed with status {}", consensusTimestamp,
-                    record.getReceipt().getStatus());
+            var status = record.getReceipt().getStatus();
+            log.warn("NodeStakeUpdateTransaction at {} failed with status {}", consensusTimestamp, status);
             return;
         }
 
@@ -65,6 +66,22 @@ class NodeStakeUpdateTransactionHandler implements TransactionHandler {
         var transactionBody = recordItem.getTransactionBody().getNodeStakeUpdate();
         long stakingPeriod = DomainUtils.timestampInNanosMax(transactionBody.getEndOfStakingPeriod());
         long stakeTotal = transactionBody.getNodeStakeList().stream().map(n -> n.getStake()).reduce(0L, Long::sum);
+
+        NetworkStake networkStake = new NetworkStake();
+        networkStake.setConsensusTimestamp(consensusTimestamp);
+        networkStake.setEndOfStakingPeriod(stakingPeriod);
+        networkStake.setEpochDay(epochDay);
+        networkStake.setMaxStakingRewardRatePerHbar(transactionBody.getMaxStakingRewardRatePerHbar());
+        networkStake.setNodeRewardFeeDenominator(transactionBody.getNodeRewardFeeFraction().getDenominator());
+        networkStake.setNodeRewardFeeNumerator(transactionBody.getNodeRewardFeeFraction().getNumerator());
+        networkStake.setStakeTotal(stakeTotal);
+        networkStake.setStakingPeriod(transactionBody.getStakingPeriod());
+        networkStake.setStakingPeriodsStored(transactionBody.getStakingPeriodsStored());
+        networkStake.setStakingRewardFeeDenominator(transactionBody.getStakingRewardFeeFraction().getDenominator());
+        networkStake.setStakingRewardFeeNumerator(transactionBody.getStakingRewardFeeFraction().getNumerator());
+        networkStake.setStakingRewardRate(transactionBody.getStakingRewardRate());
+        networkStake.setStakingStartThreshold(transactionBody.getStakingStartThreshold());
+        entityListener.onNetworkStake(networkStake);
 
         for (var nodeStakeProto : transactionBody.getNodeStakeList()) {
             NodeStake nodeStake = new NodeStake();
@@ -77,7 +94,6 @@ class NodeStakeUpdateTransactionHandler implements TransactionHandler {
             nodeStake.setStake(nodeStakeProto.getStake());
             nodeStake.setStakeNotRewarded(nodeStakeProto.getStakeNotRewarded());
             nodeStake.setStakeRewarded(nodeStakeProto.getStakeRewarded());
-            nodeStake.setStakeTotal(stakeTotal);
             nodeStake.setStakingPeriod(stakingPeriod);
             entityListener.onNodeStake(nodeStake);
         }

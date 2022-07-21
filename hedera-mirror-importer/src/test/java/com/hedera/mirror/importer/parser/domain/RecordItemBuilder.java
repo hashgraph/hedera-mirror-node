@@ -53,6 +53,7 @@ import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.Fraction;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
@@ -409,6 +410,13 @@ public class RecordItemBuilder {
     public Builder<NodeStakeUpdateTransactionBody.Builder> nodeStakeUpdate() {
         var builder = NodeStakeUpdateTransactionBody.newBuilder()
                 .setEndOfStakingPeriod(timestamp())
+                .setMaxStakingRewardRatePerHbar(17_808L)
+                .setNodeRewardFeeFraction(Fraction.newBuilder().setNumerator(0L).setDenominator(100L))
+                .setStakingPeriod(1440)
+                .setStakingPeriodsStored(365)
+                .setStakingRewardFeeFraction(Fraction.newBuilder().setNumerator(100L).setDenominator(100L))
+                .setStakingRewardRate(100_000_000_000L)
+                .setStakingStartThreshold(25_000_000_000_000_000L)
                 .addNodeStake(nodeStake());
         return new Builder<>(TransactionType.NODESTAKEUPDATE, builder);
     }
@@ -575,7 +583,7 @@ public class RecordItemBuilder {
 
     public NodeStake.Builder nodeStake() {
         long stake = id() * TINYBARS_IN_ONE_HBAR;
-        long maxStake = 2 * stake;
+        long maxStake = 50_000_000_000L * TINYBARS_IN_ONE_HBAR / 26L;
         long minStake = stake / 2;
         return NodeStake.newBuilder()
                 .setMaxStake(maxStake)

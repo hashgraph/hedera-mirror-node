@@ -36,6 +36,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 
+import com.hedera.mirror.common.domain.addressbook.NetworkStake;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.Transaction;
@@ -44,6 +45,9 @@ import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.util.Utility;
 
 class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
+
+    @Captor
+    private ArgumentCaptor<NetworkStake> networkStakes;
 
     @Captor
     private ArgumentCaptor<NodeStake> nodeStakes;
@@ -99,19 +103,37 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         long epochDay = Utility.getEpochDay(consensusTimestamp) - 1L;
         long stakeTotal = nodeStake1 + nodeStake2;
-        var transactionBody = recordItem.getTransactionBody().getNodeStakeUpdate();
-        long stakingPeriod = DomainUtils.timestampInNanosMax(transactionBody.getEndOfStakingPeriod());
+        var body = recordItem.getTransactionBody().getNodeStakeUpdate();
+        long stakingPeriod = DomainUtils.timestampInNanosMax(body.getEndOfStakingPeriod());
         var expectedNodeStakes = List.of(
-                getExpectedNodeStake(consensusTimestamp, epochDay, nodeStakeProto1, stakeTotal, stakingPeriod),
-                getExpectedNodeStake(consensusTimestamp, epochDay, nodeStakeProto2, stakeTotal, stakingPeriod)
+                getExpectedNodeStake(consensusTimestamp, epochDay, nodeStakeProto1, stakingPeriod),
+                getExpectedNodeStake(consensusTimestamp, epochDay, nodeStakeProto2, stakingPeriod)
         );
 
         // when
         transactionHandler.updateTransaction(null, recordItem);
 
         // then
+        verify(entityListener, times(1)).onNetworkStake(networkStakes.capture());
         verify(entityListener, times(2)).onNodeStake(nodeStakes.capture());
         assertThat(nodeStakes.getAllValues()).containsExactlyInAnyOrderElementsOf(expectedNodeStakes);
+        assertThat(networkStakes.getAllValues())
+                .hasSize(1)
+                .first()
+                .returns(consensusTimestamp, NetworkStake::getConsensusTimestamp)
+                .returns(epochDay, NetworkStake::getEpochDay)
+                .returns(stakingPeriod, NetworkStake::getEndOfStakingPeriod)
+                .returns(body.getMaxStakingRewardRatePerHbar(), NetworkStake::getMaxStakingRewardRatePerHbar)
+                .returns(body.getNodeRewardFeeFraction().getDenominator(), NetworkStake::getNodeRewardFeeDenominator)
+                .returns(body.getNodeRewardFeeFraction().getNumerator(), NetworkStake::getNodeRewardFeeNumerator)
+                .returns(stakeTotal, NetworkStake::getStakeTotal)
+                .returns(body.getStakingPeriod(), NetworkStake::getStakingPeriod)
+                .returns(body.getStakingPeriodsStored(), NetworkStake::getStakingPeriodsStored)
+                .returns(body.getStakingRewardFeeFraction().getDenominator(),
+                        NetworkStake::getStakingRewardFeeDenominator)
+                .returns(body.getStakingRewardFeeFraction().getNumerator(), NetworkStake::getStakingRewardFeeNumerator)
+                .returns(body.getStakingRewardRate(), NetworkStake::getStakingRewardRate)
+                .returns(body.getStakingStartThreshold(), NetworkStake::getStakingStartThreshold);
     }
 
     @Test
@@ -124,6 +146,7 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
 
         // then
         verify(entityListener, never()).onNodeStake(any());
+        verify(entityListener, times(1)).onNetworkStake(networkStakes.capture());
     }
 
     private com.hederahashgraph.api.proto.java.NodeStake getNodeStakeProto(long stake, long stakeRewarded) {
@@ -139,7 +162,7 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
 
     private NodeStake getExpectedNodeStake(long consensusTimestamp, long epochDay,
                                            com.hederahashgraph.api.proto.java.NodeStake nodeStakeProto,
-                                           long stakeTotal, long stakingPeriod) {
+                                           long stakingPeriod) {
         return NodeStake.builder()
                 .consensusTimestamp(consensusTimestamp)
                 .epochDay(epochDay)
@@ -150,7 +173,6 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
                 .stake(nodeStakeProto.getStake())
                 .stakeNotRewarded(nodeStakeProto.getStakeNotRewarded())
                 .stakeRewarded(nodeStakeProto.getStakeRewarded())
-                .stakeTotal(stakeTotal)
                 .stakingPeriod(stakingPeriod)
                 .build();
     }

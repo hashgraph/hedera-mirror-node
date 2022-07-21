@@ -27,22 +27,25 @@ import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.hedera.mirror.common.domain.addressbook.NetworkStake;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.repository.NetworkStakeRepository;
 import com.hedera.mirror.importer.repository.NodeStakeRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerTest {
 
+    private final NetworkStakeRepository networkStakeRepository;
     private final NodeStakeRepository nodeStakeRepository;
 
     @Test
     void nodeStakeUpdate() {
         var recordItem = recordItemBuilder.nodeStakeUpdate().build();
-        var transactionBody = recordItem.getTransactionBody().getNodeStakeUpdate();
-        var nodeStake = transactionBody.getNodeStakeList().get(0);
-        var stakingPeriod = DomainUtils.timestampInNanosMax(transactionBody.getEndOfStakingPeriod());
+        var body = recordItem.getTransactionBody().getNodeStakeUpdate();
+        var nodeStake = body.getNodeStakeList().get(0);
+        var stakingPeriod = DomainUtils.timestampInNanosMax(body.getEndOfStakingPeriod());
         var epochDay = Utility.getEpochDay(recordItem.getConsensusTimestamp()) - 1L;
 
         parseRecordItemAndCommit(recordItem);
@@ -52,7 +55,7 @@ class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerT
                 () -> assertEquals(0, entityRepository.count()),
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertThat(nodeStakeRepository.findAll())
-                        .hasSize(transactionBody.getNodeStakeCount())
+                        .hasSize(body.getNodeStakeCount())
                         .first()
                         .isNotNull()
                         .returns(recordItem.getConsensusTimestamp(), NodeStake::getConsensusTimestamp)
@@ -61,8 +64,27 @@ class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerT
                         .returns(nodeStake.getRewardRate(), NodeStake::getRewardRate)
                         .returns(nodeStake.getStake(), NodeStake::getStake)
                         .returns(nodeStake.getStakeRewarded(), NodeStake::getStakeRewarded)
-                        .returns(stakingPeriod, NodeStake::getStakingPeriod)
-                        .returns(nodeStake.getStake(), NodeStake::getStakeTotal)
+                        .returns(stakingPeriod, NodeStake::getStakingPeriod),
+                () -> assertThat(networkStakeRepository.findAll())
+                        .hasSize(1)
+                        .first()
+                        .returns(recordItem.getConsensusTimestamp(), NetworkStake::getConsensusTimestamp)
+                        .returns(epochDay, NetworkStake::getEpochDay)
+                        .returns(stakingPeriod, NetworkStake::getEndOfStakingPeriod)
+                        .returns(body.getMaxStakingRewardRatePerHbar(), NetworkStake::getMaxStakingRewardRatePerHbar)
+                        .returns(body.getNodeRewardFeeFraction().getDenominator(),
+                                NetworkStake::getNodeRewardFeeDenominator)
+                        .returns(body.getNodeRewardFeeFraction().getNumerator(),
+                                NetworkStake::getNodeRewardFeeNumerator)
+                        .returns(nodeStake.getStake(), NetworkStake::getStakeTotal)
+                        .returns(body.getStakingPeriod(), NetworkStake::getStakingPeriod)
+                        .returns(body.getStakingPeriodsStored(), NetworkStake::getStakingPeriodsStored)
+                        .returns(body.getStakingRewardFeeFraction().getDenominator(),
+                                NetworkStake::getStakingRewardFeeDenominator)
+                        .returns(body.getStakingRewardFeeFraction().getNumerator(),
+                                NetworkStake::getStakingRewardFeeNumerator)
+                        .returns(body.getStakingRewardRate(), NetworkStake::getStakingRewardRate)
+                        .returns(body.getStakingStartThreshold(), NetworkStake::getStakingStartThreshold)
         );
     }
 }

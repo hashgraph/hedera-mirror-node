@@ -29,7 +29,7 @@ aims to document the required changes associated with any new feature.
 - [ ] `RecordItemBuilder`
 - [ ] `EntityRecordItemListener*Test`
 - [ ] `PubSubMessageTest` updated for `TransactionRecord` changes
-- [ ] `pub-sub-messages.txt`
+- [ ] `pubsub-messages.txt`
 
 ## Monitor
 

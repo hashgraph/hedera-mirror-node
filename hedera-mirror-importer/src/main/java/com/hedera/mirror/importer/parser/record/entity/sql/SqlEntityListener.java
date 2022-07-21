@@ -36,6 +36,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.annotation.Order;
 
+import com.hedera.mirror.common.domain.addressbook.NetworkStake;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractAction;
@@ -114,6 +115,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<EthereumTransaction> ethereumTransactions;
     private final Collection<FileData> fileData;
     private final Collection<LiveHash> liveHashes;
+    private final Collection<NetworkStake> networkStakes;
     private final Collection<NftAllowance> nftAllowances;
     private final Collection<NodeStake> nodeStakes;
     private final Collection<NonFeeTransfer> nonFeeTransfers;
@@ -173,6 +175,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         fileData = new ArrayList<>();
         liveHashes = new ArrayList<>();
         nftAllowances = new ArrayList<>();
+        networkStakes = new ArrayList<>();
         nodeStakes = new ArrayList<>();
         nonFeeTransfers = new ArrayList<>();
         prngs = new ArrayList<>();
@@ -239,15 +242,16 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             ethereumTransactions.clear();
             fileData.clear();
             liveHashes.clear();
-            nonFeeTransfers.clear();
-            stakingRewardTransfers.clear();
+            networkStakes.clear();
             nfts.clear();
             nftAllowances.clear();
             nftAllowanceState.clear();
             nftTransferState.clear();
             nodeStakes.clear();
+            nonFeeTransfers.clear();
             prngs.clear();
             schedules.clear();
+            stakingRewardTransfers.clear();
             topicMessages.clear();
             tokenAccounts.clear();
             tokenAccountState.clear();
@@ -282,6 +286,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             batchPersister.persist(ethereumTransactions);
             batchPersister.persist(fileData);
             batchPersister.persist(liveHashes);
+            batchPersister.persist(networkStakes);
             batchPersister.persist(nodeStakes);
             batchPersister.persist(prngs);
             batchPersister.persist(topicMessages);
@@ -399,6 +404,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onLiveHash(LiveHash liveHash) throws ImporterException {
         liveHashes.add(liveHash);
+    }
+
+    @Override
+    public void onNetworkStake(NetworkStake networkStake) throws ImporterException {
+        networkStakes.add(networkStake);
     }
 
     @Override

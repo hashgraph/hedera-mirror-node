@@ -107,8 +107,7 @@
         "reward_rate": 5,
         "stake": 12,
         "stake_not_rewarded": 8,
-        "stake_rewarded": 4,
-        "stake_total": 30
+        "stake_rewarded": 4
       },
       {
         "consensus_timestamp": 1655164800000000005,
@@ -120,7 +119,6 @@
         "stake": 13,
         "stake_not_rewarded": 8,
         "stake_rewarded": 5,
-        "stake_total": 50,
         "staking_period": 1655164799999999999
       }
     ]
@@ -149,7 +147,6 @@
         "stake": 13,
         "stake_not_rewarded": 8,
         "stake_rewarded": 5,
-        "stake_total": 50,
         "staking_period": {
           "from": "1655164800.000000000",
           "to": "1655251200.000000000"
@@ -179,7 +176,6 @@
         "stake": 9223372036854775807,
         "stake_not_rewarded": null,
         "stake_rewarded": null,
-        "stake_total": null,
         "staking_period": null,
         "timestamp": {
           "from": "187654.000123457",

@@ -64,6 +64,7 @@ import com.hedera.mirror.common.aggregator.LogsBloomAggregator;
 import com.hedera.mirror.common.domain.addressbook.AddressBook;
 import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
 import com.hedera.mirror.common.domain.addressbook.AddressBookServiceEndpoint;
+import com.hedera.mirror.common.domain.addressbook.NetworkStake;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
@@ -532,6 +533,25 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
+    public DomainWrapper<NetworkStake, NetworkStake.NetworkStakeBuilder> networkStake() {
+        var timestamp = timestamp();
+        var builder = NetworkStake.builder()
+                .consensusTimestamp(timestamp)
+                .endOfStakingPeriod(timestamp - 1L)
+                .epochDay(getEpochDay(timestamp))
+                .maxStakingRewardRatePerHbar(17_808L)
+                .nodeRewardFeeDenominator(0L)
+                .nodeRewardFeeNumerator(100L)
+                .stakeTotal(id())
+                .stakingPeriod(1440)
+                .stakingPeriodsStored(365)
+                .stakingRewardFeeDenominator(100L)
+                .stakingRewardFeeNumerator(100L)
+                .stakingRewardRate(100_000_000_000L)
+                .stakingStartThreshold(25_000_000_000_000_000L);
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
     public DomainWrapper<Nft, Nft.NftBuilder> nft() {
         var createdTimestamp = timestamp();
         var builder = Nft.builder()
@@ -577,19 +597,20 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<NodeStake, NodeStake.NodeStakeBuilder> nodeStake() {
-        var stake = id() * TINYBARS_IN_ONE_HBAR;
+        long maxStake = 50_000_000_000L * TINYBARS_IN_ONE_HBAR / 26L;
+        long stake = id() * TINYBARS_IN_ONE_HBAR;
         long timestamp = timestamp();
+
         var builder = NodeStake.builder()
                 .consensusTimestamp(timestamp)
                 .epochDay(getEpochDay(timestamp))
-                .maxStake(stake * 2)
-                .minStake(stake / 2)
+                .maxStake(maxStake)
+                .minStake(maxStake / 2L)
                 .nodeId(id())
                 .rewardRate(id())
                 .stake(stake)
                 .stakeNotRewarded(TINYBARS_IN_ONE_HBAR)
                 .stakeRewarded(stake - TINYBARS_IN_ONE_HBAR)
-                .stakeTotal(stake * 5)
                 .stakingPeriod(timestamp());
         return new DomainWrapperImpl<>(builder, builder::build);
     }

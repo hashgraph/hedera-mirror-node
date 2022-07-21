@@ -103,8 +103,7 @@
         "node_id": 0,
         "reward_rate": 0,
         "stake": 0,
-        "stake_rewarded": 0,
-        "stake_total": 0
+        "stake_rewarded": 0
       },
       {
         "consensus_timestamp": 187654000123457,
@@ -112,8 +111,7 @@
         "node_id": 1,
         "reward_rate": 1,
         "stake": 1,
-        "stake_rewarded": 1,
-        "stake_total": 1
+        "stake_rewarded": 1
       },
       {
         "consensus_timestamp": 187654000123457,
@@ -121,8 +119,7 @@
         "node_id": 2,
         "reward_rate": 2,
         "stake": 2,
-        "stake_rewarded": 2,
-        "stake_total": 2
+        "stake_rewarded": 2
       },
       {
         "consensus_timestamp": 187654000123457,
@@ -130,8 +127,7 @@
         "node_id": 3,
         "reward_rate": 3,
         "stake": 3,
-        "stake_rewarded": 3,
-        "stake_total": 3
+        "stake_rewarded": 3
       },
       {
         "consensus_timestamp": 187654000123457,
@@ -139,8 +135,7 @@
         "node_id": 4,
         "reward_rate": 4,
         "stake": 4,
-        "stake_rewarded": 4,
-        "stake_total": 4
+        "stake_rewarded": 4
       },
       {
         "consensus_timestamp": 187654000123457,
@@ -148,8 +143,7 @@
         "node_id": 5,
         "reward_rate": 5,
         "stake": 5,
-        "stake_rewarded": 5,
-        "stake_total": 5
+        "stake_rewarded": 5
       },
       {
         "consensus_timestamp": 187654000123457,
@@ -157,8 +151,7 @@
         "node_id": 6,
         "reward_rate": 6,
         "stake": 6,
-        "stake_rewarded": 6,
-        "stake_total": 416
+        "stake_rewarded": 6
       }
     ]
   },
@@ -186,7 +179,6 @@
         "stake": 3,
         "stake_not_rewarded": 0,
         "stake_rewarded": 3,
-        "stake_total": 3,
         "staking_period": {
           "from": "86400.000000000",
           "to": "172800.000000000"
@@ -216,7 +208,6 @@
         "stake": 4,
         "stake_not_rewarded": 0,
         "stake_rewarded": 4,
-        "stake_total": 4,
         "staking_period": {
           "from": "86400.000000000",
           "to": "172800.000000000"

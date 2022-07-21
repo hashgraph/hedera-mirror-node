@@ -103,8 +103,7 @@
         "node_id": 0,
         "reward_rate": 5,
         "stake": 10,
-        "stake_rewarded": 2,
-        "stake_total": 4
+        "stake_rewarded": 2
       },
       {
         "consensus_timestamp": 2,
@@ -112,8 +111,7 @@
         "node_id": 0,
         "reward_rate": 6,
         "stake": 11,
-        "stake_rewarded": 3,
-        "stake_total": 5
+        "stake_rewarded": 3
       },
       {
         "consensus_timestamp": 187654000123456,
@@ -121,8 +119,7 @@
         "node_id": 0,
         "reward_rate": 7,
         "stake": 12,
-        "stake_rewarded": 4,
-        "stake_total": 6
+        "stake_rewarded": 4
       },
       {
         "consensus_timestamp": 187654000123456,
@@ -130,8 +127,7 @@
         "node_id": 1,
         "reward_rate": 8,
         "stake": 100,
-        "stake_rewarded": 20,
-        "stake_total": 40
+        "stake_rewarded": 20
       },
       {
         "consensus_timestamp": 187654000123457,
@@ -139,8 +135,7 @@
         "node_id": 0,
         "reward_rate": 9,
         "stake": 13,
-        "stake_rewarded": 5,
-        "stake_total": 7
+        "stake_rewarded": 5
       },
       {
         "consensus_timestamp": 187654000123457,
@@ -148,8 +143,7 @@
         "node_id": 1,
         "reward_rate": 10,
         "stake": 101,
-        "stake_rewarded": 21,
-        "stake_total": 41
+        "stake_rewarded": 21
       }
     ]
   },

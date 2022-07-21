@@ -108,8 +108,7 @@
         "node_id": 0,
         "reward_rate": 5,
         "stake": 10,
-        "stake_rewarded": 2,
-        "stake_total": 4
+        "stake_rewarded": 2
       },
       {
         "consensus_timestamp": 2,
@@ -117,8 +116,7 @@
         "node_id": 0,
         "reward_rate": 6,
         "stake": 11,
-        "stake_rewarded": 3,
-        "stake_total": 5
+        "stake_rewarded": 3
       },
       {
         "consensus_timestamp": 187654000123456,
@@ -126,8 +124,7 @@
         "node_id": 0,
         "reward_rate": 7,
         "stake": 12,
-        "stake_rewarded": 4,
-        "stake_total": 6
+        "stake_rewarded": 4
       },
       {
         "consensus_timestamp": 187654000123456,
@@ -135,8 +132,7 @@
         "node_id": 1,
         "reward_rate": 8,
         "stake": 100,
-        "stake_rewarded": 20,
-        "stake_total": 40
+        "stake_rewarded": 20
       },
       {
         "consensus_timestamp": 187654000123458,
@@ -146,7 +142,6 @@
         "stake": 13,
         "stake_not_rewarded": 8,
         "stake_rewarded": 5,
-        "stake_total": 20,
         "staking_period": 1655164799999999999
       },
       {
@@ -156,8 +151,7 @@
         "reward_rate": 10,
         "stake": 101,
         "stake_not_rewarded": 80,
-        "stake_rewarded": 21,
-        "stake_total": 151
+        "stake_rewarded": 21
       }
     ]
   },
@@ -185,7 +179,6 @@
         "stake": 13,
         "stake_not_rewarded": 8,
         "stake_rewarded": 5,
-        "stake_total": 20,
         "staking_period": {
           "from": "1655164800.000000000",
           "to": "1655251200.000000000"
@@ -215,7 +208,6 @@
         "stake": 101,
         "stake_not_rewarded": 80,
         "stake_rewarded": 21,
-        "stake_total": 151,
         "staking_period": {
           "from": "86400.000000000",
           "to": "172800.000000000"
