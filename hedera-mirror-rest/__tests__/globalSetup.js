@@ -25,23 +25,15 @@ import {GenericContainer} from 'testcontainers';
 const DEFAULT_DB_NAME = 'mirror_node_integration';
 const POSTGRES_PORT = 5432;
 
-const v1DockerImageConfig = {
-  imageName: 'postgres',
-  tagName: '14-alpine',
-};
-
-const v2DockerImageConfig = {
-  imageName: 'citusdata/citus',
-  tagName: '10.2.2-alpine',
-};
+const v1DatabaseImage = 'postgres:14-alpine';
+const v2DatabaseImage = 'citusdata/citus:10.2.2-alpine';
 
 const isV2Schema = () => process.env.MIRROR_NODE_SCHEMA === 'v2';
 
 const createDbContainer = async (maxWorkers) => {
   const dbAdminUser = 'mirror_api_admin';
   const dbAdminPassword = crypto.randomBytes(16).toString('hex');
-  const dockerImageConfig = isV2Schema() ? v2DockerImageConfig : v1DockerImageConfig;
-  const image = `${dockerImageConfig.imageName}:${dockerImageConfig.tagName}`;
+  const image = isV2Schema() ? v2DatabaseImage : v1DatabaseImage;
   console.info(`Starting PostgreSQL docker container with image ${image}`);
 
   const dockerDb = await new GenericContainer(image)
@@ -67,7 +59,7 @@ const createDbContainer = async (maxWorkers) => {
 
   for (let i = 1; i <= maxWorkers; i++) {
     // JEST_WORKER_ID starts from 1
-    const dbName = `${DEFAULT_DB_NAME}_${i}`;
+    const dbName = getDatabaseNameForWorker(i);
     await pool.query(`create database ${dbName} with owner ${dbAdminUser}`);
 
     if (isV2Schema()) {
@@ -82,8 +74,12 @@ const createDbContainer = async (maxWorkers) => {
   console.info(`Created separate databases for each of ${maxWorkers} jest workers`);
 };
 
+const getDatabaseName = () => getDatabaseNameForWorker(process.env.JEST_WORKER_ID);
+
+const getDatabaseNameForWorker = (workerId) => `${DEFAULT_DB_NAME}_${workerId}`;
+
 export default async function (globalConfig) {
   await createDbContainer(globalConfig.maxWorkers);
 }
 
-export {DEFAULT_DB_NAME};
+export {getDatabaseName};

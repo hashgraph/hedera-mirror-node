@@ -24,9 +24,9 @@ import os from 'os';
 import path from 'path';
 
 import config from '../config';
+import {getDatabaseName} from './globalSetup';
 import {getModuleDirname} from './testutils';
 import {getPoolClass} from '../utils';
-import {DEFAULT_DB_NAME} from './globalSetup';
 
 const {db: defaultDbConfig} = config;
 const Pool = await getPoolClass();
@@ -56,7 +56,7 @@ const extractDbConnectionParams = (url) => {
 };
 
 const createPool = () => {
-  const dbName = `${DEFAULT_DB_NAME}_${process.env.JEST_WORKER_ID}`;
+  const dbName = getDatabaseName();
   const {username, password, host, port} = extractDbConnectionParams(process.env.INTEGRATION_DATABASE_URL);
   global.pool = new Pool({
     user: username,
@@ -76,7 +76,7 @@ const flywayMigrate = async () => {
   logger.info(`Using flyway CLI to construct schema for jest worker ${workerId}`);
   const dbConnectionParams = extractDbConnectionParams(process.env.INTEGRATION_DATABASE_URL);
   const apiUsername = `${defaultDbConfig.username}_${workerId}`;
-  const dbName = `${DEFAULT_DB_NAME}_${workerId}`;
+  const dbName = getDatabaseName();
   const exePath = path.join('.', 'node_modules', 'node-flywaydb', 'bin', 'flyway');
   const flywayDataPath = '.node-flywaydb';
   const flywayConfigPath = path.join(os.tmpdir(), `config_worker_${workerId}.json`); // store configs in temp dir
