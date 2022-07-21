@@ -206,7 +206,6 @@ export DATA_RETENTION_FREQUENCY=7d
 export DATA_RETENTION_PERIOD=90d
 ```
 
-
 The configuration can be overridden when creating the rosetta container, for example, to enable it and set the
 retention period to 30 days,
 
