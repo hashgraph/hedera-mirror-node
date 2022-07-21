@@ -24,7 +24,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
-import com.hederahashgraph.api.proto.java.PrngTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.Test;
@@ -34,20 +33,19 @@ import org.mockito.Captor;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.Prng;
 
-class PrngTransactionHandlerTest extends AbstractTransactionHandlerTest {
+class UtilPrngTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     @Captor
     private ArgumentCaptor<Prng> pseudoRandomGenerates;
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new PrngTransactionHandler(entityListener);
+        return new UtilPrngTransactionHandler(entityListener);
     }
 
     @Override
     protected TransactionBody.Builder getDefaultTransactionBody() {
-        return TransactionBody.newBuilder()
-                .setPrng(PrngTransactionBody.newBuilder().build());
+        return recordItemBuilder.prng(0).build().getTransactionBody().toBuilder();
     }
 
     @Override
