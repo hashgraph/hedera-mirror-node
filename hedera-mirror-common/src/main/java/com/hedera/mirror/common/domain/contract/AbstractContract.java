@@ -64,7 +64,7 @@ public abstract class AbstractContract extends AbstractEntity implements Aliasab
         return getEvmAddress();
     }
 
-    public boolean equals(ContractID contractID) {
+    public boolean equalsContractID(ContractID contractID) {
         return contractID.getShardNum() == this.getShard() &&
                 contractID.getRealmNum() == this.getRealm() &&
                 contractID.getContractNum() == this.getNum();

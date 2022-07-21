@@ -897,7 +897,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         ContractBytecode sidecarBytecode = null;
         var sidecarRecords = recordItem.getSidecarRecords();
         for (var sidecarRecord : sidecarRecords) {
-            if (sidecarRecord.hasBytecode() && contract.equals(sidecarRecord.getBytecode().getContractId())) {
+            if (sidecarRecord.hasBytecode() && contract.equalsContractID(sidecarRecord.getBytecode().getContractId())) {
                 sidecarBytecode = sidecarRecord.getBytecode();
                 break;
             }

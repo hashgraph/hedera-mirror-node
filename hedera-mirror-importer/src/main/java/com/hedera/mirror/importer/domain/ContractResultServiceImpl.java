@@ -105,7 +105,10 @@ public class ContractResultServiceImpl implements ContractResultService {
             }
         }
 
-        processContractStateChanges(contractStateChanges, contractResult);
+        if (contractResult != null) {
+            processContractStateChanges(contractStateChanges, contractResult);
+        }
+
         processContractActions(recordItem, contractActions);
     }
 
