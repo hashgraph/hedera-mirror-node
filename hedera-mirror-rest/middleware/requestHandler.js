@@ -18,21 +18,19 @@
  * ‍
  */
 
-'use strict';
+import httpContext from 'express-http-context';
+import qs from 'qs';
 
-const httpContext = require('express-http-context');
-const qs = require('qs');
-const constants = require('../constants');
-const {randomString} = require('../utils');
-const {httpStatusCodes} = require('../constants');
+import {httpStatusCodes, requestIdLabel, requestStartTime} from '../constants';
+import {randomString} from '../utils';
 
 const requestLogger = async (req, res, next) => {
   const requestId = await randomString(8);
-  httpContext.set(constants.requestIdLabel, requestId);
+  httpContext.set(requestIdLabel, requestId);
 
   // set default http OK code for reference
   res.locals.statusCode = httpStatusCodes.OK.code;
-  res.locals[constants.requestStartTime] = Date.now();
+  res.locals[requestStartTime] = Date.now();
 };
 
 /**
@@ -74,7 +72,4 @@ const requestQueryParser = (queryString) => {
   return caseInsensitiveQueryString;
 };
 
-module.exports = {
-  requestLogger,
-  requestQueryParser,
-};
+export {requestLogger, requestQueryParser};

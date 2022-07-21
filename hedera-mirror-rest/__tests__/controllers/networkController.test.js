@@ -18,13 +18,11 @@
  * ‍
  */
 
-'use strict';
-
-const constants = require('../../constants');
-const {NetworkController} = require('../../controllers');
-const {FileData} = require('../../model');
-const networkCtrl = require('../../controllers/networkController');
-const utils = require('../../utils');
+import * as constants from '../../constants';
+import {NetworkController} from '../../controllers';
+import {FileData} from '../../model';
+import networkCtrl from '../../controllers/networkController';
+import * as utils from '../../utils';
 
 describe('extractNetworkNodesQuery', () => {
   const defaultExpected = {

@@ -18,24 +18,22 @@
  * ‍
  */
 
-'use strict';
+import {jest} from '@jest/globals';
+import * as math from 'mathjs';
+import path from 'path';
 
-const math = require('mathjs');
-const path = require('path');
-const EntityId = require('../entityId');
-const testutils = require('./testutils');
-const {
-  response: {
-    limit: {default: defaultLimit},
-  },
-} = require('../config');
+import {getResponseLimit} from '../config';
+import EntityId from '../entityId';
+import * as testutils from './testutils';
+
+const {default: defaultLimit} = getResponseLimit();
 
 /**
  * This is a mock database for unit testing.
  * It captures SQL query that would have been sent to the database, and parses the
  * relevant parameters such as timestamp, account.id from it.
  */
-class Pool {
+class MockPool {
   /**
    * Constructor for the mock DB pool
    * @param {Object} dbParams Unused - db parameters
@@ -195,38 +193,38 @@ class Pool {
 
     // Sanity check on the numbers
     [accountNum, timestamp, limit].forEach((pVar) => {
-      pVar = this.sanityCheck(pVar);
+      this.sanityCheck(pVar);
     });
 
     // Create a mock response based on the sql query parameters
     let rows = [];
     for (let i = 0; i < limit.high; i++) {
-      const row = {};
-      row.payer_account_id = EntityId.of(0n, 0n, BigInt(i)).getEncodedId();
-      row.memo = Buffer.from(`Test memo ${i}`);
-      row.consensus_timestamp = this.toNs(this.timeNow - i);
-      row.valid_start_ns = this.toNs(this.timeNow - i - 1);
-      row.result = 'SUCCESS';
-      row.type = 14;
-      row.name = 'CRYPTOTRANSFER';
-      row.node_account_id = EntityId.of(0n, 0n, BigInt(i % this.NUM_NODES)).getEncodedId();
-      row.nonce = 0;
-
       const accountNumValue = this.getAccountId(accountNum, i);
+      const row = {
+        payer_account_id: EntityId.of(0n, 0n, BigInt(i)).getEncodedId(),
+        memo: Buffer.from(`Test memo ${i}`),
+        consensus_timestamp: this.toNs(this.timeNow - i),
+        valid_start_ns: this.toNs(this.timeNow - i - 1),
+        result: 'SUCCESS',
+        type: 14,
+        name: 'CRYPTOTRANSFER',
+        node_account_id: EntityId.of(0n, 0n, BigInt(i % this.NUM_NODES)).getEncodedId(),
+        nonce: 0,
+        crypto_transfer_list: [
+          {
+            amount: i * 1000,
+            entity_id: EntityId.of(0n, 0n, BigInt(accountNumValue)).getEncodedId(),
+          },
+        ],
+        charged_tx_fee: 100 + i,
+        entity_id: null,
+        max_fee: i,
+        scheduled: false,
+        transaction_bytes: '',
+        transaction_hash: '',
+        valid_duration_seconds: i,
+      };
 
-      row.crypto_transfer_list = [
-        {
-          amount: i * 1000,
-          entity_id: EntityId.of(0n, 0n, BigInt(accountNumValue)).getEncodedId(),
-        },
-      ];
-      row.charged_tx_fee = 100 + i;
-      row.entity_id = null;
-      row.max_fee = i;
-      row.scheduled = false;
-      row.transaction_bytes = '';
-      row.transaction_hash = '';
-      row.valid_duration_seconds = i;
       rows.push(row);
     }
     if (['asc', 'ASC'].includes(order)) {
@@ -288,17 +286,17 @@ class Pool {
 
     // Sanity check on the numbers
     [accountNum, timestamp, balance, limit].forEach((pVar) => {
-      pVar = this.sanityCheck(pVar);
+      this.sanityCheck(pVar);
     });
 
     // Create a mock response based on the sql query parameters
     let rows = [];
     for (let i = 0; i < limit.high; i++) {
-      const row = {};
-      row.consensus_timestamp = this.toNs(Math.floor((timestamp.low + timestamp.high) / 2));
-      row.account_id = this.getAccountId(accountNum, i);
-
-      row.balance = balance.low + Math.floor((balance.high - balance.low) / limit.high);
+      const row = {
+        consensus_timestamp: this.toNs(Math.floor((timestamp.low + timestamp.high) / 2)),
+        account_id: this.getAccountId(accountNum, i),
+        balance: balance.low + Math.floor((balance.high - balance.low) / limit.high),
+      };
 
       rows.push(row);
     }
@@ -350,30 +348,30 @@ class Pool {
 
     // Sanity check on the numbers
     [accountNum, balance, limit].forEach((pVar) => {
-      pVar = this.sanityCheck(pVar);
+      this.sanityCheck(pVar);
     });
 
     // Create a mock response based on the sql query parameters
     let rows = [];
     for (let i = 0; i < limit.high; i++) {
-      const row = {};
-
-      row.account_balance = balance.low + Math.floor((balance.high - balance.low) / limit.high);
-      row.alias = null;
-      row.auto_renew_period = i * 1000;
-      row.consensus_timestamp = this.toNs(this.timeNow);
-      row.decline_reward = false;
-      row.deleted = false;
-      row.expiration_timestamp = this.toNs(this.timeNow + 1000);
-      row.id = this.getAccountId(accountNum, i);
-      row.key = Buffer.from(`Key for row ${i}`);
-      row.max_automatic_token_associations = i;
-      row.memo = 'account_memo' + i;
-      row.receiver_sig_required = false;
-      row.staked_account_id = 0;
-      row.staked_node_id = -1;
-      row.stake_period_start = -1;
-      row.type = 'ACCOUNT';
+      const row = {
+        account_balance: balance.low + Math.floor((balance.high - balance.low) / limit.high),
+        alias: null,
+        auto_renew_period: i * 1000,
+        consensus_timestamp: this.toNs(this.timeNow),
+        decline_reward: false,
+        deleted: false,
+        expiration_timestamp: this.toNs(this.timeNow + 1000),
+        id: this.getAccountId(accountNum, i),
+        key: Buffer.from(`Key for row ${i}`),
+        max_automatic_token_associations: i,
+        memo: 'account_memo' + i,
+        receiver_sig_required: false,
+        staked_account_id: 0,
+        staked_node_id: -1,
+        stake_period_start: -1,
+        type: 'ACCOUNT',
+      };
 
       rows.push(row);
     }
@@ -449,4 +447,4 @@ class Pool {
   }
 }
 
-module.exports = Pool;
+export default MockPool;

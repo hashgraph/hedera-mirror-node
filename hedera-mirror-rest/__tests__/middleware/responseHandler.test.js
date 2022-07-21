@@ -18,15 +18,16 @@
  * ‍
  */
 
-'use strict';
+import {jest} from '@jest/globals';
+
+import config from '../../config';
+import {NotFoundError} from '../../errors';
+import {responseHandler} from '../../middleware';
+import {JSONStringify} from '../../utils';
 
 const {
   response: {headers},
-} = require('../../config');
-const {NotFoundError} = require('../../errors/notFoundError');
-const {responseHandler} = require('../../middleware/responseHandler');
-const {JSONStringify} = require('../../utils');
-require('../testutils'); // For logger init
+} = config;
 
 const responseData = {transactions: [], links: {next: null}};
 

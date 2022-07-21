@@ -18,16 +18,12 @@
  * ‍
  */
 
-'use strict';
+import {NetworkNodeService} from '../../service';
+import {assertSqlQueryEqual} from '../testutils';
+import integrationDomainOps from '../integrationDomainOps';
+import {setupIntegrationTest} from '../integrationUtils';
 
-const {NetworkNodeService} = require('../../service');
-const {assertSqlQueryEqual} = require('../testutils');
-
-const integrationDbOps = require('../integrationDbOps');
-const integrationDomainOps = require('../integrationDomainOps');
-
-const {defaultMochaStatements} = require('./defaultMochaStatements');
-defaultMochaStatements(jest, integrationDbOps, integrationDomainOps);
+setupIntegrationTest();
 
 const defaultNodeFilter = 'abe.node_id = $2';
 describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {

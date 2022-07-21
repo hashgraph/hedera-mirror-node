@@ -18,9 +18,7 @@
  * ‍
  */
 
-'use strict';
-
-const _ = require('lodash');
+import _ from 'lodash';
 
 class ContractStateChange {
   /**
@@ -54,4 +52,4 @@ class ContractStateChange {
   }
 }
 
-module.exports = ContractStateChange;
+export default ContractStateChange;

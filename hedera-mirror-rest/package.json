@@ -2,17 +2,19 @@
   "name": "@hashgraph/mirror-rest",
   "version": "0.62.0-SNAPSHOT",
   "description": "Hedera Mirror Node REST API",
+  "type": "module",
   "main": "server.js",
   "private": true,
   "engines": {
     "node": ">=16.13.0 < 17"
   },
   "scripts": {
-    "dev": "nodemon server.js",
-    "integrationtest": "jest --testPathPattern='/__tests__/integration.test.js|/__tests__/service/.*\\.test\\.js' --collectCoverage=false",
+    "dev": "nodemon --experimental-specifier-resolution=node server.js",
+    "integrationtest": "node --experimental-vm-modules node_modules/jest/bin/jest --testPathPattern='/__tests__/integration.test.js|/__tests__/service/.*\\.test\\.js' --collectCoverage=false",
     "lint": "eslint --ignore-pattern node_modules/ --fix .",
     "postinstall": "node ./npm_scripts/postinstall.js",
-    "test": "jest --testPathPattern='__tests__/.*\\.test\\.js'"
+    "start": "node --experimental-specifier-resolution=node server.js",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --testPathPattern='__tests__/.*\\.test\\.js'"
   },
   "author": "Hedera Mirror Node Team",
   "license": "Apache-2.0",
@@ -37,16 +39,16 @@
     "log4js": "^6.6.0",
     "long": "^5.2.0",
     "mathjs": "^10.6.4",
-    "mem": "^8.1.1",
+    "mem": "^9.0.2",
     "parse-duration": "^1.0.2",
     "pg": "~8.7.3",
     "pg-range": "^1.1.1",
     "prom-client": "^14.0.1",
     "qs": "^6.11.0",
-    "quick-lru": "^5.1.1",
+    "quick-lru": "^6.1.1",
     "rfc4648": "^1.5.2",
     "swagger-stats": "^0.99.2",
-    "swagger-ui-express": "^4.4.0"
+    "swagger-ui-express": "^4.5.0"
   },
   "bundledDependencies": [
     "@awaitjs/express",
@@ -97,7 +99,6 @@
     "jest-circus": "^28.1.2",
     "jest-extended": "^3.0.1",
     "jest-junit": "^14.0.0",
-    "mock-req-res": "^1.2.0",
     "node-flywaydb": "^3.0.7",
     "nodemon": "^2.0.19",
     "pg-format": "^1.0.4",
@@ -114,13 +115,14 @@
     "coveragePathIgnorePatterns": [
       "<rootDir>/__tests__/"
     ],
+    "globalSetup": "./__tests__/globalSetup.js",
     "maxWorkers": "50%",
     "reporters": [
       "default",
       "jest-junit"
     ],
     "setupFilesAfterEnv": [
-      "./__tests__/jest.setup.js"
+      "./__tests__/jestSetup.js"
     ],
     "testEnvironment": "node",
     "testRunner": "jest-circus/runner",

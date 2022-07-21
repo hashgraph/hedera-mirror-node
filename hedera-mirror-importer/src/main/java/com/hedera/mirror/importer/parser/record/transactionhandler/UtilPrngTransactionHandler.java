@@ -35,7 +35,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 @Log4j2
 @Named
 @RequiredArgsConstructor
-class PrngTransactionHandler implements TransactionHandler {
+class UtilPrngTransactionHandler implements TransactionHandler {
 
     private final EntityListener entityListener;
 
@@ -46,13 +46,13 @@ class PrngTransactionHandler implements TransactionHandler {
 
     @Override
     public TransactionType getType() {
-        return TransactionType.PRNG;
+        return TransactionType.UTILPRNG;
     }
 
     @Override
     public void updateTransaction(Transaction transaction, RecordItem recordItem) {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
-        var range = recordItem.getTransactionBody().getPrng().getRange();
+        var range = recordItem.getTransactionBody().getUtilPrng().getRange();
         if (!recordItem.isSuccessful()) {
             return;
         }
@@ -61,7 +61,7 @@ class PrngTransactionHandler implements TransactionHandler {
         var prng = new Prng();
         prng.setConsensusTimestamp(consensusTimestamp);
         prng.setRange(range);
-        switch(transactionRecord.getEntropyCase()) {
+        switch (transactionRecord.getEntropyCase()) {
             case PRNG_BYTES:
                 prng.setPrngBytes(DomainUtils.toBytes(transactionRecord.getPrngBytes()));
                 break;

@@ -18,28 +18,8 @@
  * ‍
  */
 
-'use strict';
-
-const glob = require('glob');
-const path = require('path');
-const {readJSONFile} = require('../utils');
-
-const loadStateProofSamples = () => {
-  const getVersionFromPath = (filepath) => {
-    const segments = path.parse(filepath).dir.split(path.sep);
-    return parseInt(segments[segments.length - 1][1]);
-  };
-
-  const jsonFiles = glob.sync(`${__dirname}/../sample/v*/*.json`);
-  return jsonFiles.map((jsonFile) => {
-    return {
-      data: readJSONFile(jsonFile),
-      filepath: jsonFile,
-      version: getVersionFromPath(jsonFile),
-    };
-  });
-};
-
-module.exports = {
-  loadStateProofSamples,
-};
+export {handleError} from './httpErrorHandler';
+export * from './metricsHandler';
+export {openApiValidator, serveSwaggerDocs} from './openapiHandler';
+export * from './requestHandler';
+export {default as responseHandler} from './responseHandler';

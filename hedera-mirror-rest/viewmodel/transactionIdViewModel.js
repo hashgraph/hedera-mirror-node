@@ -18,13 +18,10 @@
  * ‍
  */
 
-'use strict';
+import {proto} from '@hashgraph/proto';
 
-const _ = require('lodash');
-
-const EntityId = require('../entityId');
-const {proto} = require('@hashgraph/proto');
-const utils = require('../utils');
+import EntityId from '../entityId.js';
+import {nsToSecNs} from '../utils.js';
 
 /**
  * TransactionId view model
@@ -50,9 +47,9 @@ class TransactionIdViewModel {
       this.account_id = EntityId.parse(transactionId.payerAccountId).toString();
       this.nonce = transactionId.nonce;
       this.scheduled = transactionId.scheduled;
-      this.transaction_valid_start = utils.nsToSecNs(transactionId.validStartTimestamp);
+      this.transaction_valid_start = nsToSecNs(transactionId.validStartTimestamp);
     }
   }
 }
 
-module.exports = TransactionIdViewModel;
+export default TransactionIdViewModel;

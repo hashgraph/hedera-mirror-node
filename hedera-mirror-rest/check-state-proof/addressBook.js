@@ -18,13 +18,8 @@
  * ‍
  */
 
-'use strict';
-
-// addressBook object. Parse string to object, provide methods to pull info
-
-// external libraries
-const log4js = require('log4js');
-const {proto} = require('@hashgraph/proto');
+import log4js from 'log4js';
+import {proto} from '@hashgraph/proto';
 
 const logger = log4js.getLogger();
 
@@ -57,4 +52,4 @@ class AddressBook {
   }
 }
 
-module.exports = AddressBook;
+export default AddressBook;

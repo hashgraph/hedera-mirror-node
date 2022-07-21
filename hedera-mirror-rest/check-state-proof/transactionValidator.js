@@ -18,12 +18,9 @@
  * ‍
  */
 
-'use strict';
-
-// external libraries
-const _ = require('lodash');
-const crypto = require('crypto');
-const log4js = require('log4js');
+import _ from 'lodash';
+import crypto from 'crypto';
+import log4js from 'log4js';
 
 const logger = log4js.getLogger();
 
@@ -141,7 +138,4 @@ const performStateProof = (nodePublicKeyMap, signatureFileMap, recordFileHashes)
   return validateRecordFileHash(recordFileHashes, consensusValidatedHashes);
 };
 
-module.exports = {
-  performStateProof,
-  validateRecordFileHash,
-};
+export {performStateProof, validateRecordFileHash};

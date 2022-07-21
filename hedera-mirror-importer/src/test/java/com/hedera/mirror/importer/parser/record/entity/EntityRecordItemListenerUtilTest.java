@@ -36,7 +36,7 @@ class EntityRecordItemListenerUtilTest extends AbstractEntityRecordItemListenerT
     private final PrngRepository prngRepository;
 
     @Test
-    void prngUpdateRandomNumber() {
+    void prngNumber() {
         var recordItem = recordItemBuilder.prng(Integer.MAX_VALUE).build();
         int pseudorandomNumber = recordItem.getRecord().getPrngNumber();
 
@@ -57,7 +57,7 @@ class EntityRecordItemListenerUtilTest extends AbstractEntityRecordItemListenerT
     }
 
     @Test
-    void prngUpdateRandomBytes() {
+    void prngBytes() {
         var recordItem = recordItemBuilder.prng(0).build();
         byte[] pseudorandomBytes = recordItem.getRecord().getPrngBytes().toByteArray();
 

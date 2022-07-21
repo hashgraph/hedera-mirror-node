@@ -18,11 +18,9 @@
  * ‍
  */
 
-'use strict';
-
-const ContractLogResultsViewModel = require('./contractResultLogViewModel');
-const EntityId = require('../entityId');
-const utils = require('../utils');
+import ContractLogResultsViewModel from './contractResultLogViewModel';
+import EntityId from '../entityId';
+import {nsToSecNs} from '../utils';
 
 /**
  * Contract log view model
@@ -37,9 +35,9 @@ class ContractLogViewModel extends ContractLogResultsViewModel {
     super(contractLog);
     Object.assign(this, {
       root_contract_id: EntityId.parse(contractLog.rootContractId, {isNullable: true}).toString(),
-      timestamp: utils.nsToSecNs(contractLog.consensusTimestamp),
+      timestamp: nsToSecNs(contractLog.consensusTimestamp),
     });
   }
 }
 
-module.exports = ContractLogViewModel;
+export default ContractLogViewModel;

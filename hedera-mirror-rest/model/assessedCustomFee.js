@@ -18,8 +18,6 @@
  * ‍
  */
 
-'use strict';
-
 class AssessedCustomFee {
   /**
    * Parses assessed_custom_fee table columns into object
@@ -52,4 +50,4 @@ class AssessedCustomFee {
   }
 }
 
-module.exports = AssessedCustomFee;
+export default AssessedCustomFee;

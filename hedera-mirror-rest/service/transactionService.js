@@ -18,15 +18,11 @@
  * ‍
  */
 
-'use strict';
+import _ from 'lodash';
 
-const _ = require('lodash');
-
-const BaseService = require('./baseService');
-const {Transaction} = require('../model');
-const {EthereumTransaction} = require('../model');
-const {TransactionWithEthData} = require('../model');
-const {OrderSpec} = require('../sql');
+import BaseService from './baseService';
+import {EthereumTransaction, Transaction, TransactionWithEthData} from '../model';
+import {OrderSpec} from '../sql';
 
 const ethTransactionReplaceString = `$ethTransactionWhere`;
 
@@ -197,4 +193,4 @@ class TransactionService extends BaseService {
   }
 }
 
-module.exports = new TransactionService();
+export default new TransactionService();

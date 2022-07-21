@@ -58,7 +58,6 @@ import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.NodeStake;
 import com.hederahashgraph.api.proto.java.NodeStakeUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.PrngTransactionBody;
 import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
@@ -80,6 +79,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
+import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.Collection;
@@ -394,13 +394,14 @@ public class RecordItemBuilder {
         return new Builder<>(TransactionType.NODESTAKEUPDATE, builder);
     }
 
-    public Builder<PrngTransactionBody.Builder> prng() {
+    public Builder<UtilPrngTransactionBody.Builder> prng() {
         return prng(0);
     }
 
-    public Builder<PrngTransactionBody.Builder> prng(int range) {
-        var builder = PrngTransactionBody.newBuilder().setRange(range);
-        var transactionBodyBuilder = new Builder<>(TransactionType.PRNG, builder);
+    public Builder<UtilPrngTransactionBody.Builder> prng(int range) {
+        var builder = UtilPrngTransactionBody.newBuilder().setRange(range);
+        var transactionBodyBuilder = new Builder<>(TransactionType.UTILPRNG, builder);
+
         return transactionBodyBuilder.record(r -> {
             if (range == 0) {
                 r.setPrngBytes(ByteString.copyFrom(randomBytes(382)));
