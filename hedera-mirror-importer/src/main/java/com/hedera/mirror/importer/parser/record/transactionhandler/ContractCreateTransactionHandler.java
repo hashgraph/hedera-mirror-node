@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import javax.inject.Named;
-import lombok.CustomLog;
 
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractResult;
@@ -37,7 +36,6 @@ import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionParser;
 import com.hedera.mirror.importer.util.Utility;
 
-@CustomLog
 @Named
 class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHandler<Contract> {
 
@@ -108,7 +106,9 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
                 break;
         }
 
-        for (var sidecar : recordItem.getSidecarRecords()) {
+        var sidecarRecords = recordItem.getSidecarRecords();
+        for (int i = 0; i < sidecarRecords.size(); i++) {
+            var sidecar = sidecarRecords.get(i);
             if (sidecar.hasBytecode()) {
                 var bytecode = sidecar.getBytecode();
                 if (contract.equalsContractID(bytecode.getContractId())) {

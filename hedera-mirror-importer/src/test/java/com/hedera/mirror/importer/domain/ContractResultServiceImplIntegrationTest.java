@@ -112,9 +112,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
     @Test
     void getContractCallResultDefaultFunctionResult() {
-        RecordItem recordItem = recordItemBuilder.contractCall()
-                .record(x -> x.clearContractCallResult())
-                .build();
+        RecordItem recordItem = recordItemBuilder.contractCall().record(x -> x.clearContractCallResult()).build();
         ContractFunctionResult contractFunctionResult = recordItem.getRecord().getContractCreateResult();
 
         contractResultsTest(recordItem, contractFunctionResult);
@@ -122,9 +120,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
     @Test
     void getContractCreateResultDefaultFunctionResult() {
-        RecordItem recordItem = recordItemBuilder.contractCreate()
-                .record(x -> x.clearContractCreateResult())
-                .build();
+        RecordItem recordItem = recordItemBuilder.contractCreate().record(x -> x.clearContractCreateResult()).build();
         ContractFunctionResult contractFunctionResult = recordItem.getRecord().getContractCreateResult();
 
         contractResultsTest(recordItem, contractFunctionResult);
@@ -132,10 +128,8 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
     @Test
     void contractResultZeroLogs() {
-        RecordItem recordItem = recordItemBuilder.contractCall()
-                .record(x -> x.setContractCallResult(recordItemBuilder.contractFunctionResult(CONTRACT_ID)
-                        .clearLogInfo()))
-                .build();
+        RecordItem recordItem = recordItemBuilder.contractCall().record(x -> x
+                .setContractCallResult(recordItemBuilder.contractFunctionResult(CONTRACT_ID).clearLogInfo())).build();
         ContractFunctionResult contractFunctionResult = recordItem.getRecord().getContractCallResult();
 
         contractResultsTest(recordItem, contractFunctionResult);
@@ -143,8 +137,8 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
     @Test
     void contractResultZeroStateChanges() {
-        RecordItem recordItem = recordItemBuilder.contractCreate()
-                .record(x -> x.setContractCreateResult(recordItemBuilder.contractFunctionResult(CONTRACT_ID)))
+        RecordItem recordItem = recordItemBuilder.contractCreate().record(x -> x
+                        .setContractCreateResult(recordItemBuilder.contractFunctionResult(CONTRACT_ID)))
                 .receipt(r -> r.setContractID(CONTRACT_ID))
                 .build();
         ContractFunctionResult contractFunctionResult = recordItem.getRecord().getContractCreateResult();

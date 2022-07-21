@@ -92,7 +92,7 @@ public class ContractResultServiceImpl implements ContractResultService {
         var contractStateChanges = new ArrayList<ContractStateChange>();
         for (int i = 0; i < sidecarRecords.size(); i++) {
             var sidecarRecord = sidecarRecords.get(i);
-            if (sidecarRecord.hasStateChanges()) {
+            if (sidecarRecord.hasStateChanges() && contractResult != null) {
                 var stateChanges = sidecarRecord.getStateChanges();
                 for (int j = 0; j < stateChanges.getContractStateChangesCount(); j++) {
                     contractStateChanges.add(stateChanges.getContractStateChanges(j));
@@ -234,7 +234,8 @@ public class ContractResultServiceImpl implements ContractResultService {
     }
 
     private void processContractStateChanges(List<ContractStateChange> stateChangeList, ContractResult contractResult) {
-        for (ContractStateChange stateChange : stateChangeList) {
+        for (int i = 0; i < stateChangeList.size(); i++) {
+            var stateChange = stateChangeList.get(i);
             var contractId = lookup(contractResult.getContractId(), stateChange.getContractId());
             for (var storageChange : stateChange.getStorageChangesList()) {
                 var contractStateChange = new com.hedera.mirror.common.domain.contract.ContractStateChange();
