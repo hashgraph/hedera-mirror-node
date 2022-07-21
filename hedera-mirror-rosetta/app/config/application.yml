@@ -15,6 +15,8 @@ hedera:
         port: 5432
         statementTimeout: 20
         username: mirror_rosetta
+      feature:
+        subNetworkIdentifier: false
       log:
         level: info
       network: DEMO

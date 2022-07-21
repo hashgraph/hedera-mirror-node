@@ -42,12 +42,12 @@ the data, and triggering the business logic services.
 ### Running Locally
 
 The recommended way to run Rosetta locally is to use the all-in-one docker image. Below are the steps to build the image
-for a Hedera mirror node release. Please replace the example release `v0.49.1` with the latest release from
+for a Hedera mirror node release. Please replace the example release `v0.60.0` with the latest release from
 our [releases page](https://github.com/hashgraph/hedera-mirror-node/releases).
 
 1. Download the [Dockerfile](/hedera-mirror-rosetta/build/Dockerfile).
 
-2. Run `docker build --build-arg GIT_REF=v0.49.1 -t hedera-mirror-rosetta:0.49.1 .`
+2. Run `docker build --build-arg GIT_REF=v0.60.0 -t hedera-mirror-rosetta:0.60.0 .`
 
 Configure and run the server in online mode:
 
@@ -77,7 +77,7 @@ Configure and run the server in online mode:
 ```shell
 docker run -d -e MODE=online -e NETWORK=testnet \
   -v ${PWD}/application.yml:/app/importer/application.yml \
-  -p 5432:5432 -p 5700:5700 hedera-mirror-rosetta:0.49.1
+  -p 5432:5432 -p 5700:5700 hedera-mirror-rosetta:0.60.0
 ```
 
 The server should be reachable at http://localhost:5700. Note the server can also run in offline mode by
@@ -197,19 +197,21 @@ _Note:_ To test against an instance running on the same machine as Docker use yo
 
 ## Data Retention
 
-Data retention is enabled by default in the rosetta docker image with the following defaults:
+Data retention is disabled in the rosetta docker image with the following defaults:
 
 ```shell
 export DATA_RETENTION_BATCHPERIOD=1d
-export DATA_RETENTION_ENABLED=true
+export DATA_RETENTION_ENABLED=false
 export DATA_RETENTION_FREQUENCY=7d
 export DATA_RETENTION_PERIOD=90d
 ```
 
-The configuration can be overridden when creating the rosetta container, for example, to set data retention period to
-30 days,
+
+The configuration can be overridden when creating the rosetta container, for example, to enable it and set the
+retention period to 30 days,
 
 ```shell
-docker run -d -e MODE=online -e NETWORK=testnet -e DATA_RETENTION_PERIOD=30d \
-  -p 5432:5432 -p 5700:5700 hedera-mirror-rosetta:0.49.1
+docker run -d -e MODE=online -e NETWORK=testnet \
+  -e DATA_RETENTION_ENABLED=true -e DATA_RETENTION_PERIOD=30d \
+  -p 5432:5432 -p 5700:5700 hedera-mirror-rosetta:0.60.0
 ```
