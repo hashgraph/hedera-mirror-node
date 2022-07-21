@@ -31,6 +31,7 @@ const EntityCacheKey = "entity"
 type Config struct {
 	Cache       map[string]Cache
 	Db          Db
+	Feature     Feature
 	Log         Log
 	Network     string
 	Nodes       NodeMap
@@ -64,6 +65,10 @@ func (db Db) GetDsn() string {
 		db.Name,
 		db.Password,
 	)
+}
+
+type Feature struct {
+	SubNetworkIdentifier bool `yaml:"subNetworkIdentifier"`
 }
 
 type Log struct {

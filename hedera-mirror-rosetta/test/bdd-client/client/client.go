@@ -324,7 +324,11 @@ func NewClient(serverCfg Server, operators []Operator) Client {
 	}
 
 	network := networkList.NetworkIdentifiers[0]
-	log.Infof("Network: %s, SubNetwork: %s", network.Network, network.SubNetworkIdentifier.Network)
+	var subNetwork string
+	if network.SubNetworkIdentifier != nil {
+		subNetwork = network.SubNetworkIdentifier.Network
+	}
+	log.Infof("Network: %s, SubNetwork: %s", network.Network, subNetwork)
 
 	networkRequest := &types.NetworkRequest{NetworkIdentifier: network}
 	status, rosettaErr, err := onlineClient.NetworkAPI.NetworkStatus(ctx, networkRequest)
