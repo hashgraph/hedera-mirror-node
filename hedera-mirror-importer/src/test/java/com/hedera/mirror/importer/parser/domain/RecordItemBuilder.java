@@ -82,8 +82,12 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import javax.inject.Named;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
@@ -96,6 +100,7 @@ import org.web3j.crypto.Hash;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.util.Utility;
 import com.hedera.services.stream.proto.StorageChange;
 
@@ -115,9 +120,22 @@ public class RecordItemBuilder {
     private static final ShardID SHARD_ID = ShardID.getDefaultInstance();
     private static final AccountID TREASURY = AccountID.newBuilder().setAccountNum(98).build();
 
+    private final Map<TransactionType, Supplier<Builder>> builders = new HashMap<>();
     private final AtomicLong id = new AtomicLong(1000L);
     private final Instant now = Instant.now();
     private final SecureRandom random = new SecureRandom();
+
+    {
+        // Dynamically lookup method references for every transaction body builder in this class
+        Collection<Supplier<Builder>> getters = TestUtils.gettersByType(this, Builder.class);
+        getters.forEach(s -> {
+            builders.put(s.get().type, s);
+        });
+    }
+
+    public Supplier<Builder> lookup(TransactionType type) {
+        return builders.get(type);
+    }
 
     public Builder<ConsensusSubmitMessageTransactionBody.Builder> consensusSubmitMessage() {
         var transactionBody = ConsensusSubmitMessageTransactionBody.newBuilder()

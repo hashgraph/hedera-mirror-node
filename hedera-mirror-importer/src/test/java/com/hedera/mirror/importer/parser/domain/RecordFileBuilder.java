@@ -165,47 +165,12 @@ public class RecordFileBuilder {
             return builders;
         }
 
-        private Supplier<RecordItemBuilder.Builder<?>> recordItem(TransactionType transactionType) {
-            switch (transactionType) {
-                case CONSENSUSSUBMITMESSAGE:
-                    return recordItemBuilder::consensusSubmitMessage;
-                case CONSENSUSUPDATETOPIC:
-                    return recordItemBuilder::consensusUpdateTopic;
-                case CONTRACTCALL:
-                    return recordItemBuilder::contractCall;
-                case CONTRACTCREATEINSTANCE:
-                    return recordItemBuilder::contractCreate;
-                case CONTRACTDELETEINSTANCE:
-                    return recordItemBuilder::contractDelete;
-                case CONTRACTUPDATEINSTANCE:
-                    return recordItemBuilder::contractUpdate;
-                case CRYPTOAPPROVEALLOWANCE:
-                    return recordItemBuilder::cryptoApproveAllowance;
-                case CRYPTOCREATEACCOUNT:
-                    return recordItemBuilder::cryptoCreate;
-                case CRYPTODELETE:
-                    return recordItemBuilder::cryptoDelete;
-                case CRYPTODELETEALLOWANCE:
-                    return recordItemBuilder::cryptoDeleteAllowance;
-                case CRYPTOTRANSFER:
-                    return recordItemBuilder::cryptoTransfer;
-                case CRYPTOUPDATEACCOUNT:
-                    return recordItemBuilder::cryptoUpdate;
-                case ETHEREUMTRANSACTION:
-                    return recordItemBuilder::ethereumTransaction;
-                case NODESTAKEUPDATE:
-                    return recordItemBuilder::nodeStakeUpdate;
-                case PRNG:
-                    return recordItemBuilder::prng;
-                case SCHEDULECREATE:
-                    return recordItemBuilder::scheduleCreate;
-                case TOKENMINT:
-                    return recordItemBuilder::tokenMint;
-                case TOKENUPDATE:
-                    return recordItemBuilder::tokenUpdate;
-                default:
-                    throw new UnsupportedOperationException("Transaction type not supported: " + transactionType);
+        private Supplier<RecordItemBuilder.Builder> recordItem(TransactionType transactionType) {
+            var supplier = recordItemBuilder.lookup(transactionType);
+            if (supplier == null) {
+                throw new UnsupportedOperationException("Transaction type not supported: " + transactionType);
             }
+            return supplier;
         }
 
         private RecordItem wrap(RecordItemBuilder.Builder<?> builder) {
