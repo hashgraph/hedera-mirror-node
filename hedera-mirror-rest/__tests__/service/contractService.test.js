@@ -24,9 +24,9 @@ import {ContractService} from '../../service';
 import {assertSqlQueryEqual} from '../testutils';
 import integrationDomainOps from '../integrationDomainOps';
 import {NotFoundError} from '../../errors';
-import defaultMochaStatements from './defaultMochaStatements';
+import {setupIntegrationTest} from '../integrationUtils';
 
-defaultMochaStatements();
+setupIntegrationTest();
 
 describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
   test('Verify simple query', async () => {

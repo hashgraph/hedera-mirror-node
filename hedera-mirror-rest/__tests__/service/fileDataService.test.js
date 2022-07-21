@@ -21,9 +21,9 @@
 import {FileData} from '../../model';
 import {FileDataService} from '../../service';
 import integrationDomainOps from '../integrationDomainOps';
-import defaultMochaStatements from './defaultMochaStatements';
+import {setupIntegrationTest} from '../integrationUtils';
 
-defaultMochaStatements();
+setupIntegrationTest();
 
 const files = [
   {

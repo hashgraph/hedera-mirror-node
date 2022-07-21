@@ -25,9 +25,9 @@ import {TransactionService} from '../../service';
 import {TransactionResult, TransactionType} from '../../model';
 
 import integrationDomainOps from '../integrationDomainOps';
-import defaultMochaStatements from './defaultMochaStatements';
+import {setupIntegrationTest} from '../integrationUtils';
 
-defaultMochaStatements();
+setupIntegrationTest();
 
 const contractCallType = TransactionType.getProtoId('CONTRACTCALL');
 const contractCreateType = TransactionType.getProtoId('CONTRACTCREATEINSTANCE');

@@ -20,9 +20,9 @@
 
 import {RecordFileService} from '../../service';
 import integrationDomainOps from '../integrationDomainOps';
-import defaultMochaStatements from './defaultMochaStatements';
+import {setupIntegrationTest} from '../integrationUtils';
 
-defaultMochaStatements();
+setupIntegrationTest();
 
 const expectToEqualId16 = (blockId16) => {
   expect(blockId16.index).toEqual(16);

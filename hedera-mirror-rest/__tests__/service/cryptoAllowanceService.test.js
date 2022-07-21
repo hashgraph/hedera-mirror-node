@@ -21,9 +21,9 @@
 import {CryptoAllowanceService} from '../../service';
 import {assertSqlQueryEqual} from '../testutils';
 import integrationDomainOps from '../integrationDomainOps';
-import defaultMochaStatements from './defaultMochaStatements';
+import {setupIntegrationTest} from '../integrationUtils';
 
-defaultMochaStatements();
+setupIntegrationTest();
 
 const defaultOwnerFilter = 'owner = $1';
 const additionalConditions = [defaultOwnerFilter, 'spender > $2'];
