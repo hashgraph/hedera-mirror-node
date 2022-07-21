@@ -30,6 +30,9 @@ describe('getName', () => {
   test('Return valid name', () => {
     expect(TransactionType.getName(cryptoCreateAccountProtoId)).toEqual('CRYPTOCREATEACCOUNT');
   });
+  test('Return valid custom name', () => {
+    expect(TransactionType.getName(52)).toEqual('UTILPRNG');
+  });
   test('Return UNKNOWN for future proto id', () => {
     expect(TransactionType.getName(unknownProtoId)).toEqual('UNKNOWN');
   });
@@ -47,6 +50,9 @@ describe('getName', () => {
 describe('getProtoId', () => {
   test('Return valid proto id', () => {
     expect(TransactionType.getProtoId('CRYPTOCREATEACCOUNT')).toEqual(`${cryptoCreateAccountProtoId}`);
+  });
+  test('Return valid custom proto id', () => {
+    expect(TransactionType.getProtoId('UTILPRNG')).toEqual(52);
   });
   test('Return valid proto id for camel case', () => {
     expect(TransactionType.getProtoId('cryptoCreateAccount')).toEqual(`${cryptoCreateAccountProtoId}`);
@@ -76,6 +82,9 @@ describe('getProtoId', () => {
 describe('isValid', () => {
   test('Return valid proto id', () => {
     expect(TransactionType.isValid('CRYPTOCREATEACCOUNT')).toBeTruthy();
+  });
+  test('Return valid custom proto id', () => {
+    expect(TransactionType.isValid('UTILPRNG')).toBeTruthy();
   });
   test('Return valid proto id for camel case', () => {
     expect(TransactionType.isValid('cryptoCreateAccount')).toBeTruthy();

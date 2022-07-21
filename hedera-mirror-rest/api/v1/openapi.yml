@@ -2469,7 +2469,6 @@ components:
         - FILEUPDATE
         - FREEZE
         - NODESTAKEUPDATE
-        - PRNG
         - SCHEDULECREATE
         - SCHEDULEDELETE
         - SCHEDULESIGN
@@ -2491,6 +2490,7 @@ components:
         - TOKENUPDATE
         - TOKENWIPE
         - UNCHECKEDSUBMIT
+        - UTILPRNG
     Tokens:
       type: array
       items:
