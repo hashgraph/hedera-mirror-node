@@ -48,7 +48,7 @@ const dbUrlRegex = /^postgresql:\/\/(.*):(.*)@(.*):(\d+)/;
 const extractDbConnectionParams = (url) => {
   const found = url.match(dbUrlRegex);
   return {
-    username: found[1],
+    user: found[1],
     password: found[2],
     host: found[3],
     port: found[4],
@@ -56,14 +56,11 @@ const extractDbConnectionParams = (url) => {
 };
 
 const createPool = () => {
-  const dbName = getDatabaseName();
-  const {username, password, host, port} = extractDbConnectionParams(process.env.INTEGRATION_DATABASE_URL);
+  const database = getDatabaseName();
+  const dbConnectionParams = extractDbConnectionParams(process.env.INTEGRATION_DATABASE_URL);
   global.pool = new Pool({
-    user: username,
-    host,
-    database: dbName,
-    password: password,
-    port,
+    ...dbConnectionParams,
+    database,
     sslmode: 'DISABLE',
   });
 };
@@ -96,11 +93,11 @@ const flywayMigrate = async () => {
       "placeholders.chunkTimeInterval": 604800000000000,
       "placeholders.compressionAge": 9007199254740991,
       "placeholders.db-name": "${dbName}",
-      "placeholders.db-user": "${dbConnectionParams.username}",
+      "placeholders.db-user": "${dbConnectionParams.user}",
       "placeholders.topicRunningHashV2AddedTimestamp": 0,
       "target": "latest",
       "url": "jdbc:postgresql://${dbConnectionParams.host}:${dbConnectionParams.port}/${dbName}",
-      "user": "${dbConnectionParams.username}"
+      "user": "${dbConnectionParams.user}"
     },
     "version": "8.5.9",
     "downloads": {
