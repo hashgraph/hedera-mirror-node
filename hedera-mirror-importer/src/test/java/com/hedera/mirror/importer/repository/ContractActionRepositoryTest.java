@@ -39,7 +39,7 @@ class ContractActionRepositoryTest extends AbstractRepositoryTest {
 
         contractActionRepository.prune(contractAction2.getConsensusTimestamp());
 
-        assertThat(contractActionRepository.findAll()).containsExactly(contractAction3);
+        assertThat(contractActionRepository.findAll()).containsOnly(contractAction3);
     }
 
     @Test
@@ -47,6 +47,6 @@ class ContractActionRepositoryTest extends AbstractRepositoryTest {
         var contractAction = domainBuilder.contractAction().get();
 
         contractActionRepository.save(contractAction);
-        assertThat(contractActionRepository.findAll()).contains(contractAction);
+        assertThat(contractActionRepository.findAll()).containsOnly(contractAction);
     }
 }

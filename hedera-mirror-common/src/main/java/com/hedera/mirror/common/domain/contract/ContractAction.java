@@ -104,6 +104,11 @@ public class ContractAction implements Persistable<ContractAction.Id> {
         return true; // Since we never update and use a natural ID, avoid Hibernate querying before insert
     }
 
+    public void setCaller(EntityId caller) {
+        this.caller = caller;
+        this.callerType = caller.getType();
+    }
+
     @Data
     @AllArgsConstructor
     @NoArgsConstructor

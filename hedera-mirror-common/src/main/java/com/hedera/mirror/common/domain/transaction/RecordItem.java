@@ -28,7 +28,6 @@ import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -41,16 +40,12 @@ import lombok.Setter;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.data.util.Version;
 
 import com.hedera.mirror.common.domain.StreamItem;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.exception.ProtobufException;
 import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.services.stream.proto.ContractAction;
-import com.hedera.services.stream.proto.ContractBytecode;
-import com.hedera.services.stream.proto.ContractStateChange;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 
 @Builder(buildMethodName = "buildInternal")
@@ -172,17 +167,6 @@ public class RecordItem implements StreamItem {
         }
     }
 
-    public List<ContractBytecode> getContractBytecode(long contractId) {
-        var contractBytecode = new ArrayList<ContractBytecode>();
-        for (int i = 0; i < sidecarRecords.size(); i++) {
-            var sidecarRecord = sidecarRecords.get(i);
-            if (sidecarRecord.hasBytecode() && contractId == sidecarRecord.getBytecode().getContractId().getContractNum()) {
-                contractBytecode.add(sidecarRecord.getBytecode());
-            }
-        }
-        return contractBytecode;
-    }
-
     /**
      * Because body.getDataCase() can return null for unknown transaction types, we instead get oneof generically
      *
@@ -208,26 +192,6 @@ public class RecordItem implements StreamItem {
 
     public TransactionBody getTransactionBody() {
         return transactionBodyAndSignatureMap.getTransactionBody();
-    }
-
-    public Pair<List<ContractAction>, List<ContractStateChange>> getSidecarLists() {
-        var contractActions = new ArrayList<ContractAction>();
-        var contractStateChanges = new ArrayList<ContractStateChange>();
-        for (int i = 0; i < sidecarRecords.size(); i++) {
-            var sidecarRecord = sidecarRecords.get(i);
-            if (sidecarRecord.hasStateChanges()) {
-                var stateChanges = sidecarRecord.getStateChanges();
-                for (int j = 0; j < stateChanges.getContractStateChangesCount(); j++) {
-                    contractStateChanges.add(stateChanges.getContractStateChanges(j));
-                }
-            } else if (sidecarRecord.hasActions()) {
-                var actions = sidecarRecord.getActions();
-                for (int j = 0; j < actions.getContractActionsCount(); j++) {
-                    contractActions.add(actions.getContractActions(j));
-                }
-            }
-        }
-        return Pair.of(contractActions, contractStateChanges);
     }
 
     public SignatureMap getSignatureMap() {

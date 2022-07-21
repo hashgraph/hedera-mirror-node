@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
@@ -38,7 +37,6 @@ import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
@@ -87,9 +85,28 @@ public class ContractResultServiceImpl implements ContractResultService {
         // in pre-compile case transaction is not a contract type and entityId will be of a different type
         var contractId = isContractCreateOrCall(recordItem.getTransactionBody()) ? transaction.getEntityId() :
                 entityIdService.lookup(functionResult.getContractID());
-        var sidecarLists = recordItem.getSidecarLists();
-        processContractResult(recordItem, contractId, functionResult, transactionHandler, sidecarLists.getRight());
-        processContractActions(recordItem, sidecarLists.getLeft());
+        var contractResult = processContractResult(recordItem, contractId, functionResult, transactionHandler);
+
+        var sidecarRecords = recordItem.getSidecarRecords();
+        var contractActions = new ArrayList<com.hedera.services.stream.proto.ContractAction>();
+        var contractStateChanges = new ArrayList<ContractStateChange>();
+        for (int i = 0; i < sidecarRecords.size(); i++) {
+            var sidecarRecord = sidecarRecords.get(i);
+            if (sidecarRecord.hasStateChanges()) {
+                var stateChanges = sidecarRecord.getStateChanges();
+                for (int j = 0; j < stateChanges.getContractStateChangesCount(); j++) {
+                    contractStateChanges.add(stateChanges.getContractStateChanges(j));
+                }
+            } else if (sidecarRecord.hasActions()) {
+                var actions = sidecarRecord.getActions();
+                for (int j = 0; j < actions.getContractActionsCount(); j++) {
+                    contractActions.add(actions.getContractActions(j));
+                }
+            }
+        }
+
+        processContractStateChanges(contractStateChanges, contractResult);
+        processContractActions(recordItem, contractActions);
     }
 
     private boolean isValidContractFunctionResult(ContractFunctionResult contractFunctionResult) {
@@ -108,16 +125,10 @@ public class ContractResultServiceImpl implements ContractResultService {
             var contractAction = new ContractAction();
 
             switch (action.getCallerCase()) {
-                case CALLING_CONTRACT -> {
-                    contractAction.setCallerType(EntityType.CONTRACT);
-                    contractAction.setCaller(EntityId.of(action.getCallingContract()));
-                }
-                case CALLING_ACCOUNT -> {
-                    contractAction.setCallerType(EntityType.ACCOUNT);
-                    contractAction.setCaller(EntityId.of(action.getCallingAccount()));
-                }
+                case CALLING_CONTRACT -> contractAction.setCaller(EntityId.of(action.getCallingContract()));
+                case CALLING_ACCOUNT -> contractAction.setCaller(EntityId.of(action.getCallingAccount()));
                 default ->
-                    throw new InvalidDatasetException("Invalid Contract Action Caller Case: " + action.getCallerCase());
+                        throw new InvalidDatasetException("Invalid Contract Action Caller Case: " + action.getCallerCase());
             }
 
             switch (action.getRecipientCase()) {
@@ -158,14 +169,13 @@ public class ContractResultServiceImpl implements ContractResultService {
         }
     }
 
-    private void processContractResult(RecordItem recordItem, EntityId contractEntityId,
-                                       ContractFunctionResult functionResult,
-                                       TransactionHandler transactionHandler,
-                                       List<ContractStateChange> contractStateChanges) {
+    private ContractResult processContractResult(RecordItem recordItem, EntityId contractEntityId,
+                                                 ContractFunctionResult functionResult,
+                                                 TransactionHandler transactionHandler) {
         // create child contracts regardless of contractResults support
         List<Long> contractIds = getCreatedContractIds(functionResult, recordItem, contractEntityId);
         if (!entityProperties.getPersist().isContractResults()) {
-            return;
+            return null;
         }
 
         ContractResult contractResult = new ContractResult();
@@ -194,10 +204,10 @@ public class ContractResultServiceImpl implements ContractResultService {
             }
 
             processContractLogs(functionResult, contractResult);
-            processContractStateChanges(contractStateChanges, contractResult);
         }
 
         entityListener.onContractResult(contractResult);
+        return contractResult;
     }
 
     private void processContractLogs(ContractFunctionResult functionResult, ContractResult contractResult) {
@@ -224,8 +234,7 @@ public class ContractResultServiceImpl implements ContractResultService {
         for (ContractStateChange stateChange : stateChangeList) {
             var contractId = lookup(contractResult.getContractId(), stateChange.getContractId());
             for (var storageChange : stateChange.getStorageChangesList()) {
-                com.hedera.mirror.common.domain.contract.ContractStateChange contractStateChange =
-                        new com.hedera.mirror.common.domain.contract.ContractStateChange();
+                var contractStateChange = new com.hedera.mirror.common.domain.contract.ContractStateChange();
                 contractStateChange.setConsensusTimestamp(contractResult.getConsensusTimestamp());
                 contractStateChange.setContractId(contractId);
                 contractStateChange.setPayerAccountId(contractResult.getPayerAccountId());

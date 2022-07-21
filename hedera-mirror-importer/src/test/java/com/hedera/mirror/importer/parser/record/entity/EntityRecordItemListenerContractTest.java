@@ -53,6 +53,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -86,6 +87,7 @@ import com.hedera.mirror.importer.repository.ContractActionRepository;
 import com.hedera.mirror.importer.repository.ContractLogRepository;
 import com.hedera.mirror.importer.repository.ContractStateChangeRepository;
 import com.hedera.mirror.importer.util.Utility;
+import com.hedera.services.stream.proto.ContractBytecode;
 import com.hedera.services.stream.proto.ContractStateChanges;
 
 class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListenerTest {
@@ -188,7 +190,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .record(r -> r.setContractCreateResult(r.getContractCreateResultBuilder()
                         .setEvmAddress(BytesValue.of(DomainUtils.fromBytes(parentEvmAddress)))
                 ))
-                .sidecarRecord(s -> s.get(0).clearSidecarRecords())
+                .sidecarRecords(s -> s.remove(0))
                 .hapiVersion(HAPI_VERSION_0_23_0)
                 .build();
 
@@ -205,7 +207,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                         .setContractCreateResult(r.getContractCreateResultBuilder()
                                 .clearCreatedContractIDs()
                                 .setEvmAddress(BytesValue.of(DomainUtils.fromBytes(childEvmAddress)))))
-                .sidecarRecord(s -> s.get(0).clearSidecarRecords())
+                .sidecarRecords(s -> s.remove(0))
                 .hapiVersion(HAPI_VERSION_0_23_0)
                 .build();
 
@@ -604,7 +606,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .transactionBody(b -> b.setContractID(setupResult.protoContractId))
                 .record(r -> r.clearContractCallResult()
                         .setContractCallResult(recordItemBuilder.contractFunctionResult(CONTRACT_ID)))
-                .sidecarRecord(s -> s.get(0).clearSidecarRecords())
+                .sidecarRecords(s -> s.remove(0))
                 .hapiVersion(HAPI_VERSION_0_23_0)
                 .build();
 
@@ -619,7 +621,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                                 .clearCreatedContractIDs()
                                 .setEvmAddress(BytesValue.of(DomainUtils.fromBytes(childEvmAddress))))
                         .setTransactionID(childTransactionId))
-                .sidecarRecord(s -> s.get(0).clearSidecarRecords())
+                .sidecarRecords(s -> s.remove(0))
                 .hapiVersion(HAPI_VERSION_0_23_0)
                 .build();
 
@@ -891,9 +893,16 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         Long expectedAutoRenewAccountId = transactionBody.hasAutoRenewAccountId() ?
                 transactionBody.getAutoRenewAccountId().getAccountNum() : null;
         EntityId expectedFileId = transactionBody.hasFileID() ? EntityId.of(transactionBody.getFileID()) : null;
-        var optionalInitcode = recordItem.getContractBytecode(contract.getId()).stream()
-                .findFirst();
-        byte[] expectedInitcode = optionalInitcode.isPresent() ? optionalInitcode.get().getInitcode().toByteArray() :
+
+        ContractBytecode sidecarBytecode = null;
+        var sidecarRecords = recordItem.getSidecarRecords();
+        for (var sidecarRecord : sidecarRecords) {
+            if (sidecarRecord.hasBytecode() && contract.equals(sidecarRecord.getBytecode().getContractId())) {
+                sidecarBytecode = sidecarRecord.getBytecode();
+                break;
+            }
+        }
+        byte[] expectedInitcode = sidecarBytecode != null ? sidecarBytecode.getInitcode().toByteArray() :
                 null;
         expectedInitcode = transactionBody.getInitcode() != ByteString.EMPTY ?
                 DomainUtils.toBytes(transactionBody.getInitcode()) : expectedInitcode;
@@ -965,24 +974,36 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     private void assertContractAction(RecordItem recordItem) {
         int count = 0;
         var repositoryActions = assertThat(contractActionRepository.findAll());
-        for (var contractAction : recordItem.getSidecarLists().getLeft()) {
+
+        var contractActions = new ArrayList<com.hedera.services.stream.proto.ContractAction>();
+        var sidecarRecords = recordItem.getSidecarRecords();
+        for (var sidecarRecord : sidecarRecords) {
+            if (sidecarRecord.hasActions()) {
+                var actions = sidecarRecord.getActions();
+                for (int j = 0; j < actions.getContractActionsCount(); j++) {
+                    contractActions.add(actions.getContractActions(j));
+                }
+            }
+        }
+
+        for (var contractAction : contractActions) {
             var caller = contractAction.getCallerCase().equals(CALLING_CONTRACT) ?
-                EntityId.of(contractAction.getCallingContract()) :
-                EntityId.of(contractAction.getCallingAccount());
+                    EntityId.of(contractAction.getCallingContract()) :
+                    EntityId.of(contractAction.getCallingAccount());
 
             EntityId recipientAccount = null;
             EntityId recipientContract = null;
             byte[] recipientAddress = null;
-            if(contractAction.getRecipientCase().equals(RECIPIENT_CONTRACT)) {
+            if (contractAction.getRecipientCase().equals(RECIPIENT_CONTRACT)) {
                 recipientContract = EntityId.of(contractAction.getRecipientContract());
-            } else if(contractAction.getRecipientCase().equals(RECIPIENT_ACCOUNT)) {
+            } else if (contractAction.getRecipientCase().equals(RECIPIENT_ACCOUNT)) {
                 recipientAccount = EntityId.of(contractAction.getRecipientAccount());
             } else {
                 recipientAddress = contractAction.getInvalidSolidityAddress().toByteArray();
             }
 
             repositoryActions.filteredOn(c -> c.getConsensusTimestamp() == recordItem.getConsensusTimestamp()
-                    && c.getCaller().equals(caller)
+                            && c.getCaller().equals(caller)
                     )
                     .hasSize(1)
                     .first()
@@ -1127,7 +1148,18 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         int count = 0;
         var contractStateChanges = assertThat(contractStateChangeRepository.findAll());
 
-        for (var contractStateChange : recordItem.getSidecarLists().getRight()) {
+        var sidecarStateChanges = new ArrayList<com.hedera.services.stream.proto.ContractStateChange>();
+        var sidecarRecords = recordItem.getSidecarRecords();
+        for (var sidecarRecord : sidecarRecords) {
+            if (sidecarRecord.hasStateChanges()) {
+                var stateChanges = sidecarRecord.getStateChanges();
+                for (int j = 0; j < stateChanges.getContractStateChangesCount(); j++) {
+                    sidecarStateChanges.add(stateChanges.getContractStateChanges(j));
+                }
+            }
+        }
+
+        for (var contractStateChange : sidecarStateChanges) {
             EntityId contractId = EntityId.of(contractStateChange.getContractId());
             for (var storageChange : contractStateChange.getStorageChangesList()) {
                 byte[] slot = DomainUtils.toBytes(storageChange.getSlot());

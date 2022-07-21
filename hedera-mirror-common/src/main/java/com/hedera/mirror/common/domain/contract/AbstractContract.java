@@ -21,6 +21,7 @@ package com.hedera.mirror.common.domain.contract;
  */
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.hederahashgraph.api.proto.java.ContractID;
 import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.MappedSuperclass;
@@ -61,5 +62,11 @@ public abstract class AbstractContract extends AbstractEntity implements Aliasab
     @Override
     public byte[] getAlias() {
         return getEvmAddress();
+    }
+
+    public boolean equals(ContractID contractID) {
+        return contractID.getShardNum() == this.getShard() &&
+                contractID.getRealmNum() == this.getRealm() &&
+                contractID.getContractNum() == this.getNum();
     }
 }

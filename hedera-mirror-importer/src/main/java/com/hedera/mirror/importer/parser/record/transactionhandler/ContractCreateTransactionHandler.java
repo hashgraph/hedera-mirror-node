@@ -20,8 +20,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.google.protobuf.ByteString;
-import java.util.ArrayList;
 import javax.inject.Named;
 import lombok.CustomLog;
 
@@ -110,28 +108,17 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
                 break;
         }
 
-        var contractBytecodes = recordItem.getContractBytecode(contract.getId());
-        var runtimeBytecodes = new ArrayList<ByteString>();
-        var sidecarInitCodes = new ArrayList<ByteString>();
-        for(int i = 0; i < contractBytecodes.size(); i++) {
-            var contractBytecode = contractBytecodes.get(i);
-            runtimeBytecodes.add(contractBytecode.getRuntimeBytecode());
-            sidecarInitCodes.add(contractBytecode.getInitcode());
-        }
+        for (var sidecar : recordItem.getSidecarRecords()) {
+            if (sidecar.hasBytecode()) {
+                var bytecode = sidecar.getBytecode();
+                if (contract.equals(bytecode.getContractId())) {
+                    if (contract.getInitcode() == null) {
+                        contract.setInitcode(DomainUtils.toBytes(bytecode.getInitcode()));
+                    }
 
-        if(!runtimeBytecodes.isEmpty()) {
-            contract.setRuntimeBytecode(runtimeBytecodes.get(0).toByteArray());
-            if(runtimeBytecodes.size() > 1) {
-                log.warn("Incorrect number of runtime bytecodes ({}) found in sidecar record for Contract Id {}",
-                        runtimeBytecodes.size(), contract.getId());
-            }
-        }
-
-        if (contract.getInitcode() == null && !sidecarInitCodes.isEmpty()) {
-            contract.setInitcode(DomainUtils.toBytes(sidecarInitCodes.get(0)));
-            if(sidecarInitCodes.size() > 1) {
-                log.warn("Incorrect number of initcodes ({}) found in sidecar record for Contract Id {}",
-                        sidecarInitCodes.size(), contract.getId());
+                    contract.setRuntimeBytecode(DomainUtils.toBytes(bytecode.getRuntimeBytecode()));
+                    break;
+                }
             }
         }
 

@@ -102,7 +102,7 @@ class ContractResultServiceImplTest {
                     r.getContractCreateResultBuilder().getLogInfoBuilder(0).setContractID(invalidContractId);
                     r.getContractCreateResultBuilder().removeLogInfo(1);
                 })
-                .sidecarRecord(r -> r.get(0).clearSidecarRecords())
+                .sidecarRecords(r -> r.remove(0))
                 .build();
 
         if (shard == 0 && realm == 0) {
@@ -141,7 +141,7 @@ class ContractResultServiceImplTest {
                     r.getContractCallResultBuilder().getLogInfoBuilder(0).setContractID(invalidContractId);
                     r.getContractCallResultBuilder().removeLogInfo(1);
                 })
-                .sidecarRecord(r -> r.get(0).clearSidecarRecords())
+                .sidecarRecords(r -> r.remove(0))
                 .build();
 
         if (shard == 0 && realm == 0) {
