@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.parser.record.entity;
 
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
 import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
@@ -62,6 +63,9 @@ public interface EntityListener {
     }
 
     default void onContract(Contract contract) {
+    }
+
+    default void onContractAction(ContractAction contractAction) {
     }
 
     default void onContractLog(ContractLog contractLog) {

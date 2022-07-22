@@ -80,6 +80,9 @@ import com.hedera.mirror.importer.repository.StakingRewardTransferRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.util.Utility;
+import com.hedera.services.stream.proto.ContractStateChange;
+import com.hedera.services.stream.proto.ContractStateChanges;
+import com.hedera.services.stream.proto.StorageChange;
 
 public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTest {
 
@@ -492,5 +495,34 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
                 .addTopic(ByteString.copyFromUtf8("Topic1"))
                 .addTopic(ByteString.copyFromUtf8("Topic2"))
                 .addTopic(ByteString.copyFromUtf8("Topic3")).build());
+    }
+
+    protected void buildContractStateChanges(ContractStateChanges.Builder builder) {
+        // 3 state changes, no value written, valid value written and zero value written
+        builder.addContractStateChanges(
+            ContractStateChange.newBuilder()
+                .setContractId(CONTRACT_ID)
+                .addStorageChanges(StorageChange.newBuilder()
+                        .setSlot(ByteString
+                                .copyFromUtf8("0x000000000000000000"))
+                        .setValueRead(ByteString
+                                .copyFromUtf8("0xaf846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0"))
+                        .build())
+                .addStorageChanges(StorageChange.newBuilder()
+                        .setSlot(ByteString
+                                .copyFromUtf8("0x000000000000000001"))
+                        .setValueRead(ByteString
+                                .copyFromUtf8("0xaf846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0"))
+                        .setValueWritten(BytesValue.of(ByteString
+                                .copyFromUtf8("0x000000000000000000000000000000000000000000c2a8c408d0e29d623347c5")))
+                        .build())
+                .addStorageChanges(StorageChange.newBuilder()
+                        .setSlot(ByteString
+                                .copyFromUtf8("0x00000000000000002"))
+                        .setValueRead(ByteString
+                                .copyFromUtf8("0xaf846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0"))
+                        .setValueWritten(BytesValue.of(ByteString.copyFromUtf8("0")))
+                        .build())
+                .build());
     }
 }

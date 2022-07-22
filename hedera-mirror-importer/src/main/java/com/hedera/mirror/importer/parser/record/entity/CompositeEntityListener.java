@@ -29,6 +29,7 @@ import org.springframework.context.annotation.Primary;
 
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
 import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
@@ -80,6 +81,11 @@ public class CompositeEntityListener implements EntityListener {
     @Override
     public void onContract(Contract contract) throws ImporterException {
         onEach(EntityListener::onContract, contract);
+    }
+
+    @Override
+    public void onContractAction(ContractAction contractAction) throws ImporterException {
+        onEach(EntityListener::onContractAction, contractAction);
     }
 
     @Override

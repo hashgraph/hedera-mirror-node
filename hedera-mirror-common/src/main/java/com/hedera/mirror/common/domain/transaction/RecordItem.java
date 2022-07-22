@@ -113,25 +113,31 @@ public class RecordItem implements StreamItem {
     // Used only in tests
     // There are many brittle RecordItemParser*Tests which rely on bytes being null. Those tests need to be fixed,
     // then this function can be removed.
-    public RecordItem(Version hapiVersion, Transaction transaction, TransactionRecord record) {
+    public RecordItem(Version hapiVersion, Transaction transaction, TransactionRecord transactionRecord,
+                      List<TransactionSidecarRecord> sidecarRecords) {
         Objects.requireNonNull(transaction, "transaction is required");
-        Objects.requireNonNull(record, "record is required");
+        Objects.requireNonNull(transactionRecord, "record is required");
 
         this.hapiVersion = hapiVersion;
         this.transaction = transaction;
         transactionBodyAndSignatureMap = parseTransactionBodyAndSignatureMap(transaction);
         transactionType = getTransactionType(transactionBodyAndSignatureMap.getTransactionBody());
-        this.record = record;
+        this.record = transactionRecord;
         transactionBytes = transaction.toByteArray();
-        recordBytes = record.toByteArray();
+        recordBytes = transactionRecord.toByteArray();
+        this.sidecarRecords = sidecarRecords;
         transactionIndex = 0;
         parent = null;
         previous = null;
     }
 
-    // Used only in tests, default hapiVersion to RecordFile.HAPI_VERSION_NOT_SET
-    public RecordItem(Transaction transaction, TransactionRecord record) {
-        this(RecordFile.HAPI_VERSION_NOT_SET, transaction, record);
+    public RecordItem(Version hapiVersion, Transaction transaction, TransactionRecord transactionRecord) {
+        this(hapiVersion, transaction, transactionRecord, Collections.emptyList());
+    }
+
+    // Used only in tests, default hapiVersion to RecordFile.HAPI_VERSION_NOT_SET and no sidecarRecords
+    public RecordItem(Transaction transaction, TransactionRecord transactionRecord) {
+        this(RecordFile.HAPI_VERSION_NOT_SET, transaction, transactionRecord, Collections.emptyList());
     }
 
     private static TransactionBodyAndSignatureMap parseTransactionBodyAndSignatureMap(Transaction transaction) {

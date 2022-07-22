@@ -73,7 +73,6 @@ class ContractResultServiceImplTest {
 
     @BeforeEach
     void beforeEach() {
-
         doNothing().when(transactionHandler).updateContractResult(any(ContractResult.class), any(RecordItem.class));
         doReturn(transactionHandler).when(transactionHandlerFactory).get(any(TransactionType.class));
         contractResultService = new ContractResultServiceImpl(entityProperties, entityIdService, entityListener,
@@ -103,6 +102,7 @@ class ContractResultServiceImplTest {
                     r.getContractCreateResultBuilder().getLogInfoBuilder(0).setContractID(invalidContractId);
                     r.getContractCreateResultBuilder().removeLogInfo(1);
                 })
+                .sidecarRecords(r -> r.remove(0))
                 .build();
 
         if (shard == 0 && realm == 0) {
@@ -141,6 +141,7 @@ class ContractResultServiceImplTest {
                     r.getContractCallResultBuilder().getLogInfoBuilder(0).setContractID(invalidContractId);
                     r.getContractCallResultBuilder().removeLogInfo(1);
                 })
+                .sidecarRecords(r -> r.remove(0))
                 .build();
 
         if (shard == 0 && realm == 0) {

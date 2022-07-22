@@ -106,6 +106,21 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
                 break;
         }
 
+        var sidecarRecords = recordItem.getSidecarRecords();
+        for (var sidecar : sidecarRecords) {
+            if (sidecar.hasBytecode()) {
+                var bytecode = sidecar.getBytecode();
+                if (contract.equalsContractID(bytecode.getContractId())) {
+                    if (contract.getInitcode() == null) {
+                        contract.setInitcode(DomainUtils.toBytes(bytecode.getInitcode()));
+                    }
+
+                    contract.setRuntimeBytecode(DomainUtils.toBytes(bytecode.getRuntimeBytecode()));
+                    break;
+                }
+            }
+        }
+
         contract.setMaxAutomaticTokenAssociations(transactionBody.getMaxAutomaticTokenAssociations());
 
         if (transactionBody.hasProxyAccountID()) {
@@ -118,7 +133,8 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
 
         contract.setMemo(transactionBody.getMemo());
 
-        // for child transactions initCode and FileID are located in parent ContractCreate/EthereumTransaction types
+        // for child transactions FileID is located in parent ContractCreate/EthereumTransaction types
+        // and initcode is located in the sidecar
         updateChildFromParent(contract, recordItem);
         updateStakingInfo(recordItem, contract);
 

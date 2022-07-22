@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.record.sidecar;
+package com.hedera.mirror.importer.repository;
 
 /*-
  * ‌
@@ -20,22 +20,16 @@ package com.hedera.mirror.importer.parser.record.sidecar;
  * ‍
  */
 
-import java.util.Collections;
-import java.util.Set;
-import javax.validation.constraints.NotNull;
-import lombok.Data;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.CrudRepository;
 
-import com.hedera.services.stream.proto.SidecarType;
+import com.hedera.mirror.common.domain.contract.ContractAction;
 
-@Data
-@ConfigurationProperties("hedera.mirror.importer.parser.record.sidecar")
-public class SidecarProperties {
+public interface ContractActionRepository extends CrudRepository<ContractAction, ContractAction.Id>, RetentionRepository {
 
-    private boolean enabled = false;
-
-    private boolean persistBytes = false;
-
-    @NotNull
-    private Set<SidecarType> types = Collections.emptySet();
+    @Modifying
+    @Override
+    @Query("delete from ContractAction where consensusTimestamp <= ?1")
+    int prune(long consensusTimestamp);
 }

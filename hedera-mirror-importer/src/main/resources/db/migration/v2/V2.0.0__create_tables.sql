@@ -102,6 +102,7 @@ create table if not exists contract
     proxy_account_id                 bigint                         null,
     public_key                       character varying              null,
     realm                            bigint                         not null,
+    runtime_bytecode                 bytea                           null,
     shard                            bigint                         not null,
     staked_account_id                bigint                         null,
     staked_node_id                   bigint      default -1         null,
@@ -110,6 +111,27 @@ create table if not exists contract
     type                             entity_type default 'CONTRACT' not null
 );
 comment on table contract is 'Contract entity';
+
+--contract_action
+create table if not exists contract_action
+(
+    call_depth          integer                             not null,
+    call_type           integer                             not null,
+    caller              bigint                              not null,
+    caller_type         entity_type     default 'CONTRACT'  not null,
+    consensus_timestamp bigint                              not null,
+    gas                 bigint                              not null,
+    gas_used            bigint                              not null,
+    index               integer                             not null,
+    input               bytea                               null,
+    recipient_account   bigint                              null,
+    recipient_address   bytea                               null,
+    recipient_contract  bigint                              null,
+    result_data         bytea                               null,
+    result_data_type    integer                             not null,
+    value               bigint                              not null
+);
+comment on table contract_action is 'Contract action';
 
 -- contract_history
 create table if not exists contract_history
