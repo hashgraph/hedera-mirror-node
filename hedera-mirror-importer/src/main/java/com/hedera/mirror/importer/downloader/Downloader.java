@@ -25,7 +25,6 @@ import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIGNATUR
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.maxBy;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
@@ -91,7 +90,6 @@ public abstract class Downloader<T extends StreamFile> {
     protected final StreamFileReader<T, ?> streamFileReader;
     protected final StreamFileNotifier streamFileNotifier;
     protected final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
-    @VisibleForTesting
     protected final AtomicReference<Optional<T>> lastStreamFile = new AtomicReference<>(Optional.empty());
     protected final S3AsyncClient s3Client;
     private final AddressBookService addressBookService;
