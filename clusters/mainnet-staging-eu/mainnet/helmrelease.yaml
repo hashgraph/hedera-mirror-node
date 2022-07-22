@@ -22,13 +22,11 @@ spec:
   interval: 90s
   test:
     enable: true
-    timeout: 5m
+    timeout: 25m
   timeout: 48h
   upgrade:
     cleanupOnFail: true
     crds: CreateReplace
-    remediation:
-      retries: 20
   valuesFrom:
     - kind: Secret
       name: mirror
