@@ -135,6 +135,11 @@ public class RecordFile implements StreamFile<RecordItem> {
     private int version;
 
     @Override
+    public StreamFile<RecordItem> copy() {
+        return this.toBuilder().build();
+    }
+
+    @Override
     public StreamType getType() {
         return StreamType.RECORD;
     }

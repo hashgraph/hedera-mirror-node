@@ -25,6 +25,7 @@ import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIGNATUR
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.maxBy;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
@@ -90,6 +91,7 @@ public abstract class Downloader<T extends StreamFile> {
     protected final StreamFileReader<T, ?> streamFileReader;
     protected final StreamFileNotifier streamFileNotifier;
     protected final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
+    @VisibleForTesting
     protected final AtomicReference<Optional<T>> lastStreamFile = new AtomicReference<>(Optional.empty());
     protected final S3AsyncClient s3Client;
     private final AddressBookService addressBookService;
@@ -503,7 +505,11 @@ public abstract class Downloader<T extends StreamFile> {
         cloudStorageLatencyMetric.record(Duration.between(consensusEnd, cloudStorageTime));
         downloadLatencyMetric.record(Duration.between(consensusEnd, Instant.now()));
 
-        lastStreamFile.set(Optional.of(streamFile));
+        // Cache a copy of the streamFile with bytes and items set to null so as not to keep them in memory
+        var copy = (T) streamFile.copy();
+        copy.setBytes(null);
+        copy.setItems(null);
+        lastStreamFile.set(Optional.of(copy));
     }
 
     /**

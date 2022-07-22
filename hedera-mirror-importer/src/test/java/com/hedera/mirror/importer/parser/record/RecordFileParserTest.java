@@ -85,8 +85,9 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
 
     @Override
     protected void assertParsed(StreamFile streamFile, boolean parsed, boolean dbError) {
-        RecordFile recordFile = (RecordFile) streamFile;
+        super.assertParsed(streamFile, parsed, dbError);
 
+        RecordFile recordFile = (RecordFile) streamFile;
         if (parsed) {
             verify(recordItemListener).onItem(recordItem);
             verify(recordStreamFileListener).onEnd(recordFile);
@@ -135,7 +136,6 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
         parser.parse(recordFile);
         verifyNoInteractions(recordItemListener);
         verify(recordStreamFileListener).onEnd(recordFile);
-        assertPostParseStreamFile(recordFile, true);
     }
 
     @ParameterizedTest(name = "endDate with offset {0}ns")
@@ -157,7 +157,6 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
             verify(recordItemListener).onItem(firstItem);
         }
         verify(recordStreamFileListener).onEnd(recordFile);
-        assertPostParseStreamFile(recordFile, true);
     }
 
     @Test
@@ -226,7 +225,6 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
             verify(recordItemListener).onItem(firstItem);
         }
         verify(recordStreamFileListener).onEnd(recordFile);
-        assertPostParseStreamFile(recordFile, true);
     }
 
     @Test
@@ -245,8 +243,6 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
         // then
         assertParsed(streamFile1, true, false);
         assertParsed(streamFile2, true, false);
-        assertPostParseStreamFile(streamFile1, true);
-        assertPostParseStreamFile(streamFile2, true);
         verify(recordFileRepository).updateIndex(offset - 1);
     }
 
@@ -265,7 +261,6 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
 
         // then
         assertParsed(streamFile2, true, false);
-        assertPostParseStreamFile(streamFile2, true);
         verify(recordFileRepository).updateIndex(offset - 1);
     }
 
@@ -285,8 +280,6 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
         // then
         assertParsed(streamFile1, true, false);
         assertParsed(streamFile2, true, false);
-        assertPostParseStreamFile(streamFile1, true);
-        assertPostParseStreamFile(streamFile2, true);
         verify(recordFileRepository, never()).updateIndex(anyLong());
     }
 
@@ -304,8 +297,6 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
         // then
         assertParsed(streamFile1, true, false);
         assertParsed(streamFile2, true, false);
-        assertPostParseStreamFile(streamFile1, true);
-        assertPostParseStreamFile(streamFile2, true);
         verify(recordFileRepository, never()).updateIndex(anyLong());
     }
 

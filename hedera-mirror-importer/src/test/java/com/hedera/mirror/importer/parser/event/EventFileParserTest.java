@@ -63,8 +63,9 @@ class EventFileParserTest extends AbstractStreamFileParserTest<EventFileParser> 
 
     @Override
     protected void assertParsed(StreamFile streamFile, boolean parsed, boolean dbError) {
-        EventFile eventFile = (EventFile) streamFile;
+        super.assertParsed(streamFile, parsed, dbError);
 
+        EventFile eventFile = (EventFile) streamFile;
         if (parsed) {
             verify(eventFileRepository).save(eventFile);
         } else {
