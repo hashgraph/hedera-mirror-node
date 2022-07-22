@@ -86,7 +86,7 @@ public class EventFile implements StreamFile<EventItem> {
     private int version;
 
     @Override
-    public StreamFile<EventItem> clone() {
+    public StreamFile<EventItem> copy() {
         return this.toBuilder().build();
     }
 

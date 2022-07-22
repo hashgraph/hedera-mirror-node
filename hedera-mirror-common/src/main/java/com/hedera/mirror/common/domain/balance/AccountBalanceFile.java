@@ -73,7 +73,7 @@ public class AccountBalanceFile implements StreamFile<AccountBalance> {
     private int timeOffset;
 
     @Override
-    public StreamFile<AccountBalance> clone() {
+    public StreamFile<AccountBalance> copy() {
         return this.toBuilder().build();
     }
 
