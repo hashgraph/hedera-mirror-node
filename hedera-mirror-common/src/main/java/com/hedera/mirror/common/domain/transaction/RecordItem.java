@@ -131,13 +131,8 @@ public class RecordItem implements StreamItem {
         previous = null;
     }
 
-    public RecordItem(Version hapiVersion, Transaction transaction, TransactionRecord record) {
-        this(hapiVersion, transaction, record, Collections.emptyList());
-    }
-
-    // Used only in tests, default hapiVersion to RecordFile.HAPI_VERSION_NOT_SET
-    public RecordItem(Transaction transaction, TransactionRecord transactionRecord, List<TransactionSidecarRecord> sidecarRecords) {
-        this(RecordFile.HAPI_VERSION_NOT_SET, transaction, transactionRecord, sidecarRecords);
+    public RecordItem(Version hapiVersion, Transaction transaction, TransactionRecord transactionRecord) {
+        this(hapiVersion, transaction, transactionRecord, Collections.emptyList());
     }
 
     // Used only in tests, default hapiVersion to RecordFile.HAPI_VERSION_NOT_SET and no sidecarRecords

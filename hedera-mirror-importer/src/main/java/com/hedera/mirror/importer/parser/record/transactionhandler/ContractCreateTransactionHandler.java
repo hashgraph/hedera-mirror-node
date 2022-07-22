@@ -107,8 +107,7 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
         }
 
         var sidecarRecords = recordItem.getSidecarRecords();
-        for (int i = 0; i < sidecarRecords.size(); i++) {
-            var sidecar = sidecarRecords.get(i);
+        for (var sidecar : sidecarRecords) {
             if (sidecar.hasBytecode()) {
                 var bytecode = sidecar.getBytecode();
                 if (contract.equalsContractID(bytecode.getContractId())) {

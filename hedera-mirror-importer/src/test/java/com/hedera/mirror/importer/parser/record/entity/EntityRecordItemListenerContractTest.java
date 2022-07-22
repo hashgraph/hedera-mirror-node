@@ -577,7 +577,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         ContractCallTransactionBody contractCallTransactionBody = transactionBody.getContractCall();
 
         var sidecarRecord = recordItemBuilder.transactionSidecarRecord(CONTRACT_ID).build();
-        RecordItem recordItem = new RecordItem(transaction, record, List.of(sidecarRecord));
+        var recordItem = new RecordItem(transaction, record);
+        recordItem.setSidecarRecords(List.of(sidecarRecord));
 
         parseRecordItemAndCommit(recordItem);
 
@@ -842,7 +843,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         var sidecarRecords = recordItemBuilder.transactionSidecarRecord(contractId)
                 .setStateChanges(contractStateChanges);
 
-        var recordItem = new RecordItem(transaction, record, List.of(sidecarRecords.build()));
+        var recordItem = new RecordItem(transaction, record);
+        recordItem.setSidecarRecords(List.of(sidecarRecords.build()));
         parseRecordItemAndCommit(recordItem);
 
         var dbTransaction = getDbTransaction(record.getConsensusTimestamp());
