@@ -504,10 +504,10 @@ public abstract class Downloader<T extends StreamFile> {
         downloadLatencyMetric.record(Duration.between(consensusEnd, Instant.now()));
 
         // Cache a copy of the streamFile with bytes and items set to null so as not to keep them in memory
-        var copy = (T) streamFile.copy();
-        copy.setBytes(null);
-        copy.setItems(null);
-        lastStreamFile.set(Optional.of(copy));
+        var clone = (T) streamFile.clone();
+        clone.setBytes(null);
+        clone.setItems(null);
+        lastStreamFile.set(Optional.of(clone));
     }
 
     /**

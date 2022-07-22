@@ -25,9 +25,9 @@ import reactor.core.publisher.Flux;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 
-public interface StreamFile<T extends StreamItem> {
+public interface StreamFile<T extends StreamItem> extends Cloneable {
 
-    StreamFile<T> copy();
+    StreamFile<T> clone();
 
     byte[] getBytes();
 

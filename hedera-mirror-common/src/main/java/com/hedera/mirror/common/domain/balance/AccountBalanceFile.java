@@ -73,13 +73,13 @@ public class AccountBalanceFile implements StreamFile<AccountBalance> {
     private int timeOffset;
 
     @Override
-    public Long getConsensusEnd() {
-        return consensusTimestamp;
+    public StreamFile<AccountBalance> clone() {
+        return this.toBuilder().build();
     }
 
     @Override
-    public StreamFile<AccountBalance> copy() {
-        return this.toBuilder().build();
+    public Long getConsensusEnd() {
+        return consensusTimestamp;
     }
 
     @Override

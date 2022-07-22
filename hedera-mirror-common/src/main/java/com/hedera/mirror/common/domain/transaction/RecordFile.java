@@ -135,7 +135,7 @@ public class RecordFile implements StreamFile<RecordItem> {
     private int version;
 
     @Override
-    public StreamFile<RecordItem> copy() {
+    public StreamFile<RecordItem> clone() {
         return this.toBuilder().build();
     }
 
