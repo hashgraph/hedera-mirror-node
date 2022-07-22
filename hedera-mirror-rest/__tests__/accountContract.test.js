@@ -18,10 +18,8 @@
  * ‍
  */
 
-'use strict';
-
-const accountContract = require('../accountContract');
-const {assertSqlQueryEqual} = require('./testutils');
+import accountContract from '../accountContract';
+import {assertSqlQueryEqual} from './testutils';
 
 describe('getAccountContractUnionQueryWithOrder', () => {
   test('no order options', () => {

@@ -18,25 +18,18 @@
  * ‍
  */
 
-'use strict';
+import _ from 'lodash';
 
-const _ = require('lodash');
+import BaseService from './baseService';
+import {getResponseLimit} from '../config';
+import {filterKeys, orderFilterValues} from '../constants';
+import EntityId from '../entityId';
+import {NotFoundError} from '../errors';
+import {OrderSpec} from '../sql';
+import {JSONStringify} from '../utils';
+import {Contract, ContractLog, ContractResult, ContractStateChange, Transaction, EthereumTransaction} from '../model';
 
-const constants = require('../constants');
-const Contract = require('../model/contract');
-const {ContractLog, ContractResult, ContractStateChange, Transaction, EthereumTransaction} = require('../model');
-const {
-  response: {
-    limit: {default: defaultLimit},
-  },
-} = require('../config');
-const EntityId = require('../entityId');
-const {NotFoundError} = require('../errors/notFoundError');
-const {orderFilterValues} = require('../constants');
-const {OrderSpec} = require('../sql');
-const {JSONStringify} = require('../utils');
-
-const BaseService = require('./baseService');
+const {default: defaultLimit} = getResponseLimit();
 
 /**
  * Contract retrieval business logic
@@ -117,7 +110,7 @@ class ContractService extends BaseService {
   static contractIdByEvmAddressQuery = `select
     ${Contract.ID}
     from ${Contract.tableName} ${Contract.tableAlias}
-    where deleted <> true`;
+    where ${Contract.DELETED} <> true`;
   static contractByEvmAddressQueryFilters = [
     {
       partName: 'shard',
@@ -134,8 +127,8 @@ class ContractService extends BaseService {
   ];
 
   static contractLogsPaginationColumns = {
-    [constants.filterKeys.TIMESTAMP]: ContractLog.CONSENSUS_TIMESTAMP,
-    [constants.filterKeys.INDEX]: ContractLog.INDEX,
+    [filterKeys.TIMESTAMP]: ContractLog.CONSENSUS_TIMESTAMP,
+    [filterKeys.INDEX]: ContractLog.INDEX,
   };
 
   getContractResultsByIdAndFiltersQuery(whereConditions, whereParams, order, limit) {
@@ -347,8 +340,8 @@ class ContractService extends BaseService {
       return this.getContractIdByEvmAddress(contractIdParts);
     }
 
-    return EntityId.parse(contractIdValue, {paramName: constants.filterKeys.CONTRACTID}).getEncodedId();
+    return EntityId.parse(contractIdValue, {paramName: filterKeys.CONTRACTID}).getEncodedId();
   }
 }
 
-module.exports = new ContractService();
+export default new ContractService();

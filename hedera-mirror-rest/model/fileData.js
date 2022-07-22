@@ -18,9 +18,7 @@
  * ‍
  */
 
-'use strict';
-
-const _ = require('lodash');
+import _ from 'lodash';
 
 class FileData {
   /**
@@ -52,4 +50,4 @@ class FileData {
   }
 }
 
-module.exports = FileData;
+export default FileData;

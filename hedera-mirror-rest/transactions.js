@@ -18,16 +18,15 @@
  * ‍
  */
 
-'use strict';
+import _ from 'lodash';
 
-const _ = require('lodash');
+import * as constants from './constants';
+import EntityId from './entityId';
+import {NotFoundError} from './errors';
+import TransactionId from './transactionId';
+import * as utils from './utils';
 
-const utils = require('./utils');
-const constants = require('./constants');
-const EntityId = require('./entityId');
-const TransactionId = require('./transactionId');
-const {NotFoundError} = require('./errors/notFoundError');
-const {
+import {
   AssessedCustomFee,
   CryptoTransfer,
   NftTransfer,
@@ -35,8 +34,9 @@ const {
   Transaction,
   TransactionResult,
   TransactionType,
-} = require('./model');
-const {AssessedCustomFeeViewModel, NftTransferViewModel} = require('./viewmodel');
+} from './model';
+
+import {AssessedCustomFeeViewModel, NftTransferViewModel} from './viewmodel';
 
 const transactionFields = [
   Transaction.CHARGED_TX_FEE,
@@ -686,23 +686,24 @@ const getTransactionsById = async (req, res) => {
   };
 };
 
-module.exports = {
+const transactions = {
+  createTransferLists,
   getTransactions,
   getTransactionsById,
-  createTransferLists,
-  reqToSql,
-  buildWhereClause,
   getTransactionsInnerQuery,
   getTransactionsOuterQuery,
 };
 
 if (utils.isTestEnv()) {
-  Object.assign(module.exports, {
+  Object.assign(transactions, {
+    buildWhereClause,
     createAssessedCustomFeeList,
     createCryptoTransferList,
     createNftTransferList,
     createTokenTransferList,
-    createTransferLists,
     extractSqlFromTransactionsByIdRequest,
+    reqToSql,
   });
 }
+
+export default transactions;

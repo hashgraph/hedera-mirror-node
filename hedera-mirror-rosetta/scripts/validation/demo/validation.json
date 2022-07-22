@@ -1,10 +1,7 @@
 {
   "network": {
     "blockchain": "Hedera",
-    "network": "demo",
-    "sub_network_identifier": {
-      "network": "shard 0 realm 0"
-    }
+    "network": "demo"
   },
   "online_url": "http://localhost:5700",
   "http_timeout": 15,

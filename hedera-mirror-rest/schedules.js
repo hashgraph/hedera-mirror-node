@@ -18,18 +18,14 @@
  * ‍
  */
 
-'use strict';
+import {getResponseLimit} from './config';
+import * as constants from './constants';
+import EntityId from './entityId';
+import {NotFoundError} from './errors';
+import {SignatureType} from './model';
+import * as utils from './utils';
 
-const {
-  response: {
-    limit: {default: defaultLimit},
-  },
-} = require('./config');
-const constants = require('./constants');
-const EntityId = require('./entityId');
-const {SignatureType} = require('./model');
-const utils = require('./utils');
-const {NotFoundError} = require('./errors/notFoundError');
+const {default: defaultLimit} = getResponseLimit();
 
 const scheduleSelectFields = [
   'e.key',
@@ -258,14 +254,16 @@ const getSchedules = async (req, res) => {
   res.locals[constants.responseDataLabel] = schedulesResponse;
 };
 
-module.exports = {
+const schedules = {
   getScheduleById,
   getSchedules,
 };
 
 if (utils.isTestEnv()) {
-  Object.assign(module.exports, {
+  Object.assign(schedules, {
     extractSqlFromScheduleFilters,
     formatScheduleRow,
   });
 }
+
+export default schedules;

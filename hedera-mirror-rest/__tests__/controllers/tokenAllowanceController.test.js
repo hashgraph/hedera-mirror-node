@@ -18,16 +18,11 @@
  * ‍
  */
 
-'use strict';
+import {getResponseLimit} from '../../config';
+import * as constants from '../../constants';
+import * as utils from '../../utils';
 
-const {
-  response: {
-    limit: {default: defaultLimit},
-  },
-} = require('../../config');
-const constants = require('../../constants');
-const utils = require('../../utils');
-
+const {default: defaultLimit} = getResponseLimit();
 const {
   filterKeys: {SPENDER_ID, TOKEN_ID, ORDER, LIMIT},
 } = constants;
@@ -35,8 +30,8 @@ const {
   opsMap: {eq, gt, gte, lt, lte, ne},
 } = utils;
 
-const Bound = require('../../controllers/bound');
-const {TokenAllowanceController} = require('../../controllers');
+import Bound from '../../controllers/bound';
+import {TokenAllowanceController} from '../../controllers';
 
 const ownerAccountId = BigInt(1);
 

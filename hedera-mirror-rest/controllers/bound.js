@@ -18,11 +18,10 @@
  * ‍
  */
 
-'use strict';
+import _ from 'lodash';
 
-const _ = require('lodash');
-const utils = require('../utils');
-const {InvalidArgumentError} = require('../errors/invalidArgumentError');
+import {InvalidArgumentError} from '../errors';
+import * as utils from '../utils';
 
 /**
  * Holds the filters for query parameters in a multi-column paging query. The parsing logic only allows single
@@ -87,4 +86,4 @@ class Bound {
   }
 }
 
-module.exports = Bound;
+export default Bound;

@@ -58,7 +58,6 @@ import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
-import com.hedera.mirror.test.e2e.acceptance.client.TopicClient;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorAssessedCustomFee;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorCustomFees;
@@ -84,7 +83,6 @@ public class TokenFeature {
     private final TokenClient tokenClient;
     private final AccountClient accountClient;
     private final MirrorNodeClient mirrorClient;
-    private final TopicClient topicClient;
 
     private final List<ExpandedAccountId> recipients = new ArrayList<>();
     private final List<ExpandedAccountId> senders = new ArrayList<>();
@@ -117,14 +115,6 @@ public class TokenFeature {
     @Given("I successfully create a new token with freeze status {int} and kyc status {int}")
     public void createNewToken(int freezeStatus, int kycStatus) {
         createNewToken(RandomStringUtils.randomAlphabetic(4).toUpperCase(), freezeStatus, kycStatus);
-    }
-
-    @Given("I successfully create a new nft")
-    public void createNewNft() {
-        createNewNft(RandomStringUtils.randomAlphabetic(4)
-                        .toUpperCase(), TokenFreezeStatus.FreezeNotApplicable_VALUE,
-                TokenKycStatus.KycNotApplicable_VALUE,
-                TokenSupplyType.INFINITE);
     }
 
     @Given("I successfully create a new nft with supplyType {string}")
@@ -320,55 +310,56 @@ public class TokenFeature {
         verifyTokenPauseStatus(tokenIds.get(0), status);
     }
 
-    @Then("the mirror node REST API should return status {int}")
+    @Then("the mirror node REST API should return the transaction")
     @Retryable(value = {AssertionError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
-    public void verifyMirrorAPIResponses(int status) {
-        verifyTransactions(status);
+    public void verifyMirrorAPIResponses() {
+        verifyTransactions();
     }
 
-    @Then("^the mirror node REST API should return status (.*) for token (:?(.*) )?serial number " +
+    @Then("^the mirror node REST API should return the transaction for token (:?(.*) )?serial number " +
             "(:?(.*) )?transaction flow$")
     @Retryable(value = {AssertionError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
-    public void verifyMirrorNftTransactionsAPIResponses(int status, Integer tokenIndex, Integer serialNumberIndex) {
+    public void verifyMirrorNftTransactionsAPIResponses(Integer tokenIndex, Integer serialNumberIndex) {
         TokenId tokenId = tokenIds.get(getIndexOrDefault(tokenIndex));
         Long serialNumber = tokenSerialNumbers.get(tokenId).get(getIndexOrDefault(serialNumberIndex));
-        verifyTransactions(status);
+        verifyTransactions();
         verifyNftTransactions(tokenId, serialNumber);
     }
 
-    @Then("^the mirror node REST API should return status (.*) for token (:?(.*) )?fund flow$")
+    @Then("^the mirror node REST API should return the transaction for token (:?(.*) )?fund flow$")
     @Retryable(value = {AssertionError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
-    public void verifyMirrorTokenFundFlow(int status, Integer tokenIndex) {
-        verifyMirrorTokenFundFlow(status, tokenIndex, Collections.emptyList());
+    public void verifyMirrorTokenFundFlow(Integer tokenIndex) {
+        verifyMirrorTokenFundFlow(tokenIndex, Collections.emptyList());
     }
 
-    @Then("^the mirror node REST API should return status (.*) for token (:?(.*) )?fund flow with assessed custom " +
+    @Then("^the mirror node REST API should return the transaction for token (:?(.*) )?fund flow with assessed custom" +
+            " " +
             "fees$")
     @Retryable(value = {AssertionError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
-    public void verifyMirrorTokenFundFlow(int status, Integer tokenIndex,
-                                          List<MirrorAssessedCustomFee> assessedCustomFees) {
+    public void verifyMirrorTokenFundFlow(Integer tokenIndex, List<MirrorAssessedCustomFee> assessedCustomFees) {
         TokenId tokenId = tokenIds.get(getIndexOrDefault(tokenIndex));
-        verifyTransactions(status, assessedCustomFees);
+        verifyTransactions(assessedCustomFees);
         verifyToken(tokenId);
         verifyTokenTransfers(tokenId);
     }
 
-    @Then("^the mirror node REST API should return status (.*) for token (:?(.*) )?serial number (:?(.*) )?full flow$")
+    @Then("^the mirror node REST API should return the transaction for token (:?(.*) )?serial number (:?(.*) )?full " +
+            "flow$")
     @Retryable(value = {AssertionError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
-    public void verifyMirrorNftFundFlow(int status, Integer tokenIndex, Integer serialNumberIndex) {
+    public void verifyMirrorNftFundFlow(Integer tokenIndex, Integer serialNumberIndex) {
         TokenId tokenId = tokenIds.get(getIndexOrDefault(tokenIndex));
         Long serialNumber = tokenSerialNumbers.get(tokenId).get(getIndexOrDefault(serialNumberIndex));
-        verifyTransactions(status);
+        verifyTransactions();
         verifyToken(tokenId);
         verifyNft(tokenId, serialNumber);
         verifyNftTransfers(tokenId, serialNumber);
@@ -383,7 +374,7 @@ public class TokenFeature {
         verifyTokenUpdate(tokenIds.get(0));
     }
 
-    @Then("the mirror node REST API should return status {int} for transaction {string}")
+    @Then("the mirror node REST API should return the transaction for transaction {string}")
     @Retryable(value = {AssertionError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
@@ -406,7 +397,7 @@ public class TokenFeature {
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyMirrorTokenWithCustomFeesSchedule(Integer tokenIndex) {
-        MirrorTransaction transaction = verifyTransactions(200);
+        MirrorTransaction transaction = verifyTransactions();
 
         TokenId tokenId = tokenIds.get(getIndexOrDefault(tokenIndex));
         verifyTokenWithCustomFeesSchedule(tokenId, transaction.getConsensusTimestamp());
@@ -560,11 +551,11 @@ public class TokenFeature {
         assertThat(tokenClient.getTokenBalance(receiver, tokenId)).isEqualTo(startingBalance + 1);
     }
 
-    private MirrorTransaction verifyTransactions(int status) {
-        return verifyTransactions(status, Collections.emptyList());
+    private MirrorTransaction verifyTransactions() {
+        return verifyTransactions(Collections.emptyList());
     }
 
-    private MirrorTransaction verifyTransactions(int status, List<MirrorAssessedCustomFee> assessedCustomFees) {
+    private MirrorTransaction verifyTransactions(List<MirrorAssessedCustomFee> assessedCustomFees) {
         String transactionId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
         MirrorTransactionsResponse mirrorTransactionsResponse = mirrorClient.getTransactions(transactionId);
 
@@ -577,10 +568,7 @@ public class TokenFeature {
                 .isEqualTo(networkTransactionResponse.getValidStartString());
         assertThat(mirrorTransaction.getAssessedCustomFees())
                 .containsExactlyInAnyOrderElementsOf(assessedCustomFees);
-
-        if (status == HttpStatus.OK.value()) {
-            assertThat(mirrorTransaction.getResult()).isEqualTo("SUCCESS");
-        }
+        assertThat(mirrorTransaction.getResult()).isEqualTo("SUCCESS");
 
         return mirrorTransaction;
     }

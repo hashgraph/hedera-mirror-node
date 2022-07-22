@@ -18,10 +18,8 @@
  * ‍
  */
 
-'use strict';
-
-const log4js = require('log4js');
-const config = require('../config');
+import path from 'path';
+import {fileURLToPath} from 'url';
 
 const invalidBase32Strs = [
   // A base32 group without padding can have 2, 4, 5, 7 or 8 characters from its alphabet
@@ -69,6 +67,11 @@ const formatSqlQueryString = (query) => {
 
 const getAllAccountAliases = (alias) => [alias, `0.${alias}`, `0.0.${alias}`];
 
+const getBuffer = (inputBytes, defaultBytes) => {
+  return inputBytes != null ? Buffer.from(inputBytes) : defaultBytes;
+};
+
+const getModuleDirname = (importMeta) => path.dirname(fileURLToPath(importMeta.url));
 /**
  * Parse the sql query with positional parameters and an array of corresponding
  * values to extracts the filter clauses of the query (e.g. consensus_timestamp < xyz)
@@ -159,7 +162,7 @@ const parseSqlQueryAndParams = (sqlquery, sqlparams, orderprefix = '') => {
     }
     // Result parameter
     const resultparam = sql.match(/result\s*(!*=)\s*(\d+)/);
-    if (resultparam !== null && resultparam.length == 3) {
+    if (resultparam !== null && resultparam.length === 3) {
       parsedparams.push({
         field: 'result',
         operator: resultparam[1],
@@ -231,43 +234,14 @@ const validateAccNumInArray = function (responseObjects, potentialValues) {
   return true;
 };
 
-const configureLogger = () => {
-  log4js.configure({
-    appenders: {
-      console: {
-        layout: {
-          pattern: '%d{yyyy-MM-ddThh:mm:ss.SSSO} %p %x{requestId} %m',
-          tokens: {
-            requestId: (e) => 'TEST',
-          },
-          type: 'pattern',
-        },
-        type: 'stdout',
-      },
-    },
-    categories: {
-      default: {
-        appenders: ['console'],
-        level: config.log.level,
-      },
-    },
-  });
-  global.logger = log4js.getLogger();
-};
-
-const getBuffer = (inputBytes, defaultBytes) => {
-  return inputBytes != null ? Buffer.from(inputBytes) : defaultBytes;
-};
-
-configureLogger();
-
-module.exports = {
+export {
   assertSqlQueryEqual,
   badParamsList,
   checkSql,
   formatSqlQueryString,
   getAllAccountAliases,
   getBuffer,
+  getModuleDirname,
   invalidBase32Strs,
   parseSqlQueryAndParams,
   testBadParams,

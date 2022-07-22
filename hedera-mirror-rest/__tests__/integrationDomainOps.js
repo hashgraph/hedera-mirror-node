@@ -18,17 +18,15 @@
  * ‍
  */
 
-'use strict';
+import _ from 'lodash';
+import * as math from 'mathjs';
+import pgformat from 'pg-format';
 
-const _ = require('lodash');
-const math = require('mathjs');
-const pgformat = require('pg-format');
-
-const base32 = require('../base32');
-const config = require('../config');
-const constants = require('../constants');
-const EntityId = require('../entityId');
-const testUtils = require('./testutils');
+import base32 from '../base32';
+import config from '../config';
+import * as constants from '../constants';
+import EntityId from '../entityId';
+import * as testUtils from './testutils';
 
 const NETWORK_FEE = 1n;
 const NODE_FEE = 2n;
@@ -36,12 +34,9 @@ const SERVICE_FEE = 4n;
 const DEFAULT_NODE_ID = '3';
 const DEFAULT_TREASURY_ID = '98';
 
-let sqlConnection;
-
 const defaultFileData = '\\x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750';
 
-const setUp = async (testDataJson, sqlconn) => {
-  sqlConnection = sqlconn;
+const setup = async (testDataJson) => {
   await loadAccounts(testDataJson.accounts);
   await loadAddressBooks(testDataJson.addressbooks);
   await loadAddressBookEntries(testDataJson.addressbookentries);
@@ -511,7 +506,7 @@ const addFileData = async (fileDataInput) => {
       ? Buffer.from(fileDataInput.file_data, encoding)
       : Buffer.from(fileData.file_data);
 
-  await sqlConnection.query(
+  await pool.query(
     `insert into file_data (file_data, consensus_timestamp, entity_id, transaction_type)
      values ($1, $2, $3, $4)`,
     [fileData.file_data, fileData.consensus_timestamp, fileData.entity_id, fileData.transaction_type]
@@ -543,7 +538,7 @@ const addAssessedCustomFee = async (assessedCustomFee) => {
     '}',
   ].join('');
 
-  await sqlConnection.query(
+  await pool.query(
     `insert into assessed_custom_fee
      (amount, collector_account_id, consensus_timestamp, effective_payer_account_ids, token_id, payer_account_id)
      values ($1, $2, $3, $4, $5, $6);`,
@@ -565,7 +560,7 @@ const addCustomFee = async (customFee) => {
     netOfTransfers = false;
   }
 
-  await sqlConnection.query(
+  await pool.query(
     `insert into custom_fee (amount,
                              amount_denominator,
                              collector_account_id,
@@ -597,13 +592,13 @@ const addCustomFee = async (customFee) => {
 const setAccountBalance = async (balance) => {
   balance = {timestamp: 0, id: null, balance: 0, realm_num: 0, ...balance};
   const accountId = EntityId.of(BigInt(config.shard), BigInt(balance.realm_num), BigInt(balance.id)).getEncodedId();
-  await sqlConnection.query(
+  await pool.query(
     `INSERT INTO account_balance (consensus_timestamp, account_id, balance)
      VALUES ($1, $2, $3);`,
     [balance.timestamp, accountId, balance.balance]
   );
 
-  await sqlConnection.query(
+  await pool.query(
     `INSERT INTO account_balance_file
      (consensus_timestamp, count, load_start, load_end, name, node_account_id)
      VALUES ($1, $2, $3, $4, $5, $6)
@@ -622,7 +617,7 @@ const setAccountBalance = async (balance) => {
         BigInt(tokenBalance.token_num)
       ).getEncodedId(),
     ]);
-    await sqlConnection.query(
+    await pool.query(
       pgformat(
         'INSERT INTO token_balance (consensus_timestamp, account_id, balance, token_id) VALUES %L',
         tokenBalances
@@ -702,17 +697,17 @@ const insertTransfers = async (
 ) => {
   if (transfers.length === 0 && hasChargedTransactionFee && payerAccountId) {
     // insert default crypto transfers to node and treasury
-    await sqlConnection.query(
+    await pool.query(
       `INSERT INTO ${tableName} (consensus_timestamp, amount, entity_id, payer_account_id, is_approval)
        VALUES ($1, $2, $3, $4, $5);`,
       [consensusTimestamp.toString(), NODE_FEE, nodeAccount || DEFAULT_NODE_ID, payerAccountId, false]
     );
-    await sqlConnection.query(
+    await pool.query(
       `INSERT INTO ${tableName} (consensus_timestamp, amount, entity_id, payer_account_id, is_approval)
        VALUES ($1, $2, $3, $4, $5);`,
       [consensusTimestamp.toString(), NETWORK_FEE, DEFAULT_TREASURY_ID, payerAccountId, false]
     );
-    await sqlConnection.query(
+    await pool.query(
       `INSERT INTO ${tableName} (consensus_timestamp, amount, entity_id, payer_account_id, is_approval)
        VALUES ($1, $2, $3, $4, $5);`,
       [consensusTimestamp.toString(), -(NODE_FEE + NETWORK_FEE), payerAccountId, payerAccountId, false]
@@ -720,7 +715,7 @@ const insertTransfers = async (
   }
 
   for (const transfer of transfers) {
-    await sqlConnection.query(
+    await pool.query(
       `INSERT INTO ${tableName} (consensus_timestamp, amount, entity_id, payer_account_id, is_approval)
        VALUES ($1, $2, $3, $4, $5);`,
       [
@@ -750,7 +745,7 @@ const insertTokenTransfers = async (consensusTimestamp, transfers, payerAccountI
     ];
   });
 
-  await sqlConnection.query(
+  await pool.query(
     pgformat(
       'INSERT INTO token_transfer (consensus_timestamp, token_id, account_id, amount, payer_account_id, is_approval) VALUES %L',
       tokenTransfers
@@ -775,7 +770,7 @@ const insertNftTransfers = async (consensusTimestamp, nftTransferList, payerAcco
     ];
   });
 
-  await sqlConnection.query(
+  await pool.query(
     pgformat(
       'INSERT INTO nft_transfer (consensus_timestamp, receiver_account_id, sender_account_id, serial_number, token_id, payer_account_id, is_approval) VALUES %L',
       nftTransfers
@@ -907,7 +902,7 @@ const addContractLog = async (contractLogInput) => {
   contractLog.topic2 = testUtils.getBuffer(contractLogInput.topic2, contractLog.topic2);
   contractLog.topic3 = testUtils.getBuffer(contractLogInput.topic3, contractLog.topic3);
 
-  await sqlConnection.query(
+  await pool.query(
     `insert into contract_log (${insertFields.join(',')})
      values (${positions})`,
     insertFields.map((name) => contractLog[name])
@@ -1031,7 +1026,7 @@ const addSchedule = async (schedule) => {
     ...schedule,
   };
 
-  await sqlConnection.query(
+  await pool.query(
     `INSERT INTO schedule (consensus_timestamp,
                            creator_account_id,
                            executed_timestamp,
@@ -1055,7 +1050,7 @@ const addSchedule = async (schedule) => {
 };
 
 const addTransactionSignature = async (transactionSignature) => {
-  await sqlConnection.query(
+  await pool.query(
     `INSERT INTO transaction_signature (consensus_timestamp,
                                         public_key_prefix,
                                         entity_id,
@@ -1104,7 +1099,7 @@ const addToken = async (token) => {
     token.modified_timestamp = token.created_timestamp;
   }
 
-  await sqlConnection.query(
+  await pool.query(
     `INSERT INTO token (token_id,
                         created_timestamp,
                         decimals,
@@ -1177,7 +1172,7 @@ const addTokenAccount = async (tokenAccount) => {
     tokenAccount.modified_timestamp = tokenAccount.created_timestamp;
   }
 
-  await sqlConnection.query(
+  await pool.query(
     `INSERT INTO token_account (account_id, associated, automatic_association, created_timestamp, freeze_status,
                                 kyc_status, modified_timestamp, token_id)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`,
@@ -1230,7 +1225,7 @@ const addNft = async (nft) => {
     nft.modified_timestamp = nft.created_timestamp;
   }
 
-  await sqlConnection.query(
+  await pool.query(
     `INSERT INTO nft (account_id, created_timestamp, delegating_spender, deleted, modified_timestamp, metadata, serial_number, spender, token_id)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);`,
     [
@@ -1327,7 +1322,7 @@ const addRecordFile = async (recordFileInput) => {
 
 const insertDomainObject = async (table, fields, obj) => {
   const positions = _.range(1, fields.length + 1).map((position) => `$${position}`);
-  await sqlConnection.query(
+  await pool.query(
     `INSERT INTO ${table} (${fields}) VALUES (${positions});`,
     fields.map((f) => obj[f])
   );
@@ -1337,7 +1332,7 @@ const insertDomainObject = async (table, fields, obj) => {
 // use the history table
 const getTableName = (base, entity) => (entity.timestamp_range.endsWith(',)') ? base : `${base}_history`);
 
-module.exports = {
+export default {
   addAccount,
   addCryptoTransaction,
   addNft,
@@ -1357,5 +1352,5 @@ module.exports = {
   loadContractLogs,
   loadContractStateChanges,
   setAccountBalance,
-  setUp,
+  setup,
 };

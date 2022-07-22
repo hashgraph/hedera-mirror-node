@@ -18,17 +18,13 @@
  * ‍
  */
 
-'use strict';
+import {filterKeys} from '../../constants';
+import {NftService} from '../../service';
+import {assertSqlQueryEqual} from '../testutils';
+import {opsMap} from '../../utils';
 
-const {
-  filterKeys: {SERIAL_NUMBER, SPENDER_ID, TOKEN_ID},
-} = require('../../constants');
-const {
-  opsMap: {eq, gt, gte, lt, lte},
-} = require('../../utils');
-
-const {assertSqlQueryEqual} = require('../testutils');
-const {NftService} = require('../../service');
+const {SERIAL_NUMBER, SPENDER_ID, TOKEN_ID} = filterKeys;
+const {eq, gt, gte, lt, lte} = opsMap;
 
 describe('getQuery', () => {
   const defaultQuery = {

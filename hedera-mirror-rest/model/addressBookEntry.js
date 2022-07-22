@@ -18,16 +18,12 @@
  * ‍
  */
 
-'use strict';
-
-const _ = require('lodash');
-
 class AddressBookEntry {
   /**
    * Parses address_book_entry table columns into object
    */
   constructor(addressBookEntry) {
-    // explicitly assign properties to restict properties and allow for composition in other models
+    // explicitly assign properties to restrict properties and allow for composition in other models
     this.consensusTimestamp = addressBookEntry.consensus_timestamp;
     this.description = addressBookEntry.description;
     this.memo = addressBookEntry.memo;
@@ -61,4 +57,4 @@ class AddressBookEntry {
   }
 }
 
-module.exports = AddressBookEntry;
+export default AddressBookEntry;

@@ -23,6 +23,7 @@ package config
 import (
 	"bytes"
 	_ "embed"
+	"fmt"
 	"os"
 	"reflect"
 	"strings"
@@ -42,6 +43,7 @@ const (
 	configTypeYaml  = "yml"
 	envKeyDelimiter = "_"
 	keyDelimiter    = "::"
+	nodesEnvKey     = "HEDERA_MIRROR_ROSETTA_NODES"
 )
 
 type fullConfig struct {
@@ -54,6 +56,11 @@ type fullConfig struct {
 
 // LoadConfig loads configuration from yaml files and env variables
 func LoadConfig() (*Config, error) {
+	nodeMap, err := loadNodeMapFromEnv()
+	if err != nil {
+		return nil, err
+	}
+
 	// NodeMap's key has '.', set viper key delimiter to avoid parsing it as a nested key
 	v := viper.NewWithOptions(viper.KeyDelimiter(keyDelimiter))
 	v.SetConfigType(configTypeYaml)
@@ -88,12 +95,37 @@ func LoadConfig() (*Config, error) {
 	}
 
 	rosettaConfig := &config.Hedera.Mirror.Rosetta
+	if len(nodeMap) != 0 {
+		rosettaConfig.Nodes = nodeMap
+	}
+
 	var password = rosettaConfig.Db.Password
 	rosettaConfig.Db.Password = "<omitted>"
 	log.Infof("Using configuration: %+v", rosettaConfig)
 	rosettaConfig.Db.Password = password
 
 	return rosettaConfig, nil
+}
+
+func loadNodeMapFromEnv() (NodeMap, error) {
+	nodeValue := os.Getenv(nodesEnvKey)
+	os.Unsetenv(nodesEnvKey)
+	if nodeValue == "" {
+		return nil, nil
+	}
+
+	nodeInfoMap := make(map[string]interface{})
+	for _, node := range strings.Split(nodeValue, ",") {
+		parts := strings.Split(strings.TrimSpace(node), ":")
+		if len(parts) != 3 {
+			return nil, errors.Errorf("Invalid node string %s", node)
+		}
+
+		nodeInfoMap[fmt.Sprintf("%s:%s", parts[0], parts[1])] = parts[2]
+	}
+
+	nodeMap, err := nodeMapDecodeHookFunc(reflect.TypeOf(nodeInfoMap), reflect.TypeOf(NodeMap{}), nodeInfoMap)
+	return nodeMap.(NodeMap), err
 }
 
 func mergeExternalConfigFile(v *viper.Viper) error {
@@ -120,16 +152,17 @@ func nodeMapDecodeHookFunc(from, to reflect.Type, data interface{}) (interface{}
 		return nil, errors.Errorf("Invalid data type for NodeMap")
 	}
 
+	var zeroNodeMap NodeMap
 	nodeMap := make(NodeMap)
 	for key, nodeAccountId := range input {
 		nodeAccountIdStr, ok := nodeAccountId.(string)
 		if !ok {
-			return nil, errors.Errorf("Invalid data type for node account ID")
+			return zeroNodeMap, errors.Errorf("Invalid data type for node account ID")
 		}
 
 		accountId, err := hedera.AccountIDFromString(nodeAccountIdStr)
 		if err != nil {
-			return nil, err
+			return zeroNodeMap, err
 		}
 
 		nodeMap[key] = accountId

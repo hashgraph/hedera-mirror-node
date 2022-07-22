@@ -18,8 +18,6 @@
  * ‍
  */
 
-'use strict';
-
 const FileDecodeErrorMessage =
   'Failed to decode file contents. Ensure timestamp filters cover the complete file create/update and append transactions';
 
@@ -33,4 +31,4 @@ class FileDecodeError extends Error {
   }
 }
 
-module.exports = FileDecodeError;
+export default FileDecodeError;

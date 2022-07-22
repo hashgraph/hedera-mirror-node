@@ -18,9 +18,7 @@
  * ‍
  */
 
-'use strict';
-
-const {TopicMessageViewModel} = require('../../viewmodel');
+import {TopicMessageViewModel} from '../../viewmodel';
 
 describe('topicMessageViewModel tests', () => {
   test('Basic topic message', () => {

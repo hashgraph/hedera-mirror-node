@@ -18,10 +18,8 @@
  * ‍
  */
 
-'use strict';
-
-const StateProofHandler = require('../stateProofHandler');
-const {readJSONFile} = require('../utils');
+import StateProofHandler from '../stateProofHandler';
+import {readJSONFile} from '../utils';
 
 describe('stateproof sample test', () => {
   test('transaction 0.0.94139-1570800748-313194300 in v2 sample json', () => {

@@ -18,9 +18,7 @@
  * ‍
  */
 
-'use strict';
-
-const _ = require('lodash');
+import _ from 'lodash';
 
 /**
  * Base service class that other services should inherit from for their retrieval business logic
@@ -110,4 +108,4 @@ class BaseService {
   }
 }
 
-module.exports = BaseService;
+export default BaseService;

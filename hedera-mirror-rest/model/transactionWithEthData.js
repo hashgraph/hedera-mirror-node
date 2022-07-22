@@ -18,9 +18,7 @@
  * ‍
  */
 
-'use strict';
-
-const Transaction = require('./transaction');
+import Transaction from './transaction';
 
 class TransactionWithEthData extends Transaction {
   /**
@@ -45,4 +43,4 @@ class TransactionWithEthData extends Transaction {
   }
 }
 
-module.exports = TransactionWithEthData;
+export default TransactionWithEthData;

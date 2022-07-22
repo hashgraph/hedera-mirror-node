@@ -18,14 +18,11 @@
  * ‍
  */
 
-'use strict';
+import _ from 'lodash';
+import {proto} from '@hashgraph/proto';
 
-const _ = require('lodash');
-const {
-  proto: {HederaFunctionality},
-} = require('@hashgraph/proto');
-const utils = require('../utils');
-const constants = require('../constants');
+import {orderFilterValues} from '../constants';
+import {convertGasPriceToTinyBars, nsToSecNs} from '../utils';
 
 /**
  * Fee schedule view model
@@ -34,9 +31,9 @@ class FeeScheduleViewModel {
   static currentLabel = 'current_';
   static nextLabel = 'next_';
   static enabledTxTypesMap = {
-    [HederaFunctionality.ContractCall]: 'ContractCall',
-    [HederaFunctionality.ContractCreate]: 'ContractCreate',
-    [HederaFunctionality.EthereumTransaction]: 'EthereumTransaction',
+    [proto.HederaFunctionality.ContractCall]: 'ContractCall',
+    [proto.HederaFunctionality.ContractCreate]: 'ContractCreate',
+    [proto.HederaFunctionality.EthereumTransaction]: 'EthereumTransaction',
   };
   /**
    * Constructs fee schedule view model
@@ -59,7 +56,7 @@ class FeeScheduleViewModel {
       .map(({fees, hederaFunctionality}) => {
         const fee = _.first(fees);
         const gasPrice = _.result(fee, 'servicedata.gas.toNumber');
-        const tinyBars = utils.convertGasPriceToTinyBars(gasPrice, hbarRate, centRate);
+        const tinyBars = convertGasPriceToTinyBars(gasPrice, hbarRate, centRate);
 
         // make sure the gas price is converted successfully, otherwise something is wrong with gasPrice or exchange rate, so skip the current fee
         if (_.isNil(tinyBars)) {
@@ -74,12 +71,12 @@ class FeeScheduleViewModel {
       .filter((f) => !_.isNil(f))
       .sort((curr, next) => {
         // localCompare by default sorts the array in ascending order, so when its multiplied by -1 the sort order is reversed
-        const sortOrder = order.toLowerCase() === constants.orderFilterValues.ASC ? 1 : -1;
+        const sortOrder = order.toLowerCase() === orderFilterValues.ASC ? 1 : -1;
         return curr.transaction_type.localeCompare(next.transaction_type) * sortOrder;
       });
 
-    this.timestamp = utils.nsToSecNs(feeSchedule.timestamp);
+    this.timestamp = nsToSecNs(feeSchedule.timestamp);
   }
 }
 
-module.exports = FeeScheduleViewModel;
+export default FeeScheduleViewModel;

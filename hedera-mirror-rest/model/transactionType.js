@@ -18,10 +18,8 @@
  * ‍
  */
 
-'use strict';
-
-const _ = require('lodash');
-const {InvalidArgumentError} = require('../errors/invalidArgumentError');
+import _ from 'lodash';
+import {InvalidArgumentError} from '../errors';
 
 const protoToName = {
   7: 'CONTRACTCALL',
@@ -71,12 +69,18 @@ const protoToName = {
   52: 'PRNG',
 };
 
+// Temporary extra mappings until we can update the hashgraph proto dependency with the latest types
+const custom = {
+  UTILPRNG: 52,
+};
+
 const UNKNOWN = 'UNKNOWN';
 
+const protoToCustom = _.invert(custom);
 const nameToProto = _.invert(protoToName);
 
 const getName = (protoId) => {
-  return protoToName[protoId] || UNKNOWN;
+  return protoToCustom[protoId] || protoToName[protoId] || UNKNOWN;
 };
 
 const getProtoId = (name) => {
@@ -84,10 +88,17 @@ const getProtoId = (name) => {
     throw new InvalidArgumentError(`Invalid argument ${name} is not a string`);
   }
 
-  const type = nameToProto[name.toUpperCase()];
+  const nameUpper = name.toUpperCase();
+  let type = nameToProto[nameUpper];
+
   if (!type) {
-    throw new InvalidArgumentError(`Invalid transaction type ${name.toUpperCase()}`);
+    type = custom[nameUpper];
+
+    if (!type) {
+      throw new InvalidArgumentError(`Invalid transaction type ${nameUpper}`);
+    }
   }
+
   return type;
 };
 
@@ -95,10 +106,12 @@ const isValid = (name) => {
   if (!_.isString(name)) {
     return false;
   }
-  return nameToProto[name.toUpperCase()] !== undefined;
+
+  const nameUpper = name.toUpperCase();
+  return nameToProto[nameUpper] !== undefined || custom[nameUpper] !== undefined;
 };
 
-module.exports = {
+export default {
   isValid,
   getName,
   getProtoId,

@@ -18,11 +18,9 @@
  * ‍
  */
 
-'use strict';
-
-const {AddressBook, AddressBookEntry, AddressBookServiceEndpoint, NetworkNode, NodeStake} = require('../model');
-const BaseService = require('./baseService');
-const {OrderSpec} = require('../sql');
+import BaseService from './baseService';
+import {AddressBook, AddressBookEntry, AddressBookServiceEndpoint, NetworkNode, NodeStake} from '../model';
+import {OrderSpec} from '../sql';
 
 /**
  * Network node business model
@@ -54,7 +52,9 @@ class NetworkNodeService extends BaseService {
       ${NodeStake.getFullName(NodeStake.MAX_STAKE)},
       ${NodeStake.getFullName(NodeStake.MIN_STAKE)},
       ${NodeStake.getFullName(NodeStake.REWARD_RATE)},
-      ${NodeStake.getFullName(NodeStake.STAKE)},
+      coalesce(${NodeStake.getFullName(NodeStake.STAKE)}, ${AddressBookEntry.getFullName(
+    AddressBookEntry.STAKE
+  )}) as stake,
       ${NodeStake.getFullName(NodeStake.STAKE_NOT_REWARDED)},
       ${NodeStake.getFullName(NodeStake.STAKE_REWARDED)},
       ${NodeStake.getFullName(NodeStake.STAKE_TOTAL)},
@@ -97,4 +97,4 @@ class NetworkNodeService extends BaseService {
   };
 }
 
-module.exports = new NetworkNodeService();
+export default new NetworkNodeService();

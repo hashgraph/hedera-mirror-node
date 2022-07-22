@@ -18,9 +18,7 @@
  * ‍
  */
 
-'use strict';
-
-const {ContractLogViewModel} = require('../../viewmodel');
+import {ContractLogViewModel} from '../../viewmodel';
 
 describe('ContractLogViewModel', () => {
   const hexArray = Array(18).fill(0x00).concat(0x12, 0x34);

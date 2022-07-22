@@ -18,10 +18,8 @@
  * ‍
  */
 
-'use strict';
-
-const base32 = require('./base32');
-const {InvalidArgumentError} = require('./errors/invalidArgumentError');
+import base32 from './base32';
+import {InvalidArgumentError} from './errors';
 
 // limit the alias to the base32 alphabet excluding padding, other checks will be done in base32.decode. We need
 // the check here because base32.decode allows lower case letters, padding, and auto corrects some typos.
@@ -83,4 +81,4 @@ class AccountAlias {
   }
 }
 
-module.exports = AccountAlias;
+export default AccountAlias;

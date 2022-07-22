@@ -18,9 +18,7 @@
  * ‍
  */
 
-'use strict';
-
-const constants = require('../constants');
+import {filterKeys} from '../constants';
 
 class Transaction {
   static tableAlias = 't';
@@ -44,7 +42,7 @@ class Transaction {
   static VALID_START_NS = `valid_start_ns`;
   static INDEX = `index`;
   static FILTER_MAP = {
-    [constants.filterKeys.TIMESTAMP]: Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP),
+    [filterKeys.TIMESTAMP]: Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP),
   };
 
   /**
@@ -82,4 +80,4 @@ class Transaction {
   }
 }
 
-module.exports = Transaction;
+export default Transaction;
