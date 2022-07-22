@@ -177,9 +177,12 @@ func main() {
 	network := &rTypes.NetworkIdentifier{
 		Blockchain: types.Blockchain,
 		Network:    strings.ToLower(rosettaConfig.Network),
-		SubNetworkIdentifier: &rTypes.SubNetworkIdentifier{
+	}
+
+	if rosettaConfig.Feature.SubNetworkIdentifier {
+		network.SubNetworkIdentifier = &rTypes.SubNetworkIdentifier{
 			Network: fmt.Sprintf("shard %d realm %d", rosettaConfig.Shard, rosettaConfig.Realm),
-		},
+		}
 	}
 
 	version := &rTypes.Version{

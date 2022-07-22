@@ -18,9 +18,7 @@
  * ‍
  */
 
-'use strict';
-
-const {INT_SIZE, LONG_SIZE} = require('./constants');
+import {INT_SIZE, LONG_SIZE} from './constants';
 
 // classId, classVersion
 const STREAM_OBJECT_HEADER_SIZE = LONG_SIZE + INT_SIZE;
@@ -62,4 +60,4 @@ class StreamObject {
   }
 }
 
-module.exports = StreamObject;
+export default StreamObject;

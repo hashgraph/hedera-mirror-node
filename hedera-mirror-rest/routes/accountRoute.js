@@ -18,13 +18,11 @@
  * ‍
  */
 
-'use strict';
-
 // external libraries
-const {Router} = require('@awaitjs/express');
+import {Router} from '@awaitjs/express';
 
-const {filterKeys} = require('../constants');
-const {AccountController, CryptoAllowanceController, TokenAllowanceController} = require('../controllers');
+import {filterKeys} from '../constants';
+import {AccountController, CryptoAllowanceController, TokenAllowanceController} from '../controllers';
 
 const router = Router();
 
@@ -35,7 +33,7 @@ router.getAsync(getPath('nfts'), AccountController.getNftsByAccountId);
 router.getAsync(getPath('allowances/crypto'), CryptoAllowanceController.getAccountCryptoAllowances);
 router.getAsync(getPath('allowances/tokens'), TokenAllowanceController.getAccountTokenAllowances);
 
-module.exports = {
+export default {
   resource,
   router,
 };

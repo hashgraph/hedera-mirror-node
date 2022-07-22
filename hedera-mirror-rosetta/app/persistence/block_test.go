@@ -464,6 +464,16 @@ func (suite *blockRepositorySuite) TestRetrieveGenesis() {
 	// then
 	assert.Nil(suite.T(), err)
 	assert.Equal(suite.T(), expectedGenesisBlock, actual)
+
+	// given blocks are deleted
+	db.ExecSql(dbClient, truncateRecordFileSql)
+
+	// when
+	actual, err = repo.RetrieveGenesis(defaultContext)
+
+	// then RetrieveGenesis returns the cached block info
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), expectedGenesisBlock, actual)
 }
 
 func (suite *blockRepositorySuite) TestRetrieveGenesisIndexOverflowInt4() {
@@ -640,7 +650,13 @@ func (suite *blockRepositorySuite) TestRetrieveLatestDbConnectionError() {
 }
 
 func TestRecordFileToBlock(t *testing.T) {
-	genesisConsensusStart := int64(110)
+	genesisBlock := recordBlock{
+		ConsensusStart: 110,
+		ConsensusEnd:   200,
+		Hash:           "hash",
+		Index:          genesisBlockIndex,
+		PrevHash:       "prev_hash",
+	}
 	tests := []struct {
 		name     string
 		input    recordBlock
@@ -660,7 +676,7 @@ func TestRecordFileToBlock(t *testing.T) {
 				Hash:                "hash",
 				ParentIndex:         genesisBlockIndex,
 				ParentHash:          "hash",
-				ConsensusStartNanos: genesisConsensusStart,
+				ConsensusStartNanos: genesisBlock.ConsensusStart,
 				ConsensusEndNanos:   200,
 			},
 		},
@@ -686,7 +702,7 @@ func TestRecordFileToBlock(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, tt.input.ToBlock(genesisConsensusStart, genesisBlockIndex))
+			assert.Equal(t, tt.expected, tt.input.ToBlock(genesisBlock))
 		})
 	}
 }

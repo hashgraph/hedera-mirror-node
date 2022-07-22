@@ -18,10 +18,10 @@
  * ‍
  */
 
-const _ = require('lodash');
+import _ from 'lodash';
 
-const AccountAlias = require('../accountAlias');
-const {getAllAccountAliases, invalidBase32Strs} = require('./testutils');
+import AccountAlias from '../accountAlias';
+import {getAllAccountAliases, invalidBase32Strs} from './testutils';
 
 describe('AccountAlias', () => {
   describe('fromString', () => {

@@ -18,11 +18,9 @@
  * ‍
  */
 
-'use strict';
-
-const CompactRecordFile = require('./compactRecordFile');
-const FullRecordFile = require('./fullRecordFile');
-const RecordFile = require('./recordFile');
+import CompactRecordFile from './compactRecordFile';
+import FullRecordFile from './fullRecordFile';
+import RecordFile from './recordFile';
 
 const delegates = [CompactRecordFile, FullRecordFile];
 
@@ -71,4 +69,4 @@ class CompositeRecordFile extends RecordFile {
   }
 }
 
-module.exports = CompositeRecordFile;
+export default CompositeRecordFile;

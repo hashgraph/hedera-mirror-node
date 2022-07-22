@@ -18,14 +18,11 @@
  * ‍
  */
 
-'use strict';
-
-// external libraries
-const AbortController = require('abort-controller');
-const fs = require('fs');
-const log4js = require('log4js');
-const fetch = require('node-fetch');
-const path = require('path');
+import AbortController from 'abort-controller';
+import fs from 'fs';
+import log4js from 'log4js';
+import fetch from 'node-fetch';
+import path from 'path';
 
 const logger = log4js.getLogger();
 
@@ -78,9 +75,4 @@ const getAPIResponse = async (url) => {
 
 const readJSONFile = (filePath) => JSON.parse(fs.readFileSync(filePath, 'utf-8'));
 
-module.exports = {
-  getAPIResponse,
-  makeStateProofDir,
-  readJSONFile,
-  storeFile,
-};
+export {getAPIResponse, makeStateProofDir, readJSONFile, storeFile};

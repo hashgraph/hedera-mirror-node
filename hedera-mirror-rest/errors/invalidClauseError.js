@@ -18,8 +18,6 @@
  * ‍
  */
 
-'use strict';
-
 const InvalidClauseErrorMessage = 'Invalid clause produced after parsing query parameters';
 
 class InvalidClauseError extends Error {
@@ -29,6 +27,4 @@ class InvalidClauseError extends Error {
   }
 }
 
-module.exports = {
-  InvalidClauseError,
-};
+export default InvalidClauseError;

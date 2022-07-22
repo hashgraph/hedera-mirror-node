@@ -18,9 +18,7 @@
  * ‍
  */
 
-'use strict';
-
-const utils = require('../utils');
+import {addHexPrefix, nsToSecNs, toHexString} from '../utils';
 
 /**
  * Block view model
@@ -34,18 +32,18 @@ class BlockViewModel {
   constructor(recordFile) {
     this.count = recordFile.count;
     this.hapi_version = recordFile.getFullHapiVersion();
-    this.hash = utils.addHexPrefix(recordFile.hash);
+    this.hash = addHexPrefix(recordFile.hash);
     this.name = recordFile.name;
     this.number = recordFile.index;
-    this.previous_hash = utils.addHexPrefix(recordFile.prevHash);
+    this.previous_hash = addHexPrefix(recordFile.prevHash);
     this.size = recordFile.size;
     this.timestamp = {
-      from: utils.nsToSecNs(recordFile.consensusStart),
-      to: utils.nsToSecNs(recordFile.consensusEnd),
+      from: nsToSecNs(recordFile.consensusStart),
+      to: nsToSecNs(recordFile.consensusEnd),
     };
     this.gas_used = recordFile.gasUsed === -1 ? null : recordFile.gasUsed;
-    this.logs_bloom = recordFile.logsBloom ? utils.toHexString(recordFile.logsBloom, true, 512) : null;
+    this.logs_bloom = recordFile.logsBloom ? toHexString(recordFile.logsBloom, true, 512) : null;
   }
 }
 
-module.exports = BlockViewModel;
+export default BlockViewModel;

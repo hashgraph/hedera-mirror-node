@@ -18,23 +18,21 @@
  * ‍
  */
 
-'use strict';
+import _ from 'lodash';
 
-const _ = require('lodash');
-
-const {Nft} = require('../model');
-const BaseService = require('./baseService');
-const {OrderSpec} = require('../sql');
-const constants = require('../constants');
+import BaseService from './baseService';
+import {filterKeys} from '../constants';
+import {Nft} from '../model';
+import {OrderSpec} from '../sql';
 
 /**
  * Nft business model
  */
 class NftService extends BaseService {
   static columns = {
-    [constants.filterKeys.TOKEN_ID]: Nft.TOKEN_ID,
-    [constants.filterKeys.SERIAL_NUMBER]: Nft.SERIAL_NUMBER,
-    [constants.filterKeys.SPENDER_ID]: Nft.SPENDER,
+    [filterKeys.TOKEN_ID]: Nft.TOKEN_ID,
+    [filterKeys.SERIAL_NUMBER]: Nft.SERIAL_NUMBER,
+    [filterKeys.SPENDER_ID]: Nft.SPENDER,
   };
 
   static nftByIdQuery = `select * from nft where ${Nft.TOKEN_ID} = $1 and ${Nft.SERIAL_NUMBER} = $2`;
@@ -156,4 +154,4 @@ class NftService extends BaseService {
   }
 }
 
-module.exports = new NftService();
+export default new NftService();

@@ -18,13 +18,18 @@
  * ‍
  */
 
-'use strict';
+import AccountController from './accountController';
+import ContractController from './contractController';
+import CryptoAllowanceController from './cryptoAllowanceController';
+import NetworkController from './networkController';
+import TokenAllowanceController from './tokenAllowanceController';
+import BlockController from './blockController';
 
-module.exports = {
-  AccountController: require('./accountController'),
-  ContractController: require('./contractController'),
-  CryptoAllowanceController: require('./cryptoAllowanceController'),
-  NetworkController: require('./networkController'),
-  TokenAllowanceController: require('./tokenAllowanceController'),
-  BlockController: require('./blockController'),
+export {
+  AccountController,
+  ContractController,
+  CryptoAllowanceController,
+  NetworkController,
+  TokenAllowanceController,
+  BlockController,
 };

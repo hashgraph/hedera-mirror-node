@@ -18,19 +18,19 @@
  * ‍
  */
 
-'use strict';
+import config from '../config';
+import {requestStartTime, responseDataLabel} from '../constants';
+import {NotFoundError} from '../errors';
+import {JSONStringify} from '../utils';
 
 const {
   response: {headers},
-} = require('../config');
-const constants = require('../constants');
-const {NotFoundError} = require('../errors/notFoundError');
-const {JSONStringify} = require('../utils');
+} = config;
 
 // response middleware that pulls response data passed through request and sets in json response
 // next param is required to ensure express maps to this middleware and can also be used to pass onto future middleware
 const responseHandler = async (req, res, next) => {
-  const responseData = res.locals[constants.responseDataLabel];
+  const responseData = res.locals[responseDataLabel];
   if (responseData === undefined) {
     // unmatched route will have no response data, pass NotFoundError to next middleware
     throw new NotFoundError();
@@ -44,12 +44,10 @@ const responseHandler = async (req, res, next) => {
     res.set('Content-Type', 'application/json');
     res.send(JSONStringify(responseData));
 
-    const startTime = res.locals[constants.requestStartTime];
+    const startTime = res.locals[requestStartTime];
     const elapsed = startTime ? Date.now() - startTime : 0;
     logger.info(`${req.ip} ${req.method} ${req.originalUrl} in ${elapsed} ms: ${code}`);
   }
 };
 
-module.exports = {
-  responseHandler,
-};
+export default responseHandler;

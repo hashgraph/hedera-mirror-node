@@ -18,14 +18,19 @@
  * ‍
  */
 
-'use strict';
+import {DbError, NotFoundError} from './errors';
 
-const {DbError} = require('./errors/dbError');
-const {NotFoundError} = require('./errors/notFoundError');
+const readinessQuery = 'select true from address_book limit 1';
 
-const readinessQuery = `select true
-                        from address_book
-                        limit 1;`;
+/**
+ * Allows for a graceful shutdown.
+ *
+ * @returns {Promise<*>}
+ */
+const beforeShutdown = async () => {
+  logger.info(`Closing connection pool`);
+  return pool.end();
+};
 
 /**
  * Function to determine readiness of application.
@@ -52,18 +57,8 @@ const readinessCheck = async () => {
  */
 const livenessCheck = async () => {};
 
-/**
- * Allows for a graceful shutdown.
- *
- * @returns {Promise<*>}
- */
-const beforeShutdown = async () => {
-  logger.info(`Closing connection pool`);
-  return pool.end();
-};
-
-module.exports = {
-  readinessCheck,
-  livenessCheck,
+export default {
   beforeShutdown,
+  livenessCheck,
+  readinessCheck,
 };

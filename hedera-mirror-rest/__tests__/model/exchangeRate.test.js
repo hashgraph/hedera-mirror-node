@@ -18,11 +18,10 @@
  * ‍
  */
 
-'use strict';
+import {FileDecodeError} from '../../errors';
 
-const {FileDecodeError} = require('../../errors/fileDecodeError');
 // models
-const {ExchangeRate} = require('../../model');
+import {ExchangeRate} from '../../model';
 
 describe('exchange rate proto parse', () => {
   const input = {
@@ -48,5 +47,51 @@ describe('exchange rate proto parse', () => {
     expect(() => new ExchangeRate({file_data: Buffer.from('123456', 'hex'), consensus_timestamp: 1})).toThrowError(
       FileDecodeError
     );
+  });
+
+  test('64 bits positive expiration time', () => {
+    const res = new ExchangeRate({
+      file_data: Buffer.from('0a1408b0ea0110cac1181a0a089ec184d7c7c2eba301121008b0ea0110e18e191a0608b0bdd09306', 'hex'),
+      consensus_timestamp: 1651770056616171001,
+    });
+
+    expect(res.timestamp).toEqual(1651770056616171001);
+    expect(res.current_expiration).toEqual(92233720368537758);
+  });
+
+  test('64 bits negative expiration time', () => {
+    const res = new ExchangeRate({
+      file_data: Buffer.from(
+        '0a1508b0ea0110cac1181a0b08e2befba8b8bd94dcfe01121008b0ea0110e18e191a0608b0bdd09306',
+        'hex'
+      ),
+      consensus_timestamp: 1651770056616171002,
+    });
+
+    expect(res.timestamp).toEqual(1651770056616171002);
+    expect(res.current_expiration).toEqual(-92233720368537758);
+  });
+
+  test('32 bits positive expiration time', () => {
+    const res = new ExchangeRate({
+      file_data: Buffer.from('0a1008b0ea0110cac1181a060880bc8dfc05121008b0ea0110e18e191a0608b0bdd09306', 'hex'),
+      consensus_timestamp: 1651770056616171003,
+    });
+
+    expect(res.timestamp).toEqual(1651770056616171003);
+    expect(res.current_expiration).toEqual(1602444800);
+  });
+
+  test('32 bits negative expiration time', () => {
+    const res = new ExchangeRate({
+      file_data: Buffer.from(
+        '0a1508b0ea0110cac1181a0b0880c4f283faffffffff01121008b0ea0110e18e191a0608b0bdd09306',
+        'hex'
+      ),
+      consensus_timestamp: 1651770056616171004,
+    });
+
+    expect(res.timestamp).toEqual(1651770056616171004);
+    expect(res.current_expiration).toEqual(-1602444800);
   });
 });

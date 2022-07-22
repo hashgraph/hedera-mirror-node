@@ -18,11 +18,9 @@
  * ‍
  */
 
-'use strict';
-
-const _ = require('lodash');
-const {proto} = require('@hashgraph/proto');
-const {FileDecodeError} = require('../errors/fileDecodeError');
+import _ from 'lodash';
+import {proto} from '@hashgraph/proto';
+import {FileDecodeError} from '../errors';
 
 class FeeSchedule {
   static FEE_DIVISOR_FACTOR = 1000;
@@ -45,4 +43,4 @@ class FeeSchedule {
   }
 }
 
-module.exports = FeeSchedule;
+export default FeeSchedule;

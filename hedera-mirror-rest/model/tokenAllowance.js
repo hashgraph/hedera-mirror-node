@@ -18,9 +18,7 @@
  * ‍
  */
 
-'use strict';
-
-const _ = require('lodash');
+import _ from 'lodash';
 
 class TokenAllowance {
   /**
@@ -55,4 +53,4 @@ class TokenAllowance {
   }
 }
 
-module.exports = TokenAllowance;
+export default TokenAllowance;

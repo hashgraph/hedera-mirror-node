@@ -410,7 +410,7 @@ create table if not exists prng
     pseudorandom_bytes  bytea   null,
     pseudorandom_number integer null
 );
-comment on table prng is 'Pseudo random generates';
+comment on table prng is 'Pseudorandom number generator';
 
 -- record_file
 create table if not exists record_file
@@ -421,7 +421,7 @@ create table if not exists record_file
     count              bigint                 not null,
     digest_algorithm   int                    not null,
     file_hash          character varying(96)  not null,
-    gas_used           bigint default -1,
+    gas_used           bigint                          default -1,
     hapi_version_major int,
     hapi_version_minor int,
     hapi_version_patch int,
@@ -456,15 +456,15 @@ comment on table schedule is 'Schedule entity entries';
 -- sidecar file
 create table if not exists sidecar_file
 (
-  bytes          bytea null,
-  count          int null,
-  consensus_end  bigint not null,
-  hash_algorithm int not null,
-  hash           bytea not null,
-  id             int not null,
-  name           character varying(250) not null,
-  size           int null,
-  types          int[] not null
+    bytes          bytea                  null,
+    count          int                    null,
+    consensus_end  bigint                 not null,
+    hash_algorithm int                    not null,
+    hash           bytea                  not null,
+    id             int                    not null,
+    name           character varying(250) not null,
+    size           int                    null,
+    types          int[]                  not null
 );
 comment on table sidecar_file is 'Sidecar record file';
 

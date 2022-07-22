@@ -18,9 +18,14 @@
  * ‍
  */
 
-'use strict';
+import {jest} from '@jest/globals';
+import {exec} from 'child_process';
 
-const {exec} = require('child_process');
+import integrationDbOps from './integrationDbOps';
+
+// set a large timeout for beforeAll as downloading docker image if not exists can take quite some time. Note
+// it's 12 minutes for CI to workaround possible DockerHub rate limit.
+const defaultBeforeAllTimeoutMillis = process.env.CI ? 12 * 60 * 1000 : 4 * 60 * 1000;
 
 const isDockerInstalled = function () {
   return new Promise((resolve) => {
@@ -30,6 +35,19 @@ const isDockerInstalled = function () {
   });
 };
 
-module.exports = {
-  isDockerInstalled,
+const setupIntegrationTest = () => {
+  jest.setTimeout(40000);
+
+  beforeAll(async () => {
+    await integrationDbOps.flywayMigrate();
+    return integrationDbOps.createPool();
+  }, defaultBeforeAllTimeoutMillis);
+
+  afterAll(async () => pool.end());
+
+  beforeEach(async () => {
+    await integrationDbOps.cleanUp();
+  });
 };
+
+export {defaultBeforeAllTimeoutMillis, isDockerInstalled, setupIntegrationTest};

@@ -18,9 +18,7 @@
  * ‍
  */
 
-'use strict';
-
-const constants = require('../constants');
+import {filterKeys} from '../constants';
 
 class NftTransfer {
   /**
@@ -46,7 +44,7 @@ class NftTransfer {
   static TOKEN_ID = `token_id`;
 
   static FILTER_MAP = {
-    [constants.filterKeys.TIMESTAMP]: NftTransfer.getFullName(NftTransfer.CONSENSUS_TIMESTAMP),
+    [filterKeys.TIMESTAMP]: NftTransfer.getFullName(NftTransfer.CONSENSUS_TIMESTAMP),
   };
 
   /**
@@ -60,4 +58,4 @@ class NftTransfer {
   }
 }
 
-module.exports = NftTransfer;
+export default NftTransfer;
