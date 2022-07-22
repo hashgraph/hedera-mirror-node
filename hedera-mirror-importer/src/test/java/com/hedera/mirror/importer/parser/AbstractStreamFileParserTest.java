@@ -40,8 +40,6 @@ public abstract class AbstractStreamFileParserTest<T extends StreamFileParser> {
 
     protected ParserProperties parserProperties;
 
-    protected abstract void assertParsed(StreamFile streamFile, boolean parsed, boolean dbError);
-
     protected abstract T getParser();
 
     protected abstract StreamFile getStreamFile();
@@ -67,7 +65,6 @@ public abstract class AbstractStreamFileParserTest<T extends StreamFileParser> {
 
         // then
         assertParsed(streamFile, true, false);
-        assertPostParseStreamFile(streamFile, true);
     }
 
     @Test
@@ -81,7 +78,6 @@ public abstract class AbstractStreamFileParserTest<T extends StreamFileParser> {
 
         // then
         assertParsed(streamFile, false, false);
-        assertPostParseStreamFile(streamFile, true);
     }
 
     @Test
@@ -95,7 +91,6 @@ public abstract class AbstractStreamFileParserTest<T extends StreamFileParser> {
 
         // then
         assertParsed(streamFile, false, false);
-        assertPostParseStreamFile(streamFile, true);
     }
 
     @Test
@@ -111,16 +106,10 @@ public abstract class AbstractStreamFileParserTest<T extends StreamFileParser> {
 
         // then
         assertParsed(streamFile, false, true);
-        assertPostParseStreamFile(streamFile, false);
     }
 
-    public void assertPostParseStreamFile(StreamFile streamFile, boolean success) {
-        if (success) {
-            assertThat(streamFile.getBytes()).isNull();
-            assertThat(streamFile.getItems()).isNull();
-        } else {
-            assertThat(streamFile.getBytes()).isNotNull();
-            assertThat(streamFile.getItems()).isNotNull();
-        }
+    protected void assertParsed(StreamFile streamFile, boolean parsed, boolean dbError) {
+        assertThat(streamFile.getBytes()).isNotNull();
+        assertThat(streamFile.getItems()).isNotNull();
     }
 }

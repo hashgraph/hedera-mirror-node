@@ -78,20 +78,21 @@ class AccountBalanceFileParserTest extends IntegrationTest {
     void disabled() {
         // given
         parserProperties.setEnabled(false);
-        AccountBalanceFile accountBalanceFile = accountBalanceFile(1);
+        var accountBalanceFile = accountBalanceFile(1);
+        var items = accountBalanceFile.getItems().collectList().block();
 
         // when
         accountBalanceFileParser.parse(accountBalanceFile);
 
         // then
-        assertAccountBalanceFile(accountBalanceFile, List.of());
+        assertAccountBalanceFileWhenSkipped(accountBalanceFile, items);
     }
 
     @Test
     void success() {
         // given
-        AccountBalanceFile accountBalanceFile = accountBalanceFile(1);
-        List<AccountBalance> items = accountBalanceFile.getItems().collectList().block();
+        var accountBalanceFile = accountBalanceFile(1);
+        var items = accountBalanceFile.getItems().collectList().block();
 
         // when
         accountBalanceFileParser.parse(accountBalanceFile);
@@ -106,8 +107,8 @@ class AccountBalanceFileParserTest extends IntegrationTest {
         // given
         int batchSize = parserProperties.getBatchSize();
         parserProperties.setBatchSize(2);
-        AccountBalanceFile accountBalanceFile = accountBalanceFile(1);
-        List<AccountBalance> items = accountBalanceFile.getItems().collectList().block();
+        var accountBalanceFile = accountBalanceFile(1);
+        var items = accountBalanceFile.getItems().collectList().block();
 
         // when
         accountBalanceFileParser.parse(accountBalanceFile);
@@ -120,9 +121,9 @@ class AccountBalanceFileParserTest extends IntegrationTest {
     @Test
     void duplicateFile() {
         // given
-        AccountBalanceFile accountBalanceFile = accountBalanceFile(1);
-        AccountBalanceFile duplicate = accountBalanceFile(1);
-        List<AccountBalance> items = accountBalanceFile.getItems().collectList().block();
+        var accountBalanceFile = accountBalanceFile(1);
+        var duplicate = accountBalanceFile(1);
+        var items = accountBalanceFile.getItems().collectList().block();
 
         // when
         accountBalanceFileParser.parse(accountBalanceFile);
@@ -136,17 +137,14 @@ class AccountBalanceFileParserTest extends IntegrationTest {
     @Test
     void beforeStartDate() {
         // given
-        AccountBalanceFile accountBalanceFile = accountBalanceFile(-1L);
+        var accountBalanceFile = accountBalanceFile(-1L);
+        var items = accountBalanceFile.getItems().collectList().block();
 
         // when
         accountBalanceFileParser.parse(accountBalanceFile);
 
         // then
-        assertThat(accountBalanceFileRepository.findAll())
-                .usingElementComparatorIgnoringFields("bytes", "items")
-                .containsExactly(accountBalanceFile);
-        assertThat(accountBalanceRepository.count()).isZero();
-        assertAccountBalanceFile(accountBalanceFile, List.of());
+        assertAccountBalanceFileWhenSkipped(accountBalanceFile, items);
     }
 
     @Test
@@ -172,14 +170,33 @@ class AccountBalanceFileParserTest extends IntegrationTest {
                 .flatMap(Collection::stream)
                 .collect(Collectors.toMap(TokenBalance::getId, t -> t, (previous, current) -> previous));
 
-        assertThat(accountBalanceFile.getBytes()).isNull();
-        assertThat(accountBalanceFile.getItems()).isNull();
+        assertThat(accountBalanceFile.getBytes()).isNotNull();
+        assertThat(accountBalanceFile.getItems().collectList().block()).containsExactlyElementsOf(accountBalances);
         assertThat(accountBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(accountBalances);
         assertThat(tokenBalanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokenBalances.values());
 
         if (parserProperties.isEnabled()) {
-            assertThat(accountBalanceFileRepository.findById(accountBalanceFile.getConsensusTimestamp()))
-                    .get()
+            assertThat(accountBalanceFileRepository.findAll())
+                    .hasSize(1)
+                    .first()
+                    .matches(a -> a.getLoadEnd() != null)
+                    .usingRecursiveComparison()
+                    .ignoringFields("bytes", "items", "loadEnd")
+                    .isEqualTo(accountBalanceFile);
+        }
+    }
+
+    void assertAccountBalanceFileWhenSkipped(AccountBalanceFile accountBalanceFile,
+                                             List<AccountBalance> accountBalances) {
+        assertThat(accountBalanceFile.getBytes()).isNotNull();
+        assertThat(accountBalanceFile.getItems().collectList().block()).containsExactlyElementsOf(accountBalances);
+        assertThat(accountBalanceRepository.count()).isZero();
+        assertThat(tokenBalanceRepository.count()).isZero();
+
+        if (parserProperties.isEnabled()) {
+            assertThat(accountBalanceFileRepository.findAll())
+                    .hasSize(1)
+                    .first()
                     .matches(a -> a.getLoadEnd() != null)
                     .usingRecursiveComparison()
                     .ignoringFields("bytes", "items", "loadEnd")

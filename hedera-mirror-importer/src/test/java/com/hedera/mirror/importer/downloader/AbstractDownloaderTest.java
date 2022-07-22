@@ -709,6 +709,17 @@ public abstract class AbstractDownloaderTest {
         for (var extraAssert : extraAsserts) {
             streamFileAssert.allSatisfy(extraAssert::accept);
         }
+
+        if (!files.isEmpty()) {
+            var lastFilename = files.get(files.size() - 1);
+            var lastStreamFile = (Optional<StreamFile>) downloader.lastStreamFile.get();
+            assertThat(lastStreamFile)
+                    .isNotEmpty()
+                    .get()
+                    .returns(null, StreamFile::getBytes)
+                    .returns(null, StreamFile::getItems)
+                    .returns(lastFilename, StreamFile::getName);
+        }
     }
 
     private Instant chooseFileInstant(String choice) {

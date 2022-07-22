@@ -503,7 +503,11 @@ public abstract class Downloader<T extends StreamFile> {
         cloudStorageLatencyMetric.record(Duration.between(consensusEnd, cloudStorageTime));
         downloadLatencyMetric.record(Duration.between(consensusEnd, Instant.now()));
 
-        lastStreamFile.set(Optional.of(streamFile));
+        // Cache a copy of the streamFile with bytes and items set to null so as not to keep them in memory
+        var copy = (T) streamFile.copy();
+        copy.setBytes(null);
+        copy.setItems(null);
+        lastStreamFile.set(Optional.of(copy));
     }
 
     /**
