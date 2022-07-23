@@ -319,7 +319,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         TransactionRecord record = getContractTransactionRecord(transactionBody, ContractTransactionType.UPDATE);
         ContractUpdateTransactionBody contractUpdateTransactionBody = transactionBody.getContractUpdateInstance();
 
-        parseRecordItemAndCommit(new RecordItem(transaction, record));
+        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
@@ -354,7 +354,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         TransactionRecord record = getContractTransactionRecord(transactionBody, ContractTransactionType.UPDATE);
         ContractUpdateTransactionBody contractUpdateTransactionBody = transactionBody.getContractUpdateInstance();
 
-        parseRecordItemAndCommit(new RecordItem(transaction, record));
+        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
@@ -378,7 +378,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         TransactionRecord record = getContractTransactionRecord(transactionBody, ContractTransactionType.UPDATE);
         ContractUpdateTransactionBody contractUpdateTransactionBody = transactionBody.getContractUpdateInstance();
 
-        parseRecordItemAndCommit(new RecordItem(transaction, record));
+        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
@@ -400,7 +400,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = getContractTransactionRecord(transactionBody, ContractTransactionType.UPDATE);
 
-        parseRecordItemAndCommit(new RecordItem(transaction, record));
+        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
 
         var dbTransaction = getDbTransaction(record.getConsensusTimestamp());
         assertAll(
@@ -420,7 +420,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         TransactionRecord record = getContractTransactionRecord(transactionBody, ContractTransactionType.UPDATE);
         ContractUpdateTransactionBody contractUpdateTransactionBody = transactionBody.getContractUpdateInstance();
 
-        parseRecordItemAndCommit(new RecordItem(transaction, record));
+        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
@@ -444,7 +444,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         TransactionRecord record = getContractTransactionRecord(transactionBody,
                 ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE,
                 ContractTransactionType.UPDATE);
-        RecordItem recordItem = new RecordItem(transaction, record);
+        RecordItem recordItem = RecordItem.builder().record(record).transaction(transaction).build();
 
         parseRecordItemAndCommit(recordItem);
 
@@ -466,7 +466,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         Transaction transaction = contractDeleteTransaction(setupResult.protoContractId, permanentRemoval);
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = getContractTransactionRecord(transactionBody, ContractTransactionType.DELETE);
-        RecordItem recordItem = new RecordItem(transaction, record);
+        RecordItem recordItem = RecordItem.builder().record(record).transaction(transaction).build();
 
         parseRecordItemAndCommit(recordItem);
 
@@ -499,7 +499,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         Transaction transaction = contractDeleteTransaction(setupResult.protoContractId, false);
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = getContractTransactionRecord(transactionBody, ContractTransactionType.DELETE);
-        RecordItem recordItem = new RecordItem(transaction, record);
+        RecordItem recordItem = RecordItem.builder().record(record).transaction(transaction).build();
 
         parseRecordItemAndCommit(recordItem);
         Contract contract = getTransactionEntity(record.getConsensusTimestamp());
@@ -530,7 +530,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         Transaction transaction = contractDeleteTransaction(setupResult.protoContractId, false);
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = getContractTransactionRecord(transactionBody, ContractTransactionType.DELETE);
-        RecordItem recordItem = new RecordItem(transaction, record);
+        RecordItem recordItem = RecordItem.builder().record(record).transaction(transaction).build();
 
         parseRecordItemAndCommit(recordItem);
 
@@ -553,7 +553,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE,
                 ContractTransactionType.DELETE);
 
-        parseRecordItemAndCommit(new RecordItem(transaction, record));
+        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
@@ -577,7 +577,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         ContractCallTransactionBody contractCallTransactionBody = transactionBody.getContractCall();
 
         var sidecarRecord = recordItemBuilder.transactionSidecarRecord(CONTRACT_ID).build();
-        var recordItem = new RecordItem(transaction, record);
+        var recordItem = RecordItem.builder().record(record).transaction(transaction).build();
         recordItem.setSidecarRecords(List.of(sidecarRecord));
 
         parseRecordItemAndCommit(recordItem);
@@ -674,7 +674,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         var paidRewardTransfer = AccountAmount.newBuilder().setAccountID(contractAccountId).setAmount(15L);
         record = record.toBuilder().setConsensusTimestamp(TestUtils.toTimestamp(timestamp))
                 .setTransferList(transferList).addPaidStakingRewards(paidRewardTransfer).build();
-        var recordItem = new RecordItem(transaction, record);
+        var recordItem = RecordItem.builder().record(record).transaction(transaction).build();
 
         // when
         parseRecordItemAndCommit(recordItem);
@@ -717,7 +717,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = getContractTransactionRecord(transactionBody, ContractTransactionType.CALL);
         ContractCallTransactionBody contractCallTransactionBody = transactionBody.getContractCall();
-        RecordItem recordItem = new RecordItem(transaction, record);
+        RecordItem recordItem = RecordItem.builder().record(record).transaction(transaction).build();
 
         parseRecordItemAndCommit(recordItem);
 
@@ -797,7 +797,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE, ContractTransactionType.CALL)
                 .toBuilder().clearContractCallResult().build();
 
-        parseRecordItemAndCommit(new RecordItem(transaction, record));
+        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
@@ -815,7 +815,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = getContractTransactionRecord(transactionBody, ContractTransactionType.CALL);
 
-        parseRecordItemAndCommit(new RecordItem(transaction, record));
+        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
@@ -843,7 +843,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         var sidecarRecords = recordItemBuilder.transactionSidecarRecord(contractId)
                 .setStateChanges(contractStateChanges);
 
-        var recordItem = new RecordItem(transaction, record);
+        var recordItem = RecordItem.builder().record(record).transaction(transaction).build();
         recordItem.setSidecarRecords(List.of(sidecarRecords.build()));
         parseRecordItemAndCommit(recordItem);
 

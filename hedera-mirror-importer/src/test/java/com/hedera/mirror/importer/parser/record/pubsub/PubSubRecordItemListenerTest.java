@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record.pubsub;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -161,7 +161,7 @@ class PubSubRecordItemListenerTest {
         Transaction transaction = buildTransaction(builder -> builder.setConsensusSubmitMessage(submitMessage));
         // when
         doReturn(topicIdEntity).when(transactionHandler).getEntity(any());
-        pubSubRecordItemListener.onItem(new RecordItem(transaction, DEFAULT_RECORD));
+        pubSubRecordItemListener.onItem(RecordItem.builder().record(DEFAULT_RECORD).transaction(transaction).build());
 
         // then
         var pubSubMessage = assertPubSubMessage(buildPubSubTransaction(transaction), 1);
@@ -182,7 +182,7 @@ class PubSubRecordItemListenerTest {
         Transaction transaction = buildTransaction(builder -> builder.setConsensusSubmitMessage(submitMessage));
         // when
         doReturn(null).when(transactionHandler).getEntity(any());
-        pubSubRecordItemListener.onItem(new RecordItem(transaction, DEFAULT_RECORD));
+        pubSubRecordItemListener.onItem(RecordItem.builder().record(DEFAULT_RECORD).transaction(transaction).build());
 
         // then
         var pubSubMessage = assertPubSubMessage(buildPubSubTransaction(transaction), 1);
@@ -203,7 +203,7 @@ class PubSubRecordItemListenerTest {
                         .build())
                 .build();
         Transaction transaction = buildTransaction(builder -> builder.setCryptoTransfer(cryptoTransfer));
-        var recordItem = new RecordItem(transaction, DEFAULT_RECORD);
+        var recordItem = RecordItem.builder().record(DEFAULT_RECORD).transaction(transaction).build();
         when(nonFeeTransferExtractionStrategy.extractNonFeeTransfers(recordItem.getTransactionBody(),
                 recordItem.getRecord())).thenReturn(cryptoTransfer.getTransfers().getAccountAmountsList());
 
@@ -229,7 +229,8 @@ class PubSubRecordItemListenerTest {
 
         // then
         assertThatThrownBy(
-                () -> pubSubRecordItemListener.onItem(new RecordItem(transaction, DEFAULT_RECORD)))
+                () -> pubSubRecordItemListener.onItem(RecordItem.builder().record(DEFAULT_RECORD)
+                        .transaction(transaction).build()))
                 .isInstanceOf(ParserException.class)
                 .hasMessageContaining("Error sending transaction to pubsub");
         verify(messageChannel, times(1)).send(any());
@@ -249,7 +250,7 @@ class PubSubRecordItemListenerTest {
                 .thenThrow(MessageTimeoutException.class)
                 .thenThrow(MessageTimeoutException.class)
                 .thenReturn(true);
-        pubSubRecordItemListener.onItem(new RecordItem(transaction, DEFAULT_RECORD));
+        pubSubRecordItemListener.onItem(RecordItem.builder().record(DEFAULT_RECORD).transaction(transaction).build());
 
         // then
         var pubSubMessage = assertPubSubMessage(buildPubSubTransaction(transaction), 3);
@@ -271,7 +272,7 @@ class PubSubRecordItemListenerTest {
         // when
         EntityId entityId = EntityId.of(ADDRESS_BOOK_FILE_ID);
         doReturn(entityId).when(transactionHandler).getEntity(any());
-        pubSubRecordItemListener.onItem(new RecordItem(transaction, DEFAULT_RECORD));
+        pubSubRecordItemListener.onItem(RecordItem.builder().record(DEFAULT_RECORD).transaction(transaction).build());
 
         // then
         FileData fileData = new FileData(100L, fileContents, entityId, TransactionType.FILEAPPEND
@@ -291,7 +292,7 @@ class PubSubRecordItemListenerTest {
 
         // when
         doReturn(EntityId.of(ADDRESS_BOOK_FILE_ID)).when(transactionHandler).getEntity(any());
-        pubSubRecordItemListener.onItem(new RecordItem(transaction, DEFAULT_RECORD));
+        pubSubRecordItemListener.onItem(RecordItem.builder().record(DEFAULT_RECORD).transaction(transaction).build());
 
         // then
         FileData fileData = new FileData(100L, fileContents, EntityId
