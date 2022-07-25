@@ -56,12 +56,7 @@ class BlockController extends BaseController {
     const orderBy = filters
       .filter((f) => blockWhereFilters.includes(f.key))
       .map((f) => {
-        switch (f.key) {
-          case filterKeys.BLOCK_NUMBER:
-            return RecordFile.INDEX;
-          case filterKeys.TIMESTAMP:
-            return RecordFile.CONSENSUS_END;
-        }
+        return f.key === filterKeys.BLOCK_NUMBER ? RecordFile.INDEX : RecordFile.CONSENSUS_END;
       })[0];
 
     return _.isEmpty(orderBy) ? RecordFile.CONSENSUS_END : orderBy;
