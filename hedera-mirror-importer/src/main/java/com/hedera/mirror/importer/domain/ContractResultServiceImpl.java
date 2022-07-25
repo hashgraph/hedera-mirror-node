@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.google.common.collect.Range;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
@@ -49,6 +50,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 import com.hedera.mirror.importer.util.Utility;
+import com.hedera.services.stream.proto.ContractBytecode;
 import com.hedera.services.stream.proto.ContractStateChange;
 
 @Log4j2
@@ -71,6 +73,8 @@ public class ContractResultServiceImpl implements ContractResultService {
         var functionResult = transactionRecord.hasContractCreateResult() ?
                 transactionRecord.getContractCreateResult() : transactionRecord.getContractCallResult();
 
+        processSidecarRecords(recordItem);
+
         // handle non create/call transactions
         if (!isContractCreateOrCall(recordItem
                 .getTransactionBody()) && !isValidContractFunctionResult(functionResult)) {
@@ -86,23 +90,6 @@ public class ContractResultServiceImpl implements ContractResultService {
         var contractId = isContractCreateOrCall(recordItem.getTransactionBody()) ? transaction.getEntityId() :
                 entityIdService.lookup(functionResult.getContractID());
         processContractResult(recordItem, contractId, functionResult, transactionHandler);
-
-        var sidecarRecords = recordItem.getSidecarRecords();
-        long consensusTimestamp = recordItem.getConsensusTimestamp();
-        var payerAccountId = recordItem.getPayerAccountId();
-        for (var sidecarRecord : sidecarRecords) {
-            if (sidecarRecord.hasStateChanges()) {
-                var stateChanges = sidecarRecord.getStateChanges();
-                for (var stateChange : stateChanges.getContractStateChangesList()) {
-                    processContractStateChange(stateChange, consensusTimestamp, payerAccountId);
-                }
-            } else if (sidecarRecord.hasActions()) {
-                var actions = sidecarRecord.getActions();
-                for (int actionIndex = 0; actionIndex < actions.getContractActionsCount(); actionIndex++) {
-                    processContractAction(actions.getContractActions(actionIndex), actionIndex, consensusTimestamp);
-                }
-            }
-        }
     }
 
     private boolean isValidContractFunctionResult(ContractFunctionResult contractFunctionResult) {
@@ -111,6 +98,20 @@ public class ContractResultServiceImpl implements ContractResultService {
 
     private boolean isContractCreateOrCall(TransactionBody transactionBody) {
         return transactionBody.hasContractCall() || transactionBody.hasContractCreateInstance();
+    }
+
+    private void migrateBytecode(ContractBytecode contractBytecode) {
+        EntityId contractId = entityIdService.lookup(contractBytecode.getContractId());
+        var contract = Contract.builder()
+                .id(contractId.getId())
+                .shard(contractId.getShardNum())
+                .realm(contractId.getRealmNum())
+                .num(contractId.getEntityNum())
+                .runtimeBytecode(DomainUtils.toBytes(contractBytecode.getRuntimeBytecode()))
+                .timestampRange(Range.atLeast(0L))
+                .build();
+
+        entityListener.onContract(contract);
     }
 
     private void processContractAction(com.hedera.services.stream.proto.ContractAction action, int index,
@@ -127,7 +128,7 @@ public class ContractResultServiceImpl implements ContractResultService {
             case RECIPIENT_ACCOUNT -> contractAction.setRecipientAccount(EntityId.of(action.getRecipientAccount()));
             case RECIPIENT_CONTRACT -> contractAction.setRecipientContract(EntityId.of(action.getRecipientContract()));
             case INVALID_SOLIDITY_ADDRESS ->
-                    contractAction.setRecipientAddress(action.getInvalidSolidityAddress().toByteArray());
+                    contractAction.setRecipientAddress(DomainUtils.toBytes(action.getInvalidSolidityAddress()));
             default -> throw new InvalidDatasetException("Invalid recipient case for contract action: " +
                     action.getRecipientCase());
         }
@@ -266,6 +267,27 @@ public class ContractResultServiceImpl implements ContractResultService {
         }
 
         entityListener.onContract(contract);
+    }
+
+    private void processSidecarRecords(RecordItem recordItem) {
+        var sidecarRecords = recordItem.getSidecarRecords();
+        long consensusTimestamp = recordItem.getConsensusTimestamp();
+        var payerAccountId = recordItem.getPayerAccountId();
+        for (var sidecarRecord : sidecarRecords) {
+            if (sidecarRecord.hasStateChanges()) {
+                var stateChanges = sidecarRecord.getStateChanges();
+                for (var stateChange : stateChanges.getContractStateChangesList()) {
+                    processContractStateChange(stateChange, consensusTimestamp, payerAccountId);
+                }
+            } else if (sidecarRecord.hasActions()) {
+                var actions = sidecarRecord.getActions();
+                for (int actionIndex = 0; actionIndex < actions.getContractActionsCount(); actionIndex++) {
+                    processContractAction(actions.getContractActions(actionIndex), actionIndex, consensusTimestamp);
+                }
+            } else if (sidecarRecord.hasBytecode() && sidecarRecord.getMigration()) {
+                migrateBytecode(sidecarRecord.getBytecode());
+            }
+        }
     }
 
     /**

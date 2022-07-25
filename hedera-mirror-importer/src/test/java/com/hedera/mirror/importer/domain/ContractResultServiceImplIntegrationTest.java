@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.domain;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -42,6 +43,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.StreamType;
+import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
@@ -57,6 +59,7 @@ import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.repository.ContractActionRepository;
 import com.hedera.mirror.importer.repository.ContractLogRepository;
+import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.ContractStateChangeRepository;
 
@@ -64,6 +67,7 @@ import com.hedera.mirror.importer.repository.ContractStateChangeRepository;
 class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     private static final ContractID CONTRACT_ID = ContractID.newBuilder().setContractNum(901).build();
 
+    private final ContractRepository contractRepository;
     private final ContractActionRepository contractActionRepository;
     private final ContractLogRepository contractLogRepository;
     private final ContractResultRepository contractResultRepository;
@@ -84,7 +88,9 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
     @Test
     void getContractResultOnCreate() {
-        RecordItem recordItem = recordItemBuilder.contractCreate(CONTRACT_ID).build();
+        RecordItem recordItem = recordItemBuilder.contractCreate(CONTRACT_ID)
+                .sidecarRecords(r -> r.get(2).setMigration(true))
+                .build();
         ContractFunctionResult contractFunctionResult = recordItem.getRecord().getContractCreateResult();
 
         contractResultsTest(recordItem, contractFunctionResult);
@@ -195,6 +201,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
         var contractActions = new ArrayList<com.hedera.services.stream.proto.ContractAction>();
         var sidecarStateChanges = new ArrayList<com.hedera.services.stream.proto.ContractStateChange>();
+        var bytecodeMigrations = new ArrayList<com.hedera.services.stream.proto.ContractBytecode>();
         var sidecarRecords = recordItem.getSidecarRecords();
         for (var sidecarRecord : sidecarRecords) {
             if (sidecarRecord.hasActions()) {
@@ -209,11 +216,15 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                     sidecarStateChanges.add(stateChanges.getContractStateChanges(j));
                 }
             }
+            if (sidecarRecord.hasBytecode() && sidecarRecord.getMigration()) {
+                bytecodeMigrations.add(sidecarRecord.getBytecode());
+            }
         }
 
         assertContractStateChanges(sidecarStateChanges, recordItem.getPayerAccountId(),
                 recordItem.getConsensusTimestamp());
         assertContractActions(contractActions, recordItem.getConsensusTimestamp());
+        assertContractBytecodeMigrations(bytecodeMigrations);
     }
 
     private byte[] parseContractResultBytes(ByteString byteString) {
@@ -226,6 +237,37 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
     private Long parseContractResultLongs(long num) {
         return num == 0 ? null : num;
+    }
+
+    private void assertContractBytecodeMigrations(List<com.hedera.services.stream.proto.ContractBytecode>
+                                                          bytecodeMigrations) {
+        IterableAssert<Contract> listAssert =
+                assertThat(contractRepository.findAll()).hasSizeGreaterThanOrEqualTo(bytecodeMigrations.size());
+
+        if (!bytecodeMigrations.isEmpty()) {
+            var expectedContracts = new ArrayList<Contract>();
+            for (com.hedera.services.stream.proto.ContractBytecode contractBytecode : bytecodeMigrations) {
+                var contractID = contractBytecode.getContractId();
+                var runtimeBytecode = contractBytecode.getRuntimeBytecode();
+                var expectedContract = Contract.builder()
+                        .id(EntityId.of(contractID).getId())
+                        .shard(contractID.getShardNum())
+                        .realm(contractID.getRealmNum())
+                        .num(contractID.getContractNum())
+                        .runtimeBytecode(DomainUtils.toBytes(runtimeBytecode))
+                        .declineReward(false)
+                        .memo("")
+                        .stakedNodeId(-1L)
+                        .stakePeriodStart(-1L)
+                        .type(EntityType.CONTRACT)
+                        .timestampRange(Range.atLeast(0L))
+                        .build();
+
+                expectedContracts.add(expectedContract);
+            }
+
+            listAssert.containsAll(expectedContracts);
+        }
     }
 
     private void assertContractActions(List<com.hedera.services.stream.proto.ContractAction> contractActions,
