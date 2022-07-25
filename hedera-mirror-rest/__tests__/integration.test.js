@@ -65,7 +65,6 @@ beforeEach(async () => {
   await setupData();
 });
 
-//
 // TEST DATA
 // shard 0, realm 15, accounts 1-10
 // 3 balances per account
@@ -284,22 +283,19 @@ describe('DB integration test - spec based', () => {
     };
   };
 
-  const walk = async (dir) => {
-    let files = await fs.promises.readdir(dir);
-    files = await Promise.all(
-      files.map(async (file) => {
-        const filePath = path.join(dir, file);
-        const stats = await fs.promises.stat(filePath);
-        if (stats.isDirectory()) {
-          return walk(filePath);
-        }
-        if (stats.isFile()) {
-          return filePath;
-        }
-      })
-    );
+  const walk = function (dir, files = []) {
+    for (const f of fs.readdirSync(dir)) {
+      const p = path.join(dir, f);
+      const stat = fs.statSync(p);
 
-    return files.reduce((all, folderContents) => all.concat(folderContents), []);
+      if (stat.isDirectory()) {
+        walk(p, files);
+      } else {
+        files.push(p);
+      }
+    }
+
+    return files;
   };
 
   const uploadFilesToS3 = async (endpoint) => {
@@ -322,7 +318,7 @@ describe('DB integration test - spec based', () => {
 
     logger.debug('uploading file objects to mock s3 service');
     const s3ObjectKeys = [];
-    for (const filePath of await walk(dataPath)) {
+    for (const filePath of walk(dataPath)) {
       const s3ObjectKey = path.relative(dataPath, filePath);
       const fileStream = fs.createReadStream(filePath);
       await s3client
@@ -434,6 +430,25 @@ describe('DB integration test - spec based', () => {
     restoreConfig();
   });
 
+  const getSpecs = () => {
+    const specPath = path.join(getModuleDirname(import.meta), 'specs');
+    const specMap = new Map();
+
+    walk(specPath)
+      .filter((f) => f.endsWith('.json'))
+      .forEach((f) => {
+        const specText = fs.readFileSync(f, 'utf8');
+        const spec = JSONParse(specText);
+        spec.file = path.basename(f);
+        const key = path.dirname(f).replace(specPath, '');
+        const specs = specMap.get(key) || [];
+        specs.push(spec);
+        specMap.set(key, specs);
+      });
+
+    return specMap;
+  };
+
   const getTests = (spec) => {
     const tests = spec.tests || [
       {
@@ -452,28 +467,25 @@ describe('DB integration test - spec based', () => {
     );
   };
 
-  const specPath = path.join(getModuleDirname(import.meta), 'specs');
-  // process applicable .json spec files
-  fs.readdirSync(specPath)
-    .filter((f) => f.endsWith('.json'))
-    .forEach((file) => {
-      const p = path.join(specPath, file);
-      const specText = fs.readFileSync(p, 'utf8');
-      const spec = JSONParse(specText);
-      const tests = getTests(spec);
+  getSpecs().forEach((specs, dir) => {
+    describe(`${dir}`, () => {
+      specs.forEach((spec) => {
+        describe(`${spec.file}`, () => {
+          getTests(spec).forEach((tt) => {
+            test(`${tt.url}`, async () => {
+              await specSetupSteps(spec.setup);
+              const response = await request(server).get(tt.url);
 
-      tests.forEach((tt) =>
-        test(`DB integration test - ${file} - ${tt.url}`, async () => {
-          await specSetupSteps(spec.setup);
-          const response = await request(server).get(tt.url);
-
-          expect(response.status).toEqual(tt.responseStatus);
-          let jsonObj = response.text === '' ? {} : JSONParse(response.text);
-          if (response.status === 200 && file.startsWith('stateproof')) {
-            jsonObj = transformStateProofResponse(jsonObj);
-          }
-          expect(jsonObj).toEqual(tt.responseJson);
-        })
-      );
+              expect(response.status).toEqual(tt.responseStatus);
+              let jsonObj = response.text === '' ? {} : JSONParse(response.text);
+              if (response.status === 200 && spec.file.startsWith('stateproof')) {
+                jsonObj = transformStateProofResponse(jsonObj);
+              }
+              expect(jsonObj).toEqual(tt.responseJson);
+            });
+          });
+        });
+      });
     });
+  });
 });
