@@ -71,10 +71,11 @@ public class AcceptanceTestProperties {
     private long operatorBalance = 15_000_000_000L;
 
     @NotBlank
-    private String operatorId;
+    private String operatorId = "0.0.2";
 
     @NotBlank
-    private String operatorKey;
+    private String operatorKey =
+            "302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137";
 
     private boolean retrieveAddressBook = true;
 
