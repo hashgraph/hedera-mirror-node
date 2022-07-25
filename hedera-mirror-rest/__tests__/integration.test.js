@@ -478,7 +478,7 @@ describe('DB integration test - spec based', () => {
 
               expect(response.status).toEqual(tt.responseStatus);
               let jsonObj = response.text === '' ? {} : JSONParse(response.text);
-              if (response.status === 200 && spec.file.startsWith('stateproof')) {
+              if (response.status === 200 && dir.endsWith('stateproof')) {
                 jsonObj = transformStateProofResponse(jsonObj);
               }
               expect(jsonObj).toEqual(tt.responseJson);
