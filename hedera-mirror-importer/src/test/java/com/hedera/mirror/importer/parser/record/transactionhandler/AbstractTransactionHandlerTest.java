@@ -243,14 +243,15 @@ abstract class AbstractTransactionHandlerTest {
 
     protected void testGetEntityIdHelper(
             TransactionBody transactionBody, TransactionRecord transactionRecord, EntityId expectedEntity) {
-        RecordItem recordItem = new RecordItem(
-                Transaction.newBuilder().
-                        setSignedTransactionBytes(SignedTransaction.newBuilder()
-                                .setBodyBytes(transactionBody.toByteString())
-                                .setSigMap(getDefaultSigMap())
-                                .build().toByteString())
-                        .build(),
-                transactionRecord);
+        RecordItem recordItem = RecordItem.builder().transaction(
+                        Transaction.newBuilder().
+                                setSignedTransactionBytes(SignedTransaction.newBuilder()
+                                        .setBodyBytes(transactionBody.toByteString())
+                                        .setSigMap(getDefaultSigMap())
+                                        .build().toByteString())
+                                .build())
+                .record(transactionRecord)
+                .build();
         assertThat(transactionHandler.getEntity(recordItem)).isEqualTo(expectedEntity);
     }
 
@@ -541,7 +542,7 @@ abstract class AbstractTransactionHandlerTest {
                 )
                 .build();
 
-        return new RecordItem(transaction, record);
+        return RecordItem.builder().record(record).transaction(transaction).build();
     }
 
     private boolean isCrudTransactionHandler(TransactionHandler transactionHandler) {

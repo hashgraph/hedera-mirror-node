@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record.entity;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -246,11 +246,11 @@ class EntityRecordItemListenerNonFeeTransferTest extends AbstractEntityRecordIte
         var transactionBody = getTransactionBody(transaction);
         var recordBuilder = transactionRecordSuccess(transactionBody, transferList);
         var contractCallResult = recordBuilder.getContractCallResultBuilder()
-                        .setContractID(ContractID.newBuilder().setContractNum(NEW_CONTRACT_NUM));
+                .setContractID(ContractID.newBuilder().setContractNum(NEW_CONTRACT_NUM));
         var record = recordBuilder.setContractCallResult(contractCallResult).build();
 
         expectedTransactions.add(new TransactionContext(transaction, record));
-        parseRecordItemAndCommit(new RecordItem(transaction, record));
+        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
     }
 
     private Transaction contractCreate() {
@@ -270,11 +270,11 @@ class EntityRecordItemListenerNonFeeTransferTest extends AbstractEntityRecordIte
         var transactionBody = getTransactionBody(transaction);
         var recordBuilder = transactionRecordSuccess(transactionBody, transferList);
         var contractCreateResult = recordBuilder.getContractCreateResultBuilder()
-                        .addCreatedContractIDs(ContractID.newBuilder().setContractNum(NEW_CONTRACT_NUM));
+                .addCreatedContractIDs(ContractID.newBuilder().setContractNum(NEW_CONTRACT_NUM));
         var record = recordBuilder.setContractCreateResult(contractCreateResult).build();
 
         expectedTransactions.add(new TransactionContext(transaction, record));
-        parseRecordItemAndCommit(new RecordItem(transaction, record));
+        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
     }
 
     private Transaction cryptoCreate() {
@@ -298,7 +298,7 @@ class EntityRecordItemListenerNonFeeTransferTest extends AbstractEntityRecordIte
         var record = transactionRecordSuccess(transactionBody, transferList).build();
 
         expectedTransactions.add(new TransactionContext(transaction, record));
-        parseRecordItemAndCommit(new RecordItem(transaction, record));
+        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
     }
 
     private Transaction cryptoTransfer() {
@@ -326,7 +326,7 @@ class EntityRecordItemListenerNonFeeTransferTest extends AbstractEntityRecordIte
         var record = transactionRecord(transactionBody, rc, transferList).build();
 
         expectedTransactions.add(new TransactionContext(transaction, record));
-        parseRecordItemAndCommit(new RecordItem(transaction, record));
+        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
     }
 
     private void cryptoTransferWithTransferList(TransferList.Builder transferList) {
@@ -349,7 +349,7 @@ class EntityRecordItemListenerNonFeeTransferTest extends AbstractEntityRecordIte
 
     private void givenSuccessfulContractCreateTransaction() {
         contractCreateWithTransferList(transferListForContractCreateItemized());
-        expectedEntityNum.addAll(List.of(NEW_CONTRACT_NUM));
+        expectedEntityNum.add(NEW_CONTRACT_NUM);
         if (entityProperties.getPersist().isNonFeeTransfers()) {
             expectedNonFeeTransfersCount += 2;
         }
@@ -357,7 +357,7 @@ class EntityRecordItemListenerNonFeeTransferTest extends AbstractEntityRecordIte
 
     private void givenSuccessfulContractCreateTransactionAggregatedTransfers() {
         contractCreateWithTransferList(transferListForContractCreateAggregated());
-        expectedEntityNum.addAll(List.of(NEW_CONTRACT_NUM));
+        expectedEntityNum.add(NEW_CONTRACT_NUM);
 
         if (entityProperties.getPersist().isNonFeeTransfers()) {
             expectedNonFeeTransfersCount += 2;
@@ -366,7 +366,7 @@ class EntityRecordItemListenerNonFeeTransferTest extends AbstractEntityRecordIte
 
     private void givenSuccessfulCryptoCreateTransaction() {
         cryptoCreateWithTransferList(transferListForCryptoCreateItemized());
-        expectedEntityNum.addAll(List.of(NEW_ACCOUNT_NUM));
+        expectedEntityNum.add(NEW_ACCOUNT_NUM);
         if (entityProperties.getPersist().isNonFeeTransfers()) {
             expectedNonFeeTransfersCount += 2;
         }
@@ -374,7 +374,7 @@ class EntityRecordItemListenerNonFeeTransferTest extends AbstractEntityRecordIte
 
     private void givenSuccessfulCryptoCreateTransactionAggregatedTransfers() {
         cryptoCreateWithTransferList(transferListForCryptoCreateAggregated());
-        expectedEntityNum.addAll(List.of(NEW_ACCOUNT_NUM));
+        expectedEntityNum.add(NEW_ACCOUNT_NUM);
         if (entityProperties.getPersist().isNonFeeTransfers()) {
             expectedNonFeeTransfersCount += 2;
         }
