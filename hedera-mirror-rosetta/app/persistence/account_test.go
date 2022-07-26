@@ -377,6 +377,19 @@ func (suite *accountRepositorySuite) TestGetAccountId() {
 	assert.Equal(suite.T(), types.AccountId{}, actual)
 }
 
+func (suite *accountRepositorySuite) TestGetAccountIdNumericAccount() {
+	// given
+	accountId := types.NewAccountIdFromEntityId(domain.MustDecodeEntityId(account1))
+	repo := NewAccountRepository(dbClient)
+
+	// when
+	actual, err := repo.GetAccountId(defaultContext, accountId)
+
+	// then
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), accountId, actual)
+}
+
 func (suite *accountRepositorySuite) TestGetAccountIdDbConnectionError() {
 	// given
 	aliasAccountId, _ := types.NewAccountIdFromString(account4Alias, 0, 0)

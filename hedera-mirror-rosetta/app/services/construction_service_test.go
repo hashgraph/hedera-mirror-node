@@ -625,6 +625,7 @@ func TestConstructionMetadataOfflineAccountAliasesFail(t *testing.T) {
 	assert.Nil(t, response)
 	assert.NotNil(t, err)
 }
+
 func TestConstructionMetadataFailsWhenInvalidOptions(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -651,11 +652,22 @@ func TestConstructionMetadataFailsWhenInvalidOptions(t *testing.T) {
 			},
 		},
 		{
+			name: "incorrect account aliases",
+			request: &rTypes.ConstructionMetadataRequest{
+				NetworkIdentifier: networkIdentifier(),
+				Options: map[string]interface{}{
+					optionKeyAccountAliases: "foobar",
+					optionKeyOperationType:  types.OperationTypeCryptoTransfer,
+				},
+			},
+		},
+		{
 			name: "incorrect account aliases value type",
 			request: &rTypes.ConstructionMetadataRequest{
 				NetworkIdentifier: networkIdentifier(),
 				Options: map[string]interface{}{
 					optionKeyAccountAliases: 1,
+					optionKeyOperationType:  types.OperationTypeCryptoTransfer,
 				},
 			},
 		},
@@ -664,6 +676,10 @@ func TestConstructionMetadataFailsWhenInvalidOptions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockAccountRepo := &mocks.MockAccountRepository{}
+			mockTransactionConstructor := &mocks.MockTransactionConstructor{}
+			mockTransactionConstructor.
+				On("GetDefaultMaxTransactionFee", types.OperationTypeCryptoTransfer).
+				Return(types.HbarAmount{Value: 100}, mocks.NilError)
 
 			// when
 			service, _ := NewConstructionAPIService(
@@ -673,7 +689,7 @@ func TestConstructionMetadataFailsWhenInvalidOptions(t *testing.T) {
 				defaultNodes,
 				0,
 				0,
-				nil,
+				mockTransactionConstructor,
 			)
 			res, e := service.ConstructionMetadata(defaultContext, tt.request)
 
@@ -683,6 +699,43 @@ func TestConstructionMetadataFailsWhenInvalidOptions(t *testing.T) {
 			assert.NotNil(t, e)
 		})
 	}
+}
+
+func TestConstructionMetadataFailsWhenAccountRepoFails(t *testing.T) {
+	// given
+	mockAccountRepo := &mocks.MockAccountRepository{}
+	mockAccountRepo.
+		On("GetAccountId", defaultContext, mock.IsType(types.AccountId{})).
+		Return(types.AccountId{}, errors.ErrInvalidAccount)
+	mockTransactionConstructor := &mocks.MockTransactionConstructor{}
+	mockTransactionConstructor.
+		On("GetDefaultMaxTransactionFee", types.OperationTypeCryptoTransfer).
+		Return(types.HbarAmount{Value: 100}, mocks.NilError)
+	request := &rTypes.ConstructionMetadataRequest{
+		NetworkIdentifier: networkIdentifier(),
+		Options: map[string]interface{}{
+			optionKeyAccountAliases: aliasStr,
+			optionKeyOperationType:  types.OperationTypeCryptoTransfer,
+		},
+	}
+	service, _ := NewConstructionAPIService(
+		mockAccountRepo,
+		onlineBaseService,
+		defaultNetwork,
+		defaultNodes,
+		0,
+		0,
+		mockTransactionConstructor,
+	)
+
+	// when
+	response, err := service.ConstructionMetadata(defaultContext, request)
+
+	// then
+	mockAccountRepo.AssertExpectations(t)
+	mockTransactionConstructor.AssertExpectations(t)
+	assert.Nil(t, response)
+	assert.NotNil(t, err)
 }
 
 func TestConstructionMetadataFailsWhenTransactionConstructorFails(t *testing.T) {
