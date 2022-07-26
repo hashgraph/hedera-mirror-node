@@ -93,7 +93,7 @@ class TransactionService extends BaseService {
       and ${Transaction.VALID_START_NS} = $2`;
 
   static transactionDetailsFromEthHashQuery = `${this.selectTransactionDetailsBaseQuery}
-    where ${EthereumTransaction.getFullName(EthereumTransaction.HASH)} = $1`;
+    where position($1 in ${Transaction.TRANSACTION_HASH}) = 1`;
 
   /**
    * Retrieves the transaction for the given timestamp
