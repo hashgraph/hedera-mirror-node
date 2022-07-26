@@ -18,20 +18,18 @@
  * ‍
  */
 
-'use strict';
+import common from './common';
+import config from './config';
+import * as utils from './utils';
 
-const {getServerCurrentResults} = require('./common');
-const config = require('./config');
-const utils = require('./utils');
+import accountTests from './account_tests';
+import balanceTests from './balance_tests';
+import stateproofTests from './stateproof_tests';
+import tokenTests from './token_tests';
+import topicmessageTests from './topicmessage_tests';
+import transactionTests from './transaction_tests';
 
-const allTestModules = [
-  require('./account_tests'),
-  require('./balance_tests'),
-  require('./transaction_tests'),
-  require('./stateproof_tests'),
-  require('./topicmessage_tests'),
-  require('./token_tests'),
-];
+const allTestModules = [accountTests, balanceTests, stateproofTests, tokenTests, topicmessageTests, transactionTests];
 
 const counters = {};
 
@@ -63,7 +61,7 @@ const runTests = (server) => {
 
   const serverTestResult = new utils.ServerTestResult();
   if (skippedResource.length !== 0) {
-    const currentResults = getServerCurrentResults(server.name);
+    const currentResults = common.getServerCurrentResults(server.name);
     for (const testResult of currentResults.testResults) {
       if (skippedResource.includes(testResult.resource)) {
         serverTestResult.addTestResult(testResult);
@@ -83,6 +81,4 @@ const runTests = (server) => {
   });
 };
 
-module.exports = {
-  runTests,
-};
+export {runTests};

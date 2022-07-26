@@ -18,13 +18,12 @@
  * ‍
  */
 
-'use strict';
-
-const extend = require('extend');
-const fs = require('fs');
-const _ = require('lodash');
-const log4js = require('log4js');
-const path = require('path');
+import extend from 'extend';
+import fs from 'fs';
+import _ from 'lodash';
+import log4js from 'log4js';
+import path from 'path';
+import {fileURLToPath} from 'url';
 
 const logger = log4js.getLogger();
 
@@ -57,8 +56,9 @@ let config = {};
 let loaded = false;
 
 if (!loaded) {
-  config = load(path.join(__dirname, 'config', 'default.serverlist.json'));
-  const customConfig = load(path.join(__dirname, 'config', 'serverlist.json'));
+  const moduleDirname = path.dirname(fileURLToPath(import.meta.url));
+  config = load(path.join(moduleDirname, 'config', 'default.serverlist.json'));
+  const customConfig = load(path.join(moduleDirname, 'config', 'serverlist.json'));
   extend(true, config, customConfig);
 
   for (const field of REQUIRED_FIELDS) {
@@ -75,4 +75,4 @@ if (!loaded) {
   loaded = true;
 }
 
-module.exports = config;
+export default config;
