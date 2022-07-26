@@ -25,6 +25,7 @@ import path from 'path';
 const recordStreamsPath = path.join(appRoot.toString(), '__tests__', 'data', 'recordstreams');
 const v2RecordStreamsPath = path.join(recordStreamsPath, 'v2');
 const v5RecordStreamsPath = path.join(recordStreamsPath, 'v5');
+const v6RecordStreamsPath = path.join(recordStreamsPath, 'v6');
 
 const v5CompactObject = {
   head: Buffer.from('AAAABQAAAAAAAAALAAAAAAAAAAE=', 'base64'),
@@ -52,6 +53,50 @@ const v5CompactObject = {
     '9CLag6JRdB4AAAABWP+BGwAAADCnPUjHQKqq+l6HnYdlD17Zt15RTB5ZCLaGD8+37c3' + 'gCTVQ+ENgVbpWAY9G1yAAGjE=',
     'base64'
   ),
+};
+
+const v6CompactObject = {
+  head: Buffer.from('AAAABgAAAAAAAAAcAAAAAA==', 'base64'),
+  startRunningHashObject: Buffer.from(
+    'f422da83a251741e0000000158ff811b00000030' +
+      '5beae2b0a79d74637dfb1a054cb5d6a741fd5a2c503ddeee4b55be0e949dab9e1f82fc5f312637185d10a0d119db4146',
+    'hex'
+  ),
+  hashesBefore: [
+    '482e023ef8eb7071d66c9e7a85cdb095b74e4215a756d8783d3c49c8301d097a8e65c0fc590b0cd4841aee1d4113f7db',
+    '7a3171b44cd92aad89187e8cda75dc5c66cdb78b02b1a7641adf34e9a01402ed7275cd0686a4c73fcdd8286139db1de3',
+    '0fd17c5477d0c723e240bb1a20141d7062fecd6e3068c910685fc75e39089174385b7eb42bb329054c611051e1422bf2',
+    '409b5c3a3cb2aa3ade5e7d54c897909a80a3d6f6f7a9364391299685112b0c31217d343f6da688d74654dec8ad947e54',
+    '753636b32e74740001b5ea95ac3068a4cf41c5d905236b5b591238d2cd3e290762c7839e7bcb9711028fe1201a64c332',
+  ].map((h) => Buffer.from(h, 'hex')),
+  recordStreamObject: Buffer.from(
+    '43CSm6VCnYsAAAABAAAAvwogCBYqHAoMCAEQDBoGCICumaQPEgwIARAPGgYIgK6ZpA8SMFSht00u3ifHfOqDFJxFn2829Lfb' +
+      '8tDebW+8FfFQFT4H/FCG8zPnv+PkzGjxPiiytxoMCJrQ+JYGEKOup8UBIhIKDAiR0PiWBhDh+a6cARICGFoqHERldk9wcyBTeW50' +
+      'aGV0aWMgMi4wIFRlc3Rpbmcw5pQFUiUKBgoCGAIQAgoHCgIYBxDMNQoICgIYWhDNqQoKCAoCGGIQgPQJAAAAwCq9AQpTChIKDAiR' +
+      '0PiWBhDh+a6cARICGFoSAhgHGIDC1y8iAgh4MhxEZXZPcHMgU3ludGhldGljIDIuMCBUZXN0aW5nchIKEAoGCgIYAhACCgYKAhha' +
+      'EAESZgpkCiDCSaMjyHj1teLazNptcx5v3DL4cCKNHNT65VnZR9vDbBpA6cQPMB3yXP6hgSb3+5SYsu0+alJzdATvTCYiJm8Xb0y2' +
+      'feYxVNV2QX2fd4Cu4TY/rYgaNBYBYTdOlKQN/VsMAw==',
+    'base64'
+  ),
+  hashesAfter: [
+    'd82a33b9b01d4ea2e8da1d01fb129c402429338d3655c1c30b878338073afffdbfcc0a6978b32be82f5323c7ddb711dc',
+    '69a3df3aecd7dbd9ab3795f162245b3f64b1209cf1daa5e57fe809ef9150d83455bc7b7d5f9288a9188a6051a46edc3c',
+    'ff725b38357e5a5be05a9784c045b8bc42f544aa4d362d82f436102db858d7e639f6dcb4fc302fdb99a890edf056a02b',
+    '0d1497587d70f3800a19c4ee44852b22dfd8cca48d6f7be44615e5157738e450cc3fb55c6195fe81773625affa0f42c1',
+    '5ae4268d7b4cf01aa3a09f34afa858c204a643fc243bc5b8bfe919eb91ea5d27030301de56a484b0f8d6db795ea640c1',
+    'f22cd29e3a8e01a3382b8fe294e81478715aafe13aa2c7890a17b112aa12515a9a9e7f15c63a15441cbd7f5249c8032f',
+    '5fb44a7ab6c89088f2456391db4656427a0edd68c35da18c5c2c02e6e5165eb96b1d74fd78abc370a297552080d76a63',
+    '0c91b2f4f61ad71cc0cfb078d7d2a1c379ff58847399f909c845af6f69f052e21b25e9a33c3400a55fe8f06ea20fbff4',
+    'd82dbfcbb6692f886d1d3a0c1f988a08d438d82d12348c3de55b5797ba3c61f02a6aa8e0d6cf14581002d156141d281b',
+    'd8d1863a26020e8246d04f5931a278a947116a389a09095ee479b21f5fe78adcbbb7f216d2e998ceecab2f2fe2d19b4e',
+    'a434963320c3e0eaaf68a2f398820be9b4726c0b6376633e5dc6566f74bea361bec969259a01b3d399e75fd03d3924d5',
+  ].map((h) => Buffer.from(h, 'hex')),
+  endRunningHashObject: Buffer.from(
+    'f422da83a251741e0000000158ff811b00000030' +
+      '091160ab978e8c6056ee06249b12e98044a0ac8a008bc65d8bd130d1c011fc68081825de90f6a77fbb7d552dcc3bc804',
+    'hex'
+  ),
+  blockNumber: Buffer.from('AAAAAAAEKgg=', 'base64'),
 };
 
 const testRecordFiles = {
@@ -198,6 +243,111 @@ const testRecordFiles = {
       ],
     },
   ],
+  v6: [
+    {
+      buffer: fs.readFileSync(path.join(v6RecordStreamsPath, '2022-07-25T05_20_26.016617003Z.rcd')),
+      checks: [
+        {
+          func: 'containsTransaction',
+          args: ['0.0.90-1658726414-804049281'],
+          expected: true,
+        },
+        {
+          func: 'containsTransaction',
+          args: ['0.0.1-123-123456789'],
+          expected: false,
+        },
+        {
+          func: 'getFileHash',
+          args: [],
+          expected: null,
+        },
+        {
+          func: 'getMetadataHash',
+          args: [],
+          expected: null,
+        },
+        {
+          func: 'getTransactionMap',
+          args: [],
+          expected: {
+            '0.0.90-1658726413-451096835-0-false': 0,
+            '0.0.90-1658726413-169011949-0-false': 1,
+            '0.0.90-1658726414-804049281-0-false': 2,
+            '0.0.90-1658726413-721724245-0-false': 3,
+            '0.0.90-1658726417-275420039-0-false': 4,
+            '0.0.90-1658726417-327924961-0-false': 5,
+            '0.0.90-1658726416-923370178-0-false': 6,
+            '0.0.90-1658726416-683133317-0-false': 7,
+            '0.0.90-1658726414-436906280-0-false': 8,
+            '0.0.90-1658726415-926052066-0-false': 9,
+            '0.0.90-1658726414-63781067-0-false': 10,
+            '0.0.90-1658726418-510432850-0-false': 11,
+            '0.0.90-1658726418-131669339-0-false': 12,
+            '0.0.90-1658726417-797595848-0-false': 13,
+            '0.0.90-1658726417-566725327-0-false': 14,
+            '0.0.90-1658726414-311613333-0-false': 15,
+            '0.0.90-1658726416-691474692-0-false': 16,
+          },
+        },
+        {
+          func: 'getVersion',
+          args: [],
+          expected: 6,
+        },
+        {
+          func: 'toCompactObject',
+          args: ['0.0.90-1658726417-327924961'],
+          expected: v6CompactObject,
+        },
+        {
+          func: 'toCompactObject',
+          args: ['0.0.1-123-123456789'],
+          expectErr: true,
+        },
+      ],
+    },
+    {
+      obj: v6CompactObject,
+      checks: [
+        {
+          func: 'containsTransaction',
+          args: ['0.0.90-1658726417-327924961'],
+          expected: true,
+        },
+        {
+          func: 'containsTransaction',
+          args: ['0.0.90-1658726416-691474692'],
+          expected: false,
+        },
+        {
+          func: 'getFileHash',
+          args: [],
+          expected: null,
+        },
+        {
+          func: 'getMetadataHash',
+          args: [],
+          expected: Buffer.from('jSe8LNhaMESeJAy0LTXoFlvdNsIfBX9yPuhZmpLjDAdCnBkTgVdeDoiktbsGwQSE', 'base64'),
+        },
+        {
+          func: 'getTransactionMap',
+          args: [],
+          expected: {'0.0.90-1658726417-327924961-0-false': null},
+        },
+        {
+          func: 'getVersion',
+          args: [],
+          expected: 6,
+        },
+        {
+          func: 'toCompactObject',
+          args: ['0.0.90-1658726417-327924961'],
+          expected: v6CompactObject,
+        },
+      ],
+    },
+  ],
 };
 
 const testSignatureFiles = {
@@ -241,6 +391,30 @@ const testSignatureFiles = {
         'base64'
       ),
       version: 5,
+    },
+  },
+  v6: {
+    buffer: fs.readFileSync(path.join(v6RecordStreamsPath, '2022-07-25T05_20_26.016617003Z.rcd_sig')),
+    expected: {
+      fileHash: Buffer.from('fPXooSulG4JGAWsnXXV4h4trVQjnSICa8LoDkv1bPHEoyfIYUXpiolNU4YSQ8xyB', 'base64'),
+      fileHashSignature: Buffer.from(
+        'KSjqnJWJZdtSSpREU8NYcaGegRwl/3NrH3tAiiatE7qhGXYpLddTR7j8GGvXZ0VUk5U5ncbFUqVZPZIxMlGLrdl2qMW5OCBIorloEwcc' +
+          'V+NN430NnMc/rbOYrC6EuqMIQqtCiwq6gYR3hdAQ3hD+c1w8CpwMz4XtRKE16UvBDDUhZF/gjURwlH2SljgZzkA02lv5Ntb56IIbltq3+cAC' +
+          '+ud8O8xOeLXsItMERuR7+bD/I1ujCqGT6xVwR97hii75Ma1ePvb/y7qjmjSCxeyLwQcKW0iEDEjcMkCHAHrcoV+rlDM6I3FwjgGZAKDl2HRJ' +
+          'JjW3mhnrMU65g7IJeqXyd+/LNrdnG6a7i1DjIRAUZwiQCSXHFli6bZkoiwuHhm8tbfHvY7F3zX2u2+gEiqSAUJ9/0nCgNc3ELIy0wHFcBV3O' +
+          'BxZypioApv3guFk0i5g0Az66s4lnKR7Vakg/eUqyhWg3YkbKuMkpiSAFdR9rpN9an98MyxdilKLAwAX9MHYo',
+        'base64'
+      ),
+      metadataHash: Buffer.from('jSe8LNhaMESeJAy0LTXoFlvdNsIfBX9yPuhZmpLjDAdCnBkTgVdeDoiktbsGwQSE', 'base64'),
+      metadataHashSignature: Buffer.from(
+        'ObbMCOSkr4uTLL3dOHKhicpKJRx0GAAF+uDg+E6om2pqKjsrJPMYn6Sm5hqyvt+kRZQ/n4RJ4IdJSxikKYkjs6WV6b9UMSFifmN2YxmX' +
+          '/jySvTgHt1CVAmtNJnPsEj6VxhlEXrWQHYM26R2Wl4/jEpQkCzUEM0WQ0bQvYcCmvGjYPfrsBD7vV28V3ckkmWyio1XE52n5OMyZVj+NlltO' +
+          'UxfFO0PtNXu2USfCaun84OLDrH+/WzLjKo98Qt3NP+1Vp9Q60itZ1tVZyvc8hIlhG0LqGjIraXXwNRccztSGXkOhqkDNA5KA3F6GH5iE3dBM' +
+          'OWkDHu/z7Mfkj/nvQS7xtAxslMcIvWDzuoOT5qtzocZBR8hqP6POhmPboTEj4kr1JXLCU0Nku05yfaSchvRxY5sjBqknjuYu2ZoRVaPM5sJ+' +
+          'm365wMCMIHsKLTnWGlAWTkni+Cf2m7kR8IHi99XWwY0/qoYjI1214oXydYPTMs/MT7M+OFyUXk0mu0Gj1imM',
+        'base64'
+      ),
+      version: 6,
     },
   },
 };

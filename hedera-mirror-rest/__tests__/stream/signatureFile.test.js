@@ -42,7 +42,7 @@ describe('from signature file buffer', () => {
   });
 
   describe('unsupported version', () => {
-    [0, 1, 2, 3, 6].forEach((version) => {
+    [0, 1, 2, 3, 7].forEach((version) => {
       test(`mark/version ${version}`, () => {
         const buffer = Buffer.from(testUtils.testSignatureFiles.v2.buffer);
         buffer.writeInt8(version);

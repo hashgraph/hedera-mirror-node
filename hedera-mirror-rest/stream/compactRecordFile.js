@@ -21,35 +21,22 @@
 import crypto from 'crypto';
 import _ from 'lodash';
 
-import {INT_SIZE} from './constants';
 import HashObject from './hashObject';
 import RecordFile from './recordFile';
 import RecordStreamObject from './recordStreamObject';
 import {calculateRunningHash} from './runningHash';
 
-const COMPACT_OBJECT_FIELDS = [
-  'head',
-  'startRunningHashObject',
-  'hashesBefore',
-  'recordStreamObject',
-  'hashesAfter',
-  'endRunningHashObject',
-];
-
 const {SHA_384} = HashObject;
 
-// version, hapi version major/minor/patch, object stream version
-const V5_START_HASH_OFFSET = INT_SIZE + (INT_SIZE + INT_SIZE + INT_SIZE) + INT_SIZE;
-
 class CompactRecordFile extends RecordFile {
+  static compactObjectFields = [];
+
   constructor(bufferOrObj) {
     super();
 
-    if (!CompactRecordFile._support(bufferOrObj)) {
-      throw new Error('Unsupported record file version, expect 5');
+    if (!this.constructor._support(bufferOrObj)) {
+      throw new Error(`Unsupported record file version, expect ${this.constructor.version}`);
     }
-
-    this._version = 5;
 
     if (Buffer.isBuffer(bufferOrObj)) {
       this._parseFromBuffer(bufferOrObj);
@@ -60,7 +47,7 @@ class CompactRecordFile extends RecordFile {
 
   static _support(bufferOrObj) {
     const buffer = Buffer.isBuffer(bufferOrObj) ? bufferOrObj : bufferOrObj.head;
-    return this._readVersion(buffer) === 5;
+    return this._readVersion(buffer) === this.version;
   }
 
   static canCompact(buffer) {
@@ -72,71 +59,71 @@ class CompactRecordFile extends RecordFile {
       throw new Error(`Transaction ${transactionId} not found in the successful transactions map`);
     }
 
-    if (this._recordStreamObjects) {
-      // parsed from a full record file v5
+    if (this._hasRecordStreamObjects()) {
+      // parsed from a full record file
       const transactionKey = RecordFile._getTransactionKey(transactionId, nonce, scheduled);
       const index = this._transactionMap[transactionKey];
-      this.recordStreamObject = this._recordStreamObjects[index];
+      this.recordStreamObject = this._getRecordStreamObject(index);
 
       this._hashes.forEach((value, current) => {
         if (!value && current !== index) {
           // calculate and cache the hash if not found and this is not the transaction of interest
-          this._hashes[current] = crypto.createHash(SHA_384.name).update(this._recordStreamObjects[current]).digest();
+          const recordStreamObject = this._getRecordStreamObject(current);
+          this._hashes[current] = crypto.createHash(SHA_384.name).update(recordStreamObject).digest();
         }
       });
       this.hashesBefore = this._hashes.slice(0, index);
       this.hashesAfter = this._hashes.slice(index + 1);
     }
 
-    return _.pick(this, COMPACT_OBJECT_FIELDS);
+    return _.pick(this, this.constructor.compactObjectFields);
   }
 
+  /**
+   * Calculates the record file metadata hash
+   *
+   * @returns {Buffer}
+   */
+  _calculateMetadataHash() {
+    throw new Error('Unsupported operation');
+  }
+
+  /**
+   * Gets the RecordStreamObject at the index
+   *
+   * @param {Number} index
+   * @returns {Buffer}
+   */
+  _getRecordStreamObject(index) {
+    throw new Error('Unsupported operation');
+  }
+
+  /**
+   * Whether the record file object has RecordStreamObjects
+   *
+   * @return {boolean}
+   */
+  _hasRecordStreamObjects() {
+    return false;
+  }
+
+  /**
+   * Parses the record file from the raw buffer
+   *
+   * @param {Buffer} buffer
+   * @throws {Error}
+   */
   _parseFromBuffer(buffer) {
-    // only the REST service parses full record file v5 data and only the fields in the compact format response are
-    // needed, so don't calculate full file hash and metadata hash
-
-    // skip the bytes before the start hash object to read a list of stream objects organized as follows:
-    //
-    // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    // |  Start Object Running Hash  |
-    // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    // |    Record Stream Object     |
-    // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    // |    ...                      |
-    // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    // |    Record Stream Object     |
-    // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    // |   End Object Running Hash   |
-    // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-    //
-    // Note the start object running hash and the end object running hash are of the same type HashObject and
-    // they have the same classId an classVersion.
-    this.head = buffer.slice(0, V5_START_HASH_OFFSET);
-
-    buffer = buffer.slice(V5_START_HASH_OFFSET);
-    const startHashObject = new HashObject(buffer);
-    this.startRunningHashObject = buffer.slice(0, startHashObject.getLength());
-
-    buffer = buffer.slice(startHashObject.getLength());
-    this._recordStreamObjects = []; // store the record stream object raw buffer
-    while (buffer.readBigInt64BE() !== startHashObject.classId) {
-      // record stream objects are between the start hash object and the end hash object
-      const recordStreamObject = new RecordStreamObject(buffer);
-      this._addTransaction(recordStreamObject.record, this._recordStreamObjects.length);
-      this._recordStreamObjects.push(buffer.slice(0, recordStreamObject.getLength()));
-      buffer = buffer.slice(recordStreamObject.getLength());
-    }
-
-    this._hashes = new Array(this._recordStreamObjects.length).fill(undefined);
-    const endHashObject = new HashObject(buffer);
-    this.endRunningHashObject = buffer.slice(0, endHashObject.getLength());
-    if (buffer.length !== endHashObject.getLength()) {
-      throw new Error('Extra data discovered in record file');
-    }
+    throw new Error('Unsupported operation');
   }
 
+  /**
+   * Parses the record file from the compact format object
+   *
+   * @param obj
+   */
   _parseFromObj(obj) {
-    Object.assign(this, _.pick(obj, COMPACT_OBJECT_FIELDS));
+    Object.assign(this, _.pick(obj, this.constructor.compactObjectFields));
 
     this._verifyEndRunningHash();
 
@@ -145,14 +132,14 @@ class CompactRecordFile extends RecordFile {
     this._addTransaction(recordStreamObject.record);
 
     // calculate metadata hash
-    this._metadataHash = crypto
-      .createHash(SHA_384.name)
-      .update(this.head)
-      .update(this.startRunningHashObject)
-      .update(this.endRunningHashObject)
-      .digest();
+    this._metadataHash = this._calculateMetadataHash();
   }
 
+  /**
+   * Verifies the calculated end running hash matches what's in the record file
+   *
+   * @throws {Error} Will throw if calculated hash doesn't match
+   */
   _verifyEndRunningHash() {
     const startHashObject = new HashObject(this.startRunningHashObject);
     const endHashObject = new HashObject(this.endRunningHashObject);

@@ -33,7 +33,7 @@ const {SHA_384} = HashObject;
 // version, hapiVersion, previous hash marker, SHA-384 hash
 const PRE_V5_HEADER_LENGTH = INT_SIZE + INT_SIZE + BYTE_SIZE + SHA_384.length;
 
-class FullRecordFile extends RecordFile {
+class RecordFilePreV5 extends RecordFile {
   /**
    * Parses rcd file storing hash and transactionId map for future verification
    * @param {Buffer} buffer
@@ -41,7 +41,7 @@ class FullRecordFile extends RecordFile {
   constructor(buffer) {
     super();
 
-    if (FullRecordFile._support(buffer)) {
+    if (RecordFilePreV5._support(buffer)) {
       this._parsePreV5RecordFile(buffer);
     } else {
       throw new Error(`Unsupported record file`);
@@ -55,6 +55,10 @@ class FullRecordFile extends RecordFile {
 
     const version = RecordFile._readVersion(bufferOrObj);
     return version === 1 || version === 2;
+  }
+
+  getVersion() {
+    return this._version;
   }
 
   _parsePreV5RecordFile(buffer) {
@@ -94,4 +98,4 @@ class FullRecordFile extends RecordFile {
   }
 }
 
-export default FullRecordFile;
+export default RecordFilePreV5;

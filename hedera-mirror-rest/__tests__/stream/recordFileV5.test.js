@@ -18,11 +18,11 @@
  * ‍
  */
 
-import FullRecordFile from '../../stream/fullRecordFile';
+import RecordFileV5 from '../../stream/recordFileV5';
 import testUtils from './testUtils';
 
 describe('unsupported record file version', () => {
-  testUtils.testRecordFileUnsupportedVersion([3, 4, 5, 6], FullRecordFile);
+  testUtils.testRecordFileUnsupportedVersion([1, 2, 3, 4, 6], RecordFileV5);
 });
 
 describe('canCompact', () => {
@@ -31,13 +31,13 @@ describe('canCompact', () => {
     [2, false],
     [3, false],
     [4, false],
-    [5, false],
+    [5, true],
     [6, false],
   ];
 
-  testUtils.testRecordFileCanCompact(testSpecs, FullRecordFile);
+  testUtils.testRecordFileCanCompact(testSpecs, RecordFileV5);
 });
 
-describe('from v2 buffer', () => {
-  testUtils.testRecordFileFromBufferOrObj(2, FullRecordFile);
+describe('from v5 buffer or compact object', () => {
+  testUtils.testRecordFileFromBufferOrObj(5, RecordFileV5, true, true);
 });

@@ -18,6 +18,8 @@
  * ‍
  */
 
+import {proto} from '@hashgraph/proto';
+
 import {BYTE_SIZE, INT_SIZE} from './constants';
 import HashObject from './hashObject';
 import SignatureObject from './signatureObject';
@@ -41,6 +43,10 @@ class SignatureFile {
       case 5:
         this.version = 5;
         this._parseV5SignatureFile(buffer);
+        break;
+      case 6:
+        this.version = 6;
+        this._parseV6SignatureFile(buffer);
         break;
       default:
         throw new Error(`Unexpected signature file version '${version}'`);
@@ -85,6 +91,14 @@ class SignatureFile {
     this.fileHashSignature = fileHashSignatureObject.signature;
     this.metadataHash = metadataHashObject.hash;
     this.metadataHashSignature = metadataHashSignatureObject.signature;
+  }
+
+  _parseV6SignatureFile(buffer) {
+    const signatureFile = proto.SignatureFile.decode(buffer.slice(1));
+    this.fileHash = signatureFile.fileSignature.hashObject.hash;
+    this.fileHashSignature = signatureFile.fileSignature.signature;
+    this.metadataHash = signatureFile.metadataSignature.hashObject.hash;
+    this.metadataHashSignature = signatureFile.metadataSignature.signature;
   }
 }
 

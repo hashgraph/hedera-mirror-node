@@ -18,11 +18,12 @@
  * ‍
  */
 
-import CompactRecordFile from './compactRecordFile';
-import FullRecordFile from './fullRecordFile';
 import RecordFile from './recordFile';
+import RecordFilePreV5 from './recordFilePreV5';
+import RecordFileV5 from './recordFileV5';
+import RecordFileV6 from './recordFileV6';
 
-const delegates = [CompactRecordFile, FullRecordFile];
+const delegates = [RecordFilePreV5, RecordFileV5, RecordFileV6];
 
 class CompositeRecordFile extends RecordFile {
   constructor(bufferOrObj) {
