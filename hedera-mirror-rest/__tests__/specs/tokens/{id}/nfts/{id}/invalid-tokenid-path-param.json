@@ -8,7 +8,7 @@
     "cryptotransfers": [],
     "nfts": []
   },
-  "urls": ["/api/v1/tokens/mirror/nfts"],
+  "urls": ["/api/v1/tokens/mirror/nfts/2"],
   "responseStatus": 400,
   "responseJson": {
     "_status": {

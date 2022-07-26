@@ -69,7 +69,10 @@
   },
   "tests": [
     {
-      "url": "/api/v1/transactions?transactiontype=CRYPTOTRANSFER",
+      "urls": [
+        "/api/v1/transactions?transactionType=cryptotransfer",
+        "/api/v1/transactions?transactiontype=CRYPTOTRANSFER"
+      ],
       "responseStatus": 200,
       "responseJson": {
         "transactions": [
