@@ -8,8 +8,8 @@ require (
 	github.com/cucumber/godog v0.12.5
 	github.com/ethereum/go-ethereum v1.10.20
 	github.com/go-playground/validator/v10 v10.11.0
-	github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20220614085905-694ecae18fba
-	github.com/hashgraph/hedera-sdk-go/v2 v2.16.1
+	github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20220706052312-268a7f00b638
+	github.com/hashgraph/hedera-sdk-go/v2 v2.17.0
 	github.com/hellofresh/health-go/v4 v4.6.0
 	github.com/jackc/pgtype v1.11.0
 	github.com/lib/pq v1.10.6
@@ -108,12 +108,12 @@ require (
 	go.opentelemetry.io/otel v1.7.0 // indirect
 	go.opentelemetry.io/otel/trace v1.7.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
-	golang.org/x/crypto v0.0.0-20220518034528-6f7dac969898 // indirect
-	golang.org/x/net v0.0.0-20220607020251-c690dde0001d // indirect
+	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d // indirect
+	golang.org/x/net v0.0.0-20220708220712-1185a9018129 // indirect
 	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect
 	golang.org/x/text v0.3.7 // indirect
-	google.golang.org/genproto v0.0.0-20220519153652-3a47de7e79bd // indirect
-	google.golang.org/grpc v1.47.0 // indirect
+	google.golang.org/genproto v0.0.0-20220718134204-073382fd740c // indirect
+	google.golang.org/grpc v1.48.0 // indirect
 	gopkg.in/ini.v1 v1.66.4 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
