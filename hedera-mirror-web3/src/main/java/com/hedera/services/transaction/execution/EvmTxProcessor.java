@@ -61,6 +61,7 @@ import com.hedera.mirror.web3.evm.SimulatedPricesSource;
 import com.hedera.mirror.web3.evm.SimulatorUpdater;
 import com.hedera.mirror.web3.evm.properties.EvmProperties;
 import com.hedera.mirror.web3.evm.properties.BlockMetaSourceProvider;
+import com.hedera.mirror.web3.evm.properties.SimulatedBlockMetaSource;
 import com.hedera.services.transaction.HederaMessageCallProcessor;
 import com.hedera.services.transaction.TransactionProcessingResult;
 import com.hedera.services.transaction.exception.InvalidTransactionException;

@@ -29,6 +29,9 @@ import org.hyperledger.besu.evm.frame.BlockValues;
 import com.hedera.mirror.web3.evm.exception.MissingResultException;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
 
+/**
+ * Provider of block meta information, calculated based on the state in the DB
+ */
 @Singleton
 @RequiredArgsConstructor
 public class BlockMetaSourceProvider {
