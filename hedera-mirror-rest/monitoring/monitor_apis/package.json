@@ -23,11 +23,11 @@
     "extend": "^3.0.2",
     "http-errors": "^2.0.0",
     "lodash": "^4.17.21",
-    "log4js": "^6.6.0",
+    "log4js": "^6.6.1",
     "mathjs": "^11.0.1",
-    "node-fetch": "^2.6.7",
+    "node-fetch": "^3.2.9",
     "parse-duration": "^1.0.2",
-    "pretty-ms": "^7.0.1"
+    "pretty-ms": "^8.0.0"
   },
   "devDependencies": {
     "jest": "^28.1.3",
