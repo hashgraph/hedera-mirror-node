@@ -34,7 +34,7 @@ class NetworkNodeService extends BaseService {
     ),
     ${NodeStake.tableAlias} as (
       select ${NodeStake.MAX_STAKE}, ${NodeStake.MIN_STAKE}, ${NodeStake.NODE_ID}, ${NodeStake.REWARD_RATE},
-             ${NodeStake.STAKE}, ${NodeStake.STAKE_NOT_REWARDED}, ${NodeStake.STAKE_REWARDED}, ${NodeStake.STAKE_TOTAL},
+             ${NodeStake.STAKE}, ${NodeStake.STAKE_NOT_REWARDED}, ${NodeStake.STAKE_REWARDED},
              ${NodeStake.STAKING_PERIOD}
       from ${NodeStake.tableName}
       where ${NodeStake.CONSENSUS_TIMESTAMP} =
@@ -57,7 +57,6 @@ class NetworkNodeService extends BaseService {
   )}) as stake,
       ${NodeStake.getFullName(NodeStake.STAKE_NOT_REWARDED)},
       ${NodeStake.getFullName(NodeStake.STAKE_REWARDED)},
-      ${NodeStake.getFullName(NodeStake.STAKE_TOTAL)},
       ${NodeStake.getFullName(NodeStake.STAKING_PERIOD)},
       coalesce((
         select jsonb_agg(jsonb_build_object(

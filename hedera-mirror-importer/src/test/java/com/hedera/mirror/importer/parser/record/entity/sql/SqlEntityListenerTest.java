@@ -89,6 +89,7 @@ import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.EthereumTransactionRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.repository.LiveHashRepository;
+import com.hedera.mirror.importer.repository.NetworkStakeRepository;
 import com.hedera.mirror.importer.repository.NftAllowanceRepository;
 import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.NftTransferRepository;
@@ -108,6 +109,7 @@ import com.hedera.mirror.importer.repository.TransactionSignatureRepository;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class SqlEntityListenerTest extends IntegrationTest {
+
     private static final String KEY = "0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110fff";
     private static final String KEY2 = "0a3312200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92";
     private static final EntityId TRANSACTION_PAYER = EntityId.of("0.0.1000", ACCOUNT);
@@ -125,6 +127,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     private final EthereumTransactionRepository ethereumTransactionRepository;
     private final FileDataRepository fileDataRepository;
     private final LiveHashRepository liveHashRepository;
+    private final NetworkStakeRepository networkStakeRepository;
     private final NftRepository nftRepository;
     private final NftAllowanceRepository nftAllowanceRepository;
     private final NftTransferRepository nftTransferRepository;
@@ -150,7 +153,8 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     private static Stream<Arguments> provideParamsContractHistory() {
-        Consumer<Contract.ContractBuilder> emptyCustomizer = c -> {};
+        Consumer<Contract.ContractBuilder> emptyCustomizer = c -> {
+        };
         Consumer<Contract.ContractBuilder> initcodeCustomizer = c -> c.fileId(null).initcode(new byte[] {1, 2, 3, 4});
         return Stream.of(
                 Arguments.of("fileId", emptyCustomizer, 1),
@@ -789,6 +793,21 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(liveHashRepository.findAll()).containsExactly(liveHash);
+    }
+
+    @Test
+    void onNetworkStake() {
+        // given
+        var networkStake1 = domainBuilder.networkStake().get();
+        var networkStake2 = domainBuilder.networkStake().get();
+
+        // when
+        sqlEntityListener.onNetworkStake(networkStake1);
+        sqlEntityListener.onNetworkStake(networkStake2);
+        completeFileAndCommit();
+
+        // then
+        assertThat(networkStakeRepository.findAll()).containsExactlyInAnyOrder(networkStake1, networkStake2);
     }
 
     @Test

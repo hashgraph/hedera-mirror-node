@@ -1254,7 +1254,6 @@ const addNodeStake = async (nodeStakeInput) => {
     stake: 0,
     stake_not_rewarded: 0,
     stake_rewarded: 0,
-    stake_total: 0,
     staking_period: stakingPeriodEnd,
     ...nodeStakeInput,
   };

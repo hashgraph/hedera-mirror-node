@@ -83,48 +83,50 @@ class PubSubMessageTest {
     }
 
     private static String getExpectedTransactionJson() {
-        return "\"transaction\" : {" +
-                "  \"body\": {" +
-                "    \"transactionID\": {" +
-                "      \"transactionValidStart\": {" +
-                "        \"seconds\": \"0\"," +
-                "        \"nanos\": 123456789" +
-                "      }," +
-                "      \"accountID\": {" +
-                "        \"shardNum\": \"0\"," +
-                "        \"realmNum\": \"0\"," +
-                "        \"accountNum\": \"10\"" +
-                "      }," +
-                "      \"scheduled\": false," +
-                "      \"nonce\": 0" +
-                "    }," +
-                "    \"nodeAccountID\": {" +
-                "      \"shardNum\": \"0\"," +
-                "      \"realmNum\": \"0\"," +
-                "      \"accountNum\": \"10\"" +
-                "    }," +
-                "    \"transactionFee\": \"100000000\"," +
-                "    \"transactionValidDuration\": {" +
-                "      \"seconds\": \"100000000\"" +
-                "    }," +
-                "    \"generateRecord\": false," +
-                "    \"memo\": \"abcdef\"," +
-                "    \"consensusSubmitMessage\": {" +
-                "      \"topicID\": {" +
-                "        \"shardNum\": \"0\"," +
-                "        \"realmNum\": \"0\"," +
-                "        \"topicNum\": \"20\"" +
-                "      }," +
-                "      \"message\": \"YWJjZGVm\"" +
-                "    }" +
-                "  }," +
-                "  \"sigMap\": {" +
-                "    \"sigPair\": [{" +
-                "      \"pubKeyPrefix\": \"YWJjZGVm\"," +
-                "      \"ed25519\": \"YWJjZGVm\"" +
-                "    }]" +
-                "  }" +
-                "}";
+        return """
+                "transaction" : {
+                  "body": {
+                    "transactionID": {
+                      "transactionValidStart": {
+                        "seconds": "0",
+                        "nanos": 123456789
+                      },
+                      "accountID": {
+                        "shardNum": "0",
+                        "realmNum": "0",
+                        "accountNum": "10"
+                      },
+                      "scheduled": false,
+                      "nonce": 0
+                    },
+                    "nodeAccountID": {
+                      "shardNum": "0",
+                      "realmNum": "0",
+                      "accountNum": "10"
+                    },
+                    "transactionFee": "100000000",
+                    "transactionValidDuration": {
+                      "seconds": "100000000"
+                    },
+                    "generateRecord": false,
+                    "memo": "abcdef",
+                    "consensusSubmitMessage": {
+                      "topicID": {
+                        "shardNum": "0",
+                        "realmNum": "0",
+                        "topicNum": "20"
+                      },
+                      "message": "YWJjZGVm"
+                    }
+                  },
+                  "sigMap": {
+                    "sigPair": [{
+                      "pubKeyPrefix": "YWJjZGVm",
+                      "ed25519": "YWJjZGVm"
+                    }]
+                  }
+                }
+                """;
     }
 
     private static TransactionRecord getTransactionRecord() {
@@ -147,48 +149,50 @@ class PubSubMessageTest {
     }
 
     private static String getExpectedTransactionRecord() {
-        return "\"transactionRecord\" : {" +
-                "  \"receipt\": {" +
-                "    \"status\": \"SUCCESS\"," +
-                "    \"topicSequenceNumber\": \"100000000\"," +
-                "    \"topicRunningHash\": \"YWJjZGVm\"," +
-                "    \"topicRunningHashVersion\": \"0\"," +
-                "    \"newTotalSupply\": \"0\"," +
-                "    \"serialNumbers\": []" +
-                "  }," +
-                "  \"transactionHash\": \"YWJjZGVm\"," +
-                "  \"consensusTimestamp\": {" +
-                "    \"seconds\": \"0\"," +
-                "    \"nanos\": 123456789" +
-                "  }," +
-                "  \"memo\": \"\"," +
-                "  \"transactionFee\": \"0\"," +
-                "  \"transferList\": {" +
-                "    \"accountAmounts\": [{" +
-                "      \"accountID\": {" +
-                "        \"shardNum\": \"0\"," +
-                "        \"realmNum\": \"0\"," +
-                "        \"accountNum\": \"10\"" +
-                "      }," +
-                "      \"amount\": \"100000000\"," +
-                "      \"isApproval\": false" +
-                "    }, {" +
-                "      \"accountID\": {" +
-                "        \"shardNum\": \"0\"," +
-                "        \"realmNum\": \"0\"," +
-                "        \"accountNum\": \"10\"" +
-                "      }," +
-                "      \"amount\": \"100000000\"," +
-                "      \"isApproval\": false" +
-                "    }]" +
-                "  }," +
-                "  \"tokenTransferLists\":[]," +
-                "  \"assessedCustomFees\":[]," +
-                "  \"automaticTokenAssociations\":[]," +
-                "  \"alias\":\"\"," +
-                "  \"ethereumHash\":\"YWJjZGVm\"," +
-                "  \"paidStakingRewards\":[]" +
-                "}";
+        return """
+                "transactionRecord" : {
+                  "receipt": {
+                    "status": "SUCCESS",
+                    "topicSequenceNumber": "100000000",
+                    "topicRunningHash": "YWJjZGVm",
+                    "topicRunningHashVersion": "0",
+                    "newTotalSupply": "0",
+                    "serialNumbers": []
+                  },
+                  "transactionHash": "YWJjZGVm",
+                  "consensusTimestamp": {
+                    "seconds": "0",
+                    "nanos": 123456789
+                  },
+                 "memo": "",
+                 "transactionFee": "0",
+                  "transferList": {
+                    "accountAmounts": [{
+                      "accountID": {
+                        "shardNum": "0",
+                        "realmNum": "0",
+                        "accountNum": "10"
+                      },
+                      "amount": "100000000",
+                      "isApproval": false
+                    }, {
+                      "accountID": {
+                        "shardNum": "0",
+                        "realmNum": "0",
+                        "accountNum": "10"
+                      },
+                      "amount": "100000000",
+                      "isApproval": false
+                    }]
+                  },
+                  "tokenTransferLists":[],
+                  "assessedCustomFees":[],
+                  "automaticTokenAssociations":[],
+                  "alias":"",
+                  "ethereumHash":"YWJjZGVm",
+                  "paidStakingRewards":[]
+                }
+                """;
     }
 
     @Test
@@ -205,35 +209,38 @@ class PubSubMessageTest {
                 nonFeeTransfers);
         ObjectMapper objectMapper = new ObjectMapper();
         String actual = objectMapper.writeValueAsString(pubSubMessage);
-        String expected = "{" +
-                "  \"consensusTimestamp\" : 123456789," +
-                "  \"entity\" : {" +
-                "    \"shardNum\" : 0," +
-                "    \"realmNum\" : 0," +
-                "    \"entityNum\" : 20," +
-                "    \"type\" : 4" +
-                "  }," +
-                "  \"transactionType\" : 10," +
-                getExpectedTransactionJson() + "," +
-                getExpectedTransactionRecord() + "," +
-                "  \"nonFeeTransfers\" : [ {" +
-                "    \"accountID\": {" +
-                "      \"shardNum\": \"0\"," +
-                "      \"realmNum\": \"0\"," +
-                "      \"accountNum\": \"10\"" +
-                "      }," +
-                "    \"amount\": \"100000000\"," +
-                "    \"isApproval\": false" +
-                "  }, {" +
-                "    \"accountID\": {" +
-                "      \"shardNum\": \"0\"," +
-                "      \"realmNum\": \"0\"," +
-                "      \"accountNum\": \"10\"" +
-                "      }," +
-                "    \"amount\": \"100000000\"," +
-                "    \"isApproval\": false" +
-                "  } ]" +
-                "}";
+        String pre = """
+                {
+                  "consensusTimestamp" : 123456789,
+                  "entity" : {
+                    "shardNum" : 0,
+                    "realmNum" : 0,
+                    "entityNum" : 20,
+                    "type" : 4
+                  },
+                  "transactionType" : 10,
+                """;
+        String post = """
+                  "nonFeeTransfers" : [ {
+                    "accountID": {
+                      "shardNum": "0",
+                      "realmNum": "0",
+                      "accountNum": "10"
+                      },
+                    "amount": "100000000",
+                    "isApproval": false
+                  }, {
+                    "accountID": {
+                      "shardNum": "0",
+                      "realmNum": "0",
+                      "accountNum": "10"
+                      },
+                    "amount": "100000000",
+                    "isApproval": false
+                  } ]
+                };
+                """;
+        String expected = pre + getExpectedTransactionJson() + "," + getExpectedTransactionRecord() + "," + post;
         JSONAssert.assertEquals(expected, actual, true);
     }
 
@@ -244,12 +251,13 @@ class PubSubMessageTest {
                 getTransactionRecord(), null);
         ObjectMapper objectMapper = new ObjectMapper();
         String actual = objectMapper.writeValueAsString(pubSubMessage);
-        String expected = "{" +
-                "  \"consensusTimestamp\" : 123456789," +
-                "  \"transactionType\" : 10," +
+        String expected = """
+                {
+                  "consensusTimestamp" : 123456789,
+                  "transactionType" : 10,
+                """ +
                 getExpectedTransactionJson() + "," +
-                getExpectedTransactionRecord() +
-                "}";
+                getExpectedTransactionRecord() + "}";
         JSONAssert.assertEquals(expected, actual, true);
     }
 }

@@ -1925,7 +1925,6 @@ components:
         - stake
         - stake_not_rewarded
         - stake_rewarded
-        - stake_total
         - staking_period
         - timestamp
       properties:
@@ -1989,11 +1988,6 @@ components:
           type: number
           format: int64
           nullable: true
-        stake_total:
-          description: The sum of all nodes' consensus weight at the beginning of the staking period
-          type: number
-          format: int64
-          nullable: true
         staking_period:
           allOf:
             - $ref: '#/components/schemas/TimestampRange'
@@ -2018,7 +2012,6 @@ components:
         stake: 20000
         stake_not_rewarded: 19900
         stake_rewarded: 100
-        stake_total: 100000
         staking_period:
           from: '1655164800.000000000'
           to: '1655251200.000000000'

@@ -27,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.context.annotation.Primary;
 
+import com.hedera.mirror.common.domain.addressbook.NetworkStake;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractAction;
@@ -139,8 +140,8 @@ public class CompositeEntityListener implements EntityListener {
     }
 
     @Override
-    public void onNonFeeTransfer(NonFeeTransfer nonFeeTransfer) throws ImporterException {
-        onEach(EntityListener::onNonFeeTransfer, nonFeeTransfer);
+    public void onNetworkStake(NetworkStake networkStake) throws ImporterException {
+        onEach(EntityListener::onNetworkStake, networkStake);
     }
 
     @Override
@@ -159,8 +160,13 @@ public class CompositeEntityListener implements EntityListener {
     }
 
     @Override
-    public void onNodeStake(NodeStake nodeStake) {
+    public void onNodeStake(NodeStake nodeStake) throws ImporterException {
         onEach(EntityListener::onNodeStake, nodeStake);
+    }
+
+    @Override
+    public void onNonFeeTransfer(NonFeeTransfer nonFeeTransfer) throws ImporterException {
+        onEach(EntityListener::onNonFeeTransfer, nonFeeTransfer);
     }
 
     @Override
