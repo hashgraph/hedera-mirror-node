@@ -69,13 +69,13 @@ class NodeStakeUpdateTransactionHandler implements TransactionHandler {
 
         NetworkStake networkStake = new NetworkStake();
         networkStake.setConsensusTimestamp(consensusTimestamp);
-        networkStake.setEndOfStakingPeriod(stakingPeriod);
         networkStake.setEpochDay(epochDay);
         networkStake.setMaxStakingRewardRatePerHbar(transactionBody.getMaxStakingRewardRatePerHbar());
         networkStake.setNodeRewardFeeDenominator(transactionBody.getNodeRewardFeeFraction().getDenominator());
         networkStake.setNodeRewardFeeNumerator(transactionBody.getNodeRewardFeeFraction().getNumerator());
         networkStake.setStakeTotal(stakeTotal);
-        networkStake.setStakingPeriod(transactionBody.getStakingPeriod());
+        networkStake.setStakingPeriod(stakingPeriod);
+        networkStake.setStakingPeriodDuration(transactionBody.getStakingPeriod());
         networkStake.setStakingPeriodsStored(transactionBody.getStakingPeriodsStored());
         networkStake.setStakingRewardFeeDenominator(transactionBody.getStakingRewardFeeFraction().getDenominator());
         networkStake.setStakingRewardFeeNumerator(transactionBody.getStakingRewardFeeFraction().getNumerator());

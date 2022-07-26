@@ -38,13 +38,13 @@ public class NetworkStake implements Persistable<Long> {
 
     @javax.persistence.Id
     private long consensusTimestamp;
-    private long endOfStakingPeriod;
     private long epochDay;
     private long maxStakingRewardRatePerHbar;
     private long nodeRewardFeeDenominator;
     private long nodeRewardFeeNumerator;
     private long stakeTotal;
     private long stakingPeriod;
+    private long stakingPeriodDuration;
     private long stakingPeriodsStored;
     private long stakingRewardFeeDenominator;
     private long stakingRewardFeeNumerator;

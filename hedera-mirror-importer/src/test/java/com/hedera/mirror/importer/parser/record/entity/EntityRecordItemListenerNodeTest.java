@@ -70,14 +70,14 @@ class EntityRecordItemListenerNodeTest extends AbstractEntityRecordItemListenerT
                         .first()
                         .returns(recordItem.getConsensusTimestamp(), NetworkStake::getConsensusTimestamp)
                         .returns(epochDay, NetworkStake::getEpochDay)
-                        .returns(stakingPeriod, NetworkStake::getEndOfStakingPeriod)
                         .returns(body.getMaxStakingRewardRatePerHbar(), NetworkStake::getMaxStakingRewardRatePerHbar)
                         .returns(body.getNodeRewardFeeFraction().getDenominator(),
                                 NetworkStake::getNodeRewardFeeDenominator)
                         .returns(body.getNodeRewardFeeFraction().getNumerator(),
                                 NetworkStake::getNodeRewardFeeNumerator)
                         .returns(nodeStake.getStake(), NetworkStake::getStakeTotal)
-                        .returns(body.getStakingPeriod(), NetworkStake::getStakingPeriod)
+                        .returns(stakingPeriod, NetworkStake::getStakingPeriod)
+                        .returns(body.getStakingPeriod(), NetworkStake::getStakingPeriodDuration)
                         .returns(body.getStakingPeriodsStored(), NetworkStake::getStakingPeriodsStored)
                         .returns(body.getStakingRewardFeeFraction().getDenominator(),
                                 NetworkStake::getStakingRewardFeeDenominator)
