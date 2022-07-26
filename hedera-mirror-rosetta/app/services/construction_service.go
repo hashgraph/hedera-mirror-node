@@ -176,31 +176,33 @@ func (c *constructionAPIService) ConstructionMetadata(
 		SuggestedFee: []*rTypes.Amount{maxFee.ToRosetta()},
 	}
 
-	if options[optionKeyAccountAliases] != nil {
-		if !c.BaseService.IsOnline() {
-			return nil, errors.ErrEndpointNotSupportedInOfflineMode
-		}
-
-		accountAliases, ok := options[optionKeyAccountAliases].(string)
-		if !ok {
-			return nil, errors.ErrInvalidOptions
-		}
-
-		var accountMap []string
-		for _, accountAlias := range strings.Split(accountAliases, ",") {
-			accountId, err := types.NewAccountIdFromString(accountAlias, c.systemShard, c.systemRealm)
-			if err != nil {
-				return nil, errors.ErrInvalidAccount
-			}
-
-			if found, rErr := c.accountRepo.GetAccountId(ctx, accountId); rErr != nil {
-				return nil, rErr
-			} else {
-				accountMap = append(accountMap, fmt.Sprintf("%s:%s", accountAlias, found))
-			}
-		}
-		response.Metadata[metadataKeyAccountMap] = strings.Join(accountMap, ",")
+	if options[optionKeyAccountAliases] == nil {
+		return response, nil
 	}
+
+	if !c.BaseService.IsOnline() {
+		return nil, errors.ErrEndpointNotSupportedInOfflineMode
+	}
+
+	accountAliases, ok := options[optionKeyAccountAliases].(string)
+	if !ok {
+		return nil, errors.ErrInvalidOptions
+	}
+
+	var accountMap []string
+	for _, accountAlias := range strings.Split(accountAliases, ",") {
+		accountId, err := types.NewAccountIdFromString(accountAlias, c.systemShard, c.systemRealm)
+		if err != nil {
+			return nil, errors.ErrInvalidAccount
+		}
+
+		found, rErr := c.accountRepo.GetAccountId(ctx, accountId)
+		if rErr != nil {
+			return nil, rErr
+		}
+		accountMap = append(accountMap, fmt.Sprintf("%s:%s", accountAlias, found))
+	}
+	response.Metadata[metadataKeyAccountMap] = strings.Join(accountMap, ",")
 
 	return response, nil
 }
@@ -407,38 +409,40 @@ func (c *constructionAPIService) getOperationSlice(operations []*rTypes.Operatio
 }
 
 func (c *constructionAPIService) getSdkPayerAccountId(payerAccountId types.AccountId, accountMapMetadata interface{}) (
-	hedera.AccountID,
-	*rTypes.Error,
+	zero hedera.AccountID,
+	_ *rTypes.Error,
 ) {
-	var payer hedera.AccountID
 	if !payerAccountId.HasAlias() {
-		payer = payerAccountId.ToSdkAccountId()
-	} else {
-		// look up the account map metadata for the alias account's `shard.realm.num` account id
-		if accountMapMetadata == nil {
-			return payer, errors.ErrAccountNotFound
+		return payerAccountId.ToSdkAccountId(), nil
+	}
+
+	// if it's an alias account, look up the account map metadata for its `shard.realm.num` account id
+	if accountMapMetadata == nil {
+		return zero, errors.ErrAccountNotFound
+	}
+
+	accountMap, ok := accountMapMetadata.(string)
+	if !ok {
+		return zero, errors.ErrAccountNotFound
+	}
+
+	var payer hedera.AccountID
+	payerAlias := payerAccountId.String()
+	for _, aliasMap := range strings.Split(accountMap, ",") {
+		if !strings.HasPrefix(aliasMap, payerAlias) {
+			continue
 		}
 
-		accountMap, ok := accountMapMetadata.(string)
-		if !ok {
-			return payer, errors.ErrAccountNotFound
+		var err error
+		mapping := strings.Split(aliasMap, ":")
+		if payer, err = hedera.AccountIDFromString(mapping[1]); err != nil {
+			return zero, errors.ErrInvalidAccount
 		}
+		break
+	}
 
-		payerAlias := payerAccountId.String()
-		for _, aliasMap := range strings.Split(accountMap, ",") {
-			if strings.HasPrefix(aliasMap, payerAlias) {
-				var err error
-				mapping := strings.Split(aliasMap, ":")
-				if payer, err = hedera.AccountIDFromString(mapping[1]); err != nil {
-					return payer, errors.ErrInvalidAccount
-				}
-				break
-			}
-		}
-
-		if payer.Account == 0 {
-			return hedera.AccountID{}, errors.ErrAccountNotFound
-		}
+	if payer.Account == 0 {
+		return zero, errors.ErrAccountNotFound
 	}
 
 	return payer, nil
