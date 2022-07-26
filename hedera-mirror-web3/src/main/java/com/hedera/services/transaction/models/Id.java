@@ -4,26 +4,13 @@ import static java.lang.System.arraycopy;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
-import com.hederahashgraph.api.proto.java.AccountID;
 import com.swirlds.common.utility.CommonUtils;
-import java.util.Comparator;
 import org.hyperledger.besu.datatypes.Address;
 
 /**
  * Represents the id of a Hedera entity (account, topic, token, contract, file, or schedule).
  */
 public record Id(long shard, long realm, long num) {
-    public static final Id DEFAULT = new Id(0, 0, 0);
-    public static final Comparator<Id> ID_COMPARATOR = Comparator
-            .comparingLong(Id::num)
-            .thenComparingLong(Id::shard)
-            .thenComparingLong(Id::realm);
-    public static final Id MISSING_ID = new Id(0, 0, 0);
-
-    public static Id fromGrpcAccount(final AccountID id) {
-        return new Id(id.getShardNum(), id.getRealmNum(), id.getAccountNum());
-    }
-
     /**
      * Returns the EVM representation of the Account
      *
