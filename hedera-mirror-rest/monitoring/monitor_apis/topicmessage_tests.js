@@ -18,10 +18,9 @@
  * ‍
  */
 
-'use strict';
+import config from './config';
 
-const config = require('./config');
-const {
+import {
   checkAPIResponseError,
   checkElementsOrder,
   checkRespObjDefined,
@@ -33,7 +32,7 @@ const {
   getUrl,
   testRunner,
   CheckRunner,
-} = require('./utils');
+} from './utils';
 
 const resource = 'topic';
 const resourceLimit = config[resource].limit || DEFAULT_LIMIT;
@@ -326,7 +325,7 @@ const runTests = async (server, testResult) => {
   ]);
 };
 
-module.exports = {
+export default {
   resource,
   runTests,
 };

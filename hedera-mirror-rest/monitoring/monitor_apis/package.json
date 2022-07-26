@@ -2,14 +2,15 @@
   "name": "@hashgraph/mirror-monitor",
   "version": "0.62.0-SNAPSHOT",
   "description": "Hedera Mirror Node Monitor",
+  "type": "module",
   "main": "server.js",
   "private": true,
   "engines": {
     "node": ">=16.13.0 < 17"
   },
   "scripts": {
-    "test": "jest --watchAll",
-    "dev": "nodemon app.js"
+    "dev": "nodemon --experimental-specifier-resolution=node server.js",
+    "start": "node --experimental-specifier-resolution=node server.js"
   },
   "author": "Hedera Mirror Node Team",
   "license": "Apache-2.0",
