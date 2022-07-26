@@ -2,6 +2,8 @@
 
 exports[`from v6 buffer or compact object check individual field from v6 buffer - toCompactObject - ["0.0.1-123-123456789"] 1`] = `"Transaction 0.0.1-123-123456789 not found in the successful transactions map"`;
 
+exports[`from v6 buffer or compact object check individual field from v6 compact object - toCompactObject - ["0.0.1-123-123456789"] 1`] = `"Transaction 0.0.1-123-123456789 not found in the successful transactions map"`;
+
 exports[`from v6 buffer or compact object end running hash mismatch 1`] = `"End object running hash mismatch"`;
 
 exports[`from v6 buffer or compact object truncated v6 buffer 1`] = `"index out of range: 6658 + 1 > 6658"`;

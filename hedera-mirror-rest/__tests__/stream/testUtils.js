@@ -99,6 +99,72 @@ const v6CompactObject = {
   blockNumber: Buffer.from('AAAAAAAEKgg=', 'base64'),
 };
 
+const commonV5Checks = [
+  {
+    func: 'containsTransaction',
+    args: ['0.0.365299-1615141267-266970662'],
+    expected: true,
+  },
+  {
+    func: 'containsTransaction',
+    args: ['0.0.1-123-123456789'],
+    expected: false,
+  },
+  {
+    func: 'getFileHash',
+    args: [],
+    expected: null,
+  },
+  {
+    func: 'getVersion',
+    args: [],
+    expected: 5,
+  },
+  {
+    func: 'toCompactObject',
+    args: ['0.0.365299-1615141267-266970662'],
+    expected: v5CompactObject,
+  },
+  {
+    func: 'toCompactObject',
+    args: ['0.0.1-123-123456789'],
+    expectErr: true,
+  },
+];
+
+const commonV6Checks = [
+  {
+    func: 'containsTransaction',
+    args: ['0.0.90-1658726417-327924961'],
+    expected: true,
+  },
+  {
+    func: 'containsTransaction',
+    args: ['0.0.1-123-123456789'],
+    expected: false,
+  },
+  {
+    func: 'getFileHash',
+    args: [],
+    expected: null,
+  },
+  {
+    func: 'getVersion',
+    args: [],
+    expected: 6,
+  },
+  {
+    func: 'toCompactObject',
+    args: ['0.0.90-1658726417-327924961'],
+    expected: v6CompactObject,
+  },
+  {
+    func: 'toCompactObject',
+    args: ['0.0.1-123-123456789'],
+    expectErr: true,
+  },
+];
+
 const testRecordFiles = {
   v2: [
     {
@@ -152,21 +218,7 @@ const testRecordFiles = {
     {
       buffer: fs.readFileSync(path.join(v5RecordStreamsPath, '2021-03-07T18_21_20.041164000Z.rcd')),
       checks: [
-        {
-          func: 'containsTransaction',
-          args: ['0.0.365299-1615141267-604167594'],
-          expected: true,
-        },
-        {
-          func: 'containsTransaction',
-          args: ['0.0.1-123-123456789'],
-          expected: false,
-        },
-        {
-          func: 'getFileHash',
-          args: [],
-          expected: null,
-        },
+        ...commonV5Checks,
         {
           func: 'getMetadataHash',
           args: [],
@@ -185,41 +237,12 @@ const testRecordFiles = {
             '0.0.88-1615141270-697933000-0-false': 6,
           },
         },
-        {
-          func: 'getVersion',
-          args: [],
-          expected: 5,
-        },
-        {
-          func: 'toCompactObject',
-          args: ['0.0.365299-1615141267-266970662'],
-          expected: v5CompactObject,
-        },
-        {
-          func: 'toCompactObject',
-          args: ['0.0.1-123-123456789'],
-          expectErr: true,
-        },
       ],
     },
     {
       obj: v5CompactObject,
       checks: [
-        {
-          func: 'containsTransaction',
-          args: ['0.0.365299-1615141267-266970662'],
-          expected: true,
-        },
-        {
-          func: 'containsTransaction',
-          args: ['0.0.365299-1615141267-604167594'],
-          expected: false,
-        },
-        {
-          func: 'getFileHash',
-          args: [],
-          expected: null,
-        },
+        ...commonV5Checks,
         {
           func: 'getMetadataHash',
           args: [],
@@ -230,16 +253,6 @@ const testRecordFiles = {
           args: [],
           expected: {'0.0.365299-1615141267-266970662-0-false': null},
         },
-        {
-          func: 'getVersion',
-          args: [],
-          expected: 5,
-        },
-        {
-          func: 'toCompactObject',
-          args: ['0.0.365299-1615141267-266970662'],
-          expected: v5CompactObject,
-        },
       ],
     },
   ],
@@ -247,21 +260,7 @@ const testRecordFiles = {
     {
       buffer: fs.readFileSync(path.join(v6RecordStreamsPath, '2022-07-25T05_20_26.016617003Z.rcd')),
       checks: [
-        {
-          func: 'containsTransaction',
-          args: ['0.0.90-1658726414-804049281'],
-          expected: true,
-        },
-        {
-          func: 'containsTransaction',
-          args: ['0.0.1-123-123456789'],
-          expected: false,
-        },
-        {
-          func: 'getFileHash',
-          args: [],
-          expected: null,
-        },
+        ...commonV6Checks,
         {
           func: 'getMetadataHash',
           args: [],
@@ -290,41 +289,12 @@ const testRecordFiles = {
             '0.0.90-1658726416-691474692-0-false': 16,
           },
         },
-        {
-          func: 'getVersion',
-          args: [],
-          expected: 6,
-        },
-        {
-          func: 'toCompactObject',
-          args: ['0.0.90-1658726417-327924961'],
-          expected: v6CompactObject,
-        },
-        {
-          func: 'toCompactObject',
-          args: ['0.0.1-123-123456789'],
-          expectErr: true,
-        },
       ],
     },
     {
       obj: v6CompactObject,
       checks: [
-        {
-          func: 'containsTransaction',
-          args: ['0.0.90-1658726417-327924961'],
-          expected: true,
-        },
-        {
-          func: 'containsTransaction',
-          args: ['0.0.90-1658726416-691474692'],
-          expected: false,
-        },
-        {
-          func: 'getFileHash',
-          args: [],
-          expected: null,
-        },
+        ...commonV6Checks,
         {
           func: 'getMetadataHash',
           args: [],
@@ -334,16 +304,6 @@ const testRecordFiles = {
           func: 'getTransactionMap',
           args: [],
           expected: {'0.0.90-1658726417-327924961-0-false': null},
-        },
-        {
-          func: 'getVersion',
-          args: [],
-          expected: 6,
-        },
-        {
-          func: 'toCompactObject',
-          args: ['0.0.90-1658726417-327924961'],
-          expected: v6CompactObject,
         },
       ],
     },
