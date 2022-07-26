@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
+import com.google.protobuf.BytesValue;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -62,6 +63,10 @@ import com.hedera.mirror.importer.repository.ContractLogRepository;
 import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.ContractStateChangeRepository;
+import com.hedera.services.stream.proto.ContractBytecode;
+import com.hedera.services.stream.proto.ContractStateChanges;
+import com.hedera.services.stream.proto.StorageChange;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class ContractResultServiceImplIntegrationTest extends IntegrationTest {
@@ -88,9 +93,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
     @Test
     void getContractResultOnCreate() {
-        RecordItem recordItem = recordItemBuilder.contractCreate(CONTRACT_ID)
-                .sidecarRecords(r -> r.get(2).setMigration(true))
-                .build();
+        RecordItem recordItem = recordItemBuilder.contractCreate(CONTRACT_ID).build();
         ContractFunctionResult contractFunctionResult = recordItem.getRecord().getContractCreateResult();
 
         contractResultsTest(recordItem, contractFunctionResult);
@@ -174,6 +177,60 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
         contractResultsTest(recordItem, contractFunctionResult);
     }
 
+    @Test
+    void migrateContractSidecar() {
+        RecordItem recordItem = recordItemBuilder.cryptoTransfer().build();
+        var stateChangeRecord1 = TransactionSidecarRecord.newBuilder()
+                .setStateChanges(ContractStateChanges.newBuilder()
+                        .addContractStateChanges(com.hedera.services.stream.proto.ContractStateChange.newBuilder()
+                                .setContractId(ContractID.newBuilder().setContractNum(1001L))
+                                .addStorageChanges(StorageChange.newBuilder()
+                                        .setValueWritten(BytesValue.of(DomainUtils.fromBytes(new byte[] {1, 1})))))
+                        .addContractStateChanges(com.hedera.services.stream.proto.ContractStateChange.newBuilder()
+                                .setContractId(ContractID.newBuilder().setContractNum(1002L))
+                                .addStorageChanges(StorageChange.newBuilder()
+                                        .setValueWritten(BytesValue.of(DomainUtils.fromBytes(new byte[] {2, 2}))))))
+                .build();
+        var stateChangeRecord2 = TransactionSidecarRecord.newBuilder()
+                .setStateChanges(ContractStateChanges.newBuilder()
+                        .addContractStateChanges(com.hedera.services.stream.proto.ContractStateChange.newBuilder()
+                                .setContractId(ContractID.newBuilder().setContractNum(1003L))
+                                .addStorageChanges(StorageChange.newBuilder()
+                                        .setValueWritten(BytesValue.of(DomainUtils.fromBytes(new byte[] {3, 3})))))
+                        .addContractStateChanges(com.hedera.services.stream.proto.ContractStateChange.newBuilder()
+                                .setContractId(ContractID.newBuilder().setContractNum(1004L))
+                                .addStorageChanges(StorageChange.newBuilder()
+                                        .setValueWritten(BytesValue.of(DomainUtils.fromBytes(new byte[] {4, 4}))))))
+                .build();
+        var bytecodeRecord1 = TransactionSidecarRecord.newBuilder()
+                .setMigration(true)
+                .setBytecode(ContractBytecode.newBuilder()
+                        .setContractId(ContractID.newBuilder().setContractNum(2001L))
+                        .setRuntimeBytecode(ByteString.copyFrom(new byte[] {1})))
+                .build();
+        var bytecodeRecord2 = TransactionSidecarRecord.newBuilder()
+                .setMigration(true)
+                .setBytecode(ContractBytecode.newBuilder()
+                        .setContractId(ContractID.newBuilder().setContractNum(2002L))
+                        .setRuntimeBytecode(ByteString.copyFrom(new byte[] {2})))
+                .build();
+        var bytecodeRecord3 = TransactionSidecarRecord.newBuilder()
+                .setMigration(false)
+                .setBytecode(ContractBytecode.newBuilder()
+                        .setContractId(ContractID.newBuilder().setContractNum(2003L))
+                        .setRuntimeBytecode(ByteString.copyFrom(new byte[] {3})))
+                .build();
+
+        recordItem.setSidecarRecords(List.of(stateChangeRecord1, stateChangeRecord2, bytecodeRecord1, bytecodeRecord2,
+                bytecodeRecord3));
+
+        var transaction = domainBuilder.transaction().customize(t -> t
+                .entityId(EntityId.of(recordItem.getRecord().getReceipt().getContractID()))
+                .type(recordItem.getTransactionType())).get();
+        parseRecordItemAndCommit(recordItem, transaction);
+        assertSidecarRecords(recordItem);
+    }
+
     private void contractResultsTest(RecordItem recordItem, ContractFunctionResult contractFunctionResult) {
         var transaction = domainBuilder.transaction().customize(t -> t
                 .entityId(EntityId.of(recordItem.getRecord().getReceipt().getContractID()))
@@ -198,33 +255,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                 .returns(parseContractResultLongs(contractFunctionResult.getGasUsed()), ContractResult::getGasUsed);
 
         assertContractLogs(contractFunctionResult, recordItem);
-
-        var contractActions = new ArrayList<com.hedera.services.stream.proto.ContractAction>();
-        var sidecarStateChanges = new ArrayList<com.hedera.services.stream.proto.ContractStateChange>();
-        var bytecodeMigrations = new ArrayList<com.hedera.services.stream.proto.ContractBytecode>();
-        var sidecarRecords = recordItem.getSidecarRecords();
-        for (var sidecarRecord : sidecarRecords) {
-            if (sidecarRecord.hasActions()) {
-                var actions = sidecarRecord.getActions();
-                for (int j = 0; j < actions.getContractActionsCount(); j++) {
-                    contractActions.add(actions.getContractActions(j));
-                }
-            }
-            if (sidecarRecord.hasStateChanges()) {
-                var stateChanges = sidecarRecord.getStateChanges();
-                for (int j = 0; j < stateChanges.getContractStateChangesCount(); j++) {
-                    sidecarStateChanges.add(stateChanges.getContractStateChanges(j));
-                }
-            }
-            if (sidecarRecord.hasBytecode() && sidecarRecord.getMigration()) {
-                bytecodeMigrations.add(sidecarRecord.getBytecode());
-            }
-        }
-
-        assertContractStateChanges(sidecarStateChanges, recordItem.getPayerAccountId(),
-                recordItem.getConsensusTimestamp());
-        assertContractActions(contractActions, recordItem.getConsensusTimestamp());
-        assertContractBytecodeMigrations(bytecodeMigrations);
+        assertSidecarRecords(recordItem);
     }
 
     private byte[] parseContractResultBytes(ByteString byteString) {
@@ -242,7 +273,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     private void assertContractBytecodeMigrations(List<com.hedera.services.stream.proto.ContractBytecode>
                                                           bytecodeMigrations) {
         IterableAssert<Contract> listAssert =
-                assertThat(contractRepository.findAll()).hasSizeGreaterThanOrEqualTo(bytecodeMigrations.size());
+                assertThat(contractRepository.findAll()).hasSize(2);
 
         if (!bytecodeMigrations.isEmpty()) {
             var expectedContracts = new ArrayList<Contract>();
@@ -266,7 +297,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                 expectedContracts.add(expectedContract);
             }
 
-            listAssert.containsAll(expectedContracts);
+            listAssert.containsExactlyInAnyOrderElementsOf(expectedContracts);
         }
     }
 
@@ -335,7 +366,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
             assertThat(contractStateChangeRepository.findAll()).isEmpty();
         } else {
             var listAssert = assertThat(contractStateChangeRepository.findAll())
-                    .hasSize(2);
+                    .hasSize(sidecarStateChanges.size());
 
             var contractIds = new ArrayList<Long>();
             var slots = new ArrayList<byte[]>();
@@ -357,6 +388,35 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
             listAssert.extracting(ContractStateChange::getValueRead).containsAll(valuesRead);
             listAssert.extracting(ContractStateChange::getValueWritten).containsAll(valuesWritten);
         }
+    }
+
+    private void assertSidecarRecords(RecordItem recordItem) {
+        var contractActions = new ArrayList<com.hedera.services.stream.proto.ContractAction>();
+        var sidecarStateChanges = new ArrayList<com.hedera.services.stream.proto.ContractStateChange>();
+        var bytecodeMigrations = new ArrayList<com.hedera.services.stream.proto.ContractBytecode>();
+        var sidecarRecords = recordItem.getSidecarRecords();
+        for (var sidecarRecord : sidecarRecords) {
+            if (sidecarRecord.hasActions()) {
+                var actions = sidecarRecord.getActions();
+                for (int j = 0; j < actions.getContractActionsCount(); j++) {
+                    contractActions.add(actions.getContractActions(j));
+                }
+            }
+            if (sidecarRecord.hasStateChanges()) {
+                var stateChanges = sidecarRecord.getStateChanges();
+                for (int j = 0; j < stateChanges.getContractStateChangesCount(); j++) {
+                    sidecarStateChanges.add(stateChanges.getContractStateChanges(j));
+                }
+            }
+            if (sidecarRecord.hasBytecode() && sidecarRecord.getMigration()) {
+                bytecodeMigrations.add(sidecarRecord.getBytecode());
+            }
+        }
+
+        assertContractStateChanges(sidecarStateChanges, recordItem.getPayerAccountId(),
+                recordItem.getConsensusTimestamp());
+        assertContractActions(contractActions, recordItem.getConsensusTimestamp());
+        assertContractBytecodeMigrations(bytecodeMigrations);
     }
 
     protected void parseRecordItemAndCommit(RecordItem recordItem, Transaction transaction) {

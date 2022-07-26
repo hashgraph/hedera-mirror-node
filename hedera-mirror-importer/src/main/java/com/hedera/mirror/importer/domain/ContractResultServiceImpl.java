@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import com.google.common.collect.Range;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
@@ -101,15 +100,10 @@ public class ContractResultServiceImpl implements ContractResultService {
     }
 
     private void migrateBytecode(ContractBytecode contractBytecode) {
-        EntityId contractId = entityIdService.lookup(contractBytecode.getContractId());
-        var contract = Contract.builder()
-                .id(contractId.getId())
-                .shard(contractId.getShardNum())
-                .realm(contractId.getRealmNum())
-                .num(contractId.getEntityNum())
-                .runtimeBytecode(DomainUtils.toBytes(contractBytecode.getRuntimeBytecode()))
-                .timestampRange(Range.atLeast(0L))
-                .build();
+        var contractId = entityIdService.lookup(contractBytecode.getContractId());
+        Contract contract = contractId.toEntity();
+        contract.setRuntimeBytecode(DomainUtils.toBytes(contractBytecode.getRuntimeBytecode()));
+        //contract.setTimestampRange(null);
 
         entityListener.onContract(contract);
     }

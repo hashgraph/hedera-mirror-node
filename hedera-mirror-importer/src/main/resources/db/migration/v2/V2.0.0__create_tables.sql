@@ -107,7 +107,7 @@ create table if not exists contract
     staked_account_id                bigint                         null,
     staked_node_id                   bigint      default -1         null,
     stake_period_start               bigint      default -1         null,
-    timestamp_range                  int8range                      not null,
+    timestamp_range                  int8range                      null,
     type                             entity_type default 'CONTRACT' not null
 );
 comment on table contract is 'Contract entity';
