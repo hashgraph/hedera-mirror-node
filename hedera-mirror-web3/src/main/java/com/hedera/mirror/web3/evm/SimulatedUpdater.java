@@ -58,7 +58,7 @@ public class SimulatedUpdater implements HederaWorldUpdater {
     private SimulatedEntityAccess entityAccess;
     private CodeCache codeCache;
 
-    private int numAllocatedIds = 0;
+    private int numAllocatedContractIds = 0;
     private long sbhRefund = 0L;
     private long newContractNumId;
 
@@ -120,8 +120,8 @@ public class SimulatedUpdater implements HederaWorldUpdater {
         getDeletedAccounts().clear();
         getUpdatedAccounts().clear();
 
-        while (numAllocatedIds != 0) {
-            numAllocatedIds--;
+        while (numAllocatedContractIds != 0) {
+            numAllocatedContractIds--;
             newContractNumId--;
         }
         sbhRefund = 0L;
@@ -169,7 +169,7 @@ public class SimulatedUpdater implements HederaWorldUpdater {
 
     @Override
     public Address newContractAddress(Address sponsor) {
-        numAllocatedIds++;
+        numAllocatedContractIds++;
         newContractNumId = contractRepository.findLatestNum().get() + 1;
 
         final var sponsorBytes = sponsor.toArrayUnsafe();
@@ -195,7 +195,7 @@ public class SimulatedUpdater implements HederaWorldUpdater {
 
     @Override
     public void countIdsAllocatedByStacked(int n) {
-        numAllocatedIds += n;
+        numAllocatedContractIds += n;
     }
 
     private void commitSizeLimitedStorageTo(final EntityAccess entityAccess) {

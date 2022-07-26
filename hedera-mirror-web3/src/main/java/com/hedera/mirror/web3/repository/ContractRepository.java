@@ -28,6 +28,6 @@ import com.hedera.mirror.common.domain.contract.Contract;
 
 public interface ContractRepository extends CrudRepository<Contract, Long> {
 
-    @Query(value = "select max(c.num) from Contract c")
+    @Query(value = "select num from Contract order by id desc limit 1")
     Optional<Long> findLatestNum();
 }
