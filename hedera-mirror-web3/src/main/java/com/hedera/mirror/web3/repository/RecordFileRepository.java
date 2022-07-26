@@ -20,25 +20,27 @@ package com.hedera.mirror.web3.repository;
  * ‍
  */
 
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_10MIN;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_500MS;
+
 import java.util.Optional;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.web3.evm.config.EvmConfiguration;
 
 public interface RecordFileRepository extends PagingAndSortingRepository<RecordFile, Long> {
 
-    @Cacheable(cacheNames = "record_file.latest_index", cacheManager = EvmConfiguration.CACHE_MANAGER_500NS, unless = "#result == null")
+    @Cacheable(cacheNames = "record_file.latest_index", cacheManager = CACHE_MANAGER_500MS, unless = "#result == null")
     @Query("select max(r.index) from RecordFile r")
     Optional<Long> findLatestIndex();
 
-    @Cacheable(cacheNames = "record_file.index", cacheManager = EvmConfiguration.CACHE_MANAGER_10M, unless = "#result == null")
+    @Cacheable(cacheNames = "record_file.index", cacheManager = CACHE_MANAGER_10MIN, unless = "#result == null")
     @Query("select r from RecordFile r where r.index = ?1")
     Optional<RecordFile> findByIndex(long index);
 
-    @Cacheable(cacheNames = "record_file.latest", cacheManager = EvmConfiguration.CACHE_MANAGER_500NS, unless = "#result == null")
+    @Cacheable(cacheNames = "record_file.latest", cacheManager = CACHE_MANAGER_500MS, unless = "#result == null")
     @Query(value = "select * from record_file order by consensus_end desc limit 1", nativeQuery = true)
     Optional<RecordFile> findLatest();
 }

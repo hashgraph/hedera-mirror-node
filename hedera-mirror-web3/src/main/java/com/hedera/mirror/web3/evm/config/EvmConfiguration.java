@@ -30,28 +30,31 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @EnableCaching
-public class EvmConfiguration {
+public
+class EvmConfiguration {
 
-    public static final String CACHE_MANAGER_10M = "10M";
-    public static final String CACHE_MANAGER_500NS = "500NS";
+    public static final String CACHE_MANAGER_10MIN = "cacheManager10Min";
+    public static final String CACHE_MANAGER_500MS = "cacheManager500Ms";
 
     @Bean
     Caffeine caffeineConfig() {
         return Caffeine.newBuilder();
     }
 
-    @Bean(CACHE_MANAGER_10M)
-    public CacheManager cacheManager10M(Caffeine caffeine) {
-        CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
-        caffeine.expireAfterAccess(10, TimeUnit.MINUTES).maximumSize(10000);
+    @Bean(CACHE_MANAGER_10MIN)
+    CacheManager cacheManager10MIN() {
+        final var caffeine =
+                Caffeine.newBuilder().expireAfterAccess(10, TimeUnit.MINUTES).maximumSize(10000);
+        final CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
         caffeineCacheManager.setCaffeine(caffeine);
         return caffeineCacheManager;
     }
 
-    @Bean(CACHE_MANAGER_500NS)
-    public CacheManager cacheManager500NS(Caffeine caffeine) {
-        CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
-        caffeine.expireAfterAccess(500, TimeUnit.NANOSECONDS).maximumSize(1);
+    @Bean(CACHE_MANAGER_500MS)
+    CacheManager cacheManager500MS() {
+        final var caffeine =
+                Caffeine.newBuilder().expireAfterAccess(500, TimeUnit.MILLISECONDS).maximumSize(1);
+        final CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
         caffeineCacheManager.setCaffeine(caffeine);
         return caffeineCacheManager;
     }
