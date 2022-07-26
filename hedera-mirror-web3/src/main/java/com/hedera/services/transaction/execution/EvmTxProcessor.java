@@ -58,7 +58,7 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
 
 import com.hedera.mirror.web3.evm.OracleSimulator;
 import com.hedera.mirror.web3.evm.SimulatedPricesSource;
-import com.hedera.mirror.web3.evm.SimulatorUpdater;
+import com.hedera.mirror.web3.evm.SimulatedUpdater;
 import com.hedera.mirror.web3.evm.properties.EvmProperties;
 import com.hedera.mirror.web3.evm.properties.SimulatedBlockMetaSource;
 import com.hedera.services.transaction.HederaMessageCallProcessor;
@@ -84,7 +84,7 @@ abstract class EvmTxProcessor {
     public static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
 
     private SimulatedBlockMetaSource blockMetaSource;
-    private SimulatorUpdater worldUpdater;
+    private SimulatedUpdater worldUpdater;
 
     private final GasCalculator gasCalculator;
     private final SimulatedPricesSource simulatedPricesSource;
@@ -113,12 +113,12 @@ abstract class EvmTxProcessor {
         this.blockMetaSource = blockMetaSource;
     }
 
-    protected void setWorldUpdater(final SimulatorUpdater worldUpdater) {
+    protected void setWorldUpdater(final SimulatedUpdater worldUpdater) {
         this.worldUpdater = worldUpdater;
     }
 
     protected EvmTxProcessor(
-            final SimulatorUpdater worldUpdater,
+            final SimulatedUpdater worldUpdater,
             final SimulatedPricesSource simulatedPricesSource,
             final EvmProperties configurationProperties,
             final GasCalculator gasCalculator,
@@ -197,7 +197,6 @@ abstract class EvmTxProcessor {
         final var senderAccount = worldUpdater.getOrCreateSenderAccount(sender.getId().asEvmAddress());
         final MutableAccount mutableSender = senderAccount.getMutable();
 
-        var allowanceCharged = Wei.ZERO;
         MutableAccount mutableRelayer = null;
         if (relayer != null) {
             final var relayerAccount = worldUpdater.getOrCreateSenderAccount(relayer.getId().asEvmAddress());
@@ -219,7 +218,6 @@ abstract class EvmTxProcessor {
                     final var relayerCanAffordGas = mutableRelayer.getBalance().compareTo((gasCost)) >= 0;
                     ValidationUtils.validateTrue(relayerCanAffordGas, INSUFFICIENT_PAYER_BALANCE);
                     mutableRelayer.decrementBalance(gasCost);
-                    allowanceCharged = gasCost;
                 } else if (userOfferedGasPrice.divide(WEIBARS_TO_TINYBARS).compareTo(BigInteger.valueOf(gasPrice)) < 0) {
                     // If sender gas price < current gas price, pay the difference from gas allowance
                     var senderFee =
@@ -230,7 +228,6 @@ abstract class EvmTxProcessor {
                     ValidationUtils.validateTrue(mutableRelayer.getBalance().compareTo(remainingFee) >= 0, INSUFFICIENT_PAYER_BALANCE);
                     mutableSender.decrementBalance(senderFee);
                     mutableRelayer.decrementBalance(remainingFee);
-                    allowanceCharged = remainingFee;
                 } else {
                     // If user gas price >= current gas price, sender pays all fees
                     final var senderCanAffordGas = mutableSender.getBalance().compareTo(gasCost) >= 0;
@@ -281,36 +278,12 @@ abstract class EvmTxProcessor {
 
         var gasUsedByTransaction = calculateGasUsedByTX(gasLimit, initialFrame);
         final long sbhRefund = worldUpdater.getSbhRefund();
-        final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges;
+        final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges = Map.of();
 
-        if (isStatic) {
-            stateChanges = Map.of();
-        } else {
-            // return gas price to accounts
-            final long refunded = gasLimit - gasUsedByTransaction + sbhRefund;
-            final Wei refundedWei = Wei.of(refunded * gasPrice);
+        initialFrame.getSelfDestructs().forEach(worldUpdater::deleteAccount);
 
-            if (refundedWei.greaterThan(Wei.ZERO)) {
-                if (relayer != null && allowanceCharged.greaterThan(Wei.ZERO)) {
-                    // If allowance has been charged, we always try to refund relayer first
-                    if (refundedWei.greaterOrEqualThan(allowanceCharged)) {
-                        mutableRelayer.incrementBalance(allowanceCharged);
-                        mutableSender.incrementBalance(refundedWei.subtract(allowanceCharged));
-                    } else {
-                        mutableRelayer.incrementBalance(refundedWei);
-                    }
-                } else {
-                    mutableSender.incrementBalance(refundedWei);
-                }
-            }
-
-            initialFrame.getSelfDestructs().forEach(worldUpdater::deleteAccount);
-
-            stateChanges = Map.of();
-
-            // Commit top level updater
-            worldUpdater.commit();
-        }
+        // Commit top level updater
+        worldUpdater.commit();
 
         // Externalise result
         if (initialFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {

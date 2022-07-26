@@ -209,6 +209,11 @@ public class SimulatedUpdater implements HederaWorldUpdater {
             }
         }
         entityAccess.flushStorage();
+        for (final var updatedAccount : updatedAccounts.values()) {
+            if (updatedAccount.codeWasUpdated()) {
+                entityAccess.storeCode(updatedAccount.getAddress(), updatedAccount.getCode());
+            }
+        }
     }
 
     protected UpdateTrackingLedgerAccount<Account> track(final UpdateTrackingLedgerAccount<Account> account) {
