@@ -112,7 +112,7 @@ Clone this repository and checkout the latest stable tag:
 
 ```shell
 git clone https://github.com/hashgraph/hedera-mirror-node.git
-git checkout tags/v0.60.0 # Change version appropriately
+git checkout tags/v0.62.0 # Change version appropriately
 ```
 
 ## Install the Application resource definition

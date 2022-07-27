@@ -47,7 +47,7 @@ our [releases page](https://github.com/hashgraph/hedera-mirror-node/releases).
 
 1. Download the [Dockerfile](/hedera-mirror-rosetta/build/Dockerfile).
 
-2. Run `docker build --build-arg GIT_REF=v0.60.0 -t hedera-mirror-rosetta:0.60.0 .`
+2. Run `docker build --build-arg GIT_REF=v0.60.0 -t hedera-mirror-rosetta:0.62.0 .`
 
 Configure and run the server in online mode:
 
@@ -77,7 +77,7 @@ Configure and run the server in online mode:
 ```shell
 docker run -d -e MODE=online -e NETWORK=testnet \
   -v ${PWD}/application.yml:/app/importer/application.yml \
-  -p 5432:5432 -p 5700:5700 hedera-mirror-rosetta:0.60.0
+  -p 5432:5432 -p 5700:5700 hedera-mirror-rosetta:0.62.0
 ```
 
 The server should be reachable at http://localhost:5700. Note the server can also run in offline mode by
@@ -212,5 +212,5 @@ retention period to 30 days,
 ```shell
 docker run -d -e MODE=online -e NETWORK=testnet \
   -e DATA_RETENTION_ENABLED=true -e DATA_RETENTION_PERIOD=30d \
-  -p 5432:5432 -p 5700:5700 hedera-mirror-rosetta:0.60.0
+  -p 5432:5432 -p 5700:5700 hedera-mirror-rosetta:0.62.0
 ```
