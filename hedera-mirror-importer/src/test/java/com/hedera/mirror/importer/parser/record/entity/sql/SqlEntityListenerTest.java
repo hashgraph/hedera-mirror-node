@@ -47,6 +47,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
@@ -77,6 +78,7 @@ import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.repository.AssessedCustomFeeRepository;
+import com.hedera.mirror.importer.repository.ContractActionRepository;
 import com.hedera.mirror.importer.repository.ContractLogRepository;
 import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
@@ -87,12 +89,15 @@ import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.EthereumTransactionRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.repository.LiveHashRepository;
+import com.hedera.mirror.importer.repository.NetworkStakeRepository;
 import com.hedera.mirror.importer.repository.NftAllowanceRepository;
 import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.NftTransferRepository;
 import com.hedera.mirror.importer.repository.NodeStakeRepository;
+import com.hedera.mirror.importer.repository.PrngRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.ScheduleRepository;
+import com.hedera.mirror.importer.repository.SidecarFileRepository;
 import com.hedera.mirror.importer.repository.StakingRewardTransferRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
@@ -104,11 +109,13 @@ import com.hedera.mirror.importer.repository.TransactionSignatureRepository;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class SqlEntityListenerTest extends IntegrationTest {
+
     private static final String KEY = "0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110fff";
     private static final String KEY2 = "0a3312200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92";
     private static final EntityId TRANSACTION_PAYER = EntityId.of("0.0.1000", ACCOUNT);
 
     private final AssessedCustomFeeRepository assessedCustomFeeRepository;
+    private final ContractActionRepository contractActionRepository;
     private final ContractLogRepository contractLogRepository;
     private final ContractRepository contractRepository;
     private final ContractResultRepository contractResultRepository;
@@ -120,11 +127,14 @@ class SqlEntityListenerTest extends IntegrationTest {
     private final EthereumTransactionRepository ethereumTransactionRepository;
     private final FileDataRepository fileDataRepository;
     private final LiveHashRepository liveHashRepository;
+    private final NetworkStakeRepository networkStakeRepository;
     private final NftRepository nftRepository;
     private final NftAllowanceRepository nftAllowanceRepository;
     private final NftTransferRepository nftTransferRepository;
     private final NodeStakeRepository nodeStakeRepository;
+    private final PrngRepository prngRepository;
     private final RecordFileRepository recordFileRepository;
+    private final SidecarFileRepository sidecarFileRepository;
     private final ScheduleRepository scheduleRepository;
     private final SqlEntityListener sqlEntityListener;
     private final SqlProperties sqlProperties;
@@ -376,6 +386,19 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
+    void onContractAction() {
+        // given
+        ContractAction contractAction = domainBuilder.contractAction().get();
+
+        // when
+        sqlEntityListener.onContractAction(contractAction);
+        completeFileAndCommit();
+
+        // then
+        assertThat(contractActionRepository.findAll()).containsExactlyInAnyOrder(contractAction);
+    }
+
+    @Test
     void onContractLog() {
         // given
         ContractLog contractLog = domainBuilder.contractLog().get();
@@ -494,6 +517,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     void onEndNull() {
         sqlEntityListener.onEnd(null);
         assertThat(recordFileRepository.count()).isZero();
+        assertThat(sidecarFileRepository.count()).isZero();
     }
 
     @Test
@@ -769,6 +793,21 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(liveHashRepository.findAll()).containsExactly(liveHash);
+    }
+
+    @Test
+    void onNetworkStake() {
+        // given
+        var networkStake1 = domainBuilder.networkStake().get();
+        var networkStake2 = domainBuilder.networkStake().get();
+
+        // when
+        sqlEntityListener.onNetworkStake(networkStake1);
+        sqlEntityListener.onNetworkStake(networkStake2);
+        completeFileAndCommit();
+
+        // then
+        assertThat(networkStakeRepository.findAll()).containsExactlyInAnyOrder(networkStake1, networkStake2);
     }
 
     @Test
@@ -1148,6 +1187,24 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(nodeStakeRepository.findAll()).containsExactlyInAnyOrder(nodeStake1, nodeStake2);
+    }
+
+    @Test
+    void onPrng() {
+        var prng = domainBuilder.prng().get();
+        var prng2 = domainBuilder.prng()
+                .customize(r -> r.range(0)
+                        .prngNumber(null)
+                        .prngBytes(domainBuilder.bytes(382))).get();
+
+        sqlEntityListener.onPrng(prng);
+        sqlEntityListener.onPrng(prng2);
+
+        // when
+        completeFileAndCommit();
+
+        // then
+        assertThat(prngRepository.findAll()).containsExactlyInAnyOrder(prng, prng2);
     }
 
     @Test
@@ -1670,7 +1727,9 @@ class SqlEntityListenerTest extends IntegrationTest {
     private void completeFileAndCommit() {
         RecordFile recordFile = domainBuilder.recordFile().persist();
         transactionTemplate.executeWithoutResult(status -> sqlEntityListener.onEnd(recordFile));
+
         assertThat(recordFileRepository.findAll()).contains(recordFile);
+        assertThat(sidecarFileRepository.findAll()).containsAll(recordFile.getSidecars());
     }
 
     @SneakyThrows

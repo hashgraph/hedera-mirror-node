@@ -18,12 +18,11 @@
  * ‍
  */
 
-'use strict';
+import _ from 'lodash';
+import * as math from 'mathjs';
+import config from './config';
 
-const _ = require('lodash');
-const math = require('mathjs');
-const config = require('./config');
-const {
+import {
   checkAPIResponseError,
   checkRespObjDefined,
   checkRespArrayLength,
@@ -35,7 +34,7 @@ const {
   getUrl,
   testRunner,
   CheckRunner,
-} = require('./utils');
+} from './utils';
 
 const balancesPath = '/balances';
 const resource = 'balance';
@@ -188,7 +187,7 @@ const runTests = async (server, testResult) => {
   ]);
 };
 
-module.exports = {
+export default {
   resource,
   runTests,
 };

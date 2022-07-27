@@ -18,8 +18,6 @@
  * ‍
  */
 
-'use strict';
-
 class AddressBook {
   /**
    * Parses address_book table columns into object
@@ -53,4 +51,4 @@ class AddressBook {
   }
 }
 
-module.exports = AddressBook;
+export default AddressBook;

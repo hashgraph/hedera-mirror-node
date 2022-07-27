@@ -18,20 +18,16 @@
  * ‍
  */
 
-'use strict';
+import _ from 'lodash';
 
-const _ = require('lodash');
-
-const config = require('./config');
-const constants = require('./constants');
-const EntityId = require('./entityId');
-const s3client = require('./s3client');
-const {CompositeRecordFile} = require('./stream');
-const TransactionId = require('./transactionId');
-const utils = require('./utils');
-const {DbError} = require('./errors/dbError');
-const {NotFoundError} = require('./errors/notFoundError');
-const {FileDownloadError} = require('./errors/fileDownloadError');
+import config from './config';
+import * as constants from './constants';
+import EntityId from './entityId';
+import {DbError, FileDownloadError, NotFoundError} from './errors';
+import s3client from './s3client';
+import {CompositeRecordFile} from './stream';
+import TransactionId from './transactionId';
+import * as utils from './utils';
 
 /**
  * Get the consensus_timestamp of the transaction. Throws exception if no such successful transaction found or multiple such
@@ -41,7 +37,7 @@ const {FileDownloadError} = require('./errors/fileDownloadError');
  * @param {Boolean} scheduled
  * @returns {Promise<String>} consensus_timestamp of the successful transaction if found
  */
-let getSuccessfulTransactionConsensusNs = async (transactionId, nonce, scheduled) => {
+const getSuccessfulTransactionConsensusNs = async (transactionId, nonce, scheduled) => {
   const sqlParams = [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs(), nonce, scheduled];
   const sqlQuery = `SELECT consensus_timestamp
        FROM transaction
@@ -72,7 +68,7 @@ let getSuccessfulTransactionConsensusNs = async (transactionId, nonce, scheduled
  * @returns {Promise<{Buffer, String, String}>} RCD file name, raw bytes, and the account ID of the node the file was
  *                                              downloaded from
  */
-let getRCDFileInfoByConsensusNs = async (consensusNs) => {
+const getRCDFileInfoByConsensusNs = async (consensusNs) => {
   const sqlQuery = `SELECT bytes, name, node_account_id, version
        FROM record_file
        WHERE consensus_end >= $1
@@ -102,7 +98,7 @@ let getRCDFileInfoByConsensusNs = async (consensusNs) => {
  * @param {String} consensusNs
  * @returns {Promise<Object>} List of base64 address book data in chronological order and list of node account IDs.
  */
-let getAddressBooksAndNodeAccountIdsByConsensusNs = async (consensusNs) => {
+const getAddressBooksAndNodeAccountIdsByConsensusNs = async (consensusNs) => {
   // Get the chain of address books whose start_consensus_timestamp <= consensusNs, also aggregate the corresponding
   // memo and node account ids from table address_book_entry
   let sqlQuery = `SELECT
@@ -160,7 +156,7 @@ let getAddressBooksAndNodeAccountIdsByConsensusNs = async (consensusNs) => {
  *                         record stream prefix stripped.
  * @returns {Promise<Array>} Array of file buffers
  */
-let downloadRecordStreamFilesFromObjectStorage = async (...partialFilePaths) => {
+const downloadRecordStreamFilesFromObjectStorage = async (...partialFilePaths) => {
   const {bucketName} = config.stateproof.streams;
   const s3Client = s3client.createS3Client();
 
@@ -215,7 +211,7 @@ let downloadRecordStreamFilesFromObjectStorage = async (...partialFilePaths) => 
  * @param {Number} totalCount
  * @returns {boolean} if consensus can be reached
  */
-let canReachConsensus = (actualCount, totalCount) => actualCount >= Math.ceil(totalCount / 3.0);
+const canReachConsensus = (actualCount, totalCount) => actualCount >= Math.ceil(totalCount / 3.0);
 
 /**
  * Get the value of nonce and scheduled from query filters.
@@ -337,18 +333,20 @@ const getStateProofForTransaction = async (req, res) => {
   };
 };
 
-module.exports = {
+const stateproof = {
   getStateProofForTransaction,
 };
 
 if (utils.isTestEnv()) {
-  Object.assign(module.exports, {
+  Object.assign(stateproof, {
+    canReachConsensus,
+    downloadRecordStreamFilesFromObjectStorage,
+    formatCompactableRecordFile,
     getAddressBooksAndNodeAccountIdsByConsensusNs,
     getQueryParamValues,
     getRCDFileInfoByConsensusNs,
     getSuccessfulTransactionConsensusNs,
-    downloadRecordStreamFilesFromObjectStorage,
-    canReachConsensus,
-    formatCompactableRecordFile,
   });
 }
+
+export default stateproof;

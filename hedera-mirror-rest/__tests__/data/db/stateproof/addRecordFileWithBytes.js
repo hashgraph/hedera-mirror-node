@@ -18,16 +18,16 @@
  * ‍
  */
 
-'use strict';
+import fs from 'fs';
+import path from 'path';
 
-const fs = require('fs');
-const path = require('path');
+import {getModuleDirname} from '../../../testutils';
 
 const recordFilename = '2021-03-05T05_23_04.299486999Z.rcd';
-const recordFilePath = path.join(__dirname, recordFilename);
+const recordFilePath = path.join(getModuleDirname(import.meta), recordFilename);
 const data = fs.readFileSync(recordFilePath);
 
-module.exports = async (sqlConnection) => {
+export default async () => {
   const fields = [
     'name',
     'load_start',
@@ -68,5 +68,5 @@ module.exports = async (sqlConnection) => {
     data,
     4085,
   ];
-  await sqlConnection.query(query, params);
+  await pool.query(query, params);
 };

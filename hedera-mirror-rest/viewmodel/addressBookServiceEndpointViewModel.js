@@ -18,8 +18,6 @@
  * ‍
  */
 
-'use strict';
-
 /**
  * Network address book service endpoint view model
  */
@@ -27,7 +25,7 @@ class AddressBookServiceEndpointViewModel {
   /**
    * Constructs address book service endpoint view model
    *
-   * @param {AddressBook} addressBook
+   * @param {AddressBookServiceEndpoint} serviceEndpoint
    */
   constructor(serviceEndpoint) {
     this.ip_address_v4 = serviceEndpoint.ipAddressV4;
@@ -35,4 +33,4 @@ class AddressBookServiceEndpointViewModel {
   }
 }
 
-module.exports = AddressBookServiceEndpointViewModel;
+export default AddressBookServiceEndpointViewModel;

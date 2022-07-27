@@ -14,4 +14,4 @@ USER node
 RUN npm ci --only=production && npm cache clean --force --loglevel=error
 
 # Run
-ENTRYPOINT ["node", "server.js"]
+ENTRYPOINT ["node", "--experimental-specifier-resolution=node", "server.js"]

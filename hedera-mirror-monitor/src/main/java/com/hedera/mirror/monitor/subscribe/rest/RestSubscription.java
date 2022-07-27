@@ -28,10 +28,10 @@ import reactor.core.publisher.Sinks;
 import com.hedera.mirror.monitor.AbstractScenario;
 import com.hedera.mirror.monitor.ScenarioProtocol;
 import com.hedera.mirror.monitor.publish.PublishResponse;
-import com.hedera.mirror.monitor.subscribe.rest.response.MirrorTransaction;
+import com.hedera.mirror.rest.model.TransactionByIdResponse;
 
 @Getter
-class RestSubscription extends AbstractScenario<RestSubscriberProperties, MirrorTransaction> {
+class RestSubscription extends AbstractScenario<RestSubscriberProperties, TransactionByIdResponse> {
 
     private final Sinks.Many<PublishResponse> sink;
 

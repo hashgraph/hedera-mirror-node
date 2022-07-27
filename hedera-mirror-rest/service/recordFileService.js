@@ -18,12 +18,9 @@
  * ‍
  */
 
-'use strict';
-
-const _ = require('lodash');
-
-const BaseService = require('./baseService');
-const {RecordFile} = require('../model');
+import _ from 'lodash';
+import BaseService from './baseService';
+import {RecordFile} from '../model';
 
 const buildWhereSqlStatement = (whereQuery) => {
   let where = '';
@@ -126,7 +123,7 @@ class RecordFileService extends BaseService {
       RecordFileService.blocksQuery +
       `
       ${where}
-      order by ${RecordFile.INDEX} ${filters.order}
+      order by ${filters.orderBy} ${filters.order}
       limit ${filters.limit}
     `;
     const rows = await super.getRows(query, params, 'getBlocks');
@@ -157,4 +154,4 @@ class RecordFileService extends BaseService {
   }
 }
 
-module.exports = new RecordFileService();
+export default new RecordFileService();

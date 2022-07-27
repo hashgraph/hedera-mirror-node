@@ -18,15 +18,11 @@
  * ‍
  */
 
-'use strict';
+import {getResponseLimit} from '../../config';
+import * as constants from '../../constants';
+import {BlockController} from '../../controllers';
 
-const {
-  response: {
-    limit: {default: defaultLimit, max: maxLimit},
-  },
-} = require('../../config');
-const constants = require('../../constants');
-const {BlockController} = require('../../controllers');
+const {default: defaultLimit, max: maxLimit} = getResponseLimit();
 
 describe('Block Controller', () => {
   test('Verify extractOrderFromFilters', async () => {
@@ -56,7 +52,7 @@ describe('Block Controller', () => {
 
   test('Verify extractSqlFromBlockFilters', async () => {
     const queryObj = BlockController.extractSqlFromBlockFilters([]);
-    expect(queryObj).toEqual({order: 'desc', limit: 25, whereQuery: []});
+    expect(queryObj).toEqual({order: 'desc', orderBy: 'consensus_end', limit: 25, whereQuery: []});
   });
 
   test('Verify extractSqlFromBlockFilters with block.number, order and limit params', async () => {
@@ -67,6 +63,7 @@ describe('Block Controller', () => {
     ]);
 
     expect(queryObj.order).toEqual('asc');
+    expect(queryObj.orderBy).toEqual('index');
     expect(queryObj.limit).toEqual(10);
     expect(queryObj.whereQuery[0].query).toEqual('index >');
     expect(queryObj.whereQuery[0].param).toEqual(10);
@@ -81,11 +78,21 @@ describe('Block Controller', () => {
     ]);
 
     expect(queryObj.order).toEqual('asc');
+    expect(queryObj.orderBy).toEqual('index');
     expect(queryObj.limit).toEqual(10);
     expect(queryObj.whereQuery[0].query).toEqual('index >=');
     expect(queryObj.whereQuery[0].param).toEqual(10);
     expect(queryObj.whereQuery[1].query).toEqual('consensus_end <');
     expect(queryObj.whereQuery[1].param).toEqual('1676540001.234810000');
+  });
+
+  test('Verify extractSqlFromBlockFilters with timestamp and block.number', async () => {
+    const queryObj = BlockController.extractSqlFromBlockFilters([
+      {key: 'timestamp', operator: '<', value: '1676540001.234810000'},
+      {key: 'block.number', operator: '>=', value: 10},
+    ]);
+
+    expect(queryObj.orderBy).toEqual('consensus_end');
   });
 
   test('Verify getFilterWhereCondition', async () => {

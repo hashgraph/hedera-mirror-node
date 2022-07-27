@@ -38,7 +38,7 @@ import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.entity.EntityId;
 
-@Builder
+@Builder(toBuilder = true)
 @Data
 @Entity
 @AllArgsConstructor(access = AccessLevel.PRIVATE) // For Builder
@@ -71,6 +71,11 @@ public class AccountBalanceFile implements StreamFile<AccountBalance> {
     private EntityId nodeAccountId;
 
     private int timeOffset;
+
+    @Override
+    public StreamFile<AccountBalance> copy() {
+        return this.toBuilder().build();
+    }
 
     @Override
     public Long getConsensusEnd() {

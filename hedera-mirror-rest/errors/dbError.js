@@ -18,8 +18,6 @@
  * ‍
  */
 
-'use strict';
-
 const DbErrorMessage = 'Unable to connect to database. Please retry later';
 
 class DbError extends Error {
@@ -44,6 +42,4 @@ class DbError extends Error {
   }
 }
 
-module.exports = {
-  DbError,
-};
+export default DbError;

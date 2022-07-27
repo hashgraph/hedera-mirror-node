@@ -24,7 +24,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -43,6 +45,7 @@ import org.springframework.data.util.Version;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.SidecarFile;
 import com.hedera.mirror.importer.TestRecordFiles;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
@@ -174,9 +177,32 @@ abstract class RecordFileReaderTest {
                 });
     }
 
+    private RecordFile customize(RecordFile expected) {
+        if (expected.getVersion() < 6) {
+            return expected;
+        }
+
+        // RecordFileReaders don't read sidecar files so need to clear some fields to only verify info from
+        // sidecar metadata
+        var copy = expected.toBuilder().build();
+        var sidecars = new ArrayList<SidecarFile>();
+        for (var sidecar : expected.getSidecars()) {
+            sidecars.add(sidecar.toBuilder()
+                    .actualHash(null)
+                    .count(null)
+                    .size(null)
+                    .records(Collections.emptyList())
+                    .build());
+        }
+        copy.setSidecars(sidecars);
+
+        return copy;
+    }
+
     protected Iterator<RecordFile> getFilteredFiles(boolean negate) {
         return ALL_RECORD_FILES.stream()
                 .filter((recordFile) -> negate ^ filterFile(recordFile.getVersion()))
+                .map(this::customize)
                 .toList()
                 .iterator();
     }

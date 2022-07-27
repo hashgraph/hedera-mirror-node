@@ -18,8 +18,6 @@
  * ‍
  */
 
-'use strict';
-
 class NodeStake {
   /**
    * Parses node_stake table columns into object
@@ -34,7 +32,6 @@ class NodeStake {
     this.stake = nodeStake.stake;
     this.stakeNotRewarded = nodeStake.stake_not_rewarded;
     this.stakeRewarded = nodeStake.stake_rewarded;
-    this.stakeTotal = nodeStake.stake_total;
     this.stakingPeriod = nodeStake.staking_period;
   }
 
@@ -50,7 +47,6 @@ class NodeStake {
   static STAKE = `stake`;
   static STAKE_NOT_REWARDED = `stake_not_rewarded`;
   static STAKE_REWARDED = `stake_rewarded`;
-  static STAKE_TOTAL = `stake_total`;
   static STAKING_PERIOD = `staking_period`;
 
   /**
@@ -64,4 +60,4 @@ class NodeStake {
   }
 }
 
-module.exports = NodeStake;
+export default NodeStake;

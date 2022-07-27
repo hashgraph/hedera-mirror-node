@@ -18,15 +18,14 @@
  * ‍
  */
 
-'use strict';
+import crypto from 'crypto';
+import _ from 'lodash';
 
-const crypto = require('crypto');
-const _ = require('lodash');
-const {INT_SIZE} = require('./constants');
-const HashObject = require('./hashObject');
-const RecordFile = require('./recordFile');
-const RecordStreamObject = require('./recordStreamObject');
-const {calculateRunningHash} = require('./runningHash');
+import {INT_SIZE} from './constants';
+import HashObject from './hashObject';
+import RecordFile from './recordFile';
+import RecordStreamObject from './recordStreamObject';
+import {calculateRunningHash} from './runningHash';
 
 const COMPACT_OBJECT_FIELDS = [
   'head',
@@ -185,4 +184,4 @@ class CompactRecordFile extends RecordFile {
   }
 }
 
-module.exports = CompactRecordFile;
+export default CompactRecordFile;

@@ -4,6 +4,7 @@
       "exec_mode": "fork_mode",
       "script": "./monitor_apis/server.js",
       "name": "monitor-api",
+      "node_args": "--experimental-specifier-resolution=node",
       "env": {
         "PORT": 3000,
         "NODE_ENV": "production"

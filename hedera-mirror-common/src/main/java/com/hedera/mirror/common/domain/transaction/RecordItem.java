@@ -28,13 +28,16 @@ import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import java.util.Objects;
+import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.Value;
+import lombok.experimental.NonFinal;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.data.util.Version;
 
@@ -42,108 +45,97 @@ import com.hedera.mirror.common.domain.StreamItem;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.exception.ProtobufException;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 
 @Builder(buildMethodName = "buildInternal")
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Log4j2
 @Value
 public class RecordItem implements StreamItem {
+
     static final String BAD_TRANSACTION_BYTES_MESSAGE = "Failed to parse transaction bytes";
     static final String BAD_RECORD_BYTES_MESSAGE = "Failed to parse record bytes";
     static final String BAD_TRANSACTION_BODY_BYTES_MESSAGE = "Error parsing transactionBody from transaction";
 
-    private final Version hapiVersion;
-    private final Transaction transaction;
-    private final TransactionBodyAndSignatureMap transactionBodyAndSignatureMap;
-    private final TransactionRecord record;
-    // This field is not TransactionType since in case of unknown type, we want exact numerical value rather than
-    // -1 in enum.
-    private final int transactionType;
-    private final byte[] transactionBytes;
-    private final byte[] recordBytes;
-
-    @Getter(lazy = true)
-    private long consensusTimestamp = DomainUtils.timestampInNanosMax(record.getConsensusTimestamp());
-
-    // transactions in stream always have a valid payerAccountId
-    @Getter(lazy = true)
-    private EntityId payerAccountId = EntityId.of(getTransactionBody().getTransactionID().getAccountID());
-
-    private final Integer transactionIndex;
-
+    // Final fields
+    @Builder.Default
+    private final Version hapiVersion = RecordFile.HAPI_VERSION_NOT_SET;
     private final RecordItem parent;
-
     private final RecordItem previous;
+    private final TransactionRecord record;
+    private final byte[] recordBytes;
+    private final Transaction transaction;
+    private final byte[] transactionBytes;
+    private final int transactionIndex;
+
+    // Lazily calculated fields
+    @Getter(lazy = true)
+    private final long consensusTimestamp = DomainUtils.timestampInNanosMax(record.getConsensusTimestamp());
+
+    @Getter(lazy = true)
+    private final TransactionBodyAndSignatureMap transactionBodyAndSignatureMap = parseTransaction(transaction);
+
+    @Getter(lazy = true)
+    private final EntityId payerAccountId = EntityId.of(getTransactionBody().getTransactionID().getAccountID());
+
+    @Getter(lazy = true)
+    private final int transactionType = getTransactionType(getTransactionBody());
+
+    // Mutable fields
+    @Builder.Default
+    @NonFinal
+    @Setter
+    private List<TransactionSidecarRecord> sidecarRecords = Collections.emptyList();
 
     /**
-     * Constructs RecordItem from serialized transactionBytes and recordBytes.
+     * Parses the transaction into separate TransactionBody and SignatureMap objects. Necessary since the Transaction
+     * payload has changed incompatibly multiple times over its lifetime.
+     * <p>
+     * Not possible to check the existence of bodyBytes or signedTransactionBytes fields since there are no
+     * 'hasBodyBytes()' or 'hasSignedTransactionBytes()` methods. If unset, they return empty ByteString which always
+     * parses successfully to an empty TransactionBody. However, every transaction should have a valid (non-empty)
+     * TransactionBody.
+     *
+     * @param transaction
+     * @return the parsed transaction body and signature map
      */
-    public RecordItem(Version hapiVersion, byte[] transactionBytes, byte[] recordBytes, Integer transactionIndex) {
-        try {
-            transaction = Transaction.parseFrom(transactionBytes);
-        } catch (InvalidProtocolBufferException e) {
-            throw new ProtobufException(BAD_TRANSACTION_BYTES_MESSAGE, e);
-        }
-        try {
-            record = TransactionRecord.parseFrom(recordBytes);
-        } catch (InvalidProtocolBufferException e) {
-            throw new ProtobufException(BAD_RECORD_BYTES_MESSAGE, e);
-        }
-        transactionBodyAndSignatureMap = parseTransactionBodyAndSignatureMap(transaction);
-        transactionType = getTransactionType(transactionBodyAndSignatureMap.getTransactionBody());
-
-        this.hapiVersion = hapiVersion;
-        this.transactionBytes = transactionBytes;
-        this.recordBytes = recordBytes;
-        this.transactionIndex = transactionIndex;
-        parent = null;
-        previous = null;
-    }
-
-    // Used only in tests
-    // There are many brittle RecordItemParser*Tests which rely on bytes being null. Those tests need to be fixed,
-    // then this function can be removed.
-    public RecordItem(Version hapiVersion, Transaction transaction, TransactionRecord record) {
-        Objects.requireNonNull(transaction, "transaction is required");
-        Objects.requireNonNull(record, "record is required");
-
-        this.hapiVersion = hapiVersion;
-        this.transaction = transaction;
-        transactionBodyAndSignatureMap = parseTransactionBodyAndSignatureMap(transaction);
-        transactionType = getTransactionType(transactionBodyAndSignatureMap.getTransactionBody());
-        this.record = record;
-        transactionBytes = transaction.toByteArray();
-        recordBytes = record.toByteArray();
-        transactionIndex = null;
-        parent = null;
-        previous = null;
-    }
-
-    // Used only in tests, default hapiVersion to RecordFile.HAPI_VERSION_NOT_SET
-    public RecordItem(Transaction transaction, TransactionRecord record) {
-        this(RecordFile.HAPI_VERSION_NOT_SET, transaction, record);
-    }
-
-    private static TransactionBodyAndSignatureMap parseTransactionBodyAndSignatureMap(Transaction transaction) {
+    @SuppressWarnings("deprecation")
+    private static TransactionBodyAndSignatureMap parseTransaction(Transaction transaction) {
         try {
             if (!transaction.getSignedTransactionBytes().equals(ByteString.EMPTY)) {
-                SignedTransaction signedTransaction = SignedTransaction
-                        .parseFrom(transaction.getSignedTransactionBytes());
-                return new TransactionBodyAndSignatureMap(TransactionBody
-                        .parseFrom(signedTransaction.getBodyBytes()), signedTransaction.getSigMap());
+                var signedTransaction = SignedTransaction.parseFrom(transaction.getSignedTransactionBytes());
+                var transactionBody = TransactionBody.parseFrom(signedTransaction.getBodyBytes());
+                return new TransactionBodyAndSignatureMap(transactionBody, signedTransaction.getSigMap());
             } else if (!transaction.getBodyBytes().equals(ByteString.EMPTY)) {
-                // Not possible to check existence of bodyBytes field since there is no 'hasBodyBytes()'.
-                // If unset, getBodyBytes() returns empty ByteString which always parses successfully to "empty"
-                // TransactionBody. However, every transaction should have a valid (non "empty") TransactionBody.
-                return new TransactionBodyAndSignatureMap(TransactionBody
-                        .parseFrom(transaction.getBodyBytes()), transaction.getSigMap());
+                var transactionBody = TransactionBody.parseFrom(transaction.getBodyBytes());
+                return new TransactionBodyAndSignatureMap(transactionBody, transaction.getSigMap());
             } else if (transaction.hasBody()) {
                 return new TransactionBodyAndSignatureMap(transaction.getBody(), transaction.getSigMap());
             }
+
             throw new ProtobufException(BAD_TRANSACTION_BODY_BYTES_MESSAGE);
         } catch (InvalidProtocolBufferException e) {
             throw new ProtobufException(BAD_TRANSACTION_BODY_BYTES_MESSAGE, e);
         }
+    }
+
+    public SignatureMap getSignatureMap() {
+        return getTransactionBodyAndSignatureMap().signatureMap();
+    }
+
+    public TransactionBody getTransactionBody() {
+        return getTransactionBodyAndSignatureMap().transactionBody();
+    }
+
+    public boolean isChild() {
+        return record.hasParentConsensusTimestamp();
+    }
+
+    public boolean isSuccessful() {
+        var status = record.getReceipt().getStatus();
+        return status == ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED ||
+                status == ResponseCodeEnum.SUCCESS ||
+                status == ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
     }
 
     /**
@@ -151,7 +143,7 @@ public class RecordItem implements StreamItem {
      *
      * @return The protobuf ID that represents the transaction type
      */
-    private static int getTransactionType(TransactionBody body) {
+    private int getTransactionType(TransactionBody body) {
         TransactionBody.DataCase dataCase = body.getDataCase();
 
         if (dataCase == null || dataCase == TransactionBody.DataCase.DATA_NOT_SET) {
@@ -166,46 +158,22 @@ public class RecordItem implements StreamItem {
             log.warn("Encountered unknown transaction type: {}", transactionType);
             return transactionType;
         }
+
         return dataCase.getNumber();
     }
 
-    public TransactionBody getTransactionBody() {
-        return transactionBodyAndSignatureMap.getTransactionBody();
+    private record TransactionBodyAndSignatureMap(TransactionBody transactionBody, SignatureMap signatureMap) {
     }
 
-    public SignatureMap getSignatureMap() {
-        return transactionBodyAndSignatureMap.getSignatureMap();
-    }
-
-    public boolean isSuccessful() {
-        var status = record.getReceipt().getStatus();
-        return status == ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED ||
-                status == ResponseCodeEnum.SUCCESS ||
-                status == ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
-    }
-
-    public boolean isChild() {
-        return record.hasParentConsensusTimestamp();
-    }
-
-    @Value
-    private static class TransactionBodyAndSignatureMap {
-        private TransactionBody transactionBody;
-        private SignatureMap signatureMap;
-    }
-
-    // Necessary since Lombok doesn't use our setters for builders
     public static class RecordItemBuilder<C, B extends RecordItem.RecordItemBuilder> {
 
         public RecordItem build() {
             // set parent, parent-child items are assured to exist in sequential order of [Parent, Child1,..., ChildN]
             if (record.hasParentConsensusTimestamp() && previous != null) {
-                if (record.getParentConsensusTimestamp()
-                        .equals(previous.record.getConsensusTimestamp())) {
-                    // check immediately preceding item
+                var parentTimestamp = record.getParentConsensusTimestamp();
+                if (parentTimestamp.equals(previous.record.getConsensusTimestamp())) { // check immediately preceding
                     parent = previous;
-                } else if (previous.parent != null && record.getParentConsensusTimestamp()
-                        .equals(previous.parent.record.getConsensusTimestamp())) {
+                } else if (previous.parent != null && parentTimestamp.equals(previous.parent.record.getConsensusTimestamp())) {
                     // check older siblings parent, if child count is > 1 this prevents having to search to parent
                     parent = previous.parent;
                 }
@@ -214,26 +182,35 @@ public class RecordItem implements StreamItem {
             return buildInternal();
         }
 
-        public B transactionBytes(byte[] transactionBytes) {
-            try {
-                transaction = Transaction.parseFrom(transactionBytes);
-            } catch (InvalidProtocolBufferException e) {
-                throw new ProtobufException(BAD_TRANSACTION_BYTES_MESSAGE, e);
-            }
-            transactionBodyAndSignatureMap = parseTransactionBodyAndSignatureMap(transaction);
-            transactionType = getTransactionType(transactionBodyAndSignatureMap.getTransactionBody());
-            this.transactionBytes = transactionBytes;
+        public B record(TransactionRecord record) {
+            this.record = record;
+            this.recordBytes = record.toByteArray();
             return (B) this;
         }
 
         public B recordBytes(byte[] recordBytes) {
             try {
-                record = TransactionRecord.parseFrom(recordBytes);
+                this.recordBytes = recordBytes;
+                this.record = TransactionRecord.parseFrom(recordBytes);
             } catch (InvalidProtocolBufferException e) {
                 throw new ProtobufException(BAD_RECORD_BYTES_MESSAGE, e);
             }
+            return (B) this;
+        }
 
-            this.recordBytes = recordBytes;
+        public B transaction(Transaction transaction) {
+            this.transaction = transaction;
+            this.transactionBytes = transaction.toByteArray();
+            return (B) this;
+        }
+
+        public B transactionBytes(byte[] transactionBytes) {
+            try {
+                this.transactionBytes = transactionBytes;
+                this.transaction = Transaction.parseFrom(transactionBytes);
+            } catch (InvalidProtocolBufferException e) {
+                throw new ProtobufException(BAD_TRANSACTION_BYTES_MESSAGE, e);
+            }
             return (B) this;
         }
     }

@@ -18,9 +18,7 @@
  * ‍
  */
 
-'use strict';
-
-const _ = require('lodash');
+import _ from 'lodash';
 
 class Entity {
   /**
@@ -70,4 +68,4 @@ class Entity {
   }
 }
 
-module.exports = Entity;
+export default Entity;

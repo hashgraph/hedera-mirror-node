@@ -32,6 +32,7 @@ const (
 
 	operationTypeCryptoCreateAccount = "CRYPTOCREATEACCOUNT"
 	operationTypeCryptoTransfer      = "CRYPTOTRANSFER"
+	operationTypeFee                 = "FEE"
 	operationTypeTokenAssociate      = "TOKENASSOCIATE"
 	operationTypeTokenBurn           = "TOKENBURN"
 	operationTypeTokenCreate         = "TOKENCREATION"

@@ -18,10 +18,8 @@
  * ‍
  */
 
-'use strict';
-
-const utils = require('../utils');
-const EntityId = require('../entityId');
+import EntityId from '../entityId.js';
+import {encodeBase64, nsToSecNs} from '../utils.js';
 
 /**
  * NFT view model
@@ -29,15 +27,15 @@ const EntityId = require('../entityId');
 class NftViewModel {
   constructor(nftModel) {
     this.account_id = EntityId.parse(nftModel.accountId, {isNullable: true}).toString();
-    this.created_timestamp = utils.nsToSecNs(nftModel.createdTimestamp);
+    this.created_timestamp = nsToSecNs(nftModel.createdTimestamp);
     this.delegating_spender = EntityId.parse(nftModel.delegatingSpender, {isNullable: true}).toString();
     this.deleted = nftModel.deleted;
-    this.metadata = utils.encodeBase64(nftModel.metadata);
-    this.modified_timestamp = utils.nsToSecNs(nftModel.modifiedTimestamp);
+    this.metadata = encodeBase64(nftModel.metadata);
+    this.modified_timestamp = nsToSecNs(nftModel.modifiedTimestamp);
     this.serial_number = nftModel.serialNumber;
     this.spender = EntityId.parse(nftModel.spender, {isNullable: true}).toString();
     this.token_id = EntityId.parse(nftModel.tokenId).toString();
   }
 }
 
-module.exports = NftViewModel;
+export default NftViewModel;

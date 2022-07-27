@@ -18,9 +18,7 @@
  * ‍
  */
 
-'use strict';
-
-const _ = require('lodash');
+import _ from 'lodash';
 
 class EthereumTransaction {
   /**
@@ -70,4 +68,4 @@ class EthereumTransaction {
   }
 }
 
-module.exports = EthereumTransaction;
+export default EthereumTransaction;

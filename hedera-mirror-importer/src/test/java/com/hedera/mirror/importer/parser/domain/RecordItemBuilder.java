@@ -24,6 +24,7 @@ import static com.hedera.mirror.common.domain.DomainBuilder.KEY_LENGTH_ECDSA;
 import static com.hedera.mirror.common.domain.DomainBuilder.KEY_LENGTH_ED25519;
 import static com.hedera.mirror.common.util.DomainUtils.TINYBARS_IN_ONE_HBAR;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
+import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
@@ -33,6 +34,7 @@ import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCreateTransactionBody;
@@ -40,17 +42,18 @@ import com.hederahashgraph.api.proto.java.ContractDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
-import com.hederahashgraph.api.proto.java.ContractStateChange;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.Fraction;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
@@ -65,7 +68,6 @@ import com.hederahashgraph.api.proto.java.ShardID;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
-import com.hederahashgraph.api.proto.java.StorageChange;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -78,10 +80,18 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
+import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
@@ -94,7 +104,16 @@ import org.web3j.crypto.Hash;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.util.Utility;
+import com.hedera.services.stream.proto.ContractAction;
+import com.hedera.services.stream.proto.ContractActionType;
+import com.hedera.services.stream.proto.ContractActions;
+import com.hedera.services.stream.proto.ContractBytecode;
+import com.hedera.services.stream.proto.ContractStateChange;
+import com.hedera.services.stream.proto.ContractStateChanges;
+import com.hedera.services.stream.proto.StorageChange;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 
 /**
  * Generates typical protobuf request and response objects with all fields populated.
@@ -112,9 +131,30 @@ public class RecordItemBuilder {
     private static final ShardID SHARD_ID = ShardID.getDefaultInstance();
     private static final AccountID TREASURY = AccountID.newBuilder().setAccountNum(98).build();
 
+    private final Map<TransactionType, Supplier<Builder>> builders = new HashMap<>();
     private final AtomicLong id = new AtomicLong(1000L);
     private final Instant now = Instant.now();
     private final SecureRandom random = new SecureRandom();
+
+    {
+        // Dynamically lookup method references for every transaction body builder in this class
+        Collection<Supplier<Builder>> getters = TestUtils.gettersByType(this, Builder.class);
+        getters.forEach(s -> {
+            builders.put(s.get().type, s);
+        });
+    }
+
+    public Supplier<Builder> lookup(TransactionType type) {
+        return builders.get(type);
+    }
+
+    public Builder<ConsensusSubmitMessageTransactionBody.Builder> consensusSubmitMessage() {
+        var transactionBody = ConsensusSubmitMessageTransactionBody.newBuilder()
+                .setMessage(bytes(128))
+                .setTopicID(topicId());
+        return new Builder<>(TransactionType.CONSENSUSSUBMITMESSAGE, transactionBody)
+                .receipt(r -> r.setTopicSequenceNumber(id()));
+    }
 
     public Builder<ConsensusUpdateTopicTransactionBody.Builder> consensusUpdateTopic() {
         var transactionBody = ConsensusUpdateTopicTransactionBody.newBuilder()
@@ -141,7 +181,9 @@ public class RecordItemBuilder {
 
         return new Builder<>(TransactionType.CONTRACTCALL, transactionBody)
                 .receipt(r -> r.setContractID(contractId))
-                .record(r -> r.setContractCallResult(contractFunctionResult(contractId)));
+                .record(r -> r.setContractCallResult(contractFunctionResult(contractId).clearCreatedContractIDs()))
+                .sidecarRecords(r -> r.add(contractStateChanges(contractId)))
+                .sidecarRecords(r -> r.add(contractActions(contractId)));
     }
 
     public Builder<ContractCreateTransactionBody.Builder> contractCreate() {
@@ -169,7 +211,10 @@ public class RecordItemBuilder {
         return new Builder<>(TransactionType.CONTRACTCREATEINSTANCE, transactionBody)
                 .receipt(r -> r.setContractID(contractId))
                 .record(r -> r.setContractCreateResult(contractFunctionResult(contractId)
-                        .addCreatedContractIDs(contractId)));
+                        .addCreatedContractIDs(contractId)))
+                .sidecarRecords(r -> r.add(contractStateChanges(contractId)))
+                .sidecarRecords(r -> r.add(contractActions(contractId)))
+                .sidecarRecords(r -> r.add(contractBytecode(contractId)));
     }
 
     public Builder<ContractDeleteTransactionBody.Builder> contractDelete() {
@@ -211,12 +256,7 @@ public class RecordItemBuilder {
                         .addTopic(bytes(32))
                         .addTopic(bytes(32))
                         .build())
-                .setSenderId(accountId())
-                .addStateChanges(ContractStateChange.newBuilder()
-                        .setContractID(contractId)
-                        .addStorageChanges(storageChange())
-                        .addStorageChanges(storageChange().setValueWritten(BytesValue.of(ByteString.EMPTY)))
-                        .build());
+                .setSenderId(accountId());
     }
 
     public Builder<ContractUpdateTransactionBody.Builder> contractUpdate() {
@@ -296,6 +336,13 @@ public class RecordItemBuilder {
                 .receipt(r -> r.setAccountID(accountId()));
     }
 
+    public Builder<CryptoDeleteTransactionBody.Builder> cryptoDelete() {
+        var builder = CryptoDeleteTransactionBody.newBuilder()
+                .setDeleteAccountID(accountId())
+                .setTransferAccountID(accountId());
+        return new Builder<>(TransactionType.CRYPTODELETE, builder);
+    }
+
     public Builder<CryptoDeleteAllowanceTransactionBody.Builder> cryptoDeleteAllowance() {
         var builder = CryptoDeleteAllowanceTransactionBody.newBuilder()
                 .addNftAllowances(NftRemoveAllowance.newBuilder()
@@ -329,6 +376,10 @@ public class RecordItemBuilder {
                 .receipt(r -> r.setAccountID(accountId));
     }
 
+    public Builder<EthereumTransactionBody.Builder> ethereumTransaction() {
+        return ethereumTransaction(false);
+    }
+
     @SneakyThrows
     public Builder<EthereumTransactionBody.Builder> ethereumTransaction(boolean create) {
         var transactionBytes = Hex.decodeHex(LONDON_RAW_TX);
@@ -343,20 +394,48 @@ public class RecordItemBuilder {
             return new Builder<>(TransactionType.ETHEREUMTRANSACTION, transactionBody)
                     .record(r -> r
                             .setContractCreateResult(contractFunctionResult(contractId))
-                            .setEthereumHash(digestedHash));
+                            .setEthereumHash(digestedHash))
+                    .sidecarRecords(r -> r.add(contractStateChanges(contractId)))
+                    .sidecarRecords(r -> r.add(contractActions(contractId)));
         } else {
             return new Builder<>(TransactionType.ETHEREUMTRANSACTION, transactionBody)
                     .record(r -> r
                             .setContractCallResult(contractFunctionResult(contractId))
-                            .setEthereumHash(digestedHash));
+                            .setEthereumHash(digestedHash))
+                    .sidecarRecords(r -> r.add(contractStateChanges(contractId)))
+                    .sidecarRecords(r -> r.add(contractActions(contractId)));
         }
     }
 
     public Builder<NodeStakeUpdateTransactionBody.Builder> nodeStakeUpdate() {
         var builder = NodeStakeUpdateTransactionBody.newBuilder()
                 .setEndOfStakingPeriod(timestamp())
+                .setMaxStakingRewardRatePerHbar(17_808L)
+                .setNodeRewardFeeFraction(Fraction.newBuilder().setNumerator(0L).setDenominator(100L))
+                .setStakingPeriod(1440)
+                .setStakingPeriodsStored(365)
+                .setStakingRewardFeeFraction(Fraction.newBuilder().setNumerator(100L).setDenominator(100L))
+                .setStakingRewardRate(100_000_000_000L)
+                .setStakingStartThreshold(25_000_000_000_000_000L)
                 .addNodeStake(nodeStake());
         return new Builder<>(TransactionType.NODESTAKEUPDATE, builder);
+    }
+
+    public Builder<UtilPrngTransactionBody.Builder> prng() {
+        return prng(0);
+    }
+
+    public Builder<UtilPrngTransactionBody.Builder> prng(int range) {
+        var builder = UtilPrngTransactionBody.newBuilder().setRange(range);
+        var transactionBodyBuilder = new Builder<>(TransactionType.UTILPRNG, builder);
+
+        return transactionBodyBuilder.record(r -> {
+            if (range == 0) {
+                r.setPrngBytes(ByteString.copyFrom(randomBytes(382)));
+            } else if (range > 0) {
+                r.setPrngNumber(random.nextInt());
+            }
+        });
     }
 
     public Builder<ScheduleCreateTransactionBody.Builder> scheduleCreate() {
@@ -372,6 +451,10 @@ public class RecordItemBuilder {
                 .setExpirationTime(timestamp())
                 .setWaitForExpiry(true);
         return new Builder<>(TransactionType.SCHEDULECREATE, builder);
+    }
+
+    public Builder<TokenMintTransactionBody.Builder> tokenMint() {
+        return tokenMint(NON_FUNGIBLE_UNIQUE);
     }
 
     public Builder<TokenMintTransactionBody.Builder> tokenMint(TokenType tokenType) {
@@ -433,8 +516,45 @@ public class RecordItemBuilder {
                         .addAccountAmounts(AccountAmount.newBuilder().setAccountID(accountId()).setAmount(100)));
     }
 
+    private TransactionSidecarRecord.Builder contractActions(ContractID contractId) {
+        var contractActions = ContractActions.newBuilder()
+                .addContractActions(contractAction(contractId));
+        return TransactionSidecarRecord.newBuilder().setActions(contractActions);
+    }
+
+    private ContractAction.Builder contractAction(ContractID contractId) {
+        return ContractAction.newBuilder()
+                .setCallDepth(3)
+                .setCallingContract(contractId)
+                .setCallType(ContractActionType.CALL)
+                .setGas(100)
+                .setGasUsed(50)
+                .setInput(bytes(100))
+                .setRecipientContract(contractId())
+                .setOutput(bytes(256))
+                .setValue(20);
+    }
+
+    private TransactionSidecarRecord.Builder contractBytecode(ContractID contractId) {
+        var contractBytecode = ContractBytecode.newBuilder()
+                .setContractId(contractId)
+                .setInitcode(bytes(2048))
+                .setRuntimeBytecode(bytes(3048));
+        return TransactionSidecarRecord.newBuilder()
+                .setBytecode(contractBytecode);
+    }
+
     private ContractID contractId() {
         return ContractID.newBuilder().setContractNum(id()).build();
+    }
+
+    private TransactionSidecarRecord.Builder contractStateChanges(ContractID contractId) {
+        var contractStateChange = ContractStateChange.newBuilder()
+                .setContractId(contractId)
+                .addStorageChanges(storageChange())
+                .addStorageChanges(storageChange().setValueWritten(BytesValue.of(ByteString.EMPTY)));
+        return TransactionSidecarRecord.newBuilder()
+                .setStateChanges(ContractStateChanges.newBuilder().addContractStateChanges(contractStateChange));
     }
 
     private Duration duration(int seconds) {
@@ -463,7 +583,7 @@ public class RecordItemBuilder {
 
     public NodeStake.Builder nodeStake() {
         long stake = id() * TINYBARS_IN_ONE_HBAR;
-        long maxStake = 2 * stake;
+        long maxStake = 50_000_000_000L * TINYBARS_IN_ONE_HBAR / 26L;
         long minStake = stake / 2;
         return NodeStake.newBuilder()
                 .setMaxStake(maxStake)
@@ -473,11 +593,25 @@ public class RecordItemBuilder {
                 .setStake(stake)
                 .setStakeNotRewarded(TINYBARS_IN_ONE_HBAR)
                 .setStakeRewarded(stake - TINYBARS_IN_ONE_HBAR);
-
     }
 
     public ScheduleID scheduleId() {
         return ScheduleID.newBuilder().setScheduleNum(id()).build();
+    }
+
+    public TransactionSidecarRecord.Builder transactionSidecarRecord(ContractID contractID) {
+        var contractRecipientContract = contractAction(contractID).build();
+        var accountRecipientAccount = contractAction(contractID)
+                .clearCaller().clearRecipient().setCallingAccount(accountId())
+                .setRecipientAccount(accountId()).build();
+        var contractRecipientAddress = contractAction(contractId())
+                .clearRecipient().setInvalidSolidityAddress(bytes(20)).build();
+        var contractActions = List.of(contractRecipientContract, accountRecipientAccount,
+                contractRecipientAddress);
+
+        return TransactionSidecarRecord.newBuilder()
+                .setActions(ContractActions.newBuilder()
+                        .addAllContractActions(contractActions));
     }
 
     private StorageChange.Builder storageChange() {
@@ -509,6 +643,7 @@ public class RecordItemBuilder {
         private final SignatureMap.Builder signatureMap;
         private final TransactionBody.Builder transactionBodyWrapper;
         private final TransactionRecord.Builder transactionRecord;
+        private final List<TransactionSidecarRecord.Builder> transactionSidecarRecords;
         private final AccountID payerAccountId;
         private RecordItem parent;
         private Version hapiVersion = RecordFile.HAPI_VERSION_NOT_SET;
@@ -520,6 +655,7 @@ public class RecordItemBuilder {
             signatureMap = defaultSignatureMap();
             transactionBodyWrapper = defaultTransactionBody();
             transactionRecord = defaultTransactionRecord();
+            transactionSidecarRecords = new ArrayList<>();
         }
 
         public RecordItem build() {
@@ -528,11 +664,14 @@ public class RecordItemBuilder {
 
             Transaction transaction = transaction().build();
             TransactionRecord record = transactionRecord.build();
+            List<TransactionSidecarRecord> sidecarRecords = transactionSidecarRecords.stream()
+                    .map(r -> r.build()).collect(Collectors.toList());
             return RecordItem.builder()
                     .hapiVersion(hapiVersion)
                     .parent(parent)
                     .recordBytes(record.toByteArray())
                     .transactionBytes(transaction.toByteArray())
+                    .sidecarRecords(sidecarRecords)
                     .build();
         }
 
@@ -573,6 +712,11 @@ public class RecordItemBuilder {
 
         public Builder<T> transactionBodyWrapper(Consumer<TransactionBody.Builder> consumer) {
             consumer.accept(transactionBodyWrapper);
+            return this;
+        }
+
+        public Builder<T> sidecarRecords(Consumer<List<TransactionSidecarRecord.Builder>> consumer) {
+            consumer.accept(transactionSidecarRecords);
             return this;
         }
 

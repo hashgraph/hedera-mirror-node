@@ -40,6 +40,10 @@ alter table if exists contract
 create index if not exists contract__evm_address on contract (evm_address) where evm_address is not null;
 create index if not exists contract__public_key on contract (public_key) where public_key is not null;
 
+-- contract_action
+alter table if exists contract_action
+    add constraint contract_action__pk primary key (consensus_timestamp, index, caller);
+
 -- contract_history
 alter table if exists contract_history
     add constraint contract_history__pk primary key (id, timestamp_range);
@@ -135,12 +139,16 @@ create index if not exists file_data__id_timestamp
 alter table live_hash
     add constraint live_hash__pk primary key (consensus_timestamp);
 
+-- network_stake
+alter table if exists network_stake
+    add constraint network_stake__pk primary key (consensus_timestamp);
+
 -- nft
 alter table nft
     add constraint nft__pk primary key (token_id, serial_number);
-create index if not exists nft__account_token_serialnumber on nft(account_id, token_id, serial_number);
+create index if not exists nft__account_token_serialnumber on nft (account_id, token_id, serial_number);
 create index if not exists nft__allowance on nft (account_id, spender, token_id, serial_number)
-  where account_id is not null and spender is not null;
+    where account_id is not null and spender is not null;
 
 -- nft_allowance
 alter table if exists nft_allowance
@@ -161,6 +169,10 @@ alter table if exists node_stake
 create index if not exists non_fee_transfer__consensus_timestamp
     on non_fee_transfer (consensus_timestamp);
 
+-- prng
+alter table prng
+    add constraint prng__pk primary key (consensus_timestamp);
+
 -- record_file
 alter table record_file
     add constraint record_file__pk primary key (consensus_end, node_account_id);
@@ -176,6 +188,10 @@ alter table schedule
     add constraint schedule__pk primary key (schedule_id);
 create index if not exists schedule__creator_account_id
     on schedule (creator_account_id desc);
+
+-- sidecar_file
+alter table sidecar_file
+    add constraint sidecar_file__pk primary key (consensus_end, id);
 
 -- staking_reward_transfer
 alter table staking_reward_transfer

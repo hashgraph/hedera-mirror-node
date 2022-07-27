@@ -137,6 +137,9 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.parser.record.retry.maxBackoff`                     | 10s                            | The maximum amount of time to wait between retries                                                                                                                                                                                                                 |
 | `hedera.mirror.importer.parser.record.retry.minBackoff`                     | 250ms                          | The minimum amount of time to wait between retries                                                                                                                                                                                                                 |
 | `hedera.mirror.importer.parser.record.retry.multiplier`                     | 2                              | Used to generate the next delay for backoff                                                                                                                                                                                                                        |
+| `hedera.mirror.importer.parser.record.sidecar.enabled`                      | false                          | Whether to download and read sidecar record files                                                                                                                                                                                                                  |
+| `hedera.mirror.importer.parser.record.sidecar.persistBytes`                 | false                          | Whether to persist the sidecar file bytes to the database                                                                                                                                                                                                          |
+| `hedera.mirror.importer.parser.record.sidecar.types`                        | []                             | Which types of transaction sidecar records to process. By default it is empty to indicate all types                                                                                                                                                                |
 | `hedera.mirror.importer.parser.record.transactionTimeout`                   | 30s                            | The timeout in seconds for a database transaction                                                                                                                                                                                                                  |
 | `hedera.mirror.importer.parser.tempTableBufferSize`                         | 256                            | The size of the buffer in MB to use for temporary tables                                                                                                                                                                                                           |
 | `hedera.mirror.importer.reconciliation.cron`                                | 0 0 0 * * *                    | When to run the balance reconciliation job. Defaults to once a day at midnight. See Spring [docs](https://docs.spring.io/spring-framework/docs/current/reference/html/integration.html#scheduling-cron-expression).                                                |
@@ -288,6 +291,7 @@ Name                                                            | Default | Desc
 `hedera.mirror.monitor.publish.scenarios.<name>.type`           |         | The type of transaction to publish. See the [`TransactionType`](/hedera-mirror-monitor/src/main/java/com/hedera/mirror/monitor/publish/transaction/TransactionType.java) enum for a list of possible values
 `hedera.mirror.monitor.publish.statusFrequency`                 | 10s     | How often to log publishing statistics
 `hedera.mirror.monitor.publish.warmupPeriod`                    | 30s     | The amount of time the publisher should ramp up its rate before reaching its stable (maximum) rate
+`hedera.mirror.monitor.retrieveAddressBook`                     | true    | Whether to download the address book from the mirror node and use those nodes to publish transactions
 `hedera.mirror.monitor.subscribe.clients`                       | 1       | How many SDK clients should be created to subscribe to mirror node APIs. Clients will be used in a round-robin fashion
 `hedera.mirror.monitor.subscribe.enabled`                       | true    | Whether to enable subscribing to mirror node APIs to verify published transactions
 `hedera.mirror.monitor.subscribe.grpc`                          |         | A map of scenario name to gRPC subscriber scenarios. The name is used as a unique identifier in logs, metrics, and the REST API
@@ -417,25 +421,26 @@ latter configuration overwriting (technically recursively merged into) the curre
 
 The following table lists the available properties along with their default values.
 
-Name                                                    | Default                 | Description
-------------------------------------------------------- | ----------------------- | ----------------------------------------------------------------------------------------------
-`hedera.mirror.rosetta.db.host`                         | 127.0.0.1               | The IP or hostname used to connect to the database
-`hedera.mirror.rosetta.db.name`                         | mirror_node             | The name of the database
-`hedera.mirror.rosetta.db.password`                     | mirror_rosetta_pass     | The database password the processor uses to connect
-`hedera.mirror.rosetta.db.pool.maxIdleConnections`      | 20                      | The maximum number of idle database connections
-`hedera.mirror.rosetta.db.pool.maxLifetime`             | 30                      | The maximum lifetime of a database connection in minutes
-`hedera.mirror.rosetta.db.pool.maxOpenConnections`      | 100                     | The maximum number of open database connections
-`hedera.mirror.rosetta.db.port`                         | 5432                    | The port used to connect to the database
-`hedera.mirror.rosetta.db.statementTimeout`             | 20                      | The number of seconds to wait before timing out a query statement
-`hedera.mirror.rosetta.db.username`                     | mirror_rosetta          | The username the processor uses to connect to the database
-`hedera.mirror.rosetta.log.level`                       | info                    | The log level
-`hedera.mirror.rosetta.network`                         | DEMO                    | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `PREVIEWNET`, `TESTNET` or `OTHER`
-`hedera.mirror.rosetta.nodes`                           | {}                      | A map of main nodes with its service endpoint as the key and the node account id as its value
-`hedera.mirror.rosetta.nodeVersion`                     | 0                       | The default canonical version of the node runtime
-`hedera.mirror.rosetta.online`                          | true                    | The default online mode of the Rosetta interface
-`hedera.mirror.rosetta.port`                            | 5700                    | The REST API port
-`hedera.mirror.rosetta.shard`                           | 0                       | The default shard number that this mirror node participates in
-`hedera.mirror.rosetta.realm`                           | 0                       | The default realm number within the shard
+Name                                                 | Default             | Description
+---------------------------------------------------- |---------------------| ----------------------------------------------------------------------------------------------
+`hedera.mirror.rosetta.cache.entity.maxSize`         | 524288              | The max number of entities to cache
+`hedera.mirror.rosetta.db.host`                      | 127.0.0.1           | The IP or hostname used to connect to the database
+`hedera.mirror.rosetta.db.name`                      | mirror_node         | The name of the database
+`hedera.mirror.rosetta.db.password`                  | mirror_rosetta_pass | The database password the processor uses to connect
+`hedera.mirror.rosetta.db.pool.maxIdleConnections`   | 20                  | The maximum number of idle database connections
+`hedera.mirror.rosetta.db.pool.maxLifetime`          | 30                  | The maximum lifetime of a database connection in minutes
+`hedera.mirror.rosetta.db.pool.maxOpenConnections`   | 100                 | The maximum number of open database connections
+`hedera.mirror.rosetta.db.port`                      | 5432                | The port used to connect to the database
+`hedera.mirror.rosetta.db.statementTimeout`          | 20                  | The number of seconds to wait before timing out a query statement
+`hedera.mirror.rosetta.db.username`                  | mirror_rosetta      | The username the processor uses to connect to the database
+`hedera.mirror.rosetta.log.level`                    | info                | The log level
+`hedera.mirror.rosetta.network`                      | DEMO                | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `PREVIEWNET`, `TESTNET` or `OTHER`
+`hedera.mirror.rosetta.nodes`                        | {}                  | A map of main nodes with its service endpoint as the key and the node account id as its value
+`hedera.mirror.rosetta.nodeVersion`                  | 0                   | The default canonical version of the node runtime
+`hedera.mirror.rosetta.online`                       | true                | The default online mode of the Rosetta interface
+`hedera.mirror.rosetta.port`                         | 5700                | The REST API port
+`hedera.mirror.rosetta.shard`                        | 0                   | The default shard number that this mirror node participates in
+`hedera.mirror.rosetta.realm`                        | 0                   | The default realm number within the shard
 
 ## Web3 API
 

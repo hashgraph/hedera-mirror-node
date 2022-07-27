@@ -18,8 +18,6 @@
  * ‍
  */
 
-'use strict';
+import OrderSpec from './orderSpec';
 
-module.exports = {
-  OrderSpec: require('./orderSpec'),
-};
+export {OrderSpec};

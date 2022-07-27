@@ -18,12 +18,10 @@
  * ‍
  */
 
-'use strict';
-
-const BaseService = require('./baseService');
-const constants = require('../constants');
-const {OrderSpec} = require('../sql');
-const {TokenAllowance} = require('../model');
+import BaseService from './baseService';
+import {filterKeys} from '../constants';
+import {TokenAllowance} from '../model';
+import {OrderSpec} from '../sql';
 
 /**
  * TokenAllowance business model
@@ -31,8 +29,8 @@ const {TokenAllowance} = require('../model');
 class TokenAllowanceService extends BaseService {
   static accountTokenAllowanceQuery = `select * from ${TokenAllowance.tableName}`;
   static columns = {
-    [constants.filterKeys.SPENDER_ID]: TokenAllowance.SPENDER,
-    [constants.filterKeys.TOKEN_ID]: TokenAllowance.TOKEN_ID,
+    [filterKeys.SPENDER_ID]: TokenAllowance.SPENDER,
+    [filterKeys.TOKEN_ID]: TokenAllowance.TOKEN_ID,
   };
   static orderByColumns = [TokenAllowance.SPENDER, TokenAllowance.TOKEN_ID];
 
@@ -108,4 +106,4 @@ class TokenAllowanceService extends BaseService {
   }
 }
 
-module.exports = new TokenAllowanceService();
+export default new TokenAllowanceService();

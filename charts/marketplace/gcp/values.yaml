@@ -3,7 +3,7 @@ applicationResource:
   partnerId: mirror-node-public
   partnerName: mirror-node-public
   solutionId: hedera-mirror-node
-  version: ''
+  version: ""
 
 global:
   db:
@@ -67,8 +67,8 @@ postgresql:
   enabled: true
   pgpool:
     replicaCount: 0
-  postgresql:
-    upgradeRepmgrExtension: true  # Upgrade repmgr version to 5.2 or else container spinup fails
+  serviceAccount:
+    create: false
 
 redis:
   enabled: false
@@ -93,9 +93,6 @@ rest:
     type: LoadBalancer
 
 rosetta:
-  enabled: false
-
-timescaledb:
   enabled: false
 
 web3:

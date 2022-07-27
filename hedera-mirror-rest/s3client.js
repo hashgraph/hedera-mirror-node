@@ -18,12 +18,11 @@
  * ‍
  */
 
-'use strict';
+import AWS from 'aws-sdk';
+import querystring from 'querystring';
 
-const AWS = require('aws-sdk');
-const querystring = require('querystring');
-const config = require('./config');
-const {cloudProviders, defaultCloudProviderEndpoints} = require('./constants');
+import config from './config';
+import {cloudProviders, defaultCloudProviderEndpoints} from './constants';
 
 class S3Client {
   constructor(s3, hasCredentials, gcpProjectId) {
@@ -104,6 +103,6 @@ const createS3Client = () => {
   return new S3Client(new AWS.S3(s3Config), !!s3Config.accessKeyId, gcpProjectId);
 };
 
-module.exports = {
+export default {
   createS3Client,
 };

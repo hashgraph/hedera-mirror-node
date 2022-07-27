@@ -18,16 +18,12 @@
  * ‍
  */
 
-'use strict';
+import {getResponseLimit} from '../config';
+import * as constants from '../constants';
+import schedules from '../schedules';
+import * as utils from '../utils';
 
-const {
-  response: {
-    limit: {default: defaultLimit},
-  },
-} = require('../config');
-const constants = require('../constants');
-const schedules = require('../schedules');
-const utils = require('../utils');
+const {default: defaultLimit} = getResponseLimit();
 
 describe('schedule formatScheduleRow tests', () => {
   const defaultInput = {

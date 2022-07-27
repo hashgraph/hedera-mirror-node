@@ -18,12 +18,10 @@
  * ‍
  */
 
-'use strict';
-
-const {getAccountContractUnionQueryWithOrder} = require('./accountContract');
-const constants = require('./constants');
-const EntityId = require('./entityId');
-const utils = require('./utils');
+import accountContract from './accountContract';
+import * as constants from './constants';
+import EntityId from './entityId';
+import * as utils from './utils';
 
 const formatBalancesResult = (req, result, limit, order) => {
   const {rows, sqlQuery} = result;
@@ -68,7 +66,7 @@ const formatBalancesResult = (req, result, limit, order) => {
   return ret;
 };
 
-const accountContractQuery = getAccountContractUnionQueryWithOrder();
+const accountContractQuery = accountContract.getAccountContractUnionQueryWithOrder();
 
 /**
  * Handler function for /balances API.
@@ -140,6 +138,6 @@ const getBalances = async (req, res) => {
   logger.debug(`getBalances returning ${result.rows.length} entries`);
 };
 
-module.exports = {
+export default {
   getBalances,
 };

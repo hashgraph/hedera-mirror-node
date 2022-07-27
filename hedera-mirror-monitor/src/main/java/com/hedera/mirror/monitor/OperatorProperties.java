@@ -9,9 +9,9 @@ package com.hedera.mirror.monitor;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,8 +29,9 @@ import org.springframework.validation.annotation.Validated;
 public class OperatorProperties {
 
     @NotBlank
-    private String accountId;
+    private String accountId = "0.0.2";
 
     @NotBlank
-    private String privateKey;
+    private String privateKey =
+            "302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137";
 }

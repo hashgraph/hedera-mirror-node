@@ -9,9 +9,9 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,14 +25,12 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Named;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.ArrayUtils;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.context.annotation.Scope;
 import org.springframework.retry.support.RetryTemplate;
 
 import com.hedera.hashgraph.sdk.KeyList;
@@ -51,16 +49,15 @@ import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
 @Named
-@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class TopicClient extends AbstractNetworkClient {
+
     private static final Duration autoRenewPeriod = Duration.ofSeconds(8000000);
+
     private final Map<Long, Instant> recordPublishInstants;
-    private TopicId defaultTopicId = null;
 
     public TopicClient(SDKClient sdkClient, RetryTemplate retryTemplate) {
         super(sdkClient, retryTemplate);
-        recordPublishInstants = new HashMap<>();
-        log.debug("Creating Topic Client");
+        recordPublishInstants = new ConcurrentHashMap<>();
     }
 
     public NetworkTransactionResponse createTopic(ExpandedAccountId adminAccount, PublicKey submitKey) {
@@ -137,27 +134,6 @@ public class TopicClient extends AbstractNetworkClient {
         }
 
         return transactionReceiptList;
-    }
-
-    public TopicMessageSubmitTransaction getTopicMessageSubmitTransaction(TopicId topicId, byte[] message) {
-        return new TopicMessageSubmitTransaction()
-                .setTopicId(topicId)
-                .setMessage(message);
-    }
-
-    public TopicId getDefaultTopicId() {
-        if (defaultTopicId == null) {
-            NetworkTransactionResponse networkTransactionResponse = createTopic(sdkClient
-                    .getExpandedOperatorAccountId(), null);
-            defaultTopicId = networkTransactionResponse.getReceipt().topicId;
-            log.debug("Created TopicId: '{}' for use in current test session", defaultTopicId);
-        }
-
-        return defaultTopicId;
-    }
-
-    public void publishMessageToDefaultTopic() {
-        publishMessagesToTopic(getDefaultTopicId(), "Background message", null, 1, false);
     }
 
     public TransactionId publishMessageToTopic(TopicId topicId, byte[] message, KeyList submitKeys) {

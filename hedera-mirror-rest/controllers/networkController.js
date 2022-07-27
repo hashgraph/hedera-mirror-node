@@ -18,32 +18,24 @@
  * ‍
  */
 
-'use strict';
+import _ from 'lodash';
 
-const _ = require('lodash');
-const {
-  network: {unreleasedSupplyAccounts: defaultUnreleasedSupplyAccounts},
-} = require('../config');
-const constants = require('../constants');
-const utils = require('../utils');
-
-const BaseController = require('./baseController');
-
-const {AddressBookEntry, FileData} = require('../model');
-const {FileDataService, NetworkNodeService} = require('../service');
-const {
+import BaseController from './baseController';
+import config from '../config';
+import {filterKeys, orderFilterValues, responseDataLabel} from '../constants';
+import entityId from '../entityId';
+import {InvalidArgumentError, NotFoundError} from '../errors';
+import {AddressBookEntry, FileData} from '../model';
+import {FileDataService, NetworkNodeService} from '../service';
+import * as utils from '../utils';
+import {
   ExchangeRateSetViewModel,
   NetworkNodeViewModel,
   NetworkSupplyViewModel,
   FeeScheduleViewModel,
-} = require('../viewmodel');
+} from '../viewmodel';
 
-// errors
-const {InvalidArgumentError} = require('../errors/invalidArgumentError');
-
-const entityId = require('../entityId');
-const {NotFoundError} = require('../errors/notFoundError');
-
+const defaultUnreleasedSupplyAccounts = config.network.unreleasedSupplyAccounts;
 const networkNodesDefaultSize = 10;
 const networkNodesMaxSize = 25;
 
@@ -58,7 +50,7 @@ class NetworkController extends BaseController {
    */
   extractNetworkNodesQuery = (filters) => {
     let limit = networkNodesDefaultSize;
-    let order = constants.orderFilterValues.ASC;
+    let order = orderFilterValues.ASC;
     let fileId = '102'; // default fileId for mirror node
     const startPosition = 2; // 1st index is reserved for fileId
     const conditions = [];
@@ -72,19 +64,19 @@ class NetworkController extends BaseController {
       }
 
       switch (filter.key) {
-        case constants.filterKeys.FILE_ID:
+        case filterKeys.FILE_ID:
           if (fileIdSpecified) {
-            throw new InvalidArgumentError(`Only a single instance is supported for ${constants.filterKeys.FILE_ID}`);
+            throw new InvalidArgumentError(`Only a single instance is supported for ${filterKeys.FILE_ID}`);
           }
           if (utils.opsMap.eq !== filter.operator) {
             throw new InvalidArgumentError(
-              `Only equals (eq) comparison operator is supported for ${constants.filterKeys.FILE_ID}`
+              `Only equals (eq) comparison operator is supported for ${filterKeys.FILE_ID}`
             );
           }
           fileId = filter.value;
           fileIdSpecified = true;
           break;
-        case constants.filterKeys.NODE_ID:
+        case filterKeys.NODE_ID:
           this.updateConditionsAndParamsWithInValues(
             filter,
             nodeInValues,
@@ -94,16 +86,14 @@ class NetworkController extends BaseController {
             startPosition + conditions.length
           );
           break;
-        case constants.filterKeys.LIMIT:
+        case filterKeys.LIMIT:
           // response per address book node can be large so a reduced limit is enforced
           if (filter.value > networkNodesMaxSize) {
-            throw new InvalidArgumentError(
-              `Max value of ${networkNodesMaxSize} is supported for ${constants.filterKeys.LIMIT}`
-            );
+            throw new InvalidArgumentError(`Max value of ${networkNodesMaxSize} is supported for ${filterKeys.LIMIT}`);
           }
           limit = filter.value;
           break;
-        case constants.filterKeys.ORDER:
+        case filterKeys.ORDER:
           order = filter.value;
           break;
         default:
@@ -132,18 +122,16 @@ class NetworkController extends BaseController {
     const filterQuery = {
       whereQuery: [],
     };
-    let order = constants.orderFilterValues.ASC;
+    let order = orderFilterValues.ASC;
 
     for (const filter of filters) {
       if (_.isNil(filter)) {
         continue;
       }
 
-      if (filter.key === constants.filterKeys.TIMESTAMP) {
+      if (filter.key === filterKeys.TIMESTAMP) {
         if (utils.opsMap.ne === filter.operator) {
-          throw new InvalidArgumentError(
-            `Not equals (ne) operator is not supported for ${constants.filterKeys.TIMESTAMP}`
-          );
+          throw new InvalidArgumentError(`Not equals (ne) operator is not supported for ${filterKeys.TIMESTAMP}`);
         }
 
         // to ensure most recent occurrence is found convert eq to lte
@@ -154,7 +142,7 @@ class NetworkController extends BaseController {
         filterQuery.whereQuery.push(FileDataService.getFilterWhereCondition(FileData.CONSENSUS_TIMESTAMP, filter));
       }
 
-      if (filter.key === constants.filterKeys.ORDER) {
+      if (filter.key === filterKeys.ORDER) {
         order = filter.value;
       }
     }
@@ -180,7 +168,7 @@ class NetworkController extends BaseController {
       throw new NotFoundError('Not found');
     }
 
-    res.locals[constants.responseDataLabel] = new ExchangeRateSetViewModel(exchangeRate);
+    res.locals[responseDataLabel] = new ExchangeRateSetViewModel(exchangeRate);
   };
 
   /**
@@ -206,12 +194,12 @@ class NetworkController extends BaseController {
     if (response.nodes.length === limit) {
       const lastRow = _.last(response.nodes);
       const last = {
-        [constants.filterKeys.NODE_ID]: lastRow.node_id,
+        [filterKeys.NODE_ID]: lastRow.node_id,
       };
       response.links.next = utils.getPaginationLink(req, false, last, order);
     }
 
-    res.locals[constants.responseDataLabel] = response;
+    res.locals[responseDataLabel] = response;
   };
 
   /**
@@ -247,7 +235,7 @@ class NetworkController extends BaseController {
       throw new NotFoundError('Not found');
     }
 
-    res.locals[constants.responseDataLabel] = new NetworkSupplyViewModel(rows[0], NetworkController.totalSupply);
+    res.locals[responseDataLabel] = new NetworkSupplyViewModel(rows[0], NetworkController.totalSupply);
     logger.debug(`getSupply returning ${rows.length} entries`);
   };
 
@@ -270,8 +258,8 @@ class NetworkController extends BaseController {
       throw new NotFoundError('Not found');
     }
 
-    res.locals[constants.responseDataLabel] = new FeeScheduleViewModel(feeSchedule, exchangeRate, order);
+    res.locals[responseDataLabel] = new FeeScheduleViewModel(feeSchedule, exchangeRate, order);
   };
 }
 
-module.exports = new NetworkController();
+export default new NetworkController();

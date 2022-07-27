@@ -39,7 +39,6 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
-import com.hederahashgraph.api.proto.java.StorageChange;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
@@ -81,6 +80,9 @@ import com.hedera.mirror.importer.repository.StakingRewardTransferRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.util.Utility;
+import com.hedera.services.stream.proto.ContractStateChange;
+import com.hedera.services.stream.proto.ContractStateChanges;
+import com.hedera.services.stream.proto.StorageChange;
 
 public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTest {
 
@@ -493,9 +495,13 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
                 .addTopic(ByteString.copyFromUtf8("Topic1"))
                 .addTopic(ByteString.copyFromUtf8("Topic2"))
                 .addTopic(ByteString.copyFromUtf8("Topic3")).build());
+    }
+
+    protected void buildContractStateChanges(ContractStateChanges.Builder builder) {
         // 3 state changes, no value written, valid value written and zero value written
-        builder.addStateChanges(com.hederahashgraph.api.proto.java.ContractStateChange.newBuilder()
-                .setContractID(CONTRACT_ID)
+        builder.addContractStateChanges(
+            ContractStateChange.newBuilder()
+                .setContractId(CONTRACT_ID)
                 .addStorageChanges(StorageChange.newBuilder()
                         .setSlot(ByteString
                                 .copyFromUtf8("0x000000000000000000"))

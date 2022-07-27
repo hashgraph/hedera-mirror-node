@@ -102,6 +102,7 @@ create table if not exists contract
     proxy_account_id                 bigint                         null,
     public_key                       character varying              null,
     realm                            bigint                         not null,
+    runtime_bytecode                 bytea                          null,
     shard                            bigint                         not null,
     staked_account_id                bigint                         null,
     staked_node_id                   bigint      default -1         null,
@@ -110,6 +111,27 @@ create table if not exists contract
     type                             entity_type default 'CONTRACT' not null
 );
 comment on table contract is 'Contract entity';
+
+--contract_action
+create table if not exists contract_action
+(
+    call_depth          integer                        not null,
+    call_type           integer                        not null,
+    caller              bigint                         not null,
+    caller_type         entity_type default 'CONTRACT' not null,
+    consensus_timestamp bigint                         not null,
+    gas                 bigint                         not null,
+    gas_used            bigint                         not null,
+    index               integer                        not null,
+    input               bytea                          null,
+    recipient_account   bigint                         null,
+    recipient_address   bytea                          null,
+    recipient_contract  bigint                         null,
+    result_data         bytea                          null,
+    result_data_type    integer                        not null,
+    value               bigint                         not null
+);
+comment on table contract_action is 'Contract action';
 
 -- contract_history
 create table if not exists contract_history
@@ -308,6 +330,24 @@ create table if not exists live_hash
     consensus_timestamp bigint not null
 );
 
+create table if not exists network_stake
+(
+    consensus_timestamp              bigint not null,
+    epoch_day                        bigint not null,
+    max_staking_reward_rate_per_hbar bigint not null,
+    node_reward_fee_denominator      bigint not null,
+    node_reward_fee_numerator        bigint not null,
+    stake_total                      bigint not null,
+    staking_period                   bigint not null,
+    staking_period_duration          bigint not null,
+    staking_periods_stored           bigint not null,
+    staking_reward_fee_denominator   bigint not null,
+    staking_reward_fee_numerator     bigint not null,
+    staking_reward_rate              bigint not null,
+    staking_start_threshold          bigint not null
+);
+comment on table network_stake is 'Staking information common to all nodes';
+
 -- nft
 create table if not exists nft
 (
@@ -364,7 +404,6 @@ create table if not exists node_stake
     stake               bigint not null,
     stake_not_rewarded  bigint not null,
     stake_rewarded      bigint not null,
-    stake_total         bigint not null,
     staking_period      bigint not null
 );
 comment on table node_stake is 'Node staking information';
@@ -380,6 +419,16 @@ create table if not exists non_fee_transfer
 );
 comment on table non_fee_transfer is 'Crypto account non fee Hbar transfers';
 
+-- prng
+create table if not exists prng
+(
+    consensus_timestamp bigint  not null,
+    range               integer not null,
+    pseudorandom_bytes  bytea   null,
+    pseudorandom_number integer null
+);
+comment on table prng is 'Pseudorandom number generator';
+
 -- record_file
 create table if not exists record_file
 (
@@ -389,7 +438,7 @@ create table if not exists record_file
     count              bigint                 not null,
     digest_algorithm   int                    not null,
     file_hash          character varying(96)  not null,
-    gas_used           bigint default -1,
+    gas_used           bigint                          default -1,
     hapi_version_major int,
     hapi_version_minor int,
     hapi_version_patch int,
@@ -401,6 +450,7 @@ create table if not exists record_file
     name               character varying(250) not null,
     node_account_id    bigint                 not null,
     prev_hash          character varying(96)  not null,
+    sidecar_count      int                    not null default 0,
     size               int                    null,
     version            int                    not null
 );
@@ -419,6 +469,21 @@ create table if not exists schedule
     wait_for_expiry     boolean not null default false
 );
 comment on table schedule is 'Schedule entity entries';
+
+-- sidecar file
+create table if not exists sidecar_file
+(
+    bytes          bytea                  null,
+    count          int                    null,
+    consensus_end  bigint                 not null,
+    hash_algorithm int                    not null,
+    hash           bytea                  not null,
+    id             int                    not null,
+    name           character varying(250) not null,
+    size           int                    null,
+    types          int[]                  not null
+);
+comment on table sidecar_file is 'Sidecar record file';
 
 -- staking reward transfer
 create table if not exists staking_reward_transfer
