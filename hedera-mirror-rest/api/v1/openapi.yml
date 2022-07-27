@@ -696,8 +696,7 @@ paths:
             application/json:
               schema:
                 oneOf:
-                  - $ref: '#/components/schemas/StateProofResponseCompactV6'
-                  - $ref: '#/components/schemas/StateProofResponseCompactV5'
+                  - $ref: '#/components/schemas/StateProofResponseCompact'
                   - $ref: '#/components/schemas/StateProofResponseFull'
         400:
           $ref: '#/components/responses/InvalidParameterError'
@@ -1226,6 +1225,10 @@ components:
           $ref: '#/components/schemas/Links'
     StateProofResponseFull:
       type: object
+      required:
+        - address_books
+        - record_file
+        - signature_files
       properties:
         address_books:
           description: The network address book valid at the time of the transaction
@@ -1253,8 +1256,13 @@ components:
           0.0.5: MWY0YmU5OGE3NWE4N2NkNjQ5ZTNlMWE1ODI1OTI3NTgwNWM1Y2RmNjNmYjA0YjMzMTdlZmI1MTEwNzQ2NDVjNw==
           0.0.6: NzNiZTVmMTZkNmY4NTQ4MjdiN2M4MTEzZmFlY2I1YzIwNGI5ZjFkNjhiMzdkMzczNTg4OTRkOWFiZmM5N2U4Mw==
           0.0.7: NDJiZTVmMTZkNmY4NTQ4MjdiN2M4MTEzZmFlY2I1YzIwNGI5ZjFkNjhiMzdkMzczNTg4OTRkOWFiZmM5N2U4Mw==
-    StateProofResponseCompactV5:
+    StateProofResponseCompact:
       type: object
+      required:
+        - address_books
+        - record_file
+        - signature_files
+        - version
       properties:
         address_books:
           description: The network address book valid at the time of the transaction
@@ -1265,6 +1273,13 @@ components:
         record_file:
           description: The record file the transaction belongs to, in compact format
           type: object
+          required:
+            - head
+            - start_running_hash_object
+            - end_running_hash_object
+            - hashes_before
+            - hashes_after
+            - record_stream_object
           properties:
             head:
               description: The record file head
@@ -1296,6 +1311,10 @@ components:
               description: The record stream object of the transaction in query
               type: string
               format: byte
+            block_number:
+              description: The block number, in base64 encoding. Only present if version is 6
+              type: string
+              format: byte
         signature_files:
           description: The nodes' signature files for the record file
           type: object
@@ -1303,7 +1322,7 @@ components:
             type: string
             format: byte
         version:
-          description: The record file format version
+          description: The record file format version, either 5 or 6
           type: integer
       example:
         address_books:
@@ -1318,27 +1337,14 @@ components:
             - TOJuZz3EUX1RNdRJBfz7n+V9cYyEm//ER9h3s/y1d8nzs0VqYltJFE0dPangRC6c
             - RiRHvjPQPqUXNlvDJ6lPiv40ZOPVV3VcWRH8GOKFf6Xv9jK0vUjR2qGfjI/IRZRy
           record_stream_object: 43CSm6VCnYsAAAABAAAA2gpgCBYqJAoQCLDqARCA3AsaBgjQ6f2WBhIQCLDqARCm5QsaBgjghf6WBjiR6EhCMDNd1b7xmTuNNiLcn2bdlAI=
+          block_number: AAECoA==
         signature_files:
           0.0.3: MWFmYzZlNWVjNGJiZTg0ZWJjNTVkMGViNDViMjE2Mzg2ZTQ2NjUzZTYyYmM1NjE2YThmZGJjNzQ1ZWIyMTQxNQ==
           0.0.4: ZDI4ZDIwMGJiYTdkNDhmNTA3ZTE0MGZhNjIyOGFiYTdmMjlmZjhiMmEzZjJhOGVlYjg1NzQyZGMwNTNjZWM3MQ==
           0.0.5: MWY0YmU5OGE3NWE4N2NkNjQ5ZTNlMWE1ODI1OTI3NTgwNWM1Y2RmNjNmYjA0YjMzMTdlZmI1MTEwNzQ2NDVjNw==
           0.0.6: NzNiZTVmMTZkNmY4NTQ4MjdiN2M4MTEzZmFlY2I1YzIwNGI5ZjFkNjhiMzdkMzczNTg4OTRkOWFiZmM5N2U4Mw==
           0.0.7: NDJiZTVmMTZkNmY4NTQ4MjdiN2M4MTEzZmFlY2I1YzIwNGI5ZjFkNjhiMzdkMzczNTg4OTRkOWFiZmM5N2U4Mw==
-        version: 5
-    StateProofResponseCompactV6:
-      allOf:
-        - $ref: "#/components/schemas/StateProofResponseCompactV5"
-        - properties:
-            record_file:
-              properties:
-                block_number:
-                  description: The block number, in base64 encoding
-                  type: string
-                  format: byte
-          example:
-            record_file:
-              block_number: AAECoA==
-            version: 6
+        version: 6
     TokenAllowancesResponse:
       type: object
       properties:
