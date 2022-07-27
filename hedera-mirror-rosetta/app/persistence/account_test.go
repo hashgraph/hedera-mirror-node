@@ -364,6 +364,45 @@ func (suite *accountRepositorySuite) TestGetAccountAliasDbConnectionError() {
 	assert.Equal(suite.T(), types.AccountId{}, actual)
 }
 
+func (suite *accountRepositorySuite) TestGetAccountId() {
+	// given
+	aliasAccountId, _ := types.NewAccountIdFromString(account4Alias, 0, 0)
+	repo := NewAccountRepository(dbClient)
+
+	// when
+	actual, err := repo.GetAccountId(defaultContext, aliasAccountId)
+
+	// then
+	assert.NotNil(suite.T(), err)
+	assert.Equal(suite.T(), types.AccountId{}, actual)
+}
+
+func (suite *accountRepositorySuite) TestGetAccountIdNumericAccount() {
+	// given
+	accountId := types.NewAccountIdFromEntityId(domain.MustDecodeEntityId(account1))
+	repo := NewAccountRepository(dbClient)
+
+	// when
+	actual, err := repo.GetAccountId(defaultContext, accountId)
+
+	// then
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), accountId, actual)
+}
+
+func (suite *accountRepositorySuite) TestGetAccountIdDbConnectionError() {
+	// given
+	aliasAccountId, _ := types.NewAccountIdFromString(account4Alias, 0, 0)
+	repo := NewAccountRepository(invalidDbClient)
+
+	// when
+	actual, err := repo.GetAccountId(defaultContext, aliasAccountId)
+
+	// then
+	assert.NotNil(suite.T(), err)
+	assert.Equal(suite.T(), types.AccountId{}, actual)
+}
+
 func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlock() {
 	// given
 	// tokens created at or before first account balance snapshot will not show up in account balance response
@@ -724,6 +763,38 @@ func (suite *accountRepositoryWithAliasSuite) TestGetAccountAliasThrowWhenInvali
 	repo := NewAccountRepository(dbClient)
 	actual, err := repo.GetAccountAlias(defaultContext, accountId)
 	assert.NotNil(suite.T(), err)
+	assert.Equal(suite.T(), types.AccountId{}, actual)
+}
+
+func (suite *accountRepositoryWithAliasSuite) TestGetAccountId() {
+	// given
+	aliasAccountId, err := types.NewAccountIdFromString(account4Alias, 0, 0)
+	assert.NoError(suite.T(), err)
+	repo := NewAccountRepository(dbClient)
+	expected := types.NewAccountIdFromEntityId(domain.MustDecodeEntityId(account4))
+
+	// when
+	actual, rErr := repo.GetAccountId(defaultContext, aliasAccountId)
+
+	// then
+	assert.Nil(suite.T(), rErr)
+	assert.Equal(suite.T(), expected, actual)
+}
+
+func (suite *accountRepositoryWithAliasSuite) TestGetAccountIdDeleted() {
+	// given
+	tdomain.NewEntityBuilder(dbClient, account4, 1, domain.EntityTypeAccount).
+		Deleted(true).
+		ModifiedTimestamp(accountDeleteTimestamp).
+		Persist()
+	aliasAccountId, _ := types.NewAccountIdFromString(account4Alias, 0, 0)
+	repo := NewAccountRepository(dbClient)
+
+	// when
+	actual, rErr := repo.GetAccountId(defaultContext, aliasAccountId)
+
+	// then
+	assert.NotNil(suite.T(), rErr)
 	assert.Equal(suite.T(), types.AccountId{}, actual)
 }
 
