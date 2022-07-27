@@ -44,6 +44,7 @@ import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
 
 import com.hedera.mirror.web3.repository.ContractRepository;
+import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.services.transaction.store.contracts.EntityAccess;
 import com.hedera.services.transaction.store.contracts.HederaWorldUpdater;
 import com.hedera.services.transaction.store.contracts.UpdateTrackingLedgerAccount;
@@ -54,6 +55,7 @@ import com.hedera.services.transaction.store.contracts.WorldStateTokenAccount;
 public class SimulatedUpdater implements HederaWorldUpdater {
 
     private ContractRepository contractRepository;
+    private EntityRepository entityRepository;
     private AliasesResolver aliasesResolver;
     private SimulatedEntityAccess entityAccess;
     private CodeCache codeCache;
@@ -164,13 +166,16 @@ public class SimulatedUpdater implements HederaWorldUpdater {
             return null;
         }
         final long balance = entityAccess.getBalance(address);
-        return new WorldStateAccount(address, Wei.of(balance), codeCache, entityAccess);
+        final long nonce =
+                entityRepository.findAccountNonceByAddress(address.toArray()).orElseThrow();
+        return new WorldStateAccount(
+                address, Wei.of(balance), nonce, codeCache, entityAccess);
     }
 
     @Override
     public Address newContractAddress(Address sponsor) {
         numAllocatedContractIds++;
-        newContractNumId = contractRepository.findLatestNum().get() + 1;
+        newContractNumId = contractRepository.findLatestNum().orElseThrow() + 1;
 
         final var sponsorBytes = sponsor.toArrayUnsafe();
         final var newContractEvmBytes = asEvmAddress(shardFromEvmAddress(sponsorBytes), realmFromEvmAddress(sponsorBytes), newContractNumId);

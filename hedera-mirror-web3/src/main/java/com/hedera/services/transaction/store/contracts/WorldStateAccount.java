@@ -1,25 +1,5 @@
 package com.hedera.services.transaction.store.contracts;
 
-/*-
- * ‌
- * Hedera Services Node
- * ​
- * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
- * ​
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * ‍
- */
-
 import java.util.NavigableMap;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
@@ -37,6 +17,7 @@ public class WorldStateAccount implements Account {
     private static final Code EMPTY_CODE = Code.createLegacyCode(Bytes.EMPTY, Hash.hash(Bytes.EMPTY));
 
     private final Wei balance;
+    private final Long nonce;
     private final Address address;
     private final CodeCache codeCache;
     private final EntityAccess entityAccess;
@@ -44,10 +25,12 @@ public class WorldStateAccount implements Account {
     public WorldStateAccount(
             final Address address,
             final Wei balance,
+            final Long nonce,
             final CodeCache codeCache,
             final EntityAccess entityAccess
     ) {
         this.balance = balance;
+        this.nonce = nonce;
         this.address = address;
         this.codeCache = codeCache;
         this.entityAccess = entityAccess;
@@ -60,12 +43,12 @@ public class WorldStateAccount implements Account {
 
     @Override
     public Hash getAddressHash() {
-        return Hash.EMPTY;
+        return Hash.hash(this.address);
     }
 
     @Override
     public long getNonce() {
-        return 0;
+        return nonce;
     }
 
     @Override
