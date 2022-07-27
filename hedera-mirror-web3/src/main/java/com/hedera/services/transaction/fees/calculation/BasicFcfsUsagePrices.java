@@ -22,6 +22,7 @@ import org.apache.logging.log4j.Logger;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.web3.repository.FileDataRepository;
 import com.hedera.services.transaction.pricing.RequiredPriceTypes;
 
 public class BasicFcfsUsagePrices implements UsagePricesProvider {
