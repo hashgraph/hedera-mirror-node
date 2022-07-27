@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.evm.properties;
+package com.hedera.mirror.web3.evm.exception;
 
 /*-
  * ‌
@@ -20,26 +20,9 @@ package com.hedera.mirror.web3.evm.properties;
  * ‍
  */
 
-import java.util.Optional;
-import lombok.Value;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.units.bigints.UInt256;
-import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.frame.BlockValues;
+public class MissingResultException extends EvmException {
 
-/**
- * Mirror-node adapted {@link BlockValues}
- */
-@Value
-public class SimulatedBlockMetaSource implements BlockValues {
-
-    private static Optional<Wei> zeroWei = Optional.of(Wei.ZERO);
-
-    Optional<Wei> baseFee = zeroWei;
-    Bytes difficultyBytes = UInt256.ZERO;
-
-    //Used for constructor
-    long gasLimit;
-    long number;
-    long timestamp;
+    public MissingResultException(String message) {
+        super(message);
+    }
 }
