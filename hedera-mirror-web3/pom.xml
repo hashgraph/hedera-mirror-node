@@ -60,6 +60,41 @@
             <artifactId>lombok</artifactId>
         </dependency>
         <dependency>
+            <groupId>com.swirlds</groupId>
+            <artifactId>swirlds-virtualmap</artifactId>
+            <version>${swirlds.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.swirlds</groupId>
+            <artifactId>swirlds-jasperdb</artifactId>
+            <version>${swirlds.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.swirlds</groupId>
+            <artifactId>swirlds-platform-core</artifactId>
+            <version>${swirlds.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.swirlds</groupId>
+            <artifactId>swirlds-fchashmap</artifactId>
+            <version>${swirlds.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.swirlds</groupId>
+            <artifactId>swirlds-fcqueue</artifactId>
+            <version>${swirlds.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.swirlds</groupId>
+            <artifactId>swirlds-merkle</artifactId>
+            <version>${swirlds.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.swirlds</groupId>
+            <artifactId>swirlds-common</artifactId>
+            <version>${swirlds.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-actuator-autoconfigure</artifactId>
         </dependency>
@@ -123,12 +158,6 @@
             <groupId>org.hyperledger.besu</groupId>
             <artifactId>evm</artifactId>
             <version>${besu.version}</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.swirlds</groupId>
-            <artifactId>swirlds-common</artifactId>
-            <version>${swirlds.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
@@ -213,6 +242,21 @@
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>
+        </repository>
+        <repository>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <id>local-repo-for-swirlds-sdk</id>
+            <url>file:${project.basedir}/localSwirldsSDK</url>
+        </repository>
+        <repository>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+            <id>central</id>
+            <name>Central Repository</name>
+            <url>https://repo.maven.apache.org/maven2</url>
         </repository>
     </repositories>
 </project>
