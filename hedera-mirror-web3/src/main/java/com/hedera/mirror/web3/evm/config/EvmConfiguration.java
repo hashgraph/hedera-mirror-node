@@ -36,15 +36,10 @@ class EvmConfiguration {
     public static final String CACHE_MANAGER_10MIN = "cacheManager10Min";
     public static final String CACHE_MANAGER_500MS = "cacheManager500Ms";
 
-    @Bean
-    Caffeine caffeineConfig() {
-        return Caffeine.newBuilder();
-    }
-
     @Bean(CACHE_MANAGER_10MIN)
     CacheManager cacheManager10MIN() {
         final var caffeine =
-                Caffeine.newBuilder().expireAfterAccess(10, TimeUnit.MINUTES).maximumSize(10000);
+                Caffeine.newBuilder().expireAfterWrite(10, TimeUnit.MINUTES).maximumSize(10000);
         final CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
         caffeineCacheManager.setCaffeine(caffeine);
         return caffeineCacheManager;
@@ -53,7 +48,7 @@ class EvmConfiguration {
     @Bean(CACHE_MANAGER_500MS)
     CacheManager cacheManager500MS() {
         final var caffeine =
-                Caffeine.newBuilder().expireAfterAccess(500, TimeUnit.MILLISECONDS).maximumSize(1);
+                Caffeine.newBuilder().expireAfterWrite(500, TimeUnit.MILLISECONDS).maximumSize(1);
         final CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
         caffeineCacheManager.setCaffeine(caffeine);
         return caffeineCacheManager;
