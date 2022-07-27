@@ -37,15 +37,6 @@ class RecordFileV6 extends CompactRecordFile {
     0xe3, 0x70, 0x92, 0x9b, 0xa5, 0x42, 0x9d, 0x8b, 0x00, 0x00, 0x00, 0x01,
   ]);
 
-  static compactObjectFields = [
-    'head',
-    'startRunningHashObject',
-    'hashesBefore',
-    'recordStreamObject',
-    'hashesAfter',
-    'endRunningHashObject',
-    'blockNumber',
-  ];
   static version = 6;
 
   _calculateMetadataHash() {
@@ -85,7 +76,7 @@ class RecordFileV6 extends CompactRecordFile {
 
   _parseFromBuffer(buffer) {
     // remove the version
-    const recordStreamFile = proto.RecordStreamFile.decode(buffer.slice(INT_SIZE));
+    const recordStreamFile = proto.RecordStreamFile.decode(buffer.subarray(INT_SIZE));
     this.head = Buffer.allocUnsafe(this.constructor.#HEAD_SIZE);
     let offset = this.head.writeInt32BE(this.constructor.version);
     offset = this.head.writeInt32BE(recordStreamFile.hapiProtoVersion.major, offset);

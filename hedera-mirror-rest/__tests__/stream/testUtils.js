@@ -53,6 +53,7 @@ const v5CompactObject = {
     '9CLag6JRdB4AAAABWP+BGwAAADCnPUjHQKqq+l6HnYdlD17Zt15RTB5ZCLaGD8+37c3' + 'gCTVQ+ENgVbpWAY9G1yAAGjE=',
     'base64'
   ),
+  blockNumber: null,
 };
 
 const v6CompactObject = {

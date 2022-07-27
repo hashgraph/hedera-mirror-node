@@ -65,7 +65,7 @@ class RecordFilePreV5 extends RecordFile {
     this._version = RecordFile._readVersion(buffer);
     this._calculatePreV5FileHash(buffer.readInt32BE(), buffer);
 
-    buffer = buffer.slice(PRE_V5_HEADER_LENGTH);
+    buffer = buffer.subarray(PRE_V5_HEADER_LENGTH);
     let index = 0;
     while (buffer.length !== 0) {
       const marker = buffer.readInt8();
@@ -73,13 +73,13 @@ class RecordFilePreV5 extends RecordFile {
         throw new Error(`Unsupported marker ${marker}, expect 2`);
       }
 
-      buffer = buffer.slice(BYTE_SIZE);
+      buffer = buffer.subarray(BYTE_SIZE);
       const transaction = readLengthAndBytes(buffer, BYTE_SIZE, MAX_TRANSACTION_LENGTH, false);
-      const record = readLengthAndBytes(buffer.slice(transaction.length), BYTE_SIZE, MAX_RECORD_LENGTH, false);
+      const record = readLengthAndBytes(buffer.subarray(transaction.length), BYTE_SIZE, MAX_RECORD_LENGTH, false);
       this._addTransaction(record.bytes, index);
       index++;
 
-      buffer = buffer.slice(transaction.length + record.length);
+      buffer = buffer.subarray(transaction.length + record.length);
     }
   }
 
@@ -90,8 +90,8 @@ class RecordFilePreV5 extends RecordFile {
       fileDigest.update(buffer);
     } else {
       // version 2
-      const contentHash = crypto.createHash(SHA_384.name).update(buffer.slice(PRE_V5_HEADER_LENGTH)).digest();
-      fileDigest.update(buffer.slice(0, PRE_V5_HEADER_LENGTH)).update(contentHash);
+      const contentHash = crypto.createHash(SHA_384.name).update(buffer.subarray(PRE_V5_HEADER_LENGTH)).digest();
+      fileDigest.update(buffer.subarray(0, PRE_V5_HEADER_LENGTH)).update(contentHash);
     }
 
     this._fileHash = fileDigest.digest();

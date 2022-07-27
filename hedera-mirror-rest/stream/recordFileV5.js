@@ -29,14 +29,6 @@ import RecordStreamObject from './recordStreamObject';
 const V5_START_HASH_OFFSET = INT_SIZE + (INT_SIZE + INT_SIZE + INT_SIZE) + INT_SIZE;
 
 class RecordFileV5 extends CompactRecordFile {
-  static compactObjectFields = [
-    'head',
-    'startRunningHashObject',
-    'hashesBefore',
-    'recordStreamObject',
-    'hashesAfter',
-    'endRunningHashObject',
-  ];
   static version = 5;
 
   _calculateMetadataHash() {
@@ -76,25 +68,26 @@ class RecordFileV5 extends CompactRecordFile {
     //
     // Note the start object running hash and the end object running hash are of the same type HashObject and
     // they have the same classId an classVersion.
-    this.head = buffer.slice(0, V5_START_HASH_OFFSET);
+    this.head = buffer.subarray(0, V5_START_HASH_OFFSET);
+    this.blockNumber = null; // always null for v5
 
-    buffer = buffer.slice(V5_START_HASH_OFFSET);
+    buffer = buffer.subarray(V5_START_HASH_OFFSET);
     const startHashObject = new HashObject(buffer);
-    this.startRunningHashObject = buffer.slice(0, startHashObject.getLength());
+    this.startRunningHashObject = buffer.subarray(0, startHashObject.getLength());
 
-    buffer = buffer.slice(startHashObject.getLength());
+    buffer = buffer.subarray(startHashObject.getLength());
     this._recordStreamObjects = []; // store the record stream object raw buffer
     while (buffer.readBigInt64BE() !== startHashObject.classId) {
       // record stream objects are between the start hash object and the end hash object
       const recordStreamObject = new RecordStreamObject(buffer);
       this._addTransaction(recordStreamObject.record, this._recordStreamObjects.length);
-      this._recordStreamObjects.push(buffer.slice(0, recordStreamObject.getLength()));
-      buffer = buffer.slice(recordStreamObject.getLength());
+      this._recordStreamObjects.push(buffer.subarray(0, recordStreamObject.getLength()));
+      buffer = buffer.subarray(recordStreamObject.getLength());
     }
 
     this._hashes = Array.from({length: this._recordStreamObjects.length});
     const endHashObject = new HashObject(buffer);
-    this.endRunningHashObject = buffer.slice(0, endHashObject.getLength());
+    this.endRunningHashObject = buffer.subarray(0, endHashObject.getLength());
     if (buffer.length !== endHashObject.getLength()) {
       throw new Error('Extra data discovered in record file');
     }

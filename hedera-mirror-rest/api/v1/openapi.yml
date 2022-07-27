@@ -1280,6 +1280,7 @@ components:
             - hashes_before
             - hashes_after
             - record_stream_object
+            - block_number
           properties:
             head:
               description: The record file head
@@ -1315,6 +1316,7 @@ components:
               description: The block number, in base64 encoding. Only present if version is 6
               type: string
               format: byte
+              nullable: true
         signature_files:
           description: The nodes' signature files for the record file
           type: object

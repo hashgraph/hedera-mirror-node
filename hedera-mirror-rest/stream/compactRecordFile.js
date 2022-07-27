@@ -29,7 +29,15 @@ import {calculateRunningHash} from './runningHash';
 const {SHA_384} = HashObject;
 
 class CompactRecordFile extends RecordFile {
-  static compactObjectFields = [];
+  static compactObjectFields = [
+    'head',
+    'startRunningHashObject',
+    'hashesBefore',
+    'recordStreamObject',
+    'hashesAfter',
+    'endRunningHashObject',
+    'blockNumber',
+  ];
 
   constructor(bufferOrObj) {
     super();
