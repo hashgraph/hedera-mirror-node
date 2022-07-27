@@ -646,6 +646,14 @@ const addTransaction = async (transaction) => {
     index: 1,
   };
   const insertFields = Object.keys(defaults);
+  let transaction_hash = defaults.transaction_hash;
+
+  if (transaction.transaction_hash) {
+    transaction_hash =
+      typeof transaction.transaction_hash === 'string'
+        ? Buffer.from(transaction.transaction_hash.replace(/^0x/, ''), 'hex')
+        : transaction.transaction_hash;
+  }
 
   transaction = {
     ...defaults,
@@ -653,6 +661,7 @@ const addTransaction = async (transaction) => {
     non_fee_transfers: [],
     transfers: [],
     ...transaction,
+    transaction_hash,
     entity_id: EntityId.parse(transaction.entity_id, {isNullable: true}).getEncodedId(),
     node_account_id: EntityId.parse(transaction.nodeAccountId, {isNullable: true}).getEncodedId(),
     payer_account_id: EntityId.parse(transaction.payerAccountId).getEncodedId(),
