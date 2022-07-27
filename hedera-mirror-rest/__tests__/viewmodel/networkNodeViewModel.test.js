@@ -54,7 +54,6 @@ describe('NetworkNodeViewModel', () => {
       stake: 12,
       stakeNotRewarded: 8,
       stakeRewarded: 4,
-      stakeTotal: 100,
       stakingPeriod: '1654991999999999999',
     },
   };
@@ -83,7 +82,6 @@ describe('NetworkNodeViewModel', () => {
     stake: 12,
     stake_not_rewarded: 8,
     stake_rewarded: 4,
-    stake_total: 100,
     staking_period: {
       from: '1654992000.000000000',
       to: '1655078400.000000000',
@@ -117,7 +115,6 @@ describe('NetworkNodeViewModel', () => {
           stake: null,
           stakeNotRewarded: null,
           stakeRewarded: null,
-          stakeTotal: null,
           stakingPeriod: null,
         },
       })
@@ -133,7 +130,6 @@ describe('NetworkNodeViewModel', () => {
       stake: null,
       stake_not_rewarded: null,
       stake_rewarded: null,
-      stake_total: null,
       staking_period: null,
     });
   });

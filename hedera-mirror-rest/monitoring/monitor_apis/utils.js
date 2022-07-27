@@ -18,18 +18,16 @@
  * ‍
  */
 
-'use strict';
-
-const AbortController = require('abort-controller');
-const httpErrors = require('http-errors');
-const _ = require('lodash');
-const log4js = require('log4js');
-const fetch = require('node-fetch');
-const math = require('mathjs');
-const parseDuration = require('parse-duration');
-const prettyMilliseconds = require('pretty-ms');
-const querystring = require('querystring');
-const config = require('./config');
+import AbortController from 'abort-controller';
+import httpErrors from 'http-errors';
+import _ from 'lodash';
+import log4js from 'log4js';
+import * as math from 'mathjs';
+import fetch from 'node-fetch';
+import parseDuration from 'parse-duration';
+import prettyMilliseconds from 'pretty-ms';
+import querystring from 'querystring';
+import config from './config';
 
 const apiPrefix = '/api/v1';
 const DEFAULT_LIMIT = 10;
@@ -440,20 +438,20 @@ const accountIdCompare = (first, second) => {
   return 0;
 };
 
-module.exports = {
-  accountIdCompare,
-  DEFAULT_LIMIT,
-  getUrl,
-  getAPIResponse,
-  createFailedResultJson,
-  testRunner,
-  checkAPIResponseError,
-  checkRespObjDefined,
-  checkRespArrayLength,
-  checkAccountId,
-  checkMandatoryParams,
-  checkElementsOrder,
-  checkResourceFreshness,
+export {
   CheckRunner,
+  DEFAULT_LIMIT,
   ServerTestResult,
+  accountIdCompare,
+  checkAPIResponseError,
+  checkAccountId,
+  checkElementsOrder,
+  checkMandatoryParams,
+  checkResourceFreshness,
+  checkRespArrayLength,
+  checkRespObjDefined,
+  createFailedResultJson,
+  getAPIResponse,
+  getUrl,
+  testRunner,
 };

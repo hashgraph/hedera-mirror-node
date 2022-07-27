@@ -51,7 +51,6 @@ class NetworkNodeViewModel {
     this.stake = nodeStake.stake;
     this.stake_not_rewarded = utils.asNullIfDefault(nodeStake.stakeNotRewarded, -1);
     this.stake_rewarded = nodeStake.stakeRewarded;
-    this.stake_total = nodeStake.stakeTotal;
 
     if (_.isNil(nodeStake.stakingPeriod)) {
       this.staking_period = null;

@@ -1,5 +1,5 @@
 {
-  "description": "Network nodes API with file 101 arg",
+  "description": "Network nodes API with no args",
   "setup": {
     "addressbooks": [
       {
@@ -40,15 +40,12 @@
         "consensus_timestamp": 187654000123456,
         "memo": null,
         "node_id": 0,
-        "node_account_id": 3,
-        "public_key": ""
+        "node_account_id": 3
       },
       {
         "consensus_timestamp": 187654000123456,
-        "memo": null,
         "node_id": 1,
-        "node_account_id": 4,
-        "public_key": null
+        "node_account_id": 4
       },
       {
         "consensus_timestamp": 187654000123457,
@@ -60,7 +57,8 @@
         "consensus_timestamp": 187654000123457,
         "memo": "0.0.4",
         "node_id": 1,
-        "node_account_id": 4
+        "node_account_id": 4,
+        "stake": 9223372036854775807
       }
     ],
     "addressbookserviceendpoints": [
@@ -103,125 +101,84 @@
     ],
     "nodestakes": [
       {
-        "consensus_timestamp": 1,
-        "epoch_day": 1,
-        "node_id": 0,
-        "reward_rate": 5,
-        "stake": 10,
-        "stake_rewarded": 2,
-        "stake_total": 4
-      },
-      {
-        "consensus_timestamp": 2,
-        "epoch_day": 2,
-        "node_id": 0,
-        "reward_rate": 6,
-        "stake": 11,
-        "stake_rewarded": 3,
-        "stake_total": 5
-      },
-      {
         "consensus_timestamp": 187654000123456,
         "epoch_day": 3,
         "node_id": 0,
-        "reward_rate": 7,
+        "reward_rate": 5,
         "stake": 12,
-        "stake_rewarded": 4,
-        "stake_total": 6
+        "stake_not_rewarded": 8,
+        "stake_rewarded": 4
       },
       {
-        "consensus_timestamp": 187654000123456,
-        "epoch_day": 1,
-        "node_id": 1,
-        "reward_rate": 8,
-        "stake": 100,
-        "stake_rewarded": 20,
-        "stake_total": 40
-      },
-      {
-        "consensus_timestamp": 187654000123458,
+        "consensus_timestamp": 1655164800000000005,
         "epoch_day": 4,
+        "max_stake": 5000,
+        "min_stake": 10,
         "node_id": 0,
-        "reward_rate": 9,
+        "reward_rate": 6,
         "stake": 13,
         "stake_not_rewarded": 8,
         "stake_rewarded": 5,
-        "stake_total": 20,
         "staking_period": 1655164799999999999
-      },
-      {
-        "consensus_timestamp": 187654000123458,
-        "epoch_day": 2,
-        "node_id": 1,
-        "reward_rate": 10,
-        "stake": 101,
-        "stake_not_rewarded": 80,
-        "stake_rewarded": 21,
-        "stake_total": 151
       }
     ]
   },
-  "url": "/api/v1/network/nodes?file.id=101",
+  "url": "/api/v1/network/nodes",
   "responseStatus": 200,
   "responseJson": {
     "nodes": [
       {
         "description": "description",
-        "file_id": "0.0.101",
-        "max_stake": 2000,
-        "memo": null,
-        "min_stake": 1,
+        "file_id": "0.0.102",
+        "max_stake": 5000,
+        "memo": "0.0.3",
+        "min_stake": 10,
         "node_account_id": "0.0.3",
         "node_cert_hash": "0x01d173753810c0aae794ba72d5443c292e9ff962b01046220dd99f5816422696e0569c977e2f169e1e5688afc8f4aa16",
         "node_id": 0,
-        "public_key": "0x",
-        "reward_rate_start": 9,
+        "public_key": "0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f",
+        "reward_rate_start": 6,
         "service_endpoints": [
           {
-            "ip_address_v4": "127.0.0.3",
-            "port": 50213
+            "ip_address_v4": "128.0.0.5",
+            "port": 50215
           }
         ],
         "stake": 13,
         "stake_not_rewarded": 8,
         "stake_rewarded": 5,
-        "stake_total": 20,
         "staking_period": {
           "from": "1655164800.000000000",
           "to": "1655251200.000000000"
         },
         "timestamp": {
-          "from": "187654.000123456",
+          "from": "187654.000123457",
           "to": null
         }
       },
       {
         "description": "description",
-        "file_id": "0.0.101",
-        "max_stake": 2000,
-        "memo": null,
-        "min_stake": 1,
+        "file_id": "0.0.102",
+        "max_stake": null,
+        "memo": "0.0.4",
+        "min_stake": null,
         "node_account_id": "0.0.4",
         "node_cert_hash": "0x01d173753810c0aae794ba72d5443c292e9ff962b01046220dd99f5816422696e0569c977e2f169e1e5688afc8f4aa16",
         "node_id": 1,
-        "public_key": "0x",
-        "reward_rate_start": 10,
+        "public_key": "0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f",
+        "reward_rate_start": null,
         "service_endpoints": [
           {
-            "ip_address_v4": "127.0.0.4",
-            "port": 50214
+            "ip_address_v4": "128.0.0.6",
+            "port": 50216
           }
         ],
-        "stake": 101,
-        "stake_not_rewarded": 80,
-        "stake_rewarded": 21,
-        "stake_total": 151,
-        "staking_period": {
-          "from": "86400.000000000",
-          "to": "172800.000000000"
-        },
+        "stake": 9223372036854775807,
+        "stake_not_rewarded": null,
+        "stake_rewarded": null,
+        "staking_period": null,
         "timestamp": {
-          "from": "187654.000123456",
+          "from": "187654.000123457",
           "to": null
         }
       }
