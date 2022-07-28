@@ -27,6 +27,7 @@ const utils = require('./utils');
 const allTestModules = [
   require('./account_tests'),
   require('./balance_tests'),
+  require('./network_tests'),
   require('./transaction_tests'),
   require('./stateproof_tests'),
   require('./topicmessage_tests'),
