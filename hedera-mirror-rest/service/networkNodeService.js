@@ -119,7 +119,6 @@ class NetworkNodeService extends BaseService {
 
   getNetworkStake = async () => {
     const rows = await super.getRows(NetworkNodeService.networkStakeQuery, [], 'getNetworkStake');
-    logger.info('getNetworkStake db: ', rows);
     return new NetworkStake(rows[0]);
   };
 }
