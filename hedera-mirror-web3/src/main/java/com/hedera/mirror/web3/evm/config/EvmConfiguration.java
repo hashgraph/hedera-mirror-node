@@ -33,8 +33,18 @@ import org.springframework.context.annotation.Configuration;
 public
 class EvmConfiguration {
 
+    public static final String CACHE_MANAGER_30DAYS = "cacheManager30Days";
     public static final String CACHE_MANAGER_10MIN = "cacheManager10Min";
     public static final String CACHE_MANAGER_500MS = "cacheManager500Ms";
+
+    @Bean(CACHE_MANAGER_30DAYS)
+    CacheManager cacheManager30Days() {
+        final var caffeine =
+                Caffeine.newBuilder().expireAfterWrite(30, TimeUnit.DAYS).maximumSize(1);
+        final CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
+        caffeineCacheManager.setCaffeine(caffeine);
+        return caffeineCacheManager;
+    }
 
     @Bean(CACHE_MANAGER_10MIN)
     CacheManager cacheManager10MIN() {
