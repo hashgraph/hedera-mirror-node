@@ -261,7 +261,7 @@ func (c *cryptoFeature) generateKey() error {
 	}
 	c.newAccountKey = &sk
 	operatorAccountId := testClient.GetOperator(0).Id
-	c.aliasAccountId, err = types2.NewAccountIdFromAlias(sk.PublicKey().BytesRaw(), int64(operatorAccountId.Shard), int64(operatorAccountId.Realm))
+	c.aliasAccountId, err = types2.NewAccountIdFromPublicKeyBytes(sk.PublicKey().BytesRaw(), int64(operatorAccountId.Shard), int64(operatorAccountId.Realm))
 	if err != nil {
 		return err
 	}
