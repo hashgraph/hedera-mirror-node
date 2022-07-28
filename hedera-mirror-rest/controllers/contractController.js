@@ -63,7 +63,11 @@ const contractSelectFields = [
   Contract.PROXY_ACCOUNT_ID,
   Contract.TIMESTAMP_RANGE,
 ].map((column) => Contract.getFullName(column));
-const contractWithInitcodeSelectFields = [...contractSelectFields, Contract.getFullName(Contract.INITCODE)];
+const contractWithInitAndRuntimeBytecodeSelectFields = [
+  ...contractSelectFields,
+  Contract.getFullName(Contract.INITCODE),
+  Contract.getFullName(Contract.RUNTIME_BYTECODE),
+];
 const {default: defaultLimit} = getResponseLimit();
 
 const duplicateTransactionResult = TransactionResult.getProtoId('DUPLICATE_TRANSACTION');
@@ -208,7 +212,7 @@ const formatContractRow = (row) => {
  */
 const getContractByIdOrAddressQueryForTable = (table, conditions) => {
   return [
-    `select ${contractWithInitcodeSelectFields}`,
+    `select ${contractWithInitAndRuntimeBytecodeSelectFields}`,
     `from ${table} ${Contract.tableAlias}`,
     `where ${conditions.join(' and ')}`,
   ].join('\n');
@@ -260,6 +264,7 @@ const getContractByIdOrAddressQuery = ({timestampConditions, timestampParams, co
 
   const selectFields = [
     ...contractSelectFields,
+    `encode(${Contract.getFullName(Contract.RUNTIME_BYTECODE)}, 'hex')::bytea as ${Contract.RUNTIME_BYTECODE}`,
     `coalesce(encode(${Contract.getFullName(Contract.INITCODE)}, 'hex')::bytea, cf.bytecode) as bytecode`,
   ];
   return {

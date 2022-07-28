@@ -55,6 +55,9 @@ class ContractViewModel {
     if (contract.bytecode !== undefined) {
       this.bytecode = utils.addHexPrefix(contract.bytecode, true);
     }
+    if (contract.runtimeBytecode !== undefined) {
+      this.runtime_bytecode = utils.addHexPrefix(contract.runtimeBytecode, true);
+    }
   }
 }
 

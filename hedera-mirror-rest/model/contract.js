@@ -44,6 +44,7 @@ class Contract {
   static FILE_ID = 'file_id';
   static ID = 'id';
   static INITCODE = 'initcode';
+  static RUNTIME_BYTECODE = 'runtime_bytecode';
   static KEY = 'key';
   static MAX_AUTOMATIC_TOKEN_ASSOCIATIONS = 'max_automatic_token_associations';
   static MEMO = 'memo';

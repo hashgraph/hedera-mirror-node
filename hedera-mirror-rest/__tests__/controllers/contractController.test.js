@@ -48,7 +48,11 @@ const contractFields = [
   Contract.PROXY_ACCOUNT_ID,
   Contract.TIMESTAMP_RANGE,
 ].map((column) => Contract.getFullName(column));
-const contractWithInitcodeFields = [...contractFields, Contract.getFullName(Contract.INITCODE)];
+const contractWithInitcodeFields = [
+  ...contractFields,
+  Contract.getFullName(Contract.INITCODE),
+  Contract.getFullName(Contract.RUNTIME_BYTECODE),
+];
 
 const timestampEq1002Filter = {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.eq, value: '1002'};
 const timestampGt1002Filter = {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.gt, value: '1002'};
@@ -284,6 +288,7 @@ describe('formatContractRow', () => {
 describe('getContractByIdOrAddressQuery', () => {
   const mainQuery = `select ${[
     ...contractFields,
+    "encode(c.runtime_bytecode,'hex')::bytea as runtime_bytecode",
     "coalesce(encode(c.initcode, 'hex')::bytea, cf.bytecode) as bytecode",
   ]}
     from contract c, contract_file cf`;
