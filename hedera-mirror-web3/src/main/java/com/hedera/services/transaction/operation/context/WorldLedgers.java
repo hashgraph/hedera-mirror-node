@@ -13,26 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.transaction.operation.helpers;
+package com.hedera.services.transaction.operation.context;
 
-import com.google.protobuf.ByteString;
-import javax.inject.Inject;
-import java.util.Map;
-import java.util.function.Supplier;
-
-public class AliasManager {
-    private final Supplier<Map<ByteString, EntityNum>> aliases;
-
-    @Inject
-    public AliasManager(final Supplier<Map<ByteString, EntityNum>> aliases) {
-        this.aliases = aliases;
-    }
-
-    public void link(final ByteString alias, final EntityNum num) {
-        curAliases().put(alias, num);
-    }
-
-    private Map<ByteString, EntityNum> curAliases() {
-        return aliases.get();
+//FUTURE WORK to be implemented
+public class WorldLedgers {
+    public ContractAliases aliases() {
+        return null;
     }
 }

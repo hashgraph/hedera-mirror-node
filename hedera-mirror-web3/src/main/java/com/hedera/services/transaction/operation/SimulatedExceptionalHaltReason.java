@@ -1,10 +1,23 @@
+/*
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.services.transaction.operation;
-
-import com.hedera.services.transaction.operation.helpers.MerkleAccount;
 
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 
-public class SimulateExceptionalHaltReason {
+public class SimulatedExceptionalHaltReason {
     /**
      * Used when the EVM transaction accesses address that does not map to any existing
      * (non-deleted) account
@@ -12,15 +25,14 @@ public class SimulateExceptionalHaltReason {
     public static final ExceptionalHaltReason INVALID_SOLIDITY_ADDRESS =
             SimulateExceptionalHalt.INVALID_SOLIDITY_ADDRESS;
     /**
-     * Used when {@link SimulateSelfDestructOperation} is used and the beneficiary is specified to be
+     * Used when {@link SimulatedSelfDestructOperation} is used and the beneficiary is specified to be
      * the same as the destructed account
      */
     public static final ExceptionalHaltReason SELF_DESTRUCT_TO_SELF =
             SimulateExceptionalHalt.SELF_DESTRUCT_TO_SELF;
     /**
-     * Used when there is no active signature for a given {@link
-     * com.hedera.services.transaction.operation.helpers.MerkleAccount} that has {@link
-     * MerkleAccount#isReceiverSigRequired()} enabled and the account receives HBars
+     * Used when there is no active signature for a given account that has signatures
+     * enabled and the account receives HBars.
      */
     public static final ExceptionalHaltReason INVALID_SIGNATURE =
             SimulateExceptionalHalt.INVALID_SIGNATURE;

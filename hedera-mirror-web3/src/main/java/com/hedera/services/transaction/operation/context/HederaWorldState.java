@@ -15,13 +15,25 @@
  */
 package com.hedera.services.transaction.operation.context;
 
-//FUTURE WORK to be implemented
-public interface TransactionContext {
-        /**
-         * Records the beneficiary of an account (or contract) deleted in the current transaction.
-         *
-         * @param accountNum the number of a deleted account
-         * @param beneficiaryNum the number of its beneficiary
-         */
-        void recordBeneficiaryOfDeleted(long accountNum, long beneficiaryNum);
+import com.hedera.services.transaction.operation.util.BytesComparator;
+
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
+import java.util.Map;
+import java.util.TreeMap;
+
+public class HederaWorldState {
+    public class Updater implements HederaWorldUpdater {
+        Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges =
+                new TreeMap<>(BytesComparator.INSTANCE);
+        @Override
+        public void addSbhRefund(long gasCost) {
+
+        }
+
+        public Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> getStateChanges() {
+            return stateChanges;
+        }
+    }
 }

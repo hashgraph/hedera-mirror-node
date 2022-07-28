@@ -13,26 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.hedera.services.transaction.operation.helpers;
+package com.hedera.services.transaction.operation.context;
 
-import com.google.protobuf.ByteString;
-import javax.inject.Inject;
-import java.util.Map;
-import java.util.function.Supplier;
+import org.hyperledger.besu.datatypes.Address;
 
-public class AliasManager {
-    private final Supplier<Map<ByteString, EntityNum>> aliases;
+//FUTURE WORK to be implemented
+public interface ContractAliases {
+    Address resolveForEvm(Address addressOrAlias);
 
-    @Inject
-    public AliasManager(final Supplier<Map<ByteString, EntityNum>> aliases) {
-        this.aliases = aliases;
-    }
-
-    public void link(final ByteString alias, final EntityNum num) {
-        curAliases().put(alias, num);
-    }
-
-    private Map<ByteString, EntityNum> curAliases() {
-        return aliases.get();
-    }
+    boolean isMirror(Address address);
 }

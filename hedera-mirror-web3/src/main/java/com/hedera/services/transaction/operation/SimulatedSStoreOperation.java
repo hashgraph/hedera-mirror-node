@@ -1,7 +1,22 @@
+/*
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.services.transaction.operation;
 
-import com.hedera.services.stream.proto.SidecarType;
-
+import com.hedera.services.transaction.operation.context.HederaWorldUpdater;
+import com.hedera.services.transaction.operation.gascalculator.GasCalculatorHederaV18;
 import com.hedera.services.transaction.operation.gascalculator.StorageGasCalculator;
 
 import org.apache.tuweni.units.bigints.UInt256;
@@ -18,24 +33,20 @@ import java.util.OptionalLong;
 
 import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.ILLEGAL_STATE_CHANGE;
 
-public class SimulateSStoreOperation extends AbstractOperation {
+public class SimulatedSStoreOperation extends AbstractOperation {
     private static final Operation.OperationResult ILLEGAL_STATE_CHANGE_RESULT =
             new Operation.OperationResult(OptionalLong.empty(), Optional.of(ILLEGAL_STATE_CHANGE));
 
-//    private final boolean checkSuperCost;
-    boolean checkSuperCost = true;
+    private final boolean checkSuperCost;
     private final StorageGasCalculator storageGasCalculator;
-//    private final GlobalDynamicProperties dynamicProperties;
 
     @Inject
-    public SimulateSStoreOperation(
+    public SimulatedSStoreOperation(
             final GasCalculator gasCalculator,
             final StorageGasCalculator storageGasCalculator
-//            final GlobalDynamicProperties dynamicProperties
     ) {
         super(0x55, "SSTORE", 2, 0, 1, gasCalculator);
-//        checkSuperCost = !(gasCalculator instanceof GasCalculatorHederaV18);
-//        this.dynamicProperties = dynamicProperties;
+        checkSuperCost = !(gasCalculator instanceof GasCalculatorHederaV18);
         this.storageGasCalculator = storageGasCalculator;
     }
 
@@ -59,7 +70,7 @@ public class SimulateSStoreOperation extends AbstractOperation {
             gasCost = storageGasCalculator.gasCostOfStorageIn(frame);
 
             //FUTURE WORK finish implementation when we introduce WorldUpdater
-//            ((HederaWorldUpdater) frame.getWorldUpdater()).addSbhRefund(gasCost);
+            ((HederaWorldUpdater) frame.getWorldUpdater()).addSbhRefund(gasCost);
         } else {
             checkCalculator = true;
         }
@@ -84,10 +95,6 @@ public class SimulateSStoreOperation extends AbstractOperation {
             return new Operation.OperationResult(
                     optionalCost, Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
         }
-
-//        if (dynamicProperties.enabledSidecars().contains(SidecarType.CONTRACT_STATE_CHANGE)) {
-//            cacheExistingValue(frame, account.getAddress(), key, currentValue);
-//        }
 
         account.setStorageValue(key, value);
         frame.storageWasUpdated(key, value);

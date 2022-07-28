@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,19 +30,16 @@ import javax.inject.Inject;
 import java.util.Optional;
 import java.util.OptionalLong;
 
-public class SimulateSLoadOperation extends AbstractOperation {
+public class SimulatedSLoadOperation extends AbstractOperation {
     private final OptionalLong warmCost;
     private final OptionalLong coldCost;
 
     private final Operation.OperationResult warmSuccess;
     private final Operation.OperationResult coldSuccess;
-    //FUTURE WORK Will be needed for
-//    private final GlobalDynamicProperties dynamicProperties;
 
     @Inject
-    public SimulateSLoadOperation(
+    public SimulatedSLoadOperation(
             final GasCalculator gasCalculator
-//            final GlobalDynamicProperties dynamicProperties
     ) {
         super(0x54, "SLOAD", 1, 1, 1, gasCalculator);
         final long baseCost = gasCalculator.getSloadOperationGasCost();
@@ -51,7 +48,6 @@ public class SimulateSLoadOperation extends AbstractOperation {
 
         warmSuccess = new Operation.OperationResult(warmCost, Optional.empty());
         coldSuccess = new Operation.OperationResult(coldCost, Optional.empty());
-//        this.dynamicProperties = dynamicProperties;
     }
 
     @Override
@@ -69,9 +65,6 @@ public class SimulateSLoadOperation extends AbstractOperation {
                         optionalCost, Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
             } else {
                 UInt256 storageValue = account.getStorageValue(UInt256.fromBytes(key));
-//                if (dynamicProperties.shouldEnableTraceability()) {
-//                    HederaOperationUtil.cacheExistingValue(frame, address, key, storageValue);
-//                }
 
                 frame.pushStackItem(storageValue);
                 return slotIsWarm ? warmSuccess : coldSuccess;

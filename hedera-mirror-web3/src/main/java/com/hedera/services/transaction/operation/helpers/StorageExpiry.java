@@ -15,13 +15,8 @@
  */
 package com.hedera.services.transaction.operation.helpers;
 
-import com.google.protobuf.ByteString;
-import com.swirlds.merkle.map.MerkleMap;
-import java.util.function.Supplier;
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 
 /**
@@ -52,19 +47,13 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  */
 @Singleton
 public class StorageExpiry {
-    private static final Logger log = LogManager.getLogger(StorageExpiry.class);
-
     private static final long UNAVAILABLE_EXPIRY = 0;
 
     private final AliasManager aliasManager;
-    private final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts;
 
     @Inject
-    public StorageExpiry(
-            final AliasManager aliasManager,
-            final Supplier<MerkleMap<EntityNum, MerkleAccount>> contracts) {
+    public StorageExpiry(final AliasManager aliasManager) {
         this.aliasManager = aliasManager;
-        this.contracts = contracts;
     }
 
     public class Oracle {
@@ -81,40 +70,7 @@ public class StorageExpiry {
          * @return the effective expiry for allocated storage
          */
         public long storageExpiryIn(final MessageFrame frame) {
-            final var curContracts = contracts.get();
-            var expiry = effExpiryGiven(frame, curContracts);
-
-            if (expiry == UNAVAILABLE_EXPIRY) {
-                // The first frame in the deque is the top of the stack
-                final var iter = frame.getMessageFrameStack().iterator();
-                while (iter.hasNext() && expiry == UNAVAILABLE_EXPIRY) {
-                    final var nextFrame = iter.next();
-                    expiry = effExpiryGiven(nextFrame, curContracts);
-                }
-            }
-
-            final var answer = (expiry == UNAVAILABLE_EXPIRY) ? fallbackExpiry : expiry;
-            if (answer == UNAVAILABLE_EXPIRY) {
-                log.warn(
-                        "Using 0 as expiry for storage allocated by contract {}",
-                        frame::getRecipientAddress);
-            }
-            return answer;
-        }
-
-        private long effExpiryGiven(
-                final MessageFrame frame, final MerkleMap<EntityNum, MerkleAccount> curContracts) {
-            final var recipientAddress = frame.getRecipientAddress().toArrayUnsafe();
-            final var recipientNum =
-                    aliasManager.isMirror(recipientAddress)
-                            ? EntityNum.fromMirror(recipientAddress)
-                            : aliasManager.lookupIdBy(ByteString.copyFrom(recipientAddress));
-            if (curContracts.containsKey(recipientNum)) {
-                final var recipient = curContracts.get(recipientNum);
-                return recipient.getExpiry();
-            } else {
-                return UNAVAILABLE_EXPIRY;
-            }
+            return 0;
         }
     }
 

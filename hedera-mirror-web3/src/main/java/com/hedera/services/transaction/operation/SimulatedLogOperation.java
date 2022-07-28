@@ -1,6 +1,23 @@
+/*
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.services.transaction.operation;
 
 import com.google.common.collect.ImmutableList;
+
+import com.hedera.services.transaction.operation.context.HederaStackedWorldStateUpdater;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -13,27 +30,26 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.log.Log;
 import org.hyperledger.besu.evm.log.LogTopic;
 import org.hyperledger.besu.evm.operation.AbstractOperation;
-import org.hyperledger.besu.evm.operation.Operation;
 import java.util.Optional;
 import java.util.OptionalLong;
 
 import static org.apache.tuweni.bytes.Bytes32.leftPad;
 import static org.hyperledger.besu.evm.internal.Words.clampedToLong;
 
-public class SimulateLogOperation extends AbstractOperation {
-    private static final Logger log = LogManager.getLogger(SimulateLogOperation.class);
+public class SimulatedLogOperation extends AbstractOperation {
+    private static final Logger log = LogManager.getLogger(SimulatedLogOperation.class);
 
     private static final Address UNRESOLVABLE_ADDRESS_STANDIN = Address.fromHexString("00000000000000000000");
 
     private final int numTopics;
 
-    public SimulateLogOperation(final int numTopics, final GasCalculator gasCalculator) {
+    public SimulatedLogOperation(final int numTopics, final GasCalculator gasCalculator) {
         super(0xA0 + numTopics, "LOG" + numTopics, numTopics + 2, 0, 1, gasCalculator);
         this.numTopics = numTopics;
     }
 
     @Override
-    public Operation.OperationResult execute(final MessageFrame frame, final EVM evm) {
+    public OperationResult execute(final MessageFrame frame, final EVM evm) {
         final long dataLocation = clampedToLong(frame.popStackItem());
         final long numBytes = clampedToLong(frame.popStackItem());
 
@@ -41,10 +57,10 @@ public class SimulateLogOperation extends AbstractOperation {
                 gasCalculator().logOperationGasCost(frame, dataLocation, numBytes, numTopics);
         final OptionalLong optionalCost = OptionalLong.of(cost);
         if (frame.isStatic()) {
-            return new Operation.OperationResult(
+            return new OperationResult(
                     optionalCost, Optional.of(ExceptionalHaltReason.ILLEGAL_STATE_CHANGE));
         } else if (frame.getRemainingGas() < cost) {
-            return new Operation.OperationResult(
+            return new OperationResult(
                     optionalCost, Optional.of(ExceptionalHaltReason.INSUFFICIENT_GAS));
         }
 
@@ -52,13 +68,13 @@ public class SimulateLogOperation extends AbstractOperation {
 
         //FUTURE WORK finish implementation when we introduce StackedUpdaters
 
-//        final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
-//        final var aliases = updater.aliases();
-//        var address = aliases.resolveForEvm(addressOrAlias);
-//        if (!aliases.isMirror(address)) {
-//            address = UNRESOLVABLE_ADDRESS_STANDIN;
-//            log.warn("Could not resolve logger address {}", addressOrAlias);
-//        }
+        final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
+        final var aliases = updater.aliases();
+        var address = aliases.resolveForEvm(addressOrAlias);
+        if (!aliases.isMirror(address)) {
+            address = UNRESOLVABLE_ADDRESS_STANDIN;
+            log.warn("Could not resolve logger address {}", addressOrAlias);
+        }
 
         final Bytes data = frame.readMemory(dataLocation, numBytes);
 
@@ -68,7 +84,7 @@ public class SimulateLogOperation extends AbstractOperation {
             builder.add(LogTopic.create(leftPad(frame.popStackItem())));
         }
 
-//        frame.addLog(new Log(address, data, builder.build()));
-        return new Operation.OperationResult(optionalCost, Optional.empty());
+        frame.addLog(new Log(address, data, builder.build()));
+        return new OperationResult(optionalCost, Optional.empty());
     }
 }

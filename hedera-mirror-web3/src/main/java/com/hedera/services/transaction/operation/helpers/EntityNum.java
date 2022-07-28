@@ -1,3 +1,18 @@
+/*
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.hedera.services.transaction.operation.helpers;
 
 import com.google.common.primitives.Longs;
@@ -7,46 +22,10 @@ import com.hedera.services.transaction.operation.util.MiscUtils;
 import org.jetbrains.annotations.NotNull;
 
 public class EntityNum implements Comparable<EntityNum> {
-    public static final EntityNum MISSING_NUM = new EntityNum(0);
-    public static final long MAX_NUM_ALLOWED = 0xFFFFFFFFL;
-
     private final int value;
 
     public EntityNum(int value) {
         this.value = value;
-    }
-
-    public static EntityNum fromLong(long l) {
-        if (!isValidNum(l)) {
-            return MISSING_NUM;
-        }
-        final var value = codeFromNum(l);
-        return new EntityNum(value);
-    }
-
-    public static boolean isValidNum(long num) {
-        return num >= 0 && num <= MAX_NUM_ALLOWED;
-    }
-
-    public static int codeFromNum(long num) {
-        assertValid(num);
-        return (int) num;
-    }
-
-    public static void assertValid(long num) {
-        if (num < 0 || num > MAX_NUM_ALLOWED) {
-            throw new IllegalArgumentException("Serial number " + num + " out of range!");
-        }
-    }
-
-    public static EntityNum fromMirror(final byte[] evmAddress) {
-        return EntityNum.fromLong(numFromEvmAddress(evmAddress));
-    }
-
-    public static long numFromEvmAddress(final byte[] bytes) {
-        return Longs.fromBytes(
-                bytes[12], bytes[13], bytes[14], bytes[15], bytes[16], bytes[17], bytes[18],
-                bytes[19]);
     }
 
     @Override
