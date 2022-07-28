@@ -24,6 +24,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	rosettaAsserter "github.com/coinbase/rosetta-sdk-go/asserter"
@@ -203,6 +204,10 @@ func (c Client) Submit(ctx context.Context, operations []*types.Operation, signe
 		signers = map[string]hedera.PrivateKey{operator.Id.String(): operator.PrivateKey}
 	} else {
 		for signerId := range signers {
+			if strings.HasPrefix(signerId, "0x") {
+				continue
+			}
+
 			accountId, _ := hedera.AccountIDFromString(signerId)
 			operatorKey, ok := c.privateKeys[accountId]
 			if ok {
@@ -231,7 +236,7 @@ func (c Client) Submit(ctx context.Context, operations []*types.Operation, signe
 			NetworkIdentifier: c.network,
 			Options:           preprocessResponse.Options,
 		}
-		_, rosettaErr, err = onlineConstructor.ConstructionMetadata(ctx, metadataRequest)
+		metadataResponse, rosettaErr, err := onlineConstructor.ConstructionMetadata(ctx, metadataRequest)
 		if err1 := c.handleError("Failed to handle metadata request", rosettaErr, err); err1 != nil {
 			return false, rosettaErr, err
 		}
@@ -240,6 +245,7 @@ func (c Client) Submit(ctx context.Context, operations []*types.Operation, signe
 		payloadsRequest := &types.ConstructionPayloadsRequest{
 			NetworkIdentifier: c.network,
 			Operations:        operations,
+			Metadata:          metadataResponse.Metadata,
 		}
 		payloadsResponse, rosettaErr, err := offlineConstructor.ConstructionPayloads(ctx, payloadsRequest)
 		if err1 := c.handleError("Failed to handle payloads request", rosettaErr, err); err1 != nil {
@@ -324,7 +330,11 @@ func NewClient(serverCfg Server, operators []Operator) Client {
 	}
 
 	network := networkList.NetworkIdentifiers[0]
-	log.Infof("Network: %s, SubNetwork: %s", network.Network, network.SubNetworkIdentifier.Network)
+	var subNetwork string
+	if network.SubNetworkIdentifier != nil {
+		subNetwork = network.SubNetworkIdentifier.Network
+	}
+	log.Infof("Network: %s, SubNetwork: %s", network.Network, subNetwork)
 
 	networkRequest := &types.NetworkRequest{NetworkIdentifier: network}
 	status, rosettaErr, err := onlineClient.NetworkAPI.NetworkStatus(ctx, networkRequest)

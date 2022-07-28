@@ -18,11 +18,9 @@
  * ‍
  */
 
-'use strict';
+import AccountRoutes from './accountRoute';
+import ContractRoutes from './contractRoute';
+import NetworkRoutes from './networkRoute';
+import BlockRoutes from './blockRoute';
 
-module.exports = {
-  AccountRoutes: require('./accountRoute'),
-  ContractRoutes: require('./contractRoute'),
-  NetworkRoutes: require('./networkRoute'),
-  BlockRoutes: require('./blockRoute'),
-};
+export {AccountRoutes, ContractRoutes, NetworkRoutes, BlockRoutes};

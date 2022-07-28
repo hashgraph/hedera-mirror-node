@@ -18,11 +18,10 @@
  * ‍
  */
 
-'use strict';
-
 // external libraries
-const {Router} = require('@awaitjs/express');
-const {BlockController} = require('../controllers');
+import {Router} from '@awaitjs/express';
+
+import {BlockController} from '../controllers';
 
 const router = Router();
 
@@ -30,7 +29,7 @@ const resource = 'blocks';
 router.getAsync('/', BlockController.getBlocks);
 router.getAsync('/:hashOrNumber', BlockController.getByHashOrNumber);
 
-module.exports = {
+export default {
   resource,
   router,
 };

@@ -9,9 +9,9 @@ package com.hedera.mirror.monitor.subscribe.rest;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,17 +20,17 @@ package com.hedera.mirror.monitor.subscribe.rest;
  * ‍
  */
 
+import com.google.common.collect.Iterables;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 import javax.inject.Named;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
@@ -38,33 +38,22 @@ import reactor.util.retry.Retry;
 import reactor.util.retry.RetryBackoffSpec;
 
 import com.hedera.hashgraph.sdk.TransactionId;
-import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.publish.PublishResponse;
 import com.hedera.mirror.monitor.subscribe.MirrorSubscriber;
 import com.hedera.mirror.monitor.subscribe.SubscribeProperties;
 import com.hedera.mirror.monitor.subscribe.SubscribeResponse;
-import com.hedera.mirror.monitor.subscribe.rest.response.MirrorTransaction;
+import com.hedera.mirror.rest.model.TransactionByIdResponse;
 
 @Log4j2
 @Named
+@RequiredArgsConstructor
 class RestSubscriber implements MirrorSubscriber {
 
     private static final SecureRandom RANDOM = new SecureRandom();
 
+    private final RestApiClient restApiClient;
     private final SubscribeProperties subscribeProperties;
     private final Flux<RestSubscription> subscriptions = Flux.defer(this::createSubscriptions).cache();
-    private final WebClient webClient;
-
-    RestSubscriber(MonitorProperties monitorProperties, SubscribeProperties subscribeProperties,
-                   WebClient.Builder webClientBuilder) {
-        this.subscribeProperties = subscribeProperties;
-
-        String url = monitorProperties.getMirrorNode().getRest().getBaseUrl();
-        webClient = webClientBuilder.baseUrl(url)
-                .defaultHeaders(h -> h.setAccept(List.of(MediaType.APPLICATION_JSON)))
-                .build();
-        log.info("Connecting to mirror node {}", url);
-    }
 
     @Override
     public void onPublish(PublishResponse response) {
@@ -127,12 +116,8 @@ class RestSubscriber implements MirrorSubscriber {
                 .publishOn(Schedulers.parallel())
                 .doFinally(s -> subscription.onComplete())
                 .doOnNext(publishResponse -> log.trace("Querying REST API: {}", publishResponse))
-                .flatMap(publishResponse -> webClient.get()
-                        .uri("/transactions/{transactionId}", toString(publishResponse.getTransactionId()))
-                        .retrieve()
-                        .bodyToMono(MirrorTransaction.class)
-                        .name("rest")
-                        .metrics()
+                .flatMap(publishResponse -> restApiClient.retrieve(TransactionByIdResponse.class,
+                                "/transactions/{transactionId}", toString(publishResponse.getTransactionId()))
                         .timeout(properties.getTimeout())
                         .retryWhen(retrySpec)
                         .onErrorContinue((t, o) -> subscription.onError(t))
@@ -143,11 +128,21 @@ class RestSubscriber implements MirrorSubscriber {
     }
 
     private SubscribeResponse toResponse(RestSubscription subscription, PublishResponse publishResponse,
-                                         MirrorTransaction transaction) {
+                                         TransactionByIdResponse response) {
         Instant receivedTimestamp = Instant.now();
+        var transaction = Iterables.getFirst(response.getTransactions(), null);
+        Instant consensusTimestamp = null;
+
+        if (transaction != null) {
+            var timestamp = transaction.getConsensusTimestamp();
+            var parts = StringUtils.split(timestamp, '.');
+            if (parts != null && parts.length == 2) {
+                consensusTimestamp = Instant.ofEpochSecond(Long.parseLong(parts[0]), Long.parseLong(parts[1]));
+            }
+        }
 
         return SubscribeResponse.builder()
-                .consensusTimestamp(transaction.getConsensusTimestamp())
+                .consensusTimestamp(consensusTimestamp)
                 .publishedTimestamp(publishResponse.getRequest().getTimestamp())
                 .receivedTimestamp(receivedTimestamp)
                 .scenario(subscription)

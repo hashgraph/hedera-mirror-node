@@ -159,7 +159,7 @@ public class ErrataMigration extends MirrorBaseJavaMigration implements BalanceS
                 byte[] transactionBytes = in.readLengthAndBytes(1, MAX_TRANSACTION_LENGTH, false, "transaction");
                 var transactionRecord = TransactionRecord.parseFrom(recordBytes);
                 var transaction = Transaction.parseFrom(transactionBytes);
-                var recordItem = new RecordItem(transaction, transactionRecord);
+                var recordItem = RecordItem.builder().record(transactionRecord).transaction(transaction).build();
                 long timestamp = recordItem.getConsensusTimestamp();
 
                 if (transactionRepository.findById(timestamp).isEmpty() && dateRangeFilter.filter(timestamp)) {

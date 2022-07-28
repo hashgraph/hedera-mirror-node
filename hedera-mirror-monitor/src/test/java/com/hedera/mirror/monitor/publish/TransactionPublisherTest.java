@@ -24,6 +24,8 @@ import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.OK;
 import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.when;
 
 import com.google.common.util.concurrent.Uninterruptibles;
 import io.grpc.Server;
@@ -44,6 +46,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -60,12 +66,17 @@ import com.hedera.hashgraph.sdk.proto.TransactionGetRecordResponse;
 import com.hedera.hashgraph.sdk.proto.TransactionReceipt;
 import com.hedera.hashgraph.sdk.proto.TransactionRecord;
 import com.hedera.hashgraph.sdk.proto.TransactionResponse;
+import com.hedera.mirror.monitor.HederaNetwork;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.NodeProperties;
 import com.hedera.mirror.monitor.OperatorProperties;
 import com.hedera.mirror.monitor.publish.transaction.TransactionType;
+import com.hedera.mirror.monitor.subscribe.rest.RestApiClient;
+import com.hedera.mirror.rest.model.NetworkNode;
+import com.hedera.mirror.rest.model.ServiceEndpoint;
 
 @Log4j2
+@ExtendWith(MockitoExtension.class)
 class TransactionPublisherTest {
 
     private CryptoServiceStub cryptoServiceStub;
@@ -74,6 +85,9 @@ class TransactionPublisherTest {
     private PublishScenarioProperties publishScenarioProperties;
     private Server server;
     private TransactionPublisher transactionPublisher;
+
+    @Mock
+    private RestApiClient restApiClient;
 
     @BeforeEach
     void setup() throws IOException {
@@ -85,9 +99,9 @@ class TransactionPublisherTest {
         monitorProperties.getNodeValidation().setEnabled(false);
         OperatorProperties operatorProperties = monitorProperties.getOperator();
         operatorProperties.setAccountId("0.0.100");
-        operatorProperties.setPrivateKey(PrivateKey.generate().toString());
+        operatorProperties.setPrivateKey(PrivateKey.generateED25519().toString());
         publishProperties = new PublishProperties();
-        transactionPublisher = new TransactionPublisher(monitorProperties, publishProperties);
+        transactionPublisher = new TransactionPublisher(monitorProperties, publishProperties, restApiClient);
         cryptoServiceStub = new CryptoServiceStub();
         server = InProcessServerBuilder.forName("test")
                 .addService(cryptoServiceStub)
@@ -125,6 +139,50 @@ class TransactionPublisherTest {
                 })
                 .expectComplete()
                 .verify(Duration.ofSeconds(1L));
+    }
+
+    @Test
+    void getNodesCustom() {
+        assertThat(transactionPublisher.getNodes()).isEqualTo(monitorProperties.getNodes());
+    }
+
+    @Test
+    void getNodesAddressBook() {
+        monitorProperties.setNodes(Set.of());
+        var serviceEndpoint = new ServiceEndpoint().ipAddressV4("127.0.0.1");
+        var node = new NetworkNode();
+        node.setNodeAccountId("0.0.3");
+        node.addServiceEndpointsItem(serviceEndpoint);
+        when(restApiClient.getNodes()).thenReturn(Flux.just(node));
+        assertThat(transactionPublisher.getNodes())
+                .hasSize(1)
+                .first()
+                .returns(node.getNodeAccountId(), NodeProperties::getAccountId)
+                .returns(serviceEndpoint.getIpAddressV4(), NodeProperties::getHost);
+    }
+
+    @Test
+    void getNodesAddressBookError() {
+        monitorProperties.setNodes(Set.of());
+        when(restApiClient.getNodes()).thenThrow(new RuntimeException());
+        assertThat(transactionPublisher.getNodes()).isEqualTo(monitorProperties.getNetwork().getNodes());
+    }
+
+    @Test
+    void getNodesNetwork() {
+        monitorProperties.setNodes(Set.of());
+        monitorProperties.setRetrieveAddressBook(false);
+        assertThat(transactionPublisher.getNodes()).isEqualTo(monitorProperties.getNetwork().getNodes());
+    }
+
+    @Test
+    void getNodesNotFound() {
+        monitorProperties.setNetwork(HederaNetwork.OTHER);
+        monitorProperties.setNodes(Set.of());
+        when(restApiClient.getNodes()).thenReturn(Flux.empty());
+        assertThatThrownBy(() -> transactionPublisher.getNodes())
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("nodes must not be empty");
     }
 
     @Test

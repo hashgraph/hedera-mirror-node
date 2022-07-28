@@ -18,8 +18,6 @@
  * ‍
  */
 
-'use strict';
-
 class TokenTransfer {
   /**
    * Parses token_transfer table columns into object
@@ -52,4 +50,4 @@ class TokenTransfer {
   }
 }
 
-module.exports = TokenTransfer;
+export default TokenTransfer;

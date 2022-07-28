@@ -18,19 +18,16 @@
  * ‍
  */
 
-'use strict';
+import _ from 'lodash';
 
-const _ = require('lodash');
+import TransactionId from '../../transactionId';
+import {TransactionService} from '../../service';
+import {TransactionResult, TransactionType} from '../../model';
 
-const TransactionId = require('../../transactionId');
-const {TransactionService} = require('../../service');
-const {TransactionResult, TransactionType} = require('../../model');
+import integrationDomainOps from '../integrationDomainOps';
+import {setupIntegrationTest} from '../integrationUtils';
 
-// add logger configuration support
-require('../testutils');
-
-const integrationDbOps = require('../integrationDbOps');
-const integrationDomainOps = require('../integrationDomainOps');
+setupIntegrationTest();
 
 const contractCallType = TransactionType.getProtoId('CONTRACTCALL');
 const contractCreateType = TransactionType.getProtoId('CONTRACTCREATEINSTANCE');
@@ -38,9 +35,6 @@ const ethereumTxType = TransactionType.getProtoId('ETHEREUMTRANSACTION');
 const duplicateTransactionResult = TransactionResult.getProtoId('DUPLICATE_TRANSACTION');
 const successTransactionResult = TransactionResult.getProtoId('SUCCESS');
 const wrongNonceTransactionResult = TransactionResult.getProtoId('WRONG_NONCE');
-
-const {defaultMochaStatements} = require('./defaultMochaStatements');
-defaultMochaStatements(jest, integrationDbOps, integrationDomainOps);
 
 describe('TransactionService.getTransactionDetailsFromTimestamp tests', () => {
   test('No match', async () => {

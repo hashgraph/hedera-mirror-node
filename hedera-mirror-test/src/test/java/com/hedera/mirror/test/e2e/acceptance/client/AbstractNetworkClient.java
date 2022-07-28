@@ -9,9 +9,9 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -43,7 +43,9 @@ import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse
 
 @Data
 public abstract class AbstractNetworkClient {
+
     private static final int MEMO_BYTES_MAX_LENGTH = 100;
+
     protected final Client client;
     protected final Logger log = LogManager.getLogger(getClass());
     protected final SDKClient sdkClient;
@@ -51,7 +53,7 @@ public abstract class AbstractNetworkClient {
 
     public AbstractNetworkClient(SDKClient sdkClient, RetryTemplate retryTemplate) {
         this.sdkClient = sdkClient;
-        client = sdkClient.getClient();
+        this.client = sdkClient.getClient();
         this.retryTemplate = retryTemplate;
     }
 
@@ -96,7 +98,7 @@ public abstract class AbstractNetworkClient {
 
     public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction transaction, KeyList keyList,
                                                                            ExpandedAccountId payer) {
-        long startBalance = getBalance();
+        long startBalance = log.isTraceEnabled() ? getBalance() : 0L;
         TransactionId transactionId = executeTransaction(transaction, keyList, payer);
         TransactionReceipt transactionReceipt = null;
 
@@ -106,7 +108,10 @@ public abstract class AbstractNetworkClient {
             log.error("Failed to get transaction receipt for {}: {}", transactionId, e.getMessage());
         }
 
-        log.trace("Executed transaction {} cost {} tℏ", transactionId, startBalance - getBalance());
+        if (log.isTraceEnabled()) {
+            log.trace("Executed transaction {} cost {} tℏ", transactionId, startBalance - getBalance());
+        }
+
         return new NetworkTransactionResponse(transactionId, transactionReceipt);
     }
 

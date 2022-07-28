@@ -42,6 +42,7 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -63,11 +64,13 @@ import com.hedera.mirror.common.aggregator.LogsBloomAggregator;
 import com.hedera.mirror.common.domain.addressbook.AddressBook;
 import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
 import com.hedera.mirror.common.domain.addressbook.AddressBookServiceEndpoint;
+import com.hedera.mirror.common.domain.addressbook.NetworkStake;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.contract.ContractHistory;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
@@ -100,12 +103,16 @@ import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
+import com.hedera.mirror.common.domain.transaction.Prng;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.domain.transaction.SidecarFile;
 import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.services.stream.proto.ContractAction.ResultDataCase;
+import com.hedera.services.stream.proto.ContractActionType;
 
 @Component
 @Log4j2
@@ -241,6 +248,7 @@ public class DomainBuilder {
                 .proxyAccountId(entityId(ACCOUNT))
                 .num(id)
                 .realm(0L)
+                .runtimeBytecode(bytes(256))
                 .shard(0L)
                 .stakedAccountId(-1L)
                 .stakedNodeId(-1L)
@@ -248,6 +256,24 @@ public class DomainBuilder {
                 .timestampRange(Range.atLeast(timestamp))
                 .type(CONTRACT);
 
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<ContractAction, ContractAction.ContractActionBuilder> contractAction() {
+        var builder = ContractAction.builder()
+                .callDepth(1)
+                .caller(entityId(CONTRACT))
+                .callerType(CONTRACT)
+                .callType(ContractActionType.CALL.getNumber())
+                .consensusTimestamp(timestamp())
+                .gas(100L)
+                .gasUsed(50L)
+                .index((int) id())
+                .input(bytes(256))
+                .recipientAccount(entityId(ACCOUNT))
+                .resultData(bytes(256))
+                .resultDataType(ResultDataCase.OUTPUT.getNumber())
+                .value(300L);
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
@@ -272,6 +298,7 @@ public class DomainBuilder {
                 .proxyAccountId(entityId(ACCOUNT))
                 .num(id)
                 .realm(0L)
+                .runtimeBytecode(bytes(256))
                 .shard(0L)
                 .stakedAccountId(-1L)
                 .stakedNodeId(-1L)
@@ -506,6 +533,25 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
+    public DomainWrapper<NetworkStake, NetworkStake.NetworkStakeBuilder> networkStake() {
+        var timestamp = timestamp();
+        var builder = NetworkStake.builder()
+                .consensusTimestamp(timestamp)
+                .epochDay(getEpochDay(timestamp))
+                .maxStakingRewardRatePerHbar(17_808L)
+                .nodeRewardFeeDenominator(0L)
+                .nodeRewardFeeNumerator(100L)
+                .stakeTotal(id())
+                .stakingPeriod(timestamp - 1L)
+                .stakingPeriodDuration(1440)
+                .stakingPeriodsStored(365)
+                .stakingRewardFeeDenominator(100L)
+                .stakingRewardFeeNumerator(100L)
+                .stakingRewardRate(100_000_000_000L)
+                .stakingStartThreshold(25_000_000_000_000_000L);
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
     public DomainWrapper<Nft, Nft.NftBuilder> nft() {
         var createdTimestamp = timestamp();
         var builder = Nft.builder()
@@ -551,19 +597,20 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<NodeStake, NodeStake.NodeStakeBuilder> nodeStake() {
-        var stake = id() * TINYBARS_IN_ONE_HBAR;
+        long maxStake = 50_000_000_000L * TINYBARS_IN_ONE_HBAR / 26L;
+        long stake = id() * TINYBARS_IN_ONE_HBAR;
         long timestamp = timestamp();
+
         var builder = NodeStake.builder()
                 .consensusTimestamp(timestamp)
                 .epochDay(getEpochDay(timestamp))
-                .maxStake(stake * 2)
-                .minStake(stake / 2)
+                .maxStake(maxStake)
+                .minStake(maxStake / 2L)
                 .nodeId(id())
                 .rewardRate(id())
                 .stake(stake)
                 .stakeNotRewarded(TINYBARS_IN_ONE_HBAR)
                 .stakeRewarded(stake - TINYBARS_IN_ONE_HBAR)
-                .stakeTotal(stake * 5)
                 .stakingPeriod(timestamp());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
@@ -578,28 +625,46 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
+    public DomainWrapper<Prng, Prng.PrngBuilder> prng() {
+        var builder = Prng.builder()
+                .consensusTimestamp(timestamp())
+                .range(Integer.MAX_VALUE)
+                .prngNumber(random.nextInt(Integer.MAX_VALUE));
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
     public DomainWrapper<RecordFile, RecordFile.RecordFileBuilder> recordFile() {
         // reset transaction index
         transactionIndex.set(0);
 
         long timestamp = timestamp();
+        long consensusEnd = timestamp + 1;
+        var instantString = now.toString().replace(':', '_');
         var builder = RecordFile.builder()
                 .bytes(bytes(128))
                 .consensusStart(timestamp)
-                .consensusEnd(timestamp + 1)
+                .consensusEnd(consensusEnd)
                 .count(1L)
                 .digestAlgorithm(DigestAlgorithm.SHA_384)
                 .fileHash(text(96))
                 .gasUsed(100L)
+                .hapiVersionMajor(0)
+                .hapiVersionMinor(28)
+                .hapiVersionPatch(0)
                 .hash(text(96))
                 .index(id())
                 .logsBloom(bloomFilter())
                 .loadEnd(now.plusSeconds(1).getEpochSecond())
                 .loadStart(now.getEpochSecond())
-                .name(now.toString().replace(':', '_') + ".rcd")
+                .name(instantString + ".rcd.gz")
                 .nodeAccountId(entityId(ACCOUNT))
+                .previousHash(text(96))
+                .sidecarCount(1)
+                .sidecars(List.of(sidecarFile()
+                        .customize(s -> s.consensusEnd(consensusEnd).name(instantString + "_01.rcd.gz"))
+                        .get()))
                 .size(256 * 1024)
-                .previousHash(text(96));
+                .version(6);
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
@@ -612,6 +677,21 @@ public class DomainBuilder {
                 .scheduleId(entityId(SCHEDULE).getId())
                 .transactionBody(bytes(64))
                 .waitForExpiry(true);
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<SidecarFile, SidecarFile.SidecarFileBuilder> sidecarFile() {
+        var data = bytes(256);
+        var builder = SidecarFile.builder()
+                .bytes(data)
+                .consensusEnd(timestamp())
+                .hash(bytes(DigestAlgorithm.SHA_384.getSize()))
+                .hashAlgorithm(DigestAlgorithm.SHA_384)
+                .index(1)
+                .name(now.toString().replace(':', '_') + "_01.rcd.gz")
+                .records(Collections.emptyList())
+                .size(data.length)
+                .types(List.of(1, 2));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

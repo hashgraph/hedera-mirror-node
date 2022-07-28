@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.Nonnull;
 import lombok.RequiredArgsConstructor;
 import org.flywaydb.core.api.MigrationVersion;
@@ -40,27 +41,32 @@ import reactor.core.scheduler.Schedulers;
 @RequiredArgsConstructor
 abstract class AsyncJavaMigration<T> extends MirrorBaseJavaMigration {
 
-    private static final String CHECK_FLYWAY_SCHEMA_HISTORY_EXISTENCE_SQL = "select exists( " +
-            "  select * from information_schema.tables " +
-            "  where table_schema = :schema and table_name = 'flyway_schema_history')";
+    private static final String CHECK_FLYWAY_SCHEMA_HISTORY_EXISTENCE_SQL = """
+            select exists(select * from information_schema.tables
+            where table_schema = :schema and table_name = 'flyway_schema_history')
+            """;
 
-    private static final String SELECT_LAST_CHECKSUM_SQL = "select checksum from flyway_schema_history " +
-            "where script = :className order by installed_rank desc limit 1";
+    private static final String SELECT_LAST_CHECKSUM_SQL = """
+            select checksum from flyway_schema_history
+            where script = :className order by installed_rank desc limit 1
+            """;
 
-    private static final String UPDATE_CHECKSUM_SQL = "with last as (" +
-            "  select installed_rank from flyway_schema_history" +
-            "  where script = :className order by installed_rank desc limit 1" +
-            ") " +
-            "update flyway_schema_history f " +
-            "set checksum = :checksum " +
-            "from last " +
-            "where f.installed_rank = last.installed_rank";
+    private static final String UPDATE_CHECKSUM_SQL = """
+            with last as (
+              select installed_rank from flyway_schema_history
+              where script = :className order by installed_rank desc limit 1
+            )
+            update flyway_schema_history f
+            set checksum = :checksum,
+            execution_time = least(2147483647, extract(epoch from now() - f.installed_on) * 1000)
+            from last
+            where f.installed_rank = last.installed_rank
+            """;
 
     protected final NamedParameterJdbcTemplate jdbcTemplate;
-
     private final String schema;
-
     private final TransactionOperations transactionOperations;
+    private final AtomicBoolean complete = new AtomicBoolean(false);
 
     @Override
     public Integer getChecksum() {
@@ -84,6 +90,10 @@ abstract class AsyncJavaMigration<T> extends MirrorBaseJavaMigration {
         return null; // repeatable
     }
 
+    boolean isComplete() {
+        return complete.get();
+    }
+
     public <O> O queryForObjectOrNull(String sql, SqlParameterSource paramSource, Class<O> requiredType) {
         try {
             return jdbcTemplate.queryForObject(sql, paramSource, requiredType);
@@ -103,6 +113,7 @@ abstract class AsyncJavaMigration<T> extends MirrorBaseJavaMigration {
                 .subscribeOn(Schedulers.single())
                 .doOnSuccess(t -> onSuccess())
                 .doOnError(t -> log.error("Asynchronous migration failed:", t))
+                .doFinally(s -> complete.set(true))
                 .subscribe();
     }
 
@@ -116,7 +127,8 @@ abstract class AsyncJavaMigration<T> extends MirrorBaseJavaMigration {
         try {
             do {
                 final var previous = last;
-                last = Objects.requireNonNullElse(transactionOperations.execute(t -> migratePartial(previous.get())), Optional.empty());
+                last = Objects.requireNonNullElse(transactionOperations.execute(t -> migratePartial(previous.get())),
+                        Optional.empty());
                 count++;
 
                 if (stopwatch.elapsed(TimeUnit.MINUTES) >= minutes) {

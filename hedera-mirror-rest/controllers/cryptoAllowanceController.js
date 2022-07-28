@@ -18,26 +18,18 @@
  * ‍
  */
 
-'use strict';
+import _ from 'lodash';
 
-const _ = require('lodash');
+import {getResponseLimit} from '../config';
+import {filterKeys, orderFilterValues, responseDataLabel} from '../constants';
+import BaseController from './baseController';
+import {InvalidArgumentError} from '../errors';
+import {CryptoAllowance} from '../model';
+import {CryptoAllowanceService, EntityService} from '../service';
+import * as utils from '../utils';
+import {CryptoAllowanceViewModel} from '../viewmodel';
 
-const {
-  response: {
-    limit: {default: defaultLimit},
-  },
-} = require('../config');
-const constants = require('../constants');
-const utils = require('../utils');
-
-const BaseController = require('./baseController');
-
-const {CryptoAllowance} = require('../model');
-const {CryptoAllowanceService, EntityService} = require('../service');
-const {CryptoAllowanceViewModel} = require('../viewmodel');
-
-// errors
-const {InvalidArgumentError} = require('../errors/invalidArgumentError');
+const {default: defaultLimit} = getResponseLimit();
 
 class CryptoAllowanceController extends BaseController {
   /**
@@ -48,14 +40,14 @@ class CryptoAllowanceController extends BaseController {
    */
   extractCryptoAllowancesQuery = (filters, accountId) => {
     let limit = defaultLimit;
-    let order = constants.orderFilterValues.DESC;
+    let order = orderFilterValues.DESC;
     const conditions = [`${CryptoAllowance.OWNER} = $1`];
     const params = [accountId];
     const spenderInValues = [];
 
     for (const filter of filters) {
       switch (filter.key) {
-        case constants.filterKeys.SPENDER_ID:
+        case filterKeys.SPENDER_ID:
           if (utils.opsMap.ne === filter.operator) {
             throw new InvalidArgumentError(`Not equal (ne) comparison operator is not supported for ${filter.key}`);
           }
@@ -68,10 +60,10 @@ class CryptoAllowanceController extends BaseController {
             conditions.length + 1
           );
           break;
-        case constants.filterKeys.LIMIT:
+        case filterKeys.LIMIT:
           limit = filter.value;
           break;
-        case constants.filterKeys.ORDER:
+        case filterKeys.ORDER:
           order = filter.value;
           break;
         default:
@@ -96,7 +88,7 @@ class CryptoAllowanceController extends BaseController {
    * @returns {Promise<void>}
    */
   getAccountCryptoAllowances = async (req, res) => {
-    const accountId = await EntityService.getEncodedId(req.params[constants.filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS]);
+    const accountId = await EntityService.getEncodedId(req.params[filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS]);
     const filters = utils.buildAndValidateFilters(req.query);
     const {conditions, params, order, limit} = this.extractCryptoAllowancesQuery(filters, accountId);
     const allowances = await CryptoAllowanceService.getAccountCryptoAllowances(conditions, params, order, limit);
@@ -111,13 +103,13 @@ class CryptoAllowanceController extends BaseController {
     if (response.allowances.length === limit) {
       const lastRow = _.last(response.allowances);
       const lastValues = {
-        [constants.filterKeys.SPENDER_ID]: {value: lastRow.spender},
+        [filterKeys.SPENDER_ID]: {value: lastRow.spender},
       };
       response.links.next = utils.getPaginationLink(req, false, lastValues, order);
     }
 
-    res.locals[constants.responseDataLabel] = response;
+    res.locals[responseDataLabel] = response;
   };
 }
 
-module.exports = new CryptoAllowanceController();
+export default new CryptoAllowanceController();

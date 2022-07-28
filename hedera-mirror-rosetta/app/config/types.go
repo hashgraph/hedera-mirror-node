@@ -26,8 +26,12 @@ import (
 	"github.com/hashgraph/hedera-sdk-go/v2"
 )
 
+const EntityCacheKey = "entity"
+
 type Config struct {
+	Cache       map[string]Cache
 	Db          Db
+	Feature     Feature
 	Log         Log
 	Network     string
 	Nodes       NodeMap
@@ -36,6 +40,10 @@ type Config struct {
 	Port        uint16
 	Realm       int64
 	Shard       int64
+}
+
+type Cache struct {
+	MaxSize int `yaml:"maxSize"`
 }
 
 type Db struct {
@@ -57,6 +65,10 @@ func (db Db) GetDsn() string {
 		db.Name,
 		db.Password,
 	)
+}
+
+type Feature struct {
+	SubNetworkIdentifier bool `yaml:"subNetworkIdentifier"`
 }
 
 type Log struct {

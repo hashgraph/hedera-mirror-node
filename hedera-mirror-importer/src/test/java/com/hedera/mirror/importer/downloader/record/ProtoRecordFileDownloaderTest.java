@@ -20,23 +20,153 @@ package com.hedera.mirror.importer.downloader.record;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
+
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Flux;
 
+import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestRecordFiles;
+import com.hedera.mirror.importer.downloader.AbstractDownloaderTest;
+import com.hedera.services.stream.proto.SidecarFile;
+import com.hedera.services.stream.proto.SidecarType;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 
 class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
 
+    private static final String RECORD_FILE_WITH_SIDECAR = "2022-07-13T08_46_11.304284003Z.rcd.gz";
+    private static final String SIDECAR_FILENAME = "2022-07-13T08_46_11.304284003Z_01.rcd.gz";
+
     @BeforeAll
     protected static void beforeAll() throws IOException {
-        addressBook = loadAddressBook("test-v6-4n.bin");
+        addressBook = loadAddressBook("test-v6-sidecar-4n.bin");
         allNodeAccountIds = addressBook.getNodeSet();
+    }
+
+    @Test
+    void sidecarDisabled() {
+        sidecarProperties.setEnabled(false);
+        var recordFile = recordFileMap.get(RECORD_FILE_WITH_SIDECAR);
+        recordFile.getSidecars().forEach(sidecar -> {
+            sidecar.setActualHash(null);
+            sidecar.setBytes(null);
+            sidecar.setCount(null);
+            sidecar.setRecords(Collections.emptyList());
+            sidecar.setSize(null);
+        });
+        fileCopier.copy();
+        expectLastStreamFile(Instant.EPOCH);
+        downloader.download();
+
+        super.verifyStreamFiles(List.of(file1, file2), s -> {});
+        assertThat(downloaderProperties.getStreamPath()).doesNotExist();
+    }
+
+    @Test
+    void sidecarTypesFilter() {
+        // The test sidecar file has CONTRACT_BYTECODE and CONTRACT_STATE_CHANGE
+        sidecarProperties.setTypes(Set.of(SidecarType.CONTRACT_ACTION));
+        var recordFile = recordFileMap.get(RECORD_FILE_WITH_SIDECAR);
+        recordFile.getSidecars().forEach(sidecar -> {
+            sidecar.setActualHash(null);
+            sidecar.setBytes(null);
+            sidecar.setCount(null);
+            sidecar.setRecords(Collections.emptyList());
+            sidecar.setSize(null);
+        });
+        fileCopier.copy();
+        expectLastStreamFile(Instant.EPOCH);
+        downloader.download();
+
+        super.verifyStreamFiles(List.of(file1, file2), s -> {
+            var actual = (RecordFile) s;
+            var transactionSidecarRecords = actual.getItems()
+                    .flatMap(recordItem -> Flux.fromIterable(recordItem.getSidecarRecords()))
+                    .collectList()
+                    .block();
+            assertThat(transactionSidecarRecords).isEmpty();
+        });
+        assertThat(downloaderProperties.getStreamPath()).doesNotExist();
+    }
+
+    @Test
+    void sidecarTypesFilterSome() {
+        sidecarProperties.setPersistBytes(true);
+        sidecarProperties.setTypes(Set.of(SidecarType.CONTRACT_BYTECODE));
+        fileCopier.copy();
+        expectLastStreamFile(Instant.EPOCH);
+        downloader.download();
+
+        verifyStreamFiles(List.of(file1, file2), s -> {
+            var recordFile = (RecordFile) s;
+            var sidecarTypes = recordFile.getItems()
+                    .flatMap(recordItem -> Flux.fromIterable(recordItem.getSidecarRecords()))
+                    .map(TransactionSidecarRecord::getSidecarRecordsCase)
+                    .collectList()
+                    .block();
+            if (Objects.equals(recordFile.getName(), RECORD_FILE_WITH_SIDECAR)) {
+                assertThat(sidecarTypes).containsExactly(TransactionSidecarRecord.SidecarRecordsCase.BYTECODE);
+            } else {
+                assertThat(sidecarTypes).isEmpty();
+            }
+        });
+        assertThat(downloaderProperties.getStreamPath()).doesNotExist();
+    }
+
+    @Test
+    void sidecarFileCorrupted() throws IOException {
+        fileCopier.copy();
+        Files.walk(s3Path).filter(p -> p.endsWith(SIDECAR_FILENAME)).forEach(AbstractDownloaderTest::corruptFile);
+        expectLastStreamFile(Instant.EPOCH);
+        downloader.download();
+
+        verifyForSuccess(List.of(file1));
+        assertThat(downloaderProperties.getStreamPath()).doesNotExist();
+    }
+
+    @Test
+    void sidecarFileHashMismatch() throws IOException {
+        try (var byteArrayOutputStream = new ByteArrayOutputStream();
+             var gzipCompressorOutputStream = new GzipCompressorOutputStream(byteArrayOutputStream)) {
+            gzipCompressorOutputStream.write(SidecarFile.getDefaultInstance().toByteArray());
+            gzipCompressorOutputStream.finish();
+            var fileData = byteArrayOutputStream.toByteArray();
+
+            fileCopier.copy();
+            Files.walk(s3Path).filter(p -> p.endsWith(SIDECAR_FILENAME)).forEach(p -> {
+                try {
+                    FileUtils.writeByteArrayToFile(p.toFile(), fileData);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+            expectLastStreamFile(Instant.EPOCH);
+            downloader.download();
+
+            verifyForSuccess(List.of(file1));
+            assertThat(downloaderProperties.getStreamPath()).doesNotExist();
+        }
     }
 
     @Override
@@ -52,13 +182,42 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
     @Override
     protected Map<String, RecordFile> getRecordFileMap() {
         var allRecordFileMap = TestRecordFiles.getAll();
-        var recordFile1 = allRecordFileMap.get("2022-06-21T09_15_44.212575003Z.rcd.gz");
-        var recordFile2 = allRecordFileMap.get("2022-06-21T09_15_46.247764003Z.rcd.gz");
+        var recordFile1 = allRecordFileMap.get("2022-07-13T08_46_08.041986003Z.rcd.gz").toBuilder().build();
+        var recordFile2 = allRecordFileMap.get("2022-07-13T08_46_11.304284003Z.rcd.gz").toBuilder().build();
         return Map.of(recordFile1.getName(), recordFile1, recordFile2.getName(), recordFile2);
     }
 
     @Override
     protected Map<String, Long> getExpectedFileIndexMap() {
         return getRecordFileMap().values().stream().collect(Collectors.toMap(RecordFile::getName, RecordFile::getIndex));
+    }
+
+    @Override
+    protected void verifyStreamFiles(List<String> files, Consumer<StreamFile>... extraAsserts) {
+        extraAsserts = ArrayUtils.add(extraAsserts, s -> {
+            var recordFile = (RecordFile) s;
+            var recordItems = recordFile.getItems().collectList().block();
+            if (Objects.equals(recordFile.getName(), RECORD_FILE_WITH_SIDECAR)) {
+                assertThat(recordItems)
+                        // The record item either has empty transaction sidecar records or all such records consensus
+                        // timestamp is the same as that of the recordItem
+                        .allSatisfy(recordItem -> {
+                            var consensusTimestamp = recordItem.getConsensusTimestamp();
+                            assertThat(recordItem.getSidecarRecords()).satisfiesAnyOf(
+                                    sidecarRecords -> assertThat(sidecarRecords).isEmpty(),
+                                    sidecarRecords -> assertThat(sidecarRecords)
+                                            .map(TransactionSidecarRecord::getConsensusTimestamp)
+                                            .map(DomainUtils::timestampInNanosMax)
+                                            .containsOnly(consensusTimestamp)
+                            );
+                        })
+                        // Also verify there are transaction sidecar records
+                        .flatMap(RecordItem::getSidecarRecords)
+                        .isNotEmpty();
+            } else {
+                assertThat(recordItems).flatMap(RecordItem::getSidecarRecords).isEmpty();
+            }
+        });
+        super.verifyStreamFiles(files, extraAsserts);
     }
 }

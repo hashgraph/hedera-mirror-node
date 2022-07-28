@@ -31,14 +31,14 @@ import (
 func TestResponseCodeUpToDate(t *testing.T) {
 	// given
 	for code, name := range services.ResponseCodeEnum_name {
-		assert.Equal(t, name, TransactionResults[code])
+		assert.Equal(t, name, TransactionResults[code], "Expected %s for code %d", name, code)
 	}
 }
 
 func TestTransactionTypesUpToDate(t *testing.T) {
 	sdkTransactionTypes := getSdkTransactionTypes()
 	for protoId, name := range sdkTransactionTypes {
-		assert.Equal(t, name, TransactionTypes[protoId])
+		assert.Equal(t, name, TransactionTypes[protoId], "Expected %s for proto id %d", name, protoId)
 	}
 }
 

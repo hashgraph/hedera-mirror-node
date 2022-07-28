@@ -18,9 +18,7 @@
  * ‍
  */
 
-'use strict';
-
-const _ = require('lodash');
+import _ from 'lodash';
 
 const protoToName = {
   0: 'OK',
@@ -304,6 +302,10 @@ const protoToName = {
   320: 'PROXY_ACCOUNT_ID_FIELD_IS_DEPRECATED',
   321: 'SELF_STAKING_IS_NOT_ALLOWED',
   322: 'INVALID_STAKING_ID',
+  323: 'STAKING_NOT_ENABLED',
+  324: 'INVALID_PRNG_RANGE',
+  325: 'MAX_ENTITIES_IN_PRICE_REGIME_HAVE_BEEN_CREATED',
+  326: 'INVALID_FULL_PREFIX_SIGNATURE_FOR_PRECOMPILE',
 };
 
 const nameToProto = _.invert(protoToName);
@@ -322,7 +324,7 @@ const getSuccessProtoId = () => {
   return getProtoId(SUCCESS);
 };
 
-module.exports = {
+export default {
   getName,
   getProtoId,
   getSuccessProtoId,

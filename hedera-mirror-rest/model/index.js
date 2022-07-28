@@ -18,40 +18,72 @@
  * ‍
  */
 
-'use strict';
+import AddressBook from './addressBook';
+import AddressBookEntry from './addressBookEntry';
+import AddressBookServiceEndpoint from './addressBookServiceEndpoint';
+import AssessedCustomFee from './assessedCustomFee';
+import Contract from './contract';
+import CryptoAllowance from './cryptoAllowance';
+import ContractLog from './contractLog';
+import ContractResult from './contractResult';
+import ContractStateChange from './contractStateChange';
+import CryptoTransfer from './cryptoTransfer';
+import CustomFee from './customFee';
+import Entity from './entity';
+import EthereumTransaction from './ethereumTransaction';
+import ExchangeRate from './exchangeRate';
+import FileData from './fileData';
+import NetworkNode from './networkNode';
+import Nft from './nft';
+import NftTransfer from './nftTransfer';
+import NodeStake from './nodeStake';
+import RecordFile from './recordFile';
+import SignatureType from './signatureType';
+import Token from './token';
+import TokenAllowance from './tokenAllowance';
+import TokenFreezeStatus from './tokenFreezeStatus';
+import TokenKycStatus from './tokenKycStatus';
+import TokenTransfer from './tokenTransfer';
+import TopicMessage from './topicMessage';
+import Transaction from './transaction';
+import TransactionId from './transactionId';
+import TransactionResult from './transactionResult';
+import TransactionType from './transactionType';
+import TransactionWithEthData from './transactionWithEthData';
+import FeeSchedule from './feeSchedule';
 
-module.exports = {
-  AddressBook: require('./addressBook'),
-  AddressBookEntry: require('./addressBookEntry'),
-  AddressBookServiceEndpoint: require('./addressBookServiceEndpoint'),
-  AssessedCustomFee: require('./assessedCustomFee'),
-  Contract: require('./contract'),
-  CryptoAllowance: require('./cryptoAllowance'),
-  ContractLog: require('./contractLog'),
-  ContractResult: require('./contractResult'),
-  ContractStateChange: require('./contractStateChange'),
-  CryptoTransfer: require('./cryptoTransfer'),
-  CustomFee: require('./customFee'),
-  Entity: require('./entity'),
-  EthereumTransaction: require('./ethereumTransaction'),
-  ExchangeRate: require('./exchangeRate'),
-  FileData: require('./fileData'),
-  NetworkNode: require('./networkNode'),
-  Nft: require('./nft'),
-  NftTransfer: require('./nftTransfer'),
-  NodeStake: require('./nodeStake'),
-  RecordFile: require('./recordFile'),
-  SignatureType: require('./signatureType'),
-  Token: require('./token'),
-  TokenAllowance: require('./tokenAllowance'),
-  TokenFreezeStatus: require('./tokenFreezeStatus'),
-  TokenKycStatus: require('./tokenKycStatus'),
-  TokenTransfer: require('./tokenTransfer'),
-  TopicMessage: require('./topicMessage'),
-  Transaction: require('./transaction'),
-  TransactionId: require('./transactionId'),
-  TransactionResult: require('./transactionResult'),
-  TransactionType: require('./transactionType'),
-  TransactionWithEthData: require('./transactionWithEthData'),
-  FeeSchedule: require('./feeSchedule'),
+export {
+  AddressBook,
+  AddressBookEntry,
+  AddressBookServiceEndpoint,
+  AssessedCustomFee,
+  Contract,
+  CryptoAllowance,
+  ContractLog,
+  ContractResult,
+  ContractStateChange,
+  CryptoTransfer,
+  CustomFee,
+  Entity,
+  EthereumTransaction,
+  ExchangeRate,
+  FileData,
+  NetworkNode,
+  Nft,
+  NftTransfer,
+  NodeStake,
+  RecordFile,
+  SignatureType,
+  Token,
+  TokenAllowance,
+  TokenFreezeStatus,
+  TokenKycStatus,
+  TokenTransfer,
+  TopicMessage,
+  Transaction,
+  TransactionId,
+  TransactionResult,
+  TransactionType,
+  TransactionWithEthData,
+  FeeSchedule,
 };

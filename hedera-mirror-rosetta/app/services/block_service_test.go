@@ -25,18 +25,25 @@ import (
 
 	"github.com/coinbase/rosetta-sdk-go/server"
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/config"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
+	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
+const ed25519NetworkAliasHex = "0x12205a081255a92b7c262bc2ea3ab7114b8a815345b3cc40f800b2b40914afecc44e"
+
 var (
-	account       = types.NewAccountIdFromEntityId(domain.MustDecodeEntityId(500))
-	entityId      = domain.MustDecodeEntityId(600)
-	hbarAmount    = types.HbarAmount{Value: 300}
-	statusSuccess = types.TransactionResults[22]
+	ed25519NetworkAlias = hexutil.MustDecode(ed25519NetworkAliasHex)
+	account             = types.NewAccountIdFromEntityId(domain.MustDecodeEntityId(500))
+	accountAlias, _     = types.NewAccountIdFromEntity(domain.Entity{Alias: ed25519NetworkAlias, Id: domain.MustDecodeEntityId(500)})
+	entityId            = domain.MustDecodeEntityId(600)
+	hbarAmount          = types.HbarAmount{Value: 300}
+	statusSuccess       = types.TransactionResults[22]
 )
 
 func block() *types.Block {
@@ -86,7 +93,7 @@ func expectedBlockResponse(transactions ...*rTypes.Transaction) *rTypes.BlockRes
 	}
 }
 
-func expectedTransaction(entityId *domain.EntityId, hash string) *rTypes.Transaction {
+func expectedTransaction(accountId types.AccountId, entityId *domain.EntityId, hash string) *rTypes.Transaction {
 	response := &rTypes.Transaction{
 		TransactionIdentifier: &rTypes.TransactionIdentifier{Hash: hash},
 		Operations: []*rTypes.Operation{
@@ -94,7 +101,7 @@ func expectedTransaction(entityId *domain.EntityId, hash string) *rTypes.Transac
 				OperationIdentifier: &rTypes.OperationIdentifier{Index: 0},
 				Type:                types.TransactionTypes[14],
 				Status:              &statusSuccess,
-				Account:             account.ToRosetta(),
+				Account:             accountId.ToRosetta(),
 				Amount:              hbarAmount.ToRosetta(),
 			},
 		},
@@ -146,23 +153,22 @@ func TestBlockServiceSuite(t *testing.T) {
 type blockServiceSuite struct {
 	suite.Suite
 	blockService        server.BlockAPIServicer
+	mockAccountRepo     *mocks.MockAccountRepository
 	mockBlockRepo       *mocks.MockBlockRepository
 	mockTransactionRepo *mocks.MockTransactionRepository
 }
 
 func (suite *blockServiceSuite) SetupTest() {
+	suite.mockAccountRepo = &mocks.MockAccountRepository{}
 	suite.mockBlockRepo = &mocks.MockBlockRepository{}
 	suite.mockTransactionRepo = &mocks.MockTransactionRepository{}
 
 	baseService := NewOnlineBaseService(suite.mockBlockRepo, suite.mockTransactionRepo)
-	suite.blockService = NewBlockAPIService(baseService)
+	suite.blockService = NewBlockAPIService(suite.mockAccountRepo, baseService, config.Cache{MaxSize: 1024})
 }
 
 func (suite *blockServiceSuite) TestNewBlockAPIService() {
-	baseService := NewOnlineBaseService(suite.mockBlockRepo, suite.mockTransactionRepo)
-	blockService := NewBlockAPIService(baseService)
-
-	assert.IsType(suite.T(), &blockAPIService{}, blockService)
+	assert.IsType(suite.T(), &blockAPIService{}, suite.blockService)
 }
 
 func (suite *blockServiceSuite) TestBlock() {
@@ -172,9 +178,10 @@ func (suite *blockServiceSuite) TestBlock() {
 		makeTransaction(&entityId, "246"),
 	}
 	expected := expectedBlockResponse(
-		expectedTransaction(nil, "123"),
-		expectedTransaction(&entityId, "246"),
+		expectedTransaction(account, nil, "123"),
+		expectedTransaction(account, &entityId, "246"),
 	)
+	suite.mockAccountRepo.On("GetAccountAlias").Return(account, mocks.NilError)
 	suite.mockBlockRepo.On("FindByIdentifier").Return(block(), mocks.NilError)
 	suite.mockTransactionRepo.On("FindBetween").Return(exampleTransactions, mocks.NilError)
 
@@ -184,6 +191,49 @@ func (suite *blockServiceSuite) TestBlock() {
 	// then:
 	assert.Nil(suite.T(), e)
 	assert.Equal(suite.T(), expected, actual)
+	suite.mockAccountRepo.AssertNumberOfCalls(suite.T(), "GetAccountAlias", 1)
+}
+
+func (suite *blockServiceSuite) TestBlockWithAccountAlias() {
+	// given:
+	exampleTransactions := []*types.Transaction{
+		makeTransaction(nil, "123"),
+		makeTransaction(&entityId, "246"),
+	}
+	expected := expectedBlockResponse(
+		expectedTransaction(accountAlias, nil, "123"),
+		expectedTransaction(accountAlias, &entityId, "246"),
+	)
+	suite.mockAccountRepo.On("GetAccountAlias").Return(accountAlias, mocks.NilError)
+	suite.mockBlockRepo.On("FindByIdentifier").Return(block(), mocks.NilError)
+	suite.mockTransactionRepo.On("FindBetween").Return(exampleTransactions, mocks.NilError)
+
+	// when:
+	actual, e := suite.blockService.Block(nil, blockRequest())
+
+	// then:
+	assert.Nil(suite.T(), e)
+	assert.Equal(suite.T(), expected, actual)
+	suite.mockAccountRepo.AssertNumberOfCalls(suite.T(), "GetAccountAlias", 1)
+}
+
+func (suite *blockServiceSuite) TestBlockThrowsWhenAccountRepoFail() {
+	// given:
+	exampleTransactions := []*types.Transaction{
+		makeTransaction(nil, "123"),
+		makeTransaction(&entityId, "246"),
+	}
+	suite.mockAccountRepo.On("GetAccountAlias").Return(types.AccountId{}, errors.ErrInternalServerError)
+	suite.mockBlockRepo.On("FindByIdentifier").Return(block(), mocks.NilError)
+	suite.mockTransactionRepo.On("FindBetween").Return(exampleTransactions, mocks.NilError)
+
+	// when:
+	actual, e := suite.blockService.Block(nil, blockRequest())
+
+	// then:
+	assert.Nil(suite.T(), actual)
+	assert.NotNil(suite.T(), e)
+	suite.mockAccountRepo.AssertNumberOfCalls(suite.T(), "GetAccountAlias", 1)
 }
 
 func (suite *blockServiceSuite) TestBlockThrowsWhenFindByIdentifierFails() {
@@ -217,8 +267,9 @@ func (suite *blockServiceSuite) TestBlockThrowsWhenFindBetweenFails() {
 func (suite *blockServiceSuite) TestBlockTransaction() {
 	// given:
 	exampleTransaction := makeTransaction(nil, "somehash")
-	expected := &rTypes.BlockTransactionResponse{Transaction: expectedTransaction(nil, "somehash")}
+	expected := &rTypes.BlockTransactionResponse{Transaction: expectedTransaction(account, nil, "somehash")}
 
+	suite.mockAccountRepo.On("GetAccountAlias").Return(account, mocks.NilError)
 	suite.mockBlockRepo.On("FindByIdentifier").Return(block(), mocks.NilError)
 	suite.mockTransactionRepo.On("FindByHashInBlock").Return(exampleTransaction, mocks.NilError)
 
@@ -228,6 +279,42 @@ func (suite *blockServiceSuite) TestBlockTransaction() {
 	// then:
 	assert.Equal(suite.T(), expected, actual)
 	assert.Nil(suite.T(), err)
+	suite.mockAccountRepo.AssertNumberOfCalls(suite.T(), "GetAccountAlias", 1)
+}
+
+func (suite *blockServiceSuite) TestBlockTransactionWithAccountAlias() {
+	// given:
+	exampleTransaction := makeTransaction(nil, "somehash")
+	expected := &rTypes.BlockTransactionResponse{Transaction: expectedTransaction(accountAlias, nil, "somehash")}
+
+	suite.mockAccountRepo.On("GetAccountAlias").Return(accountAlias, mocks.NilError)
+	suite.mockBlockRepo.On("FindByIdentifier").Return(block(), mocks.NilError)
+	suite.mockTransactionRepo.On("FindByHashInBlock").Return(exampleTransaction, mocks.NilError)
+
+	// when:
+	actual, err := suite.blockService.BlockTransaction(nil, transactionRequest())
+
+	// then:
+	assert.Equal(suite.T(), expected, actual)
+	assert.Nil(suite.T(), err)
+	suite.mockAccountRepo.AssertNumberOfCalls(suite.T(), "GetAccountAlias", 1)
+}
+
+func (suite *blockServiceSuite) TestBlockTransactionThrowsWhenAccountRepoFail() {
+	// given:
+	exampleTransaction := makeTransaction(nil, "somehash")
+
+	suite.mockAccountRepo.On("GetAccountAlias").Return(types.AccountId{}, errors.ErrInternalServerError)
+	suite.mockBlockRepo.On("FindByIdentifier").Return(block(), mocks.NilError)
+	suite.mockTransactionRepo.On("FindByHashInBlock").Return(exampleTransaction, mocks.NilError)
+
+	// when:
+	actual, err := suite.blockService.BlockTransaction(nil, transactionRequest())
+
+	// then:
+	assert.NotNil(suite.T(), err)
+	assert.Nil(suite.T(), actual)
+	suite.mockAccountRepo.AssertNumberOfCalls(suite.T(), "GetAccountAlias", 1)
 }
 
 func (suite *blockServiceSuite) TestBlockTransactionThrowsWhenFindByIdentifierFails() {

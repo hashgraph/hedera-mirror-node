@@ -31,14 +31,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import javax.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
 import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.transaction.support.TransactionOperations;
 
-import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -73,56 +74,29 @@ import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
 
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class BatchUpserterTest extends IntegrationTest {
 
     private static final Key KEY = Key.newBuilder()
             .setEd25519(ByteString.copyFromUtf8("0a2212200aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c"))
             .build();
 
-    @Resource
-    private BatchPersister batchPersister;
+    private final BatchPersister batchPersister;
+    private final ContractRepository contractRepository;
+    private final CryptoAllowanceRepository cryptoAllowanceRepository;
+    private final EntityRepository entityRepository;
+    private final NftRepository nftRepository;
+    private final NftAllowanceRepository nftAllowanceRepository;
+    private final NftTransferRepository nftTransferRepository;
+    private final ScheduleRepository scheduleRepository;
+    private final TokenRepository tokenRepository;
+    private final TokenAccountRepository tokenAccountRepository;
+    private final TokenAllowanceRepository tokenAllowanceRepository;
+    private final TokenTransferRepository tokenTransferRepository;
+    private final TransactionOperations transactionOperations;
 
-    @Resource
-    private ContractRepository contractRepository;
-
-    @Resource
-    private CryptoAllowanceRepository cryptoAllowanceRepository;
-
-    @Resource
-    private DomainBuilder domainBuilder;
-
-    @Resource
-    private EntityRepository entityRepository;
-
-    @Resource
-    private NftRepository nftRepository;
-
-    @Resource
-    private NftAllowanceRepository nftAllowanceRepository;
-
-    @Resource
-    private NftTransferRepository nftTransferRepository;
-
-    @Resource
-    private ScheduleRepository scheduleRepository;
-
-    @Resource
-    private TokenRepository tokenRepository;
-
-    @Resource
-    private TokenAccountRepository tokenAccountRepository;
-
-    @Resource
-    private TokenAllowanceRepository tokenAllowanceRepository;
-
-    @Resource(name = TOKEN_DISSOCIATE_BATCH_PERSISTER)
-    private BatchPersister tokenDissociateTransferBatchUpserter;
-
-    @Resource
-    private TokenTransferRepository tokenTransferRepository;
-
-    @Resource
-    private TransactionOperations transactionOperations;
+    @Qualifier(TOKEN_DISSOCIATE_BATCH_PERSISTER)
+    private final BatchPersister tokenDissociateTransferBatchUpserter;
 
     @Test
     void contract() {
@@ -529,15 +503,9 @@ class BatchUpserterTest extends IntegrationTest {
     }
 
     @Test
-    void nftInsertMissingToken() {
-        // mint
-        var nfts = new ArrayList<Nft>();
-        nfts.add(getNft("0.0.2000", 1, null, 1L, 1L, "nft1", false));
-        nfts.add(getNft("0.0.3000", 2, null, 2L, 2L, "nft2", false));
-        nfts.add(getNft("0.0.4000", 3, null, 3L, 3L, "nft3", false));
-        nfts.add(getNft("0.0.5000", 4, null, 4L, 4L, "nft4", false));
-
-        persist(batchPersister, nfts);
+    void nftUpdateWithoutExisting() {
+        var nft = domainBuilder.nft().customize(n -> n.createdTimestamp(null)).get();
+        persist(batchPersister, List.of(nft));
         assertThat(nftRepository.findAll()).isEmpty();
     }
 

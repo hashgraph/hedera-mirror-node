@@ -18,15 +18,12 @@
  * ‍
  */
 
-'use strict';
+import request from 'supertest';
 
-const log4js = require('log4js');
-const request = require('supertest');
-const server = require('../server');
-const testutils = require('./testutils.js');
-const config = require('../config.js');
+import config from '../config';
+import server from '../server';
+import * as testutils from './testutils';
 
-const logger = log4js.getLogger();
 const timeNow = Math.floor(new Date().getTime() / 1000);
 const timeOneHourAgo = timeNow - 60 * 60;
 

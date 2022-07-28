@@ -18,12 +18,10 @@
  * ‍
  */
 
-'use strict';
-
-const AddressBook = require('./addressBook');
-const AddressBookEntry = require('./addressBookEntry');
-const AddressBookServiceEndpoint = require('./addressBookServiceEndpoint');
-const NodeStake = require('./nodeStake');
+import AddressBook from './addressBook';
+import AddressBookEntry from './addressBookEntry';
+import AddressBookServiceEndpoint from './addressBookServiceEndpoint';
+import NodeStake from './nodeStake';
 
 class NetworkNode {
   /**
@@ -37,4 +35,4 @@ class NetworkNode {
   }
 }
 
-module.exports = NetworkNode;
+export default NetworkNode;

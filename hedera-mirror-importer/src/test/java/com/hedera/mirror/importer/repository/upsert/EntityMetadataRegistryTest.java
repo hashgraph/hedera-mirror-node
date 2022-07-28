@@ -29,8 +29,10 @@ import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.hedera.mirror.common.domain.UpsertColumn;
 import com.hedera.mirror.common.domain.Upsertable;
 import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.importer.IntegrationTest;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -42,15 +44,15 @@ class EntityMetadataRegistryTest extends IntegrationTest {
     void lookup() {
         var all = "auto_renew_account_id,auto_renew_period,created_timestamp,decline_reward,deleted,evm_address," +
                 "expiration_timestamp,file_id,id,initcode,key,max_automatic_token_associations,memo,num,obtainer_id," +
-                "permanent_removal,proxy_account_id,public_key,realm,shard,stake_period_start,staked_account_id," +
+                "permanent_removal,proxy_account_id,public_key,realm,runtime_bytecode,shard,stake_period_start,staked_account_id," +
                 "staked_node_id,timestamp_range,type";
 
         var nullable = "auto_renew_account_id,auto_renew_period,created_timestamp,deleted,evm_address," +
                 "expiration_timestamp,file_id,initcode,key,max_automatic_token_associations,obtainer_id," +
-                "permanent_removal,proxy_account_id,public_key,stake_period_start,staked_account_id,staked_node_id";
+                "permanent_removal,proxy_account_id,public_key,runtime_bytecode,stake_period_start,staked_account_id,staked_node_id";
         var updatable = "auto_renew_account_id,auto_renew_period,decline_reward,deleted,expiration_timestamp,key," +
                 "max_automatic_token_associations,memo,obtainer_id,permanent_removal,proxy_account_id,public_key," +
-                "stake_period_start,staked_account_id,staked_node_id,timestamp_range";
+                "runtime_bytecode,stake_period_start,staked_account_id,staked_node_id,timestamp_range";
 
         var contract = domainBuilder.contract().get();
         var newValue = -99999L;
@@ -65,7 +67,7 @@ class EntityMetadataRegistryTest extends IntegrationTest {
                 .returns(nullable, e -> e.columns(ColumnMetadata::isNullable, "{0}"))
                 .returns(updatable, e -> e.columns(ColumnMetadata::isUpdatable, "{0}"))
                 .extracting(EntityMetadata::getColumns, InstanceOfAssertFactories.ITERABLE)
-                .hasSize(25)
+                .hasSize(26)
                 .first(InstanceOfAssertFactories.type(ColumnMetadata.class))
                 .returns("auto_renew_account_id", ColumnMetadata::getName)
                 .returns(Long.class, ColumnMetadata::getType)
@@ -73,6 +75,7 @@ class EntityMetadataRegistryTest extends IntegrationTest {
                 .returns(true, ColumnMetadata::isNullable)
                 .returns(null, ColumnMetadata::getDefaultValue)
                 .returns(true, ColumnMetadata::isUpdatable)
+                .returns(null, ColumnMetadata::getUpsertColumn)
                 .satisfies(cm -> assertThat(cm.getGetter().apply(contract)).isEqualTo(contract.getAutoRenewAccountId()))
                 .satisfies(cm -> assertThatCode(() -> cm.getSetter().accept(contract, newValue))
                         .satisfies(d -> assertThat(contract.getAutoRenewAccountId()).isEqualTo(newValue)));
@@ -86,6 +89,23 @@ class EntityMetadataRegistryTest extends IntegrationTest {
     @Test
     void notEntity() {
         assertThatThrownBy(() -> registry.lookup(NonEntity.class)).isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void upsertColumn() {
+        var metadata = registry.lookup(Token.class);
+        assertThat(metadata)
+                .isNotNull()
+                .returns("token_id", e -> e.columns(ColumnMetadata::isId, "{0}"))
+                .extracting(e -> e.getColumns()
+                        .stream()
+                        .filter(c -> c.getName().equals("total_supply"))
+                        .findFirst()
+                        .get())
+                .extracting(ColumnMetadata::getUpsertColumn)
+                .isNotNull()
+                .extracting(UpsertColumn::coalesce)
+                .isNotNull();
     }
 
     @Upsertable

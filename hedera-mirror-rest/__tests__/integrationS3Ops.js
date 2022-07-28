@@ -18,17 +18,15 @@
  * ‍
  */
 
-'use strict';
-
-const axios = require('axios');
-const {GenericContainer} = require('testcontainers');
-const {isDockerInstalled} = require('./integrationUtils');
+import axios from 'axios';
+import {GenericContainer} from 'testcontainers';
+import {isDockerInstalled} from './integrationUtils';
 
 const localstackImageName = 'localstack/localstack';
 const localstackImageTag = 'latest';
 const defaultS3Port = 4566;
 
-class S3Ops {
+class IntegrationS3Ops {
   async start() {
     const isInstalled = await isDockerInstalled();
     if (!isInstalled) {
@@ -85,6 +83,4 @@ class S3Ops {
   }
 }
 
-module.exports = {
-  S3Ops,
-};
+export default IntegrationS3Ops;

@@ -27,8 +27,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.context.annotation.Primary;
 
+import com.hedera.mirror.common.domain.addressbook.NetworkStake;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
 import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
@@ -50,6 +52,7 @@ import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
+import com.hedera.mirror.common.domain.transaction.Prng;
 import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
@@ -79,6 +82,11 @@ public class CompositeEntityListener implements EntityListener {
     @Override
     public void onContract(Contract contract) throws ImporterException {
         onEach(EntityListener::onContract, contract);
+    }
+
+    @Override
+    public void onContractAction(ContractAction contractAction) throws ImporterException {
+        onEach(EntityListener::onContractAction, contractAction);
     }
 
     @Override
@@ -132,8 +140,8 @@ public class CompositeEntityListener implements EntityListener {
     }
 
     @Override
-    public void onNonFeeTransfer(NonFeeTransfer nonFeeTransfer) throws ImporterException {
-        onEach(EntityListener::onNonFeeTransfer, nonFeeTransfer);
+    public void onNetworkStake(NetworkStake networkStake) throws ImporterException {
+        onEach(EntityListener::onNetworkStake, networkStake);
     }
 
     @Override
@@ -152,8 +160,18 @@ public class CompositeEntityListener implements EntityListener {
     }
 
     @Override
-    public void onNodeStake(NodeStake nodeStake) {
+    public void onNodeStake(NodeStake nodeStake) throws ImporterException {
         onEach(EntityListener::onNodeStake, nodeStake);
+    }
+
+    @Override
+    public void onNonFeeTransfer(NonFeeTransfer nonFeeTransfer) throws ImporterException {
+        onEach(EntityListener::onNonFeeTransfer, nonFeeTransfer);
+    }
+
+    @Override
+    public void onPrng(Prng prng) {
+        onEach(EntityListener::onPrng, prng);
     }
 
     @Override

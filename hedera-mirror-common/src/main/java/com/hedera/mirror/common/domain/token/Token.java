@@ -22,6 +22,7 @@ package com.hedera.mirror.common.domain.token;
 
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.vladmihalcea.hibernate.type.basic.PostgreSQLEnumType;
+import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
@@ -37,6 +38,7 @@ import org.hibernate.annotations.Type;
 import org.hibernate.annotations.TypeDef;
 
 import com.hedera.mirror.common.converter.AccountIdConverter;
+import com.hedera.mirror.common.domain.UpsertColumn;
 import com.hedera.mirror.common.domain.Upsertable;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.util.DomainUtils;
@@ -56,26 +58,33 @@ public class Token {
     @JsonUnwrapped
     private TokenId tokenId;
 
+    @Column(updatable = false)
     private Long createdTimestamp;
 
+    @Column(updatable = false)
     private Integer decimals;
 
     @ToString.Exclude
     private byte[] feeScheduleKey;
 
+    @Column(updatable = false)
     private Boolean freezeDefault;
 
     @ToString.Exclude
     private byte[] freezeKey;
 
+    @Column(updatable = false)
     private Long initialSupply;
 
     @ToString.Exclude
     private byte[] kycKey;
 
+    @Column(updatable = false)
     private long maxSupply;
 
     private long modifiedTimestamp;
+
+    private String name;
 
     @ToString.Exclude
     private byte[] pauseKey;
@@ -84,22 +93,23 @@ public class Token {
     @Type(type = "pgsql_enum")
     private TokenPauseStatusEnum pauseStatus;
 
-    private String name;
-
     @ToString.Exclude
     private byte[] supplyKey;
 
+    @Column(updatable = false)
     @Enumerated(EnumType.STRING)
     @Type(type = "pgsql_enum")
     private TokenSupplyTypeEnum supplyType;
 
     private String symbol;
 
+    @UpsertColumn(coalesce = "case when {0} >= 0 then {0} else e_{0} + coalesce({0}, {1}) end")
     private Long totalSupply; // Increment with initialSupply and mint amounts, decrement with burn amount
 
     @Convert(converter = AccountIdConverter.class)
     private EntityId treasuryAccountId;
 
+    @Column(updatable = false)
     @Enumerated(EnumType.STRING)
     @Type(type = "pgsql_enum")
     private TokenTypeEnum type;

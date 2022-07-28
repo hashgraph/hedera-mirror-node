@@ -18,11 +18,9 @@
  * ‍
  */
 
-'use strict';
-
-const {INT_SIZE} = require('./constants');
-const StreamObject = require('./streamObject');
-const {readLengthAndBytes} = require('./utils');
+import {INT_SIZE} from './constants';
+import StreamObject from './streamObject';
+import {readLengthAndBytes} from './utils';
 
 class HashObject extends StreamObject {
   // properties of SHA-384 hash algorithm
@@ -48,4 +46,4 @@ class HashObject extends StreamObject {
   }
 }
 
-module.exports = HashObject;
+export default HashObject;

@@ -18,11 +18,9 @@
  * ‍
  */
 
-'use strict';
-
-const {AddressBook, AddressBookEntry, AddressBookServiceEndpoint, NetworkNode, NodeStake} = require('../model');
-const BaseService = require('./baseService');
-const {OrderSpec} = require('../sql');
+import BaseService from './baseService';
+import {AddressBook, AddressBookEntry, AddressBookServiceEndpoint, NetworkNode, NodeStake} from '../model';
+import {OrderSpec} from '../sql';
 
 /**
  * Network node business model
@@ -36,7 +34,7 @@ class NetworkNodeService extends BaseService {
     ),
     ${NodeStake.tableAlias} as (
       select ${NodeStake.MAX_STAKE}, ${NodeStake.MIN_STAKE}, ${NodeStake.NODE_ID}, ${NodeStake.REWARD_RATE},
-             ${NodeStake.STAKE}, ${NodeStake.STAKE_NOT_REWARDED}, ${NodeStake.STAKE_REWARDED}, ${NodeStake.STAKE_TOTAL},
+             ${NodeStake.STAKE}, ${NodeStake.STAKE_NOT_REWARDED}, ${NodeStake.STAKE_REWARDED},
              ${NodeStake.STAKING_PERIOD}
       from ${NodeStake.tableName}
       where ${NodeStake.CONSENSUS_TIMESTAMP} =
@@ -54,10 +52,11 @@ class NetworkNodeService extends BaseService {
       ${NodeStake.getFullName(NodeStake.MAX_STAKE)},
       ${NodeStake.getFullName(NodeStake.MIN_STAKE)},
       ${NodeStake.getFullName(NodeStake.REWARD_RATE)},
-      ${NodeStake.getFullName(NodeStake.STAKE)},
+      coalesce(${NodeStake.getFullName(NodeStake.STAKE)}, ${AddressBookEntry.getFullName(
+    AddressBookEntry.STAKE
+  )}) as stake,
       ${NodeStake.getFullName(NodeStake.STAKE_NOT_REWARDED)},
       ${NodeStake.getFullName(NodeStake.STAKE_REWARDED)},
-      ${NodeStake.getFullName(NodeStake.STAKE_TOTAL)},
       ${NodeStake.getFullName(NodeStake.STAKING_PERIOD)},
       coalesce((
         select jsonb_agg(jsonb_build_object(
@@ -97,4 +96,4 @@ class NetworkNodeService extends BaseService {
   };
 }
 
-module.exports = new NetworkNodeService();
+export default new NetworkNodeService();

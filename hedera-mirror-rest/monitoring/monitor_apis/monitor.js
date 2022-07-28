@@ -18,11 +18,9 @@
  * ‍
  */
 
-'use strict';
-
-const common = require('./common.js');
-const monitorTests = require('./monitor_tests.js');
-const utils = require('./utils.js');
+import common from './common';
+import {runTests} from './monitor_tests';
+import * as utils from './utils';
 
 const retryCountMax = 3; // # of times a single process can retry
 
@@ -42,7 +40,7 @@ const runEverything = async (servers) => {
 
       if (processObj === undefined) {
         // execute test and store name
-        monitorTests.runTests(server).then((outJson) => {
+        runTests(server).then((outJson) => {
           let results;
           if (outJson.testResults) {
             results = outJson;
@@ -89,6 +87,4 @@ const runEverything = async (servers) => {
   }
 };
 
-module.exports = {
-  runEverything,
-};
+export {runEverything};

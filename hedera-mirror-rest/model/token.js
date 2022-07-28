@@ -18,8 +18,6 @@
  * ‍
  */
 
-'use strict';
-
 class Token {
   static tableAlias = 'token';
   static tableName = this.tableAlias;
@@ -58,4 +56,4 @@ class Token {
   }
 }
 
-module.exports = Token;
+export default Token;

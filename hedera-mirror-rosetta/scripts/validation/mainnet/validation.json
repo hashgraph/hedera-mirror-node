@@ -1,10 +1,7 @@
 {
   "network": {
     "blockchain": "Hedera",
-    "network": "mainnet",
-    "sub_network_identifier": {
-      "network": "shard 0 realm 0"
-    }
+    "network": "mainnet"
   },
   "data_directory": "./data",
   "retry_elapsed_time": 7500,

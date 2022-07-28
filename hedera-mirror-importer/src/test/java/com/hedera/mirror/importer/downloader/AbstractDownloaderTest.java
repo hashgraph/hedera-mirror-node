@@ -48,13 +48,12 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.RegExUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.gaul.s3proxy.S3Proxy;
 import org.gaul.shaded.org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -107,6 +106,9 @@ import com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5;
 @Log4j2
 public abstract class AbstractDownloaderTest {
     private static final int S3_PROXY_PORT = 8001;
+    private static final Pattern STREAM_FILENAME_INSTANT_PATTERN = Pattern.compile(
+            "^\\d{4}-\\d{2}-\\d{2}T\\d{2}_\\d{2}_\\d{2}(\\.\\d{1,9})?Z");
+
     protected static Set<EntityId> allNodeAccountIds;
     protected static AddressBook addressBook;
     @Mock
@@ -138,7 +140,7 @@ public abstract class AbstractDownloaderTest {
     @TempDir
     Path dataPath;
 
-    private static void corruptFile(Path p) {
+    protected static void corruptFile(Path p) {
         try {
             File file = p.toFile();
             if (file.isFile()) {
@@ -288,12 +290,6 @@ public abstract class AbstractDownloaderTest {
         throw new RuntimeException("Timeout starting S3Proxy, state " + s3Proxy.getState());
     }
 
-    protected String trimCompressionSuffix(String path) {
-        var streamFilename = new StreamFilename(FilenameUtils.getName(path));
-        var extension = streamFilename.getExtension().getName();
-        return RegExUtils.replaceAll(path, extension + ".*", extension);
-    }
-
     @Test
     @DisplayName("Download and verify files")
     void download() {
@@ -309,10 +305,12 @@ public abstract class AbstractDownloaderTest {
 
     @Test
     @DisplayName("Non-unanimous consensus reached")
-    void partialConsensus() {
+    void partialConsensus() throws IOException {
         mirrorProperties.setStartBlockNumber(null);
 
-        fileCopier.filterDirectories("*0.0.3").filterDirectories("*0.0.4").filterDirectories("*0.0.5").copy();
+        fileCopier.copy();
+        var nodePath = fileCopier.getTo().resolve(downloaderProperties.getStreamType().getNodePrefix() + "0.0.6");
+        FileUtils.deleteDirectory(nodePath.toFile());
         expectLastStreamFile(Instant.EPOCH);
         downloader.download();
 
@@ -328,9 +326,10 @@ public abstract class AbstractDownloaderTest {
 
         mirrorProperties.setStartBlockNumber(null);
 
-        String nodeAccountId = entries.get(0).getNodeAccountId().toString();
+        var nodeAccountId = entries.get(0).getNodeAccountId();
+        var nodePath = downloaderProperties.getStreamType().getNodePrefix() + nodeAccountId;
         log.info("Only copy node {}'s stream files and signature files for a 3-node network", nodeAccountId);
-        fileCopier.filterDirectories("*" + nodeAccountId).copy();
+        fileCopier.from(nodePath).to(nodePath).copy();
         expectLastStreamFile(Instant.EPOCH);
         downloader.download();
 
@@ -631,7 +630,7 @@ public abstract class AbstractDownloaderTest {
         mirrorProperties.setStartBlockNumber(null);
 
         // Copy all files and modify only node 0.0.3's files to have a different timestamp
-        fileCopier.filterFiles(trimCompressionSuffix(file2) + "*").copy();
+        fileCopier.filterFiles(getStreamFilenameInstantString(file2) + "*").copy();
         Path basePath = fileCopier.getTo().resolve(streamType.getNodePrefix() + "0.0.3");
 
         // Construct a new filename with the offset added to the last valid file
@@ -661,6 +660,15 @@ public abstract class AbstractDownloaderTest {
         return dataFilename.replaceAll(dataExtension + ".*$", dataExtension + "_sig");
     }
 
+    protected String getStreamFilenameInstantString(String filename) {
+        var matcher = STREAM_FILENAME_INSTANT_PATTERN.matcher(filename);
+        if (matcher.find()) {
+            return matcher.group();
+        }
+
+        throw new IllegalArgumentException("Invalid stream filename " + filename);
+    }
+
     protected void verifyUnsuccessful() {
         verifyStreamFiles(Collections.emptyList());
     }
@@ -669,7 +677,7 @@ public abstract class AbstractDownloaderTest {
         verifyForSuccess(List.of(file1, file2));
     }
 
-    private void verifyForSuccess(List<String> files) {
+    protected void verifyForSuccess(List<String> files) {
         verifyForSuccess(files, true);
     }
 
@@ -682,13 +690,13 @@ public abstract class AbstractDownloaderTest {
         verifyStreamFiles(files, s -> {});
     }
 
-    protected void verifyStreamFiles(List<String> files, Consumer<StreamFile> extraAssert) {
+    protected void verifyStreamFiles(List<String> files, Consumer<StreamFile>... extraAsserts) {
         var captor = ArgumentCaptor.forClass(StreamFile.class);
         var expectedFileIndexMap = getExpectedFileIndexMap();
         var index = new AtomicLong(firstIndex);
 
         verify(streamFileNotifier, times(files.size())).verified(captor.capture());
-        assertThat(captor.getAllValues()).allMatch(s -> files.contains(s.getName()))
+        var streamFileAssert = assertThat(captor.getAllValues()).allMatch(s -> files.contains(s.getName()))
                 .allMatch(s -> {
                     var expected = expectedFileIndexMap.get(s.getName());
                     if (expected != null) {
@@ -697,8 +705,21 @@ public abstract class AbstractDownloaderTest {
                         return s.getIndex() == null || s.getIndex() == index.getAndIncrement();
                     }
                 })
-                .allMatch(s -> downloaderProperties.isPersistBytes() ^ (s.getBytes() == null))
-                .allSatisfy(extraAssert::accept);
+                .allMatch(s -> downloaderProperties.isPersistBytes() ^ (s.getBytes() == null));
+        for (var extraAssert : extraAsserts) {
+            streamFileAssert.allSatisfy(extraAssert::accept);
+        }
+
+        if (!files.isEmpty()) {
+            var lastFilename = files.get(files.size() - 1);
+            var lastStreamFile = (Optional<StreamFile>) downloader.lastStreamFile.get();
+            assertThat(lastStreamFile)
+                    .isNotEmpty()
+                    .get()
+                    .returns(null, StreamFile::getBytes)
+                    .returns(null, StreamFile::getItems)
+                    .returns(lastFilename, StreamFile::getName);
+        }
     }
 
     private Instant chooseFileInstant(String choice) {
@@ -751,6 +772,6 @@ public abstract class AbstractDownloaderTest {
      * @param instant the instant of the stream file
      */
     protected void expectLastStreamFile(Instant instant) {
-        expectLastStreamFile(null, null, instant);
+        expectLastStreamFile(null, 0L, instant);
     }
 }
