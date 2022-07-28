@@ -1,0 +1,37 @@
+{
+  "description": "Token nfts api call for all nfts under a given token with missing token class",
+  "setup": {
+    "balances": [],
+    "transactions": [],
+    "cryptotransfers": [],
+    "nfts": [
+      {
+        "account_id": "0.0.1001",
+        "created_timestamp": "1234567890000000005",
+        "metadata": "m1",
+        "serial_number": 1,
+        "token_id": "0.0.1500"
+      }
+    ]
+  },
+  "url": "/api/v1/tokens/0.0.1500/nfts",
+  "responseStatus": 200,
+  "responseJson": {
+    "nfts": [
+      {
+        "account_id": "0.0.1001",
+        "created_timestamp": "1234567890.000000005",
+        "delegating_spender": null,
+        "deleted": false,
+        "metadata": "bTE=",
+        "modified_timestamp": "1234567890.000000005",
+        "serial_number": 1,
+        "spender": null,
+        "token_id": "0.0.1500"
+      }
+    ],
+    "links": {
+      "next": null
+    }
+  }
+}

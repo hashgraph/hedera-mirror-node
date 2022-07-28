@@ -18,19 +18,14 @@
  * ‍
  */
 
-'use strict';
+import {getResponseLimit} from '../config';
+import * as constants from '../constants';
+import {opsMap} from '../utils';
+import * as utils from '../utils';
+import {assertSqlQueryEqual} from './testutils';
+import tokens from '../tokens';
 
-const tokens = require('../tokens');
-const {filterKeys, orderFilterValues} = require('../constants');
-const {
-  response: {
-    limit: {default: defaultLimit},
-  },
-} = require('../config');
-const {opsMap} = require('../utils');
-const utils = require('../utils');
-const {assertSqlQueryEqual} = require('./testutils');
-const constants = require('../constants');
+const {default: defaultLimit} = getResponseLimit();
 
 describe('token formatTokenRow tests', () => {
   const rowInput = {
@@ -67,7 +62,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
     const expectedquery =
       'select t.token_id, symbol, e.key, t.type from token t join entity e on e.id = t.token_id order by t.token_id asc limit $1';
     const expectedparams = [defaultLimit];
-    const expectedorder = orderFilterValues.ASC;
+    const expectedorder = constants.orderFilterValues.ASC;
     const expectedlimit = defaultLimit;
 
     verifyExtractSqlFromTokenRequest(
@@ -87,7 +82,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
     const initialParams = [];
     const filters = [
       {
-        key: filterKeys.ENTITY_PUBLICKEY,
+        key: constants.filterKeys.ENTITY_PUBLICKEY,
         operator: ' = ',
         value: '3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be',
       },
@@ -100,7 +95,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
                            order by t.token_id asc
                            limit $2`;
     const expectedparams = ['3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be', defaultLimit];
-    const expectedorder = orderFilterValues.ASC;
+    const expectedorder = constants.orderFilterValues.ASC;
     const expectedlimit = defaultLimit;
 
     verifyExtractSqlFromTokenRequest(
@@ -125,7 +120,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
     const initialParams = [5];
     const filters = [
       {
-        key: filterKeys.ACCOUNT_ID,
+        key: constants.filterKeys.ACCOUNT_ID,
         operator: ' = ',
         value: '5',
       },
@@ -145,7 +140,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
                            order by t.token_id asc
                            limit $2`;
     const expectedparams = [5, defaultLimit];
-    const expectedorder = orderFilterValues.ASC;
+    const expectedorder = constants.orderFilterValues.ASC;
     const expectedlimit = defaultLimit;
 
     verifyExtractSqlFromTokenRequest(
@@ -171,7 +166,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
     const tokenType = 'NON_FUNGIBLE_UNIQUE';
     const filters = [
       {
-        key: filterKeys.TOKEN_TYPE,
+        key: constants.filterKeys.TOKEN_TYPE,
         operator: ' = ',
         value: tokenType,
       },
@@ -191,7 +186,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
                            order by t.token_id asc
                            limit $3`;
     const expectedparams = [5, tokenType, defaultLimit];
-    const expectedorder = orderFilterValues.ASC;
+    const expectedorder = constants.orderFilterValues.ASC;
     const expectedlimit = defaultLimit;
 
     verifyExtractSqlFromTokenRequest(
@@ -217,23 +212,23 @@ describe('token extractSqlFromTokenRequest tests', () => {
     const tokenType = 'FUNGIBLE_COMMON';
     const filters = [
       {
-        key: filterKeys.ACCOUNT_ID,
+        key: constants.filterKeys.ACCOUNT_ID,
         operator: ' = ',
         value: '5',
       },
       {
-        key: filterKeys.ENTITY_PUBLICKEY,
+        key: constants.filterKeys.ENTITY_PUBLICKEY,
         operator: ' = ',
         value: '3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be',
       },
-      {key: filterKeys.TOKEN_ID, operator: ' > ', value: '2'},
+      {key: constants.filterKeys.TOKEN_ID, operator: ' > ', value: '2'},
       {
-        key: filterKeys.TOKEN_TYPE,
+        key: constants.filterKeys.TOKEN_TYPE,
         operator: ' = ',
         value: tokenType,
       },
-      {key: filterKeys.LIMIT, operator: ' = ', value: '3'},
-      {key: filterKeys.ORDER, operator: ' = ', value: orderFilterValues.DESC},
+      {key: constants.filterKeys.LIMIT, operator: ' = ', value: '3'},
+      {key: constants.filterKeys.ORDER, operator: ' = ', value: constants.orderFilterValues.DESC},
     ];
 
     const expectedquery = `with ta as (
@@ -253,7 +248,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
                            order by t.token_id desc
                            limit $5`;
     const expectedparams = [5, '3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be', '2', tokenType, '3'];
-    const expectedorder = orderFilterValues.DESC;
+    const expectedorder = constants.orderFilterValues.DESC;
     const expectedlimit = 3;
 
     verifyExtractSqlFromTokenRequest(
@@ -401,7 +396,7 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
           order by tb.account_id desc
           limit $2`,
         params: [tokenId, defaultLimit],
-        order: orderFilterValues.DESC,
+        order: constants.orderFilterValues.DESC,
         limit: defaultLimit,
       },
     },
@@ -411,12 +406,12 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
       initialQuery,
       filters: [
         {
-          key: filterKeys.TIMESTAMP,
+          key: constants.filterKeys.TIMESTAMP,
           operator: '>',
           value: timestampNsLow,
         },
         {
-          key: filterKeys.TIMESTAMP,
+          key: constants.filterKeys.TIMESTAMP,
           operator: '<',
           value: timestampNsHigh,
         },
@@ -439,7 +434,7 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
           order by tb.account_id desc
           limit $4`,
         params: [tokenId, timestampNsLow, timestampNsHigh, defaultLimit],
-        order: orderFilterValues.DESC,
+        order: constants.orderFilterValues.DESC,
         limit: defaultLimit,
       },
     },
@@ -450,7 +445,7 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
         initialQuery,
         filters: [
           {
-            key: filterKeys.TIMESTAMP,
+            key: constants.filterKeys.TIMESTAMP,
             operator: op,
             value: timestampNsLow,
           },
@@ -472,7 +467,7 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
             order by tb.account_id desc
             limit $3`,
           params: [tokenId, timestampNsLow, defaultLimit],
-          order: orderFilterValues.DESC,
+          order: constants.orderFilterValues.DESC,
           limit: defaultLimit,
         },
       };
@@ -483,7 +478,7 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
       initialQuery,
       filters: [
         {
-          key: filterKeys.LIMIT,
+          key: constants.filterKeys.LIMIT,
           operator: opsMap.eq,
           value: 30,
         },
@@ -504,7 +499,7 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
             order by tb.account_id desc
             limit $2`,
         params: [tokenId, 30],
-        order: orderFilterValues.DESC,
+        order: constants.orderFilterValues.DESC,
         limit: 30,
       },
     },
@@ -515,7 +510,7 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
         initialQuery,
         filters: [
           {
-            key: filterKeys.ACCOUNT_ID,
+            key: constants.filterKeys.ACCOUNT_ID,
             operator: op,
             value: accountId,
           },
@@ -537,7 +532,7 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
             order by tb.account_id desc
             limit $3`,
           params: [tokenId, accountId, defaultLimit],
-          order: orderFilterValues.DESC,
+          order: constants.orderFilterValues.DESC,
           limit: defaultLimit,
         },
       };
@@ -549,7 +544,7 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
         initialQuery,
         filters: [
           {
-            key: filterKeys.ACCOUNT_BALANCE,
+            key: constants.filterKeys.ACCOUNT_BALANCE,
             operator: op,
             value: balance,
           },
@@ -571,19 +566,19 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
             order by tb.account_id desc
             limit $3`,
           params: [tokenId, balance, defaultLimit],
-          order: orderFilterValues.DESC,
+          order: constants.orderFilterValues.DESC,
           limit: defaultLimit,
         },
       };
     }),
-    ...Object.values(orderFilterValues).map((order) => {
+    ...Object.values(constants.orderFilterValues).map((order) => {
       return {
         name: `order ${order}`,
         tokenId,
         initialQuery,
         filters: [
           {
-            key: filterKeys.ORDER,
+            key: constants.filterKeys.ORDER,
             operator: opsMap.eq,
             value: order,
           },
@@ -615,7 +610,7 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
       initialQuery,
       filters: [
         {
-          key: filterKeys.ACCOUNT_PUBLICKEY,
+          key: constants.filterKeys.ACCOUNT_PUBLICKEY,
           operator: opsMap.eq,
           value: publicKey,
         },
@@ -640,7 +635,7 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
           order by tb.account_id desc
           limit $3`,
         params: [tokenId, publicKey, defaultLimit],
-        order: orderFilterValues.DESC,
+        order: constants.orderFilterValues.DESC,
         limit: defaultLimit,
       },
     },
@@ -650,32 +645,32 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
       initialQuery,
       filters: [
         {
-          key: filterKeys.ACCOUNT_ID,
+          key: constants.filterKeys.ACCOUNT_ID,
           operator: opsMap.eq,
           value: accountId,
         },
         {
-          key: filterKeys.ACCOUNT_BALANCE,
+          key: constants.filterKeys.ACCOUNT_BALANCE,
           operator: opsMap.eq,
           value: balance,
         },
         {
-          key: filterKeys.ACCOUNT_PUBLICKEY,
+          key: constants.filterKeys.ACCOUNT_PUBLICKEY,
           operator: opsMap.eq,
           value: publicKey,
         },
         {
-          key: filterKeys.LIMIT,
+          key: constants.filterKeys.LIMIT,
           operator: opsMap.eq,
           value: 1,
         },
         {
-          key: filterKeys.ORDER,
+          key: constants.filterKeys.ORDER,
           operator: opsMap.eq,
-          value: orderFilterValues.ASC,
+          value: constants.orderFilterValues.ASC,
         },
         {
-          key: filterKeys.TIMESTAMP,
+          key: constants.filterKeys.TIMESTAMP,
           operator: opsMap.eq,
           value: timestampNsLow,
         },
@@ -703,7 +698,7 @@ describe('token extractSqlFromTokenBalancesRequest tests', () => {
           order by tb.account_id asc
           limit $6`,
         params: [tokenId, accountId, balance, publicKey, timestampNsLow, 1],
-        order: orderFilterValues.ASC,
+        order: constants.orderFilterValues.ASC,
         limit: 1,
       },
     },
@@ -898,7 +893,7 @@ const makeQueries = (key, values) => {
 };
 
 describe('utils buildAndValidateFilters token type tests', () => {
-  const key = filterKeys.TOKEN_TYPE;
+  const key = constants.filterKeys.TOKEN_TYPE;
   const invalidQueries = makeQueries(key, [
     // invalid format
     'cred',
@@ -919,7 +914,7 @@ describe('utils buildAndValidateFilters token type tests', () => {
 });
 
 describe('utils buildAndValidateFilters serialnumbers tests', () => {
-  const key = filterKeys.SERIAL_NUMBER;
+  const key = constants.filterKeys.SERIAL_NUMBER;
   const invalidQueries = makeQueries(key, [
     // invalid format
     '-1',
@@ -942,7 +937,7 @@ describe('utils buildAndValidateFilters serialnumbers tests', () => {
 });
 
 describe('utils validateAndParseFilters account.id tests', () => {
-  const key = filterKeys.ACCOUNT_ID;
+  const key = constants.filterKeys.ACCOUNT_ID;
   const invalidQueries = makeQueries(key, [
     // invalid format
     'L',
@@ -974,9 +969,9 @@ describe('utils validateAndParseFilters account.id tests', () => {
 });
 
 describe('utils buildAndValidateFilters token info query timestamp filter tests', () => {
-  const key = filterKeys.TIMESTAMP;
+  const key = constants.filterKeys.TIMESTAMP;
   const invalidQueries = makeQueries(key, ['abc', '', 'ne:1234', 'gt:1234', 'gte:1234']).concat(
-    makeQueries(filterKeys.SERIAL_NUMBER, ['123456'])
+    makeQueries(constants.filterKeys.SERIAL_NUMBER, ['123456'])
   );
   const validQueries = makeQueries(key, ['1', '123456789.000111', ['1', 'lt:123456789.000111']]);
 
@@ -1021,7 +1016,7 @@ describe('token extractSqlFromNftTokensRequest tests', () => {
                            order by nft.serial_number desc
                            limit $2`;
     const expectedParams = [tokenId, defaultLimit];
-    const expectedOrder = orderFilterValues.DESC;
+    const expectedOrder = constants.orderFilterValues.DESC;
     const expectedLimit = defaultLimit;
 
     verifyExtractSqlFromNftTokensRequest(
@@ -1041,7 +1036,7 @@ describe('token extractSqlFromNftTokensRequest tests', () => {
     const initialQuery = [tokens.nftSelectQuery].join('\n');
     const filters = [
       {
-        key: filterKeys.ACCOUNT_ID,
+        key: constants.filterKeys.ACCOUNT_ID,
         operator: ' = ',
         value: accountId,
       },
@@ -1063,7 +1058,7 @@ describe('token extractSqlFromNftTokensRequest tests', () => {
                            order by nft.serial_number desc
                            limit $3`;
     const expectedParams = [tokenId, accountId, defaultLimit];
-    const expectedOrder = orderFilterValues.DESC;
+    const expectedOrder = constants.orderFilterValues.DESC;
     const expectedLimit = defaultLimit;
     verifyExtractSqlFromNftTokensRequest(
       tokenId,
@@ -1082,7 +1077,7 @@ describe('token extractSqlFromNftTokensRequest tests', () => {
     const initialQuery = [tokens.nftSelectQuery].join('\n');
     const filters = [
       {
-        key: filterKeys.SERIAL_NUMBER,
+        key: constants.filterKeys.SERIAL_NUMBER,
         operator: ' = ',
         value: serialFilter,
       },
@@ -1104,7 +1099,7 @@ describe('token extractSqlFromNftTokensRequest tests', () => {
                            order by nft.serial_number desc
                            limit $3`;
     const expectedParams = [tokenId, serialFilter, defaultLimit];
-    const expectedOrder = orderFilterValues.DESC;
+    const expectedOrder = constants.orderFilterValues.DESC;
     const expectedLimit = defaultLimit;
     verifyExtractSqlFromNftTokensRequest(
       tokenId,
@@ -1123,20 +1118,20 @@ describe('token extractSqlFromNftTokensRequest tests', () => {
     const accountId = '5';
     const serialNum = '2';
     const limit = '3';
-    const order = orderFilterValues.ASC;
+    const order = constants.orderFilterValues.ASC;
     const filters = [
       {
-        key: filterKeys.ACCOUNT_ID,
+        key: constants.filterKeys.ACCOUNT_ID,
         operator: ' = ',
         value: accountId,
       },
       {
-        key: filterKeys.SERIAL_NUMBER,
+        key: constants.filterKeys.SERIAL_NUMBER,
         operator: ' = ',
         value: serialNum,
       },
-      {key: filterKeys.LIMIT, operator: ' = ', value: limit},
-      {key: filterKeys.ORDER, operator: ' = ', value: order},
+      {key: constants.filterKeys.LIMIT, operator: ' = ', value: limit},
+      {key: constants.filterKeys.ORDER, operator: ' = ', value: order},
     ];
 
     const expectedQuery = `select nft.account_id,
@@ -1252,7 +1247,7 @@ describe('token validateTokenIdParam tests', () => {
 });
 
 describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
-  const getExpectedQuery = (order = orderFilterValues.DESC, timestampFilters = []) => {
+  const getExpectedQuery = (order = constants.orderFilterValues.DESC, timestampFilters = []) => {
     let paramIndex = 3;
     const transferTimestampCondition = timestampFilters
       .map((f) => `nft_tr.consensus_timestamp ${f.operator} $${paramIndex++}`)
@@ -1331,10 +1326,10 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
 
   test('Verify limit and order query', () => {
     const limit = '3';
-    const order = orderFilterValues.ASC;
+    const order = constants.orderFilterValues.ASC;
     const filters = [
-      {key: filterKeys.LIMIT, operator: utils.opsMap.eq, value: limit},
-      {key: filterKeys.ORDER, operator: utils.opsMap.eq, value: order},
+      {key: constants.filterKeys.LIMIT, operator: utils.opsMap.eq, value: limit},
+      {key: constants.filterKeys.ORDER, operator: utils.opsMap.eq, value: order},
     ];
 
     const expectedQuery = getExpectedQuery(order);
@@ -1347,9 +1342,9 @@ describe('token extractSqlFromNftTransferHistoryRequest tests', () => {
 
   test('Verify timestamp query', () => {
     const timestamp = 5;
-    const filters = [{key: filterKeys.TIMESTAMP, operator: utils.opsMap.gt, value: timestamp}];
+    const filters = [{key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.gt, value: timestamp}];
 
-    const expectedQuery = getExpectedQuery(orderFilterValues.DESC, filters);
+    const expectedQuery = getExpectedQuery(constants.orderFilterValues.DESC, filters);
     const expectedParams = [tokenId, serialNumber, timestamp, defaultLimit];
 
     const actual = tokens.extractSqlFromNftTransferHistoryRequest(tokenId, serialNumber, filters);
@@ -1430,7 +1425,7 @@ describe('token extractSqlFromTokenInfoRequest tests', () => {
       const expectedParams = [encodedTokenId, timestamp];
       const filters = [
         {
-          key: filterKeys.TIMESTAMP,
+          key: constants.filterKeys.TIMESTAMP,
           operator: op,
           value: timestamp,
         },
@@ -1446,12 +1441,12 @@ describe('token extractSqlFromTokenInfoRequest tests', () => {
     // honor the last one
     const filters = [
       {
-        key: filterKeys.TIMESTAMP,
+        key: constants.filterKeys.TIMESTAMP,
         operator: opsMap.lt,
         value: timestamp,
       },
       {
-        key: filterKeys.TIMESTAMP,
+        key: constants.filterKeys.TIMESTAMP,
         operator: opsMap.lte,
         value: timestamp,
       },

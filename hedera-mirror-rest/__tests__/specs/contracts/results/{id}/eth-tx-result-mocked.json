@@ -1,0 +1,74 @@
+{
+  "description": "Contract results api call for a specific contract using transactionId or ethereum transaction hash with mocked contract result",
+  "setup": {
+    "transactions": [
+      {
+        "consensus_timestamp": 167654000123456,
+        "entity_id": null,
+        "payerAccountId": "8001",
+        "result": 16,
+        "nonce": 0,
+        "type": 50,
+        "transaction_hash": "519a008fabde4d",
+        "valid_start_timestamp": 167654000123455
+      }
+    ],
+    "ethereumtransactions": [
+      {
+        "consensus_timestamp": 167654000123456,
+        "hash": "4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
+        "type": 2,
+        "to_address": "0000000000000000000000000000000000001389",
+        "payer_account_id": "8001"
+      }
+    ],
+    "recordFiles": [
+      {
+        "index": 1,
+        "gas_used": 50000000,
+        "consensus_start": 167654000123450,
+        "consensus_end": 167654000123460,
+        "hash": "6ceecd8bb224da491"
+      }
+    ]
+  },
+  "urls": [
+    "/api/v1/contracts/results/0.0.8001-167654-000123455",
+    "/api/v1/contracts/results/4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
+    "/api/v1/contracts/results/0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392"
+  ],
+  "responseStatus": 200,
+  "responseJson": {
+    "access_list": "0x",
+    "amount": 0,
+    "block_gas_used": 50000000,
+    "block_hash": "0x6ceecd8bb224da491",
+    "block_number": 1,
+    "bloom": "0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+    "call_result": "0x",
+    "chain_id": "0x",
+    "contract_id": null,
+    "created_contract_ids": [],
+    "error_message": "INVALID_CONTRACT_ID",
+    "from": "0x0000000000000000000000000000000000001f41",
+    "function_parameters": "0x",
+    "gas_limit": 1000000,
+    "gas_price": "0x4a817c80",
+    "gas_used": 0,
+    "hash": "0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
+    "logs": [],
+    "max_fee_per_gas": "0x",
+    "max_priority_fee_per_gas": "0x",
+    "nonce": 1,
+    "r": "0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042",
+    "result": "INVALID_CONTRACT_ID",
+    "s": "0x24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354",
+    "state_changes": [],
+    "status": "0x0",
+    "timestamp": "167654.000123456",
+    "to": null,
+    "transaction_index": 1,
+    "type": 2,
+    "v": 1
+  }
+}

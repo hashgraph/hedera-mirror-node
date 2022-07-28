@@ -18,16 +18,12 @@
  * ‍
  */
 
-'use strict';
+import {NetworkNodeService} from '../../service';
+import {assertSqlQueryEqual} from '../testutils';
+import integrationDomainOps from '../integrationDomainOps';
+import {setupIntegrationTest} from '../integrationUtils';
 
-const {NetworkNodeService} = require('../../service');
-const {assertSqlQueryEqual} = require('../testutils');
-
-const integrationDbOps = require('../integrationDbOps');
-const integrationDomainOps = require('../integrationDomainOps');
-
-const {defaultMochaStatements} = require('./defaultMochaStatements');
-defaultMochaStatements(jest, integrationDbOps, integrationDomainOps);
+setupIntegrationTest();
 
 const defaultNodeFilter = 'abe.node_id = $2';
 describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
@@ -40,7 +36,7 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
         order by start_consensus_timestamp desc limit 1
       ),
       ns as (
-        select max_stake,min_stake,node_id,reward_rate,stake,stake_not_rewarded,stake_rewarded,stake_total,staking_period
+        select max_stake,min_stake,node_id,reward_rate,stake,stake_not_rewarded,stake_rewarded,staking_period
         from node_stake where consensus_timestamp = (select max(consensus_timestamp) from node_stake)
       )
       select
@@ -56,10 +52,9 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
         ns.max_stake,
         ns.min_stake,
         ns.reward_rate,
-        ns.stake,
+        coalesce(ns.stake,abe.stake) as stake,
         ns.stake_not_rewarded,
         ns.stake_rewarded,
-        ns.stake_total,
         ns.staking_period,
         coalesce(
           (
@@ -88,7 +83,7 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
       order by start_consensus_timestamp desc limit 1
     ),
     ns as (
-      select max_stake,min_stake,node_id,reward_rate,stake,stake_not_rewarded,stake_rewarded,stake_total,staking_period
+      select max_stake,min_stake,node_id,reward_rate,stake,stake_not_rewarded,stake_rewarded,staking_period
       from node_stake where consensus_timestamp = (select max(consensus_timestamp) from node_stake)
     )
     select
@@ -104,10 +99,9 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
       ns.max_stake,
       ns.min_stake,
       ns.reward_rate,
-      ns.stake,
+      coalesce(ns.stake,abe.stake) as stake,
       ns.stake_not_rewarded,
       ns.stake_rewarded,
-      ns.stake_total,
       ns.staking_period,
       coalesce(
         (
@@ -150,6 +144,7 @@ const defaultInputAddressBookEntries = [
     node_account_id: 3,
     node_cert_hash: '[0,)',
     description: 'desc 1',
+    stake: 0,
   },
   {
     consensus_timestamp: 1,
@@ -158,6 +153,7 @@ const defaultInputAddressBookEntries = [
     node_account_id: 4,
     node_cert_hash: '[0,)',
     description: 'desc 2',
+    stake: 1000,
   },
   {
     consensus_timestamp: 2,
@@ -166,6 +162,7 @@ const defaultInputAddressBookEntries = [
     node_account_id: 3,
     node_cert_hash: '[0,)',
     description: 'desc 3',
+    stake: 1000,
   },
   {
     consensus_timestamp: 2,
@@ -174,6 +171,7 @@ const defaultInputAddressBookEntries = [
     node_account_id: 4,
     node_cert_hash: '[0,)',
     description: 'desc 4',
+    stake: null,
   },
 ];
 
@@ -215,7 +213,6 @@ const defaultNodeStakes = [
     stake: 1,
     stake_not_rewarded: 0,
     stake_rewarded: 1,
-    stake_total: 3,
     staking_period: 1,
   },
   {
@@ -228,7 +225,6 @@ const defaultNodeStakes = [
     stake: 2,
     stake_not_rewarded: 1,
     stake_rewarded: 1,
-    stake_total: 3,
     staking_period: 2,
   },
   {
@@ -241,7 +237,6 @@ const defaultNodeStakes = [
     stake: 3,
     stake_not_rewarded: 1,
     stake_rewarded: 2,
-    stake_total: 7,
     staking_period: 1654991999999999999n,
   },
   {
@@ -254,7 +249,6 @@ const defaultNodeStakes = [
     stake: 4,
     stake_not_rewarded: 1,
     stake_rewarded: 3,
-    stake_total: 7,
     staking_period: BigInt('1655251199999999999'),
   },
 ];
@@ -284,7 +278,6 @@ const defaultExpectedNetworkNode101 = [
       stake: 4,
       stakeNotRewarded: 1,
       stakeRewarded: 3,
-      stakeTotal: 7,
       stakingPeriod: 1655251199999999999n,
     },
   },
@@ -313,7 +306,6 @@ const defaultExpectedNetworkNode101 = [
       stake: 3,
       stakeNotRewarded: 1,
       stakeRewarded: 2,
-      stakeTotal: 7,
       stakingPeriod: 1654991999999999999n,
     },
   },
@@ -345,7 +337,6 @@ const defaultExpectedNetworkNode102 = [
       stake: 3,
       stakeNotRewarded: 1,
       stakeRewarded: 2,
-      stakeTotal: 7,
       stakingPeriod: 1654991999999999999n,
     },
   },
@@ -374,7 +365,6 @@ const defaultExpectedNetworkNode102 = [
       stake: 4,
       stakeNotRewarded: 1,
       stakeRewarded: 3,
-      stakeTotal: 7,
       stakingPeriod: 1655251199999999999n,
     },
   },
@@ -401,9 +391,8 @@ const defaultExpectedNetworkNodeEmptyNodeStake = [
     ],
     nodeStake: {
       rewardRate: null,
-      stake: null,
+      stake: 1000,
       stakeRewarded: null,
-      stakeTotal: null,
       stakingPeriod: null,
     },
   },
@@ -429,7 +418,6 @@ const defaultExpectedNetworkNodeEmptyNodeStake = [
       rewardRate: null,
       stake: null,
       stakeRewarded: null,
-      stakeTotal: null,
       stakingPeriod: null,
     },
   },
@@ -501,7 +489,6 @@ describe('NetworkNodeService.getNetworkNodes tests node filter', () => {
         rewardRate: 3,
         stake: 3,
         stakeRewarded: 2,
-        stakeTotal: 7,
         stakingPeriod: 1654991999999999999n,
       },
     },
@@ -533,7 +520,6 @@ describe('NetworkNodeService.getNetworkNodes tests node filter', () => {
         stake: 3,
         stakeNotRewarded: 1,
         stakeRewarded: 2,
-        stakeTotal: 7,
         stakingPeriod: 1654991999999999999n,
       },
     },

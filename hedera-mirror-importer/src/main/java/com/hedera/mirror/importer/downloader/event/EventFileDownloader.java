@@ -38,16 +38,14 @@ import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
 @Named
 public class EventFileDownloader extends Downloader<EventFile> {
 
-    public EventFileDownloader(
-            S3AsyncClient s3Client, AddressBookService addressBookService,
-            EventDownloaderProperties downloaderProperties,
-            MeterRegistry meterRegistry, EventFileReader eventFileReader,
-            NodeSignatureVerifier nodeSignatureVerifier, SignatureFileReader signatureFileReader,
-            StreamFileNotifier streamFileNotifier,
-            MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor) {
-        super(s3Client, addressBookService, downloaderProperties, meterRegistry,
-                nodeSignatureVerifier, signatureFileReader, eventFileReader, streamFileNotifier,
-                mirrorDateRangePropertiesProcessor);
+    public EventFileDownloader(AddressBookService addressBookService, EventDownloaderProperties downloaderProperties,
+                               MeterRegistry meterRegistry,
+                               MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor,
+                               NodeSignatureVerifier nodeSignatureVerifier, S3AsyncClient s3Client,
+                               SignatureFileReader signatureFileReader,
+                               EventFileReader eventFileReader, StreamFileNotifier streamFileNotifier) {
+        super(addressBookService, downloaderProperties, meterRegistry, mirrorDateRangePropertiesProcessor,
+                nodeSignatureVerifier, s3Client, signatureFileReader, eventFileReader, streamFileNotifier);
     }
 
     @Override

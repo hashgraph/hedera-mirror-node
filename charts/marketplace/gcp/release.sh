@@ -20,8 +20,8 @@ fi
 
 target_tag="${target_tag#v}" # Strip v prefix if present
 target_tag_minor="${target_tag%\.*}"
-bats_tag="1.6.0"
-postgresql_tag="14.2.0-debian-10-r72"
+bats_tag="1.7.0"
+postgresql_tag="14.4.0-debian-11-r9"
 registry="gcr.io/mirror-node-public/hedera-mirror-node"
 
 function retag() {
@@ -49,7 +49,7 @@ function retag() {
 sed -i .bak "s/version: .*/version: ${target_tag}/" values.yaml
 
 # Build Marketplace deployer image
-docker build -f ./Dockerfile -t "${registry}/deployer:${target_tag}" --build-arg tag="${target_tag}" ../..
+docker build -f ./Dockerfile -t "${registry}/deployer:${target_tag}" --build-arg TAG="${target_tag}" ../..
 docker push "${registry}/deployer:${target_tag}"
 
 # Retag other images

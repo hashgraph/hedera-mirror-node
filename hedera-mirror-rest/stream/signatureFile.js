@@ -18,13 +18,10 @@
  * ‍
  */
 
-'use strict';
-
-const {BYTE_SIZE, INT_SIZE} = require('./constants');
-const {SHA_384} = require('./hashObject');
-const HashObject = require('./hashObject');
-const SignatureObject = require('./signatureObject');
-const {readLengthAndBytes, readNBytes} = require('./utils');
+import {BYTE_SIZE, INT_SIZE} from './constants';
+import HashObject from './hashObject';
+import SignatureObject from './signatureObject';
+import {readLengthAndBytes, readNBytes} from './utils';
 
 // version, object stream signature version
 const V5_FILE_HASH_OFFSET = BYTE_SIZE + INT_SIZE;
@@ -53,9 +50,9 @@ class SignatureFile {
   _parseV2SignatureFile(buffer) {
     // skip type, already checked
     buffer = buffer.slice(BYTE_SIZE);
-    this.fileHash = readNBytes(buffer, SHA_384.length);
+    this.fileHash = readNBytes(buffer, HashObject.SHA_384.length);
 
-    buffer = buffer.slice(SHA_384.length);
+    buffer = buffer.slice(HashObject.SHA_384.length);
     const type = buffer.readInt8();
     if (type !== 3) {
       throw new Error(`Unexpected type delimiter '${type}' in signature file`);
@@ -91,4 +88,4 @@ class SignatureFile {
   }
 }
 
-module.exports = SignatureFile;
+export default SignatureFile;

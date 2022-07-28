@@ -74,9 +74,9 @@ func configLogger(level string) {
 // ref: https://www.rosetta-api.org/docs/node_deployment.html#online-mode-endpoints
 func newBlockchainOnlineRouter(
 	asserter *rosettaAsserter.Asserter,
-	config config.Config,
 	dbClient interfaces.DbClient,
 	network *rTypes.NetworkIdentifier,
+	rosettaConfig *config.Config,
 	version *rTypes.Version,
 ) (http.Handler, error) {
 	accountRepo := persistence.NewAccountRepository(dbClient)
@@ -89,18 +89,19 @@ func newBlockchainOnlineRouter(
 	networkAPIService := services.NewNetworkAPIService(baseService, addressBookEntryRepo, network, version)
 	networkAPIController := server.NewNetworkAPIController(networkAPIService, asserter)
 
-	blockAPIService := services.NewBlockAPIService(baseService)
+	blockAPIService := services.NewBlockAPIService(accountRepo, baseService, rosettaConfig.Cache[config.EntityCacheKey])
 	blockAPIController := server.NewBlockAPIController(blockAPIService, asserter)
 
 	mempoolAPIService := services.NewMempoolAPIService()
 	mempoolAPIController := server.NewMempoolAPIController(mempoolAPIService, asserter)
 
 	constructionAPIService, err := services.NewConstructionAPIService(
+		accountRepo,
 		baseService,
 		network.Network,
-		config.Nodes,
-		config.Shard,
-		config.Realm,
+		rosettaConfig.Nodes,
+		rosettaConfig.Shard,
+		rosettaConfig.Realm,
 		construction.NewTransactionConstructor(),
 	)
 	if err != nil {
@@ -108,9 +109,9 @@ func newBlockchainOnlineRouter(
 	}
 	constructionAPIController := server.NewConstructionAPIController(constructionAPIService, asserter)
 
-	accountAPIService := services.NewAccountAPIService(baseService, accountRepo, config.Shard, config.Realm)
+	accountAPIService := services.NewAccountAPIService(baseService, accountRepo, rosettaConfig.Shard, rosettaConfig.Realm)
 	accountAPIController := server.NewAccountAPIController(accountAPIService, asserter)
-	healthController, err := middleware.NewHealthController(config.Db)
+	healthController, err := middleware.NewHealthController(rosettaConfig.Db)
 	metricsController := middleware.NewMetricsController()
 	if err != nil {
 		return nil, err
@@ -132,25 +133,26 @@ func newBlockchainOnlineRouter(
 // ref: https://www.rosetta-api.org/docs/node_deployment.html#offline-mode-endpoints
 func newBlockchainOfflineRouter(
 	asserter *rosettaAsserter.Asserter,
-	config config.Config,
 	network *rTypes.NetworkIdentifier,
+	rosettaConfig *config.Config,
 	version *rTypes.Version,
 ) (http.Handler, error) {
 	baseService := services.NewOfflineBaseService()
 
 	constructionAPIService, err := services.NewConstructionAPIService(
+		nil,
 		baseService,
 		network.Network,
-		config.Nodes,
-		config.Shard,
-		config.Realm,
+		rosettaConfig.Nodes,
+		rosettaConfig.Shard,
+		rosettaConfig.Realm,
 		construction.NewTransactionConstructor(),
 	)
 	if err != nil {
 		return nil, err
 	}
 	constructionAPIController := server.NewConstructionAPIController(constructionAPIService, asserter)
-	healthController, err := middleware.NewHealthController(config.Db)
+	healthController, err := middleware.NewHealthController(rosettaConfig.Db)
 	if err != nil {
 		return nil, err
 	}
@@ -177,9 +179,12 @@ func main() {
 	network := &rTypes.NetworkIdentifier{
 		Blockchain: types.Blockchain,
 		Network:    strings.ToLower(rosettaConfig.Network),
-		SubNetworkIdentifier: &rTypes.SubNetworkIdentifier{
+	}
+
+	if rosettaConfig.Feature.SubNetworkIdentifier {
+		network.SubNetworkIdentifier = &rTypes.SubNetworkIdentifier{
 			Network: fmt.Sprintf("shard %d realm %d", rosettaConfig.Shard, rosettaConfig.Realm),
-		},
+		}
 	}
 
 	version := &rTypes.Version{
@@ -205,14 +210,14 @@ func main() {
 	if rosettaConfig.Online {
 		dbClient := db.ConnectToDb(rosettaConfig.Db)
 
-		router, err = newBlockchainOnlineRouter(asserter, *rosettaConfig, dbClient, network, version)
+		router, err = newBlockchainOnlineRouter(asserter, dbClient, network, rosettaConfig, version)
 		if err != nil {
 			log.Fatal(err)
 		}
 
 		log.Info("Serving Rosetta API in ONLINE mode")
 	} else {
-		router, err = newBlockchainOfflineRouter(asserter, *rosettaConfig, network, version)
+		router, err = newBlockchainOfflineRouter(asserter, network, rosettaConfig, version)
 		if err != nil {
 			log.Fatal(err)
 		}

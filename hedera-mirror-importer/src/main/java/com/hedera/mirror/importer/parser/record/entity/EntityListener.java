@@ -20,8 +20,10 @@ package com.hedera.mirror.importer.parser.record.entity;
  * ‍
  */
 
+import com.hedera.mirror.common.domain.addressbook.NetworkStake;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
 import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
@@ -43,6 +45,7 @@ import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
+import com.hedera.mirror.common.domain.transaction.Prng;
 import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
@@ -61,6 +64,9 @@ public interface EntityListener {
     }
 
     default void onContract(Contract contract) {
+    }
+
+    default void onContractAction(ContractAction contractAction) {
     }
 
     default void onContractLog(ContractLog contractLog) {
@@ -93,6 +99,9 @@ public interface EntityListener {
     default void onLiveHash(LiveHash liveHash) throws ImporterException {
     }
 
+    default void onNetworkStake(NetworkStake networkStake) throws ImporterException {
+    }
+
     default void onNft(Nft nft) throws ImporterException {
     }
 
@@ -106,6 +115,9 @@ public interface EntityListener {
     }
 
     default void onNonFeeTransfer(NonFeeTransfer nonFeeTransfer) throws ImporterException {
+    }
+
+    default void onPrng(Prng prng) {
     }
 
     default void onSchedule(Schedule schedule) throws ImporterException {

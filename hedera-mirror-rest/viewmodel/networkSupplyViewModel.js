@@ -18,9 +18,7 @@
  * ‍
  */
 
-'use strict';
-
-const utils = require('../utils');
+import {nsToSecNs} from '../utils';
 
 /**
  * Network supply view model
@@ -38,9 +36,9 @@ class NetworkSupplyViewModel {
 
     // Convert numbers to string since Express doesn't support BigInt
     this.released_supply = `${releasedSupply}`;
-    this.timestamp = utils.nsToSecNs(networkSupply.consensus_timestamp);
+    this.timestamp = nsToSecNs(networkSupply.consensus_timestamp);
     this.total_supply = `${totalSupply}`;
   }
 }
 
-module.exports = NetworkSupplyViewModel;
+export default NetworkSupplyViewModel;

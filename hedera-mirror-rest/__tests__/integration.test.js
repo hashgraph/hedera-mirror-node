@@ -18,8 +18,6 @@
  * ‍
  */
 
-'use strict';
-
 /**
  * Integration tests for the rest-api and postgresql database.
  * Tests will be performed using either a docker postgres instance managed by the testContainers module or
@@ -41,50 +39,32 @@
  * in the specs/ dir.
  */
 // external libraries
-const S3 = require('aws-sdk/clients/s3');
-const crypto = require('crypto');
-const fs = require('fs');
-const _ = require('lodash');
-const path = require('path');
-const request = require('supertest');
+import S3 from 'aws-sdk/clients/s3';
+import crypto from 'crypto';
+import fs from 'fs';
+import {jest} from '@jest/globals';
+import _ from 'lodash';
+import path from 'path';
+import request from 'supertest';
 
-const integrationDbOps = require('./integrationDbOps');
-const integrationDomainOps = require('./integrationDomainOps');
-const {S3Ops} = require('./integrationS3Ops');
-const config = require('../config');
-const {cloudProviders} = require('../constants');
-const EntityId = require('../entityId');
-const server = require('../server');
-const transactions = require('../transactions');
-const {JSONParse} = require('../utils');
+import integrationDbOps from './integrationDbOps';
+import integrationDomainOps from './integrationDomainOps';
+import IntegrationS3Ops from './integrationS3Ops';
+import config from '../config';
+import {cloudProviders} from '../constants';
+import EntityId from '../entityId';
+import server from '../server';
+import {getModuleDirname} from './testutils';
+import transactions from '../transactions';
+import {JSONParse} from '../utils';
+import {defaultBeforeAllTimeoutMillis, setupIntegrationTest} from './integrationUtils';
 
-jest.setTimeout(40000);
-
-let dbConfig;
-
-// set a large timeout for beforeAll as downloading docker image if not exists can take quite some time. Note
-// it's 12 minutes for CI to workaround possible DockerHub rate limit.
-const defaultBeforeAllTimeoutMillis = process.env.CI ? 12 * 60 * 1000 : 4 * 60 * 1000;
-
-beforeAll(async () => {
-  dbConfig = await integrationDbOps.instantiateDatabase();
-}, defaultBeforeAllTimeoutMillis);
-
-afterAll(async () => {
-  await integrationDbOps.closeConnection(dbConfig);
-});
+setupIntegrationTest();
 
 beforeEach(async () => {
-  if (!dbConfig.sqlConnection) {
-    logger.warn(`sqlConnection undefined, acquire new connection`);
-    dbConfig.sqlConnection = integrationDbOps.getConnection(dbConfig.dbSessionConfig);
-  }
-
-  await integrationDbOps.cleanUp(dbConfig.sqlConnection);
   await setupData();
 });
 
-//
 // TEST DATA
 // shard 0, realm 15, accounts 1-10
 // 3 balances per account
@@ -96,11 +76,11 @@ const defaultRealm = 15;
  * Setup test data in the postgres instance.
  */
 const setupData = async () => {
-  const testDataPath = path.join(__dirname, 'integration_test_data.json');
+  const testDataPath = path.join(getModuleDirname(import.meta), 'integration_test_data.json');
   const testData = fs.readFileSync(testDataPath);
   const testDataJson = JSONParse(testData);
 
-  await integrationDomainOps.setUp(testDataJson.setup, dbConfig.sqlConnection);
+  await integrationDomainOps.setup(testDataJson.setup);
 
   logger.info('Finished initializing DB data');
 };
@@ -218,19 +198,19 @@ const expectedTransactionRowsMap = expectedTransactionRowsDesc.reduce((m, row) =
 
 test('DB integration test - transactions.reqToSql - no query string - 3 txn 9 xfers', async () => {
   const sql = transactions.reqToSql({query: {}});
-  const res = await integrationDbOps.runSqlQuery(dbConfig.sqlConnection, sql.query, sql.params);
+  const res = await pool.query(sql.query, sql.params);
   expect(mapTransactionResults(res.rows)).toEqual(expectedTransactionRowsDesc);
 });
 
 test('DB integration test - transactions.reqToSql - single valid account - 1 txn 3 xfers', async () => {
   const sql = transactions.reqToSql({query: {'account.id': `${defaultShard}.${defaultRealm}.8`}});
-  const res = await integrationDbOps.runSqlQuery(dbConfig.sqlConnection, sql.query, sql.params);
+  const res = await pool.query(sql.query, sql.params);
   expect(mapTransactionResults(res.rows)).toEqual([expectedTransactionRowsMap['1052']]);
 });
 
 test('DB integration test - transactions.reqToSql - invalid account', async () => {
   const sql = transactions.reqToSql({query: {'account.id': '0.17.666'}});
-  const res = await integrationDbOps.runSqlQuery(dbConfig.sqlConnection, sql.query, sql.params);
+  const res = await pool.query(sql.query, sql.params);
   expect(res.rowCount).toEqual(0);
 });
 
@@ -240,7 +220,7 @@ test('DB integration test - transactions.reqToSql - null validDurationSeconds an
   await addCryptoTransferTransaction(1064, '0.15.5', '0.15.4', 70, null, null); // valid validDurationSeconds and maxFee
 
   const sql = transactions.reqToSql({query: {'account.id': '0.15.5'}});
-  const res = await integrationDbOps.runSqlQuery(dbConfig.sqlConnection, sql.query, sql.params);
+  const res = await pool.query(sql.query, sql.params);
   expect(extractDurationAndMaxFeeFromTransactionResults(res.rows)).toEqual(['null, null', 'null, 777', '5, null']);
 });
 
@@ -274,7 +254,7 @@ test('DB integration test - transactions.reqToSql - Account range filtered trans
   ];
 
   const sql = transactions.reqToSql({query: {'account.id': ['gte:0.15.70', 'lte:0.15.97']}});
-  const res = await integrationDbOps.runSqlQuery(dbConfig.sqlConnection, sql.query, sql.params);
+  const res = await pool.query(sql.query, sql.params);
 
   // 2 transactions, each with 3 transfers, are applicable. For each transfer negative amount from self, amount to
   // recipient and fee to bank. Note bank is out of desired range but is expected in query result
@@ -283,7 +263,7 @@ test('DB integration test - transactions.reqToSql - Account range filtered trans
 
 describe('DB integration test - spec based', () => {
   const bucketName = 'hedera-demo-streams';
-  const s3TestDataRoot = path.join(__dirname, 'data', 's3');
+  const s3TestDataRoot = path.join(getModuleDirname(import.meta), 'data', 's3');
 
   let configOverridden = false;
   let configClone;
@@ -303,22 +283,19 @@ describe('DB integration test - spec based', () => {
     };
   };
 
-  const walk = async (dir) => {
-    let files = await fs.promises.readdir(dir);
-    files = await Promise.all(
-      files.map(async (file) => {
-        const filePath = path.join(dir, file);
-        const stats = await fs.promises.stat(filePath);
-        if (stats.isDirectory()) {
-          return walk(filePath);
-        }
-        if (stats.isFile()) {
-          return filePath;
-        }
-      })
-    );
+  const walk = function (dir, files = []) {
+    for (const f of fs.readdirSync(dir)) {
+      const p = path.join(dir, f);
+      const stat = fs.statSync(p);
 
-    return files.reduce((all, folderContents) => all.concat(folderContents), []);
+      if (stat.isDirectory()) {
+        walk(p, files);
+      } else {
+        files.push(p);
+      }
+    }
+
+    return files;
   };
 
   const uploadFilesToS3 = async (endpoint) => {
@@ -341,7 +318,7 @@ describe('DB integration test - spec based', () => {
 
     logger.debug('uploading file objects to mock s3 service');
     const s3ObjectKeys = [];
-    for (const filePath of await walk(dataPath)) {
+    for (const filePath of walk(dataPath)) {
       const s3ObjectKey = path.relative(dataPath, filePath);
       const fileStream = fs.createReadStream(filePath);
       await s3client
@@ -360,7 +337,7 @@ describe('DB integration test - spec based', () => {
   jest.setTimeout(40000);
 
   beforeAll(async () => {
-    s3Ops = new S3Ops();
+    s3Ops = new IntegrationS3Ops();
     await s3Ops.start();
     configS3ForStateProof(s3Ops.getEndpointUrl());
     await uploadFilesToS3(s3Ops.getEndpointUrl());
@@ -377,10 +354,10 @@ describe('DB integration test - spec based', () => {
     }
 
     for (const sqlScript of sqlScripts) {
-      const sqlScriptPath = path.join(__dirname, pathPrefix || '', sqlScript);
+      const sqlScriptPath = path.join(getModuleDirname(import.meta), pathPrefix || '', sqlScript);
       const script = fs.readFileSync(sqlScriptPath, 'utf8');
       logger.debug(`loading sql script ${sqlScript}`);
-      await integrationDbOps.runSqlQuery(dbConfig.sqlConnection, script);
+      await pool.query(script);
     }
   };
 
@@ -391,9 +368,9 @@ describe('DB integration test - spec based', () => {
 
     for (const sqlFunc of sqlFuncs) {
       // path.join returns normalized path, the sqlFunc is a local js file so add './'
-      const func = require(`./${path.join(pathPrefix || '', sqlFunc)}`);
+      const func = (await import(`./${path.join(pathPrefix || '', sqlFunc)}`)).default;
       logger.debug(`running sql func in ${sqlFunc}`);
-      await func.apply(null, [dbConfig.sqlConnection]);
+      await func.apply(null);
     }
   };
 
@@ -414,8 +391,8 @@ describe('DB integration test - spec based', () => {
   };
 
   const specSetupSteps = async (spec) => {
-    await integrationDbOps.cleanUp(dbConfig.sqlConnection);
-    await integrationDomainOps.setUp(spec, dbConfig.sqlConnection);
+    await integrationDbOps.cleanUp();
+    await integrationDomainOps.setup(spec);
     if (spec.sql) {
       await loadSqlScripts(spec.sql.pathprefix, spec.sql.scripts);
       await runSqlFuncs(spec.sql.pathprefix, spec.sql.funcs);
@@ -453,6 +430,25 @@ describe('DB integration test - spec based', () => {
     restoreConfig();
   });
 
+  const getSpecs = () => {
+    const specPath = path.join(getModuleDirname(import.meta), 'specs');
+    const specMap = new Map();
+
+    walk(specPath)
+      .filter((f) => f.endsWith('.json'))
+      .forEach((f) => {
+        const specText = fs.readFileSync(f, 'utf8');
+        const spec = JSONParse(specText);
+        spec.file = path.basename(f);
+        const key = path.dirname(f).replace(specPath, '');
+        const specs = specMap.get(key) || [];
+        specs.push(spec);
+        specMap.set(key, specs);
+      });
+
+    return specMap;
+  };
+
   const getTests = (spec) => {
     const tests = spec.tests || [
       {
@@ -471,28 +467,25 @@ describe('DB integration test - spec based', () => {
     );
   };
 
-  const specPath = path.join(__dirname, 'specs');
-  // process applicable .json spec files
-  fs.readdirSync(specPath)
-    .filter((f) => f.endsWith('.json'))
-    .forEach((file) => {
-      const p = path.join(specPath, file);
-      const specText = fs.readFileSync(p, 'utf8');
-      const spec = JSONParse(specText);
-      const tests = getTests(spec);
+  getSpecs().forEach((specs, dir) => {
+    describe(`${dir}`, () => {
+      specs.forEach((spec) => {
+        describe(`${spec.file}`, () => {
+          getTests(spec).forEach((tt) => {
+            test(`${tt.url}`, async () => {
+              await specSetupSteps(spec.setup);
+              const response = await request(server).get(tt.url);
 
-      tests.forEach((tt) =>
-        test(`DB integration test - ${file} - ${tt.url}`, async () => {
-          await specSetupSteps(spec.setup);
-          const response = await request(server).get(tt.url);
-
-          expect(response.status).toEqual(tt.responseStatus);
-          let jsonObj = response.text === '' ? {} : JSONParse(response.text);
-          if (response.status === 200 && file.startsWith('stateproof')) {
-            jsonObj = transformStateProofResponse(jsonObj);
-          }
-          expect(jsonObj).toEqual(tt.responseJson);
-        })
-      );
+              expect(response.status).toEqual(tt.responseStatus);
+              let jsonObj = response.text === '' ? {} : JSONParse(response.text);
+              if (response.status === 200 && dir.endsWith('stateproof')) {
+                jsonObj = transformStateProofResponse(jsonObj);
+              }
+              expect(jsonObj).toEqual(tt.responseJson);
+            });
+          });
+        });
+      });
     });
+  });
 });

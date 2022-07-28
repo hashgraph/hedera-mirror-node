@@ -30,6 +30,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.schedule.Schedule;
+import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.importer.IntegrationTest;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -65,6 +66,14 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
     }
 
     @Test
+    void customCoalesceColumn() {
+        var sql = "case when total_supply >= 0 then total_supply else e_total_supply + coalesce(total_supply, 0) end";
+        UpsertQueryGenerator generator = factory.get(Token.class);
+        assertThat(generator).isInstanceOf(GenericUpsertQueryGenerator.class);
+        assertThat(format(generator.getInsertQuery())).containsIgnoringWhitespaces(sql);
+    }
+
+    @Test
     void getInsertQueryHistory() {
         UpsertQueryGenerator generator = factory.get(Contract.class);
         assertThat(generator).isInstanceOf(GenericUpsertQueryGenerator.class);
@@ -89,6 +98,7 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                 "    e.proxy_account_id as e_proxy_account_id," +
                 "    e.public_key as e_public_key," +
                 "    e.realm as e_realm," +
+                "    e.runtime_bytecode as e_runtime_bytecode," +
                 "    e.shard as e_shard," +
                 "    e.stake_period_start as e_stake_period_start," +
                 "    e.staked_account_id as e_staked_account_id," +
@@ -122,6 +132,7 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                 "      proxy_account_id," +
                 "      public_key," +
                 "      realm," +
+                "      runtime_bytecode," +
                 "      shard," +
                 "      stake_period_start," +
                 "      staked_account_id," +
@@ -149,6 +160,7 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                 "    e_proxy_account_id," +
                 "    e_public_key," +
                 "    e_realm," +
+                "    e_runtime_bytecode," +
                 "    e_shard," +
                 "    e_stake_period_start," +
                 "    e_staked_account_id," +
@@ -186,6 +198,7 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                 "      proxy_account_id," +
                 "      public_key," +
                 "      realm," +
+                "      runtime_bytecode," +
                 "      shard," +
                 "      stake_period_start," +
                 "      staked_account_id," +
@@ -221,6 +234,7 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                 "    coalesce(proxy_account_id, e_proxy_account_id, null)," +
                 "    coalesce(public_key, e_public_key, null)," +
                 "    coalesce(realm, e_realm, null)," +
+                "    coalesce(runtime_bytecode, e_runtime_bytecode, null)," +
                 "    coalesce(shard, e_shard, null)," +
                 "    coalesce(stake_period_start, e_stake_period_start, '-1')," +
                 "    coalesce(staked_account_id, e_staked_account_id, null)," +
@@ -254,6 +268,7 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                 "    proxy_account_id," +
                 "    public_key," +
                 "    realm," +
+                "    runtime_bytecode," +
                 "    shard," +
                 "    stake_period_start," +
                 "    staked_account_id," +
@@ -289,6 +304,7 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                 "  coalesce(proxy_account_id, e_proxy_account_id, null)," +
                 "  coalesce(public_key, e_public_key, null)," +
                 "  coalesce(realm, e_realm, null)," +
+                "  coalesce(runtime_bytecode, e_runtime_bytecode, null)," +
                 "  coalesce(shard, e_shard, null)," +
                 "  coalesce(stake_period_start, e_stake_period_start, '-1')," +
                 "  coalesce(staked_account_id, e_staked_account_id, null)," +
@@ -320,6 +336,7 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                 "  permanent_removal = excluded.permanent_removal," +
                 "  proxy_account_id = excluded.proxy_account_id," +
                 "  public_key = excluded.public_key," +
+                "  runtime_bytecode = excluded.runtime_bytecode," +
                 "  stake_period_start = excluded.stake_period_start," +
                 "  staked_account_id = excluded.staked_account_id," +
                 "  staked_node_id = excluded.staked_node_id," +

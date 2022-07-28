@@ -18,17 +18,12 @@
  * ‍
  */
 
-'use strict';
+import AWSMock from 'aws-sdk-mock';
+import querystring from 'querystring';
 
-const log4js = require('log4js');
-const AWSMock = require('aws-sdk-mock');
-const querystring = require('querystring');
-const {createS3Client} = require('../s3client');
-const config = require('../config');
-const {cloudProviders, defaultCloudProviderEndpoints} = require('../constants');
-
-// create a minimal global logger for createS3Client to log errors.
-global.logger = log4js.getLogger();
+import config from '../config';
+import {cloudProviders, defaultCloudProviderEndpoints} from '../constants';
+import s3client from '../s3client';
 
 const defaultValidStreamsConfig = {
   cloudProvider: cloudProviders.S3,
@@ -167,7 +162,7 @@ describe('createS3Client with valid config', () => {
   testSpecs.forEach((spec) => {
     test(spec.name, async () => {
       overrideStreamsConfig(spec.override);
-      const s3Client = createS3Client();
+      const s3Client = s3client.createS3Client();
       await verifyForSuccess(config.stateproof.streams, s3Client);
     });
   });
@@ -195,7 +190,7 @@ describe('S3Client.getObject', () => {
   });
 
   test('with credentials provided', async () => {
-    const s3Client = createS3Client();
+    const s3Client = s3client.createS3Client();
     await new Promise((resolve) => {
       s3Client.getObject(params, (err, data) => {
         expect(data).toEqual(getObjectMessage);
@@ -206,7 +201,7 @@ describe('S3Client.getObject', () => {
 
   test('without credentials', async () => {
     overrideStreamsConfig({secretKey: ''});
-    const s3Client = createS3Client();
+    const s3Client = s3client.createS3Client();
     await new Promise((resolve) => {
       s3Client.getObject(params, (err, data) => {
         expect(data).toEqual(makeUnauthenticatedRequestMessage);

@@ -13,6 +13,8 @@ select create_distributed_table('entity', 'id');
 -- Tables that will be colocated with tables above
 select create_distributed_table('account_balance', 'account_id', colocate_with => 'entity');
 
+select create_distributed_table('contract_action', 'caller', colocate_with => 'entity');
+
 select create_distributed_table('contract_history', 'id', colocate_with => 'contract');
 
 select create_distributed_table('contract_log', 'payer_account_id', colocate_with => 'entity');

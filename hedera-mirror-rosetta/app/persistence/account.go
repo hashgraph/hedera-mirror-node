@@ -25,6 +25,7 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
@@ -34,6 +35,7 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/jackc/pgtype"
 	log "github.com/sirupsen/logrus"
+	"gorm.io/gorm"
 )
 
 const (
@@ -109,7 +111,8 @@ const (
                                     from abm
                                     left join account_balance ab
                                       on ab.consensus_timestamp = abm.max and ab.account_id = @account_id`
-	selectCryptoEntityByAlias = `select id, deleted, timestamp_range
+	selectCryptoEntityWithAliasById = "select alias, id from entity where id = @id"
+	selectCryptoEntityByAlias       = `select id, deleted, timestamp_range
                                  from entity
                                  where alias = @alias and timestamp_range @> @consensus_end
                                  union all
@@ -117,6 +120,8 @@ const (
                                  from entity_history
                                  where alias = @alias and timestamp_range @> @consensus_end
                                  order by timestamp_range desc`
+	selectCurrentCryptoEntityByAlias = `select id from entity
+                                 where alias = @alias and (deleted is null or deleted is false)`
 	selectCryptoEntityById = `select id, deleted, timestamp_range
                               from entity
                               where type = 'ACCOUNT' and id = @id
@@ -161,6 +166,56 @@ type accountRepository struct {
 // NewAccountRepository creates an instance of a accountRepository struct
 func NewAccountRepository(dbClient interfaces.DbClient) interfaces.AccountRepository {
 	return &accountRepository{dbClient}
+}
+
+func (ar *accountRepository) GetAccountAlias(ctx context.Context, accountId types.AccountId) (
+	zero types.AccountId,
+	_ *rTypes.Error,
+) {
+	db, cancel := ar.dbClient.GetDbWithContext(ctx)
+	defer cancel()
+
+	var entity domain.Entity
+	if err := db.Raw(selectCryptoEntityWithAliasById, sql.Named("id", accountId.GetId())).First(&entity).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return accountId, nil
+		}
+
+		return zero, hErrors.ErrDatabaseError
+	}
+
+	if len(entity.Alias) == 0 {
+		return accountId, nil
+	}
+
+	if accountAlias, err := types.NewAccountIdFromEntity(entity); err == nil {
+		return accountAlias, nil
+	}
+
+	return zero, hErrors.ErrInternalServerError
+}
+
+func (ar *accountRepository) GetAccountId(ctx context.Context, accountId types.AccountId) (
+	zero types.AccountId,
+	_ *rTypes.Error,
+) {
+	if !accountId.HasAlias() {
+		return accountId, nil
+	}
+
+	db, cancel := ar.dbClient.GetDbWithContext(ctx)
+	defer cancel()
+
+	var entity domain.Entity
+	if err := db.Raw(selectCurrentCryptoEntityByAlias, sql.Named("alias", accountId.GetNetworkAlias())).First(&entity).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return zero, hErrors.ErrAccountNotFound
+		}
+
+		return zero, hErrors.ErrDatabaseError
+	}
+
+	return types.NewAccountIdFromEntityId(entity.Id), nil
 }
 
 func (ar *accountRepository) RetrieveBalanceAtBlock(

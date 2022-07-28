@@ -52,21 +52,10 @@ public class AccountFeature extends AbstractFeature {
     private final AccountClient accountClient;
     private final MirrorNodeClient mirrorClient;
 
-    private long balance;
     private AccountId ownerAccountId;
     private AccountId receiverAccountId;
     private ExpandedAccountId senderAccountId;
     private long startingBalance;
-
-    @When("I request balance info for this account")
-    public void getAccountBalance() {
-        balance = accountClient.getBalance();
-    }
-
-    @Then("the crypto balance should be greater than or equal to {long}")
-    public void isGreaterOrEqualThan(long threshold) {
-        assertTrue(balance >= threshold);
-    }
 
     @When("I create a new account with balance {long} tℏ")
     public void createNewAccount(long initialBalance) {

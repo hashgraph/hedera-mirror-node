@@ -145,7 +145,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         var scheduleCreate = recordItem.getTransactionBody().getScheduleCreate();
         var timestamp = recordItem.getConsensusTimestamp();
         var expectedEntity = createEntity(EntityId.of(SCHEDULE_ID), scheduleCreate.getAdminKey(), null, null, false,
-                null, scheduleCreate.getMemo(),  null, timestamp, timestamp);
+                null, scheduleCreate.getMemo(), null, timestamp, timestamp);
         var expectedSchedule = Schedule.builder()
                 .consensusTimestamp(recordItem.getConsensusTimestamp())
                 .creatorAccountId(recordItem.getPayerAccountId())
@@ -442,7 +442,8 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         var createTransactionRecord = createTransactionRecord(createdTimestamp, scheduleID, createTransactionBody,
                 SUCCESS, false);
 
-        parseRecordItemAndCommit(new RecordItem(createTransaction, createTransactionRecord));
+        var recordItem = RecordItem.builder().record(createTransactionRecord).transaction(createTransaction).build();
+        parseRecordItemAndCommit(recordItem);
     }
 
     private void insertScheduleDeleteTransaction(long timestamp, ScheduleID scheduleId) {
@@ -450,7 +451,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         var transactionBody = getTransactionBody(transaction);
         var transactionRecord = createTransactionRecord(timestamp, scheduleId, transactionBody, SUCCESS, false);
 
-        parseRecordItemAndCommit(new RecordItem(transaction, transactionRecord));
+        parseRecordItemAndCommit(RecordItem.builder().record(transactionRecord).transaction(transaction).build());
     }
 
     private void insertScheduleSign(long signTimestamp, SignatureMap signatureMap, ScheduleID scheduleID) {
@@ -459,17 +460,17 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         var signTransactionRecord = createTransactionRecord(signTimestamp, scheduleID, signTransactionBody,
                 SUCCESS, false);
 
-        parseRecordItemAndCommit(new RecordItem(signTransaction, signTransactionRecord));
+        var recordItem = RecordItem.builder().transaction(signTransaction).record(signTransactionRecord).build();
+        parseRecordItemAndCommit(recordItem);
     }
 
     private void insertScheduledTransaction(long signTimestamp, ScheduleID scheduleID,
                                             ResponseCodeEnum responseCodeEnum) {
-        Transaction scheduledTransaction = scheduledTransaction();
-        TransactionBody scheduledTransactionBody = getTransactionBody(scheduledTransaction);
-        var scheduledTransactionRecord = createTransactionRecord(signTimestamp, scheduleID, scheduledTransactionBody,
-                responseCodeEnum, true);
-
-        parseRecordItemAndCommit(new RecordItem(scheduledTransaction, scheduledTransactionRecord));
+        var transaction = scheduledTransaction();
+        var transactionBody = getTransactionBody(transaction);
+        var record = createTransactionRecord(signTimestamp, scheduleID, transactionBody, responseCodeEnum, true);
+        var recordItem = RecordItem.builder().record(record).transaction(transaction).build();
+        parseRecordItemAndCommit(recordItem);
     }
 
     private void assertScheduleInRepository(ScheduleID scheduleID, long createdTimestamp, AccountID payer,

@@ -38,10 +38,10 @@ jobs:
           java-version: 17
 
       - name: Install k3d
-        run: curl --retry 3 -fsL https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
+        run: curl --retry 3 -fsL https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
 
       - name: Create k3d cluster
-        run: k3d cluster create mirror --agents 1 --timeout 5m --registry-create registry:0.0.0.0:5001 --image rancher/k3s:v1.22.8-k3s1
+        run: k3d cluster create mirror --agents 1 --timeout 5m --registry-create registry:0.0.0.0:5001 --image rancher/k3s:v1.23.8-k3s2
         timeout-minutes: 3
 
       - name: Build images

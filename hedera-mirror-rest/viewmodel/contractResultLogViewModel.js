@@ -18,11 +18,9 @@
  * ‍
  */
 
-'use strict';
-
-const EntityId = require('../entityId');
-const constants = require('../constants');
-const utils = require('../utils');
+import EntityId from '../entityId';
+import {filterKeys} from '../constants';
+import {toHexString} from '../utils';
 
 /**
  * Contract results log view model
@@ -34,20 +32,20 @@ class ContractResultLogViewModel {
    * @param {ContractLog} contractLog
    */
   constructor(contractLog) {
-    const contractId = EntityId.parse(contractLog.contractId, {paramName: constants.filterKeys.CONTRACTID});
+    const contractId = EntityId.parse(contractLog.contractId, {paramName: filterKeys.CONTRACTID});
     Object.assign(this, {
       address: contractId.toEvmAddress(),
-      bloom: utils.toHexString(contractLog.bloom, true),
+      bloom: toHexString(contractLog.bloom, true),
       contract_id: contractId.toString(),
-      data: utils.toHexString(contractLog.data, true),
+      data: toHexString(contractLog.data, true),
       index: contractLog.index,
       topics: this._formatTopics([contractLog.topic0, contractLog.topic1, contractLog.topic2, contractLog.topic3]),
     });
   }
 
   _formatTopics(topics) {
-    return topics.filter((topic) => topic !== null).map((topic) => utils.toHexString(topic, true, 64));
+    return topics.filter((topic) => topic !== null).map((topic) => toHexString(topic, true, 64));
   }
 }
 
-module.exports = ContractResultLogViewModel;
+export default ContractResultLogViewModel;

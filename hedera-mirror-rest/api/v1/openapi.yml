@@ -77,8 +77,8 @@ paths:
         |               | gt(e)               | Y       | Single occurrence only. | ?token.id=gte:X |
         | serialnumber  | eq                  | Y       | Single occurrence only. Requires the presence of a **token.id** query | ?serialnumber=Y |
         |               | ne                  | N       | | |
-        |               | lt(e)               | Y       | Single occurrence only. Requires the presence of an **lte** **token.id** query | ?token.id=lte:X&serialnumber=lt:Y |
-        |               | gt(e)               | Y       | Single occurrence only. Requires the presence of an **gte** **token.id** query | ?token.id=gte:X&serialnumber=gt:Y |
+        |               | lt(e)               | Y       | Single occurrence only. Requires the presence of an **lte** or **eq** **token.id** query | ?token.id=lte:X&serialnumber=lt:Y |
+        |               | gt(e)               | Y       | Single occurrence only. Requires the presence of an **gte** or **eq** **token.id** query | ?token.id=gte:X&serialnumber=gt:Y |
         | spender.id    | eq                  | Y       | | ?spender.id=Z |
         |               | ne                  | N       | | |
         |               | lt(e)               | Y       | | ?spender.id=lt:Z |
@@ -156,8 +156,8 @@ paths:
         |               | gt(e)               | Y       | Single occurrence only. | ?spender.id=gte:X |
         | token.id      | eq                  | Y       | Single occurrence only. Requires the presence of a **spender.id** query | ?token.id=lt:Y |
         |               | ne                  | N       | | |
-        |               | lt(e)               | Y       | Single occurrence only. Requires the presence of an **lte** **spender.id** query | ?spender.id=lte:X&token.id=lt:Y |
-        |               | gt(e)               | Y       | Single occurrence only. Requires the presence of an **gte** **spender.id** query | ?spender.id=gte:X&token.id=gt:Y |
+        |               | lt(e)               | Y       | Single occurrence only. Requires the presence of an **lte** or **eq** **spender.id** query | ?spender.id=lte:X&token.id=lt:Y |
+        |               | gt(e)               | Y       | Single occurrence only. Requires the presence of an **gte** or **eq** **spender.id** query | ?spender.id=gte:X&token.id=gt:Y |
 
         Both filters must be a single occurrence of **gt(e)** or **lt(e)** which provide a lower and or upper boundary for search.
 
@@ -979,8 +979,6 @@ paths:
                 $ref: '#/components/schemas/Nfts'
         400:
           $ref: '#/components/responses/InvalidParameterError'
-        404:
-          $ref: '#/components/responses/NotFoundError'
       tags:
         - tokens
   /api/v1/tokens/{tokenId}/nfts/{serialNumber}:
@@ -1056,7 +1054,7 @@ tags:
     description: The tokens object represents the information associated with a token entity and returns a list of token information.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.60.0-SNAPSHOT
+  version: 0.62.0-SNAPSHOT
   license:
     name: Apache-2.0
     url: 'https://www.apache.org/licenses/LICENSE-2.0.html'
@@ -1907,8 +1905,9 @@ components:
       type: object
       properties:
         next:
-          example: null
+          example: "/api/v1/transactions?timestamp=lt:1657598275.517984411"
           nullable: true
+          type: string
     NetworkNode:
       type: object
       required:
@@ -1926,7 +1925,6 @@ components:
         - stake
         - stake_not_rewarded
         - stake_rewarded
-        - stake_total
         - staking_period
         - timestamp
       properties:
@@ -1990,11 +1988,6 @@ components:
           type: number
           format: int64
           nullable: true
-        stake_total:
-          description: The sum of all nodes' consensus weight at the beginning of the staking period
-          type: number
-          format: int64
-          nullable: true
         staking_period:
           allOf:
             - $ref: '#/components/schemas/TimestampRange'
@@ -2019,7 +2012,6 @@ components:
         stake: 20000
         stake_not_rewarded: 19900
         stake_rewarded: 100
-        stake_total: 100000
         staking_period:
           from: '1655164800.000000000'
           to: '1655251200.000000000'
@@ -2491,6 +2483,7 @@ components:
         - TOKENUPDATE
         - TOKENWIPE
         - UNCHECKEDSUBMIT
+        - UTILPRNG
     Tokens:
       type: array
       items:
@@ -2557,7 +2550,9 @@ components:
         max_fee:
           type: string
         memo_base64:
+          format: byte
           nullable: true
+          type: string
         name:
           $ref: '#/components/schemas/TransactionTypes'
         node:

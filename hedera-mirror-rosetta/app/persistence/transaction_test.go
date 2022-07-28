@@ -42,19 +42,104 @@ const (
 )
 
 var (
-	firstEntityId            = domain.MustDecodeEntityId(12345)
-	secondEntityId           = domain.MustDecodeEntityId(54321)
-	treasuryEntityId         = domain.MustDecodeEntityId(98)
-	firstAccountId           = types.NewAccountIdFromEntityId(firstEntityId)
-	secondAccountId          = types.NewAccountIdFromEntityId(secondEntityId)
-	nodeAccountId            = types.NewAccountIdFromEntityId(nodeEntityId)
-	treasuryAccountId        = types.NewAccountIdFromEntityId(treasuryEntityId)
-	tokenId1                 = domain.MustDecodeEntityId(25636)
-	tokenId2                 = domain.MustDecodeEntityId(26700)
-	tokenId3                 = domain.MustDecodeEntityId(26750) // nft
-	tokenDecimals      int64 = 10
-	tokenInitialSupply int64 = 50000
+	firstEntityId               = domain.MustDecodeEntityId(12345)
+	secondEntityId              = domain.MustDecodeEntityId(54321)
+	thirdEntityId               = domain.MustDecodeEntityId(54350)
+	newEntityId                 = domain.MustDecodeEntityId(55000)
+	feeCollectorEntityId        = domain.MustDecodeEntityId(98)
+	firstAccountId              = types.NewAccountIdFromEntityId(firstEntityId)
+	secondAccountId             = types.NewAccountIdFromEntityId(secondEntityId)
+	newAccountId                = types.NewAccountIdFromEntityId(newEntityId)
+	nodeAccountId               = types.NewAccountIdFromEntityId(nodeEntityId)
+	feeCollectorAccountId       = types.NewAccountIdFromEntityId(feeCollectorEntityId)
+	tokenId1                    = domain.MustDecodeEntityId(25636)
+	tokenId2                    = domain.MustDecodeEntityId(26700)
+	tokenId3                    = domain.MustDecodeEntityId(26750) // nft
+	tokenDecimals         int64 = 10
+	tokenInitialSupply    int64 = 50000
 )
+
+func TestCategorizeHbarTransfers(t *testing.T) {
+	tests := []struct {
+		name                     string
+		hbarTransfers            []hbarTransfer
+		nonFeeTransfers          []hbarTransfer
+		expectedFeeHbarTransfers []hbarTransfer
+		expectedNonFeeTransfers  []hbarTransfer
+	}{
+		{
+			name:                     "empty",
+			expectedFeeHbarTransfers: []hbarTransfer{},
+			expectedNonFeeTransfers:  []hbarTransfer{},
+		},
+		{
+			name: "empty non fee transfers",
+			hbarTransfers: []hbarTransfer{
+				{firstEntityId, -65},
+				{nodeEntityId, 15},
+				{feeCollectorEntityId, 50},
+			},
+			expectedFeeHbarTransfers: []hbarTransfer{
+				{firstEntityId, -65},
+				{nodeEntityId, 15},
+				{feeCollectorEntityId, 50},
+			},
+			expectedNonFeeTransfers: []hbarTransfer{},
+		},
+		{
+			name: "simple transfer lists",
+			hbarTransfers: []hbarTransfer{
+				{firstEntityId, -165},
+				{secondEntityId, 100},
+				{nodeEntityId, 15},
+				{feeCollectorEntityId, 50},
+			},
+			nonFeeTransfers: []hbarTransfer{
+				{firstEntityId, -100},
+				{secondEntityId, 100},
+			},
+			expectedFeeHbarTransfers: []hbarTransfer{
+				{firstEntityId, -65},
+				{nodeEntityId, 15},
+				{feeCollectorEntityId, 50},
+			},
+			expectedNonFeeTransfers: []hbarTransfer{
+				{firstEntityId, -100},
+				{secondEntityId, 100},
+			},
+		},
+		{
+			name: "non fee transfer not in transaction record",
+			hbarTransfers: []hbarTransfer{
+				{firstEntityId, -100499210447},
+				{secondEntityId, 99999999958},
+				{nodeEntityId, 2558345},
+				{feeCollectorEntityId, 496652144},
+			},
+			nonFeeTransfers: []hbarTransfer{
+				{firstEntityId, -100000000000},
+				{thirdEntityId, 100000000000},
+			},
+			expectedFeeHbarTransfers: []hbarTransfer{
+				{firstEntityId, -499210447},
+				{secondEntityId, 99999999958},
+				{nodeEntityId, 2558345},
+				{feeCollectorEntityId, 496652144},
+			},
+			expectedNonFeeTransfers: []hbarTransfer{
+				{firstEntityId, -100000000000},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actualFeeHbarTransfers, actualAdjustedNonFeeTransfers := categorizeHbarTransfers(tt.hbarTransfers, tt.nonFeeTransfers)
+			assert.Equal(t, tt.expectedFeeHbarTransfers, actualFeeHbarTransfers)
+			assert.Equal(t, tt.expectedNonFeeTransfers, actualAdjustedNonFeeTransfers)
+		})
+	}
+}
 
 func TestTransactionGetHashString(t *testing.T) {
 	tx := transaction{Hash: []byte{1, 2, 3, 0xaa, 0xff}}
@@ -239,14 +324,14 @@ func (suite *transactionRepositorySuite) TestFindBetweenTokenCreatedAtOrBeforeGe
 				{
 					AccountId: types.NewAccountIdFromEntityId(domain.MustDecodeEntityId(3)),
 					Amount:    &types.HbarAmount{Value: 20},
-					Type:      types.OperationTypeCryptoTransfer,
+					Type:      types.OperationTypeFee,
 					Status:    resultSuccess,
 				},
 				{
 					AccountId: types.NewAccountIdFromEntityId(domain.MustDecodeEntityId(treasury)),
 					Amount:    &types.HbarAmount{Value: -20},
 					Index:     1,
-					Type:      types.OperationTypeCryptoTransfer,
+					Type:      types.OperationTypeFee,
 					Status:    resultSuccess,
 				},
 			},
@@ -581,7 +666,7 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 			Errata: &errataTypeInsert, PayerAccountId: firstEntityId},
 		{Amount: 5, ConsensusTimestamp: consensusTimestamp, EntityId: nodeEntityId,
 			PayerAccountId: firstEntityId},
-		{Amount: 10, ConsensusTimestamp: consensusTimestamp, EntityId: treasuryEntityId,
+		{Amount: 10, ConsensusTimestamp: consensusTimestamp, EntityId: feeCollectorEntityId,
 			PayerAccountId: firstEntityId},
 	}
 	nonFeeTransfers := []domain.NonFeeTransfer{
@@ -601,7 +686,7 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 			PayerAccountId: firstEntityId},
 		{Amount: 5, ConsensusTimestamp: consensusTimestamp, EntityId: nodeEntityId,
 			PayerAccountId: firstEntityId},
-		{Amount: 10, ConsensusTimestamp: consensusTimestamp, EntityId: treasuryEntityId,
+		{Amount: 10, ConsensusTimestamp: consensusTimestamp, EntityId: feeCollectorEntityId,
 			PayerAccountId: firstEntityId},
 	}
 	addTransaction(dbClient, consensusTimestamp, nil, &nodeEntityId, firstEntityId, 11,
@@ -610,13 +695,17 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 	operations1 := types.OperationSlice{
 		{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -135}, Type: operationType, Status: resultSuccess},
 		{AccountId: secondAccountId, Amount: &types.HbarAmount{Value: 135}, Type: operationType, Status: resultSuccess},
-		{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -15}, Type: operationType, Status: resultSuccess},
-		{AccountId: nodeAccountId, Amount: &types.HbarAmount{Value: 5}, Type: operationType, Status: resultSuccess},
-		{AccountId: treasuryAccountId, Amount: &types.HbarAmount{Value: 10}, Type: operationType,
+		{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -15}, Type: types.OperationTypeFee,
 			Status: resultSuccess},
-		{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -15}, Type: operationType, Status: resultSuccess},
-		{AccountId: nodeAccountId, Amount: &types.HbarAmount{Value: 5}, Type: operationType, Status: resultSuccess},
-		{AccountId: treasuryAccountId, Amount: &types.HbarAmount{Value: 10}, Type: operationType,
+		{AccountId: nodeAccountId, Amount: &types.HbarAmount{Value: 5}, Type: types.OperationTypeFee,
+			Status: resultSuccess},
+		{AccountId: feeCollectorAccountId, Amount: &types.HbarAmount{Value: 10}, Type: types.OperationTypeFee,
+			Status: resultSuccess},
+		{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -15}, Type: types.OperationTypeFee,
+			Status: resultSuccess},
+		{AccountId: nodeAccountId, Amount: &types.HbarAmount{Value: 5}, Type: types.OperationTypeFee,
+			Status: resultSuccess},
+		{AccountId: feeCollectorAccountId, Amount: &types.HbarAmount{Value: 10}, Type: types.OperationTypeFee,
 			Status: resultSuccess},
 	}
 	expectedTransaction1 := &types.Transaction{Hash: "0x010203", Operations: operations1}
@@ -624,7 +713,7 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 	// a successful crypto transfer + token transfer transaction
 	tick(1)
 	if createTokenEntity {
-		tdomain.NewTokenBuilder(dbClient, tokenId1.EncodedId, genesisTimestamp+2, treasuryEntityId.EncodedId).
+		tdomain.NewTokenBuilder(dbClient, tokenId1.EncodedId, genesisTimestamp+2, feeCollectorEntityId.EncodedId).
 			Decimals(tokenDecimals).
 			InitialSupply(tokenInitialSupply).
 			Persist()
@@ -637,7 +726,7 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 			PayerAccountId: firstEntityId},
 		{Amount: 5, ConsensusTimestamp: consensusTimestamp, EntityId: nodeEntityId,
 			PayerAccountId: firstEntityId},
-		{Amount: 10, ConsensusTimestamp: consensusTimestamp, EntityId: treasuryEntityId,
+		{Amount: 10, ConsensusTimestamp: consensusTimestamp, EntityId: feeCollectorEntityId,
 			PayerAccountId: firstEntityId},
 	}
 	nonFeeTransfers = []domain.NonFeeTransfer{
@@ -658,9 +747,11 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 	operations2 := types.OperationSlice{
 		{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -215}, Type: operationType, Status: resultSuccess},
 		{AccountId: secondAccountId, Amount: &types.HbarAmount{Value: 215}, Type: operationType, Status: resultSuccess},
-		{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -15}, Type: operationType, Status: resultSuccess},
-		{AccountId: nodeAccountId, Amount: &types.HbarAmount{Value: 5}, Type: operationType, Status: resultSuccess},
-		{AccountId: treasuryAccountId, Amount: &types.HbarAmount{Value: 10}, Type: operationType,
+		{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -15}, Type: types.OperationTypeFee,
+			Status: resultSuccess},
+		{AccountId: nodeAccountId, Amount: &types.HbarAmount{Value: 5}, Type: types.OperationTypeFee,
+			Status: resultSuccess},
+		{AccountId: feeCollectorAccountId, Amount: &types.HbarAmount{Value: 10}, Type: types.OperationTypeFee,
 			Status: resultSuccess},
 	}
 	if createTokenEntity {
@@ -694,7 +785,7 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 			PayerAccountId: firstEntityId},
 		{Amount: 5, ConsensusTimestamp: consensusTimestamp, EntityId: nodeEntityId,
 			PayerAccountId: firstEntityId},
-		{Amount: 10, ConsensusTimestamp: consensusTimestamp, EntityId: treasuryEntityId,
+		{Amount: 10, ConsensusTimestamp: consensusTimestamp, EntityId: feeCollectorEntityId,
 			PayerAccountId: firstEntityId},
 	}
 	tokenTransfers = []domain.TokenTransfer{
@@ -718,10 +809,11 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 		EntityId: &tokenId2,
 		Hash:     "0xaaccdd",
 		Operations: types.OperationSlice{
-			{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -15}, Type: operationType,
+			{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -15}, Type: types.OperationTypeFee,
 				Status: resultSuccess},
-			{AccountId: nodeAccountId, Amount: &types.HbarAmount{Value: 5}, Type: operationType, Status: resultSuccess},
-			{AccountId: treasuryAccountId, Amount: &types.HbarAmount{Value: 10}, Type: operationType,
+			{AccountId: nodeAccountId, Amount: &types.HbarAmount{Value: 5}, Type: types.OperationTypeFee,
+				Status: resultSuccess},
+			{AccountId: feeCollectorAccountId, Amount: &types.HbarAmount{Value: 10}, Type: types.OperationTypeFee,
 				Status: resultSuccess},
 			{AccountId: firstAccountId, Type: operationType, Status: resultSuccess, Metadata: metadata},
 			{
@@ -743,7 +835,7 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 			PayerAccountId: firstEntityId},
 		{Amount: 5, ConsensusTimestamp: consensusTimestamp, EntityId: nodeEntityId,
 			PayerAccountId: firstEntityId},
-		{Amount: 10, ConsensusTimestamp: consensusTimestamp, EntityId: treasuryEntityId,
+		{Amount: 10, ConsensusTimestamp: consensusTimestamp, EntityId: feeCollectorEntityId,
 			PayerAccountId: firstEntityId},
 	}
 	addTransaction(dbClient, consensusTimestamp, &tokenId3, &nodeEntityId, firstEntityId, 22,
@@ -760,10 +852,11 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 		EntityId: &tokenId3,
 		Hash:     "0xaa1122",
 		Operations: types.OperationSlice{
-			{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -15}, Type: operationType,
+			{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -15}, Type: types.OperationTypeFee,
 				Status: resultSuccess},
-			{AccountId: nodeAccountId, Amount: &types.HbarAmount{Value: 5}, Type: operationType, Status: resultSuccess},
-			{AccountId: treasuryAccountId, Amount: &types.HbarAmount{Value: 10}, Type: operationType,
+			{AccountId: nodeAccountId, Amount: &types.HbarAmount{Value: 5}, Type: types.OperationTypeFee,
+				Status: resultSuccess},
+			{AccountId: feeCollectorAccountId, Amount: &types.HbarAmount{Value: 10}, Type: types.OperationTypeFee,
 				Status: resultSuccess},
 			{AccountId: firstAccountId, Type: operationType, Status: resultSuccess, Metadata: metadata},
 		},
@@ -776,7 +869,7 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 			PayerAccountId: firstEntityId},
 		{Amount: 5, ConsensusTimestamp: consensusTimestamp, EntityId: nodeEntityId,
 			PayerAccountId: firstEntityId},
-		{Amount: 10, ConsensusTimestamp: consensusTimestamp, EntityId: treasuryEntityId,
+		{Amount: 10, ConsensusTimestamp: consensusTimestamp, EntityId: feeCollectorEntityId,
 			PayerAccountId: firstEntityId},
 	}
 	nftTransfers := []domain.NftTransfer{
@@ -793,10 +886,11 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 		EntityId: &tokenId3,
 		Hash:     "0xaa1133",
 		Operations: types.OperationSlice{
-			{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -15}, Type: operationType,
+			{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -15}, Type: types.OperationTypeFee,
 				Status: resultSuccess},
-			{AccountId: nodeAccountId, Amount: &types.HbarAmount{Value: 5}, Type: operationType, Status: resultSuccess},
-			{AccountId: treasuryAccountId, Amount: &types.HbarAmount{Value: 10}, Type: operationType,
+			{AccountId: nodeAccountId, Amount: &types.HbarAmount{Value: 5}, Type: types.OperationTypeFee,
+				Status: resultSuccess},
+			{AccountId: feeCollectorAccountId, Amount: &types.HbarAmount{Value: 10}, Type: types.OperationTypeFee,
 				Status: resultSuccess},
 			{AccountId: firstAccountId, Amount: getNftTokenAmount(1, 1, tokenId3), Type: operationType,
 				Status: resultSuccess},
@@ -816,7 +910,7 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 			PayerAccountId: firstEntityId},
 		{Amount: 5, ConsensusTimestamp: consensusTimestamp, EntityId: nodeEntityId,
 			PayerAccountId: firstEntityId},
-		{Amount: 10, ConsensusTimestamp: consensusTimestamp, EntityId: treasuryEntityId,
+		{Amount: 10, ConsensusTimestamp: consensusTimestamp, EntityId: feeCollectorEntityId,
 			PayerAccountId: firstEntityId},
 	}
 	nftTransfers = []domain.NftTransfer{
@@ -829,10 +923,11 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 	expectedTransaction6 := &types.Transaction{
 		Hash: "0xaa1166",
 		Operations: types.OperationSlice{
-			{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -15}, Type: operationType,
+			{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -15}, Type: types.OperationTypeFee,
 				Status: resultSuccess},
-			{AccountId: nodeAccountId, Amount: &types.HbarAmount{Value: 5}, Type: operationType, Status: resultSuccess},
-			{AccountId: treasuryAccountId, Amount: &types.HbarAmount{Value: 10}, Type: operationType,
+			{AccountId: nodeAccountId, Amount: &types.HbarAmount{Value: 5}, Type: types.OperationTypeFee,
+				Status: resultSuccess},
+			{AccountId: feeCollectorAccountId, Amount: &types.HbarAmount{Value: 10}, Type: types.OperationTypeFee,
 				Status: resultSuccess},
 			{AccountId: firstAccountId, Amount: getNftTokenAmount(-1, 1, tokenId3), Type: operationType,
 				Status: resultSuccess},
@@ -845,9 +940,8 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 	tick(1)
 	errataTypeDelete := domain.ErrataTypeDelete
 	cryptoTransfers = []domain.CryptoTransfer{
-		{Amount: -120, ConsensusTimestamp: consensusTimestamp, EntityId: firstEntityId,
-			PayerAccountId: firstEntityId},
-		{Amount: 100, ConsensusTimestamp: consensusTimestamp, EntityId: treasuryEntityId,
+		{Amount: -120, ConsensusTimestamp: consensusTimestamp, EntityId: firstEntityId, PayerAccountId: firstEntityId},
+		{Amount: 100, ConsensusTimestamp: consensusTimestamp, EntityId: feeCollectorEntityId,
 			PayerAccountId: firstEntityId},
 		{Amount: 20, ConsensusTimestamp: consensusTimestamp, EntityId: nodeEntityId,
 			PayerAccountId: firstEntityId},
@@ -863,16 +957,53 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 	expectedTransaction7 := &types.Transaction{
 		Hash: tools.SafeAddHexPrefix(hex.EncodeToString(transactionHash)),
 		Operations: types.OperationSlice{
-			{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -120}, Type: operationType, Status: resultSuccess},
-			{AccountId: treasuryAccountId, Amount: &types.HbarAmount{Value: 100}, Type: operationType,
+			{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -120}, Type: types.OperationTypeFee,
 				Status: resultSuccess},
-			{AccountId: nodeAccountId, Amount: &types.HbarAmount{Value: 20}, Type: operationType, Status: resultSuccess},
+			{AccountId: feeCollectorAccountId, Amount: &types.HbarAmount{Value: 100}, Type: types.OperationTypeFee,
+				Status: resultSuccess},
+			{AccountId: nodeAccountId, Amount: &types.HbarAmount{Value: 20}, Type: types.OperationTypeFee,
+				Status: resultSuccess},
+		},
+	}
+
+	// crypto create transaction
+	tick(1)
+	cryptoTransfers = []domain.CryptoTransfer{
+		{Amount: -620, ConsensusTimestamp: consensusTimestamp, EntityId: firstEntityId, PayerAccountId: firstEntityId},
+		{Amount: 500, ConsensusTimestamp: consensusTimestamp, EntityId: newEntityId, PayerAccountId: firstEntityId},
+		{Amount: 100, ConsensusTimestamp: consensusTimestamp, EntityId: feeCollectorEntityId,
+			PayerAccountId: firstEntityId},
+		{Amount: 20, ConsensusTimestamp: consensusTimestamp, EntityId: nodeEntityId, PayerAccountId: firstEntityId},
+	}
+	nonFeeTransfers = []domain.NonFeeTransfer{
+		{Amount: -500, ConsensusTimestamp: consensusTimestamp, EntityId: firstEntityId, PayerAccountId: firstEntityId},
+		{Amount: 500, ConsensusTimestamp: consensusTimestamp, EntityId: newEntityId, PayerAccountId: firstEntityId},
+	}
+	transactionHash = randstr.Bytes(6)
+	addTransaction(dbClient, consensusTimestamp, &newEntityId, &nodeEntityId, firstEntityId, 22, transactionHash,
+		domain.TransactionTypeCryptoCreateAccount, validStartNs, cryptoTransfers, nonFeeTransfers, nil, nil)
+
+	operationType = types.OperationTypeCryptoCreateAccount
+	expectedTransaction8 := &types.Transaction{
+		EntityId: &newEntityId,
+		Hash:     tools.SafeAddHexPrefix(hex.EncodeToString(transactionHash)),
+		Operations: types.OperationSlice{
+			{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -500},
+				Type: types.OperationTypeCryptoCreateAccount, Status: resultSuccess},
+			{AccountId: newAccountId, Amount: &types.HbarAmount{Value: 500},
+				Type: types.OperationTypeCryptoCreateAccount, Status: resultSuccess},
+			{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -120}, Type: types.OperationTypeFee,
+				Status: resultSuccess},
+			{AccountId: feeCollectorAccountId, Amount: &types.HbarAmount{Value: 100}, Type: types.OperationTypeFee,
+				Status: resultSuccess},
+			{AccountId: nodeAccountId, Amount: &types.HbarAmount{Value: 20}, Type: types.OperationTypeFee,
+				Status: resultSuccess},
 		},
 	}
 
 	return []*types.Transaction{
 		expectedTransaction1, expectedTransaction2, expectedTransaction3, expectedTransaction4,
-		expectedTransaction5, expectedTransaction6, expectedTransaction7,
+		expectedTransaction5, expectedTransaction6, expectedTransaction7, expectedTransaction8,
 	}
 }
 

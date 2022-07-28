@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,65 +20,52 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import com.hedera.mirror.common.domain.transaction.RecordFile;
-
-import com.hedera.mirror.importer.IntegrationTest;
-
-import org.junit.jupiter.api.BeforeAll;
+import com.google.common.util.concurrent.Uninterruptibles;
+import java.util.concurrent.TimeUnit;
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
-import org.junit.jupiter.api.Timeout;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.test.context.junit.jupiter.EnabledIf;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.domain.StreamFileData;
-import com.hedera.mirror.importer.reader.record.RecordFileReader;
-import com.hedera.mirror.importer.repository.RecordFileRepository;
+import com.hedera.mirror.common.domain.StreamType;
+import com.hedera.mirror.importer.config.IntegrationTestConfiguration;
+import com.hedera.mirror.importer.parser.domain.RecordFileBuilder;
 
+@EnabledIf("#{environment.acceptsProfiles('performance')}")
+@Import(IntegrationTestConfiguration.class)
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@SpringBootTest
 @Tag("performance")
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class RecordFileParserPerformanceTest extends IntegrationTest {
+class RecordFileParserPerformanceTest {
 
-    @Value("classpath:data/recordstreams/performance/v5/*.rcd")
-    private Resource[] testFiles;
-
-    @Autowired
-    private RecordFileParser recordFileParser;
-
-    @Autowired
-    private RecordFileReader recordFileReader;
-
-    @Autowired
-    private RecordFileRepository recordFileRepository;
-
-    private final List<RecordFile> recordFiles = new ArrayList<>();
-
-    @BeforeAll
-    void setup() throws Exception {
-        EntityId nodeAccountId = EntityId.of(0L, 0L, 3L, EntityType.ACCOUNT);
-        for (int index = 0; index < testFiles.length; index++) {
-            RecordFile recordFile = recordFileReader.read(StreamFileData.from(testFiles[index].getFile()));
-            recordFile.setIndex((long) index);
-            recordFile.setNodeAccountId(nodeAccountId);
-            recordFiles.add(recordFile);
-        }
-    }
+    private final ParserPerformanceProperties performanceProperties;
+    private final RecordFileParser recordFileParser;
+    private final RecordFileBuilder recordFileBuilder;
 
     @Test
-    @Timeout(25)
-    void parse() {
-        recordFiles.forEach(recordFileParser::parse);
-        assertThat(recordFileRepository.count()).isEqualTo(recordFiles.size());
+    void scenarios() {
+        long interval = StreamType.RECORD.getFileCloseInterval().toMillis();
+        long duration = performanceProperties.getDuration().toMillis();
+        long startTime = System.currentTimeMillis();
+        long endTime = startTime;
+        var recordFile = recordFileBuilder.recordFile();
+
+        performanceProperties.getTransactions().forEach(p -> {
+            int count = (int) (p.getTps() * interval / 1000);
+            recordFile.recordItems(i -> i.count(count).entities(p.getEntities()).type(p.getType()));
+        });
+
+        while (endTime - startTime < duration) {
+            recordFileParser.parse(recordFile.build());
+
+            long sleep = interval - (System.currentTimeMillis() - endTime);
+            if (sleep > 0) {
+                Uninterruptibles.sleepUninterruptibly(sleep, TimeUnit.MILLISECONDS);
+            }
+            endTime = System.currentTimeMillis();
+        }
     }
 }

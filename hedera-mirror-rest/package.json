@@ -1,27 +1,29 @@
 {
   "name": "@hashgraph/mirror-rest",
-  "version": "0.60.0-SNAPSHOT",
+  "version": "0.62.0-SNAPSHOT",
   "description": "Hedera Mirror Node REST API",
+  "type": "module",
   "main": "server.js",
   "private": true,
   "engines": {
     "node": ">=16.13.0 < 17"
   },
   "scripts": {
-    "dev": "nodemon server.js",
-    "integrationtest": "jest --testPathPattern='/__tests__/integration.test.js|/__tests__/service/.*\\.test\\.js' --collectCoverage=false",
+    "dev": "nodemon --experimental-specifier-resolution=node server.js",
+    "integrationtest": "node --experimental-vm-modules node_modules/jest/bin/jest --testPathPattern='/__tests__/integration.test.js|/__tests__/service/.*\\.test\\.js' --collectCoverage=false",
     "lint": "eslint --ignore-pattern node_modules/ --fix .",
     "postinstall": "node ./npm_scripts/postinstall.js",
-    "test": "jest --testPathPattern='__tests__/.*\\.test\\.js'"
+    "start": "node --experimental-specifier-resolution=node server.js",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --testPathPattern='__tests__/.*\\.test\\.js'"
   },
   "author": "Hedera Mirror Node Team",
   "license": "Apache-2.0",
   "dependencies": {
     "@awaitjs/express": "^0.9.0",
-    "@godaddy/terminus": "^4.11.0",
-    "@hashgraph/proto": "^2.5.0",
+    "@godaddy/terminus": "^4.11.1",
+    "@hashgraph/proto": "^2.8.0",
     "asn1js": "^3.0.5",
-    "aws-sdk": "^2.1162.0",
+    "aws-sdk": "^2.1181.0",
     "bigint-buffer": "^1.1.5",
     "body-parser": "^1.20.0",
     "compression": "^1.7.4",
@@ -34,19 +36,19 @@
     "js-yaml": "^4.1.0",
     "json-bigint": "^1.0.0",
     "lodash": "^4.17.21",
-    "log4js": "^6.5.2",
+    "log4js": "^6.6.0",
     "long": "^5.2.0",
-    "mathjs": "^10.6.3",
-    "mem": "^8.1.1",
+    "mathjs": "^11.0.0",
+    "mem": "^9.0.2",
     "parse-duration": "^1.0.2",
     "pg": "~8.7.3",
     "pg-range": "^1.1.1",
     "prom-client": "^14.0.1",
-    "qs": "^6.10.5",
-    "quick-lru": "^5.1.1",
+    "qs": "^6.11.0",
+    "quick-lru": "^6.1.1",
     "rfc4648": "^1.5.2",
     "swagger-stats": "^0.99.2",
-    "swagger-ui-express": "^4.4.0"
+    "swagger-ui-express": "^4.5.0"
   },
   "bundledDependencies": [
     "@awaitjs/express",
@@ -88,25 +90,24 @@
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-import": "^2.26.0",
-    "eslint-plugin-jest": "^26.5.3",
+    "eslint-plugin-jest": "^26.6.0",
     "eslint-plugin-node": "^11.1.0",
-    "eslint-plugin-prettier": "^4.0.0",
+    "eslint-plugin-prettier": "^4.2.1",
     "eslint-plugin-security": "^1.5.0",
     "husky": "^8.0.1",
-    "jest": "^28.1.1",
-    "jest-circus": "^28.1.1",
-    "jest-extended": "^2.0.0",
-    "jest-junit": "^13.2.0",
-    "mock-req-res": "^1.2.0",
+    "jest": "^28.1.3",
+    "jest-circus": "^28.1.2",
+    "jest-extended": "^3.0.1",
+    "jest-junit": "^14.0.0",
     "node-flywaydb": "^3.0.7",
-    "nodemon": "^2.0.18",
+    "nodemon": "^2.0.19",
     "pg-format": "^1.0.4",
     "prettier": "^2.7.1",
     "pretty-quick": "^3.1.3",
     "rewire": "^6.0.0",
     "sinon": "^14.0.0",
-    "supertest": "^6.2.3",
-    "testcontainers": "^8.10.1"
+    "supertest": "^6.2.4",
+    "testcontainers": "^8.12.0"
   },
   "jest": {
     "collectCoverage": true,
@@ -114,13 +115,14 @@
     "coveragePathIgnorePatterns": [
       "<rootDir>/__tests__/"
     ],
+    "globalSetup": "./__tests__/globalSetup.js",
     "maxWorkers": "50%",
     "reporters": [
       "default",
       "jest-junit"
     ],
     "setupFilesAfterEnv": [
-      "./__tests__/jest.setup.js"
+      "./__tests__/jestSetup.js"
     ],
     "testEnvironment": "node",
     "testRunner": "jest-circus/runner",

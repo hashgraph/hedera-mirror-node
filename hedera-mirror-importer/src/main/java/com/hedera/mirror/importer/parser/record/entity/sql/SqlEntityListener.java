@@ -36,12 +36,17 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.annotation.Order;
 
+import com.hedera.mirror.common.domain.addressbook.NetworkStake;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
 import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
+import com.hedera.mirror.common.domain.entity.AbstractCryptoAllowance;
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
+import com.hedera.mirror.common.domain.entity.AbstractNftAllowance;
+import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -65,6 +70,7 @@ import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.LiveHash;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
+import com.hedera.mirror.common.domain.transaction.Prng;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
@@ -79,6 +85,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
+import com.hedera.mirror.importer.repository.SidecarFileRepository;
 
 @Log4j2
 @Named
@@ -90,12 +97,14 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final EntityIdService entityIdService;
     private final ApplicationEventPublisher eventPublisher;
     private final RecordFileRepository recordFileRepository;
+    private final SidecarFileRepository sidecarFileRepository;
     private final SqlProperties sqlProperties;
     private final BatchPersister tokenDissociateTransferBatchPersister;
 
     // lists of insert only domains
     private final Collection<AssessedCustomFee> assessedCustomFees;
     private final Collection<Contract> contracts;
+    private final Collection<ContractAction> contractActions;
     private final Collection<ContractLog> contractLogs;
     private final Collection<ContractResult> contractResults;
     private final Collection<ContractStateChange> contractStateChanges;
@@ -106,9 +115,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<EthereumTransaction> ethereumTransactions;
     private final Collection<FileData> fileData;
     private final Collection<LiveHash> liveHashes;
+    private final Collection<NetworkStake> networkStakes;
     private final Collection<NftAllowance> nftAllowances;
     private final Collection<NodeStake> nodeStakes;
     private final Collection<NonFeeTransfer> nonFeeTransfers;
+    private final Collection<Prng> prngs;
     private final Collection<StakingRewardTransfer> stakingRewardTransfers;
     private final Map<TokenAccountId, TokenAccount> tokenAccounts;
     private final Collection<TokenAllowance> tokenAllowances;
@@ -120,14 +131,14 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     // maps of upgradable domains
     private final Map<Long, Contract> contractState;
-    private final Map<CryptoAllowance.Id, CryptoAllowance> cryptoAllowanceState;
+    private final Map<AbstractCryptoAllowance.Id, CryptoAllowance> cryptoAllowanceState;
     private final Map<Long, Entity> entityState;
     private final Map<NftId, Nft> nfts;
-    private final Map<NftAllowance.Id, NftAllowance> nftAllowanceState;
+    private final Map<AbstractNftAllowance.Id, NftAllowance> nftAllowanceState;
     private final Map<NftTransferId, NftTransfer> nftTransferState;
     private final Map<Long, Schedule> schedules;
     private final Map<Long, Token> tokens;
-    private final Map<TokenAllowance.Id, TokenAllowance> tokenAllowanceState;
+    private final Map<AbstractTokenAllowance.Id, TokenAllowance> tokenAllowanceState;
 
     // tracks the state of <token, account> relationships in a batch, the initial state before the batch is in db.
     // for each <token, account> update, merge the state and the update, save the merged state to the batch.
@@ -139,17 +150,20 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
                              EntityIdService entityIdService,
                              ApplicationEventPublisher eventPublisher,
                              RecordFileRepository recordFileRepository,
+                             SidecarFileRepository sidecarFileRepository,
                              SqlProperties sqlProperties,
                              @Qualifier(TOKEN_DISSOCIATE_BATCH_PERSISTER) BatchPersister tokenDissociateTransferBatchPersister) {
         this.batchPersister = batchPersister;
         this.entityIdService = entityIdService;
         this.eventPublisher = eventPublisher;
         this.recordFileRepository = recordFileRepository;
+        this.sidecarFileRepository = sidecarFileRepository;
         this.sqlProperties = sqlProperties;
         this.tokenDissociateTransferBatchPersister = tokenDissociateTransferBatchPersister;
 
         assessedCustomFees = new ArrayList<>();
         contracts = new ArrayList<>();
+        contractActions = new ArrayList<>();
         contractLogs = new ArrayList<>();
         contractResults = new ArrayList<>();
         contractStateChanges = new ArrayList<>();
@@ -161,8 +175,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         fileData = new ArrayList<>();
         liveHashes = new ArrayList<>();
         nftAllowances = new ArrayList<>();
+        networkStakes = new ArrayList<>();
         nodeStakes = new ArrayList<>();
         nonFeeTransfers = new ArrayList<>();
+        prngs = new ArrayList<>();
         stakingRewardTransfers = new ArrayList<>();
         tokenAccounts = new LinkedHashMap<>();
         tokenAllowances = new ArrayList<>();
@@ -199,6 +215,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         executeBatches();
         if (recordFile != null) {
             recordFileRepository.save(recordFile);
+            sidecarFileRepository.saveAll(recordFile.getSidecars());
         }
     }
 
@@ -212,6 +229,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             assessedCustomFees.clear();
             contracts.clear();
             contractState.clear();
+            contractActions.clear();
             contractLogs.clear();
             contractResults.clear();
             contractStateChanges.clear();
@@ -224,14 +242,16 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             ethereumTransactions.clear();
             fileData.clear();
             liveHashes.clear();
-            nonFeeTransfers.clear();
-            stakingRewardTransfers.clear();
+            networkStakes.clear();
             nfts.clear();
             nftAllowances.clear();
             nftAllowanceState.clear();
             nftTransferState.clear();
             nodeStakes.clear();
+            nonFeeTransfers.clear();
+            prngs.clear();
             schedules.clear();
+            stakingRewardTransfers.clear();
             topicMessages.clear();
             tokenAccounts.clear();
             tokenAccountState.clear();
@@ -257,6 +277,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
             // insert only operations
             batchPersister.persist(assessedCustomFees);
+            batchPersister.persist(contractActions);
             batchPersister.persist(contractLogs);
             batchPersister.persist(contractResults);
             batchPersister.persist(contractStateChanges);
@@ -265,7 +286,9 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             batchPersister.persist(ethereumTransactions);
             batchPersister.persist(fileData);
             batchPersister.persist(liveHashes);
+            batchPersister.persist(networkStakes);
             batchPersister.persist(nodeStakes);
+            batchPersister.persist(prngs);
             batchPersister.persist(topicMessages);
             batchPersister.persist(transactions);
             batchPersister.persist(transactionSignatures);
@@ -315,6 +338,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             // attributes only in the previous state are merged into the new contract object
             contracts.add(merged);
         }
+    }
+
+    @Override
+    public void onContractAction(ContractAction contractAction) {
+        contractActions.add(contractAction);
     }
 
     @Override
@@ -379,6 +407,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     @Override
+    public void onNetworkStake(NetworkStake networkStake) throws ImporterException {
+        networkStakes.add(networkStake);
+    }
+
+    @Override
     public void onNft(Nft nft) throws ImporterException {
         nfts.merge(nft.getId(), nft, this::mergeNft);
     }
@@ -402,6 +435,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onNonFeeTransfer(NonFeeTransfer nonFeeTransfer) throws ImporterException {
         nonFeeTransfers.add(nonFeeTransfer);
+    }
+
+    @Override
+    public void onPrng(Prng prng) {
+        prngs.add(prng);
     }
 
     @Override
@@ -550,6 +588,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
         dest.setFileId(src.getFileId());
         dest.setInitcode(src.getInitcode());
+        dest.setRuntimeBytecode(src.getRuntimeBytecode());
 
         if (dest.getMaxAutomaticTokenAssociations() == null) {
             dest.setMaxAutomaticTokenAssociations(src.getMaxAutomaticTokenAssociations());

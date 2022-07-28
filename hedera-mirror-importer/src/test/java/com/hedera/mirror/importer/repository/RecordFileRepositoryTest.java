@@ -26,6 +26,8 @@ import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.hedera.mirror.common.domain.transaction.RecordFile;
+
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class RecordFileRepositoryTest extends AbstractRepositoryTest {
 
@@ -100,5 +102,22 @@ class RecordFileRepositoryTest extends AbstractRepositoryTest {
         recordFileRepository.prune(recordFile2.getConsensusEnd());
 
         assertThat(recordFileRepository.findAll()).containsExactly(recordFile3);
+    }
+
+    @Test
+    void updateIndex() {
+        var recordFile1 = domainBuilder.recordFile().persist();
+        var recordFile2 = domainBuilder.recordFile().persist();
+
+        assertThat(recordFileRepository.updateIndex(-2L)).isEqualTo(2);
+        assertThat(recordFileRepository.findById(recordFile1.getConsensusEnd()))
+                .get()
+                .extracting(RecordFile::getIndex)
+                .isEqualTo(recordFile1.getIndex() - 2);
+
+        assertThat(recordFileRepository.findById(recordFile2.getConsensusEnd()))
+                .get()
+                .extracting(RecordFile::getIndex)
+                .isEqualTo(recordFile2.getIndex() - 2);
     }
 }

@@ -18,10 +18,6 @@
  * ‍
  */
 
-'use strict';
-
-const _ = require('lodash');
-
 class AddressBookServiceEndpoint {
   /**
    * Parses crypto_allowance table columns into object
@@ -53,4 +49,4 @@ class AddressBookServiceEndpoint {
   }
 }
 
-module.exports = AddressBookServiceEndpoint;
+export default AddressBookServiceEndpoint;

@@ -18,8 +18,6 @@
  * ‍
  */
 
-'use strict';
-
 const MAX_INT32 = 2147483647;
 
 const ONE_DAY_IN_NS = 86_400_000_000_000n;
@@ -202,7 +200,7 @@ const queryParamOperatorPatterns = {
   ne: /^!=$/,
 };
 
-module.exports = {
+export {
   MAX_INT32,
   ONE_DAY_IN_NS,
   characterEncoding,

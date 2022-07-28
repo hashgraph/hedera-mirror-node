@@ -450,7 +450,7 @@ replicas: 1
 
 resources:
   limits:
-    cpu: 2.5
+    cpu: 4
     memory: 4Gi
   requests:
     cpu: 200m

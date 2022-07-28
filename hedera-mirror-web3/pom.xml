@@ -17,7 +17,7 @@
 
     <properties>
         <repackage.classifier/>
-        <spring-native.version>0.12.0</spring-native.version>
+        <spring-native.version>0.12.1</spring-native.version>
     </properties>
 
     <dependencies>
@@ -136,6 +136,20 @@
             <artifactId>secp256k1</artifactId>
             <version>0.5.0</version>
             <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-cache</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-logging</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
         </dependency>
     </dependencies>
 

@@ -18,12 +18,7 @@
  * ‍
  */
 
-'use strict';
+import CompositeRecordFile from './compositeRecordFile';
+import SignatureFile from './signatureFile';
 
-const CompositeRecordFile = require('./compositeRecordFile');
-const SignatureFile = require('./signatureFile');
-
-module.exports = {
-  CompositeRecordFile,
-  SignatureFile,
-};
+export {CompositeRecordFile, SignatureFile};

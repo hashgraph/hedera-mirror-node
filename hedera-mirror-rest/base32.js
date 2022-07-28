@@ -18,9 +18,7 @@
  * ‍
  */
 
-'use strict';
-
-const {base32} = require('rfc4648');
+import {base32} from 'rfc4648';
 
 const decodeOpts = {loose: true};
 const encodeOpts = {pad: false};
@@ -40,7 +38,7 @@ const decode = (str) => str && base32.parse(str, decodeOpts);
  */
 const encode = (data) => data && base32.stringify(data, encodeOpts);
 
-module.exports = {
+export default {
   decode,
   encode,
 };

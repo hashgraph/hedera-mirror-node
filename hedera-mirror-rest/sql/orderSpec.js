@@ -18,8 +18,6 @@
  * ‍
  */
 
-'use strict';
-
 class OrderSpec {
   /**
    * Creates an OrderSpec object
@@ -40,4 +38,4 @@ class OrderSpec {
   }
 }
 
-module.exports = OrderSpec;
+export default OrderSpec;
