@@ -1,4 +1,24 @@
-package com.hedera.services.transaction.fees.calculation;
+package com.hedera.mirror.web3.evm.fees.calculation;
+
+/*-
+ * ‌
+ * Hedera Mirror Node
+ * ​
+ * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
 
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 
@@ -17,19 +37,25 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import javax.inject.Singleton;
+import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.web3.repository.FileDataRepository;
+import com.hedera.services.transaction.fees.calculation.UsagePricesProvider;
 import com.hedera.services.transaction.pricing.RequiredPriceTypes;
 
-public class BasicFcfsUsagePrices implements UsagePricesProvider {
-    private static final Logger log = LogManager.getLogger(BasicFcfsUsagePrices.class);
+@Singleton
+@RequiredArgsConstructor
+public class SimulatedFcfsUsagePrices implements UsagePricesProvider {
+    private static final Logger log = LogManager.getLogger(
+            SimulatedFcfsUsagePrices.class);
 
     private static final EntityId FEE_SCHEDULE_ENTITY_ID = new EntityId(0L, 0L, 111L, EntityType.FILE);
-    private static final EntityId EXCHANGE_RATE_ENTITY_ID = new EntityId(0L, 0L, 112L, EntityType.FILE);
 
     private static final long DEFAULT_FEE = 100_000L;
     private static final FeeComponents DEFAULT_PROVIDER_RESOURCE_PRICES = FeeComponents.newBuilder()
@@ -56,21 +82,12 @@ public class BasicFcfsUsagePrices implements UsagePricesProvider {
 
     @Override
     public void loadPriceSchedules() {
-        final var feeScheduleFile = fileDataRepository.findFileByEntityIdAndClosestPreviousTimestamp(now.getEpochSecond(), FEE_SCHEDULE_ENTITY_ID.getId());
-
-        try {
-            final var schedules = CurrentAndNextFeeSchedule.parseFrom(feeScheduleFile.getFileData());
-
-            setFeeSchedules(schedules);
-        } catch (InvalidProtocolBufferException e) {
-            log.warn("Corrupt fee schedules file at {}, may require remediation!", readableId(this.feeSchedules), e);
-            throw new IllegalStateException(
-                    String.format("Fee schedule %s is corrupt!", readableId(this.feeSchedules)));
-        }
+        loadPriceSchedules(0L);
     }
 
     @Override
     public FeeData defaultPricesGiven(final HederaFunctionality function, final Timestamp at) {
+        loadPriceSchedules(at.getSeconds());
         return pricesGiven(function, at).get(DEFAULT);
     }
 
@@ -87,6 +104,27 @@ public class BasicFcfsUsagePrices implements UsagePricesProvider {
                     function, Instant.ofEpochSecond(at.getSeconds(), at.getNanos()));
         }
         return DEFAULT_RESOURCE_PRICES;
+    }
+
+    private void loadPriceSchedules(final long now) {
+        FileData feeScheduleFile;
+        if (now > 0) {
+            feeScheduleFile =
+                    fileDataRepository.findFileByEntityIdAndClosestPreviousTimestamp(
+                            now, FEE_SCHEDULE_ENTITY_ID.getId());
+        } else {
+            feeScheduleFile =
+                    fileDataRepository.findLatestFileByEntityId(FEE_SCHEDULE_ENTITY_ID.getId());
+        }
+
+        try {
+            final var schedules = CurrentAndNextFeeSchedule.parseFrom(feeScheduleFile.getFileData());
+            setFeeSchedules(schedules);
+        } catch (InvalidProtocolBufferException e) {
+            log.warn("Corrupt fee schedules file at {}, may require remediation!", FEE_SCHEDULE_ENTITY_ID.toString(), e);
+            throw new IllegalStateException(
+                    String.format("Fee schedule %s is corrupt!", FEE_SCHEDULE_ENTITY_ID));
+        }
     }
 
     private Map<HederaFunctionality, Map<SubType, FeeData>> applicableUsagePrices(final Timestamp at) {

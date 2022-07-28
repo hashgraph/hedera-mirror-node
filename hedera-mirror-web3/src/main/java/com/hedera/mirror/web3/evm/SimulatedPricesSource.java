@@ -27,20 +27,25 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import java.time.Instant;
 import java.util.function.ToLongFunction;
-import lombok.Value;
+import javax.inject.Singleton;
+import lombok.RequiredArgsConstructor;
 
-import com.hedera.services.transaction.context.TransactionContext;
-import com.hedera.services.transaction.fees.FeeMultiplierSource;
+import com.hedera.mirror.web3.evm.fees.calculation.SimulatedFcfsUsagePrices;
 import com.hedera.services.transaction.fees.HbarCentExchange;
-import com.hedera.services.transaction.fees.calculation.BasicFcfsUsagePrices;
 
 // FUTURE WORK This should move to an interface when evm-module is complete
-@Value
+
+/**
+ * Provider of gas price related to given consensus timestamp in Instant format. The calculations
+ * are performed based on the Fee Schedule and Exchange Rate files saved in the DB
+ */
+@Singleton
+@RequiredArgsConstructor
 public class SimulatedPricesSource {
+    private static final long DEFAULT_MULTIPLIER = 1L;
+
     HbarCentExchange exchange;
-    BasicFcfsUsagePrices usagePrices;
-    FeeMultiplierSource feeMultiplierSource;
-    TransactionContext txnCtx;
+    SimulatedFcfsUsagePrices usagePrices;
 
     public long currentGasPrice(final Instant now, final HederaFunctionality function) {
         return currentPrice(now, function, FeeComponents::getGas);
@@ -56,7 +61,7 @@ public class SimulatedPricesSource {
         final var unscaledPrice = Math.max(1L, feeInTinyBars);
 
         final var maxMultiplier = Long.MAX_VALUE / feeInTinyBars;
-        final var curMultiplier = feeMultiplierSource.currentMultiplier(txnCtx.accessor());
+        final var curMultiplier = DEFAULT_MULTIPLIER;
         if (curMultiplier > maxMultiplier) {
             return Long.MAX_VALUE;
         } else {
