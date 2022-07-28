@@ -34,6 +34,7 @@ import {
   NetworkSupplyViewModel,
   FeeScheduleViewModel,
 } from '../viewmodel';
+import NetworkStakeViewModel from '../viewmodel/networkStakeViewModel.js';
 
 const defaultUnreleasedSupplyAccounts = config.network.unreleasedSupplyAccounts;
 const networkNodesDefaultSize = 10;
@@ -200,6 +201,17 @@ class NetworkController extends BaseController {
     }
 
     res.locals[responseDataLabel] = response;
+  };
+
+  /**
+   * Handler function for /network/stake API.
+   * @param {Request} req HTTP request object
+   * @param {Response} res HTTP response object
+   * @return {Promise<void>}
+   */
+  getNetworkStake = async (req, res) => {
+    const networkStake = await NetworkNodeService.getNetworkStake();
+    res.locals[responseDataLabel] = new NetworkStakeViewModel(networkStake);
   };
 
   /**
