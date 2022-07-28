@@ -31,10 +31,10 @@ import * as utils from '../utils';
 import {
   ExchangeRateSetViewModel,
   NetworkNodeViewModel,
+  NetworkStakeViewModel,
   NetworkSupplyViewModel,
   FeeScheduleViewModel,
 } from '../viewmodel';
-import NetworkStakeViewModel from '../viewmodel/networkStakeViewModel.js';
 
 const defaultUnreleasedSupplyAccounts = config.network.unreleasedSupplyAccounts;
 const networkNodesDefaultSize = 10;

@@ -19,9 +19,15 @@
  */
 
 import BaseService from './baseService';
-import {AddressBook, AddressBookEntry, AddressBookServiceEndpoint, NetworkNode, NodeStake} from '../model';
+import {
+  AddressBook,
+  AddressBookEntry,
+  AddressBookServiceEndpoint,
+  NetworkNode,
+  NetworkStake,
+  NodeStake,
+} from '../model';
 import {OrderSpec} from '../sql';
-import NetworkStake from '../model/networkStake.js';
 
 /**
  * Network node business model
