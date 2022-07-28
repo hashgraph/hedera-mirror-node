@@ -19,6 +19,7 @@
  */
 
 import _ from 'lodash';
+import {gunzipSync} from 'zlib';
 
 import config from './config';
 import * as constants from './constants';
@@ -28,6 +29,8 @@ import s3client from './s3client';
 import {CompositeRecordFile} from './stream';
 import TransactionId from './transactionId';
 import * as utils from './utils';
+
+const recordFileSuffixRegex = /\.rcd(\.gz)?$/;
 
 /**
  * Get the consensus_timestamp of the transaction. Throws exception if no such successful transaction found or multiple such
@@ -295,20 +298,21 @@ const getStateProofForTransaction = async (req, res) => {
   const rcdFileInfo = await getRCDFileInfoByConsensusNs(consensusNs);
   const {addressBooks, nodeAccountIds} = await getAddressBooksAndNodeAccountIdsByConsensusNs(consensusNs);
 
+  const sigFilename = rcdFileInfo.name.replace(recordFileSuffixRegex, '.rcd_sig');
   const sigFileObjects = await downloadRecordStreamFilesFromObjectStorage(
-    ..._.map(nodeAccountIds, (accountId) => `${accountId}/${rcdFileInfo.name}_sig`)
+    ..._.map(nodeAccountIds, (accountId) => `${accountId}/${sigFilename}`)
   );
 
   if (!canReachConsensus(sigFileObjects.length, nodeAccountIds.length)) {
     throw new FileDownloadError(
       `Require at least 1/3 signature files to prove consensus, got ${sigFileObjects.length}` +
-        ` out of ${nodeAccountIds.length} for file ${rcdFileInfo.name}_sig`
+        ` out of ${nodeAccountIds.length} for file ${sigFilename}`
     );
   }
 
   // download the record file from the stored node if it's not in db
-  let rcdFile = rcdFileInfo.bytes;
-  if (!rcdFile) {
+  let fileData = rcdFileInfo.bytes;
+  if (!fileData) {
     const partialPath = `${rcdFileInfo.nodeAccountId}/${rcdFileInfo.name}`;
     const rcdFileObjects = await downloadRecordStreamFilesFromObjectStorage(partialPath);
     if (_.isEmpty(rcdFileObjects)) {
@@ -316,8 +320,10 @@ const getStateProofForTransaction = async (req, res) => {
         `Failed to download record file ${rcdFileInfo.name} from node ${rcdFileInfo.nodeAccountId}`
       );
     }
-    rcdFile = _.first(rcdFileObjects).data;
+    fileData = _.first(rcdFileObjects).data;
   }
+
+  const rcdFile = rcdFileInfo.version !== 6 ? fileData : gunzipSync(fileData);
 
   const sigFilesMap = {};
   _.forEach(sigFileObjects, (sigFileObject) => {

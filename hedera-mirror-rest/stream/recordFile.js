@@ -22,13 +22,14 @@ import {proto} from '@hashgraph/proto';
 import {logger, protoTransactionIdToTransactionId} from './utils';
 
 class RecordFile {
+  static version;
+
   constructor() {
     this._fileHash = null;
     this._metadataHash = null;
     // a map of successful transactions, from its transaction ID to its index in the parsed transactions array
     // if the concrete class doesn't implement a transaction array, the index will be null
     this._transactionMap = {};
-    this._version = null;
   }
 
   static _getTransactionKey(transactionId, nonce, scheduled) {
@@ -91,7 +92,7 @@ class RecordFile {
    * @returns {number}
    */
   getVersion() {
-    return this._version;
+    return this.constructor.version;
   }
 
   /**
@@ -110,12 +111,16 @@ class RecordFile {
   /**
    * Adds a mapping of a transaction's id to its index in the record file if the transaction response status is SUCCESS.
    *
-   * @param {Buffer} recordBuffer
+   * @param {Buffer|proto.TransactionRecord} recordBufferOrObject
    * @param {Number} index
    * @private
    */
-  _addTransaction(recordBuffer, index = null) {
-    const {receipt, transactionID, scheduleRef} = proto.TransactionRecord.decode(recordBuffer);
+  _addTransaction(recordBufferOrObject, index = null) {
+    const record =
+      recordBufferOrObject instanceof Buffer
+        ? proto.TransactionRecord.decode(recordBufferOrObject)
+        : recordBufferOrObject;
+    const {receipt, transactionID, scheduleRef} = record;
     const transactionId = protoTransactionIdToTransactionId(transactionID);
     const scheduled = scheduleRef !== null;
     if (

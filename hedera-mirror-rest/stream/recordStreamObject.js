@@ -34,7 +34,7 @@ class RecordStreamObject extends StreamObject {
   _readBody(buffer) {
     const record = readLengthAndBytes(buffer, BYTE_SIZE, RecordStreamObject.MAX_RECORD_LENGTH, false);
     const transaction = readLengthAndBytes(
-      buffer.slice(record.length),
+      buffer.subarray(record.length),
       BYTE_SIZE,
       RecordStreamObject.MAX_TRANSACTION_LENGTH,
       false

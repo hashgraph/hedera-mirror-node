@@ -10,7 +10,7 @@ exports[`from signature file buffer unsupported version mark/version 2 1`] = `"U
 
 exports[`from signature file buffer unsupported version mark/version 3 1`] = `"Unexpected signature file version '3'"`;
 
-exports[`from signature file buffer unsupported version mark/version 6 1`] = `"Unexpected signature file version '6'"`;
+exports[`from signature file buffer unsupported version mark/version 7 1`] = `"Unexpected signature file version '7'"`;
 
 exports[`from signature file buffer v2 with extra data 1`] = `"Extra data discovered in signature file "`;
 
@@ -19,3 +19,7 @@ exports[`from signature file buffer v2 with truncated data 1`] = `"Error reading
 exports[`from signature file buffer v5 with extra data 1`] = `"Extra data discovered in signature file"`;
 
 exports[`from signature file buffer v5 with truncated data 1`] = `"Error reading byte array, expect 384-byte data got 383-byte"`;
+
+exports[`from signature file buffer v6 with extra data 1`] = `"index out of range: 925 + 1 > 925"`;
+
+exports[`from signature file buffer v6 with truncated data 1`] = `"index out of range: 876 + 48 > 923"`;
