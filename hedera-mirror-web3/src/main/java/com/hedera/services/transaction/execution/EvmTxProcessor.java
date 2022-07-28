@@ -59,9 +59,8 @@ import org.hyperledger.besu.evm.tracing.OperationTracer;
 import com.hedera.mirror.web3.evm.OracleSimulator;
 import com.hedera.mirror.web3.evm.SimulatedPricesSource;
 import com.hedera.mirror.web3.evm.SimulatorUpdater;
-import com.hedera.mirror.web3.evm.properties.EvmProperties;
 import com.hedera.mirror.web3.evm.properties.BlockMetaSourceProvider;
-import com.hedera.mirror.web3.evm.properties.SimulatedBlockMetaSource;
+import com.hedera.mirror.web3.evm.properties.EvmProperties;
 import com.hedera.services.transaction.HederaMessageCallProcessor;
 import com.hedera.services.transaction.TransactionProcessingResult;
 import com.hedera.services.transaction.exception.InvalidTransactionException;
@@ -74,7 +73,7 @@ import com.hedera.services.transaction.models.Account;
  * {@link EvmTxProcessor#execute(Account, Address, long, long, long, Bytes, boolean, Instant, boolean, StorageExpiry.Oracle, Address, BigInteger, long, Account)}
  * method that handles the end-to-end execution of a EVM transaction.
  */
-abstract class EvmTxProcessor {
+public abstract class EvmTxProcessor {
     private static final int MAX_STACK_SIZE = 1024;
     private static final int MAX_CODE_SIZE = 0x6000;
     private static final List<ContractValidationRule> VALIDATION_RULES =
