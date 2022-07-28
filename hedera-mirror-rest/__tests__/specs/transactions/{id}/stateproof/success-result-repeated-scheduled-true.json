@@ -30,7 +30,8 @@
         "d0fd08fbb5c7a4671965c4670a85b0a97c784274309991416ae576a2a8811f02",
         "458592658a8e7f003895706c7cc3d5230d96bb38248aa36c16c46d5eed666b37"
       ],
-      "end_running_hash_object": "2b51b1fbc88bae03b5e4c73aba0a549be6815b67b8e880e5d443abd73269faf3"
+      "end_running_hash_object": "2b51b1fbc88bae03b5e4c73aba0a549be6815b67b8e880e5d443abd73269faf3",
+      "block_number": null
     },
     "signature_files": {
       "0.0.3": "27cb86f89b5b7ec6fa5bfbd270b69e8d538caf3998d884f082868fce755cabea",
