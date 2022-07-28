@@ -4,6 +4,7 @@
       "exec_mode": "fork_mode",
       "script": "./server.js",
       "name": "6551",
+      "node_args": "--experimental-specifier-resolution=node",
       "env": {
         "HEDERA_MIRROR_REST_PORT": 6551,
         "NODE_ENV": "production"
@@ -13,6 +14,7 @@
       "exec_mode": "fork_mode",
       "script": "./server.js",
       "name": "6552",
+      "node_args": "--experimental-specifier-resolution=node",
       "env": {
         "HEDERA_MIRROR_REST_PORT": 6552,
         "NODE_ENV": "production"
@@ -22,6 +24,7 @@
       "exec_mode": "fork_mode",
       "script": "./server.js",
       "name": "6553",
+      "node_args": "--experimental-specifier-resolution=node",
       "env": {
         "HEDERA_MIRROR_REST_PORT": 6553,
         "NODE_ENV": "production"
@@ -31,6 +34,7 @@
       "exec_mode": "fork_mode",
       "script": "./server.js",
       "name": "6554",
+      "node_args": "--experimental-specifier-resolution=node",
       "env": {
         "HEDERA_MIRROR_REST_PORT": 6554,
         "NODE_ENV": "production"
@@ -40,6 +44,7 @@
       "exec_mode": "fork_mode",
       "script": "./server.js",
       "name": "6555",
+      "node_args": "--experimental-specifier-resolution=node",
       "env": {
         "HEDERA_MIRROR_REST_PORT": 6555,
         "NODE_ENV": "production"
@@ -49,6 +54,7 @@
       "exec_mode": "fork_mode",
       "script": "./server.js",
       "name": "6556",
+      "node_args": "--experimental-specifier-resolution=node",
       "env": {
         "HEDERA_MIRROR_REST_PORT": 6556,
         "NODE_ENV": "production"
@@ -58,6 +64,7 @@
       "exec_mode": "fork_mode",
       "script": "./server.js",
       "name": "6557",
+      "node_args": "--experimental-specifier-resolution=node",
       "env": {
         "HEDERA_MIRROR_REST_PORT": 6557,
         "NODE_ENV": "production"
@@ -67,6 +74,7 @@
       "exec_mode": "fork_mode",
       "script": "./server.js",
       "name": "6558",
+      "node_args": "--experimental-specifier-resolution=node",
       "env": {
         "HEDERA_MIRROR_REST_PORT": 6558,
         "NODE_ENV": "production"
@@ -76,6 +84,7 @@
       "exec_mode": "fork_mode",
       "script": "./server.js",
       "name": "6559",
+      "node_args": "--experimental-specifier-resolution=node",
       "env": {
         "HEDERA_MIRROR_REST_PORT": 6559,
         "NODE_ENV": "production"
@@ -85,6 +94,7 @@
       "exec_mode": "fork_mode",
       "script": "./server.js",
       "name": "6560",
+      "node_args": "--experimental-specifier-resolution=node",
       "env": {
         "HEDERA_MIRROR_REST_PORT": 6560,
         "NODE_ENV": "production"

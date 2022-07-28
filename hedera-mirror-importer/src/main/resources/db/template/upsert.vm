@@ -7,6 +7,6 @@ with existing as (
 insert into $finalTable ($insertColumns)
 select $coalesceColumns
 from existing
-where $notNullableColumn
+where $notUpdatableColumn
 on conflict ($conflictColumns)
 do update set $updateColumns

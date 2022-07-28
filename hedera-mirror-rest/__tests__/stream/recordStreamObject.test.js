@@ -18,9 +18,7 @@
  * ‍
  */
 
-'use strict';
-
-const RecordStreamObject = require('../../stream/recordStreamObject');
+import RecordStreamObject from '../../stream/recordStreamObject';
 
 describe('RecordStreamObject', () => {
   const classId = BigInt.asIntN(64, BigInt('0xe370929ba5429d8b'));

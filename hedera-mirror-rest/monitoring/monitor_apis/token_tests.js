@@ -18,11 +18,10 @@
  * ‍
  */
 
-'use strict';
+import * as math from 'mathjs';
+import config from './config';
 
-const math = require('mathjs');
-const config = require('./config');
-const {
+import {
   accountIdCompare,
   checkAPIResponseError,
   checkElementsOrder,
@@ -36,7 +35,7 @@ const {
   getUrl,
   testRunner,
   CheckRunner,
-} = require('./utils');
+} from './utils';
 
 const tokensPath = '/tokens';
 const resource = 'token';
@@ -458,7 +457,7 @@ const runTests = async (server, testResult) => {
   ]);
 };
 
-module.exports = {
+export default {
   resource,
   runTests,
 };

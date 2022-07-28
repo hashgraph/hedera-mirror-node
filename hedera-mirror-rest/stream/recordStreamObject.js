@@ -18,11 +18,9 @@
  * ‍
  */
 
-'use strict';
-
-const {BYTE_SIZE} = require('./constants');
-const StreamObject = require('./streamObject');
-const {readLengthAndBytes} = require('./utils');
+import {BYTE_SIZE} from './constants';
+import StreamObject from './streamObject';
+import {readLengthAndBytes} from './utils';
 
 class RecordStreamObject extends StreamObject {
   static MAX_RECORD_LENGTH = 64 * 1024;
@@ -48,4 +46,4 @@ class RecordStreamObject extends StreamObject {
   }
 }
 
-module.exports = RecordStreamObject;
+export default RecordStreamObject;

@@ -18,8 +18,6 @@
  * ‍
  */
 
-'use strict';
-
 const FileDownloadErrorMessage = 'Failed to download file';
 
 class FileDownloadError extends Error {
@@ -29,6 +27,4 @@ class FileDownloadError extends Error {
   }
 }
 
-module.exports = {
-  FileDownloadError,
-};
+export default FileDownloadError;

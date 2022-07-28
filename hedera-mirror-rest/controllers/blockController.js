@@ -18,46 +18,52 @@
  * ‍
  */
 
-'use strict';
+import _ from 'lodash';
 
-const _ = require('lodash');
+import BaseController from './baseController';
+import {filterKeys, orderFilterValues, responseDataLabel} from '../constants';
+import {getResponseLimit} from '../config';
+import {InvalidArgumentError, NotFoundError} from '../errors';
+import {RecordFile} from '../model';
+import {RecordFileService} from '../service';
+import * as utils from '../utils';
+import {BlockViewModel} from '../viewmodel';
 
-const RecordFile = require('../model/recordFile');
-const BaseController = require('./baseController');
-const {RecordFileService} = require('../service');
-const {BlockViewModel} = require('../viewmodel');
-const utils = require('../utils');
-const constants = require('../constants');
-const {NotFoundError} = require('../errors/notFoundError');
-const {InvalidArgumentError} = require('../errors/invalidArgumentError');
-const {
-  response: {
-    limit: {default: defaultLimit, max: maxLimit},
-  },
-} = require('../config');
+const {default: defaultLimit, max: maxLimit} = getResponseLimit();
+
+const blockWhereFilters = [filterKeys.BLOCK_NUMBER, filterKeys.TIMESTAMP];
 
 const validateHashOrNumber = (hashOrNumber) => {
   if (utils.isValidBlockHash(hashOrNumber)) {
     return {hash: hashOrNumber.replace('0x', ''), number: null};
   }
 
-  if (utils.isPositiveLong(hashOrNumber)) {
+  if (utils.isPositiveLong(hashOrNumber, true)) {
     return {hash: null, number: hashOrNumber};
   }
 
-  throw InvalidArgumentError.forParams(constants.filterKeys.HASH_OR_NUMBER);
+  throw InvalidArgumentError.forParams(filterKeys.HASH_OR_NUMBER);
 };
 
 class BlockController extends BaseController {
   extractOrderFromFilters = (filters) => {
-    const order = _.findLast(filters, {key: constants.filterKeys.ORDER});
+    const order = _.findLast(filters, {key: filterKeys.ORDER});
 
-    return order ? constants.orderFilterValues[order.value.toUpperCase()] : constants.orderFilterValues.DESC;
+    return order ? orderFilterValues[order.value.toUpperCase()] : orderFilterValues.DESC;
+  };
+
+  extractOrderByFromFilters = (filters) => {
+    const orderBy = filters
+      .filter((f) => blockWhereFilters.includes(f.key))
+      .map((f) => {
+        return f.key === filterKeys.BLOCK_NUMBER ? RecordFile.INDEX : RecordFile.CONSENSUS_END;
+      })[0];
+
+    return _.isEmpty(orderBy) ? RecordFile.CONSENSUS_END : orderBy;
   };
 
   extractLimitFromFilters = (filters) => {
-    const limit = _.findLast(filters, {key: constants.filterKeys.LIMIT});
-
+    const limit = _.findLast(filters, {key: filterKeys.LIMIT});
     return limit ? (limit.value > maxLimit ? defaultLimit : limit.value) : defaultLimit;
   };
 
@@ -71,6 +77,7 @@ class BlockController extends BaseController {
   extractSqlFromBlockFilters = (filters) => {
     const filterQuery = {
       order: this.extractOrderFromFilters(filters),
+      orderBy: this.extractOrderByFromFilters(filters),
       limit: this.extractLimitFromFilters(filters),
       whereQuery: [],
     };
@@ -80,13 +87,13 @@ class BlockController extends BaseController {
     }
 
     filterQuery.whereQuery = filters
-      .filter((f) => [constants.filterKeys.BLOCK_NUMBER, constants.filterKeys.TIMESTAMP].includes(f.key))
+      .filter((f) => blockWhereFilters.includes(f.key))
       .map((f) => {
         switch (f.key) {
-          case constants.filterKeys.BLOCK_NUMBER:
+          case filterKeys.BLOCK_NUMBER:
             return this.getFilterWhereCondition(RecordFile.INDEX, f);
 
-          case constants.filterKeys.TIMESTAMP:
+          case filterKeys.TIMESTAMP:
             return this.getFilterWhereCondition(RecordFile.CONSENSUS_END, f);
         }
       });
@@ -99,9 +106,7 @@ class BlockController extends BaseController {
       ? utils.getPaginationLink(
           req,
           blocks.length !== filters.limit,
-          {
-            [constants.filterKeys.BLOCK_NUMBER]: blocks[0].index,
-          },
+          {[filterKeys.BLOCK_NUMBER]: _.last(blocks).index},
           filters.order
         )
       : null;
@@ -112,7 +117,7 @@ class BlockController extends BaseController {
     const formattedFilters = this.extractSqlFromBlockFilters(filters);
     const blocks = await RecordFileService.getBlocks(formattedFilters);
 
-    res.locals[constants.responseDataLabel] = {
+    res.locals[responseDataLabel] = {
       blocks: blocks.map((model) => new BlockViewModel(model)),
       links: {
         next: this.generateNextLink(req, blocks, formattedFilters),
@@ -128,8 +133,8 @@ class BlockController extends BaseController {
       throw new NotFoundError();
     }
 
-    res.locals[constants.responseDataLabel] = new BlockViewModel(block);
+    res.locals[responseDataLabel] = new BlockViewModel(block);
   };
 }
 
-module.exports = new BlockController();
+export default new BlockController();

@@ -18,24 +18,23 @@
  * ‍
  */
 
-'use strict';
+import _ from 'lodash';
 
-const EntityId = require('../entityId');
-const utils = require('../utils');
-const {TransactionType} = require('../model');
-const _ = require('lodash');
+import EntityId from '../entityId';
+import {createTransactionId, nsToSecNs} from '../utils';
+import {TransactionType} from '../model';
 
 /**
  * Nft transaction history transfer view model
  */
 class NftTransactionHistoryViewModel {
   constructor(nftTransferModel, transactionModel) {
-    this.consensus_timestamp = utils.nsToSecNs(nftTransferModel.consensusTimestamp);
+    this.consensus_timestamp = nsToSecNs(nftTransferModel.consensusTimestamp);
     this.is_approval = _.isNil(nftTransferModel.isApproval) ? false : nftTransferModel.isApproval;
     this.nonce = transactionModel.nonce;
     this.receiver_account_id = EntityId.parse(nftTransferModel.receiverAccountId, {isNullable: true}).toString();
     this.sender_account_id = EntityId.parse(nftTransferModel.senderAccountId, {isNullable: true}).toString();
-    this.transaction_id = utils.createTransactionId(
+    this.transaction_id = createTransactionId(
       EntityId.parse(transactionModel.payerAccountId).toString(),
       transactionModel.validStartNs
     );
@@ -43,4 +42,4 @@ class NftTransactionHistoryViewModel {
   }
 }
 
-module.exports = NftTransactionHistoryViewModel;
+export default NftTransactionHistoryViewModel;

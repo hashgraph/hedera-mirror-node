@@ -21,6 +21,8 @@
 package persistence
 
 import (
+	"fmt"
+	"math"
 	"testing"
 
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
@@ -462,6 +464,42 @@ func (suite *blockRepositorySuite) TestRetrieveGenesis() {
 	// then
 	assert.Nil(suite.T(), err)
 	assert.Equal(suite.T(), expectedGenesisBlock, actual)
+
+	// given blocks are deleted
+	db.ExecSql(dbClient, truncateRecordFileSql)
+
+	// when
+	actual, err = repo.RetrieveGenesis(defaultContext)
+
+	// then RetrieveGenesis returns the cached block info
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), expectedGenesisBlock, actual)
+}
+
+func (suite *blockRepositorySuite) TestRetrieveGenesisIndexOverflowInt4() {
+	genesisIndexes := []int64{int64(math.MaxInt32) + 1, int64(math.MinInt32) - 1}
+	for _, genesisIndex := range genesisIndexes {
+		suite.T().Run(fmt.Sprintf("%d", genesisIndex), func(t *testing.T) {
+			// given
+			db.ExecSql(dbClient, truncateRecordFileSql)
+			recordFile1 := *recordFiles[0]
+			recordFile1.Index = genesisIndex
+			recordFile2 := *recordFiles[1]
+			recordFile2.Index = genesisIndex + 1
+			db.CreateDbRecords(dbClient, []*domain.RecordFile{&recordFile1, &recordFile2})
+			expected := *expectedGenesisBlock
+			expected.Index = genesisIndex
+			expected.ParentIndex = genesisIndex
+			repo := NewBlockRepository(dbClient)
+
+			// when
+			actual, err := repo.RetrieveGenesis(defaultContext)
+
+			// then
+			assert.Nil(suite.T(), err)
+			assert.Equal(suite.T(), &expected, actual)
+		})
+	}
 }
 
 func (suite *blockRepositorySuite) TestRetrieveGenesisNoAccountBalanceFile() {
@@ -612,7 +650,13 @@ func (suite *blockRepositorySuite) TestRetrieveLatestDbConnectionError() {
 }
 
 func TestRecordFileToBlock(t *testing.T) {
-	genesisConsensusStart := int64(110)
+	genesisBlock := recordBlock{
+		ConsensusStart: 110,
+		ConsensusEnd:   200,
+		Hash:           "hash",
+		Index:          genesisBlockIndex,
+		PrevHash:       "prev_hash",
+	}
 	tests := []struct {
 		name     string
 		input    recordBlock
@@ -632,7 +676,7 @@ func TestRecordFileToBlock(t *testing.T) {
 				Hash:                "hash",
 				ParentIndex:         genesisBlockIndex,
 				ParentHash:          "hash",
-				ConsensusStartNanos: genesisConsensusStart,
+				ConsensusStartNanos: genesisBlock.ConsensusStart,
 				ConsensusEndNanos:   200,
 			},
 		},
@@ -658,7 +702,7 @@ func TestRecordFileToBlock(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, tt.input.ToBlock(genesisConsensusStart, genesisBlockIndex))
+			assert.Equal(t, tt.expected, tt.input.ToBlock(genesisBlock))
 		})
 	}
 }

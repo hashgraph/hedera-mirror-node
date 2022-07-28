@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env node --experimental-specifier-resolution=node
 /*-
  * ‌
  * Hedera Mirror Node
@@ -19,14 +19,11 @@
  * ‍
  */
 
-'use strict';
+import log4js from 'log4js';
 
-// external libraries
-const log4js = require('log4js');
-
-const startUpScreen = require('./startUp');
-const StateProofHandler = require('./stateProofHandler');
-const {getAPIResponse, readJSONFile} = require('./utils');
+import startUpScreen from './startUpScreen';
+import StateProofHandler from './stateProofHandler';
+import {getAPIResponse, readJSONFile} from './utils';
 
 const logger = log4js
   .configure({

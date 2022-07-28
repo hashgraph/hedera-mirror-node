@@ -18,18 +18,18 @@
  * ‍
  */
 
-'use strict';
+import _ from 'lodash';
+import mem from 'mem';
+import quickLru from 'quick-lru';
 
-const _ = require('lodash');
-const mem = require('mem');
-const quickLru = require('quick-lru');
+import config from './config';
+import {EvmAddressType} from './constants';
+import {InvalidArgumentError} from './errors';
 
 const {
   cache: {entityId: entityIdCacheConfig},
   shard: systemShard,
-} = require('./config');
-const {InvalidArgumentError} = require('./errors/invalidArgumentError');
-const {EvmAddressType} = require('./constants');
+} = config;
 
 // format: |0|15-bit shard|16-bit realm|32-bit num|
 const numBits = 32n;
@@ -344,7 +344,7 @@ const parse = (id, {allowEvmAddress, evmAddressType, isNullable, paramName} = {}
   return checkNullId(id, isNullable) || parseMemoized(`${id}`, allowEvmAddress, evmAddressType, error);
 };
 
-module.exports = {
+export default {
   isValidEntityId,
   isValidEvmAddress,
   computeContractIdPartsFromContractIdValue,

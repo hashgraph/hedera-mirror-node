@@ -60,6 +60,7 @@ import com.hedera.mirror.web3.evm.OracleSimulator;
 import com.hedera.mirror.web3.evm.SimulatedPricesSource;
 import com.hedera.mirror.web3.evm.SimulatedUpdater;
 import com.hedera.mirror.web3.evm.properties.EvmProperties;
+import com.hedera.mirror.web3.evm.properties.BlockMetaSourceProvider;
 import com.hedera.mirror.web3.evm.properties.SimulatedBlockMetaSource;
 import com.hedera.services.transaction.HederaMessageCallProcessor;
 import com.hedera.services.transaction.TransactionProcessingResult;
@@ -83,7 +84,7 @@ abstract class EvmTxProcessor {
     public static final String EXPIRY_ORACLE_CONTEXT_KEY = "expiryOracle";
     public static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
 
-    private SimulatedBlockMetaSource blockMetaSource;
+    private BlockMetaSourceProvider blockMetaSource;
     private SimulatedUpdater worldUpdater;
 
     private final GasCalculator gasCalculator;
@@ -109,7 +110,7 @@ abstract class EvmTxProcessor {
                 null);
     }
 
-    protected void setBlockMetaSource(final SimulatedBlockMetaSource blockMetaSource) {
+    protected void setBlockMetaSource(final BlockMetaSourceProvider blockMetaSource) {
         this.blockMetaSource = blockMetaSource;
     }
 
@@ -124,7 +125,7 @@ abstract class EvmTxProcessor {
             final GasCalculator gasCalculator,
             final Set<Operation> hederaOperations,
             final Map<String, PrecompiledContract> precompiledContractMap,
-            final SimulatedBlockMetaSource blockMetaSource
+            final BlockMetaSourceProvider blockMetaSource
     ) {
         this.worldUpdater = worldUpdater;
         this.simulatedPricesSource = simulatedPricesSource;

@@ -17,7 +17,6 @@
  * limitations under the License.
  * ‍
  */
-'use strict';
 
 const InvalidArgumentErrorMessageFormat = 'Invalid parameter: ';
 const invalidParamUsageMessageFormat = 'Invalid parameter usage: ';
@@ -61,6 +60,4 @@ class InvalidArgumentError extends Error {
   }
 }
 
-module.exports = {
-  InvalidArgumentError,
-};
+export default InvalidArgumentError;

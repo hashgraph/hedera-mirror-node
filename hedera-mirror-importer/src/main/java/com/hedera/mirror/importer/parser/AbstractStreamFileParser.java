@@ -91,16 +91,9 @@ public abstract class AbstractStreamFileParser<T extends StreamFile> implements 
                 timer.record(stopwatch.elapsed());
             }
         }
-
-        postParse(streamFile);
     }
 
     protected abstract void doParse(T streamFile);
-
-    private void postParse(T streamFile) {
-        streamFile.setBytes(null);
-        streamFile.setItems(null);
-    }
 
     private boolean shouldParse(T streamFile) {
         if (!parserProperties.isEnabled()) {

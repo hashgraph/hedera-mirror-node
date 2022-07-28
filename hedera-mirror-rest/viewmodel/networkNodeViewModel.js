@@ -18,13 +18,11 @@
  * ‍
  */
 
-'use strict';
+import _ from 'lodash';
 
-const _ = require('lodash');
-
-const AddressBookServiceEndpointViewModel = require('./addressBookServiceEndpointViewModel');
-const EntityId = require('../entityId');
-const utils = require('../utils');
+import AddressBookServiceEndpointViewModel from './addressBookServiceEndpointViewModel';
+import EntityId from '../entityId';
+import * as utils from '../utils';
 
 /**
  * Network node view model
@@ -53,7 +51,6 @@ class NetworkNodeViewModel {
     this.stake = nodeStake.stake;
     this.stake_not_rewarded = utils.asNullIfDefault(nodeStake.stakeNotRewarded, -1);
     this.stake_rewarded = nodeStake.stakeRewarded;
-    this.stake_total = nodeStake.stakeTotal;
 
     if (_.isNil(nodeStake.stakingPeriod)) {
       this.staking_period = null;
@@ -72,4 +69,4 @@ class NetworkNodeViewModel {
   }
 }
 
-module.exports = NetworkNodeViewModel;
+export default NetworkNodeViewModel;

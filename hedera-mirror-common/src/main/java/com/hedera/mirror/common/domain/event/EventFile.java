@@ -41,7 +41,7 @@ import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.entity.EntityId;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-@Builder
+@Builder(toBuilder = true)
 @Data
 @Entity
 @NoArgsConstructor
@@ -84,6 +84,11 @@ public class EventFile implements StreamFile<EventItem> {
     private String previousHash;
 
     private int version;
+
+    @Override
+    public StreamFile<EventItem> copy() {
+        return this.toBuilder().build();
+    }
 
     @Override
     public StreamType getType() {

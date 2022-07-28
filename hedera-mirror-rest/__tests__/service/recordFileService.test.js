@@ -18,18 +18,11 @@
  * ‍
  */
 
-'use strict';
+import {RecordFileService} from '../../service';
+import integrationDomainOps from '../integrationDomainOps';
+import {setupIntegrationTest} from '../integrationUtils';
 
-const {RecordFileService} = require('../../service');
-
-// add logger configuration support
-require('../testutils');
-
-const integrationDbOps = require('../integrationDbOps');
-const integrationDomainOps = require('../integrationDomainOps');
-
-const {defaultMochaStatements} = require('./defaultMochaStatements');
-defaultMochaStatements(jest, integrationDbOps, integrationDomainOps);
+setupIntegrationTest();
 
 const expectToEqualId16 = (blockId16) => {
   expect(blockId16.index).toEqual(16);
@@ -140,6 +133,7 @@ describe('RecordFileService.getRecordFileBlockDetailsFromTimestamp tests', () =>
     const blocks = await RecordFileService.getBlocks({
       whereQuery: [],
       order: 'asc',
+      orderBy: 'consensus_end',
       limit: 25,
     });
 
@@ -155,6 +149,7 @@ describe('RecordFileService.getRecordFileBlockDetailsFromTimestamp tests', () =>
     const blocks = await RecordFileService.getBlocks({
       whereQuery: [{query: 'index <', param: '17'}],
       order: 'asc',
+      orderBy: 'index',
       limit: 25,
     });
 
@@ -168,6 +163,7 @@ describe('RecordFileService.getRecordFileBlockDetailsFromTimestamp tests', () =>
     const blocks = await RecordFileService.getBlocks({
       whereQuery: [],
       order: 'desc',
+      orderBy: 'consensus_end',
       limit: 1,
     });
 

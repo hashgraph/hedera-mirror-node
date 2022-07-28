@@ -7,7 +7,7 @@ metadata:
   namespace: {{ include "hedera-mirror.namespace" . }}
   annotations:
     helm.sh/hook: test-success
-    helm.sh/hook-delete-policy: before-hook-creation,hook-failed,hook-succeeded
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
 spec:
   containers:
     - name: acceptance-tests
@@ -18,8 +18,9 @@ spec:
         - '-c'
           # Copying the contents of the secret to the directory the image reads from without overwriting the existing yml.
         - |
-          apk add -qu git openjdk11-jre
-          git clone --branch {{ if regexMatch "^\\d+\\.\\d+\\.\\d+.*$" .Chart.AppVersion }}v{{end}}{{ .Chart.AppVersion }} --depth 1 https://github.com/hashgraph/hedera-mirror-node.git
+          {{ $branch := .Values.test.git.branch | default .Chart.AppVersion -}}
+          apk add -qu git openjdk17-jre
+          git clone --branch {{ if regexMatch "^\\d+\\.\\d+\\.\\d+.*$" $branch }}v{{end}}{{ $branch }} --depth 1 {{ .Values.test.git.repository }}
           cd hedera-mirror-node
           cp /etc/secrets/* hedera-mirror-test/src/test/resources/
           ./mvnw integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="{{ .Values.test.cucumberTags }}"

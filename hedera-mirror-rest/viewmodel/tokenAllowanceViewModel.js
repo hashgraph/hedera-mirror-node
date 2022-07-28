@@ -18,10 +18,8 @@
  * ‍
  */
 
-'use strict';
-
-const BaseAllowanceViewModel = require('./baseAllowanceViewModel');
-const EntityId = require('../entityId');
+import BaseAllowanceViewModel from './baseAllowanceViewModel.js';
+import EntityId from '../entityId.js';
 
 /**
  * TokenAllowance view model
@@ -39,4 +37,4 @@ class TokenAllowanceViewModel extends BaseAllowanceViewModel {
   }
 }
 
-module.exports = TokenAllowanceViewModel;
+export default TokenAllowanceViewModel;

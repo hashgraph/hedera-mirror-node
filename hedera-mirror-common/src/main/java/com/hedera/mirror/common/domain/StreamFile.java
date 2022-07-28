@@ -27,6 +27,8 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 
 public interface StreamFile<T extends StreamItem> {
 
+    StreamFile<T> copy();
+
     byte[] getBytes();
 
     void setBytes(byte[] bytes);

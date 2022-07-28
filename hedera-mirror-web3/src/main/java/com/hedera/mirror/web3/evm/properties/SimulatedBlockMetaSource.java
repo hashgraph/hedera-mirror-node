@@ -20,17 +20,26 @@ package com.hedera.mirror.web3.evm.properties;
  * ‍
  */
 
-import org.hyperledger.besu.datatypes.Hash;
-import org.hyperledger.besu.evm.fluent.SimpleBlockValues;
+import java.util.Optional;
+import lombok.Value;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.units.bigints.UInt256;
+import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.BlockValues;
 
-public class SimulatedBlockMetaSource {
+/**
+ * Mirror-node adapted {@link BlockValues}
+ */
+@Value
+public class SimulatedBlockMetaSource implements BlockValues {
 
-    public Hash getBlockHash(long blockNo) {
-        return Hash.EMPTY;
-    }
+    private static Optional<Wei> zeroWei = Optional.of(Wei.ZERO);
 
-    public BlockValues computeBlockValues(long gasLimit) {
-        return new SimpleBlockValues();
-    }
+    Optional<Wei> baseFee = zeroWei;
+    Bytes difficultyBytes = UInt256.ZERO;
+
+    //Used for constructor
+    long gasLimit;
+    long number;
+    long timestamp;
 }

@@ -9,9 +9,9 @@ package com.hedera.mirror.test.e2e.acceptance.config;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,12 +38,18 @@ import com.hedera.mirror.test.e2e.acceptance.props.NodeProperties;
 @Data
 @Validated
 public class AcceptanceTestProperties {
+
+    private final FeatureProperties featureProperties;
+    private final RestPollingProperties restPollingProperties;
+    private final SdkProperties sdkProperties;
+    private final WebClientProperties webClientProperties;
+
     @NotNull
     private Duration backOffPeriod = Duration.ofMillis(5000);
 
-    private boolean emitBackgroundMessages = false;
+    private boolean createOperatorAccount = true;
 
-    private final FeatureProperties featureProperties;
+    private boolean emitBackgroundMessages = false;
 
     @Max(5)
     private int maxRetries = 2;
@@ -52,7 +58,7 @@ public class AcceptanceTestProperties {
     private Long maxTinyBarTransactionFee = 2_000_000_000L;
 
     @NotNull
-    private Duration messageTimeout = Duration.ofSeconds(60);
+    private Duration messageTimeout = Duration.ofSeconds(20);
 
     @NotBlank
     private String mirrorNodeAddress;
@@ -62,31 +68,21 @@ public class AcceptanceTestProperties {
 
     private Set<NodeProperties> nodes = new LinkedHashSet<>();
 
-    @NotBlank
-    private String operatorId;
+    private long operatorBalance = 15_000_000_000L;
 
     @NotBlank
-    private String operatorKey;
+    private String operatorId = "0.0.2";
 
-    private final RestPollingProperties restPollingProperties;
+    @NotBlank
+    private String operatorKey =
+            "302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137";
 
     private boolean retrieveAddressBook = true;
 
-    private final SdkProperties sdkProperties;
-
-    private final WebClientProperties webClientProperties;
-
-    public Set<NodeProperties> getNodes() {
-        if (network == HederaNetwork.OTHER && nodes.isEmpty()) {
-            throw new IllegalArgumentException("nodes must not be empty");
-        }
-        return nodes;
-    }
-
     public enum HederaNetwork {
         MAINNET,
+        OTHER,
         PREVIEWNET,
         TESTNET,
-        OTHER
     }
 }

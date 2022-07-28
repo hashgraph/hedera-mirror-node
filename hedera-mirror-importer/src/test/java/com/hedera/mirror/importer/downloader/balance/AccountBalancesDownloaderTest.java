@@ -51,9 +51,9 @@ class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
     protected Downloader getDownloader() {
         BalanceFileReader balanceFileReader = new BalanceFileReaderImplV1(new BalanceParserProperties(),
                 new AccountBalanceLineParserV1(mirrorProperties));
-        return new AccountBalancesDownloader(s3AsyncClient, addressBookService,
-                (BalanceDownloaderProperties) downloaderProperties, meterRegistry, nodeSignatureVerifier,
-                signatureFileReader, balanceFileReader, streamFileNotifier, dateRangeProcessor);
+        return new AccountBalancesDownloader(addressBookService, (BalanceDownloaderProperties) downloaderProperties,
+                meterRegistry, dateRangeProcessor, nodeSignatureVerifier, s3AsyncClient, signatureFileReader,
+                balanceFileReader, streamFileNotifier);
     }
 
     @Override
@@ -77,14 +77,14 @@ class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
     }
 
     @Test
-    void downloadWithMixedStreamFileExtensions() throws Exception {
+    void downloadWithMixedStreamFileExtensions() {
         // for the mixed scenario, both .csv and .pb.gz files exist for the same timestamp; however, all .csv and
         // .csv_sig files are intentionally made empty so if two account balance files are processed, they must be
         // the .pb.gz files
         ProtoBalanceFileReader protoBalanceFileReader = new ProtoBalanceFileReader();
-        downloader = new AccountBalancesDownloader(s3AsyncClient, addressBookService,
-                (BalanceDownloaderProperties) downloaderProperties, meterRegistry, nodeSignatureVerifier,
-                signatureFileReader, protoBalanceFileReader, streamFileNotifier, dateRangeProcessor);
+        downloader = new AccountBalancesDownloader(addressBookService,
+                (BalanceDownloaderProperties) downloaderProperties, meterRegistry, dateRangeProcessor,
+                nodeSignatureVerifier, s3AsyncClient, signatureFileReader, protoBalanceFileReader, streamFileNotifier);
         fileCopier = FileCopier.create(TestUtils.getResource("data").toPath(), s3Path)
                 .from(Path.of("accountBalances", "mixed"))
                 .to(commonDownloaderProperties.getBucketName(), streamType.getPath());

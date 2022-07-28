@@ -18,12 +18,10 @@
  * ‍
  */
 
-'use strict';
-
-const long = require('long');
-const {proto} = require('@hashgraph/proto');
-const TransactionId = require('../../transactionId');
-const utils = require('../../stream/utils');
+import long from 'long';
+import {proto} from '@hashgraph/proto';
+import TransactionId from '../../transactionId';
+import * as utils from '../../stream/utils';
 
 describe('protoTransactionIdToTransactionId', () => {
   const accountID = {

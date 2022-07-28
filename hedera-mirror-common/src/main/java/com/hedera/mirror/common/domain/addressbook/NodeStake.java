@@ -45,16 +45,16 @@ public class NodeStake implements Persistable<NodeStake.Id> {
     private long epochDay;
 
     /**
-     * The maximum stake (rewarded or not rewarded) this node can have as consensus weight. If its stake to
-     * reward is above this maximum at the start of a period, then accounts staking to the node in that
-     * period will be rewarded at a lower rate scaled by (maxStake / stakeRewardStart).
+     * The maximum stake (rewarded or not rewarded) this node can have as consensus weight. If its stake to reward is
+     * above this maximum at the start of a period, then accounts staking to the node in that period will be rewarded at
+     * a lower rate scaled by (maxStake / stakeRewardStart).
      */
     private long maxStake;
 
     /**
-     * The minimum stake (rewarded or not rewarded) this node must reach before having non-zero consensus weight.
-     * If its total stake is below this minimum at the start of a period, then accounts staking to the node in
-     * that period will receive no rewards.
+     * The minimum stake (rewarded or not rewarded) this node must reach before having non-zero consensus weight. If its
+     * total stake is below this minimum at the start of a period, then accounts staking to the node in that period will
+     * receive no rewards.
      */
     private long minStake;
 
@@ -72,8 +72,8 @@ public class NodeStake implements Persistable<NodeStake.Id> {
     private long stake;
 
     /**
-     * The sum of (balance + stakedToMe) for all accounts staked to this node with declineReward=true, at the end of
-     * the staking period on epochDay
+     * The sum of (balance + stakedToMe) for all accounts staked to this node with declineReward=true, at the end of the
+     * staking period on epochDay
      */
     private long stakeNotRewarded;
 
@@ -82,11 +82,6 @@ public class NodeStake implements Persistable<NodeStake.Id> {
      * the staking period on epochDay
      */
     private long stakeRewarded;
-
-    /**
-     * The sum of all nodes' consensus weight at the end of the staking period on epochDay
-     */
-    private long stakeTotal;
 
     /**
      * The timestamp of the end of the staking period on epochDay

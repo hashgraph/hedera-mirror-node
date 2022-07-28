@@ -18,9 +18,7 @@
  * ‍
  */
 
-'use strict';
-
-const Transaction = require('./transaction');
+import Transaction from './transaction';
 
 class TransactionWithEthData extends Transaction {
   /**
@@ -41,7 +39,8 @@ class TransactionWithEthData extends Transaction {
     this.signatureS = txWithEthData.signature_s;
     this.recoveryId = txWithEthData.recovery_id;
     this.value = txWithEthData.value;
+    this.transactionType = txWithEthData.transaction_type;
   }
 }
 
-module.exports = TransactionWithEthData;
+export default TransactionWithEthData;

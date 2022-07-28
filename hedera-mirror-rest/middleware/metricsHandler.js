@@ -18,18 +18,18 @@
  * ‍
  */
 
-'use strict';
-
 // ext libraries
-const extend = require('extend');
-const client = require('prom-client');
-const swStats = require('swagger-stats');
-const url = require('url');
+import extend from 'extend';
+
+import client from 'prom-client';
+import swStats from 'swagger-stats';
+import url from 'url';
 
 // files
-const config = require('../config');
-const oasHandler = require('./openapiHandler');
-const {ipMask} = require('../utils');
+import config from '../config';
+
+import {getV1OpenApiObject} from './openapiHandler';
+import {ipMask} from '../utils';
 
 const onMetricsAuthenticate = async (req, username, password) => {
   return new Promise(function (resolve, reject) {
@@ -57,7 +57,7 @@ const metricsHandler = () => {
   const defaultMetricsConfig = {
     name: process.env.npm_package_name,
     onAuthenticate: onMetricsAuthenticate,
-    swaggerSpec: oasHandler.getV1OpenApiObject(),
+    swaggerSpec: getV1OpenApiObject(),
     version: process.env.npm_package_version,
   };
 
@@ -81,7 +81,4 @@ const metricsHandler = () => {
   };
 };
 
-module.exports = {
-  metricsHandler,
-  recordIpAndEndpoint,
-};
+export {metricsHandler, recordIpAndEndpoint};

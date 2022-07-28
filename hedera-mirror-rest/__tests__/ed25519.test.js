@@ -18,9 +18,7 @@
  * ‍
  */
 
-'use strict';
-
-const ed25519 = require('../ed25519.js');
+import ed25519 from '../ed25519';
 
 /**
  * Unit test for derToEd25519.js  to perform on the resultant SQL query.

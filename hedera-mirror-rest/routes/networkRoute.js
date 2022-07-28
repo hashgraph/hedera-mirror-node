@@ -18,11 +18,10 @@
  * ‍
  */
 
-'use strict';
-
 // external libraries
-const {Router} = require('@awaitjs/express');
-const {NetworkController} = require('../controllers');
+import {Router} from '@awaitjs/express';
+
+import {NetworkController} from '../controllers';
 
 const router = Router();
 
@@ -32,7 +31,7 @@ router.getAsync('/fees', NetworkController.getFees);
 router.getAsync('/nodes', NetworkController.getNetworkNodes);
 router.getAsync('/supply', NetworkController.getSupply);
 
-module.exports = {
+export default {
   resource,
   router,
 };

@@ -18,11 +18,9 @@
  * ‍
  */
 
-'use strict';
-
-const appRoot = require('app-root-path');
-const fs = require('fs');
-const path = require('path');
+import appRoot from 'app-root-path';
+import fs from 'fs';
+import path from 'path';
 
 const recordStreamsPath = path.join(appRoot.toString(), '__tests__', 'data', 'recordstreams');
 const v2RecordStreamsPath = path.join(recordStreamsPath, 'v2');
@@ -337,7 +335,7 @@ const testRecordFileFromBufferOrObj = (version, clazz, supportObj = false, hasRu
   }
 };
 
-module.exports = {
+export default {
   testSignatureFiles,
   testRecordFileUnsupportedVersion,
   testRecordFileCanCompact,

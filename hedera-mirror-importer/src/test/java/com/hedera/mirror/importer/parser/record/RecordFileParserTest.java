@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.parser.record;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
@@ -42,6 +43,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Instant;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -57,8 +59,16 @@ import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.Date
 import com.hedera.mirror.importer.exception.ParserSQLException;
 import com.hedera.mirror.importer.parser.AbstractStreamFileParserTest;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
+import com.hedera.mirror.importer.repository.RecordFileRepository;
+import com.hedera.mirror.importer.repository.StreamFileRepository;
 
 class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser> {
+
+    private final DomainBuilder domainBuilder = new DomainBuilder();
+    private final RecordItemBuilder recordItemBuilder = new RecordItemBuilder();
+
+    @Mock
+    private RecordFileRepository recordFileRepository;
 
     @Mock
     private RecordItemListener recordItemListener;
@@ -69,18 +79,15 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
     @Mock(lenient = true)
     private MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
 
-    private DomainBuilder domainBuilder = new DomainBuilder();
-
-    private RecordItemBuilder recordItemBuilder = new RecordItemBuilder();
-
     private long count = 0;
 
     private RecordItem recordItem;
 
     @Override
     protected void assertParsed(StreamFile streamFile, boolean parsed, boolean dbError) {
-        RecordFile recordFile = (RecordFile) streamFile;
+        super.assertParsed(streamFile, parsed, dbError);
 
+        RecordFile recordFile = (RecordFile) streamFile;
         if (parsed) {
             verify(recordItemListener).onItem(recordItem);
             verify(recordStreamFileListener).onEnd(recordFile);
@@ -100,7 +107,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
         RecordParserProperties parserProperties = new RecordParserProperties();
         when(mirrorDateRangePropertiesProcessor.getDateRangeFilter(parserProperties.getStreamType()))
                 .thenReturn(DateRangeFilter.all());
-        return new RecordFileParser(new SimpleMeterRegistry(), parserProperties, streamFileRepository,
+        return new RecordFileParser(new SimpleMeterRegistry(), parserProperties, recordFileRepository,
                 recordItemListener, recordStreamFileListener, mirrorDateRangePropertiesProcessor);
     }
 
@@ -109,6 +116,11 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
         long id = ++count;
         recordItem = cryptoTransferRecordItem(id);
         return getStreamFile(Flux.just(recordItem), id);
+    }
+
+    @Override
+    protected StreamFileRepository getStreamFileRepository() {
+        return recordFileRepository;
     }
 
     @Override
@@ -124,7 +136,6 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
         parser.parse(recordFile);
         verifyNoInteractions(recordItemListener);
         verify(recordStreamFileListener).onEnd(recordFile);
-        assertPostParseStreamFile(recordFile, true);
     }
 
     @ParameterizedTest(name = "endDate with offset {0}ns")
@@ -146,7 +157,6 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
             verify(recordItemListener).onItem(firstItem);
         }
         verify(recordStreamFileListener).onEnd(recordFile);
-        assertPostParseStreamFile(recordFile, true);
     }
 
     @Test
@@ -215,7 +225,79 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
             verify(recordItemListener).onItem(firstItem);
         }
         verify(recordStreamFileListener).onEnd(recordFile);
-        assertPostParseStreamFile(recordFile, true);
+    }
+
+    @Test
+    void blockNumberMigration() {
+        // given
+        int offset = 2;
+        var streamFile1 = (RecordFile) getStreamFile();
+        var streamFile2 = (RecordFile) getStreamFile();
+        streamFile1.setIndex(streamFile2.getIndex() - offset);
+        streamFile1.setVersion(5);
+
+        // when
+        parser.parse(streamFile1);
+        parser.parse(streamFile2);
+
+        // then
+        assertParsed(streamFile1, true, false);
+        assertParsed(streamFile2, true, false);
+        verify(recordFileRepository).updateIndex(offset - 1);
+    }
+
+    @Test
+    void blockNumberMigrationOnStartup() {
+        // given
+        int offset = 2;
+        var streamFile1 = (RecordFile) getStreamFile();
+        var streamFile2 = (RecordFile) getStreamFile();
+        streamFile1.setIndex(streamFile2.getIndex() - offset);
+        streamFile1.setVersion(5);
+        when(recordFileRepository.findLatest()).thenReturn(Optional.of(streamFile1));
+
+        // when
+        parser.parse(streamFile2);
+
+        // then
+        assertParsed(streamFile2, true, false);
+        verify(recordFileRepository).updateIndex(offset - 1);
+    }
+
+    @Test
+    void blockNumberMigrationNotV6() {
+        // given
+        var streamFile1 = (RecordFile) getStreamFile();
+        var streamFile2 = (RecordFile) getStreamFile();
+        streamFile1.setIndex(streamFile2.getIndex() - 2);
+        streamFile1.setVersion(5);
+        streamFile2.setVersion(5);
+
+        // when
+        parser.parse(streamFile1);
+        parser.parse(streamFile2);
+
+        // then
+        assertParsed(streamFile1, true, false);
+        assertParsed(streamFile2, true, false);
+        verify(recordFileRepository, never()).updateIndex(anyLong());
+    }
+
+    @Test
+    void blockNumberMigrationUnnecessary() {
+        // given
+        var streamFile1 = (RecordFile) getStreamFile();
+        var streamFile2 = (RecordFile) getStreamFile();
+        streamFile1.setIndex(streamFile2.getIndex() - 1);
+
+        // when
+        parser.parse(streamFile1);
+        parser.parse(streamFile2);
+
+        // then
+        assertParsed(streamFile1, true, false);
+        assertParsed(streamFile2, true, false);
+        verify(recordFileRepository, never()).updateIndex(anyLong());
     }
 
     private RecordItem contractCall(ContractFunctionResult contractFunctionResult, long timestamp,

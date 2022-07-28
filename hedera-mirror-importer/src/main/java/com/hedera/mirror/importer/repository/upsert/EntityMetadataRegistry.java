@@ -43,14 +43,17 @@ import javax.persistence.Id;
 import javax.persistence.Query;
 import javax.persistence.Table;
 import javax.persistence.metamodel.Attribute;
+import javax.persistence.metamodel.EmbeddableType;
 import javax.persistence.metamodel.EntityType;
 import javax.persistence.metamodel.SingularAttribute;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
+import org.hibernate.metamodel.model.domain.spi.SingularPersistentAttribute;
 import org.springframework.core.annotation.AnnotationUtils;
 
+import com.hedera.mirror.common.domain.UpsertColumn;
 import com.hedera.mirror.common.domain.Upsertable;
 
 @Log4j2
@@ -82,7 +85,15 @@ public class EntityMetadataRegistry {
 
         for (Attribute<?, ?> attribute : entityType.getAttributes()) {
             boolean id = idAttributes.contains(attribute.getName());
-            columnMetadata.add(columnMetadata(schema, attribute, id));
+
+            if (attribute.getPersistentAttributeType() == Attribute.PersistentAttributeType.EMBEDDED) {
+                var persistentAttribute = (SingularPersistentAttribute) attribute;
+                var embeddableType = (EmbeddableType<?>) persistentAttribute.getType();
+                embeddableType.getDeclaredSingularAttributes()
+                        .forEach(a -> columnMetadata.add(columnMetadata(schema, a, id)));
+            } else {
+                columnMetadata.add(columnMetadata(schema, attribute, id));
+            }
         }
 
         var entityMetadata = new EntityMetadata(tableName, upsertable, columnMetadata);
@@ -95,6 +106,7 @@ public class EntityMetadataRegistry {
         String name = attribute.getName();
         Field field = (Field) attribute.getJavaMember();
         Column column = field.getAnnotation(Column.class);
+        UpsertColumn upsertColumn = field.getAnnotation(UpsertColumn.class);
         String columnName = column != null && StringUtils.isNotBlank(column.name()) ?
                 toSnakeCase(column.name()) :
                 toSnakeCase(name);
@@ -109,7 +121,7 @@ public class EntityMetadataRegistry {
         var setter = setter(field);
         boolean updatable = !id && (column == null || column.updatable());
         return new ColumnMetadata(columnSchema.getColumnDefault(), getter, id, columnName,
-                columnSchema.isNullable(), setter, attribute.getJavaType(), updatable);
+                columnSchema.isNullable(), setter, attribute.getJavaType(), updatable, upsertColumn);
     }
 
     /*
@@ -141,8 +153,10 @@ public class EntityMetadataRegistry {
         } catch (IllegalArgumentException e) {
             SingularAttribute<?, ?> idAttribute = entityType.getId(Object.class);
 
-            if (idAttribute.getPersistentAttributeType() != Attribute.PersistentAttributeType.BASIC) {
-                throw new UnsupportedOperationException();
+            var attributeType = idAttribute.getPersistentAttributeType();
+            if (attributeType != Attribute.PersistentAttributeType.BASIC &&
+                    attributeType != Attribute.PersistentAttributeType.EMBEDDED) {
+                throw new UnsupportedOperationException("Unsupported ID attribute " + entityType.getName());
             }
 
             return Set.of(idAttribute.getName());

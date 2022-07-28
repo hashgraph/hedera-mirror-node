@@ -25,8 +25,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.context.annotation.Scope;
 import org.springframework.retry.support.RetryTemplate;
 
 import com.hedera.hashgraph.sdk.AccountAllowanceApproveTransaction;
@@ -43,20 +41,19 @@ import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
 @Named
-@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class AccountClient extends AbstractNetworkClient {
 
     private static final long DEFAULT_INITIAL_BALANCE = 50_000_000L; // 0.5 ℏ
     private static final long SMALL_INITIAL_BALANCE = 500_000L; // 0.005 ℏ
+
     private final Map<AccountNameEnum, ExpandedAccountId> accountMap = new ConcurrentHashMap<>();
     private ExpandedAccountId tokenTreasuryAccount = null;
 
     public AccountClient(SDKClient sdkClient, RetryTemplate retryTemplate) {
         super(sdkClient, retryTemplate);
-        log.debug("Creating Account Client");
     }
 
-    public ExpandedAccountId getTokenTreasuryAccount() {
+    public synchronized ExpandedAccountId getTokenTreasuryAccount() {
         if (tokenTreasuryAccount == null) {
             tokenTreasuryAccount = createNewAccount(DEFAULT_INITIAL_BALANCE);
             log.debug("Treasury Account: {} will be used for current test session", tokenTreasuryAccount);
@@ -72,7 +69,7 @@ public class AccountClient extends AbstractNetworkClient {
                     try {
                         return createNewAccount(SMALL_INITIAL_BALANCE, accountNameEnum);
                     } catch (Exception e) {
-                        log.debug("Issue creating additional account: {}, ex: {}", accountNameEnum, e);
+                        log.warn("Issue creating additional account: {}, ex: {}", accountNameEnum, e);
                         return null;
                     }
                 });
@@ -81,10 +78,11 @@ public class AccountClient extends AbstractNetworkClient {
             throw new NetworkException("Null accountId retrieved from receipt");
         }
 
-        long balance = getBalance(accountId);
         if (log.isDebugEnabled()) {
+            long balance = getBalance(accountId);
             log.debug("Retrieved Account: {}, {} w balance {}", accountId, accountNameEnum, balance);
         }
+
         return accountId;
     }
 
@@ -178,7 +176,7 @@ public class AccountClient extends AbstractNetworkClient {
     public ExpandedAccountId createCryptoAccount(Hbar initialBalance, boolean receiverSigRequired, KeyList keyList,
                                                  String memo) {
         // 1. Generate a Ed25519 private, public key pair
-        PrivateKey privateKey = PrivateKey.generate();
+        PrivateKey privateKey = PrivateKey.generateED25519();
         PublicKey publicKey = privateKey.getPublicKey();
 
         log.trace("Private key = {}", privateKey);
@@ -209,7 +207,7 @@ public class AccountClient extends AbstractNetworkClient {
                     receipt));
         }
 
-        log.debug("Created new account {}, receiverSigRequired: {}", newAccountId, receiverSigRequired);
+        log.info("Created new account {}, receiverSigRequired: {}", newAccountId, receiverSigRequired);
         return new ExpandedAccountId(newAccountId, privateKey, privateKey.getPublicKey());
     }
 

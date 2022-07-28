@@ -18,19 +18,14 @@
  * ‍
  */
 
-'use strict';
+import _ from 'lodash';
 
-const _ = require('lodash');
-
-const BaseService = require('./baseService');
-const {Contract, Entity} = require('../model');
-
-const constants = require('../constants');
-const AccountAlias = require('../accountAlias');
-const EntityId = require('../entityId');
-
-const {InvalidArgumentError} = require('../errors/invalidArgumentError');
-const {NotFoundError} = require('../errors/notFoundError');
+import AccountAlias from '../accountAlias';
+import BaseService from './baseService';
+import {filterKeys} from '../constants';
+import EntityId from '../entityId';
+import {InvalidArgumentError, NotFoundError} from '../errors';
+import {Contract, Entity} from '../model';
 
 /**
  * Entity retrieval business logic
@@ -149,7 +144,7 @@ class EntityService extends BaseService {
    * @param {String} paramName the parameter name
    * @returns {Promise} entityId
    */
-  async getEncodedId(entityIdString, paramName = constants.filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS) {
+  async getEncodedId(entityIdString, paramName = filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS) {
     try {
       if (EntityId.isValidEntityId(entityIdString)) {
         const entityId = EntityId.parse(entityIdString, {paramName});
@@ -171,4 +166,4 @@ class EntityService extends BaseService {
   }
 }
 
-module.exports = new EntityService();
+export default new EntityService();

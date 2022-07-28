@@ -18,8 +18,6 @@
  * ‍
  */
 
-'use strict';
-
 class CryptoTransfer {
   /**
    * Parses crypto_transfer table columns into object
@@ -50,4 +48,4 @@ class CryptoTransfer {
   }
 }
 
-module.exports = CryptoTransfer;
+export default CryptoTransfer;

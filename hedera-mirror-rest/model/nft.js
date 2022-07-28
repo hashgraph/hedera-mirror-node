@@ -18,8 +18,6 @@
  * ‍
  */
 
-'use strict';
-
 class Nft {
   /**
    * Parses nft table columns into object
@@ -60,4 +58,4 @@ class Nft {
   }
 }
 
-module.exports = Nft;
+export default Nft;

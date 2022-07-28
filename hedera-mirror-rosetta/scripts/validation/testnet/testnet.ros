@@ -1,6 +1,6 @@
 transfer(10){
   transfer{
-    transfer.network = {"network":"testnet", "blockchain":"Hedera", "sub_network_identifier": {"network": "shard 0 realm 0"}};
+    transfer.network = {"network":"testnet", "blockchain":"Hedera"};
     currency = {"symbol":"HBAR", "decimals":8, "metadata": {"issuer": "Hedera"}};
 
     // at least 1000 hbars

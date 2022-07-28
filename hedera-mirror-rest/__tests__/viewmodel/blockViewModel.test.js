@@ -18,10 +18,8 @@
  * ‍
  */
 
-'use strict';
-
-const BlockViewModel = require('../../viewmodel/blockViewModel');
-const RecordFile = require('../../model/recordFile');
+import {BlockViewModel} from '../../viewmodel';
+import {RecordFile} from '../../model';
 
 describe('BlockViewModel', () => {
   const defaultRecordFile = new RecordFile({

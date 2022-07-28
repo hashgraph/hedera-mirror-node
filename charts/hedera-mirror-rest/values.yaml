@@ -77,8 +77,7 @@ image:
 imagePullSecrets: []
 
 ingress:
-  annotations:
-    traefik.ingress.kubernetes.io/router.middlewares: '{{ include "hedera-mirror-rest.namespace" . }}-{{ include "hedera-mirror-rest.fullname" . }}@kubernetescrd'
+  annotations: {}
   enabled: true
   hosts:
     - host: ""
@@ -227,11 +226,14 @@ serviceMonitor:
 terminationGracePeriodSeconds: 60
 
 test:
+  checks:
+    accounts: true
+    transactions: true
   enabled: true
   image:
     pullPolicy: IfNotPresent
     repository: bats/bats
-    tag: 1.6.0
+    tag: 1.7.0
 
 tolerations: []
 

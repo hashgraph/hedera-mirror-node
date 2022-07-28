@@ -18,28 +18,48 @@
  * ‍
  */
 
-'use strict';
+import AddressBookServiceEndpointViewModel from './addressBookServiceEndpointViewModel';
+import AssessedCustomFeeViewModel from './assessedCustomFeeViewModel';
+import CustomFeeViewModel from './customFeeViewModel';
+import ContractViewModel from './contractViewModel';
+import ContractLogViewModel from './contractLogViewModel';
+import ContractResultDetailsViewModel from './contractResultDetailsViewModel';
+import ContractResultStateChangeViewModel from './contractResultStateChangeViewModel';
+import ContractResultViewModel from './contractResultViewModel';
+import CryptoAllowanceViewModel from './cryptoAllowanceViewModel';
+import ExchangeRateSetViewModel from './exchangeRateSetViewModel';
+import ExchangeRateViewModel from './exchangeRateViewModel';
+import NetworkNodeViewModel from './networkNodeViewModel';
+import NetworkSupplyViewModel from './networkSupplyViewModel';
+import NftTransactionHistoryViewModel from './nftTransactionHistoryViewModel';
+import NftTransferViewModel from './nftTransferViewModel';
+import NftViewModel from './nftViewModel';
+import TokenAllowanceViewModel from './tokenAllowanceViewModel';
+import TopicMessageViewModel from './topicMessageViewModel';
+import TransactionIdViewModel from './transactionIdViewModel';
+import BlockViewModel from './blockViewModel';
+import FeeScheduleViewModel from './feeScheduleViewModel';
 
-module.exports = {
-  AddressBookServiceEndpointViewModel: require('./addressBookServiceEndpointViewModel'),
-  AssessedCustomFeeViewModel: require('./assessedCustomFeeViewModel'),
-  CustomFeeViewModel: require('./customFeeViewModel'),
-  ContractViewModel: require('./contractViewModel'),
-  ContractLogViewModel: require('./contractLogViewModel'),
-  ContractResultDetailsViewModel: require('./contractResultDetailsViewModel'),
-  ContractResultStateChangeViewModel: require('./contractResultStateChangeViewModel'),
-  ContractResultViewModel: require('./contractResultViewModel'),
-  CryptoAllowanceViewModel: require('./cryptoAllowanceViewModel'),
-  ExchangeRateSetViewModel: require('./exchangeRateSetViewModel'),
-  ExchangeRateViewModel: require('./exchangeRateViewModel'),
-  NetworkNodeViewModel: require('./networkNodeViewModel'),
-  NetworkSupplyViewModel: require('./networkSupplyViewModel'),
-  NftTransactionHistoryViewModel: require('./nftTransactionHistoryViewModel'),
-  NftTransferViewModel: require('./nftTransferViewModel'),
-  NftViewModel: require('./nftViewModel'),
-  TokenAllowanceViewModel: require('./tokenAllowanceViewModel'),
-  TopicMessageViewModel: require('./topicMessageViewModel'),
-  TransactionIdViewModel: require('./transactionIdViewModel'),
-  BlockViewModel: require('./blockViewModel'),
-  FeeScheduleViewModel: require('./feeScheduleViewModel'),
+export {
+  AddressBookServiceEndpointViewModel,
+  AssessedCustomFeeViewModel,
+  CustomFeeViewModel,
+  ContractViewModel,
+  ContractLogViewModel,
+  ContractResultDetailsViewModel,
+  ContractResultStateChangeViewModel,
+  ContractResultViewModel,
+  CryptoAllowanceViewModel,
+  ExchangeRateSetViewModel,
+  ExchangeRateViewModel,
+  NetworkNodeViewModel,
+  NetworkSupplyViewModel,
+  NftTransactionHistoryViewModel,
+  NftTransferViewModel,
+  NftViewModel,
+  TokenAllowanceViewModel,
+  TopicMessageViewModel,
+  TransactionIdViewModel,
+  BlockViewModel,
+  FeeScheduleViewModel,
 };

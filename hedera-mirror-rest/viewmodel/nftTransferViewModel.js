@@ -18,10 +18,8 @@
  * ‍
  */
 
-'use strict';
-
-const EntityId = require('../entityId');
-const _ = require('lodash');
+import _ from 'lodash';
+import EntityId from '../entityId';
 
 /**
  * Nft transfer view model
@@ -36,4 +34,4 @@ class NftTransferViewModel {
   }
 }
 
-module.exports = NftTransferViewModel;
+export default NftTransferViewModel;
