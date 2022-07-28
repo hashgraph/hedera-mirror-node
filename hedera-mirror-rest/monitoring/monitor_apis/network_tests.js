@@ -18,9 +18,7 @@
  * ‍
  */
 
-'use strict';
-
-const {
+import {
   checkAPIResponseError,
   checkRespObjDefined,
   checkMandatoryParams,
@@ -28,7 +26,7 @@ const {
   getUrl,
   testRunner,
   CheckRunner,
-} = require('./utils');
+} from './utils';
 
 const networkStakePath = '/network/stake';
 const resource = 'network';
@@ -83,7 +81,7 @@ const runTests = async (server, testResult) => {
   return Promise.all([runTest(getNetworkStake)]);
 };
 
-module.exports = {
+export default {
   resource,
   runTests,
 };
