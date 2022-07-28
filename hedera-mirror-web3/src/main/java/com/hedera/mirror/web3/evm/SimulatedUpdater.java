@@ -34,7 +34,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import lombok.Data;
+import javax.inject.Singleton;
+import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
@@ -51,14 +52,15 @@ import com.hedera.services.transaction.store.contracts.UpdateTrackingLedgerAccou
 import com.hedera.services.transaction.store.contracts.WorldStateAccount;
 import com.hedera.services.transaction.store.contracts.WorldStateTokenAccount;
 
-@Data
+@Singleton
+@RequiredArgsConstructor
 public class SimulatedUpdater implements HederaWorldUpdater {
 
-    private ContractRepository contractRepository;
-    private EntityRepository entityRepository;
-    private AliasesResolver aliasesResolver;
-    private SimulatedEntityAccess entityAccess;
-    private CodeCache codeCache;
+    private final ContractRepository contractRepository;
+    private final EntityRepository entityRepository;
+    private final AliasesResolver aliasesResolver;
+    private final SimulatedEntityAccess entityAccess;
+    private final CodeCache codeCache;
 
     private int numAllocatedContractIds = 0;
     private long sbhRefund = 0L;
@@ -66,15 +68,12 @@ public class SimulatedUpdater implements HederaWorldUpdater {
 
     private final List<Address> provisionalContractCreations = new LinkedList<>();
     protected final Set<Address> deletedAccounts = new HashSet<>();
-    protected final Map<Address, UpdateTrackingLedgerAccount<Account>> updatedAccounts = new HashMap<>();
-
-    //FUTURE WORK finish implementation when we introduce StackedUpdaters
-    public SimulatedUpdater updater() {
-        return new SimulatedUpdater();
-    }
+    protected final Map<Address, UpdateTrackingLedgerAccount<Account>> updatedAccounts =
+            new HashMap<>();
 
     @Override
-    public EvmAccount createAccount(final Address addressOrAlias, final long nonce, final Wei balance) {
+    public EvmAccount createAccount(
+            final Address addressOrAlias, final long nonce, final Wei balance) {
         final var address = aliasesResolver.resolveForEvm(addressOrAlias);
         final var newMutable = new UpdateTrackingLedgerAccount<>(address);
         newMutable.setNonce(nonce);
@@ -109,23 +108,21 @@ public class SimulatedUpdater implements HederaWorldUpdater {
 
     @Override
     public Collection<? extends Account> getTouchedAccounts() {
-        return new ArrayList<>(getUpdatedAccounts().values());
+        return new ArrayList<>(updatedAccounts.values());
     }
 
     @Override
     public Collection<Address> getDeletedAccountAddresses() {
-        return new ArrayList<>(getDeletedAccounts());
+        return new ArrayList<>(deletedAccounts);
     }
 
     @Override
     public void revert() {
-        getDeletedAccounts().clear();
-        getUpdatedAccounts().clear();
+        deletedAccounts.clear();
+        updatedAccounts.clear();
 
-        while (numAllocatedContractIds != 0) {
-            numAllocatedContractIds--;
-            newContractNumId--;
-        }
+        newContractNumId = newContractNumId - numAllocatedContractIds;
+        numAllocatedContractIds = 0;
         sbhRefund = 0L;
     }
 
@@ -134,21 +131,24 @@ public class SimulatedUpdater implements HederaWorldUpdater {
         commitSizeLimitedStorageTo(entityAccess);
 
         final var deletedAddresses = getDeletedAccountAddresses();
-        deletedAddresses.forEach(address -> {
-            ensureExistence(address, entityAccess, provisionalContractCreations);
-        });
+        deletedAddresses.forEach(
+                address -> {
+                    trackIfNewlyCreated(address, entityAccess, provisionalContractCreations);
+                });
         for (final var updatedAccount : updatedAccounts.values()) {
             if (updatedAccount.getNonce() == TOKEN_PROXY_ACCOUNT_NONCE) {
                 continue;
             }
             final var accountAddress = updatedAccount.getAddress();
-            ensureExistence(accountAddress, entityAccess, provisionalContractCreations);
+            trackIfNewlyCreated(accountAddress, entityAccess, provisionalContractCreations);
             if (updatedAccount.codeWasUpdated()) {
                 entityAccess.storeCode(accountAddress, updatedAccount.getCode());
             }
         }
     }
 
+    // We don't need parent updater, since it's used in Precompiles to track child records. We won't
+    // do tracking logic in the EVM Module
     @Override
     public Optional<WorldUpdater> parentUpdater() {
         return Optional.empty();
@@ -168,8 +168,7 @@ public class SimulatedUpdater implements HederaWorldUpdater {
         final long balance = entityAccess.getBalance(address);
         final long nonce =
                 entityRepository.findAccountNonceByAddress(address.toArray()).orElseThrow();
-        return new WorldStateAccount(
-                address, Wei.of(balance), nonce, codeCache, entityAccess);
+        return new WorldStateAccount(address, Wei.of(balance), nonce, codeCache, entityAccess);
     }
 
     @Override
@@ -178,13 +177,18 @@ public class SimulatedUpdater implements HederaWorldUpdater {
         newContractNumId = contractRepository.findLatestNum().orElseThrow() + 1;
 
         final var sponsorBytes = sponsor.toArrayUnsafe();
-        final var newContractEvmBytes = asEvmAddress(shardFromEvmAddress(sponsorBytes), realmFromEvmAddress(sponsorBytes), newContractNumId);
+        final var newContractEvmBytes =
+                asEvmAddress(
+                        shardFromEvmAddress(sponsorBytes),
+                        realmFromEvmAddress(sponsorBytes),
+                        newContractNumId);
         return Address.wrap(Bytes.wrap(newContractEvmBytes));
     }
 
     /**
-     * Tracks how much Gas should be refunded to the sender account for the TX. SBH price is refunded for the first
-     * allocation of new contract storage in order to prevent double charging the client.
+     * Tracks how much Gas should be refunded to the sender account for the TX. SBH price is
+     * refunded for the first allocation of new contract storage in order to prevent double charging
+     * the client.
      *
      * @return the amount of Gas to refund;
      */
@@ -203,14 +207,24 @@ public class SimulatedUpdater implements HederaWorldUpdater {
         numAllocatedContractIds += n;
     }
 
+    // FUTURE WORK finish implementation when we introduce StackedUpdaters
+    @Override
+    public SimulatedUpdater updater() {
+        return new SimulatedUpdater(
+                contractRepository, entityRepository, aliasesResolver, entityAccess, codeCache);
+    }
+
     private void commitSizeLimitedStorageTo(final EntityAccess entityAccess) {
         for (final var updatedAccount : updatedAccounts.values()) {
             // Note that we don't have the equivalent of an account-scoped storage trie, so we can't
-            // do anything in particular when updated.getStorageWasCleared() is true. (We will address
+            // do anything in particular when updated.getStorageWasCleared() is true. (We will
+            // address
             // this in our global state expiration implementation.)
             final var kvUpdates = updatedAccount.getUpdatedStorage();
             if (!kvUpdates.isEmpty()) {
-                kvUpdates.forEach((key, value) -> entityAccess.putStorage(updatedAccount.getAddress(), key, value));
+                kvUpdates.forEach(
+                        (key, value) ->
+                                entityAccess.putStorage(updatedAccount.getAddress(), key, value));
             }
         }
         entityAccess.flushStorage();
@@ -221,7 +235,8 @@ public class SimulatedUpdater implements HederaWorldUpdater {
         }
     }
 
-    protected UpdateTrackingLedgerAccount<Account> track(final UpdateTrackingLedgerAccount<Account> account) {
+    protected UpdateTrackingLedgerAccount<Account> track(
+            final UpdateTrackingLedgerAccount<Account> account) {
         final var address = account.getAddress();
         updatedAccounts.put(address, account);
         deletedAccounts.remove(address);
@@ -229,14 +244,15 @@ public class SimulatedUpdater implements HederaWorldUpdater {
     }
 
     private boolean isGettable(final Address address) {
-        return entityAccess.isExtant(address) && !entityAccess.isDeleted(address) && !entityAccess.isDetached(address);
+        return entityAccess.isExtant(address)
+                && !entityAccess.isDeleted(address)
+                && !entityAccess.isDetached(address);
     }
 
-    private void ensureExistence(
+    private void trackIfNewlyCreated(
             final Address accountAddress,
             final EntityAccess entityAccess,
-            final List<Address> provisionalContractCreations
-    ) {
+            final List<Address> provisionalContractCreations) {
         if (!entityAccess.isExtant(accountAddress)) {
             provisionalContractCreations.add(accountAddress);
         }
