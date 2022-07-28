@@ -96,6 +96,7 @@ func newBlockchainOnlineRouter(
 	mempoolAPIController := server.NewMempoolAPIController(mempoolAPIService, asserter)
 
 	constructionAPIService, err := services.NewConstructionAPIService(
+		accountRepo,
 		baseService,
 		network.Network,
 		rosettaConfig.Nodes,
@@ -139,6 +140,7 @@ func newBlockchainOfflineRouter(
 	baseService := services.NewOfflineBaseService()
 
 	constructionAPIService, err := services.NewConstructionAPIService(
+		nil,
 		baseService,
 		network.Network,
 		rosettaConfig.Nodes,
