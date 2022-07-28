@@ -398,12 +398,13 @@ describe('Override db pool config', () => {
 describe('getResponseLimit', () => {
   test('default', async () => {
     const func = (await import('../config')).getResponseLimit;
-    expect(func()).toEqual({default: 25, max: 100});
+    expect(func()).toEqual({default: 25, max: 100, tokenBalance: {multiple: 500, single: 1000}});
   });
   test('custom response limit', async () => {
     const module = await import('../config');
-    module.default.response.limit = {default: 10, max: 200};
-    expect(module.getResponseLimit()).toEqual({default: 10, max: 200});
+    const customLimit = {default: 10, max: 200, tokenBalance: {multiple: 50, single: 100}};
+    module.default.response.limit = customLimit;
+    expect(module.getResponseLimit()).toEqual(customLimit);
   });
 });
 

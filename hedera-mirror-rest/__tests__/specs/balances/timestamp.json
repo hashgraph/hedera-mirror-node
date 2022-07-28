@@ -22,7 +22,6 @@
         "balance": 40,
         "tokens": [
           {
-            "token_realm": 0,
             "token_num": 90000,
             "balance": 300
           }
@@ -44,7 +43,6 @@
         "balance": 444,
         "tokens": [
           {
-            "token_realm": 0,
             "token_num": 90000,
             "balance": 1000
           }
@@ -76,7 +74,6 @@
         "balance": 6,
         "tokens": [
           {
-            "token_realm": 0,
             "token_num": 90000,
             "balance": 662
           }

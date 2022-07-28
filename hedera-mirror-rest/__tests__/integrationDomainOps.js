@@ -613,7 +613,7 @@ const setAccountBalance = async (balance) => {
       tokenBalance.balance,
       EntityId.of(
         BigInt(config.shard),
-        BigInt(tokenBalance.token_realm),
+        BigInt(tokenBalance.token_realm || 0),
         BigInt(tokenBalance.token_num)
       ).getEncodedId(),
     ]);

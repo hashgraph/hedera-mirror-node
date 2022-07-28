@@ -142,7 +142,6 @@
         "balance": 8,
         "tokens": [
           {
-            "token_realm": 0,
             "token_num": 90000,
             "balance": 668
           }

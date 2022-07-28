@@ -22,12 +22,10 @@
         "balance": 700,
         "tokens": [
           {
-            "token_realm": 0,
             "token_num": 90000,
             "balance": 1000
           },
           {
-            "token_realm": 0,
             "token_num": 80000,
             "balance": 500
           }
