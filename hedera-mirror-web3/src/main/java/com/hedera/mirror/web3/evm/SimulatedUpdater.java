@@ -52,8 +52,6 @@ import com.hedera.services.transaction.store.contracts.UpdateTrackingLedgerAccou
 import com.hedera.services.transaction.store.contracts.WorldStateAccount;
 import com.hedera.services.transaction.store.contracts.WorldStateTokenAccount;
 
-
-//FUTURE WORK tracking of state changes to be implemented in a separate PR
 @Singleton
 @RequiredArgsConstructor
 public class SimulatedUpdater implements HederaWorldUpdater {
