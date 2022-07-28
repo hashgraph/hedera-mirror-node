@@ -106,4 +106,12 @@ public class HederaStackedWorldStateUpdater {
     public ContractAliases aliases() {
         return trackingLedgers.aliases();
     }
+
+    public Address priorityAddress(final Address addressOrAlias) {
+        return null;
+    }
+
+    public Address newAliasedContractAddress(Address sourceAddressOrAlias, Address alias) {
+        return null;
+    }
 }

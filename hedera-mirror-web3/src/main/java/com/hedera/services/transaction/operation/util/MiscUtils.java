@@ -14,7 +14,13 @@
  * limitations under the License.
  */
 package com.hedera.services.transaction.operation.util;
+
+import org.bouncycastle.jcajce.provider.digest.Keccak;
+
 public final class MiscUtils {
+    public static byte[] keccak256DigestOf(final byte[] msg) {
+        return new Keccak.Digest256().digest(msg);
+    }
 
     /**
      * A permutation (invertible function) on 64 bits. The constants were found by automated search,

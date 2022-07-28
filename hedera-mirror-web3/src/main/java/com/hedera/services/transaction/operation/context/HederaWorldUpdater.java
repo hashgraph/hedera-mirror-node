@@ -15,9 +15,19 @@
  */
 package com.hedera.services.transaction.operation.context;
 
+import org.hyperledger.besu.datatypes.Address;
+
 //FUTURE WORK to be implemented
 public interface HederaWorldUpdater {
 
     void addSbhRefund(long gasCost);
 
+    /**
+     * Allocates new Contract address based on the realm and shard of the sponsor IMPORTANT - The Id
+     * must be reclaimed if the MessageFrame reverts
+     *
+     * @param sponsor sponsor of the new contract
+     * @return newly generated contract {@link Address}
+     */
+    Address newContractAddress(Address sponsor);
 }

@@ -32,6 +32,11 @@ public class HederaWorldState {
 
         }
 
+        @Override
+        public Address newContractAddress(Address sponsor) {
+            return null;
+        }
+
         public Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> getStateChanges() {
             return stateChanges;
         }

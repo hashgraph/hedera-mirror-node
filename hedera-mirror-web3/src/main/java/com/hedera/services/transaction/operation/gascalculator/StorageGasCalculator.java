@@ -18,6 +18,7 @@ package com.hedera.services.transaction.operation.gascalculator;
 import com.hedera.services.transaction.operation.helpers.StorageExpiry;
 
 import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import javax.inject.Inject;
 
 public class StorageGasCalculator {
@@ -49,5 +50,9 @@ public class StorageGasCalculator {
 
     private static MessageFrame base(final MessageFrame frame) {
         return frame.getMessageFrameStack().getLast();
+    }
+
+    public long creationGasCost(MessageFrame frame, GasCalculator calculator) {
+        return 0;
     }
 }
