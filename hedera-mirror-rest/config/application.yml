@@ -110,8 +110,8 @@ hedera:
           default: 25
           max: 100
           tokenBalance:
-            multiple: 500
-            single: 1000
+            multiple: 1000
+            single: 2000
       shard: 0
       stateproof:
         addressBookHistory: false

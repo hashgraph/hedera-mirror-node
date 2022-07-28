@@ -398,7 +398,7 @@ describe('Override db pool config', () => {
 describe('getResponseLimit', () => {
   test('default', async () => {
     const func = (await import('../config')).getResponseLimit;
-    expect(func()).toEqual({default: 25, max: 100, tokenBalance: {multiple: 500, single: 1000}});
+    expect(func()).toEqual({default: 25, max: 100, tokenBalance: {multiple: 1000, single: 2000}});
   });
   test('custom response limit', async () => {
     const module = await import('../config');
