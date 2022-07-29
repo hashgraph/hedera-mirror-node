@@ -18,8 +18,6 @@
  * ‍
  */
 
-import _ from 'lodash';
-
 import * as utils from '../utils';
 import * as math from 'mathjs';
 
@@ -39,17 +37,7 @@ class NetworkStakeViewModel {
       networkStake.nodeRewardFeeDenominator
     );
     this.stake_total = networkStake.stakeTotal;
-
-    if (_.isNil(networkStake.stakingPeriod)) {
-      this.staking_period = null;
-    } else {
-      const stakingPeriodStart = BigInt(networkStake.stakingPeriod) + 1n;
-      this.staking_period = {
-        from: utils.nsToSecNs(stakingPeriodStart),
-        to: utils.incrementTimestampByOneDay(stakingPeriodStart),
-      };
-    }
-
+    this.staking_period = utils.getStakingPeriod(networkStake.stakingPeriod);
     this.staking_period_duration = networkStake.stakingPeriodDuration;
     this.staking_periods_stored = networkStake.stakingPeriodsStored;
     this.staking_reward_fee_fraction = this.calculateFeeFraction(

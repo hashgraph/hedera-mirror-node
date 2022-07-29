@@ -2199,11 +2199,11 @@ components:
           format: int64
         node_reward_fee_fraction:
           description: The fraction of the network and service fees paid to the node reward account 0.0.801
-          type: number
-          format: int64
+          type: integer
+          format: float
         stake_total:
           description: The total amount staked to the network in tinybars the start of the current staking period
-          type: number
+          type: integer
           format: int64
         staking_period:
           allOf:
@@ -2211,23 +2211,23 @@ components:
             - description: The timestamp range of the staking period
         staking_period_duration:
           description: The number of minutes in a staking period
-          type: number
+          type: integer
           format: int64
         staking_periods_stored:
           description: The number of staking periods for which the reward is stored for each node
-          type: number
+          type: integer
           format: int64
         staking_reward_fee_fraction:
-          description: The fraction of the network and service fees paid to the staking reward account 0.0.800
-          type: number
-          format: int64
+          description: The fraction between zero and one of the network and service fees paid to the staking reward account 0.0.800
+          type: integer
+          format: float
         staking_reward_rate:
           description: The total number of tinybars to be distributed as staking rewards each period
-          type: number
+          type: integer
           format: int64
         staking_start_threshold:
           description: The minimum balance of staking reward account 0.0.800 required to active rewards
-          type: number
+          type: integer
           format: int64
       example:
         max_staking_reward_rate_per_hbar: 17808,

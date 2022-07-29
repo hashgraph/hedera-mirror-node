@@ -82,7 +82,7 @@ export const computeAccountParameters = (configuration) =>
       return {
         DEFAULT_ACCOUNT_ID: firstAccount.account,
         DEFAULT_ACCOUNT_BALANCE: firstAccount.balance.balance || 0,
-        DEFAULT_PUBLIC_KEY: firstAccount.key
+        DEFAULT_PUBLIC_KEY: firstAccount.key.key
       };
     });
 

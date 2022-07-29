@@ -25,14 +25,14 @@ import lombok.Data;
 @Data
 public class MirrorNetworkStake {
     private long maxStakingRewardRatePerHbar;
-    private long nodeRewardFeeDenominator;
-    private long nodeRewardFeeNumerator;
+    private int nodeRewardFeeDenominator;
+    private int nodeRewardFeeNumerator;
     private long stakeTotal;
     private TimestampRange stakingPeriod;
-    private long stakingPeriodDuration;
-    private long stakingPeriodsStored;
-    private long stakingRewardFeeDenominator;
-    private long stakingRewardFeeNumerator;
+    private int stakingPeriodDuration;
+    private int stakingPeriodsStored;
+    private int stakingRewardFeeDenominator;
+    private int stakingRewardFeeNumerator;
     private long stakingRewardRate;
     private long stakingStartThreshold;
 }
