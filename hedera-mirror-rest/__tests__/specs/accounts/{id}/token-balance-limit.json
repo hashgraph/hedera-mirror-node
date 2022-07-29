@@ -5,7 +5,7 @@
       "response": {
         "limit": {
           "tokenBalance": {
-            "single": 2
+            "singleAccount": 2
           }
         }
       }

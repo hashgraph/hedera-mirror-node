@@ -116,7 +116,7 @@ const getBalances = async (req, res) => {
             from token_balance tb
             where tb.account_id = ab.account_id and tb.consensus_timestamp = ab.consensus_timestamp
             order by token_id ${order}
-            limit ${tokenBalanceLimit.multiple}
+            limit ${tokenBalanceLimit.multipleAccounts}
           ) as account_token_balance
         ) as token_balances
       from account_balance ab

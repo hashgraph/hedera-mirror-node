@@ -7,7 +7,7 @@
           "default": 2,
           "max": 4,
           "tokenBalance": {
-            "multiple": 2
+            "multipleAccounts": 2
           }
         }
       }
