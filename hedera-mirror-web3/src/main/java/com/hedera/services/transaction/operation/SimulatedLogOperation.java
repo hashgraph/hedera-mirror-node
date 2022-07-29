@@ -66,8 +66,6 @@ public class SimulatedLogOperation extends AbstractOperation {
 
         final var addressOrAlias = frame.getRecipientAddress();
 
-        //FUTURE WORK finish implementation when we introduce StackedUpdaters
-
         final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
         final var aliases = updater.aliases();
         var address = aliases.resolveForEvm(addressOrAlias);

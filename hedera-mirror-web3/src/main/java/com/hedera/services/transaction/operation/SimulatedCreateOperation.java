@@ -15,7 +15,7 @@
  */
 package com.hedera.services.transaction.operation;
 
-import com.hedera.services.transaction.operation.context.HederaWorldUpdater;
+import com.hedera.mirror.web3.evm.SimulatedUpdater;
 import com.hedera.services.transaction.operation.gascalculator.StorageGasCalculator;
 
 import org.hyperledger.besu.datatypes.Address;
@@ -49,7 +49,7 @@ public class SimulatedCreateOperation extends AbstractRecordingCreateOperation {
 
     @Override
     protected Address targetContractAddress(final MessageFrame frame) {
-        final var updater = (HederaWorldUpdater) frame.getWorldUpdater();
+        final var updater = (SimulatedUpdater) frame.getWorldUpdater();
         final Address address = updater.newContractAddress(frame.getRecipientAddress());
         frame.warmUpAddress(address);
         return address;

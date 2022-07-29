@@ -45,6 +45,7 @@ import org.hyperledger.besu.evm.frame.MessageFrame;
  * storage expiry. So we need to option to configure the oracle with a {@code
  * fallbackExpiryFromHapi}.
  */
+//FUTURE WORK
 @Singleton
 public class StorageExpiry {
     private static final long UNAVAILABLE_EXPIRY = 0;

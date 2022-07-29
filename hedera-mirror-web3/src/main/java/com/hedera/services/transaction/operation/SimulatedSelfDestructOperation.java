@@ -54,7 +54,6 @@ public class SimulatedSelfDestructOperation extends SelfDestructOperation {
 
     @Override
     public Operation.OperationResult execute(final MessageFrame frame, final EVM evm) {
-        //FUTURE WORK finish implementation when we introduce StackedUpdaters
         final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
 
         final var beneficiaryAddress = Words.toAddress(frame.getStackItem(0));
@@ -85,10 +84,7 @@ public class SimulatedSelfDestructOperation extends SelfDestructOperation {
     private ExceptionalHaltReason reasonToHalt(
             final Address toBeDeleted,
             final Address beneficiaryAddress,
-
-            //FUTURE WORK finish implementation when we introduce StackedUpdaters
             final HederaStackedWorldStateUpdater updater
-
     ) {
         if (toBeDeleted.equals(beneficiaryAddress)) {
             return SimulatedExceptionalHaltReason.SELF_DESTRUCT_TO_SELF;

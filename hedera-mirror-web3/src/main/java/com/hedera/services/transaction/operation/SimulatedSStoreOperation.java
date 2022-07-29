@@ -15,7 +15,7 @@
  */
 package com.hedera.services.transaction.operation;
 
-import com.hedera.services.transaction.operation.context.HederaWorldUpdater;
+import com.hedera.mirror.web3.evm.SimulatedUpdater;
 import com.hedera.services.transaction.operation.gascalculator.GasCalculatorHederaV18;
 import com.hedera.services.transaction.operation.gascalculator.StorageGasCalculator;
 
@@ -69,8 +69,7 @@ public class SimulatedSStoreOperation extends AbstractOperation {
         if (currentZero && !newZero) {
             gasCost = storageGasCalculator.gasCostOfStorageIn(frame);
 
-            //FUTURE WORK finish implementation when we introduce WorldUpdater
-            ((HederaWorldUpdater) frame.getWorldUpdater()).addSbhRefund(gasCost);
+            ((SimulatedUpdater) frame.getWorldUpdater()).addSbhRefund(gasCost);
         } else {
             checkCalculator = true;
         }

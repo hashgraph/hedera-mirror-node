@@ -20,6 +20,7 @@ import javax.inject.Inject;
 import java.util.Map;
 import java.util.function.Supplier;
 
+//FUTURE WORK
 public class AliasManager {
     private final Supplier<Map<ByteString, EntityNum>> aliases;
 

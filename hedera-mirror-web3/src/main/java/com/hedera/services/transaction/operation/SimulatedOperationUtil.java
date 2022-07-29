@@ -106,8 +106,6 @@ public class SimulatedOperationUtil {
             return supplierExecution.get();
         }
 
-        //FUTURE WORK finish implementation when we introduce StackedUpdaters
-
         final var updater = (HederaStackedWorldStateUpdater) frame.getWorldUpdater();
         final var account = updater.get(address);
         if (Boolean.FALSE.equals(addressValidator.test(address, frame))) {
@@ -121,9 +119,6 @@ public class SimulatedOperationUtil {
         // if this is a delegate call activeContract should be the recipient address
         // otherwise it should be the contract address
         if (isDelegateCall) {
-
-            //FUTURE WORK implement logic about the EvmSigsVerifier
-
             sigReqIsMet =
                     sigsVerifier.hasActiveKeyOrNoReceiverSigReq(
                             true,
