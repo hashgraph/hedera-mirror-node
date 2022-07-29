@@ -2198,7 +2198,7 @@ components:
           type: integer
           format: int64
         node_reward_fee_fraction:
-          description: The fraction of the network and service fees paid to the node reward account 0.0.801
+          description: The fraction between zero and one of the network and service fees paid to the node reward account 0.0.801
           type: integer
           format: float
         stake_total:
