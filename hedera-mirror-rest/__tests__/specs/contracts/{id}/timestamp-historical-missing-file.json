@@ -71,6 +71,7 @@
     "auto_renew_account": null,
     "auto_renew_period": 1500,
     "bytecode": "0x",
+    "runtime_bytecode": "0x",
     "contract_id": "0.0.8001",
     "created_timestamp": "987654.000123456",
     "deleted": false,
