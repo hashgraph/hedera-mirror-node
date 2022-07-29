@@ -33,7 +33,7 @@ class ContractBytecodeViewModel extends ContractViewModel {
   constructor(contract) {
     super(contract);
     this.bytecode = utils.addHexPrefix(contract.bytecode);
-    this.runtime_bytecode = utils.addHexPrefix(contract.runtimeBytecode);
+    this.runtime_bytecode = utils.toHexString(contract.runtimeBytecode, true);
   }
 }
 

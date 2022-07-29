@@ -59,7 +59,7 @@
     "obtainer_id": null,
     "permanent_removal": null,
     "proxy_account_id": null,
-    "runtime_bytecode": "0x60806040",
+    "runtime_bytecode": "0x3630383036303430",
     "timestamp": {
       "from": "997654.000123457",
       "to": null
