@@ -25,16 +25,9 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	"github.com/stretchr/testify/assert"
-)
-
-var (
-	ecdsaSecp256k1PublicKeyProtoPrefix = []byte{0x3a, 0x21}
-	ed25519PublicKeyProtoPrefix        = []byte{0x12, 0x20}
-
-	ecdsaSecp256k1Sk, _ = hedera.PrivateKeyGenerateEcdsa()
-	ed25519Sk, _        = hedera.PrivateKeyGenerateEd25519()
 )
 
 func TestPublicKeyIsEmpty(t *testing.T) {
@@ -50,7 +43,7 @@ func TestPublicKeyIsEmpty(t *testing.T) {
 		},
 		{
 			name:      "NonEmpty",
-			publicKey: ed25519Sk.PublicKey(),
+			publicKey: ed25519PublicKey,
 		},
 	}
 
@@ -70,19 +63,22 @@ func TestPublicKeyIsEmpty(t *testing.T) {
 
 func TestPublicKeyToAlias(t *testing.T) {
 	tests := []struct {
-		name        string
-		publicKey   hedera.PublicKey
-		protoPrefix []byte
+		name              string
+		publicKey         hedera.PublicKey
+		expectedAlias     []byte
+		expectedCurveType types.CurveType
 	}{
 		{
-			name:        "EcdsaSecp256k1",
-			publicKey:   ecdsaSecp256k1Sk.PublicKey(),
-			protoPrefix: ecdsaSecp256k1PublicKeyProtoPrefix,
+			name:              "EcdsaSecp256k1",
+			publicKey:         ecdsaSecp256k1PublicKey,
+			expectedAlias:     ecdsaSecp256k1Alias,
+			expectedCurveType: types.Secp256k1,
 		},
 		{
-			name:        "Ed25519",
-			publicKey:   ed25519Sk.PublicKey(),
-			protoPrefix: ed25519PublicKeyProtoPrefix,
+			name:              "Ed25519",
+			publicKey:         ed25519PublicKey,
+			expectedAlias:     ed25519Alias,
+			expectedCurveType: types.Edwards25519,
 		},
 	}
 
@@ -90,15 +86,14 @@ func TestPublicKeyToAlias(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// given
 			wrapped := PublicKey{PublicKey: tt.publicKey}
-			expected := append([]byte{}, tt.protoPrefix...)
-			expected = append(expected, wrapped.BytesRaw()...)
 
 			// when
-			actual, err := wrapped.ToAlias()
+			actualAlias, actualCurveType, err := wrapped.ToAlias()
 
 			// then
 			assert.Nil(t, err)
-			assert.Equal(t, expected, actual)
+			assert.Equal(t, tt.expectedAlias, actualAlias)
+			assert.Equal(t, tt.expectedCurveType, actualCurveType)
 		})
 	}
 }
@@ -109,11 +104,12 @@ func TestPublicKeyToAliasEmptyKey(t *testing.T) {
 	wrapped := PublicKey{PublicKey: pk}
 
 	// when
-	actual, err := wrapped.ToAlias()
+	actualAlias, actualCurveType, err := wrapped.ToAlias()
 
 	// then
 	assert.NotNil(t, err)
-	assert.Nil(t, actual)
+	assert.Nil(t, actualAlias)
+	assert.Equal(t, zeroCurveType, actualCurveType)
 }
 
 type k struct {
@@ -122,7 +118,7 @@ type k struct {
 
 func TestPublicKeyUnmarshalJSONSuccess(t *testing.T) {
 	// given
-	expected := ed25519Sk.PublicKey()
+	expected := ed25519PublicKey
 	input := fmt.Sprintf("{\"key\": \"%s\"}", expected.String())
 
 	// when
@@ -144,4 +140,70 @@ func TestPublicKeyUnmarshalJSONInvalidInput(t *testing.T) {
 
 	// then
 	assert.Error(t, err)
+}
+
+func TestNewPublicKeyFromAlias(t *testing.T) {
+	tests := []struct {
+		name              string
+		alias             []byte
+		expectedCurveType types.CurveType
+		expectedPublicKey PublicKey
+	}{
+		{
+			name:              "EcdsaSecp256k1",
+			alias:             ecdsaSecp256k1Alias,
+			expectedCurveType: types.Secp256k1,
+			expectedPublicKey: PublicKey{ecdsaSecp256k1PublicKey},
+		},
+		{
+			name:              "Ed25519",
+			alias:             ed25519Alias,
+			expectedCurveType: types.Edwards25519,
+			expectedPublicKey: PublicKey{ed25519PublicKey},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actualCurveType, actualPublicKey, err := NewPublicKeyFromAlias(tt.alias)
+
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedCurveType, actualCurveType)
+			assert.Equal(t, tt.expectedPublicKey, actualPublicKey)
+		})
+	}
+}
+
+func TestNewPublicKeyFromAliasFail(t *testing.T) {
+	tests := []struct {
+		name  string
+		alias []byte
+	}{
+		{
+			name:  "Empty alias",
+			alias: []byte{},
+		},
+		{
+			name:  "Nil alias",
+			alias: nil,
+		},
+		{
+			name:  "Invalid alias bytes",
+			alias: []byte{1, 2, 3, 4},
+		},
+		{
+			name:  "Invalid key type",
+			alias: getKeyListAlias(),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			curveType, publicKey, err := NewPublicKeyFromAlias(tt.alias)
+
+			assert.Error(t, err)
+			assert.Equal(t, zeroCurveType, curveType)
+			assert.Equal(t, PublicKey{}, publicKey)
+		})
+	}
 }

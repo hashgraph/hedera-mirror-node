@@ -35,15 +35,16 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-const ed25519NetworkAliasHex = "0x12205a081255a92b7c262bc2ea3ab7114b8a815345b3cc40f800b2b40914afecc44e"
+const ed25519AliasHex = "0x12205a081255a92b7c262bc2ea3ab7114b8a815345b3cc40f800b2b40914afecc44e"
 
 var (
-	ed25519NetworkAlias = hexutil.MustDecode(ed25519NetworkAliasHex)
-	account             = types.NewAccountIdFromEntityId(domain.MustDecodeEntityId(500))
-	accountAlias, _     = types.NewAccountIdFromEntity(domain.Entity{Alias: ed25519NetworkAlias, Id: domain.MustDecodeEntityId(500)})
-	entityId            = domain.MustDecodeEntityId(600)
-	hbarAmount          = types.HbarAmount{Value: 300}
-	statusSuccess       = types.TransactionResults[22]
+	ed25519Alias    = hexutil.MustDecode(ed25519AliasHex)
+	accountEntityId = domain.MustDecodeEntityId(500)
+	account         = types.NewAccountIdFromEntityId(accountEntityId)
+	accountAlias, _ = types.NewAccountIdFromEntity(domain.Entity{Alias: ed25519Alias, Id: accountEntityId})
+	entityId        = domain.MustDecodeEntityId(600)
+	hbarAmount      = types.HbarAmount{Value: 300}
+	statusSuccess   = types.TransactionResults[22]
 )
 
 func block() *types.Block {

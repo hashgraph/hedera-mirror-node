@@ -87,11 +87,9 @@ var (
 	token4 domain.Token
 
 	// account3 has ecdsaSecp256k1 alias, account4 has ed25519 alias, account5 has invalid alias
-	account3Alias        = "0x03d9a822b91df7850274273a338c152e7bcfa2036b24cd9e3b29d07efd949b387a"
-	account3NetworkAlias = hexutil.MustDecode("0x3a2103d9a822b91df7850274273a338c152e7bcfa2036b24cd9e3b29d07efd949b387a")
-	account4Alias        = "0x5a081255a92b7c262bc2ea3ab7114b8a815345b3cc40f800b2b40914afecc44e"
-	account4NetworkAlias = hexutil.MustDecode("0x12205a081255a92b7c262bc2ea3ab7114b8a815345b3cc40f800b2b40914afecc44e")
-	account5NetworkAlias = randstr.Bytes(48)
+	account3Alias = hexutil.MustDecode("0x3a2103d9a822b91df7850274273a338c152e7bcfa2036b24cd9e3b29d07efd949b387a")
+	account4Alias = hexutil.MustDecode("0x12205a081255a92b7c262bc2ea3ab7114b8a815345b3cc40f800b2b40914afecc44e")
+	account5Alias = randstr.Bytes(48)
 )
 
 // run the suite
@@ -102,12 +100,12 @@ func TestAccountRepositorySuite(t *testing.T) {
 type accountRepositorySuite struct {
 	integrationTest
 	suite.Suite
-	accountId            types.AccountId
-	accountIdString      string
-	account1NetworkAlias []byte
-	account3NetworkAlias []byte
-	account4NetworkAlias []byte
-	account5NetworkAlias []byte
+	accountId       types.AccountId
+	accountIdString string
+	accountAlias    []byte
+	account3Alias   []byte
+	account4Alias   []byte
+	account5Alias   []byte
 }
 
 func (suite *accountRepositorySuite) SetupSuite() {
@@ -120,7 +118,7 @@ func (suite *accountRepositorySuite) SetupTest() {
 	associatedTokenAccounts := make([]domain.TokenAccount, 0)
 
 	tdomain.NewEntityBuilder(dbClient, account1, account1CreatedTimestamp, domain.EntityTypeAccount).
-		Alias(suite.account1NetworkAlias).
+		Alias(suite.accountAlias).
 		Persist()
 
 	// persist tokens and tokenAccounts
@@ -319,13 +317,13 @@ func (suite *accountRepositorySuite) SetupTest() {
 
 	// accounts for GetAccountAlias tests
 	tdomain.NewEntityBuilder(dbClient, account3, account3CreatedTimestamp, domain.EntityTypeAccount).
-		Alias(suite.account3NetworkAlias).
+		Alias(suite.account3Alias).
 		Persist()
 	tdomain.NewEntityBuilder(dbClient, account4, account4CreatedTimestamp, domain.EntityTypeAccount).
-		Alias(suite.account4NetworkAlias).
+		Alias(suite.account4Alias).
 		Persist()
 	tdomain.NewEntityBuilder(dbClient, account5, account5CreatedTimestamp, domain.EntityTypeAccount).
-		Alias(suite.account5NetworkAlias).
+		Alias(suite.account5Alias).
 		Persist()
 }
 
@@ -366,7 +364,7 @@ func (suite *accountRepositorySuite) TestGetAccountAliasDbConnectionError() {
 
 func (suite *accountRepositorySuite) TestGetAccountId() {
 	// given
-	aliasAccountId, _ := types.NewAccountIdFromString(account4Alias, 0, 0)
+	aliasAccountId, _ := types.NewAccountIdFromAlias(account4Alias, 0, 0)
 	repo := NewAccountRepository(dbClient)
 
 	// when
@@ -392,7 +390,7 @@ func (suite *accountRepositorySuite) TestGetAccountIdNumericAccount() {
 
 func (suite *accountRepositorySuite) TestGetAccountIdDbConnectionError() {
 	// given
-	aliasAccountId, _ := types.NewAccountIdFromString(account4Alias, 0, 0)
+	aliasAccountId, _ := types.NewAccountIdFromAlias(account4Alias, 0, 0)
 	repo := NewAccountRepository(invalidDbClient)
 
 	// when
@@ -704,18 +702,18 @@ func (suite *accountRepositoryWithAliasSuite) SetupSuite() {
 		panic(err)
 	}
 	suite.publicKey = types.PublicKey{PublicKey: sk.PublicKey()}
-	suite.account1NetworkAlias, err = suite.publicKey.ToAlias()
+	suite.accountAlias, _, err = suite.publicKey.ToAlias()
 	if err != nil {
 		panic(err)
 	}
-	suite.accountId, err = types.NewAccountIdFromAlias(suite.publicKey.BytesRaw(), 0, 0)
+	suite.accountId, err = types.NewAccountIdFromAlias(suite.accountAlias, 0, 0)
 	if err != nil {
 		panic(err)
 	}
 
-	suite.account3NetworkAlias = account3NetworkAlias
-	suite.account4NetworkAlias = account4NetworkAlias
-	suite.account5NetworkAlias = account5NetworkAlias
+	suite.account3Alias = account3Alias
+	suite.account4Alias = account4Alias
+	suite.account5Alias = account5Alias
 }
 
 func (suite *accountRepositoryWithAliasSuite) SetupTest() {
@@ -724,13 +722,13 @@ func (suite *accountRepositoryWithAliasSuite) SetupTest() {
 	// add account2 with the same alias but was deleted before account1
 	// the entity row with deleted = true in entity table
 	tdomain.NewEntityBuilder(dbClient, account2, account2CreatedTimestamp, domain.EntityTypeAccount).
-		Alias(suite.account1NetworkAlias).
+		Alias(suite.accountAlias).
 		Deleted(true).
 		ModifiedTimestamp(account2DeletedTimestamp).
 		Persist()
 	// the historical entry
 	tdomain.NewEntityBuilder(dbClient, account2, account2CreatedTimestamp, domain.EntityTypeAccount).
-		Alias(suite.account1NetworkAlias).
+		Alias(suite.accountAlias).
 		TimestampRange(account2CreatedTimestamp, account2DeletedTimestamp).
 		Historical(true).
 		Persist()
@@ -739,7 +737,7 @@ func (suite *accountRepositoryWithAliasSuite) SetupTest() {
 func (suite *accountRepositoryWithAliasSuite) TestGetAccountAlias() {
 	tests := []struct {
 		encodedId     int64
-		expectedAlias string
+		expectedAlias []byte
 	}{
 		{encodedId: account3, expectedAlias: account3Alias},
 		{encodedId: account4, expectedAlias: account4Alias},
@@ -753,7 +751,7 @@ func (suite *accountRepositoryWithAliasSuite) TestGetAccountAlias() {
 			accountId := types.NewAccountIdFromEntityId(domain.MustDecodeEntityId(tt.encodedId))
 			actual, err := repo.GetAccountAlias(defaultContext, accountId)
 			assert.Nil(t, err)
-			assert.Equal(t, tt.expectedAlias, actual.String())
+			assert.Equal(t, tt.expectedAlias, actual.GetAlias())
 		})
 	}
 }
@@ -768,7 +766,7 @@ func (suite *accountRepositoryWithAliasSuite) TestGetAccountAliasThrowWhenInvali
 
 func (suite *accountRepositoryWithAliasSuite) TestGetAccountId() {
 	// given
-	aliasAccountId, err := types.NewAccountIdFromString(account4Alias, 0, 0)
+	aliasAccountId, err := types.NewAccountIdFromAlias(account4Alias, 0, 0)
 	assert.NoError(suite.T(), err)
 	repo := NewAccountRepository(dbClient)
 	expected := types.NewAccountIdFromEntityId(domain.MustDecodeEntityId(account4))
@@ -787,7 +785,7 @@ func (suite *accountRepositoryWithAliasSuite) TestGetAccountIdDeleted() {
 		Deleted(true).
 		ModifiedTimestamp(accountDeleteTimestamp).
 		Persist()
-	aliasAccountId, _ := types.NewAccountIdFromString(account4Alias, 0, 0)
+	aliasAccountId, _ := types.NewAccountIdFromAlias(account4Alias, 0, 0)
 	repo := NewAccountRepository(dbClient)
 
 	// when
