@@ -41,6 +41,7 @@ import TransactionId from '../transactionId';
 import * as utils from '../utils';
 import {
   ContractViewModel,
+  ContractBytecodeViewModel,
   ContractLogViewModel,
   ContractResultViewModel,
   ContractResultDetailsViewModel,
@@ -63,7 +64,7 @@ const contractSelectFields = [
   Contract.PROXY_ACCOUNT_ID,
   Contract.TIMESTAMP_RANGE,
 ].map((column) => Contract.getFullName(column));
-const contractWithInitAndRuntimeBytecodeSelectFields = [
+const contractWithBytecodeSelectFields = [
   ...contractSelectFields,
   Contract.getFullName(Contract.INITCODE),
   Contract.getFullName(Contract.RUNTIME_BYTECODE),
@@ -197,11 +198,12 @@ const extractTimestampConditionsFromContractFilters = (filters) => {
 /**
  * Formats a contract row from database to the contract view model
  * @param row
- * @return {ContractViewModel}
+ * @param viewModel
+ * @return {ContractViewModel | ContractBytecodeViewModel}
  */
-const formatContractRow = (row) => {
+const formatContractRow = (row, viewModel) => {
   const model = new Contract(row);
-  return new ContractViewModel(model);
+  return new viewModel(model);
 };
 
 /**
@@ -212,7 +214,7 @@ const formatContractRow = (row) => {
  */
 const getContractByIdOrAddressQueryForTable = (table, conditions) => {
   return [
-    `select ${contractWithInitAndRuntimeBytecodeSelectFields}`,
+    `select ${contractWithBytecodeSelectFields}`,
     `from ${table} ${Contract.tableAlias}`,
     `where ${conditions.join(' and ')}`,
   ].join('\n');
@@ -264,7 +266,7 @@ const getContractByIdOrAddressQuery = ({timestampConditions, timestampParams, co
 
   const selectFields = [
     ...contractSelectFields,
-    `encode(${Contract.getFullName(Contract.RUNTIME_BYTECODE)}, 'hex')::bytea as ${Contract.RUNTIME_BYTECODE}`,
+    Contract.getFullName(Contract.RUNTIME_BYTECODE),
     `coalesce(encode(${Contract.getFullName(Contract.INITCODE)}, 'hex')::bytea, cf.bytecode) as bytecode`,
   ];
   return {
@@ -740,7 +742,7 @@ class ContractController extends BaseController {
       throw new NotFoundError();
     }
 
-    res.locals[responseDataLabel] = formatContractRow(rows[0]);
+    res.locals[responseDataLabel] = formatContractRow(rows[0], ContractBytecodeViewModel);
   };
 
   /**
@@ -767,7 +769,7 @@ class ContractController extends BaseController {
     logger.debug(`getContracts returning ${rows.length} entries`);
 
     const response = {
-      contracts: rows.map((row) => formatContractRow(row)),
+      contracts: rows.map((row) => formatContractRow(row, ContractViewModel)),
       links: {},
     };
 

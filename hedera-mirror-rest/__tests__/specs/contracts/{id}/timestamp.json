@@ -8,7 +8,7 @@
     "contracts": [
       {
         "created_timestamp": "987654999123200",
-        "runtime_bytecode": [1, 10, 11, 2],
+        "runtime_bytecode": [54, 48, 56, 48, 54, 48, 52, 48],
         "evm_address": "62cf9068fed962cf9068fed962cf9068fed9dddd",
         "file_id": "5001",
         "key": [1, 1, 1],
@@ -18,7 +18,7 @@
       {
         "auto_renew_account_id": "7007",
         "created_timestamp": "987654999123200",
-        "runtime_bytecode": [1, 10, 11, 2],
+        "runtime_bytecode": [54, 48, 56, 48, 54, 48, 52, 48],
         "evm_address": "abbcccddddeeeeeefffffff000000068fed9dddd",
         "file_id": "5001",
         "key": [1, 1, 1],
@@ -109,7 +109,7 @@
     "obtainer_id": null,
     "permanent_removal": null,
     "proxy_account_id": null,
-    "runtime_bytecode": "0x010a0b02",
+    "runtime_bytecode": "0x60806040",
     "timestamp": {
       "from": "987654.999123300",
       "to": null

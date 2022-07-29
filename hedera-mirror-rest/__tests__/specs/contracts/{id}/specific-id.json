@@ -16,7 +16,7 @@
         "file_id": "5001",
         "key": [1, 1, 1],
         "num": "8001",
-        "runtime_bytecode": [1, 10, 11, 2],
+        "runtime_bytecode": [54, 48, 56, 48, 54, 48, 52, 48],
         "timestamp_range": "[997654000123457,)"
       }
     ],
@@ -103,7 +103,7 @@
     "obtainer_id": null,
     "permanent_removal": null,
     "proxy_account_id": null,
-    "runtime_bytecode": "0x010a0b02",
+    "runtime_bytecode": "0x60806040",
     "timestamp": {
       "from": "997654.000123457",
       "to": null

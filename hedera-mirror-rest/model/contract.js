@@ -44,7 +44,6 @@ class Contract {
   static FILE_ID = 'file_id';
   static ID = 'id';
   static INITCODE = 'initcode';
-  static RUNTIME_BYTECODE = 'runtime_bytecode';
   static KEY = 'key';
   static MAX_AUTOMATIC_TOKEN_ASSOCIATIONS = 'max_automatic_token_associations';
   static MEMO = 'memo';
@@ -54,6 +53,7 @@ class Contract {
   static PROXY_ACCOUNT_ID = 'proxy_account_id';
   static PUBLIC_KEY = 'public_key';
   static REALM = 'realm';
+  static RUNTIME_BYTECODE = 'runtime_bytecode';
   static SHARD = 'shard';
   static TIMESTAMP_RANGE = 'timestamp_range';
   static TYPE = 'type';

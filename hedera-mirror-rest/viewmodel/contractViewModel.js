@@ -51,13 +51,6 @@ class ContractViewModel {
       from: utils.nsToSecNs(contract.timestampRange.begin),
       to: utils.nsToSecNs(contract.timestampRange.end),
     };
-
-    if (contract.bytecode !== undefined) {
-      this.bytecode = utils.addHexPrefix(contract.bytecode, true);
-    }
-    if (contract.runtimeBytecode !== undefined) {
-      this.runtime_bytecode = utils.addHexPrefix(contract.runtimeBytecode, true);
-    }
   }
 }
 

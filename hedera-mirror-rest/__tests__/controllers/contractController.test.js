@@ -28,6 +28,7 @@ import * as utils from '../../utils';
 import {Contract} from '../../model';
 import {FileDataService} from '../../service';
 import Bound from '../../controllers/bound';
+import {ContractBytecodeViewModel, ContractViewModel} from '../../viewmodel';
 
 const {default: defaultLimit} = getResponseLimit();
 
@@ -48,7 +49,7 @@ const contractFields = [
   Contract.PROXY_ACCOUNT_ID,
   Contract.TIMESTAMP_RANGE,
 ].map((column) => Contract.getFullName(column));
-const contractWithInitcodeFields = [
+const contractWithBytecodeFields = [
   ...contractFields,
   Contract.getFullName(Contract.INITCODE),
   Contract.getFullName(Contract.RUNTIME_BYTECODE),
@@ -280,21 +281,29 @@ describe('formatContractRow', () => {
     },
   };
 
-  test('verify', () => {
-    expect(contracts.formatContractRow(input)).toEqual(expected);
+  test('verify ContractViewModel', () => {
+    expect(contracts.formatContractRow(input, ContractViewModel)).toEqual(expected);
+  });
+
+  test('verify ContractBytecodeViewModel', () => {
+    expect(contracts.formatContractRow(input, ContractBytecodeViewModel)).toEqual({
+      ...expected,
+      bytecode: '0x',
+      runtime_bytecode: '0x',
+    });
   });
 });
 
 describe('getContractByIdOrAddressQuery', () => {
   const mainQuery = `select ${[
     ...contractFields,
-    "encode(c.runtime_bytecode,'hex')::bytea as runtime_bytecode",
+    'c.runtime_bytecode',
     "coalesce(encode(c.initcode, 'hex')::bytea, cf.bytecode) as bytecode",
   ]}
     from contract c, contract_file cf`;
 
   const queryForTable = ({table, extraConditions, columnName}) => {
-    return `select ${contractWithInitcodeFields}
+    return `select ${contractWithBytecodeFields}
       from ${table} c
       where ${(extraConditions && extraConditions.join(' and ') + ' and ') || ''} c.${columnName} = $3`;
   };
