@@ -2568,6 +2568,7 @@ components:
         - TOKENUPDATE
         - TOKENWIPE
         - UNCHECKEDSUBMIT
+        - UNKNOWN
         - UTILPRNG
     Tokens:
       type: array
