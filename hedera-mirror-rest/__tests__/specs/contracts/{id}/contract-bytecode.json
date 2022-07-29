@@ -6,6 +6,7 @@
         "created_timestamp": "987654000123456",
         "evm_address": "62cf9068fed962cf9068fed962cf9068fed9dddd",
         "file_id": "5001",
+        "runtime_bytecode": [54, 48, 56, 48, 54, 48, 52, 48],
         "key": [1, 1, 1],
         "num": "8001",
         "timestamp_range": "[987654000123456, 997654000123456]"
@@ -14,6 +15,7 @@
         "created_timestamp": "987654000123456",
         "evm_address": "62cf9068fed962cf9aaabbb962cf9068fed9dddd",
         "file_id": "5001",
+        "runtime_bytecode": [54, 48, 56, 48, 54, 48, 52, 48],
         "key": [1, 1, 1],
         "num": "8001",
         "timestamp_range": "[997654000123457,)"
@@ -57,6 +59,7 @@
     "obtainer_id": null,
     "permanent_removal": null,
     "proxy_account_id": null,
+    "runtime_bytecode": "0x3630383036303430",
     "timestamp": {
       "from": "997654.000123457",
       "to": null

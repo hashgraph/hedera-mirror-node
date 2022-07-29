@@ -444,7 +444,7 @@ const addEntity = async (defaults, entity) => {
 
 const addEthereumTransaction = async (ethereumTransaction) => {
   // any attribute starting with '_' is not a db column
-  ethereumTransaction = _.omitBy(ethereumTransaction, (v, k) => k.startsWith('_'));
+  ethereumTransaction = _.omitBy(ethereumTransaction, (_v, k) => k.startsWith('_'));
   const localDefaults = {
     access_list: null,
     call_data_id: null,
@@ -624,7 +624,7 @@ const setAccountBalance = async (balance) => {
       tokenBalance.balance,
       EntityId.of(
         BigInt(config.shard),
-        BigInt(tokenBalance.token_realm),
+        BigInt(tokenBalance.token_realm || 0),
         BigInt(tokenBalance.token_num)
       ).getEncodedId(),
     ]);
@@ -798,6 +798,7 @@ const addContract = async (contract) => {
     evm_address: null,
     expiration_timestamp: null,
     initcode: null,
+    runtime_bytecode: null,
     key: null,
     max_automatic_token_associations: 0,
     memo: 'contract memo',
@@ -815,6 +816,7 @@ const addContract = async (contract) => {
   contract.evm_address = contract.evm_address != null ? Buffer.from(contract.evm_address, 'hex') : null;
   contract.id = EntityId.of(BigInt(contract.shard), BigInt(contract.realm), BigInt(contract.num)).getEncodedId();
   contract.initcode = contract.initcode != null ? Buffer.from(contract.initcode) : null;
+  contract.runtime_bytecode = contract.runtime_bytecode != null ? Buffer.from(contract.runtime_bytecode) : null;
   contract.key = contract.key != null ? Buffer.from(contract.key) : null;
   const insertFields = Object.keys(contract)
     .filter((k) => !k.startsWith('_'))

@@ -1,15 +1,19 @@
 {
-  "description": "Account api calls with limit capped at max (6)",
+  "description": "Account api calls with limit capped at max (6), token balance capped at max (2)",
   "extendedDescription": [
     "The default and max limits in config are overridden to 3 and 6 respectively. With limit=10 in the query, the ",
-    "number of accounts in the response should be capped at 6 and there should be a next link"
+    "number of accounts in the response should be capped at 6 and there should be a next link. The number of token ",
+    "balances for each account is also capped at a max of 2"
   ],
   "setup": {
     "config": {
       "response": {
         "limit": {
           "default": 3,
-          "max": 6
+          "max": 6,
+          "tokenBalance": {
+            "multipleAccounts": 2
+          }
         }
       }
     },
@@ -57,12 +61,10 @@
         "balance": 10,
         "tokens": [
           {
-            "token_realm": 0,
             "token_num": 90000,
             "balance": 1
           },
           {
-            "token_realm": 0,
             "token_num": 90001,
             "balance": 11
           }
@@ -74,12 +76,10 @@
         "balance": 20,
         "tokens": [
           {
-            "token_realm": 0,
             "token_num": 90001,
             "balance": 2
           },
           {
-            "token_realm": 0,
             "token_num": 90010,
             "balance": 22
           }
@@ -101,13 +101,15 @@
         "balance": 50,
         "tokens": [
           {
-            "token_realm": 0,
             "token_num": 100001,
             "balance": 5
           },
           {
-            "token_realm": 0,
             "token_num": 100002,
+            "balance": 55
+          },
+          {
+            "token_num": 100003,
             "balance": 55
           }
         ]

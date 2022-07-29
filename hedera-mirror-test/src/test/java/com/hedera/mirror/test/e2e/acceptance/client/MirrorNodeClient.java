@@ -27,15 +27,8 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Named;
-
-import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorNetworkNode;
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorNetworkNodes;
-
 import lombok.extern.log4j.Log4j2;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.http.MediaType;
-import org.springframework.retry.support.RetryTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.util.retry.Retry;
 import reactor.util.retry.RetryBackoffSpec;
@@ -43,7 +36,10 @@ import reactor.util.retry.RetryBackoffSpec;
 import com.hedera.hashgraph.sdk.SubscriptionHandle;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TopicMessageQuery;
-import com.hedera.mirror.test.e2e.acceptance.config.RestPollingProperties;
+import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorNetworkNode;
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorNetworkNodes;
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorNetworkStake;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResultResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResultsResponse;
@@ -166,6 +162,11 @@ public class MirrorNodeClient {
         } while (next != null);
 
         return nodes;
+    }
+
+    public MirrorNetworkStake getNetworkStake() {
+        String stakeEndpoint = "/network/stake";
+        return callRestEndpoint(stakeEndpoint, MirrorNetworkStake.class);
     }
 
     public MirrorNftResponse getNftInfo(String tokenId, long serialNumber) {

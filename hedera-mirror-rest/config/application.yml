@@ -109,6 +109,9 @@ hedera:
         limit:
           default: 25
           max: 100
+          tokenBalance:
+            multipleAccounts: 50
+            singleAccount: 1000
       shard: 0
       stateproof:
         addressBookHistory: false
