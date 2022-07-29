@@ -32,7 +32,7 @@ class StreamObject {
     this.classId = buffer.readBigInt64BE();
     this.classVersion = buffer.readInt32BE(LONG_SIZE);
 
-    this.bodyLength = this._readBody(buffer.slice(STREAM_OBJECT_HEADER_SIZE));
+    this.bodyLength = this._readBody(buffer.subarray(STREAM_OBJECT_HEADER_SIZE));
   }
 
   _readBody(buffer) {

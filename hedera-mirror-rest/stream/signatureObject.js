@@ -42,7 +42,7 @@ class SignatureObject extends StreamObject {
     }
 
     const {length, bytes} = readLengthAndBytes(
-      buffer.slice(INT_SIZE),
+      buffer.subarray(INT_SIZE),
       BYTE_SIZE,
       SignatureObject.SHA_384_WITH_RSA.maxLength,
       true

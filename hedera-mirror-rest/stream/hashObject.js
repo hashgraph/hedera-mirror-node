@@ -39,7 +39,7 @@ class HashObject extends StreamObject {
     // always SHA-384
     const hashLength = HashObject.SHA_384.length;
     this.digestType = buffer.readInt32BE();
-    const {length, bytes} = readLengthAndBytes(buffer.slice(INT_SIZE), hashLength, hashLength, false);
+    const {length, bytes} = readLengthAndBytes(buffer.subarray(INT_SIZE), hashLength, hashLength, false);
     this.hash = bytes;
 
     return INT_SIZE + length;
