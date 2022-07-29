@@ -433,7 +433,7 @@ const addEntity = async (defaults, entity) => {
 
 const addEthereumTransaction = async (ethereumTransaction) => {
   // any attribute starting with '_' is not a db column
-  ethereumTransaction = _.omitBy(ethereumTransaction, (v, k) => k.startsWith('_'));
+  ethereumTransaction = _.omitBy(ethereumTransaction, (_v, k) => k.startsWith('_'));
   const localDefaults = {
     access_list: null,
     call_data_id: null,
@@ -613,7 +613,7 @@ const setAccountBalance = async (balance) => {
       tokenBalance.balance,
       EntityId.of(
         BigInt(config.shard),
-        BigInt(tokenBalance.token_realm),
+        BigInt(tokenBalance.token_realm || 0),
         BigInt(tokenBalance.token_num)
       ).getEncodedId(),
     ]);

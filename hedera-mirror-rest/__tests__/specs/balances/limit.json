@@ -5,7 +5,10 @@
       "response": {
         "limit": {
           "default": 2,
-          "max": 4
+          "max": 4,
+          "tokenBalance": {
+            "multipleAccounts": 2
+          }
         }
       }
     },
@@ -30,7 +33,21 @@
       {
         "timestamp": 2345,
         "id": 17,
-        "balance": 700
+        "balance": 700,
+        "tokens": [
+          {
+            "token_num": 100001,
+            "balance": 5
+          },
+          {
+            "token_num": 100002,
+            "balance": 10
+          },
+          {
+            "token_num": 100003,
+            "balance": 200
+          }
+        ]
       },
       {
         "timestamp": 2345,
@@ -40,12 +57,28 @@
       {
         "timestamp": 2345,
         "id": 19,
-        "balance": 900
+        "balance": 900,
+        "tokens": [
+          {
+            "token_num": 100010,
+            "balance": 95
+          }
+        ]
       },
       {
         "timestamp": 2345,
         "id": 20,
-        "balance": 450
+        "balance": 450,
+        "tokens": [
+          {
+            "token_num": 100001,
+            "balance": 51
+          },
+          {
+            "token_num": 100002,
+            "balance": 101
+          }
+        ]
       },
       {
         "timestamp": 2345,
@@ -66,12 +99,26 @@
           {
             "account": "0.0.17",
             "balance": 700,
-            "tokens": []
+            "tokens": [
+              {
+                "token_id": "0.0.100001",
+                "balance": 5
+              },
+              {
+                "token_id": "0.0.100002",
+                "balance": 10
+              }
+            ]
           },
           {
             "account": "0.0.19",
             "balance": 900,
-            "tokens": []
+            "tokens": [
+              {
+                "token_id": "0.0.100010",
+                "balance": 95
+              }
+            ]
           }
         ],
         "links": {
@@ -88,17 +135,40 @@
           {
             "account": "0.0.17",
             "balance": 700,
-            "tokens": []
+            "tokens": [
+              {
+                "token_id": "0.0.100001",
+                "balance": 5
+              },
+              {
+                "token_id": "0.0.100002",
+                "balance": 10
+              }
+            ]
           },
           {
             "account": "0.0.19",
             "balance": 900,
-            "tokens": []
+            "tokens": [
+              {
+                "token_id": "0.0.100010",
+                "balance": 95
+              }
+            ]
           },
           {
             "account": "0.0.20",
             "balance": 450,
-            "tokens": []
+            "tokens": [
+              {
+                "token_id": "0.0.100001",
+                "balance": 51
+              },
+              {
+                "token_id": "0.0.100002",
+                "balance": 101
+              }
+            ]
           },
           {
             "account": "0.0.21",
