@@ -20,6 +20,9 @@ package com.hedera.mirror.importer.parser.domain;
  * ‍
  */
 
+import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
+
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -33,9 +36,11 @@ import org.springframework.util.Assert;
 import reactor.core.publisher.Flux;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
+import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.util.Utility;
 
 /**
@@ -76,10 +81,13 @@ public class RecordFileBuilder {
 
             var consensusEnd = recordItems.get(recordItems.size() - 1).getConsensusTimestamp();
             var consensusStart = recordItems.get(0).getConsensusTimestamp();
+            Instant instant = Instant.ofEpochSecond(0, consensusStart);
+            String filename = StreamFilename.getFilename(StreamType.RECORD, DATA, instant);
 
             recordFile.customize(r -> r.consensusEnd(consensusEnd)
                     .consensusStart(consensusStart)
                     .count((long) recordItems.size())
+                    .name(filename)
             );
 
             return recordFile.get();

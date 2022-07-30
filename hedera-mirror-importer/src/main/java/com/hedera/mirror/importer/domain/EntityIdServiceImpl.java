@@ -38,14 +38,13 @@ import org.apache.commons.codec.binary.Hex;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 
-import com.hedera.mirror.common.domain.Aliasable;
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.exception.AliasNotFoundException;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
-import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 
 @Log4j2
@@ -53,13 +52,11 @@ import com.hedera.mirror.importer.repository.EntityRepository;
 public class EntityIdServiceImpl implements EntityIdService {
 
     private final Cache cache;
-    private final ContractRepository contractRepository;
     private final EntityRepository entityRepository;
 
     public EntityIdServiceImpl(@Named(CACHE_MANAGER_ALIAS) CacheManager cacheManager,
-                               ContractRepository contractRepository, EntityRepository entityRepository) {
+                               EntityRepository entityRepository) {
         this.cache = cacheManager.getCache("entityId");
-        this.contractRepository = contractRepository;
         this.entityRepository = entityRepository;
     }
 
@@ -90,7 +87,7 @@ public class EntityIdServiceImpl implements EntityIdService {
         }
 
         try {
-            return cache.get(entityIdProto.hashCode(), loader);
+            return cache.get(entityIdProto, loader);
         } catch (Cache.ValueRetrievalException e) {
             throw e.getCause();
         }
@@ -104,7 +101,7 @@ public class EntityIdServiceImpl implements EntityIdService {
                 if (!EntityId.isEmpty(entityId)) {
                     return entityId;
                 }
-            }  catch (Exception e) {
+            } catch (Exception e) {
                 if (e instanceof AliasNotFoundException && action == AliasNotFoundAction.ERROR) {
                     throw e;
                 }
@@ -115,18 +112,19 @@ public class EntityIdServiceImpl implements EntityIdService {
     }
 
     @Override
-    public void notify(Aliasable aliasable) {
-        if (aliasable == null || (aliasable.getDeleted() != null && aliasable.getDeleted())) {
+    public void notify(Entity entity) {
+        if (entity == null || (entity.getDeleted() != null && entity.getDeleted())) {
             return;
         }
 
-        ByteString alias = DomainUtils.fromBytes(aliasable.getAlias());
+        byte[] aliasBytes = entity.getAlias() != null ? entity.getAlias() : entity.getEvmAddress();
+        ByteString alias = DomainUtils.fromBytes(aliasBytes);
         if (alias == null) {
             return;
         }
 
-        EntityId entityId = aliasable.toEntityId();
-        EntityType type = aliasable.getType();
+        EntityId entityId = entity.toEntityId();
+        EntityType type = entity.getType();
         GeneratedMessageV3.Builder<?> builder;
 
         switch (type) {
@@ -146,7 +144,7 @@ public class EntityIdServiceImpl implements EntityIdService {
                 throw new InvalidEntityException(String.format("%s entity can't have alias", type));
         }
 
-        cache.put(builder.build().hashCode(), entityId);
+        cache.put(builder.build(), entityId);
     }
 
     private EntityId load(AccountID accountId) {
@@ -156,7 +154,7 @@ public class EntityIdServiceImpl implements EntityIdService {
             case ALIAS:
                 byte[] alias = DomainUtils.toBytes(accountId.getAlias());
                 return alias.length == DomainUtils.EVM_ADDRESS_LENGTH ?
-                        findByEvmAddress(alias, accountId.getShardNum(), accountId.getRealmNum()) :
+                        findByEvmAddress(alias, accountId.getShardNum(), accountId.getRealmNum(), ACCOUNT) :
                         entityRepository.findByAlias(alias)
                                 .map(id -> EntityId.of(id, ACCOUNT))
                                 .orElseThrow(() -> new AliasNotFoundException(Hex.encodeHexString(alias), ACCOUNT));
@@ -172,17 +170,17 @@ public class EntityIdServiceImpl implements EntityIdService {
                 return EntityId.of(contractId);
             case EVM_ADDRESS:
                 byte[] evmAddress = DomainUtils.toBytes(contractId.getEvmAddress());
-                return findByEvmAddress(evmAddress, contractId.getShardNum(), contractId.getRealmNum());
+                return findByEvmAddress(evmAddress, contractId.getShardNum(), contractId.getRealmNum(), CONTRACT);
             default:
                 throw new InvalidDatasetException("Invalid ContractID: " + contractId);
         }
     }
 
-    private EntityId findByEvmAddress(byte[] evmAddress, long shardNum, long realmNum) {
+    private EntityId findByEvmAddress(byte[] evmAddress, long shardNum, long realmNum, EntityType type) {
         return Optional.ofNullable(DomainUtils.fromEvmAddress(evmAddress))
                 // Verify shard and realm match when assuming evmAddress is in the 'shard.realm.num' form
                 .filter(e -> e.getShardNum() == shardNum && e.getRealmNum() == realmNum)
-                .or(() -> contractRepository.findByEvmAddress(evmAddress).map(id -> EntityId.of(id, CONTRACT)))
-                .orElseThrow(() -> new AliasNotFoundException(Hex.encodeHexString(evmAddress), CONTRACT));
+                .or(() -> entityRepository.findByEvmAddress(evmAddress).map(id -> EntityId.of(id, type)))
+                .orElseThrow(() -> new AliasNotFoundException(Hex.encodeHexString(evmAddress), type));
     }
 }

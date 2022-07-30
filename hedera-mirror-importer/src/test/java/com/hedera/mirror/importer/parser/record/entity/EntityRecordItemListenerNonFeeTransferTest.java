@@ -23,7 +23,6 @@ package com.hedera.mirror.importer.parser.record.entity;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.google.common.collect.Iterables;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
@@ -189,8 +188,7 @@ class EntityRecordItemListenerNonFeeTransferTest extends AbstractEntityRecordIte
 
     private void assertEntities() {
         var expected = expectedEntityNum.toArray();
-        var actual = StreamSupport.stream(Iterables.concat(entityRepository.findAll(), contractRepository.findAll())
-                        .spliterator(), false)
+        var actual = StreamSupport.stream(entityRepository.findAll().spliterator(), false)
                 .map(e -> e.getNum())
                 .toArray();
         Arrays.sort(expected);
@@ -200,22 +198,22 @@ class EntityRecordItemListenerNonFeeTransferTest extends AbstractEntityRecordIte
 
     private void assertEverything() {
         assertAll(
-                () -> assertRepositoryRowCounts()
-                , () -> assertTransactions()
-                , () -> assertEntities()
+                () -> assertRepositoryRowCounts(),
+                () -> assertTransactions(),
+                () -> assertEntities()
         );
     }
 
     private void assertRepositoryRowCounts() {
         var expectedTransfersCount = expectedTransactions.stream()
-                .mapToInt(t -> t.record.getTransferList().getAccountAmountsList().size()).sum();
-        assertAll(() -> assertEquals(expectedTransactions.size(), transactionRepository.count(), "transaction rows")
-                , () -> assertEquals(expectedEntityNum.size(), entityRepository.count() + contractRepository.count(),
-                        "entity rows")
-                , () -> assertEquals(expectedTransfersCount, cryptoTransferRepository.count(),
-                        "crypto_transfer rows")
-                , () -> assertEquals(expectedNonFeeTransfersCount, nonFeeTransferRepository.count(),
-                        "non_fee_transfer rows")
+                .mapToInt(t -> t.record.getTransferList().getAccountAmountsList().size())
+                .sum();
+        assertAll(
+                () -> assertEquals(expectedTransactions.size(), transactionRepository.count(), "transaction rows"),
+                () -> assertEquals(expectedEntityNum.size(), entityRepository.count(), "entity rows"),
+                () -> assertEquals(expectedTransfersCount, cryptoTransferRepository.count(), "crypto_transfer rows"),
+                () -> assertEquals(expectedNonFeeTransfersCount, nonFeeTransferRepository.count(), "non_fee_transfer " +
+                        "rows")
         );
     }
 

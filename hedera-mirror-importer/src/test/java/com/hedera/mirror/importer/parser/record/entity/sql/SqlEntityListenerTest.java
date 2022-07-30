@@ -40,7 +40,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -185,7 +184,6 @@ class SqlEntityListenerTest extends IntegrationTest {
         completeFileAndCommit();
 
         // then
-        assertThat(contractRepository.count()).isZero();
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(entity1, entity2);
         assertThat(findHistory(Entity.class)).isEmpty();
     }
@@ -216,10 +214,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     void onContract() {
         // given
         Contract contract1 = domainBuilder.contract().get();
-        Contract contract2 = domainBuilder.contract()
-                .customize(c -> c.fileId(null).initcode(domainBuilder.bytes(1024))
-                        .autoRenewAccountId(null).evmAddress(null))
-                .get();
+        Contract contract2 = domainBuilder.contract().get();
 
         // when
         sqlEntityListener.onContract(contract1);
@@ -229,160 +224,6 @@ class SqlEntityListenerTest extends IntegrationTest {
         // then
         assertThat(entityRepository.count()).isZero();
         assertThat(contractRepository.findAll()).containsExactlyInAnyOrder(contract1, contract2);
-        assertThat(findHistory(Contract.class)).isEmpty();
-    }
-
-    @ParameterizedTest(name = "{2} record files with {0}")
-    @MethodSource("provideParamsContractHistory")
-    void onContractHistory(String bytecodeSource, Consumer<Contract.ContractBuilder> customizer, int commitIndex) {
-        // given
-        Contract contractCreate = domainBuilder.contract()
-                .customize(c -> c.obtainerId(null))
-                .customize(customizer)
-                .get();
-
-        Contract contractUpdate = contractCreate.toEntityId().toEntity();
-        contractUpdate.setAutoRenewAccountId(110L);
-        contractUpdate.setAutoRenewPeriod(30L);
-        contractUpdate.setDeclineReward(true);
-        contractUpdate.setExpirationTimestamp(500L);
-        contractUpdate.setKey(domainBuilder.key());
-        contractUpdate.setMaxAutomaticTokenAssociations(100);
-        contractUpdate.setMemo("updated");
-        contractUpdate.setProxyAccountId(EntityId.of(100L, ACCOUNT));
-        contractUpdate.setStakedAccountId(domainBuilder.id());
-        contractUpdate.setStakePeriodStart(domainBuilder.id());
-        contractUpdate.setTimestampLower(contractCreate.getTimestampLower() + 1);
-
-        Contract contractDelete = contractCreate.toEntityId().toEntity();
-        contractDelete.setDeleted(true);
-        contractDelete.setPermanentRemoval(true);
-        contractDelete.setTimestampLower(contractCreate.getTimestampLower() + 2);
-        contractDelete.setObtainerId(EntityId.of(999L, EntityType.CONTRACT));
-
-        // Expected merged objects
-        Contract mergedCreate = TestUtils.clone(contractCreate);
-        Contract mergedUpdate = TestUtils.merge(contractCreate, contractUpdate);
-        Contract mergedDelete = TestUtils.merge(mergedUpdate, contractDelete);
-        mergedCreate.setTimestampUpper(contractUpdate.getTimestampLower());
-
-        // when
-        sqlEntityListener.onContract(contractCreate);
-        if (commitIndex > 1) {
-            completeFileAndCommit();
-            assertThat(contractRepository.findAll()).containsExactly(contractCreate);
-            assertThat(findHistory(Contract.class)).isEmpty();
-        }
-
-        sqlEntityListener.onContract(contractUpdate);
-        if (commitIndex > 2) {
-            completeFileAndCommit();
-            assertThat(contractRepository.findAll()).containsExactly(mergedUpdate);
-            assertThat(findHistory(Contract.class)).containsExactly(mergedCreate);
-        }
-
-        sqlEntityListener.onContract(contractDelete);
-        completeFileAndCommit();
-
-        // then
-        mergedUpdate.setTimestampUpper(contractDelete.getTimestampLower());
-        assertThat(contractRepository.findAll()).containsExactly(mergedDelete);
-        assertThat(findHistory(Contract.class)).containsExactly(mergedCreate, mergedUpdate);
-        assertThat(entityRepository.count()).isZero();
-    }
-
-    @ValueSource(booleans = {true, false})
-    @ParameterizedTest
-    void onContractWithHistoryAndNonHistoryUpdates(boolean nonHistoryBefore) {
-        // given
-        Contract contract = domainBuilder.contract().persist();
-
-        Contract contractStakePeriodStart1 = contract.toEntityId().toEntity();
-        contractStakePeriodStart1.setStakePeriodStart(2L);
-        contractStakePeriodStart1.setTimestampRange(null);
-
-        Contract contractStakePeriodStart2 = contract.toEntityId().toEntity();
-        contractStakePeriodStart2.setStakePeriodStart(7L);
-        contractStakePeriodStart2.setTimestampRange(null);
-
-        Contract contractMemoUpdated = contract.toEntityId().toEntity();
-        contractMemoUpdated.setMemo(domainBuilder.text(16));
-        contractMemoUpdated.setTimestampLower(domainBuilder.timestamp());
-
-        // when
-        if (nonHistoryBefore) {
-            sqlEntityListener.onContract(contractStakePeriodStart1);
-            sqlEntityListener.onContract(contractStakePeriodStart2);
-            sqlEntityListener.onContract(contractMemoUpdated);
-        } else {
-            sqlEntityListener.onContract(contractMemoUpdated);
-            sqlEntityListener.onContract(contractStakePeriodStart1);
-            sqlEntityListener.onContract(contractStakePeriodStart2);
-        }
-        completeFileAndCommit();
-
-        // then
-        Contract contractMerged = TestUtils.clone(contract);
-        contractMerged.setMemo(contractMemoUpdated.getMemo());
-        contractMerged.setStakePeriodStart(contractStakePeriodStart2.getStakePeriodStart());
-        contractMerged.setTimestampRange(contractMemoUpdated.getTimestampRange());
-        contract.setTimestampUpper(contractMemoUpdated.getTimestampLower());
-
-        assertThat(contractRepository.findAll()).containsExactly(contractMerged);
-        assertThat(findHistory(Contract.class)).containsExactly(contract);
-    }
-
-    @Test
-    void onContractWithNonHistoryUpdates() {
-        // given
-        // Update to non-history field with existing contract should just update nonce
-        var existingContract = domainBuilder.contract().persist();
-
-        Contract existingContractStakePeriodStart1 = existingContract.toEntityId().toEntity();
-        existingContractStakePeriodStart1.setStakePeriodStart(2L);
-        existingContractStakePeriodStart1.setTimestampRange(null);
-
-        Contract existingContractStakePeriodStart2 = existingContract.toEntityId().toEntity();
-        existingContractStakePeriodStart2.setStakePeriodStart(5L);
-        existingContractStakePeriodStart2.setTimestampRange(null);
-
-        // Update to non-history field with partial data should be discarded
-        Contract nonExistingContract = domainBuilder.contract().get();
-
-        Contract nonExistingContractStakePeriodStart1 = nonExistingContract.toEntityId().toEntity();
-        nonExistingContractStakePeriodStart1.setStakePeriodStart(6L);
-        nonExistingContractStakePeriodStart1.setTimestampRange(null);
-
-        Contract nonExistingContractStakePeriodStart2 = nonExistingContract.toEntityId().toEntity();
-        nonExistingContractStakePeriodStart2.setStakePeriodStart(8L);
-        nonExistingContractStakePeriodStart2.setTimestampRange(null);
-
-        // when
-        sqlEntityListener.onContract(existingContractStakePeriodStart1);
-        sqlEntityListener.onContract(existingContractStakePeriodStart2);
-        sqlEntityListener.onContract(nonExistingContractStakePeriodStart1);
-        sqlEntityListener.onContract(nonExistingContractStakePeriodStart2);
-        completeFileAndCommit();
-
-        existingContract.setStakePeriodStart(existingContractStakePeriodStart2.getStakePeriodStart());
-        assertThat(contractRepository.findAll()).containsExactly(existingContract);
-
-        Contract existingContractStakePeriodStart3 = existingContract.toEntityId().toEntity();
-        existingContractStakePeriodStart3.setStakePeriodStart(10L);
-        existingContractStakePeriodStart3.setTimestampRange(null);
-
-        Contract nonExistingContractStakePeriodStart3 = domainBuilder.entityId(EntityType.CONTRACT).toEntity();
-        nonExistingContractStakePeriodStart3.setStakePeriodStart(12L);
-        nonExistingContractStakePeriodStart3.setTimestampRange(null);
-
-        sqlEntityListener.onContract(existingContractStakePeriodStart3);
-        sqlEntityListener.onContract(nonExistingContractStakePeriodStart3);
-        completeFileAndCommit();
-
-        // then
-        existingContract.setStakePeriodStart(existingContractStakePeriodStart3.getStakePeriodStart());
-        assertThat(contractRepository.findAll()).containsExactly(existingContract);
-        assertThat(findHistory(Contract.class)).isEmpty();
     }
 
     @Test

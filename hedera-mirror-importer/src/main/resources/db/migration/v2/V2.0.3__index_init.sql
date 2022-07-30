@@ -34,23 +34,10 @@ alter table address_book_service_endpoint
 -- contract
 alter table if exists contract
     add constraint contract__pk primary key (id);
-alter table if exists contract
-    add constraint contract__type_check
-        check (type = 'CONTRACT');
-create index if not exists contract__evm_address on contract (evm_address) where evm_address is not null;
-create index if not exists contract__public_key on contract (public_key) where public_key is not null;
 
 -- contract_action
 alter table if exists contract_action
     add constraint contract_action__pk primary key (consensus_timestamp, index, caller);
-
--- contract_history
-alter table if exists contract_history
-    add constraint contract_history__pk primary key (id, timestamp_range);
-alter table if exists contract_history
-    add constraint contract_history__type_check
-        check (type = 'CONTRACT');
-create index if not exists contract_history__timestamp_range on contract_history using gist (timestamp_range);
 
 -- contract_log
 alter table if exists contract_log
@@ -97,9 +84,6 @@ create index if not exists custom_fee__token_timestamp
 -- entity
 alter table entity
     add constraint entity__pk primary key (id);
-alter table if exists entity
-    add constraint entity__type_check
-        check (type <> 'CONTRACT');
 create index if not exists entity__id_type
     on entity (id, type);
 create index if not exists entity__public_key_type
@@ -111,9 +95,6 @@ create index if not exists entity__evm_address on entity (evm_address) where evm
 -- entity_history
 alter table if exists entity_history
     add constraint entity_history__pk primary key (id, timestamp_range);
-alter table if exists entity_history
-    add constraint entity_history__type_check
-        check (type <> 'CONTRACT');
 create index if not exists entity_history__alias on entity_history (alias) where alias is not null;
 create index if not exists entity_history__evm_address on entity_history (evm_address) where evm_address is not null;
 create index if not exists entity_history__timestamp_range on entity_history using gist (timestamp_range);

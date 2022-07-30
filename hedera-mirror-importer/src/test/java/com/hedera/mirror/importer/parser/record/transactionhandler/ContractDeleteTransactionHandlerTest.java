@@ -33,7 +33,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.importer.TestUtils;
@@ -73,7 +73,7 @@ class ContractDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTrans
     @Override
     protected List<UpdateEntityTestSpec> getUpdateEntityTestSpecs() {
         List<UpdateEntityTestSpec> specs = new ArrayList<>();
-        Contract expected = (Contract) getExpectedEntityWithTimestamp();
+        Entity expected = getExpectedEntityWithTimestamp();
         expected.setDeleted(true);
         expected.setObtainerId(EntityId.of(OBTAINER_NUM, EntityType.ACCOUNT));
         expected.setPermanentRemoval(false);

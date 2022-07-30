@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.repository;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,56 +22,21 @@ package com.hedera.mirror.importer.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.List;
-import javax.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
-import org.springframework.jdbc.core.RowMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hedera.mirror.common.domain.contract.Contract;
 
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class ContractRepositoryTest extends AbstractRepositoryTest {
 
-    private static final RowMapper<Contract> ROW_MAPPER = rowMapper(Contract.class);
-
-    @Resource
-    private ContractRepository contractRepository;
-
-    @Test
-    void findByEvmAddress() {
-        Contract contract = domainBuilder.contract().persist();
-        assertThat(contractRepository.findByEvmAddress(contract.getEvmAddress())).get().isEqualTo(contract.getId());
-    }
-
-    @Test
-    void findByEvmAddressDeleted() {
-        Contract contract = domainBuilder.contract().customize((b) -> b.deleted(true)).persist();
-        assertThat(contractRepository.findByEvmAddress(contract.getEvmAddress())).isEmpty();
-    }
-
-    @Test
-    void findByEvmAddressNotFound() {
-        Contract contract = domainBuilder.contract().get();
-        assertThat(contractRepository.findByEvmAddress(contract.getEvmAddress())).isEmpty();
-    }
+    private final ContractRepository contractRepository;
 
     @Test
     void save() {
-        Contract contract = domainBuilder.contract().persist();
+        Contract contract = domainBuilder.contract().get();
+        contractRepository.save(contract);
         assertThat(contractRepository.findById(contract.getId())).get().isEqualTo(contract);
-    }
-
-    /**
-     * This test verifies that the Contract domain object and table definition are in sync with the contract_history
-     * table.
-     */
-    @Test
-    void contractHistory() {
-        Contract contract = domainBuilder.contract().persist();
-
-        jdbcOperations.update("insert into contract_history select * from contract");
-        List<Contract> contractHistory = jdbcOperations.query("select * from contract_history", ROW_MAPPER);
-
-        assertThat(contractRepository.findAll()).containsExactly(contract);
-        assertThat(contractHistory).containsExactly(contract);
     }
 }

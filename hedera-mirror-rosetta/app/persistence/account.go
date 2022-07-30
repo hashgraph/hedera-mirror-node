@@ -124,11 +124,7 @@ const (
                                  where alias = @alias and (deleted is null or deleted is false)`
 	selectCryptoEntityById = `select id, deleted, timestamp_range
                               from entity
-                              where type = 'ACCOUNT' and id = @id
-                              union all
-                              select id, deleted, timestamp_range
-                              from contract
-                              where id = @id`
+                              where type in ('ACCOUNT', 'CONTRACT') and id = @id`
 	selectNftTransfersForAccount = "with" + genesisTimestampCte + `
                                     select nt.*
                                     from nft_transfer nt

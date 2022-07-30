@@ -68,10 +68,8 @@ import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
-import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionParser;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
-import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -94,9 +92,6 @@ class TransactionSignatureTest {
     private EntityIdService entityIdService;
 
     @Mock
-    private EthereumTransactionParser ethereumTransactionParser;
-
-    @Mock
     private NonFeeTransferExtractionStrategy nonFeeTransferExtractionStrategy;
 
     @Mock
@@ -107,9 +102,6 @@ class TransactionSignatureTest {
 
     @Mock
     private FileDataRepository fileDataRepository;
-
-    @Mock
-    private EntityRepository entityRepository;
 
     private SignatureMap.Builder defaultSignatureMap;
 
@@ -130,9 +122,9 @@ class TransactionSignatureTest {
         CommonParserProperties commonParserProperties = new CommonParserProperties();
         EntityProperties entityProperties = new EntityProperties();
         RecordParserProperties parserProperties = new RecordParserProperties();
-        entityRecordItemListener = new EntityRecordItemListener(commonParserProperties, entityProperties,
-                addressBookService, nonFeeTransferExtractionStrategy, entityIdService, entityListener,
-                transactionHandlerFactory, fileDataRepository, parserProperties, contractResultService);
+        entityRecordItemListener = new EntityRecordItemListener(addressBookService, commonParserProperties,
+                contractResultService, entityIdService, entityListener, entityProperties, fileDataRepository,
+                nonFeeTransferExtractionStrategy, parserProperties, transactionHandlerFactory);
         defaultSignatureMap = getDefaultSignatureMap();
         defaultTransactionSignatures = defaultSignatureMap.getSigPairList()
                 .stream()

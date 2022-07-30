@@ -180,7 +180,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
                          @ConvertWith(KeyConverter.class) Key updatedAdminKey,
                          @ConvertWith(KeyConverter.class) Key updatedSubmitKey,
                          String updatedMemo, Long autoRenewAccountId, Long autoRenewPeriod) {
-        var topic = domainBuilder.topic().persist();
+        var topic = domainBuilder.topic().customize(t -> t.permanentRemoval(null).obtainerId(null)).persist();
         var updateTimestamp = topic.getCreatedTimestamp() + 100L;
 
         var topicId = TopicID.newBuilder().setTopicNum(topic.getNum()).build();

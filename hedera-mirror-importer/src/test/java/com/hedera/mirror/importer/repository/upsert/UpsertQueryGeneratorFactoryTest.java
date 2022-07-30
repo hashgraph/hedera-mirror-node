@@ -23,13 +23,12 @@ package com.hedera.mirror.importer.repository.upsert;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.hedera.mirror.common.domain.token.TokenAccount;
-
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.importer.IntegrationTest;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -52,6 +51,6 @@ class UpsertQueryGeneratorFactoryTest extends IntegrationTest {
 
     @Test
     void getGenericGenerator() {
-        assertThat(factory.get(Contract.class)).isInstanceOf(GenericUpsertQueryGenerator.class);
+        assertThat(factory.get(Entity.class)).isInstanceOf(GenericUpsertQueryGenerator.class);
     }
 }

@@ -23,7 +23,7 @@ package com.hedera.mirror.importer.domain;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 
-import com.hedera.mirror.common.domain.Aliasable;
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.importer.exception.AliasNotFoundException;
 
@@ -38,7 +38,7 @@ public interface EntityIdService {
      *
      * @param accountId The protobuf account ID
      * @return The converted EntityId
-     * @exception AliasNotFoundException if it fails to resolve the alias
+     * @throws AliasNotFoundException if it fails to resolve the alias
      */
     EntityId lookup(AccountID accountId);
 
@@ -58,10 +58,10 @@ public interface EntityIdService {
      * EntityId. If the {@code action} is {@link AliasNotFoundAction#ERROR}, the method throws
      * {@link AliasNotFoundException} as soon as resolving an alias fails.
      *
-     * @param action The action when looking up an alias results in {@link AliasNotFoundException}
+     * @param action     The action when looking up an alias results in {@link AliasNotFoundException}
      * @param accountIds The protobuf account IDs
      * @return The converted EntityId or EntityId.EMPTY if none can be resolved
-     * @exception AliasNotFoundException
+     * @throws AliasNotFoundException
      */
     EntityId lookup(AliasNotFoundAction action, AccountID... accountIds);
 
@@ -92,7 +92,7 @@ public interface EntityIdService {
      *
      * @param contractIds The protobuf contract IDs
      * @return The converted EntityId or EntityId.EMPTY if none can be resolved
-     * @exception AliasNotFoundException
+     * @throws AliasNotFoundException
      */
     EntityId lookup(AliasNotFoundAction action, ContractID... contractIds);
 
@@ -101,5 +101,5 @@ public interface EntityIdService {
      *
      * @param aliasable Represents a mapping of alias to entity ID.
      */
-    void notify(Aliasable aliasable);
+    void notify(Entity entity);
 }
