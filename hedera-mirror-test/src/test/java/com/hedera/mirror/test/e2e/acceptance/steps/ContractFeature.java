@@ -188,7 +188,10 @@ public class ContractFeature extends AbstractFeature {
         assertThat(address).isNotBlank().isNotEqualTo("0x").isNotEqualTo("0x0000000000000000000000000000000000000000");
         assertThat(mirrorContract.getTimestamp()).isNotNull();
         assertThat(mirrorContract.getTimestamp().getFrom()).isNotNull();
-        assertThat(mirrorContract.getRuntimeBytecode()).isNotNull();
+
+        if (contractClient.getSdkClient().getAcceptanceTestProperties().getFeatureProperties().isSidecars()) {
+            assertThat(mirrorContract.getRuntimeBytecode()).isNotNull();
+        }
 
         assertThat(mirrorContract.getBytecode()).isEqualTo(compiledSolidityArtifact.getBytecode());
 

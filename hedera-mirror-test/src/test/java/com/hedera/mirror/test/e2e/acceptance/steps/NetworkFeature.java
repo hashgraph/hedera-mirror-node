@@ -27,13 +27,11 @@ import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorNetworkStake;
 
-@Log4j2
 @Data
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class NetworkFeature {
@@ -51,14 +49,12 @@ public class NetworkFeature {
     @Then("the mirror node REST API returns the network stake")
     public void verifyNetworkStakeResponse() {
         assertThat(networkStake.getMaxStakingRewardRatePerHbar()).isPositive();
-        assertThat(networkStake.getNodeRewardFeeDenominator()).isNotNull();
-        assertThat(networkStake.getNodeRewardFeeNumerator()).isNotNull();
-        assertThat(networkStake.getStakeTotal()).isNotNull();
+        assertThat(networkStake.getNodeRewardFeeFraction()).isGreaterThanOrEqualTo(0);
+        assertThat(networkStake.getStakeTotal()).isGreaterThanOrEqualTo(0);
         assertNotNull(networkStake.getStakingPeriod());
         assertThat(networkStake.getStakingPeriodDuration()).isPositive();
         assertThat(networkStake.getStakingPeriodsStored()).isPositive();
-        assertThat(networkStake.getStakingRewardFeeDenominator()).isNotNull();
-        assertThat(networkStake.getStakingRewardFeeNumerator()).isNotNull();
+        assertThat(networkStake.getStakingRewardFeeFraction()).isGreaterThanOrEqualTo(0);
         assertThat(networkStake.getStakingRewardRate()).isPositive();
         assertThat(networkStake.getStakingStartThreshold()).isPositive();
     }

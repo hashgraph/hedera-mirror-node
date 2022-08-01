@@ -2199,7 +2199,7 @@ components:
           format: int64
         node_reward_fee_fraction:
           description: The fraction between zero and one of the network and service fees paid to the node reward account 0.0.801
-          type: integer
+          type: number
           format: float
         stake_total:
           description: The total amount staked to the network in tinybars the start of the current staking period
@@ -2219,7 +2219,7 @@ components:
           format: int64
         staking_reward_fee_fraction:
           description: The fraction between zero and one of the network and service fees paid to the staking reward account 0.0.800
-          type: integer
+          type: number
           format: float
         staking_reward_rate:
           description: The total number of tinybars to be distributed as staking rewards each period
