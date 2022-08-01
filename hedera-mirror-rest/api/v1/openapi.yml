@@ -695,7 +695,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StateProofResponse'
+                oneOf:
+                  - $ref: '#/components/schemas/StateProofResponseCompact'
+                  - $ref: '#/components/schemas/StateProofResponseFull'
         400:
           $ref: '#/components/responses/InvalidParameterError'
         404:
@@ -1221,11 +1223,130 @@ components:
           $ref: '#/components/schemas/Blocks'
         links:
           $ref: '#/components/schemas/Links'
-    StateProofResponse:
+    StateProofResponseFull:
       type: object
+      required:
+        - address_books
+        - record_file
+        - signature_files
       properties:
-        transactions:
-          $ref: '#/components/schemas/StateProofFiles'
+        address_books:
+          description: The network address book valid at the time of the transaction
+          type: array
+          items:
+            type: string
+            format: byte
+        record_file:
+          description: The content of the record file the transaction belongs to
+          type: string
+          format: byte
+        signature_files:
+          description: The nodes' signature files for the record file
+          type: object
+          additionalProperties:
+            type: string
+            format: byte
+      example:
+        record_file: YzNkOTg3Yzg3NDI5NGViOTViMmRmOWZkMzZiMDY1NjYyMzMxNTc2OWFmMmVmMzQ0YzM1ODY4NzgwMTAyYjVjMA==
+        address_books:
+          - MjljY2IxNGNjNWY2NWM1MmZlYjc0MjkyYjAxZDUyZmRjZjJkZTY0NWQzOTRiNTM3MDQ2ODBkYjZkMTMyZWM2Yw==
+        signature_files:
+          0.0.3: MWFmYzZlNWVjNGJiZTg0ZWJjNTVkMGViNDViMjE2Mzg2ZTQ2NjUzZTYyYmM1NjE2YThmZGJjNzQ1ZWIyMTQxNQ==
+          0.0.4: ZDI4ZDIwMGJiYTdkNDhmNTA3ZTE0MGZhNjIyOGFiYTdmMjlmZjhiMmEzZjJhOGVlYjg1NzQyZGMwNTNjZWM3MQ==
+          0.0.5: MWY0YmU5OGE3NWE4N2NkNjQ5ZTNlMWE1ODI1OTI3NTgwNWM1Y2RmNjNmYjA0YjMzMTdlZmI1MTEwNzQ2NDVjNw==
+          0.0.6: NzNiZTVmMTZkNmY4NTQ4MjdiN2M4MTEzZmFlY2I1YzIwNGI5ZjFkNjhiMzdkMzczNTg4OTRkOWFiZmM5N2U4Mw==
+          0.0.7: NDJiZTVmMTZkNmY4NTQ4MjdiN2M4MTEzZmFlY2I1YzIwNGI5ZjFkNjhiMzdkMzczNTg4OTRkOWFiZmM5N2U4Mw==
+    StateProofResponseCompact:
+      type: object
+      required:
+        - address_books
+        - record_file
+        - signature_files
+        - version
+      properties:
+        address_books:
+          description: The network address book valid at the time of the transaction
+          type: array
+          items:
+            type: string
+            format: byte
+        record_file:
+          description: The record file the transaction belongs to, in compact format
+          type: object
+          required:
+            - head
+            - start_running_hash_object
+            - end_running_hash_object
+            - hashes_before
+            - hashes_after
+            - record_stream_object
+            - block_number
+          properties:
+            head:
+              description: The record file head
+              type: string
+              format: byte
+            start_running_hash_object:
+              description: The start running hash object
+              type: string
+              format: byte
+            end_running_hash_object:
+              description: THe end running hash object
+              type: string
+              format: byte
+            hashes_before:
+              description: |
+                The hashes of the transactions before the transaction in query, in consensus timestamp ascending order
+              type: array
+              items:
+                type: string
+                format: byte
+            hashes_after:
+              description: |
+                The hashes of the transactions after the transaction in query, in consensus timestamp ascending order
+              type: array
+              items:
+                type: string
+                format: byte
+            record_stream_object:
+              description: The record stream object of the transaction in query
+              type: string
+              format: byte
+            block_number:
+              description: The block number, in base64 encoding. Only present if version is 6
+              type: string
+              format: byte
+              nullable: true
+        signature_files:
+          description: The nodes' signature files for the record file
+          type: object
+          additionalProperties:
+            type: string
+            format: byte
+        version:
+          description: The record file format version, either 5 or 6
+          type: integer
+      example:
+        address_books:
+          - MjljY2IxNGNjNWY2NWM1MmZlYjc0MjkyYjAxZDUyZmRjZjJkZTY0NWQzOTRiNTM3MDQ2ODBkYjZkMTMyZWM2Yw==
+        record_file:
+          head: AAAABQAAAAAAAAAbAAAAAAAAAAE==
+          start_running_hash_object: 9CLag6JRdB4AAAABWP+BGwAAADCTEm5j2O9qy33fqKR/F0sKXYqPPQCt92kA2koMvkg4h6uhnEX/H0iXWL4CxWCK+C8=
+          end_running_hash_object: 9CLag6JRdB4AAAABWP+BGwAAADAkK6BKPFKbOX46Kul0OiAYR5x52X0cJLgPvmOjupycWgXRyItITx7HrfSjH5LpU6Q=
+          hashes_before:
+            - RxKzucDUGgqBgR+CXXfAKgYuE/xhIaBlo+hmMKyxrm8nmSiaG3a9hlLGHh6+yXFm
+          hashes_after:
+            - TOJuZz3EUX1RNdRJBfz7n+V9cYyEm//ER9h3s/y1d8nzs0VqYltJFE0dPangRC6c
+            - RiRHvjPQPqUXNlvDJ6lPiv40ZOPVV3VcWRH8GOKFf6Xv9jK0vUjR2qGfjI/IRZRy
+          record_stream_object: 43CSm6VCnYsAAAABAAAA2gpgCBYqJAoQCLDqARCA3AsaBgjQ6f2WBhIQCLDqARCm5QsaBgjghf6WBjiR6EhCMDNd1b7xmTuNNiLcn2bdlAI=
+          block_number: AAECoA==
+        signature_files:
+          0.0.3: MWFmYzZlNWVjNGJiZTg0ZWJjNTVkMGViNDViMjE2Mzg2ZTQ2NjUzZTYyYmM1NjE2YThmZGJjNzQ1ZWIyMTQxNQ==
+          0.0.4: ZDI4ZDIwMGJiYTdkNDhmNTA3ZTE0MGZhNjIyOGFiYTdmMjlmZjhiMmEzZjJhOGVlYjg1NzQyZGMwNTNjZWM3MQ==
+          0.0.5: MWY0YmU5OGE3NWE4N2NkNjQ5ZTNlMWE1ODI1OTI3NTgwNWM1Y2RmNjNmYjA0YjMzMTdlZmI1MTEwNzQ2NDVjNw==
+          0.0.6: NzNiZTVmMTZkNmY4NTQ4MjdiN2M4MTEzZmFlY2I1YzIwNGI5ZjFkNjhiMzdkMzczNTg4OTRkOWFiZmM5N2U4Mw==
+          0.0.7: NDJiZTVmMTZkNmY4NTQ4MjdiN2M4MTEzZmFlY2I1YzIwNGI5ZjFkNjhiMzdkMzczNTg4OTRkOWFiZmM5N2U4Mw==
+        version: 6
     TokenAllowancesResponse:
       type: object
       properties:
@@ -2241,42 +2362,6 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/ServiceEndpoint'
-    StateProofFiles:
-      type: object
-      properties:
-        record_file:
-          type: string
-          format: byte
-        address_books:
-          type: array
-          items:
-            type: string
-            format: byte
-        signature_files:
-          type: object
-          properties:
-            0.0.3:
-              type: string
-              format: byte
-            0.0.4:
-              type: string
-              format: byte
-            0.0.5:
-              type: string
-              format: byte
-            0.0.6:
-              type: string
-              format: byte
-      example:
-        record_file: YzNkOTg3Yzg3NDI5NGViOTViMmRmOWZkMzZiMDY1NjYyMzMxNTc2OWFmMmVmMzQ0YzM1ODY4NzgwMTAyYjVjMA==
-        address_books:
-          - MjljY2IxNGNjNWY2NWM1MmZlYjc0MjkyYjAxZDUyZmRjZjJkZTY0NWQzOTRiNTM3MDQ2ODBkYjZkMTMyZWM2Yw==
-        signature_files:
-          0.0.3: MWFmYzZlNWVjNGJiZTg0ZWJjNTVkMGViNDViMjE2Mzg2ZTQ2NjUzZTYyYmM1NjE2YThmZGJjNzQ1ZWIyMTQxNQ==
-          0.0.4: ZDI4ZDIwMGJiYTdkNDhmNTA3ZTE0MGZhNjIyOGFiYTdmMjlmZjhiMmEzZjJhOGVlYjg1NzQyZGMwNTNjZWM3MQ==
-          0.0.5: MWY0YmU5OGE3NWE4N2NkNjQ5ZTNlMWE1ODI1OTI3NTgwNWM1Y2RmNjNmYjA0YjMzMTdlZmI1MTEwNzQ2NDVjNw==
-          0.0.6: NzNiZTVmMTZkNmY4NTQ4MjdiN2M4MTEzZmFlY2I1YzIwNGI5ZjFkNjhiMzdkMzczNTg4OTRkOWFiZmM5N2U4Mw==
-          0.0.7: NDJiZTVmMTZkNmY4NTQ4MjdiN2M4MTEzZmFlY2I1YzIwNGI5ZjFkNjhiMzdkMzczNTg4OTRkOWFiZmM5N2U4Mw==
     Timestamp:
       type: string
       example: "1586567700.453054000"
@@ -2483,6 +2568,7 @@ components:
         - TOKENUPDATE
         - TOKENWIPE
         - UNCHECKEDSUBMIT
+        - UNKNOWN
         - UTILPRNG
     Tokens:
       type: array

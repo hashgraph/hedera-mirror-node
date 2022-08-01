@@ -124,7 +124,8 @@ func (c *constructionAPIService) ConstructionDerive(
 	if publicKey.CurveType != rTypes.Edwards25519 {
 		return nil, errors.ErrInvalidPublicKey
 	}
-	accountId, err := types.NewAccountIdFromAlias(request.PublicKey.Bytes, c.systemShard, c.systemRealm)
+
+	accountId, err := types.NewAccountIdFromPublicKeyBytes(request.PublicKey.Bytes, c.systemShard, c.systemRealm)
 	if err != nil || accountId.GetCurveType() != rTypes.Edwards25519 {
 		return nil, errors.ErrInvalidPublicKey
 	}
