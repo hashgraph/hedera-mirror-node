@@ -25,7 +25,7 @@
     "lodash": "^4.17.21",
     "log4js": "^6.6.1",
     "mathjs": "^11.0.1",
-    "node-fetch": "^3.2.9",
+    "node-fetch": "^3.2.10",
     "parse-duration": "^1.0.2",
     "pretty-ms": "^8.0.0"
   },
