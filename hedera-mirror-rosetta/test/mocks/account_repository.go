@@ -42,6 +42,14 @@ func (m *MockAccountRepository) GetAccountAlias(ctx context.Context, accountId t
 	return args.Get(0).(types.AccountId), args.Get(1).(*rTypes.Error)
 }
 
+func (m *MockAccountRepository) GetAccountId(ctx context.Context, accountId types.AccountId) (
+	types.AccountId,
+	*rTypes.Error,
+) {
+	args := m.Called(ctx, accountId)
+	return args.Get(0).(types.AccountId), args.Get(1).(*rTypes.Error)
+}
+
 func (m *MockAccountRepository) RetrieveBalanceAtBlock(
 	ctx context.Context,
 	accountId types.AccountId,

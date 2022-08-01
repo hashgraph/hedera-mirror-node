@@ -22,20 +22,19 @@ package scenario
 
 import (
 	"context"
-	"encoding/hex"
-	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/tools"
 
 	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/cucumber/godog"
+	types2 "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/domain/types"
 	"github.com/hashgraph/hedera-sdk-go/v2"
 	log "github.com/sirupsen/logrus"
 )
 
 type cryptoFeature struct {
 	*baseFeature
-	aliasAddress  string
-	newAccountId  *hedera.AccountID // new account created during test
-	newAccountKey *hedera.PrivateKey
+	aliasAccountId types2.AccountId
+	newAccountId   *hedera.AccountID // new account created during test
+	newAccountKey  *hedera.PrivateKey
 }
 
 func (c *cryptoFeature) createCryptoAccount(ctx context.Context) error {
@@ -93,7 +92,7 @@ func (c *cryptoFeature) createCryptoAccountByAlias(ctx context.Context) error {
 		return err
 	}
 
-	log.Infof("Transfer some hbar to new alias %s", c.aliasAddress)
+	log.Infof("Transfer some hbar to new alias %s", c.aliasAccountId)
 	operations := []*types.Operation{
 		{
 			OperationIdentifier: &types.OperationIdentifier{Index: 0},
@@ -107,7 +106,7 @@ func (c *cryptoFeature) createCryptoAccountByAlias(ctx context.Context) error {
 		},
 		{
 			OperationIdentifier: &types.OperationIdentifier{Index: 1},
-			Account:             &types.AccountIdentifier{Address: c.aliasAddress},
+			Account:             c.aliasAccountId.ToRosetta(),
 			Amount: &types.Amount{
 				Value:    "1000000000",
 				Currency: currencyHbar,
@@ -118,7 +117,7 @@ func (c *cryptoFeature) createCryptoAccountByAlias(ctx context.Context) error {
 	return c.submit(ctx, operations, nil)
 }
 
-func (c *cryptoFeature) verifyCryptoTransferAliasTransaction(ctx context.Context) error {
+func (c *cryptoFeature) verifyCryptoTransferToAliasTransaction(ctx context.Context) error {
 	transaction, err := c.findTransaction(ctx, operationTypeCryptoTransfer)
 	if err != nil {
 		return err
@@ -133,7 +132,7 @@ func (c *cryptoFeature) verifyCryptoTransferAliasTransaction(ctx context.Context
 		return err
 	}
 
-	resp, err := testClient.GetAccountBalance(ctx, &types.AccountIdentifier{Address: c.aliasAddress})
+	resp, err := testClient.GetAccountBalance(ctx, c.aliasAccountId.ToRosetta())
 	if err != nil {
 		return err
 	}
@@ -147,6 +146,52 @@ func (c *cryptoFeature) verifyCryptoTransferAliasTransaction(ctx context.Context
 	log.Infof("Successfully retrieved new account %s from account balance endpoint", accountIdStr)
 
 	return nil
+}
+
+func (c *cryptoFeature) transferFromAlias(ctx context.Context) error {
+	operations := []*types.Operation{
+		{
+			OperationIdentifier: &types.OperationIdentifier{Index: 0},
+			Account:             c.aliasAccountId.ToRosetta(),
+			Amount:              &types.Amount{Value: "-1", Currency: currencyHbar},
+			Type:                operationTypeCryptoTransfer,
+		},
+		{
+			OperationIdentifier: &types.OperationIdentifier{Index: 1},
+			Account:             getRosettaAccountIdentifier(testClient.GetOperator(0).Id),
+			Amount:              &types.Amount{Value: "1", Currency: currencyHbar},
+			Type:                operationTypeCryptoTransfer,
+		},
+	}
+
+	return c.submit(ctx, operations, map[string]hedera.PrivateKey{
+		c.aliasAccountId.String(): *c.newAccountKey,
+	})
+}
+func (c *cryptoFeature) verifyCryptoTransferFromAliasTransaction(ctx context.Context) error {
+	transaction, err := c.findTransaction(ctx, operationTypeCryptoTransfer)
+	if err != nil {
+		return err
+	}
+
+	expectedAccountAmounts := []accountAmount{
+		{
+			Account: c.aliasAccountId.ToRosetta(),
+			Amount:  &types.Amount{Value: "-1", Currency: currencyHbar},
+		},
+		{
+			Account: getRosettaAccountIdentifier(testClient.GetOperator(0).Id),
+			Amount:  &types.Amount{Value: "1", Currency: currencyHbar},
+		},
+	}
+
+	return assertTransactionAll(
+		transaction,
+		assertTransactionOpSuccess,
+		assertTransactionOpCount(2, gte),
+		assertTransactionOpTypesContains(operationTypeCryptoTransfer, operationTypeFee),
+		assertTransactionIncludesTransfers(expectedAccountAmounts),
+	)
 }
 
 func (c *cryptoFeature) transferHbarToTreasury(ctx context.Context) error {
@@ -202,7 +247,6 @@ func (c *cryptoFeature) cleanup(ctx context.Context, s *godog.Scenario, err erro
 		testClient.DeleteAccount(*c.newAccountId, c.newAccountKey) // #nosec
 	}
 
-	c.aliasAddress = ""
 	c.newAccountId = nil
 	c.newAccountKey = nil
 
@@ -216,7 +260,11 @@ func (c *cryptoFeature) generateKey() error {
 		return err
 	}
 	c.newAccountKey = &sk
-	c.aliasAddress = tools.SafeAddHexPrefix(hex.EncodeToString(sk.PublicKey().BytesRaw()))
+	operatorAccountId := testClient.GetOperator(0).Id
+	c.aliasAccountId, err = types2.NewAccountIdFromPublicKeyBytes(sk.PublicKey().BytesRaw(), int64(operatorAccountId.Shard), int64(operatorAccountId.Realm))
+	if err != nil {
+		return err
+	}
 	log.Debug("Generated private key for new account")
 	return nil
 }
@@ -231,7 +279,11 @@ func initializeCryptoScenario(ctx *godog.ScenarioContext) {
 
 	ctx.Step("I transfer some hbar to a new alias", crypto.createCryptoAccountByAlias)
 	ctx.Step("the DATA API should show the CryptoTransfer transaction and new account id",
-		crypto.verifyCryptoTransferAliasTransaction)
+		crypto.verifyCryptoTransferToAliasTransaction)
+
+	ctx.Step("I transfer some hbar from the alias", crypto.transferFromAlias)
+	ctx.Step("^the DATA API should show the CryptoTransfer transaction from the alias$",
+		crypto.verifyCryptoTransferFromAliasTransaction)
 
 	ctx.Step("I transfer some hbar to the treasury account", crypto.transferHbarToTreasury)
 	ctx.Step("^the DATA API should show the CryptoTransfer transaction$", crypto.verifyCryptoTransferTransaction)

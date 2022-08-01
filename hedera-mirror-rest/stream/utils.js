@@ -76,7 +76,7 @@ const readLengthAndBytes = (buffer, minLength, maxLength, hasChecksum) => {
 
   return {
     length: offset + length,
-    bytes: readNBytes(buffer.slice(offset), length),
+    bytes: readNBytes(buffer.subarray(offset), length),
   };
 };
 
@@ -92,7 +92,7 @@ const readNBytes = (buffer, length) => {
     throw new Error(`Error reading byte array, expect ${length}-byte data got ${buffer.length}-byte`);
   }
 
-  return buffer.slice(0, length);
+  return buffer.subarray(0, length);
 };
 
 export {logger, protoTransactionIdToTransactionId, readLengthAndBytes, readNBytes};

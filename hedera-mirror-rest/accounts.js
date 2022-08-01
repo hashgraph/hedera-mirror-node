@@ -20,12 +20,15 @@
 
 import accountContract from './accountContract';
 import base32 from './base32';
+import {getResponseLimit} from './config';
 import * as constants from './constants';
 import EntityId from './entityId';
 import * as utils from './utils';
 import {EntityService} from './service';
 import transactions from './transactions';
 import {NotFoundError} from './errors';
+
+const {tokenBalance: tokenBalanceResponseLimit} = getResponseLimit();
 
 /**
  * Processes one row of the results of the SQL query and format into API return format
@@ -224,6 +227,7 @@ const getEntityBalanceQuery = (
  *
  * @param entityAccountQuery entity id query
  * @param balanceAccountQuery account balance account id query
+ * @param tokenBalanceLimit The max number of token balances for an account
  * @param balanceQuery optional account balance query
  * @param limitAndOrderQuery optional limit and order query
  * @param pubKeyQuery optional entity public key query
@@ -233,6 +237,7 @@ const getEntityBalanceQuery = (
 const getAccountQuery = (
   entityAccountQuery,
   balanceAccountQuery,
+  tokenBalanceLimit,
   balanceQuery = {query: '', params: []},
   limitAndOrderQuery = {query: '', params: [], order: constants.orderFilterValues.ASC},
   pubKeyQuery = {query: '', params: []},
@@ -282,27 +287,20 @@ const getAccountQuery = (
         );
 
   const query = `
-    with entity_balance as (${entityBalanceQuery}),
-    token_balance as (
-      select
-        tb.account_id,
-        jsonb_agg(
-          jsonb_build_object(
-            'token_id', tb.token_id::text,
-            'balance', tb.balance
-          ) order by tb.token_id ${order}
-        ) as token_balances
-      from token_balance tb
-      join entity_balance eb
-        on tb.account_id = eb.id and tb.consensus_timestamp = eb.consensus_timestamp
-      group by tb.account_id
-    )
-    select eb.*,tb.token_balances
+    with entity_balance as (${entityBalanceQuery})
+    select eb.*,
+           (
+             select json_agg(json_build_object('token_id', token_id, 'balance', balance))
+             from (
+               select token_id, balance
+               from token_balance
+               where account_id = eb.id and consensus_timestamp = eb.consensus_timestamp
+               order by token_id ${order}
+               limit ${tokenBalanceLimit}
+             ) as account_token_balance
+           ) as token_balances
     from entity_balance eb
-    left join token_balance tb
-      on tb.account_id = eb.id
-    order by eb.id ${order}
-  `;
+    order by eb.id ${order}`;
 
   return {query, params};
 };
@@ -347,6 +345,7 @@ const getAccounts = async (req, res) => {
   const {query, params} = getAccountQuery(
     entityAccountQuery,
     balanceAccountQuery,
+    tokenBalanceResponseLimit.multipleAccounts,
     balanceQuery,
     limitAndOrderQuery,
     pubKeyQuery,
@@ -414,7 +413,8 @@ const getOneAccount = async (req, res) => {
   const accountIdParams = [encodedId];
   const {query: entityQuery, params: entityParams} = getAccountQuery(
     {query: 'id = ?', params: accountIdParams},
-    {query: 'ab.account_id = ?', params: accountIdParams}
+    {query: 'ab.account_id = ?', params: accountIdParams},
+    tokenBalanceResponseLimit.singleAccount
   );
   const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entityQuery);
 

@@ -133,6 +133,7 @@ describe('RecordFileService.getRecordFileBlockDetailsFromTimestamp tests', () =>
     const blocks = await RecordFileService.getBlocks({
       whereQuery: [],
       order: 'asc',
+      orderBy: 'consensus_end',
       limit: 25,
     });
 
@@ -148,6 +149,7 @@ describe('RecordFileService.getRecordFileBlockDetailsFromTimestamp tests', () =>
     const blocks = await RecordFileService.getBlocks({
       whereQuery: [{query: 'index <', param: '17'}],
       order: 'asc',
+      orderBy: 'index',
       limit: 25,
     });
 
@@ -161,6 +163,7 @@ describe('RecordFileService.getRecordFileBlockDetailsFromTimestamp tests', () =>
     const blocks = await RecordFileService.getBlocks({
       whereQuery: [],
       order: 'desc',
+      orderBy: 'consensus_end',
       limit: 1,
     });
 

@@ -1,0 +1,92 @@
+{
+  "description": "Balance api calls for a range of balances",
+  "setup": {
+    "accounts": [
+      {
+        "num": 17
+      },
+      {
+        "num": 18
+      },
+      {
+        "num": 19
+      },
+      {
+        "num": 21
+      }
+    ],
+    "balances": [
+      {
+        "timestamp": 2345,
+        "id": 17,
+        "balance": 700,
+        "tokens": [
+          {
+            "token_num": 90000,
+            "balance": 1000
+          },
+          {
+            "token_num": 80000,
+            "balance": 500
+          }
+        ]
+      },
+      {
+        "timestamp": 2345,
+        "id": 18,
+        "balance": 200
+      },
+      {
+        "timestamp": 2345,
+        "id": 19,
+        "balance": 900
+      },
+      {
+        "timestamp": 2345,
+        "id": 20,
+        "balance": 450
+      },
+      {
+        "timestamp": 2345,
+        "id": 21,
+        "balance": 300
+      }
+    ],
+    "contracts": [
+      {
+        "num": 20
+      }
+    ],
+    "transactions": [],
+    "cryptotransfers": []
+  },
+  "url": "/api/v1/balances?account.balance=gt:300&account.balance=lte:700&&order=asc",
+  "responseStatus": 200,
+  "responseJson": {
+    "timestamp": "0.000002345",
+    "balances": [
+      {
+        "account": "0.0.17",
+        "balance": 700,
+        "tokens": [
+          {
+            "token_id": "0.0.80000",
+            "balance": 500
+          },
+          {
+            "token_id": "0.0.90000",
+            "balance": 1000
+          }
+        ]
+      },
+      {
+        "account": "0.0.20",
+        "balance": 450,
+        "tokens": []
+      }
+    ],
+    "links": {
+      "next": null
+    }
+  }
+}

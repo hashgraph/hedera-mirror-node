@@ -34,6 +34,9 @@ type AccountRepository interface {
 	// doesn't have an alias
 	GetAccountAlias(ctx context.Context, accountId types.AccountId) (types.AccountId, *rTypes.Error)
 
+	// GetAccountId returns the `shard.realm.num` format of the account from its alias if exists
+	GetAccountId(ctx context.Context, accountId types.AccountId) (types.AccountId, *rTypes.Error)
+
 	// RetrieveBalanceAtBlock returns the hbar balance and token balances of the account at a given block (provided by
 	// consensusEnd timestamp).
 	// balance = balanceAtLatestBalanceSnapshot + balanceChangeBetweenSnapshotAndBlock

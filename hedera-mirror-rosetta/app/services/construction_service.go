@@ -27,6 +27,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/coinbase/rosetta-sdk-go/server"
@@ -44,15 +45,19 @@ import (
 )
 
 const (
-	defaultValidDurationSeconds     = 180
+	maxValidDurationSeconds         = 180
+	defaultValidDurationSeconds     = maxValidDurationSeconds
+	metadataKeyAccountMap           = "account_map"
 	metadataKeyValidDurationSeconds = "valid_duration"
 	metadataKeyValidStartNanos      = "valid_start_nanos"
+	optionKeyAccountAliases         = "account_aliases"
 	optionKeyOperationType          = "operation_type"
 )
 
 // constructionAPIService implements the server.ConstructionAPIServicer interface.
 type constructionAPIService struct {
 	BaseService
+	accountRepo              interfaces.AccountRepository
 	defaultMaxTransactionFee map[string]hedera.Hbar
 	hederaClient             *hedera.Client
 	nodeAccountIds           []hedera.AccountID
@@ -95,7 +100,7 @@ func (c *constructionAPIService) ConstructionCombine(
 			return nil, errors.ErrInvalidSignatureVerification
 		}
 
-		if rErr := addSignature(transaction, pubKey, signature.Bytes); rErr != nil {
+		if rErr = addSignature(transaction, pubKey, signature.Bytes); rErr != nil {
 			return nil, rErr
 		}
 	}
@@ -119,7 +124,8 @@ func (c *constructionAPIService) ConstructionDerive(
 	if publicKey.CurveType != rTypes.Edwards25519 {
 		return nil, errors.ErrInvalidPublicKey
 	}
-	accountId, err := types.NewAccountIdFromAlias(request.PublicKey.Bytes, c.systemShard, c.systemRealm)
+
+	accountId, err := types.NewAccountIdFromPublicKeyBytes(request.PublicKey.Bytes, c.systemShard, c.systemRealm)
 	if err != nil || accountId.GetCurveType() != rTypes.Edwards25519 {
 		return nil, errors.ErrInvalidPublicKey
 	}
@@ -148,13 +154,14 @@ func (c *constructionAPIService) ConstructionHash(
 
 // ConstructionMetadata implements the /construction/metadata endpoint.
 func (c *constructionAPIService) ConstructionMetadata(
-	_ context.Context,
+	ctx context.Context,
 	request *rTypes.ConstructionMetadataRequest,
 ) (*rTypes.ConstructionMetadataResponse, *rTypes.Error) {
 	options := request.Options
 	if options == nil || options[optionKeyOperationType] == nil {
 		return nil, errors.ErrInvalidOptions
 	}
+
 	operationType, ok := options[optionKeyOperationType].(string)
 	if !ok {
 		return nil, errors.ErrInvalidOptions
@@ -165,10 +172,40 @@ func (c *constructionAPIService) ConstructionMetadata(
 		return nil, err
 	}
 
-	return &rTypes.ConstructionMetadataResponse{
-		Metadata:     make(map[string]interface{}),
+	response := &rTypes.ConstructionMetadataResponse{
+		Metadata:     map[string]interface{}{},
 		SuggestedFee: []*rTypes.Amount{maxFee.ToRosetta()},
-	}, nil
+	}
+
+	if options[optionKeyAccountAliases] == nil {
+		return response, nil
+	}
+
+	if !c.BaseService.IsOnline() {
+		return nil, errors.ErrEndpointNotSupportedInOfflineMode
+	}
+
+	accountAliases, ok := options[optionKeyAccountAliases].(string)
+	if !ok {
+		return nil, errors.ErrInvalidOptions
+	}
+
+	var accountMap []string
+	for _, accountAlias := range strings.Split(accountAliases, ",") {
+		accountId, err := types.NewAccountIdFromString(accountAlias, c.systemShard, c.systemRealm)
+		if err != nil {
+			return nil, errors.ErrInvalidAccount
+		}
+
+		found, rErr := c.accountRepo.GetAccountId(ctx, accountId)
+		if rErr != nil {
+			return nil, rErr
+		}
+		accountMap = append(accountMap, fmt.Sprintf("%s:%s", accountAlias, found))
+	}
+	response.Metadata[metadataKeyAccountMap] = strings.Join(accountMap, ",")
+
+	return response, nil
 }
 
 // ConstructionParse implements the /construction/parse endpoint.
@@ -224,7 +261,12 @@ func (c *constructionAPIService) ConstructionPayloads(
 		return nil, rErr
 	}
 
-	payer := signers[0].ToSdkAccountId()
+	// signers[0] is always the payer account id
+	payer, rErr := c.getSdkPayerAccountId(signers[0], request.Metadata[metadataKeyAccountMap])
+	if rErr != nil {
+		return nil, rErr
+	}
+
 	if rErr = updateTransaction(
 		transaction,
 		transactionSetNodeAccountId(c.getRandomNodeAccountId()),
@@ -280,10 +322,18 @@ func (c *constructionAPIService) ConstructionPreprocess(
 		requiredPublicKeys = append(requiredPublicKeys, &rTypes.AccountIdentifier{Address: signer.String()})
 	}
 
-	return &rTypes.ConstructionPreprocessResponse{
+	response := &rTypes.ConstructionPreprocessResponse{
 		Options:            map[string]interface{}{optionKeyOperationType: operations[0].Type},
 		RequiredPublicKeys: requiredPublicKeys,
-	}, nil
+	}
+
+	// the first signer is always the payer account
+	payer := signers[0]
+	if payer.HasAlias() {
+		response.Options[optionKeyAccountAliases] = fmt.Sprintf("%s", payer)
+	}
+
+	return response, nil
 }
 
 // ConstructionSubmit implements the /construction/submit endpoint.
@@ -359,6 +409,46 @@ func (c *constructionAPIService) getOperationSlice(operations []*rTypes.Operatio
 	return operationSlice, nil
 }
 
+func (c *constructionAPIService) getSdkPayerAccountId(payerAccountId types.AccountId, accountMapMetadata interface{}) (
+	zero hedera.AccountID,
+	_ *rTypes.Error,
+) {
+	if !payerAccountId.HasAlias() {
+		return payerAccountId.ToSdkAccountId(), nil
+	}
+
+	// if it's an alias account, look up the account map metadata for its `shard.realm.num` account id
+	if accountMapMetadata == nil {
+		return zero, errors.ErrAccountNotFound
+	}
+
+	accountMap, ok := accountMapMetadata.(string)
+	if !ok {
+		return zero, errors.ErrAccountNotFound
+	}
+
+	var payer hedera.AccountID
+	payerAlias := payerAccountId.String()
+	for _, aliasMap := range strings.Split(accountMap, ",") {
+		if !strings.HasPrefix(aliasMap, payerAlias) {
+			continue
+		}
+
+		var err error
+		mapping := strings.Split(aliasMap, ":")
+		if payer, err = hedera.AccountIDFromString(mapping[1]); err != nil {
+			return zero, errors.ErrInvalidAccount
+		}
+		break
+	}
+
+	if payer.Account == 0 {
+		return zero, errors.ErrAccountNotFound
+	}
+
+	return payer, nil
+}
+
 func (c *constructionAPIService) getRandomNodeAccountId() hedera.AccountID {
 	index, err := rand.Int(rand.Reader, c.nodeAccountIdsLen)
 	if err != nil {
@@ -388,11 +478,12 @@ func (c *constructionAPIService) getIntMetadataValue(metadata map[string]interfa
 
 func isValidTransactionValidDuration(validDuration int64) bool {
 	// A value of 0 indicates validDuration is unset
-	return validDuration >= 0 && validDuration <= 180
+	return validDuration >= 0 && validDuration <= maxValidDurationSeconds
 }
 
 // NewConstructionAPIService creates a new instance of a constructionAPIService.
 func NewConstructionAPIService(
+	accountRepo interfaces.AccountRepository,
 	baseService BaseService,
 	network string,
 	nodes config.NodeMap,
@@ -425,6 +516,7 @@ func NewConstructionAPIService(
 	}
 
 	return &constructionAPIService{
+		accountRepo:        accountRepo,
 		BaseService:        baseService,
 		hederaClient:       hederaClient,
 		nodeAccountIds:     nodeAccountIds,

@@ -1,0 +1,95 @@
+{
+  "description": "Token balances api calls for a specific account",
+  "setup": {
+    "accounts": [
+      {
+        "num": 7
+      },
+      {
+        "num": 8
+      },
+      {
+        "num": 9
+      }
+    ],
+    "tokens": [
+      {
+        "token_id": "0.0.2007",
+        "symbol": "TOKEN1",
+        "created_timestamp": "1234567890000000001",
+        "type": "FUNGIBLE_COMMON"
+      },
+      {
+        "token_id": "0.20.8",
+        "symbol": "TOKEN2",
+        "created_timestamp": "1234567890000000002",
+        "type": "FUNGIBLE_COMMON"
+      },
+      {
+        "token_id": "0.20.9",
+        "symbol": "TOKEN3",
+        "created_timestamp": "1234567890000000003",
+        "type": "FUNGIBLE_COMMON"
+      }
+    ],
+    "balances": [
+      {
+        "timestamp": 2345,
+        "id": 7,
+        "balance": 70,
+        "tokens": [
+          {
+            "token_num": 2007,
+            "balance": 700
+          },
+          {
+            "token_realm": 20,
+            "token_num": 8,
+            "balance": 777
+          }
+        ]
+      },
+      {
+        "timestamp": 2345,
+        "id": 8,
+        "balance": 80,
+        "tokens": [
+          {
+            "token_num": 2007,
+            "balance": 1000
+          },
+          {
+            "token_realm": 20,
+            "token_num": 8,
+            "balance": 500
+          }
+        ]
+      },
+      {
+        "timestamp": 2345,
+        "id": 9,
+        "balance": 90
+      }
+    ],
+    "transactions": [],
+    "cryptotransfers": []
+  },
+  "urls": [
+    "/api/v1/tokens/0.0.2007/balances?account.id=0.0.8",
+    "/api/v1/tokens/0.2007/balances?account.id=0.8",
+    "/api/v1/tokens/2007/balances?account.id=8"
+  ],
+  "responseStatus": 200,
+  "responseJson": {
+    "timestamp": "0.000002345",
+    "balances": [
+      {
+        "account": "0.0.8",
+        "balance": 1000
+      }
+    ],
+    "links": {
+      "next": null
+    }
+  }
+}

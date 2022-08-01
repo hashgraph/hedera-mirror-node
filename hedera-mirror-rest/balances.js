@@ -19,9 +19,12 @@
  */
 
 import accountContract from './accountContract';
+import {getResponseLimit} from './config';
 import * as constants from './constants';
 import EntityId from './entityId';
 import * as utils from './utils';
+
+const {tokenBalance: tokenBalanceLimit} = getResponseLimit();
 
 const formatBalancesResult = (req, result, limit, order) => {
   const {rows, sqlQuery} = result;
@@ -79,7 +82,7 @@ const getBalances = async (req, res) => {
   // Parse the filter parameters for credit/debit, account-numbers, timestamp and pagination
   const [accountQuery, accountParams] = utils.parseAccountIdQueryParam(req.query, 'ab.account_id');
   // transform the timestamp=xxxx or timestamp=eq:xxxx query in url to 'timestamp <= xxxx' SQL query condition
-  const [tsQuery, tsParams] = utils.parseTimestampQueryParam(req.query, 'ab.consensus_timestamp', {
+  const [tsQuery, tsParams] = utils.parseTimestampQueryParam(req.query, 'consensus_timestamp', {
     [utils.opsMap.eq]: utils.opsMap.lte,
   });
   const [balanceQuery, balanceParams] = utils.parseBalanceQueryParam(req.query, 'ab.balance');
@@ -88,41 +91,38 @@ const getBalances = async (req, res) => {
 
   // Use the inner query to find the latest snapshot timestamp from the balance history table
   const innerQuery = `
-      SELECT
-        ab.consensus_timestamp
-      FROM account_balance ab
-      WHERE ${tsQuery === '' ? '1=1' : tsQuery}
-      ORDER BY ab.consensus_timestamp DESC
-      LIMIT 1`;
+      select consensus_timestamp
+      from account_balance_file
+      ${(tsQuery && `where ${tsQuery}`) || ''}
+      order by consensus_timestamp desc
+      limit 1`;
 
   const whereClause = `
-      WHERE ${[`ab.consensus_timestamp = (${innerQuery})`, accountQuery, pubKeyQuery, balanceQuery]
+      where ${[`ab.consensus_timestamp = (${innerQuery})`, accountQuery, pubKeyQuery, balanceQuery]
         .filter((q) => q !== '')
-        .join(' AND ')}`;
+        .join(' and ')}`;
 
   // Only need to join entity if we're selecting on publickey.
-  const joinEntityClause = pubKeyQuery !== '' ? `JOIN (${accountContractQuery}) ac on ac.id = ab.account_id` : '';
+  const joinEntityClause = pubKeyQuery !== '' ? `join (${accountContractQuery}) ac on ac.id = ab.account_id` : '';
 
   // token balances pairs are aggregated as an array of json objects {token_id, balance}
   const sqlQuery = `
-      SELECT
-        ab.consensus_timestamp,
-        ab.account_id,
-        ab.balance,
-        json_agg(
-          json_build_object(
-            'token_id', tb.token_id::text,
-            'balance', tb.balance
-          ) order by tb.token_id ${order}
-        ) FILTER (WHERE tb.token_id IS NOT NULL) AS token_balances
-      FROM account_balance ab
-      LEFT JOIN token_balance tb
-        ON ab.consensus_timestamp = tb.consensus_timestamp
-          AND ab.account_id = tb.account_id
+      select
+        ab.*,
+        (
+          select json_agg(json_build_object('token_id', token_id, 'balance', balance))
+          from (
+            select token_id, balance
+            from token_balance tb
+            where tb.account_id = ab.account_id and tb.consensus_timestamp = ab.consensus_timestamp
+            order by token_id ${order}
+            limit ${tokenBalanceLimit.multipleAccounts}
+          ) as account_token_balance
+        ) as token_balances
+      from account_balance ab
       ${joinEntityClause}
       ${whereClause}
-      GROUP BY ab.consensus_timestamp, ab.account_id
-      ORDER BY ab.account_id ${order}
+      order by ab.account_id ${order}
       ${query}`;
 
   const sqlParams = utils.mergeParams(tsParams, accountParams, pubKeyParams, balanceParams, params);

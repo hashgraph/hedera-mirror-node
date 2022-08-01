@@ -9,7 +9,7 @@
     "node": ">=16.13.0 < 17"
   },
   "scripts": {
-    "dev": "nodemon --experimental-specifier-resolution=node server.js",
+    "dev": "HEDERA_MIRROR_REST_LOG_LEVEL=trace nodemon --experimental-specifier-resolution=node server.js",
     "integrationtest": "node --experimental-vm-modules node_modules/jest/bin/jest --testPathPattern='/__tests__/integration.test.js|/__tests__/service/.*\\.test\\.js' --collectCoverage=false",
     "lint": "eslint --ignore-pattern node_modules/ --fix .",
     "postinstall": "node ./npm_scripts/postinstall.js",
@@ -21,7 +21,7 @@
   "dependencies": {
     "@awaitjs/express": "^0.9.0",
     "@godaddy/terminus": "^4.11.1",
-    "@hashgraph/proto": "^2.7.0",
+    "@hashgraph/proto": "^2.8.0",
     "asn1js": "^3.0.5",
     "aws-sdk": "^2.1181.0",
     "bigint-buffer": "^1.1.5",

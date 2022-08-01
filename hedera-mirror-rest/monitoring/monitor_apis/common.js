@@ -18,9 +18,7 @@
  * ‍
  */
 
-'use strict';
-
-const config = require('./config');
+import config from './config';
 
 const currentResults = {}; // Results of current tests are stored here
 const pids = {}; // PIDs for the monitoring test processes
@@ -149,7 +147,7 @@ const deleteProcess = (server) => {
   delete pids[server.baseUrl];
 };
 
-module.exports = {
+export default {
   initResults,
   saveResults,
   getServerCurrentResults,
