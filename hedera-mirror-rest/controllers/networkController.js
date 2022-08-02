@@ -205,11 +205,11 @@ class NetworkController extends BaseController {
 
   /**
    * Handler function for /network/stake API.
-   * @param {Request} req HTTP request object
+   * @param {Request} _req HTTP request object
    * @param {Response} res HTTP response object
    * @return {Promise<void>}
    */
-  getNetworkStake = async (req, res) => {
+  getNetworkStake = async (_req, res) => {
     const networkStake = await NetworkNodeService.getNetworkStake();
     res.locals[responseDataLabel] = new NetworkStakeViewModel(networkStake);
   };

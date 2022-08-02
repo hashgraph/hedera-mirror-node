@@ -50,7 +50,7 @@ public class NetworkFeature {
     public void verifyNetworkStakeResponse() {
         assertThat(networkStake.getMaxStakingRewardRatePerHbar()).isPositive();
         assertThat(networkStake.getNodeRewardFeeFraction()).isBetween(0.0F, 1.0F);
-        assertThat(networkStake.getStakeTotal()).isGreaterThanOrEqualTo(0);
+        assertThat(networkStake.getStakeTotal()).isNotNegative();
         assertNotNull(networkStake.getStakingPeriod());
         assertThat(networkStake.getStakingPeriodDuration()).isPositive();
         assertThat(networkStake.getStakingPeriodsStored()).isPositive();

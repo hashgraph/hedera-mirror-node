@@ -18,8 +18,6 @@
  * ‍
  */
 
-import _ from 'lodash';
-
 import AddressBookServiceEndpointViewModel from './addressBookServiceEndpointViewModel';
 import EntityId from '../entityId';
 import * as utils from '../utils';
