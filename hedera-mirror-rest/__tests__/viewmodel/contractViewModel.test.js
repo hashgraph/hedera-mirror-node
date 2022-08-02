@@ -22,6 +22,10 @@ import {Range} from 'pg-range';
 import {ContractBytecodeViewModel, ContractViewModel} from '../../viewmodel';
 
 const defaultContract = {
+  fileId: 2800n,
+  id: 3001n,
+};
+const defaultEntity = {
   autoRenewAccountId: 2009n,
   autoRenewPeriod: 1000n,
   createdTimestamp: 999123456789n,
@@ -31,7 +35,6 @@ const defaultContract = {
     0x23,
   ]),
   expirationTimestamp: 99999999000000000n,
-  fileId: 2800n,
   id: 3001n,
   key: Buffer.from([0xaa, 0xbb, 0xcc, 0x77]),
   memo: 'sample contract',
@@ -64,13 +67,13 @@ const defaultExpected = {
 };
 describe('ContractViewModel', () => {
   test('default', () => {
-    expect(new ContractViewModel(defaultContract)).toEqual(defaultExpected);
+    expect(new ContractViewModel(defaultContract, defaultEntity)).toEqual(defaultExpected);
   });
 
   test('null auto renew account', () => {
     expect(
-      new ContractViewModel({
-        ...defaultContract,
+      new ContractViewModel(defaultContract, {
+        ...defaultEntity,
         autoRenewAccountId: null,
       })
     ).toEqual({
@@ -81,8 +84,8 @@ describe('ContractViewModel', () => {
 
   test('0 auto renew account', () => {
     expect(
-      new ContractViewModel({
-        ...defaultContract,
+      new ContractViewModel(defaultContract, {
+        ...defaultEntity,
         autoRenewAccountId: 0,
       })
     ).toEqual({
@@ -93,8 +96,8 @@ describe('ContractViewModel', () => {
 
   test('null evm address', () => {
     expect(
-      new ContractViewModel({
-        ...defaultContract,
+      new ContractViewModel(defaultContract, {
+        ...defaultEntity,
         evmAddress: null,
       })
     ).toEqual({
@@ -105,8 +108,8 @@ describe('ContractViewModel', () => {
 
   test('permanent removal', () => {
     expect(
-      new ContractViewModel({
-        ...defaultContract,
+      new ContractViewModel(defaultContract, {
+        ...defaultEntity,
         deleted: true,
         permanentRemoval: false,
       })
@@ -119,8 +122,8 @@ describe('ContractViewModel', () => {
 
   test('open-ended timestamp range', () => {
     expect(
-      new ContractViewModel({
-        ...defaultContract,
+      new ContractViewModel(defaultContract, {
+        ...defaultEntity,
         timestampRange: Range('1000123456789', null, '[)'),
       })
     ).toEqual({
@@ -135,7 +138,7 @@ describe('ContractViewModel', () => {
 
 describe('ContractBytecodeViewModel', function () {
   test('default', () => {
-    expect(new ContractBytecodeViewModel(defaultContract)).toEqual({
+    expect(new ContractBytecodeViewModel(defaultContract, defaultEntity)).toEqual({
       ...defaultExpected,
       bytecode: '0x',
       runtime_bytecode: '0x',
@@ -144,14 +147,17 @@ describe('ContractBytecodeViewModel', function () {
 
   test('bytecode', () => {
     expect(
-      new ContractBytecodeViewModel({
-        ...defaultContract,
-        bytecode: Buffer.from(
-          '6080604052348015600f57600080fd5b5060405160c838038060c8833981016040819052602a91604e565b600080546001600160a01b0319166001600160a01b0392909216919091179055607c565b600060208284031215605f57600080fd5b81516001600160a01b0381168114607557600080fd5b9392505050565b603f8060896000396000f3fe6080604052600080fdfea2646970667358221220cef90c1de1bfe76c35095b7f0d6a94d1ca71f144f8da70eb9816329ab76eda3564736f6c634300080a0033',
-          'utf-8'
-        ),
-        runtimeBytecode: Buffer.from('60806040', 'utf-8'),
-      })
+      new ContractBytecodeViewModel(
+        {
+          ...defaultContract,
+          bytecode: Buffer.from(
+            '6080604052348015600f57600080fd5b5060405160c838038060c8833981016040819052602a91604e565b600080546001600160a01b0319166001600160a01b0392909216919091179055607c565b600060208284031215605f57600080fd5b81516001600160a01b0381168114607557600080fd5b9392505050565b603f8060896000396000f3fe6080604052600080fdfea2646970667358221220cef90c1de1bfe76c35095b7f0d6a94d1ca71f144f8da70eb9816329ab76eda3564736f6c634300080a0033',
+            'utf-8'
+          ),
+          runtimeBytecode: Buffer.from('60806040', 'utf-8'),
+        },
+        defaultEntity
+      )
     ).toEqual({
       ...defaultExpected,
       bytecode:
@@ -162,24 +168,30 @@ describe('ContractBytecodeViewModel', function () {
 
   test('null bytecode', () => {
     expect(
-      new ContractBytecodeViewModel({
-        ...defaultContract,
-        bytecode: null,
-        runtimeBytecode: null,
-      })
+      new ContractBytecodeViewModel(
+        {
+          ...defaultContract,
+          bytecode: null,
+          runtimeBytecode: null,
+        },
+        defaultEntity
+      )
     ).toEqual({...defaultExpected, bytecode: '0x', runtime_bytecode: '0x'});
   });
 
   test('bytecode with 0x prefix', () => {
     expect(
-      new ContractBytecodeViewModel({
-        ...defaultContract,
-        bytecode: Buffer.from(
-          '0x6080604052348015600f57600080fd5b5060405160c838038060c8833981016040819052602a91604e565b600080546001600160a01b0319166001600160a01b0392909216919091179055607c565b600060208284031215605f57600080fd5b81516001600160a01b0381168114607557600080fd5b9392505050565b603f8060896000396000f3fe6080604052600080fdfea2646970667358221220cef90c1de1bfe76c35095b7f0d6a94d1ca71f144f8da70eb9816329ab76eda3564736f6c634300080a0033',
-          'utf-8'
-        ),
-        runtimeBytecode: Buffer.from('0x60806040', 'utf-8'),
-      })
+      new ContractBytecodeViewModel(
+        {
+          ...defaultContract,
+          bytecode: Buffer.from(
+            '0x6080604052348015600f57600080fd5b5060405160c838038060c8833981016040819052602a91604e565b600080546001600160a01b0319166001600160a01b0392909216919091179055607c565b600060208284031215605f57600080fd5b81516001600160a01b0381168114607557600080fd5b9392505050565b603f8060896000396000f3fe6080604052600080fdfea2646970667358221220cef90c1de1bfe76c35095b7f0d6a94d1ca71f144f8da70eb9816329ab76eda3564736f6c634300080a0033',
+            'utf-8'
+          ),
+          runtimeBytecode: Buffer.from('0x60806040', 'utf-8'),
+        },
+        defaultEntity
+      )
     ).toEqual({
       ...defaultExpected,
       bytecode:

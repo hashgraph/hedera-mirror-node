@@ -829,7 +829,7 @@ paths:
                   value:
                     admin_key:
                       _type: ProtobufEncoded
-                      key: 7b2231222c2231222c2231227d
+                      key: 010101
                     auto_renew_account: 0.1.2
                     auto_renew_period:
                     created_timestamp: '1234567890.000000001'
@@ -839,22 +839,22 @@ paths:
                     freeze_default: false
                     freeze_key:
                       _type: ProtobufEncoded
-                      key: 7b2231222c2231222c2231227d
+                      key: 010101
                     initial_supply: 1000000
                     kyc_key:
                       _type: ProtobufEncoded
-                      key: 7b2231222c2231222c2231227d
+                      key: 010101
                     max_supply: 9223372036854776000
                     memo: "token memo"
                     modified_timestamp: '1234567890.000000001'
                     name: Token name
                     pause_key:
                       _type: ProtobufEncoded
-                      key: 7b2231222c2231222c2231227d
+                      key: 010101
                     pause_status: UNPAUSED
                     supply_key:
                       _type: ProtobufEncoded
-                      key: 7b2231222c2231222c2231227d
+                      key: 010101
                     supply_type: INFINITE
                     symbol: ORIGINALRDKSE
                     token_id: 0.10.1
@@ -863,7 +863,7 @@ paths:
                     type: FUNGIBLE_COMMON
                     wipe_key:
                       _type: ProtobufEncoded
-                      key: 7b2231222c2231222c2231227d
+                      key: 010101
                     custom_fees:
                       created_timestamp: '1234567890.000000001'
                       fixed_fees:
@@ -883,7 +883,7 @@ paths:
                   value:
                     admin_key:
                       _type: ProtobufEncoded
-                      key: 7b2231222c2231222c2231227d
+                      key: 010101
                     auto_renew_account: 0.1.2
                     auto_renew_period:
                     created_timestamp: '1234567890.000000001'
@@ -893,22 +893,22 @@ paths:
                     freeze_default: false
                     freeze_key:
                       _type: ProtobufEncoded
-                      key: 7b2231222c2231222c2231227d
+                      key: 010101
                     initial_supply: 0
                     kyc_key:
                       _type: ProtobufEncoded
-                      key: 7b2231222c2231222c2231227d
+                      key: 010101
                     max_supply: 9223372036854776000
                     memo: "token memo"
                     modified_timestamp: '1234567890.000000001'
                     name: Token name
                     pause_key:
                       _type: ProtobufEncoded
-                      key: 7b2231222c2231222c2231227d
+                      key: 010101
                     pause_status: UNPAUSED
                     supply_key:
                       _type: ProtobufEncoded
-                      key: 7b2231222c2231222c2231227d
+                      key: 010101
                     supply_type: INFINITE
                     symbol: ORIGINALRDKSE
                     token_id: 0.10.1
@@ -917,7 +917,7 @@ paths:
                     type: NON_FUNGIBLE_UNIQUE
                     wipe_key:
                       _type: ProtobufEncoded
-                      key: 7b2231222c2231222c2231227d
+                      key: 010101
                     custom_fees:
                       created_timestamp: '1234567890.000000001'
                       fixed_fees:
@@ -2021,7 +2021,7 @@ components:
           example: ProtobufEncoded
         key:
           type: string
-          example: 7b2231222c2231222c2231227d
+          example: 010101
     Links:
       type: object
       properties:

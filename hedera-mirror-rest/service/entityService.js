@@ -25,36 +25,34 @@ import BaseService from './baseService';
 import {filterKeys} from '../constants';
 import EntityId from '../entityId';
 import {InvalidArgumentError, NotFoundError} from '../errors';
-import {Contract, Entity} from '../model';
+import {Entity} from '../model';
 
 /**
  * Entity retrieval business logic
  */
 class EntityService extends BaseService {
-  constructor() {
-    super();
-  }
-
   static entityFromAliasQuery = `select ${Entity.ID}
-    from ${Entity.tableName}`;
+                                 from ${Entity.tableName}`;
+
   static entityFromEvmAddressQuery = `select ${Entity.ID}
-    from ${Entity.tableName}
-    where ${Entity.DELETED} <> true and ${Entity.EVM_ADDRESS} = $1
-    union all
-    select ${Contract.ID}
-    from ${Contract.tableName}
-    where ${Contract.DELETED} <> true and ${Contract.EVM_ADDRESS} = $1`;
+                                      from ${Entity.tableName}
+                                      where ${Entity.DELETED} <> true
+                                        and ${Entity.EVM_ADDRESS} = $1`;
+
   // use a small column in existence check to reduce return payload size
   static entityExistenceQuery = `select ${Entity.TYPE}
-    from ${Entity.tableName} where ${Entity.ID} = $1`;
+                                 from ${Entity.tableName}
+                                 where ${Entity.ID} = $1`;
 
   static aliasColumns = [Entity.SHARD, Entity.REALM, Entity.ALIAS];
   static aliasConditions = [`coalesce(${Entity.DELETED}, false) <> true`];
-
-  static missingEntityIdMessage = 'No entity with a matching id found';
   static missingAccountAlias = 'No account with a matching alias found';
   static multipleAliasMatch = `Multiple alive entities matching alias`;
   static multipleEvmAddressMatch = `Multiple alive entities matching evm address`;
+
+  constructor() {
+    super();
+  }
 
   /**
    * Retrieves the entity containing matching the given alias

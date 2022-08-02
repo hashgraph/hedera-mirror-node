@@ -29,9 +29,10 @@ class ContractBytecodeViewModel extends ContractViewModel {
    * Constructs contract view model
    *
    * @param {Contract} contract
+   * @param {Entity} entity
    */
-  constructor(contract) {
-    super(contract);
+  constructor(contract, entity) {
+    super(contract, entity);
     this.bytecode = utils.addHexPrefix(contract.bytecode);
     this.runtime_bytecode = utils.toHexString(contract.runtimeBytecode, true);
   }
