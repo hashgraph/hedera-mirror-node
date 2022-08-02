@@ -202,6 +202,39 @@ const defaultInputServiceEndpointBooks = [
   },
 ];
 
+const defaultNetworkStakes = [
+  {
+    consensus_timestamp: 1,
+    epoch_day: 1,
+    max_staking_reward_rate_per_hbar: 17807,
+    node_reward_fee_denominator: 0,
+    node_reward_fee_numerator: 100,
+    stake_total: 35000000000000000n,
+    staking_period: 1654991999999999999n,
+    staking_period_duration: 1440,
+    staking_periods_stored: 365,
+    staking_reward_fee_denominator: 100,
+    staking_reward_fee_numerator: 100,
+    staking_reward_rate: 100000000000,
+    staking_start_threshold: 25000000000000000,
+  },
+  {
+    consensus_timestamp: 2,
+    epoch_day: 2,
+    max_staking_reward_rate_per_hbar: 17808,
+    node_reward_fee_denominator: 0,
+    node_reward_fee_numerator: 100,
+    stake_total: 35000000000000000n,
+    staking_period: 1654991999999999999n,
+    staking_period_duration: 1440,
+    staking_periods_stored: 365,
+    staking_reward_fee_denominator: 100,
+    staking_reward_fee_numerator: 100,
+    staking_reward_rate: 100000000000,
+    staking_start_threshold: 25000000000000000,
+  },
+];
+
 const defaultNodeStakes = [
   {
     consensus_timestamp: 1,
@@ -545,5 +578,27 @@ describe('NetworkNodeService.getNetworkNodes tests node filter', () => {
     await expect(NetworkNodeService.getNetworkNodes([defaultNodeFilter], [102, 0], 'asc', 5)).resolves.toMatchObject(
       expectedNetworkNode102
     );
+  });
+});
+
+describe('NetworkNodeService.getNetworkStake tests', () => {
+  const expectedNetworkStake = {
+    maxStakingRewardRatePerHbar: 17808,
+    nodeRewardFeeDenominator: 0,
+    nodeRewardFeeNumerator: 100,
+    stakeTotal: 35000000000000000n,
+    stakingPeriod: 1654991999999999999n,
+    stakingPeriodDuration: 1440,
+    stakingPeriodsStored: 365,
+    stakingRewardFeeDenominator: 100,
+    stakingRewardFeeNumerator: 100,
+    stakingRewardRate: 100000000000,
+    stakingStartThreshold: 25000000000000000n,
+  };
+
+  test('NetworkNodeService.getNetworkStake', async () => {
+    await integrationDomainOps.loadNetworkStakes(defaultNetworkStakes);
+
+    await expect(NetworkNodeService.getNetworkStake()).resolves.toMatchObject(expectedNetworkStake);
   });
 });

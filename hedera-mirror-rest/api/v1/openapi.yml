@@ -565,6 +565,24 @@ paths:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
         - network
+  /api/v1/network/stake:
+    get:
+      summary: Get network stake information
+      description: Returns the network's current stake information.
+      operationId: getNetworkStake
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NetworkStakeResponse'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+        500:
+          $ref: '#/components/responses/ServiceUnavailableError'
+      tags:
+        - network
   /api/v1/network/supply:
     get:
       summary: Get the network supply
@@ -1194,6 +1212,11 @@ components:
           $ref: '#/components/schemas/NetworkNodes'
         links:
           $ref: '#/components/schemas/Links'
+    NetworkStakeResponse:
+      type: object
+      properties:
+        network_stake:
+          $ref: '#/components/schemas/NetworkStake'
     NetworkSupplyResponse:
       type: object
       properties:
@@ -2157,6 +2180,67 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/NetworkFee'
+    NetworkStake:
+      type: object
+      required:
+        - max_staking_reward_rate_per_hbar
+        - node_reward_fee_fraction
+        - stake_total
+        - staking_period
+        - staking_period_duration
+        - staking_periods_stored
+        - staking_reward_fee_fraction
+        - staking_reward_rate
+        - staking_start_threshold
+      properties:
+        max_staking_reward_rate_per_hbar:
+          description: The maximum reward rate, in tinybars per whole hbar, that any account can receive in a day
+          type: integer
+          format: int64
+        node_reward_fee_fraction:
+          description: The fraction between zero and one of the network and service fees paid to the node reward account 0.0.801
+          type: number
+          format: float
+        stake_total:
+          description: The total amount staked to the network in tinybars the start of the current staking period
+          type: integer
+          format: int64
+        staking_period:
+          allOf:
+            - $ref: '#/components/schemas/TimestampRange'
+            - description: The timestamp range of the staking period
+        staking_period_duration:
+          description: The number of minutes in a staking period
+          type: integer
+          format: int64
+        staking_periods_stored:
+          description: The number of staking periods for which the reward is stored for each node
+          type: integer
+          format: int64
+        staking_reward_fee_fraction:
+          description: The fraction between zero and one of the network and service fees paid to the staking reward account 0.0.800
+          type: number
+          format: float
+        staking_reward_rate:
+          description: The total number of tinybars to be distributed as staking rewards each period
+          type: integer
+          format: int64
+        staking_start_threshold:
+          description: The minimum balance of staking reward account 0.0.800 required to active rewards
+          type: integer
+          format: int64
+      example:
+        max_staking_reward_rate_per_hbar: 17808,
+        node_reward_fee_fraction: 1.0,
+        stake_total: 35000000000000000,
+        staking_period:
+          from: '1655164800.000000000'
+          to: '1655251200.000000000'
+        staking_period_duration: 1440,
+        staking_periods_stored: 365,
+        staking_reward_fee_fraction: 1.0,
+        staking_reward_rate: 100000000000,
+        staking_start_threshold: 25000000000000000
     Nft:
       type: object
       properties:

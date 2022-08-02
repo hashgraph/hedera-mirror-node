@@ -53,6 +53,7 @@ const setup = async (testDataJson) => {
   await loadEntities(testDataJson.entities);
   await loadEthereumTransactions(testDataJson.ethereumtransactions);
   await loadFileData(testDataJson.filedata);
+  await loadNetworkStakes(testDataJson.networkstakes);
   await loadNfts(testDataJson.nfts);
   await loadNodeStakes(testDataJson.nodestakes);
   await loadRecordFiles(testDataJson.recordFiles);
@@ -232,6 +233,16 @@ const loadNfts = async (nfts) => {
 
   for (const nft of nfts) {
     await addNft(nft);
+  }
+};
+
+const loadNetworkStakes = async (networkStakes) => {
+  if (networkStakes == null) {
+    return;
+  }
+
+  for (const networkStake of networkStakes) {
+    await addNetworkStake(networkStake);
   }
 };
 
@@ -1208,6 +1219,31 @@ const addTokenAllowance = async (tokenAllowance) => {
   await insertDomainObject(table, insertFields, tokenAllowance);
 };
 
+const addNetworkStake = async (networkStakeInput) => {
+  const stakingPeriodEnd = 86_400_000_000_000n - 1n;
+  const networkStake = {
+    consensus_timestamp: 0,
+    epoch_day: 0,
+    max_staking_reward_rate_per_hbar: 17808,
+    node_reward_fee_denominator: 0,
+    node_reward_fee_numerator: 100,
+    stake_total: 10000000,
+    staking_period: stakingPeriodEnd,
+    staking_period_duration: 1440,
+    staking_periods_stored: 365,
+    staking_reward_fee_denominator: 100,
+    staking_reward_fee_numerator: 100,
+    staking_reward_rate: 100000000000,
+    staking_start_threshold: 25000000000000000,
+    ...networkStakeInput,
+  };
+  const insertFields = Object.keys(networkStake)
+    .filter((k) => !k.startsWith('_'))
+    .sort();
+
+  await insertDomainObject('network_stake', insertFields, networkStake);
+};
+
 const addNft = async (nft) => {
   // create nft account object
   nft = {
@@ -1346,6 +1382,7 @@ export default {
   loadCryptoAllowances,
   loadEntities,
   loadFileData,
+  loadNetworkStakes,
   loadNodeStakes,
   loadRecordFiles,
   loadTransactions,

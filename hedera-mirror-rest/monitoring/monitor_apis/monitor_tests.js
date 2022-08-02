@@ -24,12 +24,21 @@ import * as utils from './utils';
 
 import accountTests from './account_tests';
 import balanceTests from './balance_tests';
+import networkTests from './network_tests';
 import stateproofTests from './stateproof_tests';
 import tokenTests from './token_tests';
 import topicmessageTests from './topicmessage_tests';
 import transactionTests from './transaction_tests';
 
-const allTestModules = [accountTests, balanceTests, stateproofTests, tokenTests, topicmessageTests, transactionTests];
+const allTestModules = [
+  accountTests,
+  balanceTests,
+  networkTests,
+  stateproofTests,
+  tokenTests,
+  topicmessageTests,
+  transactionTests,
+];
 
 const counters = {};
 

@@ -182,11 +182,17 @@ public class ContractFeature extends AbstractFeature {
         assertThat(mirrorContract.getCreatedTimestamp()).isNotBlank();
         assertThat(mirrorContract.isDeleted()).isEqualTo(isDeleted);
         assertThat(mirrorContract.getFileId()).isEqualTo(fileId.toString());
+        assertThat(mirrorContract.getMaxAutomaticTokenAssociations()).isPositive();
         assertThat(mirrorContract.getMemo()).isNotBlank();
         String address = mirrorContract.getEvmAddress();
         assertThat(address).isNotBlank().isNotEqualTo("0x").isNotEqualTo("0x0000000000000000000000000000000000000000");
         assertThat(mirrorContract.getTimestamp()).isNotNull();
         assertThat(mirrorContract.getTimestamp().getFrom()).isNotNull();
+
+        if (contractClient.getSdkClient().getAcceptanceTestProperties().getFeatureProperties().isSidecars()) {
+            assertThat(mirrorContract.getRuntimeBytecode()).isNotNull();
+        }
+
         assertThat(mirrorContract.getBytecode()).isEqualTo(compiledSolidityArtifact.getBytecode());
 
         if (isDeleted) {

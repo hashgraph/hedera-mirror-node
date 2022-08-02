@@ -34,6 +34,7 @@ import EthereumTransaction from './ethereumTransaction';
 import ExchangeRate from './exchangeRate';
 import FileData from './fileData';
 import NetworkNode from './networkNode';
+import NetworkStake from './networkStake.js';
 import Nft from './nft';
 import NftTransfer from './nftTransfer';
 import NodeStake from './nodeStake';
@@ -69,6 +70,7 @@ export {
   ExchangeRate,
   FileData,
   NetworkNode,
+  NetworkStake,
   Nft,
   NftTransfer,
   NodeStake,

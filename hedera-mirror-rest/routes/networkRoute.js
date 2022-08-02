@@ -29,6 +29,7 @@ const resource = 'network';
 router.getAsync('/exchangerate', NetworkController.getExchangeRate);
 router.getAsync('/fees', NetworkController.getFees);
 router.getAsync('/nodes', NetworkController.getNetworkNodes);
+router.getAsync('/stake', NetworkController.getNetworkStake);
 router.getAsync('/supply', NetworkController.getSupply);
 
 export default {

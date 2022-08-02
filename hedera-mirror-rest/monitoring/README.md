@@ -104,7 +104,7 @@ To customize per-resource configuration:
 TO run the monitor_apis backend:
 
 ```
-PORT=3000 pm2 start server.js
+PORT=3000 pm2 start server.js --node-args="--experimental-specifier-resolution=node"
 ```
 
 The server will start polling Hedera mirror nodes specified in the config/serverlist.json file.

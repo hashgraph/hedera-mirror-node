@@ -1277,6 +1277,24 @@ const getPoolClass = async (mock = false) => {
 };
 
 /**
+ * Gets the staking period view model object for the given staking period timestamp.
+ *
+ * @param {number} stakingPeriod
+ * @returns {Object|null}
+ */
+const getStakingPeriod = (stakingPeriod) => {
+  if (_.isNil(stakingPeriod)) {
+    return null;
+  } else {
+    const stakingPeriodStart = BigInt(stakingPeriod) + 1n;
+    return {
+      from: nsToSecNs(stakingPeriodStart),
+      to: incrementTimestampByOneDay(stakingPeriodStart),
+    };
+  }
+};
+
+/**
  * Checks that the timestamp filters contains either a valid range (greater than and less than filters that do not span
  * beyond a configured limit), or a set of equals operators within the same limit.
  *
@@ -1426,6 +1444,7 @@ export {
   getNullableNumber,
   getPaginationLink,
   getPoolClass,
+  getStakingPeriod,
   gtGte,
   incrementTimestampByOneDay,
   ipMask,
