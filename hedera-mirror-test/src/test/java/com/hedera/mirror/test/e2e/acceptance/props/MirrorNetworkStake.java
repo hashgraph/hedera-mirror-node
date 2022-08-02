@@ -1,4 +1,4 @@
-package com.hedera.mirror.test.e2e.acceptance.config;
+package com.hedera.mirror.test.e2e.acceptance.props;
 
 /*-
  * ‌
@@ -20,23 +20,17 @@ package com.hedera.mirror.test.e2e.acceptance.config;
  * ‍
  */
 
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
 import lombok.Data;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
-import org.springframework.validation.annotation.Validated;
 
-@Component
-@ConfigurationProperties(prefix = "hedera.mirror.test.acceptance.feature")
 @Data
-@Validated
-public class FeatureProperties {
-    // To-do: move feature logic related properties from AcceptanceTestProperties here
-
-    @Min(1)
-    @Max(5_000_000)
-    private long maxContractFunctionGas = 3_000_000;
-
-    private boolean sidecars = false;
+public class MirrorNetworkStake {
+    private long maxStakingRewardRatePerHbar;
+    private float nodeRewardFeeFraction;
+    private long stakeTotal;
+    private TimestampRange stakingPeriod;
+    private long stakingPeriodDuration;
+    private long stakingPeriodsStored;
+    private float stakingRewardFeeFraction;
+    private long stakingRewardRate;
+    private long stakingStartThreshold;
 }
