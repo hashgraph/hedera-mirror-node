@@ -28,8 +28,8 @@ public class MirrorNetworkStake {
     private float nodeRewardFeeFraction;
     private long stakeTotal;
     private TimestampRange stakingPeriod;
-    private int stakingPeriodDuration;
-    private int stakingPeriodsStored;
+    private long stakingPeriodDuration;
+    private long stakingPeriodsStored;
     private float stakingRewardFeeFraction;
     private long stakingRewardRate;
     private long stakingStartThreshold;
