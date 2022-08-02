@@ -21,7 +21,7 @@
 import _ from 'lodash';
 
 import BaseService from './baseService';
-import {Contract, Entity, ExchangeRate, FileData, FeeSchedule} from '../model';
+import {ExchangeRate, FileData, FeeSchedule} from '../model';
 
 /**
  * File data retrieval business logic
