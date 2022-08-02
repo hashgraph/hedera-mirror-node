@@ -70,7 +70,7 @@
         "symbol": "ORIGINALRDKSE",
         "admin_key": {
           "_type": "ProtobufEncoded",
-          "key": "7b2232222c2232222c2232227d"
+          "key": "020202"
         },
         "type": "NON_FUNGIBLE_UNIQUE"
       },
@@ -79,7 +79,7 @@
         "symbol": "HEDERACOIN",
         "admin_key": {
           "_type": "ProtobufEncoded",
-          "key": "7b2234222c2234222c2234227d"
+          "key": "040404"
         },
         "type": "NON_FUNGIBLE_UNIQUE"
       }

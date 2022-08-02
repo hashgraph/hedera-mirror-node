@@ -39,7 +39,6 @@ import lombok.EqualsAndHashCode;
 import lombok.Value;
 
 import com.hedera.mirror.common.converter.EntityTypeSerializer;
-import com.hedera.mirror.common.domain.contract.Contract;
 
 /**
  * Common encapsulation for accountID, fileID, contractID, topicID and tokenID.
@@ -81,10 +80,6 @@ public class EntityId implements Serializable, Comparable<EntityId> {
         return of(accountID.getShardNum(), accountID.getRealmNum(), accountID.getAccountNum(), EntityType.ACCOUNT);
     }
 
-    /**
-     * @deprecated in favor of using EntityIdService.lookup where applicable
-     */
-    @Deprecated(since = "v0.50.0")
     public static EntityId of(ContractID contractID) {
         return of(contractID.getShardNum(), contractID.getRealmNum(), contractID.getContractNum(),
                 EntityType.CONTRACT);
@@ -135,21 +130,8 @@ public class EntityId implements Serializable, Comparable<EntityId> {
         return entityId == null || EMPTY.equals(entityId);
     }
 
-    /**
-     * @deprecated in favor of using toString()
-     */
-    @Deprecated(since = "v0.49.0")
-    public String entityIdToString() {
-        return String.format("%d.%d.%d", getShardNum(), getRealmNum(), getEntityNum());
-    }
-
-    @SuppressWarnings("deprecation")
-    public String toString() {
-        return entityIdToString();
-    }
-
-    public <T extends AbstractEntity> T toEntity() {
-        T entity = createEntity();
+    public Entity toEntity() {
+        Entity entity = new Entity();
         entity.setId(id);
         entity.setShard(shardNum);
         entity.setRealm(realmNum);
@@ -159,16 +141,13 @@ public class EntityId implements Serializable, Comparable<EntityId> {
         return entity;
     }
 
-    private <T extends AbstractEntity> T createEntity() {
-        if (type == EntityType.CONTRACT) {
-            return (T) new Contract();
-        } else {
-            return (T) new Entity();
-        }
-    }
-
     @Override
     public int compareTo(EntityId other) {
         return COMPARATOR.compare(this, other);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%d.%d.%d", getShardNum(), getRealmNum(), getEntityNum());
     }
 }

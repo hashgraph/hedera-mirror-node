@@ -132,7 +132,7 @@
         "expiry_timestamp": "0.123456783",
         "key": {
           "_type": "ProtobufEncoded",
-          "key": "7b2233222c2233222c2233227d"
+          "key": "030303"
         },
         "max_automatic_token_associations": 0,
         "memo": "entity memo",

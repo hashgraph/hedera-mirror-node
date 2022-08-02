@@ -189,7 +189,7 @@ public class NodeSignatureVerifier {
                                 .toCollection(TreeSet::new))));
 
         Set<String> seenNodes = new HashSet<>();
-        signatures.forEach(signature -> seenNodes.add(signature.getNodeAccountId().entityIdToString()));
+        signatures.forEach(signature -> seenNodes.add(signature.getNodeAccountId().toString()));
 
         Set<String> missingNodes = new TreeSet<>(Sets.difference(
                 nodeAccountIDPubKeyMap.keySet().stream().collect(Collectors.toSet()),

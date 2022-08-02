@@ -68,7 +68,7 @@ public class AcceptanceTestProperties {
 
     private Set<NodeProperties> nodes = new LinkedHashSet<>();
 
-    private long operatorBalance = 15_000_000_000L;
+    private long operatorBalance = 18_000_000_000L;
 
     @NotBlank
     private String operatorId = "0.0.2";

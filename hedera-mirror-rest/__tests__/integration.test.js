@@ -26,18 +26,12 @@
  * schema (using sql files in the ../src/resources/db/migration directory).
  *
  * * Test data for rest-api tests is created by:
- * 1) reading account id, balance, expiration and crypto transfer information from *.spec.json
+ * 1) reading account id, balance, expiration and crypto transfer information from specs/*.json
  * 2) applying account creations, balance sets and transfers to the integration DB
- *
- * Test data for database tests is created by:
- * 1) reading account id, balance, expiration and crypto transfer information from integration_test_data.json
- * 2) storing those accounts in integration DB
- * 3) creating 3 balances records per account at timestamp 1000, 2000, 3000 in the integration DB
- * 4) apply transfers (from integration_test_data.json) to the integration DB
- *
- * Tests are then run in code below (find TESTS all caps) and by comparing requests/responses from the server to data
- * in the specs/ dir.
+
+ * Tests are then run in code below and by comparing requests/responses from the server to data in the specs/ dir.
  */
+
 // external libraries
 import S3 from 'aws-sdk/clients/s3';
 import crypto from 'crypto';
@@ -52,216 +46,14 @@ import integrationDomainOps from './integrationDomainOps';
 import IntegrationS3Ops from './integrationS3Ops';
 import config from '../config';
 import {cloudProviders} from '../constants';
-import EntityId from '../entityId';
 import server from '../server';
 import {getModuleDirname} from './testutils';
-import transactions from '../transactions';
 import {JSONParse} from '../utils';
 import {defaultBeforeAllTimeoutMillis, setupIntegrationTest} from './integrationUtils';
 
 setupIntegrationTest();
 
-beforeEach(async () => {
-  await setupData();
-});
-
-// TEST DATA
-// shard 0, realm 15, accounts 1-10
-// 3 balances per account
-// several transactions
-const defaultShard = 0;
-const defaultRealm = 15;
-
-/**
- * Setup test data in the postgres instance.
- */
-const setupData = async () => {
-  const testDataPath = path.join(getModuleDirname(import.meta), 'integration_test_data.json');
-  const testData = fs.readFileSync(testDataPath);
-  const testDataJson = JSONParse(testData);
-
-  await integrationDomainOps.setup(testDataJson.setup);
-
-  logger.info('Finished initializing DB data');
-};
-
-/**
- * Add a crypto transfer from A to B with A also paying 1 tinybar to account number 2 (fee)
- * @param consensusTimestamp
- * @param payerAccountId
- * @param recipientAccountId
- * @param amount
- * @param validDurationSeconds
- * @param maxFee
- * @param result
- * @param type
- * @param nodeAccountId
- * @param treasuryAccountId
- * @return {Promise<void>}
- */
-const addCryptoTransferTransaction = async (
-  consensusTimestamp,
-  payerAccountId,
-  recipientAccountId,
-  amount,
-  validDurationSeconds,
-  maxFee,
-  result = 22,
-  type = 14,
-  nodeAccountId = '0.15.3',
-  treasuryAccountId = '0.15.98'
-) => {
-  await integrationDomainOps.addCryptoTransaction({
-    consensus_timestamp: consensusTimestamp,
-    payerAccountId,
-    recipientAccountId,
-    amount,
-    valid_duration_seconds: validDurationSeconds,
-    max_fee: maxFee,
-    result,
-    type,
-    nodeAccountId,
-    treasuryAccountId,
-  });
-};
-
-const createAndPopulateNewAccount = async (id, realm, ts, bal) => {
-  await integrationDomainOps.addAccount({
-    num: id,
-    realm: realm,
-  });
-
-  await integrationDomainOps.setAccountBalance({
-    timestamp: ts,
-    id,
-    realm_num: realm,
-    balance: bal,
-  });
-};
-
-/**
- * Map a DB transaction/cryptotransfer result to something easily comparable in a test assert/expect.
- * @param rows
- * @returns {*}
- */
-const mapTransactionResults = (rows) => {
-  return rows.map((v) => {
-    const cryptoTransfers = v.crypto_transfer_list.map((transfer) => {
-      return {
-        amount: transfer.amount,
-        account: EntityId.parse(transfer.entity_id).toString(),
-        is_approval: transfer.is_approval,
-      };
-    });
-    return {
-      consensusTimestamp: v.consensus_timestamp,
-      cryptoTransfers,
-    };
-  });
-};
-
-const extractDurationAndMaxFeeFromTransactionResults = (rows) => {
-  return rows.map((v) => `${v.valid_duration_seconds}, ${v.max_fee}`);
-};
-
-// expected transaction rows order by consensus_timestamp desc, only check fields consensus_timestamp and crypto_transfer_list
-const expectedTransactionRowsDesc = [
-  {
-    consensusTimestamp: 1052,
-    cryptoTransfers: [
-      {account: '0.15.8', amount: -31, is_approval: false},
-      {account: '0.15.9', amount: 30, is_approval: false},
-      {account: '0.15.98', amount: 1, is_approval: false},
-    ],
-  },
-  {
-    consensusTimestamp: 1051,
-    cryptoTransfers: [
-      {account: '0.15.9', amount: 20, is_approval: false},
-      {account: '0.15.10', amount: -21, is_approval: false},
-      {account: '0.15.98', amount: 1, is_approval: false},
-    ],
-  },
-  {
-    consensusTimestamp: 1050,
-    cryptoTransfers: [
-      {account: '0.15.9', amount: 10, is_approval: false},
-      {account: '0.15.10', amount: -11, is_approval: false},
-      {account: '0.15.98', amount: 1, is_approval: false},
-    ],
-  },
-];
-const expectedTransactionRowsMap = expectedTransactionRowsDesc.reduce((m, row) => {
-  m[row.consensusTimestamp] = row;
-  return m;
-}, {});
-
-test('DB integration test - transactions.reqToSql - no query string - 3 txn 9 xfers', async () => {
-  const sql = transactions.reqToSql({query: {}});
-  const res = await pool.query(sql.query, sql.params);
-  expect(mapTransactionResults(res.rows)).toEqual(expectedTransactionRowsDesc);
-});
-
-test('DB integration test - transactions.reqToSql - single valid account - 1 txn 3 xfers', async () => {
-  const sql = transactions.reqToSql({query: {'account.id': `${defaultShard}.${defaultRealm}.8`}});
-  const res = await pool.query(sql.query, sql.params);
-  expect(mapTransactionResults(res.rows)).toEqual([expectedTransactionRowsMap['1052']]);
-});
-
-test('DB integration test - transactions.reqToSql - invalid account', async () => {
-  const sql = transactions.reqToSql({query: {'account.id': '0.17.666'}});
-  const res = await pool.query(sql.query, sql.params);
-  expect(res.rowCount).toEqual(0);
-});
-
-test('DB integration test - transactions.reqToSql - null validDurationSeconds and maxFee inserts', async () => {
-  await addCryptoTransferTransaction(1062, '0.15.5', '0.15.4', 50, 5, null); // null maxFee
-  await addCryptoTransferTransaction(1063, '0.15.5', '0.15.4', 70, null, 777); // null validDurationSeconds
-  await addCryptoTransferTransaction(1064, '0.15.5', '0.15.4', 70, null, null); // valid validDurationSeconds and maxFee
-
-  const sql = transactions.reqToSql({query: {'account.id': '0.15.5'}});
-  const res = await pool.query(sql.query, sql.params);
-  expect(extractDurationAndMaxFeeFromTransactionResults(res.rows)).toEqual(['null, null', 'null, 777', '5, null']);
-});
-
-test('DB integration test - transactions.reqToSql - Account range filtered transactions', async () => {
-  await createAndPopulateNewAccount(13, 15, 5, 10);
-  await createAndPopulateNewAccount(63, 15, 6, 50);
-  await createAndPopulateNewAccount(82, 15, 7, 100);
-
-  // create 3 transactions - 9 transfers
-  await addCryptoTransferTransaction(2062, '0.15.13', '0.15.63', 50, 5000, 50);
-  await addCryptoTransferTransaction(2063, '0.15.63', '0.15.82', 70, 7000, 777);
-  await addCryptoTransferTransaction(2064, '0.15.82', '0.15.63', 20, 8000, -80);
-
-  const expected = [
-    {
-      consensusTimestamp: 2064,
-      cryptoTransfers: [
-        {account: '0.15.63', amount: 20, is_approval: false},
-        {account: '0.15.82', amount: -21, is_approval: false},
-        {account: '0.15.98', amount: 1, is_approval: false},
-      ],
-    },
-    {
-      consensusTimestamp: 2063,
-      cryptoTransfers: [
-        {account: '0.15.63', amount: -71, is_approval: false},
-        {account: '0.15.82', amount: 70, is_approval: false},
-        {account: '0.15.98', amount: 1, is_approval: false},
-      ],
-    },
-  ];
-
-  const sql = transactions.reqToSql({query: {'account.id': ['gte:0.15.70', 'lte:0.15.97']}});
-  const res = await pool.query(sql.query, sql.params);
-
-  // 2 transactions, each with 3 transfers, are applicable. For each transfer negative amount from self, amount to
-  // recipient and fee to bank. Note bank is out of desired range but is expected in query result
-  expect(mapTransactionResults(res.rows).sort()).toEqual(expected);
-});
-
-describe('DB integration test - spec based', () => {
+describe('API specification tests', () => {
   const bucketName = 'hedera-demo-streams';
   const s3TestDataRoot = path.join(getModuleDirname(import.meta), 'data', 's3');
 

@@ -71,7 +71,6 @@ import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractAction;
-import com.hedera.mirror.common.domain.contract.ContractHistory;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
@@ -228,34 +227,11 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<Contract, Contract.ContractBuilder> contract() {
-        long id = id();
-        long timestamp = timestamp();
-
         var builder = Contract.builder()
-                .autoRenewAccountId(id())
-                .autoRenewPeriod(1800L)
-                .createdTimestamp(timestamp)
-                .declineReward(false)
-                .deleted(false)
-                .evmAddress(evmAddress())
-                .expirationTimestamp(timestamp + 30_000_000L)
                 .fileId(entityId(FILE))
-                .id(id)
-                .key(key())
-                .maxAutomaticTokenAssociations(2)
-                .memo(text(16))
-                .obtainerId(entityId(CONTRACT))
-                .proxyAccountId(entityId(ACCOUNT))
-                .num(id)
-                .realm(0L)
-                .runtimeBytecode(bytes(256))
-                .shard(0L)
-                .stakedAccountId(-1L)
-                .stakedNodeId(-1L)
-                .stakePeriodStart(-1L)
-                .timestampRange(Range.atLeast(timestamp))
-                .type(CONTRACT);
-
+                .id(id())
+                .initcode(null) // Mutually exclusive with fileId
+                .runtimeBytecode(bytes(256));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
@@ -274,38 +250,6 @@ public class DomainBuilder {
                 .resultData(bytes(256))
                 .resultDataType(ResultDataCase.OUTPUT.getNumber())
                 .value(300L);
-        return new DomainWrapperImpl<>(builder, builder::build);
-    }
-
-    public DomainWrapper<ContractHistory, ContractHistory.ContractHistoryBuilder> contractHistory() {
-        long id = id();
-        long timestamp = timestamp();
-
-        var builder = ContractHistory.builder()
-                .autoRenewAccountId(id())
-                .autoRenewPeriod(1800L)
-                .createdTimestamp(timestamp)
-                .declineReward(false)
-                .deleted(false)
-                .evmAddress(evmAddress())
-                .expirationTimestamp(timestamp + 30_000_000L)
-                .fileId(entityId(FILE))
-                .id(id)
-                .key(key())
-                .maxAutomaticTokenAssociations(2)
-                .memo(text(16))
-                .obtainerId(entityId(CONTRACT))
-                .proxyAccountId(entityId(ACCOUNT))
-                .num(id)
-                .realm(0L)
-                .runtimeBytecode(bytes(256))
-                .shard(0L)
-                .stakedAccountId(-1L)
-                .stakedNodeId(-1L)
-                .stakePeriodStart(-1L)
-                .timestampRange(Range.closedOpen(timestamp, timestamp()))
-                .type(CONTRACT);
-
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
@@ -417,12 +361,14 @@ public class DomainBuilder {
                 .expirationTimestamp(timestamp + 30_000_000L)
                 .id(id)
                 .key(key())
-                .maxAutomaticTokenAssociations(0)
+                .maxAutomaticTokenAssociations(1)
                 .memo(text(16))
+                .obtainerId(entityId(ACCOUNT))
+                .permanentRemoval(false)
                 .proxyAccountId(entityId(ACCOUNT))
                 .num(id)
                 .realm(0L)
-                .receiverSigRequired(false)
+                .receiverSigRequired(true)
                 .shard(0L)
                 .stakedNodeId(-1L)
                 .stakePeriodStart(-1L)
@@ -449,12 +395,14 @@ public class DomainBuilder {
                 .expirationTimestamp(timestamp + 30_000_000L)
                 .id(id)
                 .key(key())
-                .maxAutomaticTokenAssociations(0)
+                .maxAutomaticTokenAssociations(1)
                 .memo(text(16))
+                .obtainerId(entityId(ACCOUNT))
+                .permanentRemoval(false)
                 .proxyAccountId(entityId(ACCOUNT))
                 .num(id)
                 .realm(0L)
-                .receiverSigRequired(false)
+                .receiverSigRequired(true)
                 .shard(0L)
                 .stakedAccountId(-1L)
                 .stakedNodeId(-1L)

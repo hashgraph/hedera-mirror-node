@@ -45,6 +45,9 @@ class CryptoDeleteTransactionHandler extends AbstractEntityCrudTransactionHandle
 
     @Override
     protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
+        var transactionBody = recordItem.getTransactionBody().getCryptoDelete();
+        var obtainerId = entityIdService.lookup(transactionBody.getTransferAccountID());
+        entity.setObtainerId(obtainerId);
         entityListener.onEntity(entity);
     }
 }

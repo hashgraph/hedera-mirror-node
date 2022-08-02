@@ -18,7 +18,6 @@
  * ‍
  */
 
-import accountContract from './accountContract';
 import base32 from './base32';
 import {getResponseLimit} from './config';
 import * as constants from './constants';
@@ -100,7 +99,6 @@ const latestBalanceFilter = 'ab.consensus_timestamp = (select max(consensus_time
 /**
  * Gets the query for entity fields with hbar balance info for the full outer join case.
  *
- * @param accountContractQuery
  * @param balanceAccountQuery
  * @param entityAccountQuery
  * @param entityWhereClause
@@ -110,7 +108,6 @@ const latestBalanceFilter = 'ab.consensus_timestamp = (select max(consensus_time
  * @return {{query: string, params: *[]}}
  */
 const getEntityBalanceFullOuterJoinQuery = (
-  accountContractQuery,
   balanceAccountQuery,
   entityAccountQuery,
   entityWhereClause,
@@ -128,32 +125,26 @@ const getEntityBalanceFullOuterJoinQuery = (
     limitParams
   );
   const entityBalanceQuery = `
-      select ${entityIdField} id,${entityAndBalanceFields}
-      from (
-        select id,${entityFields}
-        from (${accountContractQuery}) e
-        ${entityWhereClause}
-        order by id ${order}
-        ${limitQuery}
-      ) e
-      full outer join (
-        select *
-        from account_balance ab
-        where ${balanceWhereCondition}
-        order by account_id ${order}
-        ${limitQuery}
-      ) ab
-        on ab.account_id = e.id
-      order by ${entityIdField} ${order}
+    select ${entityIdField} id, ${entityAndBalanceFields}
+    from (select id, ${entityFields}
+          from entity e
+          where type in ('ACCOUNT', 'CONTRACT') ${entityWhereClause}
+          order by id ${order} ${limitQuery}) e
+           full outer join (select *
+                            from account_balance ab
+                            where ${balanceWhereCondition}
+                            order by account_id ${order}
+                              ${limitQuery}) ab
+                           on ab.account_id = e.id
+    order by ${entityIdField} ${order}
       ${limitQuery}
-    `;
+  `;
   return {query: entityBalanceQuery, params};
 };
 
 /**
  * Gets the query for entity fields with hbar balance info for inner, left outer, and right outer join cases.
  *
- * @param accountContractQuery
  * @param balanceAccountQuery
  * @param balanceQuery
  * @param entityAccountQuery
@@ -164,7 +155,6 @@ const getEntityBalanceFullOuterJoinQuery = (
  * @return {{query: string, params: *[]}}
  */
 const getEntityBalanceQuery = (
-  accountContractQuery,
   balanceAccountQuery,
   balanceQuery,
   entityAccountQuery,
@@ -207,18 +197,16 @@ const getEntityBalanceQuery = (
   ]
     .filter((x) => !!x)
     .join(' and ');
-  const whereClause = `where ${whereCondition}`;
+  const whereClause = `and ${whereCondition}`;
 
   params = utils.mergeParams(...params, limitParams);
   const entityBalanceQuery = `
-      select ${entityIdField} id,${entityAndBalanceFields}
-      from (${accountContractQuery}) e
-      ${joinType} join account_balance ab
-        on ${balanceJoinConditions.join(' and ')}
-      ${whereClause}
-      order by ${entityIdField} ${order}
-      ${limitQuery}
-    `;
+    select ${entityIdField} id, ${entityAndBalanceFields}
+    from entity e ${joinType} join account_balance ab
+    on ${balanceJoinConditions.join(' and ')}
+    where e.type in ('ACCOUNT', 'CONTRACT') ${whereClause}
+    order by ${entityIdField} ${order} ${limitQuery}
+  `;
   return {query: entityBalanceQuery, params};
 };
 
@@ -244,19 +232,17 @@ const getAccountQuery = (
   includeBalance = true
 ) => {
   const entityWhereCondition = [entityAccountQuery.query, pubKeyQuery.query].filter((x) => !!x).join(' and ');
-  const entityWhereClause = entityWhereCondition && `where ${entityWhereCondition}`;
+  const entityWhereClause = entityWhereCondition && `and ${entityWhereCondition}`;
   const limitParams = limitAndOrderQuery.params;
   const limitQuery = limitAndOrderQuery.query || '';
   const order = limitAndOrderQuery.order || constants.orderFilterValues.ASC;
-  const accountContractQuery = accountContract.getAccountContractUnionQueryWithOrder({field: 'id', order});
 
   if (!includeBalance) {
     const entityOnlyQuery = `
-      select id,${entityFields}
-      from (${accountContractQuery}) account_contract
-      ${entityWhereClause}
-      order by id ${order}
-      ${limitQuery}`;
+      select id, ${entityFields}
+      from entity e
+      where e.type in ('ACCOUNT', 'CONTRACT') ${entityWhereClause}
+      order by id ${order} ${limitQuery}`;
     return {
       query: entityOnlyQuery,
       params: utils.mergeParams(entityAccountQuery.params, pubKeyQuery.params, limitParams),
@@ -267,7 +253,6 @@ const getAccountQuery = (
     balanceQuery.query === '' && pubKeyQuery.query === ''
       ? // use full outer join when no balance query and public key query
         getEntityBalanceFullOuterJoinQuery(
-          accountContractQuery,
           balanceAccountQuery,
           entityAccountQuery,
           entityWhereClause,
@@ -276,7 +261,6 @@ const getAccountQuery = (
           order
         )
       : getEntityBalanceQuery(
-          accountContractQuery,
           balanceAccountQuery,
           balanceQuery,
           entityAccountQuery,
@@ -289,16 +273,13 @@ const getAccountQuery = (
   const query = `
     with entity_balance as (${entityBalanceQuery})
     select eb.*,
-           (
-             select json_agg(json_build_object('token_id', token_id, 'balance', balance))
-             from (
-               select token_id, balance
-               from token_balance
-               where account_id = eb.id and consensus_timestamp = eb.consensus_timestamp
-               order by token_id ${order}
-               limit ${tokenBalanceLimit}
-             ) as account_token_balance
-           ) as token_balances
+           (select json_agg(json_build_object('token_id', token_id, 'balance', balance))
+            from (select token_id, balance
+                  from token_balance
+                  where account_id = eb.id
+                    and consensus_timestamp = eb.consensus_timestamp
+                  order by token_id ${order}
+                  limit ${tokenBalanceLimit}) as account_token_balance) as token_balances
     from entity_balance eb
     order by eb.id ${order}`;
 
