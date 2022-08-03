@@ -13,7 +13,7 @@ import reactor.core.scheduler.Schedulers;
 @SpringBootApplication
 public class ApiContractApplication {
 
-    public static void main(String[] args) {
+    public static void main(String args) {
         Schedulers.enableMetrics();
         SpringApplication.run(ApiContractApplication.class, args);
     }
