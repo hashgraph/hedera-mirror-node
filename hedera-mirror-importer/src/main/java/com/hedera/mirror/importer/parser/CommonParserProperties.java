@@ -27,12 +27,13 @@ import java.util.function.Predicate;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
+import lombok.Getter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.importer.domain.TransactionFilterFields;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.importer.domain.TransactionFilterFields;
 
 @Data
 @Validated
@@ -51,9 +52,8 @@ public class CommonParserProperties {
     @Min(1)
     private int tempTableBufferSize = 256; // Size in MB
 
-    public Predicate<TransactionFilterFields> getFilter() {
-        return includeFilter().and(excludeFilter());
-    }
+    @Getter(lazy = true)
+    private final Predicate<TransactionFilterFields> filter = includeFilter().and(excludeFilter());
 
     private Predicate<TransactionFilterFields> excludeFilter() {
         if (exclude.isEmpty()) {

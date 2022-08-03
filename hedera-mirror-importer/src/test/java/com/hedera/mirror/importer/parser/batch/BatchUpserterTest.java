@@ -40,7 +40,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.transaction.support.TransactionOperations;
 
-import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -97,36 +96,6 @@ class BatchUpserterTest extends IntegrationTest {
 
     @Qualifier(TOKEN_DISSOCIATE_BATCH_PERSISTER)
     private final BatchPersister tokenDissociateTransferBatchUpserter;
-
-    @Test
-    void contract() {
-        Contract contract1 = domainBuilder.contract().get();
-        Contract contract2 = domainBuilder.contract().get();
-        Contract contract3 = domainBuilder.contract().get();
-        var contracts = List.of(contract1, contract2, contract3);
-
-        persist(batchPersister, contracts);
-        assertThat(contractRepository.findAll()).containsExactlyInAnyOrderElementsOf(contracts);
-
-        String contract2Memo = contract2.getMemo();
-        contract1.setCreatedTimestamp(null);
-        contract1.setMemo("updated1");
-        contract2.setCreatedTimestamp(null);
-        contract2.setMemo(null);
-        contract3.setCreatedTimestamp(null);
-        contract3.setMemo("");
-
-        persist(batchPersister, contracts);
-
-        assertThat(contractRepository.findAll())
-                .hasSize(3)
-                .extracting(Contract::getMemo)
-                .containsExactlyInAnyOrder(contract1.getMemo(), contract2Memo, contract3.getMemo());
-        assertThat(findHistory(Contract.class))
-                .hasSize(3)
-                .extracting(Contract::getId)
-                .containsExactlyInAnyOrder(contract1.getId(), contract2.getId(), contract3.getId());
-    }
 
     @Test
     void cryptoAllowance() {
@@ -264,7 +233,7 @@ class BatchUpserterTest extends IntegrationTest {
                 .isNotEmpty()
                 .hasSize(6)
                 .extracting(Token::getTreasuryAccountId)
-                .extracting(EntityId::entityIdToString)
+                .extracting(EntityId::toString)
                 .containsExactlyInAnyOrder("0.0.1001", "0.0.1002", "0.0.2001", "0.0.2002", "0.0.2005", "0.0.2006");
     }
 
@@ -535,7 +504,7 @@ class BatchUpserterTest extends IntegrationTest {
                 .isNotEmpty()
                 .hasSize(4)
                 .extracting(Nft::getAccountId)
-                .extracting(EntityId::entityIdToString)
+                .extracting(EntityId::toString)
                 .containsExactlyInAnyOrder("0.0.1001", "0.0.1002", "0.0.1003", "0.0.1004");
     }
 
@@ -577,7 +546,7 @@ class BatchUpserterTest extends IntegrationTest {
                 .isNotEmpty()
                 .hasSize(6)
                 .extracting(Nft::getAccountId)
-                .extracting(EntityId::entityIdToString)
+                .extracting(EntityId::toString)
                 .containsExactlyInAnyOrder("0.0.1001", "0.0.1002", "0.0.1013", "0.0.1014", "0.0.1015", "0.0.1016");
     }
 
@@ -616,7 +585,7 @@ class BatchUpserterTest extends IntegrationTest {
                 .isNotEmpty()
                 .hasSize(4)
                 .extracting(Nft::getAccountId)
-                .extracting(EntityId::entityIdToString)
+                .extracting(EntityId::toString)
                 .containsExactlyInAnyOrder("0.0.1005", "0.0.1006", "0.0.1007", "0.0.1008");
 
         // updates with wipe/burn
@@ -800,7 +769,7 @@ class BatchUpserterTest extends IntegrationTest {
 
     private Nft getNft(EntityId tokenId, EntityId accountId, long serialNumber, long createdTimestamp,
                        long modifiedTimestamp, boolean deleted) {
-        return getNft(tokenId.entityIdToString(), serialNumber, accountId.entityIdToString(), createdTimestamp,
+        return getNft(tokenId.toString(), serialNumber, accountId.toString(), createdTimestamp,
                 modifiedTimestamp, "meta", deleted);
     }
 

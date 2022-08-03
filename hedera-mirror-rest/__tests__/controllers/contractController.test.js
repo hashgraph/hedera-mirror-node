@@ -25,35 +25,12 @@ import * as constants from '../../constants';
 import contracts from '../../controllers/contractController';
 import {assertSqlQueryEqual} from '../testutils';
 import * as utils from '../../utils';
-import {Contract} from '../../model';
+import {Entity} from '../../model';
 import {FileDataService} from '../../service';
 import Bound from '../../controllers/bound';
 import {ContractBytecodeViewModel, ContractViewModel} from '../../viewmodel';
 
 const {default: defaultLimit} = getResponseLimit();
-
-const contractFields = [
-  Contract.AUTO_RENEW_ACCOUNT_ID,
-  Contract.AUTO_RENEW_PERIOD,
-  Contract.CREATED_TIMESTAMP,
-  Contract.DELETED,
-  Contract.EVM_ADDRESS,
-  Contract.EXPIRATION_TIMESTAMP,
-  Contract.FILE_ID,
-  Contract.ID,
-  Contract.KEY,
-  Contract.MAX_AUTOMATIC_TOKEN_ASSOCIATIONS,
-  Contract.MEMO,
-  Contract.OBTAINER_ID,
-  Contract.PERMANENT_REMOVAL,
-  Contract.PROXY_ACCOUNT_ID,
-  Contract.TIMESTAMP_RANGE,
-].map((column) => Contract.getFullName(column));
-const contractWithBytecodeFields = [
-  ...contractFields,
-  Contract.getFullName(Contract.INITCODE),
-  Contract.getFullName(Contract.RUNTIME_BYTECODE),
-];
 
 const timestampEq1002Filter = {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.eq, value: '1002'};
 const timestampGt1002Filter = {key: constants.filterKeys.TIMESTAMP, operator: utils.opsMap.gt, value: '1002'};
@@ -74,7 +51,7 @@ const primaryContractFilter = 'cr.contract_id = $1';
 
 describe('extractSqlFromContractFilters', () => {
   const defaultExpected = {
-    filterQuery: '',
+    filterQuery: `where e.type = 'CONTRACT'`,
     params: [defaultLimit],
     order: constants.orderFilterValues.DESC,
     limit: defaultLimit,
@@ -137,7 +114,7 @@ describe('extractSqlFromContractFilters', () => {
       ],
       expected: {
         ...defaultExpected,
-        filterQuery: 'where c.id > $1 and c.id in ($2,$3)',
+        filterQuery: `where e.type = 'CONTRACT' and e.id > $1 and e.id in ($2,$3)`,
         params: [1000, 1001, 1002, defaultLimit],
         limitQuery: 'limit $4',
       },
@@ -153,7 +130,7 @@ describe('extractSqlFromContractFilters', () => {
 
 describe('extractTimestampConditionsFromContractFilters', () => {
   const timestampKey = constants.filterKeys.TIMESTAMP;
-  const timestampColumn = Contract.getFullName(Contract.TIMESTAMP_RANGE);
+  const timestampColumn = Entity.getFullName(Entity.TIMESTAMP_RANGE);
   const specs = [
     {
       name: emptyFilterString,
@@ -295,17 +272,17 @@ describe('formatContractRow', () => {
 });
 
 describe('getContractByIdOrAddressQuery', () => {
-  const mainQuery = `select ${[
-    ...contractFields,
-    'c.runtime_bytecode',
-    "coalesce(encode(c.initcode, 'hex')::bytea, cf.bytecode) as bytecode",
-  ]}
-    from contract c, contract_file cf`;
+  const mainQuery = `select ce.*, coalesce(encode(ce.initcode, 'hex')::bytea, cf.bytecode) as bytecode
+                     from contract_entity ce,
+                          contract_file cf`;
 
   const queryForTable = ({table, extraConditions, columnName}) => {
-    return `select ${contractWithBytecodeFields}
-      from ${table} c
-      where ${(extraConditions && extraConditions.join(' and ') + ' and ') || ''} c.${columnName} = $3`;
+    return `select ${contracts.contractWithBytecodeSelectFields}
+            from ${table} e
+                   left join contract c
+                             on e.id = c.id
+            where e.type = 'CONTRACT'
+              and ${(extraConditions && extraConditions.join(' and ') + ' and ') || ''} e.${columnName} = $3`;
   };
 
   const timestampConditions = ['c.timestamp_range && $1', 'c.timestamp_range && $2'];
@@ -317,12 +294,9 @@ describe('getContractByIdOrAddressQuery', () => {
       input: {timestampConditions: [], timestampParams: [1234, 5678], contractIdParam: '0.0.2'},
       expectedParams: [1234, 5678, 2],
       expectedQuery: (columnName) => `
-        with contract as (
-          ${queryForTable({table: 'contract', columnName})}
-        ), contract_file as (
-            ${FileDataService.getContractInitCodeFiledataQuery()}
-        )
-        ${mainQuery}`,
+        with contract_entity as (${queryForTable({table: 'entity', columnName})}),
+             contract_file as (${FileDataService.getContractInitCodeFiledataQuery()})
+          ${mainQuery}`,
     },
     {
       name: 'historical',
@@ -338,16 +312,17 @@ describe('getContractByIdOrAddressQuery', () => {
         Buffer.from([112, 242, 178, 145, 74, 42, 75, 120, 63, 174, 251, 117, 244, 89, 165, 128, 97, 111, 203, 94]),
       ],
       expectedQuery: (columnName) => `
-        with contract as (
-            ${queryForTable({table: 'contract', extraConditions: timestampConditions, columnName})}
+        with contract_entity as (${queryForTable({table: 'entity', extraConditions: timestampConditions, columnName})}
             union
-            ${queryForTable({table: 'contract_history', extraConditions: timestampConditions, columnName})}
-            order by timestamp_range desc
-            limit 1
-        ), contract_file as (
-            ${FileDataService.getContractInitCodeFiledataQuery()}
-        )
-        ${mainQuery}`,
+                                ${queryForTable({
+                                  table: 'entity_history',
+                                  extraConditions: timestampConditions,
+                                  columnName,
+                                })}
+                                order by timestamp_range desc
+                                limit 1),
+             contract_file as (${FileDataService.getContractInitCodeFiledataQuery()})
+          ${mainQuery}`,
     },
     {
       name: 'latest',
@@ -363,12 +338,9 @@ describe('getContractByIdOrAddressQuery', () => {
         Buffer.from([112, 242, 178, 145, 74, 42, 75, 120, 63, 174, 251, 117, 244, 89, 165, 128, 97, 111, 203, 94]),
       ],
       expectedQuery: (columnName) => `
-        with contract as (
-          ${queryForTable({table: 'contract', columnName})}
-        ), contract_file as (
-            ${FileDataService.getContractInitCodeFiledataQuery()}
-        )
-        ${mainQuery}`,
+        with contract_entity as (${queryForTable({table: 'entity', columnName})}),
+             contract_file as (${FileDataService.getContractInitCodeFiledataQuery()})
+          ${mainQuery}`,
     },
     {
       name: 'historical',
@@ -376,16 +348,17 @@ describe('getContractByIdOrAddressQuery', () => {
       input: {timestampConditions, timestampParams: [5678, 1234], contractIdParam: '0.0.1'},
       expectedParams: [5678, 1234, 1],
       expectedQuery: (columnName) => `
-        with contract as (
-            ${queryForTable({table: 'contract', extraConditions: timestampConditions, columnName})}
+        with contract_entity as (${queryForTable({table: 'entity', extraConditions: timestampConditions, columnName})}
             union
-            ${queryForTable({table: 'contract_history', extraConditions: timestampConditions, columnName})}
-            order by timestamp_range desc
-            limit 1
-        ), contract_file as (
-            ${FileDataService.getContractInitCodeFiledataQuery()}
-        )
-        ${mainQuery}`,
+                                ${queryForTable({
+                                  table: 'entity_history',
+                                  extraConditions: timestampConditions,
+                                  columnName,
+                                })}
+                                order by timestamp_range desc
+                                limit 1),
+             contract_file as (${FileDataService.getContractInitCodeFiledataQuery()})
+          ${mainQuery}`,
     },
     {
       name: 'latest',
@@ -393,11 +366,8 @@ describe('getContractByIdOrAddressQuery', () => {
       input: {timestampConditions: [], timestampParams: [1234, 5678], contractIdParam: '0.0.924569'},
       expectedParams: [1234, 5678, 924569],
       expectedQuery: (columnName) => `
-        with contract as (
-          ${queryForTable({table: 'contract', columnName})}
-          ), contract_file as (
-          ${FileDataService.getContractInitCodeFiledataQuery()}
-          )
+        with contract_entity as (${queryForTable({table: 'entity', columnName})}),
+             contract_file as (${FileDataService.getContractInitCodeFiledataQuery()})
           ${mainQuery}`,
     },
     {
@@ -406,12 +376,9 @@ describe('getContractByIdOrAddressQuery', () => {
       input: {timestampConditions: [], timestampParams: [1234, 5678], contractIdParam: '1.1.924569'},
       expectedParams: [1234, 5678, 281479272602521],
       expectedQuery: (columnName) => `
-        with contract as (
-          ${queryForTable({table: 'contract', columnName})}
-        ), contract_file as (
-            ${FileDataService.getContractInitCodeFiledataQuery()}
-        )
-        ${mainQuery}`,
+        with contract_entity as (${queryForTable({table: 'entity', columnName})}),
+             contract_file as (${FileDataService.getContractInitCodeFiledataQuery()})
+          ${mainQuery}`,
     },
   ];
 
@@ -419,7 +386,7 @@ describe('getContractByIdOrAddressQuery', () => {
     test(`${spec.name}`, () => {
       const actualContract = contracts.getContractByIdOrAddressQuery(spec.input);
       const actualQuery = actualContract.query;
-      const expectedQuery = spec.expectedQuery(spec.isCreate2Test ? Contract.EVM_ADDRESS : Contract.ID);
+      const expectedQuery = spec.expectedQuery(spec.isCreate2Test ? Entity.EVM_ADDRESS : Entity.ID);
       assertSqlQueryEqual(actualQuery, expectedQuery);
       expect(actualContract.params).toEqual(spec.expectedParams);
     });
@@ -435,23 +402,27 @@ describe('getContractsQuery', () => {
         limitQuery: 'limit $1',
         order: 'asc',
       },
-      expected: `select ${contractFields}
-        from contract c
-        order by c.id asc
-        limit $1`,
+      expected: `select ${contracts.contractSelectFields}
+                 from entity e
+                        left join contract c
+                                  on e.id = c.id
+                 order by e.id asc
+                 limit $1`,
     },
     {
       name: 'non-empty whereQuery',
       input: {
-        whereQuery: 'where c.id <= $1',
+        whereQuery: 'where e.id <= $1',
         limitQuery: 'limit $2',
         order: 'desc',
       },
-      expected: `select ${contractFields}
-        from contract c
-        where c.id <= $1
-        order by c.id desc
-        limit $2`,
+      expected: `select ${contracts.contractSelectFields}
+                 from entity e
+                        left join contract c
+                                  on e.id = c.id
+                 where e.id <= $1
+                 order by e.id desc
+                 limit $2`,
     },
   ];
 

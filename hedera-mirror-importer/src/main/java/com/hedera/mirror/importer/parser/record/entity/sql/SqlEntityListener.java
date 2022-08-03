@@ -44,7 +44,6 @@ import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.entity.AbstractCryptoAllowance;
-import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.AbstractNftAllowance;
 import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
@@ -130,7 +129,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<TransactionSignature> transactionSignatures;
 
     // maps of upgradable domains
-    private final Map<Long, Contract> contractState;
     private final Map<AbstractCryptoAllowance.Id, CryptoAllowance> cryptoAllowanceState;
     private final Map<Long, Entity> entityState;
     private final Map<NftId, Nft> nfts;
@@ -188,7 +186,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         transactions = new ArrayList<>();
         transactionSignatures = new ArrayList<>();
 
-        contractState = new HashMap<>();
         cryptoAllowanceState = new HashMap<>();
         entityState = new HashMap<>();
         nfts = new HashMap<>();
@@ -228,7 +225,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         try {
             assessedCustomFees.clear();
             contracts.clear();
-            contractState.clear();
             contractActions.clear();
             contractLogs.clear();
             contractResults.clear();
@@ -331,13 +327,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onContract(Contract contract) {
-        entityIdService.notify(contract);
-        Contract merged = contractState.merge(contract.getId(), contract, this::mergeContract);
-        if (merged == contract) {
-            // only add the merged object to the collection if the state is replaced with the new contract object, i.e.,
-            // attributes only in the previous state are merged into the new contract object
-            contracts.add(merged);
-        }
+        contracts.add(contract);
     }
 
     @Override
@@ -389,6 +379,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             // attributes only in the previous state are merged into the new entity object
             entities.add(entity);
         }
+        entityIdService.notify(entity);
     }
 
     @Override
@@ -506,9 +497,17 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         transactionSignatures.add(transactionSignature);
     }
 
-    private <T extends AbstractEntity> T mergeAbstractEntity(T previous, T current) {
+    private CryptoAllowance mergeCryptoAllowance(CryptoAllowance previous, CryptoAllowance current) {
+        previous.setTimestampUpper(current.getTimestampLower());
+        return current;
+    }
+
+    private Entity mergeEntity(Entity previous, Entity current) {
         // This entity should not trigger a history record, so just copy common non-history fields, if set, to previous
         if (!current.isHistory()) {
+            if (current.getEthereumNonce() != null) {
+                previous.setEthereumNonce(current.getEthereumNonce());
+            }
             if (current.getStakePeriodStart() != null) {
                 previous.setStakePeriodStart(current.getStakePeriodStart());
             }
@@ -520,6 +519,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         var dest = previous.isHistory() ? current : previous;
 
         // Copy non-updatable fields from src
+        dest.setAlias(src.getAlias());
         dest.setCreatedTimestamp(src.getCreatedTimestamp());
         dest.setEvmAddress(src.getEvmAddress());
 
@@ -539,6 +539,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             dest.setDeleted(src.getDeleted());
         }
 
+        if (dest.getEthereumNonce() == null) {
+            dest.setEthereumNonce(src.getEthereumNonce());
+        }
+
         if (dest.getExpirationTimestamp() == null) {
             dest.setExpirationTimestamp(src.getExpirationTimestamp());
         }
@@ -547,12 +551,28 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             dest.setKey(src.getKey());
         }
 
+        if (dest.getMaxAutomaticTokenAssociations() == null) {
+            dest.setMaxAutomaticTokenAssociations(src.getMaxAutomaticTokenAssociations());
+        }
+
         if (dest.getMemo() == null) {
             dest.setMemo(src.getMemo());
         }
 
+        if (dest.getObtainerId() == null) {
+            dest.setObtainerId(src.getObtainerId());
+        }
+
+        if (dest.getPermanentRemoval() == null) {
+            dest.setPermanentRemoval(src.getPermanentRemoval());
+        }
+
         if (dest.getProxyAccountId() == null) {
             dest.setProxyAccountId(src.getProxyAccountId());
+        }
+
+        if (dest.getReceiverSigRequired() == null) {
+            dest.setReceiverSigRequired(src.getReceiverSigRequired());
         }
 
         if (dest.getStakedAccountId() == null) {
@@ -567,6 +587,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             dest.setStakePeriodStart(src.getStakePeriodStart());
         }
 
+        if (dest.getSubmitKey() == null) {
+            dest.setSubmitKey(src.getSubmitKey());
+        }
+
         // There is at least one entity with history. If there is one without history, it must be dest and just copy the
         // timestamp range from src to dest. Otherwise, both have history, and it's a normal merge from previous to
         // current, so close the src entity's timestamp range
@@ -574,71 +598,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             dest.setTimestampRange(src.getTimestampRange());
         } else {
             src.setTimestampUpper(dest.getTimestampLower());
-        }
-
-        return dest;
-    }
-
-    private Contract mergeContract(Contract previous, Contract current) {
-        var merged = mergeAbstractEntity(previous, current);
-
-        // Merge consistently
-        var src = merged == current ? previous : current;
-        var dest = merged == current ? current : previous;
-
-        dest.setFileId(src.getFileId());
-        dest.setInitcode(src.getInitcode());
-        dest.setRuntimeBytecode(src.getRuntimeBytecode());
-
-        if (dest.getMaxAutomaticTokenAssociations() == null) {
-            dest.setMaxAutomaticTokenAssociations(src.getMaxAutomaticTokenAssociations());
-        }
-
-        if (dest.getObtainerId() == null) {
-            dest.setObtainerId(src.getObtainerId());
-        }
-
-        if (dest.getPermanentRemoval() == null) {
-            dest.setPermanentRemoval(src.getPermanentRemoval());
-        }
-
-        return dest;
-    }
-
-    private CryptoAllowance mergeCryptoAllowance(CryptoAllowance previous, CryptoAllowance current) {
-        previous.setTimestampUpper(current.getTimestampLower());
-        return current;
-    }
-
-    private Entity mergeEntity(Entity previous, Entity current) {
-        var merged = mergeAbstractEntity(previous, current);
-
-        // This entity should not trigger a history record, so just copy non-history fields, if set, to previous
-        if (!current.isHistory()) {
-            if (current.getEthereumNonce() != null) {
-                previous.setEthereumNonce(current.getEthereumNonce());
-            }
-            return previous;
-        }
-
-        // Merge consistently
-        var src = merged == current ? previous : current;
-        var dest = merged == current ? current : previous;
-
-        if (dest.getEthereumNonce() == null) {
-            dest.setEthereumNonce(src.getEthereumNonce());
-        }
-
-        if (dest.getMaxAutomaticTokenAssociations() == null) {
-            dest.setMaxAutomaticTokenAssociations(src.getMaxAutomaticTokenAssociations());
-        }
-
-        if (dest.getReceiverSigRequired() == null) {
-            dest.setReceiverSigRequired(src.getReceiverSigRequired());
-        }
-
-        if (dest.getSubmitKey() == null) {
-            dest.setSubmitKey(src.getSubmitKey());
         }
 
         return dest;

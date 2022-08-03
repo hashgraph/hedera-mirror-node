@@ -23,7 +23,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import com.hederahashgraph.api.proto.java.ContractID;
 import javax.inject.Named;
 
-import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
@@ -32,7 +32,7 @@ import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @Named
-class ContractDeleteTransactionHandler extends AbstractEntityCrudTransactionHandler<Contract> {
+class ContractDeleteTransactionHandler extends AbstractEntityCrudTransactionHandler<Entity> {
 
     ContractDeleteTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
                                      RecordParserProperties recordParserProperties) {
@@ -56,7 +56,7 @@ class ContractDeleteTransactionHandler extends AbstractEntityCrudTransactionHand
     }
 
     @Override
-    protected void doUpdateEntity(Contract contract, RecordItem recordItem) {
+    protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
         var transactionBody = recordItem.getTransactionBody().getContractDeleteInstance();
         EntityId obtainerId = null;
 
@@ -66,9 +66,8 @@ class ContractDeleteTransactionHandler extends AbstractEntityCrudTransactionHand
             obtainerId = entityIdService.lookup(transactionBody.getTransferContractID());
         }
 
-        contract.setObtainerId(obtainerId);
-        contract.setPermanentRemoval(transactionBody.getPermanentRemoval());
-
-        entityListener.onContract(contract);
+        entity.setObtainerId(obtainerId);
+        entity.setPermanentRemoval(transactionBody.getPermanentRemoval());
+        entityListener.onEntity(entity);
     }
 }

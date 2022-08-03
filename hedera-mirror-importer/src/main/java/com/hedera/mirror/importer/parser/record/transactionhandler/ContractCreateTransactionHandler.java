@@ -24,6 +24,7 @@ import javax.inject.Named;
 
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractResult;
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
@@ -37,7 +38,7 @@ import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionPars
 import com.hedera.mirror.importer.util.Utility;
 
 @Named
-class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHandler<Contract> {
+class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHandler<Entity> {
 
     private final EntityProperties entityProperties;
     private final EthereumTransactionParser ethereumTransactionParser;
@@ -72,8 +73,8 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
     }
 
     @Override
-    @SuppressWarnings("java:S1874")
-    protected void doUpdateEntity(Contract contract, RecordItem recordItem) {
+    @SuppressWarnings({"deprecation", "java:S1874"})
+    protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
         if (!entityProperties.getPersist().isContracts()) {
             return;
         }
@@ -84,16 +85,36 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
         if (transactionBody.hasAutoRenewAccountId()) {
             getAccountId(transactionBody.getAutoRenewAccountId())
                     .map(EntityId::getId)
-                    .ifPresent(contract::setAutoRenewAccountId);
+                    .ifPresent(entity::setAutoRenewAccountId);
         }
 
         if (transactionBody.hasAutoRenewPeriod()) {
-            contract.setAutoRenewPeriod(transactionBody.getAutoRenewPeriod().getSeconds());
+            entity.setAutoRenewPeriod(transactionBody.getAutoRenewPeriod().getSeconds());
+        }
+
+        if (contractCreateResult.hasEvmAddress()) {
+            entity.setEvmAddress(DomainUtils.toBytes(contractCreateResult.getEvmAddress().getValue()));
         }
 
         if (transactionBody.hasAdminKey()) {
-            contract.setKey(transactionBody.getAdminKey().toByteArray());
+            entity.setKey(transactionBody.getAdminKey().toByteArray());
         }
+
+        if (transactionBody.hasProxyAccountID()) {
+            entity.setProxyAccountId(EntityId.of(transactionBody.getProxyAccountID()));
+        }
+
+        entity.setMaxAutomaticTokenAssociations(transactionBody.getMaxAutomaticTokenAssociations());
+        entity.setMemo(transactionBody.getMemo());
+        updateStakingInfo(recordItem, entity);
+        createContract(recordItem, entity);
+        entityListener.onEntity(entity);
+    }
+
+    private void createContract(RecordItem recordItem, Entity entity) {
+        var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
+        Contract contract = new Contract();
+        contract.setId(entity.getId());
 
         switch (transactionBody.getInitcodeSourceCase()) {
             case FILEID:
@@ -106,11 +127,13 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
                 break;
         }
 
+        var contractId = recordItem.getRecord().getReceipt().getContractID();
         var sidecarRecords = recordItem.getSidecarRecords();
+
         for (var sidecar : sidecarRecords) {
             if (sidecar.hasBytecode() && !sidecar.getMigration()) {
                 var bytecode = sidecar.getBytecode();
-                if (contract.equalsContractID(bytecode.getContractId())) {
+                if (contractId.equals(bytecode.getContractId())) {
                     if (contract.getInitcode() == null) {
                         contract.setInitcode(DomainUtils.toBytes(bytecode.getInitcode()));
                     }
@@ -121,27 +144,13 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
             }
         }
 
-        contract.setMaxAutomaticTokenAssociations(transactionBody.getMaxAutomaticTokenAssociations());
-
-        if (transactionBody.hasProxyAccountID()) {
-            contract.setProxyAccountId(EntityId.of(transactionBody.getProxyAccountID()));
-        }
-
-        if (contractCreateResult.hasEvmAddress()) {
-            contract.setEvmAddress(DomainUtils.toBytes(contractCreateResult.getEvmAddress().getValue()));
-        }
-
-        contract.setMemo(transactionBody.getMemo());
-
         // for child transactions FileID is located in parent ContractCreate/EthereumTransaction types
         // and initcode is located in the sidecar
         updateChildFromParent(contract, recordItem);
-        updateStakingInfo(recordItem, contract);
-
         entityListener.onContract(contract);
     }
 
-    private void updateStakingInfo(RecordItem recordItem, Contract contract) {
+    private void updateStakingInfo(RecordItem recordItem, Entity contract) {
         var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
         contract.setDeclineReward(transactionBody.getDeclineReward());
 
@@ -175,23 +184,20 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
             return;
         }
 
-        // parents may be ContractCreate or EthereumTransaction
+        // Parents may be either ContractCreate or EthereumTransaction
         var parentRecordItem = recordItem.getParent();
-        switch (TransactionType.of(parentRecordItem.getTransactionType())) {
-            case CONTRACTCREATEINSTANCE:
-                updateChildFromContractCreateParent(contract, parentRecordItem);
-                break;
-            case ETHEREUMTRANSACTION:
-                updateChildFromEthereumTransactionParent(contract, parentRecordItem);
-                break;
-            default:
-                break;
+        var type = TransactionType.of(parentRecordItem.getTransactionType());
+
+        switch (type) {
+            case CONTRACTCREATEINSTANCE -> updateChildFromContractCreateParent(contract, parentRecordItem);
+            case ETHEREUMTRANSACTION -> updateChildFromEthereumTransactionParent(contract, parentRecordItem);
+            default -> {}
         }
     }
 
     private void updateChildFromContractCreateParent(Contract contract, RecordItem recordItem) {
-        var transactionBody = recordItem.getTransactionBody()
-                .getContractCreateInstance();
+        var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
+
         switch (transactionBody.getInitcodeSourceCase()) {
             case FILEID:
                 if (contract.getFileId() == null) {
@@ -213,15 +219,15 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
         var body = recordItem.getTransactionBody().getEthereumTransaction();
 
         // use callData FileID if present
-        if (body.hasCallData()) {
+        if (body.hasCallData() && contract.getFileId() == null) {
             contract.setFileId(EntityId.of(body.getCallData()));
             return;
         }
 
-        var ethereumDataBytes = DomainUtils.toBytes(body.getEthereumData());
-        var ethereumTransaction = ethereumTransactionParser.decode(ethereumDataBytes);
-
         if (contract.getInitcode() == null) {
+            var ethereumDataBytes = DomainUtils.toBytes(body.getEthereumData());
+            var ethereumTransaction = ethereumTransactionParser.decode(ethereumDataBytes);
+
             contract.setInitcode(ethereumTransaction.getCallData());
         }
     }

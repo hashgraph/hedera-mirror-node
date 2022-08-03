@@ -41,6 +41,7 @@ import org.hibernate.annotations.TypeDef;
 import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.converter.RangeToStringDeserializer;
 import com.hedera.mirror.common.converter.RangeToStringSerializer;
+import com.hedera.mirror.common.converter.UnknownIdConverter;
 import com.hedera.mirror.common.domain.History;
 import com.hedera.mirror.common.domain.Upsertable;
 import com.hedera.mirror.common.util.DomainUtils;
@@ -61,8 +62,11 @@ import com.hedera.mirror.common.util.DomainUtils;
 public abstract class AbstractEntity implements History {
 
     public static final long ACCOUNT_ID_CLEARED = 0L;
-
     public static final long NODE_ID_CLEARED = -1L;
+
+    @Column(updatable = false)
+    @ToString.Exclude
+    private byte[] alias;
 
     private Long autoRenewAccountId;
 
@@ -74,6 +78,8 @@ public abstract class AbstractEntity implements History {
     private Boolean declineReward;
 
     private Boolean deleted;
+
+    private Long ethereumNonce;
 
     @Column(updatable = false)
     @ToString.Exclude
@@ -94,6 +100,11 @@ public abstract class AbstractEntity implements History {
     @Column(updatable = false)
     private Long num;
 
+    @Convert(converter = UnknownIdConverter.class)
+    private EntityId obtainerId;
+
+    private Boolean permanentRemoval;
+
     @Convert(converter = AccountIdConverter.class)
     private EntityId proxyAccountId;
 
@@ -101,6 +112,8 @@ public abstract class AbstractEntity implements History {
 
     @Column(updatable = false)
     private Long realm;
+
+    private Boolean receiverSigRequired;
 
     @Column(updatable = false)
     private Long shard;
@@ -111,14 +124,17 @@ public abstract class AbstractEntity implements History {
 
     private Long stakePeriodStart;
 
-    @Column(updatable = false)
-    @Enumerated(EnumType.STRING)
-    @Type(type = "pgsql_enum")
-    private EntityType type;
+    @ToString.Exclude
+    private byte[] submitKey;
 
     @JsonDeserialize(using = RangeToStringDeserializer.class)
     @JsonSerialize(using = RangeToStringSerializer.class)
     private Range<Long> timestampRange;
+
+    @Column(updatable = false)
+    @Enumerated(EnumType.STRING)
+    @Type(type = "pgsql_enum")
+    private EntityType type;
 
     public void setKey(byte[] key) {
         this.key = key;

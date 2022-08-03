@@ -9,7 +9,7 @@
 ## GRPC API
 
 The GRPC process is a Java-based application and should be able to run on any platform that Java supports. That said, we
-recommend Ubuntu 18.04 be used as the base operating system as that is the only OS we've tested against.
+recommend Ubuntu 22.04 be used as the base operating system as that is the only OS we've tested against.
 
 ### File Layout
 
@@ -64,7 +64,7 @@ grpcurl -plaintext -d '{"topicID":{"shardNum":0,"realmNum":0,"topicNum":{topicNu
 ## Importer
 
 The Importer process is a Java-based application and should be able to run on any platform that Java supports. That
-said, we recommend Ubuntu 18.04 be used as the base operating system as that is the only OS we've tested against.
+said, we recommend Ubuntu 22.04 be used as the base operating system as that is the only OS we've tested against.
 
 ### File Layout
 
@@ -160,17 +160,16 @@ recommend running it as a Docker container via [Docker Compose](/docker-compose.
 ### Initial Installation
 
 The REST API runs on [Node.js](https://nodejs.org) and should be able to run on any platform that Node.js supports. That
-said, we recommend Ubuntu 18.04 be used as the base operating system as that is the only OS we've tested against. It is
+said, we recommend Ubuntu 22.04 be used as the base operating system as that is the only OS we've tested against. It is
 also recommended to create a `restapi` user and execute all commands as that user.
 
 ```shell script
-sudo apt-get install build-essential libssl-dev git postgresql-client
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
-bash # reload shell
-nvm install --lts #pin the current lts version node and npm provided by node distribution
-npm install -g pm2
+sudo apt install nodejs npm
+sudo npm install -g pm2
+sudo useradd --create-home restapi
 sudo mkdir -p /opt/restapi
 sudo chown restapi: /opt/restapi
+sudo su - restapi
 cd /opt/restapi
 cat > application.yml <<EOF
 hedera:
@@ -180,17 +179,8 @@ hedera:
         host: dbhost
         password: mirror_api_pass
 EOF
-wget "https://github.com/hashgraph/hedera-mirror-node/releases/download/${VERSION}/hedera-mirror-rest-${VERSION}.tgz"
 tar --strip-components=1 -xvf hedera-mirror-rest-v*.tgz
 pm2 start pm2.json
-```
-
-Please set `VERSION` to a release tag listed [here](https://github.com/hashgraph/hedera-mirror-node/releases).
-
-You can use the following shell command to get the latest release tag:
-
-```shell script
-VERSION=$(curl -s https://github.com/hashgraph/hedera-mirror-node/releases/latest | sed -n -e 's/^.*\(v[0-9.]\+\).*$/\1/p')
 ```
 
 ### File Layout
@@ -300,10 +290,9 @@ Where `swagger` is the default metrics path as controlled by `hedera.mirror.rest
 ### Initial Installation / Upgrade
 
 The Rosetta API runs on [Go](https://golang.org/) and should be able to run on any platform that Golang supports. That
-said, we recommend Ubuntu 18.04 be used as the base operating system as that is the only OS we've tested against.
+said, we recommend Ubuntu 22.04 be used as the base operating system as that is the only OS we've tested against.
 
 ```shell script
-wget "https://github.com/hashgraph/hedera-mirror-node/releases/download/v0.27.0/hedera-mirror-rosetta-v0.27.0.tgz"
 tar -xvf hedera-mirror-rosetta-v*.tgz
 cd hedera-mirror-rosetta-*/scripts
 sudo ./deploy.sh

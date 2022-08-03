@@ -20,22 +20,11 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.ContractFunctionResult;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.ContractLoginfo;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import java.util.ArrayList;
-import java.util.List;
-import javax.inject.Named;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
-import org.apache.commons.codec.binary.Hex;
-
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
@@ -51,6 +40,18 @@ import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHa
 import com.hedera.mirror.importer.util.Utility;
 import com.hedera.services.stream.proto.ContractBytecode;
 import com.hedera.services.stream.proto.ContractStateChange;
+
+import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.ContractLoginfo;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+import org.apache.commons.codec.binary.Hex;
+import javax.inject.Named;
+import java.util.ArrayList;
+import java.util.List;
 
 @Log4j2
 @Named
@@ -68,6 +69,7 @@ public class ContractResultServiceImpl implements ContractResultService {
             return;
         }
 
+        var transactionBody = recordItem.getTransactionBody();
         var transactionRecord = recordItem.getRecord();
         var functionResult = transactionRecord.hasContractCreateResult() ?
                 transactionRecord.getContractCreateResult() : transactionRecord.getContractCallResult();
@@ -75,18 +77,16 @@ public class ContractResultServiceImpl implements ContractResultService {
         processSidecarRecords(recordItem);
 
         // handle non create/call transactions
-        if (!isContractCreateOrCall(recordItem
-                .getTransactionBody()) && !isValidContractFunctionResult(functionResult)) {
+        if (!isContractCreateOrCall(transactionBody) && !isValidContractFunctionResult(functionResult)) {
             // if transaction is neither a create/call and has no valid ContractFunctionResult then skip
             return;
         }
 
         // contractResult
-        TransactionHandler transactionHandler = transactionHandlerFactory
-                .get(TransactionType.of(transaction.getType()));
+        var transactionHandler = transactionHandlerFactory.get(TransactionType.of(transaction.getType()));
 
         // in pre-compile case transaction is not a contract type and entityId will be of a different type
-        var contractId = isContractCreateOrCall(recordItem.getTransactionBody()) ? transaction.getEntityId() :
+        var contractId = isContractCreateOrCall(transactionBody) ? transaction.getEntityId() :
                 entityIdService.lookup(functionResult.getContractID());
         processContractResult(recordItem, contractId, functionResult, transactionHandler);
     }
@@ -100,10 +100,13 @@ public class ContractResultServiceImpl implements ContractResultService {
     }
 
     private void migrateBytecode(ContractBytecode contractBytecode) {
-        var contractId = entityIdService.lookup(contractBytecode.getContractId());
-        Contract contract = contractId.toEntity();
+        var entity = EntityId.of(contractBytecode.getContractId()).toEntity();
+        Contract contract = new Contract();
+        contract.setId(entity.getId());
         contract.setRuntimeBytecode(DomainUtils.toBytes(contractBytecode.getRuntimeBytecode()));
-        //contract.setTimestampRange(null);
+        // Should entity have timestamp_range set to null?
+
+        // Here -> Add all contract migration info into a collection; and then put them all in a single db update.
 
         entityListener.onContract(contract);
     }
@@ -115,15 +118,15 @@ public class ContractResultServiceImpl implements ContractResultService {
             case CALLING_CONTRACT -> contractAction.setCaller(EntityId.of(action.getCallingContract()));
             case CALLING_ACCOUNT -> contractAction.setCaller(EntityId.of(action.getCallingAccount()));
             default ->
-                    throw new InvalidDatasetException("Invalid Contract Action Caller Case: " + action.getCallerCase());
+                    throw new InvalidDatasetException("Invalid caller for contract action: " + action.getCallerCase());
         }
 
         switch (action.getRecipientCase()) {
             case RECIPIENT_ACCOUNT -> contractAction.setRecipientAccount(EntityId.of(action.getRecipientAccount()));
             case RECIPIENT_CONTRACT -> contractAction.setRecipientContract(EntityId.of(action.getRecipientContract()));
             case INVALID_SOLIDITY_ADDRESS ->
-                    contractAction.setRecipientAddress(DomainUtils.toBytes(action.getInvalidSolidityAddress()));
-            default -> throw new InvalidDatasetException("Invalid recipient case for contract action: " +
+                    contractAction.setRecipientAddress(action.getInvalidSolidityAddress().toByteArray());
+            default -> throw new InvalidDatasetException("Invalid recipient for contract action: " +
                     action.getRecipientCase());
         }
 
@@ -131,7 +134,7 @@ public class ContractResultServiceImpl implements ContractResultService {
             case ERROR -> contractAction.setResultData(DomainUtils.toBytes(action.getError()));
             case REVERT_REASON -> contractAction.setResultData(DomainUtils.toBytes(action.getRevertReason()));
             case OUTPUT -> contractAction.setResultData(DomainUtils.toBytes(action.getOutput()));
-            default -> throw new InvalidDatasetException("Invalid result data case for contract action: " +
+            default -> throw new InvalidDatasetException("Invalid result data for contract action: " +
                     action.getResultDataCase());
         }
 
@@ -250,17 +253,17 @@ public class ContractResultServiceImpl implements ContractResultService {
     }
 
     private void processCreatedContractEntity(RecordItem recordItem, EntityId contractEntityId) {
-        Contract contract = contractEntityId.toEntity();
-        contract.setCreatedTimestamp(recordItem.getConsensusTimestamp());
-        contract.setDeleted(false);
-        contract.setMaxAutomaticTokenAssociations(0);
-        contract.setTimestampLower(recordItem.getConsensusTimestamp());
+        Entity entity = contractEntityId.toEntity();
+        entity.setCreatedTimestamp(recordItem.getConsensusTimestamp());
+        entity.setDeleted(false);
+        entity.setMaxAutomaticTokenAssociations(0);
+        entity.setTimestampLower(recordItem.getConsensusTimestamp());
 
         if (recordItem.getTransactionBody().hasContractCreateInstance()) {
-            updateContractEntityOnCreate(contract, recordItem);
+            updateContractEntityOnCreate(entity, recordItem);
         }
 
-        entityListener.onContract(contract);
+        entityListener.onEntity(entity);
     }
 
     private void processSidecarRecords(RecordItem recordItem) {
@@ -290,29 +293,36 @@ public class ContractResultServiceImpl implements ContractResultService {
      * contract creation is externalized into its own synthesized contract create transaction and should be processed by
      * ContractCreateTransactionHandler.
      *
-     * @param contract   The contract entity
+     * @param entity     The contract entity
      * @param recordItem The recordItem in which the contract is created
      */
-    private void updateContractEntityOnCreate(Contract contract, RecordItem recordItem) {
+    @SuppressWarnings("deprecation")
+    private void updateContractEntityOnCreate(Entity entity, RecordItem recordItem) {
         var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
 
         if (transactionBody.hasAutoRenewPeriod()) {
-            contract.setAutoRenewPeriod(transactionBody.getAutoRenewPeriod().getSeconds());
+            entity.setAutoRenewPeriod(transactionBody.getAutoRenewPeriod().getSeconds());
         }
 
         if (transactionBody.hasAdminKey()) {
-            contract.setKey(transactionBody.getAdminKey().toByteArray());
+            entity.setKey(transactionBody.getAdminKey().toByteArray());
         }
 
         if (transactionBody.hasProxyAccountID()) {
-            contract.setProxyAccountId(EntityId.of(transactionBody.getProxyAccountID()));
+            entity.setProxyAccountId(EntityId.of(transactionBody.getProxyAccountID()));
         }
 
+        entity.setMemo(transactionBody.getMemo());
+
+        Contract contract = new Contract();
+        contract.setId(entity.getId());
+
+        // No need to check initcode and other newer fields since they weren't available in older HAPI versions
         if (transactionBody.hasFileID()) {
             contract.setFileId(EntityId.of(transactionBody.getFileID()));
         }
 
-        contract.setMemo(transactionBody.getMemo());
+        entityListener.onContract(contract);
     }
 
     /**

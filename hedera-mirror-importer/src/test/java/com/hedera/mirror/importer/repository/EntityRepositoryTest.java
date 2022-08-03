@@ -25,26 +25,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
 import java.util.List;
-import javax.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
-import org.springframework.jdbc.core.JdbcOperations;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 
-import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.entity.Entity;
 
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class EntityRepositoryTest extends AbstractRepositoryTest {
 
     private static final RowMapper<Entity> ROW_MAPPER = rowMapper(Entity.class);
 
-    @Resource
-    private DomainBuilder domainBuilder;
-
-    @Resource
-    private EntityRepository entityRepository;
-
-    @Resource
-    private JdbcOperations jdbcOperations;
+    private final EntityRepository entityRepository;
 
     @Test
     void nullCharacter() {
@@ -105,5 +98,14 @@ class EntityRepositoryTest extends AbstractRepositoryTest {
         byte[] alias = entity.getAlias();
 
         assertThat(entityRepository.findByAlias(alias)).get().isEqualTo(entity.getId());
+    }
+
+    @Test
+    void findByEvmAddress() {
+        Entity entity = domainBuilder.entity().persist();
+        Entity entityDeleted = domainBuilder.entity().customize((b) -> b.deleted(true)).persist();
+        assertThat(entityRepository.findByEvmAddress(entity.getEvmAddress())).get().isEqualTo(entity.getId());
+        assertThat(entityRepository.findByEvmAddress(entityDeleted.getEvmAddress())).isEmpty();
+        assertThat(entityRepository.findByEvmAddress(new byte[] {1, 2, 3})).isEmpty();
     }
 }

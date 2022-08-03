@@ -60,12 +60,11 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.inject.Named;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
-import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.Nft;
@@ -112,38 +111,19 @@ import com.hedera.mirror.importer.util.Utility;
 @Log4j2
 @Named
 @ConditionOnEntityRecordParser
+@RequiredArgsConstructor
 public class EntityRecordItemListener implements RecordItemListener {
+
     private final AddressBookService addressBookService;
+    private final CommonParserProperties commonParserProperties;
     private final ContractResultService contractResultService;
     private final EntityIdService entityIdService;
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
     private final FileDataRepository fileDataRepository;
     private final NonFeeTransferExtractionStrategy nonFeeTransfersExtractor;
-    private final Predicate<TransactionFilterFields> transactionFilter;
     private final RecordParserProperties parserProperties;
     private final TransactionHandlerFactory transactionHandlerFactory;
-
-    public EntityRecordItemListener(CommonParserProperties commonParserProperties, EntityProperties entityProperties,
-                                    AddressBookService addressBookService,
-                                    NonFeeTransferExtractionStrategy nonFeeTransfersExtractor,
-                                    EntityIdService entityIdService,
-                                    EntityListener entityListener,
-                                    TransactionHandlerFactory transactionHandlerFactory,
-                                    FileDataRepository fileDataRepository,
-                                    RecordParserProperties parserProperties,
-                                    ContractResultService contractResultService) {
-        this.addressBookService = addressBookService;
-        this.contractResultService = contractResultService;
-        this.entityIdService = entityIdService;
-        this.entityListener = entityListener;
-        this.entityProperties = entityProperties;
-        this.fileDataRepository = fileDataRepository;
-        this.nonFeeTransfersExtractor = nonFeeTransfersExtractor;
-        this.parserProperties = parserProperties;
-        this.transactionHandlerFactory = transactionHandlerFactory;
-        transactionFilter = commonParserProperties.getFilter();
-    }
 
     @Override
     public void onItem(RecordItem recordItem) throws ImporterException {
@@ -166,7 +146,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
         // to:do - exclude Freeze from Filter transaction type
         TransactionFilterFields transactionFilterFields = new TransactionFilterFields(entityId, transactionType);
-        if (!transactionFilter.test(transactionFilterFields)) {
+        if (!commonParserProperties.getFilter().test(transactionFilterFields)) {
             log.debug("Ignoring transaction. consensusTimestamp={}, transactionType={}, entityId={}",
                     consensusTimestamp, transactionType, entityId);
             return;
@@ -426,12 +406,6 @@ public class EntityRecordItemListener implements RecordItemListener {
             account.setStakePeriodStart(stakePeriodStart);
             account.setTimestampRange(null); // Don't trigger a history row
             entityListener.onEntity(account);
-
-            Contract contract = EntityId.of(account.getShard(), account.getRealm(), account.getNum(),
-                    EntityType.CONTRACT).toEntity();
-            contract.setStakePeriodStart(stakePeriodStart);
-            contract.setTimestampRange(null); // Don't trigger a history row
-            entityListener.onContract(contract);
         }
     }
 

@@ -24,7 +24,6 @@ import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.from;
 
-import com.google.common.collect.Iterables;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -46,7 +45,6 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 import javax.annotation.Resource;
@@ -56,7 +54,6 @@ import org.springframework.transaction.support.TransactionTemplate;
 import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.StreamType;
-import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -353,17 +350,13 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
         return transactionRepository.findById(DomainUtils.timeStampInNanos(consensusTimestamp)).get();
     }
 
-    protected <T extends AbstractEntity> T getTransactionEntity(Timestamp consensusTimestamp) {
+    protected Entity getTransactionEntity(Timestamp consensusTimestamp) {
         var transaction = transactionRepository.findById(DomainUtils.timeStampInNanos(consensusTimestamp)).get();
         return getEntity(transaction.getEntityId());
     }
 
-    protected <T extends AbstractEntity> T getEntity(EntityId entityId) {
-        Optional<Contract> contract = contractRepository.findById(entityId.getId());
-        if (contract.isPresent()) {
-            return (T) contract.get();
-        }
-        return (T) entityRepository.findById(entityId.getId()).get();
+    protected Entity getEntity(EntityId entityId) {
+        return entityRepository.findById(entityId.getId()).get();
     }
 
     protected AccountAmount.Builder accountAmount(long accountNum, long amount) {
@@ -436,7 +429,7 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
             return;
         }
 
-        assertThat(Iterables.concat(contractRepository.findAll(), entityRepository.findAll()))
+        assertThat(entityRepository.findAll())
                 .hasSize(entityIds.length)
                 .allMatch(entity -> entity.getId() > 0)
                 .allMatch(entity -> entity.getType() != null)
@@ -500,29 +493,33 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
     protected void buildContractStateChanges(ContractStateChanges.Builder builder) {
         // 3 state changes, no value written, valid value written and zero value written
         builder.addContractStateChanges(
-            ContractStateChange.newBuilder()
-                .setContractId(CONTRACT_ID)
-                .addStorageChanges(StorageChange.newBuilder()
-                        .setSlot(ByteString
-                                .copyFromUtf8("0x000000000000000000"))
-                        .setValueRead(ByteString
-                                .copyFromUtf8("0xaf846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0"))
-                        .build())
-                .addStorageChanges(StorageChange.newBuilder()
-                        .setSlot(ByteString
-                                .copyFromUtf8("0x000000000000000001"))
-                        .setValueRead(ByteString
-                                .copyFromUtf8("0xaf846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0"))
-                        .setValueWritten(BytesValue.of(ByteString
-                                .copyFromUtf8("0x000000000000000000000000000000000000000000c2a8c408d0e29d623347c5")))
-                        .build())
-                .addStorageChanges(StorageChange.newBuilder()
-                        .setSlot(ByteString
-                                .copyFromUtf8("0x00000000000000002"))
-                        .setValueRead(ByteString
-                                .copyFromUtf8("0xaf846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0"))
-                        .setValueWritten(BytesValue.of(ByteString.copyFromUtf8("0")))
-                        .build())
-                .build());
+                ContractStateChange.newBuilder()
+                        .setContractId(CONTRACT_ID)
+                        .addStorageChanges(StorageChange.newBuilder()
+                                .setSlot(ByteString
+                                        .copyFromUtf8("0x000000000000000000"))
+                                .setValueRead(ByteString
+                                        .copyFromUtf8(
+                                                "0xaf846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0"))
+                                .build())
+                        .addStorageChanges(StorageChange.newBuilder()
+                                .setSlot(ByteString
+                                        .copyFromUtf8("0x000000000000000001"))
+                                .setValueRead(ByteString
+                                        .copyFromUtf8(
+                                                "0xaf846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0"))
+                                .setValueWritten(BytesValue.of(ByteString
+                                        .copyFromUtf8(
+                                                "0x000000000000000000000000000000000000000000c2a8c408d0e29d623347c5")))
+                                .build())
+                        .addStorageChanges(StorageChange.newBuilder()
+                                .setSlot(ByteString
+                                        .copyFromUtf8("0x00000000000000002"))
+                                .setValueRead(ByteString
+                                        .copyFromUtf8(
+                                                "0xaf846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0"))
+                                .setValueWritten(BytesValue.of(ByteString.copyFromUtf8("0")))
+                                .build())
+                        .build());
     }
 }
