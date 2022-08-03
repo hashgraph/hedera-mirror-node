@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.evm.exception;
+package com.hedera.mirror.api.contract.evm.properties;
 
 /*-
  * ‌
@@ -20,9 +20,13 @@ package com.hedera.mirror.web3.evm.exception;
  * ‍
  */
 
-public class MissingResultException extends EvmException {
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
-    public MissingResultException(String message) {
-        super(message);
-    }
+@ConfigurationProperties(prefix = "hedera.mirror.web3.evm")
+@Data
+public class EvmProperties {
+
+    private int chainId = 298;
+    private int maxGasRefundPercentage = 20;
 }

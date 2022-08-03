@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.evm;
+package com.hedera.mirror.api.contract.controller;
 
 /*-
  * ‌
@@ -20,13 +20,16 @@ package com.hedera.mirror.web3.evm;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import java.time.Instant;
+import lombok.Data;
 
-// FUTURE WORK This should move to an interface when evm-module is complete
-public class SimulatedPricesSource {
+@Data
+final class JsonRpcSuccessResponse<T> extends JsonRpcResponse {
 
-    public long currentGasPrice(final Instant now, final HederaFunctionality function) {
-        return 0L;
+    static final String SUCCESS = "SUCCESS";
+
+    private T result;
+
+    String getStatus() {
+        return SUCCESS;
     }
 }

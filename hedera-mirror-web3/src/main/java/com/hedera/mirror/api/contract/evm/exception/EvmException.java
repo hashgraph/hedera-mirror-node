@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.repository;
+package com.hedera.mirror.api.contract.evm.exception;
 
 /*-
  * ‌
@@ -20,14 +20,17 @@ package com.hedera.mirror.web3.repository;
  * ‍
  */
 
-import java.util.Optional;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.CrudRepository;
+public abstract class EvmException extends RuntimeException {
 
-import com.hedera.mirror.common.domain.contract.Contract;
+    public EvmException(String message) {
+        super(message);
+    }
 
-public interface ContractRepository extends CrudRepository<Contract, Long> {
+    public EvmException(Throwable throwable) {
+        super(throwable);
+    }
 
-    @Query(value = "select num from contract order by id desc limit 1", nativeQuery=true)
-    Optional<Long> findLatestNum();
+    public EvmException(String message, Throwable throwable) {
+        super(message, throwable);
+    }
 }

@@ -56,17 +56,18 @@ import org.hyperledger.besu.evm.processor.AbstractMessageProcessor;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
-import com.hedera.mirror.web3.evm.OracleSimulator;
-import com.hedera.mirror.web3.evm.SimulatedPricesSource;
-import com.hedera.mirror.web3.evm.SimulatedUpdater;
-import com.hedera.mirror.web3.evm.properties.EvmProperties;
-import com.hedera.mirror.web3.evm.properties.BlockMetaSourceProvider;
-import com.hedera.mirror.web3.evm.properties.SimulatedBlockMetaSource;
+import com.hedera.mirror.api.contract.evm.OracleSimulator;
+import com.hedera.mirror.api.contract.evm.SimulatedPricesSource;
+import com.hedera.mirror.api.contract.evm.SimulatedUpdater;
+import com.hedera.mirror.api.contract.evm.properties.BlockMetaSourceProvider;
+import com.hedera.mirror.api.contract.evm.properties.EvmProperties;
+import com.hedera.mirror.api.contract.service.eth.AccountDto;
 import com.hedera.services.transaction.HederaMessageCallProcessor;
 import com.hedera.services.transaction.TransactionProcessingResult;
 import com.hedera.services.transaction.exception.InvalidTransactionException;
 import com.hedera.services.transaction.exception.ValidationUtils;
 import com.hedera.services.transaction.models.Account;
+import com.hedera.services.transaction.models.Id;
 
 /**
  * Abstract processor of EVM transactions that prepares the {@link EVM} and all of the peripherals upon
@@ -74,7 +75,7 @@ import com.hedera.services.transaction.models.Account;
  * {@link EvmTxProcessor#execute(Account, Address, long, long, long, Bytes, boolean, Instant, boolean, StorageExpiry.Oracle, Address, BigInteger, long, Account)}
  * method that handles the end-to-end execution of a EVM transaction.
  */
-abstract class EvmTxProcessor {
+public abstract class EvmTxProcessor {
     private static final int MAX_STACK_SIZE = 1024;
     private static final int MAX_CODE_SIZE = 0x6000;
     private static final List<ContractValidationRule> VALIDATION_RULES =
@@ -175,8 +176,8 @@ abstract class EvmTxProcessor {
      * 		the mirror form of the receiving {@link Address}; or the newly created address
      * @return the result of the EVM execution returned as {@link TransactionProcessingResult}
      */
-    protected TransactionProcessingResult execute(
-            final Account sender,
+    public TransactionProcessingResult execute(
+            final AccountDto sender,
             final Address receiver,
             final long gasPrice,
             final long gasLimit,
@@ -189,18 +190,18 @@ abstract class EvmTxProcessor {
             final Address mirrorReceiver,
             final BigInteger userOfferedGasPrice,
             final long maxGasAllowanceInTinybars,
-            final Account relayer
+            final AccountDto relayer
     ) {
         final Wei gasCost = Wei.of(Math.multiplyExact(gasLimit, gasPrice));
         final Wei upfrontCost = gasCost.add(value);
         final long intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
 
-        final var senderAccount = worldUpdater.getOrCreateSenderAccount(sender.getId().asEvmAddress());
+        final var senderAccount = worldUpdater.getOrCreateSenderAccount(new Id(0, 0, sender.getNum()).asEvmAddress());
         final MutableAccount mutableSender = senderAccount.getMutable();
 
         MutableAccount mutableRelayer = null;
         if (relayer != null) {
-            final var relayerAccount = worldUpdater.getOrCreateSenderAccount(relayer.getId().asEvmAddress());
+            final var relayerAccount = worldUpdater.getOrCreateSenderAccount(new Id(0, 0, relayer.getNum()).asEvmAddress());
             mutableRelayer = relayerAccount.getMutable();
         }
         if (!isStatic) {
@@ -241,6 +242,7 @@ abstract class EvmTxProcessor {
             }
         }
 
+        final var coinbase = Address.ZERO;
         final var blockValues = blockMetaSource.computeBlockValues(gasLimit);
         final var gasAvailable = gasLimit - intrinsicGas;
         final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
@@ -264,11 +266,14 @@ abstract class EvmTxProcessor {
                         .completer(unused -> {
                         })
                         .isStatic(isStatic)
+                        .miningBeneficiary(coinbase)
                         .blockHashLookup(blockMetaSource::getBlockHash)
-                        .contextVariables(Map.of(
+                        .contextVariables(
+                                Map.of(
                                 "sbh", storageByteHoursTinyBarsGiven(consensusTime),
-                                "HederaFunctionality", getFunctionType(),
-                                EXPIRY_ORACLE_CONTEXT_KEY, expiryOracle));
+                                "HederaFunctionality", getFunctionType())
+//                                EXPIRY_ORACLE_CONTEXT_KEY, expiryOracle)
+                        );
 
         final MessageFrame initialFrame = buildInitialFrame(commonInitialFrame, receiver, payload, value);
         messageFrameStack.addFirst(initialFrame);

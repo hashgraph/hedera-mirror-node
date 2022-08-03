@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.repository;
+package com.hedera.mirror.api.contract.service.eth;
 
 /*-
  * ‌
@@ -20,14 +20,8 @@ package com.hedera.mirror.web3.repository;
  * ‍
  */
 
-import java.util.Optional;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.CrudRepository;
+import com.hedera.mirror.web3.service.Web3Service;
 
-import com.hedera.mirror.common.domain.contract.Contract;
+public interface EthService<I, O> extends Web3Service<I, O> {
 
-public interface ContractRepository extends CrudRepository<Contract, Long> {
-
-    @Query(value = "select num from contract order by id desc limit 1", nativeQuery=true)
-    Optional<Long> findLatestNum();
 }

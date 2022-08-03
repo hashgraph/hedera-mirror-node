@@ -1,10 +1,10 @@
-package com.hedera.mirror.web3.evm;
+package com.hedera.mirror.api.contract.evm;
 
 /*-
  * ‌
- * Hedera Services Node
+ * Hedera Mirror Node
  * ​
- * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,14 +20,15 @@ package com.hedera.mirror.web3.evm;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import java.time.Instant;
 import javax.inject.Singleton;
-import org.hyperledger.besu.datatypes.Address;
 
+// FUTURE WORK This should move to an interface when evm-module is complete
 @Singleton
-public class AliasesResolver {
+public class SimulatedPricesSource {
 
-    //FUTURE WORK implementation to be provided in separate PR
-    Address resolveForEvm(final Address addressOrAlias) {
-        return null;
+    public long currentGasPrice(final Instant now, final HederaFunctionality function) {
+        return 0L;
     }
 }

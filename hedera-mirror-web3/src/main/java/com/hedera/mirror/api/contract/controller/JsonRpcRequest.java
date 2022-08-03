@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.repository;
+package com.hedera.mirror.api.contract.controller;
 
 /*-
  * ‌
@@ -20,14 +20,27 @@ package com.hedera.mirror.web3.repository;
  * ‍
  */
 
-import java.util.Optional;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.CrudRepository;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.PositiveOrZero;
+import lombok.Data;
 
-import com.hedera.mirror.common.domain.contract.Contract;
+@Data
+class JsonRpcRequest<T> {
 
-public interface ContractRepository extends CrudRepository<Contract, Long> {
+    @NotNull
+    @PositiveOrZero
+    private Long id;
 
-    @Query(value = "select num from contract order by id desc limit 1", nativeQuery=true)
-    Optional<Long> findLatestNum();
+    @NotBlank
+    private String jsonrpc;
+
+    @NotBlank
+    private String method;
+
+    private T params;
+
+    @JsonIgnore
+    private final long startTime = System.nanoTime();
 }

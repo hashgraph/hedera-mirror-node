@@ -31,4 +31,7 @@ public interface EntityRepository extends CrudRepository<Entity, Long> {
     //FUTURE WORK Coffeine cache to be added
     @Query(value = "select ethereumNonce from entity where evmAddress = ?1 and deleted <> true", nativeQuery = true)
     Optional<Long> findAccountNonceByAddress(byte[] alias);
+
+    @Query(value = "select * from entity where evmAddress = ?1 and deleted <> true", nativeQuery = true)
+    Optional<Entity> findAccountByAddress(byte[] alias);
 }

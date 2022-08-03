@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.repository;
+package com.hedera.mirror.api.contract.exception;
 
 /*-
  * ‌
@@ -20,14 +20,9 @@ package com.hedera.mirror.web3.repository;
  * ‍
  */
 
-import java.util.Optional;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.CrudRepository;
+public class InvalidParametersException extends ApiContractException {
 
-import com.hedera.mirror.common.domain.contract.Contract;
-
-public interface ContractRepository extends CrudRepository<Contract, Long> {
-
-    @Query(value = "select num from contract order by id desc limit 1", nativeQuery=true)
-    Optional<Long> findLatestNum();
+    public InvalidParametersException(String message) {
+        super(message);
+    }
 }

@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.evm.properties;
+package com.hedera.mirror.api.contract.controller;
 
 /*-
  * ‌
@@ -20,26 +20,15 @@ package com.hedera.mirror.web3.evm.properties;
  * ‍
  */
 
-import java.util.Optional;
-import lombok.Value;
-import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.units.bigints.UInt256;
-import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.frame.BlockValues;
+import lombok.Data;
 
-/**
- * Mirror-node adapted {@link BlockValues}
- */
-@Value
-public class SimulatedBlockMetaSource implements BlockValues {
+@Data
+abstract class JsonRpcResponse {
 
-    private static Optional<Wei> zeroWei = Optional.of(Wei.ZERO);
+    public static final String VERSION = "2.0";
 
-    Optional<Wei> baseFee = zeroWei;
-    Bytes difficultyBytes = UInt256.ZERO;
+    private Long id;
+    private final String jsonrpc = VERSION;
 
-    //Used for constructor
-    long gasLimit;
-    long number;
-    long timestamp;
+    abstract String getStatus();
 }

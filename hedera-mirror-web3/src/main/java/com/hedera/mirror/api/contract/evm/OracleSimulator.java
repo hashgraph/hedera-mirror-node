@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.evm.exception;
+package com.hedera.mirror.api.contract.evm;
 
 /*-
  * ‌
@@ -20,17 +20,14 @@ package com.hedera.mirror.web3.evm.exception;
  * ‍
  */
 
-public abstract class EvmException extends RuntimeException {
+import javax.inject.Singleton;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
-    public EvmException(String message) {
-        super(message);
-    }
+// FUTURE WORK This should move to an interface when evm-module is complete
+@Singleton
+public class OracleSimulator {
 
-    public EvmException(Throwable throwable) {
-        super(throwable);
-    }
-
-    public EvmException(String message, Throwable throwable) {
-        super(message, throwable);
+    public long storageExpiryIn(final MessageFrame frame) {
+        return 0L;
     }
 }

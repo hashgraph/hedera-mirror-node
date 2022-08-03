@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.evm;
+package com.hedera.mirror.api.contract.evm;
 
 /*-
  * ‌
@@ -20,9 +20,9 @@ package com.hedera.mirror.web3.evm;
  * ‍
  */
 
-import static com.hedera.mirror.web3.evm.utils.AddressUtils.asEvmAddress;
-import static com.hedera.mirror.web3.evm.utils.AddressUtils.realmFromEvmAddress;
-import static com.hedera.mirror.web3.evm.utils.AddressUtils.shardFromEvmAddress;
+import static com.hedera.mirror.api.contract.evm.utils.AddressUtils.asEvmAddress;
+import static com.hedera.mirror.api.contract.evm.utils.AddressUtils.realmFromEvmAddress;
+import static com.hedera.mirror.api.contract.evm.utils.AddressUtils.shardFromEvmAddress;
 import static com.hedera.services.transaction.store.contracts.WorldStateTokenAccount.TOKEN_PROXY_ACCOUNT_NONCE;
 
 import java.util.ArrayList;
@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import javax.inject.Singleton;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -52,7 +51,7 @@ import com.hedera.services.transaction.store.contracts.UpdateTrackingLedgerAccou
 import com.hedera.services.transaction.store.contracts.WorldStateAccount;
 import com.hedera.services.transaction.store.contracts.WorldStateTokenAccount;
 
-@Singleton
+//@Singleton
 @RequiredArgsConstructor
 public class SimulatedUpdater implements HederaWorldUpdater {
 
@@ -75,7 +74,8 @@ public class SimulatedUpdater implements HederaWorldUpdater {
     public EvmAccount createAccount(
             final Address addressOrAlias, final long nonce, final Wei balance) {
         final var address = aliasesResolver.resolveForEvm(addressOrAlias);
-        final var newMutable = new UpdateTrackingLedgerAccount<>(address);
+        final var newMutable =
+                new UpdateTrackingLedgerAccount<>(address != null ? address : Address.ZERO);
         newMutable.setNonce(nonce);
         newMutable.setBalance(balance);
 

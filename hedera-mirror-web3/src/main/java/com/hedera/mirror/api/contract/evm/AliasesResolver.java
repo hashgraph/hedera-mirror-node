@@ -1,10 +1,10 @@
-package com.hedera.mirror.web3.evm;
+package com.hedera.mirror.api.contract.evm;
 
 /*-
  * ‌
- * Hedera Mirror Node
+ * Hedera Services Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,14 @@ package com.hedera.mirror.web3.evm;
  * ‍
  */
 
-import org.hyperledger.besu.evm.frame.MessageFrame;
+import javax.inject.Singleton;
+import org.hyperledger.besu.datatypes.Address;
 
-// FUTURE WORK This should move to an interface when evm-module is complete
-public class OracleSimulator {
+@Singleton
+public class AliasesResolver {
 
-    public long storageExpiryIn(final MessageFrame frame) {
-        return 0L;
+    //FUTURE WORK implementation to be provided in separate PR
+    Address resolveForEvm(final Address addressOrAlias) {
+        return null;
     }
 }

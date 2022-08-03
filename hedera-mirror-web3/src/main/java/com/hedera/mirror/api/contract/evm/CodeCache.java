@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.evm;
+package com.hedera.mirror.api.contract.evm;
 
 /*-
  * ‌
@@ -20,10 +20,12 @@ package com.hedera.mirror.web3.evm;
  * ‍
  */
 
+import javax.inject.Singleton;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Code;
 
 //FUTURE WORK to be implemented in separate PR
+@Singleton
 public class CodeCache {
 
     public Code getIfPresent(final Address address) {

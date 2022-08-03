@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.evm.properties;
+package com.hedera.mirror.api.contract.evm.properties;
 
 /*-
  * ‌
@@ -20,13 +20,26 @@ package com.hedera.mirror.web3.evm.properties;
  * ‍
  */
 
-import lombok.Data;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import java.util.Optional;
+import lombok.Value;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.units.bigints.UInt256;
+import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.frame.BlockValues;
 
-@ConfigurationProperties(prefix = "hedera.mirror.web3.evm")
-@Data
-public class EvmProperties {
+/**
+ * Mirror-node adapted {@link BlockValues}
+ */
+@Value
+public class SimulatedBlockMetaSource implements BlockValues {
 
-    private int chainId = 298;
-    private int maxGasRefundPercentage = 20;
+    private static Optional<Wei> zeroWei = Optional.of(Wei.ZERO);
+
+    Optional<Wei> baseFee = zeroWei;
+    Bytes difficultyBytes = UInt256.ZERO;
+
+    //Used for constructor
+    long gasLimit;
+    long number;
+    long timestamp;
 }

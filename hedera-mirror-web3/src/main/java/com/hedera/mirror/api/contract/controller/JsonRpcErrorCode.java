@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.repository;
+package com.hedera.mirror.api.contract.controller;
 
 /*-
  * ‌
@@ -20,14 +20,21 @@ package com.hedera.mirror.web3.repository;
  * ‍
  */
 
-import java.util.Optional;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.CrudRepository;
+import com.fasterxml.jackson.annotation.JsonValue;
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
-import com.hedera.mirror.common.domain.contract.Contract;
+@Getter
+@RequiredArgsConstructor
+enum JsonRpcErrorCode {
 
-public interface ContractRepository extends CrudRepository<Contract, Long> {
+    INTERNAL_ERROR(-32603, "Unknown error invoking RPC"),
+    INVALID_PARAMS(-32602, "Invalid params"),
+    INVALID_REQUEST(-32600, "Invalid request"),
+    METHOD_NOT_FOUND(-32601, "Unsupported JSON-RPC method"),
+    PARSE_ERROR(-32700, "Unable to parse JSON");
 
-    @Query(value = "select num from contract order by id desc limit 1", nativeQuery=true)
-    Optional<Long> findLatestNum();
+    @JsonValue
+    private final int code;
+    private final String message;
 }
