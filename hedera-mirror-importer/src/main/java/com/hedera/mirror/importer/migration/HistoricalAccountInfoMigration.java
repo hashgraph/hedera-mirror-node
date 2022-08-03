@@ -43,17 +43,15 @@ import org.flywaydb.core.api.configuration.Configuration;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.Resource;
-import org.springframework.data.repository.CrudRepository;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
-import com.hedera.mirror.common.domain.entity.AbstractEntity;
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 
 @Named
@@ -63,7 +61,6 @@ public class HistoricalAccountInfoMigration extends MirrorBaseJavaMigration {
     static final Instant EXPORT_DATE = Instant.parse("2019-09-14T00:00:10Z");
 
     private final Set<Long> contractIds = new HashSet<>();
-    private final ContractRepository contractRepository;
     private final EntityRepository entityRepository;
     private final NamedParameterJdbcTemplate jdbcOperations;
     private final MirrorProperties mirrorProperties;
@@ -114,7 +111,7 @@ public class HistoricalAccountInfoMigration extends MirrorBaseJavaMigration {
 
         Stopwatch stopwatch = Stopwatch.createStarted();
         loadContractIds();
-        moveContractEntities();
+        fixContractEntities();
         processFile(stopwatch);
     }
 
@@ -146,16 +143,14 @@ public class HistoricalAccountInfoMigration extends MirrorBaseJavaMigration {
         }
     }
 
-    private void moveContractEntities() {
-        int inserted = jdbcOperations.update("with contract_entity as (" +
-                        "delete from entity where id in (:ids) returning *) " +
-                        "insert into contract (auto_renew_period,created_timestamp,deleted,expiration_timestamp," +
-                        "id,key,memo,num,proxy_account_id,public_key,realm,shard,timestamp_range)" +
-                        "select auto_renew_period,created_timestamp,deleted,expiration_timestamp,id,key,memo,num," +
-                        "proxy_account_id,public_key,realm,shard,timestamp_range from contract_entity " +
-                        "on conflict do nothing",
+    private void fixContractEntities() {
+        int inserted = jdbcOperations.update("update entity set type = 'CONTRACT' where id in (:ids)",
                 new MapSqlParameterSource("ids", contractIds));
-        log.info("Moved {} rows from entity to contract table", inserted);
+        log.info("Changed {} entity to be type contract", inserted);
+
+        inserted = jdbcOperations.update("update entity_history set type = 'CONTRACT' where id in (:ids)",
+                new MapSqlParameterSource("ids", contractIds));
+        log.info("Changed {} entity_history to be type contract", inserted);
     }
 
     private AccountInfo parse(String line) {
@@ -180,17 +175,16 @@ public class HistoricalAccountInfoMigration extends MirrorBaseJavaMigration {
         }
 
         EntityId entityId = EntityIdEndec.decode(id, entityType);
-        CrudRepository<AbstractEntity, Long> repository = getRepository(entityType);
-        Optional<AbstractEntity> currentEntity = repository.findById(entityId.getId());
+        Optional<Entity> currentEntity = entityRepository.findById(entityId.getId());
         boolean exists = currentEntity.isPresent();
 
-        AbstractEntity entity = currentEntity.orElseGet(entityId::toEntity);
+        Entity entity = currentEntity.orElseGet(entityId::toEntity);
         boolean updated = !exists;
 
         // All regular accounts have a key so if it's missing we know it had to have been created before the reset.
         // All contract accounts don't have to have a key, but luckily in our file they do.
         if (exists && ArrayUtils.isNotEmpty(entity.getKey())) {
-            log.trace("Skipping entity {} that was created after the reset", entityId::entityIdToString);
+            log.trace("Skipping entity {} that was created after the reset", entityId::toString);
             return false;
         }
 
@@ -233,17 +227,9 @@ public class HistoricalAccountInfoMigration extends MirrorBaseJavaMigration {
 
         if (updated) {
             log.info("Saving {} entity: {}", exists ? "existing" : "new", entity);
-            repository.save(entity);
+            entityRepository.save(entity);
         }
 
         return updated;
-    }
-
-    private <T extends AbstractEntity> CrudRepository<T, Long> getRepository(EntityType type) {
-        if (type == EntityType.CONTRACT) {
-            return (CrudRepository<T, Long>) contractRepository;
-        } else {
-            return (CrudRepository<T, Long>) entityRepository;
-        }
     }
 }

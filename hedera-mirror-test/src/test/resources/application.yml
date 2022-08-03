@@ -6,7 +6,5 @@ hedera:
         # grpc endpoint
         mirrorNodeAddress: hcs.testnet.mirrornode.hedera.com:5600
         network: testnet
-        operatorId:
-        operatorKey:
         rest:
           baseUrl: http://testnet.mirrornode.hedera.com/api/v1

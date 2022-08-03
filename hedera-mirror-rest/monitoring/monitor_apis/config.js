@@ -34,6 +34,7 @@ const REQUIRED_FIELDS = [
   'account.intervalMultiplier',
   'balance.freshnessThreshold',
   'balance.intervalMultiplier',
+  'network.intervalMultiplier',
   'stateproof.intervalMultiplier',
   'transaction.freshnessThreshold',
   'transaction.intervalMultiplier',

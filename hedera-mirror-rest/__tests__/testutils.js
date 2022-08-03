@@ -61,7 +61,7 @@ const formatSqlQueryString = (query) => {
     .replace(/\(\s+/g, '(')
     .replace(/\s+\)/g, ')')
     .replace(/\s+/g, ' ')
-    .replace(/,\s+/g, ',')
+    .replace(/\s*,\s+/g, ',')
     .toLowerCase();
 };
 

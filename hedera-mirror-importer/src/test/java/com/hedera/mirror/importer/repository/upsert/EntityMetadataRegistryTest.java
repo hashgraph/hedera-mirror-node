@@ -31,7 +31,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hedera.mirror.common.domain.UpsertColumn;
 import com.hedera.mirror.common.domain.Upsertable;
-import com.hedera.mirror.common.domain.contract.Contract;
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.importer.IntegrationTest;
 
@@ -42,43 +42,45 @@ class EntityMetadataRegistryTest extends IntegrationTest {
 
     @Test
     void lookup() {
-        var all = "auto_renew_account_id,auto_renew_period,created_timestamp,decline_reward,deleted,evm_address," +
-                "expiration_timestamp,file_id,id,initcode,key,max_automatic_token_associations,memo,num,obtainer_id," +
-                "permanent_removal,proxy_account_id,public_key,realm,runtime_bytecode,shard,stake_period_start,staked_account_id," +
-                "staked_node_id,timestamp_range,type";
+        var all = "alias,auto_renew_account_id,auto_renew_period,created_timestamp,decline_reward,deleted," +
+                "ethereum_nonce,evm_address,expiration_timestamp,id,key,max_automatic_token_associations,memo,num," +
+                "obtainer_id,permanent_removal,proxy_account_id,public_key,realm,receiver_sig_required,shard," +
+                "stake_period_start,staked_account_id,staked_node_id,submit_key,timestamp_range,type";
 
-        var nullable = "auto_renew_account_id,auto_renew_period,created_timestamp,deleted,evm_address," +
-                "expiration_timestamp,file_id,initcode,key,max_automatic_token_associations,obtainer_id," +
-                "permanent_removal,proxy_account_id,public_key,runtime_bytecode,stake_period_start,staked_account_id,staked_node_id";
-        var updatable = "auto_renew_account_id,auto_renew_period,decline_reward,deleted,expiration_timestamp,key," +
-                "max_automatic_token_associations,memo,obtainer_id,permanent_removal,proxy_account_id,public_key," +
-                "runtime_bytecode,stake_period_start,staked_account_id,staked_node_id,timestamp_range";
+        var nullable = "alias,auto_renew_account_id,auto_renew_period,created_timestamp,deleted,ethereum_nonce," +
+                "evm_address,expiration_timestamp,key,max_automatic_token_associations,obtainer_id," +
+                "permanent_removal,proxy_account_id,public_key,receiver_sig_required,stake_period_start," +
+                "staked_account_id,staked_node_id,submit_key";
+        var updatable = "auto_renew_account_id,auto_renew_period,decline_reward,deleted,ethereum_nonce," +
+                "expiration_timestamp,key,max_automatic_token_associations,memo,obtainer_id,permanent_removal," +
+                "proxy_account_id,public_key,receiver_sig_required,stake_period_start,staked_account_id," +
+                "staked_node_id,submit_key,timestamp_range";
 
-        var contract = domainBuilder.contract().get();
-        var newValue = -99999L;
-        var metadata = registry.lookup(Contract.class);
+        var entity = domainBuilder.entity().get();
+        var newValue = new byte[] {0, 1, 2};
+        var metadata = registry.lookup(Entity.class);
 
         assertThat(metadata)
                 .isNotNull()
-                .returns("contract", EntityMetadata::getTableName)
+                .returns("entity", EntityMetadata::getTableName)
                 .returns(true, e -> e.getUpsertable().history())
                 .returns("id", e -> e.columns(ColumnMetadata::isId, "{0}"))
                 .returns(all, e -> e.columns("{0}"))
                 .returns(nullable, e -> e.columns(ColumnMetadata::isNullable, "{0}"))
                 .returns(updatable, e -> e.columns(ColumnMetadata::isUpdatable, "{0}"))
                 .extracting(EntityMetadata::getColumns, InstanceOfAssertFactories.ITERABLE)
-                .hasSize(26)
+                .hasSize(27)
                 .first(InstanceOfAssertFactories.type(ColumnMetadata.class))
-                .returns("auto_renew_account_id", ColumnMetadata::getName)
-                .returns(Long.class, ColumnMetadata::getType)
+                .returns("alias", ColumnMetadata::getName)
+                .returns(byte[].class, ColumnMetadata::getType)
                 .returns(false, ColumnMetadata::isId)
                 .returns(true, ColumnMetadata::isNullable)
                 .returns(null, ColumnMetadata::getDefaultValue)
-                .returns(true, ColumnMetadata::isUpdatable)
+                .returns(false, ColumnMetadata::isUpdatable)
                 .returns(null, ColumnMetadata::getUpsertColumn)
-                .satisfies(cm -> assertThat(cm.getGetter().apply(contract)).isEqualTo(contract.getAutoRenewAccountId()))
-                .satisfies(cm -> assertThatCode(() -> cm.getSetter().accept(contract, newValue))
-                        .satisfies(d -> assertThat(contract.getAutoRenewAccountId()).isEqualTo(newValue)));
+                .satisfies(cm -> assertThat(cm.getGetter().apply(entity)).isEqualTo(entity.getAlias()))
+                .satisfies(cm -> assertThatCode(() -> cm.getSetter().accept(entity, newValue))
+                        .satisfies(d -> assertThat(entity.getAlias()).isEqualTo(newValue)));
     }
 
     @Test

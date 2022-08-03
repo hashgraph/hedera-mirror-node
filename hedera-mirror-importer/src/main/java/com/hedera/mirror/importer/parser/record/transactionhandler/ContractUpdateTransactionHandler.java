@@ -25,8 +25,8 @@ import static com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody.S
 import com.hederahashgraph.api.proto.java.ContractID;
 import javax.inject.Named;
 
-import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
@@ -37,7 +37,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.util.Utility;
 
 @Named
-class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler<Contract> {
+class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler<Entity> {
 
     ContractUpdateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
                                      RecordParserProperties recordParserProperties) {
@@ -63,38 +63,38 @@ class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHand
     // We explicitly ignore the updated fileID field since hedera nodes do not allow changing the bytecode after create
     @SuppressWarnings("java:S1874")
     @Override
-    protected void doUpdateEntity(Contract contract, RecordItem recordItem) {
+    protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
         var transactionBody = recordItem.getTransactionBody().getContractUpdateInstance();
 
         if (transactionBody.hasExpirationTime()) {
-            contract.setExpirationTimestamp(DomainUtils.timestampInNanosMax(transactionBody.getExpirationTime()));
+            entity.setExpirationTimestamp(DomainUtils.timestampInNanosMax(transactionBody.getExpirationTime()));
         }
 
         if (transactionBody.hasAutoRenewAccountId()) {
             getAccountId(transactionBody.getAutoRenewAccountId())
                     .map(EntityId::getId)
-                    .ifPresent(contract::setAutoRenewAccountId);
+                    .ifPresent(entity::setAutoRenewAccountId);
         }
 
         if (transactionBody.hasAutoRenewPeriod()) {
-            contract.setAutoRenewPeriod(transactionBody.getAutoRenewPeriod().getSeconds());
+            entity.setAutoRenewPeriod(transactionBody.getAutoRenewPeriod().getSeconds());
         }
 
         if (transactionBody.hasAdminKey()) {
-            contract.setKey(transactionBody.getAdminKey().toByteArray());
+            entity.setKey(transactionBody.getAdminKey().toByteArray());
         }
 
         if (transactionBody.hasMaxAutomaticTokenAssociations()) {
-            contract.setMaxAutomaticTokenAssociations(transactionBody.getMaxAutomaticTokenAssociations().getValue());
+            entity.setMaxAutomaticTokenAssociations(transactionBody.getMaxAutomaticTokenAssociations().getValue());
         }
 
         switch (transactionBody.getMemoFieldCase()) {
             case MEMOWRAPPER:
-                contract.setMemo(transactionBody.getMemoWrapper().getValue());
+                entity.setMemo(transactionBody.getMemoWrapper().getValue());
                 break;
             case MEMO:
                 if (transactionBody.getMemo().length() > 0) {
-                    contract.setMemo(transactionBody.getMemo());
+                    entity.setMemo(transactionBody.getMemo());
                 }
                 break;
             default:
@@ -102,36 +102,36 @@ class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHand
         }
 
         if (transactionBody.hasProxyAccountID()) {
-            contract.setProxyAccountId(EntityId.of(transactionBody.getProxyAccountID()));
+            entity.setProxyAccountId(EntityId.of(transactionBody.getProxyAccountID()));
         }
 
-        updateStakingInfo(recordItem, contract);
-        entityListener.onContract(contract);
+        updateStakingInfo(recordItem, entity);
+        entityListener.onEntity(entity);
     }
 
-    private void updateStakingInfo(RecordItem recordItem, Contract contract) {
+    private void updateStakingInfo(RecordItem recordItem, Entity entity) {
         var transactionBody = recordItem.getTransactionBody().getContractUpdateInstance();
         if (transactionBody.hasDeclineReward()) {
-            contract.setDeclineReward(transactionBody.getDeclineReward().getValue());
+            entity.setDeclineReward(transactionBody.getDeclineReward().getValue());
         }
 
         switch (transactionBody.getStakedIdCase()) {
             case STAKEDID_NOT_SET:
                 break;
             case STAKED_NODE_ID:
-                contract.setStakedNodeId(transactionBody.getStakedNodeId());
-                contract.setStakedAccountId(AbstractEntity.ACCOUNT_ID_CLEARED);
+                entity.setStakedNodeId(transactionBody.getStakedNodeId());
+                entity.setStakedAccountId(AbstractEntity.ACCOUNT_ID_CLEARED);
                 break;
             case STAKED_ACCOUNT_ID:
                 EntityId accountId = EntityId.of(transactionBody.getStakedAccountId());
-                contract.setStakedAccountId(accountId.getId());
-                contract.setStakedNodeId(AbstractEntity.NODE_ID_CLEARED);
+                entity.setStakedAccountId(accountId.getId());
+                entity.setStakedNodeId(AbstractEntity.NODE_ID_CLEARED);
                 break;
         }
 
         // If the stake node id or the decline reward value has changed, we start a new stake period.
         if (transactionBody.getStakedIdCase() != STAKEDID_NOT_SET || transactionBody.hasDeclineReward()) {
-            contract.setStakePeriodStart(Utility.getEpochDay(recordItem.getConsensusTimestamp()));
+            entity.setStakePeriodStart(Utility.getEpochDay(recordItem.getConsensusTimestamp()));
         }
     }
 }

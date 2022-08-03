@@ -111,7 +111,7 @@
       {
         "admin_key": {
           "_type": "ProtobufEncoded",
-          "key": "7b2233222c2233222c2233227d"
+          "key": "030303"
         },
         "consensus_timestamp": "1234567890.000030004",
         "creator_account_id": "0.0.1024",
@@ -128,7 +128,7 @@
       {
         "admin_key": {
           "_type": "ProtobufEncoded",
-          "key": "7b2233222c2233222c2233227d"
+          "key": "030303"
         },
         "consensus_timestamp": "1234567890.000030003",
         "creator_account_id": "0.0.1024",
@@ -152,7 +152,7 @@
       {
         "admin_key": {
           "_type": "ProtobufEncoded",
-          "key": "7b2232222c2232222c2232227d"
+          "key": "020202"
         },
         "consensus_timestamp": "1234567890.000020002",
         "creator_account_id": "0.0.1024",
@@ -182,7 +182,7 @@
       {
         "admin_key": {
           "_type": "ProtobufEncoded",
-          "key": "7b2231222c2231222c2231227d"
+          "key": "010101"
         },
         "consensus_timestamp": "1234567890.000010001",
         "creator_account_id": "0.0.1024",

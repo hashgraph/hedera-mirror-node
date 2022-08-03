@@ -31,6 +31,7 @@ import * as utils from '../utils';
 import {
   ExchangeRateSetViewModel,
   NetworkNodeViewModel,
+  NetworkStakeViewModel,
   NetworkSupplyViewModel,
   FeeScheduleViewModel,
 } from '../viewmodel';
@@ -200,6 +201,17 @@ class NetworkController extends BaseController {
     }
 
     res.locals[responseDataLabel] = response;
+  };
+
+  /**
+   * Handler function for /network/stake API.
+   * @param {Request} _req HTTP request object
+   * @param {Response} res HTTP response object
+   * @return {Promise<void>}
+   */
+  getNetworkStake = async (_req, res) => {
+    const networkStake = await NetworkNodeService.getNetworkStake();
+    res.locals[responseDataLabel] = new NetworkStakeViewModel(networkStake);
   };
 
   /**

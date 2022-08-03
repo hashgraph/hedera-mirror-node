@@ -1,4 +1,4 @@
-package com.hedera.mirror.common.domain;
+package com.hedera.mirror.test.e2e.acceptance.props;
 
 /*-
  * ‌
@@ -20,16 +20,17 @@ package com.hedera.mirror.common.domain;
  * ‍
  */
 
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
+import lombok.Data;
 
-public interface Aliasable {
-
-    byte[] getAlias();
-
-    Boolean getDeleted();
-
-    EntityType getType();
-
-    EntityId toEntityId();
+@Data
+public class MirrorNetworkStake {
+    private long maxStakingRewardRatePerHbar;
+    private float nodeRewardFeeFraction;
+    private long stakeTotal;
+    private TimestampRange stakingPeriod;
+    private long stakingPeriodDuration;
+    private long stakingPeriodsStored;
+    private float stakingRewardFeeFraction;
+    private long stakingRewardRate;
+    private long stakingStartThreshold;
 }

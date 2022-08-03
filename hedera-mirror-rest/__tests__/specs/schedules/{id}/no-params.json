@@ -48,7 +48,7 @@
   "responseJson": {
     "admin_key": {
       "_type": "ProtobufEncoded",
-      "key": "7b2231222c2231222c2231227d"
+      "key": "010101"
     },
     "consensus_timestamp": "1234567890.000000001",
     "creator_account_id": "0.0.1024",

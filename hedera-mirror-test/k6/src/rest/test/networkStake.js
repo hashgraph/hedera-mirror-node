@@ -1,5 +1,3 @@
-package com.hedera.mirror.common.domain.entity;
-
 /*-
  * ‌
  * Hedera Mirror Node
@@ -20,29 +18,25 @@ package com.hedera.mirror.common.domain.entity;
  * ‍
  */
 
-import javax.persistence.Column;
-import javax.persistence.MappedSuperclass;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
-import lombok.experimental.SuperBuilder;
+import http from "k6/http";
 
-import com.hedera.mirror.common.domain.Aliasable;
+import {TestScenarioBuilder} from '../../lib/common.js';
+import {urlPrefix} from '../../lib/constants.js';
+import {isSuccess} from "./common.js";
+import {setupTestParameters} from "./bootstrapEnvParameters.js";
 
-@Data
-@MappedSuperclass
-@NoArgsConstructor
-@SuperBuilder
-public abstract class EntityCommon extends AbstractEntity implements Aliasable {
+const urlTag = '/network/stake';
 
-    @Column(updatable = false)
-    @ToString.Exclude
-    private byte[] alias;
+const {options, run} = new TestScenarioBuilder()
+  .name('networkStake') // use unique scenario name among all tests
+  .tags({url: urlTag})
+  .request((testParameters) => {
+    const url = `${testParameters['BASE_URL']}${urlPrefix}${urlTag}`;
+    return http.get(url);
+  })
+  .check('Network stake OK', isSuccess)
+  .build();
 
-    private Long ethereumNonce;
+export {options, run};
 
-    private Boolean receiverSigRequired;
-
-    @ToString.Exclude
-    private byte[] submitKey;
-}
+export const setup = setupTestParameters;

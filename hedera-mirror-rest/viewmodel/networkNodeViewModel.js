@@ -18,8 +18,6 @@
  * ‍
  */
 
-import _ from 'lodash';
-
 import AddressBookServiceEndpointViewModel from './addressBookServiceEndpointViewModel';
 import EntityId from '../entityId';
 import * as utils from '../utils';
@@ -51,16 +49,7 @@ class NetworkNodeViewModel {
     this.stake = nodeStake.stake;
     this.stake_not_rewarded = utils.asNullIfDefault(nodeStake.stakeNotRewarded, -1);
     this.stake_rewarded = nodeStake.stakeRewarded;
-
-    if (_.isNil(nodeStake.stakingPeriod)) {
-      this.staking_period = null;
-    } else {
-      const stakingPeriodStart = BigInt(nodeStake.stakingPeriod) + 1n;
-      this.staking_period = {
-        from: utils.nsToSecNs(stakingPeriodStart),
-        to: utils.incrementTimestampByOneDay(stakingPeriodStart),
-      };
-    }
+    this.staking_period = utils.getStakingPeriod(nodeStake.stakingPeriod);
 
     this.timestamp = {
       from: utils.nsToSecNs(networkNode.addressBook.startConsensusTimestamp),

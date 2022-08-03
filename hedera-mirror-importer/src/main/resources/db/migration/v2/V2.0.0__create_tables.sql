@@ -249,6 +249,8 @@ create table if not exists entity
     max_automatic_token_associations integer               null,
     memo                             text    default ''    not null,
     num                              bigint                not null,
+    obtainer_id                      bigint                null,
+    permanent_removal                boolean               null,
     proxy_account_id                 bigint                null,
     public_key                       character varying     null,
     realm                            bigint                not null,

@@ -20,11 +20,8 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.SystemUndeleteTransactionBody;
 import javax.inject.Named;
 
-import com.hedera.mirror.common.domain.contract.Contract;
-import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
@@ -34,7 +31,7 @@ import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @Named
-class SystemUndeleteTransactionHandler extends AbstractEntityCrudTransactionHandler<AbstractEntity> {
+class SystemUndeleteTransactionHandler extends AbstractEntityCrudTransactionHandler<Entity> {
 
     SystemUndeleteTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
                                      RecordParserProperties recordParserProperties) {
@@ -43,21 +40,19 @@ class SystemUndeleteTransactionHandler extends AbstractEntityCrudTransactionHand
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        SystemUndeleteTransactionBody systemUndelete = recordItem.getTransactionBody().getSystemUndelete();
+        var systemUndelete = recordItem.getTransactionBody().getSystemUndelete();
+
         if (systemUndelete.hasContractID()) {
             return entityIdService.lookup(systemUndelete.getContractID());
         } else if (systemUndelete.hasFileID()) {
             return EntityId.of(systemUndelete.getFileID());
         }
+
         return null;
     }
 
     @Override
-    protected void doUpdateEntity(AbstractEntity entity, RecordItem recordItem) {
-        if (entity instanceof Contract) {
-            entityListener.onContract((Contract) entity);
-        } else {
-            entityListener.onEntity((Entity) entity);
-        }
+    protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
+        entityListener.onEntity(entity);
     }
 }
