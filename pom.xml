@@ -541,7 +541,7 @@
                                             <value>${release.version}</value>
                                         </replacement>
                                         <replacement>
-                                            <token><![CDATA[(?<=(\s{3})version: )[0-9a-zA-Z.-]+]]></token>
+                                            <token><![CDATA[(?<=(\s{3})version: )[0-9a-zA-Z.-]{2,}]]></token>
                                             <value>${release.version}</value>
                                         </replacement>
                                         <replacement>

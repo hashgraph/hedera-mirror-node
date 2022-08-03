@@ -1369,7 +1369,7 @@ components:
           0.0.5: MWY0YmU5OGE3NWE4N2NkNjQ5ZTNlMWE1ODI1OTI3NTgwNWM1Y2RmNjNmYjA0YjMzMTdlZmI1MTEwNzQ2NDVjNw==
           0.0.6: NzNiZTVmMTZkNmY4NTQ4MjdiN2M4MTEzZmFlY2I1YzIwNGI5ZjFkNjhiMzdkMzczNTg4OTRkOWFiZmM5N2U4Mw==
           0.0.7: NDJiZTVmMTZkNmY4NTQ4MjdiN2M4MTEzZmFlY2I1YzIwNGI5ZjFkNjhiMzdkMzczNTg4OTRkOWFiZmM5N2U4Mw==
-        version: 0.63.0-SNAPSHOT
+        version: 6
     TokenAllowancesResponse:
       type: object
       properties:
