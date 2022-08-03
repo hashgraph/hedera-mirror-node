@@ -5,6 +5,8 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 contract EthCall {
 
+    string storageData = "test";
+
     // Pure function without arguments that multiplies two numbers (e.g. return 2*2)
     function multiplySimpleNumbers() public pure returns(uint) {
         return 2 * 2;
@@ -15,11 +17,9 @@ contract EthCall {
         _recipient.transfer(msg.value);
     }
 
-    // External function that writes data to a contract field and then returns the field as a function result
-    function returnGivenData(string memory data) external pure returns (string memory) {
-        string memory result;
-        result = data;
-        return result;
+    // External function that returns a storage field as a function result
+    function returnStorageData() external view returns (string memory) {
+        return storageData;
     }
 
     // External function that has an argument for a token address and using open zeppelin IERC20 interface as a wrapper, returns the token’s name
