@@ -20,6 +20,18 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.ContractLoginfo;
+import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.ArrayList;
+import java.util.List;
+import javax.inject.Named;
+import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
+import org.apache.commons.codec.binary.Hex;
+
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.contract.ContractLog;
@@ -40,18 +52,6 @@ import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHa
 import com.hedera.mirror.importer.util.Utility;
 import com.hedera.services.stream.proto.ContractBytecode;
 import com.hedera.services.stream.proto.ContractStateChange;
-
-import com.hederahashgraph.api.proto.java.ContractFunctionResult;
-import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.ContractLoginfo;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
-import org.apache.commons.codec.binary.Hex;
-import javax.inject.Named;
-import java.util.ArrayList;
-import java.util.List;
 
 @Log4j2
 @Named
@@ -104,10 +104,6 @@ public class ContractResultServiceImpl implements ContractResultService {
         Contract contract = new Contract();
         contract.setId(entity.getId());
         contract.setRuntimeBytecode(DomainUtils.toBytes(contractBytecode.getRuntimeBytecode()));
-        // Should entity have timestamp_range set to null?
-
-        // Here -> Add all contract migration info into a collection; and then put them all in a single db update.
-
         entityListener.onContract(contract);
     }
 

@@ -550,8 +550,8 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         when(entityIdService.lookup(autoRenewAccount)).thenReturn(EntityId.of(autoRenewAccount));
         transactionHandler.updateTransaction(transaction, recordItem);
         assertContract(contractId)
-                .returns(null, Contract::getInitcode);
-        // .returns(null, Contract::getRuntimeBytecode));
+                .returns(null, Contract::getInitcode)
+                .returns(null, Contract::getRuntimeBytecode);
     }
 
     private ObjectAssert<Contract> assertContract(EntityId contractId) {
