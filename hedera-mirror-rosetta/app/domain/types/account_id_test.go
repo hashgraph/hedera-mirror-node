@@ -35,29 +35,33 @@ import (
 )
 
 var (
-	ed25519PrivateKey, _   = hedera.PrivateKeyGenerateEd25519()
-	ed25519PublicKey       = ed25519PrivateKey.PublicKey()
-	secp256k1PrivateKey, _ = hedera.PrivateKeyGenerateEcdsa()
-	secp256k1PublicKey     = secp256k1PrivateKey.PublicKey()
+	ecdsaSecp256k1PublicKeyProtoPrefix = []byte{0x3a, 0x21}
+	ed25519PublicKeyProtoPrefix        = []byte{0x12, 0x20}
 
-	zeroAccountId         = AccountId{}
-	ed25519AliasAccountId = AccountId{
-		aliasKey:  &ed25519PublicKey,
-		alias:     ed25519PublicKey.BytesRaw(),
-		curveType: types.Edwards25519,
-	}
-	secp256k1AliasAccountId = AccountId{
-		aliasKey:  &secp256k1PublicKey,
-		alias:     secp256k1PublicKey.BytesRaw(),
+	ecdsaSecp256k1PrivateKey, _  = hedera.PrivateKeyGenerateEcdsa()
+	ecdsaSecp256k1PublicKey      = ecdsaSecp256k1PrivateKey.PublicKey()
+	ecdsaSecp256k1Alias          = append(ecdsaSecp256k1PublicKeyProtoPrefix, ecdsaSecp256k1PublicKey.BytesRaw()...)
+	ecdsaSecp256k1AliasString    = "0x" + hex.EncodeToString(ecdsaSecp256k1Alias)
+	ecdsaSecp256k1AliasAccountId = AccountId{
+		aliasKey:  &ecdsaSecp256k1PublicKey,
+		alias:     ecdsaSecp256k1Alias,
 		curveType: types.Secp256k1,
 	}
+
+	ed25519PrivateKey, _  = hedera.PrivateKeyGenerateEd25519()
+	ed25519PublicKey      = ed25519PrivateKey.PublicKey()
+	ed25519Alias          = append(ed25519PublicKeyProtoPrefix, ed25519PublicKey.BytesRaw()...)
+	ed25519AliasString    = "0x" + hex.EncodeToString(ed25519Alias)
+	ed25519AliasAccountId = AccountId{
+		aliasKey:  &ed25519PublicKey,
+		alias:     ed25519Alias,
+		curveType: types.Edwards25519,
+	}
+
 	nonAliasAccountId = AccountId{accountId: domain.MustDecodeEntityId(125)}
 
-	ed25519AliasString   = hex.EncodeToString(ed25519PublicKey.BytesRaw())
-	secp256k1AliasString = hex.EncodeToString(secp256k1PublicKey.BytesRaw())
-
-	ed25519NetworkAlias   = concatBytes(ed25519PublicKeyProtoPrefix, ed25519PublicKey.BytesRaw())
-	secp256k1NetworkAlias = concatBytes(ecdsaSecp256k1PublicKeyProtoPrefix, secp256k1PublicKey.BytesRaw())
+	zeroAccountId AccountId
+	zeroCurveType types.CurveType
 )
 
 func TestAccountIdGetAlias(t *testing.T) {
@@ -72,9 +76,14 @@ func TestAccountIdGetAlias(t *testing.T) {
 			expected: nil,
 		},
 		{
-			name:     "Alias",
+			name:     "EcdsaSecp256K1 Alias",
+			input:    ecdsaSecp256k1AliasAccountId,
+			expected: ecdsaSecp256k1Alias,
+		},
+		{
+			name:     "Ed25519 Alias",
 			input:    ed25519AliasAccountId,
-			expected: ed25519PublicKey.BytesRaw(),
+			expected: ed25519Alias,
 		},
 	}
 
@@ -94,17 +103,17 @@ func TestAccountIdGetCurveType(t *testing.T) {
 		{
 			name:     "ZeroAccount",
 			input:    zeroAccountId,
-			expected: "",
+			expected: zeroCurveType,
+		},
+		{
+			name:     "EcdsaSecp256k1Alias",
+			input:    ecdsaSecp256k1AliasAccountId,
+			expected: types.Secp256k1,
 		},
 		{
 			name:     "Ed25519Alias",
 			input:    ed25519AliasAccountId,
 			expected: types.Edwards25519,
-		},
-		{
-			name:     "Secp256k1Alias",
-			input:    secp256k1AliasAccountId,
-			expected: types.Secp256k1,
 		},
 	}
 
@@ -147,18 +156,18 @@ func TestAccountIdGetId(t *testing.T) {
 
 func TestAccountIdHasAlias(t *testing.T) {
 	tests := []struct {
-		name   string
-		input  AccountId
-		truthy bool
+		name     string
+		input    AccountId
+		expected bool
 	}{
 		{
 			name:  "ZeroAccount",
 			input: zeroAccountId,
 		},
 		{
-			name:   "Alias",
-			input:  ed25519AliasAccountId,
-			truthy: true,
+			name:     "Alias",
+			input:    ed25519AliasAccountId,
+			expected: true,
 		},
 		{
 			name:  "Non-alias",
@@ -168,25 +177,21 @@ func TestAccountIdHasAlias(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.truthy {
-				assert.True(t, tt.input.HasAlias())
-			} else {
-				assert.False(t, tt.input.HasAlias())
-			}
+			assert.Equal(t, tt.expected, tt.input.HasAlias())
 		})
 	}
 }
 
 func TestAccountIdIsZero(t *testing.T) {
 	tests := []struct {
-		name   string
-		input  AccountId
-		truthy bool
+		name     string
+		input    AccountId
+		expected bool
 	}{
 		{
-			name:   "ZeroAccount",
-			input:  AccountId{},
-			truthy: true,
+			name:     "ZeroAccount",
+			input:    AccountId{},
+			expected: true,
 		},
 		{
 			name:  "Alias",
@@ -200,11 +205,7 @@ func TestAccountIdIsZero(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.truthy {
-				assert.True(t, tt.input.IsZero())
-			} else {
-				assert.False(t, tt.input.IsZero())
-			}
+			assert.Equal(t, tt.expected, tt.input.IsZero())
 		})
 	}
 }
@@ -221,9 +222,14 @@ func TestAccountIdString(t *testing.T) {
 			expected: "0.0.0",
 		},
 		{
-			name:     "Alias",
+			name:     "EcdsaSecp256k1 Alias",
+			input:    ecdsaSecp256k1AliasAccountId,
+			expected: ecdsaSecp256k1AliasString,
+		},
+		{
+			name:     "Ed25519 Alias",
 			input:    ed25519AliasAccountId,
-			expected: "0x" + hex.EncodeToString(ed25519PublicKey.BytesRaw()),
+			expected: ed25519AliasString,
 		},
 		{
 			name:     "Non-alias",
@@ -246,9 +252,14 @@ func TestAccountIdToRosetta(t *testing.T) {
 		expected *types.AccountIdentifier
 	}{
 		{
-			name:     "Alias",
+			name:     "EcdsaSecp256k1 Alias",
+			input:    ecdsaSecp256k1AliasAccountId,
+			expected: &types.AccountIdentifier{Address: ecdsaSecp256k1AliasString},
+		},
+		{
+			name:     "Ed25519 Alias",
 			input:    ed25519AliasAccountId,
-			expected: &types.AccountIdentifier{Address: "0x" + hex.EncodeToString(ed25519PublicKey.BytesRaw())},
+			expected: &types.AccountIdentifier{Address: ed25519AliasString},
 		},
 		{
 			name:     "Non-alias",
@@ -325,7 +336,7 @@ func TestNewAccountIdFromStringShardRealmAccount(t *testing.T) {
 			if !tt.expectErr {
 				assert.Nil(t, err)
 				assert.Equal(t, tt.expected, accountId.String())
-				assert.Nil(t, accountId.GetNetworkAlias())
+				assert.Nil(t, accountId.GetAlias())
 			} else {
 				assert.NotNil(t, err)
 				assert.Equal(t, zeroAccountId, accountId)
@@ -338,27 +349,27 @@ func TestNewAccountIdFromStringAlias(t *testing.T) {
 	tests := []struct {
 		input            string
 		expectErr        bool
+		alias            []byte
 		curveType        types.CurveType
-		networkAlias     []byte
 		sdkAccountString string
 		shard            int64
 		realm            int64
 	}{
 		{
-			input:            "0x" + ed25519AliasString,
+			input:            ecdsaSecp256k1AliasString,
+			alias:            ecdsaSecp256k1Alias,
+			curveType:        types.Secp256k1,
+			sdkAccountString: "0.0." + ecdsaSecp256k1PublicKey.String(),
+		},
+		{
+			input:            ed25519AliasString,
+			alias:            ed25519Alias,
 			curveType:        types.Edwards25519,
-			networkAlias:     ed25519NetworkAlias,
 			sdkAccountString: "0.1." + ed25519PublicKey.String(),
 			realm:            1,
 		},
 		{
-			input:            "0x" + secp256k1AliasString,
-			curveType:        types.Secp256k1,
-			networkAlias:     secp256k1NetworkAlias,
-			sdkAccountString: "0.0." + secp256k1PublicKey.String(),
-		},
-		{
-			input:     ed25519AliasString,
+			input:     hex.EncodeToString(ed25519Alias),
 			expectErr: true,
 		},
 		{
@@ -391,8 +402,8 @@ func TestNewAccountIdFromStringAlias(t *testing.T) {
 			accountId, err := NewAccountIdFromString(tt.input, tt.shard, tt.realm)
 			if !tt.expectErr {
 				assert.Nil(t, err)
+				assert.Equal(t, tt.alias, accountId.GetAlias())
 				assert.Equal(t, tt.curveType, accountId.GetCurveType())
-				assert.Equal(t, tt.networkAlias, accountId.GetNetworkAlias())
 				assert.Equal(t, tt.sdkAccountString, accountId.ToSdkAccountId().String())
 			} else {
 				assert.NotNil(t, err)
@@ -405,45 +416,49 @@ func TestNewAccountIdFromStringAlias(t *testing.T) {
 func TestNewAccountIdFromAlias(t *testing.T) {
 	tests := []struct {
 		input            []byte
-		expectErr        bool
 		curveType        types.CurveType
-		networkAlias     []byte
 		sdkAccountString string
 	}{
 		{
-			input:            ed25519PublicKey.BytesRaw(),
+			input:            ed25519Alias,
 			curveType:        types.Edwards25519,
-			networkAlias:     ed25519NetworkAlias,
 			sdkAccountString: "0.1." + ed25519PublicKey.String(),
 		},
 		{
-			input:            secp256k1PublicKey.BytesRaw(),
+			input:            ecdsaSecp256k1Alias,
 			curveType:        types.Secp256k1,
-			networkAlias:     secp256k1NetworkAlias,
-			sdkAccountString: "0.1." + secp256k1PublicKey.String(),
-		},
-		{
-			input:     []byte{},
-			expectErr: true,
-		},
-		{
-			input:     randstr.Bytes(10),
-			expectErr: true,
+			sdkAccountString: "0.1." + ecdsaSecp256k1PublicKey.String(),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(hex.EncodeToString(tt.input), func(t *testing.T) {
 			accountId, err := NewAccountIdFromAlias(tt.input, 0, 1)
-			if !tt.expectErr {
-				assert.Nil(t, err)
-				assert.Equal(t, tt.curveType, accountId.GetCurveType())
-				assert.Equal(t, tt.networkAlias, accountId.GetNetworkAlias())
-				assert.Equal(t, tt.sdkAccountString, accountId.ToSdkAccountId().String())
-			} else {
-				assert.NotNil(t, err)
-				assert.Equal(t, zeroAccountId, accountId)
-			}
+			assert.Nil(t, err)
+			assert.Equal(t, tt.input, accountId.GetAlias())
+			assert.Equal(t, tt.curveType, accountId.GetCurveType())
+			assert.Equal(t, tt.sdkAccountString, accountId.ToSdkAccountId().String())
+		})
+	}
+}
+
+func TestNewAccountIdFromAliasFail(t *testing.T) {
+	tests := []struct {
+		alias []byte
+		shard int64
+		realm int64
+	}{
+		{alias: []byte{}},
+		{alias: ed25519Alias, shard: -1},
+		{alias: ed25519Alias, realm: -1},
+		{alias: randstr.Bytes(10)},
+	}
+
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("%+v", tt), func(t *testing.T) {
+			actual, err := NewAccountIdFromAlias(tt.alias, tt.shard, tt.realm)
+			assert.Error(t, err)
+			assert.Equal(t, zeroAccountId, actual)
 		})
 	}
 }
@@ -455,7 +470,6 @@ func TestNewAccountIdFromEntity(t *testing.T) {
 		expectedAlias         []byte
 		expectedCurveType     types.CurveType
 		expectedId            int64
-		expectedNetworkAlias  []byte
 	}{
 		{
 			input:                 domain.Entity{Id: domain.MustDecodeEntityId(150)},
@@ -468,20 +482,18 @@ func TestNewAccountIdFromEntity(t *testing.T) {
 			expectedId:            281483566645258,
 		},
 		{
-			input:                 domain.Entity{Alias: ed25519NetworkAlias, Id: domain.MustDecodeEntityId(150)},
-			expectedAccountString: "0x" + ed25519AliasString,
-			expectedAlias:         ed25519PublicKey.BytesRaw(),
-			expectedCurveType:     types.Edwards25519,
-			expectedId:            150,
-			expectedNetworkAlias:  ed25519NetworkAlias,
-		},
-		{
-			input:                 domain.Entity{Alias: secp256k1NetworkAlias, Id: domain.MustDecodeEntityId(150)},
-			expectedAccountString: "0x" + secp256k1AliasString,
-			expectedAlias:         secp256k1PublicKey.BytesRaw(),
+			input:                 domain.Entity{Alias: ecdsaSecp256k1Alias, Id: domain.MustDecodeEntityId(150)},
+			expectedAccountString: ecdsaSecp256k1AliasString,
+			expectedAlias:         ecdsaSecp256k1Alias,
 			expectedCurveType:     types.Secp256k1,
 			expectedId:            150,
-			expectedNetworkAlias:  secp256k1NetworkAlias,
+		},
+		{
+			input:                 domain.Entity{Alias: ed25519Alias, Id: domain.MustDecodeEntityId(150)},
+			expectedAccountString: ed25519AliasString,
+			expectedAlias:         ed25519Alias,
+			expectedCurveType:     types.Edwards25519,
+			expectedId:            150,
 		},
 	}
 
@@ -493,20 +505,11 @@ func TestNewAccountIdFromEntity(t *testing.T) {
 			assert.Equal(t, tt.expectedAlias, accountId.GetAlias())
 			assert.Equal(t, tt.expectedCurveType, accountId.GetCurveType())
 			assert.Equal(t, tt.expectedId, accountId.GetId())
-			assert.Equal(t, tt.expectedNetworkAlias, accountId.GetNetworkAlias())
 		})
 	}
 }
 
 func TestNewAccountIdFromEntityFail(t *testing.T) {
-	keyList := services.Key{
-		Key: &services.Key_KeyList{
-			KeyList: &services.KeyList{
-				Keys: []*services.Key{{Key: &services.Key_Ed25519{Ed25519: ed25519PublicKey.BytesRaw()}}}},
-		},
-	}
-	keyListNetworkAlias, _ := proto.Marshal(&keyList)
-
 	tests := []struct {
 		name  string
 		input domain.Entity
@@ -517,7 +520,7 @@ func TestNewAccountIdFromEntityFail(t *testing.T) {
 		},
 		{
 			name:  "unsupported key type",
-			input: domain.Entity{Alias: keyListNetworkAlias, Id: domain.MustDecodeEntityId(150)},
+			input: domain.Entity{Alias: getKeyListAlias(), Id: domain.MustDecodeEntityId(150)},
 		},
 	}
 
@@ -553,28 +556,81 @@ func TestNewAccountIdFromEntityId(t *testing.T) {
 	}
 }
 
+func TestNewAccountIdFromPublicKeyBytes(t *testing.T) {
+	tests := []struct {
+		keyBytes         []byte
+		alias            []byte
+		curveType        types.CurveType
+		sdkAccountString string
+	}{
+		{
+			keyBytes:         ed25519PublicKey.BytesRaw(),
+			alias:            ed25519Alias,
+			curveType:        types.Edwards25519,
+			sdkAccountString: "0.0." + ed25519PublicKey.String(),
+		},
+		{
+			keyBytes:         ecdsaSecp256k1PublicKey.BytesRaw(),
+			alias:            ecdsaSecp256k1Alias,
+			curveType:        types.Secp256k1,
+			sdkAccountString: "0.0." + ecdsaSecp256k1PublicKey.String(),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(hex.EncodeToString(tt.keyBytes), func(t *testing.T) {
+			accountId, err := NewAccountIdFromPublicKeyBytes(tt.keyBytes, 0, 0)
+			assert.Nil(t, err)
+			assert.Equal(t, tt.alias, accountId.GetAlias())
+			assert.Equal(t, tt.curveType, accountId.GetCurveType())
+			assert.Equal(t, tt.sdkAccountString, accountId.ToSdkAccountId().String())
+		})
+	}
+}
+
+func TestNewAccountIdFromPublicKeyBytesFail(t *testing.T) {
+	tests := []struct {
+		keyBytes []byte
+		shard    int64
+		realm    int64
+	}{
+		{keyBytes: []byte{}},
+		{keyBytes: ed25519PublicKey.BytesRaw(), shard: -1},
+		{keyBytes: ed25519PublicKey.BytesRaw(), realm: -1},
+		{keyBytes: randstr.Bytes(10)},
+	}
+
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("%+v", tt), func(t *testing.T) {
+			actual, err := NewAccountIdFromPublicKeyBytes(tt.keyBytes, tt.shard, tt.realm)
+			assert.Error(t, err)
+			assert.Equal(t, zeroAccountId, actual)
+		})
+	}
+}
+
 func TestNewAccountIdFromSdkAccountId(t *testing.T) {
 	tests := []struct {
-		input        hedera.AccountID
-		curveType    types.CurveType
-		expectErr    bool
-		hasAlias     bool
-		networkAlias []byte
+		input     hedera.AccountID
+		expectErr bool
+		alias     []byte
+		curveType types.CurveType
+		hasAlias  bool
 	}{
 		{input: hedera.AccountID{Account: 150}},
 		{input: hedera.AccountID{Shard: 1, Realm: 2, Account: 150}},
 		{input: hedera.AccountID{Shard: 1, Realm: 2, Account: 150}},
 		{
-			input:        hedera.AccountID{Realm: 2, AliasKey: &ed25519PublicKey},
-			curveType:    types.Edwards25519,
-			hasAlias:     true,
-			networkAlias: concatBytes(ed25519PublicKeyProtoPrefix, ed25519PublicKey.BytesRaw()),
+			input:     hedera.AccountID{Realm: 2, AliasKey: &ed25519PublicKey},
+			alias:     ed25519Alias,
+			curveType: types.Edwards25519,
+			hasAlias:  true,
 		},
 		{
-			input:        hedera.AccountID{Realm: 2, AliasKey: &secp256k1PublicKey},
-			curveType:    types.Secp256k1,
-			hasAlias:     true,
-			networkAlias: concatBytes(ecdsaSecp256k1PublicKeyProtoPrefix, secp256k1PublicKey.BytesRaw()),
+			input:     hedera.AccountID{Realm: 2, AliasKey: &ecdsaSecp256k1PublicKey},
+			alias:     ecdsaSecp256k1Alias,
+			curveType: types.Secp256k1,
+			hasAlias:  true,
 		},
 		{input: hedera.AccountID{Shard: 1 << 15}, expectErr: true},
 		{input: hedera.AccountID{Realm: 1 << 16}, expectErr: true},
@@ -588,9 +644,9 @@ func TestNewAccountIdFromSdkAccountId(t *testing.T) {
 			if !tt.expectErr {
 				assert.Nil(t, err)
 				assert.Equal(t, tt.input.String(), accountId.ToSdkAccountId().String())
+				assert.Equal(t, tt.alias, accountId.GetAlias())
 				assert.Equal(t, tt.curveType, accountId.GetCurveType())
 				assert.Equal(t, tt.hasAlias, accountId.HasAlias())
-				assert.Equal(t, tt.networkAlias, accountId.GetNetworkAlias())
 			} else {
 				assert.NotNil(t, err)
 				assert.Equal(t, zeroAccountId, accountId)
@@ -599,8 +655,13 @@ func TestNewAccountIdFromSdkAccountId(t *testing.T) {
 	}
 }
 
-func concatBytes(s1, s2 []byte) []byte {
-	r := make([]byte, len(s1))
-	copy(r, s1)
-	return append(r, s2...)
+func getKeyListAlias() []byte {
+	keyList := services.Key{
+		Key: &services.Key_KeyList{
+			KeyList: &services.KeyList{
+				Keys: []*services.Key{{Key: &services.Key_Ed25519{Ed25519: ed25519PublicKey.BytesRaw()}}}},
+		},
+	}
+	keyListAlias, _ := proto.Marshal(&keyList)
+	return keyListAlias
 }

@@ -23,6 +23,10 @@
     "intervalMultiplier": 1,
     "limit": 10
   },
+  "network": {
+    "enabled": true,
+    "intervalMultiplier": 1
+  },
   "stateproof": {
     "enabled": true,
     "intervalMultiplier": 10

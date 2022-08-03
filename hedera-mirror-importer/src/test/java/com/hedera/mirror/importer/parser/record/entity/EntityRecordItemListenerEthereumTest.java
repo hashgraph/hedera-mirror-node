@@ -71,8 +71,8 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
-                () -> assertEquals(1, contractRepository.count()),
-                () -> assertEquals(1, entityRepository.count()),
+                () -> assertEquals(0, contractRepository.count()),
+                () -> assertEquals(2, entityRepository.count()),
                 () -> assertEquals(1, contractResultRepository.count()),
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertEquals(1, ethereumTransactionRepository.count()),
@@ -91,8 +91,8 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
-                () -> assertEquals(1, contractRepository.count()),
-                () -> assertEquals(0, entityRepository.count()),
+                () -> assertEquals(0, contractRepository.count()),
+                () -> assertEquals(1, entityRepository.count()),
                 () -> assertEquals(1, contractResultRepository.count()),
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertEquals(1, ethereumTransactionRepository.count()),
@@ -111,8 +111,8 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
-                () -> assertEquals(1, contractRepository.count()),
-                () -> assertEquals(0, entityRepository.count()),
+                () -> assertEquals(0, contractRepository.count()),
+                () -> assertEquals(1, entityRepository.count()),
                 () -> assertEquals(1, contractResultRepository.count()),
                 () -> assertEquals(3, cryptoTransferRepository.count()),
                 () -> assertEquals(1, ethereumTransactionRepository.count()),

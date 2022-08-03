@@ -22,6 +22,7 @@ import AddressBookServiceEndpointViewModel from './addressBookServiceEndpointVie
 import AssessedCustomFeeViewModel from './assessedCustomFeeViewModel';
 import CustomFeeViewModel from './customFeeViewModel';
 import ContractViewModel from './contractViewModel';
+import ContractBytecodeViewModel from './contractBytecodeViewModel';
 import ContractLogViewModel from './contractLogViewModel';
 import ContractResultDetailsViewModel from './contractResultDetailsViewModel';
 import ContractResultStateChangeViewModel from './contractResultStateChangeViewModel';
@@ -30,6 +31,7 @@ import CryptoAllowanceViewModel from './cryptoAllowanceViewModel';
 import ExchangeRateSetViewModel from './exchangeRateSetViewModel';
 import ExchangeRateViewModel from './exchangeRateViewModel';
 import NetworkNodeViewModel from './networkNodeViewModel';
+import NetworkStakeViewModel from './networkStakeViewModel';
 import NetworkSupplyViewModel from './networkSupplyViewModel';
 import NftTransactionHistoryViewModel from './nftTransactionHistoryViewModel';
 import NftTransferViewModel from './nftTransferViewModel';
@@ -45,6 +47,7 @@ export {
   AssessedCustomFeeViewModel,
   CustomFeeViewModel,
   ContractViewModel,
+  ContractBytecodeViewModel,
   ContractLogViewModel,
   ContractResultDetailsViewModel,
   ContractResultStateChangeViewModel,
@@ -53,6 +56,7 @@ export {
   ExchangeRateSetViewModel,
   ExchangeRateViewModel,
   NetworkNodeViewModel,
+  NetworkStakeViewModel,
   NetworkSupplyViewModel,
   NftTransactionHistoryViewModel,
   NftTransferViewModel,

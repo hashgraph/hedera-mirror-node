@@ -69,7 +69,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -963,8 +962,8 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
 
     @Test
     void cryptoTransferWithEvmAddressAlias() {
-        Contract contract = domainBuilder.contract().persist();
-        assertThat(contractRepository.findByEvmAddress(contract.getEvmAddress())).isPresent();
+        Entity contract = domainBuilder.entity().persist();
+        assertThat(entityRepository.findByEvmAddress(contract.getEvmAddress())).isPresent();
 
         entityProperties.getPersist().setNonFeeTransfers(true);
 

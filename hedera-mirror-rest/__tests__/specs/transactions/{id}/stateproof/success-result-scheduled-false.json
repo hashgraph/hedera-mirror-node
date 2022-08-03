@@ -29,7 +29,8 @@
       ],
       "record_stream_object": "5594c0e183bc80ecfb06fe05a481ccc23fa05020bc3a2a3623a1f8162bb758f0",
       "hashes_after": ["5f2e4a8ecd4d09b7a0a22ebdc942fd05843b9aa91c89245516a5f7f328b3a8c3"],
-      "end_running_hash_object": "ec2142ea265aa0fe95a02ea4d9d5f4e36a88e0ace35a3afdb47d7438a2a2f65d"
+      "end_running_hash_object": "ec2142ea265aa0fe95a02ea4d9d5f4e36a88e0ace35a3afdb47d7438a2a2f65d",
+      "block_number": null
     },
     "signature_files": {
       "0.0.3": "8ee2cb6e65024973bad7e7f9b25e782343de38acab41f66bc712a8fc1c0616b8",

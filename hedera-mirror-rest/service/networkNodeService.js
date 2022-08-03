@@ -19,7 +19,14 @@
  */
 
 import BaseService from './baseService';
-import {AddressBook, AddressBookEntry, AddressBookServiceEndpoint, NetworkNode, NodeStake} from '../model';
+import {
+  AddressBook,
+  AddressBookEntry,
+  AddressBookServiceEndpoint,
+  NetworkNode,
+  NetworkStake,
+  NodeStake,
+} from '../model';
 import {OrderSpec} from '../sql';
 
 /**
@@ -75,6 +82,21 @@ class NetworkNodeService extends BaseService {
     left join ${NodeStake.tableAlias} on ${AddressBookEntry.getFullName(AddressBookEntry.NODE_ID)} =
       ${NodeStake.getFullName(NodeStake.NODE_ID)}`;
 
+  static networkStakeQuery = `select ${NetworkStake.MAX_STAKING_REWARD_RATE_PER_HBAR},
+         ${NetworkStake.NODE_REWARD_FEE_DENOMINATOR},
+         ${NetworkStake.NODE_REWARD_FEE_NUMERATOR},
+         ${NetworkStake.STAKE_TOTAL},
+         ${NetworkStake.STAKING_PERIOD},
+         ${NetworkStake.STAKING_PERIOD_DURATION},
+         ${NetworkStake.STAKING_PERIODS_STORED},
+         ${NetworkStake.STAKING_REWARD_FEE_DENOMINATOR},
+         ${NetworkStake.STAKING_REWARD_FEE_NUMERATOR},
+         ${NetworkStake.STAKING_REWARD_RATE},
+         ${NetworkStake.STAKING_START_THRESHOLD}
+      from ${NetworkStake.tableName}
+      where ${NetworkStake.CONSENSUS_TIMESTAMP} =
+            (select max(${NetworkStake.CONSENSUS_TIMESTAMP}) from ${NetworkStake.tableName})`;
+
   getNetworkNodes = async (whereConditions, whereParams, order, limit) => {
     const [query, params] = this.getNetworkNodesWithFiltersQuery(whereConditions, whereParams, order, limit);
 
@@ -93,6 +115,11 @@ class NetworkNodeService extends BaseService {
     ].join('\n');
 
     return [query, params];
+  };
+
+  getNetworkStake = async () => {
+    const rows = await super.getRows(NetworkNodeService.networkStakeQuery, [], 'getNetworkStake');
+    return new NetworkStake(rows[0]);
   };
 }
 

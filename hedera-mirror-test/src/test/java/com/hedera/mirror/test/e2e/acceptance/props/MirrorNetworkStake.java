@@ -1,4 +1,4 @@
-package com.hedera.mirror.common.domain.entity;
+package com.hedera.mirror.test.e2e.acceptance.props;
 
 /*-
  * ‌
@@ -20,29 +20,17 @@ package com.hedera.mirror.common.domain.entity;
  * ‍
  */
 
-import javax.persistence.Column;
-import javax.persistence.MappedSuperclass;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
-import lombok.experimental.SuperBuilder;
-
-import com.hedera.mirror.common.domain.Aliasable;
 
 @Data
-@MappedSuperclass
-@NoArgsConstructor
-@SuperBuilder
-public abstract class EntityCommon extends AbstractEntity implements Aliasable {
-
-    @Column(updatable = false)
-    @ToString.Exclude
-    private byte[] alias;
-
-    private Long ethereumNonce;
-
-    private Boolean receiverSigRequired;
-
-    @ToString.Exclude
-    private byte[] submitKey;
+public class MirrorNetworkStake {
+    private long maxStakingRewardRatePerHbar;
+    private float nodeRewardFeeFraction;
+    private long stakeTotal;
+    private TimestampRange stakingPeriod;
+    private long stakingPeriodDuration;
+    private long stakingPeriodsStored;
+    private float stakingRewardFeeFraction;
+    private long stakingRewardRate;
+    private long stakingStartThreshold;
 }

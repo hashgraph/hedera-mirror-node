@@ -124,11 +124,7 @@ const (
                                  where alias = @alias and (deleted is null or deleted is false)`
 	selectCryptoEntityById = `select id, deleted, timestamp_range
                               from entity
-                              where type = 'ACCOUNT' and id = @id
-                              union all
-                              select id, deleted, timestamp_range
-                              from contract
-                              where id = @id`
+                              where type in ('ACCOUNT', 'CONTRACT') and id = @id`
 	selectNftTransfersForAccount = "with" + genesisTimestampCte + `
                                     select nt.*
                                     from nft_transfer nt
@@ -207,7 +203,7 @@ func (ar *accountRepository) GetAccountId(ctx context.Context, accountId types.A
 	defer cancel()
 
 	var entity domain.Entity
-	if err := db.Raw(selectCurrentCryptoEntityByAlias, sql.Named("alias", accountId.GetNetworkAlias())).First(&entity).Error; err != nil {
+	if err := db.Raw(selectCurrentCryptoEntityByAlias, sql.Named("alias", accountId.GetAlias())).First(&entity).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return zero, hErrors.ErrAccountNotFound
 		}
@@ -309,11 +305,11 @@ func (ar *accountRepository) getCryptoEntity(ctx context.Context, accountId type
 	if accountId.HasAlias() {
 		query = selectCryptoEntityByAlias
 		args = []interface{}{
-			sql.Named("alias", accountId.GetNetworkAlias()),
+			sql.Named("alias", accountId.GetAlias()),
 			sql.Named("consensus_end", getInclusiveInt8Range(consensusEnd, consensusEnd)),
 		}
 		notFoundError = hErrors.AddErrorDetails(hErrors.ErrAccountNotFound, "reason",
-			fmt.Sprintf("Account with the alias '%s' not found", hex.EncodeToString(accountId.GetNetworkAlias())))
+			fmt.Sprintf("Account with the alias '%s' not found", hex.EncodeToString(accountId.GetAlias())))
 	} else {
 		query = selectCryptoEntityById
 		args = []interface{}{sql.Named("id", accountId.GetId())}

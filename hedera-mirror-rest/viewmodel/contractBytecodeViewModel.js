@@ -18,26 +18,24 @@
  * ‍
  */
 
-import FullRecordFile from '../../stream/fullRecordFile';
-import testUtils from './testUtils';
+import * as utils from '../utils';
+import ContractViewModel from './contractViewModel';
 
-describe('unsupported record file version', () => {
-  testUtils.testRecordFileUnsupportedVersion([3, 4, 5, 6], FullRecordFile);
-});
+/**
+ * Contract with bytecode view model
+ */
+class ContractBytecodeViewModel extends ContractViewModel {
+  /**
+   * Constructs contract view model
+   *
+   * @param {Contract} contract
+   * @param {Entity} entity
+   */
+  constructor(contract, entity) {
+    super(contract, entity);
+    this.bytecode = utils.addHexPrefix(contract.bytecode);
+    this.runtime_bytecode = utils.toHexString(contract.runtimeBytecode, true);
+  }
+}
 
-describe('canCompact', () => {
-  const testSpecs = [
-    [1, false],
-    [2, false],
-    [3, false],
-    [4, false],
-    [5, false],
-    [6, false],
-  ];
-
-  testUtils.testRecordFileCanCompact(testSpecs, FullRecordFile);
-});
-
-describe('from v2 buffer', () => {
-  testUtils.testRecordFileFromBufferOrObj(2, FullRecordFile);
-});
+export default ContractBytecodeViewModel;

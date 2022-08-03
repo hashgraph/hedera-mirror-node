@@ -53,6 +53,7 @@ const setup = async (testDataJson) => {
   await loadEntities(testDataJson.entities);
   await loadEthereumTransactions(testDataJson.ethereumtransactions);
   await loadFileData(testDataJson.filedata);
+  await loadNetworkStakes(testDataJson.networkstakes);
   await loadNfts(testDataJson.nfts);
   await loadNodeStakes(testDataJson.nodestakes);
   await loadRecordFiles(testDataJson.recordFiles);
@@ -235,6 +236,16 @@ const loadNfts = async (nfts) => {
   }
 };
 
+const loadNetworkStakes = async (networkStakes) => {
+  if (networkStakes == null) {
+    return;
+  }
+
+  for (const networkStake of networkStakes) {
+    await addNetworkStake(networkStake);
+  }
+};
+
 const loadNodeStakes = async (nodeStakes) => {
   if (nodeStakes == null) {
     return;
@@ -390,50 +401,59 @@ const addAddressBookServiceEndpoint = async (addressBookServiceEndpointInput) =>
   await insertDomainObject('address_book_service_endpoint', insertFields, addressBookServiceEndpoint);
 };
 
-const addEntity = async (defaults, entity) => {
-  const localDefaults = {
-    alias: null,
-    auto_renew_account_id: null,
-    auto_renew_period: null,
-    decline_reward: false,
-    deleted: false,
-    ethereum_nonce: null,
-    evm_address: null,
-    expiration_timestamp: null,
-    id: null,
-    key: null,
-    max_automatic_token_associations: null,
-    memo: 'entity memo',
-    num: 0,
-    public_key: null,
-    realm: 0,
-    receiver_sig_required: false,
-    shard: 0,
-    staked_account_id: null,
-    staked_node_id: -1,
-    stake_period_start: -1,
-    timestamp_range: '[0,)',
-    type: constants.entityTypes.ACCOUNT,
-  };
-  const insertFields = Object.keys(localDefaults).sort();
-  entity = {
-    ...localDefaults,
+const entityDefaults = {
+  alias: null,
+  auto_renew_account_id: null,
+  auto_renew_period: null,
+  created_timestamp: null,
+  decline_reward: false,
+  deleted: false,
+  ethereum_nonce: null,
+  evm_address: null,
+  expiration_timestamp: null,
+  id: null,
+  key: null,
+  max_automatic_token_associations: null,
+  memo: 'entity memo',
+  num: 0,
+  obtainer_id: null,
+  permanent_removal: null,
+  proxy_account_id: null,
+  public_key: null,
+  realm: 0,
+  receiver_sig_required: false,
+  shard: 0,
+  staked_account_id: null,
+  staked_node_id: -1,
+  stake_period_start: -1,
+  submit_key: null,
+  timestamp_range: '[0,)',
+  type: constants.entityTypes.ACCOUNT,
+};
+const addEntity = async (defaults, custom) => {
+  const insertFields = Object.keys(entityDefaults).sort();
+  const entity = {
+    ...entityDefaults,
     ...defaults,
-    ...entity,
+    ...custom,
   };
   entity.id = EntityId.of(BigInt(entity.shard), BigInt(entity.realm), BigInt(entity.num)).getEncodedId();
   entity.alias = base32.decode(entity.alias);
   entity.evm_address = entity.evm_address && Buffer.from(entity.evm_address, 'hex');
   if (typeof entity.key === 'string') {
     entity.key = Buffer.from(entity.key, 'hex');
+  } else if (entity.key != null) {
+    entity.key = Buffer.from(entity.key);
   }
 
-  await insertDomainObject('entity', insertFields, entity);
+  const table = getTableName('entity', entity);
+  await insertDomainObject(table, insertFields, entity);
+  return entity;
 };
 
 const addEthereumTransaction = async (ethereumTransaction) => {
   // any attribute starting with '_' is not a db column
-  ethereumTransaction = _.omitBy(ethereumTransaction, (v, k) => k.startsWith('_'));
+  ethereumTransaction = _.omitBy(ethereumTransaction, (_v, k) => k.startsWith('_'));
   const localDefaults = {
     access_list: null,
     call_data_id: null,
@@ -613,7 +633,7 @@ const setAccountBalance = async (balance) => {
       tokenBalance.balance,
       EntityId.of(
         BigInt(config.shard),
-        BigInt(tokenBalance.token_realm),
+        BigInt(tokenBalance.token_realm || 0),
         BigInt(tokenBalance.token_num)
       ).getEncodedId(),
     ]);
@@ -778,39 +798,37 @@ const insertNftTransfers = async (consensusTimestamp, nftTransferList, payerAcco
   );
 };
 
-const addContract = async (contract) => {
-  contract = {
-    auto_renew_account_id: null,
-    auto_renew_period: null,
-    decline_reward: false,
-    deleted: false,
-    evm_address: null,
-    expiration_timestamp: null,
-    initcode: null,
-    key: null,
-    max_automatic_token_associations: 0,
-    memo: 'contract memo',
-    permanent_removal: null,
-    public_key: null,
-    realm: 0,
-    shard: 0,
-    staked_account_id: null,
-    staked_node_id: -1,
-    stake_period_start: -1,
-    type: constants.entityTypes.CONTRACT,
-    timestamp_range: '[0,)',
-    ...contract,
-  };
-  contract.evm_address = contract.evm_address != null ? Buffer.from(contract.evm_address, 'hex') : null;
-  contract.id = EntityId.of(BigInt(contract.shard), BigInt(contract.realm), BigInt(contract.num)).getEncodedId();
-  contract.initcode = contract.initcode != null ? Buffer.from(contract.initcode) : null;
-  contract.key = contract.key != null ? Buffer.from(contract.key) : null;
-  const insertFields = Object.keys(contract)
-    .filter((k) => !k.startsWith('_'))
-    .sort();
+const contractDefaults = {
+  file_id: null,
+  id: null,
+  initcode: null,
+  runtime_bytecode: null,
+};
+const addContract = async (custom) => {
+  const entity = await addEntity(
+    {
+      max_automatic_token_associations: 0,
+      memo: 'contract memo',
+      receiver_sig_required: null,
+      type: constants.entityTypes.CONTRACT,
+    },
+    custom
+  );
 
-  const table = getTableName('contract', contract);
-  await insertDomainObject(table, insertFields, contract);
+  if (isHistory(entity)) {
+    return;
+  }
+
+  const contract = {
+    ...contractDefaults,
+    ...entity,
+    ...custom,
+  };
+  contract.initcode = contract.initcode != null ? Buffer.from(contract.initcode) : null;
+  contract.runtime_bytecode = contract.runtime_bytecode != null ? Buffer.from(contract.runtime_bytecode) : null;
+  const insertFields = Object.keys(contractDefaults).sort();
+
+  await insertDomainObject('contract', insertFields, contract);
 };
 
 const addContractResult = async (contractResultInput) => {
@@ -1206,6 +1224,31 @@ const addTokenAllowance = async (tokenAllowance) => {
   await insertDomainObject(table, insertFields, tokenAllowance);
 };
 
+const addNetworkStake = async (networkStakeInput) => {
+  const stakingPeriodEnd = 86_400_000_000_000n - 1n;
+  const networkStake = {
+    consensus_timestamp: 0,
+    epoch_day: 0,
+    max_staking_reward_rate_per_hbar: 17808,
+    node_reward_fee_denominator: 0,
+    node_reward_fee_numerator: 100,
+    stake_total: 10000000,
+    staking_period: stakingPeriodEnd,
+    staking_period_duration: 1440,
+    staking_periods_stored: 365,
+    staking_reward_fee_denominator: 100,
+    staking_reward_fee_numerator: 100,
+    staking_reward_rate: 100000000000,
+    staking_start_threshold: 25000000000000000,
+    ...networkStakeInput,
+  };
+  const insertFields = Object.keys(networkStake)
+    .filter((k) => !k.startsWith('_'))
+    .sort();
+
+  await insertDomainObject('network_stake', insertFields, networkStake);
+};
+
 const addNft = async (nft) => {
   // create nft account object
   nft = {
@@ -1226,7 +1269,8 @@ const addNft = async (nft) => {
   }
 
   await pool.query(
-    `INSERT INTO nft (account_id, created_timestamp, delegating_spender, deleted, modified_timestamp, metadata, serial_number, spender, token_id)
+    `INSERT INTO nft (account_id, created_timestamp, delegating_spender, deleted, modified_timestamp, metadata,
+                      serial_number, spender, token_id)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);`,
     [
       EntityId.parse(nft.account_id, {isNullable: true}).getEncodedId(),
@@ -1322,14 +1366,17 @@ const addRecordFile = async (recordFileInput) => {
 const insertDomainObject = async (table, fields, obj) => {
   const positions = _.range(1, fields.length + 1).map((position) => `$${position}`);
   await pool.query(
-    `INSERT INTO ${table} (${fields}) VALUES (${positions});`,
+    `INSERT INTO ${table} (${fields})
+     VALUES (${positions});`,
     fields.map((f) => obj[f])
   );
 };
 
 // for a pair of current and history tables, if the timestamp range is open-ended, use the current table, otherwise
 // use the history table
-const getTableName = (base, entity) => (entity.timestamp_range.endsWith(',)') ? base : `${base}_history`);
+const getTableName = (base, entity) => (isHistory(entity) ? `${base}_history` : base);
+
+const isHistory = (entity) => entity.hasOwnProperty('timestamp_range') && !entity.timestamp_range.endsWith(',)');
 
 export default {
   addAccount,
@@ -1344,6 +1391,7 @@ export default {
   loadCryptoAllowances,
   loadEntities,
   loadFileData,
+  loadNetworkStakes,
   loadNodeStakes,
   loadRecordFiles,
   loadTransactions,

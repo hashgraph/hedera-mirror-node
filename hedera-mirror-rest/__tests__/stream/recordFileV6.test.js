@@ -1,5 +1,3 @@
-package com.hedera.mirror.common.domain;
-
 /*-
  * ‌
  * Hedera Mirror Node
@@ -20,16 +18,26 @@ package com.hedera.mirror.common.domain;
  * ‍
  */
 
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
+import RecordFileV6 from '../../stream/recordFileV6';
+import testUtils from './testUtils';
 
-public interface Aliasable {
+describe('unsupported record file version', () => {
+  testUtils.testRecordFileUnsupportedVersion([1, 2, 3, 4, 5], RecordFileV6);
+});
 
-    byte[] getAlias();
+describe('canCompact', () => {
+  const testSpecs = [
+    [1, false],
+    [2, false],
+    [3, false],
+    [4, false],
+    [5, false],
+    [6, true],
+  ];
 
-    Boolean getDeleted();
+  testUtils.testRecordFileCanCompact(testSpecs, RecordFileV6);
+});
 
-    EntityType getType();
-
-    EntityId toEntityId();
-}
+describe('from v6 buffer or compact object', () => {
+  testUtils.testRecordFileFromBufferOrObj(6, RecordFileV6, true, true);
+});

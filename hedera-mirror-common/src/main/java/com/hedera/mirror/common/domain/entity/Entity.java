@@ -28,6 +28,6 @@ import lombok.experimental.SuperBuilder;
 @javax.persistence.Entity
 @NoArgsConstructor
 @SuperBuilder
-public class Entity extends EntityCommon {
+public class Entity extends AbstractEntity {
     // Only the parent class should contain fields so that they're shared with both the history and non-history tables.
 }

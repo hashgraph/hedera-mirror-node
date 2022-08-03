@@ -39,7 +39,6 @@
         "balance": 70,
         "tokens": [
           {
-            "token_realm": 0,
             "token_num": 2007,
             "balance": 700
           },
@@ -56,7 +55,6 @@
         "balance": 80,
         "tokens": [
           {
-            "token_realm": 0,
             "token_num": 2007,
             "balance": 1000
           },

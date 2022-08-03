@@ -54,12 +54,10 @@
         "balance": 10,
         "tokens": [
           {
-            "token_realm": 0,
             "token_num": 90000,
             "balance": 1
           },
           {
-            "token_realm": 0,
             "token_num": 90001,
             "balance": 11
           }
@@ -71,12 +69,10 @@
         "balance": 9223372036847275807,
         "tokens": [
           {
-            "token_realm": 0,
             "token_num": 90001,
             "balance": 9223372036847275807
           },
           {
-            "token_realm": 0,
             "token_num": 90010,
             "balance": 22
           }
@@ -98,12 +94,10 @@
         "balance": 50,
         "tokens": [
           {
-            "token_realm": 0,
             "token_num": 100001,
             "balance": 5
           },
           {
-            "token_realm": 0,
             "token_num": 100002,
             "balance": 55
           }

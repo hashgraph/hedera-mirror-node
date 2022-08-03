@@ -68,7 +68,6 @@ import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
-import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -120,7 +119,7 @@ abstract class AbstractTransactionHandlerTest {
     protected EntityRepository entityRepository;
 
     @Captor
-    private ArgumentCaptor<AbstractEntity> entityCaptor;
+    protected ArgumentCaptor<Entity> entityCaptor;
 
     protected static Key getKey(String keyString) {
         return Key.newBuilder().setEd25519(ByteString.copyFromUtf8(keyString)).build();
@@ -228,12 +227,7 @@ abstract class AbstractTransactionHandlerTest {
                     transaction.setEntityId(testSpec.getExpected().toEntityId());
                     Mockito.reset(entityListener);
                     transactionHandler.updateTransaction(transaction, testSpec.getRecordItem());
-
-                    if (getExpectedEntityIdType() == EntityType.CONTRACT) {
-                        verify(entityListener).onContract((Contract) entityCaptor.capture());
-                    } else {
-                        verify(entityListener).onEntity((Entity) entityCaptor.capture());
-                    }
+                    verify(entityListener).onEntity(entityCaptor.capture());
 
                     // then
                     assertThat(entityCaptor.getValue()).isEqualTo(testSpec.getExpected());
@@ -255,13 +249,13 @@ abstract class AbstractTransactionHandlerTest {
         assertThat(transactionHandler.getEntity(recordItem)).isEqualTo(expectedEntity);
     }
 
-    protected AbstractEntity getEntity() {
+    protected Entity getEntity() {
         EntityId entityId = EntityId.of(0L, 0L, DEFAULT_ENTITY_NUM, getExpectedEntityIdType());
         return entityId.toEntity();
     }
 
-    protected AbstractEntity getExpectedEntityWithTimestamp() {
-        AbstractEntity entity = getEntity();
+    protected Entity getExpectedEntityWithTimestamp() {
+        Entity entity = getEntity();
         EntityOperation entityOperation = transactionHandler.getType().getEntityOperation();
 
         if (entityOperation == EntityOperation.CREATE) {
@@ -338,8 +332,8 @@ abstract class AbstractTransactionHandlerTest {
         AbstractEntity expected = getExpectedUpdatedEntity();
 
         Message unchangedMemoInnerBody = innerBody;
-        if (receiverSigRequiredWrapperField != null && expected instanceof Entity) {
-            ((Entity) expected).setReceiverSigRequired(UPDATED_RECEIVER_SIG_REQUIRED.getValue());
+        if (receiverSigRequiredWrapperField != null) {
+            expected.setReceiverSigRequired(UPDATED_RECEIVER_SIG_REQUIRED.getValue());
         }
 
         testSpecs.add(
@@ -359,8 +353,8 @@ abstract class AbstractTransactionHandlerTest {
             updatedMemoInnerBody = innerBody.toBuilder().setField(memoField, UPDATED_MEMO).build();
         }
 
-        if (receiverSigRequiredWrapperField != null && expected instanceof Entity) {
-            ((Entity) expected).setReceiverSigRequired(UPDATED_RECEIVER_SIG_REQUIRED.getValue());
+        if (receiverSigRequiredWrapperField != null) {
+            expected.setReceiverSigRequired(UPDATED_RECEIVER_SIG_REQUIRED.getValue());
         }
 
         testSpecs.add(
@@ -382,8 +376,8 @@ abstract class AbstractTransactionHandlerTest {
         expected.setMemo("");
         Message clearedMemoInnerBody = innerBody.toBuilder().setField(field, StringValue.of("")).build();
 
-        if (receiverSigRequiredWrapperField != null && expected instanceof Entity) {
-            ((Entity) expected).setReceiverSigRequired(UPDATED_RECEIVER_SIG_REQUIRED.getValue());
+        if (receiverSigRequiredWrapperField != null) {
+            expected.setReceiverSigRequired(UPDATED_RECEIVER_SIG_REQUIRED.getValue());
         }
 
         testSpecs.add(
@@ -400,8 +394,8 @@ abstract class AbstractTransactionHandlerTest {
         Message memoStringValueUpdatedInnerBody = innerBody.toBuilder().setField(field, StringValue.of(UPDATED_MEMO))
                 .build();
 
-        if (receiverSigRequiredWrapperField != null && expected instanceof Entity) {
-            ((Entity) expected).setReceiverSigRequired(UPDATED_RECEIVER_SIG_REQUIRED.getValue());
+        if (receiverSigRequiredWrapperField != null) {
+            expected.setReceiverSigRequired(UPDATED_RECEIVER_SIG_REQUIRED.getValue());
         }
 
         testSpecs.add(
@@ -415,8 +409,8 @@ abstract class AbstractTransactionHandlerTest {
         if (maxAutomaticTokenAssociationsField != null) {
             expected = getExpectedUpdatedEntity();
             expected.setMaxAutomaticTokenAssociations(500);
-            if (expected instanceof Entity) {
-                ((Entity) expected).setReceiverSigRequired(true);
+            if (expected.getType() != EntityType.CONTRACT) {
+                expected.setReceiverSigRequired(true);
             }
 
             Message updatedInnerBody = innerBody.toBuilder()
@@ -435,7 +429,7 @@ abstract class AbstractTransactionHandlerTest {
     }
 
     protected AbstractEntity getExpectedUpdatedEntity() {
-        AbstractEntity entity = getExpectedEntityWithTimestamp();
+        Entity entity = getExpectedEntityWithTimestamp();
 
         TransactionBody defaultBody = getDefaultTransactionBody().build();
         Message innerBody = getInnerBody(defaultBody);
@@ -459,14 +453,10 @@ abstract class AbstractTransactionHandlerTest {
                     entity.setKey(DEFAULT_KEY_LIST.toByteArray());
                     break;
                 case "receiverSigRequired":
-                    if (entity instanceof Entity) {
-                        ((Entity) entity).setReceiverSigRequired(DEFAULT_RECEIVER_SIG_REQUIRED);
-                    }
+                    entity.setReceiverSigRequired(DEFAULT_RECEIVER_SIG_REQUIRED);
                     break;
                 case "submitKey":
-                    if (entity instanceof Entity) {
-                        ((Entity) entity).setSubmitKey(DEFAULT_SUBMIT_KEY.toByteArray());
-                    }
+                    entity.setSubmitKey(DEFAULT_SUBMIT_KEY.toByteArray());
                     break;
                 default:
                     break;

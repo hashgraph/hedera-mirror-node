@@ -33,7 +33,7 @@ const {SHA_384} = HashObject;
 // version, hapiVersion, previous hash marker, SHA-384 hash
 const PRE_V5_HEADER_LENGTH = INT_SIZE + INT_SIZE + BYTE_SIZE + SHA_384.length;
 
-class FullRecordFile extends RecordFile {
+class RecordFilePreV5 extends RecordFile {
   /**
    * Parses rcd file storing hash and transactionId map for future verification
    * @param {Buffer} buffer
@@ -41,7 +41,7 @@ class FullRecordFile extends RecordFile {
   constructor(buffer) {
     super();
 
-    if (FullRecordFile._support(buffer)) {
+    if (RecordFilePreV5._support(buffer)) {
       this._parsePreV5RecordFile(buffer);
     } else {
       throw new Error(`Unsupported record file`);
@@ -57,11 +57,15 @@ class FullRecordFile extends RecordFile {
     return version === 1 || version === 2;
   }
 
+  getVersion() {
+    return this._version;
+  }
+
   _parsePreV5RecordFile(buffer) {
     this._version = RecordFile._readVersion(buffer);
     this._calculatePreV5FileHash(buffer.readInt32BE(), buffer);
 
-    buffer = buffer.slice(PRE_V5_HEADER_LENGTH);
+    buffer = buffer.subarray(PRE_V5_HEADER_LENGTH);
     let index = 0;
     while (buffer.length !== 0) {
       const marker = buffer.readInt8();
@@ -69,13 +73,13 @@ class FullRecordFile extends RecordFile {
         throw new Error(`Unsupported marker ${marker}, expect 2`);
       }
 
-      buffer = buffer.slice(BYTE_SIZE);
+      buffer = buffer.subarray(BYTE_SIZE);
       const transaction = readLengthAndBytes(buffer, BYTE_SIZE, MAX_TRANSACTION_LENGTH, false);
-      const record = readLengthAndBytes(buffer.slice(transaction.length), BYTE_SIZE, MAX_RECORD_LENGTH, false);
+      const record = readLengthAndBytes(buffer.subarray(transaction.length), BYTE_SIZE, MAX_RECORD_LENGTH, false);
       this._addTransaction(record.bytes, index);
       index++;
 
-      buffer = buffer.slice(transaction.length + record.length);
+      buffer = buffer.subarray(transaction.length + record.length);
     }
   }
 
@@ -86,12 +90,12 @@ class FullRecordFile extends RecordFile {
       fileDigest.update(buffer);
     } else {
       // version 2
-      const contentHash = crypto.createHash(SHA_384.name).update(buffer.slice(PRE_V5_HEADER_LENGTH)).digest();
-      fileDigest.update(buffer.slice(0, PRE_V5_HEADER_LENGTH)).update(contentHash);
+      const contentHash = crypto.createHash(SHA_384.name).update(buffer.subarray(PRE_V5_HEADER_LENGTH)).digest();
+      fileDigest.update(buffer.subarray(0, PRE_V5_HEADER_LENGTH)).update(contentHash);
     }
 
     this._fileHash = fileDigest.digest();
   }
 }
 
-export default FullRecordFile;
+export default RecordFilePreV5;

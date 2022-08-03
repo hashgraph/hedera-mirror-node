@@ -31,7 +31,8 @@
       ],
       "record_stream_object": "d8f399d55c3be7834a97a4c594df488036778bcbfc92b35f084c7a3544e56a42",
       "hashes_after": [],
-      "end_running_hash_object": "2b51b1fbc88bae03b5e4c73aba0a549be6815b67b8e880e5d443abd73269faf3"
+      "end_running_hash_object": "2b51b1fbc88bae03b5e4c73aba0a549be6815b67b8e880e5d443abd73269faf3",
+      "block_number": null
     },
     "signature_files": {
       "0.0.3": "27cb86f89b5b7ec6fa5bfbd270b69e8d538caf3998d884f082868fce755cabea",

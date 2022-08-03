@@ -31,23 +31,22 @@ import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import java.time.Instant;
-import javax.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
-import com.hedera.mirror.common.domain.contract.Contract;
-import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.util.Utility;
 
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class HistoricalAccountInfoMigrationTest extends IntegrationTest {
 
     // These are the three accounts present in the test accountInfo.txt.gz
@@ -58,17 +57,9 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
     private static final int CONTRACT_COUNT = 1;
     private static final int ENTITY_COUNT = 3;
 
-    @Resource
-    private HistoricalAccountInfoMigration historicalAccountInfoMigration;
-
-    @Resource
-    private ContractRepository contractRepository;
-
-    @Resource
-    private EntityRepository entityRepository;
-
-    @Resource
-    private MirrorProperties mirrorProperties;
+    private final HistoricalAccountInfoMigration historicalAccountInfoMigration;
+    private final EntityRepository entityRepository;
+    private final MirrorProperties mirrorProperties;
 
     private MirrorProperties.HederaNetwork network;
 
@@ -88,8 +79,7 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
     @Test
     void noExistingEntities() throws Exception {
         historicalAccountInfoMigration.doMigrate();
-        assertThat(contractRepository.count()).isEqualTo(CONTRACT_COUNT);
-        assertThat(entityRepository.count()).isEqualTo(ENTITY_COUNT);
+        assertThat(entityRepository.count()).isEqualTo(ENTITY_COUNT + CONTRACT_COUNT);
     }
 
     @Test
@@ -97,23 +87,17 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
         Entity entity1 = createEntity(ACCOUNT_ID1, EntityType.ACCOUNT, false);
         Entity entity2 = createEntity(ACCOUNT_ID2, EntityType.ACCOUNT, false);
         Entity entity3 = createEntity(ACCOUNT_ID3, EntityType.ACCOUNT, false);
-        Contract contract1 = createEntity(CONTRACT_ID1, EntityType.CONTRACT, false);
+        Entity contract1 = createEntity(CONTRACT_ID1, EntityType.CONTRACT, false);
 
         historicalAccountInfoMigration.doMigrate();
 
-        assertThat(contractRepository.findAll()).hasSize(CONTRACT_COUNT)
-                .allMatch(e -> e.getAutoRenewPeriod() > 0)
-                .allMatch(e -> e.getExpirationTimestamp() > 0)
-                .allMatch(e -> e.getKey().length > 0)
-                .map(Contract::getNum)
-                .containsExactly(contract1.getNum());
         assertThat(entityRepository.findAll())
-                .hasSize(ENTITY_COUNT)
+                .hasSize(ENTITY_COUNT + CONTRACT_COUNT)
                 .allMatch(e -> e.getAutoRenewPeriod() > 0)
                 .allMatch(e -> e.getExpirationTimestamp() > 0)
                 .allMatch(e -> e.getKey().length > 0)
                 .map(Entity::getNum)
-                .containsExactlyInAnyOrder(entity1.getNum(), entity2.getNum(), entity3.getNum());
+                .containsExactlyInAnyOrder(entity1.getNum(), entity2.getNum(), entity3.getNum(), contract1.getNum());
     }
 
     @Test
@@ -121,12 +105,11 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
         Entity entity1 = createEntity(ACCOUNT_ID1, EntityType.ACCOUNT, true);
         Entity entity2 = createEntity(ACCOUNT_ID2, EntityType.ACCOUNT, true);
         Entity entity3 = createEntity(ACCOUNT_ID3, EntityType.ACCOUNT, true);
-        Contract contract1 = createEntity(CONTRACT_ID1, EntityType.CONTRACT, true);
+        Entity contract1 = createEntity(CONTRACT_ID1, EntityType.CONTRACT, true);
 
         historicalAccountInfoMigration.doMigrate();
 
-        assertThat(contractRepository.findAll()).containsExactlyInAnyOrder(contract1);
-        assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(entity1, entity2, entity3);
+        assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(entity1, entity2, entity3, contract1);
     }
 
     @Test
@@ -138,27 +121,19 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
 
         historicalAccountInfoMigration.doMigrate();
 
-        assertThat(contractRepository.findAll())
-                .hasSize(CONTRACT_COUNT)
-                .first()
-                .returns(EntityType.CONTRACT, Contract::getType)
-                .returns(entity4.getNum(), Contract::getNum);
-        assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(entity1, entity2, entity3);
+        entity4.setType(EntityType.CONTRACT);
+        assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(entity1, entity2, entity3, entity4);
     }
 
     @Test
     void noChangesWhenRanAgain() throws Exception {
         historicalAccountInfoMigration.doMigrate();
 
-        assertThat(contractRepository.count()).isEqualTo(CONTRACT_COUNT);
-        Iterable<Contract> contracts = contractRepository.findAll();
         Iterable<Entity> entities = entityRepository.findAll();
-        assertThat(contracts).hasSize(1);
-        assertThat(entities).hasSize(ENTITY_COUNT);
+        assertThat(entities).hasSize(ENTITY_COUNT + CONTRACT_COUNT);
 
         historicalAccountInfoMigration.doMigrate();
 
-        assertThat(contractRepository.findAll()).containsExactlyInAnyOrderElementsOf(contracts);
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrderElementsOf(entities);
     }
 
@@ -166,7 +141,6 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
     void disabled() throws Exception {
         mirrorProperties.setImportHistoricalAccountInfo(false);
         historicalAccountInfoMigration.doMigrate();
-        assertThat(contractRepository.count()).isZero();
         assertThat(entityRepository.count()).isZero();
     }
 
@@ -174,7 +148,6 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
     void notMainnet() throws Exception {
         mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.DEMO);
         historicalAccountInfoMigration.doMigrate();
-        assertThat(contractRepository.count()).isZero();
         assertThat(entityRepository.count()).isZero();
     }
 
@@ -182,7 +155,6 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
     void startDateAfter() throws Exception {
         mirrorProperties.setStartDate(Instant.now());
         historicalAccountInfoMigration.doMigrate();
-        assertThat(contractRepository.count()).isZero();
         assertThat(entityRepository.count()).isZero();
     }
 
@@ -190,23 +162,20 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
     void startDateBefore() throws Exception {
         mirrorProperties.setStartDate(HistoricalAccountInfoMigration.EXPORT_DATE.minusNanos(1));
         historicalAccountInfoMigration.doMigrate();
-        assertThat(contractRepository.count()).isEqualTo(CONTRACT_COUNT);
-        assertThat(entityRepository.count()).isEqualTo(ENTITY_COUNT);
+        assertThat(entityRepository.count()).isEqualTo(ENTITY_COUNT + CONTRACT_COUNT);
     }
 
     @Test
     void startDateEquals() throws Exception {
         mirrorProperties.setStartDate(HistoricalAccountInfoMigration.EXPORT_DATE);
         historicalAccountInfoMigration.doMigrate();
-        assertThat(contractRepository.count()).isEqualTo(CONTRACT_COUNT);
-        assertThat(entityRepository.count()).isEqualTo(ENTITY_COUNT);
+        assertThat(entityRepository.count()).isEqualTo(ENTITY_COUNT + CONTRACT_COUNT);
     }
 
     @Test
     void startDateNull() throws Exception {
         mirrorProperties.setStartDate(null);
         historicalAccountInfoMigration.doMigrate();
-        assertThat(contractRepository.count()).isZero();
         assertThat(entityRepository.count()).isZero();
     }
 
@@ -313,8 +282,8 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
                 .setProxyAccountID(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2).build());
     }
 
-    private <T extends AbstractEntity> T createEntity(long num, EntityType type, boolean afterReset) {
-        T entity = EntityId.of(0L, 0L, num, type).toEntity();
+    private Entity createEntity(long num, EntityType type, boolean afterReset) {
+        Entity entity = EntityId.of(0L, 0L, num, type).toEntity();
         entity.setDeclineReward(false);
         entity.setNum(num);
         entity.setRealm(0L);
@@ -334,12 +303,7 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
             entity.setProxyAccountId(EntityId.of(0, 0, 3, EntityType.ACCOUNT));
         }
 
-        if (type == EntityType.CONTRACT) {
-            contractRepository.save((Contract) entity);
-        } else {
-            entityRepository.save((Entity) entity);
-        }
-
+        entityRepository.save(entity);
         return entity;
     }
 }

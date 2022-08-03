@@ -27,21 +27,21 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
-import javax.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.springframework.beans.factory.annotation.Autowired;
 
-import com.hedera.mirror.common.domain.DomainBuilder;
-import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.exception.AliasNotFoundException;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
-import com.hedera.mirror.importer.repository.ContractRepository;
+import com.hedera.mirror.importer.repository.EntityRepository;
 
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class EntityIdServiceImplTest extends IntegrationTest {
 
     // in the form 'shard.realm.num'
@@ -51,18 +51,12 @@ class EntityIdServiceImplTest extends IntegrationTest {
             0, 0, 0, 0, 0, 0, 0, 100, // num
     };
 
-    @Resource
-    private ContractRepository contractRepository;
-
-    @Resource
-    private DomainBuilder domainBuilder;
-
-    @Resource
-    private EntityIdService entityIdService;
+    private final EntityRepository entityRepository;
+    private final EntityIdService entityIdService;
 
     @Test
     void cache() {
-        Contract contract = domainBuilder.contract().persist();
+        Entity contract = domainBuilder.entity().customize(e -> e.alias(null).type(CONTRACT)).persist();
         ContractID contractId = getProtoContractId(contract);
         EntityId expected = contract.toEntityId();
 
@@ -71,12 +65,12 @@ class EntityIdServiceImplTest extends IntegrationTest {
 
         // mark it as deleted
         contract.setDeleted(true);
-        contractRepository.save(contract);
+        entityRepository.save(contract);
 
         // cache hit
         assertThat(entityIdService.lookup(contractId)).isEqualTo(expected);
 
-        contractRepository.deleteById(contract.getId());
+        entityRepository.deleteById(contract.getId());
         assertThat(entityIdService.lookup(contractId)).isEqualTo(expected);
 
         // cache miss
@@ -163,21 +157,37 @@ class EntityIdServiceImplTest extends IntegrationTest {
     }
 
     @Test
-    void lookupContractCreate2EvmAddress() {
-        Contract contract = domainBuilder.contract().persist();
+    void lookupContractEvmAddress() {
+        Entity contract = domainBuilder.entity().customize(e -> e.alias(null).type(CONTRACT)).persist();
         assertThat(entityIdService.lookup(getProtoContractId(contract))).isEqualTo(contract.toEntityId());
     }
 
     @Test
-    void lookupContractCreate2EvmAddressNoMatch() {
-        Contract contract = domainBuilder.contract().get();
+    void lookupContractEvmAddressSpecific() {
+        var contractId = ContractID.newBuilder().setEvmAddress(DomainUtils.fromBytes(PARSABLE_EVM_ADDRESS)).build();
+        assertThat(entityIdService.lookup(contractId)).isEqualTo(EntityId.of(100, CONTRACT));
+    }
+
+    @Test
+    void lookupContractEvmAddressNoMatch() {
+        Entity contract = domainBuilder.entity().customize(e -> e.alias(null).type(CONTRACT)).get();
         assertThrows(AliasNotFoundException.class, () -> entityIdService.lookup(getProtoContractId(contract)));
     }
 
     @Test
-    void lookupContractCreate2EvmAddressDeleted() {
-        Contract contract = domainBuilder.contract().customize((b) -> b.deleted(true)).persist();
+    void lookupContractEvmAddressDeleted() {
+        Entity contract = domainBuilder.entity().customize(e -> e.alias(null).deleted(true).type(CONTRACT)).persist();
         assertThrows(AliasNotFoundException.class, () -> entityIdService.lookup(getProtoContractId(contract)));
+    }
+
+    @Test
+    void lookupContractEvmAddressShardRealmMismatch() {
+        ContractID contractId = ContractID.newBuilder()
+                .setShardNum(1)
+                .setRealmNum(2)
+                .setEvmAddress(DomainUtils.fromBytes(PARSABLE_EVM_ADDRESS))
+                .build();
+        assertThrows(AliasNotFoundException.class, () -> entityIdService.lookup(contractId));
     }
 
     @Test
@@ -191,22 +201,6 @@ class EntityIdServiceImplTest extends IntegrationTest {
     }
 
     @Test
-    void lookupParsableEvmAddress() {
-        var contractId = ContractID.newBuilder().setEvmAddress(DomainUtils.fromBytes(PARSABLE_EVM_ADDRESS)).build();
-        assertThat(entityIdService.lookup(contractId)).isEqualTo(EntityId.of(100, CONTRACT));
-    }
-
-    @Test
-    void lookupParsableEvmAddressShardRealmMismatch() {
-        ContractID contractId = ContractID.newBuilder()
-                .setShardNum(1)
-                .setRealmNum(2)
-                .setEvmAddress(DomainUtils.fromBytes(PARSABLE_EVM_ADDRESS))
-                .build();
-        assertThrows(AliasNotFoundException.class, () -> entityIdService.lookup(contractId));
-    }
-
-    @Test
     void lookupContractThrows() {
         ContractID contractId = ContractID.newBuilder().setRealmNum(1).build();
         assertThrows(InvalidDatasetException.class, () -> entityIdService.lookup(contractId));
@@ -217,7 +211,8 @@ class EntityIdServiceImplTest extends IntegrationTest {
         ContractID nullContractId = null;
         ContractID contractId = ContractID.newBuilder().setContractNum(100).build();
         ContractID contractIdInvalid = ContractID.newBuilder().setRealmNum(1).build();
-        Contract contractDeleted = domainBuilder.contract().customize(e -> e.deleted(true)).persist();
+        Entity contractDeleted = domainBuilder.entity().customize(e -> e.alias(null).deleted(true).type(CONTRACT))
+                .persist();
 
         EntityId entityId = entityIdService.lookup(nullContractId,
                 ContractID.getDefaultInstance(),
@@ -238,8 +233,8 @@ class EntityIdServiceImplTest extends IntegrationTest {
 
     @Test
     void lookupContractsAliasNotFoundActionError() {
-        Contract contract1 = domainBuilder.contract().get();
-        Contract contract2 = domainBuilder.contract().customize(c -> c.evmAddress(null)).get();
+        Entity contract1 = domainBuilder.entity().customize(e -> e.alias(null).type(CONTRACT)).get();
+        Entity contract2 = domainBuilder.entity().customize(c -> c.alias(null).evmAddress(null).type(CONTRACT)).get();
         assertThrows(AliasNotFoundException.class, () -> entityIdService.lookup(AliasNotFoundAction.ERROR,
                 getProtoContractId(contract1), getProtoContractId(contract2)));
     }
@@ -262,14 +257,14 @@ class EntityIdServiceImplTest extends IntegrationTest {
     @ParameterizedTest
     @CsvSource(value = {"false", ","})
     void storeContract(Boolean deleted) {
-        Contract contract = domainBuilder.contract().customize(c -> c.deleted(deleted)).get();
+        Entity contract = domainBuilder.entity().customize(c -> c.alias(null).deleted(deleted).type(CONTRACT)).get();
         entityIdService.notify(contract);
         assertThat(entityIdService.lookup(getProtoContractId(contract))).isEqualTo(contract.toEntityId());
     }
 
     @Test
     void storeContractDeleted() {
-        Contract contract = domainBuilder.contract().customize(c -> c.deleted(true)).get();
+        Entity contract = domainBuilder.entity().customize(c -> c.alias(null).deleted(true).type(CONTRACT)).get();
         entityIdService.notify(contract);
         assertThrows(AliasNotFoundException.class, () -> entityIdService.lookup(getProtoContractId(contract)));
     }
@@ -299,7 +294,7 @@ class EntityIdServiceImplTest extends IntegrationTest {
         return accountId.build();
     }
 
-    private ContractID getProtoContractId(Contract contract) {
+    private ContractID getProtoContractId(Entity contract) {
         var contractId = ContractID.newBuilder()
                 .setShardNum(contract.getShard())
                 .setRealmNum(contract.getRealm());

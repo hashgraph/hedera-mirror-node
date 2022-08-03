@@ -1730,3 +1730,27 @@ describe('Utils convertGasPriceToTinyBars tests', () => {
     });
   });
 });
+
+describe('Utils getStakingPeriod tests', () => {
+  const specs = [
+    {
+      name: 'null',
+      args: null,
+      expected: null,
+    },
+    {
+      name: 'staking period',
+      args: 1654991999999999999n,
+      expected: {
+        from: '1654992000.000000000',
+        to: '1655078400.000000000',
+      },
+    },
+  ];
+
+  specs.forEach((spec) => {
+    test(spec.name, () => {
+      expect(utils.getStakingPeriod(spec.args)).toEqual(spec.expected);
+    });
+  });
+});

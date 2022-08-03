@@ -553,7 +553,7 @@ public abstract class AbstractDownloaderTest {
         mirrorProperties.setStartBlockNumber(null);
         fileCopier.copy();
         Files.walk(s3Path).filter(this::isSigFile)
-                .filter(p -> p.toString().contains(nodeAccountId.entityIdToString()))
+                .filter(p -> p.toString().contains(nodeAccountId.toString()))
                 .forEach(AbstractDownloaderTest::corruptFile);
         expectLastStreamFile(Instant.EPOCH);
         downloader.download();
@@ -567,7 +567,7 @@ public abstract class AbstractDownloaderTest {
         mirrorProperties.setStartBlockNumber(null);
         fileCopier.copy();
         Files.walk(s3Path).filter(Predicate.not(this::isSigFile))
-                .filter(p -> p.toString().contains(nodeAccountId.entityIdToString()))
+                .filter(p -> p.toString().contains(nodeAccountId.toString()))
                 .forEach(AbstractDownloaderTest::corruptFile);
         expectLastStreamFile(Instant.EPOCH);
         downloader.download();
@@ -687,7 +687,8 @@ public abstract class AbstractDownloaderTest {
     }
 
     protected void verifyStreamFiles(List<String> files) {
-        verifyStreamFiles(files, s -> {});
+        verifyStreamFiles(files, s -> {
+        });
     }
 
     protected void verifyStreamFiles(List<String> files, Consumer<StreamFile>... extraAsserts) {

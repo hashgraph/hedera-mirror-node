@@ -1,5 +1,3 @@
-package com.hedera.mirror.importer.repository;
-
 /*-
  * ‌
  * Hedera Mirror Node
@@ -20,16 +18,25 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.CrudRepository;
+import http from "k6/http";
 
-import com.hedera.mirror.common.domain.contract.ContractHistory;
+import {TestScenarioBuilder} from '../../lib/common.js';
+import {urlPrefix} from '../../lib/constants.js';
+import {isSuccess} from "./common.js";
+import {setupTestParameters} from "./bootstrapEnvParameters.js";
 
-public interface ContractHistoryRepository extends CrudRepository<ContractHistory, Long>, RetentionRepository {
+const urlTag = '/network/stake';
 
-    @Modifying
-    @Override
-    @Query(nativeQuery = true, value = "delete from contract_history where upper(timestamp_range) <= ?1")
-    int prune(long consensusTimestamp);
-}
+const {options, run} = new TestScenarioBuilder()
+  .name('networkStake') // use unique scenario name among all tests
+  .tags({url: urlTag})
+  .request((testParameters) => {
+    const url = `${testParameters['BASE_URL']}${urlPrefix}${urlTag}`;
+    return http.get(url);
+  })
+  .check('Network stake OK', isSuccess)
+  .build();
+
+export {options, run};
+
+export const setup = setupTestParameters;

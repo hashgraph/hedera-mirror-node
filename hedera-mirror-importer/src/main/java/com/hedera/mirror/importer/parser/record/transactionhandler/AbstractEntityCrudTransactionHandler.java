@@ -27,6 +27,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityOperation;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
@@ -77,7 +78,7 @@ abstract class AbstractEntityCrudTransactionHandler<T extends AbstractEntity> im
 
     protected final void updateEntity(EntityId entityId, RecordItem recordItem) {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
-        T entity = entityId.toEntity();
+        Entity entity = entityId.toEntity();
         EntityOperation entityOperation = type.getEntityOperation();
 
         if (entityOperation == EntityOperation.CREATE) {
@@ -90,7 +91,7 @@ abstract class AbstractEntityCrudTransactionHandler<T extends AbstractEntity> im
         }
 
         entity.setTimestampLower(consensusTimestamp);
-        doUpdateEntity(entity, recordItem);
+        doUpdateEntity((T) entity, recordItem);
     }
 
     protected abstract void doUpdateEntity(T entity, RecordItem recordItem);

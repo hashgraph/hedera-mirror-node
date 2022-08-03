@@ -31,39 +31,45 @@ import {
   Contract,
   ContractLog,
   ContractResult,
-  TransactionResult,
+  Entity,
   RecordFile,
   Transaction,
+  TransactionResult,
   TransactionType,
 } from '../model';
 import {ContractService, FileDataService, RecordFileService, TransactionService} from '../service';
 import TransactionId from '../transactionId';
 import * as utils from '../utils';
 import {
-  ContractViewModel,
+  ContractBytecodeViewModel,
   ContractLogViewModel,
-  ContractResultViewModel,
   ContractResultDetailsViewModel,
+  ContractResultViewModel,
+  ContractViewModel,
 } from '../viewmodel';
 
 const contractSelectFields = [
-  Contract.AUTO_RENEW_ACCOUNT_ID,
-  Contract.AUTO_RENEW_PERIOD,
-  Contract.CREATED_TIMESTAMP,
-  Contract.DELETED,
-  Contract.EVM_ADDRESS,
-  Contract.EXPIRATION_TIMESTAMP,
-  Contract.FILE_ID,
-  Contract.ID,
-  Contract.KEY,
-  Contract.MAX_AUTOMATIC_TOKEN_ASSOCIATIONS,
-  Contract.MEMO,
-  Contract.OBTAINER_ID,
-  Contract.PERMANENT_REMOVAL,
-  Contract.PROXY_ACCOUNT_ID,
-  Contract.TIMESTAMP_RANGE,
-].map((column) => Contract.getFullName(column));
-const contractWithInitcodeSelectFields = [...contractSelectFields, Contract.getFullName(Contract.INITCODE)];
+  Entity.AUTO_RENEW_ACCOUNT_ID,
+  Entity.AUTO_RENEW_PERIOD,
+  Entity.CREATED_TIMESTAMP,
+  Entity.DELETED,
+  Entity.EVM_ADDRESS,
+  Entity.EXPIRATION_TIMESTAMP,
+  Entity.ID,
+  Entity.KEY,
+  Entity.MAX_AUTOMATIC_TOKEN_ASSOCIATIONS,
+  Entity.MEMO,
+  Entity.OBTAINER_ID,
+  Entity.PERMANENT_REMOVAL,
+  Entity.PROXY_ACCOUNT_ID,
+  Entity.TIMESTAMP_RANGE,
+].map((column) => Entity.getFullName(column));
+contractSelectFields.push(Contract.getFullName(Contract.FILE_ID));
+const contractWithBytecodeSelectFields = [
+  ...contractSelectFields,
+  Contract.getFullName(Contract.INITCODE),
+  Contract.getFullName(Contract.RUNTIME_BYTECODE),
+];
 const {default: defaultLimit} = getResponseLimit();
 
 const duplicateTransactionResult = TransactionResult.getProtoId('DUPLICATE_TRANSACTION');
@@ -79,7 +85,7 @@ const emptyBloomBuffer = Buffer.alloc(256);
  */
 const extractSqlFromContractFilters = async (filters) => {
   const filterQuery = {
-    filterQuery: '',
+    filterQuery: `where e.type = 'CONTRACT'`,
     params: [defaultLimit],
     order: orderFilterValues.DESC,
     limit: defaultLimit,
@@ -94,7 +100,7 @@ const extractSqlFromContractFilters = async (filters) => {
   const conditions = [];
   const contractIdInValues = [];
   const params = [];
-  const contractIdFullName = Contract.getFullName(Contract.ID);
+  const contractIdFullName = Entity.getFullName(Entity.ID);
 
   for (const filter of filters) {
     switch (filter.key) {
@@ -119,7 +125,7 @@ const extractSqlFromContractFilters = async (filters) => {
   }
 
   if (contractIdInValues.length !== 0) {
-    // add the condition 'c.id in ()'
+    // add the condition 'e.id in ()'
     const start = params.length + 1; // start is the next positional index
     params.push(...contractIdInValues);
     const positions = _.range(contractIdInValues.length)
@@ -127,13 +133,14 @@ const extractSqlFromContractFilters = async (filters) => {
       .map((position) => `$${position}`);
     conditions.push(`${contractIdFullName} in (${positions})`);
   }
-  const whereQuery = conditions.length !== 0 ? `where ${conditions.join(' and ')}` : '';
+
+  if (conditions.length !== 0) {
+    filterQuery.filterQuery += ` and ${conditions.join(' and ')}`;
+  }
 
   // add limit
   params.push(filterQuery.limit);
   filterQuery.limitQuery = `limit $${params.length}`;
-
-  filterQuery.filterQuery = whereQuery;
   filterQuery.params = params;
 
   return filterQuery;
@@ -146,7 +153,7 @@ const extractSqlFromContractFilters = async (filters) => {
 const extractTimestampConditionsFromContractFilters = (filters) => {
   const conditions = [];
   const params = [];
-  const timestampRangeColumn = Contract.getFullName(Contract.TIMESTAMP_RANGE);
+  const timestampRangeColumn = Entity.getFullName(Entity.TIMESTAMP_RANGE);
 
   filters
     .filter((filter) => filter.key === filterKeys.TIMESTAMP)
@@ -193,11 +200,13 @@ const extractTimestampConditionsFromContractFilters = (filters) => {
 /**
  * Formats a contract row from database to the contract view model
  * @param row
- * @return {ContractViewModel}
+ * @param viewModel
+ * @return {ContractViewModel | ContractBytecodeViewModel}
  */
-const formatContractRow = (row) => {
-  const model = new Contract(row);
-  return new ContractViewModel(model);
+const formatContractRow = (row, viewModel) => {
+  const contract = new Contract(row);
+  const entity = new Entity(row);
+  return new viewModel(contract, entity);
 };
 
 /**
@@ -208,9 +217,11 @@ const formatContractRow = (row) => {
  */
 const getContractByIdOrAddressQueryForTable = (table, conditions) => {
   return [
-    `select ${contractWithInitcodeSelectFields}`,
-    `from ${table} ${Contract.tableAlias}`,
-    `where ${conditions.join(' and ')}`,
+    `select ${contractWithBytecodeSelectFields}`,
+    `from ${table} ${Entity.tableAlias}`,
+    `left join ${Contract.tableName} ${Contract.tableAlias}`,
+    `on ${Entity.getFullName(Entity.ID)} = ${Contract.getFullName(Contract.ID)}`,
+    `where e.type = 'CONTRACT' and ${conditions.join(' and ')}`,
   ].join('\n');
 };
 
@@ -237,33 +248,27 @@ const getContractByIdOrAddressQuery = ({timestampConditions, timestampParams, co
     // The contract ID string can be shard.realm.num, realm.num when shard=0 in application.yml or the encoded entity ID string.
     const encodedId = EntityId.parse(contractIdParam).getEncodedId();
     params.push(encodedId);
-    conditions.push(`${Contract.getFullName(Contract.ID)} = $${params.length}`);
+    conditions.push(`${Entity.getFullName(Entity.ID)} = $${params.length}`);
   }
 
-  const tableUnionQueries = [getContractByIdOrAddressQueryForTable(Contract.tableName, conditions)];
+  const tableUnionQueries = [getContractByIdOrAddressQueryForTable(Entity.tableName, conditions)];
   if (timestampConditions.length !== 0) {
     // if there is timestamp condition, union the result from both tables
     tableUnionQueries.push(
       'union',
-      getContractByIdOrAddressQueryForTable(Contract.historyTableName, conditions),
-      `order by ${Contract.TIMESTAMP_RANGE} desc`,
+      getContractByIdOrAddressQueryForTable(Entity.historyTableName, conditions),
+      `order by ${Entity.TIMESTAMP_RANGE} desc`,
       `limit 1`
     );
   }
 
-  const cte = `with contract as (
-    ${tableUnionQueries.join('\n')}
-  ),
-  contract_file as (
-    ${FileDataService.getContractInitCodeFiledataQuery()}
-  )`;
-
-  const selectFields = [
-    ...contractSelectFields,
-    `coalesce(encode(${Contract.getFullName(Contract.INITCODE)}, 'hex')::bytea, cf.bytecode) as bytecode`,
-  ];
   return {
-    query: [cte, `select ${selectFields}`, `from contract ${Contract.tableAlias}, contract_file cf`].join('\n'),
+    query: [
+      `with contract_entity as (${tableUnionQueries.join('\n')}),
+                    contract_file as (${FileDataService.getContractInitCodeFiledataQuery()})`,
+      `select ce.*, coalesce(encode(ce.initcode, 'hex')::bytea, cf.bytecode) as bytecode`,
+      `from contract_entity ce, contract_file cf`,
+    ].join('\n'),
     params,
   };
 };
@@ -278,9 +283,11 @@ const getContractByIdOrAddressQuery = ({timestampConditions, timestampParams, co
 const getContractsQuery = (whereQuery, limitQuery, order) => {
   return [
     `select ${contractSelectFields}`,
-    `from ${Contract.tableName} ${Contract.tableAlias}`,
+    `from ${Entity.tableName} ${Entity.tableAlias}`,
+    `left join ${Contract.tableName} ${Contract.tableAlias}`,
+    `on ${Entity.getFullName(Entity.ID)} = ${Contract.getFullName(Contract.ID)}`,
     whereQuery,
-    `order by ${Contract.getFullName(Contract.ID)} ${order}`,
+    `order by ${Entity.getFullName(Entity.ID)} ${order}`,
     limitQuery,
   ]
     .filter((q) => q !== '')
@@ -735,7 +742,7 @@ class ContractController extends BaseController {
       throw new NotFoundError();
     }
 
-    res.locals[responseDataLabel] = formatContractRow(rows[0]);
+    res.locals[responseDataLabel] = formatContractRow(rows[0], ContractBytecodeViewModel);
   };
 
   /**
@@ -762,7 +769,7 @@ class ContractController extends BaseController {
     logger.debug(`getContracts returning ${rows.length} entries`);
 
     const response = {
-      contracts: rows.map((row) => formatContractRow(row)),
+      contracts: rows.map((row) => formatContractRow(row, ContractViewModel)),
       links: {},
     };
 
@@ -1111,6 +1118,8 @@ if (utils.isTestEnv()) {
     exportControllerMethods(['extractContractResultsByIdQuery', 'extractContractLogsMultiUnionQuery']),
     {
       checkTimestampsForTopics,
+      contractSelectFields,
+      contractWithBytecodeSelectFields,
       extractSqlFromContractFilters,
       extractTimestampConditionsFromContractFilters,
       formatContractRow,

@@ -25,12 +25,10 @@
         "balance": 5,
         "tokens": [
           {
-            "token_realm": 0,
             "token_num": 90000,
             "balance": 1
           },
           {
-            "token_realm": 0,
             "token_num": 90001,
             "balance": 5
           }
@@ -42,12 +40,10 @@
         "balance": 10,
         "tokens": [
           {
-            "token_realm": 0,
             "token_num": 90000,
             "balance": 6
           },
           {
-            "token_realm": 0,
             "token_num": 90001,
             "balance": 11
           }
@@ -59,12 +55,10 @@
         "balance": 10,
         "tokens": [
           {
-            "token_realm": 0,
             "token_num": 90001,
             "balance": 1
           },
           {
-            "token_realm": 0,
             "token_num": 90010,
             "balance": 12
           }
@@ -76,12 +70,10 @@
         "balance": 20,
         "tokens": [
           {
-            "token_realm": 0,
             "token_num": 90001,
             "balance": 2
           },
           {
-            "token_realm": 0,
             "token_num": 90010,
             "balance": 22
           }
@@ -93,12 +85,10 @@
         "balance": 50,
         "tokens": [
           {
-            "token_realm": 0,
             "token_num": 100001,
             "balance": 5
           },
           {
-            "token_realm": 0,
             "token_num": 100002,
             "balance": 55
           }

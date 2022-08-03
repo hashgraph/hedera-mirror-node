@@ -1,5 +1,3 @@
-package com.hedera.mirror.common.domain.contract;
-
 /*-
  * ‌
  * Hedera Mirror Node
@@ -20,13 +18,26 @@ package com.hedera.mirror.common.domain.contract;
  * ‍
  */
 
-import javax.persistence.Entity;
-import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
+import RecordFilePreV5 from '../../stream/recordFilePreV5';
+import testUtils from './testUtils';
 
-@Entity
-@NoArgsConstructor
-@SuperBuilder
-public class ContractHistory extends AbstractContract {
-    // Only the parent class should contain fields so that they're shared with both the history and non-history tables.
-}
+describe('unsupported record file version', () => {
+  testUtils.testRecordFileUnsupportedVersion([3, 4, 5, 6], RecordFilePreV5);
+});
+
+describe('canCompact', () => {
+  const testSpecs = [
+    [1, false],
+    [2, false],
+    [3, false],
+    [4, false],
+    [5, false],
+    [6, false],
+  ];
+
+  testUtils.testRecordFileCanCompact(testSpecs, RecordFilePreV5);
+});
+
+describe('from v2 buffer', () => {
+  testUtils.testRecordFileFromBufferOrObj(2, RecordFilePreV5);
+});
