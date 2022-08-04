@@ -185,6 +185,12 @@ public class SimulatedUpdater implements HederaWorldUpdater {
         return Address.wrap(Bytes.wrap(newContractEvmBytes));
     }
 
+    @Override
+    public Long getTestContract() {
+
+        return contractRepository.findNumOfTestContract().get();
+    }
+
     /**
      * Tracks how much Gas should be refunded to the sender account for the TX. SBH price is
      * refunded for the first allocation of new contract storage in order to prevent double charging
