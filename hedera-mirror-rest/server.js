@@ -27,7 +27,6 @@ import bodyParser from 'body-parser';
 import cors from 'cors';
 import httpContext from 'express-http-context';
 import fs from 'fs';
-import log4js from 'log4js';
 import compression from 'compression';
 
 // local files
@@ -56,30 +55,6 @@ import {
 
 // routes
 import {AccountRoutes, ContractRoutes, NetworkRoutes, BlockRoutes} from './routes';
-
-// Logger
-const logger = log4js.getLogger();
-log4js.configure({
-  appenders: {
-    console: {
-      layout: {
-        pattern: '%d{yyyy-MM-ddThh:mm:ss.SSSO} %p %x{requestId} %m',
-        type: 'pattern',
-        tokens: {
-          requestId: (e) => httpContext.get(constants.requestIdLabel) || 'Startup',
-        },
-      },
-      type: 'stdout',
-    },
-  },
-  categories: {
-    default: {
-      appenders: ['console'],
-      level: config.log.level,
-    },
-  },
-});
-global.logger = log4js.getLogger();
 
 // use a dummy port for jest unit tests
 const port = isTestEnv() ? 3000 : config.port;
