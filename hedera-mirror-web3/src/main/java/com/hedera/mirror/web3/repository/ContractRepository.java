@@ -31,7 +31,6 @@ public interface ContractRepository extends CrudRepository<Contract, Long> {
     @Query(value = "select num from contract order by id desc limit 1", nativeQuery=true)
     Optional<Long> findLatestNum();
 
-
     @Query(value = "select encode(runtime_bytecode, 'hex') from contract where id = ?1", nativeQuery=true)
     Optional<String> getRuntimeBytecodeOfTestContract(Long num);
 }
