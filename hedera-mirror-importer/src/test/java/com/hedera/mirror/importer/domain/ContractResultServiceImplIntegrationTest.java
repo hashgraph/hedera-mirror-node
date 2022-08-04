@@ -280,7 +280,13 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
     @Test
     void migrateContractSidecar() {
-        RecordItem recordItem = recordItemBuilder.cryptoTransfer().build();
+        // given
+        var entity1 = domainBuilder.entity().persist();
+        var entity2 = domainBuilder.entity().persist();
+        domainBuilder.contract().customize(c -> c.id(entity1.getId())).persist();
+        domainBuilder.contract().customize(c -> c.id(entity2.getId())).persist();
+
+        var recordItem = recordItemBuilder.cryptoTransfer().build();
         var stateChangeRecord1 = TransactionSidecarRecord.newBuilder()
                 .setStateChanges(ContractStateChanges.newBuilder()
                         .addContractStateChanges(com.hedera.services.stream.proto.ContractStateChange.newBuilder()
@@ -306,13 +312,13 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
         var bytecodeRecord1 = TransactionSidecarRecord.newBuilder()
                 .setMigration(true)
                 .setBytecode(ContractBytecode.newBuilder()
-                        .setContractId(ContractID.newBuilder().setContractNum(2001L))
+                        .setContractId(ContractID.newBuilder().setContractNum(entity1.getId()))
                         .setRuntimeBytecode(ByteString.copyFrom(new byte[] {1})))
                 .build();
         var bytecodeRecord2 = TransactionSidecarRecord.newBuilder()
                 .setMigration(true)
                 .setBytecode(ContractBytecode.newBuilder()
-                        .setContractId(ContractID.newBuilder().setContractNum(2002L))
+                        .setContractId(ContractID.newBuilder().setContractNum(entity2.getId()))
                         .setRuntimeBytecode(ByteString.copyFrom(new byte[] {2})))
                 .build();
         var bytecodeRecord3 = TransactionSidecarRecord.newBuilder()
@@ -325,9 +331,27 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
         recordItem.setSidecarRecords(List.of(stateChangeRecord1, stateChangeRecord2, bytecodeRecord1, bytecodeRecord2,
                 bytecodeRecord3));
 
+        // when
         process(recordItem);
+
+        // then
         assertContractStateChanges(recordItem);
-        assertContractBytecodeMigrations(recordItem);
+        assertContractRuntimeBytecode(recordItem);
+        assertEntityContractType(recordItem);
+    }
+
+    private void assertEntityContractType(RecordItem recordItem) {
+        var entities = entityRepository.findAll().iterator();
+        recordItem.getSidecarRecords()
+                .stream()
+                .filter(TransactionSidecarRecord::getMigration)
+                .map(TransactionSidecarRecord::getBytecode)
+                .forEach(contractBytecode -> {
+                    assertThat(entities).hasNext();
+                    assertThat(entities.next())
+                            .returns(CONTRACT, Entity::getType);
+                });
+        assertThat(entities).isExhausted();
     }
 
     @SuppressWarnings("deprecation")
@@ -376,7 +400,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
         assertThat(contractActions).isExhausted();
     }
 
-    private void assertContractBytecodeMigrations(RecordItem recordItem) {
+    private void assertContractRuntimeBytecode(RecordItem recordItem) {
         var contracts = contractRepository.findAll().iterator();
         recordItem.getSidecarRecords()
                 .stream()

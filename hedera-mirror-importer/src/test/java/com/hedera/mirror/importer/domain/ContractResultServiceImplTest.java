@@ -48,11 +48,13 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.exception.InvalidEntityException;
+import com.hedera.mirror.importer.migration.EntityContractTypeMigration;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
+import com.hedera.mirror.importer.repository.ContractRepository;
 
 @ExtendWith(MockitoExtension.class)
 class ContractResultServiceImplTest {
@@ -60,6 +62,10 @@ class ContractResultServiceImplTest {
     private final EntityProperties entityProperties = new EntityProperties();
     private final DomainBuilder domainBuilder = new DomainBuilder();
 
+    @Mock
+    private ContractRepository contractRepository;
+    @Mock
+    private EntityContractTypeMigration entityContractTypeMigration;
     @Mock(lenient = true)
     private EntityIdService entityIdService;
     @Mock
@@ -75,8 +81,8 @@ class ContractResultServiceImplTest {
     void beforeEach() {
         doNothing().when(transactionHandler).updateContractResult(any(ContractResult.class), any(RecordItem.class));
         doReturn(transactionHandler).when(transactionHandlerFactory).get(any(TransactionType.class));
-        contractResultService = new ContractResultServiceImpl(entityProperties, entityIdService, entityListener,
-                transactionHandlerFactory);
+        contractResultService = new ContractResultServiceImpl(contractRepository, entityContractTypeMigration,
+                entityProperties, entityIdService, entityListener, transactionHandlerFactory);
     }
 
     @CsvSource({

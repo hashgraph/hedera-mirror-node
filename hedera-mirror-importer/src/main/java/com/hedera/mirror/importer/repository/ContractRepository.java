@@ -20,10 +20,16 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.hedera.mirror.common.domain.contract.Contract;
 
+@Transactional
 public interface ContractRepository extends CrudRepository<Contract, Long> {
-
+    @Modifying
+    @Query(value = "update contract set runtime_bytecode = ? where id = ?", nativeQuery = true)
+    int updateRuntimeBytecode(byte[] runtimeBytecode, long id);
 }
