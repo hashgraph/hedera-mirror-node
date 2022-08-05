@@ -38,7 +38,7 @@ import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionPars
 import com.hedera.mirror.importer.util.Utility;
 
 @Named
-class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHandler<Entity> {
+class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
     private final EntityProperties entityProperties;
     private final EthereumTransactionParser ethereumTransactionParser;
@@ -104,6 +104,7 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
             entity.setProxyAccountId(EntityId.of(transactionBody.getProxyAccountID()));
         }
 
+        entity.setBalance(0L);
         entity.setMaxAutomaticTokenAssociations(transactionBody.getMaxAutomaticTokenAssociations());
         entity.setMemo(transactionBody.getMemo());
         updateStakingInfo(recordItem, entity);
@@ -191,7 +192,8 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
         switch (type) {
             case CONTRACTCREATEINSTANCE -> updateChildFromContractCreateParent(contract, parentRecordItem);
             case ETHEREUMTRANSACTION -> updateChildFromEthereumTransactionParent(contract, parentRecordItem);
-            default -> {}
+            default -> {
+            }
         }
     }
 

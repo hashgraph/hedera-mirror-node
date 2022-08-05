@@ -47,6 +47,7 @@ import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.Date
 import com.hedera.mirror.importer.exception.FileOperationException;
 import com.hedera.mirror.importer.parser.balance.BalanceStreamFileListener;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityRecordItemListener;
 import com.hedera.mirror.importer.reader.ValidatedDataInputStream;
 import com.hedera.mirror.importer.repository.TransactionRepository;
@@ -63,6 +64,7 @@ public class ErrataMigration extends MirrorBaseJavaMigration implements BalanceS
     @Value("classpath:errata/mainnet/balance-offsets.txt")
     private final Resource balanceOffsets;
     private final EntityRecordItemListener entityRecordItemListener;
+    private final EntityProperties entityProperties;
     private final NamedParameterJdbcOperations jdbcOperations;
     private final MirrorProperties mirrorProperties;
     private final RecordStreamFileListener recordStreamFileListener;
@@ -104,9 +106,16 @@ public class ErrataMigration extends MirrorBaseJavaMigration implements BalanceS
     @Override
     protected void doMigrate() throws IOException {
         if (isMainnet()) {
-            balanceFileAdjustment();
-            spuriousTransfers();
-            missingTransactions();
+            boolean trackBalance = entityProperties.getPersist().isTrackBalance();
+            entityProperties.getPersist().setTrackBalance(false);
+
+            try {
+                balanceFileAdjustment();
+                spuriousTransfers();
+                missingTransactions();
+            } finally {
+                entityProperties.getPersist().setTrackBalance(trackBalance);
+            }
         }
     }
 

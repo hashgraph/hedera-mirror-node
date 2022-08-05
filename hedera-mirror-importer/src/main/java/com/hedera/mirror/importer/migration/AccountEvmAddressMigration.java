@@ -24,14 +24,12 @@ import java.io.IOException;
 import java.util.Map;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 
 import com.hedera.mirror.importer.util.Utility;
 
-@Log4j2
 @Named
 @RequiredArgsConstructor(onConstructor_ = {@Lazy})
 public class AccountEvmAddressMigration extends MirrorBaseJavaMigration {
