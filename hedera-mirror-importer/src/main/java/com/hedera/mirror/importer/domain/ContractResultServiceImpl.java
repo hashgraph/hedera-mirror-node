@@ -25,7 +25,6 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import javax.inject.Named;
 import lombok.NonNull;
@@ -46,12 +45,11 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
-import com.hedera.mirror.importer.migration.EntityContractTypeMigration;
+import com.hedera.mirror.importer.migration.SidecarContractMigration;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
-import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.util.Utility;
 import com.hedera.services.stream.proto.ContractBytecode;
 import com.hedera.services.stream.proto.ContractStateChange;
@@ -61,14 +59,11 @@ import com.hedera.services.stream.proto.ContractStateChange;
 @RequiredArgsConstructor
 public class ContractResultServiceImpl implements ContractResultService {
 
-    private final ContractRepository contractRepository;
-    private final EntityContractTypeMigration entityContractTypeMigration;
     private final EntityProperties entityProperties;
     private final EntityIdService entityIdService;
     private final EntityListener entityListener;
+    private final SidecarContractMigration sidecarContractMigration;
     private final TransactionHandlerFactory transactionHandlerFactory;
-
-    private final Collection<Long> sidecarMigrationContractIds = new ArrayList<>();
 
     @Override
     public void process(@NonNull RecordItem recordItem, Transaction transaction) {
@@ -104,13 +99,6 @@ public class ContractResultServiceImpl implements ContractResultService {
 
     private boolean isContractCreateOrCall(TransactionBody transactionBody) {
         return transactionBody.hasContractCall() || transactionBody.hasContractCreateInstance();
-    }
-
-    private void processBytecode(ContractBytecode contractBytecode) {
-        var entity = EntityId.of(contractBytecode.getContractId());
-        sidecarMigrationContractIds.add(entity.getId());
-        contractRepository.updateRuntimeBytecode(DomainUtils.toBytes(contractBytecode.getRuntimeBytecode()),
-                entity.getId());
     }
 
     private void processContractAction(com.hedera.services.stream.proto.ContractAction action, int index,
@@ -269,6 +257,7 @@ public class ContractResultServiceImpl implements ContractResultService {
     }
 
     private void processSidecarRecords(RecordItem recordItem) {
+        var contractBytecodes = new ArrayList<ContractBytecode>();
         var sidecarRecords = recordItem.getSidecarRecords();
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         var payerAccountId = recordItem.getPayerAccountId();
@@ -284,12 +273,11 @@ public class ContractResultServiceImpl implements ContractResultService {
                     processContractAction(actions.getContractActions(actionIndex), actionIndex, consensusTimestamp);
                 }
             } else if (sidecarRecord.hasBytecode() && sidecarRecord.getMigration()) {
-                processBytecode(sidecarRecord.getBytecode());
+                contractBytecodes.add(sidecarRecord.getBytecode());
             }
         }
 
-        entityContractTypeMigration.doMigrate(sidecarMigrationContractIds);
-        sidecarMigrationContractIds.clear();
+        sidecarContractMigration.migrate(contractBytecodes);
     }
 
     /**

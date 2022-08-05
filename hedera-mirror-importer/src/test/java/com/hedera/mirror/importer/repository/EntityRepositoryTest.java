@@ -115,10 +115,9 @@ class EntityRepositoryTest extends AbstractRepositoryTest {
         Entity entity = domainBuilder.entity().persist();
         Entity entity2 = domainBuilder.entity().persist();
         entityRepository.updateContractType(List.of(entity.getId(), entity2.getId()));
-
-        assertThat(entityRepository.findById(entity.getId())).get()
-                .extracting(Entity::getType).isEqualTo(CONTRACT);
-        assertThat(entityRepository.findById(entity2.getId())).get()
-                .extracting(Entity::getType).isEqualTo(CONTRACT);
+        assertThat(entityRepository.findAll())
+                .hasSize(2)
+                .extracting(Entity::getType)
+                .allMatch(e -> e == CONTRACT);
     }
 }

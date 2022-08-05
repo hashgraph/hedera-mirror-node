@@ -22,33 +22,46 @@ package com.hedera.mirror.importer.migration;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Iterables;
-import java.util.Collection;
+import java.util.ArrayList;
+import java.util.List;
 import javax.inject.Named;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.annotation.Lazy;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
+import com.hedera.services.stream.proto.ContractBytecode;
 
 @CustomLog
 @Named
-@RequiredArgsConstructor(onConstructor_ = {@Lazy})
-public class EntityContractTypeMigration {
+@RequiredArgsConstructor
+public class SidecarContractMigration {
 
     private static final int BATCH_LIMIT = 32767;
+    private final ContractRepository contractRepository;
     private final EntityRepository entityRepository;
 
-    public void doMigrate(final Collection<Long> contractIds) {
-        if (contractIds == null || contractIds.isEmpty()) {
+    public void migrate(List<ContractBytecode> contractBytecodes) {
+        if (contractBytecodes == null || contractBytecodes.isEmpty()) {
             return;
         }
 
-        int count = 0;
-        var partitions = Iterables.partition(contractIds, BATCH_LIMIT);
+        var sidecarMigrationContractIds = new ArrayList<Long>();
         var stopwatch = Stopwatch.createStarted();
+        for (ContractBytecode contractBytecode : contractBytecodes) {
+            var entityId = EntityId.of(contractBytecode.getContractId()).getId();
+            sidecarMigrationContractIds.add(entityId);
+            contractRepository.updateRuntimeBytecode(
+                    DomainUtils.toBytes(contractBytecode.getRuntimeBytecode()), entityId);
+        }
+
+        int count = 0;
+        var partitions = Iterables.partition(sidecarMigrationContractIds, BATCH_LIMIT);
         for (var partition : partitions) {
             count += entityRepository.updateContractType(partition);
         }
-        log.info("Updated {} entities in {}", count, stopwatch);
+        log.info("Migrated {} sidecar contract entities in {}", count, stopwatch);
     }
 }
