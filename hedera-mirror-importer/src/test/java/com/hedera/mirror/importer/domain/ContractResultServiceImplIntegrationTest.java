@@ -284,7 +284,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
         var entity1 = domainBuilder.entity().persist();
         var entity2 = domainBuilder.entity().persist();
         domainBuilder.contract().customize(c -> c.id(entity1.getId())).persist();
-        domainBuilder.contract().customize(c -> c.id(entity2.getId())).persist();
+        domainBuilder.contract().customize(c -> c.id(entity2.getId()).runtimeBytecode(null)).persist();
 
         var recordItem = recordItemBuilder.cryptoTransfer().build();
         var stateChangeRecord1 = TransactionSidecarRecord.newBuilder()
