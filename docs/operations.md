@@ -162,10 +162,10 @@ balance is inaccurate due to bugs, follow the steps below to re-run the migratio
 
 2. Get the latest checksum of `InitializeEntityBalanceMigration`
 
-```shell
-$ psql -h db -U mirror_node -c "select checksum from flyway_schema_history \
-  where script like '%InitializeEntityBalanceMigration' order by installed_rank desc limit 1"
-```
+   ```shell
+   $ psql -h db -U mirror_node -c "select checksum from flyway_schema_history \
+     where script like '%InitializeEntityBalanceMigration' order by installed_rank desc limit 1"
+   ```
 
 3. Set a different checksum (e.g., 2) for the migration and start importer
 
