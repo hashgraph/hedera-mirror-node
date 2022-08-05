@@ -149,6 +149,35 @@ should be able to ingest one month's worth of mainnet data in less than 1.5 days
   - max_wal_size = 8388608
   - work_mem = 262144
 
+### Initialize Entity Balance
+
+The importer tracks up-to-date entity balance by applying the balance changes from crypto transfers. This relies on the
+[InitializeEntityBalanceMigration](/hedera-mirror-importer/src/main/java/com/hedera/mirror/importer/migration/InitializeEntityBalanceMigration.java)
+to set the correct initial entity balance from the latest account balance snapshot relative to the last record stream
+file the importer has ingested and the balance changes in the above record stream file not accounted in the snapshot.
+If the importer is started with a database which doesn't meet the prerequisite (e.g., an empty database) or the entity
+balance is inaccurate due to bugs, follow the steps below to re-run the migration to fix the entity balance.
+
+1. Stop importer
+
+2. Get the latest checksum of `InitializeEntityBalanceMigration`
+
+```shell
+$ psql -h db -U mirror_node -c "select checksum from flyway_schema_history \
+  where script like '%InitializeEntityBalanceMigration' order by installed_rank desc limit 1"
+```
+
+3. Set a different checksum (e.g., 2) for the migration and start importer
+
+   ```yaml
+   hedera:
+     mirror:
+       importer:
+         migration:
+           initializeEntityBalanceMigration:
+             checksum: 2
+   ```
+
 ## Monitor
 
 The monitor is a Java-based application and should be able to run on any platform that Java supports. That said, we

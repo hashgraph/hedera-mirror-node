@@ -23,9 +23,12 @@ package com.hedera.mirror.importer.migration;
 import com.google.common.base.Stopwatch;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcOperations;
+
+import com.hedera.mirror.importer.MirrorProperties;
 
 @Named
 @RequiredArgsConstructor(onConstructor_ = {@Lazy})
@@ -48,11 +51,13 @@ public class InitializeEntityBalanceMigration extends MirrorBaseJavaMigration {
             where type in ('ACCOUNT', 'CONTRACT') and deleted is not true;
             """;
 
+    private final MirrorProperties mirrorProperties;
     private final JdbcOperations jdbcOperations;
 
     @Override
     public Integer getChecksum() {
-        return 1; // Change this if this migration should be rerun
+        // Change the value in the configuration file if this migration should be rerun
+        return mirrorProperties.getMigration().get(StringUtils.uncapitalize(getClass().getSimpleName())).getChecksum();
     }
 
     @Override
