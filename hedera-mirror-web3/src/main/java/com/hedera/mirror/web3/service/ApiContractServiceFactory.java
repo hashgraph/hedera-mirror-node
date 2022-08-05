@@ -1,10 +1,12 @@
-package com.hedera.mirror.api.contract.service;
+package com.hedera.mirror.web3.service;
 
 import java.util.Collection;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import javax.inject.Named;
 
+@Named
 public class ApiContractServiceFactory {
 
     private final Map<String, ApiContractService<?, ?>> services;

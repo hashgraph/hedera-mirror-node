@@ -1,4 +1,4 @@
-package com.hedera.mirror.api.contract.service;
+package com.hedera.mirror.web3.service;
 
 public interface ApiContractService<I, O> {
 

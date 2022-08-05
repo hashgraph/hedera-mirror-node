@@ -45,7 +45,6 @@ import org.hyperledger.besu.evm.contractvalidation.ContractValidationRule;
 import org.hyperledger.besu.evm.contractvalidation.MaxCodeSizeRule;
 import org.hyperledger.besu.evm.contractvalidation.PrefixCodeRule;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.internal.EvmConfiguration;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.operation.OperationRegistry;
@@ -56,12 +55,13 @@ import org.hyperledger.besu.evm.processor.AbstractMessageProcessor;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
-import com.hedera.mirror.api.contract.evm.OracleSimulator;
-import com.hedera.mirror.api.contract.evm.SimulatedPricesSource;
-import com.hedera.mirror.api.contract.evm.SimulatedUpdater;
-import com.hedera.mirror.api.contract.evm.properties.BlockMetaSourceProvider;
-import com.hedera.mirror.api.contract.evm.properties.EvmProperties;
-import com.hedera.mirror.api.contract.service.eth.AccountDto;
+import com.hedera.mirror.web3.evm.OracleSimulator;
+import com.hedera.mirror.web3.evm.SimulatedGasCalculator;
+import com.hedera.mirror.web3.evm.SimulatedPricesSource;
+import com.hedera.mirror.web3.evm.SimulatedUpdater;
+import com.hedera.mirror.web3.evm.properties.BlockMetaSourceProvider;
+import com.hedera.mirror.web3.evm.properties.EvmProperties;
+import com.hedera.mirror.web3.service.eth.AccountDto;
 import com.hedera.services.transaction.HederaMessageCallProcessor;
 import com.hedera.services.transaction.TransactionProcessingResult;
 import com.hedera.services.transaction.exception.InvalidTransactionException;
@@ -88,7 +88,7 @@ public abstract class EvmTxProcessor {
     private BlockMetaSourceProvider blockMetaSource;
     private SimulatedUpdater worldUpdater;
 
-    private final GasCalculator gasCalculator;
+    private final SimulatedGasCalculator gasCalculator;
     private final SimulatedPricesSource simulatedPricesSource;
     private final AbstractMessageProcessor messageCallProcessor;
     private final AbstractMessageProcessor contractCreationProcessor;
@@ -97,7 +97,7 @@ public abstract class EvmTxProcessor {
     protected EvmTxProcessor(
             final SimulatedPricesSource simulatedPricesSource,
             final EvmProperties configurationProperties,
-            final GasCalculator gasCalculator,
+            final SimulatedGasCalculator gasCalculator,
             final Set<Operation> hederaOperations,
             final Map<String, PrecompiledContract> precompiledContractMap
     ) {
@@ -123,7 +123,7 @@ public abstract class EvmTxProcessor {
             final SimulatedUpdater worldUpdater,
             final SimulatedPricesSource simulatedPricesSource,
             final EvmProperties configurationProperties,
-            final GasCalculator gasCalculator,
+            final SimulatedGasCalculator gasCalculator,
             final Set<Operation> hederaOperations,
             final Map<String, PrecompiledContract> precompiledContractMap,
             final BlockMetaSourceProvider blockMetaSource
@@ -258,7 +258,8 @@ public abstract class EvmTxProcessor {
                         .initialGas(gasAvailable)
                         .originator(senderEvmAddress)
                         .gasPrice(Wei.of(gasPrice))
-                        .sender(senderEvmAddress)
+//                        .sender(senderEvmAddress)
+                        .sender(new Id(0, 0, sender.getNum()).asEvmAddress())
                         .value(valueAsWei)
                         .apparentValue(valueAsWei)
                         .blockValues(blockValues)

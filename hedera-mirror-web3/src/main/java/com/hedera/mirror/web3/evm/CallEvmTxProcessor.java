@@ -1,4 +1,7 @@
-package com.hedera.mirror.api.contract.evm;
+package com.hedera.mirror.web3.evm;
+
+import com.hedera.mirror.web3.evm.properties.BlockMetaSourceProvider;
+import com.hedera.mirror.web3.evm.properties.EvmProperties;
 
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.math.BigInteger;
@@ -10,13 +13,10 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.frame.MessageFrame.Builder;
-import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
-import com.hedera.mirror.api.contract.evm.properties.BlockMetaSourceProvider;
-import com.hedera.mirror.api.contract.evm.properties.EvmProperties;
-import com.hedera.mirror.api.contract.service.eth.AccountDto;
+import com.hedera.mirror.web3.service.eth.AccountDto;
 import com.hedera.services.transaction.TransactionProcessingResult;
 import com.hedera.services.transaction.execution.EvmTxProcessor;
 
@@ -25,7 +25,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
     public CallEvmTxProcessor(
             SimulatedPricesSource simulatedPricesSource,
             EvmProperties configurationProperties,
-            GasCalculator gasCalculator,
+            SimulatedGasCalculator gasCalculator,
             Set<Operation> hederaOperations,
             Map<String, PrecompiledContract> precompiledContractMap) {
         super(simulatedPricesSource, configurationProperties, gasCalculator, hederaOperations,

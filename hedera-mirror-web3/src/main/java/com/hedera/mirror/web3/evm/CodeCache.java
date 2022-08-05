@@ -1,10 +1,10 @@
-package com.hedera.mirror.api.contract.evm.exception;
+package com.hedera.mirror.web3.evm;
 
 /*-
  * ‌
- * Hedera Mirror Node
+ * Hedera Services Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,15 @@ package com.hedera.mirror.api.contract.evm.exception;
  * ‍
  */
 
-public class MissingResultException extends EvmException {
+import javax.inject.Named;
+import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.Code;
 
-    public MissingResultException(String message) {
-        super(message);
+//FUTURE WORK to be implemented in separate PR
+@Named
+public class CodeCache {
+
+    public Code getIfPresent(final Address address) {
+        return Code.EMPTY_CODE;
     }
 }

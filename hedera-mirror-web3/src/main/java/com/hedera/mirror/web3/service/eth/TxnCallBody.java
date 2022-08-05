@@ -1,4 +1,4 @@
-package com.hedera.mirror.api.contract.service.eth;
+package com.hedera.mirror.web3.service.eth;
 
 import lombok.RequiredArgsConstructor;
 import lombok.Value;

@@ -1,12 +1,12 @@
-package com.hedera.mirror.api.contract.service;
+package com.hedera.mirror.web3.service;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.lang3.tuple.Pair;
 
-import com.hedera.mirror.api.contract.service.eth.TxnResult;
-import com.hedera.mirror.api.contract.service.eth.TxnResult.Status;
+import com.hedera.mirror.web3.service.eth.TxnResult;
+import com.hedera.mirror.web3.service.eth.TxnResult.Status;
 import com.hedera.services.transaction.TransactionProcessingResult;
 
 public class ResultConverterUtils {

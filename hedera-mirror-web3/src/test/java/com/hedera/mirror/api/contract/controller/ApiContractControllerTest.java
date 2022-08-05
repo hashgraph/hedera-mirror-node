@@ -1,6 +1,6 @@
 package com.hedera.mirror.api.contract.controller;
 
-import static com.hedera.mirror.api.contract.controller.ApiContractController.METRIC;
+import static com.hedera.mirror.web3.controller.ApiContractController.METRIC;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -9,7 +9,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Optional;
 import javax.annotation.Resource;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -25,12 +24,13 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.reactive.function.BodyInserters;
 
-import com.hedera.mirror.api.contract.service.ApiContractService;
-import com.hedera.mirror.api.contract.service.ApiContractServiceFactory;
-import com.hedera.mirror.api.contract.service.ResultConverterUtils;
-import com.hedera.mirror.api.contract.service.eth.EthParams;
-import com.hedera.mirror.api.contract.service.eth.TxnCallBody;
-import com.hedera.mirror.api.contract.service.eth.TxnResult.Status;
+import com.hedera.mirror.web3.controller.ApiContractController;
+import com.hedera.mirror.web3.service.ApiContractService;
+import com.hedera.mirror.web3.service.ApiContractServiceFactory;
+import com.hedera.mirror.web3.service.ResultConverterUtils;
+import com.hedera.mirror.web3.service.eth.EthParams;
+import com.hedera.mirror.web3.service.eth.TxnCallBody;
+import com.hedera.mirror.web3.service.eth.TxnResult.Status;
 import com.hedera.services.transaction.TransactionProcessingResult;
 
 @ExtendWith(SpringExtension.class)
@@ -63,12 +63,12 @@ class ApiContractControllerTest {
     void successForEthGasEstimate() {
         final var params =
                 new EthParams(
-                        Optional.of("0x00000000000000000000000000000000000004e2"),
+                        "0x00000000000000000000000000000000000004e2",
                         "0x00000000000000000000000000000000000004e3",
-                        Optional.of(100),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.of("0x"));
+                        "100",
+                        "1",
+                        "1",
+                        "0x");
         final var transactionCall = new TxnCallBody(params, "latest");
 
         JsonRpcRequest jsonRpcRequest = new JsonRpcRequest();

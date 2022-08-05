@@ -1,4 +1,4 @@
-package com.hedera.mirror.api.contract.evm;
+package com.hedera.mirror.web3.evm.properties;
 
 /*-
  * ‌
@@ -20,14 +20,26 @@ package com.hedera.mirror.api.contract.evm;
  * ‍
  */
 
-import javax.inject.Singleton;
-import org.hyperledger.besu.evm.frame.MessageFrame;
+import java.util.Optional;
+import lombok.Value;
+import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.units.bigints.UInt256;
+import org.hyperledger.besu.datatypes.Wei;
+import org.hyperledger.besu.evm.frame.BlockValues;
 
-// FUTURE WORK This should move to an interface when evm-module is complete
-@Singleton
-public class OracleSimulator {
+/**
+ * Mirror-node adapted {@link BlockValues}
+ */
+@Value
+public class SimulatedBlockMetaSource implements BlockValues {
 
-    public long storageExpiryIn(final MessageFrame frame) {
-        return 0L;
-    }
+    private static Optional<Wei> zeroWei = Optional.of(Wei.ZERO);
+
+    Optional<Wei> baseFee = zeroWei;
+    Bytes difficultyBytes = UInt256.ZERO;
+
+    //Used for constructor
+    long gasLimit;
+    long number;
+    long timestamp;
 }

@@ -1,4 +1,4 @@
-package com.hedera.mirror.api.contract.evm.config;
+package com.hedera.mirror.web3.evm.config;
 
 /*-
  * ‌

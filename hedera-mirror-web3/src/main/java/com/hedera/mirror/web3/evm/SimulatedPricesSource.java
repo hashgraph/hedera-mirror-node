@@ -1,4 +1,4 @@
-package com.hedera.mirror.api.contract.evm.exception;
+package com.hedera.mirror.web3.evm;
 
 /*-
  * ‌
@@ -20,17 +20,15 @@ package com.hedera.mirror.api.contract.evm.exception;
  * ‍
  */
 
-public abstract class EvmException extends RuntimeException {
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import java.time.Instant;
+import javax.inject.Named;
 
-    public EvmException(String message) {
-        super(message);
-    }
+// FUTURE WORK This should move to an interface when evm-module is complete
+@Named
+public class SimulatedPricesSource {
 
-    public EvmException(Throwable throwable) {
-        super(throwable);
-    }
-
-    public EvmException(String message, Throwable throwable) {
-        super(message, throwable);
+    public long currentGasPrice(final Instant now, final HederaFunctionality function) {
+        return 0L;
     }
 }

@@ -1,10 +1,10 @@
-package com.hedera.mirror.api.contract.evm;
+package com.hedera.mirror.web3.evm.properties;
 
 /*-
  * ‌
- * Hedera Services Node
+ * Hedera Mirror Node
  * ​
- * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,15 +20,13 @@ package com.hedera.mirror.api.contract.evm;
  * ‍
  */
 
-import javax.inject.Singleton;
-import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.Code;
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
-//FUTURE WORK to be implemented in separate PR
-@Singleton
-public class CodeCache {
+@ConfigurationProperties(prefix = "hedera.mirror.web3.evm")
+@Data
+public class EvmProperties {
 
-    public Code getIfPresent(final Address address) {
-        return Code.EMPTY_CODE;
-    }
+    private int chainId = 298;
+    private int maxGasRefundPercentage = 20;
 }

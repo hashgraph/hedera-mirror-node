@@ -1,4 +1,4 @@
-package com.hedera.mirror.api.contract.evm;
+package com.hedera.mirror.web3.evm;
 
 /*-
  * ‌
@@ -20,15 +20,14 @@ package com.hedera.mirror.api.contract.evm;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.HederaFunctionality;
-import java.time.Instant;
 import javax.inject.Singleton;
+import org.hyperledger.besu.evm.frame.MessageFrame;
 
 // FUTURE WORK This should move to an interface when evm-module is complete
 @Singleton
-public class SimulatedPricesSource {
+public class OracleSimulator {
 
-    public long currentGasPrice(final Instant now, final HederaFunctionality function) {
+    public long storageExpiryIn(final MessageFrame frame) {
         return 0L;
     }
 }

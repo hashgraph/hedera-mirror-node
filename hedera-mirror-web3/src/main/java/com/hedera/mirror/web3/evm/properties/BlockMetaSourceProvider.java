@@ -1,4 +1,4 @@
-package com.hedera.mirror.api.contract.evm.properties;
+package com.hedera.mirror.web3.evm.properties;
 
 /*-
  * ‌
@@ -21,18 +21,18 @@ package com.hedera.mirror.api.contract.evm.properties;
  */
 
 import java.time.Instant;
-import javax.inject.Singleton;
+import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.frame.BlockValues;
 
-import com.hedera.mirror.api.contract.evm.exception.MissingResultException;
+import com.hedera.mirror.web3.evm.exception.MissingResultException;
 import com.hedera.mirror.web3.repository.RecordFileRepository;
 
 /**
  * Provider of block meta information, calculated based on the state in the DB
  */
-@Singleton
+@Named
 @RequiredArgsConstructor
 public class BlockMetaSourceProvider {
 

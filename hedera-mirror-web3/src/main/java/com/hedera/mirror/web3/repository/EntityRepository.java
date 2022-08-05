@@ -29,9 +29,9 @@ import com.hedera.mirror.common.domain.entity.Entity;
 public interface EntityRepository extends CrudRepository<Entity, Long> {
 
     //FUTURE WORK Coffeine cache to be added
-    @Query(value = "select ethereumNonce from entity where evmAddress = ?1 and deleted <> true", nativeQuery = true)
-    Optional<Long> findAccountNonceByAddress(byte[] alias);
+    @Query(value = "select ethereum_nonce from entity where evm_address = ?1 and deleted <> true", nativeQuery = true)
+    Optional<Long> findAccountNonceByAddress(byte[] evmAddress);
 
-    @Query(value = "select * from entity where evmAddress = ?1 and deleted <> true", nativeQuery = true)
-    Optional<Entity> findAccountByAddress(byte[] alias);
+    @Query(value = "select * from entity where evm_address = ?1 and deleted <> true", nativeQuery = true)
+    Optional<Entity> findAccountByAddress(byte[] evmAddress);
 }

@@ -1,6 +1,6 @@
 package com.hedera.mirror.api.contract.service.eth;
 
-import static com.hedera.mirror.api.contract.service.eth.EthGasEstimateService.METHOD;
+import static com.hedera.mirror.web3.service.eth.EthGasEstimateService.METHOD;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -11,7 +11,6 @@ import java.util.HashMap;
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.gascalculator.LondonGasCalculator;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,21 +18,25 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.hedera.mirror.api.contract.evm.SimulatedEntityAccess;
-import com.hedera.mirror.api.contract.evm.SimulatedPricesSource;
-import com.hedera.mirror.api.contract.evm.properties.BlockMetaSourceProvider;
-import com.hedera.mirror.api.contract.evm.properties.EvmProperties;
-import com.hedera.mirror.api.contract.evm.properties.SimulatedBlockMetaSource;
-import com.hedera.mirror.api.contract.service.eth.TxnResult.Status;
 import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.web3.evm.SimulatedEntityAccess;
+import com.hedera.mirror.web3.evm.SimulatedGasCalculator;
+import com.hedera.mirror.web3.evm.SimulatedPricesSource;
+import com.hedera.mirror.web3.evm.properties.BlockMetaSourceProvider;
+import com.hedera.mirror.web3.evm.properties.EvmProperties;
+import com.hedera.mirror.web3.evm.properties.SimulatedBlockMetaSource;
 import com.hedera.mirror.web3.repository.EntityRepository;
+import com.hedera.mirror.web3.service.eth.EthGasEstimateService;
+import com.hedera.mirror.web3.service.eth.EthParams;
+import com.hedera.mirror.web3.service.eth.TxnCallBody;
+import com.hedera.mirror.web3.service.eth.TxnResult.Status;
 
 @ExtendWith(MockitoExtension.class)
 class EthGasEstimateServiceTest {
 
     @Mock private EntityRepository entityRepository;
     @Mock private EvmProperties evmProperties;
-    @Mock private LondonGasCalculator gasCalculator;
+    @Mock private SimulatedGasCalculator gasCalculator;
     @Mock private SimulatedEntityAccess simulatedEntityAccess;
     @Mock private BlockMetaSourceProvider blockMetaSourceProvider;
     @Mock private Entity senderEntity;
@@ -81,12 +84,12 @@ class EthGasEstimateServiceTest {
 
         final var ethCallParams =
                 new EthParams(
-                        Optional.of("0x00000000000000000000000000000000000004e2"),
+                       "0x00000000000000000000000000000000000004e2",
                         "0x00000000000000000000000000000000000004e3",
-                        Optional.of(100),
-                        Optional.empty(),
-                        Optional.empty(),
-                        Optional.of("0x"));
+                        "100",
+                        "1",
+                        "1",
+                        "0x");
 
         final var transactionCall = new TxnCallBody(ethCallParams, "latest");
         final var result = ethGasEstimateService.get(transactionCall);

@@ -1,4 +1,4 @@
-package com.hedera.mirror.api.contract.service.eth;
+package com.hedera.mirror.web3.service.eth;
 
 import com.google.protobuf.ByteString;
 import java.math.BigInteger;
@@ -9,30 +9,29 @@ import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.gascalculator.LondonGasCalculator;
 
-import com.hedera.mirror.api.contract.evm.AliasesResolver;
-import com.hedera.mirror.api.contract.evm.CallEvmTxProcessor;
-import com.hedera.mirror.api.contract.evm.CodeCache;
-import com.hedera.mirror.api.contract.evm.SimulatedEntityAccess;
-import com.hedera.mirror.api.contract.evm.SimulatedPricesSource;
-import com.hedera.mirror.api.contract.evm.SimulatedUpdater;
-import com.hedera.mirror.api.contract.evm.properties.BlockMetaSourceProvider;
-import com.hedera.mirror.api.contract.evm.properties.EvmProperties;
+import com.hedera.mirror.web3.evm.AliasesResolver;
+import com.hedera.mirror.web3.evm.CallEvmTxProcessor;
+import com.hedera.mirror.web3.evm.CodeCache;
+import com.hedera.mirror.web3.evm.SimulatedEntityAccess;
+import com.hedera.mirror.web3.evm.SimulatedGasCalculator;
+import com.hedera.mirror.web3.evm.SimulatedPricesSource;
+import com.hedera.mirror.web3.evm.SimulatedUpdater;
+import com.hedera.mirror.web3.evm.properties.BlockMetaSourceProvider;
+import com.hedera.mirror.web3.evm.properties.EvmProperties;
 import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.mirror.web3.repository.EntityRepository;
-import com.hedera.mirror.web3.service.eth.EthService;
 import com.hedera.services.transaction.TransactionProcessingResult;
 
 @Named
 @RequiredArgsConstructor
-public class EthCallService implements EthService<TxnCallBody, TransactionProcessingResult> {
+public class EthCallService implements ApiContractEthService<TxnCallBody, TransactionProcessingResult> {
 
     static final String METHOD = "eth_call";
 
     private final EntityRepository entityRepository;
     private final EvmProperties evmProperties;
-    private final LondonGasCalculator londonGasCalculator;
+    private final SimulatedGasCalculator simulatedGasCalculator;
     private final SimulatedPricesSource simulatedPricesSource;
     private final ContractRepository contractRepository;
     private final AliasesResolver aliasesResolver;
@@ -51,18 +50,18 @@ public class EthCallService implements EthService<TxnCallBody, TransactionProces
     @Override
     public TransactionProcessingResult get(final TxnCallBody request) {
         final var ethCallParams = request.getEthParams();
-        final var sender = ethCallParams.getFrom().orElse("");
+        final var sender = ethCallParams.getFrom();
         final var senderEvmAddress = Bytes.fromHexString(sender).toArray();
         final var receiverAddress = ethCallParams.getTo() != null ? Address.wrap(Bytes.fromHexString(ethCallParams.getTo())) : Address.ZERO;
-        final var gasLimit = ethCallParams.getGas().orElse(0);
-        final var value = ethCallParams.getValue().orElse(0);
-        final var payload = ethCallParams.getData().isPresent() ? Bytes.fromHexString(ethCallParams.getData().get()) : null;
+        final var gasLimit = Integer.decode(ethCallParams.getGas());
+        final var value = Long.decode(ethCallParams.getValue());
+        final var payload = Bytes.fromHexString(ethCallParams.getData());
 
         final var senderEntity = entityRepository.findAccountByAddress(senderEvmAddress).orElse(null);
         final var senderDto = senderEntity != null ? new AccountDto(senderEntity.getNum(), ByteString.copyFrom(senderEntity.getAlias())) : new AccountDto(0L, ByteString.EMPTY);
 
         simulatedUpdater = new SimulatedUpdater(contractRepository, entityRepository, aliasesResolver, entityAccess, codeCache);
-        evmTxProcessor = new CallEvmTxProcessor(simulatedPricesSource, evmProperties, londonGasCalculator, new HashSet<>(), new HashMap<>());
+        evmTxProcessor = new CallEvmTxProcessor(simulatedPricesSource, evmProperties, simulatedGasCalculator, new HashSet<>(), new HashMap<>());
         evmTxProcessor.setWorldUpdater(simulatedUpdater);
         evmTxProcessor.setBlockMetaSource(blockMetaSourceProvider);
 

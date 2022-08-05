@@ -1,10 +1,10 @@
-package com.hedera.mirror.api.contract.evm;
+package com.hedera.mirror.web3.evm.exception;
 
 /*-
  * ‌
- * Hedera Services Node
+ * Hedera Mirror Node
  * ​
- * Copyright (C) 2018 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,14 +20,17 @@ package com.hedera.mirror.api.contract.evm;
  * ‍
  */
 
-import javax.inject.Singleton;
-import org.hyperledger.besu.datatypes.Address;
+public abstract class EvmException extends RuntimeException {
 
-@Singleton
-public class AliasesResolver {
+    public EvmException(String message) {
+        super(message);
+    }
 
-    //FUTURE WORK implementation to be provided in separate PR
-    Address resolveForEvm(final Address addressOrAlias) {
-        return null;
+    public EvmException(Throwable throwable) {
+        super(throwable);
+    }
+
+    public EvmException(String message, Throwable throwable) {
+        super(message, throwable);
     }
 }

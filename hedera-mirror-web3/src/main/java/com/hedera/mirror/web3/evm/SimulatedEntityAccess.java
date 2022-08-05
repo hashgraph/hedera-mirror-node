@@ -1,4 +1,4 @@
-package com.hedera.mirror.api.contract.evm;
+package com.hedera.mirror.web3.evm;
 
 /*-
  * ‌
@@ -20,20 +20,28 @@ package com.hedera.mirror.api.contract.evm;
  * ‍
  */
 
-import javax.inject.Singleton;
+import javax.inject.Named;
+import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 
+import com.hedera.mirror.common.domain.balance.AccountBalance;
+import com.hedera.mirror.web3.repository.AccountBalanceRepository;
 import com.hedera.services.transaction.store.contracts.EntityAccess;
 
 //FUTURE WORK to be implemented in separate PR
-@Singleton
+@Named
+@RequiredArgsConstructor
 public class SimulatedEntityAccess implements EntityAccess {
+
+    private final AccountBalanceRepository accountBalanceRepository;
 
     @Override
     public long getBalance(Address id) {
-        return 0;
+        final long idConverted = Long.decode(Bytes.wrap(id.toArray()).toHexString());
+        final var accountBalance = accountBalanceRepository.findByAccountId(idConverted);
+        return accountBalance.map(AccountBalance::getBalance).orElse(0L);
     }
 
     @Override
@@ -48,7 +56,7 @@ public class SimulatedEntityAccess implements EntityAccess {
 
     @Override
     public boolean isExtant(Address id) {
-        return false;
+        return true;
     }
 
     @Override
