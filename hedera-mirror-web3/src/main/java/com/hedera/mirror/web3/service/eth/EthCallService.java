@@ -13,10 +13,10 @@ import org.hyperledger.besu.datatypes.Address;
 import com.hedera.mirror.web3.evm.AliasesResolver;
 import com.hedera.mirror.web3.evm.CallEvmTxProcessor;
 import com.hedera.mirror.web3.evm.CodeCache;
+import com.hedera.mirror.web3.evm.HederaWorldState;
 import com.hedera.mirror.web3.evm.SimulatedEntityAccess;
 import com.hedera.mirror.web3.evm.SimulatedGasCalculator;
 import com.hedera.mirror.web3.evm.SimulatedPricesSource;
-import com.hedera.mirror.web3.evm.SimulatedUpdater;
 import com.hedera.mirror.web3.evm.properties.BlockMetaSourceProvider;
 import com.hedera.mirror.web3.evm.properties.EvmProperties;
 import com.hedera.mirror.web3.repository.ContractRepository;
@@ -38,9 +38,7 @@ public class EthCallService implements ApiContractEthService<TxnCallBody, Transa
     private final SimulatedEntityAccess entityAccess;
     private final CodeCache codeCache;
     private final BlockMetaSourceProvider blockMetaSourceProvider;
-
-    private CallEvmTxProcessor evmTxProcessor;
-    private SimulatedUpdater simulatedUpdater;
+    private final HederaWorldState worldState;
 
     @Override
     public String getMethod() {
@@ -60,9 +58,9 @@ public class EthCallService implements ApiContractEthService<TxnCallBody, Transa
         final var senderEntity = entityRepository.findAccountByAddress(senderEvmAddress).orElse(null);
         final var senderDto = senderEntity != null ? new AccountDto(senderEntity.getNum(), ByteString.copyFrom(senderEntity.getAlias())) : new AccountDto(0L, ByteString.EMPTY);
 
-        simulatedUpdater = new SimulatedUpdater(contractRepository, entityRepository, aliasesResolver, entityAccess, codeCache);
-        evmTxProcessor = new CallEvmTxProcessor(simulatedPricesSource, evmProperties, simulatedGasCalculator, new HashSet<>(), new HashMap<>());
-        evmTxProcessor.setWorldUpdater(simulatedUpdater);
+        final CallEvmTxProcessor evmTxProcessor = new CallEvmTxProcessor(simulatedPricesSource, evmProperties,
+                simulatedGasCalculator, new HashSet<>(), new HashMap<>());
+        evmTxProcessor.setWorldState(worldState);
         evmTxProcessor.setBlockMetaSource(blockMetaSourceProvider);
 
         return evmTxProcessor.executeEth(

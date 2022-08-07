@@ -20,14 +20,50 @@ package com.hedera.mirror.web3.evm;
  * ‍
  */
 
+import java.util.Arrays;
 import javax.inject.Named;
+import lombok.RequiredArgsConstructor;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
+import com.hedera.mirror.web3.repository.EntityRepository;
+
 @Named
+@RequiredArgsConstructor
 public class AliasesResolver {
 
+    private static final int EVM_ADDRESS_LEN = 20;
+    private static byte[] mirrorPrefix = null;
+    private final EntityRepository entityRepository;
+
     //FUTURE WORK implementation to be provided in separate PR
-    Address resolveForEvm(final Address addressOrAlias) {
-        return null;
+    public Address resolveForEvm(final Address addressOrAlias) {
+        if (isMirror(addressOrAlias)) {
+            return addressOrAlias;
+        }
+//        final var aliasKey = ByteString.copyFrom(addressOrAlias.toArrayUnsafe());
+//        final var contractNum = curAliases().get(aliasKey);
+
+        final var contract = entityRepository.findAccountByAlias(addressOrAlias.toArray()).orElse(null);
+        // If we cannot resolve to a mirror address, we return the missing alias and let a
+        // downstream component fail the transaction by returning null from its get() method.
+        // Cf. the address validator provided by ContractsModule#provideAddressValidator().
+        return (contract == null) ? addressOrAlias : Address.wrap(Bytes.wrap(contract.getEvmAddress()));
+    }
+
+    private boolean isMirror(final Address address) {
+        return isMirror(address.toArrayUnsafe());
+    }
+
+    private boolean isMirror(final byte[] address) {
+        if (address.length != EVM_ADDRESS_LEN) {
+            return false;
+        }
+        if (mirrorPrefix == null) {
+            mirrorPrefix = new byte[12];
+            System.arraycopy(0L, 4, mirrorPrefix, 0, 4);
+            System.arraycopy(0L, 0, mirrorPrefix, 4, 8);
+        }
+        return Arrays.equals(mirrorPrefix, 0, 12, address, 0, 12);
     }
 }

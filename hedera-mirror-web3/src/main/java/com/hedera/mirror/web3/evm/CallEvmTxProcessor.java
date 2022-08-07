@@ -1,8 +1,5 @@
 package com.hedera.mirror.web3.evm;
 
-import com.hedera.mirror.web3.evm.properties.BlockMetaSourceProvider;
-import com.hedera.mirror.web3.evm.properties.EvmProperties;
-
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -16,9 +13,12 @@ import org.hyperledger.besu.evm.frame.MessageFrame.Builder;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
+import com.hedera.mirror.web3.evm.properties.BlockMetaSourceProvider;
+import com.hedera.mirror.web3.evm.properties.EvmProperties;
 import com.hedera.mirror.web3.service.eth.AccountDto;
 import com.hedera.services.transaction.TransactionProcessingResult;
 import com.hedera.services.transaction.execution.EvmTxProcessor;
+import com.hedera.services.transaction.store.contracts.HederaMutableWorldState;
 
 public class CallEvmTxProcessor extends EvmTxProcessor {
 
@@ -66,8 +66,8 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
         super.setBlockMetaSource(blockMetaSource);
     }
 
-    public void setWorldUpdater(final SimulatedUpdater worldUpdater) {
-        super.setWorldUpdater(worldUpdater);
+    public void setWorldState(final HederaMutableWorldState worldState) {
+        super.setWorldState(worldState);
     }
 
 

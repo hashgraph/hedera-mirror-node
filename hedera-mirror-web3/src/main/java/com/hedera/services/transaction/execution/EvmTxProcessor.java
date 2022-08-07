@@ -55,10 +55,10 @@ import org.hyperledger.besu.evm.processor.AbstractMessageProcessor;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
+import com.hedera.mirror.web3.evm.HederaWorldState;
 import com.hedera.mirror.web3.evm.OracleSimulator;
 import com.hedera.mirror.web3.evm.SimulatedGasCalculator;
 import com.hedera.mirror.web3.evm.SimulatedPricesSource;
-import com.hedera.mirror.web3.evm.SimulatedUpdater;
 import com.hedera.mirror.web3.evm.properties.BlockMetaSourceProvider;
 import com.hedera.mirror.web3.evm.properties.EvmProperties;
 import com.hedera.mirror.web3.service.eth.AccountDto;
@@ -68,6 +68,7 @@ import com.hedera.services.transaction.exception.InvalidTransactionException;
 import com.hedera.services.transaction.exception.ValidationUtils;
 import com.hedera.services.transaction.models.Account;
 import com.hedera.services.transaction.models.Id;
+import com.hedera.services.transaction.store.contracts.HederaMutableWorldState;
 
 /**
  * Abstract processor of EVM transactions that prepares the {@link EVM} and all of the peripherals upon
@@ -86,7 +87,8 @@ public abstract class EvmTxProcessor {
     public static final BigInteger WEIBARS_TO_TINYBARS = BigInteger.valueOf(10_000_000_000L);
 
     private BlockMetaSourceProvider blockMetaSource;
-    private SimulatedUpdater worldUpdater;
+    private HederaMutableWorldState worldState;
+//    private SimulatedUpdater worldUpdater;
 
     private final SimulatedGasCalculator gasCalculator;
     private final SimulatedPricesSource simulatedPricesSource;
@@ -115,12 +117,16 @@ public abstract class EvmTxProcessor {
         this.blockMetaSource = blockMetaSource;
     }
 
-    protected void setWorldUpdater(final SimulatedUpdater worldUpdater) {
-        this.worldUpdater = worldUpdater;
+//    protected void setWorldUpdater(final SimulatedUpdater worldUpdater) {
+//        this.worldUpdater = worldUpdater;
+//    }
+
+    protected void setWorldState(final HederaMutableWorldState worldState) {
+        this.worldState = worldState;
     }
 
     protected EvmTxProcessor(
-            final SimulatedUpdater worldUpdater,
+            final HederaMutableWorldState worldState,
             final SimulatedPricesSource simulatedPricesSource,
             final EvmProperties configurationProperties,
             final SimulatedGasCalculator gasCalculator,
@@ -128,7 +134,7 @@ public abstract class EvmTxProcessor {
             final Map<String, PrecompiledContract> precompiledContractMap,
             final BlockMetaSourceProvider blockMetaSource
     ) {
-        this.worldUpdater = worldUpdater;
+        this.worldState = worldState;
         this.simulatedPricesSource = simulatedPricesSource;
         this.configurationProperties = configurationProperties;
         this.gasCalculator = gasCalculator;
@@ -196,12 +202,13 @@ public abstract class EvmTxProcessor {
         final Wei upfrontCost = gasCost.add(value);
         final long intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
 
-        final var senderAccount = worldUpdater.getOrCreateSenderAccount(new Id(0, 0, sender.getNum()).asEvmAddress());
+        final HederaWorldState.Updater updater = (HederaWorldState.Updater) worldState.updater();
+        final var senderAccount = updater.getOrCreateSenderAccount(new Id(0, 0, sender.getNum()).asEvmAddress());
         final MutableAccount mutableSender = senderAccount.getMutable();
 
         MutableAccount mutableRelayer = null;
         if (relayer != null) {
-            final var relayerAccount = worldUpdater.getOrCreateSenderAccount(new Id(0, 0, relayer.getNum()).asEvmAddress());
+            final var relayerAccount = updater.getOrCreateSenderAccount(new Id(0, 0, relayer.getNum()).asEvmAddress());
             mutableRelayer = relayerAccount.getMutable();
         }
         if (!isStatic) {
@@ -248,7 +255,7 @@ public abstract class EvmTxProcessor {
         final Deque<MessageFrame> messageFrameStack = new ArrayDeque<>();
 
         final var valueAsWei = Wei.of(value);
-        final var stackedUpdater = worldUpdater.updater();
+        final var stackedUpdater = updater.updater();
         final var senderEvmAddress = sender.canonicalAddress();
         final MessageFrame.Builder commonInitialFrame =
                 MessageFrame.builder()
@@ -258,8 +265,7 @@ public abstract class EvmTxProcessor {
                         .initialGas(gasAvailable)
                         .originator(senderEvmAddress)
                         .gasPrice(Wei.of(gasPrice))
-//                        .sender(senderEvmAddress)
-                        .sender(new Id(0, 0, sender.getNum()).asEvmAddress())
+                        .sender(senderEvmAddress)
                         .value(valueAsWei)
                         .apparentValue(valueAsWei)
                         .blockValues(blockValues)
@@ -284,13 +290,13 @@ public abstract class EvmTxProcessor {
         }
 
         var gasUsedByTransaction = calculateGasUsedByTX(gasLimit, initialFrame);
-        final long sbhRefund = worldUpdater.getSbhRefund();
+        final long sbhRefund = updater.getSbhRefund();
         final Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges = Map.of();
 
-        initialFrame.getSelfDestructs().forEach(worldUpdater::deleteAccount);
+        initialFrame.getSelfDestructs().forEach(updater::deleteAccount);
 
         // Commit top level updater
-        worldUpdater.commit();
+        updater.commit();
 
         // Externalise result
         if (initialFrame.getState() == MessageFrame.State.COMPLETED_SUCCESS) {
