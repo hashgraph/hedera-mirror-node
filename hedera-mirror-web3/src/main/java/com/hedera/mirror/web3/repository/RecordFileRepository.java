@@ -20,8 +20,8 @@ package com.hedera.mirror.web3.repository;
  * ‍
  */
 
-import static com.hedera.mirror.api.contract.evm.config.EvmConfiguration.CACHE_MANAGER_10MIN;
-import static com.hedera.mirror.api.contract.evm.config.EvmConfiguration.CACHE_MANAGER_500MS;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_10MIN;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_500MS;
 
 import java.util.Optional;
 import org.springframework.cache.annotation.Cacheable;

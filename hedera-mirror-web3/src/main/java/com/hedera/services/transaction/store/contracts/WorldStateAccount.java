@@ -31,7 +31,7 @@ import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.AccountStorageEntry;
 
-import com.hedera.mirror.api.contract.evm.CodeCache;
+import com.hedera.mirror.web3.evm.CodeCache;
 
 public class WorldStateAccount implements Account {
     private static final Code EMPTY_CODE = Code.createLegacyCode(Bytes.EMPTY, Hash.hash(Bytes.EMPTY));
