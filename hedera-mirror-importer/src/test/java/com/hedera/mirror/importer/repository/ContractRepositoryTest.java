@@ -40,11 +40,4 @@ class ContractRepositoryTest extends AbstractRepositoryTest {
         assertThat(contractRepository.findById(contract.getId())).get().isEqualTo(contract);
     }
 
-    @Test
-    void updateRuntimeBytecode() {
-        Contract contract = domainBuilder.contract().persist();
-        contract.setRuntimeBytecode(new byte[] {1, 2, 3});
-        contractRepository.updateRuntimeBytecode(contract.getRuntimeBytecode(), contract.getId());
-        assertThat(contractRepository.findById(contract.getId())).get().isEqualTo(contract);
-    }
 }

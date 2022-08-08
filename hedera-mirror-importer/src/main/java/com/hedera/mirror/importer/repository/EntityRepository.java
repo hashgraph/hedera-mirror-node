@@ -38,6 +38,6 @@ public interface EntityRepository extends CrudRepository<Entity, Long> {
     Optional<Long> findByEvmAddress(byte[] evmAddress);
 
     @Modifying
-    @Query(value = "update entity set type = 'CONTRACT' where id in (:ids)", nativeQuery = true)
+    @Query(value = "update entity set type = 'CONTRACT' where id in (:ids) and type <> 'CONTRACT'", nativeQuery = true)
     int updateContractType(Iterable<Long> ids);
 }
