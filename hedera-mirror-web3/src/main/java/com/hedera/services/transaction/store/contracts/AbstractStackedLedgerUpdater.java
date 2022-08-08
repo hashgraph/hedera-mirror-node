@@ -4,7 +4,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.worldstate.WorldView;
 
-import com.hedera.mirror.web3.evm.AliasesResolver;
+import com.hedera.mirror.web3.evm.SimulatedAliasManager;
 import com.hedera.mirror.web3.evm.SimulatedEntityAccess;
 import com.hedera.mirror.web3.repository.EntityRepository;
 
@@ -26,10 +26,10 @@ public abstract class AbstractStackedLedgerUpdater<W extends WorldView, A extend
 
     protected AbstractStackedLedgerUpdater(
             final AbstractLedgerWorldUpdater<W, A> world,
-            final AliasesResolver aliasesResolver,
+            final SimulatedAliasManager simulatedAliasManager,
             final SimulatedEntityAccess simulatedEntityAccess,
             final EntityRepository entityRepository) {
-        super(world, aliasesResolver, simulatedEntityAccess, entityRepository);
+        super(world, simulatedAliasManager, simulatedEntityAccess, entityRepository);
     }
 
     /** {@inheritDoc} */

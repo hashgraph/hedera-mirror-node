@@ -27,10 +27,8 @@ import org.springframework.web.reactive.function.BodyInserters;
 import com.hedera.mirror.web3.controller.ApiContractController;
 import com.hedera.mirror.web3.service.ApiContractService;
 import com.hedera.mirror.web3.service.ApiContractServiceFactory;
-import com.hedera.mirror.web3.service.ResultConverterUtils;
 import com.hedera.mirror.web3.service.eth.EthParams;
 import com.hedera.mirror.web3.service.eth.TxnCallBody;
-import com.hedera.mirror.web3.service.eth.TxnResult.Status;
 import com.hedera.services.transaction.TransactionProcessingResult;
 
 @ExtendWith(SpringExtension.class)
@@ -90,17 +88,7 @@ class ApiContractControllerTest {
                 .jsonPath("$.error").doesNotExist()
                 .jsonPath("$.id").isEqualTo(jsonRpcRequest.getId())
                 .jsonPath("$.jsonrpc").isEqualTo(JsonRpcResponse.VERSION)
-                .jsonPath("$.result.gasUsed").isEqualTo(100L)
-                .jsonPath("$.result.sbhRefund").isEqualTo(0L)
-                .jsonPath("$.result.gasPrice").isEqualTo(1L)
-                .jsonPath("$.result.status").isEqualTo(Status.SUCCESSFUL.name())
-                .jsonPath("$.result.output").isEqualTo("0x")
-                .jsonPath("$.result.logs").isEqualTo(new ArrayList<>())
-                .jsonPath("$.result.revertReason").isEqualTo("")
-                .jsonPath("$.result.recipient").isEqualTo("0x00000000000000000000000000000000000004e3")
-                .jsonPath("$.result.haltReason").isEqualTo("")
-                .jsonPath("$.result.stateChanges").isEqualTo("")
-                .jsonPath("$.result.createdContracts").isEqualTo(new ArrayList<>());
+                .jsonPath("$.result").isEqualTo(Bytes.wrap(String.valueOf(100L).getBytes()).toHexString());
 
         verify(serviceFactory).lookup(ETH_GAS_ESTIMATE_METHOD);
         assertThat(meterRegistry.find(METRIC).timers())
@@ -129,7 +117,7 @@ class ApiContractControllerTest {
         public Object get(Object request) {
             final var transactionProcessingResult = TransactionProcessingResult.successful(new ArrayList<>(),
                     100L, 0L, 1L, Bytes.EMPTY, Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000004e3")), new HashMap<>());
-            return ResultConverterUtils.fromTransactionProcessingResult(transactionProcessingResult);
+            return Bytes.wrap(String.valueOf(transactionProcessingResult.getGasUsed()).getBytes()).toHexString();
         }
     }
 }

@@ -59,7 +59,7 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
                 receiver,
                 userOfferedGasPrice,
                 maxGasAllowanceInTinybars,
-                relayer);
+                null);
     }
 
     public void setBlockMetaSource(final BlockMetaSourceProvider blockMetaSource) {

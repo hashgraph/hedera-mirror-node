@@ -55,10 +55,10 @@ import org.hyperledger.besu.evm.processor.AbstractMessageProcessor;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
-import com.hedera.mirror.web3.evm.HederaWorldState;
 import com.hedera.mirror.web3.evm.OracleSimulator;
 import com.hedera.mirror.web3.evm.SimulatedGasCalculator;
 import com.hedera.mirror.web3.evm.SimulatedPricesSource;
+import com.hedera.mirror.web3.evm.SimulatedWorldState;
 import com.hedera.mirror.web3.evm.properties.BlockMetaSourceProvider;
 import com.hedera.mirror.web3.evm.properties.EvmProperties;
 import com.hedera.mirror.web3.service.eth.AccountDto;
@@ -88,7 +88,6 @@ public abstract class EvmTxProcessor {
 
     private BlockMetaSourceProvider blockMetaSource;
     private HederaMutableWorldState worldState;
-//    private SimulatedUpdater worldUpdater;
 
     private final SimulatedGasCalculator gasCalculator;
     private final SimulatedPricesSource simulatedPricesSource;
@@ -202,7 +201,7 @@ public abstract class EvmTxProcessor {
         final Wei upfrontCost = gasCost.add(value);
         final long intrinsicGas = gasCalculator.transactionIntrinsicGasCost(Bytes.EMPTY, contractCreation);
 
-        final HederaWorldState.Updater updater = (HederaWorldState.Updater) worldState.updater();
+        final SimulatedWorldState.Updater updater = (SimulatedWorldState.Updater) worldState.updater();
         final var senderAccount = updater.getOrCreateSenderAccount(new Id(0, 0, sender.getNum()).asEvmAddress());
         final MutableAccount mutableSender = senderAccount.getMutable();
 

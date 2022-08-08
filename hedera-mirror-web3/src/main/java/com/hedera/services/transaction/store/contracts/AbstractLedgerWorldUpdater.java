@@ -21,9 +21,9 @@ import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.hyperledger.besu.evm.worldstate.WorldView;
 import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
 
-import com.hedera.mirror.web3.evm.AliasesResolver;
-import com.hedera.mirror.web3.evm.HederaWorldState;
+import com.hedera.mirror.web3.evm.SimulatedAliasManager;
 import com.hedera.mirror.web3.evm.SimulatedEntityAccess;
+import com.hedera.mirror.web3.evm.SimulatedWorldState;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.services.transaction.ethereum.EthTxSigs;
 
@@ -62,18 +62,18 @@ import com.hedera.services.transaction.ethereum.EthTxSigs;
 public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends Account>
         implements WorldUpdater {
     private final W world;
-    private final AliasesResolver aliasesResolver;
+    private final SimulatedAliasManager simulatedAliasManager;
     private final SimulatedEntityAccess simulatedEntityAccess;
     private final EntityRepository entityRepository;
 
     protected Set<Address> deletedAccounts = new HashSet<>();
     protected Map<Address, UpdateTrackingLedgerAccount<A>> updatedAccounts = new HashMap<>();
 
-    protected AbstractLedgerWorldUpdater(final W world, final AliasesResolver aliasesResolver,
+    protected AbstractLedgerWorldUpdater(final W world, final SimulatedAliasManager simulatedAliasManager,
             final SimulatedEntityAccess simulatedEntityAccess,
             final EntityRepository entityRepository) {
         this.world = world;
-        this.aliasesResolver = aliasesResolver;
+        this.simulatedAliasManager = simulatedAliasManager;
         this.simulatedEntityAccess = simulatedEntityAccess;
         this.entityRepository = entityRepository;
     }
@@ -91,7 +91,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
     @Override
     public EvmAccount createAccount(
             final Address addressOrAlias, final long nonce, final Wei balance) {
-        final var address = aliasesResolver.resolveForEvm(addressOrAlias);
+        final var address = simulatedAliasManager.resolveForEvm(addressOrAlias);
 
         final var newMutable = new UpdateTrackingLedgerAccount<A>(address);
         newMutable.setNonce(nonce);
@@ -106,7 +106,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
             return null;
         }
 
-        final var address = aliasesResolver.resolveForEvm(addressOrAlias);
+        final var address = simulatedAliasManager.resolveForEvm(addressOrAlias);
 
         final var extantMutable = this.updatedAccounts.get(address);
         if (extantMutable != null) {
@@ -115,7 +115,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
             if (this.deletedAccounts.contains(address)) {
                 return null;
             }
-            if (this.world.getClass() == HederaWorldState.class) {
+            if (this.world.getClass() == SimulatedWorldState.class) {
                 return this.world.get(address);
             }
             return this.world.get(addressOrAlias);
@@ -173,7 +173,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 
     @Override
     public void deleteAccount(final Address addressOrAlias) {
-        final var address = aliasesResolver.resolveForEvm(addressOrAlias);
+        final var address = simulatedAliasManager.resolveForEvm(addressOrAlias);
         deletedAccounts.add(address);
         updatedAccounts.remove(address);
     }

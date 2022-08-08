@@ -14,27 +14,27 @@ import com.hedera.services.transaction.store.contracts.HederaWorldUpdater;
 import com.hedera.services.transaction.store.contracts.UpdateTrackingLedgerAccount;
 import com.hedera.services.transaction.store.contracts.WorldStateTokenAccount;
 
-public class HederaStackedWorldStateUpdater
+public class SimulatedStackedWorldStateUpdater
         extends AbstractStackedLedgerUpdater<HederaMutableWorldState, Account>
         implements HederaWorldUpdater {
 
     private final HederaMutableWorldState worldState;
-    private final AliasesResolver aliasesResolver;
+    private final SimulatedAliasManager simulatedAliasManager;
     private final SimulatedEntityAccess entityAccess;
     private final EntityRepository entityRepository;
 
     private long sbhRefund = 0L;
     private int numAllocatedIds = 0;
 
-    public HederaStackedWorldStateUpdater(
+    public SimulatedStackedWorldStateUpdater(
             final AbstractLedgerWorldUpdater<HederaMutableWorldState, Account> updater,
             final HederaMutableWorldState worldState,
-            final AliasesResolver aliasesResolver,
+            final SimulatedAliasManager simulatedAliasManager,
             final SimulatedEntityAccess simulatedEntityAccess,
             final EntityRepository entityRepository) {
-        super(updater, aliasesResolver, simulatedEntityAccess, entityRepository);
+        super(updater, simulatedAliasManager, simulatedEntityAccess, entityRepository);
         this.worldState = worldState;
-        this.aliasesResolver = aliasesResolver;
+        this.simulatedAliasManager = simulatedAliasManager;
         this.entityAccess = simulatedEntityAccess;
         this.entityRepository = entityRepository;
     }
@@ -46,7 +46,7 @@ public class HederaStackedWorldStateUpdater
 
     @Override
     public Address newContractAddress(final Address sponsorAddressOrAlias) {
-        final var sponsor = aliasesResolver.resolveForEvm(sponsorAddressOrAlias);
+        final var sponsor = simulatedAliasManager.resolveForEvm(sponsorAddressOrAlias);
         final var newAddress = worldState.newContractAddress(sponsor);
         numAllocatedIds++;
         return newAddress;
@@ -54,7 +54,7 @@ public class HederaStackedWorldStateUpdater
 
     @Override
     public Account get(final Address addressOrAlias) {
-        final var address = aliasesResolver.resolveForEvm(addressOrAlias);
+        final var address = simulatedAliasManager.resolveForEvm(addressOrAlias);
         if (isTokenRedirect(address)) {
             return new WorldStateTokenAccount(address);
         }
@@ -63,7 +63,7 @@ public class HederaStackedWorldStateUpdater
 
     @Override
     public EvmAccount getAccount(final Address addressOrAlias) {
-        final var address = aliasesResolver.resolveForEvm(addressOrAlias);
+        final var address = simulatedAliasManager.resolveForEvm(addressOrAlias);
         if (isTokenRedirect(address)) {
             final var proxyAccount = new WorldStateTokenAccount(address);
             final var newMutable =
@@ -102,10 +102,10 @@ public class HederaStackedWorldStateUpdater
     @Override
     @SuppressWarnings({"unchecked", "rawtypes"})
     public WorldUpdater updater() {
-        return new HederaStackedWorldStateUpdater(
+        return new SimulatedStackedWorldStateUpdater(
                 (AbstractLedgerWorldUpdater) this,
                 worldState,
-                aliasesResolver,
+                simulatedAliasManager,
                 entityAccess, entityRepository);
     }
 

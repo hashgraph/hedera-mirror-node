@@ -30,21 +30,18 @@ import com.hedera.mirror.web3.repository.EntityRepository;
 
 @Named
 @RequiredArgsConstructor
-public class AliasesResolver {
+public class SimulatedAliasManager {
 
     private static final int EVM_ADDRESS_LEN = 20;
     private static byte[] mirrorPrefix = null;
     private final EntityRepository entityRepository;
 
-    //FUTURE WORK implementation to be provided in separate PR
     public Address resolveForEvm(final Address addressOrAlias) {
         if (isMirror(addressOrAlias)) {
             return addressOrAlias;
         }
-//        final var aliasKey = ByteString.copyFrom(addressOrAlias.toArrayUnsafe());
-//        final var contractNum = curAliases().get(aliasKey);
 
-        final var contract = entityRepository.findAccountByAlias(addressOrAlias.toArray()).orElse(null);
+        final var contract = entityRepository.findAccountByPublicKey(addressOrAlias.toUnprefixedHexString()).orElse(null);
         // If we cannot resolve to a mirror address, we return the missing alias and let a
         // downstream component fail the transaction by returning null from its get() method.
         // Cf. the address validator provided by ContractsModule#provideAddressValidator().

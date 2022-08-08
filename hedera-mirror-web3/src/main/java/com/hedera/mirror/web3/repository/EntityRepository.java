@@ -37,4 +37,7 @@ public interface EntityRepository extends CrudRepository<Entity, Long> {
 
     @Query(value = "select * from entity where alias = ?1 and deleted <> true", nativeQuery = true)
     Optional<Entity> findAccountByAlias(byte[] alias);
+
+    @Query(value = "select * from entity where public_key = ?1 and deleted <> true", nativeQuery = true)
+    Optional<Entity> findAccountByPublicKey(String publicKey);
 }

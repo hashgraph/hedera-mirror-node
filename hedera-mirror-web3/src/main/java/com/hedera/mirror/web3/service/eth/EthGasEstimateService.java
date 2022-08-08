@@ -10,22 +10,17 @@ import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
-import com.hedera.mirror.web3.evm.AliasesResolver;
 import com.hedera.mirror.web3.evm.CallEvmTxProcessor;
-import com.hedera.mirror.web3.evm.CodeCache;
-import com.hedera.mirror.web3.evm.HederaWorldState;
-import com.hedera.mirror.web3.evm.SimulatedEntityAccess;
 import com.hedera.mirror.web3.evm.SimulatedGasCalculator;
 import com.hedera.mirror.web3.evm.SimulatedPricesSource;
+import com.hedera.mirror.web3.evm.SimulatedWorldState;
 import com.hedera.mirror.web3.evm.properties.BlockMetaSourceProvider;
 import com.hedera.mirror.web3.evm.properties.EvmProperties;
-import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.mirror.web3.repository.EntityRepository;
-import com.hedera.mirror.web3.service.ResultConverterUtils;
 
 @Named
 @RequiredArgsConstructor
-public class EthGasEstimateService implements ApiContractEthService<TxnCallBody, TxnResult> {
+public class EthGasEstimateService implements ApiContractEthService<TxnCallBody, String> {
 
     public static final String METHOD = "eth_gasEstimate";
 
@@ -33,12 +28,12 @@ public class EthGasEstimateService implements ApiContractEthService<TxnCallBody,
     private final EvmProperties evmProperties;
     private final SimulatedGasCalculator simulatedGasCalculator;
     private final SimulatedPricesSource simulatedPricesSource;
-    private final ContractRepository contractRepository;
-    private final AliasesResolver aliasesResolver;
-    private final SimulatedEntityAccess entityAccess;
-    private final CodeCache codeCache;
+//    private final ContractRepository contractRepository;
+//    private final AliasesResolver aliasesResolver;
+//    private final SimulatedEntityAccess entityAccess;
+//    private final CodeCache codeCache;
     private final BlockMetaSourceProvider blockMetaSourceProvider;
-    private final HederaWorldState worldState;
+    private final SimulatedWorldState worldState;
 
     @Override
     public String getMethod() {
@@ -46,7 +41,7 @@ public class EthGasEstimateService implements ApiContractEthService<TxnCallBody,
     }
 
     @Override
-    public TxnResult get(final TxnCallBody request) {
+    public String get(final TxnCallBody request) {
         final var ethCallParams = request.getEthParams();
         final var sender = ethCallParams.getFrom();
         final var senderEvmAddress = Bytes.fromHexString(sender).toArray();
@@ -77,7 +72,7 @@ public class EthGasEstimateService implements ApiContractEthService<TxnCallBody,
                 false
         );
 
-        return ResultConverterUtils.fromTransactionProcessingResult(txnProcessingResult);
+        return Bytes.wrap(String.valueOf(txnProcessingResult.getGasUsed()).getBytes()).toHexString();
     }
 }
 

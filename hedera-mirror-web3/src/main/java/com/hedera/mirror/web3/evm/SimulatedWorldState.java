@@ -39,10 +39,10 @@ import com.hedera.services.transaction.utils.BytesComparator;
 
 @Named
 @RequiredArgsConstructor
-public class HederaWorldState implements HederaMutableWorldState {
+public class SimulatedWorldState implements HederaMutableWorldState {
     private final List<Address> provisionalContractCreations = new LinkedList<>();
     private final CodeCache codeCache;
-    private final AliasesResolver aliasesResolver;
+    private final SimulatedAliasManager simulatedAliasManager;
     private final SimulatedEntityAccess entityAccess;
     private final EntityRepository entityRepository;
     private final ContractRepository contractRepository;
@@ -69,7 +69,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
     @Override
     public Updater updater() {
-        return new Updater(this, aliasesResolver, entityAccess, entityRepository);
+        return new Updater(this, simulatedAliasManager, entityAccess, entityRepository);
     }
 
     @Override
@@ -119,15 +119,15 @@ public class HederaWorldState implements HederaMutableWorldState {
         private int numAllocatedIds = 0;
         private long sbhRefund = 0L;
 
-        private final AliasesResolver aliasesResolver;
+        private final SimulatedAliasManager simulatedAliasManager;
         private final SimulatedEntityAccess simulatedEntityAccess;
         private final EntityRepository entityRepository;
 
         protected Updater(
-                final HederaWorldState world, final AliasesResolver aliasesResolver,
+                final SimulatedWorldState world, final SimulatedAliasManager simulatedAliasManager,
                 final SimulatedEntityAccess simulatedEntityAccess, final EntityRepository entityRepository) {
-            super(world, aliasesResolver, simulatedEntityAccess, entityRepository);
-            this.aliasesResolver = aliasesResolver;
+            super(world, simulatedAliasManager, simulatedEntityAccess, entityRepository);
+            this.simulatedAliasManager = simulatedAliasManager;
             this.simulatedEntityAccess = simulatedEntityAccess;
             this.entityRepository = entityRepository;
         }
@@ -165,7 +165,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
         @Override
         protected Account getForMutation(final Address address) {
-            final HederaWorldState wrapped = (HederaWorldState) wrappedWorldView();
+            final SimulatedWorldState wrapped = (SimulatedWorldState) wrappedWorldView();
             return wrapped.get(address);
         }
 
@@ -199,7 +199,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
         @Override
         public void commit() {
-            final HederaWorldState wrapped = (HederaWorldState) wrappedWorldView();
+            final SimulatedWorldState wrapped = (SimulatedWorldState) wrappedWorldView();
             final var entityAccess = wrapped.entityAccess;
             final var updatedAccounts = getUpdatedAccounts();
 
@@ -251,7 +251,7 @@ public class HederaWorldState implements HederaMutableWorldState {
 
         @Override
         public WorldUpdater updater() {
-            return new HederaStackedWorldStateUpdater(this, wrappedWorldView(), aliasesResolver,
+            return new SimulatedStackedWorldStateUpdater(this, wrappedWorldView(), simulatedAliasManager,
                     simulatedEntityAccess, entityRepository);
         }
     }
