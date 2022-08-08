@@ -37,6 +37,7 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
@@ -52,18 +53,37 @@ public class InitializeEntityBalanceMigrationTest extends IntegrationTest {
     private final CryptoTransferRepository cryptoTransferRepository;
     private final EntityRepository entityRepository;
     private final InitializeEntityBalanceMigration initializeEntityBalanceMigration;
+    private final MirrorProperties mirrorProperties;
     private final RecordFileRepository recordFileRepository;
 
     private Entity account;
     private Entity accountDeleted;
     private Entity contract;
+    private MigrationProperties migrationProperties;
     private RecordFile recordFile2;
     private AtomicLong timestamp;
     private Entity topic;
 
     @BeforeEach
     void beforeEach() {
+        migrationProperties = mirrorProperties.getMigration().get("initializeEntityBalanceMigration");
+        migrationProperties.setEnabled(true);
         timestamp = new AtomicLong(0L);
+    }
+
+    @Test
+    void disabled() {
+        // given
+        migrationProperties.setEnabled(false);
+        setup();
+
+        // when
+        initializeEntityBalanceMigration.doMigrate();
+
+        // then
+        account.setBalance(0L);
+        contract.setBalance(0L);
+        assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(account, accountDeleted, contract, topic);
     }
 
     @Test
@@ -165,6 +185,10 @@ public class InitializeEntityBalanceMigrationTest extends IntegrationTest {
         long accountBalanceTimestamp1 = timestamp(Duration.ofMinutes(10));
         domainBuilder.accountBalanceFile().customize(a -> a.consensusTimestamp(accountBalanceTimestamp1)).persist();
         persistAccountBalance(500L, account.toEntityId(), accountBalanceTimestamp1);
+
+        // A crypto transfer already accounted in the first account balance file, so it shouldn't be included to
+        // initialize entity balance
+        persistCryptoTransfer(300L, account.getId(), accountBalanceTimestamp1);
 
         // The contract is created after the first account balance file
         contract = domainBuilder.entity()

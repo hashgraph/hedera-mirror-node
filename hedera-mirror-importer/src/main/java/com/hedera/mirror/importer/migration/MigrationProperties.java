@@ -28,4 +28,6 @@ public class MigrationProperties {
 
     @NotNull
     private Integer checksum;
+
+    private boolean enabled = true;
 }
