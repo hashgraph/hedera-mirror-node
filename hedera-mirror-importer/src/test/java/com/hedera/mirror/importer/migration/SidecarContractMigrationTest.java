@@ -28,6 +28,7 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.vladmihalcea.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Tag;
@@ -76,7 +77,7 @@ class SidecarContractMigrationTest extends IntegrationTest {
         // given
         var entities = new ArrayList<Entity>();
         var contracts = new ArrayList<Contract>();
-        var contractBytecodes = new ArrayList<ContractBytecode>();
+        var contractBytecodesMap = new HashMap<Long, ContractBytecode>();
         var contractBytecodeBuilder = ContractBytecode.newBuilder();
         var contractIdBuilder = ContractID.newBuilder();
         for (int i = 0; i < 66000; i++) {
@@ -85,7 +86,7 @@ class SidecarContractMigrationTest extends IntegrationTest {
 
             entities.add(entity);
             contracts.add(domainBuilder.contract().customize(c -> c.id(entityId)).get());
-            contractBytecodes.add(contractBytecodeBuilder
+            contractBytecodesMap.put(entityId, contractBytecodeBuilder
                     .setContractId(contractIdBuilder.setContractNum(entityId))
                     .setRuntimeBytecode(ByteString.copyFrom(domainBuilder.bytes(256)))
                     .build());
@@ -93,6 +94,9 @@ class SidecarContractMigrationTest extends IntegrationTest {
 
         persistEntities(entities);
         persistContracts(contracts);
+
+        var contractBytecodes = contractBytecodesMap.entrySet().stream()
+                .map(b -> b.getValue()).toList();
 
         // when
         sidecarContractMigration.migrate(contractBytecodes);
@@ -104,14 +108,13 @@ class SidecarContractMigrationTest extends IntegrationTest {
                 .extracting(EntityHistory::getType).containsOnly(CONTRACT);
 
         var contractsIterator = contractRepository.findAll().iterator();
-        contractBytecodes.stream()
-                .map(ContractBytecode::getRuntimeBytecode)
-                .forEach(runtimeBytecode -> {
-                    assertThat(contractsIterator).hasNext();
-                    assertThat(contractsIterator.next())
-                            .returns(DomainUtils.toBytes(runtimeBytecode),
-                                    Contract::getRuntimeBytecode);
-                });
+        contractsIterator.forEachRemaining(savedContract -> {
+            var contractBytecode = contractBytecodesMap.remove(savedContract.getId());
+            assertThat(DomainUtils.toBytes(contractBytecode.getRuntimeBytecode()))
+                    .isEqualTo(savedContract.getRuntimeBytecode());
+        });
+        assertThat(contractsIterator).isExhausted();
+        assertThat(contractBytecodesMap.isEmpty());
     }
 
     private void persistEntities(List<Entity> entities) {
