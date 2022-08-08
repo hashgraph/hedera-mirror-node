@@ -50,7 +50,6 @@ class MetricsConfiguration {
 
     private final DataSource dataSource;
     private final DBProperties dbProperties;
-    private final MeterRegistry meterRegistry;
 
     @Bean
     MeterBinder processMemoryMetrics() {
@@ -71,11 +70,11 @@ class MetricsConfiguration {
     @ConditionalOnProperty(prefix = "management.metrics.table", name = "enabled", havingValue = "true",
             matchIfMissing = true)
     MeterBinder tableMetrics(@Lazy JdbcOperations jdbcOperations) {
-        return registry -> getTablesNames().stream().forEach(t -> registerTableMetric(jdbcOperations, t));
+        return registry -> getTablesNames().forEach(t -> registerTableMetric(jdbcOperations, registry, t));
     }
 
     // select count(*) is very slow on large tables, so we use the stats table to provide an estimate
-    private void registerTableMetric(JdbcOperations jdbcOperations, String tableName) {
+    private void registerTableMetric(JdbcOperations jdbcOperations, MeterRegistry registry, String tableName) {
         final String query = "select n_live_tup from pg_stat_all_tables where schemaname = ? and relname = ?";
         ToDoubleFunction<DataSource> totalRows = ds -> jdbcOperations.queryForObject(query, Long.class,
                 dbProperties.getSchema(), tableName);
@@ -85,7 +84,7 @@ class MetricsConfiguration {
                 .tag("table", tableName)
                 .description("Number of rows in a database table")
                 .baseUnit(BaseUnits.ROWS)
-                .register(meterRegistry);
+                .register(registry);
     }
 
     private Collection<String> getTablesNames() {
