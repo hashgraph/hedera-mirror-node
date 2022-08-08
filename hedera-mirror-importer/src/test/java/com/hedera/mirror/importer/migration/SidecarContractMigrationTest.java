@@ -114,7 +114,7 @@ class SidecarContractMigrationTest extends IntegrationTest {
                     .isEqualTo(savedContract.getRuntimeBytecode());
         });
         assertThat(contractsIterator).isExhausted();
-        assertThat(contractBytecodesMap.isEmpty());
+        assertThat(contractBytecodesMap).isEmpty();
     }
 
     private void persistEntities(List<Entity> entities) {
