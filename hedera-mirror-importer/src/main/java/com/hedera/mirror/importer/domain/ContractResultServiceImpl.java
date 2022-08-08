@@ -45,11 +45,13 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
+import com.hedera.mirror.importer.migration.SidecarContractMigration;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 import com.hedera.mirror.importer.util.Utility;
+import com.hedera.services.stream.proto.ContractBytecode;
 import com.hedera.services.stream.proto.ContractStateChange;
 
 @Log4j2
@@ -60,6 +62,7 @@ public class ContractResultServiceImpl implements ContractResultService {
     private final EntityProperties entityProperties;
     private final EntityIdService entityIdService;
     private final EntityListener entityListener;
+    private final SidecarContractMigration sidecarContractMigration;
     private final TransactionHandlerFactory transactionHandlerFactory;
 
     @Override
@@ -72,6 +75,8 @@ public class ContractResultServiceImpl implements ContractResultService {
         var transactionRecord = recordItem.getRecord();
         var functionResult = transactionRecord.hasContractCreateResult() ?
                 transactionRecord.getContractCreateResult() : transactionRecord.getContractCallResult();
+
+        processSidecarRecords(recordItem);
 
         // handle non create/call transactions
         if (!isContractCreateOrCall(transactionBody) && !isValidContractFunctionResult(functionResult)) {
@@ -86,24 +91,6 @@ public class ContractResultServiceImpl implements ContractResultService {
         var contractId = isContractCreateOrCall(transactionBody) ? transaction.getEntityId() :
                 entityIdService.lookup(functionResult.getContractID());
         processContractResult(recordItem, contractId, functionResult, transactionHandler);
-
-        var sidecarRecords = recordItem.getSidecarRecords();
-        long consensusTimestamp = recordItem.getConsensusTimestamp();
-        var payerAccountId = recordItem.getPayerAccountId();
-
-        for (var sidecarRecord : sidecarRecords) {
-            if (sidecarRecord.hasStateChanges()) {
-                var stateChanges = sidecarRecord.getStateChanges();
-                for (var stateChange : stateChanges.getContractStateChangesList()) {
-                    processContractStateChange(stateChange, consensusTimestamp, payerAccountId);
-                }
-            } else if (sidecarRecord.hasActions()) {
-                var actions = sidecarRecord.getActions();
-                for (int actionIndex = 0; actionIndex < actions.getContractActionsCount(); actionIndex++) {
-                    processContractAction(actions.getContractActions(actionIndex), actionIndex, consensusTimestamp);
-                }
-            }
-        }
     }
 
     private boolean isValidContractFunctionResult(ContractFunctionResult contractFunctionResult) {
@@ -267,6 +254,30 @@ public class ContractResultServiceImpl implements ContractResultService {
         }
 
         entityListener.onEntity(entity);
+    }
+
+    private void processSidecarRecords(RecordItem recordItem) {
+        var contractBytecodes = new ArrayList<ContractBytecode>();
+        var sidecarRecords = recordItem.getSidecarRecords();
+        long consensusTimestamp = recordItem.getConsensusTimestamp();
+        var payerAccountId = recordItem.getPayerAccountId();
+        for (var sidecarRecord : sidecarRecords) {
+            if (sidecarRecord.hasStateChanges()) {
+                var stateChanges = sidecarRecord.getStateChanges();
+                for (var stateChange : stateChanges.getContractStateChangesList()) {
+                    processContractStateChange(stateChange, consensusTimestamp, payerAccountId);
+                }
+            } else if (sidecarRecord.hasActions()) {
+                var actions = sidecarRecord.getActions();
+                for (int actionIndex = 0; actionIndex < actions.getContractActionsCount(); actionIndex++) {
+                    processContractAction(actions.getContractActions(actionIndex), actionIndex, consensusTimestamp);
+                }
+            } else if (sidecarRecord.hasBytecode() && sidecarRecord.getMigration()) {
+                contractBytecodes.add(sidecarRecord.getBytecode());
+            }
+        }
+
+        sidecarContractMigration.migrate(contractBytecodes);
     }
 
     /**
