@@ -23,18 +23,23 @@ package com.hedera.mirror.importer.migration;
 import java.io.IOException;
 import java.util.Map;
 import javax.inject.Named;
-import lombok.RequiredArgsConstructor;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 
+import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.util.Utility;
 
 @Named
-@RequiredArgsConstructor(onConstructor_ = {@Lazy})
-public class AccountEvmAddressMigration extends MirrorBaseJavaMigration {
+public class AccountEvmAddressMigration extends RepeatableMigration {
 
     private final NamedParameterJdbcOperations jdbcOperations;
+
+    @Lazy
+    public AccountEvmAddressMigration(NamedParameterJdbcOperations jdbcOperations, MirrorProperties mirrorProperties) {
+        super(mirrorProperties.getMigration());
+        this.jdbcOperations = jdbcOperations;
+    }
 
     @Override
     protected void doMigrate() throws IOException {
@@ -61,11 +66,6 @@ public class AccountEvmAddressMigration extends MirrorBaseJavaMigration {
     }
 
     @Override
-    public Integer getChecksum() {
-        return 1; // Change this if this migration should be rerun
-    }
-
-    @Override
     public String getDescription() {
         return "Populates evm_address for accounts with an ECDSA secp256k1 alias";
     }
@@ -73,10 +73,5 @@ public class AccountEvmAddressMigration extends MirrorBaseJavaMigration {
     @Override
     public MigrationVersion getMinimumVersion() {
         return MigrationVersion.fromVersion("1.58.6");
-    }
-
-    @Override
-    public MigrationVersion getVersion() {
-        return null;
     }
 }

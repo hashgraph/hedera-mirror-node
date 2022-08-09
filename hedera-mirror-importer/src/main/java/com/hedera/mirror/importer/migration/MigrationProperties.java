@@ -20,14 +20,12 @@ package com.hedera.mirror.importer.migration;
  * ‍
  */
 
-import javax.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
 public class MigrationProperties {
 
-    @NotNull
-    private Integer checksum;
+    private int checksum = 1;
 
     private boolean enabled = true;
 }

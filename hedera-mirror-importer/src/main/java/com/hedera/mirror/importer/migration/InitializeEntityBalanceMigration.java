@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.migration;
 
 import com.google.common.base.Stopwatch;
 import javax.inject.Named;
-import org.apache.commons.lang3.StringUtils;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcOperations;
@@ -30,24 +29,28 @@ import org.springframework.jdbc.core.JdbcOperations;
 import com.hedera.mirror.importer.MirrorProperties;
 
 @Named
-public class InitializeEntityBalanceMigration extends MirrorBaseJavaMigration {
+public class InitializeEntityBalanceMigration extends RepeatableMigration {
 
     private static final String INITIALIZE_ENTITY_BALANCE_SQL = """
             with timestamp_range as (
-              select consensus_timestamp as from_timestamp, consensus_end as to_timestamp
+              select
+                consensus_timestamp as snapshot_timestamp,
+                consensus_timestamp + time_offset as from_timestamp,
+                consensus_end as to_timestamp
               from account_balance_file
               join (select consensus_end from record_file order by consensus_end desc limit 1) last_record_file
-                on consensus_timestamp <= consensus_end
+                on consensus_timestamp + time_offset <= consensus_end
               order by consensus_timestamp desc
               limit 1
             ), snapshot as (
               select account_id, balance
               from account_balance
-              join timestamp_range on from_timestamp = consensus_timestamp
+              join timestamp_range on snapshot_timestamp = consensus_timestamp
             ), balance_change as (
               select entity_id, sum(amount) as amount
               from crypto_transfer
               join timestamp_range on consensus_timestamp > from_timestamp and consensus_timestamp <= to_timestamp
+              where errata is null or errata <> 'DELETE'
               group by entity_id
             )
             update entity
@@ -58,19 +61,11 @@ public class InitializeEntityBalanceMigration extends MirrorBaseJavaMigration {
             """;
 
     private final JdbcOperations jdbcOperations;
-    private final MigrationProperties migrationProperties;
 
     @Lazy
     public InitializeEntityBalanceMigration(JdbcOperations jdbcOperations, MirrorProperties mirrorProperties) {
+        super(mirrorProperties.getMigration());
         this.jdbcOperations = jdbcOperations;
-        String propertiesKey = StringUtils.uncapitalize(getClass().getSimpleName());
-        this.migrationProperties = mirrorProperties.getMigration().get(propertiesKey);
-    }
-
-    @Override
-    public Integer getChecksum() {
-        // Change the value in the configuration file if this migration should be rerun
-        return migrationProperties.getChecksum();
     }
 
     @Override
@@ -84,17 +79,7 @@ public class InitializeEntityBalanceMigration extends MirrorBaseJavaMigration {
     }
 
     @Override
-    public MigrationVersion getVersion() {
-        return null;
-    }
-
-    @Override
     protected void doMigrate() {
-        if (!migrationProperties.isEnabled()) {
-            log.info("Skip migration since it's disabled");
-            return;
-        }
-
         var stopwatch = Stopwatch.createStarted();
         int count = jdbcOperations.update(INITIALIZE_ENTITY_BALANCE_SQL);
         log.info("Initialized {} entities balance in {}", count, stopwatch);

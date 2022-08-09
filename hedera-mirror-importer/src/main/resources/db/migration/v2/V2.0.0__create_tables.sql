@@ -238,6 +238,7 @@ create table if not exists entity
     alias                            bytea                 null,
     auto_renew_account_id            bigint                null,
     auto_renew_period                bigint                null,
+    balance                          bigint                null,
     created_timestamp                bigint                null,
     decline_reward                   boolean default false not null,
     deleted                          boolean               null,

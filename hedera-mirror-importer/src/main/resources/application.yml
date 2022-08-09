@@ -14,8 +14,12 @@ hedera:
         schema: public
         username: mirror_node
       migration:
-        initializeEntityBalanceMigration:
-          checksum: 1
+        blockNumberMigration:
+          checksum: 4
+        errataMigration:
+          checksum: 2
+        historicalAccountInfoMigration:
+          checksum: 3
 
 logging:
   level:

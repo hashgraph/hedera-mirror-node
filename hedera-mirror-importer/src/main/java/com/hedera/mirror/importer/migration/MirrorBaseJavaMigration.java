@@ -46,7 +46,7 @@ abstract class MirrorBaseJavaMigration implements JavaMigration {
         Configuration configuration = context.getConfiguration();
 
         if (skipMigration(configuration)) {
-            log.info("Migration {} will be skipped as it does not fall between the baseline: {} and target: {} range",
+            log.info("Migration will be skipped: version - {}, baseline - {}, target - {}",
                     getVersion(), configuration.getBaselineVersion(), configuration.getTarget().getVersion());
             return;
         }
