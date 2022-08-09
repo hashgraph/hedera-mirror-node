@@ -32,7 +32,8 @@ const {
   createCryptoTransferList,
   createNftTransferList,
   createTransferLists,
-  extractSqlFromTransactionsByIdRequest,
+  extractSqlFromTransactionsByIdOrHashRequest,
+  isValidTransactionHash,
 } = subject;
 
 const timeNow = Math.floor(new Date().getTime() / 1000);
@@ -731,14 +732,21 @@ describe('create transferLists', () => {
   });
 });
 
-describe('extractSqlFromTransactionsByIdRequest', () => {
+describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
   describe('success', () => {
+    const defaultTransactionHashBase64 = 'rovr8cn6DzCTVuSAV/YEevfN5jA30FCdFt3Dsg4IUVi/3xTRU0XBsYsZm3L+1Kxv';
+    const defaultTransactionHashBase64Url = 'rovr8cn6DzCTVuSAV_YEevfN5jA30FCdFt3Dsg4IUVi_3xTRU0XBsYsZm3L-1Kxv';
+    const defaultTransactionHash = Buffer.from(defaultTransactionHashBase64, 'base64');
+    const defaultTransactionHashHex = defaultTransactionHash.toString('hex');
+    const defaultTransactionHashParams = [defaultTransactionHash];
+
     const defaultTransactionIdStr = '0.0.200-123456789-987654321';
-    const defaultParams = [200, '123456789987654321'];
-    const getQuery = (extraConditions) => {
+    const defaultTransactionIdParams = [200, '123456789987654321'];
+
+    const getQuery = (baseConditions, extraConditions) => {
       return `with timestampFilter as (
       select consensus_timestamp from transaction t
-      where t.payer_account_id = $1 and t.valid_start_ns = $2 ${(extraConditions && 'and ' + extraConditions) || ''}
+      where ${baseConditions} ${(extraConditions && 'and ' + extraConditions) || ''}
       order by consensus_timestamp desc
     ), tlist as (
       select t.charged_tx_fee,
@@ -878,86 +886,92 @@ describe('extractSqlFromTransactionsByIdRequest', () => {
     order by t.consensus_timestamp asc`;
     };
 
+    const getTransactionHashQuery = () => getQuery('t.transaction_hash = $1');
+
+    const getTransactionIdQuery = (extraConditions) => {
+      return getQuery('t.payer_account_id = $1 and t.valid_start_ns = $2', extraConditions);
+    };
+
     const testSpecs = [
       {
-        name: 'emptyFilter',
+        name: 'empty filter',
         input: {
-          transactionIdStr: defaultTransactionIdStr,
+          transactionIdOrHash: defaultTransactionIdStr,
           filters: [],
         },
         expected: {
-          query: getQuery(),
-          params: defaultParams,
+          query: getTransactionIdQuery(),
+          params: defaultTransactionIdParams,
         },
       },
       {
-        name: 'nonceFilter',
+        name: 'nonce filter',
         input: {
-          transactionIdStr: defaultTransactionIdStr,
+          transactionIdOrHash: defaultTransactionIdStr,
           filters: [{key: constants.filterKeys.NONCE, op: 'eq', value: 1}],
         },
         expected: {
-          query: getQuery('t.nonce = $3'),
-          params: [...defaultParams, 1],
+          query: getTransactionIdQuery('t.nonce = $3'),
+          params: [...defaultTransactionIdParams, 1],
         },
       },
       {
-        name: 'repeatedNonceFilters',
+        name: 'repeated nonce filters',
         input: {
-          transactionIdStr: defaultTransactionIdStr,
+          transactionIdOrHash: defaultTransactionIdStr,
           filters: [
             {key: constants.filterKeys.NONCE, op: 'eq', value: 1},
             {key: constants.filterKeys.NONCE, op: 'eq', value: 2},
           ],
         },
         expected: {
-          query: getQuery('t.nonce = $3'),
-          params: [...defaultParams, 2],
+          query: getTransactionIdQuery('t.nonce = $3'),
+          params: [...defaultTransactionIdParams, 2],
         },
       },
       {
-        name: 'scheduledFilter',
+        name: 'scheduled filter',
         input: {
-          transactionIdStr: defaultTransactionIdStr,
+          transactionIdOrHash: defaultTransactionIdStr,
           filters: [{key: constants.filterKeys.SCHEDULED, op: 'eq', value: true}],
         },
         expected: {
-          query: getQuery('t.scheduled = $3'),
-          params: [...defaultParams, true],
+          query: getTransactionIdQuery('t.scheduled = $3'),
+          params: [...defaultTransactionIdParams, true],
         },
       },
       {
-        name: 'repeatedScheduledFilters',
+        name: 'repeated scheduled filters',
         input: {
-          transactionIdStr: defaultTransactionIdStr,
+          transactionIdOrHash: defaultTransactionIdStr,
           filters: [
             {key: constants.filterKeys.SCHEDULED, op: 'eq', value: true},
             {key: constants.filterKeys.SCHEDULED, op: 'eq', value: false},
           ],
         },
         expected: {
-          query: getQuery('t.scheduled = $3'),
-          params: [...defaultParams, false],
+          query: getTransactionIdQuery('t.scheduled = $3'),
+          params: [...defaultTransactionIdParams, false],
         },
       },
       {
-        name: 'nonceAndScheduledFilters',
+        name: 'nonce and scheduled filters',
         input: {
-          transactionIdStr: defaultTransactionIdStr,
+          transactionIdOrHash: defaultTransactionIdStr,
           filters: [
             {key: constants.filterKeys.NONCE, op: 'eq', value: 1},
             {key: constants.filterKeys.SCHEDULED, op: 'eq', value: true},
           ],
         },
         expected: {
-          query: getQuery('t.nonce = $3 and t.scheduled = $4'),
-          params: [...defaultParams, 1, true],
+          query: getTransactionIdQuery('t.nonce = $3 and t.scheduled = $4'),
+          params: [...defaultTransactionIdParams, 1, true],
         },
       },
       {
-        name: 'repeatedNonceAndScheduledFilters',
+        name: 'repeated nonce and scheduled filters',
         input: {
-          transactionIdStr: defaultTransactionIdStr,
+          transactionIdOrHash: defaultTransactionIdStr,
           filters: [
             {key: constants.filterKeys.NONCE, op: 'eq', value: 1},
             {key: constants.filterKeys.SCHEDULED, op: 'eq', value: true},
@@ -968,15 +982,74 @@ describe('extractSqlFromTransactionsByIdRequest', () => {
           ],
         },
         expected: {
-          query: getQuery('t.nonce = $3 and t.scheduled = $4'),
-          params: [...defaultParams, 3, false],
+          query: getTransactionIdQuery('t.nonce = $3 and t.scheduled = $4'),
+          params: [...defaultTransactionIdParams, 3, false],
+        },
+      },
+      {
+        name: 'base64 transaction hash',
+        input: {
+          transactionIdOrHash: defaultTransactionHashBase64,
+          filters: [],
+        },
+        expected: {
+          query: getTransactionHashQuery(),
+          params: defaultTransactionHashParams,
+        },
+      },
+      {
+        name: 'base64 transaction hash url escaped',
+        input: {
+          transactionIdOrHash: defaultTransactionHashBase64Url,
+          filters: [],
+        },
+        expected: {
+          query: getTransactionHashQuery(),
+          params: defaultTransactionHashParams,
+        },
+      },
+      {
+        name: 'hex transaction hash',
+        input: {
+          transactionIdOrHash: defaultTransactionHashHex,
+          filters: [],
+        },
+        expected: {
+          query: getTransactionHashQuery(),
+          params: defaultTransactionHashParams,
+        },
+      },
+      {
+        name: 'hex transaction hash with 0x prefix',
+        input: {
+          transactionIdOrHash: `0x${defaultTransactionHashHex}`,
+          filters: [],
+        },
+        expected: {
+          query: getTransactionHashQuery(),
+          params: defaultTransactionHashParams,
+        },
+      },
+      {
+        name: 'hex transaction hash with nonce and scheduled',
+        input: {
+          transactionIdOrHash: `0x${defaultTransactionHashHex}`,
+          filters: [
+            {key: constants.filterKeys.NONCE, op: 'eq', value: 1},
+            {key: constants.filterKeys.SCHEDULED, op: 'eq', value: true},
+          ],
+        },
+        expected: {
+          query: getTransactionHashQuery(),
+          params: defaultTransactionHashParams,
         },
       },
     ];
 
     for (const testSpec of testSpecs) {
       test(testSpec.name, () => {
-        const actual = extractSqlFromTransactionsByIdRequest(testSpec.input.transactionIdStr, testSpec.input.filters);
+        const {transactionIdOrHash, filters} = testSpec.input;
+        const actual = extractSqlFromTransactionsByIdOrHashRequest(transactionIdOrHash, filters);
 
         testutils.assertSqlQueryEqual(actual.query, testSpec.expected.query);
         expect(actual.params).toStrictEqual(testSpec.expected.params);
@@ -984,11 +1057,75 @@ describe('extractSqlFromTransactionsByIdRequest', () => {
     }
   });
 
-  describe('failure', () => {
-    test('invalidTransactionIdStr', () => {
-      expect(() => {
-        extractSqlFromTransactionsByIdRequest('0.1.x-1235234-5334', []);
-      }).toThrowErrorMatchingSnapshot();
+  describe('invalidTransactionIdOrHash', () => {
+    [
+      '0.1.x-1235234-5334',
+      'izUDXqZ8gOhKlL5vbFInnw2VObTXzNWEH2QOg7XOUQwl9Mp2SVil8lufZIU6xJEE====',
+      '0xab4af784ae69ca3e1d17fef8491f7f89a0e8a3b80ad3748b841110f0345ada53456bc14bbe9ee6f441829c2849',
+      'ab4af784ae69ca3e1d17fef8491f7f89a0e8a3b80ad3748b841110f0345ada53456bc14bbe9ee6f441829c2849',
+    ].forEach((transactionIdOrHash) => {
+      test(transactionIdOrHash, () => {
+        expect(() => {
+          extractSqlFromTransactionsByIdOrHashRequest(transactionIdOrHash, []);
+        }).toThrowErrorMatchingSnapshot();
+      });
+    });
+  });
+});
+
+describe('isValidTransactionHash', () => {
+  describe('base64', () => {
+    describe('valid', () => {
+      [
+        'rovr8cn6DzCTVuSAV/YEevfN5jA30FCdFt3Dsg4IUVi/3xTRU0XBsYsZm3L+1Kxv',
+        'rovr8cn6DzCTVuSAV_YEevfN5jA30FCdFt3Dsg4IUVi_3xTRU0XBsYsZm3L-1Kxv',
+      ].forEach((hash) =>
+        test(`'${hash}'`, () => {
+          expect(isValidTransactionHash(hash)).toBeTrue();
+        })
+      );
+    });
+
+    describe('invalid', () => {
+      [
+        'q0r3hK5pyj4dF/74SR9/iaDoo7gK03SLhBEQ8DRa2lNFa8FLvp7m9EGCnChJ',
+        'q0r3hK5pyj4dF/74SR9/iaDoo7gK03SLhBEQ8DRa2lNFa8FLvp7m9EGCnChJkzrEaaaa',
+        'q0r3hK5pyj4dF/74SR9/iaDoo7gK03SLhBEQ8DRa2lNFa8FLvp7m9EGCnChJ????',
+      ].forEach((hash) =>
+        test(`'${hash}`, () => {
+          expect(isValidTransactionHash(hash)).toBeFalse();
+        })
+      );
+    });
+  });
+
+  describe('hex', () => {
+    describe('valid', () => {
+      [
+        'ab4af784ae69ca3e1d17fef8491f7f89a0e8a3b80ad3748b841110f0345ada53456bc14bbe9ee6f441829c2849933ac4',
+        'AB4AF784AE69CA3E1D17FEF8491F7F89A0E8A3B80AD3748B841110F0345ADA53456BC14BBE9EE6F441829C2849933AC4',
+        '0xab4af784ae69ca3e1d17fef8491f7f89a0e8a3b80ad3748b841110f0345ada53456bc14bbe9ee6f441829c2849933ac4',
+      ].forEach((hash) =>
+        test(`'${hash}'`, () => {
+          expect(isValidTransactionHash(hash)).toBeTrue();
+        })
+      );
+    });
+
+    describe('invalid', () => {
+      [
+        null,
+        undefined,
+        '',
+        'ab4af784ae69ca3e1d17fef8491f7f89a0e8a3b80ad3748b841110f0345ada53456bc14bbe9ee6f441829c2849933ac4beef',
+        'ab4af784ae69ca3e1d17fef8491f7f89a0e8a3b80ad3748b841110f0345ada53456bc14bbe9ee6f441829c284993====',
+        'ab4af784ae69ca3e1d17fef8491f7f89a0e8a3b80ad3748b841110f0345ada53456bc14bbe9ee6f441829c28',
+        '0xab4af784ae69ca3e1d17fef8491f7f89a0e8a3b80ad3748b841110f0345ada53456bc14bbe9ee6f441829c2849933a',
+      ].forEach((hash) =>
+        test(`'${hash}'`, () => {
+          expect(isValidTransactionHash(hash)).toBeFalse();
+        })
+      );
     });
   });
 });
