@@ -159,10 +159,10 @@ alter table record_file
     add constraint record_file__pk primary key (consensus_end, node_account_id);
 create index if not exists record_file__index_node
     on record_file (index);
-create index if not exists record_file__hash
-    on record_file (encode(hash::bytea, 'hex') COLLATE "C");
-create index if not exists record_file__prev_hash
-    on record_file (encode(prev_hash::bytea, 'hex') COLLATE "C");
+create index if not exists record_file__hash_prefix
+    on record_file (substring(hash from 1 for 64));
+create index if not exists record_file__prev_hash_prefix
+    on record_file (substring(prev_hash from 1 for 64))
 
 -- schedule
 alter table schedule
