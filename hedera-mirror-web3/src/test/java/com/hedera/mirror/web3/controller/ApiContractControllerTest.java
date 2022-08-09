@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import javax.annotation.Resource;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,7 +25,6 @@ import org.springframework.web.reactive.function.BodyInserters;
 
 import com.hedera.mirror.web3.service.ApiContractService;
 import com.hedera.mirror.web3.service.ApiContractServiceFactory;
-import com.hedera.services.transaction.TransactionProcessingResult;
 
 @ExtendWith(SpringExtension.class)
 @WebFluxTest(controllers = ApiContractController.class)
@@ -73,7 +71,7 @@ class ApiContractControllerTest {
         jsonRpcRequest.setMethod(ETH_GAS_ESTIMATE_METHOD);
         jsonRpcRequest.setParams(params);
 
-        when(serviceFactory.lookup(ETH_GAS_ESTIMATE_METHOD)).thenReturn(new DummyGasEstimateService());
+        when(serviceFactory.lookup(ETH_GAS_ESTIMATE_METHOD)).thenReturn(new DummyEthGasEstimateService());
 
         webClient.post()
                 .uri("/api/v1/contracts")
@@ -96,6 +94,48 @@ class ApiContractControllerTest {
                 .returns(JsonRpcSuccessResponse.SUCCESS, t -> t.getId().getTag("status"));
     }
 
+    @Test
+    void successForEthCallForPureFunction() {
+        final var ethParams = new HashMap<>();
+        ethParams.put("from", "0x00000000000000000000000000000000000004e2");
+        ethParams.put("to", "0x00000000000000000000000000000000000004e4");
+        ethParams.put("gas", "0x76c0");
+        ethParams.put("gasPrice", "0x76c0");
+        ethParams.put("value", "0x76c0");
+        ethParams.put("data", "0x8070450f");
+        final var params = new ArrayList<>();
+        params.add(ethParams);
+        params.add("latest");
+
+        JsonRpcRequest jsonRpcRequest = new JsonRpcRequest();
+        jsonRpcRequest.setId(1L);
+        jsonRpcRequest.setJsonrpc(JsonRpcResponse.VERSION);
+        jsonRpcRequest.setMethod(ETH_CALL_METHOD);
+        jsonRpcRequest.setParams(params);
+
+        when(serviceFactory.lookup(ETH_CALL_METHOD)).thenReturn(new DummyEthCallService());
+
+        webClient.post()
+                .uri("/api/v1/contracts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(jsonRpcRequest))
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.error").doesNotExist()
+                .jsonPath("$.id").isEqualTo(jsonRpcRequest.getId())
+                .jsonPath("$.jsonrpc").isEqualTo(JsonRpcResponse.VERSION)
+                .jsonPath("$.result").isEqualTo(Bytes.wrap(String.valueOf(4L).getBytes()).toHexString());
+
+        verify(serviceFactory).lookup(ETH_CALL_METHOD);
+        assertThat(meterRegistry.find(METRIC).timers())
+                .hasSize(1)
+                .first()
+                .returns(ETH_CALL_METHOD, t -> t.getId().getTag("method"))
+                .returns(JsonRpcSuccessResponse.SUCCESS, t -> t.getId().getTag("status"));
+    }
+
     @TestConfiguration
     static class Config {
         @Bean
@@ -104,7 +144,7 @@ class ApiContractControllerTest {
         }
     }
 
-    private class DummyGasEstimateService implements ApiContractService<Object, Object> {
+    private class DummyEthGasEstimateService implements ApiContractService<Object, Object> {
 
         @Override
         public String getMethod() {
@@ -113,9 +153,20 @@ class ApiContractControllerTest {
 
         @Override
         public Object get(Object request) {
-            final var transactionProcessingResult = TransactionProcessingResult.successful(new ArrayList<>(),
-                    100L, 0L, 1L, Bytes.EMPTY, Address.wrap(Bytes.fromHexString("0x00000000000000000000000000000000000004e3")), new HashMap<>());
-            return Bytes.wrap(String.valueOf(transactionProcessingResult.getGasUsed()).getBytes()).toHexString();
+            return Bytes.wrap(String.valueOf(100L).getBytes()).toHexString();
+        }
+    }
+
+    private class DummyEthCallService implements ApiContractService<Object, Object> {
+
+        @Override
+        public String getMethod() {
+            return ETH_CALL_METHOD;
+        }
+
+        @Override
+        public Object get(Object request) {
+            return Bytes.wrap(String.valueOf(4L).getBytes()).toHexString();
         }
     }
 }

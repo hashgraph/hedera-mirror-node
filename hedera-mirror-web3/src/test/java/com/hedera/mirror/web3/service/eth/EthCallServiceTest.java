@@ -1,5 +1,6 @@
 package com.hedera.mirror.web3.service.eth;
 
+import static com.hedera.mirror.web3.service.eth.EthGasEstimateService.ETH_CALL_METHOD;
 import static com.hedera.mirror.web3.service.eth.EthGasEstimateService.ETH_GAS_ESTIMATE_METHOD;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -9,7 +10,6 @@ import java.time.Instant;
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.junit.jupiter.api.Assertions;
@@ -32,9 +32,9 @@ import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.services.transaction.models.Id;
 
 @ExtendWith(MockitoExtension.class)
-class EthGasEstimateServiceTest {
-
-    @Mock private EntityRepository entityRepository;
+public class EthCallServiceTest {
+    @Mock
+    private EntityRepository entityRepository;
     @Mock private EvmProperties evmProperties;
     @Mock private SimulatedGasCalculator gasCalculator;
     @Mock private BlockMetaSourceProvider blockMetaSourceProvider;
@@ -50,22 +50,25 @@ class EthGasEstimateServiceTest {
 
     private Address senderAddress = new Id(0,0,1250).asEvmAddress();
 
-    @InjectMocks private EthGasEstimateService ethGasEstimateService;
+    @InjectMocks
+    private EthGasEstimateService ethGasEstimateService;
+
+    @InjectMocks
+    private EthCallService ethCallService;
 
     @Test
-    void ethGasEstimateForTransferHbarsWorks() {
+    void ethCallWithEmptyInputWorks() {
         when(hederaWorldState.updater()).thenReturn(updater);
         when(updater.updater()).thenReturn(simulatedStackedWorldStateUpdater);
         when(updater.getOrCreateSenderAccount(senderAddress)).thenReturn(senderAccount);
         when(senderAccount.getMutable()).thenReturn(mutableSender);
-        when(mutableSender.getBalance()).thenReturn(Wei.of(1_000_000L));
         when(simulatedStackedWorldStateUpdater.getSenderAccount(any())).thenReturn(senderAccount);
         when(simulatedStackedWorldStateUpdater.getOrCreate(any())).thenReturn(recipientAccount);
         when(recipientAccount.getMutable()).thenReturn(mutableRecipient);
         when(evmProperties.getChainId()).thenReturn(298);
         when(entityRepository.findAccountByAddress(
-                        Bytes.fromHexString("0x00000000000000000000000000000000000004e2")
-                                .toArray()))
+                Bytes.fromHexString("0x00000000000000000000000000000000000004e2")
+                        .toArray()))
                 .thenReturn(Optional.of(senderEntity));
         when(blockMetaSourceProvider.computeBlockValues(30400L))
                 .thenReturn(new SimulatedBlockMetaSource(30400L, 1, Instant.now().getEpochSecond()));
@@ -82,7 +85,7 @@ class EthGasEstimateServiceTest {
 
         final var ethCallParams =
                 new EthParams(
-                       "0x00000000000000000000000000000000000004e2",
+                        "0x00000000000000000000000000000000000004e2",
                         "0x00000000000000000000000000000000000004e3",
                         "0x76c0",
                         "0x76c0",
@@ -90,12 +93,17 @@ class EthGasEstimateServiceTest {
                         "");
 
         final var transactionCall = new TxnCallBody(ethCallParams, "latest");
-        final var result = ethGasEstimateService.get(transactionCall);
-        Assertions.assertEquals(Bytes.wrap(String.valueOf(30400L).getBytes()).toHexString(), result);
+        final var result = ethCallService.get(transactionCall);
+        Assertions.assertEquals(Bytes.EMPTY.toHexString(), result);
     }
 
     @Test
-    void getMethod() {
+    void getEthGasEstimateMethod() {
         assertThat(ethGasEstimateService.getMethod()).isEqualTo(ETH_GAS_ESTIMATE_METHOD);
+    }
+
+    @Test
+    void getEthCallMethod() {
+        assertThat(ethCallService.getMethod()).isEqualTo(ETH_CALL_METHOD);
     }
 }

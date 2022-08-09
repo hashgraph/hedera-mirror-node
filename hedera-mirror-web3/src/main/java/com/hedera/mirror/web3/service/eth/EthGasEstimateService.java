@@ -22,7 +22,8 @@ import com.hedera.mirror.web3.repository.EntityRepository;
 @RequiredArgsConstructor
 public class EthGasEstimateService implements ApiContractEthService<TxnCallBody, String> {
 
-    public static final String METHOD = "eth_gasEstimate";
+    public static final String ETH_CALL_METHOD = "eth_call";
+    public static final String ETH_GAS_ESTIMATE_METHOD = "eth_gasEstimate";
 
     private final EntityRepository entityRepository;
     private final EvmProperties evmProperties;
@@ -33,7 +34,7 @@ public class EthGasEstimateService implements ApiContractEthService<TxnCallBody,
 
     @Override
     public String getMethod() {
-        return METHOD;
+        return ETH_GAS_ESTIMATE_METHOD;
     }
 
     @Override
@@ -64,7 +65,7 @@ public class EthGasEstimateService implements ApiContractEthService<TxnCallBody,
                 Instant.now(),
                 BigInteger.valueOf(0L),
                 senderDto,
-                20_000L,
+                0L,
                 false
         );
 
