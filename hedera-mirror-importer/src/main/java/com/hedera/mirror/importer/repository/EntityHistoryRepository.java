@@ -23,13 +23,20 @@ package com.hedera.mirror.importer.repository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.hedera.mirror.common.domain.entity.EntityHistory;
 
+@Transactional
 public interface EntityHistoryRepository extends CrudRepository<EntityHistory, Long>, RetentionRepository {
 
     @Modifying
     @Override
     @Query(nativeQuery = true, value = "delete from entity_history where upper(timestamp_range) <= ?1")
     int prune(long consensusTimestamp);
+
+    @Modifying
+    @Query(value = "update entity_history set type = 'CONTRACT' where id in (:ids) and type <> 'CONTRACT'",
+            nativeQuery = true)
+    int updateContractType(Iterable<Long> ids);
 }
