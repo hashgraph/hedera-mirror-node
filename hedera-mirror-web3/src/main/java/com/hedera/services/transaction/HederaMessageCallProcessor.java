@@ -71,8 +71,11 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
         final long gasRequirement;
         final Bytes output;
         //TODO: connect precompile logic
-//        if (contract instanceof HTSPrecompiledContract htsPrecompile) {
-//            final var costedResult = htsPrecompile.computeCosted(frame.getInputData(), frame);
+        if (contract instanceof HTSPrecompiledContract htsPrecompile) {
+            final var costedResult = htsPrecompile.computeCosted(frame.getInputData(), frame);
+
+            output = costedResult.getValue();
+            frame.setOutputData(output);
 //            if (frame.getState() == REVERT) {
 //                return;
 //            }
@@ -93,6 +96,6 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
 //            frame.setState(COMPLETED_SUCCESS);
 //        } else {
 //            frame.setState(EXCEPTIONAL_HALT);
-//        }
+        }
     }
 }
