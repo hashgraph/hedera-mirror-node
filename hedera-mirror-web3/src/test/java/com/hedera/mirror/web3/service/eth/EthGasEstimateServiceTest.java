@@ -1,4 +1,4 @@
-package com.hedera.mirror.api.contract.service.eth;
+package com.hedera.mirror.web3.service.eth;
 
 import static com.hedera.mirror.web3.service.eth.EthGasEstimateService.METHOD;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,9 +29,6 @@ import com.hedera.mirror.web3.evm.properties.BlockMetaSourceProvider;
 import com.hedera.mirror.web3.evm.properties.EvmProperties;
 import com.hedera.mirror.web3.evm.properties.SimulatedBlockMetaSource;
 import com.hedera.mirror.web3.repository.EntityRepository;
-import com.hedera.mirror.web3.service.eth.EthGasEstimateService;
-import com.hedera.mirror.web3.service.eth.EthParams;
-import com.hedera.mirror.web3.service.eth.TxnCallBody;
 import com.hedera.services.transaction.models.Id;
 
 @ExtendWith(MockitoExtension.class)

@@ -28,10 +28,6 @@ public class EthGasEstimateService implements ApiContractEthService<TxnCallBody,
     private final EvmProperties evmProperties;
     private final SimulatedGasCalculator simulatedGasCalculator;
     private final SimulatedPricesSource simulatedPricesSource;
-//    private final ContractRepository contractRepository;
-//    private final AliasesResolver aliasesResolver;
-//    private final SimulatedEntityAccess entityAccess;
-//    private final CodeCache codeCache;
     private final BlockMetaSourceProvider blockMetaSourceProvider;
     private final SimulatedWorldState worldState;
 

@@ -7,10 +7,10 @@ import lombok.Value;
 @RequiredArgsConstructor
 public class EthParams {
 
-    private String from;
-    private String to;
-    private String gas;
-    private String gasPrice;
-    private String value;
-    private String data;
+    String from;
+    String to;
+    String gas;
+    String gasPrice;
+    String value;
+    String data;
 }

@@ -1,4 +1,4 @@
-package com.hedera.mirror.api.contract;
+package com.hedera.mirror.web3;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
