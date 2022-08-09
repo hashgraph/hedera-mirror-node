@@ -536,6 +536,24 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .satisfies(c -> assertThat(c.getInitcode()).isNotEmpty());
     }
 
+    @Test
+    void migrationBytecodeNotProcessed() {
+        var recordItem = recordItemBuilder.contractCreate()
+                .sidecarRecords(r -> r.get(2).setMigration(true))
+                .build();
+        var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
+        var timestamp = recordItem.getConsensusTimestamp();
+        var transaction = domainBuilder.transaction()
+                .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
+                .get();
+        var autoRenewAccount = recordItem.getTransactionBody().getContractCreateInstance().getAutoRenewAccountId();
+        when(entityIdService.lookup(autoRenewAccount)).thenReturn(EntityId.of(autoRenewAccount));
+        transactionHandler.updateTransaction(transaction, recordItem);
+        assertContract(contractId)
+                .returns(null, Contract::getInitcode)
+                .returns(null, Contract::getRuntimeBytecode);
+    }
+
     private ObjectAssert<Contract> assertContract(EntityId contractId) {
         verify(entityListener).onContract(contracts.capture());
         return assertThat(contracts.getAllValues())
