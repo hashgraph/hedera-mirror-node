@@ -621,7 +621,7 @@ const isValidTransactionHash = (hash) => transactionHashRegex.test(hash);
 const extractSqlFromTransactionsByIdOrHashRequest = (transactionIdOrHash, filters) => {
   const conditions = [];
   const params = [];
-  let postFilter = (t) => true;
+  let postFilter = (_t) => true;
 
   if (isValidTransactionHash(transactionIdOrHash)) {
     const encoding = transactionIdOrHash.length === Transaction.BASE64_HASH_SIZE ? 'base64url' : 'hex';
