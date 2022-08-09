@@ -28,10 +28,6 @@ public class EthCallService implements ApiContractEthService<TxnCallBody, String
     private final EvmProperties evmProperties;
     private final SimulatedGasCalculator simulatedGasCalculator;
     private final SimulatedPricesSource simulatedPricesSource;
-//    private final ContractRepository contractRepository;
-//    private final AliasesResolver aliasesResolver;
-//    private final SimulatedEntityAccess entityAccess;
-//    private final CodeCache codeCache;
     private final BlockMetaSourceProvider blockMetaSourceProvider;
     private final SimulatedWorldState worldState;
 
@@ -67,7 +63,7 @@ public class EthCallService implements ApiContractEthService<TxnCallBody, String
                 Instant.now(),
                 BigInteger.valueOf(0L),
                 senderDto,
-                20_000L,
+                0L,
                 true
         );
 
