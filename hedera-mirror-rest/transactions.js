@@ -604,7 +604,10 @@ const getTransactions = async (req, res) => {
   res.locals[constants.responseDataLabel] = ret;
 };
 
-const transactionHashRegex = /^([\dA-Za-z+\-\/_=]{64}|(0x)?[\dA-Fa-f]{96})$/;
+// The first part of the regex is for the base64url encoded 48-byte transaction hash. Note base64 url replaces '+' with
+// '-' and '/' with '_'. The padding character '=' is not included since the base64 encoding a 48-byte array always
+// produced a 64-byte string without padding
+const transactionHashRegex = /^([\dA-Za-z+\-\/_]{64}|(0x)?[\dA-Fa-f]{96})$/;
 
 const isValidTransactionHash = (hash) => transactionHashRegex.test(hash);
 

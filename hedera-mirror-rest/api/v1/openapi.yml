@@ -1927,7 +1927,7 @@ components:
       description: A base64url encoded hedera transaction hash.
       minLength: 64
       maxLength: 64
-      pattern: '^[\dA-Za-z+\-\/_=]{64}$'
+      pattern: '^[\dA-Za-z+\-\/_]{64}$'
     HederaHashInHex:
       type: string
       description: A hex encoded hedera transaction hash.
