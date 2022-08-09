@@ -39,4 +39,5 @@ class ContractRepositoryTest extends AbstractRepositoryTest {
         contractRepository.save(contract);
         assertThat(contractRepository.findById(contract.getId())).get().isEqualTo(contract);
     }
+
 }
