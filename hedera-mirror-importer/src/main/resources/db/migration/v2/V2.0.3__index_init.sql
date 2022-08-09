@@ -162,7 +162,7 @@ create index if not exists record_file__index_node
 create index if not exists record_file__hash_prefix
     on record_file (substring(hash from 1 for 64));
 create index if not exists record_file__prev_hash_prefix
-    on record_file (substring(prev_hash from 1 for 64))
+    on record_file (substring(prev_hash from 1 for 64));
 
 -- schedule
 alter table schedule
