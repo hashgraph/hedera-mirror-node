@@ -22,6 +22,7 @@ import {filterKeys} from '../constants';
 
 class Transaction {
   static BASE64_HASH_SIZE = 64;
+  static HASH_PREFIX_SIZE = 32;
   static HEX_HASH_SIZE = 96;
   static HEX_HASH_WITH_PREFIX_SIZE = this.HEX_HASH_SIZE + 2;
 

@@ -618,6 +618,7 @@ const isValidTransactionHash = (hash) => transactionHashRegex.test(hash);
 const extractSqlFromTransactionsByIdOrHashRequest = (transactionIdOrHash, filters) => {
   const conditions = [];
   const params = [];
+  let postFilter = (t) => t;
 
   if (isValidTransactionHash(transactionIdOrHash)) {
     const encoding = transactionIdOrHash.length === Transaction.BASE64_HASH_SIZE ? 'base64url' : 'hex';
@@ -626,8 +627,9 @@ const extractSqlFromTransactionsByIdOrHashRequest = (transactionIdOrHash, filter
     }
 
     const transactionHash = Buffer.from(transactionIdOrHash, encoding);
-    conditions.push(`${Transaction.getFullName(Transaction.TRANSACTION_HASH)} = $1`);
-    params.push(transactionHash);
+    conditions.push(`substring(${Transaction.getFullName(Transaction.TRANSACTION_HASH)} from 1 for 32) = $1`);
+    params.push(transactionHash.subarray(0, Transaction.HASH_PREFIX_SIZE));
+    postFilter = (t) => Buffer.compare(t.transaction_hash, transactionHash) === 0;
   } else {
     // try to parse it as a transaction id
     const transactionId = TransactionId.fromString(transactionIdOrHash);
@@ -668,8 +670,7 @@ const extractSqlFromTransactionsByIdOrHashRequest = (transactionIdOrHash, filter
   const whereClause = buildWhereClause(...conditions);
   const innerQuery = `select ${Transaction.CONSENSUS_TIMESTAMP}
                       from ${Transaction.tableName} ${Transaction.tableAlias}
-                      ${whereClause}
-                      order by ${Transaction.CONSENSUS_TIMESTAMP} desc`;
+                      ${whereClause}`;
   const query = `
     ${getSelectClauseWithTransfers(true, innerQuery)}
     from transfer_list t
@@ -678,6 +679,7 @@ const extractSqlFromTransactionsByIdOrHashRequest = (transactionIdOrHash, filter
   return {
     query,
     params,
+    postFilter,
   };
 };
 
@@ -688,13 +690,17 @@ const extractSqlFromTransactionsByIdOrHashRequest = (transactionIdOrHash, filter
  */
 const getTransactionsByIdOrHash = async (req, res) => {
   const filters = utils.buildAndValidateFilters(req.query);
-  const {query, params} = extractSqlFromTransactionsByIdOrHashRequest(req.params.transactionIdOrHash, filters);
+  const {query, params, postFilter} = extractSqlFromTransactionsByIdOrHashRequest(
+    req.params.transactionIdOrHash,
+    filters
+  );
   if (logger.isTraceEnabled()) {
     logger.trace(`getTransactionsByIdOrHash query: ${query} ${utils.JSONStringify(params)}`);
   }
 
   // Execute query
-  const {rows} = await pool.queryQuietly(query, params);
+  let {rows} = await pool.queryQuietly(query, params);
+  rows = rows.filter(postFilter);
   if (rows.length === 0) {
     throw new NotFoundError('Not found');
   }

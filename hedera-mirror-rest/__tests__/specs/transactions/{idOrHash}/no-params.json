@@ -1,5 +1,11 @@
 {
   "description": "Transaction api calls for a specific transaction using transaction id or hash",
+  "extendedDescription": [
+    "The first test is a query using a specific transaction id. The second test suite queries by transaction hash.",
+    "Note the last transaction's hash only differs than the hash in search in the last 4 bytes. The test verifies that",
+    "the rest api only returns the exact matching transaction hash even though the database also returns the last",
+    "transaction since its hash prefix is a match"
+  ],
   "setup": {
     "accounts": [
       {
@@ -65,6 +71,34 @@
           {
             "account": "0.0.98",
             "amount": 1
+          }
+        ]
+      },
+      {
+        "charged_tx_fee": 15,
+        "payerAccountId": "0.0.10",
+        "nodeAccountId": "0.0.4",
+        "consensus_timestamp": "1234567898000000055",
+        "valid_start_timestamp": "1234567898000000001",
+        "name": "CRYPTOTRANSFER",
+        "transaction_hash": "ae8bebf1c9fa0f309356e48057f6047af7cde63037d0509d16ddc3b20e085158bfdf14d15345c1b18b199b7201020304",
+        "type": 14,
+        "transfers": [
+          {
+            "account": "0.0.4",
+            "amount": 5
+          },
+          {
+            "account": "0.0.9",
+            "amount": 105
+          },
+          {
+            "account": "0.0.10",
+            "amount": -120
+          },
+          {
+            "account": "0.0.98",
+            "amount": 10
           }
         ]
       }
