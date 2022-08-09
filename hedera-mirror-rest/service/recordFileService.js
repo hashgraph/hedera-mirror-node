@@ -135,8 +135,13 @@ class RecordFileService extends BaseService {
     let whereStatement = '';
     const params = [];
     if (hash) {
-      whereStatement += `${RecordFile.HASH} like $1`;
-      params.push(hash + '%');
+      if (hash.length === 96) {
+        whereStatement += `${RecordFile.HASH} = $1`;
+        params.push(hash);
+      } else {
+        whereStatement += `${RecordFile.HASH} like $1`;
+        params.push(hash + '%');
+      }
     } else {
       whereStatement += `${RecordFile.INDEX} = $1`;
       params.push(number);
