@@ -20,46 +20,29 @@ package com.hedera.mirror.monitor.publish;
  * ‍
  */
 
-import static com.hedera.hashgraph.sdk.Status.SUCCESS;
-
-import com.google.common.annotations.VisibleForTesting;
 import java.security.SecureRandom;
-import java.time.Duration;
 import java.time.Instant;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.util.CollectionUtils;
-import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.HbarUnit;
 import com.hedera.hashgraph.sdk.PrivateKey;
-import com.hedera.hashgraph.sdk.Status;
 import com.hedera.hashgraph.sdk.Transaction;
 import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.hashgraph.sdk.TransactionReceiptQuery;
 import com.hedera.hashgraph.sdk.TransactionRecordQuery;
 import com.hedera.hashgraph.sdk.TransactionResponse;
-import com.hedera.hashgraph.sdk.TransferTransaction;
 import com.hedera.hashgraph.sdk.WithExecute;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.NodeProperties;
-import com.hedera.mirror.monitor.NodeValidationProperties;
-import com.hedera.mirror.monitor.subscribe.rest.RestApiClient;
 
 @Log4j2
 @Named
@@ -67,21 +50,14 @@ import com.hedera.mirror.monitor.subscribe.rest.RestApiClient;
 public class TransactionPublisher implements AutoCloseable {
 
     private final MonitorProperties monitorProperties;
+    private final NodeSupplier nodeSupplier;
     private final PublishProperties publishProperties;
-    private final RestApiClient restApiClient;
 
-    private final CopyOnWriteArrayList<NodeProperties> nodes = new CopyOnWriteArrayList<>();
-    private final SecureRandom secureRandom = new SecureRandom();
-    private final AtomicReference<Disposable> nodeValidator = new AtomicReference<>();
-    private final AtomicReference<Client> validationClient = new AtomicReference<>();
     private final Flux<Client> clients = Flux.defer(this::getClients).cache();
+    private final SecureRandom secureRandom = new SecureRandom();
 
     @Override
     public void close() {
-        if (nodeValidator.get() != null) {
-            nodeValidator.get().dispose();
-        }
-
         if (publishProperties.isEnabled()) {
             log.warn("Closing {} clients", publishProperties.getClients());
             clients.subscribe(client -> {
@@ -91,15 +67,6 @@ public class TransactionPublisher implements AutoCloseable {
                     // Ignore
                 }
             });
-
-            Client client = validationClient.get();
-            if (client != null) {
-                try {
-                    client.close();
-                } catch (Exception e) {
-                    // Ignore
-                }
-            }
         }
     }
 
@@ -133,12 +100,7 @@ public class TransactionPublisher implements AutoCloseable {
 
         // set transaction node where applicable
         if (transaction.getNodeAccountIds() == null) {
-            if (nodes.isEmpty()) {
-                return Mono.error(new IllegalArgumentException("No valid nodes available"));
-            }
-
-            int nodeIndex = secureRandom.nextInt(nodes.size());
-            var node = nodes.get(nodeIndex);
+            var node = nodeSupplier.get();
             transaction.setNodeAccountIds(node.getAccountIds());
         }
 
@@ -177,113 +139,12 @@ public class TransactionPublisher implements AutoCloseable {
         }
     }
 
-    private synchronized Flux<Client> getClients() {
-        NodeValidationProperties validationProperties = monitorProperties.getNodeValidation();
-        var configuredNodes = getNodes();
-        Map<String, AccountId> nodeMap = configuredNodes.stream()
-                .collect(Collectors.toMap(NodeProperties::getEndpoint, p -> AccountId.fromString(p.getAccountId())));
-        this.nodes.addAll(configuredNodes);
-
-        Client client = toClient(nodeMap);
-        client.setMaxAttempts(validationProperties.getMaxAttempts());
-        client.setMaxBackoff(validationProperties.getMaxBackoff());
-        client.setMinBackoff(validationProperties.getMinBackoff());
-        client.setRequestTimeout(validationProperties.getRequestTimeout());
-        this.validationClient.set(client);
-
-        if (validationProperties.isEnabled() && nodeValidator.get() == null) {
-            int nodeCount = configuredNodes.size();
-            int parallelism = Math.min(nodeCount, validationProperties.getMaxThreads());
-
-            var scheduler = Schedulers.newParallel("validator", parallelism + 1);
-            var disposable = Flux.interval(Duration.ZERO, validationProperties.getFrequency(), scheduler)
-                    .filter(i -> validationProperties.isEnabled()) // In case it's later disabled
-                    .flatMap(i -> Flux.fromIterable(configuredNodes))
-                    .parallel(parallelism)
-                    .runOn(scheduler)
-                    .map(this::validateNode)
-                    .sequential()
-                    .buffer(nodeCount)
-                    .doOnNext(i -> log.info("{} of {} nodes are functional", nodes.size(), nodeCount))
-                    .doOnSubscribe(s -> log.info("Starting node validation"))
-                    .onErrorContinue((e, i) -> log.error("Exception validating nodes: ", e))
-                    .subscribe();
-            nodeValidator.set(disposable);
-        }
-
-        return Flux.range(0, publishProperties.getClients())
-                .flatMap(i -> Mono.defer(() -> Mono.just(toClient(nodeMap))));
-    }
-
-    @VisibleForTesting
-    Collection<NodeProperties> getNodes() {
-        var configuredNodes = monitorProperties.getNodes();
-
-        if (configuredNodes.isEmpty() && monitorProperties.isRetrieveAddressBook()) {
-            configuredNodes = getAddressBook();
-        }
-
-        if (configuredNodes.isEmpty()) {
-            configuredNodes = monitorProperties.getNetwork().getNodes();
-            log.info("Using monitor default address book with {} nodes", configuredNodes.size());
-        }
-
-        if (configuredNodes.isEmpty()) {
-            throw new IllegalArgumentException("nodes must not be empty");
-        }
-
-        return configuredNodes;
-    }
-
-    private Set<NodeProperties> getAddressBook() {
-        try {
-            return restApiClient.getNodes()
-                    .filter(n -> !CollectionUtils.isEmpty(n.getServiceEndpoints()))
-                    .map(n -> new NodeProperties(n.getNodeAccountId(), n.getServiceEndpoints().get(0).getIpAddressV4()))
-                    .collect(Collectors.toSet())
-                    .doOnSuccess(n -> log.info("Retrieved {} nodes from address book", n.size()))
-                    .doOnError(t -> log.warn("Unable to retrieve address book: {}", t.getMessage()))
-                    .toFuture() // Can't use block() in a reactor thread
-                    .get();
-        } catch (Exception e) {
-            log.error("Unable to retrieve address book", e);
-            Thread.currentThread().interrupt();
-        }
-
-        return Collections.emptySet();
-    }
-
-    @VisibleForTesting
-    boolean validateNode(NodeProperties node) {
-        try {
-            log.info("Validating node {}", node);
-            Hbar hbar = Hbar.fromTinybars(1L);
-            AccountId nodeAccountId = AccountId.fromString(node.getAccountId());
-            Client client = validationClient.get();
-
-            Status receiptStatus = new TransferTransaction()
-                    .addHbarTransfer(nodeAccountId, hbar)
-                    .addHbarTransfer(client.getOperatorAccountId(), hbar.negated())
-                    .setNodeAccountIds(node.getAccountIds())
-                    .execute(client)
-                    .getReceipt(client)
-                    .status;
-
-            if (receiptStatus == SUCCESS) {
-                log.info("Validated node {} successfully", nodeAccountId);
-                nodes.addIfAbsent(node);
-                return true;
-            }
-
-            log.warn("Unable to validate node {}: invalid status code {}", node, receiptStatus);
-        } catch (TimeoutException e) {
-            log.warn("Unable to validate node {}: Timed out", node);
-        } catch (Exception e) {
-            log.warn("Unable to validate node {}: ", node, e);
-        }
-
-        nodes.remove(node);
-        return false;
+    private Flux<Client> getClients() {
+        return nodeSupplier.refresh()
+                .collect(Collectors.toMap(NodeProperties::getEndpoint, p -> AccountId.fromString(p.getAccountId())))
+                .flatMapMany(nodeMap -> Flux.range(0, publishProperties.getClients())
+                        .flatMap(i -> Mono.defer(() -> Mono.just(toClient(nodeMap))))
+                );
     }
 
     private Client toClient(Map<String, AccountId> nodes) {

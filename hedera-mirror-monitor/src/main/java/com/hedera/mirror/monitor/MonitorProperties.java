@@ -48,8 +48,6 @@ public class MonitorProperties {
 
     private NodeValidationProperties nodeValidation = new NodeValidationProperties();
 
-    private boolean retrieveAddressBook = true;
-
     public MirrorNodeProperties getMirrorNode() {
         return Objects.requireNonNullElseGet(this.mirrorNode, network::getMirrorNode);
     }
