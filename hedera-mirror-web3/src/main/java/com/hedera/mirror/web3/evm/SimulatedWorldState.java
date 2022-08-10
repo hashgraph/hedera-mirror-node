@@ -10,7 +10,6 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
@@ -70,7 +69,7 @@ public class SimulatedWorldState implements HederaMutableWorldState {
 
     @Override
     public Updater updater() {
-        return new Updater(this, simulatedAliasManager, entityAccess, entityRepository, contractRepository);
+        return new Updater(this, simulatedAliasManager, entityAccess, entityRepository);
     }
 
     @Override
@@ -123,16 +122,14 @@ public class SimulatedWorldState implements HederaMutableWorldState {
         private final SimulatedAliasManager simulatedAliasManager;
         private final SimulatedEntityAccess simulatedEntityAccess;
         private final EntityRepository entityRepository;
-        private final ContractRepository contractRepository;
 
         protected Updater(
                 final SimulatedWorldState world, final SimulatedAliasManager simulatedAliasManager,
-                final SimulatedEntityAccess simulatedEntityAccess, final EntityRepository entityRepository, final ContractRepository contractRepository) {
+                final SimulatedEntityAccess simulatedEntityAccess, final EntityRepository entityRepository) {
             super(world, simulatedAliasManager, simulatedEntityAccess, entityRepository);
             this.simulatedAliasManager = simulatedAliasManager;
             this.simulatedEntityAccess = simulatedEntityAccess;
             this.entityRepository = entityRepository;
-            this.contractRepository = contractRepository;
         }
 
         public Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> getStateChanges() {
@@ -255,7 +252,7 @@ public class SimulatedWorldState implements HederaMutableWorldState {
         @Override
         public WorldUpdater updater() {
             return new SimulatedStackedWorldStateUpdater(this, wrappedWorldView(), simulatedAliasManager,
-                    simulatedEntityAccess, entityRepository, contractRepository);
+                    simulatedEntityAccess, entityRepository);
         }
     }
 }
