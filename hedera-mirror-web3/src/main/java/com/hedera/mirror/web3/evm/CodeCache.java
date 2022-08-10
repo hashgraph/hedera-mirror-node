@@ -43,7 +43,7 @@ public class CodeCache {
 
         final Long id = entityRepository.findAccountIdByAddress(address.toArray()).orElse(null);
 
-        final var runtimeBytecode = contractRepository.getRuntimeBytecodeOfTestContract(id).orElse(null);
+        final var runtimeBytecode = contractRepository.findRuntimeBytecodeById(id).orElse(null);
 
         final var bytes = Bytes.fromHexString(runtimeBytecode);
 
