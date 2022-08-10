@@ -1,13 +1,13 @@
 package com.hedera.mirror.web3.evm;
 
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.frame.MessageFrame.Builder;
 import org.hyperledger.besu.evm.operation.Operation;
@@ -20,16 +20,24 @@ import com.hedera.services.transaction.TransactionProcessingResult;
 import com.hedera.services.transaction.execution.EvmTxProcessor;
 import com.hedera.services.transaction.store.contracts.HederaMutableWorldState;
 
+import static com.hedera.services.transaction.exception.ValidationUtils.validateTrue;
+
 public class CallEvmTxProcessor extends EvmTxProcessor {
+    private final CodeCache codeCache;
+    private final SimulatedAliasManager aliasManager;
 
     public CallEvmTxProcessor(
             SimulatedPricesSource simulatedPricesSource,
             EvmProperties configurationProperties,
             SimulatedGasCalculator gasCalculator,
             Set<Operation> hederaOperations,
-            Map<String, PrecompiledContract> precompiledContractMap) {
+            Map<String, PrecompiledContract> precompiledContractMap,
+            CodeCache codeCache,
+            SimulatedAliasManager aliasManager) {
         super(simulatedPricesSource, configurationProperties, gasCalculator, hederaOperations,
                 precompiledContractMap);
+        this.codeCache = codeCache;
+        this.aliasManager = aliasManager;
     }
 
     public TransactionProcessingResult executeEth(
@@ -81,20 +89,20 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
             Builder baseInitialFrame,
             Address to, Bytes payload,
             long value) {
-//        final var code = codeCache.getIfPresent(aliasManager.resolveForEvm(to));
+        final var code = codeCache.getIfPresent(aliasManager.resolveForEvm(to));
         /* The ContractCallTransitionLogic would have rejected a missing or deleted
          * contract, so at this point we should have non-null bytecode available.
          * If there is no bytecode, it means we have a non-token and non-contract account,
          * hence the code should be null and there must be a value transfer.
          */
-//        validateTrue(code != null || value > 0, ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION);
+        validateTrue(code != null || value > 0, ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION);
 
         return baseInitialFrame
                 .type(MessageFrame.Type.MESSAGE_CALL)
                 .address(to)
                 .contract(to)
                 .inputData(payload)
-                .code(Code.EMPTY)
+                .code(code)
                 .build();
     }
 }

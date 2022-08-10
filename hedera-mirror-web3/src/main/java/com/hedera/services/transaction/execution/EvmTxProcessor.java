@@ -116,10 +116,6 @@ public abstract class EvmTxProcessor {
         this.blockMetaSource = blockMetaSource;
     }
 
-//    protected void setWorldUpdater(final SimulatedUpdater worldUpdater) {
-//        this.worldUpdater = worldUpdater;
-//    }
-
     protected void setWorldState(final HederaMutableWorldState worldState) {
         this.worldState = worldState;
     }
