@@ -1,12 +1,11 @@
 package com.hedera.mirror.web3.repository;
 
-import com.hedera.mirror.web3.Web3IntegrationTest;
-
+import javax.annotation.Resource;
 import org.junit.Test;
 
-import javax.annotation.Resource;
+import com.hedera.mirror.web3.ApiContractIntegrationTest;
 
-public class ContractRepositoryTest extends Web3IntegrationTest {
+public class ContractRepositoryTest extends ApiContractIntegrationTest {
 
     private long timestamp = 0;
 
@@ -14,7 +13,7 @@ public class ContractRepositoryTest extends Web3IntegrationTest {
     private ContractRepository contractRepository;
 
     @Test
-    void getContract() {
+    public void getContract() {
 
     }
 }

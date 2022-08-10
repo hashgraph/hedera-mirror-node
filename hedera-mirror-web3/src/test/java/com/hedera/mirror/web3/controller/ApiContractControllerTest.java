@@ -53,7 +53,7 @@ class ApiContractControllerTest {
     }
 
     @Test
-    void successForEthGasEstimate() {
+    void successForEthGasEstimateTransferHbarsDirectly() {
         final var ethParams = new HashMap<>();
         ethParams.put("from", "0x00000000000000000000000000000000000004e2");
         ethParams.put("to", "0x00000000000000000000000000000000000004e3");
@@ -61,6 +61,48 @@ class ApiContractControllerTest {
         ethParams.put("gasPrice", "0x76c0");
         ethParams.put("value", "0x76c0");
         ethParams.put("data", "0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675");
+        final var params = new ArrayList<>();
+        params.add(ethParams);
+        params.add("latest");
+
+        JsonRpcRequest jsonRpcRequest = new JsonRpcRequest();
+        jsonRpcRequest.setId(1L);
+        jsonRpcRequest.setJsonrpc(JsonRpcResponse.VERSION);
+        jsonRpcRequest.setMethod(ETH_GAS_ESTIMATE_METHOD);
+        jsonRpcRequest.setParams(params);
+
+        when(serviceFactory.lookup(ETH_GAS_ESTIMATE_METHOD)).thenReturn(new DummyEthGasEstimateService());
+
+        webClient.post()
+                .uri("/api/v1/contracts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(jsonRpcRequest))
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.error").doesNotExist()
+                .jsonPath("$.id").isEqualTo(jsonRpcRequest.getId())
+                .jsonPath("$.jsonrpc").isEqualTo(JsonRpcResponse.VERSION)
+                .jsonPath("$.result").isEqualTo(Bytes.wrap(String.valueOf(100L).getBytes()).toHexString());
+
+        verify(serviceFactory).lookup(ETH_GAS_ESTIMATE_METHOD);
+        assertThat(meterRegistry.find(METRIC).timers())
+                .hasSize(1)
+                .first()
+                .returns(ETH_GAS_ESTIMATE_METHOD, t -> t.getId().getTag("method"))
+                .returns(JsonRpcSuccessResponse.SUCCESS, t -> t.getId().getTag("status"));
+    }
+
+    @Test
+    void successForEthGasEstimateTransferHbarsInSmartContract() {
+        final var ethParams = new HashMap<>();
+        ethParams.put("from", "0x00000000000000000000000000000000000004e2");
+        ethParams.put("to", "0x00000000000000000000000000000000000004e4");
+        ethParams.put("gas", "0x76c0");
+        ethParams.put("gasPrice", "0x76c0");
+        ethParams.put("value", "0x76c0");
+        ethParams.put("data", "0x80b9f03c00000000000000000000000000000000000004e3");
         final var params = new ArrayList<>();
         params.add(ethParams);
         params.add("latest");
