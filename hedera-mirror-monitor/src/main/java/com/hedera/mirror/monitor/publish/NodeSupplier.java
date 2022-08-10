@@ -92,7 +92,7 @@ public class NodeSupplier {
     public Flux<NodeProperties> refresh() {
         log.info("Refreshing node list");
         return Flux.fromIterable(monitorProperties.getNodes())
-                .switchIfEmpty(Flux.defer(() -> getAddressBook()))
+                .switchIfEmpty(Flux.defer(this::getAddressBook))
                 .switchIfEmpty(Flux.fromIterable(monitorProperties.getNetwork().getNodes()))
                 .switchIfEmpty(Flux.error(new IllegalArgumentException("Nodes must not be empty")));
     }
@@ -104,7 +104,7 @@ public class NodeSupplier {
 
         var count = new AtomicInteger(0);
 
-        return Flux.defer(() -> restApiClient.getNodes())
+        return Flux.defer(restApiClient::getNodes)
                 .filter(n -> !CollectionUtils.isEmpty(n.getServiceEndpoints()))
                 .map(n -> new NodeProperties(n.getNodeAccountId(), n.getServiceEndpoints().get(0).getIpAddressV4()))
                 .doOnNext(n -> count.incrementAndGet())
