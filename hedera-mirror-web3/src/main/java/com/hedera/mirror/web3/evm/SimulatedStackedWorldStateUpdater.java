@@ -1,5 +1,7 @@
 package com.hedera.mirror.web3.evm;
 
+import com.hedera.mirror.web3.repository.ContractRepository;
+
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.EvmAccount;
@@ -13,6 +15,8 @@ import com.hedera.services.transaction.store.contracts.HederaMutableWorldState;
 import com.hedera.services.transaction.store.contracts.HederaWorldUpdater;
 import com.hedera.services.transaction.store.contracts.UpdateTrackingLedgerAccount;
 import com.hedera.services.transaction.store.contracts.WorldStateTokenAccount;
+
+import java.util.Optional;
 
 public class SimulatedStackedWorldStateUpdater
         extends AbstractStackedLedgerUpdater<HederaMutableWorldState, Account>

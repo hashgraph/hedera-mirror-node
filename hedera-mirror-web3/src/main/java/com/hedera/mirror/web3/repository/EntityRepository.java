@@ -40,4 +40,7 @@ public interface EntityRepository extends CrudRepository<Entity, Long> {
 
     @Query(value = "select * from entity where public_key = ?1 and deleted <> true", nativeQuery = true)
     Optional<Entity> findAccountByPublicKey(String publicKey);
+
+    @Query(value = "select id from entity where evm_address = ?1 and deleted <> true", nativeQuery = true)
+    Optional<Long> findAccountIdByAddress(byte[] evmAddress);
 }
