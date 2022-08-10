@@ -23,7 +23,7 @@ package com.hedera.mirror.monitor.config;
 import java.util.List;
 import java.util.concurrent.CompletionException;
 import java.util.function.Function;
-import javax.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -44,6 +44,7 @@ import com.hedera.mirror.monitor.subscribe.SubscribeMetrics;
 
 @Log4j2
 @Configuration
+@RequiredArgsConstructor
 class MonitorConfiguration {
 
     static {
@@ -55,17 +56,12 @@ class MonitorConfiguration {
         });
     }
 
-    @Resource
-    private MirrorSubscriber mirrorSubscriber;
-
-    @Resource
-    private PublishProperties publishProperties;
-
-    @Resource
-    private TransactionGenerator transactionGenerator;
-
-    @Resource
-    private TransactionPublisher transactionPublisher;
+    private final MirrorSubscriber mirrorSubscriber;
+    private final PublishMetrics publishMetrics;
+    private final PublishProperties publishProperties;
+    private final SubscribeMetrics subscribeMetrics;
+    private final TransactionGenerator transactionGenerator;
+    private final TransactionPublisher transactionPublisher;
 
     /**
      * Constructs a reactive flow for publishing transactions. The transaction generator will run on a single thread and
@@ -78,7 +74,7 @@ class MonitorConfiguration {
      */
     @Bean(destroyMethod = "dispose")
     @ConditionalOnProperty(value = "hedera.mirror.monitor.publish.enabled", havingValue = "true", matchIfMissing = true)
-    Disposable publish(PublishMetrics publishMetrics) {
+    Disposable publish() {
         return Flux.<List<PublishRequest>>generate(sink -> sink.next(transactionGenerator.next(0)))
                 .flatMapIterable(Function.identity())
                 .retry()
@@ -104,13 +100,12 @@ class MonitorConfiguration {
     /**
      * Starts subscribing to mirror node APIs to receive data, sending the results to the metrics collector.
      *
-     * @param subscribeMetrics
      * @return the subscribing flow's Disposable
      */
     @Bean(destroyMethod = "dispose")
     @ConditionalOnProperty(value = "hedera.mirror.monitor.subscribe.enabled", havingValue = "true", matchIfMissing =
             true)
-    Disposable subscribe(SubscribeMetrics subscribeMetrics) {
+    Disposable subscribe() {
         return mirrorSubscriber.subscribe()
                 .name("subscribe")
                 .metrics()
