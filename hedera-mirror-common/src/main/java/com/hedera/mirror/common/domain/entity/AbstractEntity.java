@@ -64,7 +64,7 @@ public abstract class AbstractEntity implements History {
     public static final long ACCOUNT_ID_CLEARED = 0L;
     public static final long NODE_ID_CLEARED = -1L;
 
-    @Column(updatable = true)
+    @Column(updatable = false)
     @ToString.Exclude
     private byte[] alias;
 
@@ -81,7 +81,7 @@ public abstract class AbstractEntity implements History {
 
     private Long ethereumNonce;
 
-    @Column(updatable = true)
+    @Column(updatable = false)
     @ToString.Exclude
     private byte[] evmAddress;
 

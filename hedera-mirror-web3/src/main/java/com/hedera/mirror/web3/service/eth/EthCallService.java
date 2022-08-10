@@ -22,7 +22,7 @@ import com.hedera.mirror.web3.repository.EntityRepository;
 @RequiredArgsConstructor
 public class EthCallService implements ApiContractEthService<TxnCallBody, String> {
 
-    static final String METHOD = "eth_call";
+    static final String ETH_CALL_METHOD = "eth_call";
 
     private final EntityRepository entityRepository;
     private final EvmProperties evmProperties;
@@ -33,7 +33,7 @@ public class EthCallService implements ApiContractEthService<TxnCallBody, String
 
     @Override
     public String getMethod() {
-        return METHOD;
+        return ETH_CALL_METHOD;
     }
 
     @Override

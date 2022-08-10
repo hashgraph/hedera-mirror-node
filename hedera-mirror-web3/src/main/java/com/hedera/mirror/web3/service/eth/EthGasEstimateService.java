@@ -22,7 +22,6 @@ import com.hedera.mirror.web3.repository.EntityRepository;
 @RequiredArgsConstructor
 public class EthGasEstimateService implements ApiContractEthService<TxnCallBody, String> {
 
-    public static final String ETH_CALL_METHOD = "eth_call";
     public static final String ETH_GAS_ESTIMATE_METHOD = "eth_gasEstimate";
 
     private final EntityRepository entityRepository;
