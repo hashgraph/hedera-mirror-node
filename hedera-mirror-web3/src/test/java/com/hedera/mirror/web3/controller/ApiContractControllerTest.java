@@ -1,6 +1,21 @@
 package com.hedera.mirror.web3.controller;
 
 import static com.hedera.mirror.web3.controller.ApiContractController.METRIC;
+import static com.hedera.mirror.web3.utils.TestConstants.contractHexAddress;
+import static com.hedera.mirror.web3.utils.TestConstants.data;
+import static com.hedera.mirror.web3.utils.TestConstants.from;
+import static com.hedera.mirror.web3.utils.TestConstants.gas;
+import static com.hedera.mirror.web3.utils.TestConstants.gasHexValue;
+import static com.hedera.mirror.web3.utils.TestConstants.gasPrice;
+import static com.hedera.mirror.web3.utils.TestConstants.gasPriceHexValue;
+import static com.hedera.mirror.web3.utils.TestConstants.latestTag;
+import static com.hedera.mirror.web3.utils.TestConstants.multiplySimpleNumbersSelector;
+import static com.hedera.mirror.web3.utils.TestConstants.receiverHexAddress;
+import static com.hedera.mirror.web3.utils.TestConstants.senderHexAddress;
+import static com.hedera.mirror.web3.utils.TestConstants.to;
+import static com.hedera.mirror.web3.utils.TestConstants.transferHbarsToReceiverInputData;
+import static com.hedera.mirror.web3.utils.TestConstants.value;
+import static com.hedera.mirror.web3.utils.TestConstants.valueHexValue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -9,6 +24,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import javax.annotation.Resource;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.BeforeEach;
@@ -54,22 +70,11 @@ class ApiContractControllerTest {
 
     @Test
     void successForEthGasEstimateTransferHbarsDirectly() {
-        final var ethParams = new HashMap<>();
-        ethParams.put("from", "0x00000000000000000000000000000000000004e2");
-        ethParams.put("to", "0x00000000000000000000000000000000000004e3");
-        ethParams.put("gas", "0x76c0");
-        ethParams.put("gasPrice", "0x76c0");
-        ethParams.put("value", "0x76c0");
-        ethParams.put("data", "0xd46e8dd67c5d32be8d46e8dd67c5d32be8058bb8eb970870f072445675058bb8eb970870f072445675");
-        final var params = new ArrayList<>();
-        params.add(ethParams);
-        params.add("latest");
-
         JsonRpcRequest jsonRpcRequest = new JsonRpcRequest();
         jsonRpcRequest.setId(1L);
         jsonRpcRequest.setJsonrpc(JsonRpcResponse.VERSION);
         jsonRpcRequest.setMethod(ETH_GAS_ESTIMATE_METHOD);
-        jsonRpcRequest.setParams(params);
+        jsonRpcRequest.setParams(getJsonRpcRequestParams(receiverHexAddress, ""));
 
         when(serviceFactory.lookup(ETH_GAS_ESTIMATE_METHOD)).thenReturn(new DummyEthGasEstimateService());
 
@@ -96,22 +101,11 @@ class ApiContractControllerTest {
 
     @Test
     void successForEthGasEstimateTransferHbarsInSmartContract() {
-        final var ethParams = new HashMap<>();
-        ethParams.put("from", "0x00000000000000000000000000000000000004e2");
-        ethParams.put("to", "0x00000000000000000000000000000000000004e4");
-        ethParams.put("gas", "0x76c0");
-        ethParams.put("gasPrice", "0x76c0");
-        ethParams.put("value", "0x76c0");
-        ethParams.put("data", "0x80b9f03c00000000000000000000000000000000000004e3");
-        final var params = new ArrayList<>();
-        params.add(ethParams);
-        params.add("latest");
-
         JsonRpcRequest jsonRpcRequest = new JsonRpcRequest();
         jsonRpcRequest.setId(1L);
         jsonRpcRequest.setJsonrpc(JsonRpcResponse.VERSION);
         jsonRpcRequest.setMethod(ETH_GAS_ESTIMATE_METHOD);
-        jsonRpcRequest.setParams(params);
+        jsonRpcRequest.setParams(getJsonRpcRequestParams(contractHexAddress, transferHbarsToReceiverInputData));
 
         when(serviceFactory.lookup(ETH_GAS_ESTIMATE_METHOD)).thenReturn(new DummyEthGasEstimateService());
 
@@ -138,22 +132,11 @@ class ApiContractControllerTest {
 
     @Test
     void successForEthCallForPureFunction() {
-        final var ethParams = new HashMap<>();
-        ethParams.put("from", "0x00000000000000000000000000000000000004e2");
-        ethParams.put("to", "0x00000000000000000000000000000000000004e4");
-        ethParams.put("gas", "0x76c0");
-        ethParams.put("gasPrice", "0x76c0");
-        ethParams.put("value", "0x76c0");
-        ethParams.put("data", "0x8070450f");
-        final var params = new ArrayList<>();
-        params.add(ethParams);
-        params.add("latest");
-
         JsonRpcRequest jsonRpcRequest = new JsonRpcRequest();
         jsonRpcRequest.setId(1L);
         jsonRpcRequest.setJsonrpc(JsonRpcResponse.VERSION);
         jsonRpcRequest.setMethod(ETH_CALL_METHOD);
-        jsonRpcRequest.setParams(params);
+        jsonRpcRequest.setParams(getJsonRpcRequestParams(contractHexAddress, multiplySimpleNumbersSelector));
 
         when(serviceFactory.lookup(ETH_CALL_METHOD)).thenReturn(new DummyEthCallService());
 
@@ -176,6 +159,21 @@ class ApiContractControllerTest {
                 .first()
                 .returns(ETH_CALL_METHOD, t -> t.getId().getTag("method"))
                 .returns(JsonRpcSuccessResponse.SUCCESS, t -> t.getId().getTag("status"));
+    }
+
+    private List getJsonRpcRequestParams(final String recipientHexValue, final String dataHexValue) {
+        final var ethParams = new HashMap<>();
+        ethParams.put(from, senderHexAddress);
+        ethParams.put(to, recipientHexValue);
+        ethParams.put(gas, gasHexValue);
+        ethParams.put(gasPrice, gasPriceHexValue);
+        ethParams.put(value, valueHexValue);
+        ethParams.put(data, dataHexValue);
+        final var params = new ArrayList<>();
+        params.add(ethParams);
+        params.add(latestTag);
+
+        return params;
     }
 
     @TestConfiguration
