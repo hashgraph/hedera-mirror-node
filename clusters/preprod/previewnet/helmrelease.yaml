@@ -21,14 +21,11 @@ spec:
     crds: CreateReplace
   interval: 90s
   test:
-    enable: false
-    timeout: 20m  # It can take up to 15m for the next balance file to show up that the helm tests verify
-  timeout: 20m
+    enable: true
+    timeout: 20m
   upgrade:
     cleanupOnFail: true
     crds: CreateReplace
-    remediation:
-      retries: 20
   valuesFrom:
     - kind: Secret
       name: mirror
@@ -50,5 +47,5 @@ spec:
     postgresql:
       enabled: false
     test:
-      enabled: false
+      enabled: true
 
