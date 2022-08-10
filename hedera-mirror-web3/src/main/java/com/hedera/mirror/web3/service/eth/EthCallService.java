@@ -6,6 +6,11 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
 import javax.inject.Named;
+
+import com.hedera.mirror.web3.evm.CodeCache;
+
+import com.hedera.mirror.web3.evm.SimulatedAliasManager;
+
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -30,6 +35,8 @@ public class EthCallService implements ApiContractEthService<TxnCallBody, String
     private final SimulatedPricesSource simulatedPricesSource;
     private final BlockMetaSourceProvider blockMetaSourceProvider;
     private final SimulatedWorldState worldState;
+    private final CodeCache codeCache;
+    private final SimulatedAliasManager simulatedAliasManager;
 
     @Override
     public String getMethod() {
@@ -50,7 +57,7 @@ public class EthCallService implements ApiContractEthService<TxnCallBody, String
         final var senderDto = senderEntity != null ? new AccountDto(senderEntity.getNum(), ByteString.copyFrom(senderEntity.getAlias())) : new AccountDto(0L, ByteString.EMPTY);
 
         final CallEvmTxProcessor evmTxProcessor = new CallEvmTxProcessor(simulatedPricesSource, evmProperties,
-                simulatedGasCalculator, new HashSet<>(), new HashMap<>());
+                simulatedGasCalculator, new HashSet<>(), new HashMap<>(), codeCache, simulatedAliasManager);
         evmTxProcessor.setWorldState(worldState);
         evmTxProcessor.setBlockMetaSource(blockMetaSourceProvider);
 

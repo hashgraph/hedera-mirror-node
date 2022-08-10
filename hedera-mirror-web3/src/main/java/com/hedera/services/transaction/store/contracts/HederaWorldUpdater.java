@@ -2,7 +2,6 @@ package com.hedera.services.transaction.store.contracts;
 
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
-import java.util.Optional;
 
 /**
  * Provides a stacked Hedera adapted world view. Utilised by {@link org.hyperledger.besu.evm.frame.MessageFrame} in
