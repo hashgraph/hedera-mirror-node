@@ -1,6 +1,6 @@
-package com.hedera.mirror.api.contract.service.eth;
+package com.hedera.mirror.web3.service.eth;
 
-import static com.hedera.mirror.web3.service.eth.EthGasEstimateService.METHOD;
+import static com.hedera.mirror.web3.service.eth.EthGasEstimateService.ETH_GAS_ESTIMATE_METHOD;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -29,9 +29,6 @@ import com.hedera.mirror.web3.evm.properties.BlockMetaSourceProvider;
 import com.hedera.mirror.web3.evm.properties.EvmProperties;
 import com.hedera.mirror.web3.evm.properties.SimulatedBlockMetaSource;
 import com.hedera.mirror.web3.repository.EntityRepository;
-import com.hedera.mirror.web3.service.eth.EthGasEstimateService;
-import com.hedera.mirror.web3.service.eth.EthParams;
-import com.hedera.mirror.web3.service.eth.TxnCallBody;
 import com.hedera.services.transaction.models.Id;
 
 @ExtendWith(MockitoExtension.class)
@@ -61,7 +58,7 @@ class EthGasEstimateServiceTest {
         when(updater.updater()).thenReturn(simulatedStackedWorldStateUpdater);
         when(updater.getOrCreateSenderAccount(senderAddress)).thenReturn(senderAccount);
         when(senderAccount.getMutable()).thenReturn(mutableSender);
-        when(mutableSender.getBalance()).thenReturn(Wei.of(1000L));
+        when(mutableSender.getBalance()).thenReturn(Wei.of(1_000_000L));
         when(simulatedStackedWorldStateUpdater.getSenderAccount(any())).thenReturn(senderAccount);
         when(simulatedStackedWorldStateUpdater.getOrCreate(any())).thenReturn(recipientAccount);
         when(recipientAccount.getMutable()).thenReturn(mutableRecipient);
@@ -70,8 +67,8 @@ class EthGasEstimateServiceTest {
                         Bytes.fromHexString("0x00000000000000000000000000000000000004e2")
                                 .toArray()))
                 .thenReturn(Optional.of(senderEntity));
-        when(blockMetaSourceProvider.computeBlockValues(100L))
-                .thenReturn(new SimulatedBlockMetaSource(100L, 1, Instant.now().getEpochSecond()));
+        when(blockMetaSourceProvider.computeBlockValues(30400L))
+                .thenReturn(new SimulatedBlockMetaSource(30400L, 1, Instant.now().getEpochSecond()));
 
         when(senderEntity.getAlias())
                 .thenReturn(
@@ -87,18 +84,18 @@ class EthGasEstimateServiceTest {
                 new EthParams(
                        "0x00000000000000000000000000000000000004e2",
                         "0x00000000000000000000000000000000000004e3",
-                        "100",
-                        "1",
-                        "1",
-                        "0x");
+                        "0x76c0",
+                        "0x76c0",
+                        "0x76c0",
+                        "");
 
         final var transactionCall = new TxnCallBody(ethCallParams, "latest");
         final var result = ethGasEstimateService.get(transactionCall);
-        Assertions.assertEquals(Bytes.wrap(String.valueOf(100L).getBytes()).toHexString(), result);
+        Assertions.assertEquals(Bytes.wrap(String.valueOf(30400L).getBytes()).toHexString(), result);
     }
 
     @Test
     void getMethod() {
-        assertThat(ethGasEstimateService.getMethod()).isEqualTo(METHOD);
+        assertThat(ethGasEstimateService.getMethod()).isEqualTo(ETH_GAS_ESTIMATE_METHOD);
     }
 }

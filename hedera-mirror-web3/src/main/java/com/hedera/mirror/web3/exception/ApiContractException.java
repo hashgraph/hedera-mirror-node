@@ -1,4 +1,4 @@
-package com.hedera.mirror.api.contract.exception;
+package com.hedera.mirror.web3.exception;
 
 import com.hedera.mirror.common.exception.MirrorNodeException;
 
