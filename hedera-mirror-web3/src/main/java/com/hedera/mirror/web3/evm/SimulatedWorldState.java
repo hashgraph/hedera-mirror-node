@@ -179,11 +179,6 @@ public class SimulatedWorldState implements HederaMutableWorldState {
         }
 
         @Override
-        public Optional<byte[]> getTestContract(Address address) {
-            return Optional.empty();
-        }
-
-        @Override
         public long getSbhRefund() {
             return sbhRefund;
         }
