@@ -49,6 +49,10 @@ spec:
       enabled: false
     redis:
       enabled: false
+    rest:
+      resources:
+        requests:
+          cpu: 300m
     rosetta:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "mainnet"
