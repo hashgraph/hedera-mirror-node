@@ -60,11 +60,6 @@ public class SimulatedStackedWorldStateUpdater
     }
 
     @Override
-    public Optional<byte[]> getTestContract(Address address) {
-        return null;
-    }
-
-    @Override
     public Account get(final Address addressOrAlias) {
         final var address = simulatedAliasManager.resolveForEvm(addressOrAlias);
         if (isTokenRedirect(address)) {
