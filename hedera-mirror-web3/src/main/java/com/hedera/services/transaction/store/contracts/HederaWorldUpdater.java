@@ -2,6 +2,7 @@ package com.hedera.services.transaction.store.contracts;
 
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
+import java.util.Optional;
 
 /**
  * Provides a stacked Hedera adapted world view. Utilised by {@link org.hyperledger.besu.evm.frame.MessageFrame} in
@@ -21,7 +22,7 @@ public interface HederaWorldUpdater extends WorldUpdater {
     /**
      * FUTURE WORK - ADD COMMENT
      */
-    Long getTestContract();
+    Optional<byte[]> getTestContract(Address address);
 
     /**
      * Tracks how much Gas should be refunded to the sender account for the TX. SBH price is refunded for the first
