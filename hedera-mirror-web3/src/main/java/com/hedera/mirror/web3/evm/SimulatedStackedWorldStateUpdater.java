@@ -1,5 +1,7 @@
 package com.hedera.mirror.web3.evm;
 
+import com.hedera.mirror.web3.repository.ContractRepository;
+
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.EvmAccount;
@@ -14,6 +16,8 @@ import com.hedera.services.transaction.store.contracts.HederaWorldUpdater;
 import com.hedera.services.transaction.store.contracts.UpdateTrackingLedgerAccount;
 import com.hedera.services.transaction.store.contracts.WorldStateTokenAccount;
 
+import java.util.Optional;
+
 public class SimulatedStackedWorldStateUpdater
         extends AbstractStackedLedgerUpdater<HederaMutableWorldState, Account>
         implements HederaWorldUpdater {
@@ -22,6 +26,7 @@ public class SimulatedStackedWorldStateUpdater
     private final SimulatedAliasManager simulatedAliasManager;
     private final SimulatedEntityAccess entityAccess;
     private final EntityRepository entityRepository;
+    private final ContractRepository contractRepository;
 
     private long sbhRefund = 0L;
     private int numAllocatedIds = 0;
@@ -31,12 +36,14 @@ public class SimulatedStackedWorldStateUpdater
             final HederaMutableWorldState worldState,
             final SimulatedAliasManager simulatedAliasManager,
             final SimulatedEntityAccess simulatedEntityAccess,
-            final EntityRepository entityRepository) {
+            final EntityRepository entityRepository,
+            final ContractRepository contractRepository) {
         super(updater, simulatedAliasManager, simulatedEntityAccess, entityRepository);
         this.worldState = worldState;
         this.simulatedAliasManager = simulatedAliasManager;
         this.entityAccess = simulatedEntityAccess;
         this.entityRepository = entityRepository;
+        this.contractRepository = contractRepository;
     }
 
     @Override
@@ -50,6 +57,11 @@ public class SimulatedStackedWorldStateUpdater
         final var newAddress = worldState.newContractAddress(sponsor);
         numAllocatedIds++;
         return newAddress;
+    }
+
+    @Override
+    public Optional<byte[]> getTestContract(Address address) {
+        return null;
     }
 
     @Override
@@ -106,7 +118,7 @@ public class SimulatedStackedWorldStateUpdater
                 (AbstractLedgerWorldUpdater) this,
                 worldState,
                 simulatedAliasManager,
-                entityAccess, entityRepository);
+                entityAccess, entityRepository, contractRepository);
     }
 
     // --- Internal helpers
