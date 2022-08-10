@@ -28,11 +28,11 @@ import org.flywaydb.core.api.configuration.Configuration;
 
 abstract class RepeatableMigration extends MirrorBaseJavaMigration {
 
-    private final static MigrationProperties DEFAULT_MIGRATION_PROPERTIES = new MigrationProperties();
+    private static final MigrationProperties DEFAULT_MIGRATION_PROPERTIES = new MigrationProperties();
 
     protected final MigrationProperties migrationProperties;
 
-    public RepeatableMigration(Map<String, MigrationProperties> migrationPropertiesMap) {
+    protected RepeatableMigration(Map<String, MigrationProperties> migrationPropertiesMap) {
         String propertiesKey = StringUtils.uncapitalize(getClass().getSimpleName());
         migrationProperties = migrationPropertiesMap.getOrDefault(propertiesKey, DEFAULT_MIGRATION_PROPERTIES);
     }
