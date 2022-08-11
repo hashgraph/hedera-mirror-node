@@ -37,9 +37,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.inject.Named;
 import javax.persistence.Column;
-import javax.persistence.Entity;
 import javax.persistence.EntityManager;
-import javax.persistence.Id;
 import javax.persistence.Table;
 import javax.persistence.metamodel.Attribute;
 import javax.persistence.metamodel.EmbeddableType;
@@ -199,9 +197,7 @@ public class EntityMetadataRegistry {
     }
 
     @Data
-    @Entity(name = "columns")
     static class InformationSchemaColumns {
-        @Id
         private String columnName;
         private String columnDefault;
         private boolean nullable;
