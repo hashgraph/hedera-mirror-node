@@ -47,5 +47,6 @@ spec:
     postgresql:
       enabled: false
     test:
+      cucumberTags: "@acceptance and not @networkstake"
       enabled: true
 
