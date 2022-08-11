@@ -24,10 +24,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.hedera.mirror.common.domain.UpsertColumn;
 import com.hedera.mirror.common.domain.Upsertable;
@@ -81,6 +83,26 @@ class EntityMetadataRegistryTest extends IntegrationTest {
                 .satisfies(cm -> assertThat(cm.getGetter().apply(entity)).isEqualTo(entity.getAlias()))
                 .satisfies(cm -> assertThatCode(() -> cm.getSetter().accept(entity, newValue))
                         .satisfies(d -> assertThat(entity.getAlias()).isEqualTo(newValue)));
+    }
+
+    @Test
+    @Transactional
+    void lookupSameColumnNameFromMultipleDomainClasses() {
+        // The test case reproduces the issue in the ticket https://github.com/hashgraph/hedera-mirror-node/issues/4265
+        // With the entity manager cache, if we look up two domain classes metadata in the same session, for columns with
+        // the same name, the defaults of the first domain class will override those of the second. For example,
+        // without the fix, entity.type's default will be "'FUNGIBLE_COMMON'"
+        // given, when
+        var tokenMetadata = registry.lookup(Token.class);
+        var entityMetadata = registry.lookup(Entity.class);
+
+        // then
+        var typeDefaultValues = Stream.of(entityMetadata, tokenMetadata)
+                .flatMap(m -> m.getColumns().stream())
+                .filter(c -> "type".equals(c.getName()))
+                .map(ColumnMetadata::getDefaultValue)
+                .toList();
+        assertThat(typeDefaultValues).containsExactly(null, "'FUNGIBLE_COMMON'");
     }
 
     @Test
