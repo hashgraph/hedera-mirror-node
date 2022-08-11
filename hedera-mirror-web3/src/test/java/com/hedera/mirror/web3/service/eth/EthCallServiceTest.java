@@ -1,6 +1,7 @@
 package com.hedera.mirror.web3.service.eth;
 
-import static com.hedera.mirror.web3.service.eth.EthGasEstimateService.ETH_CALL_METHOD;
+
+import static com.hedera.mirror.web3.service.eth.EthCallService.ETH_CALL_METHOD;
 import static com.hedera.mirror.web3.service.eth.EthGasEstimateService.ETH_GAS_ESTIMATE_METHOD;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;

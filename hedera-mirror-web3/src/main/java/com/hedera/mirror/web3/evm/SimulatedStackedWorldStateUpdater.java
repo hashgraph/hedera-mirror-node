@@ -116,6 +116,6 @@ public class SimulatedStackedWorldStateUpdater
     // --- Internal helpers
     //FUTURE WORK to be implemented
     boolean isTokenRedirect(final Address address) {
-        return false;
+        return true;
     }
 }

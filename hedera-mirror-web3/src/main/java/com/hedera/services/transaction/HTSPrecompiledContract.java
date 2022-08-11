@@ -5,6 +5,8 @@ import com.google.common.primitives.Longs;
 
 import com.hedera.mirror.web3.evm.SimulatedStackedWorldStateUpdater;
 
+import com.hedera.mirror.web3.repository.TokenRepository;
+
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.Arrays;
@@ -18,7 +20,7 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract.PrecompileContractResult;
 import org.jetbrains.annotations.NotNull;
 
-public class HTSPrecompiledContract {
+public class HTSPrecompiledContract implements PrecompiledContract {
     private long gasRequirement = 0;
     private Precompile precompile;
     private static final Bytes STATIC_CALL_REVERT_REASON =
@@ -27,6 +29,14 @@ public class HTSPrecompiledContract {
     public static final int ABI_ID_REDIRECT_FOR_TOKEN = 0x618dc65e;
     public static final int ABI_ID_ERC_NAME = 0x06fdde03;
     public static final int ABI_ID_ERC_SYMBOL = 0x95d89b41;
+
+    final TokenRepository tokenRepository;
+    final EncodingFacade encoder;
+
+    public HTSPrecompiledContract(TokenRepository tokenRepository) {
+        this.tokenRepository = tokenRepository;
+        this.encoder = new EncodingFacade();
+    }
 
     public static boolean isTokenProxyRedirect(final Bytes input) {
         return ABI_ID_REDIRECT_FOR_TOKEN == input.getInt(0);
@@ -42,6 +52,16 @@ public class HTSPrecompiledContract {
 
         final var result = computePrecompile(input, frame);
         return Pair.of(gasRequirement, result.getOutput());
+    }
+
+    @Override
+    public String getName() {
+        return null;
+    }
+
+    @Override
+    public long gasRequirement(Bytes input) {
+        return 0;
     }
 
     public PrecompileContractResult computePrecompile(final Bytes input, @NotNull final MessageFrame frame) {
@@ -64,8 +84,8 @@ public class HTSPrecompiledContract {
                 final var address = target.address();
                 final var nestedFunctionSelector = target.descriptor();
                 yield switch (nestedFunctionSelector) {
-                    case ABI_ID_ERC_NAME -> new NamePrecompile(address);
-                    case ABI_ID_ERC_SYMBOL -> new SymbolPrecompile(address);
+                    case ABI_ID_ERC_NAME -> new NamePrecompile(address, tokenRepository, encoder);
+                    case ABI_ID_ERC_SYMBOL -> new SymbolPrecompile(address, tokenRepository, encoder);
 
                     default -> null;
                 };

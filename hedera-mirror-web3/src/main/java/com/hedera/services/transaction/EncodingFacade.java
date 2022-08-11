@@ -1,6 +1,5 @@
 package com.hedera.services.transaction;
 
-import static com.hedera.services.transaction.HTSPrecompiledContract.ABI_ID_ERC_NAME;
 import static com.hedera.services.transaction.ParsingConstants.notSpecifiedType;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 

@@ -1,5 +1,7 @@
 package com.hedera.mirror.web3.evm;
 
+import com.hedera.mirror.web3.repository.TokenRepository;
+
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
@@ -33,9 +35,10 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
             Set<Operation> hederaOperations,
             Map<String, PrecompiledContract> precompiledContractMap,
             CodeCache codeCache,
-            SimulatedAliasManager aliasManager) {
+            SimulatedAliasManager aliasManager,
+            TokenRepository tokenRepository) {
         super(simulatedPricesSource, configurationProperties, gasCalculator, hederaOperations,
-                precompiledContractMap);
+                precompiledContractMap, tokenRepository);
         this.codeCache = codeCache;
         this.aliasManager = aliasManager;
     }

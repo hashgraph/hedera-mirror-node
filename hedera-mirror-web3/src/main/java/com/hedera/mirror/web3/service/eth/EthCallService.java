@@ -1,6 +1,9 @@
 package com.hedera.mirror.web3.service.eth;
 
 import com.google.protobuf.ByteString;
+
+import com.hedera.mirror.web3.repository.TokenRepository;
+
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.HashMap;
@@ -37,6 +40,7 @@ public class EthCallService implements ApiContractEthService<TxnCallBody, String
     private final SimulatedWorldState worldState;
     private final CodeCache codeCache;
     private final SimulatedAliasManager simulatedAliasManager;
+    private final TokenRepository tokenRepository;
 
     @Override
     public String getMethod() {
@@ -57,7 +61,7 @@ public class EthCallService implements ApiContractEthService<TxnCallBody, String
         final var senderDto = senderEntity != null ? new AccountDto(senderEntity.getNum(), ByteString.copyFrom(senderEntity.getAlias())) : new AccountDto(0L, ByteString.EMPTY);
 
         final CallEvmTxProcessor evmTxProcessor = new CallEvmTxProcessor(simulatedPricesSource, evmProperties,
-                simulatedGasCalculator, new HashSet<>(), new HashMap<>(), codeCache, simulatedAliasManager);
+                simulatedGasCalculator, new HashSet<>(), new HashMap<>(), codeCache, simulatedAliasManager, tokenRepository);
         evmTxProcessor.setWorldState(worldState);
         evmTxProcessor.setBlockMetaSource(blockMetaSourceProvider);
 

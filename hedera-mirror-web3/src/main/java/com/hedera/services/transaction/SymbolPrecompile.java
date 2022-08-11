@@ -6,16 +6,14 @@ import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
 import java.util.function.UnaryOperator;
+import lombok.AllArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 
+@AllArgsConstructor
 public class SymbolPrecompile implements Precompile {
     protected byte[] address;
     protected TokenRepository tokenRepository;
     protected EncodingFacade encoder;
-
-    public SymbolPrecompile(byte[] address) {
-        this.address = address;
-    }
 
     @Override
     public Builder body(
@@ -30,7 +28,6 @@ public class SymbolPrecompile implements Precompile {
 
     @Override
     public Bytes getSuccessResultFor() {
-        // FIX
         final var token = tokenRepository.findByAddress(address);
         return encoder.encodeSymbol(token.get().getSymbol());
     }

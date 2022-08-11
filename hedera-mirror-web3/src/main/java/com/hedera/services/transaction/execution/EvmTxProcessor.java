@@ -27,6 +27,10 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
 
+import com.hedera.mirror.web3.repository.TokenRepository;
+
+import com.hedera.services.transaction.HTSPrecompiledContract;
+
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -100,7 +104,8 @@ public abstract class EvmTxProcessor {
             final EvmProperties configurationProperties,
             final SimulatedGasCalculator gasCalculator,
             final Set<Operation> hederaOperations,
-            final Map<String, PrecompiledContract> precompiledContractMap
+            final Map<String, PrecompiledContract> precompiledContractMap,
+            final TokenRepository tokenRepository
     ) {
         this(
                 null,
@@ -109,7 +114,8 @@ public abstract class EvmTxProcessor {
                 gasCalculator,
                 hederaOperations,
                 precompiledContractMap,
-                null);
+                null,
+                tokenRepository);
     }
 
     protected void setBlockMetaSource(final BlockMetaSourceProvider blockMetaSource) {
@@ -127,7 +133,8 @@ public abstract class EvmTxProcessor {
             final SimulatedGasCalculator gasCalculator,
             final Set<Operation> hederaOperations,
             final Map<String, PrecompiledContract> precompiledContractMap,
-            final BlockMetaSourceProvider blockMetaSource
+            final BlockMetaSourceProvider blockMetaSource,
+            final TokenRepository tokenRepository
     ) {
         this.worldState = worldState;
         this.simulatedPricesSource = simulatedPricesSource;
@@ -141,6 +148,7 @@ public abstract class EvmTxProcessor {
         final var evm = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);
         final var precompileContractRegistry = new PrecompileContractRegistry();
         MainnetPrecompiledContracts.populateForIstanbul(precompileContractRegistry, this.gasCalculator);
+        precompiledContractMap.put("0x167", new HTSPrecompiledContract(tokenRepository));
 
         this.messageCallProcessor = new HederaMessageCallProcessor(
                 evm, precompileContractRegistry, precompiledContractMap);
