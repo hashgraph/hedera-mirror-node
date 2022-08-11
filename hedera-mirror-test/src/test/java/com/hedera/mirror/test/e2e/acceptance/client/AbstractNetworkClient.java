@@ -99,20 +99,23 @@ public abstract class AbstractNetworkClient {
     public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction transaction, KeyList keyList,
                                                                            ExpandedAccountId payer) {
         long startBalance = log.isTraceEnabled() ? getBalance() : 0L;
-        TransactionId transactionId = executeTransaction(transaction, keyList, payer);
+        var transactionId = executeTransaction(transaction, keyList, payer);
+        byte[] transactionHash = null;
         TransactionReceipt transactionReceipt = null;
 
         try {
-            transactionReceipt = getTransactionReceipt(transactionId);
+            var record = getTransactionRecord(transactionId);
+            transactionHash = record.transactionHash.toByteArray();
+            transactionReceipt = record.receipt;
         } catch (Exception e) {
-            log.error("Failed to get transaction receipt for {}: {}", transactionId, e.getMessage());
+            log.error("Failed to get transaction record for {}: {}", transactionId, e.getMessage());
         }
 
         if (log.isTraceEnabled()) {
             log.trace("Executed transaction {} cost {} tℏ", transactionId, startBalance - getBalance());
         }
 
-        return new NetworkTransactionResponse(transactionId, transactionReceipt);
+        return new NetworkTransactionResponse(transactionHash, transactionId, transactionReceipt);
     }
 
     public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction transaction, KeyList keyList) {
