@@ -19,6 +19,7 @@
  */
 
 import AbortController from 'abort-controller';
+import {detailedDiff} from 'deep-object-diff';
 import httpErrors from 'http-errors';
 import _ from 'lodash';
 import log4js from 'log4js';
@@ -221,7 +222,7 @@ const createFailedResultJson = (title, msg) => {
   return failedResultJson;
 };
 
-const checkAPIResponseError = (resp, option) => {
+const checkAPIResponseError = (resp, _option) => {
   if (resp instanceof Error) {
     return {
       passed: false,
@@ -283,6 +284,21 @@ const checkMandatoryParams = (elements, option) => {
         message: `${message}: ${params[index]}`,
       };
     }
+  }
+
+  return {passed: true};
+};
+
+const checkObjectEqual = (elements, option) => {
+  const {expected} = option;
+  const diff = detailedDiff(expected, elements);
+  const areSame = Object.values(diff).reduce((ret, cur) => ret && Object.values(cur).length === 0, true);
+
+  if (!areSame) {
+    return {
+      passed: false,
+      message: `elements differs from expected: ${JSON.stringify(diff)}`,
+    };
   }
 
   return {passed: true};
@@ -447,6 +463,7 @@ export {
   checkAccountId,
   checkElementsOrder,
   checkMandatoryParams,
+  checkObjectEqual,
   checkResourceFreshness,
   checkRespArrayLength,
   checkRespObjDefined,
