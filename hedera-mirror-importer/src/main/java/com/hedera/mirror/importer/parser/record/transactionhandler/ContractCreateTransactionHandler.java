@@ -176,6 +176,9 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
             contractResult.setAmount(transactionBody.getInitialBalance());
             contractResult.setFunctionParameters(DomainUtils.toBytes(transactionBody.getConstructorParameters()));
             contractResult.setGasLimit(transactionBody.getGas());
+            if (!recordItem.isSuccessful() && !transactionBody.getInitcode().isEmpty()) {
+                contractResult.setFailedInitcode(DomainUtils.toBytes(transactionBody.getInitcode()));
+            }
         }
     }
 

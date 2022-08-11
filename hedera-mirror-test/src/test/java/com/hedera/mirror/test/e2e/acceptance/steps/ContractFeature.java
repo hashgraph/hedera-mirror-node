@@ -235,6 +235,7 @@ public class ContractFeature extends AbstractFeature {
         String[] createdIds = contractResult.getCreatedContractIds();
         assertThat(createdIds).isNotEmpty();
         assertThat(contractResult.getErrorMessage()).isBlank();
+        assertThat(contractResult.getFailedInitcode()).isBlank();
         assertThat(contractResult.getFrom()).isEqualTo(FeatureInputHandler.evmAddress(
                 contractClient.getSdkClient().getExpandedOperatorAccountId().getAccountId()));
         assertThat(contractResult.getGasLimit())

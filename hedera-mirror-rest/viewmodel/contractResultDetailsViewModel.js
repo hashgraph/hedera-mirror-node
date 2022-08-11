@@ -51,6 +51,9 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
 
     this.block_hash = utils.addHexPrefix(recordFile.hash);
     this.block_number = recordFile.index;
+    this.failed_initcode = _.isNil(contractResult.failedInitcode)
+      ? null
+      : utils.toHexStringNonQuantity(contractResult.failedInitcode);
     this.hash = utils.toHexStringNonQuantity(transaction.transactionHash);
     this.logs = contractLogs.map((contractLog) => new ContractLogResultsViewModel(contractLog));
     this.result = TransactionResult.getName(transaction.result);

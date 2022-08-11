@@ -25,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.common.converter.WeiBarTinyBarConverter;
+import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
@@ -65,6 +66,15 @@ class EthereumTransactionHandler implements TransactionHandler {
     @Override
     public TransactionType getType() {
         return TransactionType.ETHEREUMTRANSACTION;
+    }
+
+    @Override
+    public void updateContractResult(ContractResult contractResult, RecordItem recordItem) {
+        if (!recordItem.isSuccessful()) {
+            var body = recordItem.getTransactionBody().getEthereumTransaction();
+            var ethereumTransaction = ethereumTransactionParser.decode(DomainUtils.toBytes(body.getEthereumData()));
+            contractResult.setFailedInitcode(ethereumTransaction.getCallData());
+        }
     }
 
     @Override
