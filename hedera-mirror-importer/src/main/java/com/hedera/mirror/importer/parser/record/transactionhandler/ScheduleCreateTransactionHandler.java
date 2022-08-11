@@ -35,7 +35,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 
 @Named
-class ScheduleCreateTransactionHandler extends AbstractEntityCrudTransactionHandler<Entity> {
+class ScheduleCreateTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
     private final EntityProperties entityProperties;
 

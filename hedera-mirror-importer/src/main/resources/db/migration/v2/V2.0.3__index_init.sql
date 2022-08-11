@@ -161,8 +161,6 @@ create index if not exists record_file__index_node
     on record_file (index);
 create index if not exists record_file__hash
     on record_file (hash collate "C");
-create index if not exists record_file__prev_hash
-    on record_file (prev_hash collate "C");
 
 -- schedule
 alter table schedule

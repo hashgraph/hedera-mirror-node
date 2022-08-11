@@ -25,14 +25,12 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 import com.hedera.mirror.common.converter.WeiBarTinyBarConverter;
 
-@Log4j2
 @Named
 @RequiredArgsConstructor(onConstructor_ = {@Lazy})
 public class ConvertEthereumTransactionValueMigration extends MirrorBaseJavaMigration {

@@ -692,6 +692,7 @@ class BatchUpserterTest extends IntegrationTest {
     private Entity getEntity(long id, Long createdTimestamp, long modifiedTimestamp, String memo) {
         Entity entity = new Entity();
         entity.setId(id);
+        entity.setBalance(0L);
         entity.setCreatedTimestamp(createdTimestamp);
         entity.setDeclineReward(false);
         entity.setEthereumNonce(0L);
