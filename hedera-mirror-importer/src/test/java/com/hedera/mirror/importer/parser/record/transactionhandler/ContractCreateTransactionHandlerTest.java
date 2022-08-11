@@ -171,7 +171,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
 
     @Test
     void updateContractResultFailedCreateTransaction() {
-        ContractResult contractResult = ContractResult.builder().build();
+        var contractResult = new ContractResult();
         var recordItem = recordItemBuilder.contractCreate()
                 .transactionBody(t -> t.setInitcode(ByteString.copyFrom(new byte[] {9, 8, 7})))
                 .record(TransactionRecord.Builder::clearContractCreateResult)

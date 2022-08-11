@@ -108,7 +108,7 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Test
     void updateContractResult() {
         boolean create = true;
-        ContractResult contractResult = ContractResult.builder().build();
+        var contractResult = new ContractResult();
         var recordItem = recordItemBuilder.ethereumTransaction(create).build();
         transactionHandler.updateContractResult(contractResult, recordItem);
 
@@ -119,7 +119,7 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Test
     void updateContractResultFailedTransaction() {
         boolean create = true;
-        ContractResult contractResult = ContractResult.builder().build();
+        var contractResult = new ContractResult();
         var recordItem = recordItemBuilder.ethereumTransaction(create)
                 .receipt(r -> r.clearContractID().setStatus(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION))
                 .build();
