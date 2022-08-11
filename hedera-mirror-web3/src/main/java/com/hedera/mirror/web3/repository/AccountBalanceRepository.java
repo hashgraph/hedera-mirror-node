@@ -8,7 +8,7 @@ import com.hedera.mirror.common.domain.balance.AccountBalance;
 
 public interface AccountBalanceRepository extends CrudRepository<AccountBalance, Long> {
 
-    @Query(value = "select * from account_balance where account_id = ?1 order by consensus_timestamp desc limit 1", nativeQuery=true)
-    Optional<AccountBalance> findByAccountId(final long accountId);
+    @Query(value = "select * from account_balance where account_id = (select id from entity where evm_address = ?1) order by consensus_timestamp desc limit 1", nativeQuery=true)
+    Optional<AccountBalance> findByAddress(final byte[] evmAddress);
 
 }

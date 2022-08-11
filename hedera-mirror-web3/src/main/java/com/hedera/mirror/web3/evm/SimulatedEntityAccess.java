@@ -38,9 +38,8 @@ public class SimulatedEntityAccess implements EntityAccess {
     private final AccountBalanceRepository accountBalanceRepository;
 
     @Override
-    public long getBalance(Address id) {
-        final long idConverted = Long.decode(Bytes.wrap(id.toArray()).toHexString());
-        final var accountBalance = accountBalanceRepository.findByAccountId(idConverted);
+    public long getBalance(Address address) {
+        final var accountBalance = accountBalanceRepository.findByAddress(address.toArray());
         return accountBalance.map(AccountBalance::getBalance).orElse(0L);
     }
 
