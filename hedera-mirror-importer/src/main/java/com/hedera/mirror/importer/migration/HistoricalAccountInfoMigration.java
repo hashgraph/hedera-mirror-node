@@ -34,11 +34,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.zip.GZIPInputStream;
 import javax.inject.Named;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.flywaydb.core.api.MigrationVersion;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
@@ -55,8 +53,7 @@ import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.repository.EntityRepository;
 
 @Named
-@RequiredArgsConstructor(onConstructor_ = {@Lazy})
-public class HistoricalAccountInfoMigration extends MirrorBaseJavaMigration {
+public class HistoricalAccountInfoMigration extends RepeatableMigration {
 
     static final Instant EXPORT_DATE = Instant.parse("2019-09-14T00:00:10Z");
 
@@ -71,9 +68,13 @@ public class HistoricalAccountInfoMigration extends MirrorBaseJavaMigration {
     @Value("classpath:accountInfo.txt.gz")
     private Resource accountInfoPath;
 
-    @Override
-    public Integer getChecksum() {
-        return 3; // Change this if this migration should be rerun
+    @Lazy
+    public HistoricalAccountInfoMigration(EntityRepository entityRepository, NamedParameterJdbcTemplate jdbcTemplate,
+                                          MirrorProperties mirrorProperties) {
+        super(mirrorProperties.getMigration());
+        this.entityRepository = entityRepository;
+        this.jdbcOperations = jdbcTemplate;
+        this.mirrorProperties = mirrorProperties;
     }
 
     @Override
@@ -82,13 +83,13 @@ public class HistoricalAccountInfoMigration extends MirrorBaseJavaMigration {
     }
 
     @Override
-    public MigrationVersion getVersion() {
-        return null; // Repeatable migration
-    }
-
-    @Override
     protected boolean skipMigration(Configuration configuration) {
-        return false; // Migrate for v1 and v2
+        if (!migrationProperties.isEnabled()) {
+            log.info("Skip migration since it's disabled");
+            return true;
+        }
+
+        return false; // Migrate for both v1 and v2
     }
 
     @Override

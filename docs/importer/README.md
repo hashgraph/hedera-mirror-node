@@ -3,6 +3,35 @@
 The importer component is responsible for downloading stream files uploaded by consensus nodes, verifying them, and
 ingesting the normalized data into the database.
 
+## Initialize Entity Balance
+
+The importer tracks up-to-date entity balance by applying balance changes from crypto transfers. This relies on the
+[InitializeEntityBalanceMigration](/hedera-mirror-importer/src/main/java/com/hedera/mirror/importer/migration/InitializeEntityBalanceMigration.java)
+to set the correct initial entity balance from the latest account balance snapshot relative to the last record stream
+file the importer has ingested and balance changes from crypto transfers not accounted in the snapshot. If the importer
+is started with a database which doesn't meet the prerequisite (e.g., an empty database) or the entity balance is
+inaccurate due to bugs, follow the steps below to re-run the migration to fix it.
+
+1. Stop importer
+
+2. Get the latest checksum of `InitializeEntityBalanceMigration`
+
+   ```shell
+   $ psql -h db -U mirror_node -c "select checksum from flyway_schema_history \
+     where script like '%InitializeEntityBalanceMigration' order by installed_rank desc limit 1"
+   ```
+
+3. Set a different checksum (e.g., 2) for the migration and start importer
+
+   ```yaml
+   hedera:
+     mirror:
+       importer:
+         migration:
+           initializeEntityBalanceMigration:
+             checksum: 2
+   ```
+
 ## Performance Tests
 
 The `RecordFileParserPerformanceTest` can be used to declaratively generate a `RecordFile` with different performance
