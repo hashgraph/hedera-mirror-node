@@ -200,7 +200,7 @@ public class AccountFeature extends AbstractFeature {
                         MirrorTransaction::getTransactionId)
                 .returns(networkTransactionResponse.getValidStartString(), MirrorTransaction::getValidStartTimestamp);
 
-        // verify transaction details
+        // verify transfers
         var cryptoTransfers = transactions.get(0).getTransfers();
         var transferSum = cryptoTransfers.stream().map(MirrorTransfer::getAmount).reduce(0L, Long::sum);
         assertAll(

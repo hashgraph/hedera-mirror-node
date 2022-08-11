@@ -34,8 +34,8 @@ public class MirrorTransaction {
     private String result;
     private boolean scheduled;
     private List<MirrorTokenTransfer> tokenTransfers;
-    private String transactionId;
     private String transactionHash;
+    private String transactionId;
     private List<MirrorTransfer> transfers;
     private String validStartTimestamp;
 }
