@@ -25,10 +25,13 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.stream.Stream;
+import javax.persistence.Id;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Persistable;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.hedera.mirror.common.domain.UpsertColumn;
@@ -106,6 +109,11 @@ class EntityMetadataRegistryTest extends IntegrationTest {
     }
 
     @Test
+    void nonExisting() {
+        assertThatThrownBy(() -> registry.lookup(NonExisting.class)).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
     void notUpsertable() {
         assertThatThrownBy(() -> registry.lookup(Object.class)).isInstanceOf(UnsupportedOperationException.class);
     }
@@ -134,5 +142,18 @@ class EntityMetadataRegistryTest extends IntegrationTest {
 
     @Upsertable
     private static class NonEntity {
+    }
+
+    @Data
+    @javax.persistence.Entity
+    @Upsertable
+    private static class NonExisting implements Persistable<Integer> {
+        @Id
+        private Integer id;
+
+        @Override
+        public boolean isNew() {
+            return true;
+        }
     }
 }
