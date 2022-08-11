@@ -46,8 +46,7 @@ public class CodeCache {
         if (runtimeBytecode != null) {
             final var bytes = Bytes.fromHexString(runtimeBytecode);
 
-            return Code.createLegacyCode(
-                    Bytes.fromHexStringLenient(bytes.toUnprefixedHexString()), Hash.hash(bytes));
+            return Code.createLegacyCode(bytes, Hash.hash(bytes));
         } else {
             return Code.EMPTY_CODE;
         }
