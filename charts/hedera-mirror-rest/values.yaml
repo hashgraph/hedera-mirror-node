@@ -198,7 +198,7 @@ resources:
     cpu: 750m
     memory: 350Mi
   requests:
-    cpu: 150m
+    cpu: 300m
     memory: 64Mi
 
 revisionHistoryLimit: 3

@@ -59,4 +59,6 @@ public class NodeValidationProperties {
     @DurationMin(millis = 500)
     @NotNull
     private Duration requestTimeout = Duration.ofSeconds(15L);
+
+    private boolean retrieveAddressBook = true;
 }

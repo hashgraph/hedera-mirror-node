@@ -121,6 +121,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                 .hasSize(1)
                 .first()
                 .returns(transactionBody.getAutoRenewPeriod().getSeconds(), Entity::getAutoRenewPeriod)
+                .returns(0L, Entity::getBalance)
                 .returns(recordItem.getConsensusTimestamp(), Entity::getCreatedTimestamp)
                 .returns(false, Entity::getDeleted)
                 .returns(entityId, Entity::getId)

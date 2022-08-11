@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
  */
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
+import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.common.domain.entity.EntityType.SCHEDULE;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,15 +32,13 @@ import com.hederahashgraph.api.proto.java.Key;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
-import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -76,6 +75,7 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.repository.AssessedCustomFeeRepository;
 import com.hedera.mirror.importer.repository.ContractActionRepository;
 import com.hedera.mirror.importer.repository.ContractLogRepository;
@@ -122,6 +122,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     private final CryptoAllowanceRepository cryptoAllowanceRepository;
     private final CryptoTransferRepository cryptoTransferRepository;
     private final DomainBuilder domainBuilder;
+    private final EntityProperties entityProperties;
     private final EntityRepository entityRepository;
     private final EthereumTransactionRepository ethereumTransactionRepository;
     private final FileDataRepository fileDataRepository;
@@ -151,22 +152,9 @@ class SqlEntityListenerTest extends IntegrationTest {
         return Key.newBuilder().setEd25519(ByteString.copyFromUtf8(key)).build();
     }
 
-    private static Stream<Arguments> provideParamsContractHistory() {
-        Consumer<Contract.ContractBuilder> emptyCustomizer = c -> {
-        };
-        Consumer<Contract.ContractBuilder> initcodeCustomizer = c -> c.fileId(null).initcode(new byte[] {1, 2, 3, 4});
-        return Stream.of(
-                Arguments.of("fileId", emptyCustomizer, 1),
-                Arguments.of("fileId", emptyCustomizer, 2),
-                Arguments.of("fileId", emptyCustomizer, 3),
-                Arguments.of("initcode", initcodeCustomizer, 1),
-                Arguments.of("initcode", initcodeCustomizer, 2),
-                Arguments.of("initcode", initcodeCustomizer, 3)
-        );
-    }
-
     @BeforeEach
-    final void beforeEach() {
+    void beforeEach() {
+        entityProperties.getPersist().setTrackBalance(true);
         sqlProperties.setBatchSize(20_000);
         sqlEntityListener.onStart();
     }
@@ -352,6 +340,40 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(cryptoTransferRepository.findAll()).containsExactlyInAnyOrder(cryptoTransfer1, cryptoTransfer2);
+        assertThat(entityRepository.count()).isZero();
+    }
+
+    @ParameterizedTest
+    @CsvSource({"true, 95, 225", "false, 100, 200"})
+    void onCryptoTransferWhenEntitiesExist(boolean trackBalance, long expectedAccountBalance,
+                                           long expectedContractBalance) {
+        // given
+        entityProperties.getPersist().setTrackBalance(trackBalance);
+        var account = domainBuilder.entity().customize(e -> e.balance(100L).type(ACCOUNT)).persist();
+        var contract = domainBuilder.entity().customize(e -> e.balance(200L).type(CONTRACT)).persist();
+        var cryptoTransfer1 = domainBuilder.cryptoTransfer()
+                .customize(c -> c.amount(-15L).entityId(account.getId()))
+                .get();
+        var cryptoTransfer2 = domainBuilder.cryptoTransfer()
+                .customize(c -> c.amount(10L).entityId(account.getId()))
+                .get();
+        var cryptoTransfer3 = domainBuilder.cryptoTransfer()
+                .customize(c -> c.amount(25L).entityId(contract.getId()))
+                .get();
+        account.setBalance(expectedAccountBalance);
+        contract.setBalance(expectedContractBalance);
+
+        // when
+        sqlEntityListener.onCryptoTransfer(cryptoTransfer1);
+        sqlEntityListener.onCryptoTransfer(cryptoTransfer2);
+        sqlEntityListener.onCryptoTransfer(cryptoTransfer3);
+        completeFileAndCommit();
+
+        // then
+        assertThat(cryptoTransferRepository.findAll())
+                .containsExactlyInAnyOrder(cryptoTransfer1, cryptoTransfer2, cryptoTransfer3);
+        assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(account, contract);
+        assertThat(findHistory(Entity.class)).isEmpty();
     }
 
     @Test
@@ -375,6 +397,40 @@ class SqlEntityListenerTest extends IntegrationTest {
         // then
         assertThat(contractRepository.count()).isZero();
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(entity1, entity2);
+        assertThat(findHistory(Entity.class)).isEmpty();
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1, 2, 3})
+    void onEntityCreateAndBalanceChange(int commitIndex) {
+        // given
+        var entityCreate = domainBuilder.entity().customize(e -> e.balance(0L)).get();
+        var balanceUpdate1 = Entity.builder().id(entityCreate.getId()).balance(25L).build();
+        var balanceUpdate2 = Entity.builder().id(entityCreate.getId()).balance(15L).build();
+        var expectedEntity = TestUtils.clone(entityCreate);
+
+        // when
+        sqlEntityListener.onEntity(entityCreate);
+        if (commitIndex > 1) {
+            completeFileAndCommit();
+            assertThat(entityRepository.findAll()).containsExactly(expectedEntity);
+            assertThat(findHistory(Entity.class)).isEmpty();
+        }
+
+        sqlEntityListener.onEntity(balanceUpdate1);
+        expectedEntity.setBalance(25L);
+        if (commitIndex > 2) {
+            completeFileAndCommit();
+            assertThat(entityRepository.findAll()).containsExactly(expectedEntity);
+            assertThat(findHistory(Entity.class)).isEmpty();
+        }
+
+        sqlEntityListener.onEntity(balanceUpdate2);
+        expectedEntity.setBalance(40L);
+        completeFileAndCommit();
+
+        // then
+        assertThat(entityRepository.findAll()).containsExactly(expectedEntity);
         assertThat(findHistory(Entity.class)).isEmpty();
     }
 
@@ -461,8 +517,8 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertThat(findHistory(Entity.class)).isEmpty();
     }
 
-    @ValueSource(booleans = {true, false})
     @ParameterizedTest
+    @ValueSource(booleans = {true, false})
     void onEntityWithHistoryAndNonHistoryUpdates(boolean nonHistoryBefore) {
         // given
         Entity entity = domainBuilder.entity().persist();
@@ -514,8 +570,8 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertThat(findHistory(Entity.class)).containsExactly(entity);
     }
 
-    @ValueSource(ints = {1, 2, 3})
     @ParameterizedTest
+    @ValueSource(ints = {1, 2, 3})
     void onEntityHistory(int commitIndex) {
         // given
         Entity entityCreate = domainBuilder.entity().get();

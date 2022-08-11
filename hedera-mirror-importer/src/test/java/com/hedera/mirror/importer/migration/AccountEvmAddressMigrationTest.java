@@ -41,6 +41,11 @@ class AccountEvmAddressMigrationTest extends IntegrationTest {
     private final AccountEvmAddressMigration migration;
 
     @Test
+    void checksum() {
+        assertThat(migration.getChecksum()).isEqualTo(1);
+    }
+
+    @Test
     void noAliases() throws Exception {
         insertEntity(1L, null, null);
         migration.doMigrate();

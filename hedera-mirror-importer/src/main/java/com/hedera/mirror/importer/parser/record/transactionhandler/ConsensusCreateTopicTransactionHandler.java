@@ -31,7 +31,7 @@ import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @Named
-class ConsensusCreateTopicTransactionHandler extends AbstractEntityCrudTransactionHandler<Entity> {
+class ConsensusCreateTopicTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
     private static final byte[] EMPTY = new byte[0];
 

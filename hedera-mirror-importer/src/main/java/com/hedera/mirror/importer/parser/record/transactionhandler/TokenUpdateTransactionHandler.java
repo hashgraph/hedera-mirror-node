@@ -36,7 +36,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.repository.NftRepository;
 
 @Named
-class TokenUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler<Entity> {
+class TokenUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
     private final NftRepository nftRepository;
 

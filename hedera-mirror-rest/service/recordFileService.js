@@ -37,6 +37,8 @@ const buildWhereSqlStatement = (whereQuery) => {
  * RecordFile retrieval business logic
  */
 class RecordFileService extends BaseService {
+  static HEX_HASH_PREFIX_SIZE = 64;
+
   constructor() {
     super();
   }
@@ -135,8 +137,14 @@ class RecordFileService extends BaseService {
     let whereStatement = '';
     const params = [];
     if (hash) {
-      whereStatement += `${RecordFile.HASH} like $1`;
-      params.push(hash + '%');
+      hash = hash.toLowerCase();
+      if (hash.length === RecordFileService.HEX_HASH_PREFIX_SIZE) {
+        whereStatement += `${RecordFile.HASH} like $1 collate "C"`;
+        params.push(hash + '%');
+      } else {
+        whereStatement += `${RecordFile.HASH} = $1 collate "C"`;
+        params.push(hash);
+      }
     } else {
       whereStatement += `${RecordFile.INDEX} = $1`;
       params.push(number);

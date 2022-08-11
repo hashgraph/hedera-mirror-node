@@ -20,9 +20,11 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 
+import com.google.common.collect.Range;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Message;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -31,9 +33,8 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import java.util.List;
+import org.assertj.core.api.ObjectAssert;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -47,9 +48,6 @@ import com.hedera.mirror.importer.util.Utility;
 import com.hedera.mirror.importer.util.UtilityTest;
 
 class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
-
-    @Captor
-    private ArgumentCaptor<Entity> entities;
 
     @Override
     protected TransactionHandler getTransactionHandler() {
@@ -76,6 +74,7 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
     @Override
     protected AbstractEntity getExpectedUpdatedEntity() {
         AbstractEntity entity = super.getExpectedUpdatedEntity();
+        entity.setBalance(0L);
         entity.setDeclineReward(false);
         entity.setMaxAutomaticTokenAssociations(0);
         return entity;
@@ -108,20 +107,19 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
     @Test
     void updateTransactionStakedAccountId() {
         // given
-        final AccountID accountId = AccountID.newBuilder().setAccountNum(1L).build();
+        var stakedAccountId = AccountID.newBuilder().setAccountNum(1L).build();
         var recordItem = recordItemBuilder.cryptoCreate()
-                .transactionBody(b -> b.setDeclineReward(false).setStakedAccountId(accountId))
+                .transactionBody(b -> b.setDeclineReward(false).setStakedAccountId(stakedAccountId))
                 .build();
+        var accountId = EntityId.of(recordItem.getRecord().getReceipt().getAccountID());
 
         // when
         transactionHandler.updateTransaction(transaction(recordItem), recordItem);
 
         // then
-        verify(entityListener).onEntity(entities.capture());
-        assertThat(entities.getValue())
-                .isNotNull()
+        assertEntity(accountId, recordItem.getConsensusTimestamp())
                 .returns(false, Entity::getDeclineReward)
-                .returns(accountId.getAccountNum(), Entity::getStakedAccountId)
+                .returns(stakedAccountId.getAccountNum(), Entity::getStakedAccountId)
                 .returns(Utility.getEpochDay(recordItem.getConsensusTimestamp()), Entity::getStakePeriodStart);
     }
 
@@ -132,14 +130,13 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
         var recordItem = recordItemBuilder.cryptoCreate()
                 .transactionBody(b -> b.setDeclineReward(true).setStakedNodeId(nodeId))
                 .build();
+        var accountId = EntityId.of(recordItem.getRecord().getReceipt().getAccountID());
 
         // when
         transactionHandler.updateTransaction(transaction(recordItem), recordItem);
 
         // then
-        verify(entityListener).onEntity(entities.capture());
-        assertThat(entities.getValue())
-                .isNotNull()
+        assertEntity(accountId, recordItem.getConsensusTimestamp())
                 .returns(true, Entity::getDeclineReward)
                 .returns(nodeId, Entity::getStakedNodeId)
                 .returns(null, Entity::getStakedAccountId)
@@ -150,14 +147,36 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
     void updateAlias() {
         var alias = UtilityTest.ALIAS_ECDSA_SECP256K1;
         var recordItem = recordItemBuilder.cryptoCreate().record(r -> r.setAlias(DomainUtils.fromBytes(alias))).build();
+        var accountId = EntityId.of(recordItem.getRecord().getReceipt().getAccountID());
 
         transactionHandler.updateTransaction(transaction(recordItem), recordItem);
 
-        verify(entityIdService).notify(entities.capture());
-        assertThat(entities.getValue())
-                .isNotNull()
+        assertEntity(accountId, recordItem.getConsensusTimestamp())
                 .returns(alias, Entity::getAlias)
                 .returns(UtilityTest.EVM_ADDRESS, Entity::getEvmAddress);
+    }
+
+    private ObjectAssert<Entity> assertEntity(EntityId accountId, long timestamp) {
+        verify(entityListener).onEntity(entityCaptor.capture());
+        return assertThat(entityCaptor.getValue())
+                .isNotNull()
+                .satisfies(c -> assertThat(c.getAutoRenewPeriod()).isPositive())
+                .returns(timestamp, Entity::getCreatedTimestamp)
+                .returns(0L, Entity::getBalance)
+                .returns(false, Entity::getDeleted)
+                .returns(null, Entity::getExpirationTimestamp)
+                .returns(accountId.getId(), Entity::getId)
+                .satisfies(c -> assertThat(c.getKey()).isNotEmpty())
+                .satisfies(c -> assertThat(c.getMaxAutomaticTokenAssociations()).isPositive())
+                .satisfies(c -> assertThat(c.getMemo()).isNotEmpty())
+                .returns(accountId.getEntityNum(), Entity::getNum)
+                .satisfies(c -> assertThat(c.getProxyAccountId().getId()).isPositive())
+                .satisfies(c -> assertThat(c.getPublicKey()).isNotEmpty())
+                .returns(accountId.getRealmNum(), Entity::getRealm)
+                .returns(accountId.getShardNum(), Entity::getShard)
+                .returns(ACCOUNT, Entity::getType)
+                .returns(Range.atLeast(timestamp), Entity::getTimestampRange)
+                .returns(null, Entity::getObtainerId);
     }
 
     private Transaction transaction(RecordItem recordItem) {

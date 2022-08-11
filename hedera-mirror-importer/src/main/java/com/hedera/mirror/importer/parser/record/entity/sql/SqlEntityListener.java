@@ -83,6 +83,7 @@ import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordPa
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.SidecarFileRepository;
 
@@ -94,6 +95,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     private final BatchPersister batchPersister;
     private final EntityIdService entityIdService;
+    private final EntityProperties entityProperties;
     private final ApplicationEventPublisher eventPublisher;
     private final RecordFileRepository recordFileRepository;
     private final SidecarFileRepository sidecarFileRepository;
@@ -146,6 +148,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     public SqlEntityListener(BatchPersister batchPersister,
                              EntityIdService entityIdService,
+                             EntityProperties entityProperties,
                              ApplicationEventPublisher eventPublisher,
                              RecordFileRepository recordFileRepository,
                              SidecarFileRepository sidecarFileRepository,
@@ -153,6 +156,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
                              @Qualifier(TOKEN_DISSOCIATE_BATCH_PERSISTER) BatchPersister tokenDissociateTransferBatchPersister) {
         this.batchPersister = batchPersister;
         this.entityIdService = entityIdService;
+        this.entityProperties = entityProperties;
         this.eventPublisher = eventPublisher;
         this.recordFileRepository = recordFileRepository;
         this.sidecarFileRepository = sidecarFileRepository;
@@ -358,6 +362,13 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onCryptoTransfer(CryptoTransfer cryptoTransfer) throws ImporterException {
+        if (entityProperties.getPersist().isTrackBalance()) {
+            var entity = new Entity();
+            entity.setId(cryptoTransfer.getEntityId());
+            entity.setBalance(cryptoTransfer.getAmount());
+            onEntity(entity);
+        }
+
         cryptoTransfers.add(cryptoTransfer);
     }
 
@@ -505,12 +516,16 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private Entity mergeEntity(Entity previous, Entity current) {
         // This entity should not trigger a history record, so just copy common non-history fields, if set, to previous
         if (!current.isHistory()) {
+            previous.addBalance(current.getBalance());
+
             if (current.getEthereumNonce() != null) {
                 previous.setEthereumNonce(current.getEthereumNonce());
             }
+
             if (current.getStakePeriodStart() != null) {
                 previous.setStakePeriodStart(current.getStakePeriodStart());
             }
+
             return previous;
         }
 
@@ -530,6 +545,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         if (dest.getAutoRenewAccountId() == null) {
             dest.setAutoRenewAccountId(src.getAutoRenewAccountId());
         }
+
+        dest.addBalance(src.getBalance());
 
         if (dest.getDeclineReward() == null) {
             dest.setDeclineReward(src.getDeclineReward());
