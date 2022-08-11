@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '0.61.0'
+      version: '0.62.0-rc1'
   dependsOn:
     - name: mirror
       namespace: common
@@ -46,5 +46,6 @@ spec:
     postgresql:
       enabled: false
     test:
+      cucumberTags: "@acceptance and not @networkstake"
       enabled: true
 
