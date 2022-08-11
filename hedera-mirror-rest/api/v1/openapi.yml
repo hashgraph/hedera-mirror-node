@@ -678,9 +678,9 @@ paths:
         - transactions
   /api/v1/transactions/{transactionIdOrHash}:
     get:
-      summary: Get transaction by id
-      description: Returns transaction information based on the given transaction id
-      operationId: getTransactionById
+      summary: Get transaction by id or hash
+      description: Returns transaction information based on the given transaction id or hash
+      operationId: getTransactionByIdOrHash
       parameters:
         - $ref: '#/components/parameters/transactionIdOrHashPathParam'
         - $ref: '#/components/parameters/nonceQueryParam'
@@ -1922,13 +1922,7 @@ components:
                 properties:
                   message:
                     type: string
-    HederaHashInBase64url:
-      type: string
-      description: A base64url encoded hedera transaction hash.
-      minLength: 64
-      maxLength: 64
-      pattern: '^[\dA-Za-z+\-\/_]{64}$'
-    HederaHashInHex:
+    HederaHash:
       type: string
       description: A hex encoded hedera transaction hash.
       minLength: 96
@@ -3195,7 +3189,7 @@ components:
       description: Accepts both eth and hedera hash format or block number
       schema:
         oneOf:
-          - $ref: '#/components/schemas/HederaHashInHex'
+          - $ref: '#/components/schemas/HederaHash'
           - $ref: '#/components/schemas/EthereumHash'
           - $ref: '#/components/schemas/PositiveNumber'
     entityIdPathParam:
@@ -3692,10 +3686,8 @@ components:
         transactionHashInHexWithPrefix:
           value: '0xab4af784ae69ca3e1d17fef8491f7f89a0e8a3b80ad3748b841110f0345ada53456bc14bbe9ee6f441829c2849933ac4'
       schema:
-        oneOf:
-          - $ref: '#/components/schemas/HederaHashInBase64url'
-          - $ref: '#/components/schemas/HederaHashInHex'
-          - $ref: '#/components/schemas/TransactionIdStr'
+        type: string
+        pattern: '^([\dA-Za-z\-_]{64}|(0x)?[\dA-Fa-f]{96})|(\d+\.\d+\.\d+-\d{1,19}-\d{1,9})$'
     transactionIdPathParam:
       name: transactionId
       in: path
@@ -3852,7 +3844,7 @@ components:
       required: true
       description: Transaction Id or a 32 byte hash with optional 0x prefix
       examples:
-        trahsactionId:
+        transactionId:
           value: 0.0.10-1234567890-000000000
         transactionHash:
           value: ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
