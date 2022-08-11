@@ -250,6 +250,7 @@ public class ContractResultServiceImpl implements ContractResultService {
 
     private void processCreatedContractEntity(RecordItem recordItem, EntityId contractEntityId) {
         Entity entity = contractEntityId.toEntity();
+        entity.setBalance(0L);
         entity.setCreatedTimestamp(recordItem.getConsensusTimestamp());
         entity.setDeleted(false);
         entity.setMaxAutomaticTokenAssociations(0);

@@ -31,7 +31,7 @@ import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @Named
-class SystemDeleteTransactionHandler extends AbstractEntityCrudTransactionHandler<Entity> {
+class SystemDeleteTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
     SystemDeleteTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
                                    RecordParserProperties recordParserProperties) {

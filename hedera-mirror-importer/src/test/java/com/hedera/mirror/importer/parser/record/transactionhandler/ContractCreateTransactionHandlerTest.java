@@ -105,6 +105,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
     @Override
     protected AbstractEntity getExpectedUpdatedEntity() {
         AbstractEntity entity = super.getExpectedUpdatedEntity();
+        entity.setBalance(0L);
         entity.setDeclineReward(false);
         entity.setMaxAutomaticTokenAssociations(0);
         return entity;
@@ -589,6 +590,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .isNotNull()
                 .satisfies(c -> assertThat(c.getAutoRenewPeriod()).isPositive())
                 .returns(timestamp, Entity::getCreatedTimestamp)
+                .returns(0L, Entity::getBalance)
                 .returns(false, Entity::getDeleted)
                 .returns(null, Entity::getExpirationTimestamp)
                 .returns(contractId.getId(), Entity::getId)

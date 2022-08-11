@@ -43,6 +43,7 @@ import com.hedera.mirror.common.converter.RangeToStringDeserializer;
 import com.hedera.mirror.common.converter.RangeToStringSerializer;
 import com.hedera.mirror.common.converter.UnknownIdConverter;
 import com.hedera.mirror.common.domain.History;
+import com.hedera.mirror.common.domain.UpsertColumn;
 import com.hedera.mirror.common.domain.Upsertable;
 import com.hedera.mirror.common.util.DomainUtils;
 
@@ -71,6 +72,13 @@ public abstract class AbstractEntity implements History {
     private Long autoRenewAccountId;
 
     private Long autoRenewPeriod;
+
+    @UpsertColumn(coalesce = """
+            case when coalesce(e_type, type) in (''ACCOUNT'', ''CONTRACT'') then coalesce(e_{0}, 0) + coalesce({0}, 0)
+                 else null
+            end
+            """)
+    private Long balance;
 
     @Column(updatable = false)
     private Long createdTimestamp;
@@ -135,6 +143,18 @@ public abstract class AbstractEntity implements History {
     @Enumerated(EnumType.STRING)
     @Type(type = "pgsql_enum")
     private EntityType type;
+
+    public void addBalance(Long balance) {
+        if (balance == null) {
+            return;
+        }
+
+        if (this.balance == null) {
+            this.balance = balance;
+        } else {
+            this.balance += balance;
+        }
+    }
 
     public void setKey(byte[] key) {
         this.key = key;
