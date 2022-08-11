@@ -8,6 +8,7 @@ import static com.hedera.mirror.web3.utils.TestConstants.gasHexValue;
 import static com.hedera.mirror.web3.utils.TestConstants.gasLimit;
 import static com.hedera.mirror.web3.utils.TestConstants.gasPriceHexValue;
 import static com.hedera.mirror.web3.utils.TestConstants.latestTag;
+import static com.hedera.mirror.web3.utils.TestConstants.multiplySimpleNumbersSelector;
 import static com.hedera.mirror.web3.utils.TestConstants.receiverHexAddress;
 import static com.hedera.mirror.web3.utils.TestConstants.runtimeCode;
 import static com.hedera.mirror.web3.utils.TestConstants.senderAddress;
@@ -137,7 +138,7 @@ class EthCallServiceTest {
                         gasHexValue,
                         gasPriceHexValue,
                         "0",
-                        "0x8070450f");
+                        multiplySimpleNumbersSelector);
 
         final var transactionCall = new TxnCallBody(ethCallParams, latestTag);
         final var result = ethCallService.get(transactionCall);
