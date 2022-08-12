@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '0.60.0'
+      version: '0.61.0'
   dependsOn:
     - name: mirror
       namespace: common
@@ -21,14 +21,12 @@ spec:
     crds: CreateReplace
   interval: 90s
   test:
-    enable: false
-    timeout: 5m
+    enable: true
+    timeout: 25m
   timeout: 48h
   upgrade:
     cleanupOnFail: true
     crds: CreateReplace
-    remediation:
-      retries: 20
   valuesFrom:
     - kind: Secret
       name: mirror
@@ -52,6 +50,9 @@ spec:
     redis:
       enabled: false
     rest:
+      resources:
+        requests:
+          cpu: 300m
     rosetta:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "mainnet"

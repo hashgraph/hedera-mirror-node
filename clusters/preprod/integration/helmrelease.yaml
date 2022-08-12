@@ -37,7 +37,7 @@ spec:
       image:
         pullPolicy: Always
       podAnnotations:
-        git.commit: e991fafaa452052ef348c52d73d488ce698e521f
+        git.commit: 219df5c9bf9885a52c1b7a0532d18e107559c246
     importer:
       env:
         HEDERA_MIRROR_IMPORTER_NETWORK: "OTHER"
@@ -55,4 +55,5 @@ spec:
     postgresql:
       enabled: false
     test:
+      cucumberTags: "@acceptance and not @networkstake"
       enabled: true
