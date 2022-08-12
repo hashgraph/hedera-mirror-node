@@ -29,11 +29,11 @@ contract EthCall {
 
     // External function that has an argument for a token address and using open zeppelin IERC20 interface as a wrapper, returns the token’s name
     function getTokenName(address _tokenAddress) external view returns (string memory) {
-        return IERC20Metadata(_tokenAddress).symbol();
+        return IERC20Metadata(_tokenAddress).name();
     }
 
     // External function that has an argument for a token address and using open zeppelin IERC20 interface as a wrapper, returns the token’s symbol
     function getTokenSymbol(address _tokenAddress) external view returns (string memory) {
-        return IERC20Metadata(_tokenAddress).name();
+        return IERC20Metadata(_tokenAddress).symbol();
     }
 }
