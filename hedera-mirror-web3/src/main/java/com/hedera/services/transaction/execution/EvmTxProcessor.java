@@ -35,6 +35,8 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiPredicate;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -64,6 +66,7 @@ import com.hedera.mirror.web3.evm.properties.EvmProperties;
 import com.hedera.mirror.web3.service.eth.AccountDto;
 import com.hedera.services.transaction.HederaMessageCallProcessor;
 import com.hedera.services.transaction.TransactionProcessingResult;
+import com.hedera.services.transaction.contracts.operation.HederaBalanceOperation;
 import com.hedera.services.transaction.exception.InvalidTransactionException;
 import com.hedera.services.transaction.exception.ValidationUtils;
 import com.hedera.services.transaction.models.Account;
@@ -136,6 +139,7 @@ public abstract class EvmTxProcessor {
 
         var operationRegistry = new OperationRegistry();
         registerLondonOperations(operationRegistry, gasCalculator, BigInteger.valueOf(configurationProperties.getChainId()));
+        operationRegistry.put(new HederaBalanceOperation(gasCalculator, provideAddressValidator(precompiledContractMap)));
         hederaOperations.forEach(operationRegistry::put);
 
         final var evm = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);
@@ -349,6 +353,16 @@ public abstract class EvmTxProcessor {
         final AbstractMessageProcessor executor = getMessageProcessor(frame.getType());
 
         executor.process(frame, operationTracer);
+    }
+
+    private BiPredicate<Address, MessageFrame> provideAddressValidator(
+            final Map<String, PrecompiledContract> precompiledContractMap) {
+        final var precompiles =
+                precompiledContractMap.keySet().stream()
+                        .map(Address::fromHexString)
+                        .collect(Collectors.toSet());
+        return (address, frame) ->
+                precompiles.contains(address) || frame.getWorldUpdater().get(address) != null;
     }
 
     private AbstractMessageProcessor getMessageProcessor(final MessageFrame.Type type) {
