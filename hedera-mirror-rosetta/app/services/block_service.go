@@ -23,6 +23,7 @@ package services
 import (
 	"context"
 
+	cache "github.com/Code-Hex/go-generics-cache"
 	"github.com/Code-Hex/go-generics-cache/policy/lru"
 	"github.com/coinbase/rosetta-sdk-go/server"
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
@@ -36,7 +37,7 @@ import (
 type blockAPIService struct {
 	accountRepo interfaces.AccountRepository
 	BaseService
-	entityCache *lru.Cache[int64, types.AccountId]
+	entityCache *cache.Cache[int64, types.AccountId]
 }
 
 // NewBlockAPIService creates a new instance of a blockAPIService.
@@ -45,7 +46,7 @@ func NewBlockAPIService(
 	baseService BaseService,
 	entityCacheConfig config.Cache,
 ) server.BlockAPIServicer {
-	entityCache := lru.NewCache[int64, types.AccountId](lru.WithCapacity(entityCacheConfig.MaxSize))
+	entityCache := cache.New(cache.AsLRU[int64, types.AccountId](lru.WithCapacity(entityCacheConfig.MaxSize)))
 	return &blockAPIService{accountRepo: accountRepo, BaseService: baseService, entityCache: entityCache}
 }
 
