@@ -73,6 +73,11 @@ public class ErrataMigrationTest extends IntegrationTest {
     }
 
     @Test
+    void checksum() {
+        assertThat(errataMigration.getChecksum()).isEqualTo(2);
+    }
+
+    @Test
     void migrateNotMainnet() throws Exception {
         mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET);
         domainBuilder.accountBalanceFile().persist();

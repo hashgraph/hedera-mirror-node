@@ -68,7 +68,8 @@ public class MirrorNodeClient {
                 .filter(this::shouldRetryRestCall);
     }
 
-    public SubscriptionResponse subscribeToTopic(SDKClient sdkClient, TopicMessageQuery topicMessageQuery) throws Throwable {
+    public SubscriptionResponse subscribeToTopic(SDKClient sdkClient,
+                                                 TopicMessageQuery topicMessageQuery) throws Throwable {
         log.debug("Subscribing to topic.");
         SubscriptionResponse subscriptionResponse = new SubscriptionResponse();
         SubscriptionHandle subscription = topicMessageQuery
@@ -198,10 +199,10 @@ public class MirrorNodeClient {
                 MirrorTransactionsResponse.class, timestamp);
     }
 
-    public MirrorTransactionsResponse getTransactions(String transactionId) {
-        log.debug("Verify transaction '{}' is returned by Mirror Node", transactionId);
-        return callRestEndpoint("/transactions/{transactionId}",
-                MirrorTransactionsResponse.class, transactionId);
+    public MirrorTransactionsResponse getTransactions(String transactionIdOrHash) {
+        log.debug("Verify transaction '{}' is returned by Mirror Node", transactionIdOrHash);
+        return callRestEndpoint("/transactions/{transactionIdOrHash}",
+                MirrorTransactionsResponse.class, transactionIdOrHash);
     }
 
     public void unSubscribeFromTopic(SubscriptionHandle subscription) {

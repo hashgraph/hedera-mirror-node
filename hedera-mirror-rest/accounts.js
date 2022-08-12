@@ -92,7 +92,7 @@ const entityAndBalanceFields = [
   entityFields,
   // fields from account_balance
   'consensus_timestamp',
-  'balance account_balance',
+  'ab.balance account_balance',
 ].join(',');
 const latestBalanceFilter = 'ab.consensus_timestamp = (select max(consensus_timestamp) from account_balance)';
 

@@ -24,10 +24,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.util.stream.Stream;
+import javax.persistence.Id;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Persistable;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.hedera.mirror.common.domain.UpsertColumn;
 import com.hedera.mirror.common.domain.Upsertable;
@@ -42,16 +47,16 @@ class EntityMetadataRegistryTest extends IntegrationTest {
 
     @Test
     void lookup() {
-        var all = "alias,auto_renew_account_id,auto_renew_period,created_timestamp,decline_reward,deleted," +
+        var all = "alias,auto_renew_account_id,auto_renew_period,balance,created_timestamp,decline_reward,deleted," +
                 "ethereum_nonce,evm_address,expiration_timestamp,id,key,max_automatic_token_associations,memo,num," +
                 "obtainer_id,permanent_removal,proxy_account_id,public_key,realm,receiver_sig_required,shard," +
                 "stake_period_start,staked_account_id,staked_node_id,submit_key,timestamp_range,type";
 
-        var nullable = "alias,auto_renew_account_id,auto_renew_period,created_timestamp,deleted,ethereum_nonce," +
-                "evm_address,expiration_timestamp,key,max_automatic_token_associations,obtainer_id," +
+        var nullable = "alias,auto_renew_account_id,auto_renew_period,balance,created_timestamp,deleted," +
+                "ethereum_nonce,evm_address,expiration_timestamp,key,max_automatic_token_associations,obtainer_id," +
                 "permanent_removal,proxy_account_id,public_key,receiver_sig_required,stake_period_start," +
                 "staked_account_id,staked_node_id,submit_key";
-        var updatable = "auto_renew_account_id,auto_renew_period,decline_reward,deleted,ethereum_nonce," +
+        var updatable = "auto_renew_account_id,auto_renew_period,balance,decline_reward,deleted,ethereum_nonce," +
                 "expiration_timestamp,key,max_automatic_token_associations,memo,obtainer_id,permanent_removal," +
                 "proxy_account_id,public_key,receiver_sig_required,stake_period_start,staked_account_id," +
                 "staked_node_id,submit_key,timestamp_range";
@@ -69,7 +74,7 @@ class EntityMetadataRegistryTest extends IntegrationTest {
                 .returns(nullable, e -> e.columns(ColumnMetadata::isNullable, "{0}"))
                 .returns(updatable, e -> e.columns(ColumnMetadata::isUpdatable, "{0}"))
                 .extracting(EntityMetadata::getColumns, InstanceOfAssertFactories.ITERABLE)
-                .hasSize(27)
+                .hasSize(28)
                 .first(InstanceOfAssertFactories.type(ColumnMetadata.class))
                 .returns("alias", ColumnMetadata::getName)
                 .returns(byte[].class, ColumnMetadata::getType)
@@ -81,6 +86,31 @@ class EntityMetadataRegistryTest extends IntegrationTest {
                 .satisfies(cm -> assertThat(cm.getGetter().apply(entity)).isEqualTo(entity.getAlias()))
                 .satisfies(cm -> assertThatCode(() -> cm.getSetter().accept(entity, newValue))
                         .satisfies(d -> assertThat(entity.getAlias()).isEqualTo(newValue)));
+    }
+
+    @Test
+    @Transactional
+    void lookupSameColumnNameFromMultipleDomainClasses() {
+        // The test case reproduces the issue in the ticket https://github.com/hashgraph/hedera-mirror-node/issues/4265
+        // With the entity manager cache, if we look up two domain classes metadata in the same session, for columns with
+        // the same name, the defaults of the first domain class will override those of the second. For example,
+        // without the fix, entity.type's default will be "'FUNGIBLE_COMMON'"
+        // given, when
+        var tokenMetadata = registry.lookup(Token.class);
+        var entityMetadata = registry.lookup(Entity.class);
+
+        // then
+        var typeDefaultValues = Stream.of(entityMetadata, tokenMetadata)
+                .flatMap(m -> m.getColumns().stream())
+                .filter(c -> "type".equals(c.getName()))
+                .map(ColumnMetadata::getDefaultValue)
+                .toList();
+        assertThat(typeDefaultValues).containsExactly(null, "'FUNGIBLE_COMMON'");
+    }
+
+    @Test
+    void nonExisting() {
+        assertThatThrownBy(() -> registry.lookup(NonExisting.class)).isInstanceOf(IllegalStateException.class);
     }
 
     @Test
@@ -112,5 +142,18 @@ class EntityMetadataRegistryTest extends IntegrationTest {
 
     @Upsertable
     private static class NonEntity {
+    }
+
+    @Data
+    @javax.persistence.Entity
+    @Upsertable
+    private static class NonExisting implements Persistable<Integer> {
+        @Id
+        private Integer id;
+
+        @Override
+        public boolean isNew() {
+            return true;
+        }
     }
 }

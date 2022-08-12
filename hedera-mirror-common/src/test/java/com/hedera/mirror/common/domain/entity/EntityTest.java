@@ -24,8 +24,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Range;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 class EntityTest {
+
+    @ParameterizedTest
+    @CsvSource({",,", ",1,1", "1,,1", "1,1,2"})
+    void addBalance(Long base, Long delta, Long expected) {
+        var entity = new Entity();
+        entity.setBalance(base);
+        entity.addBalance(delta);
+        assertThat(entity.getBalance()).isEqualTo(expected);
+    }
 
     @Test
     void nullCharacters() {

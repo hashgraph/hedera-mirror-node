@@ -8,23 +8,23 @@ require (
 	github.com/cucumber/godog v0.12.5
 	github.com/ethereum/go-ethereum v1.10.21
 	github.com/go-playground/validator/v10 v10.11.0
-	github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20220706052312-268a7f00b638
-	github.com/hashgraph/hedera-sdk-go/v2 v2.17.0
+	github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20220726083815-59ae9e528f56
+	github.com/hashgraph/hedera-sdk-go/v2 v2.17.1
 	github.com/hellofresh/health-go/v4 v4.6.0
-	github.com/jackc/pgtype v1.11.0
+	github.com/jackc/pgtype v1.12.0
 	github.com/lib/pq v1.10.6
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/onrik/gorm-logrus v0.4.0
 	github.com/ory/dockertest/v3 v3.9.1
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.12.2
+	github.com/prometheus/client_golang v1.13.0
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.12.0
 	github.com/stretchr/testify v1.8.0
 	github.com/thanhpk/randstr v1.0.4
 	github.com/weaveworks/common v0.0.0-20210901124008-1fa3f9fa874c
-	google.golang.org/protobuf v1.28.0
+	google.golang.org/protobuf v1.28.1
 	gopkg.in/yaml.v2 v2.4.0
 	gorm.io/driver/postgres v1.3.8
 	gorm.io/gorm v1.23.8
@@ -50,7 +50,7 @@ require (
 	github.com/felixge/httpsnoop v1.0.1 // indirect
 	github.com/fsnotify/fsnotify v1.5.4 // indirect
 	github.com/go-kit/kit v0.10.0 // indirect
-	github.com/go-logfmt/logfmt v0.5.0 // indirect
+	github.com/go-logfmt/logfmt v0.5.1 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect
 	github.com/gofrs/uuid v4.0.0+incompatible // indirect
@@ -89,8 +89,8 @@ require (
 	github.com/pelletier/go-toml/v2 v2.0.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
-	github.com/prometheus/common v0.32.1 // indirect
-	github.com/prometheus/procfs v0.7.3 // indirect
+	github.com/prometheus/common v0.37.0 // indirect
+	github.com/prometheus/procfs v0.8.0 // indirect
 	github.com/rs/zerolog v1.27.0 // indirect
 	github.com/spf13/afero v1.8.2 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
@@ -109,6 +109,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.7.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d // indirect
+	golang.org/x/exp v0.0.0-20220426173459-3bcf042a4bf5 // indirect
 	golang.org/x/net v0.0.0-20220708220712-1185a9018129 // indirect
 	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect
 	golang.org/x/text v0.3.7 // indirect

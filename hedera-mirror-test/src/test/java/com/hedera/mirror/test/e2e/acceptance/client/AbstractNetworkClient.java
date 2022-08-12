@@ -57,53 +57,19 @@ public abstract class AbstractNetworkClient {
         this.retryTemplate = retryTemplate;
     }
 
-    public TransactionId executeTransaction(Transaction transaction, KeyList keyList, ExpandedAccountId payer) {
-        int numSignatures = 0;
-
-        // set max retries on sdk
-        transaction.setMaxAttempts(sdkClient.getAcceptanceTestProperties().getSdkProperties().getMaxAttempts());
-
-        if (payer != null) {
-            transaction.setTransactionId(TransactionId.generate(payer.getAccountId()));
-
-            transaction.freezeWith(client);
-            transaction.sign(payer.getPrivateKey());
-            numSignatures++;
-        }
-
-        if (keyList != null) {
-            transaction.freezeWith(client); // Signing requires transaction to be frozen
-            for (Key k : keyList) {
-                transaction.sign((PrivateKey) k);
-            }
-            log.debug("{} additional signatures added to transaction", keyList.size());
-            numSignatures += keyList.size();
-        }
-
-        TransactionResponse transactionResponse = retryTemplate.execute(x -> executeTransaction(transaction));
-        TransactionId transactionId = transactionResponse.transactionId;
-        log.debug("Executed transaction {} with {} signatures.", transactionId, numSignatures);
-
-        return transactionId;
-    }
-
-    public TransactionId executeTransaction(Transaction transaction, KeyList keyList) {
+    public TransactionResponse executeTransaction(Transaction transaction, KeyList keyList) {
         return executeTransaction(transaction, keyList, null);
-    }
-
-    @SneakyThrows
-    private TransactionResponse executeTransaction(Transaction transaction) {
-        return (TransactionResponse) transaction.execute(client);
     }
 
     public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction transaction, KeyList keyList,
                                                                            ExpandedAccountId payer) {
         long startBalance = log.isTraceEnabled() ? getBalance() : 0L;
-        TransactionId transactionId = executeTransaction(transaction, keyList, payer);
-        TransactionReceipt transactionReceipt = null;
+        var response = executeTransaction(transaction, keyList, payer);
+        var transactionId = response.transactionId;
+        TransactionReceipt receipt = null;
 
         try {
-            transactionReceipt = getTransactionReceipt(transactionId);
+            receipt = getTransactionReceipt(transactionId);
         } catch (Exception e) {
             log.error("Failed to get transaction receipt for {}: {}", transactionId, e.getMessage());
         }
@@ -112,7 +78,7 @@ public abstract class AbstractNetworkClient {
             log.trace("Executed transaction {} cost {} tℏ", transactionId, startBalance - getBalance());
         }
 
-        return new NetworkTransactionResponse(transactionId, transactionReceipt);
+        return new NetworkTransactionResponse(response.transactionHash, transactionId, receipt);
     }
 
     public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction transaction, KeyList keyList) {
@@ -151,5 +117,39 @@ public abstract class AbstractNetworkClient {
         String memo = String.format("Mirror Node acceptance test: %s %s", Instant.now(), message);
         // Memos are capped at 100 bytes
         return StringUtils.truncate(memo, MEMO_BYTES_MAX_LENGTH);
+    }
+
+    private TransactionResponse executeTransaction(Transaction transaction, KeyList keyList, ExpandedAccountId payer) {
+        int numSignatures = 0;
+
+        // set max retries on sdk
+        transaction.setMaxAttempts(sdkClient.getAcceptanceTestProperties().getSdkProperties().getMaxAttempts());
+
+        if (payer != null) {
+            transaction.setTransactionId(TransactionId.generate(payer.getAccountId()));
+
+            transaction.freezeWith(client);
+            transaction.sign(payer.getPrivateKey());
+            numSignatures++;
+        }
+
+        if (keyList != null) {
+            transaction.freezeWith(client); // Signing requires transaction to be frozen
+            for (Key k : keyList) {
+                transaction.sign((PrivateKey) k);
+            }
+            log.debug("{} additional signatures added to transaction", keyList.size());
+            numSignatures += keyList.size();
+        }
+
+        var response = retryTemplate.execute(x -> executeTransaction(transaction));
+        log.debug("Executed transaction {} with {} signatures.", response.transactionId, numSignatures);
+
+        return response;
+    }
+
+    @SneakyThrows
+    private TransactionResponse executeTransaction(Transaction transaction) {
+        return (TransactionResponse) transaction.execute(client);
     }
 }

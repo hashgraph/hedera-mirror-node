@@ -604,52 +604,76 @@ const getTransactions = async (req, res) => {
   res.locals[constants.responseDataLabel] = ret;
 };
 
+// The first part of the regex is for the base64url encoded 48-byte transaction hash. Note base64url replaces '+' with
+// '-' and '/' with '_'. The padding character '=' is not included since base64 encoding a 48-byte array always
+// produces a 64-byte string without padding
+const transactionHashRegex = /^([\dA-Za-z+\-\/_]{64}|(0x)?[\dA-Fa-f]{96})$/;
+
+const isValidTransactionHash = (hash) => transactionHashRegex.test(hash);
+
 /**
  * Extracts the sql query and params for transactions request by transaction id
  *
- * @param {String} transactionIdStr
+ * @param {String} transactionIdOrHash
  * @param {Array} filters
  * @return {{query: string, params: string[]}}
  */
-const extractSqlFromTransactionsByIdRequest = (transactionIdStr, filters) => {
-  const transactionId = TransactionId.fromString(transactionIdStr);
-  const params = [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()];
-  const conditions = [
-    `${Transaction.getFullName(Transaction.PAYER_ACCOUNT_ID)} = $1`,
-    `${Transaction.getFullName(Transaction.VALID_START_NS)} = $2`,
-  ];
+const extractSqlFromTransactionsByIdOrHashRequest = (transactionIdOrHash, filters) => {
+  const conditions = [];
+  const params = [];
+  let postFilter = (_t) => true;
 
-  let nonce;
-  let scheduled;
-  for (const filter of filters) {
-    // honor the last for both nonce and scheduled
-    switch (filter.key) {
-      case constants.filterKeys.NONCE:
-        nonce = filter.value;
-        break;
-      case constants.filterKeys.SCHEDULED:
-        scheduled = filter.value;
-        break;
-      default:
-        break;
+  if (isValidTransactionHash(transactionIdOrHash)) {
+    const encoding = transactionIdOrHash.length === Transaction.BASE64_HASH_SIZE ? 'base64url' : 'hex';
+    if (transactionIdOrHash.length === Transaction.HEX_HASH_WITH_PREFIX_SIZE) {
+      transactionIdOrHash = transactionIdOrHash.substring(2);
     }
-  }
 
-  if (nonce !== undefined) {
-    params.push(nonce);
-    conditions.push(`${Transaction.getFullName(Transaction.NONCE)} = $${params.length}`);
-  }
+    const transactionHash = Buffer.from(transactionIdOrHash, encoding);
+    conditions.push(`substring(${Transaction.getFullName(Transaction.TRANSACTION_HASH)} from 1 for 32) = $1`);
+    params.push(transactionHash.subarray(0, Transaction.HASH_PREFIX_SIZE));
+    postFilter = (t) => Buffer.compare(t.transaction_hash, transactionHash) === 0;
+  } else {
+    // try to parse it as a transaction id
+    const transactionId = TransactionId.fromString(transactionIdOrHash);
+    conditions.push(
+      `${Transaction.getFullName(Transaction.PAYER_ACCOUNT_ID)} = $1`,
+      `${Transaction.getFullName(Transaction.VALID_START_NS)} = $2`
+    );
+    params.push(transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs());
 
-  if (scheduled !== undefined) {
-    params.push(scheduled);
-    conditions.push(`${Transaction.getFullName(Transaction.SCHEDULED)} = $${params.length}`);
+    // only parse nonce and scheduled query filters if the path parameter is transaction id
+    let nonce;
+    let scheduled;
+    for (const filter of filters) {
+      // honor the last for both nonce and scheduled
+      switch (filter.key) {
+        case constants.filterKeys.NONCE:
+          nonce = filter.value;
+          break;
+        case constants.filterKeys.SCHEDULED:
+          scheduled = filter.value;
+          break;
+        default:
+          break;
+      }
+    }
+
+    if (nonce !== undefined) {
+      params.push(nonce);
+      conditions.push(`${Transaction.getFullName(Transaction.NONCE)} = $${params.length}`);
+    }
+
+    if (scheduled !== undefined) {
+      params.push(scheduled);
+      conditions.push(`${Transaction.getFullName(Transaction.SCHEDULED)} = $${params.length}`);
+    }
   }
 
   const whereClause = buildWhereClause(...conditions);
   const innerQuery = `select ${Transaction.CONSENSUS_TIMESTAMP}
                       from ${Transaction.tableName} ${Transaction.tableAlias}
-                      ${whereClause}
-                      order by ${Transaction.CONSENSUS_TIMESTAMP} desc`;
+                      ${whereClause}`;
   const query = `
     ${getSelectClauseWithTransfers(true, innerQuery)}
     from transfer_list t
@@ -658,23 +682,28 @@ const extractSqlFromTransactionsByIdRequest = (transactionIdStr, filters) => {
   return {
     query,
     params,
+    postFilter,
   };
 };
 
 /**
- * Handler function for /transactions/:transactionId API.
+ * Handler function for /transactions/:transactionIdOrHash API.
  * @param {Request} req HTTP request object
- * @return {} None.
+ * @return
  */
-const getTransactionsById = async (req, res) => {
+const getTransactionsByIdOrHash = async (req, res) => {
   const filters = utils.buildAndValidateFilters(req.query);
-  const {query, params} = extractSqlFromTransactionsByIdRequest(req.params.transactionId, filters);
+  const {query, params, postFilter} = extractSqlFromTransactionsByIdOrHashRequest(
+    req.params.transactionIdOrHash,
+    filters
+  );
   if (logger.isTraceEnabled()) {
-    logger.trace(`getTransactionsById query: ${query} ${utils.JSONStringify(params)}`);
+    logger.trace(`getTransactionsByIdOrHash query: ${query} ${utils.JSONStringify(params)}`);
   }
 
   // Execute query
-  const {rows} = await pool.queryQuietly(query, params);
+  let {rows} = await pool.queryQuietly(query, params);
+  rows = rows.filter(postFilter);
   if (rows.length === 0) {
     throw new NotFoundError('Not found');
   }
@@ -689,7 +718,7 @@ const getTransactionsById = async (req, res) => {
 const transactions = {
   createTransferLists,
   getTransactions,
-  getTransactionsById,
+  getTransactionsByIdOrHash,
   getTransactionsInnerQuery,
   getTransactionsOuterQuery,
 };
@@ -701,7 +730,8 @@ if (utils.isTestEnv()) {
     createCryptoTransferList,
     createNftTransferList,
     createTokenTransferList,
-    extractSqlFromTransactionsByIdRequest,
+    extractSqlFromTransactionsByIdOrHashRequest,
+    isValidTransactionHash,
     reqToSql,
   });
 }

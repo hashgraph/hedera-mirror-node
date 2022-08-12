@@ -22,17 +22,18 @@ package com.hedera.mirror.importer;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
+import java.util.Map;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
+import com.hedera.mirror.importer.migration.MigrationProperties;
 import com.hedera.mirror.importer.util.Utility;
 
 @Data
@@ -51,6 +52,9 @@ public class MirrorProperties {
     private Path initialAddressBook;
 
     private boolean leaderElection = false;
+
+    @NotNull
+    private Map<String, MigrationProperties> migration = Collections.emptyMap();
 
     @NotNull
     private HederaNetwork network = HederaNetwork.DEMO;
