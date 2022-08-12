@@ -55,13 +55,11 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
-import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
-import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionParser;
 import com.hedera.mirror.importer.repository.ContractActionRepository;
 import com.hedera.mirror.importer.repository.ContractLogRepository;
 import com.hedera.mirror.importer.repository.ContractRepository;
@@ -83,7 +81,6 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     private final ContractResultService contractResultService;
     private final ContractStateChangeRepository contractStateChangeRepository;
     private final EntityRepository entityRepository;
-    private final EthereumTransactionParser ethereumTransactionParser;
     private final RecordItemBuilder recordItemBuilder;
     private final RecordStreamFileListener recordStreamFileListener;
     private final TransactionTemplate transactionTemplate;
@@ -271,22 +268,6 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
         RecordItem recordItem = recordItemBuilder.contractCreate()
                 .transactionBody(t -> t.setInitcode(ByteString.copyFrom(new byte[] {9, 8, 7})))
                 .record(TransactionRecord.Builder::clearContractCreateResult)
-                .receipt(r -> r.clearContractID().setStatus(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION))
-                .build();
-
-        process(recordItem);
-
-        assertContractResult(recordItem);
-        assertContractLogs(recordItem);
-        assertContractActions(recordItem);
-        assertContractStateChanges(recordItem);
-        assertThat(contractRepository.count()).isZero();
-        assertThat(entityRepository.count()).isZero();
-    }
-
-    @Test
-    void processEthereumContractCreateFailure() {
-        RecordItem recordItem = recordItemBuilder.ethereumTransaction(true)
                 .receipt(r -> r.clearContractID().setStatus(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION))
                 .build();
 
@@ -542,12 +523,6 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     private ByteString getFailedInitcode(RecordItem recordItem) {
         if (recordItem.isSuccessful()) {
             return ByteString.EMPTY;
-        }
-
-        if (recordItem.getTransactionType() == TransactionType.ETHEREUMTRANSACTION.getProtoId()) {
-            var body = recordItem.getTransactionBody().getEthereumTransaction();
-            var ethereumTransaction = ethereumTransactionParser.decode(DomainUtils.toBytes(body.getEthereumData()));
-            return ByteString.copyFrom(ethereumTransaction.getCallData());
         }
 
         var failedInitcode = recordItem.getTransactionBody().getContractCreateInstance().getInitcode();

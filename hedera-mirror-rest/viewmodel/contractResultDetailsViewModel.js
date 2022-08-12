@@ -27,6 +27,7 @@ import ContractResultViewModel from './contractResultViewModel';
 import EntityId from '../entityId';
 import {TransactionResult} from '../model';
 import * as utils from '../utils';
+import {toHexString} from '../utils';
 
 /**
  * Contract result details view model
@@ -51,9 +52,6 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
 
     this.block_hash = utils.addHexPrefix(recordFile.hash);
     this.block_number = recordFile.index;
-    this.failed_initcode = _.isNil(contractResult.failedInitcode)
-      ? null
-      : utils.toHexStringNonQuantity(contractResult.failedInitcode);
     this.hash = utils.toHexStringNonQuantity(transaction.transactionHash);
     this.logs = contractLogs.map((contractLog) => new ContractLogResultsViewModel(contractLog));
     this.result = TransactionResult.getName(transaction.result);
@@ -66,6 +64,17 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
       transaction.result === ContractResultDetailsViewModel._SUCCESS_PROTO_ID
         ? ContractResultDetailsViewModel._SUCCESS_RESULT
         : ContractResultDetailsViewModel._FAIL_RESULT;
+
+    if (this.status === ContractResultDetailsViewModel._FAIL_RESULT) {
+      this.failed_initcode = !_.isEmpty(contractResult.failedInitcode)
+        ? utils.toHexStringNonQuantity(contractResult.failedInitcode)
+        : null;
+      if (_.isNil(this.failed_initcode) && !_.isEmpty(transaction.callData)) {
+        this.failed_initcode = utils.toHexStringNonQuantity(transaction.callData);
+      }
+    } else {
+      this.failed_initcode = null;
+    }
 
     // default eth related values
     this.access_list = null;

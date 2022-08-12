@@ -45,7 +45,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 
-import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
@@ -103,33 +102,6 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
         var expectedId = EntityId.of(functionResult.getContractID());
 
         assertThat(transactionHandler.getEntity(recordItem)).isEqualTo(expectedId);
-    }
-
-    @Test
-    void updateContractResult() {
-        boolean create = true;
-        var contractResult = new ContractResult();
-        var recordItem = recordItemBuilder.ethereumTransaction(create).build();
-        transactionHandler.updateContractResult(contractResult, recordItem);
-
-        assertThat(contractResult)
-                .returns(null, ContractResult::getFailedInitcode);
-    }
-
-    @Test
-    void updateContractResultFailedTransaction() {
-        boolean create = true;
-        var contractResult = new ContractResult();
-        var recordItem = recordItemBuilder.ethereumTransaction(create)
-                .receipt(r -> r.clearContractID().setStatus(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION))
-                .build();
-        var body = recordItem.getTransactionBody().getEthereumTransaction();
-        var ethereumTransaction = ethereumTransactionParser.decode(DomainUtils.toBytes(body.getEthereumData()));
-
-        transactionHandler.updateContractResult(contractResult, recordItem);
-
-        assertThat(contractResult)
-                .returns(ethereumTransaction.getCallData(), ContractResult::getFailedInitcode);
     }
 
     @ValueSource(booleans = {true, false})
