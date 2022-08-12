@@ -32,7 +32,7 @@ import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @Named
-class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler<Entity> {
+class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
     TokenCreateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
                                   RecordParserProperties recordParserProperties) {

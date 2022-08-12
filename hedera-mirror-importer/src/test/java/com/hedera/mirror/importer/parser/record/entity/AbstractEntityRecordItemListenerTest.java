@@ -425,10 +425,6 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
     }
 
     protected void assertEntities(EntityId... entityIds) {
-        if (entityIds == null) {
-            return;
-        }
-
         assertThat(entityRepository.findAll())
                 .hasSize(entityIds.length)
                 .allMatch(entity -> entity.getId() > 0)

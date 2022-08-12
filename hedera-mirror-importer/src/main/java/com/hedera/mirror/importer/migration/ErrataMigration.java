@@ -30,9 +30,6 @@ import java.io.InputStreamReader;
 import java.util.HashSet;
 import java.util.Set;
 import javax.inject.Named;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
-import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.Resource;
@@ -47,6 +44,7 @@ import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.Date
 import com.hedera.mirror.importer.exception.FileOperationException;
 import com.hedera.mirror.importer.parser.balance.BalanceStreamFileListener;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityRecordItemListener;
 import com.hedera.mirror.importer.reader.ValidatedDataInputStream;
 import com.hedera.mirror.importer.repository.TransactionRepository;
@@ -55,33 +53,37 @@ import com.hedera.mirror.importer.repository.TransactionRepository;
  * Adds errata information to the database to workaround older, incorrect data on mainnet. See docs/database.md#errata
  * for more detail.
  */
-@Log4j2
 @Named
-@RequiredArgsConstructor(onConstructor_ = {@Lazy})
-public class ErrataMigration extends MirrorBaseJavaMigration implements BalanceStreamFileListener {
+public class ErrataMigration extends RepeatableMigration implements BalanceStreamFileListener {
 
-    @Value("classpath:errata/mainnet/balance-offsets.txt")
     private final Resource balanceOffsets;
     private final EntityRecordItemListener entityRecordItemListener;
+    private final EntityProperties entityProperties;
     private final NamedParameterJdbcOperations jdbcOperations;
     private final MirrorProperties mirrorProperties;
     private final RecordStreamFileListener recordStreamFileListener;
     private final TransactionRepository transactionRepository;
     private final Set<Long> timestamps = new HashSet<>();
 
-    @Override
-    public Integer getChecksum() {
-        return 2; // Change this if this migration should be rerun
+    @Lazy
+    public ErrataMigration(@Value("classpath:errata/mainnet/balance-offsets.txt") Resource balanceOffsets,
+                           EntityRecordItemListener entityRecordItemListener, EntityProperties entityProperties,
+                           NamedParameterJdbcOperations jdbcOperations, MirrorProperties mirrorProperties,
+                           RecordStreamFileListener recordStreamFileListener,
+                           TransactionRepository transactionRepository) {
+        super(mirrorProperties.getMigration());
+        this.balanceOffsets = balanceOffsets;
+        this.entityRecordItemListener = entityRecordItemListener;
+        this.entityProperties = entityProperties;
+        this.jdbcOperations = jdbcOperations;
+        this.mirrorProperties = mirrorProperties;
+        this.recordStreamFileListener = recordStreamFileListener;
+        this.transactionRepository = transactionRepository;
     }
 
     @Override
     public String getDescription() {
         return "Add errata information to the database to workaround older, incorrect data";
-    }
-
-    @Override
-    public MigrationVersion getVersion() {
-        return null; // Repeatable migration
     }
 
     @Override
@@ -104,9 +106,16 @@ public class ErrataMigration extends MirrorBaseJavaMigration implements BalanceS
     @Override
     protected void doMigrate() throws IOException {
         if (isMainnet()) {
-            balanceFileAdjustment();
-            spuriousTransfers();
-            missingTransactions();
+            boolean trackBalance = entityProperties.getPersist().isTrackBalance();
+            entityProperties.getPersist().setTrackBalance(false);
+
+            try {
+                balanceFileAdjustment();
+                spuriousTransfers();
+                missingTransactions();
+            } finally {
+                entityProperties.getPersist().setTrackBalance(trackBalance);
+            }
         }
     }
 

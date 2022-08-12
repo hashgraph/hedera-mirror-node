@@ -26,7 +26,6 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityOperation;
@@ -40,7 +39,7 @@ import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
-abstract class AbstractEntityCrudTransactionHandler<T extends AbstractEntity> implements TransactionHandler {
+abstract class AbstractEntityCrudTransactionHandler implements TransactionHandler {
 
     protected final EntityIdService entityIdService;
 
@@ -91,8 +90,8 @@ abstract class AbstractEntityCrudTransactionHandler<T extends AbstractEntity> im
         }
 
         entity.setTimestampLower(consensusTimestamp);
-        doUpdateEntity((T) entity, recordItem);
+        doUpdateEntity(entity, recordItem);
     }
 
-    protected abstract void doUpdateEntity(T entity, RecordItem recordItem);
+    protected abstract void doUpdateEntity(Entity entity, RecordItem recordItem);
 }

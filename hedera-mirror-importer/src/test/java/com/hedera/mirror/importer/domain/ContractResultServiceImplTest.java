@@ -48,6 +48,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.exception.InvalidEntityException;
+import com.hedera.mirror.importer.migration.SidecarContractMigration;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
@@ -65,6 +66,8 @@ class ContractResultServiceImplTest {
     @Mock
     private EntityListener entityListener;
     @Mock
+    private SidecarContractMigration sidecarContractMigration;
+    @Mock
     private TransactionHandlerFactory transactionHandlerFactory;
     @Mock
     private TransactionHandler transactionHandler;
@@ -76,7 +79,7 @@ class ContractResultServiceImplTest {
         doNothing().when(transactionHandler).updateContractResult(any(ContractResult.class), any(RecordItem.class));
         doReturn(transactionHandler).when(transactionHandlerFactory).get(any(TransactionType.class));
         contractResultService = new ContractResultServiceImpl(entityProperties, entityIdService, entityListener,
-                transactionHandlerFactory);
+                sidecarContractMigration, transactionHandlerFactory);
     }
 
     @CsvSource({

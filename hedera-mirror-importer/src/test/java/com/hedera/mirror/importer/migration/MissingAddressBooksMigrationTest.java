@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.migration;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,13 +33,15 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
-import javax.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import org.assertj.core.api.ListAssert;
 import org.flywaydb.core.api.configuration.ClassicConfiguration;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hedera.mirror.common.domain.addressbook.AddressBook;
 import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
@@ -47,29 +49,23 @@ import com.hedera.mirror.common.domain.addressbook.AddressBookServiceEndpoint;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.file.FileData;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.addressbook.AddressBookServiceImpl;
-import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.AddressBookServiceEndpointRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
 
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@Tag("migration")
 class MissingAddressBooksMigrationTest extends IntegrationTest {
 
     private static final NodeAddressBook FINAL = addressBook(15, 0);
 
-    @Resource
-    private MissingAddressBooksMigration missingAddressBooksMigration;
-
-    @Resource
-    private AddressBookRepository addressBookRepository;
-
-    @Resource
-    private FileDataRepository fileDataRepository;
-
-    @Resource
-    private AddressBookServiceEndpointRepository addressBookServiceEndpointRepository;
+    private final MissingAddressBooksMigration missingAddressBooksMigration;
+    private final AddressBookRepository addressBookRepository;
+    private final FileDataRepository fileDataRepository;
+    private final AddressBookServiceEndpointRepository addressBookServiceEndpointRepository;
 
     @SuppressWarnings("deprecation")
     private static NodeAddressBook addressBook(int size, int endPointSize) {
@@ -99,6 +95,11 @@ class MissingAddressBooksMigrationTest extends IntegrationTest {
             builder.addNodeAddress(nodeAddressBuilder.build());
         }
         return builder.build();
+    }
+
+    @Test
+    void checksum() {
+        assertThat(missingAddressBooksMigration.getChecksum()).isEqualTo(1);
     }
 
     @Test
@@ -165,7 +166,7 @@ class MissingAddressBooksMigrationTest extends IntegrationTest {
         List<AddressBookEntry> addressBookEntryList = new ArrayList<>();
         for (long i = 0; i < nodeCount; i++) {
             long nodeId = i;
-            long nodeAccountId =  3 + nodeId;
+            long nodeAccountId = 3 + nodeId;
             addressBookEntryList
                     .add(addressBookEntry(a -> a.consensusTimestamp(startConsensusTimestamp)
                             .nodeId(nodeId)
