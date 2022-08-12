@@ -83,6 +83,7 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                     e.alias as e_alias,
                     e.auto_renew_account_id as e_auto_renew_account_id,
                     e.auto_renew_period as e_auto_renew_period,
+                    e.balance as e_balance,
                     e.created_timestamp as e_created_timestamp,
                     e.decline_reward as e_decline_reward,
                     e.deleted as e_deleted,
@@ -118,6 +119,7 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                       alias,
                       auto_renew_account_id,
                       auto_renew_period,
+                      balance,
                       created_timestamp,
                       decline_reward,
                       deleted,
@@ -147,6 +149,7 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                     distinct on (id) e_alias,
                     e_auto_renew_account_id,
                     e_auto_renew_period,
+                    e_balance,
                     e_created_timestamp,
                     e_decline_reward,
                     e_deleted,
@@ -186,6 +189,7 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                       alias,
                       auto_renew_account_id,
                       auto_renew_period,
+                      balance,
                       created_timestamp,
                       decline_reward,
                       deleted,
@@ -219,6 +223,9 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                       null
                     ),
                     coalesce(auto_renew_period, e_auto_renew_period, null),
+                    case when coalesce(e_type, type) in ('ACCOUNT', 'CONTRACT') then coalesce(e_balance, 0) + coalesce(balance, 0)
+                         else null
+                    end,
                     coalesce(created_timestamp, e_created_timestamp, null),
                     coalesce(decline_reward, e_decline_reward, false),
                     coalesce(deleted, e_deleted, null),
@@ -262,6 +269,7 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                     alias,
                     auto_renew_account_id,
                     auto_renew_period,
+                    balance,
                     created_timestamp,
                     decline_reward,
                     deleted,
@@ -295,6 +303,9 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                     null
                   ),
                   coalesce(auto_renew_period, e_auto_renew_period, null),
+                  case when coalesce(e_type, type) in ('ACCOUNT', 'CONTRACT') then coalesce(e_balance, 0) + coalesce(balance, 0)
+                       else null
+                  end,
                   coalesce(created_timestamp, e_created_timestamp, null),
                   coalesce(decline_reward, e_decline_reward, false),
                   coalesce(deleted, e_deleted, null),
@@ -342,6 +353,7 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                 set
                   auto_renew_account_id = excluded.auto_renew_account_id,
                   auto_renew_period = excluded.auto_renew_period,
+                  balance = excluded.balance,
                   decline_reward = excluded.decline_reward,
                   deleted = excluded.deleted,
                   ethereum_nonce = excluded.ethereum_nonce,

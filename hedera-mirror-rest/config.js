@@ -27,6 +27,9 @@ import {fileURLToPath} from 'url';
 
 import {cloudProviders, defaultBucketNames, networks} from './constants';
 import {InvalidConfigError} from './errors';
+import configureLogger from './logger';
+
+configureLogger();
 
 const defaultConfigName = 'application';
 const config = {};
@@ -51,10 +54,10 @@ function load(configPath, configName) {
 function loadYaml(configFile) {
   try {
     const doc = yaml.load(fs.readFileSync(configFile, 'utf8'));
-    console.log(`Loaded configuration source: ${configFile}`);
+    logger.info(`Loaded configuration source: ${configFile}`);
     extend(true, config, doc);
   } catch (err) {
-    console.log(`Skipping configuration ${configFile}: ${err}`);
+    logger.warn(`Skipping configuration ${configFile}: ${err}`);
   }
 }
 
@@ -91,7 +94,7 @@ function setConfigValue(propertyPath, value) {
         } else {
           current[k] = convertType(value);
           const cleanedValue = property.includes('password') || property.includes('key') ? '******' : value;
-          console.log(`Override config with environment variable ${propertyPath}=${cleanedValue}`);
+          logger.info(`Override config with environment variable ${propertyPath}=${cleanedValue}`);
           return;
         }
       }
@@ -182,6 +185,7 @@ if (!loaded) {
   parseStateProofStreamsConfig();
   parseMaxTimestampRange();
   loaded = true;
+  configureLogger(getConfig().log.level);
 }
 
 export default getConfig();

@@ -37,10 +37,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.inject.Named;
 import javax.persistence.Column;
-import javax.persistence.Entity;
 import javax.persistence.EntityManager;
-import javax.persistence.Id;
-import javax.persistence.Query;
 import javax.persistence.Table;
 import javax.persistence.metamodel.Attribute;
 import javax.persistence.metamodel.EmbeddableType;
@@ -52,6 +49,7 @@ import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
 import org.hibernate.metamodel.model.domain.spi.SingularPersistentAttribute;
 import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.jdbc.core.JdbcOperations;
 
 import com.hedera.mirror.common.domain.UpsertColumn;
 import com.hedera.mirror.common.domain.Upsertable;
@@ -63,6 +61,7 @@ public class EntityMetadataRegistry {
 
     private final EntityManager entityManager;
     private final Map<Class<?>, EntityMetadata> entityMetadata = new ConcurrentHashMap<>();
+    private final JdbcOperations jdbcOperations;
 
     public EntityMetadata lookup(Class<?> domainClass) {
         return entityMetadata.computeIfAbsent(domainClass, this::create);
@@ -128,16 +127,21 @@ public class EntityMetadataRegistry {
      * Looks up column defaults in the information_schema.columns table.
      */
     private Map<String, InformationSchemaColumns> getColumnSchema(String tableName) {
-        String sql = "select column_name, regexp_replace(column_default, '::.*', '') as column_default, " +
-                "is_nullable = 'YES' as nullable from information_schema.columns where table_name = ?";
+        String sql = """
+                select column_name, regexp_replace(column_default, '::.*', '') as column_default,
+                is_nullable = 'YES' as nullable from information_schema.columns where table_name = ?
+                """;
 
-        Query query = entityManager.createNativeQuery(sql, InformationSchemaColumns.class);
-        query.setParameter(1, tableName);
-        var schema = (Map<String, InformationSchemaColumns>) query.getResultList()
-                .stream()
+        var columnSchemas = jdbcOperations.query(sql, (rs, rowNum) -> {
+            var columnSchema = new InformationSchemaColumns();
+            columnSchema.setColumnName(rs.getString(1));
+            columnSchema.setColumnDefault(rs.getString(2));
+            columnSchema.setNullable(rs.getBoolean(3));
+            return columnSchema;
+        }, tableName);
+        var schema = columnSchemas.stream()
                 .collect(Collectors.toMap(InformationSchemaColumns::getColumnName, Function.identity()));
-
-        if (schema == null || schema.isEmpty()) {
+        if (schema.isEmpty()) {
             throw new IllegalStateException("Missing information schema for " + tableName);
         }
 
@@ -193,9 +197,7 @@ public class EntityMetadataRegistry {
     }
 
     @Data
-    @Entity(name = "columns")
     static class InformationSchemaColumns {
-        @Id
         private String columnName;
         private String columnDefault;
         private boolean nullable;

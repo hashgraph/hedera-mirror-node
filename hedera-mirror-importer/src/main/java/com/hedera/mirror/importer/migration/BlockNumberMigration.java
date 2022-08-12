@@ -27,7 +27,6 @@ import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork.TESTNET;
 import com.google.common.base.Stopwatch;
 import java.util.Map;
 import javax.inject.Named;
-import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.tuple.Pair;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
@@ -37,8 +36,7 @@ import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 
 @Named
-@RequiredArgsConstructor(onConstructor_ = {@Lazy})
-public class BlockNumberMigration extends MirrorBaseJavaMigration {
+public class BlockNumberMigration extends RepeatableMigration {
 
     static final Map<HederaNetwork, Pair<Long, Long>> BLOCK_NUMBER_MAPPING = Map.of(
             TESTNET, Pair.of(1656461617493248000L, 22384256L),
@@ -48,9 +46,11 @@ public class BlockNumberMigration extends MirrorBaseJavaMigration {
     private final MirrorProperties mirrorProperties;
     private final RecordFileRepository recordFileRepository;
 
-    @Override
-    public Integer getChecksum() {
-        return 4; // Change this if this migration should be rerun
+    @Lazy
+    public BlockNumberMigration(MirrorProperties mirrorProperties, RecordFileRepository recordFileRepository) {
+        super(mirrorProperties.getMigration());
+        this.mirrorProperties = mirrorProperties;
+        this.recordFileRepository = recordFileRepository;
     }
 
     @Override
@@ -61,11 +61,6 @@ public class BlockNumberMigration extends MirrorBaseJavaMigration {
     @Override
     protected MigrationVersion getMinimumVersion() {
         return MigrationVersion.fromVersion("1.61.1");
-    }
-
-    @Override
-    public MigrationVersion getVersion() {
-        return null;
     }
 
     @Override

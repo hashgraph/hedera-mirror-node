@@ -159,10 +159,8 @@ alter table record_file
     add constraint record_file__pk primary key (consensus_end, node_account_id);
 create index if not exists record_file__index_node
     on record_file (index);
-create index if not exists record_file__hash_node
-    on record_file (hash);
-create index if not exists record_file__prev_hash
-    on record_file (prev_hash);
+create index if not exists record_file__hash
+    on record_file (hash collate "C");
 
 -- schedule
 alter table schedule
@@ -216,6 +214,8 @@ create unique index if not exists topic_message__topic_id_seqnum
 -- transaction
 alter table if exists transaction
     add constraint transaction__pk primary key (consensus_timestamp, payer_account_id);
+create index if not exists transaction__hash_prefix
+    on transaction (substring(transaction_hash from 1 for 32));
 create index if not exists transaction__transaction_id
     on transaction (valid_start_ns, payer_account_id);
 create index if not exists transaction__payer_account_id

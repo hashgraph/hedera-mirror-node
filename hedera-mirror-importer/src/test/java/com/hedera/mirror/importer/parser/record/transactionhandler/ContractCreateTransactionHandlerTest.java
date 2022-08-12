@@ -105,6 +105,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
     @Override
     protected AbstractEntity getExpectedUpdatedEntity() {
         AbstractEntity entity = super.getExpectedUpdatedEntity();
+        entity.setBalance(0L);
         entity.setDeclineReward(false);
         entity.setMaxAutomaticTokenAssociations(0);
         return entity;
@@ -536,6 +537,24 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .satisfies(c -> assertThat(c.getInitcode()).isNotEmpty());
     }
 
+    @Test
+    void migrationBytecodeNotProcessed() {
+        var recordItem = recordItemBuilder.contractCreate()
+                .sidecarRecords(r -> r.get(2).setMigration(true))
+                .build();
+        var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
+        var timestamp = recordItem.getConsensusTimestamp();
+        var transaction = domainBuilder.transaction()
+                .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
+                .get();
+        var autoRenewAccount = recordItem.getTransactionBody().getContractCreateInstance().getAutoRenewAccountId();
+        when(entityIdService.lookup(autoRenewAccount)).thenReturn(EntityId.of(autoRenewAccount));
+        transactionHandler.updateTransaction(transaction, recordItem);
+        assertContract(contractId)
+                .returns(null, Contract::getInitcode)
+                .returns(null, Contract::getRuntimeBytecode);
+    }
+
     private ObjectAssert<Contract> assertContract(EntityId contractId) {
         verify(entityListener).onContract(contracts.capture());
         return assertThat(contracts.getAllValues())
@@ -550,6 +569,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .isNotNull()
                 .satisfies(c -> assertThat(c.getAutoRenewPeriod()).isPositive())
                 .returns(timestamp, Entity::getCreatedTimestamp)
+                .returns(0L, Entity::getBalance)
                 .returns(false, Entity::getDeleted)
                 .returns(null, Entity::getExpirationTimestamp)
                 .returns(contractId.getId(), Entity::getId)
