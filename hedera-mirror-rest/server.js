@@ -172,7 +172,7 @@ app.getAsync(`${apiPrefix}/topics/messages/:consensusTimestamp`, topicmessage.ge
 
 // transactions routes
 app.getAsync(`${apiPrefix}/transactions`, transactions.getTransactions);
-app.getAsync(`${apiPrefix}/transactions/:transactionId`, transactions.getTransactionsById);
+app.getAsync(`${apiPrefix}/transactions/:transactionIdOrHash`, transactions.getTransactionsByIdOrHash);
 
 // record ip metrics if enabled
 if (config.metrics.ipMetrics) {

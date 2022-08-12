@@ -1,0 +1,20 @@
+{
+  "description": "Transaction api calls with invalid transaction id or hash",
+  "setup": {},
+  "urls": [
+    "/api/v1/transactions/0.1.10-1234567891.000000000",
+    "/api/v1/transactions/izUDXqZ8gOhKlL5vbFInnw2VObTXzNWEH2QOg7XOUQwl9Mp2SVil8lufZIU6xJEEk===",
+    "/api/v1/transactions/0xab4af784ae69ca3e1d17fef8491f7f89a0e8a3b80ad3748b841110f0345ada53456bc14bbe9ee6f441829c2849",
+    "/api/v1/transactions/ab4af784ae69ca3e1d17fef8491f7f89a0e8a3b80ad3748b841110f0345ada53456bc14bbe9ee6f441829c2849"
+  ],
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Invalid Transaction id. Please use \"shard.realm.num-sss-nnn\" format where sss are seconds and nnn are nanoseconds"
+        }
+      ]
+    }
+  }
+}
