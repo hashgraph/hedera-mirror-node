@@ -27,7 +27,6 @@ import ContractResultViewModel from './contractResultViewModel';
 import EntityId from '../entityId';
 import {TransactionResult} from '../model';
 import * as utils from '../utils';
-import {toHexString} from '../utils';
 
 /**
  * Contract result details view model
