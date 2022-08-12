@@ -41,13 +41,12 @@ public class CodeCache {
 
         final Long id = entityRepository.findAccountIdByAddress(address.toArray()).orElse(null);
 
-        final var runtimeBytecode = contractRepository.getRuntimeBytecodeOfTestContract(id).orElse(null);
+        final var runtimeBytecode = contractRepository.findRuntimeBytecodeById(id).orElse(null);
 
         if (runtimeBytecode != null) {
             final var bytes = Bytes.fromHexString(runtimeBytecode);
 
-            return Code.createLegacyCode(
-                    Bytes.fromHexStringLenient(bytes.toUnprefixedHexString()), Hash.hash(bytes));
+            return Code.createLegacyCode(bytes, Hash.hash(bytes));
         } else {
             return Code.EMPTY_CODE;
         }

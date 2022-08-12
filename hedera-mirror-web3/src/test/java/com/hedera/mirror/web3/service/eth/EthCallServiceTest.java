@@ -10,6 +10,7 @@ import static com.hedera.mirror.web3.utils.TestConstants.gasLimit;
 import static com.hedera.mirror.web3.utils.TestConstants.gasPriceHexValue;
 import static com.hedera.mirror.web3.utils.TestConstants.getSenderBalanceInputData;
 import static com.hedera.mirror.web3.utils.TestConstants.latestTag;
+import static com.hedera.mirror.web3.utils.TestConstants.multiplySimpleNumbersSelector;
 import static com.hedera.mirror.web3.utils.TestConstants.receiverHexAddress;
 import static com.hedera.mirror.web3.utils.TestConstants.runtimeCode;
 import static com.hedera.mirror.web3.utils.TestConstants.senderAddress;
@@ -51,6 +52,7 @@ import com.hedera.mirror.web3.evm.properties.BlockMetaSourceProvider;
 import com.hedera.mirror.web3.evm.properties.EvmProperties;
 import com.hedera.mirror.web3.evm.properties.SimulatedBlockMetaSource;
 import com.hedera.mirror.web3.repository.EntityRepository;
+import com.hedera.services.transaction.models.Id;
 
 @ExtendWith(MockitoExtension.class)
 class EthCallServiceTest {
@@ -67,8 +69,8 @@ class EthCallServiceTest {
     @Mock private EvmAccount recipientAccount;
     @Mock private MutableAccount mutableSender;
     @Mock private MutableAccount mutableRecipient;
-    @Mock private SimulatedAliasManager aliasManager;
     @Mock private CodeCache codeCache;
+    @Mock private SimulatedAliasManager simulatedAliasManager;
 
     @InjectMocks
     private EthGasEstimateService ethGasEstimateService;
@@ -86,7 +88,9 @@ class EthCallServiceTest {
         when(simulatedStackedWorldStateUpdater.getOrCreate(any())).thenReturn(recipientAccount);
         when(recipientAccount.getMutable()).thenReturn(mutableRecipient);
         when(evmProperties.getChainId()).thenReturn(chainId);
-        when(entityRepository.findAccountByAddress(senderEvmAddress))
+        when(entityRepository.findAccountByAddress(
+                Bytes.fromHexString(senderHexAddress)
+                        .toArray()))
                 .thenReturn(Optional.of(senderEntity));
         when(blockMetaSourceProvider.computeBlockValues(gasLimit))
                 .thenReturn(new SimulatedBlockMetaSource(gasLimit, blockNumber, Instant.now().getEpochSecond()));
@@ -110,6 +114,41 @@ class EthCallServiceTest {
         final var transactionCall = new TxnCallBody(ethCallParams, latestTag);
         final var result = ethCallService.get(transactionCall);
         Assertions.assertEquals(Bytes.EMPTY.toHexString(), result);
+    }
+
+    @Test
+    void ethCallForPureFunction() {
+        when(simulatedWorldState.updater()).thenReturn(updater);
+        when(updater.updater()).thenReturn(simulatedStackedWorldStateUpdater);
+        when(updater.getOrCreateSenderAccount(senderAddress)).thenReturn(senderAccount);
+        when(senderAccount.getMutable()).thenReturn(mutableSender);
+        when(simulatedStackedWorldStateUpdater.getSenderAccount(any())).thenReturn(senderAccount);
+        when(simulatedStackedWorldStateUpdater.getOrCreate(any())).thenReturn(recipientAccount);
+        when(evmProperties.getChainId()).thenReturn(chainId);
+        when(entityRepository.findAccountByAddress(senderEvmAddress))
+                .thenReturn(Optional.of(senderEntity));
+        when(blockMetaSourceProvider.computeBlockValues(gasLimit))
+                .thenReturn(new SimulatedBlockMetaSource(gasLimit, blockNumber, Instant.now().getEpochSecond()));
+
+        when(senderEntity.getAlias()).thenReturn(senderAlias);
+        when(senderEntity.getNum()).thenReturn(senderNum);
+
+        when(gasCalculator.getMaxRefundQuotient()).thenReturn(2L);
+        when(simulatedPricesSource.currentGasPrice(any(), any())).thenReturn(1L);
+        when(codeCache.getIfPresent(any())).thenReturn(runtimeCode);
+
+        final var ethCallParams =
+                new EthParams(
+                        senderHexAddress,
+                        receiverHexAddress,
+                        gasHexValue,
+                        gasPriceHexValue,
+                        "0",
+                        multiplySimpleNumbersSelector);
+
+        final var transactionCall = new TxnCallBody(ethCallParams, latestTag);
+        final var result = ethCallService.get(transactionCall);
+        Assertions.assertEquals(4, Integer.decode(result));
     }
 
     @Test
