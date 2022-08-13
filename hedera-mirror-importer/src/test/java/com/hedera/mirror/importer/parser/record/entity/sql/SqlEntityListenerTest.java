@@ -27,6 +27,7 @@ import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
 import java.nio.charset.StandardCharsets;
@@ -377,6 +378,27 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
+    void onCryptoTransferBeforeContractCreate() {
+        // given
+        var contract = domainBuilder.entity().customize(e -> e.balance(0L).type(CONTRACT)).get();
+        var cryptoTransfer = domainBuilder.cryptoTransfer()
+                .customize(c -> c.amount(10L).consensusTimestamp(contract.getCreatedTimestamp() - 1L)
+                        .entityId(contract.getId()))
+                .get();
+        var expectedContract = TestUtils.clone(contract);
+        expectedContract.setBalance(10L);
+
+        // when
+        sqlEntityListener.onCryptoTransfer(cryptoTransfer);
+        sqlEntityListener.onEntity(contract);
+        completeFileAndCommit();
+
+        // then
+        assertThat(cryptoTransferRepository.findAll()).containsOnly(cryptoTransfer);
+        assertThat(entityRepository.findAll()).containsOnly(expectedContract);
+    }
+
+    @Test
     void onEndNull() {
         sqlEntityListener.onEnd(null);
         assertThat(recordFileRepository.count()).isZero();
@@ -568,6 +590,33 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         assertThat(entityRepository.findAll()).containsExactly(entityMerged);
         assertThat(findHistory(Entity.class)).containsExactly(entity);
+    }
+
+    @Test
+    void onNonHistoryUpdateWithIncorrectTypeThenHistoryUpdate() {
+        // given
+        var entityId = domainBuilder.entityId(ACCOUNT); // The entity in fact is a contract
+        var nonHistoryUpdate = entityId.toEntity();
+        nonHistoryUpdate.setStakePeriodStart(120L);
+        nonHistoryUpdate.setTimestampRange(null);
+        var historyUpdate = entityId.toEntity();
+        historyUpdate.setMemo("Update entity memo");
+        historyUpdate.setTimestampRange(Range.atLeast(domainBuilder.timestamp()));
+        historyUpdate.setType(CONTRACT); // Correct type
+        var expectedEntity = TestUtils.clone(historyUpdate);
+        expectedEntity.setBalance(0L);
+        expectedEntity.setDeclineReward(false);
+        expectedEntity.setEthereumNonce(0L);
+        expectedEntity.setStakedNodeId(-1L);
+        expectedEntity.setStakePeriodStart(120L);
+
+        // when
+        sqlEntityListener.onEntity(nonHistoryUpdate);
+        sqlEntityListener.onEntity(historyUpdate);
+        completeFileAndCommit();
+
+        // then
+        assertThat(entityRepository.findAll()).containsOnly(expectedEntity);
     }
 
     @ParameterizedTest
