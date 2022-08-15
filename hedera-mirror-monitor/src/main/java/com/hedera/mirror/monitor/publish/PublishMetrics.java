@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
@@ -122,12 +123,18 @@ public class PublishMetrics {
     @Scheduled(fixedDelayString = "${hedera.mirror.monitor.publish.statusFrequency:10000}")
     public void status() {
         if (publishProperties.isEnabled()) {
+            var running = new AtomicBoolean(false);
             durationGauges.keySet()
                     .stream()
                     .map(Tags::getScenario)
                     .distinct()
                     .filter(PublishScenario::isRunning)
+                    .peek(s -> running.set(true))
                     .forEach(this::status);
+
+            if (!running.get()) {
+                log.info("No publishers");
+            }
         }
     }
 

@@ -20,6 +20,7 @@ package com.hedera.mirror.monitor.publish;
  * ‍
  */
 
+import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.FREEZE_UPGRADE_IN_PROGRESS;
 import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.OK;
 import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -138,6 +139,17 @@ class NodeSupplierTest {
     }
 
     @Test
+    void initWithRetry() {
+        monitorProperties.getNodeValidation().setRetryBackoff(Duration.ofMillis(100L));
+        cryptoServiceStub.addTransactions(Mono.just(response(FREEZE_UPGRADE_IN_PROGRESS)),
+                Mono.just(response(FREEZE_UPGRADE_IN_PROGRESS)), Mono.just(response(OK)));
+        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
+        nodeSupplier.init();
+        Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
+        assertThat(nodeSupplier.get()).isEqualTo(node);
+    }
+
+    @Test
     void refreshCustomNodes() {
         nodeSupplier.refresh()
                 .as(StepVerifier::create)
@@ -210,8 +222,9 @@ class NodeSupplierTest {
     @Test
     @Timeout(3)
     void validationRecovers() {
+        nodeSupplier.updateValidationClient(monitorProperties.getNodes());
         // Given node validated as bad
-        cryptoServiceStub.addTransactions(Mono.just(response(ResponseCodeEnum.FREEZE_UPGRADE_IN_PROGRESS)));
+        cryptoServiceStub.addTransactions(Mono.just(response(FREEZE_UPGRADE_IN_PROGRESS)));
         assertThat(nodeSupplier.validateNode(node)).isFalse();
         assertThatThrownBy(() -> nodeSupplier.get())
                 .isInstanceOf(IllegalArgumentException.class)
@@ -228,23 +241,38 @@ class NodeSupplierTest {
 
     @Test
     @Timeout(3)
-    void someValidNodes() {
-        var node2 = new NodeProperties("0.0.4", "in-process:" + SERVER);
-        monitorProperties.setNodes(Set.of(node, node2));
+    void someValidNodes() throws Exception {
+        var server3 = "server3";
+        var cryptoServiceStub2 = new CryptoServiceStub();
+        var server2 = InProcessServerBuilder.forName(server3)
+                .addService(cryptoServiceStub2)
+                .directExecutor()
+                .build()
+                .start();
 
-        // Validate good node
-        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
-        assertThat(nodeSupplier.validateNode(node)).isTrue();
+        try {
+            var node2 = new NodeProperties("0.0.4", "in-process:" + server3);
+            monitorProperties.setNodes(Set.of(node, node2));
+            nodeSupplier.updateValidationClient(monitorProperties.getNodes());
 
-        // Validate bad node
-        cryptoServiceStub.addQueries(Mono.just(receipt(ResponseCodeEnum.FREEZE_UPGRADE_IN_PROGRESS)));
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
-        assertThat(nodeSupplier.validateNode(node2)).isFalse();
+            // Validate good node
+            cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
+            cryptoServiceStub.addTransactions(Mono.just(response(OK)));
+            assertThat(nodeSupplier.validateNode(node)).isTrue();
 
-        // Then only good node returned
-        for (int i = 0; i < 10; ++i) {
-            assertThat(nodeSupplier.get()).isEqualTo(node);
+            // Validate bad node
+            cryptoServiceStub2.addQueries(Mono.just(receipt(FREEZE_UPGRADE_IN_PROGRESS)));
+            cryptoServiceStub2.addTransactions(Mono.just(response(OK)));
+            assertThat(nodeSupplier.validateNode(node2)).isFalse();
+
+            // Then only good node returned
+            for (int i = 0; i < 10; ++i) {
+                assertThat(nodeSupplier.get()).isEqualTo(node);
+            }
+        } finally {
+            cryptoServiceStub2.verify();
+            server2.shutdownNow();
+            server2.awaitTermination();
         }
     }
 
@@ -253,6 +281,7 @@ class NodeSupplierTest {
     void validationSucceeds() {
         cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
         cryptoServiceStub.addTransactions(Mono.just(response(OK)));
+        nodeSupplier.updateValidationClient(monitorProperties.getNodes());
         assertThat(nodeSupplier.validateNode(node)).isTrue();
     }
 
