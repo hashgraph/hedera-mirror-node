@@ -36,7 +36,7 @@ public class NodeValidationProperties {
 
     @DurationMin(seconds = 30)
     @NotNull
-    private Duration frequency = Duration.ofMinutes(30L);
+    private Duration frequency = Duration.ofDays(1L);
 
     @Min(1)
     private int maxAttempts = 8;
@@ -53,6 +53,10 @@ public class NodeValidationProperties {
     @DurationMax(seconds = 10)
     @NotNull
     private Duration minBackoff = Duration.ofMillis(500);
+
+    @DurationMin(millis = 100L)
+    @NotNull
+    private Duration retryBackoff = Duration.ofMinutes(2L);
 
     // requestTimeout should be longer than the total retry time controlled by maxAttempts and backoffs
     // the default would result in a max of 11.5s without considering any network delay
