@@ -1754,15 +1754,19 @@ components:
               nullable: true
               type: string
               example: '0x0127'
-            hash:
-              description: The hex encoded transaction hash
-              example: "0x3531396130303866616264653464"
+            failed_initcode:
+              description: The hex encoded initcode of a failed contract create transaction
+              example: "0x856739"
               type: string
             gas_price:
               description: The hex encoded gas_price of the wrapped ethereum transaction
               nullable: true
               type: string
               example: '0x4a817c800'
+            hash:
+              description: The hex encoded transaction hash
+              example: "0x3531396130303866616264653464"
+              type: string
             logs:
               $ref: '#/components/schemas/ContractResultLogs'
             max_fee_per_gas:

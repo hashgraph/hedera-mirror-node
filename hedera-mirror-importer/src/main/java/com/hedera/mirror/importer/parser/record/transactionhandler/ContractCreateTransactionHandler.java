@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import static com.hederahashgraph.api.proto.java.ContractCreateTransactionBody.InitcodeSourceCase.INITCODE;
+
 import javax.inject.Named;
 
 import com.hedera.mirror.common.domain.contract.Contract;
@@ -177,6 +179,9 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
             contractResult.setAmount(transactionBody.getInitialBalance());
             contractResult.setFunctionParameters(DomainUtils.toBytes(transactionBody.getConstructorParameters()));
             contractResult.setGasLimit(transactionBody.getGas());
+            if (!recordItem.isSuccessful() && transactionBody.getInitcodeSourceCase() == INITCODE) {
+                contractResult.setFailedInitcode(DomainUtils.toBytes(transactionBody.getInitcode()));
+            }
         }
     }
 
