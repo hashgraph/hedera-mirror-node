@@ -12,9 +12,11 @@
     },
     "accounts": [
       {
+        "balance": 70,
         "num": 7
       },
       {
+        "balance": 80,
         "num": 8,
         "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
         "evm_address": "ac384c53f03855fa1b3616052f8ba32c6c2a2fec",
@@ -23,7 +25,7 @@
     ],
     "balances": [
       {
-        "timestamp": 2345,
+        "timestamp": 2200,
         "id": 7,
         "balance": 70,
         "tokens": [
@@ -42,7 +44,7 @@
         ]
       },
       {
-        "timestamp": 2345,
+        "timestamp": 2200,
         "id": 8,
         "balance": 80,
         "tokens": [
@@ -55,6 +57,12 @@
             "balance": 88
           }
         ]
+      }
+    ],
+    "recordFiles": [
+      {
+        "consensus_start": 2000,
+        "consensus_end": 2345
       }
     ]
   },
