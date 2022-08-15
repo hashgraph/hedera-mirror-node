@@ -27,7 +27,6 @@ import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import javax.inject.Named;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -146,7 +145,7 @@ public class ContractResultServiceImpl implements ContractResultService {
     private void processContractResult(RecordItem recordItem, EntityId contractEntityId,
                                        ContractFunctionResult functionResult,
                                        TransactionHandler transactionHandler,
-                                       Optional<ByteString> sidecarFailedInitcode) {
+                                       ByteString sidecarFailedInitcode) {
         // create child contracts regardless of contractResults support
         List<Long> contractIds = getCreatedContractIds(functionResult, recordItem, contractEntityId);
         if (!entityProperties.getPersist().isContractResults()) {
@@ -158,8 +157,8 @@ public class ContractResultServiceImpl implements ContractResultService {
         contractResult.setContractId(contractEntityId);
         contractResult.setPayerAccountId(recordItem.getPayerAccountId());
         transactionHandler.updateContractResult(contractResult, recordItem);
-        if (sidecarFailedInitcode.isPresent() && contractResult.getFailedInitcode() == null) {
-            contractResult.setFailedInitcode(DomainUtils.toBytes(sidecarFailedInitcode.get()));
+        if (sidecarFailedInitcode != null && contractResult.getFailedInitcode() == null) {
+            contractResult.setFailedInitcode(DomainUtils.toBytes(sidecarFailedInitcode));
         }
 
         if (isValidContractFunctionResult(functionResult)) {
@@ -263,8 +262,8 @@ public class ContractResultServiceImpl implements ContractResultService {
         entityListener.onEntity(entity);
     }
 
-    private Optional<ByteString> processSidecarRecords(RecordItem recordItem) {
-        Optional<ByteString> failedInitcode = Optional.empty();
+    private ByteString processSidecarRecords(RecordItem recordItem) {
+        ByteString failedInitcode = null;
         var contractBytecodes = new ArrayList<ContractBytecode>();
         var sidecarRecords = recordItem.getSidecarRecords();
         long consensusTimestamp = recordItem.getConsensusTimestamp();
@@ -284,7 +283,7 @@ public class ContractResultServiceImpl implements ContractResultService {
                 if (sidecarRecord.getMigration()) {
                     contractBytecodes.add(sidecarRecord.getBytecode());
                 } else if (!recordItem.isSuccessful()) {
-                    failedInitcode = Optional.of(sidecarRecord.getBytecode().getInitcode());
+                    failedInitcode = sidecarRecord.getBytecode().getInitcode();
                 }
             }
         }

@@ -64,13 +64,10 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
         ? ContractResultDetailsViewModel._SUCCESS_RESULT
         : ContractResultDetailsViewModel._FAIL_RESULT;
 
-    if (this.status === ContractResultDetailsViewModel._FAIL_RESULT) {
-      this.failed_initcode = !_.isEmpty(contractResult.failedInitcode)
-        ? utils.toHexStringNonQuantity(contractResult.failedInitcode)
-        : null;
-      if (_.isNil(this.failed_initcode) && !_.isEmpty(transaction.callData)) {
-        this.failed_initcode = utils.toHexStringNonQuantity(transaction.callData);
-      }
+    if (!_.isEmpty(contractResult.failedInitcode)) {
+      this.failed_initcode = utils.toHexStringNonQuantity(contractResult.failedInitcode);
+    } else if (this.status === ContractResultDetailsViewModel._FAIL_RESULT && !_.isEmpty(transaction.callData)) {
+      this.failed_initcode = utils.toHexStringNonQuantity(transaction.callData);
     } else {
       this.failed_initcode = null;
     }
