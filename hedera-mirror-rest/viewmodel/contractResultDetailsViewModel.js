@@ -64,6 +64,14 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
         ? ContractResultDetailsViewModel._SUCCESS_RESULT
         : ContractResultDetailsViewModel._FAIL_RESULT;
 
+    if (!_.isEmpty(contractResult.failedInitcode)) {
+      this.failed_initcode = utils.toHexStringNonQuantity(contractResult.failedInitcode);
+    } else if (this.status === ContractResultDetailsViewModel._FAIL_RESULT && !_.isEmpty(transaction.callData)) {
+      this.failed_initcode = utils.toHexStringNonQuantity(transaction.callData);
+    } else {
+      this.failed_initcode = null;
+    }
+
     // default eth related values
     this.access_list = null;
     this.block_gas_used = recordFile.gasUsed !== null && recordFile.gasUsed !== -1 ? recordFile.gasUsed : null;

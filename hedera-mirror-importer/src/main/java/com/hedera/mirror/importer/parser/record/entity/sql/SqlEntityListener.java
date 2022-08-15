@@ -608,11 +608,16 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             dest.setSubmitKey(src.getSubmitKey());
         }
 
-        // There is at least one entity with history. If there is one without history, it must be dest and just copy the
-        // timestamp range from src to dest. Otherwise, both have history, and it's a normal merge from previous to
-        // current, so close the src entity's timestamp range
+        // There is at least one entity with history. If there is one without history, it must be dest and copy non-null
+        // fields and timestamp range from src to dest. Otherwise, both have history, and it's a normal merge from
+        // previous to current, so close the src entity's timestamp range
         if (!dest.isHistory()) {
+            dest.setNum(src.getNum());
+            dest.setRealm(src.getRealm());
+            dest.setShard(src.getShard());
             dest.setTimestampRange(src.getTimestampRange());
+            // It's important to set the type since some non-history updates may have incorrect entity type
+            dest.setType(src.getType());
         } else {
             src.setTimestampUpper(dest.getTimestampLower());
         }

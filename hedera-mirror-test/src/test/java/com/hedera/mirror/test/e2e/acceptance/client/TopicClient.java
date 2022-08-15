@@ -44,7 +44,6 @@ import com.hedera.hashgraph.sdk.TopicMessageSubmitTransaction;
 import com.hedera.hashgraph.sdk.TopicUpdateTransaction;
 import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
-import com.hedera.hashgraph.sdk.TransactionRecord;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
@@ -142,9 +141,8 @@ public class TopicClient extends AbstractNetworkClient {
                 .setMessage(message)
                 .setTransactionMemo(getMemo("Publish topic message"));
 
-        TransactionId transactionId = executeTransaction(consensusMessageSubmitTransaction, submitKeys);
-
-        TransactionRecord transactionRecord = getTransactionRecord(transactionId);
+        var response = executeTransaction(consensusMessageSubmitTransaction, submitKeys);
+        var transactionRecord = getTransactionRecord(response.transactionId);
         // get only the 1st sequence number
         if (recordPublishInstants.size() == 0) {
             recordPublishInstants.put(0L, transactionRecord.consensusTimestamp);
@@ -155,7 +153,7 @@ public class TopicClient extends AbstractNetworkClient {
                     new String(message, StandardCharsets.UTF_8), topicId, transactionRecord.consensusTimestamp);
         }
 
-        return transactionId;
+        return response.transactionId;
     }
 
     public TransactionReceipt publishMessageToTopicAndVerify(TopicId topicId, byte[] message, KeyList submitKeys) {
