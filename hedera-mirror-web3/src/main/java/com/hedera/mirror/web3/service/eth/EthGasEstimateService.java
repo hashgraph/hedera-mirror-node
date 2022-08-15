@@ -40,7 +40,6 @@ public class EthGasEstimateService implements ApiContractEthService<TxnCallBody,
     private final SimulatedWorldState worldState;
     private final CodeCache codeCache;
     private final SimulatedAliasManager simulatedAliasManager;
-    private final TokenRepository tokenRepository;
 
     @Override
     public String getMethod() {
@@ -62,7 +61,7 @@ public class EthGasEstimateService implements ApiContractEthService<TxnCallBody,
         final var senderDto = senderEntity != null ? new AccountDto(senderEntity.getNum(), ByteString.copyFrom(senderEntity.getAlias())) : new AccountDto(0L, ByteString.EMPTY);
 
         final CallEvmTxProcessor evmTxProcessor = new CallEvmTxProcessor(simulatedPricesSource, evmProperties,
-                simulatedGasCalculator, new HashSet<>(), new HashMap<>(), codeCache, simulatedAliasManager, tokenRepository);
+                simulatedGasCalculator, new HashSet<>(), new HashMap<>(), codeCache, simulatedAliasManager);
         evmTxProcessor.setWorldState(worldState);
         evmTxProcessor.setBlockMetaSource(blockMetaSourceProvider);
 

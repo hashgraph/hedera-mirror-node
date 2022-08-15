@@ -35,10 +35,9 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
             Set<Operation> hederaOperations,
             Map<String, PrecompiledContract> precompiledContractMap,
             CodeCache codeCache,
-            SimulatedAliasManager aliasManager,
-            TokenRepository tokenRepository) {
+            SimulatedAliasManager aliasManager) {
         super(simulatedPricesSource, configurationProperties, gasCalculator, hederaOperations,
-                precompiledContractMap, tokenRepository);
+                precompiledContractMap);
         this.codeCache = codeCache;
         this.aliasManager = aliasManager;
     }

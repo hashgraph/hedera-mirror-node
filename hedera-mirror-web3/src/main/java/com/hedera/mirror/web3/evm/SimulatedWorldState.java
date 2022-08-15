@@ -99,8 +99,10 @@ public class SimulatedWorldState implements HederaMutableWorldState {
             return null;
         }
         final long balance = entityAccess.getBalance(address);
-        final long nonce =
-                entityRepository.findAccountNonceByAddress(address.toArray()).orElseThrow();
+        final var accountNonce =
+                entityRepository.findAccountNonceByAddress(address.toArray());
+        final long nonce = accountNonce.isEmpty() ? 0L : accountNonce.get();
+
         return new WorldStateAccount(address, Wei.of(balance), nonce, codeCache, entityAccess);
     }
 

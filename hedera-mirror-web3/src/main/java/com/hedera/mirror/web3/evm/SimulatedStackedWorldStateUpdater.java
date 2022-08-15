@@ -112,6 +112,6 @@ public class SimulatedStackedWorldStateUpdater
     // --- Internal helpers
     //FUTURE WORK to be implemented
     boolean isTokenRedirect(final Address address) {
-        return true;
+        return entityAccess.isTokenAccount(address);
     }
 }

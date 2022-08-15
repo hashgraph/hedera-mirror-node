@@ -1,24 +1,14 @@
 package com.hedera.services.transaction;
 
-import com.google.common.primitives.Ints;
-import com.google.common.primitives.Longs;
-
-import com.hedera.mirror.web3.evm.SimulatedStackedWorldStateUpdater;
-
-import com.hedera.mirror.web3.repository.TokenRepository;
-
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenType;
-import java.util.Arrays;
 import java.util.Optional;
-import java.util.function.UnaryOperator;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
-import org.hyperledger.besu.evm.precompile.PrecompiledContract.PrecompileContractResult;
 import org.jetbrains.annotations.NotNull;
+
+import com.hedera.mirror.web3.repository.TokenRepository;
 
 public class HTSPrecompiledContract implements PrecompiledContract {
     private long gasRequirement = 0;
@@ -107,22 +97,12 @@ public class HTSPrecompiledContract implements PrecompiledContract {
 
     public static RedirectTarget getRedirectTarget(final Bytes input) {
         final var tokenAddress = input.slice(4, 20);
-        final var tokenId = tokenIdFromEvmAddress(tokenAddress.toArrayUnsafe());
         final var address = tokenAddress.toArray();
         final var nestedInput = input.slice(24);
-        return new RedirectTarget(nestedInput.getInt(0), tokenId, address);
-    }
-
-    public static TokenID tokenIdFromEvmAddress(byte[] bytes) {
-        return TokenID.newBuilder()
-                .setShardNum(Ints.fromByteArray(Arrays.copyOfRange(bytes, 0, 4)))
-                .setRealmNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 4, 12)))
-                .setTokenNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 12, 20)))
-                .build();
+        return new RedirectTarget(nestedInput.getInt(0), address);
     }
 
     private long defaultGas() {
         return 0L;
     }
-
 }
