@@ -27,6 +27,8 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_P
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_TX_FEE;
 import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
 
+import com.hedera.services.transaction.contracts.operation.HederaSLoadOperation;
+
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -136,6 +138,7 @@ public abstract class EvmTxProcessor {
 
         var operationRegistry = new OperationRegistry();
         registerLondonOperations(operationRegistry, gasCalculator, BigInteger.valueOf(configurationProperties.getChainId()));
+        operationRegistry.put(new HederaSLoadOperation(gasCalculator));
         hederaOperations.forEach(operationRegistry::put);
 
         final var evm = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);
