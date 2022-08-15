@@ -118,18 +118,22 @@ const getEntityBalanceQuery = (
     .join(' and ');
   const params = utils.mergeParams([], balanceQuery.params, entityAccountQuery.params, pubKeyQuery.params, limitParams);
   const query = `
-    with latest_account_balance as (select max(consensus_timestamp) as consensus_timestamp from account_balance_file)
+    with latest_account_balance as (select max(consensus_timestamp) as consensus_timestamp from account_balance_file),
+    latest_record_file as (select max(consensus_end) as consensus_timestamp from record_file)
     select
       ${entityFields},
       balance,
-      (select max(consensus_end) from record_file) as consensus_timestamp,
-      (select json_agg(json_build_object('token_id', token_id, 'balance', balance))
-       from (select token_id, balance
-             from token_balance
-             where account_id = e.id and consensus_timestamp = latest_account_balance.consensus_timestamp
-       order by token_id ${order}
-       limit ${tokenBalanceLimit}) as account_token_balance) as token_balances
-    from entity e, latest_account_balance
+      latest_record_file.consensus_timestamp,
+      (
+        select json_agg(json_build_object('token_id', token_id, 'balance', balance))
+        from (
+          select token_id, balance
+          from token_balance
+          where account_id = e.id and consensus_timestamp = latest_account_balance.consensus_timestamp
+        order by token_id ${order}
+        limit ${tokenBalanceLimit}) as account_token_balance
+      ) as token_balances
+    from entity e, latest_account_balance, latest_record_file
     where ${whereCondition}
     order by e.id ${order}
     ${limitQuery}`;
@@ -155,23 +159,20 @@ const getAccountQuery = (
   pubKeyQuery = {query: '', params: []},
   includeBalance = true
 ) => {
-  const entityConditions = [`e.type in ('ACCOUNT', 'CONTRACT')`, entityAccountQuery.query, pubKeyQuery.query]
-    .filter((x) => !!x)
-    .join('and');
-  const limitParams = limitAndOrderQuery.params;
-  const limitQuery = limitAndOrderQuery.query || '';
-  const order = limitAndOrderQuery.order || constants.orderFilterValues.ASC;
-
   if (!includeBalance) {
+    const entityCondition = [`e.type in ('ACCOUNT', 'CONTRACT')`, entityAccountQuery.query, pubKeyQuery.query]
+      .filter((x) => !!x)
+      .join(' and ');
+
     const entityOnlyQuery = `
-      select id, ${entityFields}
+      select ${entityFields}
       from entity e
-      where ${entityConditions}
-      order by id ${order}
-      ${limitQuery}`;
+      where ${entityCondition}
+      order by id ${limitAndOrderQuery.order}
+      ${limitAndOrderQuery.query}`;
     return {
       query: entityOnlyQuery,
-      params: utils.mergeParams(entityAccountQuery.params, pubKeyQuery.params, limitParams),
+      params: utils.mergeParams(entityAccountQuery.params, pubKeyQuery.params, limitAndOrderQuery.params),
     };
   }
 
