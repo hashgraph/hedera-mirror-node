@@ -138,7 +138,7 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
         }
 
         if(account.getAlias()!=null) {
-            alias = ByteString.copyFrom(account.getAlias());
+        alias = ByteString.copyFrom(account.getAlias());
         }
 
         if (!alias.isEmpty()) {

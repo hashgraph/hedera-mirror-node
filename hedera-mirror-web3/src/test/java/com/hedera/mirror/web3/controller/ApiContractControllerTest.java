@@ -8,6 +8,7 @@ import static com.hedera.mirror.web3.utils.TestConstants.gas;
 import static com.hedera.mirror.web3.utils.TestConstants.gasHexValue;
 import static com.hedera.mirror.web3.utils.TestConstants.gasPrice;
 import static com.hedera.mirror.web3.utils.TestConstants.gasPriceHexValue;
+import static com.hedera.mirror.web3.utils.TestConstants.getSenderBalanceInputData;
 import static com.hedera.mirror.web3.utils.TestConstants.latestTag;
 import static com.hedera.mirror.web3.utils.TestConstants.multiplySimpleNumbersSelector;
 import static com.hedera.mirror.web3.utils.TestConstants.receiverHexAddress;
@@ -138,7 +139,7 @@ class ApiContractControllerTest {
         jsonRpcRequest.setMethod(ETH_CALL_METHOD);
         jsonRpcRequest.setParams(getJsonRpcRequestParams(contractHexAddress, multiplySimpleNumbersSelector));
 
-        when(serviceFactory.lookup(ETH_CALL_METHOD)).thenReturn(new DummyEthCallService());
+        when(serviceFactory.lookup(ETH_CALL_METHOD)).thenReturn(new DummyEthCallService(4L));
 
         webClient.post()
                 .uri("/api/v1/contracts")
@@ -152,6 +153,37 @@ class ApiContractControllerTest {
                 .jsonPath("$.id").isEqualTo(jsonRpcRequest.getId())
                 .jsonPath("$.jsonrpc").isEqualTo(JsonRpcResponse.VERSION)
                 .jsonPath("$.result").isEqualTo(Bytes.wrap(String.valueOf(4L).getBytes()).toHexString());
+
+        verify(serviceFactory).lookup(ETH_CALL_METHOD);
+        assertThat(meterRegistry.find(METRIC).timers())
+                .hasSize(1)
+                .first()
+                .returns(ETH_CALL_METHOD, t -> t.getId().getTag("method"))
+                .returns(JsonRpcSuccessResponse.SUCCESS, t -> t.getId().getTag("status"));
+    }
+
+    @Test
+    void successForEthCallForAccountBalanceFunction() {
+        JsonRpcRequest jsonRpcRequest = new JsonRpcRequest();
+        jsonRpcRequest.setId(1L);
+        jsonRpcRequest.setJsonrpc(JsonRpcResponse.VERSION);
+        jsonRpcRequest.setMethod(ETH_CALL_METHOD);
+        jsonRpcRequest.setParams(getJsonRpcRequestParams(contractHexAddress, getSenderBalanceInputData));
+
+        when(serviceFactory.lookup(ETH_CALL_METHOD)).thenReturn(new DummyEthCallService(560000261L));
+
+        webClient.post()
+                .uri("/api/v1/contracts")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(jsonRpcRequest))
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.error").doesNotExist()
+                .jsonPath("$.id").isEqualTo(jsonRpcRequest.getId())
+                .jsonPath("$.jsonrpc").isEqualTo(JsonRpcResponse.VERSION)
+                .jsonPath("$.result").isEqualTo(Bytes.wrap(String.valueOf(560000261L).getBytes()).toHexString());
 
         verify(serviceFactory).lookup(ETH_CALL_METHOD);
         assertThat(meterRegistry.find(METRIC).timers())
@@ -199,6 +231,12 @@ class ApiContractControllerTest {
 
     private class DummyEthCallService implements ApiContractService<Object, Object> {
 
+        private final long value;
+
+        public DummyEthCallService(final long value) {
+            this.value = value;
+        }
+
         @Override
         public String getMethod() {
             return ETH_CALL_METHOD;
@@ -206,7 +244,7 @@ class ApiContractControllerTest {
 
         @Override
         public Object get(Object request) {
-            return Bytes.wrap(String.valueOf(4L).getBytes()).toHexString();
+            return Bytes.wrap(String.valueOf(value).getBytes()).toHexString();
         }
     }
 }

@@ -14,16 +14,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import javax.inject.Named;
-
-import com.hedera.mirror.web3.evm.CodeCache;
-
-import com.hedera.mirror.web3.evm.SimulatedAliasManager;
-
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 import com.hedera.mirror.web3.evm.CallEvmTxProcessor;
+import com.hedera.mirror.web3.evm.CodeCache;
+import com.hedera.mirror.web3.evm.SimulatedAliasManager;
 import com.hedera.mirror.web3.evm.SimulatedGasCalculator;
 import com.hedera.mirror.web3.evm.SimulatedPricesSource;
 import com.hedera.mirror.web3.evm.SimulatedWorldState;
