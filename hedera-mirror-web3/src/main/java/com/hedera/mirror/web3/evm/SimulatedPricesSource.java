@@ -29,6 +29,6 @@ import javax.inject.Named;
 public class SimulatedPricesSource {
 
     public long currentGasPrice(final Instant now, final HederaFunctionality function) {
-        return 0L;
+        return 1L;
     }
 }
