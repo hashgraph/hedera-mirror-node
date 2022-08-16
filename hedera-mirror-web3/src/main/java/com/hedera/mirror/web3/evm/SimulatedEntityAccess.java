@@ -20,6 +20,8 @@ package com.hedera.mirror.web3.evm;
  * ‍
  */
 
+import com.hedera.mirror.web3.repository.TokenRepository;
+
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
@@ -36,6 +38,7 @@ import com.hedera.services.transaction.store.contracts.EntityAccess;
 public class SimulatedEntityAccess implements EntityAccess {
 
     private final AccountBalanceRepository accountBalanceRepository;
+    private final TokenRepository tokenRepository;
 
     @Override
     public long getBalance(Address id) {
@@ -61,7 +64,7 @@ public class SimulatedEntityAccess implements EntityAccess {
 
     @Override
     public boolean isTokenAccount(Address address) {
-        return false;
+        return tokenRepository.findByAddress(address.toArrayUnsafe()).isPresent();
     }
 
     @Override
