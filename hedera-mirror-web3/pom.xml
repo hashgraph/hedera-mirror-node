@@ -151,6 +151,12 @@
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
         </dependency>
+      <dependency>
+        <groupId>com.esaulpaugh</groupId>
+        <artifactId>headlong</artifactId>
+        <version>6.6.2</version>
+        <scope>compile</scope>
+      </dependency>
     </dependencies>
 
     <build>

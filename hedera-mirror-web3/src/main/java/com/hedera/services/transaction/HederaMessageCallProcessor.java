@@ -22,6 +22,8 @@ package com.hedera.services.transaction;
  *
  */
 
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCESS;
+
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -71,8 +73,11 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
         final long gasRequirement;
         final Bytes output;
         //TODO: connect precompile logic
-//        if (contract instanceof HTSPrecompiledContract htsPrecompile) {
-//            final var costedResult = htsPrecompile.computeCosted(frame.getInputData(), frame);
+        if (contract instanceof HTSPrecompiledContract htsPrecompile) {
+            final var costedResult = htsPrecompile.computeCosted(frame.getInputData(), frame);
+
+            output = costedResult.getValue();
+            frame.setOutputData(output);
 //            if (frame.getState() == REVERT) {
 //                return;
 //            }
@@ -83,16 +88,17 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
 //            gasRequirement = contract.gasRequirement(frame.getInputData());
 //        }
 //        operationTracer.tracePrecompileCall(frame, gasRequirement, output);
-//        if (frame.getRemainingGas() < gasRequirement) {
-//            frame.decrementRemainingGas(frame.getRemainingGas());
-//            frame.setExceptionalHaltReason(Optional.of(INSUFFICIENT_GAS));
-//            frame.setState(EXCEPTIONAL_HALT);
+            if (output != null) {
+//            frame.decrementRemainingGas(gasRequirement);
+                frame.setOutputData(output);
+                frame.setState(COMPLETED_SUCCESS);
 //        } else if (output != null) {
 //            frame.decrementRemainingGas(gasRequirement);
 //            frame.setOutputData(output);
 //            frame.setState(COMPLETED_SUCCESS);
 //        } else {
 //            frame.setState(EXCEPTIONAL_HALT);
-//        }
+            }
+        }
     }
 }
