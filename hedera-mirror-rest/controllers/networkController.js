@@ -211,6 +211,10 @@ class NetworkController extends BaseController {
    */
   getNetworkStake = async (_req, res) => {
     const networkStake = await NetworkNodeService.getNetworkStake();
+    if (networkStake === null) {
+      throw new NotFoundError();
+    }
+
     res.locals[responseDataLabel] = new NetworkStakeViewModel(networkStake);
   };
 
