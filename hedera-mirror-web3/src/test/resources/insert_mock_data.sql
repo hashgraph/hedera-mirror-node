@@ -20,3 +20,12 @@ INSERT INTO entity (id, num, realm, shard, timestamp_range,
 						  type, evm_address, ethereum_nonce, deleted)
 VALUES (3, 1252, 0, 0, int8range(12235235, 32323436), 'CONTRACT',
 		decode('00000000000000000000000000000000000004e4', 'hex'), 0, false);
+
+INSERT INTO public.token(token_id, created_timestamp, decimals, initial_supply, modified_timestamp, name, symbol, total_supply, treasury_account_id)
+VALUES(4, 20220808000001, 2, 6, 20220808000001, 'testToken', 'ttt', 100, 1);
+
+INSERT INTO public.entity (id, num, realm, shard, timestamp_range,
+						 type, alias, evm_address, ethereum_nonce)
+VALUES (4, 1253, 0, 0, int8range(12235235, 32323436), 'TOKEN',
+		decode('00000000000000000000000000000000000004e5', 'hex'),
+		decode('00000000000000000000000000000000000004e5', 'hex'), 0);
