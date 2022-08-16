@@ -132,11 +132,13 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
 
     private Address getAddressOrAlias(final Address address) {
         final var account = entityRepository.findAccountByAddress(address.toArray()).orElse(null);
-        ByteString alias;
+        ByteString alias = ByteString.EMPTY;
         if(account==null) {
             return address;
-        } else {
-            alias = ByteString.copyFrom(account.getAlias());
+        }
+
+        if(account.getAlias()!=null) {
+        alias = ByteString.copyFrom(account.getAlias());
         }
 
         if (!alias.isEmpty()) {
