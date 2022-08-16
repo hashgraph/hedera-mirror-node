@@ -32,6 +32,7 @@ import io.grpc.Server;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.stub.StreamObserver;
 import java.io.IOException;
+import java.net.ConnectException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Queue;
@@ -78,6 +79,7 @@ class NodeSupplierTest {
 
     private CryptoServiceStub cryptoServiceStub;
     private MonitorProperties monitorProperties;
+    private NetworkNode networkNode;
     private NodeProperties node;
     private NodeSupplier nodeSupplier;
     private PublishScenarioProperties publishScenarioProperties;
@@ -89,6 +91,10 @@ class NodeSupplierTest {
     @BeforeEach
     void setup() throws IOException {
         node = new NodeProperties("0.0.3", "in-process:" + SERVER);
+        networkNode = new NetworkNode();
+        networkNode.setNodeAccountId(node.getAccountId());
+        networkNode.addServiceEndpointsItem(new ServiceEndpoint().ipAddressV4(node.getEndpoint()));
+
         publishScenarioProperties = new PublishScenarioProperties();
         publishScenarioProperties.setName("test");
         publishScenarioProperties.setType(TransactionType.CRYPTO_TRANSFER);
@@ -97,6 +103,7 @@ class NodeSupplierTest {
         OperatorProperties operatorProperties = monitorProperties.getOperator();
         operatorProperties.setAccountId("0.0.100");
         operatorProperties.setPrivateKey(PrivateKey.generateED25519().toString());
+
         nodeSupplier = new NodeSupplier(monitorProperties, restApiClient);
         cryptoServiceStub = new CryptoServiceStub();
         server = InProcessServerBuilder.forName(SERVER)
@@ -161,35 +168,32 @@ class NodeSupplierTest {
     @Test
     void refreshAddressBook() {
         monitorProperties.setNodes(Set.of());
-        var serviceEndpoint = new ServiceEndpoint().ipAddressV4("127.0.0.1");
-        var node = new NetworkNode();
-        node.setNodeAccountId("0.0.3");
-        node.addServiceEndpointsItem(serviceEndpoint);
-        when(restApiClient.getNodes()).thenReturn(Flux.just(node));
+        when(restApiClient.getNodes()).thenReturn(Flux.just(networkNode));
         assertThat(nodeSupplier.refresh().collectList().block())
                 .hasSize(1)
                 .first()
-                .returns(node.getNodeAccountId(), NodeProperties::getAccountId)
-                .returns(serviceEndpoint.getIpAddressV4(), NodeProperties::getHost);
+                .returns(networkNode.getNodeAccountId(), NodeProperties::getAccountId)
+                .returns(networkNode.getServiceEndpoints().get(0).getIpAddressV4(), NodeProperties::getHost);
     }
 
     @Test
-    void refreshAddressBookError() {
+    void refreshAddressBookRetryError() {
         monitorProperties.setNodes(Set.of());
-        when(restApiClient.getNodes()).thenThrow(new RuntimeException("error"));
-        nodeSupplier.refresh()
-                .as(StepVerifier::create)
-                .expectNextSequence(monitorProperties.getNetwork().getNodes())
-                .expectComplete()
-                .verify(Duration.ofMillis(100L));
+        when(restApiClient.getNodes())
+                .thenReturn(Flux.error(new ConnectException("connection refused")))
+                .thenReturn(Flux.just(networkNode));
+        assertThat(nodeSupplier.refresh().collectList().block())
+                .hasSize(1)
+                .first()
+                .returns(networkNode.getNodeAccountId(), NodeProperties::getAccountId)
+                .returns(networkNode.getServiceEndpoints().get(0).getIpAddressV4(), NodeProperties::getHost);
     }
 
     @Test
     void refreshAddressBookNoEndpoints() {
         monitorProperties.setNodes(Set.of());
-        var node = new NetworkNode();
-        node.setNodeAccountId("0.0.3");
-        when(restApiClient.getNodes()).thenReturn(Flux.just(node));
+        networkNode.getServiceEndpoints().clear();
+        when(restApiClient.getNodes()).thenReturn(Flux.just(networkNode));
         nodeSupplier.refresh()
                 .as(StepVerifier::create)
                 .expectNextSequence(monitorProperties.getNetwork().getNodes())
