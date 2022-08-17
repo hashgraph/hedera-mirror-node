@@ -191,14 +191,13 @@ class EthCallServiceTest {
 
     @Test
     void ethCallForStorageFunction() {
-        when(hederaWorldState.updater()).thenReturn(updater);
+        when(simulatedWorldState.updater()).thenReturn(updater);
         when(updater.updater()).thenReturn(simulatedStackedWorldStateUpdater);
         when(updater.getOrCreateSenderAccount(senderAddress)).thenReturn(senderAccount);
         when(senderAccount.getMutable()).thenReturn(mutableSender);
         when(simulatedStackedWorldStateUpdater.getSenderAccount(any())).thenReturn(senderAccount);
         when(simulatedStackedWorldStateUpdater.getOrCreate(any())).thenReturn(recipientAccount);
         when(recipientAccount.getMutable()).thenReturn(mutableRecipient);
-
         when(evmProperties.getChainId()).thenReturn(chainId);
         when(entityRepository.findAccountByAddress(senderEvmAddress))
                 .thenReturn(Optional.of(senderEntity));
@@ -206,7 +205,6 @@ class EthCallServiceTest {
                 .thenReturn(new SimulatedBlockMetaSource(gasLimit, blockNumber, Instant.now().getEpochSecond()));
 
         when(senderEntity.getAlias()).thenReturn(senderAlias);
-
         when(senderEntity.getNum()).thenReturn(senderNum);
 
         when(gasCalculator.getMaxRefundQuotient()).thenReturn(2L);
