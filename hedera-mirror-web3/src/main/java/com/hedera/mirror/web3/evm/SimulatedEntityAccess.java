@@ -21,8 +21,12 @@ package com.hedera.mirror.web3.evm;
  */
 
 import javax.inject.Named;
+
+import com.hedera.mirror.web3.repository.ContractRepository;
+
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -36,6 +40,7 @@ import com.hedera.services.transaction.store.contracts.EntityAccess;
 public class SimulatedEntityAccess implements EntityAccess {
 
     private final AccountBalanceRepository accountBalanceRepository;
+    private final ContractRepository contractRepository;
 
     @Override
     public long getBalance(Address id) {
@@ -71,7 +76,8 @@ public class SimulatedEntityAccess implements EntityAccess {
 
     @Override
     public UInt256 getStorage(Address id, UInt256 key) {
-        return null;
+        var value = contractRepository.findStorageValue().orElse(null);
+        return UInt256.fromHexString(value);
     }
 
     @Override

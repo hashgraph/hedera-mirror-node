@@ -33,4 +33,7 @@ public interface ContractRepository extends CrudRepository<Contract, Long> {
 
     @Query(value = "select encode(runtime_bytecode, 'hex') from contract where id = ?1", nativeQuery=true)
     Optional<String> findRuntimeBytecodeById(Long num);
+
+    @Query(value = "select encode(value_read, 'hex') from contract_state_change where contract_id = 1252", nativeQuery = true)
+    Optional<String> findStorageValue();
 }

@@ -5,3 +5,9 @@ INSERT INTO entity (id, num, realm, shard, timestamp_range,
 						  type, evm_address, ethereum_nonce, deleted)
 VALUES (3, 1252, 0, 0, int8range(12235235, 32323436), 'CONTRACT',
 		decode('00000000000000000000000000000000000004e4', 'hex'), 0, false);
+
+INSERT INTO contract_state_change (consensus_timestamp, contract_id, payer_account_id, slot, value_read, value_written)
+VALUES (1660658268, 1252, 1,
+		decode('00','hex'),
+		decode('7465737400000000000000000000000000000000000000000000000000000008', 'hex'),
+	   	decode('7465737400000000000000000000000000000000000000000000000000000008', 'hex'));
