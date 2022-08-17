@@ -1,27 +1,34 @@
 package com.hedera.mirror.web3.service.eth;
 
+import static com.hedera.mirror.web3.service.eth.Constants.HTS_PRECOMPILED_CONTRACT_ADDRESS;
+
 import com.google.protobuf.ByteString;
+
+import com.hedera.mirror.web3.repository.TokenRepository;
+
+import com.hedera.services.transaction.HTSPrecompiledContract;
+
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import javax.inject.Named;
-
-import com.hedera.mirror.web3.evm.CodeCache;
-
-import com.hedera.mirror.web3.evm.SimulatedAliasManager;
-
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 import com.hedera.mirror.web3.evm.CallEvmTxProcessor;
+import com.hedera.mirror.web3.evm.CodeCache;
+import com.hedera.mirror.web3.evm.SimulatedAliasManager;
 import com.hedera.mirror.web3.evm.SimulatedGasCalculator;
 import com.hedera.mirror.web3.evm.SimulatedPricesSource;
 import com.hedera.mirror.web3.evm.SimulatedWorldState;
 import com.hedera.mirror.web3.evm.properties.BlockMetaSourceProvider;
 import com.hedera.mirror.web3.evm.properties.EvmProperties;
 import com.hedera.mirror.web3.repository.EntityRepository;
+
+import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 
 @Named
 @RequiredArgsConstructor
@@ -37,6 +44,7 @@ public class EthCallService implements ApiContractEthService<TxnCallBody, String
     private final SimulatedWorldState worldState;
     private final CodeCache codeCache;
     private final SimulatedAliasManager simulatedAliasManager;
+    private final TokenRepository tokenRepository;
 
     @Override
     public String getMethod() {
@@ -56,8 +64,11 @@ public class EthCallService implements ApiContractEthService<TxnCallBody, String
         final var senderEntity = entityRepository.findAccountByAddress(senderEvmAddress).orElse(null);
         final var senderDto = senderEntity != null ? new AccountDto(senderEntity.getNum(), ByteString.copyFrom(senderEntity.getAlias())) : new AccountDto(0L, ByteString.EMPTY);
 
+        Map<String, PrecompiledContract> precompiledContractMap = new HashMap<>();
+        precompiledContractMap.put(HTS_PRECOMPILED_CONTRACT_ADDRESS, new HTSPrecompiledContract(tokenRepository));
+
         final CallEvmTxProcessor evmTxProcessor = new CallEvmTxProcessor(simulatedPricesSource, evmProperties,
-                simulatedGasCalculator, new HashSet<>(), new HashMap<>(), codeCache, simulatedAliasManager);
+                simulatedGasCalculator, new HashSet<>(), precompiledContractMap, codeCache, simulatedAliasManager);
         evmTxProcessor.setWorldState(worldState);
         evmTxProcessor.setBlockMetaSource(blockMetaSourceProvider);
 

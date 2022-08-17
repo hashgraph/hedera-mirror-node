@@ -1,5 +1,7 @@
 package com.hedera.mirror.web3.evm;
 
+import com.hedera.mirror.web3.repository.TokenRepository;
+
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;

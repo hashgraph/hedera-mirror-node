@@ -7,6 +7,7 @@ import static com.hedera.mirror.web3.utils.TestConstants.contractHexAddress;
 import static com.hedera.mirror.web3.utils.TestConstants.gasHexValue;
 import static com.hedera.mirror.web3.utils.TestConstants.gasLimit;
 import static com.hedera.mirror.web3.utils.TestConstants.gasPriceHexValue;
+import static com.hedera.mirror.web3.utils.TestConstants.getSenderBalanceInputData;
 import static com.hedera.mirror.web3.utils.TestConstants.latestTag;
 import static com.hedera.mirror.web3.utils.TestConstants.multiplySimpleNumbersSelector;
 import static com.hedera.mirror.web3.utils.TestConstants.receiverHexAddress;
@@ -15,9 +16,11 @@ import static com.hedera.mirror.web3.utils.TestConstants.runtimeCode;
 import static com.hedera.mirror.web3.utils.TestConstants.senderAddress;
 import static com.hedera.mirror.web3.utils.TestConstants.senderAlias;
 import static com.hedera.mirror.web3.utils.TestConstants.senderBalance;
+import static com.hedera.mirror.web3.utils.TestConstants.senderBalanceHexValue;
 import static com.hedera.mirror.web3.utils.TestConstants.senderEvmAddress;
 import static com.hedera.mirror.web3.utils.TestConstants.senderHexAddress;
 import static com.hedera.mirror.web3.utils.TestConstants.senderNum;
+import static com.hedera.mirror.web3.utils.TestConstants.senderPublicAddress;
 import static com.hedera.mirror.web3.utils.TestConstants.valueHexValue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -26,6 +29,7 @@ import static org.mockito.Mockito.when;
 import java.time.Instant;
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.account.EvmAccount;
@@ -59,7 +63,7 @@ class EthCallServiceTest {
     @Mock private BlockMetaSourceProvider blockMetaSourceProvider;
     @Mock private Entity senderEntity;
     @Mock private SimulatedPricesSource simulatedPricesSource;
-    @Mock private SimulatedWorldState hederaWorldState;
+    @Mock private SimulatedWorldState simulatedWorldState;
     @Mock private Updater updater;
     @Mock private SimulatedStackedWorldStateUpdater simulatedStackedWorldStateUpdater;
     @Mock private EvmAccount senderAccount;
@@ -77,7 +81,7 @@ class EthCallServiceTest {
 
     @Test
     void ethCallWithEmptyInputWorks() {
-        when(hederaWorldState.updater()).thenReturn(updater);
+        when(simulatedWorldState.updater()).thenReturn(updater);
         when(updater.updater()).thenReturn(simulatedStackedWorldStateUpdater);
         when(updater.getOrCreateSenderAccount(senderAddress)).thenReturn(senderAccount);
         when(senderAccount.getMutable()).thenReturn(mutableSender);
@@ -115,7 +119,7 @@ class EthCallServiceTest {
 
     @Test
     void ethCallForPureFunction() {
-        when(hederaWorldState.updater()).thenReturn(updater);
+        when(simulatedWorldState.updater()).thenReturn(updater);
         when(updater.updater()).thenReturn(simulatedStackedWorldStateUpdater);
         when(updater.getOrCreateSenderAccount(senderAddress)).thenReturn(senderAccount);
         when(senderAccount.getMutable()).thenReturn(mutableSender);
@@ -149,6 +153,43 @@ class EthCallServiceTest {
     }
 
     @Test
+    void ethCallForAccountBalanceWorks() {
+        when(simulatedWorldState.updater()).thenReturn(updater);
+        when(updater.updater()).thenReturn(simulatedStackedWorldStateUpdater);
+        when(updater.getOrCreateSenderAccount(senderAddress)).thenReturn(senderAccount);
+        when(senderAccount.getMutable()).thenReturn(mutableSender);
+        when(senderAccount.getBalance()).thenReturn(Wei.of(560000261L));
+        when(simulatedStackedWorldStateUpdater.getSenderAccount(any())).thenReturn(senderAccount);
+        when(simulatedStackedWorldStateUpdater.get(Address.wrap(Bytes.fromHexString(senderPublicAddress)))).thenReturn(senderAccount);
+        when(evmProperties.getChainId()).thenReturn(chainId);
+        when(entityRepository.findAccountByAddress(senderEvmAddress))
+                .thenReturn(Optional.of(senderEntity));
+        when(blockMetaSourceProvider.computeBlockValues(gasLimit))
+                .thenReturn(new SimulatedBlockMetaSource(gasLimit, blockNumber, Instant.now().getEpochSecond()));
+
+        when(senderEntity.getAlias())
+                .thenReturn(senderAlias);
+        when(senderEntity.getNum()).thenReturn(senderNum);
+
+        when(gasCalculator.getMaxRefundQuotient()).thenReturn(2L);
+        when(simulatedPricesSource.currentGasPrice(any(), any())).thenReturn(1L);
+        when(codeCache.getIfPresent(any())).thenReturn(runtimeCode);
+
+        final var ethCallParams =
+                new EthParams(
+                        senderHexAddress,
+                        contractHexAddress,
+                        gasHexValue,
+                        gasPriceHexValue,
+                        "0x00",
+                        getSenderBalanceInputData);
+
+        final var transactionCall = new TxnCallBody(ethCallParams, latestTag);
+        final var result = ethCallService.get(transactionCall);
+        Assertions.assertEquals(senderBalanceHexValue, result);
+    }
+
+    @Test
     void ethCallForStorageFunction() {
         when(hederaWorldState.updater()).thenReturn(updater);
         when(updater.updater()).thenReturn(simulatedStackedWorldStateUpdater);
@@ -157,6 +198,7 @@ class EthCallServiceTest {
         when(simulatedStackedWorldStateUpdater.getSenderAccount(any())).thenReturn(senderAccount);
         when(simulatedStackedWorldStateUpdater.getOrCreate(any())).thenReturn(recipientAccount);
         when(recipientAccount.getMutable()).thenReturn(mutableRecipient);
+
         when(evmProperties.getChainId()).thenReturn(chainId);
         when(entityRepository.findAccountByAddress(senderEvmAddress))
                 .thenReturn(Optional.of(senderEntity));
@@ -164,6 +206,7 @@ class EthCallServiceTest {
                 .thenReturn(new SimulatedBlockMetaSource(gasLimit, blockNumber, Instant.now().getEpochSecond()));
 
         when(senderEntity.getAlias()).thenReturn(senderAlias);
+
         when(senderEntity.getNum()).thenReturn(senderNum);
 
         when(gasCalculator.getMaxRefundQuotient()).thenReturn(2L);
@@ -183,6 +226,7 @@ class EthCallServiceTest {
         final var result = ethCallService.get(transactionCall);
         Assertions.assertEquals("0x", result);
     }
+
 
     @Test
     void getEthCallMethod() {

@@ -59,7 +59,7 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import org.assertj.core.api.Condition;
 import org.assertj.core.api.IterableAssert;
 import org.junit.jupiter.api.BeforeEach;
@@ -68,6 +68,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -94,6 +95,7 @@ import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
 import com.hedera.mirror.importer.util.Utility;
 import com.hedera.mirror.importer.util.UtilityTest;
 
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListenerTest {
     private static final long INITIAL_BALANCE = 1000L;
     private static final AccountID accountId1 = AccountID.newBuilder().setAccountNum(1001).build();
@@ -101,23 +103,12 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     private static final long[] additionalTransferAmounts = {1001, 1002};
     private static final ByteString ALIAS_KEY = DomainUtils.fromBytes(UtilityTest.ALIAS_ECDSA_SECP256K1);
 
-    @Resource
-    private ContractRepository contractRepository;
-
-    @Resource
-    private CryptoAllowanceRepository cryptoAllowanceRepository;
-
-    @Resource
-    private NftAllowanceRepository nftAllowanceRepository;
-
-    @Resource
-    private NftRepository nftRepository;
-
-    @Resource
-    private RecordParserProperties parserProperties;
-
-    @Resource
-    private TokenAllowanceRepository tokenAllowanceRepository;
+    private final ContractRepository contractRepository;
+    private final CryptoAllowanceRepository cryptoAllowanceRepository;
+    private final NftAllowanceRepository nftAllowanceRepository;
+    private final NftRepository nftRepository;
+    private final RecordParserProperties parserProperties;
+    private final TokenAllowanceRepository tokenAllowanceRepository;
 
     @BeforeEach
     void before() {
@@ -171,17 +162,16 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                         .areAtMost(1, isAccountAmountReceiverAccountAmount(transfer1.build()))
                         .areAtMost(1, isAccountAmountReceiverAccountAmount(transfer2.build())),
                 () -> assertCryptoTransaction(transactionBody, record),
-                () -> assertCryptoEntity(cryptoCreateTransactionBody, record.getConsensusTimestamp()),
-                () -> assertEquals(cryptoCreateTransactionBody.getInitialBalance(), dbTransaction.getInitialBalance()),
+                () -> assertCryptoEntity(cryptoCreateTransactionBody, initialBalance, record.getConsensusTimestamp()),
+                () -> assertEquals(initialBalance, dbTransaction.getInitialBalance()),
                 () -> assertThat(initialBalanceTransfer).isPresent()
         );
     }
 
     @Test
     void cryptoCreateWithZeroInitialBalance() {
-        final long initialBalance = 0;
         CryptoCreateTransactionBody.Builder cryptoCreateBuilder = cryptoCreateAccountBuilderWithDefaults()
-                .setInitialBalance(initialBalance);
+                .setInitialBalance(0L);
         Transaction transaction = cryptoCreateTransaction(cryptoCreateBuilder);
         TransactionBody transactionBody = getTransactionBody(transaction);
         CryptoCreateTransactionBody cryptoCreateTransactionBody = transactionBody.getCryptoCreateAccount();
@@ -192,16 +182,16 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         var accountEntityId = EntityId.of(accountId1);
         var consensusTimestamp = DomainUtils.timeStampInNanos(record.getConsensusTimestamp());
         var dbTransaction = getDbTransaction(record.getConsensusTimestamp());
-        Optional<CryptoTransfer> initialBalanceTransfer = cryptoTransferRepository.findById(new CryptoTransfer.Id(
-                initialBalance, consensusTimestamp, accountEntityId.getId()));
+        Optional<CryptoTransfer> initialBalanceTransfer = cryptoTransferRepository.findById(
+                new CryptoTransfer.Id(0L, consensusTimestamp, accountEntityId.getId()));
 
         assertAll(
                 () -> assertEquals(1, transactionRepository.count()),
                 () -> assertEntities(accountEntityId),
                 () -> assertCryptoTransfers(3),
                 () -> assertCryptoTransaction(transactionBody, record),
-                () -> assertCryptoEntity(cryptoCreateTransactionBody, record.getConsensusTimestamp()),
-                () -> assertEquals(cryptoCreateTransactionBody.getInitialBalance(), dbTransaction.getInitialBalance()),
+                () -> assertCryptoEntity(cryptoCreateTransactionBody, 0L, record.getConsensusTimestamp()),
+                () -> assertThat(dbTransaction.getInitialBalance()).isZero(),
                 () -> assertThat(initialBalanceTransfer).isEmpty()
         );
     }
@@ -256,7 +246,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                         .areAtMost(1, isAccountAmountReceiverAccountAmount(transfer1.build()))
                         .areAtMost(1, isAccountAmountReceiverAccountAmount(transfer2.build())),
                 () -> assertCryptoTransaction(transactionBody, record),
-                () -> assertCryptoEntity(cryptoCreateTransactionBody, record.getConsensusTimestamp()),
+                () -> assertCryptoEntity(cryptoCreateTransactionBody, initialBalance, record.getConsensusTimestamp()),
                 () -> assertEquals(cryptoCreateTransactionBody.getInitialBalance(), dbTransaction.getInitialBalance())
         );
     }
@@ -284,7 +274,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertEntities(accountEntityId),
                 () -> assertCryptoTransfers(3),
                 () -> assertCryptoTransaction(transactionBody, record),
-                () -> assertCryptoEntity(cryptoCreateTransactionBody, record.getConsensusTimestamp()),
+                () -> assertCryptoEntity(cryptoCreateTransactionBody, 0L, record.getConsensusTimestamp()),
                 () -> assertEquals(cryptoCreateTransactionBody.getInitialBalance(), dbTransaction.getInitialBalance()),
                 () -> assertThat(initialBalanceTransfer).isEmpty(),
                 () -> assertThat(entityRepository.findByAlias(ALIAS_KEY.toByteArray())).get()
@@ -414,9 +404,9 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     @Test
     void cryptoTransferWithPaidStakingRewards() {
         // given
-        var receiver1 = domainBuilder.entity().persist();
-        var receiver2 = domainBuilder.entity().persist();
-        var sender = domainBuilder.entity().persist();
+        var receiver1 = domainBuilder.entity().customize(e -> e.balance(100L)).persist();
+        var receiver2 = domainBuilder.entity().customize(e -> e.balance(200L)).persist();
+        var sender = domainBuilder.entity().customize(e -> e.balance(300L)).persist();
         var receiver1Id = AccountID.newBuilder().setAccountNum(receiver1.getNum()).build();
         var receiver2Id = AccountID.newBuilder().setAccountNum(receiver2.getNum()).build();
         var senderId = AccountID.newBuilder().setAccountNum(sender.getNum()).build();
@@ -454,8 +444,11 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         parseRecordItemAndCommit(recordItem);
 
         // then
+        sender.setBalance(285L);
         sender.setStakePeriodStart(stakePeriodStart);
+        receiver1.setBalance(109L);
         receiver1.setStakePeriodStart(stakePeriodStart);
+        receiver2.setBalance(215L);
 
         var payerAccountId = recordItem.getPayerAccountId();
         var expectedStakingRewardTransfer1 = new StakingRewardTransfer();
@@ -484,19 +477,18 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     @Test
     void cryptoTransferFailedWithPaidStakingRewards() {
         // given
-        var payer = domainBuilder.entity().persist();
-        var receiver = domainBuilder.entity().persist();
-        var sender = domainBuilder.entity().persist();
+        var payer = domainBuilder.entity().customize(e -> e.balance(5000L)).persist();
+        var receiver = domainBuilder.entity().customize(e -> e.balance(0L)).persist();
+        var sender = domainBuilder.entity().customize(e -> e.balance(5L)).persist();
         var payerId = AccountID.newBuilder().setAccountNum(payer.getNum()).build();
         var receiverId = AccountID.newBuilder().setAccountNum(receiver.getNum()).build();
         var senderId = AccountID.newBuilder().setAccountNum(sender.getNum()).build();
         var timestamp = 1653506322000111222L; // 19137 days since epoch
         var stakePeriodStart = 19137L;
 
-        // Transaction failed with INSUFFICIENT_ACCOUNT_BALANCE because sender's balance is less than the indented
+        // Transaction failed with INSUFFICIENT_ACCOUNT_BALANCE because sender's balance is less than the intended
         // transfer amount. However, the transaction payer has a balance change and there is pending reward for the
-        // payer
-        // account, so there will be a reward payout for the transaction payer.
+        // payer account, so there will be a reward payout for the transaction payer.
         var transactionId = TransactionID.newBuilder().setAccountID(payerId)
                 .setTransactionValidStart(TestUtils.toTimestamp(timestamp - 200L)).build();
         var recordItem = recordItemBuilder.cryptoTransfer()
@@ -520,6 +512,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         parseRecordItemAndCommit(recordItem);
 
         // then
+        payer.setBalance(2200L);
         payer.setStakePeriodStart(stakePeriodStart);
 
         var expectedStakingRewardTransfer = new StakingRewardTransfer();
@@ -602,16 +595,14 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         createAccount();
 
         // now update
-        var updateTransaction = buildTransaction(builder -> {
-            builder.getCryptoUpdateAccountBuilder()
-                    .setAccountIDToUpdate(accountId1)
-                    // *** THIS IS THE OVERFLOW WE WANT TO TEST ***
-                    // This should result in the entity having a Long.MAX_VALUE or Long.MIN_VALUE expirations
-                    // (the results of overflows).
-                    .setExpirationTime(Timestamp.newBuilder().setSeconds(seconds))
-                    .setDeclineReward(BoolValue.of(true))
-                    .setStakedAccountId(AccountID.newBuilder().setAccountNum(1L).build());
-        });
+        var updateTransaction = buildTransaction(builder -> builder.getCryptoUpdateAccountBuilder()
+                .setAccountIDToUpdate(accountId1)
+                // *** THIS IS THE OVERFLOW WE WANT TO TEST ***
+                // This should result in the entity having a Long.MAX_VALUE or Long.MIN_VALUE expirations
+                // (the results of overflows).
+                .setExpirationTime(Timestamp.newBuilder().setSeconds(seconds))
+                .setDeclineReward(BoolValue.of(true))
+                .setStakedAccountId(AccountID.newBuilder().setAccountNum(1L).build()));
         var transactionBody = getTransactionBody(updateTransaction);
 
         var record = transactionRecordSuccess(transactionBody);
@@ -1144,11 +1135,13 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertEntity(actualAccount));
     }
 
-    private void assertCryptoEntity(CryptoCreateTransactionBody expected, Timestamp consensusTimestamp) {
+    private void assertCryptoEntity(CryptoCreateTransactionBody expected, long expectedBalance,
+                                    Timestamp consensusTimestamp) {
         Entity actualAccount = getTransactionEntity(consensusTimestamp);
         long timestamp = DomainUtils.timestampInNanosMax(consensusTimestamp);
         assertAll(
                 () -> assertEquals(expected.getAutoRenewPeriod().getSeconds(), actualAccount.getAutoRenewPeriod()),
+                () -> assertEquals(expectedBalance, actualAccount.getBalance()),
                 () -> assertEquals(timestamp, actualAccount.getCreatedTimestamp()),
                 () -> assertEquals(false, actualAccount.getDeleted()),
                 () -> assertNull(actualAccount.getExpirationTimestamp()),

@@ -20,6 +20,8 @@ package com.hedera.mirror.web3.evm;
  * ‍
  */
 
+import com.hedera.mirror.web3.repository.TokenRepository;
+
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
@@ -27,6 +29,7 @@ import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 
 import com.hedera.mirror.common.domain.balance.AccountBalance;
+import com.hedera.mirror.web3.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.web3.repository.AccountBalanceRepository;
 import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.services.transaction.store.contracts.EntityAccess;
@@ -36,14 +39,23 @@ import com.hedera.services.transaction.store.contracts.EntityAccess;
 @RequiredArgsConstructor
 public class SimulatedEntityAccess implements EntityAccess {
 
+    private final AccountBalanceFileRepository accountBalanceFileRepository;
     private final AccountBalanceRepository accountBalanceRepository;
     private final ContractRepository contractRepository;
+    private final TokenRepository tokenRepository;
 
     @Override
-    public long getBalance(Address id) {
-        final long idConverted = Long.decode(Bytes.wrap(id.toArray()).toHexString());
-        final var accountBalance = accountBalanceRepository.findByAccountId(idConverted);
-        return accountBalance.map(AccountBalance::getBalance).orElse(0L);
+    public long getBalance(Address address) {
+        final var latestAccountBalanceFile =
+                accountBalanceFileRepository.findLatest();
+        if (latestAccountBalanceFile.isPresent()) {
+            final var latestAccountBalanceConsensusTimestamp = latestAccountBalanceFile.get().getConsensusTimestamp();
+            final var accountBalance =
+                    accountBalanceRepository.findByAddressAndConsensusTimestamp(address.toArray(), latestAccountBalanceConsensusTimestamp);
+            return accountBalance.map(AccountBalance::getBalance).orElse(0L);
+        } else {
+            return 0L;
+        }
     }
 
     @Override
@@ -63,7 +75,7 @@ public class SimulatedEntityAccess implements EntityAccess {
 
     @Override
     public boolean isTokenAccount(Address address) {
-        return false;
+        return tokenRepository.findByAddress(address.toArrayUnsafe()).isPresent();
     }
 
     @Override

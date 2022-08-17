@@ -77,6 +77,11 @@ class HistoricalAccountInfoMigrationTest extends IntegrationTest {
     }
 
     @Test
+    void checksum() {
+        assertThat(historicalAccountInfoMigration.getChecksum()).isEqualTo(3);
+    }
+
+    @Test
     void noExistingEntities() throws Exception {
         historicalAccountInfoMigration.doMigrate();
         assertThat(entityRepository.count()).isEqualTo(ENTITY_COUNT + CONTRACT_COUNT);

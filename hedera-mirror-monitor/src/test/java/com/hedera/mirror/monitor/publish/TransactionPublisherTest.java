@@ -20,14 +20,11 @@ package com.hedera.mirror.monitor.publish;
  * ‍
  */
 
-import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.ACCOUNT_DELETED;
 import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.OK;
 import static com.hedera.hashgraph.sdk.proto.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
-import com.google.common.util.concurrent.Uninterruptibles;
 import io.grpc.Server;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.grpc.stub.StreamObserver;
@@ -35,7 +32,6 @@ import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -49,6 +45,8 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -66,18 +64,17 @@ import com.hedera.hashgraph.sdk.proto.TransactionGetRecordResponse;
 import com.hedera.hashgraph.sdk.proto.TransactionReceipt;
 import com.hedera.hashgraph.sdk.proto.TransactionRecord;
 import com.hedera.hashgraph.sdk.proto.TransactionResponse;
-import com.hedera.mirror.monitor.HederaNetwork;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.NodeProperties;
 import com.hedera.mirror.monitor.OperatorProperties;
 import com.hedera.mirror.monitor.publish.transaction.TransactionType;
-import com.hedera.mirror.monitor.subscribe.rest.RestApiClient;
-import com.hedera.mirror.rest.model.NetworkNode;
-import com.hedera.mirror.rest.model.ServiceEndpoint;
 
 @Log4j2
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class TransactionPublisherTest {
+
+    private static final String SERVER = "test1";
 
     private CryptoServiceStub cryptoServiceStub;
     private MonitorProperties monitorProperties;
@@ -87,23 +84,26 @@ class TransactionPublisherTest {
     private TransactionPublisher transactionPublisher;
 
     @Mock
-    private RestApiClient restApiClient;
+    private NodeSupplier nodeSupplier;
 
     @BeforeEach
     void setup() throws IOException {
         publishScenarioProperties = new PublishScenarioProperties();
         publishScenarioProperties.setName("test");
         publishScenarioProperties.setType(TransactionType.CRYPTO_TRANSFER);
+        var node = new NodeProperties("0.0.3", "in-process:" + SERVER);
         monitorProperties = new MonitorProperties();
-        monitorProperties.setNodes(Set.of(new NodeProperties("0.0.3", "in-process:test")));
+        monitorProperties.setNodes(Set.of(node));
         monitorProperties.getNodeValidation().setEnabled(false);
         OperatorProperties operatorProperties = monitorProperties.getOperator();
         operatorProperties.setAccountId("0.0.100");
         operatorProperties.setPrivateKey(PrivateKey.generateED25519().toString());
         publishProperties = new PublishProperties();
-        transactionPublisher = new TransactionPublisher(monitorProperties, publishProperties, restApiClient);
+        transactionPublisher = new TransactionPublisher(monitorProperties, nodeSupplier, publishProperties);
         cryptoServiceStub = new CryptoServiceStub();
-        server = InProcessServerBuilder.forName("test")
+        when(nodeSupplier.refresh()).thenReturn(Flux.fromIterable(monitorProperties.getNodes()));
+        when(nodeSupplier.get()).thenReturn(node);
+        server = InProcessServerBuilder.forName(SERVER)
                 .addService(cryptoServiceStub)
                 .directExecutor()
                 .build()
@@ -139,50 +139,6 @@ class TransactionPublisherTest {
                 })
                 .expectComplete()
                 .verify(Duration.ofSeconds(1L));
-    }
-
-    @Test
-    void getNodesCustom() {
-        assertThat(transactionPublisher.getNodes()).isEqualTo(monitorProperties.getNodes());
-    }
-
-    @Test
-    void getNodesAddressBook() {
-        monitorProperties.setNodes(Set.of());
-        var serviceEndpoint = new ServiceEndpoint().ipAddressV4("127.0.0.1");
-        var node = new NetworkNode();
-        node.setNodeAccountId("0.0.3");
-        node.addServiceEndpointsItem(serviceEndpoint);
-        when(restApiClient.getNodes()).thenReturn(Flux.just(node));
-        assertThat(transactionPublisher.getNodes())
-                .hasSize(1)
-                .first()
-                .returns(node.getNodeAccountId(), NodeProperties::getAccountId)
-                .returns(serviceEndpoint.getIpAddressV4(), NodeProperties::getHost);
-    }
-
-    @Test
-    void getNodesAddressBookError() {
-        monitorProperties.setNodes(Set.of());
-        when(restApiClient.getNodes()).thenThrow(new RuntimeException());
-        assertThat(transactionPublisher.getNodes()).isEqualTo(monitorProperties.getNetwork().getNodes());
-    }
-
-    @Test
-    void getNodesNetwork() {
-        monitorProperties.setNodes(Set.of());
-        monitorProperties.setRetrieveAddressBook(false);
-        assertThat(transactionPublisher.getNodes()).isEqualTo(monitorProperties.getNetwork().getNodes());
-    }
-
-    @Test
-    void getNodesNotFound() {
-        monitorProperties.setNetwork(HederaNetwork.OTHER);
-        monitorProperties.setNodes(Set.of());
-        when(restApiClient.getNodes()).thenReturn(Flux.empty());
-        assertThatThrownBy(() -> transactionPublisher.getNodes())
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("nodes must not be empty");
     }
 
     @Test
@@ -261,79 +217,6 @@ class TransactionPublisherTest {
 
     @Test
     @Timeout(3)
-    void validationRecovers() {
-        // Initialize publisher internals with first transaction
-        var request = request().build();
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
-        transactionPublisher.publish(request)
-                .as(StepVerifier::create)
-                .expectNextCount(1L)
-                .expectComplete()
-                .verify(Duration.ofSeconds(1L));
-        var scenario = request.getScenario();
-        assertThat(scenario.getCount()).isEqualTo(1);
-        assertThat(scenario.getErrors()).isEmpty();
-
-        // Validate node as down manually
-        NodeProperties nodeProperties = monitorProperties.getNodes().iterator().next();
-        cryptoServiceStub.addQueries(Mono.just(receipt(ACCOUNT_DELETED)));
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
-        assertThat(transactionPublisher.validateNode(nodeProperties)).isFalse();
-
-        request = request().build();
-        transactionPublisher.publish(request)
-                .as(StepVerifier::create)
-                .expectErrorSatisfies(t -> assertThat(t)
-                        .isInstanceOf(PublishException.class)
-                        .hasMessageContaining("No valid nodes available")
-                        .hasCauseInstanceOf(IllegalArgumentException.class))
-                .verify(Duration.ofSeconds(1L));
-        scenario = request.getScenario();
-        assertThat(scenario.getCount()).isZero();
-        assertThat(scenario.getErrors()).containsOnly(Map.entry(IllegalArgumentException.class.getSimpleName(), 1));
-
-        // Node recovers
-        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
-        assertThat(transactionPublisher.validateNode(nodeProperties)).isTrue();
-
-        request = request().build();
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
-        transactionPublisher.publish(request)
-                .as(StepVerifier::create)
-                .expectNextCount(1L)
-                .expectComplete()
-                .verify(Duration.ofSeconds(1L));
-        scenario = request.getScenario();
-        assertThat(scenario.getCount()).isEqualTo(1);
-        assertThat(scenario.getErrors()).isEmpty();
-    }
-
-    @Test
-    @Timeout(3)
-    void validationSucceeds() {
-        monitorProperties.getNodeValidation().setEnabled(true);
-        cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)), Mono.just(response(OK)));
-        transactionPublisher.publish(request().build())
-                .as(StepVerifier::create)
-                .expectNextCount(1L)
-                .expectComplete()
-                .verify(Duration.ofSeconds(1L));
-
-        // Wait for validation thread to succeed
-        Uninterruptibles.sleepUninterruptibly(Duration.ofMillis(500L));
-
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
-        transactionPublisher.publish(request().build())
-                .as(StepVerifier::create)
-                .expectNextCount(1L)
-                .expectComplete()
-                .verify(Duration.ofSeconds(1L));
-    }
-
-    @Test
-    @Timeout(3)
     void publishRetryError() {
         ResponseCodeEnum errorResponseCode = ResponseCodeEnum.PLATFORM_TRANSACTION_NOT_CREATED;
         cryptoServiceStub.addTransactions(Mono.just(response(errorResponseCode)),
@@ -386,34 +269,6 @@ class TransactionPublisherTest {
                         .isInstanceOf(PublishException.class)
                         .hasMessageContaining("Did not observe any item or terminal signal within 100ms")
                         .hasCauseInstanceOf(TimeoutException.class))
-                .verify(Duration.ofSeconds(1L));
-    }
-
-    @Test
-    @Timeout(3)
-    void someValidNodes() {
-        NodeProperties node1 = new NodeProperties("0.0.3", "in-process:test");
-        NodeProperties node2 = new NodeProperties("0.0.4", "invalid:test");
-        monitorProperties.setNodes(Set.of(node1, node2));
-
-        // Initialize publisher internals with first transaction
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
-        PublishRequest publishRequest = request().build();
-        publishRequest.getTransaction().setNodeAccountIds(node1.getAccountIds());
-        transactionPublisher.publish(publishRequest)
-                .as(StepVerifier::create)
-                .expectNextCount(1L)
-                .expectComplete()
-                .verify(Duration.ofSeconds(1L));
-
-        // Validate one of the nodes as down manually
-        assertThat(transactionPublisher.validateNode(node2)).isFalse();
-
-        cryptoServiceStub.addTransactions(Mono.just(response(OK)));
-        transactionPublisher.publish(request().build())
-                .as(StepVerifier::create)
-                .expectNextCount(1L)
-                .expectComplete()
                 .verify(Duration.ofSeconds(1L));
     }
 

@@ -32,7 +32,7 @@ import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @Named
-class ContractDeleteTransactionHandler extends AbstractEntityCrudTransactionHandler<Entity> {
+class ContractDeleteTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
     ContractDeleteTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
                                      RecordParserProperties recordParserProperties) {

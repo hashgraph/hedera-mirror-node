@@ -28,11 +28,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.BytesValue;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenType;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
@@ -62,6 +65,9 @@ import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.ContractStateChangeRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
+import com.hedera.services.stream.proto.ContractBytecode;
+import com.hedera.services.stream.proto.ContractStateChanges;
+import com.hedera.services.stream.proto.StorageChange;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -115,6 +121,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                 .hasSize(1)
                 .first()
                 .returns(transactionBody.getAutoRenewPeriod().getSeconds(), Entity::getAutoRenewPeriod)
+                .returns(0L, Entity::getBalance)
                 .returns(recordItem.getConsensusTimestamp(), Entity::getCreatedTimestamp)
                 .returns(false, Entity::getDeleted)
                 .returns(entityId, Entity::getId)
@@ -272,6 +279,82 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
         assertThat(entityRepository.count()).isZero();
     }
 
+    @Test
+    void migrateContractSidecar() {
+        // given
+        var entity1 = domainBuilder.entity().persist();
+        var entity2 = domainBuilder.entity().persist();
+        domainBuilder.contract().customize(c -> c.id(entity1.getId())).persist();
+        domainBuilder.contract().customize(c -> c.id(entity2.getId()).runtimeBytecode(null)).persist();
+
+        var recordItem = recordItemBuilder.cryptoTransfer().build();
+        var stateChangeRecord1 = TransactionSidecarRecord.newBuilder()
+                .setStateChanges(ContractStateChanges.newBuilder()
+                        .addContractStateChanges(com.hedera.services.stream.proto.ContractStateChange.newBuilder()
+                                .setContractId(ContractID.newBuilder().setContractNum(1001L))
+                                .addStorageChanges(StorageChange.newBuilder()
+                                        .setValueWritten(BytesValue.of(DomainUtils.fromBytes(new byte[] {1, 1})))))
+                        .addContractStateChanges(com.hedera.services.stream.proto.ContractStateChange.newBuilder()
+                                .setContractId(ContractID.newBuilder().setContractNum(1002L))
+                                .addStorageChanges(StorageChange.newBuilder()
+                                        .setValueWritten(BytesValue.of(DomainUtils.fromBytes(new byte[] {2, 2}))))))
+                .build();
+        var stateChangeRecord2 = TransactionSidecarRecord.newBuilder()
+                .setStateChanges(ContractStateChanges.newBuilder()
+                        .addContractStateChanges(com.hedera.services.stream.proto.ContractStateChange.newBuilder()
+                                .setContractId(ContractID.newBuilder().setContractNum(1003L))
+                                .addStorageChanges(StorageChange.newBuilder()
+                                        .setValueWritten(BytesValue.of(DomainUtils.fromBytes(new byte[] {3, 3})))))
+                        .addContractStateChanges(com.hedera.services.stream.proto.ContractStateChange.newBuilder()
+                                .setContractId(ContractID.newBuilder().setContractNum(1004L))
+                                .addStorageChanges(StorageChange.newBuilder()
+                                        .setValueWritten(BytesValue.of(DomainUtils.fromBytes(new byte[] {4, 4}))))))
+                .build();
+        var bytecodeRecord1 = TransactionSidecarRecord.newBuilder()
+                .setMigration(true)
+                .setBytecode(ContractBytecode.newBuilder()
+                        .setContractId(ContractID.newBuilder().setContractNum(entity1.getId()))
+                        .setRuntimeBytecode(ByteString.copyFrom(new byte[] {1})))
+                .build();
+        var bytecodeRecord2 = TransactionSidecarRecord.newBuilder()
+                .setMigration(true)
+                .setBytecode(ContractBytecode.newBuilder()
+                        .setContractId(ContractID.newBuilder().setContractNum(entity2.getId()))
+                        .setRuntimeBytecode(ByteString.copyFrom(new byte[] {2})))
+                .build();
+        var bytecodeRecord3 = TransactionSidecarRecord.newBuilder()
+                .setMigration(false)
+                .setBytecode(ContractBytecode.newBuilder()
+                        .setContractId(ContractID.newBuilder().setContractNum(2003L))
+                        .setRuntimeBytecode(ByteString.copyFrom(new byte[] {3})))
+                .build();
+
+        recordItem.setSidecarRecords(List.of(stateChangeRecord1, stateChangeRecord2, bytecodeRecord1, bytecodeRecord2,
+                bytecodeRecord3));
+
+        // when
+        process(recordItem);
+
+        // then
+        assertContractStateChanges(recordItem);
+        assertContractRuntimeBytecode(recordItem);
+        assertEntityContractType(recordItem);
+    }
+
+    private void assertEntityContractType(RecordItem recordItem) {
+        var entities = entityRepository.findAll().iterator();
+        recordItem.getSidecarRecords()
+                .stream()
+                .filter(TransactionSidecarRecord::getMigration)
+                .map(TransactionSidecarRecord::getBytecode)
+                .forEach(contractBytecode -> {
+                    assertThat(entities).hasNext();
+                    assertThat(entities.next())
+                            .returns(CONTRACT, Entity::getType);
+                });
+        assertThat(entities).isExhausted();
+    }
+
     @SuppressWarnings("deprecation")
     private void assertContractResult(RecordItem recordItem) {
         var functionResult = getFunctionResult(recordItem);
@@ -316,6 +399,21 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                                     c -> assertThat(c.getRecipientAddress()).isNotEmpty());
                 });
         assertThat(contractActions).isExhausted();
+    }
+
+    private void assertContractRuntimeBytecode(RecordItem recordItem) {
+        var contracts = contractRepository.findAll().iterator();
+        recordItem.getSidecarRecords()
+                .stream()
+                .filter(TransactionSidecarRecord::getMigration)
+                .map(TransactionSidecarRecord::getBytecode)
+                .forEach(contractBytecode -> {
+                    assertThat(contracts).hasNext();
+                    assertThat(contracts.next())
+                            .returns(DomainUtils.toBytes(contractBytecode.getRuntimeBytecode()),
+                                    Contract::getRuntimeBytecode);
+                });
+        assertThat(contracts).isExhausted();
     }
 
     private void assertContractLogs(RecordItem recordItem) {

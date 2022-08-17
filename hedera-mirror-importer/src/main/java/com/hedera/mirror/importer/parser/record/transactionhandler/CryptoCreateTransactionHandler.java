@@ -35,7 +35,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.util.Utility;
 
 @Named
-class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandler<Entity> {
+class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
     CryptoCreateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
                                    RecordParserProperties recordParserProperties) {
@@ -76,6 +76,7 @@ class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandle
             entity.setProxyAccountId(EntityId.of(transactionBody.getProxyAccountID()));
         }
 
+        entity.setBalance(0L);
         entity.setMaxAutomaticTokenAssociations(transactionBody.getMaxAutomaticTokenAssociations());
         entity.setMemo(transactionBody.getMemo());
         entity.setReceiverSigRequired(transactionBody.getReceiverSigRequired());
