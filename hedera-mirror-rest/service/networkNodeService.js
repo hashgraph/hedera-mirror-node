@@ -118,8 +118,8 @@ class NetworkNodeService extends BaseService {
   };
 
   getNetworkStake = async () => {
-    const rows = await super.getRows(NetworkNodeService.networkStakeQuery, [], 'getNetworkStake');
-    return new NetworkStake(rows[0]);
+    const row = await super.getSingleRow(NetworkNodeService.networkStakeQuery, [], 'getNetworkStake');
+    return row && new NetworkStake(row);
   };
 }
 
