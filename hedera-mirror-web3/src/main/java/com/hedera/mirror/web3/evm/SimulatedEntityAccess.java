@@ -21,17 +21,14 @@ package com.hedera.mirror.web3.evm;
  */
 
 import javax.inject.Named;
-
-import com.hedera.mirror.web3.repository.ContractRepository;
-
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.bytes.Bytes32;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.web3.repository.AccountBalanceRepository;
+import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.services.transaction.store.contracts.EntityAccess;
 
 //FUTURE WORK to be implemented in separate PR
