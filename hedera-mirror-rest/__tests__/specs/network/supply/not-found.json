@@ -33,9 +33,7 @@
         "id": 100,
         "balance": 1
       }
-    ],
-    "transactions": [],
-    "cryptotransfers": []
+    ]
   },
   "urls": [
     "/api/v1/network/supply?timestamp=0.0001",
