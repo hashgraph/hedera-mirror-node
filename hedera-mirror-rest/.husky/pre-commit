@@ -1,3 +1,9 @@
 #!/bin/sh
 cd hedera-mirror-rest
-npx --no-install pretty-quick --staged
+if [ -x node/npx ]
+then
+  node/npx --no-install pretty-quick --staged
+else
+  npx --no-install pretty-quick --staged
+fi
+
