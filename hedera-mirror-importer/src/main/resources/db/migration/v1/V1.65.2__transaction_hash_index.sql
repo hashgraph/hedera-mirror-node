@@ -1,1 +1,1 @@
-create index if not exists transaction__hash_prefix on transaction (substring(transaction_hash from 1 for 32));
+create index if not exists transaction__hash on transaction using hash (transaction_hash);

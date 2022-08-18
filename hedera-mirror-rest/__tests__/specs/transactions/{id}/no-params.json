@@ -1,11 +1,5 @@
 {
   "description": "Transaction api calls for a specific transaction using transaction id or hash",
-  "extendedDescription": [
-    "The first test is a query using a specific transaction id. The second test suite queries by transaction hash.",
-    "Note the last transaction's hash only differs than the hash in search in the last 4 bytes. The test verifies that",
-    "the rest api only returns the exact matching transaction hash even though the database also returns the last",
-    "transaction since its hash prefix is a match"
-  ],
   "setup": {
     "accounts": [
       {
