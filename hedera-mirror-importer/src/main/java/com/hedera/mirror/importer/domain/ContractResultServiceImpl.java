@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
@@ -76,7 +77,7 @@ public class ContractResultServiceImpl implements ContractResultService {
         var functionResult = transactionRecord.hasContractCreateResult() ?
                 transactionRecord.getContractCreateResult() : transactionRecord.getContractCallResult();
 
-        processSidecarRecords(recordItem);
+        var sidecarFailedInitcode = processSidecarRecords(recordItem);
 
         // handle non create/call transactions
         if (!isContractCreateOrCall(transactionBody) && !isValidContractFunctionResult(functionResult)) {
@@ -90,7 +91,7 @@ public class ContractResultServiceImpl implements ContractResultService {
         // in pre-compile case transaction is not a contract type and entityId will be of a different type
         var contractId = isContractCreateOrCall(transactionBody) ? transaction.getEntityId() :
                 entityIdService.lookup(functionResult.getContractID());
-        processContractResult(recordItem, contractId, functionResult, transactionHandler);
+        processContractResult(recordItem, contractId, functionResult, transactionHandler, sidecarFailedInitcode);
     }
 
     private boolean isValidContractFunctionResult(ContractFunctionResult contractFunctionResult) {
@@ -143,7 +144,8 @@ public class ContractResultServiceImpl implements ContractResultService {
 
     private void processContractResult(RecordItem recordItem, EntityId contractEntityId,
                                        ContractFunctionResult functionResult,
-                                       TransactionHandler transactionHandler) {
+                                       TransactionHandler transactionHandler,
+                                       ByteString sidecarFailedInitcode) {
         // create child contracts regardless of contractResults support
         List<Long> contractIds = getCreatedContractIds(functionResult, recordItem, contractEntityId);
         if (!entityProperties.getPersist().isContractResults()) {
@@ -155,6 +157,9 @@ public class ContractResultServiceImpl implements ContractResultService {
         contractResult.setContractId(contractEntityId);
         contractResult.setPayerAccountId(recordItem.getPayerAccountId());
         transactionHandler.updateContractResult(contractResult, recordItem);
+        if (sidecarFailedInitcode != null && contractResult.getFailedInitcode() == null) {
+            contractResult.setFailedInitcode(DomainUtils.toBytes(sidecarFailedInitcode));
+        }
 
         if (isValidContractFunctionResult(functionResult)) {
             if (!isContractCreateOrCall(recordItem.getTransactionBody())) {
@@ -257,7 +262,8 @@ public class ContractResultServiceImpl implements ContractResultService {
         entityListener.onEntity(entity);
     }
 
-    private void processSidecarRecords(RecordItem recordItem) {
+    private ByteString processSidecarRecords(RecordItem recordItem) {
+        ByteString failedInitcode = null;
         var contractBytecodes = new ArrayList<ContractBytecode>();
         var sidecarRecords = recordItem.getSidecarRecords();
         long consensusTimestamp = recordItem.getConsensusTimestamp();
@@ -273,12 +279,17 @@ public class ContractResultServiceImpl implements ContractResultService {
                 for (int actionIndex = 0; actionIndex < actions.getContractActionsCount(); actionIndex++) {
                     processContractAction(actions.getContractActions(actionIndex), actionIndex, consensusTimestamp);
                 }
-            } else if (sidecarRecord.hasBytecode() && sidecarRecord.getMigration()) {
-                contractBytecodes.add(sidecarRecord.getBytecode());
+            } else if (sidecarRecord.hasBytecode()) {
+                if (sidecarRecord.getMigration()) {
+                    contractBytecodes.add(sidecarRecord.getBytecode());
+                } else if (!recordItem.isSuccessful()) {
+                    failedInitcode = sidecarRecord.getBytecode().getInitcode();
+                }
             }
         }
 
         sidecarContractMigration.migrate(contractBytecodes);
+        return failedInitcode;
     }
 
     /**

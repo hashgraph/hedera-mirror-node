@@ -30,10 +30,10 @@ import {FileDataService, NetworkNodeService} from '../service';
 import * as utils from '../utils';
 import {
   ExchangeRateSetViewModel,
+  FeeScheduleViewModel,
   NetworkNodeViewModel,
   NetworkStakeViewModel,
   NetworkSupplyViewModel,
-  FeeScheduleViewModel,
 } from '../viewmodel';
 
 const defaultUnreleasedSupplyAccounts = config.network.unreleasedSupplyAccounts;
@@ -151,6 +151,42 @@ class NetworkController extends BaseController {
     return {filterQuery, order};
   };
 
+  extractSupplyQuery = (filters) => {
+    const conditions = [];
+    const params = [];
+
+    for (const filter of filters) {
+      if (_.isNil(filter)) {
+        continue;
+      }
+
+      if (filter.key === filterKeys.TIMESTAMP) {
+        if (filter.operator === utils.opsMap.ne) {
+          throw InvalidArgumentError.forParams(`Not equals (ne) operator is not supported for ${filterKeys.TIMESTAMP}`);
+        }
+
+        // to ensure most recent occurrence is found convert eq to lte
+        if (utils.opsMap.eq === filter.operator) {
+          filter.operator = utils.opsMap.lte;
+        }
+
+        this.updateConditionsAndParamsWithInValues(
+          filter,
+          null,
+          params,
+          conditions,
+          'abf.consensus_timestamp',
+          params.length + 1
+        );
+      }
+    }
+
+    return {
+      params,
+      conditions,
+    };
+  };
+
   /**
    * Handler function for /network/exchangerate API
    * @param {Request} req HTTP request object
@@ -211,6 +247,10 @@ class NetworkController extends BaseController {
    */
   getNetworkStake = async (_req, res) => {
     const networkStake = await NetworkNodeService.getNetworkStake();
+    if (networkStake === null) {
+      throw new NotFoundError();
+    }
+
     res.locals[responseDataLabel] = new NetworkStakeViewModel(networkStake);
   };
 
@@ -221,34 +261,15 @@ class NetworkController extends BaseController {
    * @return {Promise<void>}
    */
   getSupply = async (req, res) => {
-    utils.validateReq(req);
-    const [tsQuery, tsParams] = utils.parseTimestampQueryParam(req.query, 'abf.consensus_timestamp', {
-      [utils.opsMap.eq]: utils.opsMap.lte,
-    });
+    const filters = utils.buildAndValidateFilters(req.query);
+    const {conditions, params} = this.extractSupplyQuery(filters);
+    const networkSupply = await NetworkNodeService.getSupply(conditions, params);
 
-    const sqlQuery = `
-      select sum(balance) as unreleased_supply, max(consensus_timestamp) as consensus_timestamp
-      from account_balance
-      where consensus_timestamp = (
-        select max(consensus_timestamp)
-        from account_balance_file abf
-        where ${tsQuery !== '' ? tsQuery : '1=1'}
-      )
-        and account_id in (${NetworkController.unreleasedSupplyAccounts});`;
-
-    const query = utils.convertMySqlStyleQueryToPostgres(sqlQuery);
-
-    if (logger.isTraceEnabled()) {
-      logger.trace(`getSupply query: ${query} ${utils.JSONStringify(tsParams)}`);
+    if (networkSupply === null || !networkSupply.consensus_timestamp) {
+      throw new NotFoundError();
     }
 
-    const {rows} = await pool.queryQuietly(query, tsParams);
-    if (rows.length !== 1 || !rows[0].consensus_timestamp) {
-      throw new NotFoundError('Not found');
-    }
-
-    res.locals[responseDataLabel] = new NetworkSupplyViewModel(rows[0], NetworkController.totalSupply);
-    logger.debug(`getSupply returning ${rows.length} entries`);
+    res.locals[responseDataLabel] = new NetworkSupplyViewModel(networkSupply);
   };
 
   /**

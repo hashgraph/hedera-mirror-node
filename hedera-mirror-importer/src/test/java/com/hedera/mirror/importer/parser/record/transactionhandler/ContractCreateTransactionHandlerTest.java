@@ -164,6 +164,26 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         assertThat(contractResult)
                 .returns(transaction.getInitialBalance(), ContractResult::getAmount)
                 .returns(transaction.getGas(), ContractResult::getGasLimit)
+                .returns(null, ContractResult::getFailedInitcode)
+                .returns(DomainUtils.toBytes(transaction.getConstructorParameters()),
+                        ContractResult::getFunctionParameters);
+    }
+
+    @Test
+    void updateContractResultFailedCreateTransaction() {
+        var contractResult = new ContractResult();
+        var recordItem = recordItemBuilder.contractCreate()
+                .transactionBody(t -> t.setInitcode(ByteString.copyFrom(new byte[] {9, 8, 7})))
+                .record(TransactionRecord.Builder::clearContractCreateResult)
+                .receipt(r -> r.clearContractID().setStatus(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION))
+                .build();
+        transactionHandler.updateContractResult(contractResult, recordItem);
+
+        var transaction = recordItem.getTransactionBody().getContractCreateInstance();
+        assertThat(contractResult)
+                .returns(transaction.getInitialBalance(), ContractResult::getAmount)
+                .returns(transaction.getGas(), ContractResult::getGasLimit)
+                .returns(DomainUtils.toBytes(transaction.getInitcode()), ContractResult::getFailedInitcode)
                 .returns(DomainUtils.toBytes(transaction.getConstructorParameters()),
                         ContractResult::getFunctionParameters);
     }
@@ -177,6 +197,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         assertThat(contractResult)
                 .returns(null, ContractResult::getAmount)
                 .returns(null, ContractResult::getGasLimit)
+                .returns(null, ContractResult::getFailedInitcode)
                 .returns(null, ContractResult::getFunctionParameters);
     }
 

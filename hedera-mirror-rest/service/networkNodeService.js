@@ -19,6 +19,7 @@
  */
 
 import BaseService from './baseService';
+import config from '../config.js';
 import {
   AddressBook,
   AddressBookEntry,
@@ -28,11 +29,16 @@ import {
   NodeStake,
 } from '../model';
 import {OrderSpec} from '../sql';
+import entityId from '../entityId.js';
 
 /**
  * Network node business model
  */
 class NetworkNodeService extends BaseService {
+  static unreleasedSupplyAccounts = config.network.unreleasedSupplyAccounts.map((a) =>
+    entityId.parse(a).getEncodedId()
+  );
+
   // add node filter
   static networkNodesBaseQuery = `with ${AddressBook.tableAlias} as (
       select ${AddressBook.START_CONSENSUS_TIMESTAMP}, ${AddressBook.END_CONSENSUS_TIMESTAMP}, ${AddressBook.FILE_ID}
@@ -97,6 +103,24 @@ class NetworkNodeService extends BaseService {
       where ${NetworkStake.CONSENSUS_TIMESTAMP} =
             (select max(${NetworkStake.CONSENSUS_TIMESTAMP}) from ${NetworkStake.tableName})`;
 
+  static networkSupplyQuery = `
+    select coalesce(sum(balance), 0) as unreleased_supply,
+           (
+             select max(consensus_end)
+             from record_file
+           )                         as consensus_timestamp
+    from entity
+    where id in (${NetworkNodeService.unreleasedSupplyAccounts})`;
+
+  static networkSupplyByTimestampQuery = `
+    select coalesce(sum(balance), 0) as unreleased_supply, max(consensus_timestamp) as consensus_timestamp
+    from account_balance
+    where account_id in (${NetworkNodeService.unreleasedSupplyAccounts})
+      and consensus_timestamp = (
+      select max(consensus_timestamp)
+      from account_balance_file abf
+      where `;
+
   getNetworkNodes = async (whereConditions, whereParams, order, limit) => {
     const [query, params] = this.getNetworkNodesWithFiltersQuery(whereConditions, whereParams, order, limit);
 
@@ -118,8 +142,18 @@ class NetworkNodeService extends BaseService {
   };
 
   getNetworkStake = async () => {
-    const rows = await super.getRows(NetworkNodeService.networkStakeQuery, [], 'getNetworkStake');
-    return new NetworkStake(rows[0]);
+    const row = await super.getSingleRow(NetworkNodeService.networkStakeQuery, [], 'getNetworkStake');
+    return row && new NetworkStake(row);
+  };
+
+  getSupply = async (conditions, params) => {
+    let query = NetworkNodeService.networkSupplyQuery;
+
+    if (conditions.length > 0) {
+      query = `${NetworkNodeService.networkSupplyByTimestampQuery} ${conditions.join(' and ')})`;
+    }
+
+    return await super.getSingleRow(query, params, 'getSupply');
   };
 }
 

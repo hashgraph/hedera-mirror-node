@@ -405,6 +405,7 @@ const entityDefaults = {
   alias: null,
   auto_renew_account_id: null,
   auto_renew_period: null,
+  balance: null,
   created_timestamp: null,
   decline_reward: false,
   deleted: false,
@@ -844,6 +845,7 @@ const addContractResult = async (contractResultInput) => {
     'contract_id',
     'created_contract_ids',
     'error_message',
+    'failed_initcode',
     'function_parameters',
     'function_result',
     'gas_limit',
@@ -860,6 +862,7 @@ const addContractResult = async (contractResultInput) => {
     contract_id: 0,
     created_contract_ids: [],
     error_message: '',
+    failed_initcode: null,
     function_parameters: Buffer.from([1, 1, 2, 2, 3, 3]),
     function_result: null,
     gas_limit: 1000,
@@ -872,6 +875,10 @@ const addContractResult = async (contractResultInput) => {
     contractResultInput.bloom != null ? Buffer.from(contractResultInput.bloom) : contractResult.bloom;
   contractResult.call_result =
     contractResultInput.call_result != null ? Buffer.from(contractResultInput.call_result) : contractResult.call_result;
+  contractResult.failed_initcode =
+    contractResultInput.failed_initcode != null
+      ? Buffer.from(contractResultInput.failed_initcode)
+      : contractResult.failed_initcode;
   contractResult.function_parameters =
     contractResultInput.function_parameters != null
       ? Buffer.from(contractResultInput.function_parameters)

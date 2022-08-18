@@ -25,18 +25,23 @@ import static com.hedera.hashgraph.sdk.Status.SUCCESS;
 import com.google.common.annotations.VisibleForTesting;
 import java.security.SecureRandom;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 import javax.inject.Named;
+import lombok.AccessLevel;
 import lombok.CustomLog;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import reactor.util.retry.Retry;
 
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Client;
@@ -59,21 +64,30 @@ public class NodeSupplier {
     private final CopyOnWriteArrayList<NodeProperties> nodes = new CopyOnWriteArrayList<>();
     private final SecureRandom secureRandom = new SecureRandom();
 
+    @Getter(lazy = true, value = AccessLevel.PRIVATE)
+    private final Client validationClient = toClient(Map.of());
+
     @PostConstruct
     public void init() {
         var validationProperties = monitorProperties.getNodeValidation();
         int parallelism = validationProperties.getMaxThreads();
+        long retryBackoff = validationProperties.getRetryBackoff().toMillis();
 
         var scheduler = Schedulers.newParallel("validator", parallelism + 1);
         Flux.interval(Duration.ZERO, validationProperties.getFrequency(), scheduler)
                 .flatMap(i -> refresh()
+                        .collectList()
+                        .flatMapIterable(this::updateValidationClient)
                         .parallel(parallelism)
                         .runOn(scheduler)
                         .map(this::validateNode)
                         .sequential()
                         .collectList()
                         .doOnNext(valid -> log.info("{} of {} nodes are functional",
-                                valid.stream().filter(v -> v).count(), valid.size())))
+                                valid.stream().filter(v -> v).count(), valid.size()))
+                        .repeatWhen(retry -> retry.filter(l -> nodes.isEmpty())
+                                .doOnNext(delay -> log.info("Retrying in {} ms", retryBackoff))
+                                .flatMap(delay -> Mono.delay(Duration.ofMillis(delay)))))
                 .doOnSubscribe(s -> log.info("Starting node validation"))
                 .doOnError(t -> log.error("Exception validating nodes: ", t))
                 .onErrorResume(t -> Mono.empty())
@@ -89,11 +103,18 @@ public class NodeSupplier {
         return nodes.get(nodeIndex);
     }
 
-    public Flux<NodeProperties> refresh() {
-        log.info("Refreshing node list");
+    public synchronized Flux<NodeProperties> refresh() {
+        Retry retrySpec = Retry.backoff(Long.MAX_VALUE, Duration.ofSeconds(1L))
+                .maxBackoff(Duration.ofSeconds(8L))
+                .scheduler(Schedulers.newSingle("nodes"))
+                .doBeforeRetry(r -> log.warn("Retry attempt #{} after failure: {}",
+                        r.totalRetries() + 1, r.failure().getMessage()));
+
         return Flux.fromIterable(monitorProperties.getNodes())
+                .doOnSubscribe(s -> log.info("Refreshing node list"))
                 .switchIfEmpty(Flux.defer(this::getAddressBook))
                 .switchIfEmpty(Flux.fromIterable(monitorProperties.getNetwork().getNodes()))
+                .retryWhen(retrySpec)
                 .switchIfEmpty(Flux.error(new IllegalArgumentException("Nodes must not be empty")));
     }
 
@@ -108,9 +129,7 @@ public class NodeSupplier {
                 .filter(n -> !CollectionUtils.isEmpty(n.getServiceEndpoints()))
                 .map(n -> new NodeProperties(n.getNodeAccountId(), n.getServiceEndpoints().get(0).getIpAddressV4()))
                 .doOnNext(n -> count.incrementAndGet())
-                .doOnComplete(() -> log.info("Retrieved {} nodes from address book", count))
-                .doOnError(t -> log.warn("Unable to retrieve address book: {}", t.getMessage()))
-                .onErrorResume(t -> Flux.empty());
+                .doOnComplete(() -> log.info("Retrieved {} nodes from address book", count));
     }
 
     private Client toClient(Map<String, AccountId> nodes) {
@@ -127,6 +146,20 @@ public class NodeSupplier {
         return client;
     }
 
+    // Temporarily workaround https://github.com/hashgraph/hedera-sdk-java/issues/1084
+    Collection<NodeProperties> updateValidationClient(Collection<NodeProperties> nodes) {
+        try {
+            var client = getValidationClient();
+            var nodeMap = nodes.stream()
+                    .collect(Collectors.toMap(NodeProperties::getEndpoint,
+                            p -> AccountId.fromString(p.getAccountId())));
+            client.setNetwork(nodeMap);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        return nodes;
+    }
+
     @VisibleForTesting
     boolean validateNode(NodeProperties node) {
         if (!monitorProperties.getNodeValidation().isEnabled()) {
@@ -136,10 +169,11 @@ public class NodeSupplier {
         }
 
         log.info("Validating node {}", node);
+        var client = getValidationClient();
         Hbar hbar = Hbar.fromTinybars(1L);
         AccountId nodeAccountId = AccountId.fromString(node.getAccountId());
 
-        try (Client client = toClient(Map.of(node.getEndpoint(), nodeAccountId))) {
+        try {
             Status receiptStatus = new TransferTransaction()
                     .addHbarTransfer(nodeAccountId, hbar)
                     .addHbarTransfer(client.getOperatorAccountId(), hbar.negated())
