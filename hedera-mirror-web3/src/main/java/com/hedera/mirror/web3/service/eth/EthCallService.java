@@ -58,7 +58,7 @@ public class EthCallService implements ApiContractEthService<TxnCallBody, String
         final var senderEvmAddress = Bytes.fromHexString(sender).toArray();
         final var receiverAddress = ethCallParams.getTo() != null ? Address.wrap(Bytes.fromHexString(ethCallParams.getTo())) : Address.ZERO;
         final var gasLimit = Integer.decode(ethCallParams.getGas());
-        final var value = Long.decode(ethCallParams.getValue());
+        final var value = ethCallParams.getValue() != null ? Long.decode(ethCallParams.getValue()) : Long.decode("0x00");
         final var payload = Bytes.fromHexString(ethCallParams.getData());
 
         final var senderEntity = entityRepository.findAccountByAddress(senderEvmAddress).orElse(null);
