@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.SignatureMap;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
@@ -36,6 +37,8 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.binary.Hex;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.data.util.Version;
 
 import com.hedera.mirror.common.exception.ProtobufException;
@@ -73,6 +76,43 @@ class RecordItemTest {
             .setReceipt(TransactionReceipt.newBuilder().setStatusValue(22).build())
             .setMemo("memo")
             .build();
+
+    @CsvSource({
+            ", FEE_SCHEDULE_FILE_PART_UPLOADED, true",
+            ", SUCCESS, true",
+            ", SUCCESS_BUT_MISSING_EXPECTED_OPERATION, true",
+            "FEE_SCHEDULE_FILE_PART_UPLOADED, FEE_SCHEDULE_FILE_PART_UPLOADED, true",
+            "SUCCESS, SUCCESS, true",
+            "SUCCESS_BUT_MISSING_EXPECTED_OPERATION, SUCCESS_BUT_MISSING_EXPECTED_OPERATION, true",
+            "INVALID_TRANSACTION, FEE_SCHEDULE_FILE_PART_UPLOADED, false",
+            "INVALID_TRANSACTION, SUCCESS, false",
+            "INVALID_TRANSACTION, SUCCESS_BUT_MISSING_EXPECTED_OPERATION, false",
+            "INVALID_TRANSACTION, INVALID_TRANSACTION, false",
+            ", INVALID_TRANSACTION, false"
+    })
+    @ParameterizedTest
+    void isSuccessful(ResponseCodeEnum parentStatus, ResponseCodeEnum childStatus, boolean expected) {
+        RecordItem parent = null;
+        if (parentStatus != null) {
+            var parentRecord = TRANSACTION_RECORD.toBuilder();
+            parentRecord.getReceiptBuilder().setStatus(parentStatus);
+            parent = RecordItem.builder()
+                    .hapiVersion(DEFAULT_HAPI_VERSION)
+                    .record(parentRecord.build())
+                    .transaction(Transaction.newBuilder().build())
+                    .build();
+        }
+
+        var childRecord = TRANSACTION_RECORD.toBuilder();
+        childRecord.getReceiptBuilder().setStatus(childStatus);
+        RecordItem recordItem = RecordItem.builder()
+                .hapiVersion(DEFAULT_HAPI_VERSION)
+                .parent(parent)
+                .record(childRecord.build())
+                .transaction(Transaction.newBuilder().build())
+                .build();
+        assertThat(recordItem.isSuccessful()).isEqualTo(expected);
+    }
 
     @Test
     void testBadTransactionBytesThrowException() {
