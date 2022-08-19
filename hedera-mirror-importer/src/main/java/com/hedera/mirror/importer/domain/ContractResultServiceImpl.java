@@ -26,7 +26,9 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import javax.inject.Named;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -39,6 +41,7 @@ import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
@@ -91,7 +94,8 @@ public class ContractResultServiceImpl implements ContractResultService {
         // in pre-compile case transaction is not a contract type and entityId will be of a different type
         var contractId = isContractCreateOrCall(transactionBody) ? transaction.getEntityId() :
                 entityIdService.lookup(functionResult.getContractID());
-        processContractResult(recordItem, contractId, functionResult, transactionHandler, sidecarFailedInitcode);
+        processContractResult(recordItem, contractId, functionResult, transaction, transactionHandler,
+                sidecarFailedInitcode);
     }
 
     private boolean isValidContractFunctionResult(ContractFunctionResult contractFunctionResult) {
@@ -143,7 +147,7 @@ public class ContractResultServiceImpl implements ContractResultService {
     }
 
     private void processContractResult(RecordItem recordItem, EntityId contractEntityId,
-                                       ContractFunctionResult functionResult,
+                                       ContractFunctionResult functionResult, Transaction transaction,
                                        TransactionHandler transactionHandler,
                                        ByteString sidecarFailedInitcode) {
         // create child contracts regardless of contractResults support
@@ -152,11 +156,20 @@ public class ContractResultServiceImpl implements ContractResultService {
             return;
         }
 
+        // Normalize the two distinct hashes into one 32 byte hash
+        var transactionHash = Optional.ofNullable(recordItem.getEthereumTransaction())
+                .map(EthereumTransaction::getHash)
+                .orElseGet(() -> Arrays.copyOfRange(transaction.getTransactionHash(), 0, 32));
+
         ContractResult contractResult = new ContractResult();
         contractResult.setConsensusTimestamp(recordItem.getConsensusTimestamp());
         contractResult.setContractId(contractEntityId);
         contractResult.setPayerAccountId(recordItem.getPayerAccountId());
+        contractResult.setTransactionHash(transactionHash);
+        contractResult.setTransactionIndex(transaction.getIndex());
+        contractResult.setTransactionResult(transaction.getResult());
         transactionHandler.updateContractResult(contractResult, recordItem);
+
         if (sidecarFailedInitcode != null && contractResult.getFailedInitcode() == null) {
             contractResult.setFailedInitcode(DomainUtils.toBytes(sidecarFailedInitcode));
         }

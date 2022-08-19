@@ -82,6 +82,10 @@ public class RecordItem implements StreamItem {
     private final int transactionType = getTransactionType(getTransactionBody());
 
     // Mutable fields
+    @NonFinal
+    @Setter
+    private EthereumTransaction ethereumTransaction;
+
     @Builder.Default
     @NonFinal
     @Setter
