@@ -145,8 +145,8 @@ github.com/cockroachdb/apd v1.1.0/go.mod h1:8Sl8LxpKi29FqWXR16WEFZRNSz3SoPzUzeMe
 github.com/cockroachdb/datadriven v0.0.0-20190809214429-80d97fb3cbaa/go.mod h1:zn76sxSg3SzpJ0PPJaLDCu+Bu0Lg3sKTORVIj19EIF8=
 github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd h1:qMd81Ts1T2OTKmB4acZcyKaMtRnY5Y44NuXGX2GFJ1w=
 github.com/codahale/hdrhistogram v0.0.0-20161010025455-3a0bb77429bd/go.mod h1:sE/e/2PUdi/liOCUjSTXgM1o87ZssimdTWN964YiIeI=
-github.com/coinbase/rosetta-sdk-go v0.7.10 h1:m5Prrqg9CD1GFZm0tu8z3LEDF/BY5RKUSkODZRpAkEc=
-github.com/coinbase/rosetta-sdk-go v0.7.10/go.mod h1:/glajndJEMrp+D7cO2PJZWKeclK8mDyzSCokCMc6Ftc=
+github.com/coinbase/rosetta-sdk-go v0.7.11 h1:T7camDGstlX2ENVE0QHR1AVu3asSXED0vg1xDaF6bYE=
+github.com/coinbase/rosetta-sdk-go v0.7.11/go.mod h1:HLTqSTSnOGLWHGTxoUJQO2TLuKkas1B9i/7ByerK6lM=
 github.com/consensys/bavard v0.1.8-0.20210406032232-f3452dc9b572/go.mod h1:Bpd0/3mZuaj6Sj+PqrmIquiOKy397AKGThQPaGzNXAQ=
 github.com/consensys/gnark-crypto v0.4.1-0.20210426202927-39ac3d4b3f1f/go.mod h1:815PAHg3wvysy0SyIqanF8gZ0Y1wjk/hrDHD/iT88+Q=
 github.com/containerd/console v1.0.3/go.mod h1:7LqA/THxQ86k76b8c/EMSiaJ3h1eZkMkXar0TQ1gf3U=

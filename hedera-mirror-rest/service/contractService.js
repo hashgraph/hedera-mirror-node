@@ -71,6 +71,7 @@ class ContractService extends BaseService {
                                         ${ContractResult.CONTRACT_ID},
                                         ${ContractResult.CREATED_CONTRACT_IDS},
                                         ${ContractResult.ERROR_MESSAGE},
+                                        ${ContractResult.FAILED_INITCODE},
                                         ${ContractResult.FUNCTION_PARAMETERS},
                                         ${ContractResult.GAS_LIMIT},
                                         ${ContractResult.GAS_USED},

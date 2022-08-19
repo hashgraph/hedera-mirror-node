@@ -95,6 +95,7 @@ class EthereumTransactionHandler implements TransactionHandler {
 
         entityListener.onEthereumTransaction(ethereumTransaction);
         updateAccountNonce(recordItem, ethereumTransaction);
+        recordItem.setEthereumTransaction(ethereumTransaction);
     }
 
     private void updateAccountNonce(RecordItem recordItem, EthereumTransaction ethereumTransaction) {

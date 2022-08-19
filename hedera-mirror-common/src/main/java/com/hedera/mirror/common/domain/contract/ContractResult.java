@@ -66,6 +66,9 @@ public class ContractResult implements Persistable<Long> {
     private String errorMessage;
 
     @ToString.Exclude
+    private byte[] failedInitcode;
+
+    @ToString.Exclude
     private byte[] functionParameters;
 
     private byte[] functionResult; // Temporary field until we can confirm the migration captured everything
@@ -79,6 +82,12 @@ public class ContractResult implements Persistable<Long> {
 
     @Convert(converter = AccountIdConverter.class)
     private EntityId senderId;
+
+    private byte[] transactionHash;
+
+    private Integer transactionIndex;
+
+    private Integer transactionResult;
 
     @JsonIgnore
     @Override

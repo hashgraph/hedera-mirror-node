@@ -33,12 +33,15 @@ import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenType;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.util.Version;
@@ -54,6 +57,7 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
@@ -83,6 +87,8 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     private final RecordItemBuilder recordItemBuilder;
     private final RecordStreamFileListener recordStreamFileListener;
     private final TransactionTemplate transactionTemplate;
+
+    private Transaction transaction;
 
     @Test
     void processContractCall() {
@@ -133,11 +139,30 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
     @Test
     void processContractCreateNoChildren() {
-        var recordItem = recordItemBuilder.contractCreate().hapiVersion(new Version(0, 24, 0)).build();
+        var recordItem = recordItemBuilder.contractCreate()
+                .recordItem(r -> r.hapiVersion(new Version(0, 24, 0)))
+                .build();
 
         process(recordItem);
 
         assertContractResult(recordItem);
+        assertContractLogs(recordItem);
+        assertContractActions(recordItem);
+        assertContractStateChanges(recordItem);
+        assertThat(contractRepository.count()).isZero();
+        assertThat(entityRepository.count()).isZero();
+    }
+
+    @Test
+    void processEthereumTransaction() {
+        var ethereumTransaction = domainBuilder.ethereumTransaction(true).get();
+        var recordItem = recordItemBuilder.ethereumTransaction()
+                .recordItem(r -> r.ethereumTransaction(ethereumTransaction))
+                .build();
+
+        process(recordItem);
+
+        assertContractResult(recordItem, true);
         assertContractLogs(recordItem);
         assertContractActions(recordItem);
         assertContractStateChanges(recordItem);
@@ -234,7 +259,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
     @Test
     void processNoSidecars() {
-        RecordItem recordItem = recordItemBuilder.contractCreate().sidecarRecords(b -> b.clear()).build();
+        RecordItem recordItem = recordItemBuilder.contractCreate().sidecarRecords(List::clear).build();
 
         process(recordItem);
 
@@ -248,7 +273,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     @Test
     void processContractCallFailure() {
         RecordItem recordItem = recordItemBuilder.contractCall()
-                .record(x -> x.clearContractCallResult())
+                .record(TransactionRecord.Builder::clearContractCallResult)
                 .receipt(r -> r.clearContractID().setStatus(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION))
                 .build();
 
@@ -265,7 +290,25 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     @Test
     void processContractCreateFailure() {
         RecordItem recordItem = recordItemBuilder.contractCreate()
-                .record(x -> x.clearContractCreateResult())
+                .transactionBody(t -> t.setInitcode(ByteString.copyFrom(new byte[] {9, 8, 7})))
+                .record(TransactionRecord.Builder::clearContractCreateResult)
+                .receipt(r -> r.clearContractID().setStatus(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION))
+                .build();
+
+        process(recordItem);
+
+        assertContractResult(recordItem);
+        assertContractLogs(recordItem);
+        assertContractActions(recordItem);
+        assertContractStateChanges(recordItem);
+        assertThat(contractRepository.count()).isZero();
+        assertThat(entityRepository.count()).isZero();
+    }
+
+    @Test
+    void processSidecarContractCreateFailure() {
+        RecordItem recordItem = recordItemBuilder.contractCreate()
+                .record(TransactionRecord.Builder::clearContractCreateResult)
                 .receipt(r -> r.clearContractID().setStatus(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION))
                 .build();
 
@@ -357,11 +400,19 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
     @SuppressWarnings("deprecation")
     private void assertContractResult(RecordItem recordItem) {
+        assertContractResult(recordItem, false);
+    }
+
+    private void assertContractResult(RecordItem recordItem, boolean ethereum) {
         var functionResult = getFunctionResult(recordItem);
         var createdIds = functionResult.getCreatedContractIDsList()
                 .stream()
                 .map(x -> EntityId.of(x).getId())
                 .collect(Collectors.toList());
+        var failedInitcode = getFailedInitcode(recordItem);
+        var hash = ethereum ? recordItem.getEthereumTransaction().getHash() :
+                Arrays.copyOfRange(transaction.getTransactionHash(), 0, 32);
+
         assertThat(contractResultRepository.findAll())
                 .hasSize(1)
                 .first()
@@ -371,7 +422,13 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                 .returns(toBytes(functionResult.getContractCallResult()), ContractResult::getCallResult)
                 .returns(createdIds, ContractResult::getCreatedContractIds)
                 .returns(parseContractResultStrings(functionResult.getErrorMessage()), ContractResult::getErrorMessage)
-                .returns(parseContractResultLongs(functionResult.getGasUsed()), ContractResult::getGasUsed);
+                .returns(parseContractResultLongs(functionResult.getGasUsed()), ContractResult::getGasUsed)
+                .returns(toBytes(failedInitcode), ContractResult::getFailedInitcode)
+                .returns(transaction.getIndex(), ContractResult::getTransactionIndex)
+                .returns(transaction.getResult(), ContractResult::getTransactionResult)
+                .extracting(ContractResult::getTransactionHash, InstanceOfAssertFactories.BYTE_ARRAY)
+                .hasSize(32)
+                .isEqualTo(hash);
     }
 
     private void assertContractActions(RecordItem recordItem) {
@@ -477,7 +534,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
     protected void process(RecordItem recordItem) {
         var entityId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
-        var transaction = domainBuilder.transaction()
+        transaction = domainBuilder.transaction()
                 .customize(t -> t.entityId(entityId).type(recordItem.getTransactionType()))
                 .get();
 
@@ -496,6 +553,24 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
             // commit, close connection
             recordStreamFileListener.onEnd(recordFile);
         });
+    }
+
+    private ByteString getFailedInitcode(RecordItem recordItem) {
+        if (recordItem.isSuccessful()) {
+            return ByteString.EMPTY;
+        }
+
+        var failedInitcode = recordItem.getTransactionBody().getContractCreateInstance().getInitcode();
+        if (failedInitcode.isEmpty()) {
+            failedInitcode = recordItem.getSidecarRecords()
+                    .stream()
+                    .filter(TransactionSidecarRecord::hasBytecode)
+                    .map(s -> s.getBytecode().getInitcode())
+                    .findFirst()
+                    .orElse(ByteString.EMPTY);
+        }
+
+        return failedInitcode;
     }
 
     private ContractFunctionResult getFunctionResult(RecordItem recordItem) {

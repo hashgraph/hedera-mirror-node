@@ -161,7 +161,7 @@ const validateOrder = function (accounts, order) {
 const singletests = {
   accountid_lowerlimit: {
     urlparam: 'account.id=gte:0.0.1111',
-    checks: [{field: 'account_id', operator: '>=', value: 1111}],
+    checks: [{field: 'id', operator: '>=', value: 1111}],
     checkFunctions: [
       {func: validateAccNumRange, args: [1111, Number.MAX_SAFE_INTEGER]},
       {func: validateFields, args: []},
@@ -169,7 +169,7 @@ const singletests = {
   },
   accountid_higherlimit: {
     urlparam: 'account.id=lt:0.0.2222',
-    checks: [{field: 'account_id', operator: '<', value: 2222}],
+    checks: [{field: 'id', operator: '<', value: 2222}],
     checkFunctions: [
       {func: validateAccNumRange, args: [0, 2222]},
       {func: validateFields, args: []},
@@ -177,7 +177,7 @@ const singletests = {
   },
   accountid_equal: {
     urlparam: 'account.id=0.0.3333',
-    checks: [{field: 'account_id', operator: 'in', value: 3333}],
+    checks: [{field: 'id', operator: 'in', value: 3333}],
     checkFunctions: [
       {func: validateAccNumInArray, args: [3333]},
       {func: validateFields, args: []},
@@ -186,8 +186,8 @@ const singletests = {
   accountid_multiple: {
     urlparam: 'account.id=0.0.3333&account.id=0.0.3334',
     checks: [
-      {field: 'account_id', operator: 'in', value: '3333'},
-      {field: 'account_id', operator: 'in', value: '3334'},
+      {field: 'id', operator: 'in', value: '3333'},
+      {field: 'id', operator: 'in', value: '3334'},
     ],
     checkFunctions: [
       {func: validateAccNumInArray, args: [3333, 3334]},
@@ -335,10 +335,10 @@ describe('Accounts tests', () => {
 
 describe('processRow', () => {
   const inputAccount = {
-    account_balance: 123456789,
     alias: base32.decode('WWDOGNX3TXHD2'),
     auto_renew_period: 7890000,
-    consensus_timestamp: '9876500123456789',
+    balance: 123456789,
+    consensus_timestamp: 9876500123456789n,
     decline_reward: false,
     ethereum_nonce: 1,
     evm_address: Buffer.from('ac384c53f03855fa1b3616052f8ba32c6c2a2fec', 'hex'),
@@ -411,7 +411,7 @@ describe('processRow', () => {
   test('undefined balance', () => {
     const inputBalanceUndefined = {
       ...inputAccount,
-      account_balance: undefined,
+      balance: undefined,
       consensus_timestamp: undefined,
       token_balances: undefined,
     };
@@ -425,7 +425,7 @@ describe('processRow', () => {
   test('null balance', () => {
     const inputNullBalance = {
       ...inputAccount,
-      account_balance: null,
+      balance: null,
       consensus_timestamp: null,
       token_balances: null,
     };

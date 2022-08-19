@@ -41,6 +41,7 @@ class ContractResult {
   static CONTRACT_ID = 'contract_id';
   static CREATED_CONTRACT_IDS = 'created_contract_ids';
   static ERROR_MESSAGE = 'error_message';
+  static FAILED_INITCODE = 'failed_initcode';
   static FUNCTION_PARAMETERS = 'function_parameters';
   static FUNCTION_RESULT = 'function_result';
   static GAS_LIMIT = 'gas_limit';

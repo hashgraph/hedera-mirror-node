@@ -131,7 +131,10 @@ class PublishMetricsTest {
 
         clearLog();
         publishMetrics.status();
-        assertThat(logOutput).asString().isEmpty();
+        assertThat(logOutput)
+                .asString()
+                .hasLineCount(1)
+                .contains("No publishers");
     }
 
     @Test
@@ -177,7 +180,10 @@ class PublishMetricsTest {
 
         clearLog();
         publishMetrics.status();
-        assertThat(logOutput).asString().isEmpty();
+        assertThat(logOutput)
+                .asString()
+                .hasLineCount(1)
+                .contains("No publishers");
     }
 
     void onError(Throwable throwable, String status) {

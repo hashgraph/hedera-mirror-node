@@ -223,7 +223,9 @@ describe('API specification tests', () => {
   });
 
   const getSpecs = () => {
-    const specPath = path.join(getModuleDirname(import.meta), 'specs');
+    const subSpecPath =
+      !process.env.CI && process.env.INTEGRATION_TEST_SUB_SPEC_PATH ? process.env.INTEGRATION_TEST_SUB_SPEC_PATH : '';
+    const specPath = path.join(getModuleDirname(import.meta), 'specs', subSpecPath);
     const specMap = new Map();
 
     walk(specPath)
