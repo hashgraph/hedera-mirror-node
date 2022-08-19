@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '0.60.0'
+      version: '0.63.0-rc5'
   dependsOn:
     - name: mirror
       namespace: common
@@ -21,14 +21,12 @@ spec:
     crds: CreateReplace
   interval: 90s
   test:
-    enable: false
-    timeout: 20m  # It can take up to 15m for the next balance file to show up that the helm tests verify
+    enable: true
+    timeout: 20m
   timeout: 20m
   upgrade:
     cleanupOnFail: true
     crds: CreateReplace
-    remediation:
-      retries: 20
   valuesFrom:
     - kind: Secret
       name: mirror
@@ -49,4 +47,6 @@ spec:
           enabled: false
     postgresql:
       enabled: false
+    test:
+      enabled: true
 
