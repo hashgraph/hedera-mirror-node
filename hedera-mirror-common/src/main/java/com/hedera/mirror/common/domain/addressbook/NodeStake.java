@@ -21,6 +21,7 @@ package com.hedera.mirror.common.domain.addressbook;
  */
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.io.Serial;
 import java.io.Serializable;
 import javax.persistence.Entity;
 import javax.persistence.IdClass;
@@ -39,9 +40,9 @@ import org.springframework.data.domain.Persistable;
 @NoArgsConstructor
 public class NodeStake implements Persistable<NodeStake.Id> {
 
+    @javax.persistence.Id
     private long consensusTimestamp;
 
-    @javax.persistence.Id
     private long epochDay;
 
     /**
@@ -92,7 +93,7 @@ public class NodeStake implements Persistable<NodeStake.Id> {
     @Override
     public Id getId() {
         Id id = new Id();
-        id.setEpochDay(epochDay);
+        id.setConsensusTimestamp(consensusTimestamp);
         id.setNodeId(nodeId);
         return id;
     }
@@ -105,8 +106,9 @@ public class NodeStake implements Persistable<NodeStake.Id> {
 
     @Data
     public static class Id implements Serializable {
+        @Serial
         private static final long serialVersionUID = -2513526593205520365L;
-        private long epochDay;
+        private long consensusTimestamp;
         private long nodeId;
     }
 }

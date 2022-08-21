@@ -221,6 +221,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     @Override
+    public void onFlush() {
+        executeBatches();
+    }
+
+    @Override
     public void onError() {
         cleanup();
     }
@@ -430,8 +435,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     @Override
-    public void onNodeStake(NodeStake nodeStake) {
-        nodeStakes.add(nodeStake);
+    public void onNodeStakes(Collection<NodeStake> nodeStakes) {
+        this.nodeStakes.addAll(nodeStakes);
     }
 
     @Override

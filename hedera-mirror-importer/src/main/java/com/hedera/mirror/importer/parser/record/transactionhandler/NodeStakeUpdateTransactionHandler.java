@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import java.util.ArrayList;
+import java.util.Collection;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -83,6 +85,7 @@ class NodeStakeUpdateTransactionHandler implements TransactionHandler {
         networkStake.setStakingStartThreshold(transactionBody.getStakingStartThreshold());
         entityListener.onNetworkStake(networkStake);
 
+        Collection<NodeStake> nodeStakes = new ArrayList<>();
         for (var nodeStakeProto : transactionBody.getNodeStakeList()) {
             NodeStake nodeStake = new NodeStake();
             nodeStake.setConsensusTimestamp(consensusTimestamp);
@@ -95,7 +98,9 @@ class NodeStakeUpdateTransactionHandler implements TransactionHandler {
             nodeStake.setStakeNotRewarded(nodeStakeProto.getStakeNotRewarded());
             nodeStake.setStakeRewarded(nodeStakeProto.getStakeRewarded());
             nodeStake.setStakingPeriod(stakingPeriod);
-            entityListener.onNodeStake(nodeStake);
+            nodeStakes.add(nodeStake);
         }
+
+        entityListener.onNodeStakes(nodeStakes);
     }
 }

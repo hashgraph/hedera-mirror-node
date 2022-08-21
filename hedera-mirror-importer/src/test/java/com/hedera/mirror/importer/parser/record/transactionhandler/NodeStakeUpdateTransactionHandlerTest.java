@@ -22,8 +22,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static com.hedera.mirror.common.util.DomainUtils.TINYBARS_IN_ONE_HBAR;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -31,6 +29,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import com.hederahashgraph.api.proto.java.NodeStakeUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.Collection;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -50,7 +49,7 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
     private ArgumentCaptor<NetworkStake> networkStakes;
 
     @Captor
-    private ArgumentCaptor<NodeStake> nodeStakes;
+    private ArgumentCaptor<Collection<NodeStake>> nodeStakes;
 
     @Override
     protected TransactionHandler getTransactionHandler() {
@@ -115,8 +114,8 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
 
         // then
         verify(entityListener, times(1)).onNetworkStake(networkStakes.capture());
-        verify(entityListener, times(2)).onNodeStake(nodeStakes.capture());
-        assertThat(nodeStakes.getAllValues()).containsExactlyInAnyOrderElementsOf(expectedNodeStakes);
+        verify(entityListener, times(1)).onNodeStakes(nodeStakes.capture());
+        assertThat(nodeStakes.getValue()).containsExactlyInAnyOrderElementsOf(expectedNodeStakes);
         assertThat(networkStakes.getAllValues())
                 .hasSize(1)
                 .first()
@@ -145,8 +144,9 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
         transactionHandler.updateTransaction(null, recordItem);
 
         // then
-        verify(entityListener, never()).onNodeStake(any());
         verify(entityListener, times(1)).onNetworkStake(networkStakes.capture());
+        verify(entityListener, times(1)).onNodeStakes(nodeStakes.capture());
+        assertThat(nodeStakes.getValue()).isEmpty();
     }
 
     private com.hederahashgraph.api.proto.java.NodeStake getNodeStakeProto(long stake, long stakeRewarded) {

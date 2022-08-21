@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser;
+package com.hedera.mirror.importer.parser.record.entity.staking;
 
 /*-
  * ‌
@@ -20,23 +20,21 @@ package com.hedera.mirror.importer.parser;
  * ‍
  */
 
-import com.hedera.mirror.common.domain.StreamFile;
-import com.hedera.mirror.importer.exception.ImporterException;
+import java.io.Serial;
+import org.springframework.context.ApplicationEvent;
 
-public interface StreamFileListener<T extends StreamFile> {
+public class NodeStakeUpdateEvent extends ApplicationEvent {
+
+    @Serial
+    private static final long serialVersionUID = -1825194602305052810L;
 
     /**
-     * Called when starting to process a new stream file.
+     * Create a new {@code ApplicationEvent}.
+     *
+     * @param source the object on which the event initially occurred or with which the event is associated (never
+     *               {@code null})
      */
-    void onStart() throws ImporterException;
-
-    void onEnd(T streamFile) throws ImporterException;
-
-    default void onFlush() {
+    public NodeStakeUpdateEvent(Object source) {
+        super(source);
     }
-
-    /**
-     * Called if an error is encountered during processing of stream file.
-     */
-    void onError();
 }

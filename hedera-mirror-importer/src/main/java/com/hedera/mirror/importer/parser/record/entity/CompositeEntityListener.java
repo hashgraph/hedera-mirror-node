@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record.entity;
  * ‍
  */
 
+import java.util.Collection;
 import java.util.List;
 import java.util.function.BiConsumer;
 import javax.inject.Named;
@@ -160,8 +161,8 @@ public class CompositeEntityListener implements EntityListener {
     }
 
     @Override
-    public void onNodeStake(NodeStake nodeStake) throws ImporterException {
-        onEach(EntityListener::onNodeStake, nodeStake);
+    public void onNodeStakes(Collection<NodeStake> nodeStakes) throws ImporterException {
+        onEach(EntityListener::onNodeStakes, nodeStakes);
     }
 
     @Override
