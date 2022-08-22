@@ -32,7 +32,6 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/test/mocks"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -198,45 +197,25 @@ func (suite *blockServiceSuite) TestBlock() {
 
 func (suite *blockServiceSuite) TestBlockWithAccountAlias() {
 	// given:
-	ch := make(chan interface{})
+	exampleTransactions := []*types.Transaction{
+		makeTransaction(nil, "123"),
+		makeTransaction(&entityId, "246"),
+	}
 	expected := expectedBlockResponse(
 		expectedTransaction(accountAlias, nil, "123"),
 		expectedTransaction(accountAlias, &entityId, "246"),
 	)
-	mockGetAccountAlias := suite.mockAccountRepo.On("GetAccountAlias")
-	mockGetAccountAlias.RunFn = func(_ mock.Arguments) {
-		<-ch // Blocks until the channel is closed
-		mockGetAccountAlias.ReturnArguments = mock.Arguments{accountAlias, mocks.NilError}
-	}
-
-	mockFindByIdentifier := suite.mockBlockRepo.On("FindByIdentifier")
-	mockFindByIdentifier.RunFn = func(_ mock.Arguments) {
-		// Avoid race detector reports concurrent writes on the same returned block struct
-		mockFindByIdentifier.ReturnArguments = mock.Arguments{block(), mocks.NilError}
-	}
-
-	mockFindBetween := suite.mockTransactionRepo.On("FindBetween")
-	mockFindBetween.RunFn = func(_ mock.Arguments) {
-		transactions := []*types.Transaction{
-			makeTransaction(nil, "123"),
-			makeTransaction(&entityId, "246"),
-		}
-		// Avoid race detector reports concurrent writes on the same returned transactions struct
-		mockFindBetween.ReturnArguments = mock.Arguments{transactions, mocks.NilError}
-	}
+	suite.mockAccountRepo.On("GetAccountAlias").Return(accountAlias, mocks.NilError)
+	suite.mockBlockRepo.On("FindByIdentifier").Return(block(), mocks.NilError)
+	suite.mockTransactionRepo.On("FindBetween").Return(exampleTransactions, mocks.NilError)
 
 	// when:
-	// Simulate a race condition
-	go suite.blockService.Block(nil, blockRequest())
-	go suite.blockService.Block(nil, blockRequest())
-	close(ch)
-
-	actual, err := suite.blockService.Block(nil, blockRequest())
+	actual, e := suite.blockService.Block(nil, blockRequest())
 
 	// then:
-	assert.Nil(suite.T(), err)
+	assert.Nil(suite.T(), e)
 	assert.Equal(suite.T(), expected, actual)
-	mock.AssertExpectationsForObjects(suite.T(), suite.mockAccountRepo, suite.mockBlockRepo, suite.mockTransactionRepo)
+	suite.mockAccountRepo.AssertNumberOfCalls(suite.T(), "GetAccountAlias", 1)
 }
 
 func (suite *blockServiceSuite) TestBlockThrowsWhenAccountRepoFail() {
