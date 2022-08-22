@@ -79,6 +79,9 @@ public class RecordItem implements StreamItem {
     private final EntityId payerAccountId = EntityId.of(getTransactionBody().getTransactionID().getAccountID());
 
     @Getter(lazy = true)
+    private boolean successful = checkSuccess();
+
+    @Getter(lazy = true)
     private final int transactionType = getTransactionType(getTransactionBody());
 
     // Mutable fields
@@ -135,7 +138,14 @@ public class RecordItem implements StreamItem {
         return record.hasParentConsensusTimestamp();
     }
 
-    public boolean isSuccessful() {
+
+    private boolean checkSuccess() {
+        // A child is only successful if its parent is as well. Consensus nodes have had issues in the past where that
+        // invariant did not hold true and children contract calls were not reverted on failure.
+        if (parent != null && !parent.isSuccessful()) {
+            return false;
+        }
+
         var status = record.getReceipt().getStatus();
         return status == ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED ||
                 status == ResponseCodeEnum.SUCCESS ||
