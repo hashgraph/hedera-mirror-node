@@ -195,6 +195,12 @@
         </dependency>
         <!-- Test -->
         <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <version>${awaitility.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>com.github.vertical-blank</groupId>
             <artifactId>sql-formatter</artifactId>
             <version>${sql-formatter.version}</version>

@@ -37,7 +37,7 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
             ), proxy_staking as (
               select staked_account_id, sum(balance) as staked_to_me
               from entity_state_start
-              where deleted is not true and staked_account_id <> 0
+              where deleted is false and staked_account_id <> 0
               group by staked_account_id
             ), updated as (
               select
@@ -66,9 +66,9 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
             table updated
             on conflict (id) do update
               set decline_reward_start = excluded.decline_reward_start,
-                  pending_reward          = excluded.pending_reward,
+                  pending_reward       = excluded.pending_reward,
                   staked_node_id_start = excluded.staked_node_id_start,
-                  staked_to_me            = excluded.staked_to_me,
+                  staked_to_me         = excluded.staked_to_me,
                   stake_total_start    = excluded.stake_total_start;
             """;
 

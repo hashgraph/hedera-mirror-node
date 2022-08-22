@@ -37,7 +37,7 @@ import org.springframework.data.domain.Persistable;
 @NoArgsConstructor
 public class EntityStake implements Persistable<Long> {
     @Id
-    private long id;
+    private Long id;
     private boolean declineRewardStart;
     private long pendingReward;
     private long stakedNodeIdStart;

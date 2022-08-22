@@ -20,7 +20,10 @@ package com.hedera.mirror.importer.parser.record.entity.staking;
  * ‍
  */
 
+import org.springframework.transaction.event.TransactionalEventListener;
+
 public interface EntityStakeCalculator {
 
+    @TransactionalEventListener(classes = NodeStakeUpdateEvent.class)
     void update();
 }

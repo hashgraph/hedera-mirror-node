@@ -29,7 +29,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.transaction.event.TransactionalEventListener;
 
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
@@ -40,7 +39,7 @@ import com.hedera.mirror.importer.repository.EntityStakeRepository;
 @Named
 @Order
 @RequiredArgsConstructor
-public class EntityStakeCalculatorImpl implements EntityListener, EntityStakeCalculator {
+public class EntityStakeCalculatorImpl implements EntityStakeCalculator, EntityListener {
 
     private final EntityStakeRepository entityStakeRepository;
     private final ApplicationEventPublisher eventPublisher;
@@ -49,7 +48,6 @@ public class EntityStakeCalculatorImpl implements EntityListener, EntityStakeCal
 
     @Override
     @Async
-    @TransactionalEventListener(classes = NodeStakeUpdateEvent.class)
     public void update() {
         var stopwatch = Stopwatch.createStarted();
         int count = entityStakeRepository.updateEntityStake();
@@ -63,8 +61,7 @@ public class EntityStakeCalculatorImpl implements EntityListener, EntityStakeCal
         }
 
         var stopwatch = Stopwatch.createStarted();
-        // Flush data from temp tables to final tables so the entity balances so the entity balance is accurate when
-        // refreshing the materialized view
+        // Flush data to final tables so the entity balance is accurate when refreshing the materialized view
         recordStreamFileListener.onFlush();
         jdbcOperations.update("refresh materialized view entity_state_start");
         eventPublisher.publishEvent(new NodeStakeUpdateEvent(this));
