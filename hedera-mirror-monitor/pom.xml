@@ -20,7 +20,7 @@
         <meanbean.version>3.0.0-M9</meanbean.version>
         <openapi-package>com.hedera.mirror.rest</openapi-package>
         <openapi-generator.version>6.0.1</openapi-generator.version>
-        <springdoc.version>1.6.9</springdoc.version>
+        <springdoc.version>1.6.11</springdoc.version>
         <swagger-annotations.version>1.6.6</swagger-annotations.version>
     </properties>
 
