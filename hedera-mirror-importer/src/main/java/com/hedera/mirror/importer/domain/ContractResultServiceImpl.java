@@ -278,8 +278,12 @@ public class ContractResultServiceImpl implements ContractResultService {
 
     private ByteString processSidecarRecords(RecordItem recordItem) {
         ByteString failedInitcode = null;
-        var contractBytecodes = new ArrayList<ContractBytecode>();
         var sidecarRecords = recordItem.getSidecarRecords();
+        if (sidecarRecords.isEmpty()) {
+            return failedInitcode;
+        }
+
+        var contractBytecodes = new ArrayList<ContractBytecode>();
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         var payerAccountId = recordItem.getPayerAccountId();
         var stopwatch = Stopwatch.createStarted();
