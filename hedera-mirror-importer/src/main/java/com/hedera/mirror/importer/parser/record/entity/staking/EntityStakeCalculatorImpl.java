@@ -47,14 +47,6 @@ public class EntityStakeCalculatorImpl implements EntityStakeCalculator, EntityL
     private final RecordStreamFileListener recordStreamFileListener;
 
     @Override
-    @Async
-    public void update() {
-        var stopwatch = Stopwatch.createStarted();
-        int count = entityStakeRepository.updateEntityStake();
-        log.info("Updated pending reward and stake state for {} entities in {}", count, stopwatch);
-    }
-
-    @Override
     public void onNodeStakes(Collection<NodeStake> nodeStakes) {
         if (nodeStakes.isEmpty()) {
             return;
@@ -66,5 +58,13 @@ public class EntityStakeCalculatorImpl implements EntityStakeCalculator, EntityL
         jdbcOperations.update("refresh materialized view entity_state_start");
         eventPublisher.publishEvent(new NodeStakeUpdateEvent(this));
         log.info("Flushed data from record file and refreshed entity_state_start materialized view in {} ", stopwatch);
+    }
+
+    @Override
+    @Async
+    public void update() {
+        var stopwatch = Stopwatch.createStarted();
+        int count = entityStakeRepository.updateEntityStake();
+        log.info("Updated pending reward and stake state for {} entities in {}", count, stopwatch);
     }
 }
