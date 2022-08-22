@@ -596,9 +596,12 @@ describe('NetworkNodeService.getNetworkStake tests', () => {
     stakingStartThreshold: 25000000000000000n,
   };
 
-  test('NetworkNodeService.getNetworkStake', async () => {
+  test('valid data', async () => {
     await integrationDomainOps.loadNetworkStakes(defaultNetworkStakes);
-
     await expect(NetworkNodeService.getNetworkStake()).resolves.toMatchObject(expectedNetworkStake);
+  });
+
+  test('empty', async () => {
+    await expect(NetworkNodeService.getNetworkStake()).resolves.toBeNull();
   });
 });

@@ -83,6 +83,12 @@ public class ContractResult implements Persistable<Long> {
     @Convert(converter = AccountIdConverter.class)
     private EntityId senderId;
 
+    private byte[] transactionHash;
+
+    private Integer transactionIndex;
+
+    private Integer transactionResult;
+
     @JsonIgnore
     @Override
     public Long getId() {

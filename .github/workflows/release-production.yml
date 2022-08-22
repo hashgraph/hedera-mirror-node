@@ -15,13 +15,13 @@ jobs:
     name: Publish images
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Get tag
         run: echo "TAG=${GITHUB_REF#refs/*/v}" >> $GITHUB_ENV
 
       - name: Install JDK
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v3
         with:
           cache: 'maven'
           distribution: 'temurin'
@@ -42,13 +42,13 @@ jobs:
         run: ./mvnw dependency:copy-dependencies license:download-licenses package -DskipTests -pl ${MODULE} -Dmvn.golang.skip=true -Dskip.npm
 
       - name: Setup QEMU
-        uses: docker/setup-qemu-action@v1
+        uses: docker/setup-qemu-action@v2
 
       - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
 
       - name: Build and push images
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -63,7 +63,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Publish helm chart
         uses: stefanprodan/helm-gh-pages@v1.5.0

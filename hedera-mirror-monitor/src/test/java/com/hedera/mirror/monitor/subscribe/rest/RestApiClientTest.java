@@ -26,6 +26,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.net.ConnectException;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,11 +57,12 @@ class RestApiClientTest {
     @Mock
     private ExchangeFunction exchangeFunction;
 
+    private MonitorProperties monitorProperties;
     private RestApiClient restApiClient;
 
     @BeforeEach
     void setup() {
-        MonitorProperties monitorProperties = new MonitorProperties();
+        monitorProperties = new MonitorProperties();
         monitorProperties.setMirrorNode(new MirrorNodeProperties());
         monitorProperties.getMirrorNode().getRest().setHost("127.0.0.1");
 
@@ -120,6 +122,15 @@ class RestApiClientTest {
                 .verify(Duration.ofMillis(500L));
 
         verify(exchangeFunction).exchange(isA(ClientRequest.class));
+    }
+
+    @Test
+    void retrieveConnectError() {
+        restApiClient = new RestApiClient(monitorProperties, WebClient.builder());
+        restApiClient.retrieve(TransactionByIdResponse.class, "transactions/{transactionId}", "1.1")
+                .as(StepVerifier::create)
+                .expectErrorMatches(t -> t.getCause() instanceof ConnectException)
+                .verify(Duration.ofMillis(500L));
     }
 
     private Mono<ClientResponse> response(Object response) {

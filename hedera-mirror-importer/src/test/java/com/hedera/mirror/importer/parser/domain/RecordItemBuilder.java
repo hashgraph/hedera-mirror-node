@@ -394,6 +394,7 @@ public class RecordItemBuilder {
         var functionResult = contractFunctionResult(contractId);
         var builder = new Builder<>(TransactionType.ETHEREUMTRANSACTION, transactionBody)
                 .record(r -> r.setContractCallResult(functionResult).setEthereumHash(digestedHash))
+                .recordItem(r -> r.hapiVersion(new Version(0, 26, 0)))
                 .sidecarRecords(r -> r.add(contractStateChanges(contractId)))
                 .sidecarRecords(r -> r.add(contractActions()));
 
@@ -627,6 +628,7 @@ public class RecordItemBuilder {
     }
 
     public class Builder<T extends GeneratedMessageV3.Builder> {
+
         private final TransactionType type;
         private final T transactionBody;
         private final SignatureMap.Builder signatureMap;
@@ -634,17 +636,17 @@ public class RecordItemBuilder {
         private final TransactionRecord.Builder transactionRecord;
         private final List<TransactionSidecarRecord.Builder> sidecarRecords;
         private final AccountID payerAccountId;
-        private RecordItem parent;
-        private Version hapiVersion = RecordFile.HAPI_VERSION_NOT_SET;
+        private final RecordItem.RecordItemBuilder recordItemBuilder;
 
         private Builder(TransactionType type, T transactionBody) {
-            payerAccountId = accountId();
+            this.payerAccountId = accountId();
+            this.recordItemBuilder = RecordItem.builder().hapiVersion(RecordFile.HAPI_VERSION_NOT_SET);
+            this.sidecarRecords = new ArrayList<>();
+            this.signatureMap = defaultSignatureMap();
             this.type = type;
             this.transactionBody = transactionBody;
-            signatureMap = defaultSignatureMap();
-            transactionBodyWrapper = defaultTransactionBody();
-            transactionRecord = defaultTransactionRecord();
-            sidecarRecords = new ArrayList<>();
+            this.transactionBodyWrapper = defaultTransactionBody();
+            this.transactionRecord = defaultTransactionRecord();
         }
 
         public RecordItem build() {
@@ -653,25 +655,13 @@ public class RecordItemBuilder {
 
             Transaction transaction = transaction().build();
             TransactionRecord record = transactionRecord.build();
-            List<TransactionSidecarRecord> sidecarRecords = this.sidecarRecords.stream()
-                    .map(r -> r.build()).collect(Collectors.toList());
-            return RecordItem.builder()
-                    .hapiVersion(hapiVersion)
-                    .parent(parent)
+            var sidecarRecords = this.sidecarRecords.stream().map(r -> r.build()).collect(Collectors.toList());
+
+            return recordItemBuilder
                     .recordBytes(record.toByteArray())
                     .transactionBytes(transaction.toByteArray())
                     .sidecarRecords(sidecarRecords)
                     .build();
-        }
-
-        public Builder<T> hapiVersion(Version hapiVersion) {
-            this.hapiVersion = hapiVersion;
-            return this;
-        }
-
-        public Builder<T> parent(RecordItem parent) {
-            this.parent = parent;
-            return this;
         }
 
         public Builder<T> receipt(Consumer<TransactionReceipt.Builder> consumer) {
@@ -681,6 +671,11 @@ public class RecordItemBuilder {
 
         public Builder<T> record(Consumer<TransactionRecord.Builder> consumer) {
             consumer.accept(transactionRecord);
+            return this;
+        }
+
+        public Builder<T> recordItem(Consumer<RecordItem.RecordItemBuilder> consumer) {
+            consumer.accept(recordItemBuilder);
             return this;
         }
 

@@ -22,6 +22,7 @@ package config
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/hashgraph/hedera-sdk-go/v2"
 )
@@ -32,6 +33,7 @@ type Config struct {
 	Cache       map[string]Cache
 	Db          Db
 	Feature     Feature
+	Http        Http
 	Log         Log
 	Network     string
 	Nodes       NodeMap
@@ -69,6 +71,13 @@ func (db Db) GetDsn() string {
 
 type Feature struct {
 	SubNetworkIdentifier bool `yaml:"subNetworkIdentifier"`
+}
+
+type Http struct {
+	IdleTimeout       time.Duration `yaml:"idleTimeout"`
+	ReadTimeout       time.Duration `yaml:"readTimeout"`
+	ReadHeaderTimeout time.Duration `yaml:"readHeaderTimeout"`
+	WriteTimeout      time.Duration `yaml:"writeTimeout"`
 }
 
 type Log struct {

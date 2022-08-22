@@ -41,6 +41,7 @@ import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import reactor.util.retry.Retry;
 
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Client;
@@ -102,11 +103,18 @@ public class NodeSupplier {
         return nodes.get(nodeIndex);
     }
 
-    public Flux<NodeProperties> refresh() {
+    public synchronized Flux<NodeProperties> refresh() {
+        Retry retrySpec = Retry.backoff(Long.MAX_VALUE, Duration.ofSeconds(1L))
+                .maxBackoff(Duration.ofSeconds(8L))
+                .scheduler(Schedulers.newSingle("nodes"))
+                .doBeforeRetry(r -> log.warn("Retry attempt #{} after failure: {}",
+                        r.totalRetries() + 1, r.failure().getMessage()));
+
         return Flux.fromIterable(monitorProperties.getNodes())
                 .doOnSubscribe(s -> log.info("Refreshing node list"))
                 .switchIfEmpty(Flux.defer(this::getAddressBook))
                 .switchIfEmpty(Flux.fromIterable(monitorProperties.getNetwork().getNodes()))
+                .retryWhen(retrySpec)
                 .switchIfEmpty(Flux.error(new IllegalArgumentException("Nodes must not be empty")));
     }
 
@@ -121,9 +129,7 @@ public class NodeSupplier {
                 .filter(n -> !CollectionUtils.isEmpty(n.getServiceEndpoints()))
                 .map(n -> new NodeProperties(n.getNodeAccountId(), n.getServiceEndpoints().get(0).getIpAddressV4()))
                 .doOnNext(n -> count.incrementAndGet())
-                .doOnComplete(() -> log.info("Retrieved {} nodes from address book", count))
-                .doOnError(t -> log.warn("Unable to retrieve address book: {}", t.getMessage()))
-                .onErrorResume(t -> Flux.empty());
+                .doOnComplete(() -> log.info("Retrieved {} nodes from address book", count));
     }
 
     private Client toClient(Map<String, AccountId> nodes) {

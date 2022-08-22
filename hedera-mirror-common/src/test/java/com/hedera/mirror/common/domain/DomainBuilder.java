@@ -283,7 +283,10 @@ public class DomainBuilder {
                 .gasLimit(200L)
                 .gasUsed(100L)
                 .payerAccountId(entityId(ACCOUNT))
-                .senderId(entityId(ACCOUNT));
+                .senderId(entityId(ACCOUNT))
+                .transactionHash(bytes(32))
+                .transactionIndex(1)
+                .transactionResult(ResponseCodeEnum.SUCCESS_VALUE);
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

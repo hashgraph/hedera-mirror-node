@@ -9,6 +9,7 @@
         "num": 7
       },
       {
+        "balance": 80,
         "num": 8,
         "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
         "public_key": "519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9"
@@ -22,9 +23,9 @@
     ],
     "balances": [
       {
-        "timestamp": 2345,
+        "timestamp": 2200,
         "id": 7,
-        "balance": 70,
+        "balance": 999,
         "tokens": [
           {
             "token_num": 99998,
@@ -37,9 +38,9 @@
         ]
       },
       {
-        "timestamp": 2345,
+        "timestamp": 2200,
         "id": 8,
-        "balance": 80,
+        "balance": 999,
         "tokens": [
           {
             "token_num": 99998,
@@ -52,9 +53,15 @@
         ]
       },
       {
-        "timestamp": 2345,
+        "timestamp": 2200,
         "id": 9,
-        "balance": 90
+        "balance": 999
+      }
+    ],
+    "recordFiles": [
+      {
+        "consensus_start": 2000,
+        "consensus_end": 2345
       }
     ],
     "transactions": [
