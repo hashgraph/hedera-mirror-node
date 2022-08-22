@@ -228,6 +228,15 @@ func main() {
 	metricsMiddleware := middleware.MetricsMiddleware(router)
 	tracingMiddleware := middleware.TracingMiddleware(metricsMiddleware)
 	corsMiddleware := server.CorsMiddleware(tracingMiddleware)
+	httpServer := &http.Server{
+		Addr:              fmt.Sprintf(":%d", rosettaConfig.Port),
+		Handler:           corsMiddleware,
+		IdleTimeout:       rosettaConfig.Http.IdleTimeout,
+		ReadHeaderTimeout: rosettaConfig.Http.ReadHeaderTimeout,
+		ReadTimeout:       rosettaConfig.Http.ReadTimeout,
+		WriteTimeout:      rosettaConfig.Http.WriteTimeout,
+	}
+
 	log.Infof("Listening on port %d", rosettaConfig.Port)
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", rosettaConfig.Port), corsMiddleware))
+	log.Fatal(httpServer.ListenAndServe())
 }

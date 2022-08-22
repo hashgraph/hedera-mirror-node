@@ -17,6 +17,11 @@ hedera:
         username: mirror_rosetta
       feature:
         subNetworkIdentifier: false
+      http:
+        idleTimeout: 10000000000
+        readHeaderTimeout: 3000000000
+        readTimeout: 5000000000
+        writeTimeout: 10000000000
       log:
         level: info
       network: DEMO
