@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.google.common.base.Stopwatch;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -281,6 +282,9 @@ public class ContractResultServiceImpl implements ContractResultService {
         var sidecarRecords = recordItem.getSidecarRecords();
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         var payerAccountId = recordItem.getPayerAccountId();
+        var stopwatch = Stopwatch.createStarted();
+        var migrations = 0;
+
         for (var sidecarRecord : sidecarRecords) {
             if (sidecarRecord.hasStateChanges()) {
                 var stateChanges = sidecarRecord.getStateChanges();
@@ -299,9 +303,14 @@ public class ContractResultServiceImpl implements ContractResultService {
                     failedInitcode = sidecarRecord.getBytecode().getInitcode();
                 }
             }
+
+            if (sidecarRecord.getMigration()) {
+                ++migrations;
+            }
         }
 
         sidecarContractMigration.migrate(contractBytecodes);
+        log.info("{} Sidecar records processed with {} migrations in {}", sidecarRecords.size(), migrations, stopwatch);
         return failedInitcode;
     }
 

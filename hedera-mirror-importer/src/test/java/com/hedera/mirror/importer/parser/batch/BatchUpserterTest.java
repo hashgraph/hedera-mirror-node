@@ -61,7 +61,6 @@ import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.CryptoAllowanceRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.NftAllowanceRepository;
@@ -81,7 +80,6 @@ class BatchUpserterTest extends IntegrationTest {
             .build();
 
     private final BatchPersister batchPersister;
-    private final ContractRepository contractRepository;
     private final CryptoAllowanceRepository cryptoAllowanceRepository;
     private final EntityRepository entityRepository;
     private final NftRepository nftRepository;
