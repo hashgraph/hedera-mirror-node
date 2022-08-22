@@ -60,8 +60,8 @@ public class EntityStakeCalculatorImpl implements EntityStakeCalculator, EntityL
         log.info("Flushed data from record file and refreshed entity_state_start materialized view in {} ", stopwatch);
     }
 
-    @Override
     @Async
+    @Override
     public void update() {
         var stopwatch = Stopwatch.createStarted();
         int count = entityStakeRepository.updateEntityStake();

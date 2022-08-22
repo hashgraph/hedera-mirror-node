@@ -147,7 +147,7 @@ public class TestUtils {
         return AccountID.newBuilder().setShardNum(Long.parseLong(parts[0])).setRealmNum(Long.parseLong(parts[1]))
                 .setAccountNum(Long.parseLong(parts[2])).build();
     }
-    
+
     public TransactionID toTransactionId(String transactionId) {
         var parts = transactionId.split("-");
         return TransactionID.newBuilder().setAccountID(toAccountId(parts[0]))

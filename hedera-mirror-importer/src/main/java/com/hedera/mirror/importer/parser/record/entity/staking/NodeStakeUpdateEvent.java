@@ -29,7 +29,7 @@ public class NodeStakeUpdateEvent extends ApplicationEvent {
     private static final long serialVersionUID = -1825194602305052810L;
 
     /**
-     * Create a new {@code ApplicationEvent}.
+     * Create a new {@code NodeStakeUpdateEvent}.
      *
      * @param source the object on which the event initially occurred or with which the event is associated (never
      *               {@code null})

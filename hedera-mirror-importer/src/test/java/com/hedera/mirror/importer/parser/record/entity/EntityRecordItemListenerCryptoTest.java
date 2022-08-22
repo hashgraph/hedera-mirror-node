@@ -1119,7 +1119,6 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 .customize(e -> e.balance(300 * TINYBARS_IN_ONE_HBAR).stakedAccountId(account2.getId()))
                 .persist();
 
-        // Crypto transfers to account2 and account 3 before nodestakeupdate should be reflected into entity balance
         long accountId4 = domainBuilder.id();
         var protoAccountId4 = AccountID.newBuilder().setAccountNum(accountId4).build();
         var timestamp = TestUtils.asStartOfEpochDay(epochDay + 1);

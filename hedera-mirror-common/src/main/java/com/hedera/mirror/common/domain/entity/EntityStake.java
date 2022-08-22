@@ -31,7 +31,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.domain.Persistable;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-@Builder
+@Builder(toBuilder = true)
 @Data
 @Entity
 @NoArgsConstructor
