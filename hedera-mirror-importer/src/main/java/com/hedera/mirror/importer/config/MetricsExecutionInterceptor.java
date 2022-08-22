@@ -54,7 +54,7 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 public class MetricsExecutionInterceptor implements ExecutionInterceptor {
 
     private static final Pattern ENTITY_ID_PATTERN = Pattern.compile("(\\d{1,10}\\.\\d{1,10}\\.\\d{1,10})");
-    private static final Pattern SIDECAR_PATTERN = Pattern.compile(".*Z_\\d+\\.rcd.*");
+    private static final Pattern SIDECAR_PATTERN = Pattern.compile("Z_\\d{1,2}\\.rcd");
     private static final ExecutionAttribute<ResponseSizeSubscriber> SIZE = new ExecutionAttribute("size");
     private static final ExecutionAttribute<Instant> START_TIME = new ExecutionAttribute("start-time");
 
@@ -124,7 +124,7 @@ public class MetricsExecutionInterceptor implements ExecutionInterceptor {
             return "list";
         } else if (uri.contains(StreamType.SIGNATURE_SUFFIX)) {
             return "signature";
-        } else if (SIDECAR_PATTERN.matcher(uri).matches()) {
+        } else if (SIDECAR_PATTERN.matcher(uri).find()) {
             return "sidecar";
         } else {
             return "signed";
