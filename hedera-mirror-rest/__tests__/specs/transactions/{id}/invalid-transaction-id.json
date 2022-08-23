@@ -1,5 +1,5 @@
 {
-  "description": "Transaction api calls for a specific transactions using non matching transaction id",
+  "description": "Transaction api calls with invalid transaction id value",
   "setup": {
     "accounts": [
       {
@@ -16,17 +16,7 @@
       }
     ],
     "balances": [],
-    "transactions": [
-      {
-        "charged_tx_fee": 0,
-        "payerAccountId": "0.0.10",
-        "nodeAccountId": "0.0.3",
-        "consensus_timestamp": "1234567890000000008",
-        "name": "CRYPTOUPDATEACCOUNT",
-        "type": "15",
-        "entity_id": "0.0.8"
-      }
-    ],
+    "transactions": [],
     "cryptotransfers": [
       {
         "consensus_timestamp": "1234567890000000001",
@@ -38,13 +28,13 @@
       }
     ]
   },
-  "url": "/api/v1/transactions/0.1.10-1234567891-000000000",
-  "responseStatus": 404,
+  "url": "/api/v1/transactions/0.1.10-1234567891.000000000",
+  "responseStatus": 400,
   "responseJson": {
     "_status": {
       "messages": [
         {
-          "message": "Not found"
+          "message": "Invalid Transaction id. Please use \"shard.realm.num-sss-nnn\" format where sss are seconds and nnn are nanoseconds"
         }
       ]
     }

@@ -214,8 +214,6 @@ create unique index if not exists topic_message__topic_id_seqnum
 -- transaction
 alter table if exists transaction
     add constraint transaction__pk primary key (consensus_timestamp, payer_account_id);
-create index if not exists transaction__hash_prefix
-    on transaction (substring(transaction_hash from 1 for 32));
 create index if not exists transaction__transaction_id
     on transaction (valid_start_ns, payer_account_id);
 create index if not exists transaction__payer_account_id
