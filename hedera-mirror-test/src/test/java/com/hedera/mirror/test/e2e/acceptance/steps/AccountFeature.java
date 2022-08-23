@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import java.util.List;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -41,6 +42,7 @@ import com.hedera.mirror.test.e2e.acceptance.props.MirrorCryptoAllowance;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransfer;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorCryptoAllowanceResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 
 @Log4j2
 @Data
@@ -69,8 +71,8 @@ public class AccountFeature extends AbstractFeature {
 
         startingBalance = accountClient.getBalance(senderAccountId);
 
-        networkTransactionResponse = accountClient.sendCryptoTransfer(senderAccountId.getAccountId(),
-                Hbar.fromTinybars(amount));
+        networkTransactionResponse = accountClient
+                .sendCryptoTransfer(senderAccountId.getAccountId(), Hbar.fromTinybars(amount));
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
@@ -128,13 +130,36 @@ public class AccountFeature extends AbstractFeature {
         assertThat(accountClient.getBalance(senderAccountId)).isGreaterThanOrEqualTo(startingBalance + amount);
     }
 
-    @Then("the mirror node REST API should return OK for the crypto transfer transaction")
-    public void verifyMirrorAPICryptoTransferResponse() {
-        verifyCryptoTransferTransaction("transaction id", networkTransactionResponse.getTransactionIdStringNoCheckSum());
-        verifyCryptoTransferTransaction("base64 hash", networkTransactionResponse.getTransactionHashInBase64url());
-        verifyCryptoTransferTransaction("hex hash", networkTransactionResponse.getTransactionHashInHex());
-        verifyCryptoTransferTransaction("hex hash with prefix",
-                networkTransactionResponse.getTransactionHashInHexWithPrefix());
+    @Then("the mirror node REST API should return status {int} for the crypto transfer transaction")
+    public void verifyMirrorAPICryptoTransferResponse(int status) {
+        log.info("Verify transaction");
+        String transactionId = networkTransactionResponse.getTransactionIdStringNoCheckSum();
+        MirrorTransactionsResponse mirrorTransactionsResponse = mirrorClient.getTransactions(transactionId);
+
+        // verify valid set of transactions
+        List<MirrorTransaction> transactions = mirrorTransactionsResponse.getTransactions();
+        assertNotNull(transactions);
+        assertThat(transactions).isNotEmpty();
+
+        // verify transaction details
+        MirrorTransaction mirrorTransaction = transactions.get(0);
+        if (status == HttpStatus.OK.value()) {
+            assertThat(mirrorTransaction.getResult()).isEqualTo("SUCCESS");
+        }
+        assertThat(mirrorTransaction.getTransactionId()).isEqualTo(transactionId);
+        assertThat(mirrorTransaction.getValidStartTimestamp())
+                .isEqualTo(networkTransactionResponse.getValidStartString());
+        assertThat(mirrorTransaction.getName()).isEqualTo("CRYPTOTRANSFER");
+
+        assertThat(mirrorTransaction.getTransfers().size()).isGreaterThanOrEqualTo(3); // network, node and transfer
+
+        //verify transfer credit and debits balance out
+        long transferSum = 0;
+        for (MirrorTransfer cryptoTransfer : mirrorTransaction.getTransfers()) {
+            transferSum += Long.valueOf(cryptoTransfer.getAmount());
+        }
+
+        assertThat(transferSum).isZero();
     }
 
     @Then("the mirror node REST API should confirm the approved {long} tℏ crypto transfer allowance")
@@ -181,31 +206,5 @@ public class AccountFeature extends AbstractFeature {
         networkTransactionResponse = accountClient.approveCryptoAllowance(accountId, Hbar.fromTinybars(amount));
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
-    }
-
-    private void verifyCryptoTransferTransaction(String name, String transactionIdOrHash) {
-        log.info("Verify transaction using {}", name);
-
-        var mirrorTransactionsResponse = mirrorClient.getTransactions(transactionIdOrHash);
-
-        // verify valid set of transactions
-        var transactions = mirrorTransactionsResponse.getTransactions();
-        assertThat(transactions)
-                .hasSize(1)
-                .first()
-                .returns("CRYPTOTRANSFER", MirrorTransaction::getName)
-                .returns("SUCCESS", MirrorTransaction::getResult)
-                .returns(networkTransactionResponse.getTransactionHashInBase64(), MirrorTransaction::getTransactionHash)
-                .returns(networkTransactionResponse.getTransactionIdStringNoCheckSum(),
-                        MirrorTransaction::getTransactionId)
-                .returns(networkTransactionResponse.getValidStartString(), MirrorTransaction::getValidStartTimestamp);
-
-        // verify transfers
-        var cryptoTransfers = transactions.get(0).getTransfers();
-        var transferSum = cryptoTransfers.stream().map(MirrorTransfer::getAmount).reduce(0L, Long::sum);
-        assertAll(
-                () -> assertThat(cryptoTransfers).hasSizeGreaterThanOrEqualTo(3),
-                () -> assertThat(transferSum).isZero()
-        );
     }
 }
