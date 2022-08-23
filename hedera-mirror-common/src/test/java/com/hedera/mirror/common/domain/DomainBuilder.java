@@ -282,7 +282,10 @@ public class DomainBuilder {
                 .gasLimit(200L)
                 .gasUsed(100L)
                 .payerAccountId(entityId(ACCOUNT))
-                .senderId(entityId(ACCOUNT));
+                .senderId(entityId(ACCOUNT))
+                .transactionHash(bytes(32))
+                .transactionIndex(1)
+                .transactionResult(ResponseCodeEnum.SUCCESS_VALUE);
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
@@ -353,6 +356,7 @@ public class DomainBuilder {
                 .alias(key())
                 .autoRenewAccountId(id())
                 .autoRenewPeriod(1800L)
+                .balance(id())
                 .createdTimestamp(timestamp)
                 .declineReward(false)
                 .deleted(false)
@@ -387,6 +391,7 @@ public class DomainBuilder {
                 .alias(key())
                 .autoRenewAccountId(id())
                 .autoRenewPeriod(1800L)
+                .balance(id())
                 .createdTimestamp(timestamp)
                 .declineReward(false)
                 .deleted(false)

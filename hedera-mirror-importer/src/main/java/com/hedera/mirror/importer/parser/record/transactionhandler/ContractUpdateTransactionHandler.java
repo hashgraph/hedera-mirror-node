@@ -37,7 +37,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.util.Utility;
 
 @Named
-class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler<Entity> {
+class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
     ContractUpdateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
                                      RecordParserProperties recordParserProperties) {

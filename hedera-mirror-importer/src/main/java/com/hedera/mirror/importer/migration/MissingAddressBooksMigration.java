@@ -21,24 +21,26 @@ package com.hedera.mirror.importer.migration;
  */
 
 import javax.inject.Named;
-import lombok.RequiredArgsConstructor;
-import org.flywaydb.core.api.MigrationVersion;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.springframework.context.annotation.Lazy;
 
+import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.repository.AddressBookServiceEndpointRepository;
 
 @Named
-@RequiredArgsConstructor(onConstructor_ = {@Lazy})
-public class MissingAddressBooksMigration extends MirrorBaseJavaMigration {
+public class MissingAddressBooksMigration extends RepeatableMigration {
 
     private final AddressBookService addressBookService;
     private final AddressBookServiceEndpointRepository addressBookServiceEndpointRepository;
 
-    @Override
-    public Integer getChecksum() {
-        return 1;
+    @Lazy
+    public MissingAddressBooksMigration(AddressBookService addressBookService,
+                                        AddressBookServiceEndpointRepository addressBookServiceEndpointRepository,
+                                        MirrorProperties mirrorProperties) {
+        super(mirrorProperties.getMigration());
+        this.addressBookService = addressBookService;
+        this.addressBookServiceEndpointRepository = addressBookServiceEndpointRepository;
     }
 
     @Override
@@ -47,12 +49,12 @@ public class MissingAddressBooksMigration extends MirrorBaseJavaMigration {
     }
 
     @Override
-    public MigrationVersion getVersion() {
-        return null;
-    }
-
-    @Override
     protected boolean skipMigration(Configuration configuration) {
+        if (!migrationProperties.isEnabled()) {
+            log.info("Skip migration since it's disabled");
+            return true;
+        }
+
         // skip when no address books with service endpoint exist. Allow normal flow migration to do initial population
         long serviceEndpointCount = 0;
         try {

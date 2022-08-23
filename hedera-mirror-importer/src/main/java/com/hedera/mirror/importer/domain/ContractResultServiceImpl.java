@@ -20,12 +20,15 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import javax.inject.Named;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +41,7 @@ import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
@@ -45,11 +49,13 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
+import com.hedera.mirror.importer.migration.SidecarContractMigration;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 import com.hedera.mirror.importer.util.Utility;
+import com.hedera.services.stream.proto.ContractBytecode;
 import com.hedera.services.stream.proto.ContractStateChange;
 
 @Log4j2
@@ -60,6 +66,7 @@ public class ContractResultServiceImpl implements ContractResultService {
     private final EntityProperties entityProperties;
     private final EntityIdService entityIdService;
     private final EntityListener entityListener;
+    private final SidecarContractMigration sidecarContractMigration;
     private final TransactionHandlerFactory transactionHandlerFactory;
 
     @Override
@@ -73,6 +80,8 @@ public class ContractResultServiceImpl implements ContractResultService {
         var functionResult = transactionRecord.hasContractCreateResult() ?
                 transactionRecord.getContractCreateResult() : transactionRecord.getContractCallResult();
 
+        var sidecarFailedInitcode = processSidecarRecords(recordItem);
+
         // handle non create/call transactions
         if (!isContractCreateOrCall(transactionBody) && !isValidContractFunctionResult(functionResult)) {
             // if transaction is neither a create/call and has no valid ContractFunctionResult then skip
@@ -85,25 +94,8 @@ public class ContractResultServiceImpl implements ContractResultService {
         // in pre-compile case transaction is not a contract type and entityId will be of a different type
         var contractId = isContractCreateOrCall(transactionBody) ? transaction.getEntityId() :
                 entityIdService.lookup(functionResult.getContractID());
-        processContractResult(recordItem, contractId, functionResult, transactionHandler);
-
-        var sidecarRecords = recordItem.getSidecarRecords();
-        long consensusTimestamp = recordItem.getConsensusTimestamp();
-        var payerAccountId = recordItem.getPayerAccountId();
-
-        for (var sidecarRecord : sidecarRecords) {
-            if (sidecarRecord.hasStateChanges()) {
-                var stateChanges = sidecarRecord.getStateChanges();
-                for (var stateChange : stateChanges.getContractStateChangesList()) {
-                    processContractStateChange(stateChange, consensusTimestamp, payerAccountId);
-                }
-            } else if (sidecarRecord.hasActions()) {
-                var actions = sidecarRecord.getActions();
-                for (int actionIndex = 0; actionIndex < actions.getContractActionsCount(); actionIndex++) {
-                    processContractAction(actions.getContractActions(actionIndex), actionIndex, consensusTimestamp);
-                }
-            }
-        }
+        processContractResult(recordItem, contractId, functionResult, transaction, transactionHandler,
+                sidecarFailedInitcode);
     }
 
     private boolean isValidContractFunctionResult(ContractFunctionResult contractFunctionResult) {
@@ -155,19 +147,32 @@ public class ContractResultServiceImpl implements ContractResultService {
     }
 
     private void processContractResult(RecordItem recordItem, EntityId contractEntityId,
-                                       ContractFunctionResult functionResult,
-                                       TransactionHandler transactionHandler) {
+                                       ContractFunctionResult functionResult, Transaction transaction,
+                                       TransactionHandler transactionHandler,
+                                       ByteString sidecarFailedInitcode) {
         // create child contracts regardless of contractResults support
         List<Long> contractIds = getCreatedContractIds(functionResult, recordItem, contractEntityId);
         if (!entityProperties.getPersist().isContractResults()) {
             return;
         }
 
+        // Normalize the two distinct hashes into one 32 byte hash
+        var transactionHash = Optional.ofNullable(recordItem.getEthereumTransaction())
+                .map(EthereumTransaction::getHash)
+                .orElseGet(() -> Arrays.copyOfRange(transaction.getTransactionHash(), 0, 32));
+
         ContractResult contractResult = new ContractResult();
         contractResult.setConsensusTimestamp(recordItem.getConsensusTimestamp());
         contractResult.setContractId(contractEntityId);
         contractResult.setPayerAccountId(recordItem.getPayerAccountId());
+        contractResult.setTransactionHash(transactionHash);
+        contractResult.setTransactionIndex(transaction.getIndex());
+        contractResult.setTransactionResult(transaction.getResult());
         transactionHandler.updateContractResult(contractResult, recordItem);
+
+        if (sidecarFailedInitcode != null && contractResult.getFailedInitcode() == null) {
+            contractResult.setFailedInitcode(DomainUtils.toBytes(sidecarFailedInitcode));
+        }
 
         if (isValidContractFunctionResult(functionResult)) {
             if (!isContractCreateOrCall(recordItem.getTransactionBody())) {
@@ -257,6 +262,7 @@ public class ContractResultServiceImpl implements ContractResultService {
 
     private void processCreatedContractEntity(RecordItem recordItem, EntityId contractEntityId) {
         Entity entity = contractEntityId.toEntity();
+        entity.setBalance(0L);
         entity.setCreatedTimestamp(recordItem.getConsensusTimestamp());
         entity.setDeleted(false);
         entity.setMaxAutomaticTokenAssociations(0);
@@ -267,6 +273,36 @@ public class ContractResultServiceImpl implements ContractResultService {
         }
 
         entityListener.onEntity(entity);
+    }
+
+    private ByteString processSidecarRecords(RecordItem recordItem) {
+        ByteString failedInitcode = null;
+        var contractBytecodes = new ArrayList<ContractBytecode>();
+        var sidecarRecords = recordItem.getSidecarRecords();
+        long consensusTimestamp = recordItem.getConsensusTimestamp();
+        var payerAccountId = recordItem.getPayerAccountId();
+        for (var sidecarRecord : sidecarRecords) {
+            if (sidecarRecord.hasStateChanges()) {
+                var stateChanges = sidecarRecord.getStateChanges();
+                for (var stateChange : stateChanges.getContractStateChangesList()) {
+                    processContractStateChange(stateChange, consensusTimestamp, payerAccountId);
+                }
+            } else if (sidecarRecord.hasActions()) {
+                var actions = sidecarRecord.getActions();
+                for (int actionIndex = 0; actionIndex < actions.getContractActionsCount(); actionIndex++) {
+                    processContractAction(actions.getContractActions(actionIndex), actionIndex, consensusTimestamp);
+                }
+            } else if (sidecarRecord.hasBytecode()) {
+                if (sidecarRecord.getMigration()) {
+                    contractBytecodes.add(sidecarRecord.getBytecode());
+                } else if (!recordItem.isSuccessful()) {
+                    failedInitcode = sidecarRecord.getBytecode().getInitcode();
+                }
+            }
+        }
+
+        sidecarContractMigration.migrate(contractBytecodes);
+        return failedInitcode;
     }
 
     /**

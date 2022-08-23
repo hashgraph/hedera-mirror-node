@@ -405,6 +405,7 @@ const entityDefaults = {
   alias: null,
   auto_renew_account_id: null,
   auto_renew_period: null,
+  balance: null,
   created_timestamp: null,
   decline_reward: false,
   deleted: false,
@@ -528,7 +529,7 @@ const addFileData = async (fileDataInput) => {
 
   await pool.query(
     `insert into file_data (file_data, consensus_timestamp, entity_id, transaction_type)
-     values ($1, $2, $3, $4)`,
+    values ($1, $2, $3, $4)`,
     [fileData.file_data, fileData.consensus_timestamp, fileData.entity_id, fileData.transaction_type]
   );
 };
@@ -560,8 +561,8 @@ const addAssessedCustomFee = async (assessedCustomFee) => {
 
   await pool.query(
     `insert into assessed_custom_fee
-     (amount, collector_account_id, consensus_timestamp, effective_payer_account_ids, token_id, payer_account_id)
-     values ($1, $2, $3, $4, $5, $6);`,
+    (amount, collector_account_id, consensus_timestamp, effective_payer_account_ids, token_id, payer_account_id)
+    values ($1, $2, $3, $4, $5, $6);`,
     [
       amount,
       EntityId.parse(collector_account_id).getEncodedId(),
@@ -592,7 +593,7 @@ const addCustomFee = async (customFee) => {
                              royalty_denominator,
                              royalty_numerator,
                              token_id)
-     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);`,
+    values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);`,
     [
       customFee.amount || null,
       customFee.amount_denominator || null,
@@ -613,16 +614,15 @@ const setAccountBalance = async (balance) => {
   balance = {timestamp: 0, id: null, balance: 0, realm_num: 0, ...balance};
   const accountId = EntityId.of(BigInt(config.shard), BigInt(balance.realm_num), BigInt(balance.id)).getEncodedId();
   await pool.query(
-    `INSERT INTO account_balance (consensus_timestamp, account_id, balance)
-     VALUES ($1, $2, $3);`,
+    `insert into account_balance (consensus_timestamp, account_id, balance)
+    values ($1, $2, $3);`,
     [balance.timestamp, accountId, balance.balance]
   );
 
   await pool.query(
-    `INSERT INTO account_balance_file
-     (consensus_timestamp, count, load_start, load_end, name, node_account_id)
-     VALUES ($1, $2, $3, $4, $5, $6)
-     ON CONFLICT DO NOTHING;`,
+    `insert into account_balance_file
+    (consensus_timestamp, count, load_start, load_end, name, node_account_id)
+    values ($1, $2, $3, $4, $5, $6) on CONFLICT DO NOTHING;`,
     [balance.timestamp, 1, balance.timestamp, balance.timestamp, `${balance.timestamp}_Balances.pb.gz`, 3]
   );
 
@@ -639,7 +639,7 @@ const setAccountBalance = async (balance) => {
     ]);
     await pool.query(
       pgformat(
-        'INSERT INTO token_balance (consensus_timestamp, account_id, balance, token_id) VALUES %L',
+        'insert into token_balance (consensus_timestamp, account_id, balance, token_id) values %L',
         tokenBalances
       )
     );
@@ -678,6 +678,10 @@ const addTransaction = async (transaction) => {
     payer_account_id: EntityId.parse(transaction.payerAccountId).getEncodedId(),
     valid_start_ns: transaction.valid_start_timestamp,
   };
+
+  if (transaction.transaction_hash.length === 96) {
+    transaction.transaction_hash = Buffer.from(transaction.transaction_hash, 'hex');
+  }
 
   if (transaction.valid_start_ns === undefined) {
     // set valid_start_ns to consensus_timestamp - 1 if not set
@@ -718,26 +722,26 @@ const insertTransfers = async (
   if (transfers.length === 0 && hasChargedTransactionFee && payerAccountId) {
     // insert default crypto transfers to node and treasury
     await pool.query(
-      `INSERT INTO ${tableName} (consensus_timestamp, amount, entity_id, payer_account_id, is_approval)
-       VALUES ($1, $2, $3, $4, $5);`,
+      `insert into ${tableName} (consensus_timestamp, amount, entity_id, payer_account_id, is_approval)
+      values ($1, $2, $3, $4, $5);`,
       [consensusTimestamp.toString(), NODE_FEE, nodeAccount || DEFAULT_NODE_ID, payerAccountId, false]
     );
     await pool.query(
-      `INSERT INTO ${tableName} (consensus_timestamp, amount, entity_id, payer_account_id, is_approval)
-       VALUES ($1, $2, $3, $4, $5);`,
+      `insert into ${tableName} (consensus_timestamp, amount, entity_id, payer_account_id, is_approval)
+      values ($1, $2, $3, $4, $5);`,
       [consensusTimestamp.toString(), NETWORK_FEE, DEFAULT_TREASURY_ID, payerAccountId, false]
     );
     await pool.query(
-      `INSERT INTO ${tableName} (consensus_timestamp, amount, entity_id, payer_account_id, is_approval)
-       VALUES ($1, $2, $3, $4, $5);`,
+      `insert into ${tableName} (consensus_timestamp, amount, entity_id, payer_account_id, is_approval)
+      values ($1, $2, $3, $4, $5);`,
       [consensusTimestamp.toString(), -(NODE_FEE + NETWORK_FEE), payerAccountId, payerAccountId, false]
     );
   }
 
   for (const transfer of transfers) {
     await pool.query(
-      `INSERT INTO ${tableName} (consensus_timestamp, amount, entity_id, payer_account_id, is_approval)
-       VALUES ($1, $2, $3, $4, $5);`,
+      `insert into ${tableName} (consensus_timestamp, amount, entity_id, payer_account_id, is_approval)
+      values ($1, $2, $3, $4, $5);`,
       [
         consensusTimestamp.toString(),
         transfer.amount,
@@ -767,7 +771,7 @@ const insertTokenTransfers = async (consensusTimestamp, transfers, payerAccountI
 
   await pool.query(
     pgformat(
-      'INSERT INTO token_transfer (consensus_timestamp, token_id, account_id, amount, payer_account_id, is_approval) VALUES %L',
+      'insert into token_transfer (consensus_timestamp, token_id, account_id, amount, payer_account_id, is_approval) values %L',
       tokenTransfers
     )
   );
@@ -792,7 +796,7 @@ const insertNftTransfers = async (consensusTimestamp, nftTransferList, payerAcco
 
   await pool.query(
     pgformat(
-      'INSERT INTO nft_transfer (consensus_timestamp, receiver_account_id, sender_account_id, serial_number, token_id, payer_account_id, is_approval) VALUES %L',
+      'insert into nft_transfer (consensus_timestamp, receiver_account_id, sender_account_id, serial_number, token_id, payer_account_id, is_approval) values %L',
       nftTransfers
     )
   );
@@ -831,23 +835,27 @@ const addContract = async (custom) => {
   await insertDomainObject('contract', insertFields, contract);
 };
 
-const addContractResult = async (contractResultInput) => {
-  const insertFields = [
-    'amount',
-    'bloom',
-    'call_result',
-    'consensus_timestamp',
-    'contract_id',
-    'created_contract_ids',
-    'error_message',
-    'function_parameters',
-    'function_result',
-    'gas_limit',
-    'gas_used',
-    'payer_account_id',
-    'sender_id',
-  ];
+const insertFields = [
+  'amount',
+  'bloom',
+  'call_result',
+  'consensus_timestamp',
+  'contract_id',
+  'created_contract_ids',
+  'error_message',
+  'failed_initcode',
+  'function_parameters',
+  'function_result',
+  'gas_limit',
+  'gas_used',
+  'payer_account_id',
+  'sender_id',
+  'transaction_hash',
+  'transaction_index',
+  'transaction_result',
+];
 
+const addContractResult = async (contractResultInput) => {
   const contractResult = {
     amount: 0,
     bloom: null,
@@ -856,11 +864,15 @@ const addContractResult = async (contractResultInput) => {
     contract_id: 0,
     created_contract_ids: [],
     error_message: '',
+    failed_initcode: null,
     function_parameters: Buffer.from([1, 1, 2, 2, 3, 3]),
     function_result: null,
     gas_limit: 1000,
     gas_used: null,
     payer_account_id: 101,
+    transaction_hash: Buffer.from([1, 2, 3]),
+    transaction_index: 1,
+    transaction_result: 22,
     ...contractResultInput,
   };
 
@@ -868,6 +880,10 @@ const addContractResult = async (contractResultInput) => {
     contractResultInput.bloom != null ? Buffer.from(contractResultInput.bloom) : contractResult.bloom;
   contractResult.call_result =
     contractResultInput.call_result != null ? Buffer.from(contractResultInput.call_result) : contractResult.call_result;
+  contractResult.failed_initcode =
+    contractResultInput.failed_initcode != null
+      ? Buffer.from(contractResultInput.failed_initcode)
+      : contractResult.failed_initcode;
   contractResult.function_parameters =
     contractResultInput.function_parameters != null
       ? Buffer.from(contractResultInput.function_parameters)
@@ -876,6 +892,10 @@ const addContractResult = async (contractResultInput) => {
     contractResultInput.function_result != null
       ? Buffer.from(contractResultInput.function_result)
       : contractResult.function_result;
+  contractResult.transaction_hash =
+    contractResultInput.transaction_hash != null
+      ? Buffer.from(contractResultInput.transaction_hash)
+      : contractResult.transaction_hash;
 
   await insertDomainObject('contract_result', insertFields, contractResult);
 };
@@ -922,7 +942,7 @@ const addContractLog = async (contractLogInput) => {
 
   await pool.query(
     `insert into contract_log (${insertFields.join(',')})
-     values (${positions})`,
+    values (${positions})`,
     insertFields.map((name) => contractLog[name])
   );
 };
@@ -1045,7 +1065,7 @@ const addSchedule = async (schedule) => {
   };
 
   await pool.query(
-    `INSERT INTO schedule (consensus_timestamp,
+    `insert into schedule (consensus_timestamp,
                            creator_account_id,
                            executed_timestamp,
                            payer_account_id,
@@ -1053,7 +1073,7 @@ const addSchedule = async (schedule) => {
                            transaction_body,
                            expiration_time,
                            wait_for_expiry)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+    values ($1, $2, $3, $4, $5, $6, $7, $8)`,
     [
       schedule.consensus_timestamp,
       EntityId.parse(schedule.creator_account_id).getEncodedId(),
@@ -1069,12 +1089,12 @@ const addSchedule = async (schedule) => {
 
 const addTransactionSignature = async (transactionSignature) => {
   await pool.query(
-    `INSERT INTO transaction_signature (consensus_timestamp,
+    `insert into transaction_signature (consensus_timestamp,
                                         public_key_prefix,
                                         entity_id,
                                         signature,
                                         type)
-     VALUES ($1, $2, $3, $4, $5)`,
+    values ($1, $2, $3, $4, $5)`,
     [
       transactionSignature.consensus_timestamp,
       Buffer.from(transactionSignature.public_key_prefix),
@@ -1118,7 +1138,7 @@ const addToken = async (token) => {
   }
 
   await pool.query(
-    `INSERT INTO token (token_id,
+    `insert into token (token_id,
                         created_timestamp,
                         decimals,
                         fee_schedule_key,
@@ -1137,7 +1157,7 @@ const addToken = async (token) => {
                         treasury_account_id,
                         type,
                         wipe_key)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19);`,
+    values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19);`,
     [
       EntityId.parse(token.token_id).getEncodedId(),
       token.created_timestamp,
@@ -1191,9 +1211,9 @@ const addTokenAccount = async (tokenAccount) => {
   }
 
   await pool.query(
-    `INSERT INTO token_account (account_id, associated, automatic_association, created_timestamp, freeze_status,
+    `insert into token_account (account_id, associated, automatic_association, created_timestamp, freeze_status,
                                 kyc_status, modified_timestamp, token_id)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8);`,
+    values ($1, $2, $3, $4, $5, $6, $7, $8);`,
     [
       EntityId.parse(tokenAccount.account_id).getEncodedId(),
       tokenAccount.associated,
@@ -1269,9 +1289,9 @@ const addNft = async (nft) => {
   }
 
   await pool.query(
-    `INSERT INTO nft (account_id, created_timestamp, delegating_spender, deleted, modified_timestamp, metadata,
+    `insert into nft (account_id, created_timestamp, delegating_spender, deleted, modified_timestamp, metadata,
                       serial_number, spender, token_id)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9);`,
+    values ($1, $2, $3, $4, $5, $6, $7, $8, $9);`,
     [
       EntityId.parse(nft.account_id, {isNullable: true}).getEncodedId(),
       nft.created_timestamp,
@@ -1366,8 +1386,8 @@ const addRecordFile = async (recordFileInput) => {
 const insertDomainObject = async (table, fields, obj) => {
   const positions = _.range(1, fields.length + 1).map((position) => `$${position}`);
   await pool.query(
-    `INSERT INTO ${table} (${fields})
-     VALUES (${positions});`,
+    `insert into ${table} (${fields})
+    values (${positions});`,
     fields.map((f) => obj[f])
   );
 };

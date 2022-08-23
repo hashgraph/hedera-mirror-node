@@ -24,6 +24,7 @@ import java.text.MessageFormat;
 import java.util.Comparator;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import lombok.ToString;
 import lombok.Value;
 import org.apache.commons.lang3.StringUtils;
 
@@ -33,10 +34,12 @@ import com.hedera.mirror.common.domain.UpsertColumn;
 class ColumnMetadata implements Comparable<ColumnMetadata> {
 
     private final Object defaultValue;
+    @ToString.Exclude
     private final Function<Object, Object> getter;
     private final boolean id;
     private final String name;
     private final boolean nullable;
+    @ToString.Exclude
     private final BiConsumer<Object, Object> setter;
     private final Class<?> type;
     private final boolean updatable;

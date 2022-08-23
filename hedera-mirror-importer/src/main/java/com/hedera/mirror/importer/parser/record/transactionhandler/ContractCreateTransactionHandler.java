@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import static com.hederahashgraph.api.proto.java.ContractCreateTransactionBody.InitcodeSourceCase.INITCODE;
+
 import javax.inject.Named;
 
 import com.hedera.mirror.common.domain.contract.Contract;
@@ -34,22 +36,18 @@ import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
-import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionParser;
 import com.hedera.mirror.importer.util.Utility;
 
 @Named
-class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHandler<Entity> {
+class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
     private final EntityProperties entityProperties;
-    private final EthereumTransactionParser ethereumTransactionParser;
 
     ContractCreateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
                                      EntityProperties entityProperties,
-                                     EthereumTransactionParser ethereumTransactionParser,
                                      RecordParserProperties recordParserProperties) {
         super(entityIdService, entityListener, recordParserProperties, TransactionType.CONTRACTCREATEINSTANCE);
         this.entityProperties = entityProperties;
-        this.ethereumTransactionParser = ethereumTransactionParser;
     }
 
     @Override
@@ -104,6 +102,7 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
             entity.setProxyAccountId(EntityId.of(transactionBody.getProxyAccountID()));
         }
 
+        entity.setBalance(0L);
         entity.setMaxAutomaticTokenAssociations(transactionBody.getMaxAutomaticTokenAssociations());
         entity.setMemo(transactionBody.getMemo());
         updateStakingInfo(recordItem, entity);
@@ -131,7 +130,7 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
         var sidecarRecords = recordItem.getSidecarRecords();
 
         for (var sidecar : sidecarRecords) {
-            if (sidecar.hasBytecode()) {
+            if (sidecar.hasBytecode() && !sidecar.getMigration()) {
                 var bytecode = sidecar.getBytecode();
                 if (contractId.equals(bytecode.getContractId())) {
                     if (contract.getInitcode() == null) {
@@ -176,6 +175,9 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
             contractResult.setAmount(transactionBody.getInitialBalance());
             contractResult.setFunctionParameters(DomainUtils.toBytes(transactionBody.getConstructorParameters()));
             contractResult.setGasLimit(transactionBody.getGas());
+            if (!recordItem.isSuccessful() && transactionBody.getInitcodeSourceCase() == INITCODE) {
+                contractResult.setFailedInitcode(DomainUtils.toBytes(transactionBody.getInitcode()));
+            }
         }
     }
 
@@ -191,7 +193,8 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
         switch (type) {
             case CONTRACTCREATEINSTANCE -> updateChildFromContractCreateParent(contract, parentRecordItem);
             case ETHEREUMTRANSACTION -> updateChildFromEthereumTransactionParent(contract, parentRecordItem);
-            default -> {}
+            default -> {
+            }
         }
     }
 
@@ -224,11 +227,8 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
             return;
         }
 
-        if (contract.getInitcode() == null) {
-            var ethereumDataBytes = DomainUtils.toBytes(body.getEthereumData());
-            var ethereumTransaction = ethereumTransactionParser.decode(ethereumDataBytes);
-
-            contract.setInitcode(ethereumTransaction.getCallData());
+        if (contract.getInitcode() == null && recordItem.getEthereumTransaction() != null) {
+            contract.setInitcode(recordItem.getEthereumTransaction().getCallData());
         }
     }
 }

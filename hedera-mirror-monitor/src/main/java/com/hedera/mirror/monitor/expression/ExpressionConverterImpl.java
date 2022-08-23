@@ -34,6 +34,7 @@ import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 import reactor.util.retry.Retry;
 
 import com.hedera.hashgraph.sdk.PrivateKey;
@@ -88,14 +89,12 @@ public class ExpressionConverterImpl implements ExpressionConverter {
             Class<? extends TransactionSupplier<?>> supplierClass = type.getTransactionType().getSupplier();
             TransactionSupplier<?> transactionSupplier = supplierClass.getConstructor().newInstance();
 
-            if (transactionSupplier instanceof AdminKeyable) {
-                AdminKeyable adminKeyable = (AdminKeyable) transactionSupplier;
+            if (transactionSupplier instanceof AdminKeyable adminKeyable) {
                 PrivateKey privateKey = PrivateKey.fromString(monitorProperties.getOperator().getPrivateKey());
                 adminKeyable.setAdminKey(privateKey.getPublicKey().toString());
             }
 
-            if (transactionSupplier instanceof TokenCreateTransactionSupplier) {
-                TokenCreateTransactionSupplier tokenSupplier = (TokenCreateTransactionSupplier) transactionSupplier;
+            if (transactionSupplier instanceof TokenCreateTransactionSupplier tokenSupplier) {
                 tokenSupplier.setTreasuryAccountId(monitorProperties.getOperator().getAccountId());
                 if (type == ExpressionType.NFT) {
                     tokenSupplier.setType(TokenType.NON_FUNGIBLE_UNIQUE);
@@ -103,8 +102,7 @@ public class ExpressionConverterImpl implements ExpressionConverter {
             }
 
             // if ScheduleCreate set the properties to the inner scheduledTransactionProperties
-            if (transactionSupplier instanceof ScheduleCreateTransactionSupplier) {
-                var scheduleCreateTransactionSupplier = (ScheduleCreateTransactionSupplier) transactionSupplier;
+            if (transactionSupplier instanceof ScheduleCreateTransactionSupplier scheduleCreateTransactionSupplier) {
                 scheduleCreateTransactionSupplier.setOperatorAccountId(monitorProperties.getOperator().getAccountId());
                 scheduleCreateTransactionSupplier.setPayerAccount(monitorProperties.getOperator().getAccountId());
             }
@@ -119,6 +117,7 @@ public class ExpressionConverterImpl implements ExpressionConverter {
             // avoid transaction expired errors
             Retry retrySpec = Retry.backoff(Long.MAX_VALUE, Duration.ofSeconds(1L))
                     .maxBackoff(Duration.ofSeconds(8L))
+                    .scheduler(Schedulers.newSingle("expression"))
                     .doBeforeRetry(r -> log.warn("Retry attempt #{} after failure: {}",
                             r.totalRetries() + 1, r.failure().getMessage()));
 
@@ -135,6 +134,7 @@ public class ExpressionConverterImpl implements ExpressionConverter {
                     .map(PublishResponse::getReceipt)
                     .map(type.getIdExtractor()::apply)
                     .doOnSuccess(id -> log.info("Created {} entity {}", type, id))
+                    .doOnError(e -> log.error("Error converting expression: {}", e))
                     .toFuture()
                     .join();
         } catch (Exception e) {

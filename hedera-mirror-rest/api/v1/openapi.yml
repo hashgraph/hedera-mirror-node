@@ -676,13 +676,13 @@ paths:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
         - transactions
-  /api/v1/transactions/{transactionId}:
+  /api/v1/transactions/{transactionIdOrHash}:
     get:
-      summary: Get transaction by id
-      description: Returns transaction information based on the given transaction id
-      operationId: getTransactionById
+      summary: Get transaction by id or hash
+      description: Returns transaction information based on the given transaction id or hash
+      operationId: getTransactionByIdOrHash
       parameters:
-        - $ref: '#/components/parameters/transactionIdPathParam'
+        - $ref: '#/components/parameters/transactionIdOrHashPathParam'
         - $ref: '#/components/parameters/nonceQueryParam'
         - $ref: '#/components/parameters/scheduledQueryParam'
       responses:
@@ -1074,7 +1074,7 @@ tags:
     description: The tokens object represents the information associated with a token entity and returns a list of token information.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.63.0-SNAPSHOT
+  version: 0.64.0-SNAPSHOT
   license:
     name: Apache-2.0
     url: 'https://www.apache.org/licenses/LICENSE-2.0.html'
@@ -1754,15 +1754,19 @@ components:
               nullable: true
               type: string
               example: '0x0127'
-            hash:
-              description: The hex encoded transaction hash
-              example: "0x3531396130303866616264653464"
+            failed_initcode:
+              description: The hex encoded initcode of a failed contract create transaction
+              example: "0x856739"
               type: string
             gas_price:
               description: The hex encoded gas_price of the wrapped ethereum transaction
               nullable: true
               type: string
               example: '0x4a817c800'
+            hash:
+              description: The hex encoded transaction hash
+              example: "0x3531396130303866616264653464"
+              type: string
             logs:
               $ref: '#/components/schemas/ContractResultLogs'
             max_fee_per_gas:
@@ -2927,7 +2931,7 @@ components:
     TransactionIdStr:
       type: string
       description: A transaction id in string format.
-      pattern: '^(\d+)\.(\d+)\.(\d+)-(\d{1,19})-(\d{1,9})$'
+      pattern: '^\d+\.\d+\.\d+-\d{1,19}-\d{1,9}$'
     Transactions:
       type: array
       items:
@@ -3671,6 +3675,23 @@ components:
       example: cryptotransfer
       schema:
         $ref: '#/components/schemas/TransactionTypes'
+    transactionIdOrHashPathParam:
+      name: transactionIdOrHash
+      in: path
+      required: true
+      description: Transaction id or hash
+      examples:
+        transactionId:
+          value: 0.0.10-1234567890-000000000
+        transactionHashInBase64url:
+          value: rovr8cn6DzCTVuSAV_YEevfN5jA30FCdFt3Dsg4IUVi_3xTRU0XBsYsZm3L-1Kxv
+        transactionHashInHex:
+          value: ab4af784ae69ca3e1d17fef8491f7f89a0e8a3b80ad3748b841110f0345ada53456bc14bbe9ee6f441829c2849933ac4
+        transactionHashInHexWithPrefix:
+          value: '0xab4af784ae69ca3e1d17fef8491f7f89a0e8a3b80ad3748b841110f0345ada53456bc14bbe9ee6f441829c2849933ac4'
+      schema:
+        type: string
+        pattern: '^([\dA-Za-z\-_]{64}|(0x)?[\dA-Fa-f]{96})|(\d+\.\d+\.\d+-\d{1,19}-\d{1,9})$'
     transactionIdPathParam:
       name: transactionId
       in: path
@@ -3678,7 +3699,7 @@ components:
       description: Transaction id
       example: 0.0.10-1234567890-000000000
       schema:
-        type: string
+        $ref: '#/components/schemas/TransactionIdStr'
     tokenIdQueryParam:
       name: token.id
       description: The ID of the token to return information for
@@ -3827,7 +3848,7 @@ components:
       required: true
       description: Transaction Id or a 32 byte hash with optional 0x prefix
       examples:
-        trahsactionId:
+        transactionId:
           value: 0.0.10-1234567890-000000000
         transactionHash:
           value: ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef

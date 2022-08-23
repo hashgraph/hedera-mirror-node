@@ -56,11 +56,11 @@ import com.hedera.mirror.monitor.publish.transaction.TransactionType;
 @MockitoSettings(strictness = Strictness.STRICT_STUBS)
 class ExpressionConverterImplTest {
 
-    @Mock
-    private TransactionPublisher transactionPublisher;
-
     @Spy
     private final MonitorProperties monitorProperties = new MonitorProperties();
+
+    @Mock
+    private TransactionPublisher transactionPublisher;
 
     @InjectMocks
     private ExpressionConverterImpl expressionConverter;
@@ -119,7 +119,8 @@ class ExpressionConverterImplTest {
     @Test
     void errorPublishing() throws InvalidProtocolBufferException {
         TransactionType type = TransactionType.CONSENSUS_CREATE_TOPIC;
-        when(transactionPublisher.publish(any())).thenReturn(Mono.error(new TimeoutException("timeout")))
+        when(transactionPublisher.publish(any()))
+                .thenReturn(Mono.error(new TimeoutException("timeout")))
                 .thenReturn(response(type, 100));
         assertThat(expressionConverter.convert("${topic.foo}")).isEqualTo("0.0.100");
     }

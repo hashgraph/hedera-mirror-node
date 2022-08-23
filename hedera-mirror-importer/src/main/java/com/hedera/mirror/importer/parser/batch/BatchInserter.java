@@ -91,7 +91,7 @@ public class BatchInserter implements BatchPersister {
         sql = String.format("COPY %s(%s) FROM STDIN WITH CSV", this.tableName, columnsCsv);
         insertDurationMetric = Timer.builder("hedera.mirror.importer.parse.insert")
                 .description("Time to insert transactions into table")
-                .tag("table", tableName)
+                .tag("table", this.tableName)
                 .register(meterRegistry);
     }
 

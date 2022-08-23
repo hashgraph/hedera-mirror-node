@@ -71,6 +71,10 @@ spring:
         paths: /usr/etc/${spring.application.name}
   lifecycle:
     timeout-per-shutdown-phase: 20s
+  task:
+    scheduling:
+      pool:
+        size: 4
 springdoc:
   api-docs:
     path: /api/v1/docs/openapi

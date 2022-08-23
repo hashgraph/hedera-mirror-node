@@ -1,36 +1,38 @@
 {
   "description": "Network supply API with no args",
   "setup": {
-    "accounts": [],
-    "balances": [
+    "accounts": [
       {
-        "timestamp": 1000000000,
-        "id": 2,
-        "balance": 3900000000000000000
+        "balance": 10,
+        "num": 1
       },
       {
-        "timestamp": 1000000001,
-        "id": 1,
-        "balance": 10
+        "balance": 4000000000000000000,
+        "num": 2
       },
       {
-        "timestamp": 1000000001,
-        "id": 2,
-        "balance": 4000000000000000000
+        "balance": 50,
+        "num": 42
       },
       {
-        "timestamp": 1000000001,
-        "id": 42,
-        "balance": 50
-      },
-      {
-        "timestamp": 1000000001,
-        "id": 100,
-        "balance": 1
+        "balance": 1,
+        "num": 100
       }
     ],
-    "transactions": [],
-    "cryptotransfers": []
+    "recordFiles": [
+      {
+        "consensus_start": "1000000000",
+        "consensus_end": "1000000001",
+        "count": 1,
+        "hapi_version_major": 0,
+        "hapi_version_minor": 22,
+        "hapi_version_patch": 3,
+        "hash": "123",
+        "index": 16,
+        "name": "2022-04-27T12_09_24.499938763Z.rcd",
+        "prev_hash": "abc"
+      }
+    ]
   },
   "url": "/api/v1/network/supply",
   "responseStatus": 200,

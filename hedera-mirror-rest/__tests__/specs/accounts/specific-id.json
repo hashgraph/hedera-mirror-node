@@ -3,24 +3,27 @@
   "setup": {
     "accounts": [
       {
+        "balance": 70,
         "decline_reward": true,
         "num": 7
       },
       {
+        "balance": 80,
         "num": 8,
         "staked_account_id": 200,
         "stake_period_start": 1100
       },
       {
+        "balance": 90,
         "num": 9,
         "staked_node_id": 5
       }
     ],
     "balances": [
       {
-        "timestamp": 2345,
+        "timestamp": 2200,
         "id": 7,
-        "balance": 70,
+        "balance": 999,
         "tokens": [
           {
             "token_num": 100001,
@@ -33,9 +36,9 @@
         ]
       },
       {
-        "timestamp": 2345,
+        "timestamp": 2200,
         "id": 8,
-        "balance": 80,
+        "balance": 999,
         "tokens": [
           {
             "token_num": 200001,
@@ -44,13 +47,17 @@
         ]
       },
       {
-        "timestamp": 2345,
+        "timestamp": 2200,
         "id": 9,
-        "balance": 90
+        "balance": 999
       }
     ],
-    "transactions": [],
-    "cryptotransfers": []
+    "recordFiles": [
+      {
+        "consensus_start": 1700,
+        "consensus_end": 2345
+      }
+    ]
   },
   "urls": ["/api/v1/accounts?account.id=0.0.8", "/api/v1/accounts?account.id=0.8", "/api/v1/accounts?account.id=8"],
   "responseStatus": 200,

@@ -21,18 +21,15 @@ package com.hedera.mirror.importer.migration;
  */
 
 import com.google.common.base.Stopwatch;
-import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import java.io.IOException;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Named;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
-import lombok.extern.log4j.Log4j2;
 import org.flywaydb.core.api.MigrationVersion;
 import org.postgresql.jdbc.PgArray;
 import org.springframework.context.annotation.Lazy;
@@ -44,7 +41,6 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.util.Utility;
 
-@Log4j2
 @Named
 @RequiredArgsConstructor(onConstructor_ = {@Lazy})
 public class ContractResultMigration extends MirrorBaseJavaMigration {

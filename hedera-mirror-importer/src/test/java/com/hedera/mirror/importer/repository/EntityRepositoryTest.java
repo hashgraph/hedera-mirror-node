@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
+import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.protobuf.ByteString;
@@ -107,5 +108,16 @@ class EntityRepositoryTest extends AbstractRepositoryTest {
         assertThat(entityRepository.findByEvmAddress(entity.getEvmAddress())).get().isEqualTo(entity.getId());
         assertThat(entityRepository.findByEvmAddress(entityDeleted.getEvmAddress())).isEmpty();
         assertThat(entityRepository.findByEvmAddress(new byte[] {1, 2, 3})).isEmpty();
+    }
+
+    @Test
+    void updateContractType() {
+        Entity entity = domainBuilder.entity().persist();
+        Entity entity2 = domainBuilder.entity().persist();
+        entityRepository.updateContractType(List.of(entity.getId(), entity2.getId()));
+        assertThat(entityRepository.findAll())
+                .hasSize(2)
+                .extracting(Entity::getType)
+                .allMatch(e -> e == CONTRACT);
     }
 }

@@ -52,6 +52,11 @@ class BlockNumberMigrationTest extends IntegrationTest {
     private final RecordFileRepository recordFileRepository;
 
     @Test
+    void checksum() {
+        assertThat(blockNumberMigration.getChecksum()).isEqualTo(4);
+    }
+
+    @Test
     void unsupportedNetwork() {
         var previousNetwork = mirrorProperties.getNetwork();
         mirrorProperties.setNetwork(PREVIEWNET);

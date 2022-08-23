@@ -28,14 +28,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.BytesValue;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
+import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenType;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.util.Version;
@@ -51,6 +57,7 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
@@ -62,6 +69,9 @@ import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.ContractStateChangeRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
+import com.hedera.services.stream.proto.ContractBytecode;
+import com.hedera.services.stream.proto.ContractStateChanges;
+import com.hedera.services.stream.proto.StorageChange;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -77,6 +87,8 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     private final RecordItemBuilder recordItemBuilder;
     private final RecordStreamFileListener recordStreamFileListener;
     private final TransactionTemplate transactionTemplate;
+
+    private Transaction transaction;
 
     @Test
     void processContractCall() {
@@ -115,6 +127,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                 .hasSize(1)
                 .first()
                 .returns(transactionBody.getAutoRenewPeriod().getSeconds(), Entity::getAutoRenewPeriod)
+                .returns(0L, Entity::getBalance)
                 .returns(recordItem.getConsensusTimestamp(), Entity::getCreatedTimestamp)
                 .returns(false, Entity::getDeleted)
                 .returns(entityId, Entity::getId)
@@ -126,11 +139,30 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
     @Test
     void processContractCreateNoChildren() {
-        var recordItem = recordItemBuilder.contractCreate().hapiVersion(new Version(0, 24, 0)).build();
+        var recordItem = recordItemBuilder.contractCreate()
+                .recordItem(r -> r.hapiVersion(new Version(0, 24, 0)))
+                .build();
 
         process(recordItem);
 
         assertContractResult(recordItem);
+        assertContractLogs(recordItem);
+        assertContractActions(recordItem);
+        assertContractStateChanges(recordItem);
+        assertThat(contractRepository.count()).isZero();
+        assertThat(entityRepository.count()).isZero();
+    }
+
+    @Test
+    void processEthereumTransaction() {
+        var ethereumTransaction = domainBuilder.ethereumTransaction(true).get();
+        var recordItem = recordItemBuilder.ethereumTransaction()
+                .recordItem(r -> r.ethereumTransaction(ethereumTransaction))
+                .build();
+
+        process(recordItem);
+
+        assertContractResult(recordItem, true);
         assertContractLogs(recordItem);
         assertContractActions(recordItem);
         assertContractStateChanges(recordItem);
@@ -227,7 +259,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
     @Test
     void processNoSidecars() {
-        RecordItem recordItem = recordItemBuilder.contractCreate().sidecarRecords(b -> b.clear()).build();
+        RecordItem recordItem = recordItemBuilder.contractCreate().sidecarRecords(List::clear).build();
 
         process(recordItem);
 
@@ -241,7 +273,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     @Test
     void processContractCallFailure() {
         RecordItem recordItem = recordItemBuilder.contractCall()
-                .record(x -> x.clearContractCallResult())
+                .record(TransactionRecord.Builder::clearContractCallResult)
                 .receipt(r -> r.clearContractID().setStatus(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION))
                 .build();
 
@@ -258,7 +290,8 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     @Test
     void processContractCreateFailure() {
         RecordItem recordItem = recordItemBuilder.contractCreate()
-                .record(x -> x.clearContractCreateResult())
+                .transactionBody(t -> t.setInitcode(ByteString.copyFrom(new byte[] {9, 8, 7})))
+                .record(TransactionRecord.Builder::clearContractCreateResult)
                 .receipt(r -> r.clearContractID().setStatus(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION))
                 .build();
 
@@ -272,13 +305,114 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
         assertThat(entityRepository.count()).isZero();
     }
 
+    @Test
+    void processSidecarContractCreateFailure() {
+        RecordItem recordItem = recordItemBuilder.contractCreate()
+                .record(TransactionRecord.Builder::clearContractCreateResult)
+                .receipt(r -> r.clearContractID().setStatus(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION))
+                .build();
+
+        process(recordItem);
+
+        assertContractResult(recordItem);
+        assertContractLogs(recordItem);
+        assertContractActions(recordItem);
+        assertContractStateChanges(recordItem);
+        assertThat(contractRepository.count()).isZero();
+        assertThat(entityRepository.count()).isZero();
+    }
+
+    @Test
+    void migrateContractSidecar() {
+        // given
+        var entity1 = domainBuilder.entity().persist();
+        var entity2 = domainBuilder.entity().persist();
+        domainBuilder.contract().customize(c -> c.id(entity1.getId())).persist();
+        domainBuilder.contract().customize(c -> c.id(entity2.getId()).runtimeBytecode(null)).persist();
+
+        var recordItem = recordItemBuilder.cryptoTransfer().build();
+        var stateChangeRecord1 = TransactionSidecarRecord.newBuilder()
+                .setStateChanges(ContractStateChanges.newBuilder()
+                        .addContractStateChanges(com.hedera.services.stream.proto.ContractStateChange.newBuilder()
+                                .setContractId(ContractID.newBuilder().setContractNum(1001L))
+                                .addStorageChanges(StorageChange.newBuilder()
+                                        .setValueWritten(BytesValue.of(DomainUtils.fromBytes(new byte[] {1, 1})))))
+                        .addContractStateChanges(com.hedera.services.stream.proto.ContractStateChange.newBuilder()
+                                .setContractId(ContractID.newBuilder().setContractNum(1002L))
+                                .addStorageChanges(StorageChange.newBuilder()
+                                        .setValueWritten(BytesValue.of(DomainUtils.fromBytes(new byte[] {2, 2}))))))
+                .build();
+        var stateChangeRecord2 = TransactionSidecarRecord.newBuilder()
+                .setStateChanges(ContractStateChanges.newBuilder()
+                        .addContractStateChanges(com.hedera.services.stream.proto.ContractStateChange.newBuilder()
+                                .setContractId(ContractID.newBuilder().setContractNum(1003L))
+                                .addStorageChanges(StorageChange.newBuilder()
+                                        .setValueWritten(BytesValue.of(DomainUtils.fromBytes(new byte[] {3, 3})))))
+                        .addContractStateChanges(com.hedera.services.stream.proto.ContractStateChange.newBuilder()
+                                .setContractId(ContractID.newBuilder().setContractNum(1004L))
+                                .addStorageChanges(StorageChange.newBuilder()
+                                        .setValueWritten(BytesValue.of(DomainUtils.fromBytes(new byte[] {4, 4}))))))
+                .build();
+        var bytecodeRecord1 = TransactionSidecarRecord.newBuilder()
+                .setMigration(true)
+                .setBytecode(ContractBytecode.newBuilder()
+                        .setContractId(ContractID.newBuilder().setContractNum(entity1.getId()))
+                        .setRuntimeBytecode(ByteString.copyFrom(new byte[] {1})))
+                .build();
+        var bytecodeRecord2 = TransactionSidecarRecord.newBuilder()
+                .setMigration(true)
+                .setBytecode(ContractBytecode.newBuilder()
+                        .setContractId(ContractID.newBuilder().setContractNum(entity2.getId()))
+                        .setRuntimeBytecode(ByteString.copyFrom(new byte[] {2})))
+                .build();
+        var bytecodeRecord3 = TransactionSidecarRecord.newBuilder()
+                .setMigration(false)
+                .setBytecode(ContractBytecode.newBuilder()
+                        .setContractId(ContractID.newBuilder().setContractNum(2003L))
+                        .setRuntimeBytecode(ByteString.copyFrom(new byte[] {3})))
+                .build();
+
+        recordItem.setSidecarRecords(List.of(stateChangeRecord1, stateChangeRecord2, bytecodeRecord1, bytecodeRecord2,
+                bytecodeRecord3));
+
+        // when
+        process(recordItem);
+
+        // then
+        assertContractStateChanges(recordItem);
+        assertContractRuntimeBytecode(recordItem);
+        assertEntityContractType(recordItem);
+    }
+
+    private void assertEntityContractType(RecordItem recordItem) {
+        var entities = entityRepository.findAll().iterator();
+        recordItem.getSidecarRecords()
+                .stream()
+                .filter(TransactionSidecarRecord::getMigration)
+                .map(TransactionSidecarRecord::getBytecode)
+                .forEach(contractBytecode -> {
+                    assertThat(entities).hasNext();
+                    assertThat(entities.next())
+                            .returns(CONTRACT, Entity::getType);
+                });
+        assertThat(entities).isExhausted();
+    }
+
     @SuppressWarnings("deprecation")
     private void assertContractResult(RecordItem recordItem) {
+        assertContractResult(recordItem, false);
+    }
+
+    private void assertContractResult(RecordItem recordItem, boolean ethereum) {
         var functionResult = getFunctionResult(recordItem);
         var createdIds = functionResult.getCreatedContractIDsList()
                 .stream()
                 .map(x -> EntityId.of(x).getId())
                 .collect(Collectors.toList());
+        var failedInitcode = getFailedInitcode(recordItem);
+        var hash = ethereum ? recordItem.getEthereumTransaction().getHash() :
+                Arrays.copyOfRange(transaction.getTransactionHash(), 0, 32);
+
         assertThat(contractResultRepository.findAll())
                 .hasSize(1)
                 .first()
@@ -288,7 +422,13 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                 .returns(toBytes(functionResult.getContractCallResult()), ContractResult::getCallResult)
                 .returns(createdIds, ContractResult::getCreatedContractIds)
                 .returns(parseContractResultStrings(functionResult.getErrorMessage()), ContractResult::getErrorMessage)
-                .returns(parseContractResultLongs(functionResult.getGasUsed()), ContractResult::getGasUsed);
+                .returns(parseContractResultLongs(functionResult.getGasUsed()), ContractResult::getGasUsed)
+                .returns(toBytes(failedInitcode), ContractResult::getFailedInitcode)
+                .returns(transaction.getIndex(), ContractResult::getTransactionIndex)
+                .returns(transaction.getResult(), ContractResult::getTransactionResult)
+                .extracting(ContractResult::getTransactionHash, InstanceOfAssertFactories.BYTE_ARRAY)
+                .hasSize(32)
+                .isEqualTo(hash);
     }
 
     private void assertContractActions(RecordItem recordItem) {
@@ -316,6 +456,21 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                                     c -> assertThat(c.getRecipientAddress()).isNotEmpty());
                 });
         assertThat(contractActions).isExhausted();
+    }
+
+    private void assertContractRuntimeBytecode(RecordItem recordItem) {
+        var contracts = contractRepository.findAll().iterator();
+        recordItem.getSidecarRecords()
+                .stream()
+                .filter(TransactionSidecarRecord::getMigration)
+                .map(TransactionSidecarRecord::getBytecode)
+                .forEach(contractBytecode -> {
+                    assertThat(contracts).hasNext();
+                    assertThat(contracts.next())
+                            .returns(DomainUtils.toBytes(contractBytecode.getRuntimeBytecode()),
+                                    Contract::getRuntimeBytecode);
+                });
+        assertThat(contracts).isExhausted();
     }
 
     private void assertContractLogs(RecordItem recordItem) {
@@ -379,7 +534,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
     protected void process(RecordItem recordItem) {
         var entityId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
-        var transaction = domainBuilder.transaction()
+        transaction = domainBuilder.transaction()
                 .customize(t -> t.entityId(entityId).type(recordItem.getTransactionType()))
                 .get();
 
@@ -398,6 +553,24 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
             // commit, close connection
             recordStreamFileListener.onEnd(recordFile);
         });
+    }
+
+    private ByteString getFailedInitcode(RecordItem recordItem) {
+        if (recordItem.isSuccessful()) {
+            return ByteString.EMPTY;
+        }
+
+        var failedInitcode = recordItem.getTransactionBody().getContractCreateInstance().getInitcode();
+        if (failedInitcode.isEmpty()) {
+            failedInitcode = recordItem.getSidecarRecords()
+                    .stream()
+                    .filter(TransactionSidecarRecord::hasBytecode)
+                    .map(s -> s.getBytecode().getInitcode())
+                    .findFirst()
+                    .orElse(ByteString.EMPTY);
+        }
+
+        return failedInitcode;
     }
 
     private ContractFunctionResult getFunctionResult(RecordItem recordItem) {
