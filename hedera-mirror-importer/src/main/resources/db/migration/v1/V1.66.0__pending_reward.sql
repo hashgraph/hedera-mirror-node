@@ -17,6 +17,7 @@ create index if not exists entity_state_start__staked_account_id
 create table if not exists entity_stake
 (
   decline_reward_start boolean not null,
+  end_stake_period     bigint  not null,
   id                   bigint  primary key,
   pending_reward       bigint  not null,
   staked_node_id_start bigint  not null,

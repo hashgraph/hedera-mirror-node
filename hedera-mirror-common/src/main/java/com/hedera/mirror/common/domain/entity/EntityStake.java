@@ -39,6 +39,7 @@ public class EntityStake implements Persistable<Long> {
     @Id
     private Long id;
     private boolean declineRewardStart;
+    private long endStakePeriod; // The epoch day of the period for which the pending reward has included so far
     private long pendingReward;
     private long stakedNodeIdStart;
     private long stakedToMe;

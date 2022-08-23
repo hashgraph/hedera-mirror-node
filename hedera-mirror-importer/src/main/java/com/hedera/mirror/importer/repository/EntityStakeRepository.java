@@ -42,6 +42,7 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
             ), updated as (
               select
                 ess.decline_reward as decline_reward_start,
+                (select epoch_day from ending_period_node_stake limit 1) as end_stake_period,
                 ess.id,
                 (case
                    when ess.deleted is true
@@ -66,6 +67,7 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
             table updated
             on conflict (id) do update
               set decline_reward_start = excluded.decline_reward_start,
+                  end_stake_period     = excluded.end_stake_period,
                   pending_reward       = excluded.pending_reward,
                   staked_node_id_start = excluded.staked_node_id_start,
                   staked_to_me         = excluded.staked_to_me,

@@ -423,6 +423,7 @@ public class DomainBuilder {
     public DomainWrapper<EntityStake, EntityStake.EntityStakeBuilder> entityStake() {
         var builder = EntityStake.builder()
                 .declineRewardStart(false)
+                .endStakePeriod(0L)
                 .id(id())
                 .pendingReward(0L)
                 .stakedNodeIdStart(-1L)

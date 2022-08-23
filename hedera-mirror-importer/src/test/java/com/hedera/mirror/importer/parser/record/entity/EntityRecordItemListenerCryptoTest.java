@@ -1154,12 +1154,16 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                         .setConsensusTimestamp(Utility.instantToTimestamp(timestamp.plusNanos(2))))
                 .build();
 
-        var expectedEntityStake1 = fromEntity(account1).customize(es -> es.pendingReward(100000L + 10000L)).get();
+        var expectedEntityStake1 = fromEntity(account1)
+                .customize(es -> es.endStakePeriod(epochDay).pendingReward(100000L + 10000L))
+                .get();
         var expectedEntityStake2 = fromEntity(account2)
-                .customize(es -> es.stakedToMe(account3.getBalance() + creditAmount)
+                .customize(es -> es.endStakePeriod(epochDay).stakedToMe(account3.getBalance() + creditAmount)
                         .stakeTotalStart(account2.getBalance() + account3.getBalance() + 2 * creditAmount))
                 .get();
-        var expectedEntityStake3 = fromEntity(account3).customize(es -> es.stakeTotalStart(0L)).get();
+        var expectedEntityStake3 = fromEntity(account3)
+                .customize(es -> es.endStakePeriod(epochDay).stakeTotalStart(0L))
+                .get();
 
         // when
         parseRecordItemsAndCommit(List.of(cryptoTransfer1, nodeStakeUpdate, cryptoTransfer2));

@@ -81,18 +81,20 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
         // existing entity stake
         domainBuilder.entityStake().customize(es -> es.id(entity1.getId())).persist();
         long timestamp = domainBuilder.timestamp();
-        domainBuilder.nodeStake().customize(ns -> ns.consensusTimestamp(timestamp).nodeId(1L).rewardRate(0L));
+        var nodeStake = domainBuilder.nodeStake()
+                .customize(ns -> ns.consensusTimestamp(timestamp).nodeId(1L).rewardRate(0L))
+                .persist();
         refreshEntityStateStart();
         var expectedEntityStakes = List.of(
-                fromEntity(entity1, 500L, 600L),
-                fromEntity(entity2, 0L, 0L),
-                fromEntity(entity3, 500L, 0L),
-                fromEntity(entity4, 0L, 0L),
-                fromEntity(entity5, 0L, 0L),
-                fromEntity(entity6, 800L, 0L),
-                fromEntity(entity8, 0L, 0L),
-                fromEntity(entity9, 1000L, 0L),
-                fromEntity(entity10, 900L, 0L)
+                fromEntity(entity1, nodeStake.getEpochDay(), 500L, 600L),
+                fromEntity(entity2, nodeStake.getEpochDay(), 0L, 0L),
+                fromEntity(entity3, nodeStake.getEpochDay(), 500L, 0L),
+                fromEntity(entity4, nodeStake.getEpochDay(), 0L, 0L),
+                fromEntity(entity5, nodeStake.getEpochDay(), 0L, 0L),
+                fromEntity(entity6, nodeStake.getEpochDay(), 800L, 0L),
+                fromEntity(entity8, nodeStake.getEpochDay(), 0L, 0L),
+                fromEntity(entity9, nodeStake.getEpochDay(), 1000L, 0L),
+                fromEntity(entity10, nodeStake.getEpochDay(), 900L, 0L)
         );
 
         // when
@@ -111,14 +113,12 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
         var contract = domainBuilder.entity().customize(e -> e.balance(5L).stakedNodeId(2L).type(CONTRACT)).persist();
         var deletedAccount = domainBuilder.entity().customize(e -> e.deleted(true)).persist();
         domainBuilder.entity().customize(e -> e.type(TOPIC)).persist();
-        domainBuilder.nodeStake().persist();
+        var nodeStake = domainBuilder.nodeStake().persist();
         refreshEntityStateStart();
         var expectedEntityStakes = List.of(
-                domainBuilder.entityStake().customize(e -> e.declineRewardStart(true).id(account.getId())).get(),
-                domainBuilder.entityStake()
-                        .customize(e -> e.id(contract.getId()).stakedNodeIdStart(2L).stakeTotalStart(5L))
-                        .get(),
-                domainBuilder.entityStake().customize(e -> e.id(deletedAccount.getId())).get()
+                fromEntity(account, nodeStake.getEpochDay(), 0L, 0L),
+                fromEntity(contract, nodeStake.getEpochDay(), 0L, 5L),
+                fromEntity(deletedAccount, nodeStake.getEpochDay(), 0L, 0L)
         );
 
         // when
@@ -172,6 +172,7 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
 
         // then
         assertThat(entityStakeRepository.findById(entity.getId())).get()
+                .returns(nodeStakeEpochDay, EntityStake::getEndStakePeriod)
                 .returns(expectedPendingReward, EntityStake::getPendingReward);
     }
 
@@ -181,9 +182,10 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
         assertThat(entityStakeRepository.findById(entityStake.getId())).get().isEqualTo(entityStake);
     }
 
-    private EntityStake fromEntity(Entity entity, long stakedToMe, long stakeTotalStart) {
+    private EntityStake fromEntity(Entity entity, long endStakePeriod, long stakedToMe, long stakeTotalStart) {
         return EntityStake.builder()
                 .declineRewardStart(entity.getDeclineReward())
+                .endStakePeriod(endStakePeriod)
                 .id(entity.getId())
                 .stakedNodeIdStart(Optional.ofNullable(entity.getStakedNodeId()).orElse(-1L))
                 .stakedToMe(stakedToMe)

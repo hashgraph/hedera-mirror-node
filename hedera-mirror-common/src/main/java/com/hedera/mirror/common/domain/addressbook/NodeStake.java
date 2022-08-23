@@ -43,6 +43,9 @@ public class NodeStake implements Persistable<NodeStake.Id> {
     @javax.persistence.Id
     private long consensusTimestamp;
 
+    /**
+     * The epoch day of the ending staking period
+     */
     private long epochDay;
 
     /**
