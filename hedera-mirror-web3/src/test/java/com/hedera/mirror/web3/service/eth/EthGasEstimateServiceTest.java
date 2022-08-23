@@ -150,7 +150,7 @@ class EthGasEstimateServiceTest {
     }
 
     @Test
-    void getMethod() {
+    void getEthGasEstimateMethod() {
         assertThat(ethGasEstimateService.getMethod()).isEqualTo(ETH_GAS_ESTIMATE_METHOD);
     }
 }

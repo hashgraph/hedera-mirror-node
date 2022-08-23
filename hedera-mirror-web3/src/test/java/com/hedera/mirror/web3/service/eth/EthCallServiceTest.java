@@ -1,10 +1,11 @@
 package com.hedera.mirror.web3.service.eth;
 
 import static com.hedera.mirror.web3.service.eth.EthCallService.ETH_CALL_METHOD;
-import static com.hedera.mirror.web3.service.eth.EthGasEstimateService.ETH_GAS_ESTIMATE_METHOD;
 import static com.hedera.mirror.web3.utils.TestConstants.blockNumber;
 import static com.hedera.mirror.web3.utils.TestConstants.chainId;
+import static com.hedera.mirror.web3.utils.TestConstants.contractAddress;
 import static com.hedera.mirror.web3.utils.TestConstants.contractHexAddress;
+import static com.hedera.mirror.web3.utils.TestConstants.expectedStorageResult;
 import static com.hedera.mirror.web3.utils.TestConstants.gasHexValue;
 import static com.hedera.mirror.web3.utils.TestConstants.gasLimit;
 import static com.hedera.mirror.web3.utils.TestConstants.gasPriceHexValue;
@@ -12,6 +13,7 @@ import static com.hedera.mirror.web3.utils.TestConstants.getSenderBalanceInputDa
 import static com.hedera.mirror.web3.utils.TestConstants.latestTag;
 import static com.hedera.mirror.web3.utils.TestConstants.multiplySimpleNumbersSelector;
 import static com.hedera.mirror.web3.utils.TestConstants.receiverHexAddress;
+import static com.hedera.mirror.web3.utils.TestConstants.returnStorageDataSelector;
 import static com.hedera.mirror.web3.utils.TestConstants.runtimeCode;
 import static com.hedera.mirror.web3.utils.TestConstants.senderAddress;
 import static com.hedera.mirror.web3.utils.TestConstants.senderAlias;
@@ -20,6 +22,7 @@ import static com.hedera.mirror.web3.utils.TestConstants.senderEvmAddress;
 import static com.hedera.mirror.web3.utils.TestConstants.senderHexAddress;
 import static com.hedera.mirror.web3.utils.TestConstants.senderNum;
 import static com.hedera.mirror.web3.utils.TestConstants.senderPublicAddress;
+import static com.hedera.mirror.web3.utils.TestConstants.storageValue;
 import static com.hedera.mirror.web3.utils.TestConstants.valueHexValue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -28,6 +31,7 @@ import static org.mockito.Mockito.when;
 import java.time.Instant;
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Code;
@@ -52,7 +56,6 @@ import com.hedera.mirror.web3.evm.properties.BlockMetaSourceProvider;
 import com.hedera.mirror.web3.evm.properties.EvmProperties;
 import com.hedera.mirror.web3.evm.properties.SimulatedBlockMetaSource;
 import com.hedera.mirror.web3.repository.EntityRepository;
-import com.hedera.services.transaction.models.Id;
 
 @ExtendWith(MockitoExtension.class)
 class EthCallServiceTest {
@@ -140,7 +143,7 @@ class EthCallServiceTest {
         final var ethCallParams =
                 new EthParams(
                         senderHexAddress,
-                        receiverHexAddress,
+                        contractHexAddress,
                         gasHexValue,
                         gasPriceHexValue,
                         "0",
@@ -173,6 +176,7 @@ class EthCallServiceTest {
         when(gasCalculator.getMaxRefundQuotient()).thenReturn(2L);
         when(simulatedPricesSource.currentGasPrice(any(), any())).thenReturn(1L);
         when(codeCache.getIfPresent(any())).thenReturn(runtimeCode);
+
         final var ethCallParams =
                 new EthParams(
                         senderHexAddress,
@@ -188,9 +192,42 @@ class EthCallServiceTest {
     }
 
     @Test
-    void getEthGasEstimateMethod() {
-        assertThat(ethGasEstimateService.getMethod()).isEqualTo(ETH_GAS_ESTIMATE_METHOD);
+    void ethCallForStorageFunction() {
+        when(simulatedWorldState.updater()).thenReturn(updater);
+        when(updater.updater()).thenReturn(simulatedStackedWorldStateUpdater);
+        when(updater.getOrCreateSenderAccount(senderAddress)).thenReturn(senderAccount);
+        when(senderAccount.getMutable()).thenReturn(mutableSender);
+        when(simulatedStackedWorldStateUpdater.getSenderAccount(any())).thenReturn(senderAccount);
+        when(simulatedStackedWorldStateUpdater.get(contractAddress)).thenReturn(recipientAccount);
+        when(simulatedStackedWorldStateUpdater.getSenderAccount(any())).thenReturn(senderAccount);
+        when(evmProperties.getChainId()).thenReturn(chainId);
+        when(entityRepository.findAccountByAddress(senderEvmAddress)).thenReturn(Optional.of(senderEntity));
+        when(recipientAccount.getAddress()).thenReturn(contractAddress);
+        when(recipientAccount.getStorageValue(UInt256.valueOf(0))).thenReturn(UInt256.fromHexString(storageValue));
+        when(blockMetaSourceProvider.computeBlockValues(gasLimit))
+                .thenReturn(new SimulatedBlockMetaSource(gasLimit, blockNumber, Instant.now().getEpochSecond()));
+
+        when(senderEntity.getAlias()).thenReturn(senderAlias);
+        when(senderEntity.getNum()).thenReturn(senderNum);
+
+        when(gasCalculator.getMaxRefundQuotient()).thenReturn(2L);
+        when(simulatedPricesSource.currentGasPrice(any(), any())).thenReturn(1L);
+        when(codeCache.getIfPresent(any())).thenReturn(runtimeCode);
+
+        final var ethCallParams =
+                new EthParams(
+                        senderHexAddress,
+                        contractHexAddress,
+                        gasHexValue,
+                        gasPriceHexValue,
+                        "0x00",
+                        returnStorageDataSelector);
+
+        final var transactionCall = new TxnCallBody(ethCallParams, latestTag);
+        final var result = ethCallService.get(transactionCall);
+        Assertions.assertEquals(expectedStorageResult, result);
     }
+
 
     @Test
     void getEthCallMethod() {
