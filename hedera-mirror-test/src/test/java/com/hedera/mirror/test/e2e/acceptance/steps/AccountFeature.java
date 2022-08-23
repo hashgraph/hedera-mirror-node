@@ -156,7 +156,7 @@ public class AccountFeature extends AbstractFeature {
         //verify transfer credit and debits balance out
         long transferSum = 0;
         for (MirrorTransfer cryptoTransfer : mirrorTransaction.getTransfers()) {
-            transferSum += Long.valueOf(cryptoTransfer.getAmount());
+            transferSum += cryptoTransfer.getAmount();
         }
 
         assertThat(transferSum).isZero();

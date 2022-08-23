@@ -3831,7 +3831,7 @@ components:
       required: true
       description: Transaction Id or a 32 byte hash with optional 0x prefix
       examples:
-        trahsactionId:
+        transactionId:
           value: 0.0.10-1234567890-000000000
         transactionHash:
           value: ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef
