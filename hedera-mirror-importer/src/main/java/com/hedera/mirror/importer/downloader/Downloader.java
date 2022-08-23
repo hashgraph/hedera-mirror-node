@@ -28,20 +28,26 @@ import static java.util.stream.Collectors.maxBy;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
+import com.google.common.collect.Sets;
 import com.google.common.collect.TreeMultimap;
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.nio.file.Path;
+import java.security.PublicKey;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -62,6 +68,7 @@ import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.addressbook.AddressBook;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
@@ -99,6 +106,7 @@ public abstract class Downloader<T extends StreamFile> {
     private final StreamType streamType;
     // Metrics
     private final MeterRegistry meterRegistry;
+    private final Map<String, Counter> nodeSignatureStatusMetricMap = new ConcurrentHashMap<>();
     private final Timer cloudStorageLatencyMetric;
     private final Timer downloadLatencyMetric;
     private final Timer streamCloseMetric;
@@ -395,15 +403,32 @@ public abstract class Downloader<T extends StreamFile> {
             Collection<FileStreamSignature> signatures = sigFilesMap.get(sigFilename);
             boolean valid = false;
 
+            String filename = signatures.stream().map(FileStreamSignature::getFilename).findFirst()
+                    .orElse("unknown");
+            var nodeAccountIDPubKeyMap = addressBookService.getCurrent().getNodeAccountIDPubKeyMap();
             try {
                 nodeSignatureVerifier.verify(signatures);
+
+                var consensusCount = signatures.stream()
+                        .filter(s -> s.getStatus() == FileStreamSignature.SignatureStatus.CONSENSUS_REACHED)
+                        .count();
+
+                if (consensusCount == nodeAccountIDPubKeyMap.size()) {
+                    log.debug("Verified signature file {} reached consensus", filename);
+                } else if (consensusCount > 0) {
+                    log.warn("Verified signature file {} reached consensus but with some errors: {}", filename,
+                            statusMap(signatures, nodeAccountIDPubKeyMap));
+                }
             } catch (SignatureVerificationException ex) {
+                var message = "Signature verification failed for file " + filename + ": " + statusMap(signatures,
+                        nodeAccountIDPubKeyMap);
                 if (sigFilenameIter.hasNext()) {
                     log.warn("Signature verification failed but still have files in the batch, try to process the " +
-                            "next group: {}", ex.getMessage());
+                            "next group: {}", message);
                     continue;
                 }
-                throw ex;
+
+                throw new SignatureVerificationException(message);
             }
 
             for (FileStreamSignature signature : signatures) {
@@ -561,5 +586,51 @@ public abstract class Downloader<T extends StreamFile> {
         }
 
         return streamFile.getPreviousHash().contentEquals(expectedPreviousHash);
+    }
+
+    private Map<String, Collection<String>> statusMap(Collection<FileStreamSignature> signatures, Map<String,
+            PublicKey> nodeAccountIDPubKeyMap) {
+        Map<String, Collection<String>> statusMap = signatures.stream()
+                .collect(Collectors.groupingBy(fss -> fss.getStatus().toString(),
+                        Collectors.mapping(fss -> fss.getNodeAccountIdString(), Collectors
+                                .toCollection(TreeSet::new))));
+
+        Set<String> seenNodes = new HashSet<>();
+        signatures.forEach(signature -> seenNodes.add(signature.getNodeAccountId().toString()));
+
+        Set<String> missingNodes = new TreeSet<>(Sets.difference(
+                nodeAccountIDPubKeyMap.keySet().stream().collect(Collectors.toSet()),
+                seenNodes));
+        statusMap.put(FileStreamSignature.SignatureStatus.NOT_FOUND.toString(), missingNodes);
+
+        String streamType = signatures.stream()
+                .map(FileStreamSignature::getStreamType)
+                .map(StreamType::toString)
+                .findFirst()
+                .orElse("UNKNOWN");
+        for (Map.Entry<String, Collection<String>> entry : statusMap.entrySet()) {
+            entry.getValue().forEach(nodeAccountId -> {
+                Counter counter = nodeSignatureStatusMetricMap.computeIfAbsent(
+                        nodeAccountId,
+                        n -> newStatusMetric(nodeAccountId, streamType, entry.getKey()));
+                counter.increment();
+            });
+        }
+
+        // remove CONSENSUS_REACHED for logging purposes
+        statusMap.remove(FileStreamSignature.SignatureStatus.CONSENSUS_REACHED.toString());
+        return statusMap;
+    }
+
+    private Counter newStatusMetric(String entityIdString, String streamType, String status) {
+        EntityId entityId = EntityId.of(entityIdString, EntityType.ACCOUNT);
+        return Counter.builder("hedera.mirror.download.signature.verification")
+                .description("The number of signatures verified from a particular node")
+                .tag("nodeAccount", entityId.getEntityNum().toString())
+                .tag("realm", entityId.getRealmNum().toString())
+                .tag("shard", entityId.getShardNum().toString())
+                .tag("type", streamType)
+                .tag("status", status)
+                .register(meterRegistry);
     }
 }

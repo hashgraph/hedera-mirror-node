@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.downloader;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,12 +23,9 @@ package com.hedera.mirror.importer.downloader;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.logging.LoggingMeterRegistry;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
@@ -36,68 +33,70 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.addressbook.AddressBookService;
+import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.addressbook.AddressBook;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureType;
-import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
+import com.hedera.mirror.importer.repository.NodeStakeRepository;
 
-@ExtendWith(MockitoExtension.class)
-class NodeSignatureVerifierTest {
+class NodeSignatureVerifierTest extends IntegrationTest {
 
     private static PrivateKey privateKey;
     private static PublicKey publicKey;
 
     private static final EntityId nodeId = new EntityId(0L, 0L, 3L, EntityType.ACCOUNT);
-    private static final MeterRegistry meterRegistry = new LoggingMeterRegistry();
     private Signature signer;
 
     @Mock
     private AddressBookService addressBookService;
-
-    @Mock
-    private CommonDownloaderProperties commonDownloaderProperties;
-
     @Mock
     private AddressBook currentAddressBook;
+    @Mock
+    private CommonDownloaderProperties commonDownloaderProperties;
+    private NodeSignatureVerifier nodeSignatureVerifier;
+    @Mock
+    private NodeStakeRepository nodeStakeRepository;
 
-    NodeSignatureVerifier nodeSignatureVerifier;
-
+    @SneakyThrows
     @BeforeAll
-    static void generateKeys() throws NoSuchAlgorithmException {
+    static void generateKeys() {
         KeyPair nodeKeyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
         privateKey = nodeKeyPair.getPrivate();
         publicKey = nodeKeyPair.getPublic();
     }
 
+    @SneakyThrows
     @BeforeEach
-    void setup() throws GeneralSecurityException {
+    void setup() {
+        var consensusValidator = new ConsensusValidatorImpl(addressBookService, commonDownloaderProperties,
+                nodeStakeRepository);
         nodeSignatureVerifier = new NodeSignatureVerifier(
                 addressBookService,
-                commonDownloaderProperties,
-                meterRegistry);
+                consensusValidator);
         signer = Signature.getInstance("SHA384withRSA", "SunRsaSign");
         signer.initSign(privateKey);
         Map<String, PublicKey> nodeAccountIDPubKeyMap = new HashMap();
         nodeAccountIDPubKeyMap.put("0.0.3", publicKey);
         when(addressBookService.getCurrent()).thenReturn(currentAddressBook);
-        when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
         when(commonDownloaderProperties.getConsensusRatio()).thenReturn(0.333f);
+        when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
     }
 
+    @SneakyThrows
     @Test
-    void testV5FileStreamSignature() throws GeneralSecurityException {
+    void testV5FileStreamSignature() {
         byte[] fileHash = TestUtils.generateRandomByteArray(48);
         byte[] metadataHash = TestUtils.generateRandomByteArray(48);
 
@@ -106,8 +105,9 @@ class NodeSignatureVerifierTest {
         nodeSignatureVerifier.verify(Arrays.asList(fileStreamSignature));
     }
 
+    @SneakyThrows
     @Test
-    void testV2FileStreamSignature() throws GeneralSecurityException {
+    void testV2FileStreamSignature() {
 
         byte[] fileHash = TestUtils.generateRandomByteArray(48);
 
@@ -117,8 +117,9 @@ class NodeSignatureVerifierTest {
         nodeSignatureVerifier.verify(Arrays.asList(fileStreamSignature));
     }
 
+    @SneakyThrows
     @Test
-    void testInvalidFileSignature() throws GeneralSecurityException {
+    void testInvalidFileSignature() {
 
         byte[] fileHash = TestUtils.generateRandomByteArray(48);
 
@@ -129,11 +130,12 @@ class NodeSignatureVerifierTest {
         List<FileStreamSignature> fileStreamSignatures = Arrays.asList(buildBareBonesFileStreamSignature());
         Exception e = assertThrows(SignatureVerificationException.class, () -> nodeSignatureVerifier
                 .verify(fileStreamSignatures));
-        assertTrue(e.getMessage().contains("Signature verification failed for file"));
+        assertTrue(e.getMessage().contains("Insufficient signature file count"));
     }
 
+    @SneakyThrows
     @Test
-    void testInvalidMetadataSignature() throws GeneralSecurityException {
+    void testInvalidMetadataSignature() {
 
         byte[] fileHash = TestUtils.generateRandomByteArray(48);
         byte[] metadataHash = TestUtils.generateRandomByteArray(48);
@@ -144,7 +146,7 @@ class NodeSignatureVerifierTest {
         List<FileStreamSignature> fileStreamSignatures = Arrays.asList(buildBareBonesFileStreamSignature());
         Exception e = assertThrows(SignatureVerificationException.class, () -> nodeSignatureVerifier
                 .verify(fileStreamSignatures));
-        assertTrue(e.getMessage().contains("Signature verification failed for file"));
+        assertTrue(e.getMessage().contains("Insufficient signature file count"));
     }
 
     @Test
@@ -160,11 +162,12 @@ class NodeSignatureVerifierTest {
         List<FileStreamSignature> fileStreamSignatures = Arrays.asList(buildBareBonesFileStreamSignature());
         Exception e = assertThrows(SignatureVerificationException.class, () -> nodeSignatureVerifier
                 .verify(fileStreamSignatures));
-        assertTrue(e.getMessage().contains("Insufficient downloaded signature file count, requires at least 0.333"));
+        assertTrue(e.getMessage().contains("Insufficient downloaded signature file count"));
     }
 
+    @SneakyThrows
     @Test
-    void testNoConsensusRequiredWithVerifiedSignatureFiles() throws GeneralSecurityException {
+    void testNoConsensusRequiredWithVerifiedSignatureFiles() {
         Map<String, PublicKey> nodeAccountIDPubKeyMap = new HashMap();
         nodeAccountIDPubKeyMap.put("0.0.3", publicKey);
         nodeAccountIDPubKeyMap.put("0.0.4", publicKey);
@@ -184,12 +187,11 @@ class NodeSignatureVerifierTest {
         FileStreamSignature fileStreamSignatureNode = buildFileStreamSignature(fileHash, fileHashSignature,
                 null, null);
 
-        // only 1 node node necessary
         nodeSignatureVerifier.verify(List.of(fileStreamSignatureNode));
     }
 
     @Test
-    void testNoConsensusRequiredWithNoVerifiedSignatureFiles() throws GeneralSecurityException {
+    void testNoConsensusRequiredWithNoVerifiedSignatureFiles() {
         Map<String, PublicKey> nodeAccountIDPubKeyMap = new HashMap();
         nodeAccountIDPubKeyMap.put("0.0.3", publicKey);
         nodeAccountIDPubKeyMap.put("0.0.4", publicKey);
@@ -205,11 +207,12 @@ class NodeSignatureVerifierTest {
 
         Exception e = assertThrows(SignatureVerificationException.class, () -> nodeSignatureVerifier
                 .verify(List.of()));
-        assertTrue(e.getMessage().contains("Signature verification failed for file"));
+        assertTrue(e.getMessage().contains("Insufficient signature file count"));
     }
 
+    @SneakyThrows
     @Test
-    void testVerifiedWithOneThirdConsensus() throws GeneralSecurityException {
+    void testVerifiedWithOneThirdConsensus() {
         Map<String, PublicKey> nodeAccountIDPubKeyMap = new HashMap();
         nodeAccountIDPubKeyMap.put("0.0.3", publicKey);
         nodeAccountIDPubKeyMap.put("0.0.4", publicKey);
@@ -224,8 +227,9 @@ class NodeSignatureVerifierTest {
                         null, null)));
     }
 
+    @SneakyThrows
     @Test
-    void testVerifiedWithOneThirdConsensusWithMissingSignatures() throws GeneralSecurityException {
+    void testVerifiedWithOneThirdConsensusWithMissingSignatures() {
         Map<String, PublicKey> nodeAccountIDPubKeyMap = new HashMap();
         nodeAccountIDPubKeyMap.put("0.0.3", publicKey);
         nodeAccountIDPubKeyMap.put("0.0.4", publicKey);
@@ -250,8 +254,9 @@ class NodeSignatureVerifierTest {
                 .verify(Arrays.asList(fileStreamSignatureNode3, fileStreamSignatureNode4, fileStreamSignatureNode5));
     }
 
+    @SneakyThrows
     @Test
-    void testVerifiedWithFullConsensusRequired() throws GeneralSecurityException {
+    void testVerifiedWithFullConsensusRequired() {
         Map<String, PublicKey> nodeAccountIDPubKeyMap = new HashMap();
         nodeAccountIDPubKeyMap.put("0.0.3", publicKey);
         nodeAccountIDPubKeyMap.put("0.0.4", publicKey);
@@ -278,8 +283,9 @@ class NodeSignatureVerifierTest {
                 .verify(Arrays.asList(fileStreamSignatureNode3, fileStreamSignatureNode4, fileStreamSignatureNode5));
     }
 
+    @SneakyThrows
     @Test
-    void testNoSignatureType() throws GeneralSecurityException {
+    void testNoSignatureType() {
 
         byte[] fileHash = TestUtils.generateRandomByteArray(48);
 
@@ -290,11 +296,11 @@ class NodeSignatureVerifierTest {
         List<FileStreamSignature> fileStreamSignatures = Arrays.asList(fileStreamSignature);
         Exception e = assertThrows(SignatureVerificationException.class, () -> nodeSignatureVerifier
                 .verify(fileStreamSignatures));
-        assertTrue(e.getMessage().contains("Signature verification failed for file"));
+        assertTrue(e.getMessage().contains("Insufficient signature file count"));
     }
 
     @Test
-    void testNoFileHashSignature() throws GeneralSecurityException {
+    void testNoFileHashSignature() {
 
         byte[] fileHash = TestUtils.generateRandomByteArray(48);
 
@@ -304,7 +310,7 @@ class NodeSignatureVerifierTest {
         List<FileStreamSignature> fileStreamSignatures = Arrays.asList(fileStreamSignature);
         Exception e = assertThrows(SignatureVerificationException.class, () -> nodeSignatureVerifier
                 .verify(fileStreamSignatures));
-        assertTrue(e.getMessage().contains("Signature verification failed for file"));
+        assertTrue(e.getMessage().contains("Insufficient signature file count"));
     }
 
     @Test
@@ -318,12 +324,12 @@ class NodeSignatureVerifierTest {
         List<FileStreamSignature> fileStreamSignatures = Arrays.asList(fileStreamSignature);
         Exception e = assertThrows(SignatureVerificationException.class, () -> nodeSignatureVerifier
                 .verify(fileStreamSignatures));
-        assertTrue(e.getMessage().contains("Signature verification failed for file"));
+        assertTrue(e.getMessage().contains("Insufficient signature file count"));
     }
 
+    @SneakyThrows
     @Test
-    void testSignedWithWrongAlgorithm() throws GeneralSecurityException {
-
+    void testSignedWithWrongAlgorithm() {
         signer = Signature.getInstance("SHA1withRSA", "SunRsaSign");
         signer.initSign(privateKey);
         byte[] entireFileHash = TestUtils.generateRandomByteArray(48);
@@ -334,7 +340,7 @@ class NodeSignatureVerifierTest {
         List<FileStreamSignature> fileStreamSignatures = Arrays.asList(fileStreamSignature);
         Exception e = assertThrows(SignatureVerificationException.class, () -> nodeSignatureVerifier
                 .verify(fileStreamSignatures));
-        assertTrue(e.getMessage().contains("Signature verification failed for file"));
+        assertTrue(e.getMessage().contains("Insufficient signature file count"));
     }
 
     private byte[] signHash(byte[] hash) throws GeneralSecurityException {

@@ -21,7 +21,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import static com.hedera.mirror.common.util.DomainUtils.TINYBARS_IN_ONE_HBAR;
+import static com.hedera.mirror.importer.repository.NodeStakeRepository.NODE_STAKE_CACHE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -32,9 +34,15 @@ import com.hederahashgraph.api.proto.java.NodeStakeUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.List;
+import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.interceptor.SimpleKey;
+import org.springframework.context.annotation.Import;
 
 import com.hedera.mirror.common.domain.addressbook.NetworkStake;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
@@ -42,9 +50,17 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.config.CacheConfiguration;
+import com.hedera.mirror.importer.config.IntegrationTestConfiguration;
 import com.hedera.mirror.importer.util.Utility;
 
+@SpringBootTest
+@Import(IntegrationTestConfiguration.class)
 class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
+
+    @Qualifier(CacheConfiguration.EXPIRE_AFTER_5M)
+    @Resource
+    private CacheManager cacheManager;
 
     @Captor
     private ArgumentCaptor<NetworkStake> networkStakes;
@@ -54,7 +70,7 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new NodeStakeUpdateTransactionHandler(entityListener);
+        return new NodeStakeUpdateTransactionHandler(cacheManager, entityListener);
     }
 
     @Override
@@ -147,6 +163,29 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
         // then
         verify(entityListener, never()).onNodeStake(any());
         verify(entityListener, times(1)).onNetworkStake(networkStakes.capture());
+    }
+
+    @Test
+    void evictNodeStakeCache() {
+        assertNull(cacheManager.getCache(NODE_STAKE_CACHE).get(SimpleKey.EMPTY));
+
+        // given a cache that is not empty
+        var cachedNodeStake = domainBuilder.nodeStake().get();
+        cacheManager.getCache(NODE_STAKE_CACHE).put(SimpleKey.EMPTY, cachedNodeStake);
+        assertThat(cacheManager.getCache(NODE_STAKE_CACHE).get(SimpleKey.EMPTY).get()).isEqualTo(cachedNodeStake);
+
+        // given a node stake transaction
+        long nodeStake1 = 5_000_000 * TINYBARS_IN_ONE_HBAR;
+        var nodeStakeProto1 = getNodeStakeProto(nodeStake1, nodeStake1);
+        var recordItem = recordItemBuilder.nodeStakeUpdate()
+                .transactionBody(b -> b.clearNodeStake().addNodeStake(nodeStakeProto1))
+                .build();
+
+        // when
+        transactionHandler.updateTransaction(null, recordItem);
+
+        // then
+        assertNull(cacheManager.getCache(NODE_STAKE_CACHE).get(SimpleKey.EMPTY));
     }
 
     private com.hederahashgraph.api.proto.java.NodeStake getNodeStakeProto(long stake, long stakeRewarded) {

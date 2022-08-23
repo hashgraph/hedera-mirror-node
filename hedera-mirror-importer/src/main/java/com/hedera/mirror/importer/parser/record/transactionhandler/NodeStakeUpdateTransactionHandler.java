@@ -20,9 +20,13 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import static com.hedera.mirror.importer.config.CacheConfiguration.EXPIRE_AFTER_5M;
+import static com.hedera.mirror.importer.repository.NodeStakeRepository.NODE_STAKE_CACHE;
+
 import javax.inject.Named;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
+import org.springframework.cache.CacheManager;
 
 import com.hedera.mirror.common.domain.addressbook.NetworkStake;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
@@ -34,10 +38,13 @@ import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.util.Utility;
 
-@Log4j2
+@CustomLog
 @Named
 @RequiredArgsConstructor
 class NodeStakeUpdateTransactionHandler implements TransactionHandler {
+
+    @Named(EXPIRE_AFTER_5M)
+    private final CacheManager cacheManager;
 
     private final EntityListener entityListener;
 
@@ -83,19 +90,23 @@ class NodeStakeUpdateTransactionHandler implements TransactionHandler {
         networkStake.setStakingStartThreshold(transactionBody.getStakingStartThreshold());
         entityListener.onNetworkStake(networkStake);
 
-        for (var nodeStakeProto : transactionBody.getNodeStakeList()) {
-            NodeStake nodeStake = new NodeStake();
-            nodeStake.setConsensusTimestamp(consensusTimestamp);
-            nodeStake.setEpochDay(epochDay);
-            nodeStake.setMaxStake(nodeStakeProto.getMaxStake());
-            nodeStake.setMinStake(nodeStakeProto.getMinStake());
-            nodeStake.setNodeId(nodeStakeProto.getNodeId());
-            nodeStake.setRewardRate(nodeStakeProto.getRewardRate());
-            nodeStake.setStake(nodeStakeProto.getStake());
-            nodeStake.setStakeNotRewarded(nodeStakeProto.getStakeNotRewarded());
-            nodeStake.setStakeRewarded(nodeStakeProto.getStakeRewarded());
-            nodeStake.setStakingPeriod(stakingPeriod);
-            entityListener.onNodeStake(nodeStake);
+        var nodeStakes = transactionBody.getNodeStakeList();
+        if (!nodeStakes.isEmpty()) {
+            cacheManager.getCache(NODE_STAKE_CACHE).clear();
+            for (var nodeStakeProto : nodeStakes) {
+                NodeStake nodeStake = new NodeStake();
+                nodeStake.setConsensusTimestamp(consensusTimestamp);
+                nodeStake.setEpochDay(epochDay);
+                nodeStake.setMaxStake(nodeStakeProto.getMaxStake());
+                nodeStake.setMinStake(nodeStakeProto.getMinStake());
+                nodeStake.setNodeId(nodeStakeProto.getNodeId());
+                nodeStake.setRewardRate(nodeStakeProto.getRewardRate());
+                nodeStake.setStake(nodeStakeProto.getStake());
+                nodeStake.setStakeNotRewarded(nodeStakeProto.getStakeNotRewarded());
+                nodeStake.setStakeRewarded(nodeStakeProto.getStakeRewarded());
+                nodeStake.setStakingPeriod(stakingPeriod);
+                entityListener.onNodeStake(nodeStake);
+            }
         }
     }
 }
