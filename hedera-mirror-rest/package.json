@@ -1,6 +1,6 @@
 {
   "name": "@hashgraph/mirror-rest",
-  "version": "0.63.0-SNAPSHOT",
+  "version": "0.64.0-SNAPSHOT",
   "description": "Hedera Mirror Node REST API",
   "type": "module",
   "main": "server.js",
@@ -23,7 +23,7 @@
     "@godaddy/terminus": "^4.11.1",
     "@hashgraph/proto": "^2.9.0",
     "asn1js": "^3.0.5",
-    "aws-sdk": "^2.1189.0",
+    "aws-sdk": "^2.1199.0",
     "bigint-buffer": "^1.1.5",
     "body-parser": "^1.20.0",
     "compression": "^1.7.4",
@@ -83,14 +83,14 @@
     "swagger-ui-express"
   ],
   "devDependencies": {
-    "app-root-path": "^3.0.0",
+    "app-root-path": "^3.1.0",
     "aws-sdk-mock": "^5.7.0",
     "axios": "^0.27.2",
     "codecov": "^3.8.3",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-import": "^2.26.0",
-    "eslint-plugin-jest": "^26.8.0",
+    "eslint-plugin-jest": "^26.8.7",
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-prettier": "^4.2.1",
     "eslint-plugin-security": "^1.5.0",

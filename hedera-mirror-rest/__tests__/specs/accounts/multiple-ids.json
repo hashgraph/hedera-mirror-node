@@ -3,17 +3,19 @@
   "setup": {
     "accounts": [
       {
+        "balance": 70,
         "num": 7
       },
       {
+        "balance": 80,
         "num": 8
       }
     ],
     "balances": [
       {
-        "timestamp": 2345,
+        "timestamp": 2300,
         "id": 7,
-        "balance": 70,
+        "balance": 999,
         "tokens": [
           {
             "token_num": 100001,
@@ -26,9 +28,9 @@
         ]
       },
       {
-        "timestamp": 2345,
+        "timestamp": 2300,
         "id": 8,
-        "balance": 80,
+        "balance": 999,
         "tokens": [
           {
             "token_num": 200001,
@@ -37,14 +39,21 @@
         ]
       },
       {
-        "timestamp": 2345,
+        "timestamp": 2300,
         "id": 9,
-        "balance": 90
+        "balance": 999
       }
     ],
     "contracts": [
       {
+        "balance": 90,
         "num": 9
+      }
+    ],
+    "recordFiles": [
+      {
+        "consensus_start": 2000,
+        "consensus_end": 2345
       }
     ],
     "transactions": [],

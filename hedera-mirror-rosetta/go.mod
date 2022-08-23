@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/Code-Hex/go-generics-cache v1.0.1
-	github.com/coinbase/rosetta-sdk-go v0.7.10
+	github.com/coinbase/rosetta-sdk-go v0.7.11
 	github.com/cucumber/godog v0.12.5
 	github.com/ethereum/go-ethereum v1.10.21
 	github.com/go-playground/validator/v10 v10.11.0
@@ -26,7 +26,7 @@ require (
 	github.com/weaveworks/common v0.0.0-20210901124008-1fa3f9fa874c
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/yaml.v2 v2.4.0
-	gorm.io/driver/postgres v1.3.8
+	gorm.io/driver/postgres v1.3.9
 	gorm.io/gorm v1.23.8
 )
 

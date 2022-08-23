@@ -3,9 +3,11 @@
   "setup": {
     "accounts": [
       {
+        "balance": 10,
         "num": 1
       },
       {
+        "balance": 20,
         "num": 2
       },
       {
@@ -15,6 +17,7 @@
         "num": 4
       },
       {
+        "balance": 50,
         "num": 5
       }
     ],
@@ -35,7 +38,7 @@
         ]
       },
       {
-        "timestamp": 2000,
+        "timestamp": 1800,
         "id": 1,
         "balance": 10,
         "tokens": [
@@ -65,7 +68,7 @@
         ]
       },
       {
-        "timestamp": 2000,
+        "timestamp": 1800,
         "id": 2,
         "balance": 20,
         "tokens": [
@@ -80,7 +83,7 @@
         ]
       },
       {
-        "timestamp": 2000,
+        "timestamp": 1800,
         "id": 5,
         "balance": 50,
         "tokens": [
@@ -107,6 +110,12 @@
       {
         "num": 8,
         "type": "TOKEN"
+      }
+    ],
+    "recordFiles": [
+      {
+        "consensus_start": 1700,
+        "consensus_end": 2000
       }
     ]
   },
@@ -178,7 +187,7 @@
       },
       {
         "balance": {
-          "timestamp": null,
+          "timestamp": "0.000002000",
           "balance": null,
           "tokens": []
         },
@@ -200,7 +209,7 @@
       },
       {
         "balance": {
-          "timestamp": null,
+          "timestamp": "0.000002000",
           "balance": null,
           "tokens": []
         },

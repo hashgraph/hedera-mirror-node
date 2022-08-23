@@ -40,7 +40,7 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
     }
 
     @Override
-    public String getInsertQuery() {
+    public String getUpsertQuery() {
         return """
                 with last as (
                   select distinct on (token_account.account_id, token_account.token_id) token_account.*
@@ -84,10 +84,5 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                 where token_account_temp.created_timestamp is not null or last.created_timestamp is not null
                 order by token_account_temp.modified_timestamp
                 """;
-    }
-
-    @Override
-    public String getUpdateQuery() {
-        return null;
     }
 }

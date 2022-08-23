@@ -621,7 +621,6 @@ const isValidTransactionHash = (hash) => transactionHashRegex.test(hash);
 const extractSqlFromTransactionsByIdOrHashRequest = (transactionIdOrHash, filters) => {
   const conditions = [];
   const params = [];
-  let postFilter = (_t) => true;
 
   if (isValidTransactionHash(transactionIdOrHash)) {
     const encoding = transactionIdOrHash.length === Transaction.BASE64_HASH_SIZE ? 'base64url' : 'hex';
@@ -629,10 +628,8 @@ const extractSqlFromTransactionsByIdOrHashRequest = (transactionIdOrHash, filter
       transactionIdOrHash = transactionIdOrHash.substring(2);
     }
 
-    const transactionHash = Buffer.from(transactionIdOrHash, encoding);
-    conditions.push(`substring(${Transaction.getFullName(Transaction.TRANSACTION_HASH)} from 1 for 32) = $1`);
-    params.push(transactionHash.subarray(0, Transaction.HASH_PREFIX_SIZE));
-    postFilter = (t) => Buffer.compare(t.transaction_hash, transactionHash) === 0;
+    conditions.push(`${Transaction.getFullName(Transaction.TRANSACTION_HASH)} = $1`);
+    params.push(Buffer.from(transactionIdOrHash, encoding));
   } else {
     // try to parse it as a transaction id
     const transactionId = TransactionId.fromString(transactionIdOrHash);
@@ -679,11 +676,7 @@ const extractSqlFromTransactionsByIdOrHashRequest = (transactionIdOrHash, filter
     from transfer_list t
     order by ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} asc`;
 
-  return {
-    query,
-    params,
-    postFilter,
-  };
+  return {query, params};
 };
 
 /**
@@ -693,17 +686,13 @@ const extractSqlFromTransactionsByIdOrHashRequest = (transactionIdOrHash, filter
  */
 const getTransactionsByIdOrHash = async (req, res) => {
   const filters = utils.buildAndValidateFilters(req.query);
-  const {query, params, postFilter} = extractSqlFromTransactionsByIdOrHashRequest(
-    req.params.transactionIdOrHash,
-    filters
-  );
+  const {query, params} = extractSqlFromTransactionsByIdOrHashRequest(req.params.transactionIdOrHash, filters);
   if (logger.isTraceEnabled()) {
     logger.trace(`getTransactionsByIdOrHash query: ${query} ${utils.JSONStringify(params)}`);
   }
 
   // Execute query
-  let {rows} = await pool.queryQuietly(query, params);
-  rows = rows.filter(postFilter);
+  const {rows} = await pool.queryQuietly(query, params);
   if (rows.length === 0) {
     throw new NotFoundError('Not found');
   }

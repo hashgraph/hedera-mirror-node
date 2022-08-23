@@ -70,14 +70,14 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
         var sql = "case when total_supply >= 0 then total_supply else e_total_supply + coalesce(total_supply, 0) end";
         UpsertQueryGenerator generator = factory.get(Token.class);
         assertThat(generator).isInstanceOf(GenericUpsertQueryGenerator.class);
-        assertThat(format(generator.getInsertQuery())).containsIgnoringWhitespaces(sql);
+        assertThat(format(generator.getUpsertQuery())).containsIgnoringWhitespaces(sql);
     }
 
     @Test
     void getInsertQueryHistory() {
         UpsertQueryGenerator generator = factory.get(Entity.class);
         assertThat(generator).isInstanceOf(GenericUpsertQueryGenerator.class);
-        assertThat(format(generator.getInsertQuery())).isEqualTo(format("""
+        assertThat(format(generator.getUpsertQuery())).isEqualTo(format("""
                 with existing as (
                   select
                     e.alias as e_alias,
@@ -378,7 +378,7 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
     void getInsertQueryNoHistory() {
         UpsertQueryGenerator generator = factory.get(Schedule.class);
         assertThat(generator).isInstanceOf(GenericUpsertQueryGenerator.class);
-        assertThat(format(generator.getInsertQuery())).isEqualTo(format("""
+        assertThat(format(generator.getUpsertQuery())).isEqualTo(format("""
                 with existing as (
                   select
                     e.consensus_timestamp as e_consensus_timestamp,
@@ -418,12 +418,6 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                 on conflict (schedule_id) do update
                   set executed_timestamp = excluded.executed_timestamp
                 """));
-    }
-
-    @Test
-    void getUpdateQuery() {
-        UpsertQueryGenerator generator = factory.get(Entity.class);
-        assertThat(format(generator.getUpdateQuery())).isEmpty();
     }
 
     private String format(String sql) {

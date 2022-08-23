@@ -19,36 +19,46 @@
     },
     "accounts": [
       {
+        "balance": 10,
         "num": 1
       },
       {
+        "balance": 20,
         "num": 2
       },
       {
+        "balance": 30,
         "num": 3
       },
       {
+        "balance": 40,
         "num": 4
       },
       {
+        "balance": 50,
         "num": 5
       },
       {
+        "balance": 60,
         "num": 6
       },
       {
+        "balance": 70,
         "num": 7
       },
       {
+        "balance": 80,
         "num": 8
       },
       {
+        "balance": 90,
         "num": 9,
         "expiration_timestamp": "-9223372036854775808",
         "max_automatic_token_associations": 150,
         "receiver_sig_required": null
       },
       {
+        "balance": 100,
         "num": 10,
         "expiration_timestamp": "9223372036854775807",
         "receiver_sig_required": true
@@ -56,9 +66,9 @@
     ],
     "balances": [
       {
-        "timestamp": 2000,
+        "timestamp": 1900,
         "id": 1,
-        "balance": 10,
+        "balance": 999,
         "tokens": [
           {
             "token_num": 90000,
@@ -71,9 +81,9 @@
         ]
       },
       {
-        "timestamp": 2000,
+        "timestamp": 1900,
         "id": 2,
-        "balance": 20,
+        "balance": 999,
         "tokens": [
           {
             "token_num": 90001,
@@ -86,19 +96,19 @@
         ]
       },
       {
-        "timestamp": 2000,
+        "timestamp": 1900,
         "id": 3,
-        "balance": 30
+        "balance": 999
       },
       {
-        "timestamp": 2000,
+        "timestamp": 1900,
         "id": 4,
-        "balance": 40
+        "balance": 999
       },
       {
-        "timestamp": 2000,
+        "timestamp": 1900,
         "id": 5,
-        "balance": 50,
+        "balance": 999,
         "tokens": [
           {
             "token_num": 100001,
@@ -115,29 +125,35 @@
         ]
       },
       {
-        "timestamp": 2000,
+        "timestamp": 1900,
         "id": 6,
-        "balance": 60
+        "balance": 999
       },
       {
-        "timestamp": 2000,
+        "timestamp": 1900,
         "id": 7,
-        "balance": 70
+        "balance": 999
       },
       {
-        "timestamp": 2000,
+        "timestamp": 1900,
         "id": 8,
-        "balance": 80
+        "balance": 999
       },
       {
-        "timestamp": 2000,
+        "timestamp": 1900,
         "id": 9,
-        "balance": 90
+        "balance": 999
       },
       {
-        "timestamp": 2000,
+        "timestamp": 1900,
         "id": 10,
-        "balance": 100
+        "balance": 999
+      }
+    ],
+    "recordFiles": [
+      {
+        "consensus_start": 1800,
+        "consensus_end": 2000
       }
     ],
     "transactions": [],

@@ -116,7 +116,7 @@ class MockPool {
         orderprefix = 'account_id';
         break;
       case 'accounts':
-        orderprefix = '(coalesce\\(ab.account_id, e.id\\)|id|account_id)';
+        orderprefix = 'e.id';
         break;
       default:
         break;
@@ -331,11 +331,11 @@ class MockPool {
     // Adjust the low/high values based on the SQL query parameters
     for (const param of parsedparams) {
       switch (param.field) {
-        case 'account_id':
-          accountNum = this.adjustRangeBasedOnConstraints(param, accountNum, BigInt);
-          break;
         case 'balance':
           balance = this.adjustRangeBasedOnConstraints(param, balance);
+          break;
+        case 'id':
+          accountNum = this.adjustRangeBasedOnConstraints(param, accountNum, BigInt);
           break;
         case 'limit':
           limit = this.adjustRangeBasedOnConstraints(param, limit);
@@ -355,9 +355,9 @@ class MockPool {
     let rows = [];
     for (let i = 0; i < limit.high; i++) {
       const row = {
-        account_balance: balance.low + Math.floor((balance.high - balance.low) / limit.high),
         alias: null,
         auto_renew_period: i * 1000,
+        balance: balance.low + Math.floor((balance.high - balance.low) / limit.high),
         consensus_timestamp: this.toNs(this.timeNow),
         decline_reward: false,
         deleted: false,

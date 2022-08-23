@@ -3,36 +3,43 @@
   "setup": {
     "accounts": [
       {
+        "balance": 10,
         "decline_reward": true,
         "num": 1,
         "key": "1220bfc9d4a344389324119eed485eb3a875b1e5a54bd189d2fd5ad88ce1d3473dee"
       },
       {
+        "balance": "9223372036847275807",
         "num": 2,
         "key": "32240a221220bfc9d4a344389324119eed485eb3a875b1e5a54bd189d2fd5ad88ce1d3473dee",
         "staked_account_id": 0
       },
       {
+        "balance": 30,
         "num": 3,
         "key": "2a28080112240a221220bfc9d4a344389324119eed485eb3a875b1e5a54bd189d2fd5ad88ce1d3473dee",
         "staked_account_id": 200,
         "stake_period_start": 2000
       },
       {
+        "balance": 40,
         "num": 4,
         "key": "3a21023673dc1b97f1e2a99041867be087ec040374636b8e7486789112e95f09018401",
         "staked_node_id": 3,
         "stake_period_start": 1000
       },
       {
+        "balance": 50,
         "num": 5,
         "key": "32250a233a21023673dc1b97f1e2a99041867be087ec040374636b8e7486789112e95f09018401"
       },
       {
+        "balance": 60,
         "num": 6,
         "key": "2a29080112250a233a21023673dc1b97f1e2a99041867be087ec040374636b8e7486789112e95f09018401"
       },
       {
+        "balance": 90,
         "num": 9,
         "expiration_timestamp": "9223372036854775806",
         "max_automatic_token_associations": 150,
@@ -40,6 +47,7 @@
       },
       {
         "alias": "32W353Y",
+        "balance": 100,
         "evm_address": "81f45dd06f708f9829e3a0284b464d9cbec37e61",
         "ethereum_nonce": 9007199254740992,
         "num": 10,
@@ -49,9 +57,9 @@
     ],
     "balances": [
       {
-        "timestamp": 2000,
+        "timestamp": 1800,
         "id": 1,
-        "balance": 10,
+        "balance": 999,
         "tokens": [
           {
             "token_num": 90000,
@@ -64,7 +72,7 @@
         ]
       },
       {
-        "timestamp": 2000,
+        "timestamp": 1800,
         "id": 2,
         "balance": 9223372036847275807,
         "tokens": [
@@ -79,19 +87,19 @@
         ]
       },
       {
-        "timestamp": 2000,
+        "timestamp": 1800,
         "id": 3,
-        "balance": 30
+        "balance": 999
       },
       {
-        "timestamp": 2000,
+        "timestamp": 1800,
         "id": 4,
-        "balance": 40
+        "balance": 999
       },
       {
-        "timestamp": 2000,
+        "timestamp": 1800,
         "id": 5,
-        "balance": 50,
+        "balance": 999,
         "tokens": [
           {
             "token_num": 100001,
@@ -104,41 +112,49 @@
         ]
       },
       {
-        "timestamp": 2000,
+        "timestamp": 1800,
         "id": 6,
-        "balance": 60
+        "balance": 999
       },
       {
-        "timestamp": 2000,
+        "timestamp": 1800,
         "id": 7,
-        "balance": 70
+        "balance": 999
       },
       {
-        "timestamp": 2000,
+        "timestamp": 1800,
         "id": 8,
-        "balance": 80
+        "balance": 999
       },
       {
-        "timestamp": 2000,
+        "timestamp": 1800,
         "id": 9,
-        "balance": 90
+        "balance": 999
       },
       {
-        "timestamp": 2000,
+        "timestamp": 1800,
         "id": 10,
-        "balance": 100
+        "balance": 999
       }
     ],
     "contracts": [
       {
+        "balance": 70,
         "evm_address": "ebb9a1be370150759408cd7af48e9eda2b8ead57",
         "num": 7,
         "max_automatic_token_associations": 20
       },
       {
+        "balance": 80,
         "num": 8,
         "staked_node_id": 5,
         "stake_period_start": 1100
+      }
+    ],
+    "recordFiles": [
+      {
+        "consensus_start": 1700,
+        "consensus_end": 2000
       }
     ],
     "transactions": [],

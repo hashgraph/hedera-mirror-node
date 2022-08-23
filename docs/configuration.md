@@ -266,12 +266,13 @@ Name                                                            | Default | Desc
 `hedera.mirror.monitor.nodes[].host`                            | ""      | The main node's hostname
 `hedera.mirror.monitor.nodes[].port`                            | 50211   | The main node's port
 `hedera.mirror.monitor.nodeValidation.enabled`                  | true    | Whether to validate and remove invalid or down nodes permanently before publishing
-`hedera.mirror.monitor.nodeValidation.frequency`                | 30m     | The amount of time between validations of the network.
+`hedera.mirror.monitor.nodeValidation.frequency`                | 1d      | The amount of time between validations of the network.
 `hedera.mirror.monitor.nodeValidation.maxAttempts`              | 8       | The number of times the monitor should attempt to receive a healthy response from a node before marking it as unhealthy.
 `hedera.mirror.monitor.nodeValidation.maxBackoff`               | 2s      | The maximum amount of time to wait in between attempts when trying to validate a node
 `hedera.mirror.monitor.nodeValidation.maxThreads`               | 25      | The maximum number of threads to use for node validation
 `hedera.mirror.monitor.nodeValidation.minBackoff`               | 500ms   | The minimum amount of time to wait in between attempts when trying to validate a node
 `hedera.mirror.monitor.nodeValidation.requestTimeout`           | 15s     | The amount of time to wait for a validation request before timing out
+`hedera.mirror.monitor.nodeValidation.retryBackoff`             | 2m      | The fixed amount of time to wait in between unsuccessful node validations that result in no valid nodes
 `hedera.mirror.monitor.operator.accountId`                      | ""      | Operator account ID used to pay for transactions
 `hedera.mirror.monitor.operator.privateKey`                     | ""      | Operator ED25519 private key used to sign transactions in hex encoded DER format
 `hedera.mirror.monitor.publish.async`                           | true    | Whether to use the SDK's asynchronous execution or synchronous. Synchronous requires more monitor responseThreads.
@@ -438,6 +439,10 @@ Name                                                 | Default             | Des
 `hedera.mirror.rosetta.db.port`                      | 5432                | The port used to connect to the database
 `hedera.mirror.rosetta.db.statementTimeout`          | 20                  | The number of seconds to wait before timing out a query statement
 `hedera.mirror.rosetta.db.username`                  | mirror_rosetta      | The username the processor uses to connect to the database
+`hedera.mirror.rosetta.http.idleTimeout`             | 10000000000         | The maximum amount of time in nanoseconds to wait for the next request when keep-alives are enabled
+`hedera.mirror.rosetta.http.readHeaderTimeout`       | 3000000000          | The maximum amount of time in nanoseconds to read request headers
+`hedera.mirror.rosetta.http.readTimeout`             | 5000000000          | The maximum duration in nanoseconds for reading the entire request, including the body
+`hedera.mirror.rosetta.http.writeTimeout`            | 10000000000         | The maximum duration in nanoseconds before timing out writes of the response
 `hedera.mirror.rosetta.log.level`                    | info                | The log level
 `hedera.mirror.rosetta.network`                      | DEMO                | Which Hedera network to use. Can be either `DEMO`, `MAINNET`, `PREVIEWNET`, `TESTNET` or `OTHER`
 `hedera.mirror.rosetta.nodes`                        | {}                  | A map of main nodes with its service endpoint as the key and the node account id as its value
