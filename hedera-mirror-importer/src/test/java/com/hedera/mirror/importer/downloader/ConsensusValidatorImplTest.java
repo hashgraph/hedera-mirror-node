@@ -26,6 +26,7 @@ import static org.mockito.Mockito.when;
 import java.security.KeyPairGenerator;
 import java.security.PublicKey;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import javax.annotation.Resource;
@@ -184,8 +185,9 @@ class ConsensusValidatorImplTest extends IntegrationTest {
                         .stake(3L))
                 .persist();
 
+        Collection<FileStreamSignature> emptyList = Collections.emptyList();
         Exception e = assertThrows(SignatureVerificationException.class, () -> consensusValidator
-                .validate(Collections.emptyList()));
+                .validate(emptyList));
         assertTrue(e.getMessage().contains("Consensus not reached for file"));
     }
 
@@ -274,9 +276,11 @@ class ConsensusValidatorImplTest extends IntegrationTest {
         fileStreamSignatureNode6.setNodeAccountId(new EntityId(0L, 0L, 6L, EntityType.ACCOUNT));
         fileStreamSignatureNode6.setStatus(FileStreamSignature.SignatureStatus.DOWNLOADED);
 
+        var fileStreamSignatures = Arrays.asList(fileStreamSignatureNode3, fileStreamSignatureNode4,
+                fileStreamSignatureNode5,
+                fileStreamSignatureNode6);
         Exception e = assertThrows(SignatureVerificationException.class, () -> consensusValidator
-                .validate(Arrays.asList(fileStreamSignatureNode3, fileStreamSignatureNode4, fileStreamSignatureNode5,
-                        fileStreamSignatureNode6)));
+                .validate(fileStreamSignatures));
 
         assertTrue(e.getMessage().contains("Insufficient signature file count, requires at least 0.333 to reach " +
                 "consensus, got 1 out of 4 for file"));

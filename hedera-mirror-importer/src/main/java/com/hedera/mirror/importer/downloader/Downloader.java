@@ -592,7 +592,7 @@ public abstract class Downloader<T extends StreamFile> {
             PublicKey> nodeAccountIDPubKeyMap) {
         Map<String, Collection<String>> statusMap = signatures.stream()
                 .collect(Collectors.groupingBy(fss -> fss.getStatus().toString(),
-                        Collectors.mapping(fss -> fss.getNodeAccountIdString(), Collectors
+                        Collectors.mapping(FileStreamSignature::getNodeAccountIdString, Collectors
                                 .toCollection(TreeSet::new))));
 
         Set<String> seenNodes = new HashSet<>();
@@ -603,7 +603,7 @@ public abstract class Downloader<T extends StreamFile> {
                 seenNodes));
         statusMap.put(FileStreamSignature.SignatureStatus.NOT_FOUND.toString(), missingNodes);
 
-        String streamType = signatures.stream()
+        String signatureStreamType = signatures.stream()
                 .map(FileStreamSignature::getStreamType)
                 .map(StreamType::toString)
                 .findFirst()
@@ -612,7 +612,7 @@ public abstract class Downloader<T extends StreamFile> {
             entry.getValue().forEach(nodeAccountId -> {
                 Counter counter = nodeSignatureStatusMetricMap.computeIfAbsent(
                         nodeAccountId,
-                        n -> newStatusMetric(nodeAccountId, streamType, entry.getKey()));
+                        n -> newStatusMetric(nodeAccountId, signatureStreamType, entry.getKey()));
                 counter.increment();
             });
         }

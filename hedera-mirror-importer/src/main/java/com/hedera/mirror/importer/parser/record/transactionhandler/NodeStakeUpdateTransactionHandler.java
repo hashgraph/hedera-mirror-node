@@ -92,7 +92,11 @@ class NodeStakeUpdateTransactionHandler implements TransactionHandler {
 
         var nodeStakes = transactionBody.getNodeStakeList();
         if (!nodeStakes.isEmpty()) {
-            cacheManager.getCache(NODE_STAKE_CACHE).clear();
+            var nodeStakeCache = cacheManager.getCache(NODE_STAKE_CACHE);
+            if (nodeStakeCache != null) {
+                nodeStakeCache.clear();
+            }
+
             for (var nodeStakeProto : nodeStakes) {
                 NodeStake nodeStake = new NodeStake();
                 nodeStake.setConsensusTimestamp(consensusTimestamp);
