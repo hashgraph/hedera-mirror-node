@@ -64,7 +64,7 @@ public class GenericUpsertQueryGenerator implements UpsertQueryGenerator {
      * @return the upsert query
      */
     @Override
-    public String getInsertQuery() {
+    public String getUpsertQuery() {
         VelocityEngine velocityEngine = new VelocityEngine();
         velocityEngine.setProperty(RuntimeConstants.RESOURCE_LOADERS, RuntimeConstants.RESOURCE_LOADER_CLASS);
         velocityEngine.setProperty("resource.loader.class.class", ClasspathResourceLoader.class.getName());
@@ -92,11 +92,6 @@ public class GenericUpsertQueryGenerator implements UpsertQueryGenerator {
         StringWriter writer = new StringWriter();
         template.merge(velocityContext, writer);
         return writer.toString();
-    }
-
-    @Override
-    public String getUpdateQuery() {
-        return "";
     }
 
     private String closeRange(String input) {
