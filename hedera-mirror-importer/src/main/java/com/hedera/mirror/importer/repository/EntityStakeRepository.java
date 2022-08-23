@@ -45,12 +45,12 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
                 ess.id,
                 (case
                    when ess.deleted is true
-                     or coalesce(es.decline_reward_start, true) is true
-                     or coalesce(es.staked_node_id_start, -1) = -1
-                     or ess.stake_period_start = -1
-                     or ess.stake_period_start >= (select epoch_day from ending_period_node_stake limit 1)
-                     then 0
-                   else coalesce(es.pending_reward, 0) + (reward_rate * (es.stake_total_start / 100000000))
+                        or coalesce(es.decline_reward_start, true) is true
+                        or coalesce(es.staked_node_id_start, -1) = -1
+                        then 0
+                   when ess.stake_period_start >= (select epoch_day from ending_period_node_stake limit 1)
+                        then reward_rate * (es.stake_total_start / 100000000)
+                   else es.pending_reward + reward_rate * (es.stake_total_start / 100000000)
                   end) as pending_reward,
                 ess.staked_node_id as staked_node_id_start,
                 coalesce(ps.staked_to_me, 0) as staked_to_me,

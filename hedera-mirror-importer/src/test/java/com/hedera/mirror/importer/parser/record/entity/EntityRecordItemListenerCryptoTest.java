@@ -1168,8 +1168,8 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         await().atMost(Durations.FIVE_SECONDS)
                 .with()
                 .pollInterval(Durations.ONE_HUNDRED_MILLISECONDS)
-                .untilAsserted(() -> assertThat(entityStakeRepository.findAll()).containsExactlyInAnyOrder(
-                        expectedEntityStake1, expectedEntityStake2, expectedEntityStake3));
+                .untilAsserted(() -> assertThat(entityStakeRepository.findAll())
+                        .containsExactlyInAnyOrder(expectedEntityStake1, expectedEntityStake2, expectedEntityStake3));
 
     }
 

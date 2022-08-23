@@ -133,7 +133,7 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
             "0, false, 1, -1, 15090000000, true, 1500",
             "20, false, 1, -1, 15090000000, true, 1520",
             "20, false, 1, -2, 15090000000, false, 1520",
-            "20, false, 1, 0, 15090000000, false, 0",
+            "20, false, 1, 0, 15090000000, false, 1500",
             "0, false, 1, 0, 0, false, 0",
             "0, false, 2, 0, 15090000000, true, 0",
             "20, false, -1, , 15090000000, true, 0",
