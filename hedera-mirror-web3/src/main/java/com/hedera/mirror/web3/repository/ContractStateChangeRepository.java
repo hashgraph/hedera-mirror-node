@@ -12,7 +12,7 @@ public interface ContractStateChangeRepository extends CrudRepository<Contract, 
                 FROM contract_state_change
                 INNER JOIN entity
                 ON contract_state_change.contract_id = entity.id
-                WHERE entity.evm_address = decode(?1, 'hex')
-                AND slot = decode(?2, 'hex')""", nativeQuery = true)
-    Optional<String> findStorageValue(String id, String key);
+                WHERE entity.evm_address = ?1
+                AND slot = ?2""", nativeQuery = true)
+    Optional<String> findStorageValue(byte[] id, byte[] key);
 }

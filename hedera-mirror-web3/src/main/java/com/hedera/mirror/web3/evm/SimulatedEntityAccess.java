@@ -85,7 +85,7 @@ public class SimulatedEntityAccess implements EntityAccess {
 
     @Override
     public UInt256 getStorage(Address id, UInt256 key) {
-        var value = contractStateChangeRepository.findStorageValue(id.toUnprefixedHexString(), key.toUnprefixedHexString()).orElse(null);
+        var value = contractStateChangeRepository.findStorageValue(id.toArray(), key.toArray()).orElse(null);
         return UInt256.fromHexString(value);
     }
 
