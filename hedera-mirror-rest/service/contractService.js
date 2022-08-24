@@ -27,7 +27,15 @@ import EntityId from '../entityId';
 import {NotFoundError} from '../errors';
 import {OrderSpec} from '../sql';
 import {JSONStringify} from '../utils';
-import {ContractLog, ContractResult, ContractStateChange, Entity, EthereumTransaction, Transaction} from '../model';
+import {
+  ContractAction,
+  ContractLog,
+  ContractResult,
+  ContractStateChange,
+  Entity,
+  EthereumTransaction,
+  Transaction,
+} from '../model';
 
 const {default: defaultLimit} = getResponseLimit();
 
@@ -103,6 +111,24 @@ class ContractService extends BaseService {
                                         from ${Entity.tableName} ${Entity.tableAlias}
                                         where ${Entity.DELETED} <> true
                                           and ${Entity.TYPE} = 'CONTRACT'`;
+
+  static contractActionsByHashQuery = `with ${ContractAction.tableAlias} as (
+      select ${ContractAction.tableName}.*
+      from ${ContractAction.tableName}
+    )
+    select ${ContractAction.tableAlias}.* from ${ContractResult.tableName} ${ContractResult.tableAlias}
+    left join ${ContractAction.tableAlias}
+      on ${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)} = ${ContractAction.getFullName(
+    ContractAction.CONSENSUS_TIMESTAMP
+  )}
+    where ${ContractResult.TRANSACTION_HASH} = $1
+    `;
+
+  static contractActionsByTxIdQuery = `
+       select ${ContractAction.tableAlias}.* from ${ContractAction.tableName} ${ContractAction.tableAlias}
+       where ${ContractAction.CONSENSUS_TIMESTAMP} = $1
+       and ${ContractAction.CALLER} = $2
+  `;
 
   static contractByEvmAddressQueryFilters = [
     {
@@ -338,6 +364,14 @@ class ContractService extends BaseService {
     }
 
     return EntityId.parse(contractIdValue, {paramName: filterKeys.CONTRACTID}).getEncodedId();
+  }
+
+  async getContractActionsByHash(hash) {
+    let params = [hash];
+
+    const query = [ContractService.contractActionsByHashQuery].join('\n');
+    const rows = await super.getRows(query, params, 'getActionsByHash');
+    return rows.map((row) => new ContractStateChange(row));
   }
 }
 

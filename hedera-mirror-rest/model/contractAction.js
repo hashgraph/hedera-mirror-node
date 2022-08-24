@@ -20,35 +20,35 @@
 
 import _ from 'lodash';
 
-class ContractResult {
+class ContractAction {
   /**
    * Parses contract_result table columns into object
    */
-  constructor(contractResult) {
+  constructor(contractAction) {
     Object.assign(
       this,
-      _.mapKeys(contractResult, (v, k) => _.camelCase(k))
+      _.mapKeys(contractAction, (v, k) => _.camelCase(k))
     );
   }
 
-  static tableAlias = 'cr';
-  static tableName = 'contract_result';
+  static tableAlias = 'cact';
+  static tableName = 'contract_action';
 
-  static AMOUNT = 'amount';
-  static BLOOM = 'bloom';
-  static CALL_RESULT = 'call_result';
+  static CALL_DEPTH = 'call_depth';
+  static CALL_TYPE = 'call_type';
+  static CALLER = 'caller';
+  static CALLER_TYPE = 'caller_type';
   static CONSENSUS_TIMESTAMP = 'consensus_timestamp';
-  static CONTRACT_ID = 'contract_id';
-  static CREATED_CONTRACT_IDS = 'created_contract_ids';
-  static ERROR_MESSAGE = 'error_message';
-  static FAILED_INITCODE = 'failed_initcode';
-  static FUNCTION_PARAMETERS = 'function_parameters';
-  static FUNCTION_RESULT = 'function_result';
-  static GAS_LIMIT = 'gas_limit';
+  static GAS = 'gas';
   static GAS_USED = 'gas_used';
-  static PAYER_ACCOUNT_ID = 'payer_account_id';
-  static SENDER_ID = 'sender_id';
-  static TRANSACTION_HASH = 'transaction_hash';
+  static INDEX = 'index';
+  static INPUT = 'input';
+  static RECEPIENT_ACCOUNT = 'recipient_account';
+  static RECEPIENT_ADDRESS = 'recipient_address';
+  static RECEPIENT_CONTRACT = 'recipient_contract';
+  static RESULT_DATA = 'result_data';
+  static RESULT_DATA_TYPE = 'result_data_type';
+  static VALUE = 'value';
 
   /**
    * Gets full column name with table alias prepended.
@@ -61,4 +61,4 @@ class ContractResult {
   }
 }
 
-export default ContractResult;
+export default ContractAction;

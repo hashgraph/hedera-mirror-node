@@ -41,6 +41,7 @@ import {ContractService, FileDataService, RecordFileService, TransactionService}
 import TransactionId from '../transactionId';
 import * as utils from '../utils';
 import {
+  ContractActionViewModel,
   ContractBytecodeViewModel,
   ContractLogViewModel,
   ContractResultDetailsViewModel,
@@ -1048,6 +1049,47 @@ class ContractController extends BaseController {
     }
   };
 
+  getContractActions = async (req, res) => {
+    // Support args: index, limit, order
+    const filters = utils.buildAndValidateFilters(req.query);
+    const order = filters.order || orderFilterValues.ASC;
+    const limit = filters.order || defaultLimit;
+    const index = filters.index;
+
+    // extract filters from query param
+    const {transactionIdOrHash} = req.params;
+    let rows = [];
+
+    if (utils.isValidTransactionHash(transactionIdOrHash)) {
+      const hash = Buffer.from(transactionIdOrHash.replace('0x', '').substring(64), 'hex');
+      rows = ContractService.getContractActionsByHash(hash);
+    } else {
+      const transactionId = TransactionId.fromString(transactionIdOrHash);
+
+      // get transactions using id
+      // TODO get contract actions by tx_id
+      // const rows = await ContractService.getActionsByTxId(transactionIdOrHash);
+    }
+
+    const actions = rows.map((row) => new ContractActionViewModel(row));
+    const lastRow = _.last(actions);
+    const lastIndex = lastRow.index;
+
+    res.locals[responseDataLabel] = {
+      actions,
+      links: {
+        next: utils.getPaginationLink(
+          req,
+          actions.length !== limit,
+          {
+            [filterKeys.INDEX]: lastIndex,
+          },
+          order
+        ),
+      },
+    };
+  };
+
   setContractResultsResponse = (
     res,
     contractResult,
@@ -1102,6 +1144,7 @@ const exportControllerMethods = (methods = []) => {
 };
 
 const contractController = exportControllerMethods([
+  'getContractActions',
   'getContractById',
   'getContracts',
   'getContractLogsById',
