@@ -30,6 +30,9 @@ import static com.hedera.mirror.common.util.DomainUtils.TINYBARS_IN_ONE_HBAR;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
+
+import com.hedera.services.stream.proto.CallOperationType;
+
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -249,7 +252,8 @@ public class DomainBuilder {
                 .recipientAccount(entityId(ACCOUNT))
                 .resultData(bytes(256))
                 .resultDataType(ResultDataCase.OUTPUT.getNumber())
-                .value(300L);
+                .value(300L)
+                .callOperationType(CallOperationType.OP_CALL.getNumber());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

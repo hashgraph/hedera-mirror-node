@@ -116,6 +116,7 @@ comment on table contract is 'Contract entity';
 create table if not exists contract_action
 (
     call_depth          integer                        not null,
+    call_operation_type smallint                       null,
     call_type           integer                        not null,
     caller              bigint                         not null,
     caller_type         entity_type default 'CONTRACT' not null,

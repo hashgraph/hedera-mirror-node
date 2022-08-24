@@ -449,6 +449,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                                     ContractAction::getCallerType)
                             .returns(contractAction.getResultDataCase().getNumber(), ContractAction::getResultDataType)
                             .returns(contractAction.getValue(), ContractAction::getValue)
+                            .returns(contractAction.getCallOperationTypeValue(), ContractAction::getCallOperationType)
                             .satisfies(c -> assertThat(c.getCaller()).isNotNull())
                             .satisfies(c -> assertThat(c.getResultData()).isNotEmpty())
                             .satisfiesAnyOf(c -> assertThat(c.getRecipientContract()).isNotNull(),

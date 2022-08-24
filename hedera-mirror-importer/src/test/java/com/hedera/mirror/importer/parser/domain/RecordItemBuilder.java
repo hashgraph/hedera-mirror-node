@@ -32,6 +32,9 @@ import com.google.protobuf.BytesValue;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
+
+import com.hedera.services.stream.proto.CallOperationType;
+
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
@@ -537,7 +540,8 @@ public class RecordItemBuilder {
                 .setInput(bytes(100))
                 .setRecipientContract(contractId())
                 .setOutput(bytes(256))
-                .setValue(20);
+                .setValue(20)
+                .setCallOperationType(CallOperationType.OP_CALL);
     }
 
     private TransactionSidecarRecord.Builder contractBytecode(ContractID contractId) {

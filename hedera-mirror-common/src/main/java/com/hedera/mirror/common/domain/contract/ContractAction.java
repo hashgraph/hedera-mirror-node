@@ -89,6 +89,8 @@ public class ContractAction implements Persistable<ContractAction.Id> {
 
     private long value;
 
+    private int callOperationType;
+
     @Override
     @JsonIgnore
     public ContractAction.Id getId() {
