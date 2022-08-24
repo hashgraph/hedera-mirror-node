@@ -104,6 +104,9 @@ create index if not exists entity_state_start__id on entity_state_start (id);
 create index if not exists entity_state_start__staked_account_id
     on entity_state_start (staked_account_id) where staked_account_id <> 0;
 
+-- entity_stake
+alter table if exists entity_stake add constraint entity_stake__pk primary key (id);
+
 -- ethereum_transaction
 alter table ethereum_transaction
     add constraint ethereum_transaction__pk primary key (consensus_timestamp);

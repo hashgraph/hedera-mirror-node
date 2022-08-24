@@ -29,6 +29,16 @@ import com.hedera.mirror.common.domain.entity.EntityStake;
 
 public interface EntityStakeRepository extends CrudRepository<EntityStake, Long> {
 
+    // Algorithm to update pending reward:
+    //
+    // 1. IF the entity is deleted, OR there is no such row in entity_stake (new entity created in the ending
+    //    stake period), OR its decline_reward_start is true (decline reward for the ending staking period), OR
+    //    it didn't stake to a node for the ending staking period, the new pending reward is 0
+    // 2. IF the current stake_period_start >= the last epochDay from node stake update (either its staking metadata or
+    //    balance changed in the ending staking period), calculate the reward it has earned in the ending staking
+    //    period as its pending reward
+    // 3. Otherwise, there's no staking metadata or balance change for the entity since the start of the ending staking
+    //    period, add the reward earned in the ending period to the current as the new pending reward
     String UPDATE_ENTITY_STAKE_SQL = """
             with ending_period_node_stake as (
               select node_id, epoch_day, reward_rate
