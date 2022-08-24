@@ -20,7 +20,6 @@ package com.hedera.mirror.web3.evm;
  * ‍
  */
 
-import com.hedera.mirror.web3.repository.TokenRepository;
 
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +30,8 @@ import org.hyperledger.besu.datatypes.Address;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.web3.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.web3.repository.AccountBalanceRepository;
+import com.hedera.mirror.web3.repository.ContractStateChangeRepository;
+import com.hedera.mirror.web3.repository.TokenRepository;
 import com.hedera.services.transaction.store.contracts.EntityAccess;
 
 //FUTURE WORK to be implemented in separate PR
@@ -40,6 +41,7 @@ public class SimulatedEntityAccess implements EntityAccess {
 
     private final AccountBalanceFileRepository accountBalanceFileRepository;
     private final AccountBalanceRepository accountBalanceRepository;
+    private final ContractStateChangeRepository contractStateChangeRepository;
     private final TokenRepository tokenRepository;
 
     @Override
@@ -83,7 +85,8 @@ public class SimulatedEntityAccess implements EntityAccess {
 
     @Override
     public UInt256 getStorage(Address id, UInt256 key) {
-        return null;
+        var value = contractStateChangeRepository.findStorageValue(id.toArray(), key.toArray()).orElse(null);
+        return UInt256.fromHexString(value);
     }
 
     @Override

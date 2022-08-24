@@ -738,7 +738,7 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
     const defaultTransactionHashBase64Url = 'rovr8cn6DzCTVuSAV_YEevfN5jA30FCdFt3Dsg4IUVi_3xTRU0XBsYsZm3L-1Kxv';
     const defaultTransactionHash = Buffer.from(defaultTransactionHashBase64, 'base64');
     const defaultTransactionHashHex = defaultTransactionHash.toString('hex');
-    const defaultTransactionHashParams = [defaultTransactionHash.subarray(0, 32)];
+    const defaultTransactionHashParams = [defaultTransactionHash];
 
     const defaultTransactionIdStr = '0.0.200-123456789-987654321';
     const defaultTransactionIdParams = [200, '123456789987654321'];
@@ -885,7 +885,7 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
     order by t.consensus_timestamp asc`;
     };
 
-    const getTransactionHashQuery = () => getQuery('substring(t.transaction_hash from 1 for 32) = $1');
+    const getTransactionHashQuery = () => getQuery('t.transaction_hash = $1');
 
     const getTransactionIdQuery = (extraConditions) => {
       return getQuery('t.payer_account_id = $1 and t.valid_start_ns = $2', extraConditions);

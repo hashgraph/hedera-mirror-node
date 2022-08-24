@@ -21,6 +21,12 @@ INSERT INTO entity (id, num, realm, shard, timestamp_range,
 VALUES (3, 1252, 0, 0, int8range(12235235, 32323436), 'CONTRACT',
 		decode('00000000000000000000000000000000000004e4', 'hex'), 0, false);
 
+INSERT INTO contract_state_change (consensus_timestamp, contract_id, payer_account_id, slot, value_read, value_written)
+VALUES (1660658268, 1252, 1,
+		decode('00','hex'),
+		decode('7465737400000000000000000000000000000000000000000000000000000008', 'hex'),
+	  decode('7465737400000000000000000000000000000000000000000000000000000008', 'hex'));
+
 INSERT INTO public.token(token_id, created_timestamp, decimals, initial_supply, modified_timestamp, name, symbol, total_supply, treasury_account_id)
 VALUES(4, 20220808000001, 2, 6, 20220808000001, 'testToken', 'ttt', 100, 1);
 

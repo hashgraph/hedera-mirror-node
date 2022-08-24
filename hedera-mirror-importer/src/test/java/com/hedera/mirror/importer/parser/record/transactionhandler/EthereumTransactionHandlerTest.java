@@ -134,6 +134,8 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .returns(recordItem.getPayerAccountId(), EthereumTransaction::getPayerAccountId)
                 .returns(expectedValue, EthereumTransaction::getValue);
 
+        assertThat(recordItem.getEthereumTransaction()).isSameAs(ethereumTransaction);
+
         var functionResult = getContractFunctionResult(recordItem.getRecord(), create);
         var senderId = functionResult.getSenderId().getAccountNum();
         verify(entityListener).onEntity(argThat(e -> e.getId() == senderId && e.getTimestampRange() == null &&
