@@ -33,11 +33,9 @@ public interface UpsertQueryGenerator {
 
     String getFinalTableName();
 
-    String getInsertQuery();
-
     default String getTemporaryTableName() {
         return getFinalTableName() + TEMP_SUFFIX;
     }
 
-    String getUpdateQuery();
+    String getUpsertQuery();
 }

@@ -6,7 +6,6 @@
       "name": "monitor-api",
       "node_args": "--experimental-specifier-resolution=node",
       "env": {
-        "PORT": 3000,
         "NODE_ENV": "production"
       }
     },
@@ -15,8 +14,7 @@
       "script": "serve",
       "name": "monitor-dashboard",
       "env": {
-        "PM2_SERVE_PATH": "./monitor_dashboard",
-        "PM2_SERVE_PORT": 3001
+        "PM2_SERVE_PATH": "./monitor_dashboard"
       }
     }
   ]
