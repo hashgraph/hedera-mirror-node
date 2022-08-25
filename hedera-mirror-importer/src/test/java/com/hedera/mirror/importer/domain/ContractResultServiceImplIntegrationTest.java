@@ -29,7 +29,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
-
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -89,9 +88,9 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     private final ContractResultService contractResultService;
     private final ContractStateChangeRepository contractStateChangeRepository;
     private final EntityRepository entityRepository;
-    private final SecureRandom random = new SecureRandom();
     private final RecordItemBuilder recordItemBuilder;
     private final RecordStreamFileListener recordStreamFileListener;
+    private final SecureRandom secureRandom = new SecureRandom();
     private final TransactionTemplate transactionTemplate;
 
     private Transaction transaction;
@@ -464,6 +463,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                     assertThat(contractActions).hasNext();
                     assertThat(contractActions.next())
                             .returns(contractAction.getCallDepth(), ContractAction::getCallDepth)
+                            .returns(contractAction.getCallOperationTypeValue(), ContractAction::getCallOperationType)
                             .returns(contractAction.getCallTypeValue(), ContractAction::getCallType)
                             .returns(recordItem.getConsensusTimestamp(), ContractAction::getConsensusTimestamp)
                             .returns(contractAction.getGas(), ContractAction::getGas)
@@ -472,7 +472,6 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                                     ContractAction::getCallerType)
                             .returns(contractAction.getResultDataCase().getNumber(), ContractAction::getResultDataType)
                             .returns(contractAction.getValue(), ContractAction::getValue)
-                            .returns(contractAction.getCallOperationTypeValue(), ContractAction::getCallOperationType)
                             .satisfies(c -> assertThat(c.getCaller()).isNotNull())
                             .satisfies(c -> assertThat(c.getResultData()).isNotEmpty())
                             .satisfiesAnyOf(c -> assertThat(c.getRecipientContract()).isNotNull(),
@@ -631,7 +630,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
     private byte[] randomBytes(int length) {
         byte[] bytes = new byte[length];
-        random.nextBytes(bytes);
+        secureRandom.nextBytes(bytes);
         return bytes;
     }
 
