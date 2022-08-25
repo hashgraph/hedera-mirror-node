@@ -20,17 +20,14 @@ package com.hedera.mirror.web3.evm;
  * ‍
  */
 
-
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 
-import com.hedera.mirror.common.domain.balance.AccountBalance;
-import com.hedera.mirror.web3.repository.AccountBalanceFileRepository;
-import com.hedera.mirror.web3.repository.AccountBalanceRepository;
 import com.hedera.mirror.web3.repository.ContractStateChangeRepository;
+import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.mirror.web3.repository.TokenRepository;
 import com.hedera.services.transaction.store.contracts.EntityAccess;
 
@@ -39,23 +36,13 @@ import com.hedera.services.transaction.store.contracts.EntityAccess;
 @RequiredArgsConstructor
 public class SimulatedEntityAccess implements EntityAccess {
 
-    private final AccountBalanceFileRepository accountBalanceFileRepository;
-    private final AccountBalanceRepository accountBalanceRepository;
     private final ContractStateChangeRepository contractStateChangeRepository;
     private final TokenRepository tokenRepository;
+    private final EntityRepository entityRepository;
 
     @Override
     public long getBalance(Address address) {
-        final var latestAccountBalanceFile =
-                accountBalanceFileRepository.findLatest();
-        if (latestAccountBalanceFile.isPresent()) {
-            final var latestAccountBalanceConsensusTimestamp = latestAccountBalanceFile.get().getConsensusTimestamp();
-            final var accountBalance =
-                    accountBalanceRepository.findByAddressAndConsensusTimestamp(address.toArray(), latestAccountBalanceConsensusTimestamp);
-            return accountBalance.map(AccountBalance::getBalance).orElse(0L);
-        } else {
-            return 0L;
-        }
+        return entityRepository.findAccountBalanceByAddress(address.toArrayUnsafe()).orElse(0L);
     }
 
     @Override
