@@ -170,7 +170,7 @@ public abstract class AbstractEntity implements History {
     }
 
     // Necessary since Lombok doesn't use our setters for builders
-    public static abstract class AbstractEntityBuilder<C extends AbstractEntity, B extends AbstractEntityBuilder<C, B>> {
+    public abstract static class AbstractEntityBuilder<C extends AbstractEntity, B extends AbstractEntityBuilder<C, B>> {
         public B key(byte[] key) {
             this.key = key;
             this.publicKey = DomainUtils.getPublicKey(key);
