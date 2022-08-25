@@ -36,6 +36,11 @@ const DEFAULT_TREASURY_ID = '98';
 
 const defaultFileData = '\\x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750';
 
+const hexStringToBytea = (hexString) => {
+  const stringValue = hexString.toString();
+  return Buffer.from(stringValue.replace(/^0x/, '').padStart(2, '0'), 'hex');
+};
+
 const setup = async (testDataJson) => {
   await loadAccounts(testDataJson.accounts);
   await loadAddressBooks(testDataJson.addressbooks);
@@ -45,6 +50,7 @@ const setup = async (testDataJson) => {
   await loadBalances(testDataJson.balances);
   await loadCryptoTransfers(testDataJson.cryptotransfers);
   await loadContracts(testDataJson.contracts);
+  await loadContractActions(testDataJson.contractactions);
   await loadContractLogs(testDataJson.contractlogs);
   await loadContractResults(testDataJson.contractresults);
   await loadContractStateChanges(testDataJson.contractStateChanges);
@@ -133,6 +139,16 @@ const loadContracts = async (contracts) => {
 
   for (const contract of contracts) {
     await addContract(contract);
+  }
+};
+
+const loadContractActions = async (contractActions) => {
+  if (contractActions == null) {
+    return;
+  }
+
+  for (const contractAction of contractActions) {
+    await addContractAction(contractAction);
   }
 };
 
@@ -503,8 +519,7 @@ const addEthereumTransaction = async (ethereumTransaction) => {
   ];
   for (const field of byteaFields) {
     if (!_.isNull(ethTx[field])) {
-      const stringValue = ethTx[field].toString();
-      ethTx[field] = Buffer.from(stringValue.replace(/^0x/, '').padStart(2, '0'), 'hex');
+      ethTx[field] = hexStringToBytea(ethTx[field]);
     }
   }
 
@@ -831,6 +846,56 @@ const addContract = async (custom) => {
   await insertDomainObject('contract', insertFields, contract);
 };
 
+const addContractAction = async (contractActionInput) => {
+  const insertFields = [
+    'call_depth',
+    'call_type',
+    'caller',
+    'caller_type',
+    'consensus_timestamp',
+    'gas',
+    'gas_used',
+    'index',
+    'input',
+    'recipient_account',
+    'recipient_address',
+    'recipient_contract',
+    'result_data',
+    'result_data_type',
+    'value',
+  ];
+
+  let action = {
+    call_depth: 1,
+    call_type: 1,
+    caller: 8001,
+    caller_type: 'CONTRACT',
+    gas: 10000,
+    gas_used: 5000,
+    index: 1,
+    input: null,
+    recipient_account: null,
+    recipient_address: null,
+    recipient_contract: null,
+    result_data: null,
+    result_data_type: 11,
+    value: 100,
+    ...contractActionInput,
+  };
+
+  if (action.input) {
+    action.input = hexStringToBytea(action.input);
+  }
+  if (action.recipient_address) {
+    action.recipient_address = hexStringToBytea(action.recipient_address);
+  }
+  if (action.result_data) {
+    action.result_data = hexStringToBytea(action.result_data);
+  }
+
+  await insertDomainObject('contract_action', insertFields, action);
+};
+
 const insertFields = [
   'amount',
   'bloom',
@@ -888,10 +953,14 @@ const addContractResult = async (contractResultInput) => {
     contractResultInput.function_result != null
       ? Buffer.from(contractResultInput.function_result)
       : contractResult.function_result;
-  contractResult.transaction_hash =
-    contractResultInput.transaction_hash != null
-      ? Buffer.from(contractResultInput.transaction_hash)
-      : contractResult.transaction_hash;
+
+  if (contractResultInput.transaction_hash != null) {
+    if (typeof contractResultInput.transaction_hash === 'string') {
+      contractResultInput.transaction_hash = hexStringToBytea(contractResultInput.transaction_hash);
+    } else {
+      contractResultInput.transaction_hash = Buffer.from(contractResultInput.transaction_hash);
+    }
+  }
 
   await insertDomainObject('contract_result', insertFields, contractResult);
 };

@@ -372,9 +372,10 @@ class ContractService extends BaseService {
   }
 
   async getContractActionsByTransactionId(transactionId, filters, order, limit) {
-    const [entityId, ...timestampParts] = transactionId.split('-');
-    const timestamp = timestampParts.join('-');
-    let params = [entityId, timestamp];
+    const [entityIdString, ...timestampParts] = transactionId.split('-');
+    const entityId = entityIdString.split('.')[2];
+    const timestamp = timestampParts.join('');
+    let params = [timestamp, entityId];
     return this.getContractActions(ContractService.contractActionsByTxIdQuery, params, filters, order, limit);
   }
 
@@ -395,7 +396,7 @@ class ContractService extends BaseService {
     let query = [baseQuery, whereClause, orderClause, limitClause].join('\n');
 
     const rows = await super.getRows(query, params, 'getActionsByHash');
-    return rows.map((row) => new ContractStateChange(row));
+    return rows.map((row) => new ContractAction(row));
   }
 }
 

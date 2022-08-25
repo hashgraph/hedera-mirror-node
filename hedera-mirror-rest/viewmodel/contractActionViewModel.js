@@ -19,11 +19,18 @@
  */
 
 import EntityId from '../entityId';
+import * as utils from '../utils.js';
 
 /**
  * Contract actions view model
  */
 class ContractActionViewModel {
+  static resultDataTypes = {
+    11: 'OUTPUT',
+    12: 'REVERT_REASON',
+    13: 'ERROR',
+  };
+
   /**
    * Constructs contractAction view model
    *
@@ -32,21 +39,27 @@ class ContractActionViewModel {
   constructor(contractAction) {
     const recipientIsAccount = !!contractAction.recipient_account;
 
-    this.call_depth = contractAction.call_depth;
-    this.call_type = contractAction.call_type;
+    this.call_depth = contractAction.callDepth;
+    this.call_type = contractAction.callType;
     this.caller = contractAction.caller;
-    this.caller_type = contractAction.caller_type;
-    this.from = EntityId.parse(contractAction.caller).toEvmAddress();
+    this.caller_type = contractAction.callerType;
+    this.from = contractAction.caller ? EntityId.parse(contractAction.caller).toEvmAddress() : null;
     this.gas = contractAction.gas;
-    this.gas_used = contractAction.gas_used;
+    this.gas_used = contractAction.gasUsed;
     this.index = contractAction.index;
-    this.input = contractAction.input;
-    this.recipient = recipientIsAccount ? contractAction.recipient_account : contractAction.recipient_contract;
+    this.input = contractAction.input ? utils.addHexPrefix(Buffer.from(contractAction.input).toString('hex')) : null;
+    this.recipient = recipientIsAccount
+      ? EntityId.parse(contractAction.recipientAccount).toString()
+      : EntityId.parse(contractAction.recipientContract).toString();
     this.recipient_type = recipientIsAccount ? 'ACCOUNT' : 'CONTRACT';
-    this.result_data = contractAction.result_data;
-    this.result_data_type = contractAction.result_data_type;
-    this.timestamp = contractAction.consensus_timestamp;
-    this.to = contractAction.recipient_address;
+    this.result_data = contractAction.resultData
+      ? utils.addHexPrefix(Buffer.from(contractAction.resultData).toString('hex'))
+      : null;
+    this.result_data_type = ContractActionViewModel.resultDataTypes[contractAction.resultDataType];
+    this.timestamp = contractAction.consensusTimestamp.toString();
+    this.to = contractAction.recipientAddress
+      ? utils.addHexPrefix(Buffer.from(contractAction.recipientAddress).toString('hex'))
+      : null;
     this.value = contractAction.value;
   }
 }

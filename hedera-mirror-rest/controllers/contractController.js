@@ -1061,27 +1061,31 @@ class ContractController extends BaseController {
     let rows = [];
 
     if (utils.isValidTransactionHash(transactionIdOrHash)) {
-      const hash = Buffer.from(transactionIdOrHash.replace('0x', '').substring(64), 'hex');
-      rows = ContractService.getContractActionsByHash(hash);
+      const hash = Buffer.from(transactionIdOrHash.replace('0x', '').substring(0, 64), 'hex');
+      rows = await ContractService.getContractActionsByHash(hash);
     } else {
       rows = await ContractService.getContractActionsByTransactionId(transactionIdOrHash);
     }
 
     const actions = rows.map((row) => new ContractActionViewModel(row));
-    const lastRow = _.last(actions);
-    const lastIndex = lastRow.index;
+    let nextLink = null;
+    if (actions.length) {
+      const lastRow = _.last(actions);
+      const lastIndex = lastRow.index;
+      nextLink = utils.getPaginationLink(
+        req,
+        actions.length !== limit,
+        {
+          [filterKeys.INDEX]: lastIndex,
+        },
+        order
+      );
+    }
 
     res.locals[responseDataLabel] = {
       actions,
       links: {
-        next: utils.getPaginationLink(
-          req,
-          actions.length !== limit,
-          {
-            [filterKeys.INDEX]: lastIndex,
-          },
-          order
-        ),
+        next: nextLink,
       },
     };
   };

@@ -31,10 +31,10 @@ router.getAsync('/:contractId', ContractController.getContractById);
 router.getAsync('/:contractId/results', ContractController.getContractResultsById);
 router.getAsync('/:contractId/results/logs', ContractController.getContractLogsById);
 router.getAsync('/:contractId/results/:consensusTimestamp([0-9.]+)', ContractController.getContractResultsByTimestamp);
-router.getAsync('/:contractId/results/:transactionIdOrHash/actions', ContractController.getContractActions);
 router.getAsync('/results', ContractController.getContractResults);
 router.getAsync('/results/logs', ContractController.getContractLogs);
 router.getAsync('/results/:transactionIdOrHash', ContractController.getContractResultsByTransactionIdOrHash);
+router.getAsync('/results/:transactionIdOrHash/actions', ContractController.getContractActions);
 
 export default {
   resource,
