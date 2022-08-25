@@ -1050,10 +1050,10 @@ class ContractController extends BaseController {
   };
 
   getContractActions = async (req, res) => {
-    // Support args: index, limit, order
+    // Supported args: index, limit, order
     const filters = utils.buildAndValidateFilters(req.query);
     const order = filters.order || orderFilterValues.ASC;
-    const limit = filters.order || defaultLimit;
+    const limit = filters.limit || defaultLimit;
     const index = filters.index;
 
     // extract filters from query param
@@ -1064,11 +1064,7 @@ class ContractController extends BaseController {
       const hash = Buffer.from(transactionIdOrHash.replace('0x', '').substring(64), 'hex');
       rows = ContractService.getContractActionsByHash(hash);
     } else {
-      const transactionId = TransactionId.fromString(transactionIdOrHash);
-
-      // get transactions using id
-      // TODO get contract actions by tx_id
-      // const rows = await ContractService.getActionsByTxId(transactionIdOrHash);
+      rows = await ContractService.getContractActionsByTransactionId(transactionIdOrHash);
     }
 
     const actions = rows.map((row) => new ContractActionViewModel(row));

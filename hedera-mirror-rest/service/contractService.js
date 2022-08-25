@@ -366,10 +366,34 @@ class ContractService extends BaseService {
     return EntityId.parse(contractIdValue, {paramName: filterKeys.CONTRACTID}).getEncodedId();
   }
 
-  async getContractActionsByHash(hash) {
+  async getContractActionsByHash(hash, filters, order, limit) {
     let params = [hash];
+    return this.getContractActions(ContractService.contractActionsByHashQuery, params, filters, order, limit);
+  }
 
-    const query = [ContractService.contractActionsByHashQuery].join('\n');
+  async getContractActionsByTransactionId(transactionId, filters, order, limit) {
+    const [entityId, ...timestampParts] = transactionId.split('-');
+    const timestamp = timestampParts.join('-');
+    let params = [entityId, timestamp];
+    return this.getContractActions(ContractService.contractActionsByTxIdQuery, params, filters, order, limit);
+  }
+
+  async getContractActions(baseQuery, params = [], filters = {}, order = orderFilterValues.ASC, limit = 25) {
+    let whereClause = ``;
+    if (filters && filters.index) {
+      whereClause = `and ${ContractAction.getFullName(ContractAction.INDEX)} = $${params.length + 1}`;
+      params.push(filters.index);
+    }
+
+    const orderClause = super.getOrderByQuery(OrderSpec.from(ContractAction.getFullName(ContractAction.INDEX), order));
+
+    if (limit < 1) limit = 1;
+    if (limit > 100) limit = 100;
+
+    const limitClause = `limit ${limit}`;
+
+    let query = [baseQuery, whereClause, orderClause, limitClause].join('\n');
+
     const rows = await super.getRows(query, params, 'getActionsByHash');
     return rows.map((row) => new ContractStateChange(row));
   }
