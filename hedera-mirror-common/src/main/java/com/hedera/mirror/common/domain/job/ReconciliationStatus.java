@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.reconciliation;
+package com.hedera.mirror.common.domain.job;
 
 /*-
  * ‌
@@ -21,19 +21,19 @@ package com.hedera.mirror.importer.reconciliation;
  */
 
 import lombok.Getter;
-
-import com.hedera.mirror.common.domain.job.ReconciliationStatus;
-import com.hedera.mirror.importer.exception.ImporterException;
+import lombok.RequiredArgsConstructor;
 
 @Getter
-class ReconciliationException extends ImporterException {
+@RequiredArgsConstructor
+public enum ReconciliationStatus {
 
-    private static final long serialVersionUID = -1037307345641558766L;
+    UNKNOWN(""),
+    RUNNING(""),
+    SUCCESS(""),
+    FAILURE_CRYPTO_TRANSFERS("Crypto transfers in range (%d, %d]: %s"),
+    FAILURE_FIFTY_BILLION("Balance file %s does not add up to 50B: %d"),
+    FAILURE_TOKEN_TRANSFERS("Token transfers in range (%d, %d]: %s"),
+    FAILURE_UNKNOWN("Unknown error");
 
-    private final ReconciliationStatus status;
-
-    ReconciliationException(ReconciliationStatus status, Object... arguments) {
-        super(String.format(status.getMessage(), arguments));
-        this.status = status;
-    }
+    private final String message;
 }

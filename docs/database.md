@@ -148,3 +148,16 @@ transactions in the balance and record streams. These issues should only appear 
   the stream. When a transaction’s payer account could not afford the network fee, its record was omitted.
 * Solution: Fixed in Hedera Services v0.4.0 late 2019. Fixed in Mirror Node in v0.53.0 by adding an `errata` field
   to `crypto_transfer` and `transaction` tables and inserting the missing rows with the `errata` field set to `INSERT`.
+
+### Record Missing for FAIL_INVALID NFT transfers
+
+* Period: July 31, 2022 to August 5, 2022
+* Scope: Affected the records of 59 transactions.
+* Problem: Any ledger that will grow to billions of entities must have an efficient way to remove expired entities. In
+  the Hedera network, this means keeping a list of NFTs owned by an account, so that when an account expires, we can
+  return its NFTs to their respective treasury accounts.
+  Under certain conditions in the 0.27.5 release, a bug in the logic maintaining these lists could cause NFT transfers
+  to fail, without refunding fees. This would manifest itself as a `FAIL_INVALID` transaction that does not get written
+  to the record stream.
+* Solution: Fixed in Hedera Services [v0.27.7](https://docs.hedera.com/guides/docs/release-notes/services#v0.27.7) on
+  August 9th 2022. Fixed in Mirror Node in v0.64.0 by a migration that adds the missing transactions and transfers.

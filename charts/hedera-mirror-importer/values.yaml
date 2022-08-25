@@ -391,7 +391,7 @@ prometheusRules:
       description: "Unable to reconcile balance information for {{ $labels.namespace }}/{{ $labels.pod }}"
       summary: "Mirror reconciliation job failed"
     enabled: true
-    expr: sum(hedera_mirror_reconciliation{application="hedera-mirror-importer"}) by (namespace, pod) > 0
+    expr: sum(hedera_mirror_reconciliation{application="hedera-mirror-importer"}) by (namespace, pod) > 2
     for: 1m
     labels:
       severity: critical

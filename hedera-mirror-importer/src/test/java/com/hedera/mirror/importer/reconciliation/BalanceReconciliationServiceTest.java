@@ -20,20 +20,27 @@ package com.hedera.mirror.importer.reconciliation;
  * ‍
  */
 
+import static com.hedera.mirror.common.domain.job.ReconciliationStatus.FAILURE_CRYPTO_TRANSFERS;
+import static com.hedera.mirror.common.domain.job.ReconciliationStatus.FAILURE_FIFTY_BILLION;
+import static com.hedera.mirror.common.domain.job.ReconciliationStatus.FAILURE_TOKEN_TRANSFERS;
+import static com.hedera.mirror.common.domain.job.ReconciliationStatus.SUCCESS;
+import static com.hedera.mirror.common.domain.job.ReconciliationStatus.UNKNOWN;
 import static com.hedera.mirror.importer.reconciliation.BalanceReconciliationService.FIFTY_BILLION_HBARS;
 import static com.hedera.mirror.importer.reconciliation.BalanceReconciliationService.METRIC;
-import static com.hedera.mirror.importer.reconciliation.BalanceReconciliationService.ReconciliationStatus.FAILURE_CRYPTO_TRANSFERS;
-import static com.hedera.mirror.importer.reconciliation.BalanceReconciliationService.ReconciliationStatus.FAILURE_FIFTY_BILLION;
-import static com.hedera.mirror.importer.reconciliation.BalanceReconciliationService.ReconciliationStatus.FAILURE_TOKEN_TRANSFERS;
-import static com.hedera.mirror.importer.reconciliation.BalanceReconciliationService.ReconciliationStatus.SUCCESS;
 import static com.hedera.mirror.importer.reconciliation.BalanceReconciliationService.TokenAccountId;
+import static com.hedera.mirror.importer.reconciliation.ReconciliationProperties.RemediationStrategy.ACCUMULATE;
+import static com.hedera.mirror.importer.reconciliation.ReconciliationProperties.RemediationStrategy.FAIL;
+import static com.hedera.mirror.importer.reconciliation.ReconciliationProperties.RemediationStrategy.RESET;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.assertj.core.api.InstanceOfAssertFactories;
+import org.assertj.core.api.ObjectAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,9 +51,12 @@ import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.job.ReconciliationJob;
+import com.hedera.mirror.common.domain.job.ReconciliationStatus;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.transaction.ErrataType;
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.repository.ReconciliationJobRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -54,15 +64,20 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
 
     private final DomainBuilder domainBuilder;
     private final MeterRegistry meterRegistry;
+    private final ReconciliationJobRepository reconciliationJobRepository;
     private final ReconciliationProperties reconciliationProperties;
-    private final BalanceReconciliationService reconciliationService;
+    private final BalanceReconciliationService balanceReconciliationService;
 
     @BeforeEach
     void setup() {
+        reconciliationProperties.setBalanceOffset(0);
+        reconciliationProperties.setDelay(Duration.ZERO);
         reconciliationProperties.setEnabled(true);
         reconciliationProperties.setEndDate(Utility.MAX_INSTANT_LONG);
+        reconciliationProperties.setRemediationStrategy(FAIL);
         reconciliationProperties.setStartDate(Instant.EPOCH);
         reconciliationProperties.setToken(true);
+        balanceReconciliationService.status.set(UNKNOWN);
     }
 
     @Test
@@ -77,39 +92,92 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
         var last = balance(Map.of(2L, FIFTY_BILLION_HBARS - 1600L, 3L, 900L, 4L, 600L, 5L, 100L));
 
         // when
-        reconciliationService.reconcile();
+        balanceReconciliationService.reconcile();
 
         // then
-        assertMetric(SUCCESS);
-        assertStartDate(last);
+        assertReconciliationJob(SUCCESS, last).returns(2, ReconciliationJob::getCount);
     }
 
     @Test
     void cryptoTransfersFailure() {
         // given
-        var first = balance(Map.of(2L, FIFTY_BILLION_HBARS));
+        balance(Map.of(2L, FIFTY_BILLION_HBARS));
         transfer(2, 3, 1000);
         balance(Map.of(2L, FIFTY_BILLION_HBARS - 1010L, 3L, 1010L)); // Missing 10 tinybar transfer
 
         // when
-        reconciliationService.reconcile();
+        balanceReconciliationService.reconcile();
 
         // then
-        assertMetric(FAILURE_CRYPTO_TRANSFERS);
-        assertStartDate(first);
+        assertReconciliationJob(FAILURE_CRYPTO_TRANSFERS, null)
+                .returns(0, ReconciliationJob::getCount);
+    }
+
+    @Test
+    void cryptoTransfersAccumulateStrategy() {
+        // given
+        reconciliationProperties.setRemediationStrategy(ACCUMULATE);
+        balance(Map.of(2L, FIFTY_BILLION_HBARS));
+        var balance2 = balance(Map.of(2L, FIFTY_BILLION_HBARS));
+        balance(Map.of(2L, FIFTY_BILLION_HBARS - 1000L, 3L, 1000L)); // Missing 1000 tinybar transfer
+        transfer(3, 4, 1);
+        balance(Map.of(2L, FIFTY_BILLION_HBARS - 1000L, 3L, 999L, 4L, 1L));
+
+        // when
+        balanceReconciliationService.reconcile();
+
+        // then
+        assertReconciliationJob(FAILURE_CRYPTO_TRANSFERS, balance2)
+                .returns(3, ReconciliationJob::getCount)
+                .satisfies(r -> assertThat(r.getError()).contains(""));
+    }
+
+    @Test
+    void cryptoTransfersResetStrategy() {
+        // given
+        reconciliationProperties.setRemediationStrategy(RESET);
+        balance(Map.of(2L, FIFTY_BILLION_HBARS));
+        var balance2 = balance(Map.of(2L, FIFTY_BILLION_HBARS));
+        balance(Map.of(2L, FIFTY_BILLION_HBARS - 1000L, 3L, 1000L)); // Missing 1000 tinybar transfer
+        transfer(3, 4, 1);
+        balance(Map.of(2L, FIFTY_BILLION_HBARS - 1000L, 3L, 999L, 4L, 1L));
+
+        // when
+        balanceReconciliationService.reconcile();
+
+        // then
+        assertReconciliationJob(FAILURE_CRYPTO_TRANSFERS, balance2).returns(3, ReconciliationJob::getCount);
     }
 
     @Test
     void cryptoTransfersZeroBalances() {
         // given
         balance(Map.of(2L, FIFTY_BILLION_HBARS, 3L, 0L));
-        balance(Map.of(2L, FIFTY_BILLION_HBARS, 4L, 0L));
+        var balance2 = balance(Map.of(2L, FIFTY_BILLION_HBARS, 4L, 0L));
 
         // when
-        reconciliationService.reconcile();
+        balanceReconciliationService.reconcile();
 
         // then
-        assertMetric(SUCCESS);
+        assertReconciliationJob(SUCCESS, balance2).returns(1, ReconciliationJob::getCount);
+    }
+
+    @Test
+    void delay() {
+        // given
+        long delay = 1000L;
+        reconciliationProperties.setDelay(Duration.ofMillis(delay));
+        balance(Map.of(2L, FIFTY_BILLION_HBARS, 3L, 0L));
+        var balance2 = balance(Map.of(2L, FIFTY_BILLION_HBARS, 4L, 0L));
+
+        // when
+        long start = System.currentTimeMillis();
+        balanceReconciliationService.reconcile();
+        long end = System.currentTimeMillis();
+
+        // then
+        assertReconciliationJob(SUCCESS, balance2).returns(1, ReconciliationJob::getCount);
+        assertThat(end - start).isGreaterThanOrEqualTo(delay);
     }
 
     @Test
@@ -119,13 +187,13 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
         tokenTransfer(2, 100, 1000);
         tokenTransfer(2, 100, -100);
         tokenTransfer(3, 100, 100);
-        tokenBalance(Map.of(new TokenAccountId(2, 100), 900L, new TokenAccountId(3, 100), 100L));
+        var balance2 = tokenBalance(Map.of(new TokenAccountId(2, 100), 900L, new TokenAccountId(3, 100), 100L));
 
         // when
-        reconciliationService.reconcile();
+        balanceReconciliationService.reconcile();
 
         // then
-        assertMetric(SUCCESS);
+        assertReconciliationJob(SUCCESS, balance2).returns(1, ReconciliationJob::getCount);
     }
 
     @Test
@@ -135,10 +203,28 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
         tokenBalance(Map.of(new TokenAccountId(2, 100), 2L)); // Missing transfer
 
         // when
-        reconciliationService.reconcile();
+        balanceReconciliationService.reconcile();
 
         // then
-        assertMetric(FAILURE_TOKEN_TRANSFERS);
+        assertReconciliationJob(FAILURE_TOKEN_TRANSFERS, null).returns(0, ReconciliationJob::getCount);
+    }
+
+    @Test
+    void tokenTransfersResetStrategy() {
+        // given
+        reconciliationProperties.setRemediationStrategy(RESET);
+        tokenBalance(Map.of(new TokenAccountId(2, 100), 100L));
+        var balance2 = tokenBalance(Map.of(new TokenAccountId(2, 100), 100L));
+        tokenBalance(Map.of(new TokenAccountId(2, 100), 101L)); // Missing transfer
+        tokenTransfer(2, 100, -10);
+        tokenTransfer(3, 100, 10);
+        tokenBalance(Map.of(new TokenAccountId(2, 100), 91L, new TokenAccountId(3, 100), 10L));
+
+        // when
+        balanceReconciliationService.reconcile();
+
+        // then
+        assertReconciliationJob(FAILURE_TOKEN_TRANSFERS, balance2).returns(3, ReconciliationJob::getCount);
     }
 
     @Test
@@ -146,26 +232,26 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
         // given
         reconciliationProperties.setToken(false);
         tokenBalance(Map.of(new TokenAccountId(2, 100), 1L));
-        tokenBalance(Map.of(new TokenAccountId(2, 100), 2L)); // Missing transfer
+        var balance2 = tokenBalance(Map.of(new TokenAccountId(2, 100), 2L)); // Missing transfer
 
         // when
-        reconciliationService.reconcile();
+        balanceReconciliationService.reconcile();
 
         // then
-        assertMetric(SUCCESS);
+        assertReconciliationJob(SUCCESS, balance2).returns(1, ReconciliationJob::getCount);
     }
 
     @Test
     void tokenTransfersZeroBalances() {
         // given
         tokenBalance(Map.of(new TokenAccountId(2, 100), 0L, new TokenAccountId(3, 100), 0L));
-        tokenBalance(Map.of(new TokenAccountId(2, 100), 0L, new TokenAccountId(3, 100), 0L));
+        var balance2 = tokenBalance(Map.of(new TokenAccountId(2, 100), 0L, new TokenAccountId(3, 100), 0L));
 
         // when
-        reconciliationService.reconcile();
+        balanceReconciliationService.reconcile();
 
         // then
-        assertMetric(SUCCESS);
+        assertReconciliationJob(SUCCESS, balance2).returns(1, ReconciliationJob::getCount);
     }
 
     @Test
@@ -175,13 +261,14 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
         transfer(2, 3, 1);
         domainBuilder.cryptoTransfer().customize(c -> c.amount(100).entityId(4).errata(ErrataType.DELETE)).persist();
         domainBuilder.cryptoTransfer().customize(c -> c.amount(-100).entityId(2).errata(ErrataType.DELETE)).persist();
-        balance(Map.of(2L, FIFTY_BILLION_HBARS - 1L, 3L, 1L)); // Errata rows not present
+        var balance2 = balance(Map.of(2L, FIFTY_BILLION_HBARS - 1L, 3L, 1L)); // Errata rows not present
 
         // when
-        reconciliationService.reconcile();
+        balanceReconciliationService.reconcile();
 
         // then
         assertMetric(SUCCESS);
+        assertReconciliationJob(SUCCESS, balance2).returns(1, ReconciliationJob::getCount);
     }
 
     @Test
@@ -191,19 +278,21 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
         balance(Map.of(2L, 1L)); // Would fail if checked
 
         // when
-        reconciliationService.reconcile();
+        balanceReconciliationService.reconcile();
 
         // then
-        assertMetric(SUCCESS);
+        assertMetric(UNKNOWN);
+        assertThat(reconciliationJobRepository.count()).isZero();
     }
 
     @Test
     void noBalanceFiles() {
         // when
-        reconciliationService.reconcile();
+        balanceReconciliationService.reconcile();
 
         // then
-        assertMetric(SUCCESS);
+        assertMetric(UNKNOWN);
+        assertReconciliationJob(UNKNOWN, null).returns(0, ReconciliationJob::getCount);
     }
 
     @Test
@@ -212,10 +301,10 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
         balance(Map.of(2L, FIFTY_BILLION_HBARS));
 
         // when
-        reconciliationService.reconcile();
+        balanceReconciliationService.reconcile();
 
         // then
-        assertMetric(SUCCESS);
+        assertReconciliationJob(SUCCESS, null).returns(0, ReconciliationJob::getCount);
     }
 
     @Test
@@ -226,10 +315,10 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
         balance(Map.of(2L, FIFTY_BILLION_HBARS, 3L, 100L));
 
         // when
-        reconciliationService.reconcile();
+        balanceReconciliationService.reconcile();
 
         // then
-        assertMetric(FAILURE_FIFTY_BILLION);
+        assertReconciliationJob(FAILURE_FIFTY_BILLION, null).returns(0, ReconciliationJob::getCount);
     }
 
     @Test
@@ -237,14 +326,14 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
         // given
         balance(Map.of(2L, 1L)); // Would fail if checked
         var balanceFile2 = balance(Map.of(2L, FIFTY_BILLION_HBARS));
-        balance(Map.of(2L, FIFTY_BILLION_HBARS));
+        var balanceFile3 = balance(Map.of(2L, FIFTY_BILLION_HBARS));
         reconciliationProperties.setStartDate(Instant.ofEpochSecond(0L, balanceFile2.getConsensusTimestamp()));
 
         // when
-        reconciliationService.reconcile();
+        balanceReconciliationService.reconcile();
 
         // then
-        assertMetric(SUCCESS);
+        assertReconciliationJob(SUCCESS, balanceFile3).returns(1, ReconciliationJob::getCount);
     }
 
     @Test
@@ -257,39 +346,42 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
         reconciliationProperties.setEndDate(Instant.ofEpochSecond(0L, balanceFile3.getConsensusTimestamp()));
 
         // when
-        reconciliationService.reconcile();
+        balanceReconciliationService.reconcile();
 
         // then
-        assertMetric(SUCCESS);
+        assertReconciliationJob(SUCCESS, balanceFile3).returns(2, ReconciliationJob::getCount);
     }
 
     @Test
     void recovers() {
         // given
-        var first = balance(Map.of(2L, FIFTY_BILLION_HBARS));
+        balance(Map.of(2L, FIFTY_BILLION_HBARS));
         domainBuilder.cryptoTransfer().customize(c -> c.amount(100).entityId(3)).persist();
         var missingTransfer = domainBuilder.cryptoTransfer().customize(c -> c.amount(-100).entityId(2));
         var last = balance(Map.of(2L, FIFTY_BILLION_HBARS - 100, 3L, 100L));
 
         // when
-        reconciliationService.reconcile();
+        balanceReconciliationService.reconcile();
 
         // then
-        assertMetric(FAILURE_CRYPTO_TRANSFERS);
-        assertStartDate(first);
+        assertReconciliationJob(FAILURE_CRYPTO_TRANSFERS, null)
+                .returns(0, ReconciliationJob::getCount)
+                .extracting(ReconciliationJob::getError)
+                .asInstanceOf(InstanceOfAssertFactories.STRING)
+                .contains("not equal: value differences={2=(5000000000000000000, 4999999999999999900)}");
 
         // given
         missingTransfer.persist();
 
         // when
-        reconciliationService.reconcile();
+        balanceReconciliationService.reconcile();
 
         // then
-        assertMetric(SUCCESS);
-        assertStartDate(last);
+        assertReconciliationJob(SUCCESS, last).returns(1, ReconciliationJob::getCount);
+        assertThat(reconciliationJobRepository.count()).isEqualTo(2);
     }
 
-    private void assertMetric(BalanceReconciliationService.ReconciliationStatus status) {
+    private void assertMetric(ReconciliationStatus status) {
         assertThat(meterRegistry.find(METRIC).gauges())
                 .hasSize(1)
                 .first()
@@ -297,9 +389,23 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
                 .isEqualTo((double) status.ordinal());
     }
 
-    private void assertStartDate(AccountBalanceFile accountBalanceFile) {
-        var expectedStartDate = Instant.ofEpochSecond(0L, accountBalanceFile.getConsensusTimestamp());
-        assertThat(reconciliationProperties.getStartDate()).isEqualTo(expectedStartDate);
+    private ObjectAssert<ReconciliationJob> assertReconciliationJob(ReconciliationStatus status,
+                                                                    AccountBalanceFile accountBalanceFile) {
+        assertMetric(status);
+
+        var consensusTimestamp = accountBalanceFile != null ? accountBalanceFile.getConsensusTimestamp() : 0L;
+        var jobAssert = assertThat(reconciliationJobRepository.findLatest())
+                .get()
+                .returns(consensusTimestamp, ReconciliationJob::getConsensusTimestamp)
+                .satisfies(rj -> assertThat(rj.getTimestampEnd()).isNotNull())
+                .satisfies(rj -> assertThat(rj.getTimestampStart()).isNotNull().isBeforeOrEqualTo(rj.getTimestampEnd()))
+                .asInstanceOf(InstanceOfAssertFactories.type(ReconciliationJob.class));
+
+        if (status == SUCCESS) {
+            jobAssert.returns("", ReconciliationJob::getError);
+        }
+
+        return jobAssert;
     }
 
     private AccountBalanceFile balance(Map<Long, Long> balances) {

@@ -86,6 +86,8 @@ import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowanceHistory;
 import com.hedera.mirror.common.domain.event.EventFile;
 import com.hedera.mirror.common.domain.file.FileData;
+import com.hedera.mirror.common.domain.job.ReconciliationJob;
+import com.hedera.mirror.common.domain.job.ReconciliationStatus;
 import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
@@ -585,6 +587,16 @@ public class DomainBuilder {
                 .consensusTimestamp(timestamp())
                 .range(Integer.MAX_VALUE)
                 .prngNumber(random.nextInt(Integer.MAX_VALUE));
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<ReconciliationJob, ReconciliationJob.ReconciliationJobBuilder> reconciliationJob() {
+        var builder = ReconciliationJob.builder()
+                .consensusTimestamp(timestamp())
+                .error("")
+                .status(ReconciliationStatus.SUCCESS)
+                .timestampEnd(Instant.now().plusSeconds(1))
+                .timestampStart(Instant.now());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
