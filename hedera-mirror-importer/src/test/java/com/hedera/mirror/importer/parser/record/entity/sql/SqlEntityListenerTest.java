@@ -1121,7 +1121,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
-    void onNodeStakes() {
+    void onNodeStake() {
         // given
         var nodeStake1 = domainBuilder.nodeStake().get();
         var nodeStake2 = domainBuilder.nodeStake().get();

@@ -294,7 +294,7 @@ select
     coalesce(staked_node_id, -1)     as staked_node_id,
     coalesce(stake_period_start, -1) as stake_period_start
 from entity
-where type in ('ACCOUNT', 'CONTRACT');
+where deleted is not true and type in ('ACCOUNT', 'CONTRACT');
 comment on materialized view entity_state_start is 'Network entity state at start of staking period';
 
 create table if not exists ethereum_transaction
