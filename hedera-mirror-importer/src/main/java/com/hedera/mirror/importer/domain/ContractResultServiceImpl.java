@@ -135,6 +135,7 @@ public class ContractResultServiceImpl implements ContractResultService {
         }
 
         contractAction.setCallDepth(action.getCallDepth());
+        contractAction.setCallOperationType(action.getCallOperationTypeValue());
         contractAction.setCallType(action.getCallTypeValue());
         contractAction.setConsensusTimestamp(consensusTimestamp);
         contractAction.setGas(action.getGas());
