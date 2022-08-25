@@ -1051,10 +1051,20 @@ class ContractController extends BaseController {
 
   getContractActions = async (req, res) => {
     // Supported args: index, limit, order
-    const filters = utils.buildAndValidateFilters(req.query);
-    const order = filters.order || orderFilterValues.ASC;
-    const limit = filters.limit || defaultLimit;
-    const index = filters.index;
+    const rawFilters = utils.buildAndValidateFilters(req.query);
+    const filters = [];
+    let order = orderFilterValues.ASC;
+    let limit = defaultLimit;
+
+    for (const filter of rawFilters) {
+      if (filter.key === 'order') {
+        order = filter.value;
+      } else if (filter.key === 'limit') {
+        limit = filter.value;
+      } else if (filter.key === 'index') {
+        filters.push(filter);
+      }
+    }
 
     // extract filters from query param
     const {transactionIdOrHash} = req.params;
@@ -1062,9 +1072,9 @@ class ContractController extends BaseController {
 
     if (utils.isValidTransactionHash(transactionIdOrHash)) {
       const hash = Buffer.from(transactionIdOrHash.replace('0x', '').substring(0, 64), 'hex');
-      rows = await ContractService.getContractActionsByHash(hash);
+      rows = await ContractService.getContractActionsByHash(hash, filters, order, limit);
     } else {
-      rows = await ContractService.getContractActionsByTransactionId(transactionIdOrHash);
+      rows = await ContractService.getContractActionsByTransactionId(transactionIdOrHash, filters, order, limit);
     }
 
     const actions = rows.map((row) => new ContractActionViewModel(row));

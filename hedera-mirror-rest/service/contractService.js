@@ -381,9 +381,15 @@ class ContractService extends BaseService {
 
   async getContractActions(baseQuery, params = [], filters = {}, order = orderFilterValues.ASC, limit = 25) {
     let whereClause = ``;
-    if (filters && filters.index) {
-      whereClause = `and ${ContractAction.getFullName(ContractAction.INDEX)} = $${params.length + 1}`;
-      params.push(filters.index);
+    if (filters && filters.length) {
+      for (const filter of filters) {
+        if (filter.key === 'index') {
+          whereClause += `\nand ${ContractAction.getFullName(ContractAction.INDEX)}${filter.operator}$${
+            params.length + 1
+          }`;
+          params.push(filter.value);
+        }
+      }
     }
 
     const orderClause = super.getOrderByQuery(OrderSpec.from(ContractAction.getFullName(ContractAction.INDEX), order));
