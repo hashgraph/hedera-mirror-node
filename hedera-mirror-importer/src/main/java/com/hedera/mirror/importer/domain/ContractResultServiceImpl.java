@@ -135,6 +135,7 @@ public class ContractResultServiceImpl implements ContractResultService {
         }
 
         contractAction.setCallDepth(action.getCallDepth());
+        contractAction.setCallOperationType(action.getCallOperationTypeValue());
         contractAction.setCallType(action.getCallTypeValue());
         contractAction.setConsensusTimestamp(consensusTimestamp);
         contractAction.setGas(action.getGas());
@@ -143,7 +144,6 @@ public class ContractResultServiceImpl implements ContractResultService {
         contractAction.setInput(DomainUtils.toBytes(action.getInput()));
         contractAction.setResultDataType(action.getResultDataCase().getNumber());
         contractAction.setValue(action.getValue());
-        contractAction.setCallOperationType(action.getCallOperationType().getNumber());
 
         entityListener.onContractAction(contractAction);
     }

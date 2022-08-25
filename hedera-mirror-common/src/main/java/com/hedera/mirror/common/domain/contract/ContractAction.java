@@ -58,6 +58,8 @@ public class ContractAction implements Persistable<ContractAction.Id> {
     @Type(type = "pgsql_enum")
     private EntityType callerType;
 
+    private int callOperationType;
+
     private int callType;
 
     @javax.persistence.Id
@@ -88,8 +90,6 @@ public class ContractAction implements Persistable<ContractAction.Id> {
     private int resultDataType;
 
     private long value;
-
-    private int callOperationType;
 
     @Override
     @JsonIgnore

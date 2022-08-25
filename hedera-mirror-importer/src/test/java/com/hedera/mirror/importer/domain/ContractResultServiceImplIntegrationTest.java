@@ -29,11 +29,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
+
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -69,6 +71,9 @@ import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.ContractStateChangeRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
+import com.hedera.services.stream.proto.CallOperationType;
+import com.hedera.services.stream.proto.ContractActionType;
+import com.hedera.services.stream.proto.ContractActions;
 import com.hedera.services.stream.proto.ContractBytecode;
 import com.hedera.services.stream.proto.ContractStateChanges;
 import com.hedera.services.stream.proto.StorageChange;
@@ -84,6 +89,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     private final ContractResultService contractResultService;
     private final ContractStateChangeRepository contractStateChangeRepository;
     private final EntityRepository entityRepository;
+    private final SecureRandom random = new SecureRandom();
     private final RecordItemBuilder recordItemBuilder;
     private final RecordStreamFileListener recordStreamFileListener;
     private final TransactionTemplate transactionTemplate;
@@ -372,8 +378,25 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                         .setRuntimeBytecode(ByteString.copyFrom(new byte[] {3})))
                 .build();
 
+        var contractActionRecord = TransactionSidecarRecord.newBuilder()
+                .setActions(ContractActions.newBuilder()
+                        .addContractActions(contractAction(3001L,
+                                CallOperationType.OP_CALL,
+                                ContractActionType.CALL,
+                                3002L))
+                        .addContractActions(contractAction(3003L,
+                                CallOperationType.OP_CREATE,
+                                ContractActionType.CREATE,
+                                3004L))
+                        .addContractActions(contractAction(3004L,
+                                CallOperationType.OP_DELEGATECALL,
+                                ContractActionType.CALL,
+                                3005L)))
+                .build();
+
+
         recordItem.setSidecarRecords(List.of(stateChangeRecord1, stateChangeRecord2, bytecodeRecord1, bytecodeRecord2,
-                bytecodeRecord3));
+                bytecodeRecord3, contractActionRecord));
 
         // when
         process(recordItem);
@@ -579,8 +602,37 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
         return record.hasContractCreateResult() ? record.getContractCreateResult() : record.getContractCallResult();
     }
 
+    private com.hedera.services.stream.proto.ContractAction contractAction(Long callingContractNum,
+                                                                           CallOperationType callOperationType,
+                                                                           ContractActionType contractActionType,
+                                                                           Long recipientContractNum){
+        return com.hedera.services.stream.proto.ContractAction.newBuilder()
+                .setCallDepth(1)
+                .setCallingContract(ContractID.newBuilder().setContractNum(callingContractNum))
+                .setCallOperationType(callOperationType)
+                .setCallType(contractActionType)
+                .setGas(100)
+                .setGasUsed(50)
+                .setInput(bytes(100))
+                .setRecipientContract(ContractID.newBuilder().setContractNum(recipientContractNum))
+                .setOutput(bytes(256))
+                .setValue(20)
+                .build();
+    }
+
     private byte[] toBytes(ByteString byteString) {
         return byteString == ByteString.EMPTY ? null : DomainUtils.toBytes(byteString);
+    }
+
+    private ByteString bytes(int length) {
+        byte[] bytes = randomBytes(length);
+        return ByteString.copyFrom(bytes);
+    }
+
+    private byte[] randomBytes(int length) {
+        byte[] bytes = new byte[length];
+        random.nextBytes(bytes);
+        return bytes;
     }
 
     private String parseContractResultStrings(String message) {

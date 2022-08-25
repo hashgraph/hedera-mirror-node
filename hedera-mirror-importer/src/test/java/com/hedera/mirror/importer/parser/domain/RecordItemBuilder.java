@@ -33,8 +33,6 @@ import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 
-import com.hedera.services.stream.proto.CallOperationType;
-
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
@@ -108,6 +106,7 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.util.Utility;
+import com.hedera.services.stream.proto.CallOperationType;
 import com.hedera.services.stream.proto.ContractAction;
 import com.hedera.services.stream.proto.ContractActionType;
 import com.hedera.services.stream.proto.ContractActions;
@@ -534,14 +533,14 @@ public class RecordItemBuilder {
         return ContractAction.newBuilder()
                 .setCallDepth(3)
                 .setCallingContract(contractId())
+                .setCallOperationType(CallOperationType.OP_CALL)
                 .setCallType(ContractActionType.CALL)
                 .setGas(100)
                 .setGasUsed(50)
                 .setInput(bytes(100))
                 .setRecipientContract(contractId())
                 .setOutput(bytes(256))
-                .setValue(20)
-                .setCallOperationType(CallOperationType.OP_CALL);
+                .setValue(20);
     }
 
     private TransactionSidecarRecord.Builder contractBytecode(ContractID contractId) {

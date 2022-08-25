@@ -243,6 +243,7 @@ public class DomainBuilder {
                 .callDepth(1)
                 .caller(entityId(CONTRACT))
                 .callerType(CONTRACT)
+                .callOperationType(CallOperationType.OP_CALL.getNumber())
                 .callType(ContractActionType.CALL.getNumber())
                 .consensusTimestamp(timestamp())
                 .gas(100L)
@@ -252,8 +253,7 @@ public class DomainBuilder {
                 .recipientAccount(entityId(ACCOUNT))
                 .resultData(bytes(256))
                 .resultDataType(ResultDataCase.OUTPUT.getNumber())
-                .value(300L)
-                .callOperationType(CallOperationType.OP_CALL.getNumber());
+                .value(300L);
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
