@@ -20,10 +20,15 @@ package com.hedera.mirror.importer.parser;
  * ‍
  */
 
+import java.io.Flushable;
+
 import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.importer.exception.ImporterException;
 
-public interface StreamFileListener<T extends StreamFile> {
+public interface StreamFileListener<T extends StreamFile> extends Flushable {
+
+    default void flush() {
+    }
 
     /**
      * Called when starting to process a new stream file.
@@ -31,9 +36,6 @@ public interface StreamFileListener<T extends StreamFile> {
     void onStart() throws ImporterException;
 
     void onEnd(T streamFile) throws ImporterException;
-
-    default void onFlush() {
-    }
 
     /**
      * Called if an error is encountered during processing of stream file.

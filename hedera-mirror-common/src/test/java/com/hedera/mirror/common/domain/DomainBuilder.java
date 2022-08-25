@@ -410,7 +410,6 @@ public class DomainBuilder {
                 .realm(0L)
                 .receiverSigRequired(true)
                 .shard(0L)
-                .stakedAccountId(-1L)
                 .stakedNodeId(-1L)
                 .stakePeriodStart(-1L)
                 .submitKey(key())

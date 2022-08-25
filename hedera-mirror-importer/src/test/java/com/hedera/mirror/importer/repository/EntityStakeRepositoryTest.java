@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.repository;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
-import static com.hedera.mirror.common.domain.entity.EntityType.TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
@@ -32,7 +31,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.JdbcOperations;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityStake;
@@ -40,8 +38,8 @@ import com.hedera.mirror.common.domain.entity.EntityStake;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class EntityStakeRepositoryTest extends AbstractRepositoryTest {
 
+    private final EntityRepository entityRepository;
     private final EntityStakeRepository entityStakeRepository;
-    private final JdbcOperations jdbcOperations;
 
     @Test
     void updateEntityStake() {
@@ -64,9 +62,7 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                 .customize(e -> e.balance(500L).stakedAccountId(entity3.getId()))
                 .persist();
         var entity6 = domainBuilder.entity().customize(e -> e.balance(600L)).persist();
-        domainBuilder.entity()
-                .customize(e -> e.balance(null).stakedAccountId(null).stakedNodeId(null).type(TOPIC))
-                .persist();
+        domainBuilder.topic().persist();
         var entity8 = domainBuilder.entity()
                 .customize(e -> e.balance(800L).stakedAccountId(entity6.getId()))
                 .persist();
@@ -78,23 +74,25 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
         var entity10 = domainBuilder.entity()
                 .customize(e -> e.balance(1000L).id(entityId10).num(entityId10).stakedAccountId(entityId9))
                 .persist();
-        // existing entity stake
-        domainBuilder.entityStake().customize(es -> es.id(entity1.getId())).persist();
         long timestamp = domainBuilder.timestamp();
         var nodeStake = domainBuilder.nodeStake()
                 .customize(ns -> ns.consensusTimestamp(timestamp).nodeId(1L).rewardRate(0L))
                 .persist();
-        refreshEntityStateStart();
+        long epochDay = nodeStake.getEpochDay();
+        // existing entity stake, note entity4 has been deleted, its existing entity stake will no longer update
+        domainBuilder.entityStake().customize(es -> es.id(entity1.getId())).persist();
+        domainBuilder.entityStake().customize(es -> es.endStakePeriod(epochDay - 1).id(entity4.getId())).persist();
+        entityRepository.refreshEntityStateStart();
         var expectedEntityStakes = List.of(
-                fromEntity(entity1, nodeStake.getEpochDay(), 500L, 600L),
-                fromEntity(entity2, nodeStake.getEpochDay(), 0L, 0L),
-                fromEntity(entity3, nodeStake.getEpochDay(), 500L, 0L),
-                fromEntity(entity4, nodeStake.getEpochDay(), 0L, 0L),
-                fromEntity(entity5, nodeStake.getEpochDay(), 0L, 0L),
-                fromEntity(entity6, nodeStake.getEpochDay(), 800L, 0L),
-                fromEntity(entity8, nodeStake.getEpochDay(), 0L, 0L),
-                fromEntity(entity9, nodeStake.getEpochDay(), 1000L, 0L),
-                fromEntity(entity10, nodeStake.getEpochDay(), 900L, 0L)
+                fromEntity(entity1, epochDay, 500L, 600L),
+                fromEntity(entity2, epochDay, 0L, 0L),
+                fromEntity(entity3, epochDay, 500L, 0L),
+                fromEntity(entity4, epochDay - 1, 0L, 0L),
+                fromEntity(entity5, epochDay, 0L, 0L),
+                fromEntity(entity6, epochDay, 800L, 0L),
+                fromEntity(entity8, epochDay, 0L, 0L),
+                fromEntity(entity9, epochDay, 1000L, 0L),
+                fromEntity(entity10, epochDay, 900L, 0L)
         );
 
         // when
@@ -111,14 +109,13 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
         // given
         var account = domainBuilder.entity().customize(e -> e.declineReward(true)).persist();
         var contract = domainBuilder.entity().customize(e -> e.balance(5L).stakedNodeId(2L).type(CONTRACT)).persist();
-        var deletedAccount = domainBuilder.entity().customize(e -> e.deleted(true)).persist();
-        domainBuilder.entity().customize(e -> e.type(TOPIC)).persist();
+        domainBuilder.entity().customize(e -> e.deleted(true)).persist();
+        domainBuilder.topic().persist();
         var nodeStake = domainBuilder.nodeStake().persist();
-        refreshEntityStateStart();
+        entityRepository.refreshEntityStateStart();
         var expectedEntityStakes = List.of(
                 fromEntity(account, nodeStake.getEpochDay(), 0L, 0L),
-                fromEntity(contract, nodeStake.getEpochDay(), 0L, 5L),
-                fromEntity(deletedAccount, nodeStake.getEpochDay(), 0L, 0L)
+                fromEntity(contract, nodeStake.getEpochDay(), 0L, 5L)
         );
 
         // when
@@ -136,6 +133,7 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
             "20, false, 1, 0, 15090000000, false, 1500",
             "0, false, 1, 0, 0, false, 0",
             "0, false, 2, 0, 15090000000, true, 0",
+            "20, false, 3, 0, 15090000000, true, 20", // no node stake for node 3, the pending reward keeps the same
             "20, false, -1, , 15090000000, true, 0",
             "0, true, 1, , 15090000000, true, 0",
     })
@@ -165,7 +163,7 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
         // The following two are old NodeStake, which shouldn't be used in pending reward calculation
         domainBuilder.nodeStake().customize(ns -> ns.consensusTimestamp(timestamp - 100).nodeId(1L)).persist();
         domainBuilder.nodeStake().customize(ns -> ns.consensusTimestamp(timestamp - 100).nodeId(2L)).persist();
-        refreshEntityStateStart();
+        entityRepository.refreshEntityStateStart();
 
         // when
         entityStakeRepository.updateEntityStake();
@@ -191,9 +189,5 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                 .stakedToMe(stakedToMe)
                 .stakeTotalStart(stakeTotalStart)
                 .build();
-    }
-
-    private void refreshEntityStateStart() {
-        jdbcOperations.update("refresh materialized view entity_state_start");
     }
 }

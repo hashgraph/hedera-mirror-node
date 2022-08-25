@@ -20,8 +20,6 @@ package com.hedera.mirror.importer.parser.record.entity;
  * ‍
  */
 
-import java.util.Collection;
-
 import com.hedera.mirror.common.domain.addressbook.NetworkStake;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
 import com.hedera.mirror.common.domain.contract.Contract;
@@ -113,7 +111,7 @@ public interface EntityListener {
     default void onNftTransfer(NftTransfer nftTransfer) throws ImporterException {
     }
 
-    default void onNodeStakes(Collection<NodeStake> nodeStakes) {
+    default void onNodeStake(NodeStake nodeStake) throws ImporterException {
     }
 
     default void onNonFeeTransfer(NonFeeTransfer nonFeeTransfer) throws ImporterException {

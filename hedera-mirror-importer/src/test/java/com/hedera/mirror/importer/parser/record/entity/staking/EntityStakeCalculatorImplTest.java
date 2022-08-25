@@ -34,10 +34,10 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.jdbc.core.JdbcOperations;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
+import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.EntityStakeRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -46,38 +46,38 @@ class EntityStakeCalculatorImplTest {
     private final DomainBuilder domainBuilder = new DomainBuilder();
 
     @Mock
+    private EntityRepository entityRepository;
+
+    @Mock
     private EntityStakeRepository entityStakeRepository;
 
     @Mock
     private ApplicationEventPublisher eventPublisher;
 
     @Mock
-    private JdbcOperations jdbcOperations;
-
-    @Mock
-    RecordStreamFileListener recordStreamFileListener;
+    private RecordStreamFileListener recordStreamFileListener;
 
     private EntityStakeCalculatorImpl entityStakeCalculator;
 
     @BeforeEach
     void setup() {
-        entityStakeCalculator = new EntityStakeCalculatorImpl(entityStakeRepository, eventPublisher, jdbcOperations,
+        entityStakeCalculator = new EntityStakeCalculatorImpl(entityRepository, entityStakeRepository, eventPublisher,
                 recordStreamFileListener);
     }
 
     @Test
-    void onNodeStakes() {
-        var inOrder = Mockito.inOrder(recordStreamFileListener, jdbcOperations, eventPublisher);
-        entityStakeCalculator.onNodeStakes(List.of(domainBuilder.nodeStake().get()));
-        inOrder.verify(recordStreamFileListener).onFlush();
-        inOrder.verify(jdbcOperations).update("refresh materialized view entity_state_start");
+    void calculate() {
+        var inOrder = Mockito.inOrder(recordStreamFileListener, entityRepository, eventPublisher);
+        entityStakeCalculator.calculate(List.of(domainBuilder.nodeStake().get()));
+        inOrder.verify(recordStreamFileListener).flush();
+        inOrder.verify(entityRepository).refreshEntityStateStart();
         inOrder.verify(eventPublisher).publishEvent(ArgumentMatchers.isA(NodeStakeUpdateEvent.class));
     }
 
     @Test
-    void onNodeStakesWhenNodeStakesIsEmpty() {
-        entityStakeCalculator.onNodeStakes(Collections.emptyList());
-        verifyNoInteractions(recordStreamFileListener, jdbcOperations, eventPublisher);
+    void calculateWhenNodeStakesIsEmpty() {
+        entityStakeCalculator.calculate(Collections.emptyList());
+        verifyNoInteractions(entityRepository, recordStreamFileListener, eventPublisher);
     }
 
     @Test

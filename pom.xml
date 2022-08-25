@@ -55,7 +55,6 @@
     </parent>
 
     <properties>
-        <awaitility.version>4.2.0</awaitility.version>
         <besu.version>22.7.0</besu.version>
         <dependency-check.version>7.1.2</dependency-check.version>
         <disruptor.version>3.4.4</disruptor.version> <!-- Used for asynchronous logging -->

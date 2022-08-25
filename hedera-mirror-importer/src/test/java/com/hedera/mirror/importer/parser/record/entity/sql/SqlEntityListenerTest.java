@@ -1127,7 +1127,8 @@ class SqlEntityListenerTest extends IntegrationTest {
         var nodeStake2 = domainBuilder.nodeStake().get();
 
         // when
-        sqlEntityListener.onNodeStakes(List.of(nodeStake1, nodeStake2));
+        sqlEntityListener.onNodeStake(nodeStake1);
+        sqlEntityListener.onNodeStake(nodeStake2);
         completeFileAndCommit();
 
         // then

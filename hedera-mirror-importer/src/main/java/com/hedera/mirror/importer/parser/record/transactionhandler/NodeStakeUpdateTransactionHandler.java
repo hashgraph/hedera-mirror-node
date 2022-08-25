@@ -34,6 +34,7 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
+import com.hedera.mirror.importer.parser.record.entity.staking.EntityStakeCalculator;
 import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
@@ -42,6 +43,7 @@ import com.hedera.mirror.importer.util.Utility;
 class NodeStakeUpdateTransactionHandler implements TransactionHandler {
 
     private final EntityListener entityListener;
+    private final EntityStakeCalculator entityStakeCalculator;
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
@@ -99,8 +101,9 @@ class NodeStakeUpdateTransactionHandler implements TransactionHandler {
             nodeStake.setStakeRewarded(nodeStakeProto.getStakeRewarded());
             nodeStake.setStakingPeriod(stakingPeriod);
             nodeStakes.add(nodeStake);
+            entityListener.onNodeStake(nodeStake);
         }
 
-        entityListener.onNodeStakes(nodeStakes);
+        entityStakeCalculator.calculate(nodeStakes);
     }
 }

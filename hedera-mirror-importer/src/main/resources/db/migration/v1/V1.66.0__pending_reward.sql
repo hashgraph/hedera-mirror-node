@@ -2,15 +2,14 @@ create materialized view if not exists entity_state_start as
 select
   balance,
   decline_reward,
-  coalesce(deleted, false)         as deleted,
   id,
   coalesce(staked_account_id, 0)   as staked_account_id,
   coalesce(staked_node_id, -1)     as staked_node_id,
   coalesce(stake_period_start, -1) as stake_period_start
 from entity
-where type in ('ACCOUNT', 'CONTRACT');
+where deleted is not true and type in ('ACCOUNT', 'CONTRACT');
 
-create index if not exists entity_state_start__id on entity_state_start (id);
+create unique index if not exists entity_state_start__id on entity_state_start (id);
 create index if not exists entity_state_start__staked_account_id
   on entity_state_start (staked_account_id) where staked_account_id <> 0;
 

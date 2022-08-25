@@ -26,41 +26,36 @@ import javax.inject.Named;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.core.annotation.Order;
-import org.springframework.jdbc.core.JdbcOperations;
-import org.springframework.scheduling.annotation.Async;
 
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
-import com.hedera.mirror.importer.parser.record.entity.EntityListener;
+import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.EntityStakeRepository;
 
 @CustomLog
 @Named
-@Order
 @RequiredArgsConstructor
-public class EntityStakeCalculatorImpl implements EntityStakeCalculator, EntityListener {
+public class EntityStakeCalculatorImpl implements EntityStakeCalculator {
 
+    private final EntityRepository entityRepository;
     private final EntityStakeRepository entityStakeRepository;
     private final ApplicationEventPublisher eventPublisher;
-    private final JdbcOperations jdbcOperations;
     private final RecordStreamFileListener recordStreamFileListener;
 
     @Override
-    public void onNodeStakes(Collection<NodeStake> nodeStakes) {
+    public void calculate(Collection<NodeStake> nodeStakes) {
         if (nodeStakes.isEmpty()) {
             return;
         }
 
         var stopwatch = Stopwatch.createStarted();
         // Flush data to final tables so the entity balance is accurate when refreshing the materialized view
-        recordStreamFileListener.onFlush();
-        jdbcOperations.update("refresh materialized view entity_state_start");
+        recordStreamFileListener.flush();
+        entityRepository.refreshEntityStateStart();
         eventPublisher.publishEvent(new NodeStakeUpdateEvent(this));
         log.info("Flushed data from record file and refreshed entity_state_start materialized view in {} ", stopwatch);
     }
 
-    @Async
     @Override
     public void update() {
         var stopwatch = Stopwatch.createStarted();

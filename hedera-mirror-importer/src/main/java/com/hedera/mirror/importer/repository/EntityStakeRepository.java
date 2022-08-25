@@ -29,17 +29,29 @@ import com.hedera.mirror.common.domain.entity.EntityStake;
 
 public interface EntityStakeRepository extends CrudRepository<EntityStake, Long> {
 
-    // Algorithm to update pending reward:
-    //
-    // 1. IF the entity is deleted, OR there is no such row in entity_stake (new entity created in the ending
-    //    stake period), OR its decline_reward_start is true (decline reward for the ending staking period), OR
-    //    it didn't stake to a node for the ending staking period, the new pending reward is 0
-    // 2. IF the current stake_period_start >= the last epochDay from node stake update (either its staking metadata or
-    //    balance changed in the ending staking period), calculate the reward it has earned in the ending staking
-    //    period as its pending reward
-    // 3. Otherwise, there's no staking metadata or balance change for the entity since the start of the ending staking
-    //    period, add the reward earned in the ending period to the current as the new pending reward
-    String UPDATE_ENTITY_STAKE_SQL = """
+    /**
+     * Updates entity stake state based on the current entity stake state, the ending period node reward rate and the
+     * entity state snapshot at the beginning of the new staking period.
+     * <p>
+     * Algorithm to update pending reward:
+     * <p>
+     * 1. IF there is no such row in entity_stake (new entity created in the ending stake period), OR its
+     * decline_reward_start is true (decline reward for the ending staking period), OR it didn't stake to a node for the
+     * ending staking period, OR there is no node stake for the node the entity staked to, the new pending reward is 0
+     * <p>
+     * 2.IF there is no node stake info for the node the entity staked to, the pending reward keeps the same
+     * <p>
+     * 3. IF the current stake_period_start >= the last epochDay from node stake update (either its staking metadata
+     * or balance changed in the ending staking period), calculate the reward it has earned in the ending staking period
+     * as its pending reward
+     * <p>
+     * 4. Otherwise, there's no staking metadata or balance change for the entity since the start of the ending staking
+     * period, add the reward earned in the ending period to the current as the new pending reward
+     *
+     * @return Number of entity state inserted and updated
+     */
+    @Modifying
+    @Query(value = """
             with ending_period_node_stake as (
               select node_id, epoch_day, reward_rate
               from node_stake
@@ -47,7 +59,7 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
             ), proxy_staking as (
               select staked_account_id, sum(balance) as staked_to_me
               from entity_state_start
-              where deleted is false and staked_account_id <> 0
+              where staked_account_id <> 0
               group by staked_account_id
             ), updated as (
               select
@@ -55,11 +67,11 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
                 (select epoch_day from ending_period_node_stake limit 1) as end_stake_period,
                 ess.id,
                 (case
-                   when ess.deleted is true
-                        or coalesce(es.decline_reward_start, true) is true
+                   when coalesce(es.decline_reward_start, true) is true
                         or coalesce(es.staked_node_id_start, -1) = -1
                         then 0
-                   when ess.stake_period_start >= (select epoch_day from ending_period_node_stake limit 1)
+                   when node_id is null then es.pending_reward
+                   when ess.stake_period_start >= epoch_day
                         then reward_rate * (es.stake_total_start / 100000000)
                    else es.pending_reward + reward_rate * (es.stake_total_start / 100000000)
                   end) as pending_reward,
@@ -82,10 +94,7 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
                   staked_node_id_start = excluded.staked_node_id_start,
                   staked_to_me         = excluded.staked_to_me,
                   stake_total_start    = excluded.stake_total_start;
-            """;
-
-    @Modifying
-    @Query(value = UPDATE_ENTITY_STAKE_SQL, nativeQuery = true)
+            """, nativeQuery = true)
     @Transactional
     int updateEntityStake();
 }
