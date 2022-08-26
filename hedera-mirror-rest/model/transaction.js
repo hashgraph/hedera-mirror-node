@@ -21,10 +21,6 @@
 import {filterKeys} from '../constants';
 
 class Transaction {
-  static BASE64_HASH_SIZE = 64;
-  static HEX_HASH_SIZE = 96;
-  static HEX_HASH_WITH_PREFIX_SIZE = this.HEX_HASH_SIZE + 2;
-
   static tableAlias = 't';
   static tableName = 'transaction';
   static CHARGED_TX_FEE = `charged_tx_fee`;

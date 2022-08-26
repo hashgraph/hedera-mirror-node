@@ -679,10 +679,6 @@ const addTransaction = async (transaction) => {
     valid_start_ns: transaction.valid_start_timestamp,
   };
 
-  if (transaction.transaction_hash.length === 96) {
-    transaction.transaction_hash = Buffer.from(transaction.transaction_hash, 'hex');
-  }
-
   if (transaction.valid_start_ns === undefined) {
     // set valid_start_ns to consensus_timestamp - 1 if not set
     const consensusTimestamp = math.bignumber(transaction.consensus_timestamp);

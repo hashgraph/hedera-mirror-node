@@ -111,6 +111,7 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.services.stream.proto.CallOperationType;
 import com.hedera.services.stream.proto.ContractAction.ResultDataCase;
 import com.hedera.services.stream.proto.ContractActionType;
 
@@ -241,6 +242,7 @@ public class DomainBuilder {
                 .callDepth(1)
                 .caller(entityId(CONTRACT))
                 .callerType(CONTRACT)
+                .callOperationType(CallOperationType.OP_CALL.getNumber())
                 .callType(ContractActionType.CALL.getNumber())
                 .consensusTimestamp(timestamp())
                 .gas(100L)

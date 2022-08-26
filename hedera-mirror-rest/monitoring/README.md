@@ -1,6 +1,7 @@
 # Monitoring a live deployment of Hedera Mirror Node
 
-This code runs on an external server outside of the Hedera mirror node deployment, and periodically polls the REST APIs exposed by the Hedera mirror node to ensure that the deployed APIs are working.
+This code runs on an external server outside of the Hedera mirror node deployment, and periodically polls the REST APIs
+exposed by the Hedera mirror node to ensure that the deployed APIs are working.
 It also provides a simple dashboard to monitor the status.
 
 ## Monitoring APIs:
@@ -27,7 +28,8 @@ A dashboard polls the above-mentioned APIs and displays the results.
 
 - [ ] List of addresses of Hedera mirror nodes that you want to monitor
 - [ ] An existing topic ID of the target Hedera Mirror node environment if you want to run topic message tests
-- [ ] An external server where you want to run this code to monitor the mirror node. You will need two TCP ports on the server.
+- [ ] An external server where you want to run this code to monitor the mirror node. You will need two TCP ports on the
+  server.
 - [ ] npm
 - [ ] PM2
 
@@ -41,17 +43,16 @@ To install the dependencies and configure monitor_apis:
 ```
 cd monitor_apis
 npm install
-cp config/default.serverlist.json config/serverlist.json // Start with the sample configuration file
-nano config/serverlist.json // Insert the mirror node deployments you want to monitor
+vi config/serverlist.json // Insert the mirror node deployments you want to monitor
 ```
 
 To customize per-resource configuration:
 
 - set `enabled` to `true` or `false` to enable / disable tests for a resource
 - `freshnessThreshold` (in seconds) for `balance`, `transaction`, `topic`, and `token` (balances of a token) can be
-   adjusted independently if needed. Set to 0 to disable freshness check for a resource
+  adjusted independently if needed. Set to 0 to disable freshness check for a resource
 - `intervalMultiplier` for all resources. The tests for a resource will run every `interval * intervalMultiplier`
-   seconds. For `stateproof`, it defaults to 10, so the tests run at a lower frequency to reduce cost
+  seconds. For `stateproof`, it defaults to 10, so the tests run at a lower frequency to reduce cost
 - `limit` threshold for `account`, `balance`, `transaction`, `topic`, and `token` can be adjusted independently if
   needed, e.g.,for environments with lower traffic volume. For `token`, `tokenBalancesLimit` is the limit for a token's
   balance query and `tokensLimit` is the limit for the token discovery query
@@ -60,55 +61,18 @@ To customize per-resource configuration:
   e.g., `tokenBalancesLimit` for the token. If not set, the tests will use the first token from the
   token discovery API response
 
-```json
-{
-  "account": {
-    "enabled": true,
-    "intervalMultiplier": 1,
-    "limit": 10
-  },
-  "balance": {
-    "enabled": true,
-    "freshnessThreshold": 1000,
-    "intervalMultiplier": 1,
-    "limit": 10
-  },
-  "stateproof": {
-    "enabled": true,
-    "intervalMultiplier": 10
-  },
-  "transaction": {
-    "enabled": true,
-    "freshnessThreshold": 50,
-    "intervalMultiplier": 1,
-    "limit": 10
-  },
-  "topic": {
-    "enabled": true,
-    "freshnessThreshold": 100,
-    "intervalMultiplier": 1,
-    "limit": 10,
-    "topicId": "sample topic id"
-  },
-  "token": {
-    "enabled": false,
-    "freshnessThreshold": 1000,
-    "intervalMultiplier": 1,
-    "tokenBalancesLimit": 10,
-    "tokenId": "sample token id",
-    "tokensLimit": 10
-  }
-}
-```
+See [default.serverlist.json](/hedera-mirror-rest/monitoring/monitor_apis/config/default.serverlist.json) for a full
+list of configuration properties.
 
-TO run the monitor_apis backend:
+To run the monitor_apis backend:
 
 ```
 PORT=3000 pm2 start server.js --node-args="--experimental-specifier-resolution=node"
 ```
 
 The server will start polling Hedera mirror nodes specified in the config/serverlist.json file.
-The default interval to populate the data is 60 seconds. You can verify the output using `curl http://<host>:<port>/api/v1/status` command.
+The default interval to populate the data is 60 seconds. You can verify the output
+using `curl http://<host>:<port>/api/v1/status` command.
 
 To run the dashboard (from `hedera-mirror-rest/monitoring` directory):
 
