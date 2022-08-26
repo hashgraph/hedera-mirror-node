@@ -36,6 +36,7 @@ import {
   EthereumTransaction,
   Transaction,
 } from '../model';
+import TransactionId from '../transactionId';
 
 const {default: defaultLimit} = getResponseLimit();
 
@@ -372,14 +373,14 @@ class ContractService extends BaseService {
   }
 
   async getContractActionsByTransactionId(transactionId, filters, order, limit) {
-    const [entityIdString, ...timestampParts] = transactionId.split('-');
-    const entityId = entityIdString.split('.')[2];
-    const timestamp = timestampParts.join('');
+    const txId = TransactionId.fromString(transactionId);
+    const entityId = txId.getEntityId().getEncodedId();
+    const timestamp = txId.getValidStartNs();
     let params = [timestamp, entityId];
     return this.getContractActions(ContractService.contractActionsByTxIdQuery, params, filters, order, limit);
   }
 
-  async getContractActions(baseQuery, params = [], filters = {}, order = orderFilterValues.ASC, limit = 25) {
+  async getContractActions(baseQuery, params = [], filters = {}, order, limit) {
     let whereClause = ``;
     if (filters && filters.length) {
       for (const filter of filters) {
@@ -394,10 +395,8 @@ class ContractService extends BaseService {
 
     const orderClause = super.getOrderByQuery(OrderSpec.from(ContractAction.getFullName(ContractAction.INDEX), order));
 
-    if (limit < 1) limit = 1;
-    if (limit > 100) limit = 100;
-
-    const limitClause = `limit ${limit}`;
+    params.push(limit);
+    const limitClause = super.getLimitQuery(params.length);
 
     let query = [baseQuery, whereClause, orderClause, limitClause].join('\n');
 
