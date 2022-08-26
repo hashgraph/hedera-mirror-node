@@ -21,13 +21,11 @@
 import EntityId from '../entityId';
 import * as utils from '../utils.js';
 import {entityTypes} from '../constants.js';
-import {toHexString} from '../utils.js';
 
 /**
  * Contract actions view model
  */
 class ContractActionViewModel {
-  // FIXME Use Protobuf enums instead of static mapping
   static resultDataTypes = {
     11: 'OUTPUT',
     12: 'REVERT_REASON',

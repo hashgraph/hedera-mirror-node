@@ -852,6 +852,7 @@ const contractActionDefaults = {
   call_type: 1,
   caller: 8001,
   caller_type: 'CONTRACT',
+  consensus_timestamp: 1234510001,
   gas: 10000,
   gas_used: 5000,
   index: 1,
@@ -880,7 +881,7 @@ const addContractAction = async (contractActionInput) => {
     action.result_data = hexStringToBytea(action.result_data);
   }
 
-  await insertDomainObject('contract_action', Object.keys(contractActionDefaults).sort(), action);
+  await insertDomainObject('contract_action', Object.keys(contractActionDefaults), action);
 };
 
 const insertFields = [
