@@ -1708,11 +1708,7 @@ components:
           nullable: false
           type: string
         caller:
-          description: The caller id
-          schema:
-            $ref: '#/components/schemas/EntityId'
-          example: "0.0.5001"
-          nullable: false
+          $ref: '#/components/schemas/EntityId'
         caller_type:
           description: The entity type of the caller
           type: string
@@ -1748,11 +1744,7 @@ components:
           nullable: true
           type: string
         recipient:
-          description: The entity id of the recipient of the transaction
-          schema:
-            $ref: '#/components/schemas/EntityId'
-          example: "0.0.5001"
-          nullable: true
+          $ref: '#/components/schemas/EntityId'
         recipient_type:
           description: The entity type of the recipient
           type: string

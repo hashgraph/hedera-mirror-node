@@ -382,7 +382,7 @@ class ContractService extends BaseService {
     return this.getContractActions(ContractService.contractActionsByTxIdQuery, params, filters, order, limit);
   }
 
-  async getContractActions(baseQuery, params = [], filters = {}, order, limit) {
+  async getContractActions(baseQuery, params, filters, order, limit) {
     let whereClause = ``;
     if (filters && filters.length) {
       for (const filter of filters) {
