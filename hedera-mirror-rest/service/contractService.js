@@ -36,7 +36,6 @@ import {
   EthereumTransaction,
   Transaction,
 } from '../model';
-import TransactionId from '../transactionId';
 
 const {default: defaultLimit} = getResponseLimit();
 
@@ -370,15 +369,14 @@ class ContractService extends BaseService {
   }
 
   async getContractActionsByHash(hash, filters, order, limit) {
-    let params = [hash];
+    const params = [hash];
     return this.getContractActions(ContractService.contractActionsByHashQuery, params, filters, order, limit);
   }
 
   async getContractActionsByTransactionId(transactionId, filters, order, limit) {
-    const txId = TransactionId.fromString(transactionId);
-    const entityId = txId.getEntityId().getEncodedId();
-    const timestamp = txId.getValidStartNs();
-    let params = [entityId, timestamp];
+    const entityId = transactionId.getEntityId().getEncodedId();
+    const timestamp = transactionId.getValidStartNs();
+    const params = [entityId, timestamp];
     return this.getContractActions(ContractService.contractActionsByTxIdQuery, params, filters, order, limit);
   }
 
@@ -400,7 +398,7 @@ class ContractService extends BaseService {
     params.push(limit);
     const limitClause = super.getLimitQuery(params.length);
 
-    let query = [baseQuery, whereClause, orderClause, limitClause].join('\n');
+    const query = [baseQuery, whereClause, orderClause, limitClause].join('\n');
 
     const rows = await super.getRows(query, params, 'getActionsByHash');
     return rows.map((row) => new ContractAction(row));

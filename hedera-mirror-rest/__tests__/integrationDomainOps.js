@@ -37,6 +37,7 @@ const DEFAULT_TREASURY_ID = '98';
 const defaultFileData = '\\x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750';
 
 const hexStringToBytea = (hexString) => {
+  if (!hexString) return null;
   const stringValue = hexString.toString();
   return Buffer.from(stringValue.replace(/^0x/, '').padStart(2, '0'), 'hex');
 };

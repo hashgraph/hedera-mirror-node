@@ -1074,7 +1074,8 @@ class ContractController extends BaseController {
       const hash = Buffer.from(transactionIdOrHash.replace('0x', ''), 'hex');
       rows = await ContractService.getContractActionsByHash(hash, filters, order, limit);
     } else {
-      rows = await ContractService.getContractActionsByTransactionId(transactionIdOrHash, filters, order, limit);
+      const transactionId = TransactionId.fromString(transactionIdOrHash);
+      rows = await ContractService.getContractActionsByTransactionId(transactionId, filters, order, limit);
     }
 
     const actions = rows.map((row) => new ContractActionViewModel(row));
