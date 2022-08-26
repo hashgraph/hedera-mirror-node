@@ -28,6 +28,8 @@ import _ from 'lodash';
  * Contract actions view model
  */
 class ContractActionViewModel {
+  static callTypes = _.invert(proto.ContractActionType);
+
   static resultDataTypes = {
     11: 'OUTPUT',
     12: 'REVERT_REASON',
@@ -46,12 +48,10 @@ class ContractActionViewModel {
 
   /**
    * Constructs contractAction view model
-   *
+   *callTypes
    * @param {ContractAction} contractAction
    */
   constructor(contractAction) {
-    const callTypes = _.invert(proto.ContractActionType);
-
     const recipientIsAccount = !!contractAction.recipientAccount;
     const recipientId = recipientIsAccount ? contractAction.recipientAccount : contractAction.recipientContract;
     const recipient = EntityId.parse(recipientId);
@@ -59,7 +59,7 @@ class ContractActionViewModel {
 
     this.call_depth = contractAction.callDepth;
     this.call_operation_type = ContractActionViewModel.callOperationTypes[contractAction.callOperationType];
-    this.call_type = callTypes[contractAction.callType];
+    this.call_type = ContractActionViewModel.callTypes[contractAction.callType];
     this.caller = callerId.toString();
     this.caller_type = contractAction.callerType;
     this.from = callerId.toEvmAddress();
