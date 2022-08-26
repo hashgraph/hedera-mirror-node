@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import java.util.ArrayList;
+import java.util.Collection;
 import javax.inject.Named;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +34,7 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
+import com.hedera.mirror.importer.parser.record.entity.staking.EntityStakeCalculator;
 import com.hedera.mirror.importer.repository.NodeStakeRepository;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -43,6 +46,7 @@ class NodeStakeUpdateTransactionHandler implements TransactionHandler {
     private final NodeStakeRepository nodeStakeRepository;
 
     private final EntityListener entityListener;
+    private final EntityStakeCalculator entityStakeCalculator;
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
@@ -86,13 +90,14 @@ class NodeStakeUpdateTransactionHandler implements TransactionHandler {
         networkStake.setStakingStartThreshold(transactionBody.getStakingStartThreshold());
         entityListener.onNetworkStake(networkStake);
 
-        var nodeStakes = transactionBody.getNodeStakeList();
-        if (nodeStakes.isEmpty()) {
+        var nodeStakesProtos = transactionBody.getNodeStakeList();
+        if (nodeStakesProtos.isEmpty()) {
             return;
         }
 
         nodeStakeRepository.evictNodeStakeCache();
-        for (var nodeStakeProto : nodeStakes) {
+        Collection<NodeStake> nodeStakes = new ArrayList<>();
+        for (var nodeStakeProto : nodeStakesProtos) {
             NodeStake nodeStake = new NodeStake();
             nodeStake.setConsensusTimestamp(consensusTimestamp);
             nodeStake.setEpochDay(epochDay);
@@ -104,7 +109,10 @@ class NodeStakeUpdateTransactionHandler implements TransactionHandler {
             nodeStake.setStakeNotRewarded(nodeStakeProto.getStakeNotRewarded());
             nodeStake.setStakeRewarded(nodeStakeProto.getStakeRewarded());
             nodeStake.setStakingPeriod(stakingPeriod);
+            nodeStakes.add(nodeStake);
             entityListener.onNodeStake(nodeStake);
         }
+
+        entityStakeCalculator.calculate(nodeStakes);
     }
 }

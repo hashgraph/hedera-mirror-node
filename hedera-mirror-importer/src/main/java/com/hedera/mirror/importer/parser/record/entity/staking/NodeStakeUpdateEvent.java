@@ -1,4 +1,4 @@
-package com.hedera.mirror.test.e2e.acceptance.props;
+package com.hedera.mirror.importer.parser.record.entity.staking;
 
 /*-
  * ‌
@@ -9,9 +9,9 @@ package com.hedera.mirror.test.e2e.acceptance.props;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,21 +20,21 @@ package com.hedera.mirror.test.e2e.acceptance.props;
  * ‍
  */
 
-import java.util.ArrayList;
-import java.util.List;
-import lombok.Data;
+import java.io.Serial;
+import org.springframework.context.ApplicationEvent;
 
-@Data
-public class MirrorTransaction {
-    private List<MirrorAssessedCustomFee> assessedCustomFees = new ArrayList<>();
-    private String consensusTimestamp;
-    private String entityId;
-    private String name;
-    private List<MirrorNftTransfer> nftTransfers;
-    private String result;
-    private boolean scheduled;
-    private List<MirrorTokenTransfer> tokenTransfers;
-    private String transactionId;
-    private List<MirrorTransfer> transfers;
-    private String validStartTimestamp;
+public class NodeStakeUpdateEvent extends ApplicationEvent {
+
+    @Serial
+    private static final long serialVersionUID = -1825194602305052810L;
+
+    /**
+     * Create a new {@code NodeStakeUpdateEvent}.
+     *
+     * @param source the object on which the event initially occurred or with which the event is associated (never
+     *               {@code null})
+     */
+    public NodeStakeUpdateEvent(Object source) {
+        super(source);
+    }
 }
