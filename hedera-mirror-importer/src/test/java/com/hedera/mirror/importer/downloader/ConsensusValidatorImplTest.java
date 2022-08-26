@@ -25,10 +25,10 @@ import static org.mockito.Mockito.when;
 
 import java.security.KeyPairGenerator;
 import java.security.PublicKey;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import javax.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -39,6 +39,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.addressbook.AddressBook;
+import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.importer.IntegrationTest;
@@ -51,7 +52,9 @@ import com.hedera.mirror.importer.repository.NodeStakeRepository;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class ConsensusValidatorImplTest extends IntegrationTest {
 
-    private static final EntityId nodeId = new EntityId(0L, 0L, 3L, EntityType.ACCOUNT);
+    private static final EntityId entity3 = EntityId.of(0L, 0L, 3L, EntityType.ACCOUNT);
+    private static final EntityId entity4 = EntityId.of(0L, 0L, 4L, EntityType.ACCOUNT);
+    private static final EntityId entity5 = EntityId.of(0L, 0L, 5L, EntityType.ACCOUNT);
 
     @Mock
     private AddressBookService addressBookService;
@@ -67,96 +70,21 @@ class ConsensusValidatorImplTest extends IntegrationTest {
     void setup() {
         consensusValidator = new ConsensusValidatorImpl(addressBookService, commonDownloaderProperties,
                 nodeStakeRepository);
+        var addressBookEntry3 = AddressBookEntry.builder().nodeId(100).nodeAccountId(entity3).build();
+        var addressBookEntry4 = AddressBookEntry.builder().nodeId(200).nodeAccountId(entity4).build();
+        var addressBookEntry5 = AddressBookEntry.builder().nodeId(300).nodeAccountId(entity5).build();
+        when(currentAddressBook.getEntries()).thenReturn(List.of(addressBookEntry3, addressBookEntry4,
+                addressBookEntry5));
         when(addressBookService.getCurrent()).thenReturn(currentAddressBook);
         when(commonDownloaderProperties.getConsensusRatio()).thenReturn(0.333f);
     }
 
     @Test
-    void testVerifiedWithOneThirdNodeStakeConsensus() {
-        var timestamp = domainBuilder.timestamp();
-        domainBuilder.nodeStake()
-                .customize(n -> n
-                        .nodeId(EntityId.of(0L, 0L, 3L, EntityType.ACCOUNT).getId())
-                        .consensusTimestamp(timestamp)
-                        .stake(3L))
-                .persist();
-        domainBuilder.nodeStake()
-                .customize(n -> n
-                        .nodeId(EntityId.of(0L, 0L, 4L, EntityType.ACCOUNT).getId())
-                        .consensusTimestamp(timestamp)
-                        .stake(3L))
-                .persist();
-        domainBuilder.nodeStake()
-                .customize(n -> n
-                        .nodeId(EntityId.of(0L, 0L, 5L, EntityType.ACCOUNT).getId())
-                        .consensusTimestamp(timestamp)
-                        .stake(3L))
-                .persist();
-
-        var fileStreamSignatures = Arrays.asList(buildFileStreamSignature());
-
-        consensusValidator.validate(fileStreamSignatures);
-    }
-
-    @Test
-    void testVerifiedWithFullNodeStakeConsensus() {
-        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(1f);
-
-        var timestamp = domainBuilder.timestamp();
-        domainBuilder.nodeStake()
-                .customize(n -> n
-                        .nodeId(EntityId.of(0L, 0L, 3L, EntityType.ACCOUNT).getId())
-                        .consensusTimestamp(timestamp)
-                        .stake(3L))
-                .persist();
-        domainBuilder.nodeStake()
-                .customize(n -> n
-                        .nodeId(EntityId.of(0L, 0L, 4L, EntityType.ACCOUNT).getId())
-                        .consensusTimestamp(timestamp)
-                        .stake(3L))
-                .persist();
-        domainBuilder.nodeStake()
-                .customize(n -> n
-                        .nodeId(EntityId.of(0L, 0L, 5L, EntityType.ACCOUNT).getId())
-                        .consensusTimestamp(timestamp)
-                        .stake(3L))
-                .persist();
-
-        FileStreamSignature fileStreamSignatureNode3 = buildFileStreamSignature();
-
-        FileStreamSignature fileStreamSignatureNode4 = buildFileStreamSignature();
-        fileStreamSignatureNode4.setNodeAccountId(new EntityId(0L, 0L, 4L, EntityType.ACCOUNT));
-
-        FileStreamSignature fileStreamSignatureNode5 = buildFileStreamSignature();
-        fileStreamSignatureNode5.setNodeAccountId(new EntityId(0L, 0L, 5L, EntityType.ACCOUNT));
-
-        consensusValidator
-                .validate(Arrays.asList(fileStreamSignatureNode3, fileStreamSignatureNode4, fileStreamSignatureNode5));
-    }
-
-    @Test
-    void testFailedVerificationNodeStakeConsensus() {
-        var timestamp = domainBuilder.timestamp();
-        domainBuilder.nodeStake()
-                .customize(n -> n
-                        .nodeId(EntityId.of(0L, 0L, 3L, EntityType.ACCOUNT).getId())
-                        .consensusTimestamp(timestamp)
-                        .stake(2L))
-                .persist();
-        domainBuilder.nodeStake()
-                .customize(n -> n
-                        .nodeId(EntityId.of(0L, 0L, 4L, EntityType.ACCOUNT).getId())
-                        .consensusTimestamp(timestamp)
-                        .stake(3L))
-                .persist();
-        domainBuilder.nodeStake()
-                .customize(n -> n
-                        .nodeId(EntityId.of(0L, 0L, 5L, EntityType.ACCOUNT).getId())
-                        .consensusTimestamp(timestamp)
-                        .stake(3L))
-                .persist();
-
-        var fileStreamSignatures = Arrays.asList(buildFileStreamSignature());
+    void testFailedVerificationWithEmptyAddressBook() {
+        when(addressBookService.getCurrent()).thenReturn(AddressBook.builder().entries(Collections.emptyList())
+                .build());
+        nodeStakes(3, 3, 3);
+        var fileStreamSignatures = List.of(buildFileStreamSignature());
 
         Exception e = assertThrows(SignatureVerificationException.class, () -> consensusValidator
                 .validate(fileStreamSignatures));
@@ -164,27 +92,80 @@ class ConsensusValidatorImplTest extends IntegrationTest {
     }
 
     @Test
-    void testFailedVerificationNoSignaturesNodeStakeConsensus() {
+    void testVerifiedWithOneThirdNodeStakeConsensus() {
+        nodeStakes(3, 3, 3);
+        var fileStreamSignatures = List.of(buildFileStreamSignature());
+        consensusValidator.validate(fileStreamSignatures);
+    }
+
+    @Test
+    void testFailedVerificationWithLessThanOneThirdNodeStakeConsensus() {
+        nodeStakes(3, 4, 3);
+        var fileStreamSignatures = List.of(
+                buildFileStreamSignature(),
+                buildFileStreamSignature()
+        );
+
+        Exception e = assertThrows(SignatureVerificationException.class, () -> consensusValidator
+                .validate(fileStreamSignatures));
+        assertTrue(e.getMessage().contains("Consensus not reached for file"));
+    }
+
+    @Test
+    void testFailedVerifiedWithAddressBookMissingNodeAccountIdConsensus() {
         var timestamp = domainBuilder.timestamp();
         domainBuilder.nodeStake()
                 .customize(n -> n
-                        .nodeId(EntityId.of(0L, 0L, 3L, EntityType.ACCOUNT).getId())
+                        .nodeId(500)
                         .consensusTimestamp(timestamp)
                         .stake(3L))
                 .persist();
         domainBuilder.nodeStake()
                 .customize(n -> n
-                        .nodeId(EntityId.of(0L, 0L, 4L, EntityType.ACCOUNT).getId())
-                        .consensusTimestamp(timestamp)
-                        .stake(3L))
-                .persist();
-        domainBuilder.nodeStake()
-                .customize(n -> n
-                        .nodeId(EntityId.of(0L, 0L, 5L, EntityType.ACCOUNT).getId())
+                        .nodeId(200)
                         .consensusTimestamp(timestamp)
                         .stake(3L))
                 .persist();
 
+        var fileStreamSignatures = List.of(buildFileStreamSignature());
+
+        Exception e = assertThrows(SignatureVerificationException.class, () -> consensusValidator
+                .validate(fileStreamSignatures));
+        assertTrue(e.getMessage().contains("Consensus not reached for file"));
+    }
+
+    @Test
+    void testVerifiedWithFullNodeStakeConsensus() {
+        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(1f);
+        nodeStakes(3, 3, 3);
+
+        FileStreamSignature fileStreamSignatureNode3 = buildFileStreamSignature();
+        FileStreamSignature fileStreamSignatureNode4 = buildFileStreamSignature();
+        fileStreamSignatureNode4.setNodeAccountId(entity4);
+        fileStreamSignatureNode4.setFileHash(fileStreamSignatureNode3.getFileHash());
+        FileStreamSignature fileStreamSignatureNode5 = buildFileStreamSignature();
+        fileStreamSignatureNode5.setNodeAccountId(entity5);
+        fileStreamSignatureNode5.setFileHash(fileStreamSignatureNode3.getFileHash());
+
+        var fileStreamSignatures = List.of(fileStreamSignatureNode3, fileStreamSignatureNode4,
+                fileStreamSignatureNode5);
+
+        consensusValidator
+                .validate(fileStreamSignatures);
+    }
+
+    @Test
+    void testFailedVerificationNodeStakeConsensus() {
+        nodeStakes(2, 3, 3);
+        var fileStreamSignatures = List.of(buildFileStreamSignature());
+        Exception e = assertThrows(SignatureVerificationException.class, () -> consensusValidator
+                .validate(fileStreamSignatures));
+        assertTrue(e.getMessage().contains("Consensus not reached for file"));
+    }
+
+    @Test
+    void testFailedVerificationNoSignaturesNodeStakeConsensus() {
+        nodeStakes(3, 3, 3);
         Collection<FileStreamSignature> emptyList = Collections.emptyList();
         Exception e = assertThrows(SignatureVerificationException.class, () -> consensusValidator
                 .validate(emptyList));
@@ -194,29 +175,11 @@ class ConsensusValidatorImplTest extends IntegrationTest {
     @Test
     void testSkipNodeStakeConsensus() {
         when(commonDownloaderProperties.getConsensusRatio()).thenReturn(0f);
-
-        var timestamp = domainBuilder.timestamp();
-        domainBuilder.nodeStake()
-                .customize(n -> n
-                        .nodeId(EntityId.of(0L, 0L, 3L, EntityType.ACCOUNT).getId())
-                        .consensusTimestamp(timestamp)
-                        .stake(1L))
-                .persist();
-        domainBuilder.nodeStake()
-                .customize(n -> n
-                        .nodeId(EntityId.of(0L, 0L, 4L, EntityType.ACCOUNT).getId())
-                        .consensusTimestamp(timestamp)
-                        .stake(3L))
-                .persist();
-        domainBuilder.nodeStake()
-                .customize(n -> n
-                        .nodeId(EntityId.of(0L, 0L, 5L, EntityType.ACCOUNT).getId())
-                        .consensusTimestamp(timestamp)
-                        .stake(3L))
-                .persist();
+        nodeStakes(1, 3, 3);
+        var fileStreamSignatures = List.of(buildFileStreamSignature());
 
         consensusValidator
-                .validate(Arrays.asList(buildFileStreamSignature()));
+                .validate(fileStreamSignatures);
     }
 
     @Test
@@ -225,15 +188,18 @@ class ConsensusValidatorImplTest extends IntegrationTest {
 
         //Node 4 and 5 will not verify due to missing signature, but 1/3 verified will confirm consensus reached
         FileStreamSignature fileStreamSignatureNode4 = buildFileStreamSignature();
-        fileStreamSignatureNode4.setNodeAccountId(new EntityId(0L, 0L, 4L, EntityType.ACCOUNT));
+        fileStreamSignatureNode4.setNodeAccountId(entity4);
         fileStreamSignatureNode4.setStatus(FileStreamSignature.SignatureStatus.DOWNLOADED);
 
         FileStreamSignature fileStreamSignatureNode5 = buildFileStreamSignature();
-        fileStreamSignatureNode5.setNodeAccountId(new EntityId(0L, 0L, 5L, EntityType.ACCOUNT));
+        fileStreamSignatureNode5.setNodeAccountId(entity5);
         fileStreamSignatureNode5.setStatus(FileStreamSignature.SignatureStatus.DOWNLOADED);
 
+        var fileStreamSignatures = List.of(fileStreamSignatureNode3, fileStreamSignatureNode4,
+                fileStreamSignatureNode5);
+
         consensusValidator
-                .validate(Arrays.asList(fileStreamSignatureNode3, fileStreamSignatureNode4, fileStreamSignatureNode5));
+                .validate(fileStreamSignatures);
     }
 
     @SneakyThrows
@@ -249,48 +215,88 @@ class ConsensusValidatorImplTest extends IntegrationTest {
         when(commonDownloaderProperties.getConsensusRatio()).thenReturn(1f);
 
         FileStreamSignature fileStreamSignatureNode3 = buildFileStreamSignature();
-
         FileStreamSignature fileStreamSignatureNode4 = buildFileStreamSignature();
-        fileStreamSignatureNode4.setNodeAccountId(new EntityId(0L, 0L, 4L, EntityType.ACCOUNT));
+        fileStreamSignatureNode4.setNodeAccountId(entity4);
+        fileStreamSignatureNode4.setFileHash(fileStreamSignatureNode3.getFileHash());
 
         FileStreamSignature fileStreamSignatureNode5 = buildFileStreamSignature();
-        fileStreamSignatureNode5.setNodeAccountId(new EntityId(0L, 0L, 5L, EntityType.ACCOUNT));
+        fileStreamSignatureNode5.setNodeAccountId(entity5);
+        fileStreamSignatureNode5.setFileHash(fileStreamSignatureNode3.getFileHash());
+
+        var fileStreamSignatures = List.of(fileStreamSignatureNode3, fileStreamSignatureNode4,
+                fileStreamSignatureNode5);
 
         consensusValidator
-                .validate(Arrays.asList(fileStreamSignatureNode3, fileStreamSignatureNode4, fileStreamSignatureNode5));
+                .validate(fileStreamSignatures);
     }
 
+    @SneakyThrows
     @Test
     void testFailedVerificationSignatureConsensus() {
+        var nodeKeyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
+        var publicKey = nodeKeyPair.getPublic();
+        var nodeAccountIDPubKeyMap = new HashMap<String, PublicKey>();
+        nodeAccountIDPubKeyMap.put("0.0.3", publicKey);
+        nodeAccountIDPubKeyMap.put("0.0.4", publicKey);
+        nodeAccountIDPubKeyMap.put("0.0.5", publicKey);
+        nodeAccountIDPubKeyMap.put("0.0.6", publicKey);
+        when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
+
         FileStreamSignature fileStreamSignatureNode3 = buildFileStreamSignature();
 
         FileStreamSignature fileStreamSignatureNode4 = buildFileStreamSignature();
-        fileStreamSignatureNode4.setNodeAccountId(new EntityId(0L, 0L, 4L, EntityType.ACCOUNT));
+        fileStreamSignatureNode4.setNodeAccountId(entity4);
         fileStreamSignatureNode4.setStatus(FileStreamSignature.SignatureStatus.DOWNLOADED);
 
         FileStreamSignature fileStreamSignatureNode5 = buildFileStreamSignature();
-        fileStreamSignatureNode5.setNodeAccountId(new EntityId(0L, 0L, 5L, EntityType.ACCOUNT));
+        fileStreamSignatureNode5.setNodeAccountId(entity5);
         fileStreamSignatureNode5.setStatus(FileStreamSignature.SignatureStatus.DOWNLOADED);
 
         FileStreamSignature fileStreamSignatureNode6 = buildFileStreamSignature();
         fileStreamSignatureNode6.setNodeAccountId(new EntityId(0L, 0L, 6L, EntityType.ACCOUNT));
         fileStreamSignatureNode6.setStatus(FileStreamSignature.SignatureStatus.DOWNLOADED);
 
-        var fileStreamSignatures = Arrays.asList(fileStreamSignatureNode3, fileStreamSignatureNode4,
+        var fileStreamSignatures = List.of(
+                fileStreamSignatureNode3,
+                fileStreamSignatureNode4,
                 fileStreamSignatureNode5,
-                fileStreamSignatureNode6);
+                fileStreamSignatureNode6
+        );
+
         Exception e = assertThrows(SignatureVerificationException.class, () -> consensusValidator
                 .validate(fileStreamSignatures));
+        assertTrue(e.getMessage()
+                .contains("Insufficient downloaded signature file count, requires at least 0.333 to reach consensus, " +
+                        "got 1 out of 4 for file"));
+    }
 
-        assertTrue(e.getMessage().contains("Insufficient signature file count, requires at least 0.333 to reach " +
-                "consensus, got 1 out of 4 for file"));
+    private void nodeStakes(long... stakes) {
+        var timestamp = domainBuilder.timestamp();
+        domainBuilder.nodeStake()
+                .customize(n -> n
+                        .nodeId(100)
+                        .consensusTimestamp(timestamp)
+                        .stake(stakes[0]))
+                .persist();
+        domainBuilder.nodeStake()
+                .customize(n -> n
+                        .nodeId(200)
+                        .consensusTimestamp(timestamp)
+                        .stake(stakes[1]))
+                .persist();
+        domainBuilder.nodeStake()
+                .customize(n -> n
+                        .nodeId(300)
+                        .consensusTimestamp(timestamp)
+                        .stake(stakes[2]))
+                .persist();
     }
 
     private FileStreamSignature buildFileStreamSignature() {
         FileStreamSignature fileStreamSignature = new FileStreamSignature();
         fileStreamSignature.setFileHash(domainBuilder.bytes(256));
         fileStreamSignature.setFilename("");
-        fileStreamSignature.setNodeAccountId(nodeId);
+        fileStreamSignature.setNodeAccountId(entity3);
         fileStreamSignature.setSignatureType(SignatureType.SHA_384_WITH_RSA);
         fileStreamSignature.setStatus(FileStreamSignature.SignatureStatus.VERIFIED);
         fileStreamSignature.setStreamType(StreamType.RECORD);

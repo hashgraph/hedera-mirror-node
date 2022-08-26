@@ -402,9 +402,6 @@ public abstract class Downloader<T extends StreamFile> {
             String sigFilename = sigFilenameIter.next();
             Collection<FileStreamSignature> signatures = sigFilesMap.get(sigFilename);
             boolean valid = false;
-
-            String filename = signatures.stream().map(FileStreamSignature::getFilename).findFirst()
-                    .orElse("unknown");
             var nodeAccountIDPubKeyMap = addressBookService.getCurrent().getNodeAccountIDPubKeyMap();
             try {
                 nodeSignatureVerifier.verify(signatures);
@@ -414,21 +411,21 @@ public abstract class Downloader<T extends StreamFile> {
                         .count();
 
                 if (consensusCount == nodeAccountIDPubKeyMap.size()) {
-                    log.debug("Verified signature file {} reached consensus", filename);
+                    log.debug("Verified signature file {} reached consensus", sigFilename);
                 } else if (consensusCount > 0) {
-                    log.warn("Verified signature file {} reached consensus but with some errors: {}", filename,
+                    log.warn("Verified signature file {} reached consensus but with some errors: {}", sigFilename,
                             statusMap(signatures, nodeAccountIDPubKeyMap));
                 }
             } catch (SignatureVerificationException ex) {
-                var message = "Signature verification failed for file " + filename + ": " + statusMap(signatures,
-                        nodeAccountIDPubKeyMap);
+                var statusMapMessage = statusMap(signatures, nodeAccountIDPubKeyMap);
                 if (sigFilenameIter.hasNext()) {
                     log.warn("Signature verification failed but still have files in the batch, try to process the " +
-                            "next group: {}", message);
+                            "next group. File {}: {}", sigFilename, statusMapMessage);
                     continue;
                 }
 
-                throw new SignatureVerificationException(message);
+                throw new SignatureVerificationException("Signature verification failed for file " + sigFilename + ":" +
+                        " " + statusMapMessage);
             }
 
             for (FileStreamSignature signature : signatures) {

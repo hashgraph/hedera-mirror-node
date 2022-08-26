@@ -22,31 +22,26 @@ package com.hedera.mirror.importer.downloader;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.stream.Collectors;
+import javax.inject.Named;
+import lombok.CustomLog;
+import lombok.RequiredArgsConstructor;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
 import com.hedera.mirror.importer.repository.NodeStakeRepository;
 
-import lombok.CustomLog;
-import javax.inject.Named;
-import java.util.Collection;
-import java.util.HashMap;
-
 @CustomLog
 @Named
+@RequiredArgsConstructor
 public class ConsensusValidatorImpl implements ConsensusValidator {
     private final AddressBookService addressBookService;
     private final CommonDownloaderProperties commonDownloaderProperties;
     private final NodeStakeRepository nodeStakeRepository;
-
-    public ConsensusValidatorImpl(AddressBookService addressBookService,
-                                  CommonDownloaderProperties commonDownloaderProperties,
-                                  NodeStakeRepository nodeStakeRepository) {
-        this.addressBookService = addressBookService;
-        this.commonDownloaderProperties = commonDownloaderProperties;
-        this.nodeStakeRepository = nodeStakeRepository;
-    }
 
     /**
      * Validates that the signature files satisfy the consensus requirement:
@@ -61,8 +56,6 @@ public class ConsensusValidatorImpl implements ConsensusValidator {
      */
     @Override
     public void validate(Collection<FileStreamSignature> signatures) throws SignatureVerificationException {
-        String filename = signatures.stream().map(FileStreamSignature::getFilename).findFirst().orElse("unknown");
-
         Multimap<String, FileStreamSignature> signatureHashMap = HashMultimap.create();
         for (var signature : signatures) {
             if (signature.getStatus() == FileStreamSignature.SignatureStatus.VERIFIED) {
@@ -70,70 +63,68 @@ public class ConsensusValidatorImpl implements ConsensusValidator {
             }
         }
 
+        var filename = signatures.stream().map(FileStreamSignature::getFilename).findFirst().orElse("unknown");
         if (commonDownloaderProperties.getConsensusRatio() == 0 && signatureHashMap.size() > 0) {
             log.debug("Signature file {} does not require consensus, skipping consensus check", filename);
             return;
         }
 
+        long totalStake = 0;
+        var nodeAccountIdToStakeMap = new HashMap<EntityId, Long>();
+        var addressBook = addressBookService.getCurrent();
         var nodeStakes = nodeStakeRepository.findLatest();
         if (nodeStakes.isEmpty()) {
-            signatureConsensus(signatures.size(), signatureHashMap, filename);
-            return;
+            var nodeAccountIDPubKeyMap = addressBook.getNodeAccountIDPubKeyMap();
+            totalStake = nodeAccountIDPubKeyMap.size();
+
+            var verifiedSignatureCount = signatureHashMap.size();
+            if (!canReachConsensus(verifiedSignatureCount, totalStake)) {
+                throw new SignatureVerificationException(String.format(
+                        "Insufficient downloaded signature file count, requires at least %.03f to reach consensus, " +
+                                "got %d out of %d for file %s",
+                        commonDownloaderProperties.getConsensusRatio(),
+                        verifiedSignatureCount,
+                        totalStake,
+                        filename));
+            }
+        } else {
+            var nodeIdToNodeAccountIdMap = new HashMap<Long, EntityId>();
+            addressBook.getEntries().stream()
+                    .forEach(entry -> nodeIdToNodeAccountIdMap.put(entry.getNodeId(), entry.getNodeAccountId()));
+            for (var nodeStake : nodeStakes) {
+                totalStake += nodeStake.getStake();
+                var nodeAccountId = nodeIdToNodeAccountIdMap.get(nodeStake.getNodeId());
+                if (nodeAccountId == null) {
+                    log.warn("Node Stake found for Node Id {} but no Node Account Id found", nodeStake.getNodeId());
+                    continue;
+                }
+
+                nodeAccountIdToStakeMap.put(nodeAccountId, nodeStake.getStake());
+            }
         }
 
-        var nodeStakeMap = new HashMap<Long, Long>();
-        long totalStake = 0L;
-        for (var nodeStake : nodeStakes) {
-            totalStake += nodeStake.getStake();
-            nodeStakeMap.put(nodeStake.getNodeId(), nodeStake.getStake());
-        }
-
-        var staked = 0L;
-        for (var key : signatureHashMap.keySet()) {
+        long consensusCount = 0;
+        for (String key : signatureHashMap.keySet()) {
             var validatedSignatures = signatureHashMap.get(key);
-            var nodeAccountId = validatedSignatures.iterator().next().getNodeAccountId().getId();
-            var nodeStakeAmount = nodeStakeMap.getOrDefault(nodeAccountId, 0L);
-            staked += nodeStakeAmount;
+            var nodeAccountIds = validatedSignatures.stream().map(FileStreamSignature::getNodeAccountId)
+                    .collect(Collectors.toSet());
+            long staked = 0L;
+            for (var signedNodeAccountId : nodeAccountIds) {
+                // If the map has no entry for the node account id, a default value of 1 is used to count a signature.
+                staked += nodeAccountIdToStakeMap.getOrDefault(signedNodeAccountId, 1L);
+            }
+
+            if (canReachConsensus(staked, totalStake)) {
+                consensusCount += staked;
+                validatedSignatures.forEach(s -> s.setStatus(FileStreamSignature.SignatureStatus.CONSENSUS_REACHED));
+            }
         }
 
-        if (canReachConsensus(staked, totalStake)) {
-            signatureHashMap.values()
-                    .forEach(signature -> signature.setStatus(FileStreamSignature.SignatureStatus.CONSENSUS_REACHED));
+        if (consensusCount > 0) {
             return;
         }
 
         throw new SignatureVerificationException(String.format("Consensus not reached for file %s", filename));
-    }
-
-    private void signatureConsensus(int signatureCount, Multimap<String, FileStreamSignature> signatureHashMap,
-                                    String filename) throws SignatureVerificationException {
-        var currentAddressBook = addressBookService.getCurrent();
-        var nodeAccountIDPubKeyMap = currentAddressBook.getNodeAccountIDPubKeyMap();
-        long nodeCount = nodeAccountIDPubKeyMap.size();
-        if (!canReachConsensus(signatureCount, nodeCount)) {
-            throw new SignatureVerificationException(String.format(
-                    "Insufficient downloaded signature file count, requires at least %.03f to reach consensus, got %d" +
-                            " out of %d for file %s",
-                    commonDownloaderProperties.getConsensusRatio(),
-                    signatureCount,
-                    nodeCount,
-                    filename));
-        }
-
-        if (!signatureHashMap.isEmpty() && canReachConsensus(signatureHashMap.values().size(), signatureCount)) {
-            for (String key : signatureHashMap.keySet()) {
-                Collection<FileStreamSignature> validatedSignatures = signatureHashMap.get(key);
-                validatedSignatures.forEach(s -> s.setStatus(FileStreamSignature.SignatureStatus.CONSENSUS_REACHED));
-            }
-
-            return;
-        }
-
-        throw new SignatureVerificationException(String.format(
-                "Insufficient signature file count, requires at least %.03f to reach consensus, got %d" +
-                        " out of %d for file %s",
-                commonDownloaderProperties.getConsensusRatio(), signatureHashMap.keySet().size(),
-                signatureCount, filename));
     }
 
     private boolean canReachConsensus(long staked, long totalStaked) {

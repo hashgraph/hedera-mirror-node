@@ -25,20 +25,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.List;
-import javax.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.interceptor.SimpleKey;
 
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
+import com.hedera.mirror.importer.config.CacheConfiguration;
 import com.hedera.mirror.importer.util.Utility;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class NodeStakeRepositoryTest extends AbstractRepositoryTest {
 
-    @Resource
+    @Qualifier(CacheConfiguration.EXPIRE_AFTER_24H)
     private final CacheManager cacheManager;
     private final NodeStakeRepository nodeStakeRepository;
 
@@ -73,19 +74,21 @@ class NodeStakeRepositoryTest extends AbstractRepositoryTest {
 
     @Test
     void cacheAndEvictNodeStake() {
-        //verify cache is empty to start
+        // verify cache is empty to start
         assertNull(cacheManager.getCache(NODE_STAKE_CACHE)
                 .get(SimpleKey.EMPTY));
 
+        // given
         long epochDay = Utility.getEpochDay(domainBuilder.timestamp());
         var nodeStake1 = domainBuilder.nodeStake().customize(n -> n.epochDay(epochDay).consensusTimestamp(10))
                 .persist();
         var nodeStake2 = domainBuilder.nodeStake()
                 .customize(n -> n.epochDay(epochDay).consensusTimestamp(10).nodeId(5l)).persist();
 
+        // when
         nodeStakeRepository.findLatest();
 
-        //verify findLatest() adds entries to the cache
+        // then verify findLatest() adds entries to the cache
         var latestNodeStakes = (List<NodeStake>) cacheManager
                 .getCache(NODE_STAKE_CACHE)
                 .get(SimpleKey.EMPTY).get();
@@ -95,8 +98,10 @@ class NodeStakeRepositoryTest extends AbstractRepositoryTest {
                 nodeStake2
         );
 
-        //verify pruning evicts the cache.
-        nodeStakeRepository.prune(nodeStake1.getConsensusTimestamp());
+        // when
+        nodeStakeRepository.evictNodeStakeCache();
+
+        // then verify the cache is cleared
         assertNull(cacheManager.getCache(NODE_STAKE_CACHE)
                 .get(SimpleKey.EMPTY));
     }

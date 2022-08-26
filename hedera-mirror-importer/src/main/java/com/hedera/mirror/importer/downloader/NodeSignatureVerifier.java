@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Map;
 import javax.inject.Named;
 import lombok.CustomLog;
+import lombok.RequiredArgsConstructor;
 
 import com.hedera.mirror.common.domain.addressbook.AddressBook;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
@@ -35,16 +36,11 @@ import com.hedera.mirror.importer.exception.SignatureVerificationException;
 
 @Named
 @CustomLog
+@RequiredArgsConstructor
 public class NodeSignatureVerifier {
 
     private final AddressBookService addressBookService;
     private final ConsensusValidator consensusValidator;
-
-    public NodeSignatureVerifier(AddressBookService addressBookService,
-                                 ConsensusValidator consensusValidator) {
-        this.addressBookService = addressBookService;
-        this.consensusValidator = consensusValidator;
-    }
 
     /**
      * Verifies that the signature files satisfy the consensus requirement:

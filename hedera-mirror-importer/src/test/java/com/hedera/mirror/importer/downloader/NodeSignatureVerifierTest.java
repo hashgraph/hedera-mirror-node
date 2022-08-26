@@ -130,7 +130,7 @@ class NodeSignatureVerifierTest extends IntegrationTest {
         List<FileStreamSignature> fileStreamSignatures = Arrays.asList(buildBareBonesFileStreamSignature());
         Exception e = assertThrows(SignatureVerificationException.class, () -> nodeSignatureVerifier
                 .verify(fileStreamSignatures));
-        assertTrue(e.getMessage().contains("Insufficient signature file count"));
+        assertTrue(e.getMessage().contains("Consensus not reached for file"));
     }
 
     @SneakyThrows
@@ -146,7 +146,7 @@ class NodeSignatureVerifierTest extends IntegrationTest {
         List<FileStreamSignature> fileStreamSignatures = Arrays.asList(buildBareBonesFileStreamSignature());
         Exception e = assertThrows(SignatureVerificationException.class, () -> nodeSignatureVerifier
                 .verify(fileStreamSignatures));
-        assertTrue(e.getMessage().contains("Insufficient signature file count"));
+        assertTrue(e.getMessage().contains("Consensus not reached for file"));
     }
 
     @Test
@@ -207,7 +207,7 @@ class NodeSignatureVerifierTest extends IntegrationTest {
 
         Exception e = assertThrows(SignatureVerificationException.class, () -> nodeSignatureVerifier
                 .verify(List.of()));
-        assertTrue(e.getMessage().contains("Insufficient signature file count"));
+        assertTrue(e.getMessage().contains("Consensus not reached for file"));
     }
 
     @SneakyThrows
@@ -296,7 +296,7 @@ class NodeSignatureVerifierTest extends IntegrationTest {
         List<FileStreamSignature> fileStreamSignatures = Arrays.asList(fileStreamSignature);
         Exception e = assertThrows(SignatureVerificationException.class, () -> nodeSignatureVerifier
                 .verify(fileStreamSignatures));
-        assertTrue(e.getMessage().contains("Insufficient signature file count"));
+        assertTrue(e.getMessage().contains("Consensus not reached for file"));
     }
 
     @Test
@@ -310,7 +310,7 @@ class NodeSignatureVerifierTest extends IntegrationTest {
         List<FileStreamSignature> fileStreamSignatures = Arrays.asList(fileStreamSignature);
         Exception e = assertThrows(SignatureVerificationException.class, () -> nodeSignatureVerifier
                 .verify(fileStreamSignatures));
-        assertTrue(e.getMessage().contains("Insufficient signature file count"));
+        assertTrue(e.getMessage().contains("Consensus not reached for file"));
     }
 
     @Test
@@ -324,7 +324,7 @@ class NodeSignatureVerifierTest extends IntegrationTest {
         List<FileStreamSignature> fileStreamSignatures = Arrays.asList(fileStreamSignature);
         Exception e = assertThrows(SignatureVerificationException.class, () -> nodeSignatureVerifier
                 .verify(fileStreamSignatures));
-        assertTrue(e.getMessage().contains("Insufficient signature file count"));
+        assertTrue(e.getMessage().contains("Consensus not reached for file"));
     }
 
     @SneakyThrows
@@ -340,7 +340,7 @@ class NodeSignatureVerifierTest extends IntegrationTest {
         List<FileStreamSignature> fileStreamSignatures = Arrays.asList(fileStreamSignature);
         Exception e = assertThrows(SignatureVerificationException.class, () -> nodeSignatureVerifier
                 .verify(fileStreamSignatures));
-        assertTrue(e.getMessage().contains("Insufficient signature file count"));
+        assertTrue(e.getMessage().contains("Consensus not reached for file"));
     }
 
     private byte[] signHash(byte[] hash) throws GeneralSecurityException {
