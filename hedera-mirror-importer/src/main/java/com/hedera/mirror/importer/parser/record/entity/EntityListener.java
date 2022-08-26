@@ -111,7 +111,7 @@ public interface EntityListener {
     default void onNftTransfer(NftTransfer nftTransfer) throws ImporterException {
     }
 
-    default void onNodeStake(NodeStake nodeStake) {
+    default void onNodeStake(NodeStake nodeStake) throws ImporterException {
     }
 
     default void onNonFeeTransfer(NonFeeTransfer nonFeeTransfer) throws ImporterException {
