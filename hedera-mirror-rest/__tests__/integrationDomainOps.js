@@ -849,6 +849,7 @@ const addContract = async (custom) => {
 const addContractAction = async (contractActionInput) => {
   const insertFields = [
     'call_depth',
+    'call_operation_type',
     'call_type',
     'caller',
     'caller_type',
@@ -867,6 +868,7 @@ const addContractAction = async (contractActionInput) => {
 
   let action = {
     call_depth: 1,
+    call_operation_type: 1,
     call_type: 1,
     caller: 8001,
     caller_type: 'CONTRACT',

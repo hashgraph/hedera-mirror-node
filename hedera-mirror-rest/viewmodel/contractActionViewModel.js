@@ -25,10 +25,22 @@ import * as utils from '../utils.js';
  * Contract actions view model
  */
 class ContractActionViewModel {
+  // FIXME Use Protobuf enums instead of static mapping
   static resultDataTypes = {
     11: 'OUTPUT',
     12: 'REVERT_REASON',
     13: 'ERROR',
+  };
+
+  // FIXME Use Protobuf enums instead of static mapping
+  static callOperationTypes = {
+    0: 'OP_UNKNOWN',
+    1: 'OP_CALL',
+    2: 'OP_CALLCODE',
+    3: 'OP_DELEGATECALL',
+    4: 'OP_STATICCALL',
+    5: 'OP_CREATE',
+    6: 'OP_CREATE2',
   };
 
   /**
@@ -37,9 +49,9 @@ class ContractActionViewModel {
    * @param {ContractAction} contractAction
    */
   constructor(contractAction) {
-    const recipientIsAccount = !!contractAction.recipient_account;
-
+    const recipientIsAccount = !!contractAction.recipientAccount;
     this.call_depth = contractAction.callDepth;
+    this.call_operation_type = ContractActionViewModel.callOperationTypes[contractAction.callOperationType];
     this.call_type = contractAction.callType;
     this.caller = contractAction.caller;
     this.caller_type = contractAction.callerType;

@@ -35,6 +35,7 @@ class ContractAction {
   static tableName = 'contract_action';
 
   static CALL_DEPTH = 'call_depth';
+  static CALL_OPERATION_TYPE = 'call_operation_type';
   static CALL_TYPE = 'call_type';
   static CALLER = 'caller';
   static CALLER_TYPE = 'caller_type';
