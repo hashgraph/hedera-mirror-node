@@ -54,6 +54,7 @@ class ReconciliationProperties {
     @NotNull
     private Instant startDate = Instant.EPOCH;
 
+    // We can't rely upon the NFT count in the balance file and there's not an easy way to just reconcile fungible
     private boolean token = false;
 
     public void setStartDate(Instant startDate) {

@@ -42,6 +42,7 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -819,8 +820,9 @@ public class DomainBuilder {
         return id.incrementAndGet();
     }
 
+    // SQL timestamp type only supports up to microsecond granularity
     private Instant instant() {
-        return now.plusMillis(id());
+        return now.truncatedTo(ChronoUnit.MILLIS).plusMillis(id());
     }
 
     public byte[] key() {
