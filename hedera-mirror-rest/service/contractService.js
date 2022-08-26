@@ -113,12 +113,9 @@ class ContractService extends BaseService {
                                         where ${Entity.DELETED} <> true
                                           and ${Entity.TYPE} = 'CONTRACT'`;
 
-  static contractActionsByHashQuery = `with ${ContractAction.tableAlias} as (
-      select ${ContractAction.tableName}.*
-      from ${ContractAction.tableName}
-    )
+  static contractActionsByHashQuery = `
     select ${ContractAction.tableAlias}.* from ${ContractResult.tableName} ${ContractResult.tableAlias}
-    left join ${ContractAction.tableAlias}
+    inner join ${ContractAction.tableName} ${ContractAction.tableAlias}
       on ${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)} = ${ContractAction.getFullName(
     ContractAction.CONSENSUS_TIMESTAMP
   )}
@@ -126,9 +123,14 @@ class ContractService extends BaseService {
     `;
 
   static contractActionsByTxIdQuery = `
-       select ${ContractAction.tableAlias}.* from ${ContractAction.tableName} ${ContractAction.tableAlias}
-       where ${ContractAction.CONSENSUS_TIMESTAMP} = $1
-       and ${ContractAction.CALLER} = $2
+       select ${Transaction.getFullName(Transaction.VALID_START_NS)}, ${ContractAction.tableAlias}.*
+       from ${Transaction.tableName} ${Transaction.tableAlias}
+       inner join ${ContractAction.tableName} ${ContractAction.tableAlias}
+            on ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} = ${ContractAction.getFullName(
+    ContractAction.CONSENSUS_TIMESTAMP
+  )}
+       where ${Transaction.getFullName(Transaction.PAYER_ACCOUNT_ID)} = $1
+       and ${Transaction.getFullName(Transaction.VALID_START_NS)} = $2
   `;
 
   static contractByEvmAddressQueryFilters = [
@@ -376,7 +378,7 @@ class ContractService extends BaseService {
     const txId = TransactionId.fromString(transactionId);
     const entityId = txId.getEntityId().getEncodedId();
     const timestamp = txId.getValidStartNs();
-    let params = [timestamp, entityId];
+    let params = [entityId, timestamp];
     return this.getContractActions(ContractService.contractActionsByTxIdQuery, params, filters, order, limit);
   }
 
