@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.migration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.IOException;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.api.IterableAssert;
@@ -31,7 +30,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.support.TransactionTemplate;
 
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
@@ -61,7 +59,6 @@ public class ErrataMigrationTest extends IntegrationTest {
     private final ErrataMigration errataMigration;
     private final MirrorProperties mirrorProperties;
     private final TransactionRepository transactionRepository;
-    private final TransactionTemplate transactionTemplate;
 
     @BeforeEach
     void setup() {
@@ -81,13 +78,13 @@ public class ErrataMigrationTest extends IntegrationTest {
     }
 
     @Test
-    void migrateNotMainnet() {
+    void migrateNotMainnet() throws Exception {
         mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET);
         domainBuilder.accountBalanceFile().persist();
         domainBuilder.accountBalanceFile().customize(a -> a.consensusTimestamp(BAD_TIMESTAMP1)).persist();
         spuriousTransfer(1L, 10, TransactionType.CRYPTOTRANSFER, false, false);
 
-        migrate();
+        errataMigration.doMigrate();
 
         assertBalanceOffsets(0);
         assertErrataTransfers(ErrataType.INSERT, 0);
@@ -98,12 +95,12 @@ public class ErrataMigrationTest extends IntegrationTest {
     }
 
     @Test
-    void migrateOutsideDateRange() {
+    void migrateOutsideDateRange() throws Exception {
         Instant now = Instant.now();
         mirrorProperties.setStartDate(now);
         mirrorProperties.setEndDate(now.plusSeconds(1L));
 
-        migrate();
+        errataMigration.doMigrate();
 
         assertErrataTransfers(ErrataType.INSERT, 0);
         assertErrataTransactions(ErrataType.INSERT, 0);
@@ -111,7 +108,7 @@ public class ErrataMigrationTest extends IntegrationTest {
     }
 
     @Test
-    void migrateMainnet() {
+    void migrateMainnet() throws Exception {
         domainBuilder.accountBalanceFile().persist();
         domainBuilder.accountBalanceFile().customize(a -> a.consensusTimestamp(BAD_TIMESTAMP1)).persist();
         domainBuilder.accountBalanceFile().customize(a -> a.consensusTimestamp(BAD_TIMESTAMP2)).persist();
@@ -122,33 +119,33 @@ public class ErrataMigrationTest extends IntegrationTest {
         spuriousTransfer(4L, 10, TransactionType.CRYPTODELETE, true, false); // Wrong type
         spuriousTransfer(1577836799000000000L, 10, TransactionType.CRYPTOTRANSFER, false, false); // Outside period
 
-        migrate();
+        errataMigration.doMigrate();
 
         assertBalanceOffsets(2);
         assertThat(contractResultRepository.count()).isEqualTo(1L);
-        assertErrataTransactions(ErrataType.INSERT, 90);
+        assertErrataTransactions(ErrataType.INSERT, 101);
         assertErrataTransactions(ErrataType.DELETE, 0);
-        assertErrataTransfers(ErrataType.INSERT, 452);
+        assertErrataTransfers(ErrataType.INSERT, 515);
         assertErrataTransfers(ErrataType.DELETE, 6)
                 .extracting(CryptoTransfer::getConsensusTimestamp)
                 .containsOnly(1L, 2L, RECEIVER_PAYER_TIMESTAMP);
     }
 
     @Test
-    void migrateWithExistingData() {
+    void migrateWithExistingData() throws Exception {
         var now = DomainUtils.convertToNanosMax(Instant.now());
         domainBuilder.recordFile().customize(r -> r.consensusStart(now)).persist();
         migrateMainnet();
     }
 
     @Test
-    void migrateIdempotency() {
+    void migrateIdempotency() throws Exception {
         migrateMainnet();
-        migrate();
+        errataMigration.doMigrate();
         assertBalanceOffsets(2);
-        assertErrataTransactions(ErrataType.INSERT, 90);
+        assertErrataTransactions(ErrataType.INSERT, 101);
         assertErrataTransactions(ErrataType.DELETE, 0);
-        assertErrataTransfers(ErrataType.INSERT, 452);
+        assertErrataTransfers(ErrataType.INSERT, 515);
         assertErrataTransfers(ErrataType.DELETE, 6);
         assertThat(contractResultRepository.count()).isEqualTo(1L);
     }
@@ -198,16 +195,6 @@ public class ErrataMigrationTest extends IntegrationTest {
         assertThat(transactionRepository.findAll())
                 .filteredOn(c -> c.getErrata() == errata)
                 .hasSize(expected);
-    }
-
-    private void migrate() {
-        transactionTemplate.executeWithoutResult(t -> {
-            try {
-                errataMigration.doMigrate();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        });
     }
 
     private void spuriousTransfer(long consensusTimestamp, int result, TransactionType type, boolean receiverIsPayer,

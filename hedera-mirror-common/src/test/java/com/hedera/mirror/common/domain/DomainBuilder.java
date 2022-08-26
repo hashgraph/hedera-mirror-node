@@ -595,8 +595,8 @@ public class DomainBuilder {
                 .consensusTimestamp(timestamp())
                 .error("")
                 .status(ReconciliationStatus.SUCCESS)
-                .timestampEnd(Instant.now().plusSeconds(1))
-                .timestampStart(Instant.now());
+                .timestampStart(instant())
+                .timestampEnd(instant());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
@@ -817,6 +817,10 @@ public class DomainBuilder {
 
     public long id() {
         return id.incrementAndGet();
+    }
+
+    private Instant instant() {
+        return now.plusMillis(id());
     }
 
     public byte[] key() {

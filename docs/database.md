@@ -122,7 +122,7 @@ transactions in the balance and record streams. These issues should only appear 
 
 ### Account Balance File Skew
 
-* Period: September 13, 2019 to September 08, 2020
+* Period: 2019-09-13 to 2020-09-08
 * Scope: 6949 account balance files
 * Problem: Early account balances file did not respect the invariant that all transfers less than or equal to the
   timestamp of the file are reflected within that file.
@@ -132,7 +132,7 @@ transactions in the balance and record streams. These issues should only appear 
 
 ### Failed Transfers in Record
 
-* Period: September 14, 2019 to October 3, 2019
+* Period: 2019-09-14 to 2019-10-03
 * Scope: Affected the records of 1177 transactions.
 * Problem: When a crypto transfer failed due to an insufficient account balance, the attempted transfers were
   nonetheless listed in the record.
@@ -142,7 +142,7 @@ transactions in the balance and record streams. These issues should only appear 
 
 ### Record Missing for Insufficient Fee Funding
 
-* Period: September 14, 2019 to September 18, 2019
+* Period: 2019-09-14 to 2019-09-18
 * Scope: Affected the records of 31 transactions
 * Problem: When a transaction over-bid the balance of its payer account as a fee payment, its record was omitted from
   the stream. When a transaction’s payer account could not afford the network fee, its record was omitted.
@@ -151,7 +151,7 @@ transactions in the balance and record streams. These issues should only appear 
 
 ### Record Missing for FAIL_INVALID NFT transfers
 
-* Period: July 31, 2022 to August 5, 2022
+* Period: 2022-07-31 to 2022-08-09
 * Scope: Affected the records of 59 transactions.
 * Problem: Any ledger that will grow to billions of entities must have an efficient way to remove expired entities. In
   the Hedera network, this means keeping a list of NFTs owned by an account, so that when an account expires, we can

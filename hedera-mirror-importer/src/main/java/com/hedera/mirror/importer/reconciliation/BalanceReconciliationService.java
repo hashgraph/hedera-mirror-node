@@ -67,20 +67,21 @@ class BalanceReconciliationService {
     static final String METRIC = "hedera.mirror.reconciliation";
 
     // Due to the number of rows returned, it's considerably more performant to not use JPA
-    private static final String BALANCE_QUERY = """
-            select account_id, balance from account_balance where consensus_timestamp = ?""";
+    private static final String BALANCE_QUERY = "select account_id, balance from account_balance " +
+            "where consensus_timestamp = ?";
 
     private static final String CRYPTO_TRANSFER_QUERY = """
             select entity_id, sum(amount) balance from crypto_transfer
             where consensus_timestamp > ? and consensus_timestamp <= ? and (errata is null or errata <> 'DELETE')
             group by entity_id""";
 
-    private static final String TOKEN_BALANCE_QUERY = """
-            select account_id, token_id, balance from token_balance where consensus_timestamp = ?""";
+    private static final String TOKEN_BALANCE_QUERY = "select account_id, token_id, balance from token_balance " +
+            "where consensus_timestamp = ?";
 
-    private static final String TOKEN_TRANSFER_QUERY = "select account_id, token_id, sum(amount) as balance " +
-            "from token_transfer where consensus_timestamp > ? and consensus_timestamp <= ? " +
-            "group by token_id, account_id";
+    private static final String TOKEN_TRANSFER_QUERY = """
+            select account_id, token_id, sum(amount) as balance
+            from token_transfer where consensus_timestamp > ? and consensus_timestamp <= ?
+            group by token_id, account_id""";
 
     final AtomicReference<ReconciliationStatus> status = Metrics.gauge(METRIC, new AtomicReference<>(UNKNOWN),
             s -> s.get().ordinal());
@@ -143,9 +144,9 @@ class BalanceReconciliationService {
                 log.info("Reconciled {} balance files successfully in {}", count, stopwatch);
             }
         } catch (Exception e) {
-            var status = e instanceof ReconciliationException re ? re.getStatus() : FAILURE_UNKNOWN;
+            var errorStatus = e instanceof ReconciliationException re ? re.getStatus() : FAILURE_UNKNOWN;
             reconciliationJob.setError(e.getMessage());
-            reconciliationJob.setStatus(status);
+            reconciliationJob.setStatus(errorStatus);
             log.warn("Reconciliation completed unsuccessfully after {} balance files in {}: {}",
                     count, stopwatch, e.getMessage());
         } finally {
@@ -266,7 +267,7 @@ class BalanceReconciliationService {
         long fromTimestamp = previous.map(BalanceSnapshot::getAccountBalanceFile)
                 .map(AccountBalanceFile::getConsensusTimestamp)
                 .map(t -> t + 1L)
-                .orElseGet(() -> reconciliationJob.getConsensusTimestamp());
+                .orElseGet(reconciliationJob::getConsensusTimestamp);
 
         return accountBalanceFileRepository.findNextInRange(fromTimestamp, toTimestamp)
                 .map(accountBalanceFile -> {
