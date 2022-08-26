@@ -28,9 +28,7 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_T
 import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
 
 import com.hedera.services.transaction.contracts.operation.HederaSLoadOperation;
-import com.hedera.mirror.web3.repository.TokenRepository;
-
-import com.hedera.services.transaction.HTSPrecompiledContract;
+import com.hedera.services.transaction.contracts.operation.HederaSStoreOperation;
 
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.math.BigInteger;
@@ -145,6 +143,7 @@ public abstract class EvmTxProcessor {
         var operationRegistry = new OperationRegistry();
         registerLondonOperations(operationRegistry, gasCalculator, BigInteger.valueOf(configurationProperties.getChainId()));
         operationRegistry.put(new HederaSLoadOperation(gasCalculator));
+        operationRegistry.put(new HederaSStoreOperation(gasCalculator));
         operationRegistry.put(new HederaBalanceOperation(gasCalculator, provideAddressValidator(precompiledContractMap)));
         hederaOperations.forEach(operationRegistry::put);
 
