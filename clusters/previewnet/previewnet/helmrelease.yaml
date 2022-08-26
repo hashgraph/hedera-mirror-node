@@ -33,6 +33,7 @@ spec:
     importer:
       env:
         HEDERA_MIRROR_IMPORTER_NETWORK: "PREVIEWNET"
+        HEDERA_MIRROR_IMPORTER_PARSER_RECORD_SIDECAR_ENABLED: "true"
     monitor:
       env:
         HEDERA_MIRROR_MONITOR_NETWORK: "PREVIEWNET"
