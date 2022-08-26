@@ -162,8 +162,6 @@ const isValidBlockHash = (query) => {
   return blockHashPattern.test(query);
 };
 
-const isValidTransactionHash = isValidBlockHash;
-
 const ethHashPattern = /^(0x)?([0-9A-Fa-f]{64})$/;
 const isValidEthHash = (hash) => {
   if (hash === undefined) {
@@ -1457,7 +1455,6 @@ export {
   isTestEnv,
   isValidBlockHash,
   isValidEthHash,
-  isValidTransactionHash,
   isValidOperatorQuery,
   isValidPublicKeyQuery,
   isValidTimestampParam,

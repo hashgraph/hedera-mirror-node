@@ -20,6 +20,8 @@
 
 import EntityId from '../entityId';
 import * as utils from '../utils.js';
+import {entityTypes} from '../constants.js';
+import {toHexString} from '../utils.js';
 
 /**
  * Contract actions view model
@@ -32,7 +34,6 @@ class ContractActionViewModel {
     13: 'ERROR',
   };
 
-  // FIXME Use Protobuf enums instead of static mapping
   static callOperationTypes = {
     0: 'OP_UNKNOWN',
     1: 'OP_CALL',
@@ -43,6 +44,14 @@ class ContractActionViewModel {
     6: 'OP_CREATE2',
   };
 
+  static callTypes = {
+    0: 'NO_ACTION',
+    1: 'CALL',
+    2: 'CREATE',
+    3: 'PRECOMPILE',
+    4: 'SYSTEM',
+  };
+
   /**
    * Constructs contractAction view model
    *
@@ -50,28 +59,28 @@ class ContractActionViewModel {
    */
   constructor(contractAction) {
     const recipientIsAccount = !!contractAction.recipientAccount;
+    const recipientId = recipientIsAccount ? contractAction.recipientAccount : contractAction.recipientContract;
+    const recipient = EntityId.parse(recipientId);
+    const callerId = EntityId.parse(contractAction.caller);
+
     this.call_depth = contractAction.callDepth;
     this.call_operation_type = ContractActionViewModel.callOperationTypes[contractAction.callOperationType];
-    this.call_type = contractAction.callType;
-    this.caller = contractAction.caller;
+    this.call_type = ContractActionViewModel.callTypes[contractAction.callType];
+    this.caller = callerId.toString();
     this.caller_type = contractAction.callerType;
-    this.from = contractAction.caller ? EntityId.parse(contractAction.caller).toEvmAddress() : null;
+    this.from = callerId.toEvmAddress();
     this.gas = contractAction.gas;
     this.gas_used = contractAction.gasUsed;
     this.index = contractAction.index;
-    this.input = contractAction.input ? utils.addHexPrefix(Buffer.from(contractAction.input).toString('hex')) : null;
-    this.recipient = recipientIsAccount
-      ? EntityId.parse(contractAction.recipientAccount).toString()
-      : EntityId.parse(contractAction.recipientContract).toString();
-    this.recipient_type = recipientIsAccount ? 'ACCOUNT' : 'CONTRACT';
-    this.result_data = contractAction.resultData
-      ? utils.addHexPrefix(Buffer.from(contractAction.resultData).toString('hex'))
-      : null;
+    this.input = utils.toHexStringNonQuantity(contractAction.input);
+    this.recipient = recipient.toString();
+    this.recipient_type = recipientIsAccount ? entityTypes.ACCOUNT : entityTypes.CONTRACT;
+    this.result_data = utils.toHexStringNonQuantity(contractAction.resultData);
     this.result_data_type = ContractActionViewModel.resultDataTypes[contractAction.resultDataType];
-    this.timestamp = contractAction.consensusTimestamp.toString();
+    this.timestamp = utils.nsToSecNs(contractAction.consensusTimestamp);
     this.to = contractAction.recipientAddress
-      ? utils.addHexPrefix(Buffer.from(contractAction.recipientAddress).toString('hex'))
-      : null;
+      ? utils.toHexString(Buffer.from(contractAction.recipientAddress), true, 40)
+      : recipient.toEvmAddress();
     this.value = contractAction.value;
   }
 }

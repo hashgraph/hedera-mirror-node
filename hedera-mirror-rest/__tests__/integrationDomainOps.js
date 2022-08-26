@@ -846,42 +846,27 @@ const addContract = async (custom) => {
   await insertDomainObject('contract', insertFields, contract);
 };
 
-const addContractAction = async (contractActionInput) => {
-  const insertFields = [
-    'call_depth',
-    'call_operation_type',
-    'call_type',
-    'caller',
-    'caller_type',
-    'consensus_timestamp',
-    'gas',
-    'gas_used',
-    'index',
-    'input',
-    'recipient_account',
-    'recipient_address',
-    'recipient_contract',
-    'result_data',
-    'result_data_type',
-    'value',
-  ];
+const contractActionDefaults = {
+  call_depth: 1,
+  call_operation_type: 1,
+  call_type: 1,
+  caller: 8001,
+  caller_type: 'CONTRACT',
+  gas: 10000,
+  gas_used: 5000,
+  index: 1,
+  input: null,
+  recipient_account: null,
+  recipient_address: null,
+  recipient_contract: null,
+  result_data: null,
+  result_data_type: 11,
+  value: 100,
+};
 
+const addContractAction = async (contractActionInput) => {
   let action = {
-    call_depth: 1,
-    call_operation_type: 1,
-    call_type: 1,
-    caller: 8001,
-    caller_type: 'CONTRACT',
-    gas: 10000,
-    gas_used: 5000,
-    index: 1,
-    input: null,
-    recipient_account: null,
-    recipient_address: null,
-    recipient_contract: null,
-    result_data: null,
-    result_data_type: 11,
-    value: 100,
+    ...contractActionDefaults,
     ...contractActionInput,
   };
 
@@ -895,7 +880,7 @@ const addContractAction = async (contractActionInput) => {
     action.result_data = hexStringToBytea(action.result_data);
   }
 
-  await insertDomainObject('contract_action', insertFields, action);
+  await insertDomainObject('contract_action', Object.keys(contractActionDefaults).sort(), action);
 };
 
 const insertFields = [

@@ -1070,8 +1070,8 @@ class ContractController extends BaseController {
     const {transactionIdOrHash} = req.params;
     let rows = [];
 
-    if (utils.isValidTransactionHash(transactionIdOrHash)) {
-      const hash = Buffer.from(transactionIdOrHash.replace('0x', '').substring(0, 64), 'hex');
+    if (utils.isValidEthHash(transactionIdOrHash)) {
+      const hash = Buffer.from(transactionIdOrHash.replace('0x', ''), 'hex');
       rows = await ContractService.getContractActionsByHash(hash, filters, order, limit);
     } else {
       rows = await ContractService.getContractActionsByTransactionId(transactionIdOrHash, filters, order, limit);
