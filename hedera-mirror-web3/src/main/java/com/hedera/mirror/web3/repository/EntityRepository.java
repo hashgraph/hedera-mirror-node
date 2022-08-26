@@ -44,6 +44,6 @@ public interface EntityRepository extends CrudRepository<Entity, Long> {
     @Query(value = "select id from entity where evm_address = ?1 and deleted <> true", nativeQuery = true)
     Optional<Long> findAccountIdByAddress(byte[] evmAddress);
 
-    @Query(value = "select balance from entity where evm_address = ?1 and deleted <> true", nativeQuery = true)
+    @Query(value = "select balance from entity where evm_address = ?1 and type in ('ACCOUNT', 'CONTRACT') and deleted is not true", nativeQuery = true)
     Optional<Long> findAccountBalanceByAddress(byte[] evmAddress);
 }
