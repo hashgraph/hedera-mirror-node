@@ -442,7 +442,7 @@ class ContractController extends BaseController {
    *
    * @param {[]} filters parsed and validated filters
    * @param {string} contractId encoded contract ID
-   * @return {{conditions: [], params: [], order: 'asc'|'desc', limit: number}}
+   * @return {Promise<{conditions: [], params: [], order: 'asc'|'desc', limit: number}>}
    */
   extractContractResultsByIdQuery = async (filters, contractId) => {
     let limit = defaultLimit;
@@ -886,6 +886,7 @@ class ContractController extends BaseController {
    */
   getContractResultsByTimestamp = async (req, res) => {
     const {timestamp} = getAndValidateContractIdAndConsensusTimestampPathParams(req);
+    const contractId = await ContractService.computeContractIdFromString(req.params.contractId);
 
     // retrieve contract result, recordFile and transaction models concurrently
     const [contractResults, recordFile, transaction, contractLogs, contractStateChanges] = await Promise.all([
@@ -893,7 +894,7 @@ class ContractController extends BaseController {
       RecordFileService.getRecordFileBlockDetailsFromTimestamp(timestamp),
       TransactionService.getTransactionDetailsFromTimestamp(timestamp),
       ContractService.getContractLogsByTimestamps(timestamp),
-      ContractService.getContractStateChangesByTimestamps(timestamp),
+      ContractService.getContractStateChangesByTimestamps(timestamp, contractId),
     ]);
     if (_.isNil(transaction)) {
       throw new NotFoundError('No correlating transaction');

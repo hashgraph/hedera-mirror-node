@@ -202,6 +202,12 @@ const checkNullId = (id, isNullable) => {
 const isValidEvmAddressLength = (len) => len === 40 || len === 42;
 
 /**
+ * Normalizes a hex evm address string by removing the "0x" prefix if exists
+ * @param {string} address
+ */
+const normalizeEvmAddress = (address) => (address.length === 42 ? address.substring(2) : address);
+
+/**
  * Parses shard, realm, num from encoded ID string.
  * @param {string} id
  * @param {Function} error
@@ -281,7 +287,7 @@ const computeContractIdPartsFromContractIdValue = (contractId) => {
     realm: idPieces[1] !== null ? BigInt(idPieces[1]) : null,
   };
   if (isCreate2EvmAddress(idPieces[2])) {
-    contractIdParts.create2_evm_address = idPieces[2];
+    contractIdParts.create2_evm_address = normalizeEvmAddress(idPieces[2]);
   } else {
     contractIdParts.num = idPieces[2];
   }
