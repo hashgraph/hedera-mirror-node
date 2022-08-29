@@ -71,8 +71,8 @@ class ConsensusValidatorImplTest extends IntegrationTest {
         consensusValidator = new ConsensusValidatorImpl(addressBookService, commonDownloaderProperties,
                 nodeStakeRepository);
         var addressBookEntry3 = AddressBookEntry.builder().nodeId(100).nodeAccountId(entity3).build();
-        var addressBookEntry4 = AddressBookEntry.builder().nodeId(200).nodeAccountId(entity4).build();
-        var addressBookEntry5 = AddressBookEntry.builder().nodeId(300).nodeAccountId(entity5).build();
+        var addressBookEntry4 = AddressBookEntry.builder().nodeId(101).nodeAccountId(entity4).build();
+        var addressBookEntry5 = AddressBookEntry.builder().nodeId(102).nodeAccountId(entity5).build();
         when(currentAddressBook.getEntries()).thenReturn(List.of(addressBookEntry3, addressBookEntry4,
                 addressBookEntry5));
         when(addressBookService.getCurrent()).thenReturn(currentAddressBook);
@@ -122,7 +122,7 @@ class ConsensusValidatorImplTest extends IntegrationTest {
                 .persist();
         domainBuilder.nodeStake()
                 .customize(n -> n
-                        .nodeId(200)
+                        .nodeId(102)
                         .consensusTimestamp(timestamp)
                         .stake(3L))
                 .persist();
@@ -272,24 +272,17 @@ class ConsensusValidatorImplTest extends IntegrationTest {
 
     private void nodeStakes(long... stakes) {
         var timestamp = domainBuilder.timestamp();
-        domainBuilder.nodeStake()
-                .customize(n -> n
-                        .nodeId(100)
-                        .consensusTimestamp(timestamp)
-                        .stake(stakes[0]))
-                .persist();
-        domainBuilder.nodeStake()
-                .customize(n -> n
-                        .nodeId(200)
-                        .consensusTimestamp(timestamp)
-                        .stake(stakes[1]))
-                .persist();
-        domainBuilder.nodeStake()
-                .customize(n -> n
-                        .nodeId(300)
-                        .consensusTimestamp(timestamp)
-                        .stake(stakes[2]))
-                .persist();
+        int nodeId = 100;
+        for (long stake : stakes) {
+            final int finalNodeId = nodeId;
+            domainBuilder.nodeStake()
+                    .customize(n -> n
+                            .nodeId(finalNodeId)
+                            .consensusTimestamp(timestamp)
+                            .stake(stake))
+                    .persist();
+            nodeId++;
+        }
     }
 
     private FileStreamSignature buildFileStreamSignature() {
