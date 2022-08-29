@@ -36,6 +36,8 @@ import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.function.Function;
@@ -65,6 +67,10 @@ public class TestUtils {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public Instant asStartOfEpochDay(long epochDay) {
+        return LocalDate.ofEpochDay(epochDay).atStartOfDay().toInstant(ZoneOffset.UTC);
     }
 
     /**

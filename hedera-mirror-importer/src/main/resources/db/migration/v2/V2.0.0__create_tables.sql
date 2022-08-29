@@ -180,12 +180,13 @@ comment on table contract_result is 'Crypto contract execution results';
 
 create table if not exists contract_state_change
 (
-    consensus_timestamp bigint not null,
-    contract_id         bigint not null,
-    payer_account_id    bigint not null,
-    slot                bytea  not null,
-    value_read          bytea  not null,
-    value_written       bytea  null
+    consensus_timestamp bigint  not null,
+    contract_id         bigint  not null,
+    migration           boolean not null default false,
+    payer_account_id    bigint  not null,
+    slot                bytea   not null,
+    value_read          bytea   not null,
+    value_written       bytea   null
 );
 comment on table contract_state_change is 'Contract execution state changes';
 
@@ -273,6 +274,30 @@ create table if not exists entity_history
     like entity including defaults
 );
 comment on table entity_history is 'Network entity historical state';
+
+create table if not exists entity_stake
+(
+    decline_reward_start boolean not null,
+    end_stake_period     bigint  not null,
+    id                   bigint  not null,
+    pending_reward       bigint  not null,
+    staked_node_id_start bigint  not null,
+    staked_to_me         bigint  not null,
+    stake_total_start    bigint  not null
+);
+comment on table entity_stake is 'Network entity stake state';
+
+create materialized view if not exists entity_state_start as
+select
+    balance,
+    decline_reward,
+    id,
+    coalesce(staked_account_id, 0)   as staked_account_id,
+    coalesce(staked_node_id, -1)     as staked_node_id,
+    coalesce(stake_period_start, -1) as stake_period_start
+from entity
+where deleted is not true and type in ('ACCOUNT', 'CONTRACT');
+comment on materialized view entity_state_start is 'Network entity state at start of staking period';
 
 create table if not exists ethereum_transaction
 (
