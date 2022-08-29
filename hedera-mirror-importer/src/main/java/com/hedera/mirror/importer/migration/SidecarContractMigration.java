@@ -53,13 +53,13 @@ public class SidecarContractMigration {
             return;
         }
 
+        var stopwatch = Stopwatch.createStarted();
         var sidecarMigrationContractIds = new ArrayList<Long>();
-        for (ContractBytecode contractBytecode : contractBytecodes) {
-            var entityId = EntityId.of(contractBytecode.getContractId()).getId();
+        for (var contractBytecode : contractBytecodes) {
+            long entityId = EntityId.of(contractBytecode.getContractId()).getId();
             sidecarMigrationContractIds.add(entityId);
         }
 
-        var stopwatch = Stopwatch.createStarted();
         jdbcOperations.batchUpdate(
                 UPDATE_RUNTIME_BYTECODE_SQL,
                 contractBytecodes,

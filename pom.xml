@@ -55,7 +55,7 @@
     </parent>
 
     <properties>
-        <besu.version>22.7.0</besu.version>
+        <besu.version>22.7.1</besu.version>
         <dependency-check.version>7.1.2</dependency-check.version>
         <disruptor.version>3.4.4</disruptor.version> <!-- Used for asynchronous logging -->
         <docker-maven-plugin.version>0.40.2</docker-maven-plugin.version>
@@ -65,7 +65,7 @@
         <docker.push.repository>gcr.io/mirrornode</docker.push.repository>
         <docker.resources>${project.build.directory}/container</docker.resources>
         <docker.tag.version>${release.version}</docker.tag.version>
-        <embedded.testcontainers.version>2.2.5</embedded.testcontainers.version>
+        <embedded.testcontainers.version>2.2.6</embedded.testcontainers.version>
         <flyway.version>8.5.9</flyway.version>
         <git-commit-id-plugin.version>4.0.4</git-commit-id-plugin.version>
         <grpc-spring-boot.version>2.13.1.RELEASE</grpc-spring-boot.version>

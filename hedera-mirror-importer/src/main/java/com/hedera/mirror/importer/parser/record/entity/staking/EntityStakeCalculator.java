@@ -1,4 +1,4 @@
-package com.hedera.mirror.common.domain.entity;
+package com.hedera.mirror.importer.parser.record.entity.staking;
 
 /*-
  * ‌
@@ -20,14 +20,17 @@ package com.hedera.mirror.common.domain.entity;
  * ‍
  */
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
+import java.util.Collection;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.transaction.event.TransactionalEventListener;
 
-@Data
-@javax.persistence.Entity
-@NoArgsConstructor
-@SuperBuilder(toBuilder = true)
-public class Entity extends AbstractEntity {
-    // Only the parent class should contain fields so that they're shared with both the history and non-history tables.
+import com.hedera.mirror.common.domain.addressbook.NodeStake;
+
+public interface EntityStakeCalculator {
+
+    void calculate(Collection<NodeStake> nodeStakes);
+
+    @Async
+    @TransactionalEventListener(classes = NodeStakeUpdateEvent.class)
+    void update();
 }

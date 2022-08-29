@@ -1,4 +1,4 @@
-package com.hedera.mirror.common.domain.entity;
+package com.hedera.mirror.importer.parser.record.entity.staking;
 
 /*-
  * ‌
@@ -20,14 +20,21 @@ package com.hedera.mirror.common.domain.entity;
  * ‍
  */
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
+import java.io.Serial;
+import org.springframework.context.ApplicationEvent;
 
-@Data
-@javax.persistence.Entity
-@NoArgsConstructor
-@SuperBuilder(toBuilder = true)
-public class Entity extends AbstractEntity {
-    // Only the parent class should contain fields so that they're shared with both the history and non-history tables.
+public class NodeStakeUpdateEvent extends ApplicationEvent {
+
+    @Serial
+    private static final long serialVersionUID = -1825194602305052810L;
+
+    /**
+     * Create a new {@code NodeStakeUpdateEvent}.
+     *
+     * @param source the object on which the event initially occurred or with which the event is associated (never
+     *               {@code null})
+     */
+    public NodeStakeUpdateEvent(Object source) {
+        super(source);
+    }
 }

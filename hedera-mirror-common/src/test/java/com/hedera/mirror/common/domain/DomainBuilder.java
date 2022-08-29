@@ -79,6 +79,7 @@ import com.hedera.mirror.common.domain.entity.CryptoAllowanceHistory;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityHistory;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityStake;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.NftAllowanceHistory;
@@ -411,13 +412,24 @@ public class DomainBuilder {
                 .realm(0L)
                 .receiverSigRequired(true)
                 .shard(0L)
-                .stakedAccountId(-1L)
                 .stakedNodeId(-1L)
                 .stakePeriodStart(-1L)
                 .submitKey(key())
                 .timestampRange(Range.closedOpen(timestamp, timestamp()))
                 .type(ACCOUNT);
 
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<EntityStake, EntityStake.EntityStakeBuilder> entityStake() {
+        var builder = EntityStake.builder()
+                .declineRewardStart(false)
+                .endStakePeriod(0L)
+                .id(id())
+                .pendingReward(0L)
+                .stakedNodeIdStart(-1L)
+                .stakedToMe(0L)
+                .stakeTotalStart(0L);
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

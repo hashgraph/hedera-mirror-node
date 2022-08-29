@@ -419,10 +419,11 @@ const validateContractIdAndConsensusTimestampParam = (consensusTimestamp, contra
   }
 };
 
-const getAndValidateContractIdAndConsensusTimestampPathParams = (req) => {
-  const {consensusTimestamp, contractId} = req.params;
+const getAndValidateContractIdAndConsensusTimestampPathParams = async (params) => {
+  const {consensusTimestamp, contractId} = params;
   validateContractIdAndConsensusTimestampParam(consensusTimestamp, contractId);
-  return {timestamp: utils.parseTimestampParam(consensusTimestamp)};
+  const encodedContractId = await ContractService.computeContractIdFromString(contractId);
+  return {contractId: encodedContractId, timestamp: utils.parseTimestampParam(consensusTimestamp)};
 };
 
 const extractContractIdAndFiltersFromValidatedRequest = (req) => {
@@ -443,7 +444,7 @@ class ContractController extends BaseController {
    *
    * @param {[]} filters parsed and validated filters
    * @param {string} contractId encoded contract ID
-   * @return {{conditions: [], params: [], order: 'asc'|'desc', limit: number}}
+   * @return {Promise<{conditions: [], params: [], order: 'asc'|'desc', limit: number}>}
    */
   extractContractResultsByIdQuery = async (filters, contractId) => {
     let limit = defaultLimit;
@@ -886,7 +887,7 @@ class ContractController extends BaseController {
    * @returns {Promise<void>}
    */
   getContractResultsByTimestamp = async (req, res) => {
-    const {timestamp} = getAndValidateContractIdAndConsensusTimestampPathParams(req);
+    const {contractId, timestamp} = await getAndValidateContractIdAndConsensusTimestampPathParams(req.params);
 
     // retrieve contract result, recordFile and transaction models concurrently
     const [contractResults, recordFile, transaction, contractLogs, contractStateChanges] = await Promise.all([
@@ -894,7 +895,7 @@ class ContractController extends BaseController {
       RecordFileService.getRecordFileBlockDetailsFromTimestamp(timestamp),
       TransactionService.getTransactionDetailsFromTimestamp(timestamp),
       ContractService.getContractLogsByTimestamps(timestamp),
-      ContractService.getContractStateChangesByTimestamps(timestamp),
+      ContractService.getContractStateChangesByTimestamps(timestamp, contractId),
     ]);
     if (_.isNil(transaction)) {
       throw new NotFoundError('No correlating transaction');
