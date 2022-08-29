@@ -363,7 +363,9 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
         var balanceFile1 = balance(Map.of(2L, 1L)); // Would fail if checked
         var balanceFile2 = balance(Map.of(2L, FIFTY_BILLION_HBARS));
         var balanceFile3 = balance(Map.of(2L, FIFTY_BILLION_HBARS));
-        domainBuilder.reconciliationJob().customize(r -> r.consensusTimestamp(balanceFile1.getConsensusTimestamp()))
+        domainBuilder.reconciliationJob()
+                .customize(r -> r.consensusTimestamp(balanceFile1.getConsensusTimestamp())
+                        .timestampStart(Instant.EPOCH).timestampEnd(Instant.EPOCH.plusSeconds(1)))
                 .persist();
         reconciliationProperties.setStartDate(Instant.ofEpochSecond(0L, balanceFile2.getConsensusTimestamp()));
 
@@ -371,6 +373,7 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
         reconcile();
 
         // then
+        reconciliationJobRepository.findAll().forEach(r -> log.info("{}", r));
         assertReconciliationJob(SUCCESS, balanceFile3).returns(1L, ReconciliationJob::getCount);
     }
 
@@ -462,6 +465,7 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
                     .persist();
         });
 
+        log.info("Persisted {}", accountBalanceFile);
         domainBuilder.recordFile().customize(r -> r.hapiVersionMinor(20)).persist();
         return accountBalanceFile;
     }
