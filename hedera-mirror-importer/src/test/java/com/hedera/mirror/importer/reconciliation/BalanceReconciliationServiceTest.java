@@ -373,7 +373,6 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
         reconcile();
 
         // then
-        reconciliationJobRepository.findAll().forEach(r -> log.info("{}", r));
         assertReconciliationJob(SUCCESS, balanceFile3).returns(1L, ReconciliationJob::getCount);
     }
 
@@ -465,7 +464,6 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
                     .persist();
         });
 
-        log.info("Persisted {}", accountBalanceFile);
         domainBuilder.recordFile().customize(r -> r.hapiVersionMinor(20)).persist();
         return accountBalanceFile;
     }
