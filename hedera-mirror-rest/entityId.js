@@ -282,10 +282,7 @@ const parseFromString = (id, error) => {
 const computeContractIdPartsFromContractIdValue = (contractId) => {
   const idPieces = contractId.split('.');
   idPieces.unshift(...[null, null].slice(0, 3 - idPieces.length));
-  const contractIdParts = {
-    shard: idPieces[0] !== null ? BigInt(idPieces[0]) : null,
-    realm: idPieces[1] !== null ? BigInt(idPieces[1]) : null,
-  };
+  const contractIdParts = {shard: idPieces[0], realm: idPieces[1]};
   if (isCreate2EvmAddress(idPieces[2])) {
     contractIdParts.create2_evm_address = normalizeEvmAddress(idPieces[2]);
   } else {
