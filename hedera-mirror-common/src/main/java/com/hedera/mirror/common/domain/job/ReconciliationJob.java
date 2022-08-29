@@ -38,7 +38,7 @@ public class ReconciliationJob {
 
     private long consensusTimestamp;
 
-    private int count;
+    private long count;
 
     private String error;
 
@@ -51,5 +51,9 @@ public class ReconciliationJob {
 
     public boolean hasErrors() {
         return status.ordinal() > ReconciliationStatus.SUCCESS.ordinal();
+    }
+
+    public void increment() {
+        ++count;
     }
 }

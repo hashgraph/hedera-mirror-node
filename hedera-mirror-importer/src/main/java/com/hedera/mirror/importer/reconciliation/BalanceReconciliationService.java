@@ -44,19 +44,23 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import javax.inject.Named;
+import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.data.util.Version;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.common.domain.job.ReconciliationJob;
 import com.hedera.mirror.common.domain.job.ReconciliationStatus;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.ReconciliationJobRepository;
+import com.hedera.mirror.importer.repository.RecordFileRepository;
 
 @Log4j2
 @Named
@@ -65,6 +69,8 @@ class BalanceReconciliationService {
 
     static final long FIFTY_BILLION_HBARS = 50_000_000_000L * 100_000_000L;
     static final String METRIC = "hedera.mirror.reconciliation";
+    static final long OFFSET_NANOS = 53;
+    static final Version VERSION_27 = new Version(0, 27, 0); // First version with 53 ns offset issue
 
     // Due to the number of rows returned, it's considerably more performant to not use JPA
     private static final String BALANCE_QUERY = "select account_id, balance from account_balance " +
@@ -88,6 +94,7 @@ class BalanceReconciliationService {
 
     private final AccountBalanceFileRepository accountBalanceFileRepository;
     private final JdbcOperations jdbcOperations;
+    private final RecordFileRepository recordFileRepository;
     private final ReconciliationProperties reconciliationProperties;
     private final ReconciliationJobRepository reconciliationJobRepository;
 
@@ -97,7 +104,6 @@ class BalanceReconciliationService {
             return;
         }
 
-        var count = 0;
         var stopwatch = Stopwatch.createStarted();
         var reconciliationJob = getLatestJob();
 
@@ -118,39 +124,44 @@ class BalanceReconciliationService {
 
             while (current.isPresent()) {
                 reconcile(previous.get(), current.get());
+                reconciliationJob.increment();
 
                 if (!reconciliationJob.hasErrors()) {
                     var consensusTimestamp = current.get().getAccountBalanceFile().getConsensusTimestamp();
                     reconciliationJob.setConsensusTimestamp(consensusTimestamp);
+
+                    // Periodically update progress
+                    if (reconciliationJob.getCount() % 100 == 0) {
+                        reconciliationJobRepository.save(reconciliationJob);
+                    }
                 }
 
                 if (reconciliationProperties.getRemediationStrategy() == ACCUMULATE) {
-                    var c = current.get();
-                    var p = previous.get();
-                    previous = Optional.of(new BalanceSnapshot(c.getAccountBalanceFile(), p.getBalances(),
-                            reconciliationJob, c.getStartTime(), p.getTokenBalances()));
+                    previous = Optional.of(current.get()
+                            .toBuilder()
+                            .balances(previous.get().getBalances())
+                            .tokenBalances(previous.get().getTokenBalances())
+                            .build());
                 } else {
                     previous = current;
                 }
 
-                ++count;
                 current = getNextBalanceSnapshot(reconciliationJob, previous);
             }
 
             if (reconciliationJob.hasErrors()) {
-                log.info("Reconciled {} balance files with some errors in {}", count, stopwatch);
+                log.info("Reconciled {} balance files with some errors in {}", reconciliationJob.getCount(), stopwatch);
             } else {
                 reconciliationJob.setStatus(SUCCESS);
-                log.info("Reconciled {} balance files successfully in {}", count, stopwatch);
+                log.info("Reconciled {} balance files successfully in {}", reconciliationJob.getCount(), stopwatch);
             }
         } catch (Exception e) {
             var errorStatus = e instanceof ReconciliationException re ? re.getStatus() : FAILURE_UNKNOWN;
             reconciliationJob.setError(e.getMessage());
             reconciliationJob.setStatus(errorStatus);
             log.warn("Reconciliation completed unsuccessfully after {} balance files in {}: {}",
-                    count, stopwatch, e.getMessage());
+                    reconciliationJob.getCount(), stopwatch, e.getMessage());
         } finally {
-            reconciliationJob.setCount(count);
             reconciliationJob.setTimestampEnd(Instant.now());
             reconciliationJobRepository.save(reconciliationJob);
             status.set(reconciliationJob.getStatus());
@@ -271,9 +282,11 @@ class BalanceReconciliationService {
 
         return accountBalanceFileRepository.findNextInRange(fromTimestamp, toTimestamp)
                 .map(accountBalanceFile -> {
+                    var timestamp = accountBalanceFile.getConsensusTimestamp();
                     var balances = getAccountBalances(accountBalanceFile);
+                    var recordFile = recordFileRepository.findNextBetween(timestamp - 1L, Long.MAX_VALUE);
                     var tokenBalances = getTokenBalances(accountBalanceFile);
-                    return new BalanceSnapshot(accountBalanceFile, balances, reconciliationJob, startTime,
+                    return new BalanceSnapshot(accountBalanceFile, balances, recordFile, reconciliationJob, startTime,
                             tokenBalances);
                 });
     }
@@ -323,19 +336,24 @@ class BalanceReconciliationService {
         private final long tokenId;
     }
 
+    @Builder(toBuilder = true)
     @Value
-    private class BalanceSnapshot {
+    private static class BalanceSnapshot {
+
         private final AccountBalanceFile accountBalanceFile;
         private final Map<Long, Long> balances;
+        private final Optional<RecordFile> recordFile;
         private final ReconciliationJob reconciliationJob;
         private final long startTime;
         private final Map<TokenAccountId, Long> tokenBalances;
 
         private long getTimestamp() {
             long offset = accountBalanceFile.getTimeOffset();
-            if (offset == 0) {
-                offset = reconciliationProperties.getBalanceOffset();
+
+            if (recordFile.isPresent() && VERSION_27.isLessThanOrEqualTo(recordFile.get().getHapiVersion())) {
+                offset += OFFSET_NANOS;
             }
+
             return accountBalanceFile.getConsensusTimestamp() + offset;
         }
     }

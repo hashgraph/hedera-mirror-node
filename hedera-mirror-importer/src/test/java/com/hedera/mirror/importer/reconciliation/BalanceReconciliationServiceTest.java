@@ -57,6 +57,7 @@ import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.transaction.ErrataType;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.repository.ReconciliationJobRepository;
+import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -64,13 +65,13 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
 
     private final DomainBuilder domainBuilder;
     private final MeterRegistry meterRegistry;
+    private final RecordFileRepository recordFileRepository;
     private final ReconciliationJobRepository reconciliationJobRepository;
     private final ReconciliationProperties reconciliationProperties;
     private final BalanceReconciliationService reconciliationService;
 
     @BeforeEach
     void setup() {
-        reconciliationProperties.setBalanceOffset(0);
         reconciliationProperties.setDelay(Duration.ZERO);
         reconciliationProperties.setEnabled(true);
         reconciliationProperties.setEndDate(Utility.MAX_INSTANT_LONG);
@@ -95,7 +96,7 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
         reconciliationService.reconcile();
 
         // then
-        assertReconciliationJob(SUCCESS, last).returns(2, ReconciliationJob::getCount);
+        assertReconciliationJob(SUCCESS, last).returns(2L, ReconciliationJob::getCount);
     }
 
     @Test
@@ -110,7 +111,7 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
 
         // then
         assertReconciliationJob(FAILURE_CRYPTO_TRANSFERS, null)
-                .returns(0, ReconciliationJob::getCount);
+                .returns(0L, ReconciliationJob::getCount);
     }
 
     @Test
@@ -128,7 +129,7 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
 
         // then
         assertReconciliationJob(FAILURE_CRYPTO_TRANSFERS, balance2)
-                .returns(3, ReconciliationJob::getCount)
+                .returns(3L, ReconciliationJob::getCount)
                 .satisfies(r -> assertThat(r.getError()).contains(""));
     }
 
@@ -146,7 +147,7 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
         reconciliationService.reconcile();
 
         // then
-        assertReconciliationJob(FAILURE_CRYPTO_TRANSFERS, balance2).returns(3, ReconciliationJob::getCount);
+        assertReconciliationJob(FAILURE_CRYPTO_TRANSFERS, balance2).returns(3L, ReconciliationJob::getCount);
     }
 
     @Test
@@ -159,7 +160,25 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
         reconciliationService.reconcile();
 
         // then
-        assertReconciliationJob(SUCCESS, balance2).returns(1, ReconciliationJob::getCount);
+        assertReconciliationJob(SUCCESS, balance2).returns(1L, ReconciliationJob::getCount);
+    }
+
+    @Test
+    void v27Offset() {
+        // given
+        balance(Map.of(2L, FIFTY_BILLION_HBARS));
+        transfer(2, 3, 1000);
+        transfer(3, 4, 100);
+        var last = balance(Map.of(2L, FIFTY_BILLION_HBARS - 1500L, 3L, 900L, 4L, 600L));
+        transfer(2, 4, 500);
+        recordFileRepository.delete(recordFileRepository.findLatest().get());
+        domainBuilder.recordFile().customize(r -> r.hapiVersionMinor(27)).persist();
+
+        // when
+        reconciliationService.reconcile();
+
+        // then
+        assertReconciliationJob(SUCCESS, last).returns(1L, ReconciliationJob::getCount);
     }
 
     @Test
@@ -176,7 +195,7 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
         long end = System.currentTimeMillis();
 
         // then
-        assertReconciliationJob(SUCCESS, balance2).returns(1, ReconciliationJob::getCount);
+        assertReconciliationJob(SUCCESS, balance2).returns(1L, ReconciliationJob::getCount);
         assertThat(end - start).isGreaterThanOrEqualTo(delay);
     }
 
@@ -193,7 +212,7 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
         reconciliationService.reconcile();
 
         // then
-        assertReconciliationJob(SUCCESS, balance2).returns(1, ReconciliationJob::getCount);
+        assertReconciliationJob(SUCCESS, balance2).returns(1L, ReconciliationJob::getCount);
     }
 
     @Test
@@ -206,7 +225,7 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
         reconciliationService.reconcile();
 
         // then
-        assertReconciliationJob(FAILURE_TOKEN_TRANSFERS, null).returns(0, ReconciliationJob::getCount);
+        assertReconciliationJob(FAILURE_TOKEN_TRANSFERS, null).returns(0L, ReconciliationJob::getCount);
     }
 
     @Test
@@ -224,7 +243,7 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
         reconciliationService.reconcile();
 
         // then
-        assertReconciliationJob(FAILURE_TOKEN_TRANSFERS, balance2).returns(3, ReconciliationJob::getCount);
+        assertReconciliationJob(FAILURE_TOKEN_TRANSFERS, balance2).returns(3L, ReconciliationJob::getCount);
     }
 
     @Test
@@ -238,7 +257,7 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
         reconciliationService.reconcile();
 
         // then
-        assertReconciliationJob(SUCCESS, balance2).returns(1, ReconciliationJob::getCount);
+        assertReconciliationJob(SUCCESS, balance2).returns(1L, ReconciliationJob::getCount);
     }
 
     @Test
@@ -251,7 +270,7 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
         reconciliationService.reconcile();
 
         // then
-        assertReconciliationJob(SUCCESS, balance2).returns(1, ReconciliationJob::getCount);
+        assertReconciliationJob(SUCCESS, balance2).returns(1L, ReconciliationJob::getCount);
     }
 
     @Test
@@ -268,7 +287,7 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
 
         // then
         assertMetric(SUCCESS);
-        assertReconciliationJob(SUCCESS, balance2).returns(1, ReconciliationJob::getCount);
+        assertReconciliationJob(SUCCESS, balance2).returns(1L, ReconciliationJob::getCount);
     }
 
     @Test
@@ -292,7 +311,7 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
 
         // then
         assertMetric(UNKNOWN);
-        assertReconciliationJob(UNKNOWN, null).returns(0, ReconciliationJob::getCount);
+        assertReconciliationJob(UNKNOWN, null).returns(0L, ReconciliationJob::getCount);
     }
 
     @Test
@@ -304,7 +323,7 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
         reconciliationService.reconcile();
 
         // then
-        assertReconciliationJob(SUCCESS, null).returns(0, ReconciliationJob::getCount);
+        assertReconciliationJob(SUCCESS, null).returns(0L, ReconciliationJob::getCount);
     }
 
     @Test
@@ -318,7 +337,7 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
         reconciliationService.reconcile();
 
         // then
-        assertReconciliationJob(FAILURE_FIFTY_BILLION, null).returns(0, ReconciliationJob::getCount);
+        assertReconciliationJob(FAILURE_FIFTY_BILLION, null).returns(0L, ReconciliationJob::getCount);
     }
 
     @Test
@@ -333,7 +352,7 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
         reconciliationService.reconcile();
 
         // then
-        assertReconciliationJob(SUCCESS, balanceFile3).returns(1, ReconciliationJob::getCount);
+        assertReconciliationJob(SUCCESS, balanceFile3).returns(1L, ReconciliationJob::getCount);
     }
 
     @Test
@@ -349,7 +368,7 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
         reconciliationService.reconcile();
 
         // then
-        assertReconciliationJob(SUCCESS, balanceFile3).returns(2, ReconciliationJob::getCount);
+        assertReconciliationJob(SUCCESS, balanceFile3).returns(2L, ReconciliationJob::getCount);
     }
 
     @Test
@@ -365,7 +384,7 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
 
         // then
         assertReconciliationJob(FAILURE_CRYPTO_TRANSFERS, null)
-                .returns(0, ReconciliationJob::getCount)
+                .returns(0L, ReconciliationJob::getCount)
                 .extracting(ReconciliationJob::getError)
                 .asInstanceOf(InstanceOfAssertFactories.STRING)
                 .contains("not equal: value differences={2=(5000000000000000000, 4999999999999999900)}");
@@ -377,7 +396,7 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
         reconciliationService.reconcile();
 
         // then
-        assertReconciliationJob(SUCCESS, last).returns(1, ReconciliationJob::getCount);
+        assertReconciliationJob(SUCCESS, last).returns(1L, ReconciliationJob::getCount);
         assertThat(reconciliationJobRepository.count()).isEqualTo(2);
     }
 
@@ -420,7 +439,7 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
                     .persist();
         });
 
-        domainBuilder.recordFile().persist();
+        domainBuilder.recordFile().customize(r -> r.hapiVersionMinor(20)).persist();
         return accountBalanceFile;
     }
 

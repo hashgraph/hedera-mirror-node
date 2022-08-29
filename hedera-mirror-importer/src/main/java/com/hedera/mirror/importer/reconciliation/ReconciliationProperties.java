@@ -36,8 +36,6 @@ import com.hedera.mirror.importer.util.Utility;
 @ConfigurationProperties("hedera.mirror.importer.reconciliation")
 class ReconciliationProperties {
 
-    private int balanceOffset = 53;
-
     @NotBlank
     private String cron = "0 0 0 * * *"; // Every day at midnight
 
