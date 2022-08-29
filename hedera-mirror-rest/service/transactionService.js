@@ -205,8 +205,6 @@ class TransactionService extends BaseService {
       query += ` ${this.getLimitQuery(params.length)}`;
     }
 
-    let cr = await super.getRows('select * from contract_result', [], 'test');
-    console.log(cr);
     const rows = await super.getRows(query, params, parentFunctionName);
     return rows.map((row) => new TransactionWithEthData(row));
   }

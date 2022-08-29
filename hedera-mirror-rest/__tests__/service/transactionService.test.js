@@ -185,39 +185,44 @@ describe('TransactionService.getTransactionDetailsFromEthHash tests', () => {
   const ethereumTxHash = '4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392';
   const ethereumTxHashBuffer = Buffer.from(ethereumTxHash, 'hex');
 
-  const inputTransactions = [
+  const inputContractResults = [
     {
       consensus_timestamp: 1,
       payerAccountId: 10,
       type: ethereumTxType,
-      result: successTransactionResult,
-      valid_start_timestamp: 1,
+      transaction_result: successTransactionResult,
+      transaction_index: 1,
+      transaction_hash: ethereumTxHash,
     },
     {
       consensus_timestamp: 2,
       payerAccountId: 10,
       type: ethereumTxType,
-      result: duplicateTransactionResult,
-      valid_start_timestamp: 2,
+      transaction_result: duplicateTransactionResult,
+      transaction_index: 1,
+      transaction_hash: ethereumTxHash,
     },
     {
       consensus_timestamp: 3,
       payerAccountId: 10,
       type: ethereumTxType,
-      result: wrongNonceTransactionResult,
-      valid_start_timestamp: 3,
+      transaction_result: wrongNonceTransactionResult,
+      transaction_index: 1,
+      transaction_hash: ethereumTxHash,
     },
     {
       consensus_timestamp: 4,
       payerAccountId: 10,
       type: ethereumTxType,
-      result: successTransactionResult,
-      valid_start_timestamp: 4,
+      transaction_result: successTransactionResult,
+      transaction_index: 1,
+      transaction_hash: ethereumTxHash,
     },
     {
       consensus_timestamp: 5,
       payerAccountId: 10,
       type: contractCreateType,
+      transaction_hash: '96ecf2e0cf1c8f7e2294ec731b2ad1aff95d9736f4ba15b5bbace1ad2766cc1c',
     },
   ];
 
@@ -253,7 +258,7 @@ describe('TransactionService.getTransactionDetailsFromEthHash tests', () => {
   };
 
   beforeEach(async () => {
-    await integrationDomainOps.loadTransactions(inputTransactions);
+    await integrationDomainOps.loadContractResults(inputContractResults);
     await integrationDomainOps.loadEthereumTransactions(inputEthTransaction);
   });
 
@@ -293,5 +298,17 @@ describe('TransactionService.getTransactionDetailsFromEthHash tests', () => {
       1
     );
     expect(pickTransactionFields(transactions)).toIncludeSameMembers([expectedTransaction]);
+  });
+
+  test('Match hedera transactions by eth hash', async () => {
+    const transactions = await TransactionService.getTransactionDetailsFromEthHash(
+      Buffer.from('96ecf2e0cf1c8f7e2294ec731b2ad1aff95d9736f4ba15b5bbace1ad2766cc1c', 'hex'),
+      [duplicateTransactionResult, wrongNonceTransactionResult],
+      1
+    );
+
+    expect(pickTransactionFields(transactions)).toIncludeSameMembers([
+      {consensusTimestamp: 5, transactionHash: '96ecf2e0cf1c8f7e2294ec731b2ad1aff95d9736f4ba15b5bbace1ad2766cc1c'},
+    ]);
   });
 });

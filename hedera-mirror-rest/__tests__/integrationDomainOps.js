@@ -866,7 +866,7 @@ const addContractResult = async (contractResultInput) => {
     gas_limit: 1000,
     gas_used: null,
     payer_account_id: 101,
-    transaction_hash: Buffer.from([1, 2, 3]),
+    transaction_hash: Buffer.from('123', 'hex'),
     transaction_index: 1,
     transaction_result: 22,
     ...contractResultInput,
@@ -890,7 +890,7 @@ const addContractResult = async (contractResultInput) => {
       : contractResult.function_result;
   contractResult.transaction_hash =
     contractResultInput.transaction_hash != null
-      ? Buffer.from(contractResultInput.transaction_hash)
+      ? Buffer.from(contractResultInput.transaction_hash, 'hex')
       : contractResult.transaction_hash;
 
   await insertDomainObject('contract_result', insertFields, contractResult);
