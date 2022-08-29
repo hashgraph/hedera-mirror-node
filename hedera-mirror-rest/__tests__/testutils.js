@@ -67,10 +67,6 @@ const formatSqlQueryString = (query) => {
 
 const getAllAccountAliases = (alias) => [alias, `0.${alias}`, `0.0.${alias}`];
 
-const getBuffer = (inputBytes, defaultBytes) => {
-  return inputBytes != null ? Buffer.from(inputBytes) : defaultBytes;
-};
-
 const getModuleDirname = (importMeta) => path.dirname(fileURLToPath(importMeta.url));
 /**
  * Parse the sql query with positional parameters and an array of corresponding
@@ -240,7 +236,6 @@ export {
   checkSql,
   formatSqlQueryString,
   getAllAccountAliases,
-  getBuffer,
   getModuleDirname,
   invalidBase32Strs,
   parseSqlQueryAndParams,

@@ -278,7 +278,7 @@ class ContractService extends BaseService {
     return rows.map((row) => new ContractLog(row));
   }
 
-  async getContractStateChangesByTimestamps(timestamps) {
+  async getContractStateChangesByTimestamps(timestamps, contractId = null) {
     let params = [timestamps];
     let timestampsOpAndValue = '= $1';
     if (Array.isArray(timestamps)) {
@@ -287,7 +287,17 @@ class ContractService extends BaseService {
       timestampsOpAndValue = `in (${positions})`;
     }
 
-    const whereClause = `where ${ContractStateChange.CONSENSUS_TIMESTAMP} ${timestampsOpAndValue}`;
+    const conditions = [`${ContractStateChange.CONSENSUS_TIMESTAMP} ${timestampsOpAndValue}`];
+    if (contractId) {
+      params.push(contractId);
+      conditions.push(
+        `(${ContractStateChange.MIGRATION} is false or ${ContractStateChange.CONTRACT_ID} = $${params.length})`
+      );
+    } else {
+      conditions.push(`${ContractStateChange.MIGRATION} is false`);
+    }
+
+    const whereClause = 'where ' + conditions.join(' and ');
     const orderClause = `order by ${ContractStateChange.CONSENSUS_TIMESTAMP}, ${ContractStateChange.CONTRACT_ID}, ${ContractStateChange.SLOT}`;
     const query = [ContractService.contractStateChangesQuery, whereClause, orderClause].join('\n');
     const rows = await super.getRows(query, params, 'getContractStateChangesByTimestamps');
@@ -319,14 +329,14 @@ class ContractService extends BaseService {
         `No contract with the given evm address: ${JSONStringify(evmAddressFilter)} has been found.`
       );
     }
-    //since evm_address is not an unique index, it is important to make this check.
+    // since evm_address is not a unique index, it is important to make this check.
     if (rows.length > 1) {
       throw new Error(
         `More than one contract with the evm address ${JSONStringify(evmAddressFilter)} have been found.`
       );
     }
-    const contractId = rows[0];
-    return BigInt(contractId.id);
+
+    return rows[0].id;
   }
 
   async computeContractIdFromString(contractIdValue) {
