@@ -44,6 +44,7 @@ import org.assertj.core.api.ObjectAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
@@ -61,6 +62,7 @@ import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
+@Transactional
 class BalanceReconciliationServiceTest extends IntegrationTest {
 
     private final DomainBuilder domainBuilder;
