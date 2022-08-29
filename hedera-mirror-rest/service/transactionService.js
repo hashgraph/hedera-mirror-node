@@ -21,7 +21,7 @@
 import _ from 'lodash';
 
 import BaseService from './baseService';
-import {EthereumTransaction, Transaction, TransactionWithEthData} from '../model';
+import {ContractResult, EthereumTransaction, Transaction, TransactionWithEthData} from '../model';
 import {OrderSpec} from '../sql';
 
 const ethTransactionReplaceString = `$ethTransactionWhere`;
@@ -92,8 +92,20 @@ class TransactionService extends BaseService {
     where ${Transaction.PAYER_ACCOUNT_ID} = $1
       and ${Transaction.VALID_START_NS} = $2`;
 
-  static transactionDetailsFromEthHashQuery = `${this.selectTransactionDetailsBaseQuery}
-    where ${EthereumTransaction.getFullName(EthereumTransaction.HASH)} = $1`;
+  static selectTransactionDetailsByHash = `${this.ethTransactionTableCTE}
+    select
+      ${ContractResult.CONSENSUS_TIMESTAMP},
+      ${ContractResult.PAYER_ACCOUNT_ID},
+      ${ContractResult.TRANSACTION_RESULT} as result,
+      ${ContractResult.TRANSACTION_INDEX} as index,
+      ${ContractResult.TRANSACTION_HASH},
+      ${EthereumTransaction.tableAlias}.*
+    from ${ContractResult.tableName} ${ContractResult.tableAlias}
+    left join ${EthereumTransaction.tableAlias}
+    on ${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)} = ethConsensus`;
+
+  static transactionDetailsFromEthHashQuery = `${this.selectTransactionDetailsByHash}
+    where ${ContractResult.TRANSACTION_HASH} = $1`;
 
   /**
    * Retrieves the transaction for the given timestamp
@@ -129,7 +141,7 @@ class TransactionService extends BaseService {
         `${EthereumTransaction.PAYER_ACCOUNT_ID} = $1`
       ),
       [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()],
-      'getTransactionDetailsFromEthHash',
+      'getTransactionDetailsFromTransactionId',
       excludeTransactionResults,
       nonce
     );
@@ -146,7 +158,7 @@ class TransactionService extends BaseService {
       excludeTransactionResults,
       undefined,
       limit,
-      this.getOrderByQuery(OrderSpec.from(Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP), 'asc'))
+      this.getOrderByQuery(OrderSpec.from(ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP), 'asc'))
     );
   }
 
@@ -165,17 +177,22 @@ class TransactionService extends BaseService {
       and ${Transaction.getFullName(Transaction.NONCE)} = $${params.length}`;
     }
 
+    const resultField =
+      parentFunctionName == 'getTransactionDetailsFromEthHash'
+        ? ContractResult.getFullName(ContractResult.TRANSACTION_RESULT)
+        : Transaction.getFullName(Transaction.RESULT);
+
     if (excludeTransactionResults !== undefined) {
       if (Array.isArray(excludeTransactionResults)) {
         if (excludeTransactionResults.length > 0) {
           const start = params.length + 1;
           params.push(...excludeTransactionResults);
           const positions = _.range(start, params.length + 1).map((p) => `$${p}`);
-          query += ` and ${Transaction.getFullName(Transaction.RESULT)} not in (${positions})`;
+          query += ` and ${resultField} not in (${positions})`;
         }
       } else {
         params.push(excludeTransactionResults);
-        query += ` and ${Transaction.getFullName(Transaction.RESULT)} <> $${params.length}`;
+        query += ` and ${resultField} <> $${params.length}`;
       }
     }
 
@@ -188,6 +205,8 @@ class TransactionService extends BaseService {
       query += ` ${this.getLimitQuery(params.length)}`;
     }
 
+    let cr = await super.getRows('select * from contract_result', [], 'test');
+    console.log(cr);
     const rows = await super.getRows(query, params, parentFunctionName);
     return rows.map((row) => new TransactionWithEthData(row));
   }
