@@ -784,7 +784,7 @@ paths:
           $ref: '#/components/responses/NotFoundError'
       tags:
         - topics
-  /api/v1/topics/messages/{consensusTimestamp}:
+  /api/v1/topics/messages/{timestamp}:
     get:
       summary: Get topic message by consensusTimestamp
       description: Returns a topic message the given the consensusTimestamp.

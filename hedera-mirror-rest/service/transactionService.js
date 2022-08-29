@@ -119,7 +119,7 @@ class TransactionService extends BaseService {
    *
    * @param {TransactionId} transactionId transactionId
    * @param {Number} nonce nonce of the transaction
-   * @param {Number[]|Number} excludeTransactionResults Transaction results to exclude, can be a list or a single result
+   * @param {string[]|string} excludeTransactionResults Transaction results to exclude, can be a list or a single result
    * @return {Promise<Transaction[]>} transactions subset
    */
   async getTransactionDetailsFromTransactionId(transactionId, nonce = undefined, excludeTransactionResults = []) {

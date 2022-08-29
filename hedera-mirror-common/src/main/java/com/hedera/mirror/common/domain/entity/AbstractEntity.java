@@ -50,7 +50,7 @@ import com.hedera.mirror.common.util.DomainUtils;
 @Data
 @MappedSuperclass
 @NoArgsConstructor
-@SuperBuilder
+@SuperBuilder(toBuilder = true)
 @TypeDef(
         defaultForType = Range.class,
         typeClass = PostgreSQLGuavaRangeType.class
@@ -170,16 +170,16 @@ public abstract class AbstractEntity implements History {
     }
 
     // Necessary since Lombok doesn't use our setters for builders
-    public abstract static class AbstractEntityBuilder<C, B extends AbstractEntityBuilder> {
+    public abstract static class AbstractEntityBuilder<C extends AbstractEntity, B extends AbstractEntityBuilder<C, B>> {
         public B key(byte[] key) {
             this.key = key;
             this.publicKey = DomainUtils.getPublicKey(key);
-            return (B) this;
+            return self();
         }
 
         public B memo(String memo) {
             this.memo = DomainUtils.sanitize(memo);
-            return (B) this;
+            return self();
         }
     }
 }
