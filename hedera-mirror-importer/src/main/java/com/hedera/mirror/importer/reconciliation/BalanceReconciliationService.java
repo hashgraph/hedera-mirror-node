@@ -169,9 +169,11 @@ class BalanceReconciliationService {
     }
 
     private ReconciliationJob getLatestJob() {
+        long startDate = DomainUtils.convertToNanosMax(reconciliationProperties.getStartDate());
         var consensusTimestamp = reconciliationJobRepository.findLatest()
                 .map(ReconciliationJob::getConsensusTimestamp)
-                .orElseGet(() -> DomainUtils.convertToNanosMax(reconciliationProperties.getStartDate()));
+                .orElse(startDate);
+        consensusTimestamp = Math.max(startDate, consensusTimestamp);
 
         var reconciliationJob = ReconciliationJob.builder()
                 .consensusTimestamp(consensusTimestamp)

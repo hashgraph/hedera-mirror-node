@@ -356,6 +356,23 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
     }
 
     @Test
+    void startDateAfterLastRun() {
+        // given
+        var balanceFile1 = balance(Map.of(2L, 1L)); // Would fail if checked
+        var balanceFile2 = balance(Map.of(2L, FIFTY_BILLION_HBARS));
+        var balanceFile3 = balance(Map.of(2L, FIFTY_BILLION_HBARS));
+        domainBuilder.reconciliationJob().customize(r -> r.consensusTimestamp(balanceFile1.getConsensusTimestamp()))
+                .persist();
+        reconciliationProperties.setStartDate(Instant.ofEpochSecond(0L, balanceFile2.getConsensusTimestamp()));
+
+        // when
+        reconciliationService.reconcile();
+
+        // then
+        assertReconciliationJob(SUCCESS, balanceFile3).returns(1L, ReconciliationJob::getCount);
+    }
+
+    @Test
     void endDate() {
         // given
         balance(Map.of(2L, FIFTY_BILLION_HBARS));
