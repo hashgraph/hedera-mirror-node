@@ -117,6 +117,7 @@ associated with the downloading of stream files are paid for by the requester an
 
 - Components
   - [gRPC API](docs/grpc/README.md)
+  - [Importer](docs/importer/README.md)
   - [Monitor](docs/monitor/README.md)
   - [REST API](docs/rest/README.md)
   - [Rosetta API](docs/rosetta/README.md)

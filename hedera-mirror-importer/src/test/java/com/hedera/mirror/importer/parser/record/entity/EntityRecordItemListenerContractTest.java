@@ -918,6 +918,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                     .hasSize(1)
                     .first()
                     .returns(contractAction.getCallDepth(), ContractAction::getCallDepth)
+                    .returns(contractAction.getCallOperationTypeValue(), ContractAction::getCallOperationType)
                     .returns(contractAction.getCallTypeValue(), ContractAction::getCallType)
                     .returns(contractAction.getGas(), ContractAction::getGas)
                     .returns(contractAction.getGasUsed(), ContractAction::getGasUsed)

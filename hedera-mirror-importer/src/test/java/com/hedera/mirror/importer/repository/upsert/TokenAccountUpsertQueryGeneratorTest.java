@@ -53,7 +53,7 @@ class TokenAccountUpsertQueryGeneratorTest extends IntegrationTest {
     void insertQuery() {
         var entityMetadata = entityMetadataRegistry.lookup(TokenAccount.class);
         var columns = entityMetadata.columns("{0}");
-        var insertQuery = upsertQueryGenerator.getInsertQuery();
+        var insertQuery = upsertQueryGenerator.getUpsertQuery();
         assertThat(insertQuery).isNotBlank().containsIgnoringWhitespaces(columns);
     }
 
@@ -61,10 +61,5 @@ class TokenAccountUpsertQueryGeneratorTest extends IntegrationTest {
     void temporaryTableName() {
         var temporaryTableName = upsertQueryGenerator.getTemporaryTableName();
         assertThat(temporaryTableName).isEqualTo("token_account_temp");
-    }
-
-    @Test
-    void updateQuery() {
-        assertThat(upsertQueryGenerator.getUpdateQuery()).isNull();
     }
 }
