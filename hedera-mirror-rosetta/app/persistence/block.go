@@ -59,7 +59,7 @@ const (
                                       index,
                                       prev_hash
                                     from record_file p
-                                    where hash  = @hash`
+                                    where hash = @hash collate "C"`
 
 	// selectGenesis - Selects the first block whose consensus_end is after the genesis account balance
 	// timestamp. Return the record file with adjusted consensus start
