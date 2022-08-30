@@ -172,7 +172,7 @@ alter table record_file
     add constraint record_file__pk primary key (consensus_end, node_account_id);
 create index if not exists record_file__index_node
     on record_file (index);
-create unique index if not exists record_file__hash
+create index if not exists record_file__hash
     on record_file (hash collate "C");
 
 -- schedule
