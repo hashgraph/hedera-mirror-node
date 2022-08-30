@@ -23,6 +23,7 @@ jobs:
   install:
     runs-on: ubuntu-latest
     env:
+      GIT_REPO: ${{ github.repository }}
       IMAGE_TAG: ci-${{ github.sha }}
     steps:
       - name: Checkout
