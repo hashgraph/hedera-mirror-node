@@ -11,7 +11,7 @@ import org.hyperledger.besu.evm.worldstate.WorldView;
  */
 public interface HederaMutableWorldState extends WorldState, WorldView {
     /**
-     * Given a the EVM address of a sponsoring account, returns an EVM address appropriate for a new
+     * Given the EVM address of a sponsoring account, returns an EVM address appropriate for a new
      * contract.
      *
      * <p><b>Important: </b>Since the new contract will <i>also</i> be a Hedera entity that has a
