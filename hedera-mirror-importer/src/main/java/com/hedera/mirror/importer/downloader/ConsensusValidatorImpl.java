@@ -76,21 +76,8 @@ public class ConsensusValidatorImpl implements ConsensusValidator {
         if (nodeStakes.isEmpty()) {
             var nodeAccountIDPubKeyMap = addressBook.getNodeAccountIDPubKeyMap();
             totalStake = nodeAccountIDPubKeyMap.size();
-
-            var verifiedSignatureCount = signatureHashMap.size();
-            if (!canReachConsensus(verifiedSignatureCount, totalStake)) {
-                throw new SignatureVerificationException(String.format(
-                        "Insufficient downloaded signature file count, requires at least %.03f to reach consensus, " +
-                                "got %d out of %d for file %s",
-                        commonDownloaderProperties.getConsensusRatio(),
-                        verifiedSignatureCount,
-                        totalStake,
-                        filename));
-            }
         } else {
-            var nodeIdToNodeAccountIdMap = new HashMap<Long, EntityId>();
-            addressBook.getEntries().stream()
-                    .forEach(entry -> nodeIdToNodeAccountIdMap.put(entry.getNodeId(), entry.getNodeAccountId()));
+            var nodeIdToNodeAccountIdMap = addressBook.getNodeIdNodeAccountIdMap();
             for (var nodeStake : nodeStakes) {
                 totalStake += nodeStake.getStake();
                 var nodeAccountId = nodeIdToNodeAccountIdMap.get(nodeStake.getNodeId());
@@ -104,18 +91,18 @@ public class ConsensusValidatorImpl implements ConsensusValidator {
         }
 
         long consensusCount = 0;
+        var nodeAccountIds = signatureHashMap.values().stream().map(FileStreamSignature::getNodeAccountId)
+                .collect(Collectors.toSet());
         for (String key : signatureHashMap.keySet()) {
             var validatedSignatures = signatureHashMap.get(key);
-            var nodeAccountIds = validatedSignatures.stream().map(FileStreamSignature::getNodeAccountId)
-                    .collect(Collectors.toSet());
-            long staked = 0L;
+            long stake = 0L;
             for (var signedNodeAccountId : nodeAccountIds) {
                 // If the map has no entry for the node account id, a default value of 1 is used to count a signature.
-                staked += nodeAccountIdToStakeMap.getOrDefault(signedNodeAccountId, 1L);
+                stake += nodeAccountIdToStakeMap.getOrDefault(signedNodeAccountId, 1L);
             }
 
-            if (canReachConsensus(staked, totalStake)) {
-                consensusCount += staked;
+            if (canReachConsensus(stake, totalStake)) {
+                consensusCount += stake;
                 validatedSignatures.forEach(s -> s.setStatus(FileStreamSignature.SignatureStatus.CONSENSUS_REACHED));
             }
         }
@@ -127,7 +114,7 @@ public class ConsensusValidatorImpl implements ConsensusValidator {
         throw new SignatureVerificationException(String.format("Consensus not reached for file %s", filename));
     }
 
-    private boolean canReachConsensus(long staked, long totalStaked) {
-        return staked >= Math.ceil(totalStaked * commonDownloaderProperties.getConsensusRatio());
+    private boolean canReachConsensus(long stake, long totalStake) {
+        return stake >= Math.ceil(totalStake * commonDownloaderProperties.getConsensusRatio());
     }
 }

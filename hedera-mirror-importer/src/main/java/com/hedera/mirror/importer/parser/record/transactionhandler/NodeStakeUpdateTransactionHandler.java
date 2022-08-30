@@ -42,11 +42,9 @@ import com.hedera.mirror.importer.util.Utility;
 @Named
 @RequiredArgsConstructor
 class NodeStakeUpdateTransactionHandler implements TransactionHandler {
-
-    private final NodeStakeRepository nodeStakeRepository;
-
     private final EntityListener entityListener;
     private final EntityStakeCalculator entityStakeCalculator;
+    private final NodeStakeRepository nodeStakeRepository;
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {

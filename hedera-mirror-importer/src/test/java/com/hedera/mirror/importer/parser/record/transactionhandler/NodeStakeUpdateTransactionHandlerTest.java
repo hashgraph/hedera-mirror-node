@@ -66,7 +66,7 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new NodeStakeUpdateTransactionHandler(nodeStakeRepository, entityListener, entityStakeCalculator);
+        return new NodeStakeUpdateTransactionHandler(entityListener, entityStakeCalculator, nodeStakeRepository);
     }
 
     @Override
@@ -97,7 +97,7 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
                 .build();
         var transaction = new Transaction();
         transactionHandler.updateTransaction(transaction, recordItem);
-        verifyNoInteractions(entityListener, entityStakeCalculator);
+        verifyNoInteractions(entityListener, entityStakeCalculator, nodeStakeRepository);
     }
 
     @Test
@@ -131,6 +131,7 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
         verify(entityStakeCalculator).calculate(nodeStakeCollection.capture());
         assertThat(nodeStakes.getAllValues()).containsExactlyInAnyOrderElementsOf(expectedNodeStakes);
         assertThat(nodeStakeCollection.getValue()).containsExactlyInAnyOrderElementsOf(expectedNodeStakes);
+        verify(nodeStakeRepository).evictNodeStakeCache();
         assertThat(networkStakes.getAllValues())
                 .hasSize(1)
                 .first()
@@ -162,22 +163,7 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
         verify(entityListener).onNetworkStake(networkStakes.capture());
         verify(entityListener, never()).onNodeStake(nodeStakes.capture());
         verify(entityStakeCalculator, never()).calculate(nodeStakeCollection.capture());
-    }
-
-    @Test
-    void evictNodeStakeCache() {
-        // given a node stake transaction
-        long nodeStake1 = 5_000_000 * TINYBARS_IN_ONE_HBAR;
-        var nodeStakeProto1 = getNodeStakeProto(nodeStake1, nodeStake1);
-        var recordItem = recordItemBuilder.nodeStakeUpdate()
-                .transactionBody(b -> b.clearNodeStake().addNodeStake(nodeStakeProto1))
-                .build();
-
-        // when
-        transactionHandler.updateTransaction(null, recordItem);
-
-        // then
-        verify(nodeStakeRepository).evictNodeStakeCache();
+        verify(nodeStakeRepository, never()).evictNodeStakeCache();
     }
 
     private com.hederahashgraph.api.proto.java.NodeStake getNodeStakeProto(long stake, long stakeRewarded) {

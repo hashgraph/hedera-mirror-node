@@ -20,26 +20,28 @@ package com.hedera.mirror.importer.downloader;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
 import java.security.KeyPairGenerator;
 import java.security.PublicKey;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import javax.annotation.Resource;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.addressbook.AddressBook;
-import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.importer.IntegrationTest;
@@ -70,11 +72,9 @@ class ConsensusValidatorImplTest extends IntegrationTest {
     void setup() {
         consensusValidator = new ConsensusValidatorImpl(addressBookService, commonDownloaderProperties,
                 nodeStakeRepository);
-        var addressBookEntry3 = AddressBookEntry.builder().nodeId(100).nodeAccountId(entity3).build();
-        var addressBookEntry4 = AddressBookEntry.builder().nodeId(101).nodeAccountId(entity4).build();
-        var addressBookEntry5 = AddressBookEntry.builder().nodeId(102).nodeAccountId(entity5).build();
-        when(currentAddressBook.getEntries()).thenReturn(List.of(addressBookEntry3, addressBookEntry4,
-                addressBookEntry5));
+        var nodeIdNodeAccountIdMap = Map.of(100L, entity3, 101L, entity4, 102L, entity5);
+        when(addressBookService.getCurrent()).thenReturn(currentAddressBook);
+        when(currentAddressBook.getNodeIdNodeAccountIdMap()).thenReturn(nodeIdNodeAccountIdMap);
         when(addressBookService.getCurrent()).thenReturn(currentAddressBook);
         when(commonDownloaderProperties.getConsensusRatio()).thenReturn(0.333f);
     }
@@ -85,17 +85,42 @@ class ConsensusValidatorImplTest extends IntegrationTest {
                 .build());
         nodeStakes(3, 3, 3);
         var fileStreamSignatures = List.of(buildFileStreamSignature());
-
-        Exception e = assertThrows(SignatureVerificationException.class, () -> consensusValidator
-                .validate(fileStreamSignatures));
-        assertTrue(e.getMessage().contains("Consensus not reached for file"));
+        assertConsensusNotReached(fileStreamSignatures);
     }
 
     @Test
-    void testVerifiedWithOneThirdNodeStakeConsensus() {
+    void testVerifiedWithOneThirdNodeStakeConsensusMissingSignatures() {
         nodeStakes(3, 3, 3);
         var fileStreamSignatures = List.of(buildFileStreamSignature());
+
         consensusValidator.validate(fileStreamSignatures);
+        assertThat(fileStreamSignatures)
+                .map(FileStreamSignature::getStatus)
+                .containsOnly(FileStreamSignature.SignatureStatus.CONSENSUS_REACHED);
+    }
+
+    @Test
+    void testVerifiedWithOneThirdNodeStakeConsensusNonVerifiedSignatures() {
+        nodeStakes(3, 3, 3);
+
+        FileStreamSignature fileStreamSignatureNode3 = buildFileStreamSignature();
+        FileStreamSignature fileStreamSignatureNode4 = buildFileStreamSignature();
+        fileStreamSignatureNode4.setNodeAccountId(entity4);
+        fileStreamSignatureNode4.setFileHash(fileStreamSignatureNode3.getFileHash());
+        fileStreamSignatureNode4.setStatus(FileStreamSignature.SignatureStatus.DOWNLOADED);
+        FileStreamSignature fileStreamSignatureNode5 = buildFileStreamSignature();
+        fileStreamSignatureNode5.setNodeAccountId(entity5);
+        fileStreamSignatureNode5.setFileHash(fileStreamSignatureNode3.getFileHash());
+        fileStreamSignatureNode5.setStatus(FileStreamSignature.SignatureStatus.DOWNLOADED);
+
+        var fileStreamSignatures = List.of(fileStreamSignatureNode3, fileStreamSignatureNode4,
+                fileStreamSignatureNode5);
+
+        consensusValidator.validate(fileStreamSignatures);
+        assertThat(fileStreamSignatures)
+                .map(FileStreamSignature::getStatus)
+                .containsExactly(FileStreamSignature.SignatureStatus.CONSENSUS_REACHED,
+                        FileStreamSignature.SignatureStatus.DOWNLOADED, FileStreamSignature.SignatureStatus.DOWNLOADED);
     }
 
     @Test
@@ -105,10 +130,71 @@ class ConsensusValidatorImplTest extends IntegrationTest {
                 buildFileStreamSignature(),
                 buildFileStreamSignature()
         );
+        assertConsensusNotReached(fileStreamSignatures);
+    }
+
+    @Test
+    void testVerificationWithNodeStakeConsensusMissingSignature() {
+        nodeStakes(3, 4, 3);
+
+        var fileStreamSignatureNode3 = buildFileStreamSignature();
+        var fileStreamSignatureNode5 = buildFileStreamSignature();
+        fileStreamSignatureNode5.setNodeAccountId(entity5);
+        var fileStreamSignatures = List.of(
+                fileStreamSignatureNode3,
+                fileStreamSignatureNode5
+        );
+
+        consensusValidator.validate(fileStreamSignatures);
+        assertThat(fileStreamSignatures)
+                .map(FileStreamSignature::getStatus)
+                .containsExactly(FileStreamSignature.SignatureStatus.CONSENSUS_REACHED,
+                        FileStreamSignature.SignatureStatus.CONSENSUS_REACHED);
+    }
+
+    @Test
+    void testFailedVerificationInsufficientStakeSignatureMissing() {
+        nodeStakes(1, 5, 1);
+
+        var fileStreamSignatureNode3 = buildFileStreamSignature();
+        var fileStreamSignatureNode5 = buildFileStreamSignature();
+        fileStreamSignatureNode5.setNodeAccountId(entity5);
+        var fileStreamSignatures = List.of(
+                fileStreamSignatureNode3,
+                fileStreamSignatureNode5
+        );
+
+        assertConsensusNotReached(fileStreamSignatures);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = FileStreamSignature.SignatureStatus.class, names = {"DOWNLOADED", "CONSENSUS_REACHED",
+            "NOT_FOUND"})
+    void testFailedVerificationInsufficientStake(FileStreamSignature.SignatureStatus status) {
+        nodeStakes(1, 5, 1);
+
+        var fileStreamSignatureNode3 = buildFileStreamSignature();
+        FileStreamSignature fileStreamSignatureNode4 = buildFileStreamSignature();
+        fileStreamSignatureNode4.setNodeAccountId(entity4);
+        fileStreamSignatureNode4.setStatus(status);
+        fileStreamSignatureNode4.setFileHash(fileStreamSignatureNode3.getFileHash());
+        var fileStreamSignatureNode5 = buildFileStreamSignature();
+        fileStreamSignatureNode5.setNodeAccountId(entity5);
+        var fileStreamSignatures = List.of(
+                fileStreamSignatureNode3,
+                fileStreamSignatureNode4,
+                fileStreamSignatureNode5
+        );
+        var signatures = fileStreamSignatures.stream().map(FileStreamSignature::getStatus).toList();
 
         Exception e = assertThrows(SignatureVerificationException.class, () -> consensusValidator
                 .validate(fileStreamSignatures));
         assertTrue(e.getMessage().contains("Consensus not reached for file"));
+
+        // Assert that signature status is unchanged
+        assertThat(fileStreamSignatures)
+                .map(FileStreamSignature::getStatus)
+                .containsExactlyElementsOf(signatures);
     }
 
     @Test
@@ -128,10 +214,7 @@ class ConsensusValidatorImplTest extends IntegrationTest {
                 .persist();
 
         var fileStreamSignatures = List.of(buildFileStreamSignature());
-
-        Exception e = assertThrows(SignatureVerificationException.class, () -> consensusValidator
-                .validate(fileStreamSignatures));
-        assertTrue(e.getMessage().contains("Consensus not reached for file"));
+        assertConsensusNotReached(fileStreamSignatures);
     }
 
     @Test
@@ -150,26 +233,24 @@ class ConsensusValidatorImplTest extends IntegrationTest {
         var fileStreamSignatures = List.of(fileStreamSignatureNode3, fileStreamSignatureNode4,
                 fileStreamSignatureNode5);
 
-        consensusValidator
-                .validate(fileStreamSignatures);
+        consensusValidator.validate(fileStreamSignatures);
+        assertThat(fileStreamSignatures)
+                .map(FileStreamSignature::getStatus)
+                .containsOnly(FileStreamSignature.SignatureStatus.CONSENSUS_REACHED);
     }
 
     @Test
     void testFailedVerificationNodeStakeConsensus() {
         nodeStakes(2, 3, 3);
         var fileStreamSignatures = List.of(buildFileStreamSignature());
-        Exception e = assertThrows(SignatureVerificationException.class, () -> consensusValidator
-                .validate(fileStreamSignatures));
-        assertTrue(e.getMessage().contains("Consensus not reached for file"));
+        assertConsensusNotReached(fileStreamSignatures);
     }
 
     @Test
     void testFailedVerificationNoSignaturesNodeStakeConsensus() {
         nodeStakes(3, 3, 3);
-        Collection<FileStreamSignature> emptyList = Collections.emptyList();
-        Exception e = assertThrows(SignatureVerificationException.class, () -> consensusValidator
-                .validate(emptyList));
-        assertTrue(e.getMessage().contains("Consensus not reached for file"));
+        List<FileStreamSignature> emptyList = Collections.emptyList();
+        assertConsensusNotReached(emptyList);
     }
 
     @Test
@@ -178,8 +259,10 @@ class ConsensusValidatorImplTest extends IntegrationTest {
         nodeStakes(1, 3, 3);
         var fileStreamSignatures = List.of(buildFileStreamSignature());
 
-        consensusValidator
-                .validate(fileStreamSignatures);
+        consensusValidator.validate(fileStreamSignatures);
+        assertThat(fileStreamSignatures)
+                .map(FileStreamSignature::getStatus)
+                .doesNotContain(FileStreamSignature.SignatureStatus.CONSENSUS_REACHED);
     }
 
     @Test
@@ -198,8 +281,11 @@ class ConsensusValidatorImplTest extends IntegrationTest {
         var fileStreamSignatures = List.of(fileStreamSignatureNode3, fileStreamSignatureNode4,
                 fileStreamSignatureNode5);
 
-        consensusValidator
-                .validate(fileStreamSignatures);
+        consensusValidator.validate(fileStreamSignatures);
+        assertThat(fileStreamSignatures)
+                .map(FileStreamSignature::getStatus)
+                .containsExactly(FileStreamSignature.SignatureStatus.CONSENSUS_REACHED,
+                        FileStreamSignature.SignatureStatus.DOWNLOADED, FileStreamSignature.SignatureStatus.DOWNLOADED);
     }
 
     @SneakyThrows
@@ -226,8 +312,10 @@ class ConsensusValidatorImplTest extends IntegrationTest {
         var fileStreamSignatures = List.of(fileStreamSignatureNode3, fileStreamSignatureNode4,
                 fileStreamSignatureNode5);
 
-        consensusValidator
-                .validate(fileStreamSignatures);
+        consensusValidator.validate(fileStreamSignatures);
+        assertThat(fileStreamSignatures)
+                .map(FileStreamSignature::getStatus)
+                .containsOnly(FileStreamSignature.SignatureStatus.CONSENSUS_REACHED);
     }
 
     @SneakyThrows
@@ -262,12 +350,16 @@ class ConsensusValidatorImplTest extends IntegrationTest {
                 fileStreamSignatureNode5,
                 fileStreamSignatureNode6
         );
+        assertConsensusNotReached(fileStreamSignatures);
+    }
 
+    private void assertConsensusNotReached(List<FileStreamSignature> fileStreamSignatures) {
         Exception e = assertThrows(SignatureVerificationException.class, () -> consensusValidator
                 .validate(fileStreamSignatures));
-        assertTrue(e.getMessage()
-                .contains("Insufficient downloaded signature file count, requires at least 0.333 to reach consensus, " +
-                        "got 1 out of 4 for file"));
+        assertTrue(e.getMessage().contains("Consensus not reached for file"));
+        assertThat(fileStreamSignatures)
+                .map(FileStreamSignature::getStatus)
+                .doesNotContain(FileStreamSignature.SignatureStatus.CONSENSUS_REACHED);
     }
 
     private void nodeStakes(long... stakes) {
