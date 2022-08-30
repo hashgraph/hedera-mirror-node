@@ -42,6 +42,7 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -87,6 +88,8 @@ import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowanceHistory;
 import com.hedera.mirror.common.domain.event.EventFile;
 import com.hedera.mirror.common.domain.file.FileData;
+import com.hedera.mirror.common.domain.job.ReconciliationJob;
+import com.hedera.mirror.common.domain.job.ReconciliationStatus;
 import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
@@ -600,6 +603,16 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
+    public DomainWrapper<ReconciliationJob, ReconciliationJob.ReconciliationJobBuilder> reconciliationJob() {
+        var builder = ReconciliationJob.builder()
+                .consensusTimestamp(timestamp())
+                .error("")
+                .status(ReconciliationStatus.SUCCESS)
+                .timestampStart(instant())
+                .timestampEnd(instant());
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
     public DomainWrapper<RecordFile, RecordFile.RecordFileBuilder> recordFile() {
         // reset transaction index
         transactionIndex.set(0);
@@ -817,6 +830,11 @@ public class DomainBuilder {
 
     public long id() {
         return id.incrementAndGet();
+    }
+
+    // SQL timestamp type only supports up to microsecond granularity
+    private Instant instant() {
+        return now.truncatedTo(ChronoUnit.MILLIS).plusMillis(id());
     }
 
     public byte[] key() {

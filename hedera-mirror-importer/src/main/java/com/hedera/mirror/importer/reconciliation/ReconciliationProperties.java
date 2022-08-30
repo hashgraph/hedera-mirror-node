@@ -20,10 +20,12 @@ package com.hedera.mirror.importer.reconciliation;
  * ‍
  */
 
+import java.time.Duration;
 import java.time.Instant;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
+import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
@@ -37,14 +39,20 @@ class ReconciliationProperties {
     @NotBlank
     private String cron = "0 0 0 * * *"; // Every day at midnight
 
+    @DurationMin(millis = 0)
+    private Duration delay = Duration.ofSeconds(1L);
+
     private boolean enabled = true;
 
     @NotNull
     private Instant endDate = Utility.MAX_INSTANT_LONG;
 
+    private RemediationStrategy remediationStrategy = RemediationStrategy.FAIL;
+
     @NotNull
     private Instant startDate = Instant.EPOCH;
 
+    // We can't rely upon the NFT count in the balance file and there's not an easy way to just reconcile fungible
     private boolean token = false;
 
     public void setStartDate(Instant startDate) {
@@ -54,5 +62,11 @@ class ReconciliationProperties {
         }
 
         this.startDate = startDate;
+    }
+
+    public enum RemediationStrategy {
+        ACCUMULATE, // Continue processing after transfer failures without resetting balances for the next iteration
+        FAIL,       // Halt processing on any reconciliation failure
+        RESET,      // Continue processing after transfer failures with corrected balances
     }
 }

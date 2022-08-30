@@ -459,6 +459,17 @@ create table if not exists prng
 );
 comment on table prng is 'Pseudorandom number generator';
 
+create table if not exists reconciliation_job
+(
+    consensus_timestamp bigint      not null,
+    count               bigint      not null,
+    error               text        not null default '',
+    timestamp_end       timestamptz null,
+    timestamp_start     timestamptz not null,
+    status              smallint    not null
+);
+comment on table reconciliation_job is 'Reconciliation job status';
+
 -- record_file
 create table if not exists record_file
 (
