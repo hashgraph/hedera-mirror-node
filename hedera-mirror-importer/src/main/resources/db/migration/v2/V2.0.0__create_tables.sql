@@ -180,12 +180,13 @@ comment on table contract_result is 'Crypto contract execution results';
 
 create table if not exists contract_state_change
 (
-    consensus_timestamp bigint not null,
-    contract_id         bigint not null,
-    payer_account_id    bigint not null,
-    slot                bytea  not null,
-    value_read          bytea  not null,
-    value_written       bytea  null
+    consensus_timestamp bigint  not null,
+    contract_id         bigint  not null,
+    migration           boolean not null default false,
+    payer_account_id    bigint  not null,
+    slot                bytea   not null,
+    value_read          bytea   not null,
+    value_written       bytea   null
 );
 comment on table contract_state_change is 'Contract execution state changes';
 

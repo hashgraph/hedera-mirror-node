@@ -20,10 +20,10 @@
 
 import _ from 'lodash';
 
+import {NotFoundError} from '../../errors';
 import {ContractService} from '../../service';
 import {assertSqlQueryEqual} from '../testutils';
 import integrationDomainOps from '../integrationDomainOps';
-import {NotFoundError} from '../../errors';
 import {setupIntegrationTest} from '../integrationUtils';
 
 setupIntegrationTest();
@@ -358,7 +358,7 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
       {
         contract_id: 2,
         consensus_timestamp: 1,
-        function_parameters: '\\x0D',
+        function_parameters: '0x0D',
         amount: 10,
       },
     ]);
@@ -382,14 +382,14 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
       {
         contract_id: 1,
         consensus_timestamp: 1,
-        function_parameters: '\\x0D',
+        function_parameters: '0x0D',
         amount: 10,
         payer_account_id: 123,
       },
       {
         contract_id: 2,
         consensus_timestamp: 2,
-        function_parameters: '\\x0D',
+        function_parameters: '0x0D',
         amount: 10,
         payer_account_id: 123,
       },
@@ -415,35 +415,35 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
       {
         contract_id: 2,
         consensus_timestamp: 1,
-        function_parameters: '\\x0D',
+        function_parameters: '0x0D',
         amount: 10,
         payer_account_id: 123,
       },
       {
         contract_id: 2,
         consensus_timestamp: 2,
-        function_parameters: '\\x0D',
+        function_parameters: '0x0D',
         amount: 10,
         payer_account_id: 123,
       },
       {
         contract_id: 3,
         consensus_timestamp: 3,
-        function_parameters: '\\x0D',
+        function_parameters: '0x0D',
         amount: 10,
         payer_account_id: 124,
       },
       {
         contract_id: 3,
         consensus_timestamp: 4,
-        function_parameters: '\\x0D',
+        function_parameters: '0x0D',
         amount: 10,
         payer_account_id: 124,
       },
       {
         contract_id: 3,
         consensus_timestamp: 5,
-        function_parameters: '\\x0D',
+        function_parameters: '0x0D',
         amount: 10,
         payer_account_id: 124,
       },
@@ -479,34 +479,34 @@ describe('ContractService.getContractLogsByTimestamps tests', () => {
     {
       consensus_timestamp: 1,
       contract_id: 1,
-      data: '\\x0012',
+      data: '0x0012',
       index: 0,
       root_contract_id: 1,
-      topic0: '\\x000a',
+      topic0: '0x000a',
     },
     {
       consensus_timestamp: 1,
       contract_id: 2,
-      data: '\\x0013',
+      data: '0x0013',
       index: 1,
       root_contract_id: 1,
-      topic0: '\\x000b',
+      topic0: '0x000b',
     },
     {
       consensus_timestamp: 2,
       contract_id: 1,
-      data: '\\x0014',
+      data: '0x0014',
       index: 0,
       root_contract_id: 1,
-      topic0: '\\x000c',
+      topic0: '0x000c',
     },
     {
       consensus_timestamp: 2,
       contract_id: 3,
-      data: '\\x0015',
+      data: '0x0015',
       index: 1,
       root_contract_id: 1,
-      topic0: '\\x000d',
+      topic0: '0x000d',
     },
   ];
   const expected = [
@@ -568,14 +568,14 @@ describe('ContractService.getContractResultsByTimestamps tests', () => {
     {
       contract_id: 2,
       consensus_timestamp: 2,
-      function_parameters: '\\x0D',
+      function_parameters: '0x0D',
       amount: 10,
       payer_account_id: '5',
     },
     {
       contract_id: 3,
       consensus_timestamp: 6,
-      function_parameters: '\\x0D',
+      function_parameters: '0x0D',
       amount: 15,
       payer_account_id: '5',
     },
@@ -792,10 +792,10 @@ describe('ContractService.getContractLogs tests', () => {
       ],
       params: [
         3,
-        'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ea',
-        'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3eb',
-        'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ec',
-        'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ed',
+        Buffer.from('ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ea', 'hex'),
+        Buffer.from('ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3eb', 'hex'),
+        Buffer.from('ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ec', 'hex'),
+        Buffer.from('ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ed', 'hex'),
       ],
       timestampOrder: 'desc',
       indexOrder: 'asc',
@@ -805,86 +805,94 @@ describe('ContractService.getContractLogs tests', () => {
   });
 });
 
-// state changes
 describe('ContractService.getContractStateChangesByTimestamps tests', () => {
+  beforeEach(async () => {
+    await integrationDomainOps.loadContractStateChanges([
+      {
+        consensus_timestamp: 1,
+        contract_id: 3,
+        slot: '01',
+        value_read: '0101',
+        value_written: 'a1a1',
+      },
+      {
+        consensus_timestamp: 1,
+        contract_id: 4,
+        migration: true,
+        slot: '02',
+        value_read: '0202',
+        value_written: 'a2a2',
+      },
+      {
+        consensus_timestamp: 2,
+        contract_id: 5,
+        slot: '0a',
+        value_read: '0303',
+        value_written: 'a3a3',
+      },
+      {
+        consensus_timestamp: 2,
+        contract_id: 3,
+        migration: true,
+        slot: '0b',
+        value_read: '0404',
+        value_written: 'a4a4',
+      },
+      {
+        consensus_timestamp: 3,
+        contract_id: 4,
+        slot: '0c',
+        value_read: '0505',
+        value_written: 'a5a5',
+      },
+      {
+        consensus_timestamp: 4,
+        contract_id: 5,
+        slot: '0d',
+        value_read: '0606',
+        value_written: 'a6a6',
+      },
+    ]);
+  });
+
   test('No match', async () => {
-    const response = await ContractService.getContractStateChangesByTimestamps('1');
-    expect(response).toEqual([]);
+    const response = await ContractService.getContractStateChangesByTimestamps('10');
+    expect(response).toBeEmpty();
   });
 
   test('Row match', async () => {
-    await integrationDomainOps.loadContractStateChanges([
-      {
-        consensus_timestamp: 1,
-        contract_id: 2,
-      },
-    ]);
-
-    const expectedContractStateChange = [
+    const expected = [
       {
         consensusTimestamp: 1,
-        contractId: 2,
+        contractId: 3,
+        slot: Buffer.from([0x1]),
+        valueRead: Buffer.from([0x1, 0x1]),
+        valueWritten: Buffer.from([0xa1, 0xa1]),
       },
     ];
-
     const response = await ContractService.getContractStateChangesByTimestamps('1');
-    expect(response).toMatchObject(expectedContractStateChange);
+    expect(response).toMatchObject(expected);
   });
 
-  test('Id match', async () => {
-    await integrationDomainOps.loadContractStateChanges([
+  test('Row match with contractId', async () => {
+    const expected = [
       {
-        consensus_timestamp: 1,
-        contract_id: 3,
-        slot: '\\x000a',
-      },
-      {
-        consensus_timestamp: 1,
-        contract_id: 4,
-        slot: '\\x000b',
-      },
-      {
-        consensus_timestamp: 1,
-        contract_id: 5,
-        slot: '\\x000c',
-      },
-      {
-        consensus_timestamp: 2,
-        contract_id: 3,
-        slot: '\\x0001',
-      },
-      {
-        consensus_timestamp: 2,
-        contract_id: 4,
-        slot: '\\x0002',
-      },
-      {
-        consensus_timestamp: 2,
-        contract_id: 5,
-        slot: '\\x0003',
-      },
-    ]);
-
-    const expectedContractStateChange = [
-      {
-        consensusTimestamp: 2,
+        consensusTimestamp: 1,
         contractId: 3,
-        slot: Buffer.from([92, 120, 48, 48, 48, 49]),
+        slot: Buffer.from([0x1]),
+        valueRead: Buffer.from([0x1, 0x1]),
+        valueWritten: Buffer.from([0xa1, 0xa1]),
       },
       {
-        consensusTimestamp: 2,
+        consensusTimestamp: 1,
         contractId: 4,
-        slot: Buffer.from([92, 120, 48, 48, 48, 50]),
-      },
-      {
-        consensusTimestamp: 2,
-        contractId: 5,
-        slot: Buffer.from([92, 120, 48, 48, 48, 51]),
+        slot: Buffer.from([0x2]),
+        valueRead: Buffer.from([0x2, 0x2]),
+        valueWritten: Buffer.from([0xa2, 0xa2]),
       },
     ];
-
-    const response = await ContractService.getContractStateChangesByTimestamps('2');
-    expect(response).toMatchObject(expectedContractStateChange);
+    const response = await ContractService.getContractStateChangesByTimestamps('1', 4);
+    expect(response).toMatchObject(expected);
   });
 });
 
@@ -905,7 +913,7 @@ describe('ContractService.getContractIdByEvmAddress tests', () => {
         deleted: false,
         expiration_timestamp: null,
         id: 111169,
-        key: "E'\\\\x326C0A221220F7ECD392568A9ECE84097C4B3C04C74AE52653D54398E132747B498B287245610A221220FA34ADAC826D3F878CCA5E4B074C7060DAE76259611543D6A876FF4E4B8B5C3A0A2212201ADBD17C33C48D59D0961356D5C0B19B391760A6504C3FC78D3094266FA290D2'",
+        key: "E'\\0x326C0A221220F7ECD392568A9ECE84097C4B3C04C74AE52653D54398E132747B498B287245610A221220FA34ADAC826D3F878CCA5E4B074C7060DAE76259611543D6A876FF4E4B8B5C3A0A2212201ADBD17C33C48D59D0961356D5C0B19B391760A6504C3FC78D3094266FA290D2'",
         memo: '',
         num: 111169,
         public_key: null,
@@ -924,7 +932,7 @@ describe('ContractService.getContractIdByEvmAddress tests', () => {
         deleted: false,
         expiration_timestamp: null,
         id: 111278,
-        key: "E'\\\\x326C0A2212203053E42F8D8978BC5999080C4A625BBB1BF96CBCA6BAD6A4796808A6812564490A221220CC16FF9223B2E8F8151E8EFB054203CEF5EE9AF6171D2649D46734ECDD7F5A280A22122097C6975280B82DC1969ABA4E7DDE4F478E872E04CD6E0FE3849EAFB5D86315F1'",
+        key: "E'\\0x326C0A2212203053E42F8D8978BC5999080C4A625BBB1BF96CBCA6BAD6A4796808A6812564490A221220CC16FF9223B2E8F8151E8EFB054203CEF5EE9AF6171D2649D46734ECDD7F5A280A22122097C6975280B82DC1969ABA4E7DDE4F478E872E04CD6E0FE3849EAFB5D86315F1'",
         memo: '',
         num: 111278,
         public_key: null,
@@ -943,7 +951,7 @@ describe('ContractService.getContractIdByEvmAddress tests', () => {
         deleted: false,
         expiration_timestamp: 1581285572000000000,
         id: 111482,
-        key: "E'\\\\x326C0A221220A13DDC50A38C7ED4A7F64CFD05E364746B8DABC3DAE8B2AFBE9A94FF2105AB1F0A2212202CECF7F1A3EADBBD678EC9D62EED162893A2069D456A4E5061E86F96C95F4FFF0A221220C6C448A8B628C11C55F773A3366D8B75E8188EEF46A50A2CCDDDA6B3B4EF55E3'",
+        key: "E'\\0x326C0A221220A13DDC50A38C7ED4A7F64CFD05E364746B8DABC3DAE8B2AFBE9A94FF2105AB1F0A2212202CECF7F1A3EADBBD678EC9D62EED162893A2069D456A4E5061E86F96C95F4FFF0A221220C6C448A8B628C11C55F773A3366D8B75E8188EEF46A50A2CCDDDA6B3B4EF55E3'",
         memo: '',
         num: 111482,
         public_key: null,
@@ -975,7 +983,7 @@ describe('ContractService.getContractIdByEvmAddress tests', () => {
         deleted: false,
         expiration_timestamp: null,
         id: 111169,
-        key: "E'\\\\x326C0A221220F7ECD392568A9ECE84097C4B3C04C74AE52653D54398E132747B498B287245610A221220FA34ADAC826D3F878CCA5E4B074C7060DAE76259611543D6A876FF4E4B8B5C3A0A2212201ADBD17C33C48D59D0961356D5C0B19B391760A6504C3FC78D3094266FA290D2'",
+        key: "E'\\0x326C0A221220F7ECD392568A9ECE84097C4B3C04C74AE52653D54398E132747B498B287245610A221220FA34ADAC826D3F878CCA5E4B074C7060DAE76259611543D6A876FF4E4B8B5C3A0A2212201ADBD17C33C48D59D0961356D5C0B19B391760A6504C3FC78D3094266FA290D2'",
         memo: '',
         num: 111169,
         public_key: null,
@@ -994,7 +1002,7 @@ describe('ContractService.getContractIdByEvmAddress tests', () => {
         deleted: false,
         expiration_timestamp: null,
         id: 111278,
-        key: "E'\\\\x326C0A2212203053E42F8D8978BC5999080C4A625BBB1BF96CBCA6BAD6A4796808A6812564490A221220CC16FF9223B2E8F8151E8EFB054203CEF5EE9AF6171D2649D46734ECDD7F5A280A22122097C6975280B82DC1969ABA4E7DDE4F478E872E04CD6E0FE3849EAFB5D86315F1'",
+        key: "E'\\0x326C0A2212203053E42F8D8978BC5999080C4A625BBB1BF96CBCA6BAD6A4796808A6812564490A221220CC16FF9223B2E8F8151E8EFB054203CEF5EE9AF6171D2649D46734ECDD7F5A280A22122097C6975280B82DC1969ABA4E7DDE4F478E872E04CD6E0FE3849EAFB5D86315F1'",
         memo: '',
         num: 111278,
         public_key: null,
@@ -1013,7 +1021,7 @@ describe('ContractService.getContractIdByEvmAddress tests', () => {
         deleted: false,
         expiration_timestamp: 1581285572000000000,
         id: 111482,
-        key: "E'\\\\x326C0A221220A13DDC50A38C7ED4A7F64CFD05E364746B8DABC3DAE8B2AFBE9A94FF2105AB1F0A2212202CECF7F1A3EADBBD678EC9D62EED162893A2069D456A4E5061E86F96C95F4FFF0A221220C6C448A8B628C11C55F773A3366D8B75E8188EEF46A50A2CCDDDA6B3B4EF55E3'",
+        key: "E'\\0x326C0A221220A13DDC50A38C7ED4A7F64CFD05E364746B8DABC3DAE8B2AFBE9A94FF2105AB1F0A2212202CECF7F1A3EADBBD678EC9D62EED162893A2069D456A4E5061E86F96C95F4FFF0A221220C6C448A8B628C11C55F773A3366D8B75E8188EEF46A50A2CCDDDA6B3B4EF55E3'",
         memo: '',
         num: 111482,
         public_key: null,
