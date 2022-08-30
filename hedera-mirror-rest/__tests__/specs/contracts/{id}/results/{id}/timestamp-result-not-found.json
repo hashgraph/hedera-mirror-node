@@ -17,7 +17,16 @@
         "payer_account_id": 8001
       }
     ],
-    "recordFiles": [],
+    "contracts": [
+      {
+        "created_timestamp": "987654999123200",
+        "evm_address": "70f2b2914a2a4b783faefb75f459a580616fcb5e",
+        "file_id": "5001",
+        "key": [1, 1, 1],
+        "num": "5001",
+        "timestamp_range": "[987654999123300,)"
+      }
+    ],
     "transactions": [
       {
         "consensus_timestamp": 167654000123456,

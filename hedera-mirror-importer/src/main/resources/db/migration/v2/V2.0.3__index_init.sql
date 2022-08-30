@@ -105,7 +105,8 @@ create index if not exists entity_state_start__staked_account_id
     on entity_state_start (staked_account_id) where staked_account_id <> 0;
 
 -- entity_stake
-alter table if exists entity_stake add constraint entity_stake__pk primary key (id);
+alter table if exists entity_stake
+    add constraint entity_stake__pk primary key (id);
 
 -- ethereum_transaction
 alter table ethereum_transaction
@@ -161,6 +162,10 @@ create index if not exists non_fee_transfer__consensus_timestamp
 -- prng
 alter table prng
     add constraint prng__pk primary key (consensus_timestamp);
+
+-- reconciliation_job
+alter table reconciliation_job
+    add constraint reconciliation_job__pk primary key (timestamp_start);
 
 -- record_file
 alter table record_file

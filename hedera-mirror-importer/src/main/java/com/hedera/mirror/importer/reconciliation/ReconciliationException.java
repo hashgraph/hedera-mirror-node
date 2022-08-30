@@ -22,8 +22,8 @@ package com.hedera.mirror.importer.reconciliation;
 
 import lombok.Getter;
 
+import com.hedera.mirror.common.domain.job.ReconciliationStatus;
 import com.hedera.mirror.importer.exception.ImporterException;
-import com.hedera.mirror.importer.reconciliation.BalanceReconciliationService.ReconciliationStatus;
 
 @Getter
 class ReconciliationException extends ImporterException {

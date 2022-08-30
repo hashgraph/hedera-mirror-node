@@ -36,6 +36,7 @@ class ContractStateChange {
 
   static CONSENSUS_TIMESTAMP = 'consensus_timestamp';
   static CONTRACT_ID = 'contract_id';
+  static MIGRATION = 'migration';
   static PAYER_ACCOUNT_ID = 'payer_account_id';
   static SLOT = 'slot';
   static VALUE_READ = 'value_read';

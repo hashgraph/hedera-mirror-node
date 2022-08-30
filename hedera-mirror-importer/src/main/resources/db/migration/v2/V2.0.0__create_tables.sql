@@ -116,7 +116,7 @@ comment on table contract is 'Contract entity';
 create table if not exists contract_action
 (
     call_depth          integer                        not null,
-    call_operation_type integer                        not null,
+    call_operation_type integer                        null,
     call_type           integer                        not null,
     caller              bigint                         not null,
     caller_type         entity_type default 'CONTRACT' not null,
@@ -180,12 +180,13 @@ comment on table contract_result is 'Crypto contract execution results';
 
 create table if not exists contract_state_change
 (
-    consensus_timestamp bigint not null,
-    contract_id         bigint not null,
-    payer_account_id    bigint not null,
-    slot                bytea  not null,
-    value_read          bytea  not null,
-    value_written       bytea  null
+    consensus_timestamp bigint  not null,
+    contract_id         bigint  not null,
+    migration           boolean not null default false,
+    payer_account_id    bigint  not null,
+    slot                bytea   not null,
+    value_read          bytea   not null,
+    value_written       bytea   null
 );
 comment on table contract_state_change is 'Contract execution state changes';
 
@@ -287,15 +288,15 @@ create table if not exists entity_stake
 comment on table entity_stake is 'Network entity stake state';
 
 create materialized view if not exists entity_state_start as
-select
-    balance,
-    decline_reward,
-    id,
-    coalesce(staked_account_id, 0)   as staked_account_id,
-    coalesce(staked_node_id, -1)     as staked_node_id,
-    coalesce(stake_period_start, -1) as stake_period_start
+select balance,
+       decline_reward,
+       id,
+       coalesce(staked_account_id, 0)   as staked_account_id,
+       coalesce(staked_node_id, -1)     as staked_node_id,
+       coalesce(stake_period_start, -1) as stake_period_start
 from entity
-where deleted is not true and type in ('ACCOUNT', 'CONTRACT');
+where deleted is not true
+  and type in ('ACCOUNT', 'CONTRACT');
 comment on materialized view entity_state_start is 'Network entity state at start of staking period';
 
 create table if not exists ethereum_transaction
@@ -457,6 +458,17 @@ create table if not exists prng
     pseudorandom_number integer null
 );
 comment on table prng is 'Pseudorandom number generator';
+
+create table if not exists reconciliation_job
+(
+    consensus_timestamp bigint      not null,
+    count               bigint      not null,
+    error               text        not null default '',
+    timestamp_end       timestamptz null,
+    timestamp_start     timestamptz not null,
+    status              smallint    not null
+);
+comment on table reconciliation_job is 'Reconciliation job status';
 
 -- record_file
 create table if not exists record_file

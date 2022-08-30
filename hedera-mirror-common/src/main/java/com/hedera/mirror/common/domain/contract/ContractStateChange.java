@@ -21,6 +21,7 @@ package com.hedera.mirror.common.domain.contract;
  */
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.io.Serial;
 import java.io.Serializable;
 import javax.persistence.Convert;
 import javax.persistence.IdClass;
@@ -37,7 +38,7 @@ import com.hedera.mirror.common.converter.ContractIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE) // For Builder
-@Builder
+@Builder(toBuilder = true)
 @Data
 @javax.persistence.Entity
 @IdClass(ContractStateChange.Id.class)
@@ -50,6 +51,8 @@ public class ContractStateChange implements Persistable<ContractStateChange.Id> 
     @Convert(converter = ContractIdConverter.class)
     @javax.persistence.Id
     private long contractId;
+
+    private boolean migration;
 
     @Convert(converter = AccountIdConverter.class)
     private EntityId payerAccountId;
@@ -88,6 +91,7 @@ public class ContractStateChange implements Persistable<ContractStateChange.Id> 
     @Data
     @NoArgsConstructor
     public static class Id implements Serializable {
+        @Serial
         private static final long serialVersionUID = -3677350664183037811L;
         private long consensusTimestamp;
         private long contractId;
