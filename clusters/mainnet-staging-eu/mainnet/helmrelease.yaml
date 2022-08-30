@@ -54,3 +54,5 @@ spec:
     rosetta:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "mainnet"
+      test:
+        enabled: false
