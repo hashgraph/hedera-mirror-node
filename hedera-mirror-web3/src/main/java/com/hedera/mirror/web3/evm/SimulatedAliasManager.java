@@ -63,4 +63,11 @@ public class SimulatedAliasManager {
         }
         return Arrays.equals(mirrorPrefix, 0, 12, address, 0, 12);
     }
+
+//    default Address currentAddress(final ContractID idOrAlias) {
+//        if (isAlias(idOrAlias)) {
+//            return resolveForEvm(Address.wrap(Bytes.wrap(idOrAlias.getEvmAddress().toByteArray())));
+//        }
+//        return asTypedEvmAddress(idOrAlias);
+//    }
 }

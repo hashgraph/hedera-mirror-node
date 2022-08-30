@@ -28,6 +28,8 @@ import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 
 import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.mirror.web3.repository.EntityRepository;
+import com.hedera.mirror.web3.repository.NftRepository;
+import com.hedera.mirror.web3.repository.TokenRepository;
 import com.hedera.services.transaction.store.contracts.AbstractLedgerWorldUpdater;
 import com.hedera.services.transaction.store.contracts.EntityAccess;
 import com.hedera.services.transaction.store.contracts.HederaMutableWorldState;
@@ -46,6 +48,8 @@ public class SimulatedWorldState implements HederaMutableWorldState {
     private final SimulatedEntityAccess entityAccess;
     private final EntityRepository entityRepository;
     private final ContractRepository contractRepository;
+    private final NftRepository nftRepository;
+    private final TokenRepository tokenRepository;
 
     @Override
     public List<Address> getCreatedContractIds() {
@@ -69,7 +73,7 @@ public class SimulatedWorldState implements HederaMutableWorldState {
 
     @Override
     public Updater updater() {
-        return new Updater(this, simulatedAliasManager, entityAccess, entityRepository);
+        return new Updater(this, simulatedAliasManager, entityAccess, entityRepository, nftRepository, tokenRepository);
     }
 
     @Override
@@ -124,14 +128,25 @@ public class SimulatedWorldState implements HederaMutableWorldState {
         private final SimulatedAliasManager simulatedAliasManager;
         private final SimulatedEntityAccess simulatedEntityAccess;
         private final EntityRepository entityRepository;
+        private final NftRepository nftRepository;
+        private final TokenRepository tokenRepository;
 
         protected Updater(
                 final SimulatedWorldState world, final SimulatedAliasManager simulatedAliasManager,
-                final SimulatedEntityAccess simulatedEntityAccess, final EntityRepository entityRepository) {
-            super(world, simulatedAliasManager, simulatedEntityAccess, entityRepository);
+                final SimulatedEntityAccess simulatedEntityAccess, final EntityRepository entityRepository, final NftRepository nftRepository,
+                final TokenRepository tokenRepository) {
+            super(
+                    world,
+                    simulatedAliasManager,
+                    simulatedEntityAccess,
+                    entityRepository,
+                    nftRepository,
+                    tokenRepository);
             this.simulatedAliasManager = simulatedAliasManager;
             this.simulatedEntityAccess = simulatedEntityAccess;
             this.entityRepository = entityRepository;
+            this.nftRepository = nftRepository;
+            this.tokenRepository = tokenRepository;
         }
 
         public Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> getStateChanges() {
@@ -254,7 +269,7 @@ public class SimulatedWorldState implements HederaMutableWorldState {
         @Override
         public WorldUpdater updater() {
             return new SimulatedStackedWorldStateUpdater(this, wrappedWorldView(), simulatedAliasManager,
-                    simulatedEntityAccess, entityRepository);
+                    simulatedEntityAccess, entityRepository, nftRepository, tokenRepository);
         }
     }
 }

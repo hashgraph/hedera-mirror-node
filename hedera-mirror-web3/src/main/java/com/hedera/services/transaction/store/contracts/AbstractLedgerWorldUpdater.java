@@ -22,9 +22,12 @@ import org.hyperledger.besu.evm.worldstate.WorldView;
 import org.hyperledger.besu.evm.worldstate.WrappedEvmAccount;
 
 import com.hedera.mirror.web3.evm.SimulatedAliasManager;
+import com.hedera.mirror.web3.evm.SimulatedBackingTokens;
 import com.hedera.mirror.web3.evm.SimulatedEntityAccess;
 import com.hedera.mirror.web3.evm.SimulatedWorldState;
 import com.hedera.mirror.web3.repository.EntityRepository;
+import com.hedera.mirror.web3.repository.NftRepository;
+import com.hedera.mirror.web3.repository.TokenRepository;
 import com.hedera.services.transaction.ethereum.EthTxSigs;
 
 /**
@@ -65,17 +68,21 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
     private final SimulatedAliasManager simulatedAliasManager;
     private final SimulatedEntityAccess simulatedEntityAccess;
     private final EntityRepository entityRepository;
+    private final NftRepository nftRepository;
+    private final TokenRepository tokenRepository;
 
     protected Set<Address> deletedAccounts = new HashSet<>();
     protected Map<Address, UpdateTrackingLedgerAccount<A>> updatedAccounts = new HashMap<>();
 
     protected AbstractLedgerWorldUpdater(final W world, final SimulatedAliasManager simulatedAliasManager,
             final SimulatedEntityAccess simulatedEntityAccess,
-            final EntityRepository entityRepository) {
+            final EntityRepository entityRepository, NftRepository nftRepository, TokenRepository tokenRepository) {
         this.world = world;
         this.simulatedAliasManager = simulatedAliasManager;
         this.simulatedEntityAccess = simulatedEntityAccess;
         this.entityRepository = entityRepository;
+        this.nftRepository = nftRepository;
+        this.tokenRepository = tokenRepository;
     }
 
     /**
@@ -120,6 +127,10 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
             }
             return this.world.get(addressOrAlias);
         }
+    }
+
+    public SimulatedBackingTokens wrappedBackingTokens() {
+        return new SimulatedBackingTokens(nftRepository, tokenRepository, entityRepository, simulatedEntityAccess);
     }
 
     private Address canonicalAddress(final Address addressOrAlias) {

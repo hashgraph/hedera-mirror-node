@@ -7,6 +7,8 @@ import org.hyperledger.besu.evm.worldstate.WorldView;
 import com.hedera.mirror.web3.evm.SimulatedAliasManager;
 import com.hedera.mirror.web3.evm.SimulatedEntityAccess;
 import com.hedera.mirror.web3.repository.EntityRepository;
+import com.hedera.mirror.web3.repository.NftRepository;
+import com.hedera.mirror.web3.repository.TokenRepository;
 
 /**
  * Base implementation of a {@link org.hyperledger.besu.evm.worldstate.WorldUpdater} that buffers a
@@ -28,8 +30,10 @@ public abstract class AbstractStackedLedgerUpdater<W extends WorldView, A extend
             final AbstractLedgerWorldUpdater<W, A> world,
             final SimulatedAliasManager simulatedAliasManager,
             final SimulatedEntityAccess simulatedEntityAccess,
-            final EntityRepository entityRepository) {
-        super(world, simulatedAliasManager, simulatedEntityAccess, entityRepository);
+            final EntityRepository entityRepository,
+            final NftRepository nftRepository,
+            final TokenRepository tokenRepository) {
+        super(world, simulatedAliasManager, simulatedEntityAccess, entityRepository, nftRepository, tokenRepository);
     }
 
     /** {@inheritDoc} */

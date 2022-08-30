@@ -9,7 +9,8 @@ public class ParsingConstants {
 
     public enum FunctionType {
         ERC_NAME,
-        ERC_SYMBOL
+        ERC_SYMBOL,
+        HAPI_MINT
     }
 
 }

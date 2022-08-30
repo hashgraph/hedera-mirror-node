@@ -29,4 +29,5 @@ public class EvmProperties {
 
     private int chainId = 298;
     private int maxGasRefundPercentage = 20;
+    private boolean areNftsEnabled = true;
 }

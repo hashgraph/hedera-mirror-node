@@ -1,18 +1,22 @@
 package com.hedera.services.transaction;
 
+import static com.hedera.services.transaction.ParsingConstants.FunctionType.HAPI_MINT;
 import static com.hedera.services.transaction.ParsingConstants.notSpecifiedType;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
-
-import com.hedera.services.transaction.ParsingConstants.FunctionType;
-
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
+import org.jetbrains.annotations.NotNull;
+
+import com.hedera.services.transaction.ParsingConstants.FunctionType;
 
 @Singleton
 public class EncodingFacade {
@@ -20,7 +24,7 @@ public class EncodingFacade {
     private static final String STRING_RETURN_TYPE = "(string)";
     private static final TupleType nameType = TupleType.parse(STRING_RETURN_TYPE);
     private static final TupleType symbolType = TupleType.parse(STRING_RETURN_TYPE);
-
+    private static final List<Long> NO_MINTED_SERIAL_NUMBERS = new ArrayList<>();
 
     @Inject
     public EncodingFacade() {
@@ -42,6 +46,24 @@ public class EncodingFacade {
                 .build();
     }
 
+    public Bytes encodeMintSuccess(final long totalSupply, final List<Long> serialNumbers) {
+        return functionResultBuilder()
+                .forFunction(HAPI_MINT)
+                .withStatus(SUCCESS.getNumber())
+                .withTotalSupply(totalSupply)
+                .withSerialNumbers(serialNumbers != null ? serialNumbers : NO_MINTED_SERIAL_NUMBERS)
+                .build();
+    }
+
+    public Bytes encodeMintFailure(@NotNull final ResponseCodeEnum status) {
+        return functionResultBuilder()
+                .forFunction(HAPI_MINT)
+                .withStatus(status.getNumber())
+                .withTotalSupply(0L)
+                .withSerialNumbers(NO_MINTED_SERIAL_NUMBERS)
+                .build();
+    }
+
     private FunctionResultBuilder functionResultBuilder() {
         return new FunctionResultBuilder();
     }
@@ -52,6 +74,8 @@ public class EncodingFacade {
         private int status;
         private String name;
         private String symbol;
+        private long totalSupply;
+        private List<Long> serialNumbers;
 
         private FunctionResultBuilder forFunction(final FunctionType functionType) {
             this.tupleType =
@@ -76,11 +100,28 @@ public class EncodingFacade {
             return this;
         }
 
+        private FunctionResultBuilder withStatus(final int status) {
+            this.status = status;
+            return this;
+        }
+
+        private FunctionResultBuilder withTotalSupply(final long totalSupply) {
+            this.totalSupply = totalSupply;
+            return this;
+        }
+
+        private FunctionResultBuilder withSerialNumbers(final List<Long> serialNumbers) {
+            this.serialNumbers = serialNumbers;
+            return this;
+        }
+
         private Bytes build() {
             final var result =
                     switch (functionType) {
                         case ERC_NAME -> Tuple.of(name);
                         case ERC_SYMBOL -> Tuple.of(symbol);
+                        case HAPI_MINT -> Tuple.of(
+                                status, BigInteger.valueOf(totalSupply), serialNumbers);
                         default -> Tuple.of(status);
                     };
 

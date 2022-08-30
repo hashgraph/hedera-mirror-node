@@ -20,11 +20,11 @@ package com.hedera.mirror.web3.repository;
  * ‍
  */
 
+import com.hedera.mirror.common.domain.entity.Entity;
+
 import java.util.Optional;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
-
-import com.hedera.mirror.common.domain.entity.Entity;
 
 public interface EntityRepository extends CrudRepository<Entity, Long> {
 
@@ -43,6 +43,9 @@ public interface EntityRepository extends CrudRepository<Entity, Long> {
 
     @Query(value = "select id from entity where evm_address = ?1 and deleted <> true", nativeQuery = true)
     Optional<Long> findAccountIdByAddress(byte[] evmAddress);
+
+    @Query(value = "select evm_address from entity where num = ?1 and deleted <> true", nativeQuery = true)
+    Optional<byte[]> findAddressByNum(long num);
 
     @Query(value = "select balance from entity where evm_address = ?1 and type in ('ACCOUNT', 'CONTRACT') and deleted is not true", nativeQuery = true)
     Optional<Long> findAccountBalanceByAddress(byte[] evmAddress);
