@@ -24,7 +24,6 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
@@ -91,14 +90,12 @@ public class ConsensusValidatorImpl implements ConsensusValidator {
         }
 
         long consensusCount = 0;
-        var nodeAccountIds = signatureHashMap.values().stream().map(FileStreamSignature::getNodeAccountId)
-                .collect(Collectors.toSet());
         for (String key : signatureHashMap.keySet()) {
             var validatedSignatures = signatureHashMap.get(key);
             long stake = 0L;
-            for (var signedNodeAccountId : nodeAccountIds) {
+            for (var signature : validatedSignatures) {
                 // If the map has no entry for the node account id, a default value of 1 is used to count a signature.
-                stake += nodeAccountIdToStakeMap.getOrDefault(signedNodeAccountId, 1L);
+                stake += nodeAccountIdToStakeMap.getOrDefault(signature.getNodeAccountId(), 1L);
             }
 
             if (canReachConsensus(stake, totalStake)) {

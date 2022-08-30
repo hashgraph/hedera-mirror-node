@@ -126,19 +126,10 @@ class ConsensusValidatorImplTest extends IntegrationTest {
     @Test
     void testFailedVerificationWithLessThanOneThirdNodeStakeConsensus() {
         nodeStakes(3, 4, 3);
-        var fileStreamSignatures = List.of(
-                buildFileStreamSignature(),
-                buildFileStreamSignature()
-        );
-        assertConsensusNotReached(fileStreamSignatures);
-    }
-
-    @Test
-    void testVerificationWithNodeStakeConsensusMissingSignature() {
-        nodeStakes(3, 4, 3);
 
         var fileStreamSignatureNode3 = buildFileStreamSignature();
         var fileStreamSignatureNode5 = buildFileStreamSignature();
+        fileStreamSignatureNode5.setFileHash(fileStreamSignatureNode3.getFileHash());
         fileStreamSignatureNode5.setNodeAccountId(entity5);
         var fileStreamSignatures = List.of(
                 fileStreamSignatureNode3,
@@ -158,6 +149,7 @@ class ConsensusValidatorImplTest extends IntegrationTest {
 
         var fileStreamSignatureNode3 = buildFileStreamSignature();
         var fileStreamSignatureNode5 = buildFileStreamSignature();
+        fileStreamSignatureNode5.setFileHash(fileStreamSignatureNode3.getFileHash());
         fileStreamSignatureNode5.setNodeAccountId(entity5);
         var fileStreamSignatures = List.of(
                 fileStreamSignatureNode3,
@@ -286,6 +278,42 @@ class ConsensusValidatorImplTest extends IntegrationTest {
                 .map(FileStreamSignature::getStatus)
                 .containsExactly(FileStreamSignature.SignatureStatus.CONSENSUS_REACHED,
                         FileStreamSignature.SignatureStatus.DOWNLOADED, FileStreamSignature.SignatureStatus.DOWNLOADED);
+    }
+
+    @Test
+    void testMultipleFileHashWithMultipleConsensusResults() {
+        // First FileHash
+        FileStreamSignature fileStreamSignature1 = buildFileStreamSignature();
+        fileStreamSignature1.setStatus(FileStreamSignature.SignatureStatus.DOWNLOADED);
+
+        // Second FileHash
+        FileStreamSignature fileStreamSignature2 = buildFileStreamSignature();
+        fileStreamSignature2.setFileHash(domainBuilder.bytes(256));
+
+        // Third FileHash
+        var thirdHash = domainBuilder.bytes(256);
+        FileStreamSignature fileStreamSignature3 = buildFileStreamSignature();
+        fileStreamSignature3.setFileHash(thirdHash);
+        FileStreamSignature fileStreamSignature4 = buildFileStreamSignature();
+        fileStreamSignature4.setStatus(FileStreamSignature.SignatureStatus.DOWNLOADED);
+        fileStreamSignature4.setFileHash(thirdHash);
+
+        // Forth FileHash
+        FileStreamSignature fileStreamSignature5 = buildFileStreamSignature();
+        fileStreamSignature5.setStatus(FileStreamSignature.SignatureStatus.DOWNLOADED);
+        fileStreamSignature5.setFileHash(domainBuilder.bytes(256));
+
+        var fileStreamSignatures = List.of(fileStreamSignature1, fileStreamSignature2, fileStreamSignature3,
+                fileStreamSignature4, fileStreamSignature5);
+
+        consensusValidator.validate(fileStreamSignatures);
+        assertThat(fileStreamSignatures)
+                .map(FileStreamSignature::getStatus)
+                .containsExactly(FileStreamSignature.SignatureStatus.DOWNLOADED,
+                        FileStreamSignature.SignatureStatus.CONSENSUS_REACHED,
+                        FileStreamSignature.SignatureStatus.CONSENSUS_REACHED,
+                        FileStreamSignature.SignatureStatus.DOWNLOADED,
+                        FileStreamSignature.SignatureStatus.DOWNLOADED);
     }
 
     @SneakyThrows
