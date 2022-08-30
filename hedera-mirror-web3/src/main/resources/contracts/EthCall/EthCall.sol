@@ -18,8 +18,14 @@ contract EthCall {
         _recipient.transfer(msg.value);
     }
 
-   // External function that has an argument for test value that will be written to contract storage slot
+    // External function that has an argument for test value that will be written to contract storage slot
     function writeToStorageSlot(string memory _value) payable external returns (string memory){
+        emptyStorageData = _value;
+        return emptyStorageData;
+    }
+
+    // External function that has an argument for test value that will be written to contract storage slot
+    function writeToStorageSlotWithDelegateCall(string memory _value) payable external returns (string memory){
         emptyStorageData = _value;
         return emptyStorageData;
     }
@@ -42,5 +48,27 @@ contract EthCall {
     // External function that has an argument for a token address and using open zeppelin IERC20 interface as a wrapper, returns the token’s symbol
     function getTokenSymbol(address _tokenAddress) external view returns (string memory) {
         return IERC20Metadata(_tokenAddress).symbol();
+    }
+}
+
+contract DelegateCallTest {
+
+    // External function that has an argument for test value that will be written to contract storage slot
+    function writeToStorageSlotWithDelegateCall(address _addr, string memory _value) payable external{
+        (bool success, bytes memory result) =
+        _addr.delegatecall(
+            abi.encodeWithSelector(EthCall.writeToStorageSlotWithDelegateCall.selector, _value));
+        if (success == false) {
+            // if there is a return reason string
+            if (result.length > 0) {
+                // bubble up any reason for revert
+                assembly {
+                    let result_size := mload(result)
+                    revert(add(32, result), result_size)
+                }
+            } else {
+                revert("Function call reverted");
+            }
+        }
     }
 }

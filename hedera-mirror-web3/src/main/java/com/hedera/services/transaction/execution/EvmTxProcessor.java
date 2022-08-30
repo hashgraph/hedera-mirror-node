@@ -143,7 +143,7 @@ public abstract class EvmTxProcessor {
         var operationRegistry = new OperationRegistry();
         registerLondonOperations(operationRegistry, gasCalculator, BigInteger.valueOf(configurationProperties.getChainId()));
         operationRegistry.put(new HederaSLoadOperation(gasCalculator));
-        operationRegistry.put(new HederaSStoreOperation(gasCalculator));
+        operationRegistry.put(new HederaSStoreOperation(1, gasCalculator));
         operationRegistry.put(new HederaBalanceOperation(gasCalculator, provideAddressValidator(precompiledContractMap)));
         hederaOperations.forEach(operationRegistry::put);
 

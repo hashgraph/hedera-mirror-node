@@ -199,7 +199,6 @@ class EthCallServiceTest {
         when(senderAccount.getMutable()).thenReturn(mutableSender);
         when(simulatedStackedWorldStateUpdater.getSenderAccount(any())).thenReturn(senderAccount);
         when(simulatedStackedWorldStateUpdater.get(contractAddress)).thenReturn(recipientAccount);
-        when(simulatedStackedWorldStateUpdater.getSenderAccount(any())).thenReturn(senderAccount);
         when(evmProperties.getChainId()).thenReturn(chainId);
         when(entityRepository.findAccountByAddress(senderEvmAddress)).thenReturn(Optional.of(senderEntity));
         when(recipientAccount.getAddress()).thenReturn(contractAddress);
