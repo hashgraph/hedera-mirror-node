@@ -89,17 +89,6 @@ class ConsensusValidatorImplTest extends IntegrationTest {
     }
 
     @Test
-    void testVerifiedWithOneThirdNodeStakeConsensusMissingSignatures() {
-        nodeStakes(3, 3, 3);
-        var fileStreamSignatures = List.of(buildFileStreamSignature());
-
-        consensusValidator.validate(fileStreamSignatures);
-        assertThat(fileStreamSignatures)
-                .map(FileStreamSignature::getStatus)
-                .containsOnly(FileStreamSignature.SignatureStatus.CONSENSUS_REACHED);
-    }
-
-    @Test
     void testVerifiedWithOneThirdNodeStakeConsensusNonVerifiedSignatures() {
         nodeStakes(3, 3, 3);
 
@@ -170,22 +159,6 @@ class ConsensusValidatorImplTest extends IntegrationTest {
                         FileStreamSignature.SignatureStatus.CONSENSUS_REACHED);
     }
 
-    @Test
-    void testFailedVerificationInsufficientStakeSignatureMissing() {
-        nodeStakes(1, 5, 1);
-
-        var fileStreamSignatureNode3 = buildFileStreamSignature();
-        var fileStreamSignatureNode5 = buildFileStreamSignature();
-        fileStreamSignatureNode5.setFileHash(fileStreamSignatureNode3.getFileHash());
-        fileStreamSignatureNode5.setNodeAccountId(entity5);
-        var fileStreamSignatures = List.of(
-                fileStreamSignatureNode3,
-                fileStreamSignatureNode5
-        );
-
-        assertConsensusNotReached(fileStreamSignatures);
-    }
-
     @ParameterizedTest
     @EnumSource(value = FileStreamSignature.SignatureStatus.class, names = {"DOWNLOADED", "CONSENSUS_REACHED",
             "NOT_FOUND"})
@@ -239,7 +212,7 @@ class ConsensusValidatorImplTest extends IntegrationTest {
     @Test
     void testVerifiedWithFullNodeStakeConsensus() {
         when(commonDownloaderProperties.getConsensusRatio()).thenReturn(1d);
-        nodeStakes(3, 3, 3);
+        nodeStakes(16_666_666_666L, 16_666_666_667L, 16_666_666_667L);
 
         FileStreamSignature fileStreamSignatureNode3 = buildFileStreamSignature();
         FileStreamSignature fileStreamSignatureNode4 = buildFileStreamSignature();
@@ -256,13 +229,6 @@ class ConsensusValidatorImplTest extends IntegrationTest {
         assertThat(fileStreamSignatures)
                 .map(FileStreamSignature::getStatus)
                 .containsOnly(FileStreamSignature.SignatureStatus.CONSENSUS_REACHED);
-    }
-
-    @Test
-    void testFailedVerificationNodeStakeConsensus() {
-        nodeStakes(2, 3, 3);
-        var fileStreamSignatures = List.of(buildFileStreamSignature());
-        assertConsensusNotReached(fileStreamSignatures);
     }
 
     @Test
