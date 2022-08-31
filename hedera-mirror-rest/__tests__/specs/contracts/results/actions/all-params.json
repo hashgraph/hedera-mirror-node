@@ -182,7 +182,7 @@
     "actions": [
       {
         "call_depth": 2,
-        "call_operation_type": "OP_CALLCODE",
+        "call_operation_type": "CALLCODE",
         "call_type": "CREATE",
         "caller": "0.0.5001",
         "caller_type": "CONTRACT",

@@ -204,7 +204,7 @@
       {
         "call_depth": 2,
         "call_type": "CREATE",
-        "call_operation_type": "OP_CALLCODE",
+        "call_operation_type": "CALLCODE",
         "caller": "0.0.5001",
         "caller_type": "CONTRACT",
         "from": "0x0000000000000000000000000000000000001389",

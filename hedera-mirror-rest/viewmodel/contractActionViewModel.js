@@ -37,13 +37,13 @@ class ContractActionViewModel {
   };
 
   static callOperationTypes = {
-    0: 'OP_UNKNOWN',
-    1: 'OP_CALL',
-    2: 'OP_CALLCODE',
-    3: 'OP_DELEGATECALL',
-    4: 'OP_STATICCALL',
-    5: 'OP_CREATE',
-    6: 'OP_CREATE2',
+    0: 'UNKNOWN',
+    1: 'CALL',
+    2: 'CALLCODE',
+    3: 'DELEGATECALL',
+    4: 'STATICCALL',
+    5: 'CREATE',
+    6: 'CREATE2',
   };
 
   /**
@@ -56,9 +56,10 @@ class ContractActionViewModel {
     const recipientId = recipientIsAccount ? contractAction.recipientAccount : contractAction.recipientContract;
     const recipient = EntityId.parse(recipientId);
     const callerId = EntityId.parse(contractAction.caller);
+    const callOperationType = contractAction.callOperationType || 0;
 
     this.call_depth = contractAction.callDepth;
-    this.call_operation_type = ContractActionViewModel.callOperationTypes[contractAction.callOperationType];
+    this.call_operation_type = ContractActionViewModel.callOperationTypes[callOperationType];
     this.call_type = ContractActionViewModel.callTypes[contractAction.callType];
     this.caller = callerId.toString();
     this.caller_type = contractAction.callerType;

@@ -183,7 +183,7 @@
       {
         "call_depth": 1,
         "call_type": "CALL",
-        "call_operation_type": "OP_CALL",
+        "call_operation_type": "CALL",
         "caller": "0.0.5001",
         "caller_type": "CONTRACT",
         "from": "0x0000000000000000000000000000000000001389",
