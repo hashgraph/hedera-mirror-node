@@ -1058,27 +1058,34 @@ class ContractController extends BaseController {
     let limit = defaultLimit;
 
     for (const filter of rawFilters) {
-      if (filter.key === 'order') {
+      if (filter.key === filterKeys.ORDER) {
         order = filter.value;
-      } else if (filter.key === 'limit') {
+      } else if (filter.key === filterKeys.LIMIT) {
         limit = filter.value;
-      } else if (filter.key === 'index') {
+      } else if (filter.key === filterKeys.INDEX) {
         filters.push(filter);
       }
     }
 
     // extract filters from query param
     const {transactionIdOrHash} = req.params;
-    let rows = [];
-
+    let consensusTimestamp;
     if (utils.isValidEthHash(transactionIdOrHash)) {
       const hash = Buffer.from(transactionIdOrHash.replace('0x', ''), 'hex');
-      rows = await ContractService.getContractActionsByHash(hash, filters, order, limit);
+      const tx = await TransactionService.getTransactionDetailsFromEthHash(hash);
+      consensusTimestamp = tx.length ? tx[0].consensusTimestamp : null;
     } else {
       const transactionId = TransactionId.fromString(transactionIdOrHash);
-      rows = await ContractService.getContractActionsByTransactionId(transactionId, filters, order, limit);
+      const tx = await TransactionService.getTransactionDetailsFromTransactionId(transactionId);
+      consensusTimestamp = tx.length ? tx[0].consensusTimestamp : null;
     }
 
+    const rows = await ContractService.getContractActionsByConsensusTimestamp(
+      consensusTimestamp,
+      filters,
+      order,
+      limit
+    );
     const actions = rows.map((row) => new ContractActionViewModel(row));
     let nextLink = null;
     if (actions.length) {

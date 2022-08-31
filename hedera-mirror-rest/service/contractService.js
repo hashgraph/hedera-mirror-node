@@ -112,25 +112,28 @@ class ContractService extends BaseService {
                                         where ${Entity.DELETED} <> true
                                           and ${Entity.TYPE} = 'CONTRACT'`;
 
-  static contractActionsByHashQuery = `
-    select ${ContractAction.tableAlias}.* from ${ContractResult.tableName} ${ContractResult.tableAlias}
-    inner join ${ContractAction.tableName} ${ContractAction.tableAlias}
-      on ${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)} = ${ContractAction.getFullName(
-    ContractAction.CONSENSUS_TIMESTAMP
-  )}
-    where ${ContractResult.TRANSACTION_HASH} = $1
+  static contractActionsByConsensusTimestampQuery = `
+    select
+      ${ContractAction.RECEPIENT_ACCOUNT},
+      ${ContractAction.RECEPIENT_CONTRACT},
+      ${ContractAction.CALLER},
+      ${ContractAction.CALL_DEPTH},
+      ${ContractAction.CALLER_TYPE},
+      ${ContractAction.CALL_OPERATION_TYPE},
+      ${ContractAction.CALL_TYPE},
+      ${ContractAction.CALLER_TYPE},
+      ${ContractAction.GAS},
+      ${ContractAction.GAS_USED},
+      ${ContractAction.INDEX},
+      ${ContractAction.INPUT},
+      ${ContractAction.RESULT_DATA},
+      ${ContractAction.RESULT_DATA_TYPE},
+      ${ContractAction.CONSENSUS_TIMESTAMP},
+      ${ContractAction.RECEPIENT_ADDRESS},
+      ${ContractAction.VALUE}
+    from ${ContractAction.tableName} ${ContractAction.tableAlias}
+    where ${ContractAction.getFullName(ContractAction.CONSENSUS_TIMESTAMP)} = $1
     `;
-
-  static contractActionsByTxIdQuery = `
-       select ${Transaction.getFullName(Transaction.VALID_START_NS)}, ${ContractAction.tableAlias}.*
-       from ${Transaction.tableName} ${Transaction.tableAlias}
-       inner join ${ContractAction.tableName} ${ContractAction.tableAlias}
-            on ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} = ${ContractAction.getFullName(
-    ContractAction.CONSENSUS_TIMESTAMP
-  )}
-       where ${Transaction.getFullName(Transaction.PAYER_ACCOUNT_ID)} = $1
-       and ${Transaction.getFullName(Transaction.VALID_START_NS)} = $2
-  `;
 
   static contractByEvmAddressQueryFilters = [
     {
@@ -378,16 +381,15 @@ class ContractService extends BaseService {
     return EntityId.parse(contractIdValue, {paramName: filterKeys.CONTRACTID}).getEncodedId();
   }
 
-  async getContractActionsByHash(hash, filters, order, limit) {
-    const params = [hash];
-    return this.getContractActions(ContractService.contractActionsByHashQuery, params, filters, order, limit);
-  }
-
-  async getContractActionsByTransactionId(transactionId, filters, order, limit) {
-    const entityId = transactionId.getEntityId().getEncodedId();
-    const timestamp = transactionId.getValidStartNs();
-    const params = [entityId, timestamp];
-    return this.getContractActions(ContractService.contractActionsByTxIdQuery, params, filters, order, limit);
+  async getContractActionsByConsensusTimestamp(consensusTimestamp, filters, order, limit) {
+    const params = [consensusTimestamp];
+    return this.getContractActions(
+      ContractService.contractActionsByConsensusTimestampQuery,
+      params,
+      filters,
+      order,
+      limit
+    );
   }
 
   async getContractActions(baseQuery, params, filters, order, limit) {

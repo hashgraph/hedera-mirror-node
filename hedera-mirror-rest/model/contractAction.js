@@ -22,7 +22,7 @@ import _ from 'lodash';
 
 class ContractAction {
   /**
-   * Parses contract_result table columns into object
+   * Parses contract_action table columns into object
    */
   constructor(contractAction) {
     Object.assign(
