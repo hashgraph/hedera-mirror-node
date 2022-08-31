@@ -76,7 +76,7 @@ class ConsensusValidatorImplTest extends IntegrationTest {
         when(addressBookService.getCurrent()).thenReturn(currentAddressBook);
         when(currentAddressBook.getNodeIdNodeAccountIdMap()).thenReturn(nodeIdNodeAccountIdMap);
         when(addressBookService.getCurrent()).thenReturn(currentAddressBook);
-        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(0.333f);
+        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(0.33333333333d);
     }
 
     @Test
@@ -124,8 +124,35 @@ class ConsensusValidatorImplTest extends IntegrationTest {
     }
 
     @Test
-    void testFailedVerificationWithLessThanOneThirdNodeStakeConsensus() {
-        nodeStakes(3, 4, 3);
+    void testFailedVerificationWithLargeStakes() {
+        // Total stake is 50 billion
+        long nodeOneStake = 16_666_666_665L;
+        long nodeTwoStake = 16_666_666_668L;
+        long nodeThreeStake = 16_666_666_667L;
+
+        nodeStakes(nodeOneStake, nodeTwoStake, nodeThreeStake);
+
+        var fileStreamSignatureNode3 = buildFileStreamSignature();
+        var fileStreamSignatureNode5 = buildFileStreamSignature();
+        fileStreamSignatureNode5.setFileHash(fileStreamSignatureNode3.getFileHash());
+        fileStreamSignatureNode5.setNodeAccountId(entity5);
+        fileStreamSignatureNode5.setStatus(FileStreamSignature.SignatureStatus.DOWNLOADED);
+        var fileStreamSignatures = List.of(
+                fileStreamSignatureNode3,
+                fileStreamSignatureNode5
+        );
+
+        assertConsensusNotReached(fileStreamSignatures);
+    }
+
+    @Test
+    void testVerificationWithLargeStakes() {
+        // Total stake is 50 billion
+        long nodeOneStake = 8_333_333_334L;
+        long nodeTwoStake = 33_333_333_333L;
+        long nodeThreeStake = 8_333_333_333L;
+
+        nodeStakes(nodeOneStake, nodeTwoStake, nodeThreeStake);
 
         var fileStreamSignatureNode3 = buildFileStreamSignature();
         var fileStreamSignatureNode5 = buildFileStreamSignature();
@@ -211,7 +238,7 @@ class ConsensusValidatorImplTest extends IntegrationTest {
 
     @Test
     void testVerifiedWithFullNodeStakeConsensus() {
-        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(1f);
+        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(1d);
         nodeStakes(3, 3, 3);
 
         FileStreamSignature fileStreamSignatureNode3 = buildFileStreamSignature();
@@ -247,7 +274,7 @@ class ConsensusValidatorImplTest extends IntegrationTest {
 
     @Test
     void testSkipNodeStakeConsensus() {
-        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(0f);
+        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(0d);
         nodeStakes(1, 3, 3);
         var fileStreamSignatures = List.of(buildFileStreamSignature());
 
@@ -326,7 +353,7 @@ class ConsensusValidatorImplTest extends IntegrationTest {
         nodeAccountIDPubKeyMap.put("0.0.4", publicKey);
         nodeAccountIDPubKeyMap.put("0.0.5", publicKey);
         when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
-        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(1f);
+        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(1d);
 
         FileStreamSignature fileStreamSignatureNode3 = buildFileStreamSignature();
         FileStreamSignature fileStreamSignatureNode4 = buildFileStreamSignature();

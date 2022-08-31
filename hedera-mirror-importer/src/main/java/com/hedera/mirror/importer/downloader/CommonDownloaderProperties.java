@@ -50,7 +50,7 @@ public class CommonDownloaderProperties {
 
     @Max(1)
     @Min(0)
-    private float consensusRatio = (float) 1 / 3;
+    private double consensusRatio = 0.33333333333d;
 
     private String endpointOverride;
 

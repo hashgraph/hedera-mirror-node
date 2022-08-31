@@ -91,7 +91,7 @@ class NodeSignatureVerifierTest extends IntegrationTest {
         nodeAccountIDPubKeyMap.put("0.0.3", publicKey);
         when(addressBookService.getCurrent()).thenReturn(currentAddressBook);
         when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
-        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(0.333f);
+        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(0.33333333333d);
     }
 
     @SneakyThrows
@@ -179,7 +179,7 @@ class NodeSignatureVerifierTest extends IntegrationTest {
         nodeAccountIDPubKeyMap.put("0.0.10", publicKey);
 
         when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
-        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(0f);
+        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(0d);
 
         byte[] fileHash = TestUtils.generateRandomByteArray(48);
         byte[] fileHashSignature = signHash(fileHash);
@@ -204,7 +204,7 @@ class NodeSignatureVerifierTest extends IntegrationTest {
         nodeAccountIDPubKeyMap.put("0.0.10", publicKey);
 
         when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
-        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(0f);
+        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(0d);
 
         Exception e = assertThrows(SignatureVerificationException.class, () -> nodeSignatureVerifier
                 .verify(List.of()));
@@ -263,7 +263,7 @@ class NodeSignatureVerifierTest extends IntegrationTest {
         nodeAccountIDPubKeyMap.put("0.0.4", publicKey);
         nodeAccountIDPubKeyMap.put("0.0.5", publicKey);
         when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
-        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(1f);
+        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(1d);
 
         byte[] fileHash = TestUtils.generateRandomByteArray(48);
         byte[] fileHashSignature = signHash(fileHash);

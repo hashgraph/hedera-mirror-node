@@ -22,6 +22,8 @@ package com.hedera.mirror.importer.downloader;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Collection;
 import java.util.HashMap;
 import javax.inject.Named;
@@ -99,7 +101,7 @@ public class ConsensusValidatorImpl implements ConsensusValidator {
             }
 
             if (canReachConsensus(stake, totalStake)) {
-                consensusCount += stake;
+                consensusCount += validatedSignatures.size();
                 validatedSignatures.forEach(s -> s.setStatus(FileStreamSignature.SignatureStatus.CONSENSUS_REACHED));
             }
         }
@@ -112,6 +114,9 @@ public class ConsensusValidatorImpl implements ConsensusValidator {
     }
 
     private boolean canReachConsensus(long stake, long totalStake) {
-        return stake >= Math.ceil(totalStake * commonDownloaderProperties.getConsensusRatio());
+        var stakeRequiredForConsensus = BigDecimal.valueOf(totalStake)
+                .multiply(BigDecimal.valueOf(commonDownloaderProperties.getConsensusRatio()))
+                .setScale(0, RoundingMode.CEILING);
+        return BigDecimal.valueOf(stake).compareTo(stakeRequiredForConsensus) >= 0;
     }
 }
