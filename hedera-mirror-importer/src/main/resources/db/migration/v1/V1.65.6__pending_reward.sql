@@ -13,6 +13,16 @@ create unique index if not exists entity_state_start__id on entity_state_start (
 create index if not exists entity_state_start__staked_account_id
   on entity_state_start (staked_account_id) where staked_account_id <> 0;
 
+-- necessary to make changing materialized view owner work
+grant create on schema ${db-schema} to readwrite;
+grant readwrite to CURRENT_USER;
+
+alter materialized view if exists entity_state_start owner to readwrite;
+
+-- revert the permission / role changes
+revoke readwrite from CURRENT_USER;
+revoke create on schema ${db-schema} from readwrite;
+
 create table if not exists entity_stake
 (
   decline_reward_start boolean not null,
