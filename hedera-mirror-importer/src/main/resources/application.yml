@@ -103,7 +103,6 @@ spring:
       chunkTimeInterval: 86400000000000
       compressionAge: 604800000000000
       db-name: ${hedera.mirror.importer.db.name}
-      db-schema: ${hedera.mirror.importer.db.schema}
       db-user: ${hedera.mirror.importer.db.username}
     user: ${hedera.mirror.importer.db.owner}
   jpa:

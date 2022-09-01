@@ -13,15 +13,24 @@ create unique index if not exists entity_state_start__id on entity_state_start (
 create index if not exists entity_state_start__staked_account_id
   on entity_state_start (staked_account_id) where staked_account_id <> 0;
 
--- necessary to make changing materialized view owner work
-grant create on schema ${db-schema} to readwrite;
-grant readwrite to CURRENT_USER;
+create or replace function change_access_privilege(grant_or_revoke boolean) returns void as
+$$
+begin
+    if current_user <> '${db-user}' then
+        if grant_or_revoke then
+            grant create on schema public to ${db-user};
+            grant ${db-user} to current_user;
+        else
+            revoke ${db-user} from current_user;
+            revoke create on schema public from ${db-user};
+        end if;
+    end if;
+end
+$$ language plpgsql;
 
-alter materialized view if exists entity_state_start owner to readwrite;
-
--- revert the permission / role changes
-revoke readwrite from CURRENT_USER;
-revoke create on schema ${db-schema} from readwrite;
+select change_access_privilege(true);
+alter materialized view if exists entity_state_start owner to ${db-user};
+select change_access_privilege(false);
 
 create table if not exists entity_stake
 (
