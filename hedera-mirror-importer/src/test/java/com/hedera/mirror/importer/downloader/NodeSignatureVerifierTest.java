@@ -23,6 +23,8 @@ package com.hedera.mirror.importer.downloader;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -91,7 +93,8 @@ class NodeSignatureVerifierTest extends IntegrationTest {
         nodeAccountIDPubKeyMap.put("0.0.3", publicKey);
         when(addressBookService.getCurrent()).thenReturn(currentAddressBook);
         when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
-        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(0.33333333333d);
+        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(BigDecimal.ONE.divide(BigDecimal.valueOf(3),
+                19, RoundingMode.CEILING));
     }
 
     @SneakyThrows
@@ -179,7 +182,7 @@ class NodeSignatureVerifierTest extends IntegrationTest {
         nodeAccountIDPubKeyMap.put("0.0.10", publicKey);
 
         when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
-        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(0d);
+        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(BigDecimal.ZERO);
 
         byte[] fileHash = TestUtils.generateRandomByteArray(48);
         byte[] fileHashSignature = signHash(fileHash);
@@ -204,7 +207,7 @@ class NodeSignatureVerifierTest extends IntegrationTest {
         nodeAccountIDPubKeyMap.put("0.0.10", publicKey);
 
         when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
-        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(0d);
+        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(BigDecimal.ZERO);
 
         Exception e = assertThrows(SignatureVerificationException.class, () -> nodeSignatureVerifier
                 .verify(List.of()));
@@ -263,7 +266,7 @@ class NodeSignatureVerifierTest extends IntegrationTest {
         nodeAccountIDPubKeyMap.put("0.0.4", publicKey);
         nodeAccountIDPubKeyMap.put("0.0.5", publicKey);
         when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
-        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(1d);
+        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(BigDecimal.ONE);
 
         byte[] fileHash = TestUtils.generateRandomByteArray(48);
         byte[] fileHashSignature = signHash(fileHash);

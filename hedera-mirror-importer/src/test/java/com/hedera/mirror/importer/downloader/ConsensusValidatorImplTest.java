@@ -20,10 +20,13 @@ package com.hedera.mirror.importer.downloader;
  * ‍
  */
 
+import static com.hedera.mirror.common.util.DomainUtils.TINYBARS_IN_ONE_HBAR;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.security.KeyPairGenerator;
 import java.security.PublicKey;
 import java.util.Collections;
@@ -58,6 +61,9 @@ class ConsensusValidatorImplTest extends IntegrationTest {
     private static final EntityId entity4 = EntityId.of(0L, 0L, 4L, EntityType.ACCOUNT);
     private static final EntityId entity5 = EntityId.of(0L, 0L, 5L, EntityType.ACCOUNT);
 
+    private static final BigDecimal MAX_TINYBARS = BigDecimal.valueOf(50_000_000_000L)
+            .multiply(BigDecimal.valueOf(TINYBARS_IN_ONE_HBAR));
+
     @Mock
     private AddressBookService addressBookService;
     @Mock
@@ -76,7 +82,8 @@ class ConsensusValidatorImplTest extends IntegrationTest {
         when(addressBookService.getCurrent()).thenReturn(currentAddressBook);
         when(currentAddressBook.getNodeIdNodeAccountIdMap()).thenReturn(nodeIdNodeAccountIdMap);
         when(addressBookService.getCurrent()).thenReturn(currentAddressBook);
-        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(0.33333333333d);
+        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(BigDecimal.ONE.divide(BigDecimal.valueOf(3),
+                19, RoundingMode.CEILING));
     }
 
     @Test
@@ -114,10 +121,10 @@ class ConsensusValidatorImplTest extends IntegrationTest {
 
     @Test
     void testFailedVerificationWithLargeStakes() {
-        // Total stake is 50 billion
-        long nodeOneStake = 16_666_666_665L;
-        long nodeTwoStake = 16_666_666_668L;
-        long nodeThreeStake = 16_666_666_667L;
+        var oneThirdStake = MAX_TINYBARS.divide(BigDecimal.valueOf(3), 0, RoundingMode.CEILING);
+        long nodeOneStake = oneThirdStake.subtract(BigDecimal.ONE).longValue();
+        long nodeTwoStake = oneThirdStake.add(BigDecimal.ONE).longValue();
+        long nodeThreeStake = oneThirdStake.subtract(BigDecimal.ONE).longValue();
 
         nodeStakes(nodeOneStake, nodeTwoStake, nodeThreeStake);
 
@@ -136,10 +143,11 @@ class ConsensusValidatorImplTest extends IntegrationTest {
 
     @Test
     void testVerificationWithLargeStakes() {
-        // Total stake is 50 billion
-        long nodeOneStake = 8_333_333_334L;
-        long nodeTwoStake = 33_333_333_333L;
-        long nodeThreeStake = 8_333_333_333L;
+        var oneThirdStake = MAX_TINYBARS.divide(BigDecimal.valueOf(3), 0, RoundingMode.CEILING);
+        long nodeOneStake = oneThirdStake.divide(BigDecimal.valueOf(2), 0, RoundingMode.CEILING).longValue();
+        long nodeTwoStake = oneThirdStake.multiply(BigDecimal.valueOf(2)).subtract(BigDecimal.ONE).longValue();
+        long nodeThreeStake = oneThirdStake.divide(BigDecimal.valueOf(2), 0, RoundingMode.CEILING)
+                .subtract(BigDecimal.ONE).longValue();
 
         nodeStakes(nodeOneStake, nodeTwoStake, nodeThreeStake);
 
@@ -157,6 +165,20 @@ class ConsensusValidatorImplTest extends IntegrationTest {
                 .map(FileStreamSignature::getStatus)
                 .containsExactly(FileStreamSignature.SignatureStatus.CONSENSUS_REACHED,
                         FileStreamSignature.SignatureStatus.CONSENSUS_REACHED);
+    }
+
+    @Test
+    void testVerificationWithMinimumStakes() {
+        nodeStakes(1, 1, 1);
+        var fileStreamSignatureNode3 = buildFileStreamSignature();
+        var fileStreamSignatures = List.of(
+                fileStreamSignatureNode3
+        );
+
+        consensusValidator.validate(fileStreamSignatures);
+        assertThat(fileStreamSignatures)
+                .map(FileStreamSignature::getStatus)
+                .containsExactly(FileStreamSignature.SignatureStatus.CONSENSUS_REACHED);
     }
 
     @ParameterizedTest
@@ -211,8 +233,12 @@ class ConsensusValidatorImplTest extends IntegrationTest {
 
     @Test
     void testVerifiedWithFullNodeStakeConsensus() {
-        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(1d);
-        nodeStakes(16_666_666_666L, 16_666_666_667L, 16_666_666_667L);
+        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(BigDecimal.ONE);
+        var oneThirdStake = MAX_TINYBARS.divide(BigDecimal.valueOf(3), 0, RoundingMode.CEILING);
+        long nodeOneStake = oneThirdStake.subtract(BigDecimal.ONE).longValue();
+        long nodeTwoStake = oneThirdStake.longValue();
+        long nodeThreeStake = oneThirdStake.longValue();
+        nodeStakes(nodeOneStake, nodeTwoStake, nodeThreeStake);
 
         FileStreamSignature fileStreamSignatureNode3 = buildFileStreamSignature();
         FileStreamSignature fileStreamSignatureNode4 = buildFileStreamSignature();
@@ -240,7 +266,7 @@ class ConsensusValidatorImplTest extends IntegrationTest {
 
     @Test
     void testSkipNodeStakeConsensus() {
-        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(0d);
+        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(BigDecimal.ZERO);
         nodeStakes(1, 3, 3);
         var fileStreamSignatures = List.of(buildFileStreamSignature());
 
@@ -319,7 +345,7 @@ class ConsensusValidatorImplTest extends IntegrationTest {
         nodeAccountIDPubKeyMap.put("0.0.4", publicKey);
         nodeAccountIDPubKeyMap.put("0.0.5", publicKey);
         when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
-        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(1d);
+        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(BigDecimal.ONE);
 
         FileStreamSignature fileStreamSignatureNode3 = buildFileStreamSignature();
         FileStreamSignature fileStreamSignatureNode4 = buildFileStreamSignature();

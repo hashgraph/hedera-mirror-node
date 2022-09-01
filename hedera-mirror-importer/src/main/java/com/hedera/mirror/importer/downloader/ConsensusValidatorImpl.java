@@ -65,7 +65,8 @@ public class ConsensusValidatorImpl implements ConsensusValidator {
         }
 
         var filename = signatures.stream().map(FileStreamSignature::getFilename).findFirst().orElse("unknown");
-        if (commonDownloaderProperties.getConsensusRatio() == 0 && signatureHashMap.size() > 0) {
+        if (BigDecimal.ZERO.compareTo(commonDownloaderProperties.getConsensusRatio()) == 0
+                && signatureHashMap.size() > 0) {
             log.debug("Signature file {} does not require consensus, skipping consensus check", filename);
             return;
         }
@@ -115,8 +116,8 @@ public class ConsensusValidatorImpl implements ConsensusValidator {
 
     private boolean canReachConsensus(long stake, long totalStake) {
         var stakeRequiredForConsensus = BigDecimal.valueOf(totalStake)
-                .multiply(BigDecimal.valueOf(commonDownloaderProperties.getConsensusRatio()))
-                .setScale(0, RoundingMode.CEILING);
+                .multiply(commonDownloaderProperties.getConsensusRatio())
+                .setScale(1, RoundingMode.DOWN);
         return BigDecimal.valueOf(stake).compareTo(stakeRequiredForConsensus) >= 0;
     }
 }
