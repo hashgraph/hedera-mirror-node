@@ -1063,6 +1063,10 @@ class ContractController extends BaseController {
       } else if (filter.key === filterKeys.LIMIT) {
         limit = filter.value;
       } else if (filter.key === filterKeys.INDEX) {
+        if (filter.operator === utils.opsMap.ne) {
+          throw InvalidArgumentError.forRequestValidation(filterKeys.INDEX);
+        }
+
         filters.push(filter);
       }
     }

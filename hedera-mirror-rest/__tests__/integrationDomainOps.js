@@ -1411,4 +1411,5 @@ export default {
   loadContractStateChanges,
   setAccountBalance,
   setup,
+  loadContractActions,
 };
