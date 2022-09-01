@@ -490,3 +490,35 @@ describe('EntityId encoding', () => {
     expect(EntityId.parse(null, {isNullable: true}).getEncodedId()).toBeNull();
   });
 });
+
+describe('computeContractIdPartsFromContractIdValue', () => {
+  const specs = [
+    {input: '0.0.500', expected: {shard: '0', realm: '0', num: '500'}},
+    {
+      input: '500',
+      expected: {shard: null, realm: null, num: '500'},
+    },
+    {
+      input: '0.0.71eaa748d5252be68c1185588beca495459fdba4',
+      expected: {shard: '0', realm: '0', create2_evm_address: '71eaa748d5252be68c1185588beca495459fdba4'},
+    },
+    {
+      input: '71eaa748d5252be68c1185588beca495459fdba4',
+      expected: {shard: null, realm: null, create2_evm_address: '71eaa748d5252be68c1185588beca495459fdba4'},
+    },
+    {
+      input: '0.0.0x71eaa748d5252be68c1185588beca495459fdba4',
+      expected: {shard: '0', realm: '0', create2_evm_address: '71eaa748d5252be68c1185588beca495459fdba4'},
+    },
+    {
+      input: '0x71eaa748d5252be68c1185588beca495459fdba4',
+      expected: {shard: null, realm: null, create2_evm_address: '71eaa748d5252be68c1185588beca495459fdba4'},
+    },
+  ];
+
+  for (const spec of specs) {
+    test(spec.input, () => {
+      expect(EntityId.computeContractIdPartsFromContractIdValue(spec.input)).toEqual(spec.expected);
+    });
+  }
+});

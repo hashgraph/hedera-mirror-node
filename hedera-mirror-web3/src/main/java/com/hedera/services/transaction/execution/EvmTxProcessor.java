@@ -29,7 +29,6 @@ import static org.hyperledger.besu.evm.MainnetEVMs.registerLondonOperations;
 
 import com.hedera.services.transaction.contracts.operation.HederaSLoadOperation;
 import com.hedera.services.transaction.contracts.operation.HederaSStoreOperation;
-
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -60,7 +59,6 @@ import org.hyperledger.besu.evm.processor.AbstractMessageProcessor;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.tracing.OperationTracer;
 
-import com.hedera.mirror.web3.evm.OracleSimulator;
 import com.hedera.mirror.web3.evm.SimulatedGasCalculator;
 import com.hedera.mirror.web3.evm.SimulatedPricesSource;
 import com.hedera.mirror.web3.evm.SimulatedWorldState;
@@ -70,6 +68,7 @@ import com.hedera.mirror.web3.service.eth.AccountDto;
 import com.hedera.services.transaction.HederaMessageCallProcessor;
 import com.hedera.services.transaction.TransactionProcessingResult;
 import com.hedera.services.transaction.contracts.operation.HederaBalanceOperation;
+import com.hedera.services.transaction.contracts.operation.HederaSLoadOperation;
 import com.hedera.services.transaction.exception.InvalidTransactionException;
 import com.hedera.services.transaction.exception.ValidationUtils;
 import com.hedera.services.transaction.models.Account;
@@ -79,7 +78,7 @@ import com.hedera.services.transaction.store.contracts.HederaMutableWorldState;
 /**
  * Abstract processor of EVM transactions that prepares the {@link EVM} and all of the peripherals upon
  * instantiation. Provides a base
- * {@link EvmTxProcessor#execute(Account, Address, long, long, long, Bytes, boolean, Instant, boolean, StorageExpiry.Oracle, Address, BigInteger, long, Account)}
+ * {@link EvmTxProcessor#execute(Account, Address, long, long, long, Bytes, boolean, Instant, boolean, Address, BigInteger, long, Account)}
  * method that handles the end-to-end execution of a EVM transaction.
  */
 public abstract class EvmTxProcessor {
@@ -180,8 +179,6 @@ public abstract class EvmTxProcessor {
      * 		Current consensus time
      * @param isStatic
      * 		Whether the execution is static
-     * @param expiryOracle
-     * 		the oracle to use when determining the expiry of newly allocated storage
      * @param mirrorReceiver
      * 		the mirror form of the receiving {@link Address}; or the newly created address
      * @return the result of the EVM execution returned as {@link TransactionProcessingResult}
@@ -196,7 +193,6 @@ public abstract class EvmTxProcessor {
             final boolean contractCreation,
             final Instant consensusTime,
             final boolean isStatic,
-            final OracleSimulator expiryOracle,
             final Address mirrorReceiver,
             final BigInteger userOfferedGasPrice,
             final long maxGasAllowanceInTinybars,
@@ -283,7 +279,6 @@ public abstract class EvmTxProcessor {
                                 Map.of(
                                 "sbh", storageByteHoursTinyBarsGiven(consensusTime),
                                 "HederaFunctionality", getFunctionType())
-//                                EXPIRY_ORACLE_CONTEXT_KEY, expiryOracle)
                         );
 
         final MessageFrame initialFrame = buildInitialFrame(commonInitialFrame, receiver, payload, value);

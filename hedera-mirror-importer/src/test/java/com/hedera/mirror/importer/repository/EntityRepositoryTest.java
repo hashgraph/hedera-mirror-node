@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.repository;
  */
 
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
+import static com.hedera.mirror.common.domain.entity.EntityType.TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.protobuf.ByteString;
@@ -108,6 +109,49 @@ class EntityRepositoryTest extends AbstractRepositoryTest {
         assertThat(entityRepository.findByEvmAddress(entity.getEvmAddress())).get().isEqualTo(entity.getId());
         assertThat(entityRepository.findByEvmAddress(entityDeleted.getEvmAddress())).isEmpty();
         assertThat(entityRepository.findByEvmAddress(new byte[] {1, 2, 3})).isEmpty();
+    }
+
+    @Test
+    void refreshEntityStateStart() {
+        // given
+        var account1 = domainBuilder.entity().customize(e -> e.balance(20L)).persist();
+        var account2 = domainBuilder.entity().customize(e -> e.deleted(null)).persist();
+        domainBuilder.entity().customize(e -> e.deleted(true)).persist(); // deleted
+        var contract = domainBuilder.entity()
+                .customize(e -> e.stakedAccountId(null).stakedNodeId(null).stakePeriodStart(null).type(CONTRACT))
+                .persist();
+        domainBuilder.entity().customize(e -> e.type(TOPIC)).persist();
+        account1.setStakedAccountId(0L);
+        account2.setStakedAccountId(0L);
+        var expectedContract = contract.toBuilder().stakedAccountId(0L).stakedNodeId(-1L).stakePeriodStart(-1L).build();
+
+        // when
+        entityRepository.refreshEntityStateStart();
+
+        // then
+        var fields = new String[] {"balance", "declineReward", "id", "stakedAccountId", "stakedNodeId",
+                "stakePeriodStart"};
+        assertThat(jdbcOperations.query("select * from entity_state_start", ROW_MAPPER))
+                .usingRecursiveFieldByFieldElementComparatorOnFields(fields)
+                .containsExactlyInAnyOrder(account1, account2, expectedContract);
+
+        // given
+        account1.setBalance(80L);
+        account1.setDeclineReward(true);
+        account1.setStakePeriodStart(10L);
+        account1.setStakedNodeId(2L);
+        account2.setStakedAccountId(account1.getId());
+        account2.setStakePeriodStart(10L);
+        contract.setDeleted(true);
+        entityRepository.saveAll(List.of(account1, account2, contract));
+
+        // when
+        entityRepository.refreshEntityStateStart();
+
+        // then
+        assertThat(jdbcOperations.query("select * from entity_state_start", ROW_MAPPER))
+                .usingRecursiveFieldByFieldElementComparatorOnFields(fields)
+                .containsExactlyInAnyOrder(account1, account2);
     }
 
     @Test

@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.evm;
+package com.hedera.mirror.importer.parser.record.entity.staking;
 
 /*-
  * ‌
@@ -20,14 +20,17 @@ package com.hedera.mirror.web3.evm;
  * ‍
  */
 
-import javax.inject.Singleton;
-import org.hyperledger.besu.evm.frame.MessageFrame;
+import java.util.Collection;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.transaction.event.TransactionalEventListener;
 
-// FUTURE WORK This should move to an interface when evm-module is complete
-@Singleton
-public class OracleSimulator {
+import com.hedera.mirror.common.domain.addressbook.NodeStake;
 
-    public long storageExpiryIn(final MessageFrame frame) {
-        return 0L;
-    }
+public interface EntityStakeCalculator {
+
+    void calculate(Collection<NodeStake> nodeStakes);
+
+    @Async
+    @TransactionalEventListener(classes = NodeStakeUpdateEvent.class)
+    void update();
 }

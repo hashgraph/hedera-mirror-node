@@ -123,10 +123,6 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
     }
 
     private Address canonicalAddress(final Address addressOrAlias) {
-//        if (aliases.isInUse(addressOrAlias)) {
-//            return addressOrAlias;
-//        }
-
         return getAddressOrAlias(addressOrAlias);
     }
 

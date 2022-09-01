@@ -1,5 +1,6 @@
 package com.hedera.mirror.web3.evm;
 
+import static com.hedera.services.transaction.exception.ValidationUtils.validateTrue;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
@@ -19,8 +20,6 @@ import com.hedera.mirror.web3.service.eth.AccountDto;
 import com.hedera.services.transaction.TransactionProcessingResult;
 import com.hedera.services.transaction.execution.EvmTxProcessor;
 import com.hedera.services.transaction.store.contracts.HederaMutableWorldState;
-
-import static com.hedera.services.transaction.exception.ValidationUtils.validateTrue;
 
 public class CallEvmTxProcessor extends EvmTxProcessor {
     private final CodeCache codeCache;
@@ -63,7 +62,6 @@ public class CallEvmTxProcessor extends EvmTxProcessor {
                 false,
                 consensusTime,
                 isStatic,
-                null,
                 receiver,
                 userOfferedGasPrice,
                 maxGasAllowanceInTinybars,

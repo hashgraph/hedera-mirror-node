@@ -25,16 +25,15 @@ import config from './config';
 import {
   checkAPIResponseError,
   checkElementsOrder,
-  checkMandatoryParams,
-  checkObjectEqual,
-  checkResourceFreshness,
-  checkRespArrayLength,
   checkRespObjDefined,
-  CheckRunner,
+  checkRespArrayLength,
+  checkMandatoryParams,
+  checkResourceFreshness,
   DEFAULT_LIMIT,
   getAPIResponse,
   getUrl,
   testRunner,
+  CheckRunner,
 } from './utils';
 
 const transactionsPath = '/transactions';
@@ -74,56 +73,6 @@ const checkTransactionTransfers = (transactions, option) => {
   }
 
   return {passed: true};
-};
-
-/**
- * Verify get transaction by hash
- *
- * @param server
- * @returns {Promise<Object>}
- */
-const getTransactionByHashCheck = async (server) => {
-  let url = getUrl(server, transactionsPath, {limit: 1});
-  let transactions = await getAPIResponse(url, jsonRespKey);
-
-  let result = new CheckRunner()
-    .withCheckSpec(checkAPIResponseError)
-    .withCheckSpec(checkRespObjDefined, {message: 'transactions is not defined'})
-    .withCheckSpec(checkRespArrayLength, {
-      limit: 1,
-      message: (elements, limit) => `transactions.length of ${elements.length} is not ${limit}`,
-    })
-    .withCheckSpec(checkMandatoryParams, {
-      params: mandatoryParams,
-      message: 'transaction object is missing some mandatory fields',
-    })
-    .run(transactions);
-  if (!result.passed) {
-    return {url, ...result};
-  }
-
-  const expected = transactions;
-  const hash = Buffer.from(expected[0].transaction_hash, 'base64');
-  const hashStrs = [hash.toString('base64url'), hash.toString('hex'), `0x${hash.toString('hex')}`];
-  const checkRunner = new CheckRunner()
-    .withCheckSpec(checkAPIResponseError)
-    .withCheckSpec(checkRespObjDefined, {message: 'transactions is not defined'})
-    .withCheckSpec(checkObjectEqual, {expected});
-
-  for (let hashStr of hashStrs) {
-    url = getUrl(server, `${transactionsPath}/${hashStr}`);
-    transactions = await getAPIResponse(url, jsonRespKey);
-    result = checkRunner.run(transactions);
-    if (!result.passed) {
-      return {url, ...result};
-    }
-  }
-
-  return {
-    url,
-    passed: true,
-    message: 'Successfully verified get transaction by hash',
-  };
 };
 
 /**
@@ -366,7 +315,6 @@ const checkTransactionFreshness = async (server) => {
 const runTests = async (server, testResult) => {
   const runTest = testRunner(server, testResult, resource);
   return Promise.all([
-    runTest(getTransactionByHashCheck),
     runTest(getTransactionsWithAccountCheck),
     runTest(getTransactionsWithOrderParam),
     runTest(getTransactionsWithLimitParams),

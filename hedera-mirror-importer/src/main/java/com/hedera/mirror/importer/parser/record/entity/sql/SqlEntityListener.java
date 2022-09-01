@@ -202,73 +202,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     @Override
-    public boolean isEnabled() {
-        return sqlProperties.isEnabled();
-    }
-
-    @Override
-    public void onStart() {
-        cleanup();
-    }
-
-    @Override
-    public void onEnd(RecordFile recordFile) {
-        executeBatches();
-        if (recordFile != null) {
-            recordFileRepository.save(recordFile);
-            sidecarFileRepository.saveAll(recordFile.getSidecars());
-        }
-    }
-
-    @Override
-    public void onError() {
-        cleanup();
-    }
-
-    private void cleanup() {
-        try {
-            assessedCustomFees.clear();
-            contracts.clear();
-            contractActions.clear();
-            contractLogs.clear();
-            contractResults.clear();
-            contractStateChanges.clear();
-            cryptoAllowances.clear();
-            cryptoAllowanceState.clear();
-            cryptoTransfers.clear();
-            customFees.clear();
-            entities.clear();
-            entityState.clear();
-            ethereumTransactions.clear();
-            fileData.clear();
-            liveHashes.clear();
-            networkStakes.clear();
-            nfts.clear();
-            nftAllowances.clear();
-            nftAllowanceState.clear();
-            nftTransferState.clear();
-            nodeStakes.clear();
-            nonFeeTransfers.clear();
-            prngs.clear();
-            schedules.clear();
-            stakingRewardTransfers.clear();
-            topicMessages.clear();
-            tokenAccounts.clear();
-            tokenAccountState.clear();
-            tokenAllowances.clear();
-            tokenAllowanceState.clear();
-            tokens.clear();
-            tokenDissociateTransfers.clear();
-            tokenTransfers.clear();
-            transactions.clear();
-            transactionSignatures.clear();
-            eventPublisher.publishEvent(new EntityBatchCleanupEvent(this));
-        } catch (BeanCreationNotAllowedException e) {
-            // This error can occur during shutdown
-        }
-    }
-
-    private void executeBatches() {
+    public void flush() {
         try {
             // batch save action may run asynchronously, triggering it before other operations can reduce latency
             eventPublisher.publishEvent(new EntityBatchSaveEvent(this));
@@ -321,6 +255,73 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             throw new ParserException(e);
         } finally {
             cleanup();
+        }
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return sqlProperties.isEnabled();
+    }
+
+    @Override
+    public void onStart() {
+        cleanup();
+    }
+
+    @Override
+    public void onEnd(RecordFile recordFile) {
+        flush();
+        if (recordFile != null) {
+            recordFileRepository.save(recordFile);
+            sidecarFileRepository.saveAll(recordFile.getSidecars());
+        }
+    }
+
+    @Override
+    public void onError() {
+        cleanup();
+    }
+
+    private void cleanup() {
+        try {
+            assessedCustomFees.clear();
+            contracts.clear();
+            contractActions.clear();
+            contractLogs.clear();
+            contractResults.clear();
+            contractStateChanges.clear();
+            cryptoAllowances.clear();
+            cryptoAllowanceState.clear();
+            cryptoTransfers.clear();
+            customFees.clear();
+            entities.clear();
+            entityState.clear();
+            ethereumTransactions.clear();
+            fileData.clear();
+            liveHashes.clear();
+            networkStakes.clear();
+            nfts.clear();
+            nftAllowances.clear();
+            nftAllowanceState.clear();
+            nftTransferState.clear();
+            nodeStakes.clear();
+            nonFeeTransfers.clear();
+            prngs.clear();
+            schedules.clear();
+            stakingRewardTransfers.clear();
+            topicMessages.clear();
+            tokenAccounts.clear();
+            tokenAccountState.clear();
+            tokenAllowances.clear();
+            tokenAllowanceState.clear();
+            tokens.clear();
+            tokenDissociateTransfers.clear();
+            tokenTransfers.clear();
+            transactions.clear();
+            transactionSignatures.clear();
+            eventPublisher.publishEvent(new EntityBatchCleanupEvent(this));
+        } catch (BeanCreationNotAllowedException e) {
+            // This error can occur during shutdown
         }
     }
 
@@ -499,7 +500,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     public void onTransaction(Transaction transaction) throws ImporterException {
         transactions.add(transaction);
         if (transactions.size() == sqlProperties.getBatchSize()) {
-            executeBatches();
+            flush();
         }
     }
 

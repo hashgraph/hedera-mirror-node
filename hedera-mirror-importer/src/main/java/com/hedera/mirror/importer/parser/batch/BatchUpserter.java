@@ -20,17 +20,15 @@ package com.hedera.mirror.importer.parser.batch;
  * ‍
  */
 
-import com.google.common.base.Stopwatch;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.concurrent.TimeUnit;
 import javax.sql.DataSource;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.CollectionUtils;
 
 import com.hedera.mirror.importer.exception.ParserException;
@@ -43,18 +41,13 @@ import com.hedera.mirror.importer.repository.upsert.UpsertQueryGenerator;
 @Log4j2
 public class BatchUpserter extends BatchInserter {
 
-    private static final String TABLE = "table";
-
     private final String createTempTableSql;
     private final String createTempIndexSql;
     private final String finalTableName;
-    private final String insertSql;
+    private final String upsertSql;
     private final String setTempBuffersSql;
-    private final String updateSql;
-    private final Timer copyDurationMetric;
-    private final Timer finalInsertDurationMetric;
-    private final Timer updateDurationMetric;
     private final String truncateSql;
+    private final Timer upsertMetric;
 
     public BatchUpserter(Class<?> entityClass, DataSource dataSource, MeterRegistry meterRegistry,
                          CommonParserProperties properties,
@@ -63,27 +56,13 @@ public class BatchUpserter extends BatchInserter {
         createTempIndexSql = upsertQueryGenerator.getCreateTempIndexQuery();
         createTempTableSql = upsertQueryGenerator.getCreateTempTableQuery();
         setTempBuffersSql = String.format("set temp_buffers = '%dMB'", properties.getTempTableBufferSize());
-        truncateSql = String
-                .format("truncate table %s restart identity cascade", upsertQueryGenerator.getTemporaryTableName());
+        truncateSql = String.format("truncate table %s restart identity cascade", tableName);
         finalTableName = upsertQueryGenerator.getFinalTableName();
-        insertSql = upsertQueryGenerator.getInsertQuery();
-        updateSql = upsertQueryGenerator.getUpdateQuery();
-        copyDurationMetric = Timer.builder("hedera.mirror.importer.parse.upsert.copy")
-                .description("Time to copy transaction information from importer to temp table")
-                .tag(TABLE, upsertQueryGenerator.getTemporaryTableName())
-                .register(meterRegistry);
-        finalInsertDurationMetric = Timer.builder("hedera.mirror.importer.parse.upsert.insert")
+        upsertSql = upsertQueryGenerator.getUpsertQuery();
+        upsertMetric = Timer.builder("hedera.mirror.importer.parse.upsert")
                 .description("Time to insert transaction information from temp to final table")
-                .tag(TABLE, finalTableName)
+                .tag("table", finalTableName)
                 .register(meterRegistry);
-        if (StringUtils.isNotEmpty(updateSql)) {
-            updateDurationMetric = Timer.builder("hedera.mirror.importer.parse.upsert.update")
-                    .description("Time to update parsed transactions information into table")
-                    .tag(TABLE, finalTableName)
-                    .register(meterRegistry);
-        } else {
-            updateDurationMetric = null;
-        }
     }
 
     @Override
@@ -97,34 +76,13 @@ public class BatchUpserter extends BatchInserter {
             createTempTable(connection);
 
             // copy items to temp table
-            copyItems(items, connection);
+            super.persistItems(items, connection);
 
-            // insert items from temp table to final table
-            int insertCount = insertItems(connection);
-
-            // update items in final table from temp table
-            int updateCount = updateItems(connection);
-
-            log.debug("Inserted {} and updated {} from a total of {} rows to {}",
-                    insertCount, updateCount, items.size(), finalTableName);
+            // Upsert items from the temporary table to the final table
+            upsert(connection);
         } catch (Exception e) {
-            throw new ParserException(String.format("Error copying %d items to table %s", items.size(), finalTableName), e);
-        }
-    }
-
-    private int insertToFinalTable(Connection connection) throws SQLException {
-        try (PreparedStatement preparedStatement = connection.prepareStatement(insertSql)) {
-            int count = preparedStatement.executeUpdate();
-            log.trace("Inserted {} rows from {} table to {} table", count, tableName, finalTableName);
-            return count;
-        }
-    }
-
-    private int updateFinalTable(Connection connection) throws SQLException {
-        try (PreparedStatement preparedStatement = connection.prepareStatement(updateSql)) {
-            int count = preparedStatement.executeUpdate();
-            log.trace("Updated {} rows from {} table to {} table", count, tableName, finalTableName);
-            return count;
+            throw new ParserException(String.format("Error copying %d items to table %s", items.size(),
+                    finalTableName), e);
         }
     }
 
@@ -146,35 +104,19 @@ public class BatchUpserter extends BatchInserter {
         try (PreparedStatement preparedStatement = connection.prepareStatement(truncateSql)) {
             preparedStatement.executeUpdate();
         }
+
         log.trace("Created temp table {}", tableName);
     }
 
-    private void copyItems(Collection<?> items, Connection connection) throws SQLException, IOException {
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        super.persistItems(items, connection);
-        recordMetric(copyDurationMetric, stopwatch);
-    }
+    private void upsert(Connection connection) throws SQLException {
+        var startTime = System.nanoTime();
 
-    private int insertItems(Connection connection) throws SQLException {
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        int insertCount = insertToFinalTable(connection);
-        recordMetric(finalInsertDurationMetric, stopwatch);
-        return insertCount;
-    }
-
-    private int updateItems(Connection connection) throws SQLException {
-        if (StringUtils.isEmpty(updateSql)) {
-            return 0;
+        try (PreparedStatement preparedStatement = connection.prepareStatement(upsertSql)) {
+            int count = preparedStatement.executeUpdate();
+            log.debug("Inserted {} rows from {} table to {} table", count, tableName, finalTableName);
+        } finally {
+            upsertMetric.record(System.nanoTime() - startTime, TimeUnit.NANOSECONDS);
         }
-
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        int count = updateFinalTable(connection);
-        recordMetric(updateDurationMetric, stopwatch);
-        return count;
-    }
-
-    private void recordMetric(Timer timer, Stopwatch stopwatch) {
-        timer.record(stopwatch.elapsed());
     }
 }
 
