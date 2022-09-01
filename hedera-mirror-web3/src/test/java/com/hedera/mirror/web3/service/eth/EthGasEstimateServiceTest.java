@@ -3,6 +3,7 @@ package com.hedera.mirror.web3.service.eth;
 import static com.hedera.mirror.web3.service.eth.EthGasEstimateService.ETH_GAS_ESTIMATE_METHOD;
 import static com.hedera.mirror.web3.utils.TestConstants.blockNumber;
 import static com.hedera.mirror.web3.utils.TestConstants.chainId;
+import static com.hedera.mirror.web3.utils.TestConstants.contractAddress;
 import static com.hedera.mirror.web3.utils.TestConstants.contractHexAddress;
 import static com.hedera.mirror.web3.utils.TestConstants.gasHexValue;
 import static com.hedera.mirror.web3.utils.TestConstants.gasLimit;
@@ -18,8 +19,10 @@ import static com.hedera.mirror.web3.utils.TestConstants.senderBalance;
 import static com.hedera.mirror.web3.utils.TestConstants.senderEvmAddress;
 import static com.hedera.mirror.web3.utils.TestConstants.senderHexAddress;
 import static com.hedera.mirror.web3.utils.TestConstants.senderNum;
+import static com.hedera.mirror.web3.utils.TestConstants.storageValue;
 import static com.hedera.mirror.web3.utils.TestConstants.transferHbarsToReceiverInputData;
 import static com.hedera.mirror.web3.utils.TestConstants.valueHexValue;
+import static com.hedera.mirror.web3.utils.TestConstants.writeToStorageSlotInputData;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -27,6 +30,7 @@ import static org.mockito.Mockito.when;
 import java.time.Instant;
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
+import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.account.EvmAccount;
@@ -133,7 +137,7 @@ class EthGasEstimateServiceTest {
         when(gasCalculator.getMaxRefundQuotient()).thenReturn(2L);
         when(simulatedPricesSource.currentGasPrice(any(), any())).thenReturn(1L);
 
-       when(codeCache.getIfPresent(any())).thenReturn(runtimeCode);
+        when(codeCache.getIfPresent(any())).thenReturn(runtimeCode);
 
         final var ethCallParams =
                 new EthParams(
@@ -143,6 +147,46 @@ class EthGasEstimateServiceTest {
                         gasPriceHexValue,
                         valueHexValue,
                         transferHbarsToReceiverInputData);
+
+        final var transactionCall = new TxnCallBody(ethCallParams, latestTag);
+        final var result = ethGasEstimateService.get(transactionCall);
+        Assertions.assertEquals(Bytes.wrap(String.valueOf(gasUsed).getBytes()).toHexString(), result);
+    }
+
+    @Test
+    void ethGasEstimateForWritingToContractStorageWorks() {
+        when(hederaWorldState.updater()).thenReturn(updater);
+        when(updater.updater()).thenReturn(simulatedStackedWorldStateUpdater);
+        when(updater.getOrCreateSenderAccount(senderAddress)).thenReturn(senderAccount);
+        when(senderAccount.getMutable()).thenReturn(mutableSender);
+        when(simulatedStackedWorldStateUpdater.getSenderAccount(any())).thenReturn(senderAccount);
+        when(simulatedStackedWorldStateUpdater.get(contractAddress)).thenReturn(recipientAccount);
+        when(simulatedStackedWorldStateUpdater.getOrCreate(any())).thenReturn(recipientAccount);
+        when(simulatedStackedWorldStateUpdater.getAccount(contractAddress)).thenReturn(recipientAccount);
+        when(recipientAccount.getAddress()).thenReturn(contractAddress);
+        when(recipientAccount.getMutable()).thenReturn(mutableRecipient);
+        when(evmProperties.getChainId()).thenReturn(chainId);
+        when(entityRepository.findAccountByAddress(senderEvmAddress)).thenReturn(Optional.of(senderEntity));
+        when(mutableSender.getBalance()).thenReturn(Wei.of(senderBalance));
+        when(recipientAccount.getStorageValue(UInt256.valueOf(1))).thenReturn(UInt256.fromHexString(storageValue));
+
+        when(blockMetaSourceProvider.computeBlockValues(gasLimit))
+                .thenReturn(new SimulatedBlockMetaSource(gasLimit, blockNumber, Instant.now().getEpochSecond()));
+        when(senderEntity.getAlias()).thenReturn(senderAlias);
+        when(senderEntity.getNum()).thenReturn(senderNum);
+
+        when(gasCalculator.getMaxRefundQuotient()).thenReturn(2L);
+        when(simulatedPricesSource.currentGasPrice(any(), any())).thenReturn(1L);
+        when(codeCache.getIfPresent(any())).thenReturn(runtimeCode);
+
+        final var ethCallParams =
+                new EthParams(
+                        senderHexAddress,
+                        contractHexAddress,
+                        gasHexValue,
+                        gasPriceHexValue,
+                        valueHexValue,
+                        writeToStorageSlotInputData);
 
         final var transactionCall = new TxnCallBody(ethCallParams, latestTag);
         final var result = ethGasEstimateService.get(transactionCall);

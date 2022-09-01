@@ -1,7 +1,7 @@
 package com.hedera.mirror.web3.evm;
 
-import static com.hedera.services.transaction.exception.ValidationUtils.validateTrue;
 
+import static com.hedera.services.transaction.exception.ValidationUtils.validateTrue;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
