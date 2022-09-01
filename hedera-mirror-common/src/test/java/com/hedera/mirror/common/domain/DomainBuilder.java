@@ -79,6 +79,7 @@ import com.hedera.mirror.common.domain.entity.CryptoAllowanceHistory;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityHistory;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityStake;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.NftAllowanceHistory;
@@ -110,6 +111,7 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.services.stream.proto.CallOperationType;
 import com.hedera.services.stream.proto.ContractAction.ResultDataCase;
 import com.hedera.services.stream.proto.ContractActionType;
 
@@ -240,6 +242,7 @@ public class DomainBuilder {
                 .callDepth(1)
                 .caller(entityId(CONTRACT))
                 .callerType(CONTRACT)
+                .callOperationType(CallOperationType.OP_CALL.getNumber())
                 .callType(ContractActionType.CALL.getNumber())
                 .consensusTimestamp(timestamp())
                 .gas(100L)
@@ -409,13 +412,24 @@ public class DomainBuilder {
                 .realm(0L)
                 .receiverSigRequired(true)
                 .shard(0L)
-                .stakedAccountId(-1L)
                 .stakedNodeId(-1L)
                 .stakePeriodStart(-1L)
                 .submitKey(key())
                 .timestampRange(Range.closedOpen(timestamp, timestamp()))
                 .type(ACCOUNT);
 
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<EntityStake, EntityStake.EntityStakeBuilder> entityStake() {
+        var builder = EntityStake.builder()
+                .declineRewardStart(false)
+                .endStakePeriod(0L)
+                .id(id())
+                .pendingReward(0L)
+                .stakedNodeIdStart(-1L)
+                .stakedToMe(0L)
+                .stakeTotalStart(0L);
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

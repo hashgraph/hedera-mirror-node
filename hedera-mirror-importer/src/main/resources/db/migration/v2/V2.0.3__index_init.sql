@@ -99,6 +99,14 @@ create index if not exists entity_history__alias on entity_history (alias) where
 create index if not exists entity_history__evm_address on entity_history (evm_address) where evm_address is not null;
 create index if not exists entity_history__timestamp_range on entity_history using gist (timestamp_range);
 
+-- entity_state_start
+create unique index if not exists entity_state_start__id on entity_state_start (id);
+create index if not exists entity_state_start__staked_account_id
+    on entity_state_start (staked_account_id) where staked_account_id <> 0;
+
+-- entity_stake
+alter table if exists entity_stake add constraint entity_stake__pk primary key (id);
+
 -- ethereum_transaction
 alter table ethereum_transaction
     add constraint ethereum_transaction__pk primary key (consensus_timestamp);
@@ -214,8 +222,6 @@ create unique index if not exists topic_message__topic_id_seqnum
 -- transaction
 alter table if exists transaction
     add constraint transaction__pk primary key (consensus_timestamp, payer_account_id);
-create index if not exists transaction__hash_prefix
-    on transaction (substring(transaction_hash from 1 for 32));
 create index if not exists transaction__transaction_id
     on transaction (valid_start_ns, payer_account_id);
 create index if not exists transaction__payer_account_id
