@@ -65,8 +65,7 @@ public class ConsensusValidatorImpl implements ConsensusValidator {
         }
 
         var filename = signatures.stream().map(FileStreamSignature::getFilename).findFirst().orElse("unknown");
-        if (BigDecimal.ZERO.compareTo(commonDownloaderProperties.getConsensusRatio()) == 0
-                && signatureHashMap.size() > 0) {
+        if (BigDecimal.ZERO.equals(commonDownloaderProperties.getConsensusRatio()) && signatureHashMap.size() > 0) {
             log.debug("Signature file {} does not require consensus, skipping consensus check", filename);
             return;
         }

@@ -52,6 +52,8 @@ public class CommonDownloaderProperties {
     private CloudProvider cloudProvider = CloudProvider.S3;
 
     private MathContext consensusRatioMathContext = new MathContext(19, RoundingMode.DOWN);
+
+    @NotNull
     @Max(1)
     @Min(0)
     private BigDecimal consensusRatio = BigDecimal.ONE.divide(BigDecimal.valueOf(3), consensusRatioMathContext);
