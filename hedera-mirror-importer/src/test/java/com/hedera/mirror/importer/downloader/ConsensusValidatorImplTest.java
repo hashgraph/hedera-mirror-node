@@ -83,7 +83,7 @@ class ConsensusValidatorImplTest extends IntegrationTest {
         when(currentAddressBook.getNodeIdNodeAccountIdMap()).thenReturn(nodeIdNodeAccountIdMap);
         when(addressBookService.getCurrent()).thenReturn(currentAddressBook);
         when(commonDownloaderProperties.getConsensusRatio()).thenReturn(BigDecimal.ONE.divide(BigDecimal.valueOf(3),
-                19, RoundingMode.CEILING));
+                19, RoundingMode.DOWN));
     }
 
     @Test

@@ -115,9 +115,16 @@ public class ConsensusValidatorImpl implements ConsensusValidator {
     }
 
     private boolean canReachConsensus(long stake, long totalStake) {
+        log.info("Stake: {}, Total Stake: {}", stake, totalStake);
+        log.info("Consensus Ratio: {}", commonDownloaderProperties.getConsensusRatio());
+
         var stakeRequiredForConsensus = BigDecimal.valueOf(totalStake)
                 .multiply(commonDownloaderProperties.getConsensusRatio())
-                .setScale(1, RoundingMode.DOWN);
+                .setScale(0, RoundingMode.CEILING);
+
+        log.info("Stake Required For Consensus: {}", stakeRequiredForConsensus);
+        log.info("Result: {}", BigDecimal.valueOf(stake).compareTo(stakeRequiredForConsensus) >= 0);
+
         return BigDecimal.valueOf(stake).compareTo(stakeRequiredForConsensus) >= 0;
     }
 }

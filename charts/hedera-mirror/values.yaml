@@ -314,7 +314,7 @@ test:
   enabled: false
   git:
     branch: ""  # Default to Chart app version
-    repository: https://github.com/hashgraph/hedera-mirror-node.git
+    repository: hashgraph/hedera-mirror-node
   image:
     pullPolicy: IfNotPresent
     repository: alpine

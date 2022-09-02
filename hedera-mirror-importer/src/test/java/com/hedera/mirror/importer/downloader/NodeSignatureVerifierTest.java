@@ -94,7 +94,7 @@ class NodeSignatureVerifierTest extends IntegrationTest {
         when(addressBookService.getCurrent()).thenReturn(currentAddressBook);
         when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
         when(commonDownloaderProperties.getConsensusRatio()).thenReturn(BigDecimal.ONE.divide(BigDecimal.valueOf(3),
-                19, RoundingMode.CEILING));
+                19, RoundingMode.DOWN));
     }
 
     @SneakyThrows
