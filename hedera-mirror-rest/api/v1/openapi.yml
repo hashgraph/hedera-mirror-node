@@ -1725,19 +1725,19 @@ components:
           example: 50000
           nullable: false
           format: int64
-          type: number
+          type: integer
         gas_used:
           description: Gas used in tinybars
           example: 50000
           nullable: false
           format: int64
-          type: number
+          type: integer
         index:
           description: The position of the action within the ordered list of actions
           example: 0
           format: int32
           nullable: false
-          type: number
+          type: integer
         input:
           description: The hex encoded input data
           example: '0x123456'
@@ -1771,7 +1771,7 @@ components:
           example: 50000
           nullable: false
           format: int64
-          type: number
+          type: integer
     ContractResult:
       type: object
       properties:
@@ -3882,9 +3882,6 @@ components:
         eqOperator:
           summary: Example of equals operator
           value: eq:2
-        neOperator:
-          summary: Example of not equals operator
-          value: ne:3
         gtOperator:
           summary: Example of greater than operator
           value: gt:4
