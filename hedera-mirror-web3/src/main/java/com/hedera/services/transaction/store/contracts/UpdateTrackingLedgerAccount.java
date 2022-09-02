@@ -38,6 +38,7 @@ import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
 
 public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAccount, EvmAccount {
+    private static final long TOKEN_PROXY_ACCOUNT_NONCE = -1;
     private final Hash addressHash;
     private final Address address;
     private final NavigableMap<UInt256, UInt256> updatedStorage;
@@ -126,6 +127,10 @@ public class UpdateTrackingLedgerAccount<A extends Account> implements MutableAc
     @Override
     public void setNonce(final long value) {
         this.nonce = value;
+    }
+
+    public boolean wrappedAccountIsTokenProxy() {
+        return account != null && account.getNonce() == TOKEN_PROXY_ACCOUNT_NONCE;
     }
 
     @Override

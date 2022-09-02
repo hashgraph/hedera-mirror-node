@@ -20,20 +20,29 @@ package com.hedera.mirror.web3.evm;
  * ‍
  */
 
-import javax.inject.Singleton;
+import javax.inject.Named;
+import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 
+import com.hedera.mirror.web3.repository.ContractStateChangeRepository;
+import com.hedera.mirror.web3.repository.EntityRepository;
+import com.hedera.mirror.web3.repository.TokenRepository;
 import com.hedera.services.transaction.store.contracts.EntityAccess;
 
 //FUTURE WORK to be implemented in separate PR
-@Singleton
+@Named
+@RequiredArgsConstructor
 public class SimulatedEntityAccess implements EntityAccess {
 
+    private final ContractStateChangeRepository contractStateChangeRepository;
+    private final TokenRepository tokenRepository;
+    private final EntityRepository entityRepository;
+
     @Override
-    public long getBalance(Address id) {
-        return 0;
+    public long getBalance(Address address) {
+        return entityRepository.findAccountBalanceByAddress(address.toArrayUnsafe()).orElse(0L);
     }
 
     @Override
@@ -48,12 +57,12 @@ public class SimulatedEntityAccess implements EntityAccess {
 
     @Override
     public boolean isExtant(Address id) {
-        return false;
+        return true;
     }
 
     @Override
     public boolean isTokenAccount(Address address) {
-        return false;
+        return tokenRepository.findByAddress(address.toArrayUnsafe()).isPresent();
     }
 
     @Override
@@ -63,7 +72,8 @@ public class SimulatedEntityAccess implements EntityAccess {
 
     @Override
     public UInt256 getStorage(Address id, UInt256 key) {
-        return null;
+        var value = contractStateChangeRepository.findStorageValue(id.toArray(), key.toArray()).orElse(null);
+        return UInt256.fromHexString(value);
     }
 
     @Override

@@ -20,13 +20,35 @@ package com.hedera.mirror.web3.evm;
  * ‍
  */
 
+import javax.inject.Named;
+import lombok.RequiredArgsConstructor;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.evm.Code;
 
-//FUTURE WORK to be implemented in separate PR
+import com.hedera.mirror.web3.repository.ContractRepository;
+import com.hedera.mirror.web3.repository.EntityRepository;
+
+@Named
+@RequiredArgsConstructor
 public class CodeCache {
 
+    final ContractRepository contractRepository;
+    final EntityRepository entityRepository;
+
     public Code getIfPresent(final Address address) {
-        return Code.EMPTY_CODE;
+
+        final Long id = entityRepository.findAccountIdByAddress(address.toArray()).orElse(null);
+
+        final var runtimeBytecode = contractRepository.findRuntimeBytecodeById(id).orElse(null);
+
+        if (runtimeBytecode != null) {
+            final var bytes = Bytes.fromHexString(runtimeBytecode);
+
+            return Code.createLegacyCode(bytes, Hash.hash(bytes));
+        } else {
+            return Code.EMPTY_CODE;
+        }
     }
 }

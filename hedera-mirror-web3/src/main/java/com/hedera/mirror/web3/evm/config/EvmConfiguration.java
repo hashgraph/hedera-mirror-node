@@ -27,6 +27,7 @@ import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 @Configuration
 @EnableCaching
@@ -37,6 +38,7 @@ class EvmConfiguration {
     public static final String CACHE_MANAGER_500MS = "cacheManager500Ms";
 
     @Bean(CACHE_MANAGER_10MIN)
+    @Primary
     CacheManager cacheManager10MIN() {
         final var caffeine =
                 Caffeine.newBuilder().expireAfterWrite(10, TimeUnit.MINUTES).maximumSize(10000);

@@ -22,9 +22,15 @@ package com.hedera.services.transaction;
  *
  */
 
+import static org.hyperledger.besu.evm.frame.ExceptionalHaltReason.INSUFFICIENT_GAS;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.COMPLETED_SUCCESS;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.EXCEPTIONAL_HALT;
+import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
+
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
@@ -66,33 +72,31 @@ public class HederaMessageCallProcessor extends MessageCallProcessor {
     void executeHederaPrecompile(
             final PrecompiledContract contract,
             final MessageFrame frame,
-            final OperationTracer operationTracer
-    ) {
+            final OperationTracer operationTracer) {
         final long gasRequirement;
         final Bytes output;
-        //TODO: connect precompile logic
-//        if (contract instanceof HTSPrecompiledContract htsPrecompile) {
-//            final var costedResult = htsPrecompile.computeCosted(frame.getInputData(), frame);
-//            if (frame.getState() == REVERT) {
-//                return;
-//            }
-//            output = costedResult.getValue();
-//            gasRequirement = costedResult.getKey();
-//        } else {
-//            output = contract.computePrecompile(frame.getInputData(), frame).getOutput();
-//            gasRequirement = contract.gasRequirement(frame.getInputData());
-//        }
-//        operationTracer.tracePrecompileCall(frame, gasRequirement, output);
-//        if (frame.getRemainingGas() < gasRequirement) {
-//            frame.decrementRemainingGas(frame.getRemainingGas());
-//            frame.setExceptionalHaltReason(Optional.of(INSUFFICIENT_GAS));
-//            frame.setState(EXCEPTIONAL_HALT);
-//        } else if (output != null) {
-//            frame.decrementRemainingGas(gasRequirement);
-//            frame.setOutputData(output);
-//            frame.setState(COMPLETED_SUCCESS);
-//        } else {
-//            frame.setState(EXCEPTIONAL_HALT);
-//        }
+        if (contract instanceof HTSPrecompiledContract htsPrecompile) {
+            final var costedResult = htsPrecompile.computeCosted(frame.getInputData(), frame);
+            output = costedResult.getValue();
+            gasRequirement = costedResult.getKey();
+        } else {
+            output = contract.computePrecompile(frame.getInputData(), frame).getOutput();
+            gasRequirement = contract.gasRequirement(frame.getInputData());
+        }
+        operationTracer.tracePrecompileCall(frame, gasRequirement, output);
+        if (frame.getState() == REVERT) {
+            return;
+        }
+        if (frame.getRemainingGas() < gasRequirement) {
+            frame.decrementRemainingGas(frame.getRemainingGas());
+            frame.setExceptionalHaltReason(Optional.of(INSUFFICIENT_GAS));
+            frame.setState(EXCEPTIONAL_HALT);
+        } else if (output != null) {
+            frame.decrementRemainingGas(gasRequirement);
+            frame.setOutputData(output);
+            frame.setState(COMPLETED_SUCCESS);
+        } else {
+            frame.setState(EXCEPTIONAL_HALT);
+        }
     }
 }

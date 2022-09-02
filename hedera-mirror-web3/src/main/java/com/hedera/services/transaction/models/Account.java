@@ -17,9 +17,9 @@ import com.hedera.services.transaction.ethereum.EthTxSigs;
  * memo field, for example, is not yet present.
  */
 public class Account {
-    private static final int EVM_ADDRESS_SIZE = 20;
-    private static final int ECDSA_SECP256K1_ALIAS_SIZE = 35;
-    private static final ByteString ECDSA_KEY_ALIAS_PREFIX = ByteString.copyFrom(new byte[] { 0x3a, 0x21 });
+    public static final int EVM_ADDRESS_SIZE = 20;
+    public static final int ECDSA_SECP256K1_ALIAS_SIZE = 35;
+    public static final ByteString ECDSA_KEY_ALIAS_PREFIX = ByteString.copyFrom(new byte[] { 0x3a, 0x21 });
 
     private final Id id;
     private ByteString alias = ByteString.EMPTY;
