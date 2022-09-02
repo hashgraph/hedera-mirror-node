@@ -20,9 +20,8 @@
 
 import common from './common';
 import {runTests} from './monitor_tests';
-import * as utils from './utils';
 
-const retryCountMax = 3; // # of times a single process can retry
+let runCount = 0;
 
 /**
  * Main function to run the tests and save results
@@ -30,61 +29,41 @@ const retryCountMax = 3; // # of times a single process can retry
  * @return None
  */
 const runEverything = async (servers) => {
-  try {
-    if (servers.length === 0) {
+  const serverTests = [];
+  const startTime = Date.now();
+  const currentRun = ++runCount;
+  logger.info(`Running test #${currentRun}`);
+
+  servers.forEach((server) => {
+    if (server.running) {
+      logger.warn(`Skipping test run #${currentRun} for ${server.name} since a previous run is still in progress`);
       return;
     }
 
-    for (const server of servers) {
-      const processObj = common.getProcess(server);
+    server.running = true;
 
-      if (processObj === undefined) {
-        // execute test and store name
-        runTests(server).then((outJson) => {
-          let results;
-          if (outJson.testResults) {
-            results = outJson;
-            const total = results.testResults.length;
-            logger.info(`Completed tests run for ${server.name} with ${results.numPassedTests}/${total} tests passed`);
-          } else {
-            results = utils.createFailedResultJson(
-              `Test result unavailable`,
-              `Test results not available for: ${server.name}`
-            );
-            logger.warn(`Incomplete tests for ${server.name}`);
-          }
-
-          common.deleteProcess(server);
-          common.saveResults(server, results);
-        });
-
-        common.saveProcess(server, 1);
-      } else {
-        const results = utils.createFailedResultJson(
-          `Test result unavailable`,
-          `Previous tests are still running for: ${server.name}`
+    const serverTest = runTests(server)
+      .then((results) => {
+        const total = results.testResults.length;
+        logger.info(
+          `Completed test run #${currentRun} for ${server.name} with ${results.numPassedTests}/${total} tests passed`
         );
-
-        // escape race condition, kill stored process and allow next process to attempt test
-        if (processObj.encountered >= retryCountMax) {
-          logger.warn(
-            `Previous tests for ${server.name} persisted for ${processObj.encountered} rounds. Clearing saved process.`
-          );
-          common.deleteProcess(server);
-        } else {
-          logger.info(
-            `Previous tests for ${server.name} still running after ${processObj.encountered} rounds. Incrementing count.`
-          );
-          common.saveProcess(server, processObj.encountered + 1);
-        }
-
         common.saveResults(server, results);
-        logger.warn(`Incomplete tests for ${server.name}`);
-      }
-    }
-  } catch (err) {
-    logger.error(`Error in runEverything: `, err);
-  }
+      })
+      .catch((error) => {
+        logger.error(`Error running tests #${currentRun} for ${server.name}: ${error}`);
+      })
+      .finally(() => {
+        server.running = false;
+      });
+
+    serverTests.push(serverTest);
+  });
+
+  return Promise.all(serverTests).then(() => {
+    const elapsed = Date.now() - startTime;
+    logger.info(`Finished test run #${currentRun} in ${elapsed} ms`);
+  });
 };
 
 export {runEverything};

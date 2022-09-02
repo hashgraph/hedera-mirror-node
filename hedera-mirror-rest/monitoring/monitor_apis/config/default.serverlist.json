@@ -12,6 +12,7 @@
     "minBackoff": 50
   },
   "shard": 0,
+  "timeout": 10,
   "account": {
     "enabled": true,
     "intervalMultiplier": 1,

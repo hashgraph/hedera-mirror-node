@@ -23,16 +23,16 @@ import * as math from 'mathjs';
 import config from './config';
 
 import {
-  checkAPIResponseError,
-  checkRespObjDefined,
-  checkRespArrayLength,
   checkAccountId,
+  checkAPIResponseError,
   checkMandatoryParams,
+  checkRespArrayLength,
+  checkRespObjDefined,
+  CheckRunner,
   DEFAULT_LIMIT,
   getAPIResponse,
   getUrl,
   testRunner,
-  CheckRunner,
 } from './utils';
 
 const accountsPath = '/accounts';
@@ -111,14 +111,14 @@ const getAccountsWithTimeAndLimitParams = async (server) => {
   });
   let accounts = await getAPIResponse(url, jsonRespKey);
 
-  const checkRunnder = new CheckRunner()
+  const checkRunner = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
     .withCheckSpec(checkRespObjDefined, {message: 'accounts is undefined'})
     .withCheckSpec(checkRespArrayLength, {
       limit: 1,
       message: (accts) => `accounts.length of ${accts.length} was expected to be 1`,
     });
-  let result = checkRunnder.run(accounts);
+  let result = checkRunner.run(accounts);
   if (!result.passed) {
     return {url, ...result};
   }
@@ -131,7 +131,7 @@ const getAccountsWithTimeAndLimitParams = async (server) => {
   });
   accounts = await getAPIResponse(url, jsonRespKey);
 
-  result = checkRunnder.run(accounts);
+  result = checkRunner.run(accounts);
   if (!result.passed) {
     return {url, ...result};
   }

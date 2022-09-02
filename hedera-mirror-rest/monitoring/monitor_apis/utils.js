@@ -109,7 +109,7 @@ const getAPIResponse = async (url, key = undefined) => {
     () => {
       controller.abort();
     },
-    60 * 1000 // in ms
+    config.timeout * 1000 // in ms
   );
 
   try {
@@ -131,13 +131,13 @@ const getAPIResponse = async (url, key = undefined) => {
 class ServerTestResult {
   constructor() {
     this.result = {
-      testResults: [],
-      numPassedTests: 0,
-      numFailedTests: 0,
-      success: true,
-      message: '',
-      startTime: Date.now(),
       endTime: 0,
+      message: '',
+      numFailedTests: 0,
+      numPassedTests: 0,
+      startTime: Date.now(),
+      success: true,
+      testResults: [],
     };
   }
 
@@ -174,11 +174,11 @@ const testRunner = (server, testClassResult, resource) => {
 
     const testResult = {
       at: start,
+      failureMessages: !result.passed ? [result.message] : [],
+      message: result.passed ? result.message : '',
+      resource,
       result: result.passed ? 'passed' : 'failed',
       url: result.url,
-      message: result.passed ? result.message : '',
-      failureMessages: !result.passed ? [result.message] : [],
-      resource,
     };
 
     if (!result.passed) {
@@ -187,38 +187,6 @@ const testRunner = (server, testClassResult, resource) => {
 
     testClassResult.addTestResult(testResult);
   };
-};
-
-/**
- * Helper function to create a json object for failed test results
- * @param {String} title Title in the jest output
- * @param {String} msg Message in the jest output
- * @return {Object} Constructed failed result object
- */
-const createFailedResultJson = (title, msg) => {
-  const failedResultJson = new ServerTestResult().result;
-  failedResultJson.numFailedTests = 1;
-  failedResultJson.success = false;
-  failedResultJson.message = 'Prerequisite tests failed';
-  failedResultJson.testResults = [
-    {
-      at: (new Date().getTime() / 1000).toFixed(3),
-      message: `${title}: ${msg}`,
-      result: 'failed',
-      assertionResults: [
-        {
-          ancestorTitles: title,
-          failureMessages: [],
-          fullName: `${title}: ${msg}`,
-          location: null,
-          status: 'failed',
-          title: msg,
-        },
-      ],
-    },
-  ];
-
-  return failedResultJson;
 };
 
 const checkAPIResponseError = (resp, option) => {
@@ -450,7 +418,6 @@ export {
   checkResourceFreshness,
   checkRespArrayLength,
   checkRespObjDefined,
-  createFailedResultJson,
   getAPIResponse,
   getUrl,
   testRunner,
