@@ -76,24 +76,29 @@ const getBackoff = (retryAfter, xRetryIn) => {
 };
 
 /**
- * Fetch the url with opts and retry on 429 with the retry max and minMillisToWait from config file.
+ * Fetch the url with opts and retry with the retry max and minMillisToWait from config file.
  *
  * @param url
  * @param opts
  * @returns {Promise<Response>}
  */
 const fetchWithRetry = async (url, opts = {}) => {
-  for (let i = 0; ; i++) {
-    const response = await fetch(url, opts);
+  let statusCode = 200;
 
-    if (response.status !== 429 || i === config.retry.maxAttempts) {
+  for (let attempt = 1; attempt <= config.retry.maxAttempts + 1; attempt++) {
+    const response = await fetch(url, opts);
+    statusCode = response.status;
+
+    if (statusCode !== 429 && statusCode < 500) {
       return response;
     }
 
     const backoffMillis = getBackoff(response.headers.get('retry-after'), response.headers.get('x-retry-in'));
-    logger.warn(`url: ${url}, response status: 429, retry in ${backoffMillis}ms`);
+    logger.warn(`Attempt #${attempt} failed with ${statusCode}, retry in ${backoffMillis} ms: ${url}`);
     await new Promise((resolve) => setTimeout(resolve, backoffMillis));
   }
+
+  throw new Error(`Retries exhausted with ${statusCode} status code`);
 };
 
 /**
@@ -182,7 +187,7 @@ const testRunner = (server, testClassResult, resource) => {
     };
 
     if (!result.passed) {
-      logger.error(`Test ${resource} failed for ${server.name}: ${testResult.failureMessages}`);
+      logger.error(`${resource} test #${server.run} failed for ${server.name}: ${testResult.failureMessages}`);
     }
 
     testClassResult.addTestResult(testResult);

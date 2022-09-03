@@ -35,6 +35,7 @@ const runEverything = async (servers) => {
   logger.info(`Running test #${currentRun}`);
 
   servers.forEach((server) => {
+    server.run = currentRun;
     if (server.running) {
       logger.warn(`Skipping test run #${currentRun} for ${server.name} since a previous run is still in progress`);
       return;
@@ -45,13 +46,15 @@ const runEverything = async (servers) => {
     const serverTest = runTests(server)
       .then((results) => {
         const total = results.testResults.length;
+        const elapsed = Date.now() - startTime;
         logger.info(
-          `Completed test run #${currentRun} for ${server.name} with ${results.numPassedTests}/${total} tests passed`
+          `Completed test run #${currentRun} for ${server.name} with ${results.numPassedTests}/${total} tests passed in ${elapsed} ms`
         );
         common.saveResults(server, results);
       })
       .catch((error) => {
-        logger.error(`Error running tests #${currentRun} for ${server.name}: ${error}`);
+        const elapsed = Date.now() - startTime;
+        logger.error(`Error running tests #${currentRun} for ${server.name} in ${elapsed} ms: ${error}`);
       })
       .finally(() => {
         server.running = false;

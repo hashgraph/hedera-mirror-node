@@ -8,11 +8,11 @@
   ],
   "interval": 60,
   "retry": {
-    "maxAttempts": 10,
-    "minBackoff": 50
+    "maxAttempts": 2,
+    "minBackoff": 1000
   },
   "shard": 0,
-  "timeout": 10,
+  "timeout": 30,
   "account": {
     "enabled": true,
     "intervalMultiplier": 1,
