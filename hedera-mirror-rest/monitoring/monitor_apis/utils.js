@@ -216,6 +216,17 @@ const checkRespObjDefined = (resp, option) => {
   return {passed: true};
 };
 
+const checkRespObj = (data, option) => {
+  const {predicate, message} = option;
+  if (!predicate(data)) {
+    return {
+      passed: false,
+      message,
+    };
+  }
+  return {passed: true};
+};
+
 const checkRespArrayLength = (elements, option) => {
   const {func, limit, message} = option;
   if (func !== undefined) {
@@ -422,6 +433,7 @@ export {
   checkMandatoryParams,
   checkResourceFreshness,
   checkRespArrayLength,
+  checkRespObj,
   checkRespObjDefined,
   getAPIResponse,
   getUrl,

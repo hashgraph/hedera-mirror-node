@@ -89,9 +89,9 @@ const getStatusByName = (name) => {
   let ret = {
     httpCode: 400,
     results: {
+      message: 'Failed',
       numFailedTests: 0,
       numPassedTests: 0,
-      message: 'Failed',
       success: false,
       testResults: [],
     },
@@ -100,7 +100,7 @@ const getStatusByName = (name) => {
   // Return 404 (Not found) for illegal name of the serer
   if (name === undefined || name === null) {
     ret.httpCode = 404;
-    ret.results.message = `Not found. Net: ${name}`;
+    ret.results.message = `Name ${name} not found`;
     return ret;
   }
 
