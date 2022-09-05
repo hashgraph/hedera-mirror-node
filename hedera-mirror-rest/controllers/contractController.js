@@ -1084,6 +1084,10 @@ class ContractController extends BaseController {
       consensusTimestamp = tx.length ? tx[0].consensusTimestamp : null;
     }
 
+    if (!consensusTimestamp) {
+      throw new NotFoundError();
+    }
+
     const rows = await ContractService.getContractActionsByConsensusTimestamp(
       consensusTimestamp,
       filters,
