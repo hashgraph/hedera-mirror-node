@@ -49,7 +49,7 @@
     "_status": {
       "messages": [
         {
-          "message": "No correlating transaction"
+          "message": "Not found"
         }
       ]
     }

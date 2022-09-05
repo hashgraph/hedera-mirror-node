@@ -32,7 +32,10 @@
         "function_result": [8, 8],
         "gas_limit": 987654,
         "gas_used": 123,
-        "payer_account_id": 8001
+        "payer_account_id": 8001,
+        "transaction_hash": "96ecf2e0cf1c8f7e2294ec731b2ad1aff95d9736f4ba15b5bbace1ad2766cc1c",
+        "transaction_result": 22,
+        "transaction_index": 1
       }
     ],
     "contractlogs": [
@@ -83,7 +86,7 @@
       {
         "consensus_timestamp": 167654000123456,
         "payerAccountId": "8001",
-        "transaction_hash": "519a008fabde4d",
+        "transaction_hash": "96ecf2e0cf1c8f7e2294ec731b2ad1aff95d9736f4ba15b5bbace1ad2766cc1c10554fd34ae23bf39931e9b90542b781",
         "valid_start_timestamp": 167654000123400
       }
     ]
@@ -111,7 +114,7 @@
     "gas_limit": 987654,
     "gas_price": null,
     "gas_used": 123,
-    "hash": "0x3531396130303866616264653464",
+    "hash": "0x96ecf2e0cf1c8f7e2294ec731b2ad1aff95d9736f4ba15b5bbace1ad2766cc1c",
     "logs": [],
     "max_fee_per_gas": null,
     "max_priority_fee_per_gas": null,
