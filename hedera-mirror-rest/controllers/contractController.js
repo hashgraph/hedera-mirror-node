@@ -889,16 +889,14 @@ class ContractController extends BaseController {
     const {contractId, timestamp} = await getAndValidateContractIdAndConsensusTimestampPathParams(req.params);
 
     // retrieve contract result, recordFile and transaction models concurrently
-    const [contractResults, recordFile, transaction, contractLogs, contractStateChanges] = await Promise.all([
+    const [[transactions, contractResults], recordFile, contractLogs, contractStateChanges] = await Promise.all([
       ContractService.getContractResultsByTimestamps(timestamp),
       RecordFileService.getRecordFileBlockDetailsFromTimestamp(timestamp),
-      TransactionService.getTransactionDetailsFromTimestamp(timestamp),
       ContractService.getContractLogsByTimestamps(timestamp),
       ContractService.getContractStateChangesByTimestamps(timestamp, contractId),
     ]);
-    if (_.isNil(transaction)) {
-      throw new NotFoundError('No correlating transaction');
-    }
+
+    const transaction = transactions[0];
 
     if (contractResults.length === 0) {
       throw new NotFoundError();
@@ -976,12 +974,12 @@ class ContractController extends BaseController {
     // extract filters from query param
     const {transactionIdOrHash} = req.params;
     let transactions;
+    let contractResults;
     let isFailedContractResult = false;
     // When getting transactions, exclude duplicate transactions. there can be at most one
     if (utils.isValidEthHash(transactionIdOrHash)) {
       const ethHash = Buffer.from(transactionIdOrHash.replace('0x', ''), 'hex');
-      // get transactions using ethereum hash and nonce
-      transactions = await TransactionService.getTransactionDetailsFromEthHash(
+      [transactions, contractResults] = await ContractService.getContractResultsByHash(
         ethHash,
         [duplicateTransactionResult, wrongNonceTransactionResult],
         1
@@ -989,28 +987,37 @@ class ContractController extends BaseController {
     } else {
       const transactionId = TransactionId.fromString(transactionIdOrHash);
       const nonce = getLastNonceParamValue(req.query);
-      // get transactions using id and nonce
+      // Map the transactions id to a consensus timestamp
       transactions = await TransactionService.getTransactionDetailsFromTransactionId(
         transactionId,
         nonce,
         duplicateTransactionResult
       );
+
+      if (transactions.length === 0) {
+        throw new NotFoundError();
+      } else if (transactions.length > 1) {
+        logger.error(
+          'Transaction invariance breached: there should be at most one transaction with none-duplicate-transaction ' +
+            'result for a specific (payer + valid start timestamp + nonce) combination'
+        );
+        throw new Error('Transaction invariance breached');
+      }
+
+      // Fetch transactions details and contractResults by mapped timestamp
+      [transactions, contractResults] = await ContractService.getContractResultsByTimestamps(
+        transactions[0].consensusTimestamp
+      );
     }
 
     if (transactions.length === 0) {
-      throw new NotFoundError('No correlating transaction');
-    } else if (transactions.length > 1) {
-      logger.error(
-        'Transaction invariance breached: there should be at most one transaction with none-duplicate-transaction ' +
-          'result for a specific (payer + valid start timestamp + nonce) combination'
-      );
-      throw new Error('Transaction invariance breached');
+      throw new NotFoundError();
     }
 
-    // retrieve contract result and recordFile models concurrently using transaction timestamp
+    // retrieve recordFile concurrently using transaction timestamp
     const transaction = transactions[0];
-    const [contractResults, recordFile, contractLogs, contractStateChanges] = await Promise.all([
-      ContractService.getContractResultsByTimestamps(transaction.consensusTimestamp),
+
+    const [recordFile, contractLogs, contractStateChanges] = await Promise.all([
       RecordFileService.getRecordFileBlockDetailsFromTimestamp(transaction.consensusTimestamp),
       ContractService.getContractLogsByTimestamps(transaction.consensusTimestamp),
       ContractService.getContractStateChangesByTimestamps(transaction.consensusTimestamp),
