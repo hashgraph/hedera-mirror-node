@@ -415,4 +415,19 @@ class ConsensusValidatorImplTest extends IntegrationTest {
         fileStreamSignature.setStreamType(StreamType.RECORD);
         return fileStreamSignature;
     }
+
+    private void nodeStakes(long... stakes) {
+        var timestamp = domainBuilder.timestamp();
+        int nodeId = 100;
+        for (long stake : stakes) {
+            final int finalNodeId = nodeId;
+            domainBuilder.nodeStake()
+                    .customize(n -> n
+                            .nodeId(finalNodeId)
+                            .consensusTimestamp(timestamp)
+                            .stake(stake))
+                    .persist();
+            nodeId++;
+        }
+    }
 }

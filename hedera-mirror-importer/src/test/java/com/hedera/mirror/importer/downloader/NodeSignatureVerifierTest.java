@@ -92,7 +92,6 @@ class NodeSignatureVerifierTest extends IntegrationTest {
         signer.initSign(privateKey);
         Map<String, PublicKey> nodeAccountIDPubKeyMap = new HashMap();
         nodeAccountIDPubKeyMap.put("0.0.3", publicKey);
-        nodeStakes(0);
         when(addressBookService.getCurrent()).thenReturn(currentAddressBook);
         when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
         var nodeIdNodeAccountIdMap = Map.of(100L, nodeId);
@@ -279,7 +278,6 @@ class NodeSignatureVerifierTest extends IntegrationTest {
         nodeAccountIDPubKeyMap.put("0.0.3", publicKey);
         nodeAccountIDPubKeyMap.put("0.0.4", publicKey);
         nodeAccountIDPubKeyMap.put("0.0.5", publicKey);
-        nodeStakes(0, 0, 0);
         when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
         when(currentAddressBook.getNodeIdNodeAccountIdMap()).thenReturn(Map.of(100L, nodeId, 101L,
                 EntityId.of(0L, 0L, 4L, EntityType.ACCOUNT), 102L,

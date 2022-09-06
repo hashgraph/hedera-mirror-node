@@ -85,11 +85,10 @@ public class ConsensusValidatorImpl implements ConsensusValidator {
             long stake = nodeStake.getStake();
             summedStake += stake;
 
-            if (stake == 0) {
-                // If Node Stake zero, set to 1 to count as a signature.
-                stake = 1;
+            if (stake != 0) {
+                // Only place non-signature stake values into the map
+                nodeAccountIdToStakeMap.put(nodeAccountId, stake);
             }
-            nodeAccountIdToStakeMap.put(nodeAccountId, stake);
         }
 
         // If the sum of the stakes is 0, use the number of nodes as the total stake.
@@ -106,10 +105,8 @@ public class ConsensusValidatorImpl implements ConsensusValidator {
             var validatedSignatures = signatureHashMap.get(key);
             long stake = 0L;
             for (var signature : validatedSignatures) {
-                // For falling back and counting signatures, signatures with a Node Stake of 0 have already been set
-                // to have a stake of 1 to count for their signature prior to this summation. So any signatures not
-                // found in nodeAccountIdToStakeMap will truly have a stake of 0.
-                stake += nodeAccountIdToStakeMap.getOrDefault(signature.getNodeAccountId(), 0L);
+                // If the stake cannot be found in the map, count it as a signature giving it a value of 1.
+                stake += nodeAccountIdToStakeMap.getOrDefault(signature.getNodeAccountId(), 1L);
             }
 
             if (canReachConsensus(stake, stakeRequiredForConsensus)) {

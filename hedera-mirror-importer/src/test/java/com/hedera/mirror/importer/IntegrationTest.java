@@ -110,21 +110,6 @@ public abstract class IntegrationTest {
         return jdbcOperations.query(SELECT_NON_FEE_TRANSFERS_QUERY, NON_FEE_TRANSFER_ROW_MAPPER);
     }
 
-    protected void nodeStakes(long... stakes) {
-        var timestamp = domainBuilder.timestamp();
-        int nodeId = 100;
-        for (long stake : stakes) {
-            final int finalNodeId = nodeId;
-            domainBuilder.nodeStake()
-                    .customize(n -> n
-                            .nodeId(finalNodeId)
-                            .consensusTimestamp(timestamp)
-                            .stake(stake))
-                    .persist();
-            nodeId++;
-        }
-    }
-
     protected void reset() {
         cacheManagers.forEach(c -> c.getCacheNames().forEach(name -> c.getCache(name).clear()));
         mirrorDateRangePropertiesProcessor.clear();
