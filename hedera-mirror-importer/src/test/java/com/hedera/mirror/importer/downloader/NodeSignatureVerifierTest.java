@@ -35,6 +35,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Resource;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -68,7 +69,7 @@ class NodeSignatureVerifierTest extends IntegrationTest {
     @Mock
     private CommonDownloaderProperties commonDownloaderProperties;
     private NodeSignatureVerifier nodeSignatureVerifier;
-    @Mock
+    @Resource
     private NodeStakeRepository nodeStakeRepository;
 
     @SneakyThrows
@@ -91,8 +92,11 @@ class NodeSignatureVerifierTest extends IntegrationTest {
         signer.initSign(privateKey);
         Map<String, PublicKey> nodeAccountIDPubKeyMap = new HashMap();
         nodeAccountIDPubKeyMap.put("0.0.3", publicKey);
+        nodeStakes(0);
         when(addressBookService.getCurrent()).thenReturn(currentAddressBook);
         when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
+        var nodeIdNodeAccountIdMap = Map.of(100L, nodeId);
+        when(currentAddressBook.getNodeIdNodeAccountIdMap()).thenReturn(nodeIdNodeAccountIdMap);
         when(commonDownloaderProperties.getConsensusRatio()).thenReturn(BigDecimal.ONE.divide(BigDecimal.valueOf(3),
                 19, RoundingMode.DOWN));
     }
@@ -161,6 +165,8 @@ class NodeSignatureVerifierTest extends IntegrationTest {
         nodeAccountIDPubKeyMap.put("0.0.6", publicKey);
 
         when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
+        when(currentAddressBook.getNodeIdNodeAccountIdMap()).thenReturn(Map.of(100L, nodeId, 101L,
+                nodeId, 102L, nodeId, 103L, nodeId));
 
         List<FileStreamSignature> fileStreamSignatures = Arrays.asList(buildBareBonesFileStreamSignature());
         Exception e = assertThrows(SignatureVerificationException.class, () -> nodeSignatureVerifier
@@ -182,6 +188,8 @@ class NodeSignatureVerifierTest extends IntegrationTest {
         nodeAccountIDPubKeyMap.put("0.0.10", publicKey);
 
         when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
+        when(currentAddressBook.getNodeIdNodeAccountIdMap()).thenReturn(Map.of(100L, nodeId, 101L,
+                nodeId, 102L, nodeId, 103L, nodeId, 104L, nodeId, 105L, nodeId, 106L, nodeId, 107L, nodeId));
         when(commonDownloaderProperties.getConsensusRatio()).thenReturn(BigDecimal.ZERO);
 
         byte[] fileHash = TestUtils.generateRandomByteArray(48);
@@ -207,6 +215,8 @@ class NodeSignatureVerifierTest extends IntegrationTest {
         nodeAccountIDPubKeyMap.put("0.0.10", publicKey);
 
         when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
+        when(currentAddressBook.getNodeIdNodeAccountIdMap()).thenReturn(Map.of(100L, nodeId, 101L, nodeId, 102L, nodeId,
+                103L, nodeId, 104L, nodeId, 105L, nodeId, 106L, nodeId, 107L, nodeId));
         when(commonDownloaderProperties.getConsensusRatio()).thenReturn(BigDecimal.ZERO);
 
         Exception e = assertThrows(SignatureVerificationException.class, () -> nodeSignatureVerifier
@@ -222,6 +232,8 @@ class NodeSignatureVerifierTest extends IntegrationTest {
         nodeAccountIDPubKeyMap.put("0.0.4", publicKey);
         nodeAccountIDPubKeyMap.put("0.0.5", publicKey);
         when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
+        when(currentAddressBook.getNodeIdNodeAccountIdMap()).thenReturn(Map.of(100L, nodeId, 101L, nodeId, 102L,
+                nodeId));
 
         byte[] fileHash = TestUtils.generateRandomByteArray(48);
         byte[] fileHashSignature = signHash(fileHash);
@@ -239,6 +251,8 @@ class NodeSignatureVerifierTest extends IntegrationTest {
         nodeAccountIDPubKeyMap.put("0.0.4", publicKey);
         nodeAccountIDPubKeyMap.put("0.0.5", publicKey);
         when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
+        when(currentAddressBook.getNodeIdNodeAccountIdMap()).thenReturn(Map.of(100L, nodeId, 101L, nodeId, 102L,
+                nodeId));
 
         byte[] fileHash = TestUtils.generateRandomByteArray(48);
         byte[] fileHashSignature = signHash(fileHash);
@@ -265,7 +279,11 @@ class NodeSignatureVerifierTest extends IntegrationTest {
         nodeAccountIDPubKeyMap.put("0.0.3", publicKey);
         nodeAccountIDPubKeyMap.put("0.0.4", publicKey);
         nodeAccountIDPubKeyMap.put("0.0.5", publicKey);
+        nodeStakes(0, 0, 0);
         when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
+        when(currentAddressBook.getNodeIdNodeAccountIdMap()).thenReturn(Map.of(100L, nodeId, 101L,
+                EntityId.of(0L, 0L, 4L, EntityType.ACCOUNT), 102L,
+                EntityId.of(0L, 0L, 5L, EntityType.ACCOUNT)));
         when(commonDownloaderProperties.getConsensusRatio()).thenReturn(BigDecimal.ONE);
 
         byte[] fileHash = TestUtils.generateRandomByteArray(48);

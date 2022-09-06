@@ -70,39 +70,54 @@ public class ConsensusValidatorImpl implements ConsensusValidator {
             return;
         }
 
-        long totalStake = 0;
+        long summedStake = 0;
         var nodeAccountIdToStakeMap = new HashMap<EntityId, Long>();
         var addressBook = addressBookService.getCurrent();
         var nodeStakes = nodeStakeRepository.findLatest();
-        if (nodeStakes.isEmpty()) {
-            var nodeAccountIDPubKeyMap = addressBook.getNodeAccountIDPubKeyMap();
-            totalStake = nodeAccountIDPubKeyMap.size();
-        } else {
-            var nodeIdToNodeAccountIdMap = addressBook.getNodeIdNodeAccountIdMap();
-            for (var nodeStake : nodeStakes) {
-                totalStake += nodeStake.getStake();
-                var nodeAccountId = nodeIdToNodeAccountIdMap.get(nodeStake.getNodeId());
-                if (nodeAccountId == null) {
-                    log.warn("Node Stake found for Node Id {} but no Node Account Id found", nodeStake.getNodeId());
-                    continue;
-                }
-
-                nodeAccountIdToStakeMap.put(nodeAccountId, nodeStake.getStake());
+        var nodeIdToNodeAccountIdMap = addressBook.getNodeIdNodeAccountIdMap();
+        for (var nodeStake : nodeStakes) {
+            var nodeAccountId = nodeIdToNodeAccountIdMap.get(nodeStake.getNodeId());
+            if (nodeAccountId == null) {
+                throw new SignatureVerificationException(String.format("Invalid Node Id %s. Consensus not " +
+                        "reached for file %s", nodeStake.getNodeId(), filename));
             }
+
+            long stake = nodeStake.getStake();
+            summedStake += stake;
+
+            if (stake == 0) {
+                // If Node Stake zero, set to 1 to count as a signature.
+                stake = 1;
+            }
+            nodeAccountIdToStakeMap.put(nodeAccountId, stake);
         }
 
+        // If the sum of the stakes is 0, use the number of nodes as the total stake.
+        long totalStake = summedStake != 0 ? summedStake : nodeIdToNodeAccountIdMap.size();
+        if (totalStake == 0) {
+            throw new SignatureVerificationException(String.format("Invalid total staking weight. Consensus not " +
+                    "reached for file %s", filename));
+        }
+
+        long debugStake = 0;
         long consensusCount = 0;
         for (String key : signatureHashMap.keySet()) {
             var validatedSignatures = signatureHashMap.get(key);
             long stake = 0L;
             for (var signature : validatedSignatures) {
-                // If the map has no entry for the node account id, a default value of 1 is used to count a signature.
-                stake += nodeAccountIdToStakeMap.getOrDefault(signature.getNodeAccountId(), 1L);
+                // For falling back and counting signatures, signatures with a Node Stake of 0 have already been set
+                // to have a stake of 1 to count for their signature prior to this summation. So any signatures not
+                // found in nodeAccountIdToStakeMap will truly have a stake of 0.
+                stake += nodeAccountIdToStakeMap.getOrDefault(signature.getNodeAccountId(), 0L);
             }
 
             if (canReachConsensus(stake, totalStake)) {
                 consensusCount += validatedSignatures.size();
                 validatedSignatures.forEach(s -> s.setStatus(FileStreamSignature.SignatureStatus.CONSENSUS_REACHED));
+            }
+
+            if (debugStake < stake) {
+                debugStake = stake;
             }
         }
 
@@ -110,20 +125,21 @@ public class ConsensusValidatorImpl implements ConsensusValidator {
             return;
         }
 
+        var stakeRequiredForConsensus = getStakeRequiredForConsensus(totalStake);
+        log.debug("Highest encountered Stake: {}, Total Stake: {}", debugStake, totalStake);
+        log.debug("Consensus Ratio: {}", commonDownloaderProperties.getConsensusRatio());
+        log.debug("Stake Required For Consensus: {}", stakeRequiredForConsensus);
+        log.debug("Result: {}", canReachConsensus(debugStake, totalStake));
         throw new SignatureVerificationException(String.format("Consensus not reached for file %s", filename));
     }
 
     private boolean canReachConsensus(long stake, long totalStake) {
-        log.info("Stake: {}, Total Stake: {}", stake, totalStake);
-        log.info("Consensus Ratio: {}", commonDownloaderProperties.getConsensusRatio());
+        return BigDecimal.valueOf(stake).compareTo(getStakeRequiredForConsensus(totalStake)) >= 0;
+    }
 
-        var stakeRequiredForConsensus = BigDecimal.valueOf(totalStake)
+    private BigDecimal getStakeRequiredForConsensus(long totalStake) {
+        return BigDecimal.valueOf(totalStake)
                 .multiply(commonDownloaderProperties.getConsensusRatio())
                 .setScale(0, RoundingMode.CEILING);
-
-        log.info("Stake Required For Consensus: {}", stakeRequiredForConsensus);
-        log.info("Result: {}", BigDecimal.valueOf(stake).compareTo(stakeRequiredForConsensus) >= 0);
-
-        return BigDecimal.valueOf(stake).compareTo(stakeRequiredForConsensus) >= 0;
     }
 }

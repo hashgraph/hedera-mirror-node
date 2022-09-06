@@ -99,7 +99,7 @@ public abstract class IntegrationTest {
         return findHistory(historyClass, ids, null);
     }
 
-    protected  <T> Collection<T> findHistory(Class<T> historyClass, String ids, String table) {
+    protected <T> Collection<T> findHistory(Class<T> historyClass, String ids, String table) {
         if (StringUtils.isEmpty(table)) {
             table = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, historyClass.getSimpleName());
         }
@@ -108,6 +108,21 @@ public abstract class IntegrationTest {
 
     protected List<NonFeeTransfer> findNonFeeTransfers() {
         return jdbcOperations.query(SELECT_NON_FEE_TRANSFERS_QUERY, NON_FEE_TRANSFER_ROW_MAPPER);
+    }
+
+    protected void nodeStakes(long... stakes) {
+        var timestamp = domainBuilder.timestamp();
+        int nodeId = 100;
+        for (long stake : stakes) {
+            final int finalNodeId = nodeId;
+            domainBuilder.nodeStake()
+                    .customize(n -> n
+                            .nodeId(finalNodeId)
+                            .consensusTimestamp(timestamp)
+                            .stake(stake))
+                    .persist();
+            nodeId++;
+        }
     }
 
     protected void reset() {
