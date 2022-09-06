@@ -35,7 +35,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.annotation.Resource;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -69,7 +68,7 @@ class NodeSignatureVerifierTest extends IntegrationTest {
     @Mock
     private CommonDownloaderProperties commonDownloaderProperties;
     private NodeSignatureVerifier nodeSignatureVerifier;
-    @Resource
+    @Mock
     private NodeStakeRepository nodeStakeRepository;
 
     @SneakyThrows
