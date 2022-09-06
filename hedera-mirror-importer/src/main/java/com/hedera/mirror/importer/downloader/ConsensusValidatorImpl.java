@@ -99,6 +99,7 @@ public class ConsensusValidatorImpl implements ConsensusValidator {
                     "reached for file %s", filename));
         }
 
+        var stakeRequiredForConsensus = getStakeRequiredForConsensus(totalStake);
         long debugStake = 0;
         long consensusCount = 0;
         for (String key : signatureHashMap.keySet()) {
@@ -111,7 +112,7 @@ public class ConsensusValidatorImpl implements ConsensusValidator {
                 stake += nodeAccountIdToStakeMap.getOrDefault(signature.getNodeAccountId(), 0L);
             }
 
-            if (canReachConsensus(stake, totalStake)) {
+            if (canReachConsensus(stake, stakeRequiredForConsensus)) {
                 consensusCount += validatedSignatures.size();
                 validatedSignatures.forEach(s -> s.setStatus(FileStreamSignature.SignatureStatus.CONSENSUS_REACHED));
             }
@@ -125,16 +126,15 @@ public class ConsensusValidatorImpl implements ConsensusValidator {
             return;
         }
 
-        var stakeRequiredForConsensus = getStakeRequiredForConsensus(totalStake);
         log.debug("Highest encountered Stake: {}, Total Stake: {}", debugStake, totalStake);
         log.debug("Consensus Ratio: {}", commonDownloaderProperties.getConsensusRatio());
         log.debug("Stake Required For Consensus: {}", stakeRequiredForConsensus);
-        log.debug("Result: {}", canReachConsensus(debugStake, totalStake));
+        log.debug("Result: {}", canReachConsensus(debugStake, stakeRequiredForConsensus));
         throw new SignatureVerificationException(String.format("Consensus not reached for file %s", filename));
     }
 
-    private boolean canReachConsensus(long stake, long totalStake) {
-        return BigDecimal.valueOf(stake).compareTo(getStakeRequiredForConsensus(totalStake)) >= 0;
+    private boolean canReachConsensus(long stake, BigDecimal stakeRequiredForConsensus) {
+        return BigDecimal.valueOf(stake).compareTo(stakeRequiredForConsensus) >= 0;
     }
 
     private BigDecimal getStakeRequiredForConsensus(long totalStake) {
