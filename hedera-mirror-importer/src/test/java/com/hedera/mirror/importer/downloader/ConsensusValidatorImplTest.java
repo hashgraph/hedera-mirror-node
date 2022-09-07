@@ -27,10 +27,7 @@ import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.security.KeyPairGenerator;
-import java.security.PublicKey;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Resource;
@@ -57,9 +54,9 @@ import com.hedera.mirror.importer.repository.NodeStakeRepository;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class ConsensusValidatorImplTest extends IntegrationTest {
 
-    private static final EntityId entity3 = EntityId.of(0L, 0L, 3L, EntityType.ACCOUNT);
-    private static final EntityId entity4 = EntityId.of(0L, 0L, 4L, EntityType.ACCOUNT);
-    private static final EntityId entity5 = EntityId.of(0L, 0L, 5L, EntityType.ACCOUNT);
+    private static final EntityId entity3 = EntityId.of(3L, EntityType.ACCOUNT);
+    private static final EntityId entity4 = EntityId.of(4L, EntityType.ACCOUNT);
+    private static final EntityId entity5 = EntityId.of(5L, EntityType.ACCOUNT);
 
     private static final BigDecimal MAX_TINYBARS = BigDecimal.valueOf(50_000_000_000L)
             .multiply(BigDecimal.valueOf(TINYBARS_IN_ONE_HBAR));
@@ -78,10 +75,9 @@ class ConsensusValidatorImplTest extends IntegrationTest {
     void setup() {
         consensusValidator = new ConsensusValidatorImpl(addressBookService, commonDownloaderProperties,
                 nodeStakeRepository);
+        when(addressBookService.getCurrent()).thenReturn(currentAddressBook);
         var nodeIdNodeAccountIdMap = Map.of(100L, entity3, 101L, entity4, 102L, entity5);
-        when(addressBookService.getCurrent()).thenReturn(currentAddressBook);
         when(currentAddressBook.getNodeIdNodeAccountIdMap()).thenReturn(nodeIdNodeAccountIdMap);
-        when(addressBookService.getCurrent()).thenReturn(currentAddressBook);
         when(commonDownloaderProperties.getConsensusRatio()).thenReturn(BigDecimal.ONE.divide(BigDecimal.valueOf(3),
                 19, RoundingMode.DOWN));
     }
@@ -117,6 +113,29 @@ class ConsensusValidatorImplTest extends IntegrationTest {
                 .map(FileStreamSignature::getStatus)
                 .containsExactly(FileStreamSignature.SignatureStatus.CONSENSUS_REACHED,
                         FileStreamSignature.SignatureStatus.DOWNLOADED, FileStreamSignature.SignatureStatus.DOWNLOADED);
+    }
+
+    @Test
+    void testNodeStakesZeroValues() {
+        nodeStakes(0, 0, 1);
+
+        FileStreamSignature fileStreamSignatureNode3 = buildFileStreamSignature();
+        FileStreamSignature fileStreamSignatureNode4 = buildFileStreamSignature();
+        fileStreamSignatureNode4.setNodeAccountId(entity4);
+        fileStreamSignatureNode4.setFileHash(fileStreamSignatureNode3.getFileHash());
+        FileStreamSignature fileStreamSignatureNode5 = buildFileStreamSignature();
+        fileStreamSignatureNode5.setNodeAccountId(entity5);
+        fileStreamSignatureNode5.setFileHash(fileStreamSignatureNode3.getFileHash());
+
+        var fileStreamSignatures = List.of(fileStreamSignatureNode3, fileStreamSignatureNode4,
+                fileStreamSignatureNode5);
+
+        consensusValidator.validate(fileStreamSignatures);
+        assertThat(fileStreamSignatures)
+                .map(FileStreamSignature::getStatus)
+                .containsExactly(FileStreamSignature.SignatureStatus.CONSENSUS_REACHED,
+                        FileStreamSignature.SignatureStatus.CONSENSUS_REACHED,
+                        FileStreamSignature.SignatureStatus.CONSENSUS_REACHED);
     }
 
     @Test
@@ -278,6 +297,9 @@ class ConsensusValidatorImplTest extends IntegrationTest {
 
     @Test
     void testSignaturesVerifiedWithOneThirdConsensusWithMissingSignatures() {
+        // Zero node stakes occurs when falling back to counting signatures
+        nodeStakes(0, 0, 0);
+
         FileStreamSignature fileStreamSignatureNode3 = buildFileStreamSignature();
 
         //Node 4 and 5 will not verify due to missing signature, but 1/3 verified will confirm consensus reached
@@ -300,7 +322,10 @@ class ConsensusValidatorImplTest extends IntegrationTest {
     }
 
     @Test
-    void testMultipleFileHashWithMultipleConsensusResults() {
+    void testSignatureMultipleFileHashWithMultipleConsensusResults() {
+        // Zero node stakes occurs when falling back to counting signatures
+        nodeStakes(0, 0, 0);
+
         // First FileHash
         FileStreamSignature fileStreamSignature1 = buildFileStreamSignature();
         fileStreamSignature1.setStatus(FileStreamSignature.SignatureStatus.DOWNLOADED);
@@ -338,13 +363,8 @@ class ConsensusValidatorImplTest extends IntegrationTest {
     @SneakyThrows
     @Test
     void testSignaturesVerifiedWithFullConsensusRequired() {
-        var nodeKeyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
-        var publicKey = nodeKeyPair.getPublic();
-        var nodeAccountIDPubKeyMap = new HashMap<String, PublicKey>();
-        nodeAccountIDPubKeyMap.put("0.0.3", publicKey);
-        nodeAccountIDPubKeyMap.put("0.0.4", publicKey);
-        nodeAccountIDPubKeyMap.put("0.0.5", publicKey);
-        when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
+        // Zero node stakes occurs when falling back to counting signatures
+        nodeStakes(0, 0, 0);
         when(commonDownloaderProperties.getConsensusRatio()).thenReturn(BigDecimal.ONE);
 
         FileStreamSignature fileStreamSignatureNode3 = buildFileStreamSignature();
@@ -368,14 +388,13 @@ class ConsensusValidatorImplTest extends IntegrationTest {
     @SneakyThrows
     @Test
     void testFailedVerificationSignatureConsensus() {
-        var nodeKeyPair = KeyPairGenerator.getInstance("RSA").generateKeyPair();
-        var publicKey = nodeKeyPair.getPublic();
-        var nodeAccountIDPubKeyMap = new HashMap<String, PublicKey>();
-        nodeAccountIDPubKeyMap.put("0.0.3", publicKey);
-        nodeAccountIDPubKeyMap.put("0.0.4", publicKey);
-        nodeAccountIDPubKeyMap.put("0.0.5", publicKey);
-        nodeAccountIDPubKeyMap.put("0.0.6", publicKey);
-        when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
+        // Zero node stakes occurs when falling back to counting signatures
+        nodeStakes(0, 0, 0, 0);
+
+        var entity6 = EntityId.of(6L, EntityType.ACCOUNT);
+        var nodeIdNodeAccountIdMap = Map.of(100L, entity3, 101L, entity4, 102L, entity5, 103L, entity6);
+        when(currentAddressBook.getNodeIdNodeAccountIdMap()).thenReturn(nodeIdNodeAccountIdMap);
+        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(BigDecimal.ONE);
 
         FileStreamSignature fileStreamSignatureNode3 = buildFileStreamSignature();
 
@@ -388,7 +407,7 @@ class ConsensusValidatorImplTest extends IntegrationTest {
         fileStreamSignatureNode5.setStatus(FileStreamSignature.SignatureStatus.DOWNLOADED);
 
         FileStreamSignature fileStreamSignatureNode6 = buildFileStreamSignature();
-        fileStreamSignatureNode6.setNodeAccountId(new EntityId(0L, 0L, 6L, EntityType.ACCOUNT));
+        fileStreamSignatureNode6.setNodeAccountId(entity6);
         fileStreamSignatureNode6.setStatus(FileStreamSignature.SignatureStatus.DOWNLOADED);
 
         var fileStreamSignatures = List.of(
@@ -409,6 +428,17 @@ class ConsensusValidatorImplTest extends IntegrationTest {
                 .doesNotContain(FileStreamSignature.SignatureStatus.CONSENSUS_REACHED);
     }
 
+    private FileStreamSignature buildFileStreamSignature() {
+        FileStreamSignature fileStreamSignature = new FileStreamSignature();
+        fileStreamSignature.setFileHash(domainBuilder.bytes(256));
+        fileStreamSignature.setFilename("");
+        fileStreamSignature.setNodeAccountId(entity3);
+        fileStreamSignature.setSignatureType(SignatureType.SHA_384_WITH_RSA);
+        fileStreamSignature.setStatus(FileStreamSignature.SignatureStatus.VERIFIED);
+        fileStreamSignature.setStreamType(StreamType.RECORD);
+        return fileStreamSignature;
+    }
+
     private void nodeStakes(long... stakes) {
         var timestamp = domainBuilder.timestamp();
         int nodeId = 100;
@@ -422,16 +452,5 @@ class ConsensusValidatorImplTest extends IntegrationTest {
                     .persist();
             nodeId++;
         }
-    }
-
-    private FileStreamSignature buildFileStreamSignature() {
-        FileStreamSignature fileStreamSignature = new FileStreamSignature();
-        fileStreamSignature.setFileHash(domainBuilder.bytes(256));
-        fileStreamSignature.setFilename("");
-        fileStreamSignature.setNodeAccountId(entity3);
-        fileStreamSignature.setSignatureType(SignatureType.SHA_384_WITH_RSA);
-        fileStreamSignature.setStatus(FileStreamSignature.SignatureStatus.VERIFIED);
-        fileStreamSignature.setStreamType(StreamType.RECORD);
-        return fileStreamSignature;
     }
 }

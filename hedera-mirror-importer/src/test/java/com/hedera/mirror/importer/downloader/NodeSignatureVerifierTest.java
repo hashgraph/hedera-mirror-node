@@ -58,7 +58,7 @@ class NodeSignatureVerifierTest extends IntegrationTest {
     private static PrivateKey privateKey;
     private static PublicKey publicKey;
 
-    private static final EntityId nodeId = new EntityId(0L, 0L, 3L, EntityType.ACCOUNT);
+    private static final EntityId nodeId = EntityId.of(3L, EntityType.ACCOUNT);
     private Signature signer;
 
     @Mock
@@ -93,6 +93,8 @@ class NodeSignatureVerifierTest extends IntegrationTest {
         nodeAccountIDPubKeyMap.put("0.0.3", publicKey);
         when(addressBookService.getCurrent()).thenReturn(currentAddressBook);
         when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
+        var nodeIdNodeAccountIdMap = Map.of(100L, nodeId);
+        when(currentAddressBook.getNodeIdNodeAccountIdMap()).thenReturn(nodeIdNodeAccountIdMap);
         when(commonDownloaderProperties.getConsensusRatio()).thenReturn(BigDecimal.ONE.divide(BigDecimal.valueOf(3),
                 19, RoundingMode.DOWN));
     }
@@ -161,6 +163,8 @@ class NodeSignatureVerifierTest extends IntegrationTest {
         nodeAccountIDPubKeyMap.put("0.0.6", publicKey);
 
         when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
+        when(currentAddressBook.getNodeIdNodeAccountIdMap()).thenReturn(Map.of(100L, nodeId, 101L,
+                nodeId, 102L, nodeId, 103L, nodeId));
 
         List<FileStreamSignature> fileStreamSignatures = Arrays.asList(buildBareBonesFileStreamSignature());
         Exception e = assertThrows(SignatureVerificationException.class, () -> nodeSignatureVerifier
@@ -182,6 +186,8 @@ class NodeSignatureVerifierTest extends IntegrationTest {
         nodeAccountIDPubKeyMap.put("0.0.10", publicKey);
 
         when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
+        when(currentAddressBook.getNodeIdNodeAccountIdMap()).thenReturn(Map.of(100L, nodeId, 101L,
+                nodeId, 102L, nodeId, 103L, nodeId, 104L, nodeId, 105L, nodeId, 106L, nodeId, 107L, nodeId));
         when(commonDownloaderProperties.getConsensusRatio()).thenReturn(BigDecimal.ZERO);
 
         byte[] fileHash = TestUtils.generateRandomByteArray(48);
@@ -207,6 +213,8 @@ class NodeSignatureVerifierTest extends IntegrationTest {
         nodeAccountIDPubKeyMap.put("0.0.10", publicKey);
 
         when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
+        when(currentAddressBook.getNodeIdNodeAccountIdMap()).thenReturn(Map.of(100L, nodeId, 101L, nodeId, 102L, nodeId,
+                103L, nodeId, 104L, nodeId, 105L, nodeId, 106L, nodeId, 107L, nodeId));
         when(commonDownloaderProperties.getConsensusRatio()).thenReturn(BigDecimal.ZERO);
 
         Exception e = assertThrows(SignatureVerificationException.class, () -> nodeSignatureVerifier
@@ -222,6 +230,8 @@ class NodeSignatureVerifierTest extends IntegrationTest {
         nodeAccountIDPubKeyMap.put("0.0.4", publicKey);
         nodeAccountIDPubKeyMap.put("0.0.5", publicKey);
         when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
+        when(currentAddressBook.getNodeIdNodeAccountIdMap()).thenReturn(Map.of(100L, nodeId, 101L, nodeId, 102L,
+                nodeId));
 
         byte[] fileHash = TestUtils.generateRandomByteArray(48);
         byte[] fileHashSignature = signHash(fileHash);
@@ -239,6 +249,8 @@ class NodeSignatureVerifierTest extends IntegrationTest {
         nodeAccountIDPubKeyMap.put("0.0.4", publicKey);
         nodeAccountIDPubKeyMap.put("0.0.5", publicKey);
         when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
+        when(currentAddressBook.getNodeIdNodeAccountIdMap()).thenReturn(Map.of(100L, nodeId, 101L, nodeId, 102L,
+                nodeId));
 
         byte[] fileHash = TestUtils.generateRandomByteArray(48);
         byte[] fileHashSignature = signHash(fileHash);
@@ -249,10 +261,10 @@ class NodeSignatureVerifierTest extends IntegrationTest {
         //Node 4 and 5 will not verify due to missing signature, but 1/3 verified will confirm consensus reached
         FileStreamSignature fileStreamSignatureNode4 = buildFileStreamSignature(fileHash, null,
                 null, null);
-        fileStreamSignatureNode4.setNodeAccountId(new EntityId(0L, 0L, 4L, EntityType.ACCOUNT));
+        fileStreamSignatureNode4.setNodeAccountId(EntityId.of(4L, EntityType.ACCOUNT));
         FileStreamSignature fileStreamSignatureNode5 = buildFileStreamSignature(fileHash, null,
                 null, null);
-        fileStreamSignatureNode5.setNodeAccountId(new EntityId(0L, 0L, 5L, EntityType.ACCOUNT));
+        fileStreamSignatureNode5.setNodeAccountId(EntityId.of(5L, EntityType.ACCOUNT));
 
         nodeSignatureVerifier
                 .verify(Arrays.asList(fileStreamSignatureNode3, fileStreamSignatureNode4, fileStreamSignatureNode5));
@@ -266,6 +278,9 @@ class NodeSignatureVerifierTest extends IntegrationTest {
         nodeAccountIDPubKeyMap.put("0.0.4", publicKey);
         nodeAccountIDPubKeyMap.put("0.0.5", publicKey);
         when(currentAddressBook.getNodeAccountIDPubKeyMap()).thenReturn(nodeAccountIDPubKeyMap);
+        when(currentAddressBook.getNodeIdNodeAccountIdMap()).thenReturn(Map.of(100L, nodeId, 101L,
+                EntityId.of(4L, EntityType.ACCOUNT), 102L,
+                EntityId.of(5L, EntityType.ACCOUNT)));
         when(commonDownloaderProperties.getConsensusRatio()).thenReturn(BigDecimal.ONE);
 
         byte[] fileHash = TestUtils.generateRandomByteArray(48);
@@ -273,15 +288,15 @@ class NodeSignatureVerifierTest extends IntegrationTest {
 
         FileStreamSignature fileStreamSignatureNode3 = buildFileStreamSignature(fileHash, fileHashSignature,
                 null, null);
-        fileStreamSignatureNode3.setNodeAccountId(new EntityId(0L, 0L, 3L, EntityType.ACCOUNT));
+        fileStreamSignatureNode3.setNodeAccountId(EntityId.of(3L, EntityType.ACCOUNT));
 
         FileStreamSignature fileStreamSignatureNode4 = buildFileStreamSignature(fileHash, fileHashSignature,
                 null, null);
-        fileStreamSignatureNode4.setNodeAccountId(new EntityId(0L, 0L, 4L, EntityType.ACCOUNT));
+        fileStreamSignatureNode4.setNodeAccountId(EntityId.of(4L, EntityType.ACCOUNT));
 
         FileStreamSignature fileStreamSignatureNode5 = buildFileStreamSignature(fileHash, fileHashSignature,
                 null, null);
-        fileStreamSignatureNode5.setNodeAccountId(new EntityId(0L, 0L, 5L, EntityType.ACCOUNT));
+        fileStreamSignatureNode5.setNodeAccountId(EntityId.of(5L, EntityType.ACCOUNT));
 
         nodeSignatureVerifier
                 .verify(Arrays.asList(fileStreamSignatureNode3, fileStreamSignatureNode4, fileStreamSignatureNode5));

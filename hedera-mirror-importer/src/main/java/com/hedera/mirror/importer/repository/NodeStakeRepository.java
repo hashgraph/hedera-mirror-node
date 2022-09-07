@@ -35,8 +35,7 @@ public interface NodeStakeRepository extends CrudRepository<NodeStake, NodeStake
 
     String NODE_STAKE_CACHE = "node_stake";
 
-    @Cacheable(cacheManager = EXPIRE_AFTER_24H, cacheNames = NODE_STAKE_CACHE,
-            unless = "#result == null or #result.size() == 0")
+    @Cacheable(cacheManager = EXPIRE_AFTER_24H, cacheNames = NODE_STAKE_CACHE)
     @Query(value = "select * from node_stake where consensus_timestamp = (select max(consensus_timestamp) from " +
             "node_stake)", nativeQuery = true)
     List<NodeStake> findLatest();

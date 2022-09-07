@@ -74,35 +74,49 @@ public class ConsensusValidatorImpl implements ConsensusValidator {
         var nodeAccountIdToStakeMap = new HashMap<EntityId, Long>();
         var addressBook = addressBookService.getCurrent();
         var nodeStakes = nodeStakeRepository.findLatest();
-        if (nodeStakes.isEmpty()) {
-            var nodeAccountIDPubKeyMap = addressBook.getNodeAccountIDPubKeyMap();
-            totalStake = nodeAccountIDPubKeyMap.size();
-        } else {
-            var nodeIdToNodeAccountIdMap = addressBook.getNodeIdNodeAccountIdMap();
-            for (var nodeStake : nodeStakes) {
-                totalStake += nodeStake.getStake();
-                var nodeAccountId = nodeIdToNodeAccountIdMap.get(nodeStake.getNodeId());
-                if (nodeAccountId == null) {
-                    log.warn("Node Stake found for Node Id {} but no Node Account Id found", nodeStake.getNodeId());
-                    continue;
-                }
+        var nodeIdToNodeAccountIdMap = addressBook.getNodeIdNodeAccountIdMap();
+        for (var nodeStake : nodeStakes) {
+            var nodeAccountId = nodeIdToNodeAccountIdMap.get(nodeStake.getNodeId());
+            if (nodeAccountId == null) {
+                throw new SignatureVerificationException(String.format("Invalid Node Id %s. Consensus not " +
+                        "reached for file %s", nodeStake.getNodeId(), filename));
+            }
 
-                nodeAccountIdToStakeMap.put(nodeAccountId, nodeStake.getStake());
+            long stake = nodeStake.getStake();
+            totalStake += stake;
+            nodeAccountIdToStakeMap.put(nodeAccountId, stake);
+        }
+
+        if (totalStake == 0) {
+            // Count the node stakes as signatures
+            nodeAccountIdToStakeMap.clear();
+            // Use the number of nodes as the total stake.
+            totalStake = nodeIdToNodeAccountIdMap.size();
+
+            if (totalStake == 0) {
+                throw new SignatureVerificationException(String.format("Invalid total staking weight. Consensus not " +
+                        "reached for file %s", filename));
             }
         }
 
+        var stakeRequiredForConsensus = getStakeRequiredForConsensus(totalStake);
+        long debugStake = 0;
         long consensusCount = 0;
         for (String key : signatureHashMap.keySet()) {
             var validatedSignatures = signatureHashMap.get(key);
             long stake = 0L;
             for (var signature : validatedSignatures) {
-                // If the map has no entry for the node account id, a default value of 1 is used to count a signature.
+                // If the stake cannot be found in the map, count it as a signature giving it a value of 1.
                 stake += nodeAccountIdToStakeMap.getOrDefault(signature.getNodeAccountId(), 1L);
             }
 
-            if (canReachConsensus(stake, totalStake)) {
+            if (canReachConsensus(stake, stakeRequiredForConsensus)) {
                 consensusCount += validatedSignatures.size();
                 validatedSignatures.forEach(s -> s.setStatus(FileStreamSignature.SignatureStatus.CONSENSUS_REACHED));
+            }
+
+            if (debugStake < stake) {
+                debugStake = stake;
             }
         }
 
@@ -110,20 +124,17 @@ public class ConsensusValidatorImpl implements ConsensusValidator {
             return;
         }
 
-        throw new SignatureVerificationException(String.format("Consensus not reached for file %s", filename));
+        throw new SignatureVerificationException(String.format("Consensus not reached for file %s with %d/%d stake",
+                filename, debugStake, totalStake));
     }
 
-    private boolean canReachConsensus(long stake, long totalStake) {
-        log.info("Stake: {}, Total Stake: {}", stake, totalStake);
-        log.info("Consensus Ratio: {}", commonDownloaderProperties.getConsensusRatio());
+    private boolean canReachConsensus(long stake, BigDecimal stakeRequiredForConsensus) {
+        return BigDecimal.valueOf(stake).compareTo(stakeRequiredForConsensus) >= 0;
+    }
 
-        var stakeRequiredForConsensus = BigDecimal.valueOf(totalStake)
+    private BigDecimal getStakeRequiredForConsensus(long totalStake) {
+        return BigDecimal.valueOf(totalStake)
                 .multiply(commonDownloaderProperties.getConsensusRatio())
                 .setScale(0, RoundingMode.CEILING);
-
-        log.info("Stake Required For Consensus: {}", stakeRequiredForConsensus);
-        log.info("Result: {}", BigDecimal.valueOf(stake).compareTo(stakeRequiredForConsensus) >= 0);
-
-        return BigDecimal.valueOf(stake).compareTo(stakeRequiredForConsensus) >= 0;
     }
 }
