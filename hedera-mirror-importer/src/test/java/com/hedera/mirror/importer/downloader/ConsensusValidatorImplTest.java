@@ -54,9 +54,9 @@ import com.hedera.mirror.importer.repository.NodeStakeRepository;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class ConsensusValidatorImplTest extends IntegrationTest {
 
-    private static final EntityId entity3 = EntityId.of(0L, 0L, 3L, EntityType.ACCOUNT);
-    private static final EntityId entity4 = EntityId.of(0L, 0L, 4L, EntityType.ACCOUNT);
-    private static final EntityId entity5 = EntityId.of(0L, 0L, 5L, EntityType.ACCOUNT);
+    private static final EntityId entity3 = EntityId.of(3L, EntityType.ACCOUNT);
+    private static final EntityId entity4 = EntityId.of(4L, EntityType.ACCOUNT);
+    private static final EntityId entity5 = EntityId.of(5L, EntityType.ACCOUNT);
 
     private static final BigDecimal MAX_TINYBARS = BigDecimal.valueOf(50_000_000_000L)
             .multiply(BigDecimal.valueOf(TINYBARS_IN_ONE_HBAR));
@@ -391,7 +391,7 @@ class ConsensusValidatorImplTest extends IntegrationTest {
         // Zero node stakes occurs when falling back to counting signatures
         nodeStakes(0, 0, 0, 0);
 
-        var entity6 = new EntityId(0L, 0L, 6L, EntityType.ACCOUNT);
+        var entity6 = EntityId.of(6L, EntityType.ACCOUNT);
         var nodeIdNodeAccountIdMap = Map.of(100L, entity3, 101L, entity4, 102L, entity5, 103L, entity6);
         when(currentAddressBook.getNodeIdNodeAccountIdMap()).thenReturn(nodeIdNodeAccountIdMap);
         when(commonDownloaderProperties.getConsensusRatio()).thenReturn(BigDecimal.ONE);
