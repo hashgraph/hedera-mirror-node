@@ -25,6 +25,7 @@ import {ContractService} from '../../service';
 import {assertSqlQueryEqual} from '../testutils';
 import integrationDomainOps from '../integrationDomainOps';
 import {setupIntegrationTest} from '../integrationUtils';
+import {orderFilterValues} from '../../constants';
 
 setupIntegrationTest();
 
@@ -1042,5 +1043,43 @@ describe('ContractService.getContractIdByEvmAddress tests', () => {
       create2_evm_address: evmAddress,
     });
     expect(contractId.toString()).toEqual('111169');
+  });
+});
+
+describe('ContractService.getContractActionsByConsensusTimestamp tests', () => {
+  test('No match', async () => {
+    const res = await ContractService.getContractActionsByConsensusTimestamp(
+      '1676540001234390005',
+      [],
+      orderFilterValues.ASC,
+      100
+    );
+    expect(res.length).toEqual(0);
+  });
+  test('Multiple rows match', async () => {
+    await integrationDomainOps.loadContractActions([
+      {consensus_timestamp: '1676540001234390005'},
+      {consensus_timestamp: '1676540001234390005', index: 2},
+    ]);
+    const res = await ContractService.getContractActionsByConsensusTimestamp(
+      '1676540001234390005',
+      [],
+      orderFilterValues.ASC,
+      100
+    );
+    expect(res.length).toEqual(2);
+  });
+  test('One row match', async () => {
+    await integrationDomainOps.loadContractActions([
+      {consensus_timestamp: '1676540001234390005'},
+      {consensus_timestamp: '1676540001234390006'},
+    ]);
+    const res = await ContractService.getContractActionsByConsensusTimestamp(
+      '1676540001234390005',
+      [],
+      orderFilterValues.ASC,
+      100
+    );
+    expect(res.length).toEqual(1);
   });
 });
