@@ -124,11 +124,8 @@ public class ConsensusValidatorImpl implements ConsensusValidator {
             return;
         }
 
-        log.debug("Highest encountered Stake: {}, Total Stake: {}", debugStake, totalStake);
-        log.debug("Consensus Ratio: {}", commonDownloaderProperties.getConsensusRatio());
-        log.debug("Stake Required For Consensus: {}", stakeRequiredForConsensus);
-        log.debug("Result: {}", canReachConsensus(debugStake, stakeRequiredForConsensus));
-        throw new SignatureVerificationException(String.format("Consensus not reached for file %s", filename));
+        throw new SignatureVerificationException(String.format("Consensus not reached for file %s with %d/%d stake",
+                filename, debugStake, totalStake));
     }
 
     private boolean canReachConsensus(long stake, BigDecimal stakeRequiredForConsensus) {
