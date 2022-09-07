@@ -47,8 +47,8 @@ import com.hedera.mirror.importer.repository.TransactionHashRepository;
 @Tag("migration")
 class BackfillTransactionHashMigrationTest extends IntegrationTest {
 
-    private final static long DEFAULT_START_TIMESTAMP = 10_000_000_000L;
-    private final static String MIGRATION_NAME = "backfillTransactionHashMigration";
+    private static final long DEFAULT_START_TIMESTAMP = 10_000_000_000L;
+    private static final String MIGRATION_NAME = "backfillTransactionHashMigration";
 
     private final EntityProperties entityProperties;
     private final JdbcTemplate jdbcTemplate;

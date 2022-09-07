@@ -32,7 +32,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 @Named
 public class BackfillTransactionHashMigration extends RepeatableMigration {
 
-    private final static String BACKFILL_TRANSACTION_HASH_SQL = """
+    private static final String BACKFILL_TRANSACTION_HASH_SQL = """
             begin;
             truncate transaction_hash;
             insert into transaction_hash (consensus_timestamp, hash)
@@ -42,7 +42,7 @@ public class BackfillTransactionHashMigration extends RepeatableMigration {
             commit;
             """;
 
-    private final static String START_TIMESTAMP_KEY = "startTimestamp";
+    private static final String START_TIMESTAMP_KEY = "startTimestamp";
 
     private final EntityProperties entityProperties;
 
