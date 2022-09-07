@@ -20,6 +20,9 @@ package com.hedera.mirror.importer.downloader;
  * ‍
  */
 
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
@@ -48,9 +51,12 @@ public class CommonDownloaderProperties {
     @NotNull
     private CloudProvider cloudProvider = CloudProvider.S3;
 
+    private MathContext consensusRatioMathContext = new MathContext(19, RoundingMode.DOWN);
+
+    @NotNull
     @Max(1)
     @Min(0)
-    private float consensusRatio = (float) 1 / 3;
+    private BigDecimal consensusRatio = BigDecimal.ONE.divide(BigDecimal.valueOf(3), consensusRatioMathContext);
 
     private String endpointOverride;
 

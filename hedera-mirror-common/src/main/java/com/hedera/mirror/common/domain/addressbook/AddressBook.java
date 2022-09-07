@@ -78,6 +78,14 @@ public class AddressBook {
             .collect(Collectors
                     .toMap(e -> e.getNodeAccountId().toString(), AddressBookEntry::getPublicKeyAsObject));
 
+    @ToString.Exclude
+    @Transient
+    @Getter(lazy = true)
+    private final Map<Long, EntityId> nodeIdNodeAccountIdMap = this.getEntries()
+            .stream()
+            .collect(Collectors
+                    .toMap(e -> e.getNodeId(), AddressBookEntry::getNodeAccountId));
+
     public Set<EntityId> getNodeSet() {
         return entries.stream()
                 .map(AddressBookEntry::getNodeAccountId)

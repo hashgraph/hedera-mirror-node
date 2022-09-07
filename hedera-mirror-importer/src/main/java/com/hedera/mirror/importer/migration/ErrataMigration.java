@@ -27,15 +27,19 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
 import javax.inject.Named;
+import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
+import org.springframework.transaction.support.TransactionOperations;
 
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
@@ -56,20 +60,25 @@ import com.hedera.mirror.importer.repository.TransactionRepository;
 @Named
 public class ErrataMigration extends RepeatableMigration implements BalanceStreamFileListener {
 
+    @Value("classpath:errata/mainnet/balance-offsets.txt")
     private final Resource balanceOffsets;
     private final EntityRecordItemListener entityRecordItemListener;
     private final EntityProperties entityProperties;
     private final NamedParameterJdbcOperations jdbcOperations;
     private final MirrorProperties mirrorProperties;
     private final RecordStreamFileListener recordStreamFileListener;
+    private final TransactionOperations transactionOperations;
     private final TransactionRepository transactionRepository;
     private final Set<Long> timestamps = new HashSet<>();
 
     @Lazy
-    public ErrataMigration(@Value("classpath:errata/mainnet/balance-offsets.txt") Resource balanceOffsets,
-                           EntityRecordItemListener entityRecordItemListener, EntityProperties entityProperties,
-                           NamedParameterJdbcOperations jdbcOperations, MirrorProperties mirrorProperties,
+    public ErrataMigration(Resource balanceOffsets,
+                           EntityRecordItemListener entityRecordItemListener,
+                           EntityProperties entityProperties,
+                           NamedParameterJdbcOperations jdbcOperations,
+                           MirrorProperties mirrorProperties,
                            RecordStreamFileListener recordStreamFileListener,
+                           TransactionOperations transactionOperations,
                            TransactionRepository transactionRepository) {
         super(mirrorProperties.getMigration());
         this.balanceOffsets = balanceOffsets;
@@ -78,6 +87,7 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
         this.jdbcOperations = jdbcOperations;
         this.mirrorProperties = mirrorProperties;
         this.recordStreamFileListener = recordStreamFileListener;
+        this.transactionOperations = transactionOperations;
         this.transactionRepository = transactionRepository;
     }
 
@@ -110,9 +120,11 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
             entityProperties.getPersist().setTrackBalance(false);
 
             try {
-                balanceFileAdjustment();
-                spuriousTransfers();
-                missingTransactions();
+                transactionOperations.executeWithoutResult(t -> {
+                    balanceFileAdjustment();
+                    spuriousTransfers();
+                    missingTransactions();
+                });
             } finally {
                 entityProperties.getPersist().setTrackBalance(trackBalance);
             }
@@ -151,17 +163,21 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
         log.info("Updated {} spurious transfers", count * 2);
     }
 
-    // Adds the transactions and records that are missing due to the insufficient fee funding issue in services.
-    private void missingTransactions() throws IOException {
+    /**
+     * Adds the transactions and records that are missing due to the insufficient fee funding and FAIL_INVALID NFT
+     * transfer issues in services.
+     */
+    @SneakyThrows
+    private void missingTransactions() {
         Set<Long> consensusTimestamps = new HashSet<>();
         var resourceResolver = new PathMatchingResourcePatternResolver();
         Resource[] resources = resourceResolver.getResources("classpath*:errata/mainnet/missingtransactions/*.bin");
+        Arrays.sort(resources, Comparator.comparing(Resource::getFilename));
         recordStreamFileListener.onStart();
         var dateRangeFilter = new DateRangeFilter(mirrorProperties.getStartDate(), mirrorProperties.getEndDate());
 
         for (Resource resource : resources) {
             String name = resource.getFilename();
-            log.info("Loading file: {}", name);
 
             try (var in = new ValidatedDataInputStream(resource.getInputStream(), name)) {
                 byte[] recordBytes = in.readLengthAndBytes(1, MAX_TRANSACTION_LENGTH, false, "record");
@@ -174,6 +190,9 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
                 if (transactionRepository.findById(timestamp).isEmpty() && dateRangeFilter.filter(timestamp)) {
                     entityRecordItemListener.onItem(recordItem);
                     consensusTimestamps.add(timestamp);
+                    log.info("Processed errata {} successfully", name);
+                } else {
+                    log.info("Skipped previously processed errata {}", name);
                 }
             } catch (IOException e) {
                 recordStreamFileListener.onError();

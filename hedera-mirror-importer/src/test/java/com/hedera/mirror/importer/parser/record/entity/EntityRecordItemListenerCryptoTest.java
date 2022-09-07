@@ -839,6 +839,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         Transaction transaction = cryptoTransferTransaction();
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = buildTransactionRecord(r -> {
+            r.setConsensusTimestamp(TestUtils.toTimestamp(1577836799000000000L - 1));
             for (int i = 0; i < additionalTransfers.length; i++) {
                 // Add non-fee transfers to record
                 var accountAmount = accountAmount(additionalTransfers[i], additionalTransferAmounts[i]);

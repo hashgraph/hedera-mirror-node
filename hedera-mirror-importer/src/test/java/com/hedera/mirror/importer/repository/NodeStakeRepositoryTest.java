@@ -20,17 +20,27 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
+import static com.hedera.mirror.importer.repository.NodeStakeRepository.NODE_STAKE_CACHE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.interceptor.SimpleKey;
 
+import com.hedera.mirror.common.domain.addressbook.NodeStake;
+import com.hedera.mirror.importer.config.CacheConfiguration;
 import com.hedera.mirror.importer.util.Utility;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class NodeStakeRepositoryTest extends AbstractRepositoryTest {
 
+    @Qualifier(CacheConfiguration.EXPIRE_AFTER_24H)
+    private final CacheManager cacheManager;
     private final NodeStakeRepository nodeStakeRepository;
 
     @Test
@@ -50,5 +60,49 @@ class NodeStakeRepositoryTest extends AbstractRepositoryTest {
         var nodeStake = domainBuilder.nodeStake().get();
         nodeStakeRepository.save(nodeStake);
         assertThat(nodeStakeRepository.findById(nodeStake.getId())).get().isEqualTo(nodeStake);
+    }
+
+    @Test
+    void findLatest() {
+        long epochDay = Utility.getEpochDay(domainBuilder.timestamp());
+        domainBuilder.nodeStake().customize(n -> n.epochDay(epochDay - 2)).persist();
+        domainBuilder.nodeStake().customize(n -> n.epochDay(epochDay - 1)).persist();
+        var latestNodeStake = domainBuilder.nodeStake().customize(n -> n.epochDay(epochDay)).persist();
+
+        assertThat(nodeStakeRepository.findLatest()).containsOnly(latestNodeStake);
+    }
+
+    @Test
+    void cacheAndEvictNodeStake() {
+        // verify cache is empty to start
+        assertNull(cacheManager.getCache(NODE_STAKE_CACHE)
+                .get(SimpleKey.EMPTY));
+
+        // given
+        long epochDay = Utility.getEpochDay(domainBuilder.timestamp());
+        var nodeStake1 = domainBuilder.nodeStake().customize(n -> n.epochDay(epochDay).consensusTimestamp(10))
+                .persist();
+        var nodeStake2 = domainBuilder.nodeStake()
+                .customize(n -> n.epochDay(epochDay).consensusTimestamp(10).nodeId(5l)).persist();
+
+        // when
+        nodeStakeRepository.findLatest();
+
+        // then verify findLatest() adds entries to the cache
+        var latestNodeStakes = (List<NodeStake>) cacheManager
+                .getCache(NODE_STAKE_CACHE)
+                .get(SimpleKey.EMPTY).get();
+
+        assertThat(latestNodeStakes).containsExactlyInAnyOrder(
+                nodeStake1,
+                nodeStake2
+        );
+
+        // when
+        nodeStakeRepository.evictNodeStakeCache();
+
+        // then verify the cache is cleared
+        assertNull(cacheManager.getCache(NODE_STAKE_CACHE)
+                .get(SimpleKey.EMPTY));
     }
 }

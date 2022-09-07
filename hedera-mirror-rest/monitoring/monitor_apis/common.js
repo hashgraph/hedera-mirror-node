@@ -21,7 +21,6 @@
 import config from './config';
 
 const currentResults = {}; // Results of current tests are stored here
-const pids = {}; // PIDs for the monitoring test processes
 
 /**
  * Initializer for results
@@ -88,63 +87,35 @@ const getStatus = () => {
  */
 const getStatusByName = (name) => {
   let ret = {
-    numPassedTests: 0,
-    numFailedTests: 0,
-    success: false,
-    testResults: [],
-    message: 'Failed',
     httpCode: 400,
+    results: {
+      message: 'Failed',
+      numFailedTests: 0,
+      numPassedTests: 0,
+      success: false,
+      testResults: [],
+    },
   };
 
   // Return 404 (Not found) for illegal name of the serer
   if (name === undefined || name === null) {
     ret.httpCode = 404;
-    ret.message = `Not found. Net: ${name}`;
+    ret.results.message = `Name ${name} not found`;
     return ret;
   }
 
   // Return 404 (Not found) for if the server doesn't appear in our results table
-  if (!currentResults[name] || !currentResults[name].results) {
+  const currentResult = currentResults[name];
+  if (!currentResult || !currentResult.results) {
     ret.httpCode = 404;
-    ret.message = `Test results unavailable for server: ${name}`;
+    ret.results.message = `Test results unavailable for server: ${name}`;
     return ret;
   }
 
   // Return the results saved in the currentResults object
-  ret = currentResults[name];
-  ret.httpCode = currentResults[name].results.success ? 200 : 409;
+  ret = currentResult;
+  ret.httpCode = currentResult.results.success ? 200 : 409;
   return ret;
-};
-
-/**
- * Get the process pid for a given server
- * @param {Object} server the server for which the pid is requested
- * @return {Number} PID of the test process running for the given server
- */
-const getProcess = (server) => {
-  return pids[server.baseUrl];
-};
-
-/**
- * Stores the process pid for a given server
- * @param {Object} server the server for which the pid needs to be stored
- * @param {number} count
- * @return None
- */
-const saveProcess = (server, count) => {
-  pids[server.baseUrl] = {
-    id: server.name,
-    encountered: count,
-  };
-};
-
-/**
- * Deletes the process pid for a given server (when the test process returns)
- * @param {Object} server the server for which the pid needs to be deleted
- * @return None
- */
-const deleteProcess = (server) => {
-  delete pids[server.baseUrl];
 };
 
 export default {
@@ -153,7 +124,4 @@ export default {
   getServerCurrentResults,
   getStatus,
   getStatusByName,
-  getProcess,
-  saveProcess,
-  deleteProcess,
 };
