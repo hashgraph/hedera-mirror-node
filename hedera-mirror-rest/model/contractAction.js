@@ -21,16 +21,6 @@
 import _ from 'lodash';
 
 class ContractAction {
-  /**
-   * Parses contract_action table columns into object
-   */
-  constructor(contractAction) {
-    Object.assign(
-      this,
-      _.mapKeys(contractAction, (v, k) => _.camelCase(k))
-    );
-  }
-
   static tableAlias = 'cact';
   static tableName = 'contract_action';
 
@@ -44,12 +34,22 @@ class ContractAction {
   static GAS_USED = 'gas_used';
   static INDEX = 'index';
   static INPUT = 'input';
-  static RECEPIENT_ACCOUNT = 'recipient_account';
-  static RECEPIENT_ADDRESS = 'recipient_address';
-  static RECEPIENT_CONTRACT = 'recipient_contract';
+  static RECIPIENT_ACCOUNT = 'recipient_account';
+  static RECIPIENT_ADDRESS = 'recipient_address';
+  static RECIPIENT_CONTRACT = 'recipient_contract';
   static RESULT_DATA = 'result_data';
   static RESULT_DATA_TYPE = 'result_data_type';
   static VALUE = 'value';
+
+  /**
+   * Parses contract_action table columns into object
+   */
+  constructor(contractAction) {
+    Object.assign(
+      this,
+      _.mapKeys(contractAction, (v, k) => _.camelCase(k))
+    );
+  }
 
   /**
    * Gets full column name with table alias prepended.

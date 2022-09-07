@@ -1697,8 +1697,8 @@ components:
           type: integer
         call_operation_type:
           description:  The type of the call operation
-          enum: [OP_UNKNOWN, OP_CALL, OP_CALLCODE, OP_DELEGATECALL, OP_STATICCALL, OP_CREATE, OP_CREATE2]
-          example: OP_CALL
+          enum: [CALL, CALLCODE, CREATE, CREATE2, DELEGATECALL, STATICCALL, UNKNOWN]
+          example: CALL
           nullable: false
           type: string
         call_type:
