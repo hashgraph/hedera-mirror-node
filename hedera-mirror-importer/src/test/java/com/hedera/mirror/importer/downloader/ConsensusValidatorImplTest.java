@@ -116,6 +116,29 @@ class ConsensusValidatorImplTest extends IntegrationTest {
     }
 
     @Test
+    void testNodeStakesZeroValues() {
+        nodeStakes(0, 0, 1);
+
+        FileStreamSignature fileStreamSignatureNode3 = buildFileStreamSignature();
+        FileStreamSignature fileStreamSignatureNode4 = buildFileStreamSignature();
+        fileStreamSignatureNode4.setNodeAccountId(entity4);
+        fileStreamSignatureNode4.setFileHash(fileStreamSignatureNode3.getFileHash());
+        FileStreamSignature fileStreamSignatureNode5 = buildFileStreamSignature();
+        fileStreamSignatureNode5.setNodeAccountId(entity5);
+        fileStreamSignatureNode5.setFileHash(fileStreamSignatureNode3.getFileHash());
+
+        var fileStreamSignatures = List.of(fileStreamSignatureNode3, fileStreamSignatureNode4,
+                fileStreamSignatureNode5);
+
+        consensusValidator.validate(fileStreamSignatures);
+        assertThat(fileStreamSignatures)
+                .map(FileStreamSignature::getStatus)
+                .containsExactly(FileStreamSignature.SignatureStatus.CONSENSUS_REACHED,
+                        FileStreamSignature.SignatureStatus.CONSENSUS_REACHED,
+                        FileStreamSignature.SignatureStatus.CONSENSUS_REACHED);
+    }
+
+    @Test
     void testFailedVerificationWithLargeStakes() {
         var oneThirdStake = MAX_TINYBARS.divide(BigDecimal.valueOf(3), 0, RoundingMode.CEILING);
         long nodeOneStake = oneThirdStake.subtract(BigDecimal.ONE).longValue();

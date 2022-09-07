@@ -70,7 +70,7 @@ public class ConsensusValidatorImpl implements ConsensusValidator {
             return;
         }
 
-        long summedStake = 0;
+        long totalStake = 0;
         var nodeAccountIdToStakeMap = new HashMap<EntityId, Long>();
         var addressBook = addressBookService.getCurrent();
         var nodeStakes = nodeStakeRepository.findLatest();
@@ -83,19 +83,20 @@ public class ConsensusValidatorImpl implements ConsensusValidator {
             }
 
             long stake = nodeStake.getStake();
-            summedStake += stake;
-
-            if (stake != 0) {
-                // Only place non-signature stake values into the map
-                nodeAccountIdToStakeMap.put(nodeAccountId, stake);
-            }
+            totalStake += stake;
+            nodeAccountIdToStakeMap.put(nodeAccountId, stake);
         }
 
-        // If the sum of the stakes is 0, use the number of nodes as the total stake.
-        long totalStake = summedStake != 0 ? summedStake : nodeIdToNodeAccountIdMap.size();
         if (totalStake == 0) {
-            throw new SignatureVerificationException(String.format("Invalid total staking weight. Consensus not " +
-                    "reached for file %s", filename));
+            // Count the node stakes as signatures
+            nodeAccountIdToStakeMap.clear();
+            // Use the number of nodes as the total stake.
+            totalStake = nodeIdToNodeAccountIdMap.size();
+
+            if (totalStake == 0) {
+                throw new SignatureVerificationException(String.format("Invalid total staking weight. Consensus not " +
+                        "reached for file %s", filename));
+            }
         }
 
         var stakeRequiredForConsensus = getStakeRequiredForConsensus(totalStake);
