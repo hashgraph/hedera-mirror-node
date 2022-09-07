@@ -801,9 +801,7 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<TransactionHash, TransactionHash.TransactionHashBuilder> transactionHash() {
-        var builder = TransactionHash.builder()
-                .consensusTimestamp(timestamp())
-                .hash(bytes(48));
+        var builder = TransactionHash.builder().consensusTimestamp(timestamp()).hash(bytes(48));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
