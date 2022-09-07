@@ -4,6 +4,9 @@ import static com.hedera.mirror.web3.service.eth.Constants.HTS_PRECOMPILED_CONTR
 
 import com.google.protobuf.ByteString;
 
+import com.hedera.mirror.web3.evm.InfrastructureFactory;
+import com.hedera.mirror.web3.evm.PrecompilePricingUtils;
+import com.hedera.mirror.web3.evm.SimulatedTxnAwareEvmSigsVerifier;
 import com.hedera.mirror.web3.repository.TokenRepository;
 
 import com.hedera.services.transaction.HTSPrecompiledContract;
@@ -45,6 +48,9 @@ public class EthCallService implements ApiContractEthService<TxnCallBody, String
     private final CodeCache codeCache;
     private final SimulatedAliasManager simulatedAliasManager;
     private final TokenRepository tokenRepository;
+    private final InfrastructureFactory infrastructureFactory;
+    private final PrecompilePricingUtils pricingUtils;
+    private final SimulatedTxnAwareEvmSigsVerifier sigsVerifier;
 
     @Override
     public String getMethod() {
@@ -65,7 +71,8 @@ public class EthCallService implements ApiContractEthService<TxnCallBody, String
         final var senderDto = senderEntity != null ? new AccountDto(senderEntity.getNum(), ByteString.copyFrom(senderEntity.getAlias())) : new AccountDto(0L, ByteString.EMPTY);
 
         Map<String, PrecompiledContract> precompiledContractMap = new HashMap<>();
-        precompiledContractMap.put(HTS_PRECOMPILED_CONTRACT_ADDRESS, new HTSPrecompiledContract(tokenRepository));
+        precompiledContractMap.put(HTS_PRECOMPILED_CONTRACT_ADDRESS, new HTSPrecompiledContract(tokenRepository, infrastructureFactory,
+                pricingUtils, simulatedAliasManager, sigsVerifier));
 
         final CallEvmTxProcessor evmTxProcessor = new CallEvmTxProcessor(simulatedPricesSource, evmProperties,
                 simulatedGasCalculator, new HashSet<>(), precompiledContractMap, codeCache, simulatedAliasManager);

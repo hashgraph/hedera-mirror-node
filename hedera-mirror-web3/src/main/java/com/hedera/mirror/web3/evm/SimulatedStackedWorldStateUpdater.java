@@ -1,5 +1,9 @@
 package com.hedera.mirror.web3.evm;
 
+import com.hedera.mirror.web3.repository.NftRepository;
+import com.hedera.mirror.web3.repository.TokenRepository;
+
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.account.EvmAccount;
@@ -18,10 +22,13 @@ public class SimulatedStackedWorldStateUpdater
         extends AbstractStackedLedgerUpdater<HederaMutableWorldState, Account>
         implements HederaWorldUpdater {
 
+    private static final byte[] NON_CANONICAL_REFERENCE = new byte[20];
     private final HederaMutableWorldState worldState;
     private final SimulatedAliasManager simulatedAliasManager;
     private final SimulatedEntityAccess entityAccess;
     private final EntityRepository entityRepository;
+    private final NftRepository nftRepository;
+    private final TokenRepository tokenRepository;
 
     private long sbhRefund = 0L;
     private int numAllocatedIds = 0;
@@ -31,12 +38,16 @@ public class SimulatedStackedWorldStateUpdater
             final HederaMutableWorldState worldState,
             final SimulatedAliasManager simulatedAliasManager,
             final SimulatedEntityAccess simulatedEntityAccess,
-            final EntityRepository entityRepository) {
-        super(updater, simulatedAliasManager, simulatedEntityAccess, entityRepository);
+            final EntityRepository entityRepository,
+            final NftRepository nftRepository,
+            final TokenRepository tokenRepository) {
+        super(updater, simulatedAliasManager, simulatedEntityAccess, entityRepository, nftRepository, tokenRepository);
         this.worldState = worldState;
         this.simulatedAliasManager = simulatedAliasManager;
         this.entityAccess = simulatedEntityAccess;
         this.entityRepository = entityRepository;
+        this.nftRepository = nftRepository;
+        this.tokenRepository = tokenRepository;
     }
 
     @Override
@@ -73,6 +84,22 @@ public class SimulatedStackedWorldStateUpdater
         return super.getAccount(address);
     }
 
+    /**
+     * Returns the mirror form of the given EVM address if it exists; or 20 bytes of binary zeros if
+     * the given address is the mirror address of an account with an EIP-1014 address.
+     *
+     * @param evmAddress an EVM address
+     * @return its mirror form, or binary zeros if an EIP-1014 address should have been used for
+     *     this account
+     */
+    public byte[] unaliased(final byte[] evmAddress) {
+        final var addressOrAlias = Address.wrap(Bytes.wrap(evmAddress));
+        if (!addressOrAlias.equals(canonicalAddress(addressOrAlias))) {
+            return NON_CANONICAL_REFERENCE;
+        }
+        return simulatedAliasManager.resolveForEvm(addressOrAlias).toArrayUnsafe();
+    }
+
     @Override
     public long getSbhRefund() {
         return sbhRefund;
@@ -106,7 +133,8 @@ public class SimulatedStackedWorldStateUpdater
                 (AbstractLedgerWorldUpdater) this,
                 worldState,
                 simulatedAliasManager,
-                entityAccess, entityRepository);
+                entityAccess, entityRepository,
+                nftRepository, tokenRepository);
     }
 
     // --- Internal helpers

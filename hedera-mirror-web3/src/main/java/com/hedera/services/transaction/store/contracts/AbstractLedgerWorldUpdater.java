@@ -5,6 +5,11 @@ import static com.hedera.services.transaction.models.Account.ECDSA_SECP256K1_ALI
 import static com.hedera.services.transaction.models.Account.EVM_ADDRESS_SIZE;
 
 import com.google.protobuf.ByteString;
+
+import com.hedera.mirror.web3.evm.SimulatedBackingTokens;
+import com.hedera.mirror.web3.repository.NftRepository;
+import com.hedera.mirror.web3.repository.TokenRepository;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -65,17 +70,21 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
     private final SimulatedAliasManager simulatedAliasManager;
     private final SimulatedEntityAccess simulatedEntityAccess;
     private final EntityRepository entityRepository;
+    private final NftRepository nftRepository;
+    private final TokenRepository tokenRepository;
 
     protected Set<Address> deletedAccounts = new HashSet<>();
     protected Map<Address, UpdateTrackingLedgerAccount<A>> updatedAccounts = new HashMap<>();
 
     protected AbstractLedgerWorldUpdater(final W world, final SimulatedAliasManager simulatedAliasManager,
             final SimulatedEntityAccess simulatedEntityAccess,
-            final EntityRepository entityRepository) {
+            final EntityRepository entityRepository, NftRepository nftRepository, TokenRepository tokenRepository) {
         this.world = world;
         this.simulatedAliasManager = simulatedAliasManager;
         this.simulatedEntityAccess = simulatedEntityAccess;
         this.entityRepository = entityRepository;
+        this.nftRepository = nftRepository;
+        this.tokenRepository = tokenRepository;
     }
 
     /**
@@ -122,7 +131,11 @@ public abstract class AbstractLedgerWorldUpdater<W extends WorldView, A extends 
         }
     }
 
-    private Address canonicalAddress(final Address addressOrAlias) {
+    public SimulatedBackingTokens wrappedBackingTokens() {
+        return new SimulatedBackingTokens(nftRepository, tokenRepository, entityRepository, simulatedEntityAccess);
+    }
+
+    public Address canonicalAddress(final Address addressOrAlias) {
         return getAddressOrAlias(addressOrAlias);
     }
 

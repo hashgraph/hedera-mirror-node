@@ -1,5 +1,8 @@
 package com.hedera.services.transaction.store.contracts;
 
+import com.hedera.mirror.web3.repository.NftRepository;
+import com.hedera.mirror.web3.repository.TokenRepository;
+
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.worldstate.WorldView;
@@ -28,8 +31,10 @@ public abstract class AbstractStackedLedgerUpdater<W extends WorldView, A extend
             final AbstractLedgerWorldUpdater<W, A> world,
             final SimulatedAliasManager simulatedAliasManager,
             final SimulatedEntityAccess simulatedEntityAccess,
-            final EntityRepository entityRepository) {
-        super(world, simulatedAliasManager, simulatedEntityAccess, entityRepository);
+            final EntityRepository entityRepository,
+            final NftRepository nftRepository,
+            final TokenRepository tokenRepository) {
+        super(world, simulatedAliasManager, simulatedEntityAccess, entityRepository, nftRepository, tokenRepository);
     }
 
     /** {@inheritDoc} */
