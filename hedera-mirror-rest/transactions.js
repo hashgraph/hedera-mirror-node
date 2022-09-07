@@ -32,6 +32,7 @@ import {
   NftTransfer,
   TokenTransfer,
   Transaction,
+  TransactionHash,
   TransactionResult,
   TransactionType,
 } from './model';
@@ -87,10 +88,8 @@ const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'des
     }
 
     const tquery = `select ${transactionFullFields}
-                    from ${Transaction.tableName} ${Transaction.tableAlias}
-                    ${timestampFilterJoin}
-                    order by ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} ${order}
-                    ${limitQuery}`;
+                    from ${Transaction.tableName} ${Transaction.tableAlias} ${timestampFilterJoin}
+                    order by ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} ${order} ${limitQuery}`;
 
     return `${timestampFilter}
       tlist as (${tquery})`;
@@ -409,11 +408,8 @@ const getTransferDistinctTimestampsQuery = function (
 
   return `
     SELECT DISTINCT ${tableAlias}.${timestampColumn} AS consensus_timestamp
-    FROM ${tableName} AS ${tableAlias}
-    ${joinClause}
-    ${whereClause}
-    ORDER BY ${tableAlias}.consensus_timestamp ${order}
-    ${namedLimitQuery}`;
+    FROM ${tableName} AS ${tableAlias} ${joinClause} ${whereClause}
+    ORDER BY ${tableAlias}.consensus_timestamp ${order} ${namedLimitQuery}`;
 };
 
 /**
@@ -460,10 +456,8 @@ const getTransactionsInnerQuery = function (
   const transactionOnlyQuery = _.isEmpty(transactionWhereClause)
     ? undefined
     : `select ${Transaction.CONSENSUS_TIMESTAMP}
-    from ${Transaction.tableName} as ${Transaction.tableAlias}
-    ${transactionWhereClause}
-    order by ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} ${order}
-    ${transactionOnlyLimitQuery}`;
+       from ${Transaction.tableName} as ${Transaction.tableAlias} ${transactionWhereClause}
+       order by ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} ${order} ${transactionOnlyLimitQuery}`;
 
   if (creditDebitQuery || namedAccountQuery) {
     const ctlQuery = getTransferDistinctTimestampsQuery(
@@ -500,10 +494,10 @@ const getTransactionsInnerQuery = function (
       return `
         SELECT COALESCE(ctl.consensus_timestamp, ttl.consensus_timestamp) AS consensus_timestamp
         FROM (${ctlQuery}) AS ctl
-        FULL OUTER JOIN (${ttlQuery}) as ttl
-        ON ctl.consensus_timestamp = ttl.consensus_timestamp
+               FULL OUTER JOIN (${ttlQuery}) as ttl
+                               ON ctl.consensus_timestamp = ttl.consensus_timestamp
         ORDER BY consensus_timestamp ${order}
-        ${namedLimitQuery}`;
+          ${namedLimitQuery}`;
     }
 
     // account filter applies to transaction.payer_account_id, crypto_transfer.entity_id, nft_transfer.account_id,
@@ -511,14 +505,14 @@ const getTransactionsInnerQuery = function (
     return `
       SELECT coalesce(t.consensus_timestamp, ctl.consensus_timestamp, ttl.consensus_timestamp) AS consensus_timestamp
       FROM (${transactionOnlyQuery}) AS ${Transaction.tableAlias}
-      FULL OUTER JOIN (${ctlQuery}) AS ctl
-      ON ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} = ctl.consensus_timestamp
-      FULL OUTER JOIN (${ttlQuery}) AS ttl
-      ON coalesce(${Transaction.getFullName(
-        Transaction.CONSENSUS_TIMESTAMP
-      )}, ctl.consensus_timestamp) = ttl.consensus_timestamp
+             FULL OUTER JOIN (${ctlQuery}) AS ctl
+                             ON ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} = ctl.consensus_timestamp
+             FULL OUTER JOIN (${ttlQuery}) AS ttl
+                             ON coalesce(${Transaction.getFullName(
+                               Transaction.CONSENSUS_TIMESTAMP
+                             )}, ctl.consensus_timestamp) = ttl.consensus_timestamp
       order by consensus_timestamp ${order}
-      ${namedLimitQuery}`;
+        ${namedLimitQuery}`;
   }
 
   return transactionOnlyQuery;
@@ -604,73 +598,93 @@ const getTransactions = async (req, res) => {
   res.locals[constants.responseDataLabel] = ret;
 };
 
+// The first part of the regex is for the base64url encoded 48-byte transaction hash. Note base64url replaces '+' with
+// '-' and '/' with '_'. The padding character '=' is not included since base64 encoding a 48-byte array always
+// produces a 64-byte string without padding
+const transactionHashRegex = /^([\dA-Za-z+\-\/_]{64}|(0x)?[\dA-Fa-f]{96})$/;
+
+const isValidTransactionHash = (hash) => transactionHashRegex.test(hash);
+
 /**
  * Extracts the sql query and params for transactions request by transaction id
  *
- * @param {String} transactionIdStr
+ * @param {String} transactionIdOrHash
  * @param {Array} filters
  * @return {{query: string, params: string[]}}
  */
-const extractSqlFromTransactionsByIdRequest = (transactionIdStr, filters) => {
-  const transactionId = TransactionId.fromString(transactionIdStr);
-  const params = [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()];
-  const conditions = [
-    `${Transaction.getFullName(Transaction.PAYER_ACCOUNT_ID)} = $1`,
-    `${Transaction.getFullName(Transaction.VALID_START_NS)} = $2`,
-  ];
+const extractSqlFromTransactionsByIdOrHashRequest = (transactionIdOrHash, filters) => {
+  const conditions = [];
+  let innerQuery;
+  const params = [];
 
-  let nonce;
-  let scheduled;
-  for (const filter of filters) {
-    // honor the last for both nonce and scheduled
-    switch (filter.key) {
-      case constants.filterKeys.NONCE:
-        nonce = filter.value;
-        break;
-      case constants.filterKeys.SCHEDULED:
-        scheduled = filter.value;
-        break;
-      default:
-        break;
+  if (isValidTransactionHash(transactionIdOrHash)) {
+    const encoding = transactionIdOrHash.length === Transaction.BASE64_HASH_SIZE ? 'base64url' : 'hex';
+    if (transactionIdOrHash.length === Transaction.HEX_HASH_WITH_PREFIX_SIZE) {
+      transactionIdOrHash = transactionIdOrHash.substring(2);
     }
+
+    const transactionHash = Buffer.from(transactionIdOrHash, encoding);
+    innerQuery = `select ${TransactionHash.CONSENSUS_TIMESTAMP}
+                  from ${TransactionHash.tableName}
+                  where ${TransactionHash.HASH} = $1`;
+    params.push(transactionHash);
+  } else {
+    // try to parse it as a transaction id
+    const transactionId = TransactionId.fromString(transactionIdOrHash);
+    conditions.push(`${Transaction.PAYER_ACCOUNT_ID} = $1`, `${Transaction.VALID_START_NS} = $2`);
+    params.push(transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs());
+
+    // only parse nonce and scheduled query filters if the path parameter is transaction id
+    let nonce;
+    let scheduled;
+    for (const filter of filters) {
+      // honor the last for both nonce and scheduled
+      switch (filter.key) {
+        case constants.filterKeys.NONCE:
+          nonce = filter.value;
+          break;
+        case constants.filterKeys.SCHEDULED:
+          scheduled = filter.value;
+          break;
+        default:
+          break;
+      }
+    }
+
+    if (nonce !== undefined) {
+      params.push(nonce);
+      conditions.push(`${Transaction.NONCE} = $${params.length}`);
+    }
+
+    if (scheduled !== undefined) {
+      params.push(scheduled);
+      conditions.push(`${Transaction.SCHEDULED} = $${params.length}`);
+    }
+
+    const whereClause = buildWhereClause(...conditions);
+    innerQuery = `select ${Transaction.CONSENSUS_TIMESTAMP}
+                  from ${Transaction.tableName}
+                  ${whereClause}`;
   }
 
-  if (nonce !== undefined) {
-    params.push(nonce);
-    conditions.push(`${Transaction.getFullName(Transaction.NONCE)} = $${params.length}`);
-  }
-
-  if (scheduled !== undefined) {
-    params.push(scheduled);
-    conditions.push(`${Transaction.getFullName(Transaction.SCHEDULED)} = $${params.length}`);
-  }
-
-  const whereClause = buildWhereClause(...conditions);
-  const innerQuery = `select ${Transaction.CONSENSUS_TIMESTAMP}
-                      from ${Transaction.tableName} ${Transaction.tableAlias}
-                      ${whereClause}
-                      order by ${Transaction.CONSENSUS_TIMESTAMP} desc`;
   const query = `
     ${getSelectClauseWithTransfers(true, innerQuery)}
     from transfer_list t
     order by ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} asc`;
 
-  return {
-    query,
-    params,
-  };
+  return {query, params};
 };
 
 /**
- * Handler function for /transactions/:transactionId API.
+ * Handler function for /transactions/:transactionIdOrHash API.
  * @param {Request} req HTTP request object
- * @return {} None.
+ * @return {Promise<None>}
  */
-const getTransactionsById = async (req, res) => {
+const getTransactionsByIdOrHash = async (req, res) => {
   const filters = utils.buildAndValidateFilters(req.query);
-  const {query, params} = extractSqlFromTransactionsByIdRequest(req.params.transactionId, filters);
+  const {query, params} = extractSqlFromTransactionsByIdOrHashRequest(req.params.transactionIdOrHash, filters);
   if (logger.isTraceEnabled()) {
-    logger.trace(`getTransactionsById query: ${query} ${utils.JSONStringify(params)}`);
+    logger.trace(`getTransactionsByIdOrHash query: ${query} ${utils.JSONStringify(params)}`);
   }
 
   // Execute query
@@ -680,7 +694,7 @@ const getTransactionsById = async (req, res) => {
   }
 
   const transferList = createTransferLists(rows);
-  logger.debug(`getTransactionsById returning ${transferList.transactions.length} entries`);
+  logger.debug(`getTransactionsByIdOrHash returning ${transferList.transactions.length} entries`);
   res.locals[constants.responseDataLabel] = {
     transactions: transferList.transactions,
   };
@@ -689,7 +703,7 @@ const getTransactionsById = async (req, res) => {
 const transactions = {
   createTransferLists,
   getTransactions,
-  getTransactionsById,
+  getTransactionsByIdOrHash,
   getTransactionsInnerQuery,
   getTransactionsOuterQuery,
 };
@@ -701,7 +715,8 @@ if (utils.isTestEnv()) {
     createCryptoTransferList,
     createNftTransferList,
     createTokenTransferList,
-    extractSqlFromTransactionsByIdRequest,
+    extractSqlFromTransactionsByIdOrHashRequest,
+    isValidTransactionHash,
     reqToSql,
   });
 }
