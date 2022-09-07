@@ -88,8 +88,10 @@ const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'des
     }
 
     const tquery = `select ${transactionFullFields}
-                    from ${Transaction.tableName} ${Transaction.tableAlias} ${timestampFilterJoin}
-                    order by ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} ${order} ${limitQuery}`;
+                    from ${Transaction.tableName} ${Transaction.tableAlias}
+                    ${timestampFilterJoin}
+                    order by ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} ${order}
+                    ${limitQuery}`;
 
     return `${timestampFilter}
       tlist as (${tquery})`;
@@ -408,8 +410,11 @@ const getTransferDistinctTimestampsQuery = function (
 
   return `
     SELECT DISTINCT ${tableAlias}.${timestampColumn} AS consensus_timestamp
-    FROM ${tableName} AS ${tableAlias} ${joinClause} ${whereClause}
-    ORDER BY ${tableAlias}.consensus_timestamp ${order} ${namedLimitQuery}`;
+    FROM ${tableName} AS ${tableAlias}
+    ${joinClause}
+    ${whereClause}
+    ORDER BY ${tableAlias}.consensus_timestamp ${order}
+    ${namedLimitQuery}`;
 };
 
 /**
@@ -456,8 +461,10 @@ const getTransactionsInnerQuery = function (
   const transactionOnlyQuery = _.isEmpty(transactionWhereClause)
     ? undefined
     : `select ${Transaction.CONSENSUS_TIMESTAMP}
-       from ${Transaction.tableName} as ${Transaction.tableAlias} ${transactionWhereClause}
-       order by ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} ${order} ${transactionOnlyLimitQuery}`;
+    from ${Transaction.tableName} as ${Transaction.tableAlias}
+    ${transactionWhereClause}
+    order by ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} ${order}
+    ${transactionOnlyLimitQuery}`;
 
   if (creditDebitQuery || namedAccountQuery) {
     const ctlQuery = getTransferDistinctTimestampsQuery(
@@ -494,10 +501,10 @@ const getTransactionsInnerQuery = function (
       return `
         SELECT COALESCE(ctl.consensus_timestamp, ttl.consensus_timestamp) AS consensus_timestamp
         FROM (${ctlQuery}) AS ctl
-               FULL OUTER JOIN (${ttlQuery}) as ttl
-                               ON ctl.consensus_timestamp = ttl.consensus_timestamp
+        FULL OUTER JOIN (${ttlQuery}) as ttl
+        ON ctl.consensus_timestamp = ttl.consensus_timestamp
         ORDER BY consensus_timestamp ${order}
-          ${namedLimitQuery}`;
+        ${namedLimitQuery}`;
     }
 
     // account filter applies to transaction.payer_account_id, crypto_transfer.entity_id, nft_transfer.account_id,
@@ -505,14 +512,14 @@ const getTransactionsInnerQuery = function (
     return `
       SELECT coalesce(t.consensus_timestamp, ctl.consensus_timestamp, ttl.consensus_timestamp) AS consensus_timestamp
       FROM (${transactionOnlyQuery}) AS ${Transaction.tableAlias}
-             FULL OUTER JOIN (${ctlQuery}) AS ctl
-                             ON ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} = ctl.consensus_timestamp
-             FULL OUTER JOIN (${ttlQuery}) AS ttl
-                             ON coalesce(${Transaction.getFullName(
-                               Transaction.CONSENSUS_TIMESTAMP
-                             )}, ctl.consensus_timestamp) = ttl.consensus_timestamp
+      FULL OUTER JOIN (${ctlQuery}) AS ctl
+      ON ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} = ctl.consensus_timestamp
+      FULL OUTER JOIN (${ttlQuery}) AS ttl
+      ON coalesce(${Transaction.getFullName(
+        Transaction.CONSENSUS_TIMESTAMP
+      )}, ctl.consensus_timestamp) = ttl.consensus_timestamp
       order by consensus_timestamp ${order}
-        ${namedLimitQuery}`;
+      ${namedLimitQuery}`;
   }
 
   return transactionOnlyQuery;
