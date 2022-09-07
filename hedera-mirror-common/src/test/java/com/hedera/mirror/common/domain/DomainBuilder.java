@@ -111,6 +111,7 @@ import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.SidecarFile;
 import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
+import com.hedera.mirror.common.domain.transaction.TransactionHash;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
@@ -796,6 +797,13 @@ public class DomainBuilder {
                 .type(TransactionType.CRYPTOTRANSFER.getProtoId())
                 .validStartNs(timestamp())
                 .validDurationSeconds(120L);
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<TransactionHash, TransactionHash.TransactionHashBuilder> transactionHash() {
+        var builder = TransactionHash.builder()
+                .consensusTimestamp(timestamp())
+                .hash(bytes(48));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
