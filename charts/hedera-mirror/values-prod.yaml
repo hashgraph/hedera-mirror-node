@@ -3,6 +3,9 @@ alertmanager:
   inhibitRules:
     enabled: true
 
+global:
+  middleware: true
+
 grpc:
   alertmanager:
     inhibitRules:
@@ -10,9 +13,6 @@ grpc:
   hpa:
     enabled: true
     minReplicas: 2
-  ingress:
-    middleware:
-      enabled: true
   podDisruptionBudget:
     enabled: true
   priorityClassName: medium
@@ -84,9 +84,6 @@ rosetta:
       enabled: true
   hpa:
     minReplicas: 2
-  ingress:
-    middleware:
-      enabled: true
   podDisruptionBudget:
     enabled: true
   priorityClassName: medium
@@ -102,9 +99,6 @@ web3:
   hpa:
     enabled: true
     minReplicas: 2
-  ingress:
-    middleware:
-      enabled: true
   podDisruptionBudget:
     enabled: true
   priorityClassName: medium

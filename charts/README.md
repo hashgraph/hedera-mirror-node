@@ -107,7 +107,8 @@ a [Standalone NEG](https://cloud.google.com/kubernetes-engine/docs/how-to/standa
          cloud.google.com/neg: '{"exposed_ports": {"443": {"name": "<tls_neg_name>"}}}'
    ```
 
-   > **_Note:_** Ensure the NEG names are cluster unique to support shared NEGs across separate globally distributed clusters
+   > **_Note:_** Ensure the NEG names are cluster unique to support shared NEGs across separate globally distributed
+   > clusters
 
    The annotation will ensure that a NEG is created for each name specified, with the endpoints pointing to the Traefik
    pod IPs in your cluster on the configured port. These ports should match the ports exposed by Traefik in the common
@@ -137,7 +138,6 @@ test:
         test:
           acceptance:
             network:
-            # Do not use use 0.0.2 or 0.0.50 for operator to ensure crypto transfers are not waived
             operatorId:
             operatorKey:
 ```
