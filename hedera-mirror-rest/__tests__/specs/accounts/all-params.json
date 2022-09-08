@@ -136,6 +136,7 @@
             }
           ]
         },
+        "created_timestamp": null,
         "decline_reward": false,
         "deleted": false,
         "ethereum_nonce": null,

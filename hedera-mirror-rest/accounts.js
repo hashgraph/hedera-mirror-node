@@ -55,6 +55,7 @@ const processRow = (row) => {
     alias: base32.encode(row.alias),
     auto_renew_period: row.auto_renew_period,
     balance,
+    created_timestamp: utils.nsToSecNs(row.created_timestamp),
     decline_reward: row.decline_reward,
     deleted: row.deleted,
     ethereum_nonce: row.ethereum_nonce,
@@ -74,6 +75,7 @@ const processRow = (row) => {
 const entityFields = [
   'alias',
   'auto_renew_period',
+  'created_timestamp',
   'decline_reward',
   'deleted',
   'ethereum_nonce',

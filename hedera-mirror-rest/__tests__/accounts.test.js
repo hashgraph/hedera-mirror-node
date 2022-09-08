@@ -339,6 +339,7 @@ describe('processRow', () => {
     auto_renew_period: 7890000,
     balance: 123456789,
     consensus_timestamp: 9876500123456789n,
+    created_timestamp: 10123456789n,
     decline_reward: false,
     ethereum_nonce: 1,
     evm_address: Buffer.from('ac384c53f03855fa1b3616052f8ba32c6c2a2fec', 'hex'),
@@ -381,6 +382,7 @@ describe('processRow', () => {
         },
       ],
     },
+    created_timestamp: '10.123456789',
     decline_reward: false,
     deleted: false,
     ethereum_nonce: 1,
@@ -495,6 +497,13 @@ describe('processRow', () => {
     expect(subject.processRow({...inputContract, evm_address: null})).toEqual({
       ...expectedContract,
       evm_address: '0x00000000000000000000000000000000000004e2',
+    });
+  });
+
+  test('null created_timestamp', () => {
+    expect(subject.processRow({...inputAccount, created_timestamp: null})).toEqual({
+      ...expectedAccount,
+      created_timestamp: null,
     });
   });
 });
