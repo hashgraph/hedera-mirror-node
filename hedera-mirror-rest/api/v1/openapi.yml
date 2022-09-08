@@ -1600,9 +1600,9 @@ components:
         timestamp:
           $ref: '#/components/schemas/TimestampNullable'
         balance:
-          format: integer
-          type: int64
+          format: int64
           nullable: true
+          type: integer
         tokens:
           type: array
           items:
