@@ -391,6 +391,29 @@ paths:
           $ref: '#/components/responses/NotFoundError'
       tags:
         - contracts
+  /api/v1/contracts/results/{transactionIdOrHash}/actions:
+    get:
+      summary: Get the contract actions from a contract on the network for a given transactionId or ethereum transaction hash
+      description: Returns a list of ContractActions for a contract's function executions for a given transactionId or ethereum transaction hash.
+      operationId: getContractActionsByTransactionIdOrHash
+      parameters:
+        - $ref: '#/components/parameters/transactionIdOrEthHashPathParam'
+        - $ref: '#/components/parameters/contractActionsIndexQueryParam'
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/orderQueryParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractActionsResponse'
+        400:
+          $ref: '#/components/responses/InvalidParameterError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+      tags:
+        - contracts
   /api/v1/contracts/{contractIdOrAddress}/results/logs:
     get:
       summary: List contract logs from a contract on the network
@@ -1174,6 +1197,13 @@ components:
           $ref: '#/components/schemas/ContractResults'
         links:
           $ref: '#/components/schemas/Links'
+    ContractActionsResponse:
+      type: object
+      properties:
+        actions:
+          $ref: '#/components/schemas/ContractActions'
+        links:
+          $ref: '#/components/schemas/Links'
     ContractLogsResponse:
       type: object
       properties:
@@ -1656,6 +1686,92 @@ components:
       items:
         type: string
       type: array
+    ContractAction:
+      type: object
+      properties:
+        call_depth:
+          description: The nesting depth of the call
+          example: 1
+          format: int32
+          nullable: false
+          type: integer
+        call_operation_type:
+          description:  The type of the call operation
+          enum: [CALL, CALLCODE, CREATE, CREATE2, DELEGATECALL, STATICCALL, UNKNOWN]
+          example: CALL
+          nullable: false
+          type: string
+        call_type:
+          description: The type of the call
+          enum: [NO_ACTION, CALL, CREATE, PRECOMPILE, SYSTEM]
+          example: CALL
+          nullable: false
+          type: string
+        caller:
+          $ref: '#/components/schemas/EntityId'
+        caller_type:
+          description: The entity type of the caller
+          type: string
+          enum: [ ACCOUNT, CONTRACT ]
+          example: ACCOUNT
+          nullable: false
+        from:
+          description: The EVM address of the caller
+          example: "0x0000000000000000000000000000000000000065"
+          nullable: false
+          type: string
+        gas:
+          description: Gas cost in tinybars
+          example: 50000
+          nullable: false
+          format: int64
+          type: integer
+        gas_used:
+          description: Gas used in tinybars
+          example: 50000
+          nullable: false
+          format: int64
+          type: integer
+        index:
+          description: The position of the action within the ordered list of actions
+          example: 0
+          format: int32
+          nullable: false
+          type: integer
+        input:
+          description: The hex encoded input data
+          example: '0x123456'
+          nullable: true
+          type: string
+        recipient:
+          $ref: '#/components/schemas/EntityId'
+        recipient_type:
+          description: The entity type of the recipient
+          type: string
+          enum: [ ACCOUNT, CONTRACT ]
+          example: ACCOUNT
+          nullable: false
+        result_data:
+          description: The hex encoded result data
+          example: '0x123456'
+          nullable: true
+          type: string
+        result_data_type:
+          description: The type of the result data
+          enum: [OUTPUT, REVERT_REASON, ERROR]
+          example: OUTPUT
+          nullable: false
+          type: string
+        timestamp:
+          $ref: '#/components/schemas/Timestamp'
+        to:
+          $ref: '#/components/schemas/EvmAddressNullable'
+        value:
+          description: The value of the transaction in tinybars
+          example: 50000
+          nullable: false
+          format: int64
+          type: integer
     ContractResult:
       type: object
       properties:
@@ -1873,6 +1989,10 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/ContractResult'
+    ContractActions:
+      type: array
+      items:
+        $ref: '#/components/schemas/ContractAction'
     ContractLogs:
       type: array
       items:
@@ -3747,6 +3867,36 @@ components:
         type: array
         items:
           type: string
+    contractActionsIndexQueryParam:
+      name: index
+      in: query
+      description: The index of a contract action
+      explode: true
+      examples:
+        noValue:
+          summary: --
+          value: ""
+        noOperator:
+          summary: Example of equals with no operator
+          value: 1
+        eqOperator:
+          summary: Example of equals operator
+          value: eq:2
+        gtOperator:
+          summary: Example of greater than operator
+          value: gt:4
+        gteOperator:
+          summary: Example of greater than or equals operator
+          value: gte:5
+        ltOperator:
+          summary: Example of less than operator
+          value: lt:6
+        lteOperator:
+          summary: Example of less than or equals operator
+          value: lte:7
+      schema:
+        type: string
+        pattern: ^((gte?|lte?|eq|ne)\:)?\d{1,10}$
     contractsBlockNumberQueryParam:
       name: block.number
       in: query

@@ -27,7 +27,15 @@ import EntityId from '../entityId';
 import {NotFoundError} from '../errors';
 import {OrderSpec} from '../sql';
 import {JSONStringify} from '../utils';
-import {ContractLog, ContractResult, ContractStateChange, Entity, EthereumTransaction, Transaction} from '../model';
+import {
+  ContractAction,
+  ContractLog,
+  ContractResult,
+  ContractStateChange,
+  Entity,
+  EthereumTransaction,
+  Transaction,
+} from '../model';
 
 const {default: defaultLimit} = getResponseLimit();
 
@@ -37,7 +45,7 @@ const {default: defaultLimit} = getResponseLimit();
 class ContractService extends BaseService {
   static detailedContractResultsWithEthereumTransactionHashQuery = `select ${ContractResult.tableAlias}.*,
                                                                            ${EthereumTransaction.tableAlias}.${EthereumTransaction.HASH}
-                                                                    from ${ContractResult.tableName} ${ContractResult.tableAlias}
+  from ${ContractResult.tableName} ${ContractResult.tableAlias}
   `;
 
   static transactionTableCTE = `, ${Transaction.tableAlias} as (
@@ -64,28 +72,30 @@ class ContractService extends BaseService {
   )}
   `;
 
-  static contractResultsQuery = `select ${ContractResult.AMOUNT},
-                                        ${ContractResult.BLOOM},
-                                        ${ContractResult.CALL_RESULT},
-                                        ${ContractResult.CONSENSUS_TIMESTAMP},
-                                        ${ContractResult.CONTRACT_ID},
-                                        ${ContractResult.CREATED_CONTRACT_IDS},
-                                        ${ContractResult.ERROR_MESSAGE},
-                                        ${ContractResult.FAILED_INITCODE},
-                                        ${ContractResult.FUNCTION_PARAMETERS},
-                                        ${ContractResult.GAS_LIMIT},
-                                        ${ContractResult.GAS_USED},
-                                        ${ContractResult.PAYER_ACCOUNT_ID},
-                                        ${ContractResult.SENDER_ID}
-                                 from ${ContractResult.tableName}`;
+  static contractResultsQuery = `
+    select ${ContractResult.AMOUNT},
+           ${ContractResult.BLOOM},
+           ${ContractResult.CALL_RESULT},
+           ${ContractResult.CONSENSUS_TIMESTAMP},
+           ${ContractResult.CONTRACT_ID},
+           ${ContractResult.CREATED_CONTRACT_IDS},
+           ${ContractResult.ERROR_MESSAGE},
+           ${ContractResult.FAILED_INITCODE},
+           ${ContractResult.FUNCTION_PARAMETERS},
+           ${ContractResult.GAS_LIMIT},
+           ${ContractResult.GAS_USED},
+           ${ContractResult.PAYER_ACCOUNT_ID},
+           ${ContractResult.SENDER_ID}
+    from ${ContractResult.tableName}`;
 
-  static contractStateChangesQuery = `select ${ContractStateChange.CONSENSUS_TIMESTAMP},
-                                             ${ContractStateChange.CONTRACT_ID},
-                                             ${ContractStateChange.PAYER_ACCOUNT_ID},
-                                             ${ContractStateChange.SLOT},
-                                             ${ContractStateChange.VALUE_READ},
-                                             ${ContractStateChange.VALUE_WRITTEN}
-                                      from ${ContractStateChange.tableName}`;
+  static contractStateChangesQuery = `
+    select ${ContractStateChange.CONSENSUS_TIMESTAMP},
+           ${ContractStateChange.CONTRACT_ID},
+           ${ContractStateChange.PAYER_ACCOUNT_ID},
+           ${ContractStateChange.SLOT},
+           ${ContractStateChange.VALUE_READ},
+           ${ContractStateChange.VALUE_WRITTEN}
+    from ${ContractStateChange.tableName}`;
 
   static contractLogsQuery = `select ${ContractLog.BLOOM},
                                      ${ContractLog.CONTRACT_ID},
@@ -97,12 +107,34 @@ class ContractService extends BaseService {
                                      ${ContractLog.TOPIC1},
                                      ${ContractLog.TOPIC2},
                                      ${ContractLog.TOPIC3}
-                              from ${ContractLog.tableName} ${ContractLog.tableAlias}`;
+  from ${ContractLog.tableName} ${ContractLog.tableAlias}`;
 
-  static contractIdByEvmAddressQuery = `select ${Entity.ID}
-                                        from ${Entity.tableName} ${Entity.tableAlias}
-                                        where ${Entity.DELETED} <> true
-                                          and ${Entity.TYPE} = 'CONTRACT'`;
+  static contractIdByEvmAddressQuery = `
+    select ${Entity.ID}
+    from ${Entity.tableName} ${Entity.tableAlias}
+    where ${Entity.DELETED} <> true
+      and ${Entity.TYPE} = 'CONTRACT'`;
+
+  static contractActionsByConsensusTimestampQuery = `
+    select ${ContractAction.CALLER},
+           ${ContractAction.CALL_DEPTH},
+           ${ContractAction.CALLER_TYPE},
+           ${ContractAction.CALL_OPERATION_TYPE},
+           ${ContractAction.CALL_TYPE},
+           ${ContractAction.CALLER_TYPE},
+           ${ContractAction.CONSENSUS_TIMESTAMP},
+           ${ContractAction.GAS},
+           ${ContractAction.GAS_USED},
+           ${ContractAction.INDEX},
+           ${ContractAction.INPUT},
+           ${ContractAction.RECIPIENT_ACCOUNT},
+           ${ContractAction.RECIPIENT_ADDRESS},
+           ${ContractAction.RECIPIENT_CONTRACT},
+           ${ContractAction.RESULT_DATA},
+           ${ContractAction.RESULT_DATA_TYPE},
+           ${ContractAction.VALUE}
+    from ${ContractAction.tableName} ${ContractAction.tableAlias}
+    where ${ContractAction.getFullName(ContractAction.CONSENSUS_TIMESTAMP)} = $1`;
 
   static contractByEvmAddressQueryFilters = [
     {
@@ -348,6 +380,41 @@ class ContractService extends BaseService {
     }
 
     return EntityId.parse(contractIdValue, {paramName: filterKeys.CONTRACTID}).getEncodedId();
+  }
+
+  async getContractActionsByConsensusTimestamp(consensusTimestamp, filters, order, limit) {
+    const params = [consensusTimestamp];
+    return this.getContractActions(
+      ContractService.contractActionsByConsensusTimestampQuery,
+      params,
+      filters,
+      order,
+      limit
+    );
+  }
+
+  async getContractActions(baseQuery, params, filters, order, limit) {
+    let whereClause = ``;
+    if (filters && filters.length) {
+      for (const filter of filters) {
+        if (filter.key === 'index') {
+          whereClause += `\nand ${ContractAction.getFullName(ContractAction.INDEX)}${filter.operator}$${
+            params.length + 1
+          }`;
+          params.push(filter.value);
+        }
+      }
+    }
+
+    const orderClause = super.getOrderByQuery(OrderSpec.from(ContractAction.getFullName(ContractAction.INDEX), order));
+
+    params.push(limit);
+    const limitClause = super.getLimitQuery(params.length);
+
+    const query = [baseQuery, whereClause, orderClause, limitClause].join('\n');
+
+    const rows = await super.getRows(query, params, 'getActionsByHash');
+    return rows.map((row) => new ContractAction(row));
   }
 }
 

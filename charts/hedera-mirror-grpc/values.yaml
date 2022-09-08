@@ -60,6 +60,7 @@ fullnameOverride: ""
 
 global:
   image: {}
+  middleware: false
   namespaceOverride: ""
   podAnnotations: {}
 
@@ -94,16 +95,6 @@ ingress:
         - "/com.hedera.mirror.api.proto.ConsensusService"
         - "/com.hedera.mirror.api.proto.NetworkService"
         - "/grpc.reflection.v1alpha.ServerReflection"
-  middleware:
-    circuitBreaker: NetworkErrorRatio() > 0.10 || ResponseCodeRatio(500, 600, 0, 600) > 0.25
-    connectionsPerIP: 5
-    enabled: false
-    ipWhitelist:
-      - 0.0.0.0/0
-    rateLimit:
-      average: 20
-      sourceCriterion:
-        requestHost: true
   tls:
     enabled: false
     secretName: ""
@@ -117,6 +108,17 @@ livenessProbe:
   initialDelaySeconds: 50
   periodSeconds: 10
   timeoutSeconds: 2
+
+middleware:
+  - circuitBreaker:
+      expression: NetworkErrorRatio() > 0.10 || ResponseCodeRatio(500, 600, 0, 600) > 0.25
+  - rateLimit:
+      average: 5
+      sourceCriterion:
+        requestHost: true
+  - retry:
+      attempts: 3
+      initialInterval: 250ms
 
 nodeSelector: {}
 

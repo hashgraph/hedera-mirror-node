@@ -52,6 +52,7 @@ fullnameOverride: ""
 
 global:
   image: {}
+  middleware: false
   namespaceOverride: ""
   podAnnotations: {}
 
@@ -77,21 +78,12 @@ image:
 imagePullSecrets: []
 
 ingress:
-  annotations: {}
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: '{{ include "hedera-mirror-rest.namespace" . }}-{{ include "hedera-mirror-rest.fullname" . }}@kubernetescrd'
   enabled: true
   hosts:
     - host: ""
       paths: ["/api/v1"]
-  middleware:
-    circuitBreaker: NetworkErrorRatio() > 0.25 || ResponseCodeRatio(500, 600, 0, 600) > 0.25
-    connectionsPerIP: 5
-    enabled: false
-    ipWhitelist:
-      - 0.0.0.0/0
-    rateLimit:
-      average: 20
-      sourceCriterion:
-        requestHost: true
   tls:
     enabled: false
     secretName: ""
@@ -104,6 +96,13 @@ livenessProbe:
     port: http
   initialDelaySeconds: 25
   timeoutSeconds: 2
+
+middleware:
+  - circuitBreaker:
+      expression: NetworkErrorRatio() > 0.25 || ResponseCodeRatio(500, 600, 0, 600) > 0.25
+  - retry:
+      attempts: 10
+      initialInterval: 100ms
 
 nodeSelector: {}
 

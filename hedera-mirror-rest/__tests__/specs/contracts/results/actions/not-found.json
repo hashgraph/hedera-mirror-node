@@ -1,0 +1,20 @@
+{
+  "description": "Contract actions api call for all contracts for non-existing transaction with and without filters",
+  "setup": {},
+  "urls": [
+    "/api/v1/contracts/results/0.0.5001-1676540001-234390005/actions",
+    "/api/v1/contracts/results/0.0.5001-1676540001-234390005/actions?index=2&order=desc&limit=1",
+    "/api/v1/contracts/results/0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb98/actions",
+    "/api/v1/contracts/results/0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb98/actions?index=2&order=desc&limit=1"
+  ],
+  "responseStatus": 404,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Not found"
+        }
+      ]
+    }
+  }
+}

@@ -24,6 +24,7 @@ import AddressBookServiceEndpoint from './addressBookServiceEndpoint';
 import AssessedCustomFee from './assessedCustomFee';
 import Contract from './contract';
 import CryptoAllowance from './cryptoAllowance';
+import ContractAction from './contractAction.js';
 import ContractLog from './contractLog';
 import ContractResult from './contractResult';
 import ContractStateChange from './contractStateChange';
@@ -61,6 +62,7 @@ export {
   AssessedCustomFee,
   Contract,
   CryptoAllowance,
+  ContractAction,
   ContractLog,
   ContractResult,
   ContractStateChange,
