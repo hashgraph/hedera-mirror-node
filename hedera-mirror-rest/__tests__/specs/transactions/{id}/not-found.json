@@ -1,5 +1,5 @@
 {
-  "description": "Transaction api calls for a specific transactions using non matching transaction id",
+  "description": "Transaction api calls for a specific transactions using non matching transaction id or hash",
   "setup": {
     "accounts": [
       {
@@ -38,7 +38,12 @@
       }
     ]
   },
-  "url": "/api/v1/transactions/0.1.10-1234567891-000000000",
+  "urls": [
+    "/api/v1/transactions/0.1.10-1234567891-000000000",
+    "/api/v1/transactions/q0r3hK5pyj4dF_74SR9_iaDoo7gK03SLhBEQ8DRa2lNFa8FLvp7m9EGCnChJkzrE",
+    "/api/v1/transactions/ab4af784ae69ca3e1d17fef8491f7f89a0e8a3b80ad3748b841110f0345ada53456bc14bbe9ee6f441829c2849933ac4",
+    "/api/v1/transactions/0xab4af784ae69ca3e1d17fef8491f7f89a0e8a3b80ad3748b841110f0345ada53456bc14bbe9ee6f441829c2849933ac4"
+  ],
   "responseStatus": 404,
   "responseJson": {
     "_status": {
