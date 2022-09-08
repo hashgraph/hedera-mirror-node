@@ -98,8 +98,7 @@ to work around the known `rosetta-cli` performance issue of loading large genesi
 #### Genesis Balance File
 
 As an alternative, run the [script](/hedera-mirror-rosetta/scripts/validation/get-genesis-balance.sh) script to get the
-genesis account balance file. Once the `get-genesis-balance.sh testnet` command is executed, it'll write the file to
-`testnet/data_genesis_balances.json`. Note the script uses PostgreSQL's command line client psql to query the
+genesis account balance file.
 
 The `get-genesis-balance.sh` script takes the following form
 
