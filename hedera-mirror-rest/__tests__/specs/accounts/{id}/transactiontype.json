@@ -153,7 +153,7 @@
         "parent_consensus_timestamp": null,
         "result": "SUCCESS",
         "scheduled": false,
-        "transaction_hash": "aGFzaA==",
+        "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
         "transaction_id": "0.0.8-1234567891-000000006",
         "transfers": [
           {
@@ -183,7 +183,7 @@
         "parent_consensus_timestamp": null,
         "result": "SUCCESS",
         "scheduled": false,
-        "transaction_hash": "aGFzaA==",
+        "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
         "transaction_id": "0.0.8-1234567890-000000006",
         "transfers": [
           {
