@@ -33,6 +33,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
@@ -73,6 +74,7 @@ import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.Transaction;
+import com.hedera.mirror.common.domain.transaction.TransactionHash;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.TestUtils;
@@ -104,6 +106,7 @@ import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
+import com.hedera.mirror.importer.repository.TransactionHashRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.repository.TransactionSignatureRepository;
 
@@ -146,6 +149,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     private final TokenTransferRepository tokenTransferRepository;
     private final TopicMessageRepository topicMessageRepository;
     private final TransactionRepository transactionRepository;
+    private final TransactionHashRepository transactionHashRepository;
     private final TransactionSignatureRepository transactionSignatureRepository;
     private final TransactionTemplate transactionTemplate;
 
@@ -756,12 +760,21 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertThat(networkStakeRepository.findAll()).containsExactlyInAnyOrder(networkStake1, networkStake2);
     }
 
-    @Test
-    void onTransaction() {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void onTransaction(boolean persistTransactionHash) {
         // given
+        entityProperties.getPersist().setTransactionHash(persistTransactionHash);
         var firstTransaction = domainBuilder.transaction().get();
         var secondTransaction = domainBuilder.transaction().get();
         var thirdTransaction = domainBuilder.transaction().get();
+        var expectedTransactionHashes = Stream.of(firstTransaction, secondTransaction, thirdTransaction)
+                .filter(t -> persistTransactionHash)
+                .map(transaction -> TransactionHash.builder()
+                        .consensusTimestamp(transaction.getConsensusTimestamp())
+                        .hash(transaction.getTransactionHash())
+                        .build())
+                .toList();
 
         // when
         sqlEntityListener.onTransaction(firstTransaction);
@@ -790,6 +803,8 @@ class SqlEntityListenerTest extends IntegrationTest {
                 .isNotNull()
                 .extracting(Transaction::getIndex)
                 .isEqualTo(2);
+
+        assertThat(transactionHashRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedTransactionHashes);
     }
 
     @Test
