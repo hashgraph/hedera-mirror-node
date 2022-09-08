@@ -657,6 +657,14 @@ create table if not exists transaction
 );
 comment on table transaction is 'Submitted network transactions';
 
+-- transaction_hash
+create table if not exists transaction_hash
+(
+    consensus_timestamp bigint not null,
+    hash                bytea  not null
+);
+comment on table transaction_hash is 'Network transaction hash to consensus timestamp mapping';
+
 -- transaction_signature
 create table if not exists transaction_signature
 (

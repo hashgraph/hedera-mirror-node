@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.migration;
+package com.hedera.mirror.importer.repository;
 
 /*-
  * ‌
@@ -16,22 +16,13 @@ package com.hedera.mirror.importer.migration;
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
- * limitations under the License.
+ * limitations under the Licens
  * ‍
  */
 
-import java.util.Collections;
-import java.util.Map;
-import javax.validation.constraints.NotNull;
-import lombok.Data;
+import org.springframework.data.repository.CrudRepository;
 
-@Data
-public class MigrationProperties {
+import com.hedera.mirror.common.domain.transaction.TransactionHash;
 
-    private int checksum = 1;
-
-    private boolean enabled = true;
-
-    @NotNull
-    private Map<String, String> params = Collections.emptyMap();
+public interface TransactionHashRepository extends CrudRepository<TransactionHash, byte[]> {
 }
