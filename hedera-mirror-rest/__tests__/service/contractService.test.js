@@ -1073,6 +1073,7 @@ describe('ContractService.getContractResultsByHash tests', () => {
       transaction_result: successTransactionResult,
       transaction_index: 1,
       transaction_hash: ethereumTxHash,
+      gasLimit: 1000,
     },
     {
       consensus_timestamp: 2,
@@ -1081,6 +1082,7 @@ describe('ContractService.getContractResultsByHash tests', () => {
       transaction_result: duplicateTransactionResult,
       transaction_index: 1,
       transaction_hash: ethereumTxHash,
+      gasLimit: 1000,
     },
     {
       consensus_timestamp: 3,
@@ -1089,6 +1091,7 @@ describe('ContractService.getContractResultsByHash tests', () => {
       transaction_result: wrongNonceTransactionResult,
       transaction_index: 1,
       transaction_hash: ethereumTxHash,
+      gasLimit: 1000,
     },
     {
       consensus_timestamp: 4,
@@ -1097,12 +1100,14 @@ describe('ContractService.getContractResultsByHash tests', () => {
       transaction_result: successTransactionResult,
       transaction_index: 1,
       transaction_hash: ethereumTxHash,
+      gasLimit: 1000,
     },
     {
       consensus_timestamp: 5,
       payerAccountId: 10,
       type: contractCreateType,
       transaction_hash: '96ecf2e0cf1c8f7e2294ec731b2ad1aff95d9736f4ba15b5bbace1ad2766cc1c',
+      gasLimit: 1000,
     },
   ];
 
