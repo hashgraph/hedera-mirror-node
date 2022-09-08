@@ -41,6 +41,7 @@ import {ContractService, FileDataService, RecordFileService, TransactionService}
 import TransactionId from '../transactionId';
 import * as utils from '../utils';
 import {
+  ContractActionViewModel,
   ContractBytecodeViewModel,
   ContractLogViewModel,
   ContractResultDetailsViewModel,
@@ -1056,6 +1057,74 @@ class ContractController extends BaseController {
     }
   };
 
+  getContractActions = async (req, res) => {
+    // Supported args: index, limit, order
+    const rawFilters = utils.buildAndValidateFilters(req.query);
+    const filters = [];
+    let order = orderFilterValues.ASC;
+    let limit = defaultLimit;
+
+    for (const filter of rawFilters) {
+      if (filter.key === filterKeys.ORDER) {
+        order = filter.value;
+      } else if (filter.key === filterKeys.LIMIT) {
+        limit = filter.value;
+      } else if (filter.key === filterKeys.INDEX) {
+        if (filter.operator === utils.opsMap.ne) {
+          throw InvalidArgumentError.forRequestValidation(filterKeys.INDEX);
+        }
+
+        filters.push(filter);
+      }
+    }
+
+    // extract filters from query param
+    const {transactionIdOrHash} = req.params;
+    let tx;
+    let consensusTimestamp;
+    if (utils.isValidEthHash(transactionIdOrHash)) {
+      const hash = Buffer.from(transactionIdOrHash.replace('0x', ''), 'hex');
+      tx = await TransactionService.getTransactionDetailsFromEthHash(hash);
+    } else {
+      const transactionId = TransactionId.fromString(transactionIdOrHash);
+      tx = await TransactionService.getTransactionDetailsFromTransactionId(transactionId);
+    }
+
+    if (tx.length) {
+      consensusTimestamp = tx[0].consensusTimestamp;
+    } else {
+      throw new NotFoundError();
+    }
+
+    const rows = await ContractService.getContractActionsByConsensusTimestamp(
+      consensusTimestamp,
+      filters,
+      order,
+      limit
+    );
+    const actions = rows.map((row) => new ContractActionViewModel(row));
+    let nextLink = null;
+    if (actions.length) {
+      const lastRow = _.last(actions);
+      const lastIndex = lastRow.index;
+      nextLink = utils.getPaginationLink(
+        req,
+        actions.length !== limit,
+        {
+          [filterKeys.INDEX]: lastIndex,
+        },
+        order
+      );
+    }
+
+    res.locals[responseDataLabel] = {
+      actions,
+      links: {
+        next: nextLink,
+      },
+    };
+  };
+
   setContractResultsResponse = (
     res,
     contractResult,
@@ -1110,6 +1179,7 @@ const exportControllerMethods = (methods = []) => {
 };
 
 const contractController = exportControllerMethods([
+  'getContractActions',
   'getContractById',
   'getContracts',
   'getContractLogsById',

@@ -26,6 +26,7 @@ import {assertSqlQueryEqual} from '../testutils';
 import integrationDomainOps from '../integrationDomainOps';
 import {setupIntegrationTest} from '../integrationUtils';
 import {TransactionResult, TransactionType} from '../../model';
+import {orderFilterValues} from '../../constants';
 
 setupIntegrationTest();
 
@@ -1189,5 +1190,45 @@ describe('ContractService.getContractResultsByHash tests', () => {
     expect(pickTransactionFields(transactions)).toIncludeSameMembers([
       {consensusTimestamp: 5, transactionHash: '96ecf2e0cf1c8f7e2294ec731b2ad1aff95d9736f4ba15b5bbace1ad2766cc1c'},
     ]);
+  });
+});
+
+describe('ContractService.getContractActionsByConsensusTimestamp tests', () => {
+  test('No match', async () => {
+    const res = await ContractService.getContractActionsByConsensusTimestamp(
+      '1676540001234390005',
+      [],
+      orderFilterValues.ASC,
+      100
+    );
+    expect(res.length).toEqual(0);
+  });
+
+  test('Multiple rows match', async () => {
+    await integrationDomainOps.loadContractActions([
+      {consensus_timestamp: '1676540001234390005'},
+      {consensus_timestamp: '1676540001234390005', index: 2},
+    ]);
+    const res = await ContractService.getContractActionsByConsensusTimestamp(
+      '1676540001234390005',
+      [],
+      orderFilterValues.ASC,
+      100
+    );
+    expect(res.length).toEqual(2);
+  });
+
+  test('One row match', async () => {
+    await integrationDomainOps.loadContractActions([
+      {consensus_timestamp: '1676540001234390005'},
+      {consensus_timestamp: '1676540001234390006'},
+    ]);
+    const res = await ContractService.getContractActionsByConsensusTimestamp(
+      '1676540001234390005',
+      [],
+      orderFilterValues.ASC,
+      100
+    );
+    expect(res.length).toEqual(1);
   });
 });

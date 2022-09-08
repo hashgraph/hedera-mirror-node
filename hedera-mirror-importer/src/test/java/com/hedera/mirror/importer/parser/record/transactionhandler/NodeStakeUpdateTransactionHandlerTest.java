@@ -44,6 +44,7 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.parser.record.entity.staking.EntityStakeCalculator;
+import com.hedera.mirror.importer.repository.NodeStakeRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
@@ -60,9 +61,12 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
     @Captor
     private ArgumentCaptor<NodeStake> nodeStakes;
 
+    @Mock
+    private NodeStakeRepository nodeStakeRepository;
+
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new NodeStakeUpdateTransactionHandler(entityListener, entityStakeCalculator);
+        return new NodeStakeUpdateTransactionHandler(entityListener, entityStakeCalculator, nodeStakeRepository);
     }
 
     @Override
@@ -93,7 +97,7 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
                 .build();
         var transaction = new Transaction();
         transactionHandler.updateTransaction(transaction, recordItem);
-        verifyNoInteractions(entityListener, entityStakeCalculator);
+        verifyNoInteractions(entityListener, entityStakeCalculator, nodeStakeRepository);
     }
 
     @Test
@@ -127,6 +131,7 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
         verify(entityStakeCalculator).calculate(nodeStakeCollection.capture());
         assertThat(nodeStakes.getAllValues()).containsExactlyInAnyOrderElementsOf(expectedNodeStakes);
         assertThat(nodeStakeCollection.getValue()).containsExactlyInAnyOrderElementsOf(expectedNodeStakes);
+        verify(nodeStakeRepository).evictNodeStakeCache();
         assertThat(networkStakes.getAllValues())
                 .hasSize(1)
                 .first()
@@ -157,8 +162,8 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
         // then
         verify(entityListener).onNetworkStake(networkStakes.capture());
         verify(entityListener, never()).onNodeStake(nodeStakes.capture());
-        verify(entityStakeCalculator).calculate(nodeStakeCollection.capture());
-        assertThat(nodeStakeCollection.getValue()).isEmpty();
+        verify(entityStakeCalculator, never()).calculate(nodeStakeCollection.capture());
+        verify(nodeStakeRepository, never()).evictNodeStakeCache();
     }
 
     private com.hederahashgraph.api.proto.java.NodeStake getNodeStakeProto(long stake, long stakeRewarded) {

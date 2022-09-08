@@ -51,8 +51,8 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import lombok.CustomLog;
 import lombok.SneakyThrows;
-import lombok.extern.log4j.Log4j2;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.gaul.s3proxy.S3Proxy;
@@ -101,9 +101,10 @@ import com.hedera.mirror.importer.reader.signature.ProtoSignatureFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReaderV2;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReaderV5;
+import com.hedera.mirror.importer.repository.NodeStakeRepository;
 
+@CustomLog
 @ExtendWith(MockitoExtension.class)
-@Log4j2
 public abstract class AbstractDownloaderTest {
     private static final int S3_PROXY_PORT = 8001;
     private static final Pattern STREAM_FILENAME_INSTANT_PATTERN = Pattern.compile(
@@ -134,6 +135,8 @@ public abstract class AbstractDownloaderTest {
     protected List<Pair<Instant, String>> instantFilenamePairs;
     protected EntityId corruptedNodeAccountId;
     protected NodeSignatureVerifier nodeSignatureVerifier;
+    @Mock
+    private NodeStakeRepository nodeStakeRepository;
     protected SignatureFileReader signatureFileReader;
     protected StreamType streamType;
     protected long firstIndex = 0L;
@@ -230,10 +233,9 @@ public abstract class AbstractDownloaderTest {
 
         signatureFileReader = new CompositeSignatureFileReader(new SignatureFileReaderV2(),
                 new SignatureFileReaderV5(), new ProtoSignatureFileReader());
-        nodeSignatureVerifier = new NodeSignatureVerifier(
-                addressBookService,
-                downloaderProperties.getCommon(),
-                meterRegistry);
+        var consensusValidator = new ConsensusValidatorImpl(addressBookService, commonDownloaderProperties,
+                nodeStakeRepository);
+        nodeSignatureVerifier = new NodeSignatureVerifier(addressBookService, consensusValidator);
         downloader = getDownloader();
         streamType = downloaderProperties.getStreamType();
 

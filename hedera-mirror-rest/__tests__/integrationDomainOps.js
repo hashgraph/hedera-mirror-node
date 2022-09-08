@@ -44,6 +44,7 @@ const setup = async (testDataJson) => {
   await loadBalances(testDataJson.balances);
   await loadCryptoTransfers(testDataJson.cryptotransfers);
   await loadContracts(testDataJson.contracts);
+  await loadContractActions(testDataJson.contractactions);
   await loadContractLogs(testDataJson.contractlogs);
   await loadContractResults(testDataJson.contractresults);
   await loadContractStateChanges(testDataJson.contractStateChanges);
@@ -132,6 +133,16 @@ const loadContracts = async (contracts) => {
 
   for (const contract of contracts) {
     await addContract(contract);
+  }
+};
+
+const loadContractActions = async (contractActions) => {
+  if (contractActions == null) {
+    return;
+  }
+
+  for (const contractAction of contractActions) {
+    await addContractAction(contractAction);
   }
 };
 
@@ -841,6 +852,36 @@ const addContract = async (custom) => {
   await insertDomainObject('contract', Object.keys(contractDefaults), contract);
 };
 
+const contractActionDefaults = {
+  call_depth: 1,
+  call_operation_type: 1,
+  call_type: 1,
+  caller: 8001,
+  caller_type: 'CONTRACT',
+  consensus_timestamp: 1234510001,
+  gas: 10000,
+  gas_used: 5000,
+  index: 1,
+  input: null,
+  recipient_account: null,
+  recipient_address: null,
+  recipient_contract: null,
+  result_data: null,
+  result_data_type: 11,
+  value: 100,
+};
+
+const addContractAction = async (contractActionInput) => {
+  const action = {
+    ...contractActionDefaults,
+    ...contractActionInput,
+  };
+
+  convertByteaFields(['input', 'recipient_address', 'result_data'], action);
+
+  await insertDomainObject('contract_action', Object.keys(contractActionDefaults), action);
+};
+
 const insertFields = [
   'amount',
   'bloom',
@@ -1303,32 +1344,32 @@ const addRecordFile = async (recordFileInput) => {
     'version',
   ];
 
-  const bytes = Buffer.from([1, 1, 2, 2, 3, 3]);
   const recordFile = {
-    bytes,
-    gas_used: 0,
+    bytes: '0x010102020303',
     consensus_end: 1628751573995691000,
     consensus_start: 1628751572000852000,
     count: 1200,
     digest_algorithm: 0,
     file_hash: 'dee34bdd8bbe32fdb53ce7e3cf764a0495fa5e93b15ca567208cfb384231301bedf821de07b0d8dc3fb55c5b3c90ac61',
-    index: 123456789,
+    gas_used: 0,
     hapi_version_major: 0,
     hapi_version_minor: 11,
     hapi_version_patch: 0,
     hash: 'ed55d98d53fd55c9caf5f61affe88cd2978d37128ec54af5dace29b6fd271cbd079ebe487bda5f227087e2638b1100cf',
+    index: 123456789,
     load_end: 1629298236,
     load_start: 1629298233,
+    logs_bloom: Buffer.alloc(0),
     name: '2021-08-12T06_59_32.000852000Z.rcd',
     node_account_id: 3,
     prev_hash: '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
+    size: 6,
     version: 5,
-    logs_bloom: Buffer.alloc(0),
-    size: bytes.length,
     ...recordFileInput,
   };
-  recordFile.bytes = recordFileInput.bytes != null ? Buffer.from(recordFileInput.bytes) : recordFile.bytes;
-  recordFile.logs_bloom = valueToBuffer(recordFile.logs_bloom);
+
+  convertByteaFields(['bytes', 'logs_bloom'], recordFile);
+  recordFile.size = recordFile.bytes !== null ? recordFile.bytes.length : recordFile.size;
 
   await insertDomainObject('record_file', insertFields, recordFile);
 };
@@ -1370,4 +1411,5 @@ export default {
   loadContractStateChanges,
   setAccountBalance,
   setup,
+  loadContractActions,
 };

@@ -50,7 +50,7 @@ const counters = {};
  * @param {Object} server object provided by the user
  * @return {Object} results object capturing tests for given endpoint
  */
-const runTests = (server) => {
+const runTests = async (server) => {
   const counter = server.name in counters ? counters[server.name] : 0;
   const skippedResource = [];
   const enabledTestModules = allTestModules.filter((testModule) => {

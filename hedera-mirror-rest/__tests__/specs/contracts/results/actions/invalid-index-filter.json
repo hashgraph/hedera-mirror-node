@@ -1,0 +1,18 @@
+{
+  "description": "Contract actions api call for all contracts with invalid index filter",
+  "setup": {},
+  "urls": [
+    "/api/v1/contracts/results/0.0.5001-1676540001-234390005/actions?index=ne:3",
+    "/api/v1/contracts/results/0.0.5001-1676540001-234390005/actions?index=eq:test"
+  ],
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Invalid parameter: index"
+        }
+      ]
+    }
+  }
+}

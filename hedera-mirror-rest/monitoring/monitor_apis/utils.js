@@ -76,24 +76,29 @@ const getBackoff = (retryAfter, xRetryIn) => {
 };
 
 /**
- * Fetch the url with opts and retry on 429 with the retry max and minMillisToWait from config file.
+ * Fetch the url with opts and retry with the retry max and minMillisToWait from config file.
  *
  * @param url
  * @param opts
  * @returns {Promise<Response>}
  */
 const fetchWithRetry = async (url, opts = {}) => {
-  for (let i = 0; ; i++) {
-    const response = await fetch(url, opts);
+  let statusCode = 200;
 
-    if (response.status !== 429 || i === config.retry.maxAttempts) {
+  for (let attempt = 1; attempt <= config.retry.maxAttempts + 1; attempt++) {
+    const response = await fetch(url, opts);
+    statusCode = response.status;
+
+    if (statusCode !== 429 && statusCode < 500) {
       return response;
     }
 
     const backoffMillis = getBackoff(response.headers.get('retry-after'), response.headers.get('x-retry-in'));
-    logger.warn(`url: ${url}, response status: 429, retry in ${backoffMillis}ms`);
+    logger.warn(`Attempt #${attempt} failed with ${statusCode}, retry in ${backoffMillis} ms: ${url}`);
     await new Promise((resolve) => setTimeout(resolve, backoffMillis));
   }
+
+  throw new Error(`Retries exhausted with ${statusCode} status code`);
 };
 
 /**
@@ -109,7 +114,7 @@ const getAPIResponse = async (url, key = undefined) => {
     () => {
       controller.abort();
     },
-    60 * 1000 // in ms
+    config.timeout * 1000 // in ms
   );
 
   try {
@@ -131,13 +136,13 @@ const getAPIResponse = async (url, key = undefined) => {
 class ServerTestResult {
   constructor() {
     this.result = {
-      testResults: [],
-      numPassedTests: 0,
-      numFailedTests: 0,
-      success: true,
-      message: '',
-      startTime: Date.now(),
       endTime: 0,
+      message: '',
+      numFailedTests: 0,
+      numPassedTests: 0,
+      startTime: Date.now(),
+      success: true,
+      testResults: [],
     };
   }
 
@@ -174,51 +179,19 @@ const testRunner = (server, testClassResult, resource) => {
 
     const testResult = {
       at: start,
+      failureMessages: !result.passed ? [result.message] : [],
+      message: result.passed ? result.message : '',
+      resource,
       result: result.passed ? 'passed' : 'failed',
       url: result.url,
-      message: result.passed ? result.message : '',
-      failureMessages: !result.passed ? [result.message] : [],
-      resource,
     };
 
     if (!result.passed) {
-      logger.error(`Test ${resource} failed for ${server.name}: ${testResult.failureMessages}`);
+      logger.error(`${resource} test #${server.run} failed for ${server.name}: ${testResult.failureMessages}`);
     }
 
     testClassResult.addTestResult(testResult);
   };
-};
-
-/**
- * Helper function to create a json object for failed test results
- * @param {String} title Title in the jest output
- * @param {String} msg Message in the jest output
- * @return {Object} Constructed failed result object
- */
-const createFailedResultJson = (title, msg) => {
-  const failedResultJson = new ServerTestResult().result;
-  failedResultJson.numFailedTests = 1;
-  failedResultJson.success = false;
-  failedResultJson.message = 'Prerequisite tests failed';
-  failedResultJson.testResults = [
-    {
-      at: (new Date().getTime() / 1000).toFixed(3),
-      message: `${title}: ${msg}`,
-      result: 'failed',
-      assertionResults: [
-        {
-          ancestorTitles: title,
-          failureMessages: [],
-          fullName: `${title}: ${msg}`,
-          location: null,
-          status: 'failed',
-          title: msg,
-        },
-      ],
-    },
-  ];
-
-  return failedResultJson;
 };
 
 const checkAPIResponseError = (resp, option) => {
@@ -235,6 +208,17 @@ const checkAPIResponseError = (resp, option) => {
 const checkRespObjDefined = (resp, option) => {
   const {message} = option;
   if (resp === undefined) {
+    return {
+      passed: false,
+      message,
+    };
+  }
+  return {passed: true};
+};
+
+const checkRespObj = (data, option) => {
+  const {predicate, message} = option;
+  if (!predicate(data)) {
     return {
       passed: false,
       message,
@@ -449,8 +433,8 @@ export {
   checkMandatoryParams,
   checkResourceFreshness,
   checkRespArrayLength,
+  checkRespObj,
   checkRespObjDefined,
-  createFailedResultJson,
   getAPIResponse,
   getUrl,
   testRunner,
