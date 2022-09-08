@@ -49,6 +49,9 @@ create index if not exists contract_log__contract_id_timestamp_index
 alter table if exists contract_result
     add constraint contract_result__pk primary key (consensus_timestamp, payer_account_id);
 
+create index if not exists contract_result__hash
+    on contract_result using hash (transaction_hash);
+
 create index if not exists contract_result__id_payer_timestamp
     on contract_result (contract_id, payer_account_id, consensus_timestamp);
 
