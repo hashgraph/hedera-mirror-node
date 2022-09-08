@@ -174,7 +174,10 @@ create table if not exists contract_result
     gas_limit            bigint       not null,
     gas_used             bigint       null,
     payer_account_id     bigint       not null,
-    sender_id            bigint       null
+    sender_id            bigint       null,
+    transaction_hash     bytea        not null,
+    transaction_index    integer      null,
+    transaction_result   smallint     not null
 );
 comment on table contract_result is 'Crypto contract execution results';
 
