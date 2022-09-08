@@ -97,17 +97,24 @@ class ContractService extends BaseService {
            ${ContractStateChange.VALUE_WRITTEN}
     from ${ContractStateChange.tableName}`;
 
-  static contractLogsQuery = `select ${ContractLog.BLOOM},
-                                     ${ContractLog.CONTRACT_ID},
-                                     ${ContractLog.CONSENSUS_TIMESTAMP},
-                                     ${ContractLog.DATA},
-                                     ${ContractLog.INDEX},
-                                     ${ContractLog.ROOT_CONTRACT_ID},
-                                     ${ContractLog.TOPIC0},
-                                     ${ContractLog.TOPIC1},
-                                     ${ContractLog.TOPIC2},
-                                     ${ContractLog.TOPIC3}
-  from ${ContractLog.tableName} ${ContractLog.tableAlias}`;
+  static contractLogsQuery = `select ${ContractLog.getFullName(ContractLog.BLOOM)},
+                                     ${ContractLog.getFullName(ContractLog.CONTRACT_ID)},
+                                     ${ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP)},
+                                     ${ContractLog.getFullName(ContractLog.DATA)},
+                                     ${ContractLog.getFullName(ContractLog.INDEX)},
+                                     ${ContractLog.getFullName(ContractLog.ROOT_CONTRACT_ID)},
+                                     ${ContractLog.getFullName(ContractLog.TOPIC0)},
+                                     ${ContractLog.getFullName(ContractLog.TOPIC1)},
+                                     ${ContractLog.getFullName(ContractLog.TOPIC2)},
+                                     ${ContractLog.getFullName(ContractLog.TOPIC3)},
+                                     ${ContractResult.getFullName(ContractResult.TRANSACTION_HASH)},
+                                     ${ContractResult.getFullName(ContractResult.TRANSACTION_INDEX)}
+  from ${ContractLog.tableName} ${ContractLog.tableAlias}
+  left join ${ContractResult.tableName} ${ContractResult.tableAlias} on
+  ${ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP)} = ${ContractResult.getFullName(
+    ContractResult.CONSENSUS_TIMESTAMP
+  )}
+  `;
 
   static contractIdByEvmAddressQuery = `
     select ${Entity.ID}
@@ -291,7 +298,13 @@ class ContractService extends BaseService {
   async getContractLogs(query) {
     const [sqlQuery, params] = this.getContractLogsQuery(query);
     const rows = await super.getRows(sqlQuery, params, 'getContractLogs');
-    return rows.map((cr) => new ContractLog(cr));
+    return rows.map((cr) => {
+      return {
+        ...new ContractLog(cr),
+        transaction_hash: cr.transaction_hash,
+        transaction_index: cr.transaction_index,
+      };
+    });
   }
 
   async getContractLogsByTimestamps(timestamps) {
