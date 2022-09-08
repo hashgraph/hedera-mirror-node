@@ -168,7 +168,7 @@
             "is_approval": true
           }
         ],
-        "transaction_hash": "aGFzaA==",
+        "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
         "transaction_id": "0.0.8-1234567890-300000006",
         "transfers": [
           {
@@ -203,7 +203,7 @@
         "parent_consensus_timestamp": null,
         "result": "SUCCESS",
         "scheduled": false,
-        "transaction_hash": "aGFzaA==",
+        "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
         "transaction_id": "0.0.8-1234567890-000000006",
         "transfers": [
           {
@@ -256,6 +256,7 @@
     },
     "account": "0.0.8",
     "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
+    "created_timestamp": null,
     "decline_reward": false,
     "deleted": false,
     "ethereum_nonce": null,

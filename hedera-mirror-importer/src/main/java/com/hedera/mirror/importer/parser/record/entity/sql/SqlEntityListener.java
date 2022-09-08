@@ -73,6 +73,7 @@ import com.hedera.mirror.common.domain.transaction.Prng;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
+import com.hedera.mirror.common.domain.transaction.TransactionHash;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.exception.ImporterException;
@@ -128,6 +129,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<TokenTransfer> tokenTransfers;
     private final Collection<TopicMessage> topicMessages;
     private final Collection<Transaction> transactions;
+    private final Collection<TransactionHash> transactionHashes;
     private final Collection<TransactionSignature> transactionSignatures;
 
     // maps of upgradable domains
@@ -188,6 +190,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         tokenTransfers = new ArrayList<>();
         topicMessages = new ArrayList<>();
         transactions = new ArrayList<>();
+        transactionHashes = new ArrayList<>();
         transactionSignatures = new ArrayList<>();
 
         cryptoAllowanceState = new HashMap<>();
@@ -225,6 +228,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             batchPersister.persist(prngs);
             batchPersister.persist(topicMessages);
             batchPersister.persist(transactions);
+            batchPersister.persist(transactionHashes);
             batchPersister.persist(transactionSignatures);
 
             // insert operations with conflict management
@@ -318,6 +322,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             tokenDissociateTransfers.clear();
             tokenTransfers.clear();
             transactions.clear();
+            transactionHashes.clear();
             transactionSignatures.clear();
             eventPublisher.publishEvent(new EntityBatchCleanupEvent(this));
         } catch (BeanCreationNotAllowedException e) {
@@ -499,6 +504,14 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onTransaction(Transaction transaction) throws ImporterException {
         transactions.add(transaction);
+
+        if (entityProperties.getPersist().isTransactionHash()) {
+            transactionHashes.add(TransactionHash.builder()
+                    .consensusTimestamp(transaction.getConsensusTimestamp())
+                    .hash(transaction.getTransactionHash())
+                    .build());
+        }
+
         if (transactions.size() == sqlProperties.getBatchSize()) {
             flush();
         }

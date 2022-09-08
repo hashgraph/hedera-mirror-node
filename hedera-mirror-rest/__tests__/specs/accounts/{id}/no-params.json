@@ -14,6 +14,7 @@
       },
       {
         "balance": 80,
+        "created_timestamp": "9999123456789",
         "num": 8,
         "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
         "evm_address": "ac384c53f03855fa1b3616052f8ba32c6c2a2fec",
@@ -130,7 +131,7 @@
         "parent_consensus_timestamp": "1234567890.000000005",
         "result": "SUCCESS",
         "scheduled": false,
-        "transaction_hash": "aGFzaA==",
+        "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
         "transaction_id": "0.0.8-1234567890-000000005",
         "transfers": [
           {
@@ -165,7 +166,7 @@
         "parent_consensus_timestamp": null,
         "result": "SUCCESS",
         "scheduled": false,
-        "transaction_hash": "aGFzaA==",
+        "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
         "transaction_id": "0.0.8-1234567890-000000004",
         "transfers": [
           {
@@ -200,7 +201,7 @@
         "parent_consensus_timestamp": null,
         "result": "SUCCESS",
         "scheduled": false,
-        "transaction_hash": "aGFzaA==",
+        "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
         "transaction_id": "0.0.7-1234567890-000000000",
         "transfers": [
           {
@@ -239,6 +240,7 @@
     },
     "account": "0.0.8",
     "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
+    "created_timestamp": "9999.123456789",
     "decline_reward": false,
     "deleted": false,
     "ethereum_nonce": null,

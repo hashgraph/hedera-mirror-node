@@ -1450,6 +1450,7 @@ components:
         - alias
         - auto_renew_period
         - balance
+        - created_timestamp
         - decline_reward
         - deleted
         - ethereum_nonce
@@ -1473,6 +1474,8 @@ components:
           nullable: true
         balance:
           $ref: '#/components/schemas/Balance'
+        created_timestamp:
+          $ref: '#/components/schemas/TimestampNullable'
         decline_reward:
           description: Whether the account declines receiving a staking reward
           type: boolean
@@ -1525,6 +1528,7 @@ components:
           tokens:
             - token_id: 0.0.200001
               balance: 8
+        created_timestamp: "1562591528.000123456"
         decline_reward: false
         deleted: false
         ethereum_nonce: 10

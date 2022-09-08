@@ -234,6 +234,10 @@ create index if not exists transaction__payer_account_id
 create index if not exists transaction__type_consensus_timestamp
     on transaction (type, consensus_timestamp);
 
+-- transaction_hash
+create index if not exists transaction_hash__hash
+    on transaction_hash using hash (hash);
+
 -- transaction_signature
 create index if not exists transaction_signature__entity_id
     on transaction_signature (entity_id desc, consensus_timestamp desc);

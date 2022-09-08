@@ -1,5 +1,3 @@
-package com.hedera.mirror.importer.migration;
-
 /*-
  * ‌
  * Hedera Mirror Node
@@ -20,18 +18,29 @@ package com.hedera.mirror.importer.migration;
  * ‍
  */
 
-import java.util.Collections;
-import java.util.Map;
-import javax.validation.constraints.NotNull;
-import lombok.Data;
+class TransactionHash {
+  static tableAlias = 'th';
+  static tableName = 'transaction_hash';
+  static CONSENSUS_TIMESTAMP = 'consensus_timestamp';
+  static HASH = 'hash';
 
-@Data
-public class MigrationProperties {
+  /**
+   * Parses transaction_hash table columns into object
+   */
+  constructor(transactionHash) {
+    this.consensusTimestamp = transactionHash.consensus_timestamp;
+    this.hash = transactionHash.hash;
+  }
 
-    private int checksum = 1;
-
-    private boolean enabled = true;
-
-    @NotNull
-    private Map<String, String> params = Collections.emptyMap();
+  /**
+   * Gets full column name with table alias prepended.
+   *
+   * @param {string} columnName
+   * @private
+   */
+  static getFullName(columnName) {
+    return `${this.tableAlias}.${columnName}`;
+  }
 }
+
+export default TransactionHash;

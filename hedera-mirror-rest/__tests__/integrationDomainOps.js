@@ -345,13 +345,20 @@ const loadTopicMessages = async (messages) => {
   }
 };
 
+const hexRegex = /^(0x)?[0-9A-Fa-f]+$/;
+
 const valueToBuffer = (value) => {
   if (value === null) {
     return value;
   }
 
   if (typeof value === 'string') {
-    return Buffer.from(value.replace(/^0x/, '').padStart(2, '0'), 'hex');
+    if (hexRegex.test(value)) {
+      return Buffer.from(value.replace(/^0x/, '').padStart(2, '0'), 'hex');
+    }
+
+    // base64
+    return Buffer.from(value, 'base64');
   } else if (Array.isArray(value)) {
     return Buffer.from(value);
   }
@@ -668,29 +675,29 @@ const setAccountBalance = async (balance) => {
   }
 };
 
-const addTransaction = async (transaction) => {
-  const defaults = {
-    charged_tx_fee: NODE_FEE + NETWORK_FEE + SERVICE_FEE,
-    consensus_timestamp: null,
-    entity_id: null,
-    max_fee: 33,
-    node_account_id: null,
-    nonce: 0,
-    parent_consensus_timestamp: null,
-    payer_account_id: null,
-    result: 22,
-    scheduled: false,
-    transaction_bytes: 'bytes',
-    transaction_hash: 'hash',
-    type: 14,
-    valid_duration_seconds: 11,
-    valid_start_ns: null,
-    index: 1,
-  };
-  const insertFields = Object.keys(defaults);
+const defaultTransaction = {
+  charged_tx_fee: NODE_FEE + NETWORK_FEE + SERVICE_FEE,
+  consensus_timestamp: null,
+  entity_id: null,
+  max_fee: 33,
+  node_account_id: null,
+  nonce: 0,
+  parent_consensus_timestamp: null,
+  payer_account_id: null,
+  result: 22,
+  scheduled: false,
+  transaction_bytes: 'bytes',
+  transaction_hash: Buffer.from([...Array(49).keys()].splice(1)),
+  type: 14,
+  valid_duration_seconds: 11,
+  valid_start_ns: null,
+  index: 1,
+};
+const transactionFields = Object.keys(defaultTransaction);
 
+const addTransaction = async (transaction) => {
   transaction = {
-    ...defaults,
+    ...defaultTransaction,
     // transfer which aren't in the defaults
     non_fee_transfers: [],
     transfers: [],
@@ -701,6 +708,8 @@ const addTransaction = async (transaction) => {
     valid_start_ns: transaction.valid_start_timestamp,
   };
 
+  transaction.transaction_hash = valueToBuffer(transaction.transaction_hash);
+
   if (transaction.valid_start_ns === undefined) {
     // set valid_start_ns to consensus_timestamp - 1 if not set
     const consensusTimestamp = math.bignumber(transaction.consensus_timestamp);
@@ -708,8 +717,9 @@ const addTransaction = async (transaction) => {
   }
 
   const {node_account_id: nodeAccount, payer_account_id: payerAccount} = transaction;
-  await insertDomainObject('transaction', insertFields, transaction);
+  await insertDomainObject('transaction', transactionFields, transaction);
 
+  await addTransactionHash({consensus_timestamp: transaction.consensus_timestamp, hash: transaction.transaction_hash});
   await insertTransfers(
     'crypto_transfer',
     transaction.consensus_timestamp,
@@ -727,6 +737,11 @@ const addTransaction = async (transaction) => {
   );
   await insertTokenTransfers(transaction.consensus_timestamp, transaction.token_transfer_list, payerAccount);
   await insertNftTransfers(transaction.consensus_timestamp, transaction.nft_transfer_list, payerAccount);
+};
+
+const addTransactionHash = async (transactionHash) => {
+  transactionHash.hash = valueToBuffer(transactionHash.hash);
+  await insertDomainObject('transaction_hash', Object.keys(transactionHash), transactionHash);
 };
 
 const insertTransfers = async (
