@@ -2413,7 +2413,7 @@ components:
           $ref: '#/components/schemas/TimestampNullable'
         serial_number:
           example: 1
-          format: int32
+          format: int64
           type: integer
         spender:
           $ref: '#/components/schemas/EntityId'
