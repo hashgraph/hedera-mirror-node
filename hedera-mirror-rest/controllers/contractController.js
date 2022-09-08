@@ -890,22 +890,22 @@ class ContractController extends BaseController {
     const {contractId, timestamp} = await getAndValidateContractIdAndConsensusTimestampPathParams(req.params);
 
     // retrieve contract result, recordFile and transaction models concurrently
-    const [[transactions, contractResults], recordFile, contractLogs, contractStateChanges] = await Promise.all([
+    const [[ethTransactions, contractResults], recordFile, contractLogs, contractStateChanges] = await Promise.all([
       ContractService.getContractResultsByTimestamps(timestamp),
       RecordFileService.getRecordFileBlockDetailsFromTimestamp(timestamp),
       ContractService.getContractLogsByTimestamps(timestamp),
       ContractService.getContractStateChangesByTimestamps(timestamp, contractId),
     ]);
 
-    const transaction = transactions[0];
-
     if (contractResults.length === 0) {
       throw new NotFoundError();
     }
 
+    const ethTransaction = ethTransactions[0];
+
     let fileData = null;
-    if (!_.isNil(transaction.callDataId)) {
-      fileData = await FileDataService.getLatestFileDataContents(transaction.callDataId, {whereQuery: []});
+    if (!_.isNil(ethTransaction.callDataId)) {
+      fileData = await FileDataService.getLatestFileDataContents(ethTransaction.callDataId, {whereQuery: []});
     }
 
     if (_.isNil(contractResults[0].callResult)) {
@@ -918,7 +918,7 @@ class ContractController extends BaseController {
       res,
       contractResults[0],
       recordFile,
-      transaction,
+      ethTransaction,
       contractLogs,
       contractStateChanges,
       fileData
@@ -974,13 +974,13 @@ class ContractController extends BaseController {
 
     // extract filters from query param
     const {transactionIdOrHash} = req.params;
-    let transactions;
-    let contractResults;
     let isFailedContractResult = false;
+    let ethTransactions;
+    let contractResults;
     // When getting transactions, exclude duplicate transactions. there can be at most one
     if (utils.isValidEthHash(transactionIdOrHash)) {
       const ethHash = Buffer.from(transactionIdOrHash.replace('0x', ''), 'hex');
-      [transactions, contractResults] = await ContractService.getContractResultsByHash(
+      [ethTransactions, contractResults] = await ContractService.getContractResultsByHash(
         ethHash,
         [duplicateTransactionResult, wrongNonceTransactionResult],
         1
@@ -989,7 +989,7 @@ class ContractController extends BaseController {
       const transactionId = TransactionId.fromString(transactionIdOrHash);
       const nonce = getLastNonceParamValue(req.query);
       // Map the transactions id to a consensus timestamp
-      transactions = await TransactionService.getTransactionDetailsFromTransactionId(
+      let transactions = await TransactionService.getTransactionDetailsFromTransactionId(
         transactionId,
         nonce,
         duplicateTransactionResult
@@ -1006,33 +1006,33 @@ class ContractController extends BaseController {
       }
 
       // Fetch transactions details and contractResults by mapped timestamp
-      [transactions, contractResults] = await ContractService.getContractResultsByTimestamps(
+      [ethTransactions, contractResults] = await ContractService.getContractResultsByTimestamps(
         transactions[0].consensusTimestamp
       );
     }
 
-    if (transactions.length === 0) {
+    if (contractResults.length === 0) {
       throw new NotFoundError();
     }
 
     // retrieve recordFile concurrently using transaction timestamp
-    const transaction = transactions[0];
+    const ethTransaction = ethTransactions[0];
 
     const [recordFile, contractLogs, contractStateChanges] = await Promise.all([
-      RecordFileService.getRecordFileBlockDetailsFromTimestamp(transaction.consensusTimestamp),
-      ContractService.getContractLogsByTimestamps(transaction.consensusTimestamp),
-      ContractService.getContractStateChangesByTimestamps(transaction.consensusTimestamp),
+      RecordFileService.getRecordFileBlockDetailsFromTimestamp(ethTransaction.consensusTimestamp),
+      ContractService.getContractLogsByTimestamps(ethTransaction.consensusTimestamp),
+      ContractService.getContractStateChangesByTimestamps(ethTransaction.consensusTimestamp),
     ]);
 
     let fileData = null;
-    if (!_.isNil(transaction.callDataId)) {
+    if (!_.isNil(ethTransaction.callDataId)) {
       fileData = await FileDataService.getLatestFileDataContents(transaction.callDataId, {whereQuery: []});
     }
 
     if (contractResults.length === 0) {
       // should always return a contract results when
       // contract results are empty AND transaction type = ethereum transaction
-      isFailedContractResult = transaction.transactionType.toString() === ethereumTransactionType;
+      isFailedContractResult = ethTransaction.transactionType.toString() === ethereumTransactionType;
       if (isFailedContractResult) {
         contractResults.push(this.getDefaultFailureContractResultByTransaction(transaction));
       } else {
@@ -1044,7 +1044,7 @@ class ContractController extends BaseController {
       res,
       contractResults[0],
       recordFile,
-      transaction,
+      ethTransaction,
       contractLogs,
       contractStateChanges,
       fileData
@@ -1084,7 +1084,7 @@ class ContractController extends BaseController {
     let consensusTimestamp;
     if (utils.isValidEthHash(transactionIdOrHash)) {
       const hash = Buffer.from(transactionIdOrHash.replace('0x', ''), 'hex');
-      tx = await TransactionService.getTransactionDetailsFromEthHash(hash);
+      [tx] = await ContractService.getContractResultsByHash(hash);
     } else {
       const transactionId = TransactionId.fromString(transactionIdOrHash);
       tx = await TransactionService.getTransactionDetailsFromTransactionId(transactionId);
@@ -1129,7 +1129,7 @@ class ContractController extends BaseController {
     res,
     contractResult,
     recordFile,
-    transaction,
+    ethTransaction,
     contractLogs,
     contractStateChanges,
     fileData
@@ -1137,7 +1137,7 @@ class ContractController extends BaseController {
     res.locals[responseDataLabel] = new ContractResultDetailsViewModel(
       contractResult,
       recordFile,
-      transaction,
+      ethTransaction,
       contractLogs,
       contractStateChanges,
       fileData

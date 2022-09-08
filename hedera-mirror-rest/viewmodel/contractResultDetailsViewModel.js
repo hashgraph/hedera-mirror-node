@@ -41,33 +41,33 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
    *
    * @param {ContractResult} contractResult
    * @param {RecordFile} recordFile
-   * @param {Transaction} transaction
+   * @param {EthereumTransaction} ethTransaction
    * @param {ContractLog[]} contractLogs
    * @param {ContractStateChange[]} contractStateChanges
    * @param {FileData} fileData
    */
-  constructor(contractResult, recordFile, transaction, contractLogs, contractStateChanges, fileData) {
+  constructor(contractResult, recordFile, ethTransaction, contractLogs, contractStateChanges, fileData) {
     super(contractResult);
 
     this.block_hash = utils.addHexPrefix(recordFile.hash);
     this.block_number = recordFile.index;
-    this.hash = utils.toHexStringNonQuantity(transaction.transactionHash);
+    this.hash = utils.toHexStringNonQuantity(contractResult.hash);
     this.logs = contractLogs.map((contractLog) => new ContractLogResultsViewModel(contractLog));
-    this.result = TransactionResult.getName(transaction.result);
-    this.transaction_index = transaction.index;
+    this.result = TransactionResult.getName(contractResult.result);
+    this.transaction_index = contractResult.index;
 
     this.state_changes = contractStateChanges.map(
       (contractStateChange) => new ContractResultStateChangeViewModel(contractStateChange)
     );
     this.status =
-      transaction.result === ContractResultDetailsViewModel._SUCCESS_PROTO_ID
+      ethTransaction.result === ContractResultDetailsViewModel._SUCCESS_PROTO_ID
         ? ContractResultDetailsViewModel._SUCCESS_RESULT
         : ContractResultDetailsViewModel._FAIL_RESULT;
 
     if (!_.isEmpty(contractResult.failedInitcode)) {
       this.failed_initcode = utils.toHexStringNonQuantity(contractResult.failedInitcode);
-    } else if (this.status === ContractResultDetailsViewModel._FAIL_RESULT && !_.isEmpty(transaction.callData)) {
-      this.failed_initcode = utils.toHexStringNonQuantity(transaction.callData);
+    } else if (this.status === ContractResultDetailsViewModel._FAIL_RESULT && !_.isEmpty(ethTransaction.callData)) {
+      this.failed_initcode = utils.toHexStringNonQuantity(ethTransaction.callData);
     } else {
       this.failed_initcode = null;
     }
@@ -85,29 +85,29 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
     this.v = null;
     this.nonce = null;
 
-    if (!_.isNil(transaction.type)) {
-      this.access_list = utils.toHexStringNonQuantity(transaction.accessList);
-      this.amount = transaction.value && toBigIntBE(transaction.value);
-      this.chain_id = utils.toHexStringQuantity(transaction.chainId);
+    if (!_.isNil(ethTransaction.type)) {
+      this.access_list = utils.toHexStringNonQuantity(ethTransaction.accessList);
+      this.amount = ethTransaction.value && toBigIntBE(ethTransaction.value);
+      this.chain_id = utils.toHexStringQuantity(ethTransaction.chainId);
 
       if (!_.isNil(contractResult.senderId)) {
         this.from = EntityId.parse(contractResult.senderId).toEvmAddress();
       }
 
-      if (!_.isNil(transaction.gasLimit)) {
-        this.gas_limit = transaction.gasLimit;
+      if (!_.isNil(ethTransaction.gasLimit)) {
+        this.gas_limit = ethTransaction.gasLimit;
       }
-      this.gas_price = utils.toHexStringQuantity(transaction.gasPrice);
-      this.max_fee_per_gas = utils.toHexStringQuantity(transaction.maxFeePerGas);
-      this.max_priority_fee_per_gas = utils.toHexStringQuantity(transaction.maxPriorityFeePerGas);
-      this.nonce = transaction.nonce;
-      this.r = utils.toHexStringNonQuantity(transaction.signatureR);
-      this.s = utils.toHexStringNonQuantity(transaction.signatureS);
-      this.type = transaction.type;
-      this.v = transaction.recoveryId;
+      this.gas_price = utils.toHexStringQuantity(ethTransaction.gasPrice);
+      this.max_fee_per_gas = utils.toHexStringQuantity(ethTransaction.maxFeePerGas);
+      this.max_priority_fee_per_gas = utils.toHexStringQuantity(ethTransaction.maxPriorityFeePerGas);
+      this.nonce = ethTransaction.nonce;
+      this.r = utils.toHexStringNonQuantity(ethTransaction.signatureR);
+      this.s = utils.toHexStringNonQuantity(ethTransaction.signatureS);
+      this.type = ethTransaction.type;
+      this.v = ethTransaction.recoveryId;
 
-      if (!_.isNil(transaction.callData)) {
-        this.function_parameters = utils.toHexStringNonQuantity(transaction.callData);
+      if (!_.isNil(ethTransaction.callData)) {
+        this.function_parameters = utils.toHexStringNonQuantity(ethTransaction.callData);
       } else if (!contractResult.functionParameters.length && !_.isNil(fileData)) {
         this.function_parameters = utils.toHexStringNonQuantity(fileData.file_data);
       }
