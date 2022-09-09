@@ -4,7 +4,11 @@ import static com.hedera.mirror.web3.service.eth.EthGasEstimateService.ETH_GAS_E
 import static com.hedera.mirror.web3.utils.TestConstants.blockNumber;
 import static com.hedera.mirror.web3.utils.TestConstants.chainId;
 import static com.hedera.mirror.web3.utils.TestConstants.contractAddress;
+import static com.hedera.mirror.web3.utils.TestConstants.contractDelegateCallAddress;
 import static com.hedera.mirror.web3.utils.TestConstants.contractHexAddress;
+import static com.hedera.mirror.web3.utils.TestConstants.contractWithDelegateCallHexAddress;
+import static com.hedera.mirror.web3.utils.TestConstants.defaultBalance;
+import static com.hedera.mirror.web3.utils.TestConstants.delegateCallRuntimeCode;
 import static com.hedera.mirror.web3.utils.TestConstants.gasHexValue;
 import static com.hedera.mirror.web3.utils.TestConstants.gasLimit;
 import static com.hedera.mirror.web3.utils.TestConstants.gasPriceHexValue;
@@ -12,6 +16,7 @@ import static com.hedera.mirror.web3.utils.TestConstants.gasUsed;
 import static com.hedera.mirror.web3.utils.TestConstants.latestTag;
 import static com.hedera.mirror.web3.utils.TestConstants.receiverEvmAddress;
 import static com.hedera.mirror.web3.utils.TestConstants.receiverHexAddress;
+import static com.hedera.mirror.web3.utils.TestConstants.runtimeByteCodeBytes;
 import static com.hedera.mirror.web3.utils.TestConstants.runtimeCode;
 import static com.hedera.mirror.web3.utils.TestConstants.senderAddress;
 import static com.hedera.mirror.web3.utils.TestConstants.senderAlias;
@@ -22,6 +27,7 @@ import static com.hedera.mirror.web3.utils.TestConstants.senderNum;
 import static com.hedera.mirror.web3.utils.TestConstants.storageValue;
 import static com.hedera.mirror.web3.utils.TestConstants.transferHbarsToReceiverInputData;
 import static com.hedera.mirror.web3.utils.TestConstants.valueHexValue;
+import static com.hedera.mirror.web3.utils.TestConstants.writeToStorageSlotDelegateCallInputData;
 import static com.hedera.mirror.web3.utils.TestConstants.writeToStorageSlotInputData;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -31,10 +37,15 @@ import java.time.Instant;
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
+import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Code;
+import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
+import org.hyperledger.besu.evm.frame.MessageFrame;
+import org.hyperledger.besu.evm.worldstate.MutableWorldView;
+import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -69,11 +80,13 @@ class EthGasEstimateServiceTest {
     @Mock private SimulatedStackedWorldStateUpdater simulatedStackedWorldStateUpdater;
     @Mock private EvmAccount senderAccount;
     @Mock private EvmAccount recipientAccount;
+    @Mock private EvmAccount delegateTargetAccount;
     @Mock private MutableAccount mutableSender;
     @Mock private MutableAccount mutableRecipient;
+    @Mock private MutableAccount mutableDelegate;
     @Mock private SimulatedAliasManager simulatedAliasManager;
+    @Mock private MessageFrame frame;
     @Mock private CodeCache codeCache;
-
     @InjectMocks private EthGasEstimateService ethGasEstimateService;
 
     @Test
@@ -191,6 +204,52 @@ class EthGasEstimateServiceTest {
         final var transactionCall = new TxnCallBody(ethCallParams, latestTag);
         final var result = ethGasEstimateService.get(transactionCall);
         Assertions.assertEquals(Bytes.wrap(String.valueOf(gasUsed).getBytes()).toHexString(), result);
+    }
+
+    @Test
+    void ethGasEstimateForWritingToContractStorageWithDelegateCallWorks() {
+        when(hederaWorldState.updater()).thenReturn(updater);
+        when(updater.updater()).thenReturn(simulatedStackedWorldStateUpdater);
+        when(simulatedStackedWorldStateUpdater.updater()).thenReturn(simulatedStackedWorldStateUpdater);
+        when(simulatedStackedWorldStateUpdater.get(contractDelegateCallAddress)).thenReturn(delegateTargetAccount);
+        when(simulatedStackedWorldStateUpdater.getAccount(contractDelegateCallAddress)).thenReturn(delegateTargetAccount);
+        when(delegateTargetAccount.getMutable()).thenReturn(mutableDelegate);
+        when(delegateTargetAccount.getAddress()).thenReturn(contractDelegateCallAddress);
+        when(updater.getOrCreateSenderAccount(senderAddress)).thenReturn(senderAccount);
+        when(simulatedStackedWorldStateUpdater.getSenderAccount(any())).thenReturn(senderAccount);
+        when(senderAccount.getMutable()).thenReturn(mutableSender);
+        when(entityRepository.findAccountByAddress(senderEvmAddress)).thenReturn(Optional.of(senderEntity));
+        when(senderEntity.getAlias()).thenReturn(senderAlias);
+        when(senderEntity.getNum()).thenReturn(senderNum);
+        when(mutableSender.getBalance()).thenReturn(Wei.of(senderBalance));
+        when(simulatedStackedWorldStateUpdater.getOrCreate(contractDelegateCallAddress)).thenReturn(delegateTargetAccount);
+        when(simulatedStackedWorldStateUpdater.get(contractDelegateCallAddress)).thenReturn(delegateTargetAccount);
+        when(delegateTargetAccount.getBalance()).thenReturn(Wei.of(defaultBalance));
+        when(simulatedStackedWorldStateUpdater.get(contractAddress)).thenReturn(recipientAccount);
+        when(evmProperties.getChainId()).thenReturn(chainId);
+        when(delegateTargetAccount.getStorageValue(UInt256.valueOf(1))).thenReturn(UInt256.fromHexString(storageValue));
+        when(recipientAccount.getCodeHash()).thenReturn(Hash.hash(runtimeByteCodeBytes));
+        when(recipientAccount.getCode()).thenReturn(runtimeByteCodeBytes);
+        when(codeCache.getIfPresent(any())).thenReturn(delegateCallRuntimeCode);
+
+        when(blockMetaSourceProvider.computeBlockValues(60800))
+                .thenReturn(new SimulatedBlockMetaSource(60800, blockNumber, Instant.now().getEpochSecond()));
+        when(gasCalculator.getMaxRefundQuotient()).thenReturn(2L);
+        when(simulatedPricesSource.currentGasPrice(any(), any())).thenReturn(1L);
+
+
+        final var ethCallParams =
+                new EthParams(
+                        senderHexAddress,
+                        contractWithDelegateCallHexAddress,
+                        "0xED80",
+                        "0xED80",
+                        "0xED80",
+                        writeToStorageSlotDelegateCallInputData);
+
+        final var transactionCall = new TxnCallBody(ethCallParams, latestTag);
+        final var result = ethGasEstimateService.get(transactionCall);
+        Assertions.assertEquals(Bytes.wrap(String.valueOf(60800).getBytes()).toHexString(), result);
     }
 
     @Test
