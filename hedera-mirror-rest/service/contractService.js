@@ -308,15 +308,7 @@ class ContractService extends BaseService {
   async getContractLogs(query) {
     const [sqlQuery, params] = this.getContractLogsQuery(query);
     const rows = await super.getRows(sqlQuery, params, 'getContractLogs');
-    return rows.map((cr) => {
-      return {
-        ...new ContractLog(cr),
-        transaction_hash: cr.transaction_hash,
-        transaction_index: cr.transaction_index,
-        block_hash: cr.block_hash,
-        block_number: cr.block_number,
-      };
-    });
+    return rows.map((cr) => new ContractLog(cr));
   }
 
   async getContractLogsByTimestamps(timestamps) {
@@ -334,15 +326,7 @@ class ContractService extends BaseService {
     )}, ${ContractLog.getFullName(ContractLog.INDEX)}`;
     const query = [ContractService.contractLogsQuery, whereClause, orderClause].join('\n');
     const rows = await super.getRows(query, params, 'getContractLogsByTimestamps');
-    return rows.map((cr) => {
-      return {
-        ...new ContractLog(cr),
-        transaction_hash: cr.transaction_hash,
-        transaction_index: cr.transaction_index,
-        block_hash: cr.block_hash,
-        block_number: cr.block_number,
-      };
-    });
+    return rows.map((cr) => new ContractLog(cr));
   }
 
   async getContractStateChangesByTimestamps(timestamps, contractId = null) {

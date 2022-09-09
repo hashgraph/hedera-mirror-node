@@ -40,10 +40,10 @@ class ContractResultLogViewModel {
       data: toHexString(contractLog.data, true),
       index: contractLog.index,
       topics: this._formatTopics([contractLog.topic0, contractLog.topic1, contractLog.topic2, contractLog.topic3]),
-      transaction_hash: toHexStringNonQuantity(contractLog.transaction_hash),
-      transaction_index: contractLog.transaction_index,
-      block_hash: addHexPrefix(contractLog.block_hash),
-      block_number: contractLog.block_number,
+      transaction_hash: toHexStringNonQuantity(contractLog.transactionHash),
+      transaction_index: contractLog.transactionIndex,
+      block_hash: addHexPrefix(contractLog.blockHash),
+      block_number: contractLog.blockNumber,
     });
   }
 
