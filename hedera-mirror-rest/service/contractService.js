@@ -35,6 +35,7 @@ import {
   Entity,
   EthereumTransaction,
   Transaction,
+  RecordFile,
 } from '../model';
 
 const {default: defaultLimit} = getResponseLimit();
@@ -108,12 +109,21 @@ class ContractService extends BaseService {
                                      ${ContractLog.getFullName(ContractLog.TOPIC2)},
                                      ${ContractLog.getFullName(ContractLog.TOPIC3)},
                                      ${ContractResult.getFullName(ContractResult.TRANSACTION_HASH)},
-                                     ${ContractResult.getFullName(ContractResult.TRANSACTION_INDEX)}
-  from ${ContractLog.tableName} ${ContractLog.tableAlias}
-  left join ${ContractResult.tableName} ${ContractResult.tableAlias} on
-  ${ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP)} = ${ContractResult.getFullName(
+                                     ${ContractResult.getFullName(ContractResult.TRANSACTION_INDEX)},
+                                     block.block_number,
+                                     block.block_hash
+    from ${ContractLog.tableName} ${ContractLog.tableAlias}
+    left join ${ContractResult.tableName} ${ContractResult.tableAlias} on
+    ${ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP)} = ${ContractResult.getFullName(
     ContractResult.CONSENSUS_TIMESTAMP
   )}
+    left join lateral (
+      select ${RecordFile.INDEX} as block_number, ${RecordFile.HASH} as block_hash
+      from ${RecordFile.tableName}
+      where ${RecordFile.CONSENSUS_END} >= ${ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP)}
+      order by ${RecordFile.CONSENSUS_END} asc
+      limit 1
+    ) as block on true
   `;
 
   static contractIdByEvmAddressQuery = `
@@ -303,6 +313,8 @@ class ContractService extends BaseService {
         ...new ContractLog(cr),
         transaction_hash: cr.transaction_hash,
         transaction_index: cr.transaction_index,
+        block_hash: cr.block_hash,
+        block_number: cr.block_number,
       };
     });
   }
