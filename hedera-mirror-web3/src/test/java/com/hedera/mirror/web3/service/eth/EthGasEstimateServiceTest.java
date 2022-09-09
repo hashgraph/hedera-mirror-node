@@ -10,9 +10,13 @@ import static com.hedera.mirror.web3.utils.TestConstants.contractWithDelegateCal
 import static com.hedera.mirror.web3.utils.TestConstants.defaultBalance;
 import static com.hedera.mirror.web3.utils.TestConstants.delegateCallRuntimeCode;
 import static com.hedera.mirror.web3.utils.TestConstants.gasHexValue;
+import static com.hedera.mirror.web3.utils.TestConstants.gasHexValueDelegateCall;
 import static com.hedera.mirror.web3.utils.TestConstants.gasLimit;
+import static com.hedera.mirror.web3.utils.TestConstants.gasLimitDelegateCall;
 import static com.hedera.mirror.web3.utils.TestConstants.gasPriceHexValue;
+import static com.hedera.mirror.web3.utils.TestConstants.gasPriceHexValueDelegateCall;
 import static com.hedera.mirror.web3.utils.TestConstants.gasUsed;
+import static com.hedera.mirror.web3.utils.TestConstants.gasUsedDelegateCall;
 import static com.hedera.mirror.web3.utils.TestConstants.latestTag;
 import static com.hedera.mirror.web3.utils.TestConstants.receiverEvmAddress;
 import static com.hedera.mirror.web3.utils.TestConstants.receiverHexAddress;
@@ -27,6 +31,7 @@ import static com.hedera.mirror.web3.utils.TestConstants.senderNum;
 import static com.hedera.mirror.web3.utils.TestConstants.storageValue;
 import static com.hedera.mirror.web3.utils.TestConstants.transferHbarsToReceiverInputData;
 import static com.hedera.mirror.web3.utils.TestConstants.valueHexValue;
+import static com.hedera.mirror.web3.utils.TestConstants.valueHexValueDelegateCall;
 import static com.hedera.mirror.web3.utils.TestConstants.writeToStorageSlotDelegateCallInputData;
 import static com.hedera.mirror.web3.utils.TestConstants.writeToStorageSlotInputData;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -232,8 +237,8 @@ class EthGasEstimateServiceTest {
         when(recipientAccount.getCode()).thenReturn(runtimeByteCodeBytes);
         when(codeCache.getIfPresent(any())).thenReturn(delegateCallRuntimeCode);
 
-        when(blockMetaSourceProvider.computeBlockValues(60800))
-                .thenReturn(new SimulatedBlockMetaSource(60800, blockNumber, Instant.now().getEpochSecond()));
+        when(blockMetaSourceProvider.computeBlockValues(gasLimitDelegateCall))
+                .thenReturn(new SimulatedBlockMetaSource(gasLimitDelegateCall, blockNumber, Instant.now().getEpochSecond()));
         when(gasCalculator.getMaxRefundQuotient()).thenReturn(2L);
         when(simulatedPricesSource.currentGasPrice(any(), any())).thenReturn(1L);
 
@@ -242,14 +247,14 @@ class EthGasEstimateServiceTest {
                 new EthParams(
                         senderHexAddress,
                         contractWithDelegateCallHexAddress,
-                        "0xED80",
-                        "0xED80",
-                        "0xED80",
+                        gasHexValueDelegateCall,
+                        gasPriceHexValueDelegateCall,
+                        valueHexValueDelegateCall,
                         writeToStorageSlotDelegateCallInputData);
 
         final var transactionCall = new TxnCallBody(ethCallParams, latestTag);
         final var result = ethGasEstimateService.get(transactionCall);
-        Assertions.assertEquals(Bytes.wrap(String.valueOf(60800).getBytes()).toHexString(), result);
+        Assertions.assertEquals(Bytes.wrap(String.valueOf(gasUsedDelegateCall).getBytes()).toHexString(), result);
     }
 
     @Test

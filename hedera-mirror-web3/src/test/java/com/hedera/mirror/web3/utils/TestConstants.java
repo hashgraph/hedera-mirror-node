@@ -15,6 +15,8 @@ public class TestConstants {
     public static final Long blockNumber = 1L;
     public static final Long gasLimit = 30400L;
     public static final Long gasUsed = 30400L;
+    public static final Long gasLimitDelegateCall = 60800L;
+    public static final Long gasUsedDelegateCall = 60800L;
     public static final Long senderNum = 1250L;
     public static final Long contractId = 3L;
     public static final Long contractNum = 1252L;
@@ -27,6 +29,9 @@ public class TestConstants {
     public static final String gasHexValue = "0x76c0";
     public static final String gasPriceHexValue = "0x76c0";
     public static final String valueHexValue = "0x76c0";
+    public static final String gasHexValueDelegateCall = "0xED80";
+    public static final String gasPriceHexValueDelegateCall = "0xED80";
+    public static final String valueHexValueDelegateCall = "0xED80";
     public static final String latestTag = "latest";
     public static final String senderHexAddress = "0x00000000000000000000000000000000000004e2";
     public static final String receiverHexAddress = "0x00000000000000000000000000000000000004e3";
