@@ -328,11 +328,21 @@ class ContractService extends BaseService {
       timestampsOpAndValue = `in (${positions})`;
     }
 
-    const whereClause = `where ${ContractLog.CONSENSUS_TIMESTAMP} ${timestampsOpAndValue}`;
-    const orderClause = `order by ${ContractLog.CONSENSUS_TIMESTAMP}, ${ContractLog.INDEX}`;
+    const whereClause = `where ${ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP)} ${timestampsOpAndValue}`;
+    const orderClause = `order by ${ContractLog.getFullName(
+      ContractLog.CONSENSUS_TIMESTAMP
+    )}, ${ContractLog.getFullName(ContractLog.INDEX)}`;
     const query = [ContractService.contractLogsQuery, whereClause, orderClause].join('\n');
     const rows = await super.getRows(query, params, 'getContractLogsByTimestamps');
-    return rows.map((row) => new ContractLog(row));
+    return rows.map((cr) => {
+      return {
+        ...new ContractLog(cr),
+        transaction_hash: cr.transaction_hash,
+        transaction_index: cr.transaction_index,
+        block_hash: cr.block_hash,
+        block_number: cr.block_number,
+      };
+    });
   }
 
   async getContractStateChangesByTimestamps(timestamps, contractId = null) {

@@ -20,7 +20,7 @@
 
 import EntityId from '../entityId';
 import {filterKeys} from '../constants';
-import {toHexString} from '../utils';
+import {toHexString, addHexPrefix, toHexStringNonQuantity} from '../utils';
 
 /**
  * Contract results log view model
@@ -40,9 +40,9 @@ class ContractResultLogViewModel {
       data: toHexString(contractLog.data, true),
       index: contractLog.index,
       topics: this._formatTopics([contractLog.topic0, contractLog.topic1, contractLog.topic2, contractLog.topic3]),
-      transaction_hash: toHexString(contractLog.transaction_hash, true),
+      transaction_hash: toHexStringNonQuantity(contractLog.transaction_hash),
       transaction_index: contractLog.transaction_index,
-      block_hash: contractLog.block_hash,
+      block_hash: addHexPrefix(contractLog.block_hash),
       block_number: contractLog.block_number,
     });
   }
