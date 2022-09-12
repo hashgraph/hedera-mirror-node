@@ -1,9 +1,9 @@
-FROM eclipse-temurin:17.0.3_7-jre as builder
+FROM eclipse-temurin:17.0.4.1_1-jre as builder
 WORKDIR /app
 COPY target/ ./
 RUN java -Djarmode=layertools -jar *.jar extract
 
-FROM eclipse-temurin:17.0.3_7-jre
+FROM eclipse-temurin:17.0.4.1_1-jre
 ENV JDK_JAVA_OPTIONS="-XX:MaxRAMPercentage=80"
 EXPOSE 5600
 HEALTHCHECK --interval=10s --retries=3 --start-period=50s --timeout=2s CMD curl -f http://localhost:8081/actuator/health/liveness
