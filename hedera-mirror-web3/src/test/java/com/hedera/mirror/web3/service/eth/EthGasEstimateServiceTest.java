@@ -18,7 +18,6 @@ import static com.hedera.mirror.web3.utils.TestConstants.gasPriceHexValueDelegat
 import static com.hedera.mirror.web3.utils.TestConstants.gasUsed;
 import static com.hedera.mirror.web3.utils.TestConstants.gasUsedDelegateCall;
 import static com.hedera.mirror.web3.utils.TestConstants.latestTag;
-import static com.hedera.mirror.web3.utils.TestConstants.receiverEvmAddress;
 import static com.hedera.mirror.web3.utils.TestConstants.receiverHexAddress;
 import static com.hedera.mirror.web3.utils.TestConstants.runtimeByteCodeBytes;
 import static com.hedera.mirror.web3.utils.TestConstants.runtimeCode;
@@ -36,6 +35,8 @@ import static com.hedera.mirror.web3.utils.TestConstants.writeToStorageSlotDeleg
 import static com.hedera.mirror.web3.utils.TestConstants.writeToStorageSlotInputData;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
@@ -45,12 +46,9 @@ import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.Code;
-import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.MessageFrame;
-import org.hyperledger.besu.evm.worldstate.MutableWorldView;
-import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -105,7 +103,7 @@ class EthGasEstimateServiceTest {
         when(simulatedStackedWorldStateUpdater.getOrCreate(any())).thenReturn(recipientAccount);
         when(recipientAccount.getMutable()).thenReturn(mutableRecipient);
         when(evmProperties.getChainId()).thenReturn(chainId);
-        when(entityRepository.findAccountByAddress(receiverEvmAddress))
+        when(entityRepository.findAccountByAddress(senderEvmAddress))
                 .thenReturn(Optional.of(senderEntity));
         when(blockMetaSourceProvider.computeBlockValues(gasLimit))
                 .thenReturn(new SimulatedBlockMetaSource(gasLimit, blockNumber, Instant.now().getEpochSecond()));
@@ -236,10 +234,10 @@ class EthGasEstimateServiceTest {
         when(recipientAccount.getCodeHash()).thenReturn(Hash.hash(runtimeByteCodeBytes));
         when(recipientAccount.getCode()).thenReturn(runtimeByteCodeBytes);
         when(codeCache.getIfPresent(any())).thenReturn(delegateCallRuntimeCode);
-
         when(blockMetaSourceProvider.computeBlockValues(gasLimitDelegateCall))
                 .thenReturn(new SimulatedBlockMetaSource(gasLimitDelegateCall, blockNumber, Instant.now().getEpochSecond()));
         when(gasCalculator.getMaxRefundQuotient()).thenReturn(2L);
+        when(gasCalculator.gasAvailableForChildCall(any(), anyLong(), anyBoolean())).thenReturn(20_000L);
         when(simulatedPricesSource.currentGasPrice(any(), any())).thenReturn(1L);
 
 
