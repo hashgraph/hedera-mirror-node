@@ -1957,13 +1957,13 @@ components:
         transaction_index:
           description: The position of the transaction in the block
           nullable: true
-          format: int64
+          format: int32
           type: integer
           example: 1
         transaction_hash:
           type: string
           description: A hex encoded transaction hash
-          example: "0x397022d1e5baeb89d0ab66e6bf602640610e6fb7e55d78638db861e2c6339aa92fe09995fa3cc336c2f98c479731b0d6"
+          example: "0x397022d1e5baeb89d0ab66e6bf602640610e6fb7e55d78638db861e2c6339aa9"
         block_hash:
           description: The hex encoded block (record file chain) hash
           example: "0x553f9311833391c0a3b2f9ed64540a89f2190a511986cd94889f1c0cf7fa63e898b1c6730f14a61755d1fb4ca05fb073"
