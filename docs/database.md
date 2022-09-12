@@ -152,7 +152,7 @@ transactions in the balance and record streams. These issues should only appear 
 ### Record Missing for FAIL_INVALID NFT transfers
 
 * Period: 2022-07-31 to 2022-08-09
-* Scope: Affected the records of 59 transactions.
+* Scope: Affected the records of 70 transactions.
 * Problem: Any ledger that will grow to billions of entities must have an efficient way to remove expired entities. In
   the Hedera network, this means keeping a list of NFTs owned by an account, so that when an account expires, we can
   return its NFTs to their respective treasury accounts.
