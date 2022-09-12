@@ -12,7 +12,7 @@ require (
 	github.com/hashgraph/hedera-sdk-go/v2 v2.17.2
 	github.com/hellofresh/health-go/v4 v4.6.0
 	github.com/jackc/pgtype v1.12.0
-	github.com/lib/pq v1.10.6
+	github.com/lib/pq v1.10.7
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/onrik/gorm-logrus v0.4.0
 	github.com/ory/dockertest/v3 v3.9.1
