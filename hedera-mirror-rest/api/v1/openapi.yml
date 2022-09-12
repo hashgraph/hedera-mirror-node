@@ -1505,6 +1505,12 @@ components:
         memo:
           type: string
           nullable: true
+        pending_reward:
+          description: |
+            The pending reward in tinybars the account will receive in the next reward payout. Note the value is updated
+            at the end of each staking period and there may be delay to reflect the changes in the past staking period.
+          type: integer
+          format: int64
         receiver_sig_required:
           nullable: true
           type: boolean
