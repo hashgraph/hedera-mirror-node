@@ -104,6 +104,6 @@ class NodeStakeUpdateTransactionHandler implements TransactionHandler {
             entityListener.onNodeStake(nodeStake);
         }
 
-        entityStakeCalculator.calculate(nodeStakes);
+//        entityStakeCalculator.calculate(nodeStakes);
     }
 }
