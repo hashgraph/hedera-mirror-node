@@ -39,6 +39,7 @@ spec:
               migration:
                 backfillTransactionHashMigration:
                   checksum: 2
+                  enabled: false
                   params:
                     startTimestamp: "1661472000121743002"
       env:
