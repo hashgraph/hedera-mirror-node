@@ -20,7 +20,7 @@
 
 import EntityId from '../entityId';
 import {filterKeys} from '../constants';
-import {toHexString, addHexPrefix, toHexStringNonQuantity} from '../utils';
+import {toHexString} from '../utils';
 
 /**
  * Contract results log view model
