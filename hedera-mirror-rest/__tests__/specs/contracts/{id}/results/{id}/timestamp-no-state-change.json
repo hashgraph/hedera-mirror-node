@@ -101,7 +101,7 @@
       {
         "consensus_timestamp": 167654000123456,
         "payerAccountId": "8001",
-        "transaction_hash": "0x3531396130303866616264653464",
+        "transaction_hash": "519a008fabde4d",
         "valid_start_timestamp": 167654000123400
       }
     ]

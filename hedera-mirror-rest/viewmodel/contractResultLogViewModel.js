@@ -31,7 +31,7 @@ class ContractResultLogViewModel {
    *
    * @param {ContractLog} contractLog
    */
-  constructor(contractLog) {
+  constructor(contractLog, extended = true) {
     const contractId = EntityId.parse(contractLog.contractId, {paramName: filterKeys.CONTRACTID});
     Object.assign(this, {
       address: contractId.toEvmAddress(),
@@ -40,10 +40,6 @@ class ContractResultLogViewModel {
       data: toHexString(contractLog.data, true),
       index: contractLog.index,
       topics: this._formatTopics([contractLog.topic0, contractLog.topic1, contractLog.topic2, contractLog.topic3]),
-      transaction_hash: toHexStringNonQuantity(contractLog.transactionHash),
-      transaction_index: contractLog.transactionIndex,
-      block_hash: addHexPrefix(contractLog.blockHash),
-      block_number: contractLog.blockNumber,
     });
   }
 

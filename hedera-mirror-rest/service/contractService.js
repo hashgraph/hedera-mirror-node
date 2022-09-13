@@ -39,6 +39,17 @@ import {
 } from '../model';
 
 const {default: defaultLimit} = getResponseLimit();
+const contractLogsFields = `${ContractLog.getFullName(ContractLog.BLOOM)},
+${ContractLog.getFullName(ContractLog.CONTRACT_ID)},
+${ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP)},
+${ContractLog.getFullName(ContractLog.DATA)},
+${ContractLog.getFullName(ContractLog.INDEX)},
+${ContractLog.getFullName(ContractLog.ROOT_CONTRACT_ID)},
+${ContractLog.getFullName(ContractLog.TOPIC0)},
+${ContractLog.getFullName(ContractLog.TOPIC1)},
+${ContractLog.getFullName(ContractLog.TOPIC2)},
+${ContractLog.getFullName(ContractLog.TOPIC3)}
+`;
 
 /**
  * Contract retrieval business logic
@@ -98,16 +109,10 @@ class ContractService extends BaseService {
            ${ContractStateChange.VALUE_WRITTEN}
     from ${ContractStateChange.tableName}`;
 
-  static contractLogsQuery = `select ${ContractLog.getFullName(ContractLog.BLOOM)},
-                                     ${ContractLog.getFullName(ContractLog.CONTRACT_ID)},
-                                     ${ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP)},
-                                     ${ContractLog.getFullName(ContractLog.DATA)},
-                                     ${ContractLog.getFullName(ContractLog.INDEX)},
-                                     ${ContractLog.getFullName(ContractLog.ROOT_CONTRACT_ID)},
-                                     ${ContractLog.getFullName(ContractLog.TOPIC0)},
-                                     ${ContractLog.getFullName(ContractLog.TOPIC1)},
-                                     ${ContractLog.getFullName(ContractLog.TOPIC2)},
-                                     ${ContractLog.getFullName(ContractLog.TOPIC3)},
+  static contractLogsQuery = `select ${contractLogsFields}
+  from ${ContractLog.tableName} ${ContractLog.tableAlias}`;
+
+  static contractLogsExtendedQuery = `select ${contractLogsFields},
                                      ${ContractResult.getFullName(ContractResult.TRANSACTION_HASH)},
                                      ${ContractResult.getFullName(ContractResult.TRANSACTION_INDEX)},
                                      block.block_number,
@@ -268,7 +273,7 @@ class ContractService extends BaseService {
       .filter((filters) => filters.length !== 0)
       .map((filters) =>
         super.buildSelectQuery(
-          ContractService.contractLogsQuery,
+          ContractService.contractLogsExtendedQuery,
           params,
           conditions,
           orderClause,
@@ -284,7 +289,7 @@ class ContractService extends BaseService {
     if (subQueries.length === 0) {
       // if all three filters are empty, the subqueries will be empty too, just create the query with empty filters
       sqlQuery = super.buildSelectQuery(
-        ContractService.contractLogsQuery,
+        ContractService.contractLogsExtendedQuery,
         params,
         conditions,
         orderClause,
@@ -320,13 +325,12 @@ class ContractService extends BaseService {
       timestampsOpAndValue = `in (${positions})`;
     }
 
-    const whereClause = `where ${ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP)} ${timestampsOpAndValue}`;
-    const orderClause = `order by ${ContractLog.getFullName(
-      ContractLog.CONSENSUS_TIMESTAMP
-    )}, ${ContractLog.getFullName(ContractLog.INDEX)}`;
+    const whereClause = `where ${ContractLog.CONSENSUS_TIMESTAMP} ${timestampsOpAndValue}`;
+    const orderClause = `order by ${ContractLog.CONSENSUS_TIMESTAMP}, ${ContractLog.INDEX}`;
+
     const query = [ContractService.contractLogsQuery, whereClause, orderClause].join('\n');
     const rows = await super.getRows(query, params, 'getContractLogsByTimestamps');
-    return rows.map((cr) => new ContractLog(cr));
+    return rows.map((row) => new ContractLog(row));
   }
 
   async getContractStateChangesByTimestamps(timestamps, contractId = null) {
