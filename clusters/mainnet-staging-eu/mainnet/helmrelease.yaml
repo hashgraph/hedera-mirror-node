@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '0.64.0'
+      version: '0.64.1'
   dependsOn:
     - name: mirror
       namespace: common
@@ -32,7 +32,17 @@ spec:
       name: mirror
   values:
     importer:
+    importer:
+      config:
+        hedera:
+          mirror:
+            importer:
+              migration:
+                backfillTransactionHashMigration:
+                  params:
+                    startTimestamp: "1661472000121743002"
       env:
+        HEDERA_MIRROR_IMPORTER_PARSER_RECORD_ENTITY_PERSIST_TRANSACTIONHASH: "true"
         HEDERA_MIRROR_IMPORTER_NETWORK: "MAINNET"
         HEDERA_MIRROR_IMPORTER_PARSER_RECORD_SIDECAR_ENABLED: "true"
         HEDERA_MIRROR_IMPORTER_RECONCILIATION_ENABLED: "false"

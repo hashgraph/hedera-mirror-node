@@ -32,8 +32,16 @@ spec:
       name: mirror
   values:
     importer:
+      config:
+        hedera:
+          mirror:
+            importer:
+              migration:
+                backfillTransactionHashMigration:
+                  checksum: 2
+                  params:
+                    startTimestamp: "1661472000121743002"
       env:
-        HEDERA_MIRROR_IMPORTER_MIGRATION_BACKFILLTRANSACTIONHASHMIGRATION_PARAMS_STARTTIMESTAMP: "1661472000121743002"
         HEDERA_MIRROR_IMPORTER_PARSER_RECORD_ENTITY_PERSIST_TRANSACTIONHASH: "true"
         HEDERA_MIRROR_IMPORTER_NETWORK: "MAINNET"
         HEDERA_MIRROR_IMPORTER_PARSER_RECORD_SIDECAR_ENABLED: "true"
