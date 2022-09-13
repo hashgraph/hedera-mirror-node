@@ -51,22 +51,26 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
 
     this.block_hash = utils.addHexPrefix(recordFile.hash);
     this.block_number = recordFile.index;
-    this.hash = utils.toHexStringNonQuantity(contractResult.hash);
+    this.hash = utils.toHexStringNonQuantity(contractResult.transactionHash);
     this.logs = contractLogs.map((contractLog) => new ContractLogResultsViewModel(contractLog));
-    this.result = TransactionResult.getName(contractResult.result);
-    this.transaction_index = contractResult.index;
+    this.result = TransactionResult.getName(contractResult.transactionResult);
+    this.transaction_index = contractResult.transactionIndex;
 
     this.state_changes = contractStateChanges.map(
       (contractStateChange) => new ContractResultStateChangeViewModel(contractStateChange)
     );
     this.status =
-      ethTransaction.result === ContractResultDetailsViewModel._SUCCESS_PROTO_ID
+      contractResult.transactionResult === ContractResultDetailsViewModel._SUCCESS_PROTO_ID
         ? ContractResultDetailsViewModel._SUCCESS_RESULT
         : ContractResultDetailsViewModel._FAIL_RESULT;
 
     if (!_.isEmpty(contractResult.failedInitcode)) {
       this.failed_initcode = utils.toHexStringNonQuantity(contractResult.failedInitcode);
-    } else if (this.status === ContractResultDetailsViewModel._FAIL_RESULT && !_.isEmpty(ethTransaction.callData)) {
+    } else if (
+      this.status === ContractResultDetailsViewModel._FAIL_RESULT &&
+      !_.isNil(ethTransaction) &&
+      !_.isEmpty(ethTransaction.callData)
+    ) {
       this.failed_initcode = utils.toHexStringNonQuantity(ethTransaction.callData);
     } else {
       this.failed_initcode = null;
@@ -85,7 +89,7 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
     this.v = null;
     this.nonce = null;
 
-    if (!_.isNil(ethTransaction.type)) {
+    if (!_.isNil(ethTransaction)) {
       this.access_list = utils.toHexStringNonQuantity(ethTransaction.accessList);
       this.amount = ethTransaction.value && toBigIntBE(ethTransaction.value);
       this.chain_id = utils.toHexStringQuantity(ethTransaction.chainId);

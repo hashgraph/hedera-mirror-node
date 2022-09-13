@@ -628,19 +628,17 @@ describe('ContractService.getContractResultsByTimestamps tests', () => {
   });
 
   test('No match', async () => {
-    const [transactions, contractResults] = await ContractService.getContractResultsByTimestamps('1');
+    const contractResults = await ContractService.getContractResultsByTimestamps('1');
     expect(contractResults).toHaveLength(0);
   });
 
   test('Sing row match single timestamp', async () => {
-    const [transactions, contractResults] = await ContractService.getContractResultsByTimestamps(
-      expected[0].consensusTimestamp
-    );
+    const contractResults = await ContractService.getContractResultsByTimestamps(expected[0].consensusTimestamp);
     expect(pickContractResultFields(contractResults)).toIncludeSameMembers(expected.slice(0, 1));
   });
 
   test('Sing row match multiple timestamps', async () => {
-    const [transactions, contractResults] = await ContractService.getContractResultsByTimestamps([
+    const contractResults = await ContractService.getContractResultsByTimestamps([
       expected[0].consensusTimestamp,
       '100',
     ]);
@@ -648,7 +646,7 @@ describe('ContractService.getContractResultsByTimestamps tests', () => {
   });
 
   test('Multiple rows match multiple timestamps', async () => {
-    const [transactions, contractResults] = await ContractService.getContractResultsByTimestamps(
+    const contractResults = await ContractService.getContractResultsByTimestamps(
       expected.map((e) => e.consensusTimestamp)
     );
     expect(pickContractResultFields(contractResults)).toIncludeSameMembers(expected);
@@ -1148,16 +1146,16 @@ describe('ContractService.getContractResultsByHash tests', () => {
   });
 
   test('No match', async () => {
-    const [transactions, contractResults] = await ContractService.getContractResultsByHash(
+    const contractResults = await ContractService.getContractResultsByHash(
       Buffer.from('4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6393', 'hex')
     );
 
-    expect(transactions).toHaveLength(0);
+    expect(contractResults).toHaveLength(0);
   });
 
   test('Match all transactions by same hash', async () => {
-    const [transactions, contractResults] = await ContractService.getContractResultsByHash(ethereumTxHashBuffer);
-    expect(pickTransactionFields(transactions)).toIncludeSameMembers([
+    const contractResults = await ContractService.getContractResultsByHash(ethereumTxHashBuffer);
+    expect(pickTransactionFields(contractResults)).toIncludeSameMembers([
       expectedTransaction,
       {consensusTimestamp: 2, transactionHash: ethereumTxHash},
       {consensusTimestamp: 3, transactionHash: ethereumTxHash},
@@ -1166,33 +1164,33 @@ describe('ContractService.getContractResultsByHash tests', () => {
   });
 
   test('Match all transactions with no duplicates and wrong nonces', async () => {
-    const [transactions, contractResults] = await ContractService.getContractResultsByHash(ethereumTxHashBuffer, [
+    const contractResults = await ContractService.getContractResultsByHash(ethereumTxHashBuffer, [
       duplicateTransactionResult,
       wrongNonceTransactionResult,
     ]);
-    expect(pickTransactionFields(transactions)).toIncludeSameMembers([
+    expect(pickTransactionFields(contractResults)).toIncludeSameMembers([
       expectedTransaction,
       {consensusTimestamp: 4, transactionHash: ethereumTxHash},
     ]);
   });
 
   test('Match the oldest tx with no duplicates and wrong nonces', async () => {
-    const [transactions, contractResults] = await ContractService.getContractResultsByHash(
+    const contractResults = await ContractService.getContractResultsByHash(
       ethereumTxHashBuffer,
       [duplicateTransactionResult, wrongNonceTransactionResult],
       1
     );
-    expect(pickTransactionFields(transactions)).toIncludeSameMembers([expectedTransaction]);
+    expect(pickTransactionFields(contractResults)).toIncludeSameMembers([expectedTransaction]);
   });
 
   test('Match hedera transactions by eth hash', async () => {
-    const [transactions, contractResults] = await ContractService.getContractResultsByHash(
+    const contractResults = await ContractService.getContractResultsByHash(
       Buffer.from('96ecf2e0cf1c8f7e2294ec731b2ad1aff95d9736f4ba15b5bbace1ad2766cc1c', 'hex'),
       [duplicateTransactionResult, wrongNonceTransactionResult],
       1
     );
 
-    expect(pickTransactionFields(transactions)).toIncludeSameMembers([
+    expect(pickTransactionFields(contractResults)).toIncludeSameMembers([
       {consensusTimestamp: 5, transactionHash: '96ecf2e0cf1c8f7e2294ec731b2ad1aff95d9736f4ba15b5bbace1ad2766cc1c'},
     ]);
   });
