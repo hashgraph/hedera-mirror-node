@@ -37,6 +37,7 @@ func exampleTransaction() *Transaction {
 	return &Transaction{
 		EntityId: &entityId,
 		Hash:     "somehash",
+		Memo:     []byte("transfer"),
 		Operations: OperationSlice{
 			{
 				AccountId: AccountId{},
@@ -63,6 +64,7 @@ func expectedTransaction() *types.Transaction {
 		},
 		Metadata: map[string]interface{}{
 			"entity_id": entityId.String(),
+			"memo":      "transfer",
 		},
 	}
 }
@@ -81,11 +83,39 @@ func TestToRosettaTransaction(t *testing.T) {
 func TestToRosettaTransactionNoEntityId(t *testing.T) {
 	// given
 	expected := expectedTransaction()
-	expected.Metadata = nil
+	delete(expected.Metadata, "entity_id")
 
 	// when
 	transaction := exampleTransaction()
 	transaction.EntityId = nil
+	actual := transaction.ToRosetta()
+
+	// then
+	assert.Equal(t, expected, actual)
+}
+
+func TestToRosettaTransactionNilMemo(t *testing.T) {
+	// given
+	expected := expectedTransaction()
+	delete(expected.Metadata, "memo")
+
+	// when
+	transaction := exampleTransaction()
+	transaction.Memo = nil
+	actual := transaction.ToRosetta()
+
+	// then
+	assert.Equal(t, expected, actual)
+}
+
+func TestToRosettaTransactionEmptyMemo(t *testing.T) {
+	// given
+	expected := expectedTransaction()
+	delete(expected.Metadata, "memo")
+
+	// when
+	transaction := exampleTransaction()
+	transaction.Memo = []byte{}
 	actual := transaction.ToRosetta()
 
 	// then

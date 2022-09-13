@@ -29,15 +29,21 @@ import (
 type Transaction struct {
 	EntityId   *domain.EntityId
 	Hash       string
+	Memo       []byte
 	Operations OperationSlice
 }
 
 // ToRosetta returns Rosetta type Transaction from the current domain type Transaction
 func (t *Transaction) ToRosetta() *types.Transaction {
 	operations := t.Operations.ToRosetta()
-	var metadata map[string]interface{}
+
+	metadata := make(map[string]interface{})
 	if t.EntityId != nil {
-		metadata = map[string]interface{}{"entity_id": t.EntityId.String()}
+		metadata["entity_id"] = t.EntityId.String()
+	}
+
+	if len(t.Memo) != 0 {
+		metadata[MetadataKeyMemo] = string(t.Memo)
 	}
 
 	return &types.Transaction{

@@ -218,6 +218,15 @@ func (c *constructionAPIService) ConstructionParse(
 		return nil, err
 	}
 
+	metadata := make(map[string]interface{})
+	if memo, err := hedera.TransactionGetTransactionMemo(transaction); err == nil {
+		if memo != "" {
+			metadata[types.MetadataKeyMemo] = memo
+		}
+	} else {
+		return nil, errors.ErrInvalidTransactionMemo
+	}
+
 	operations, accounts, err := c.transactionHandler.Parse(ctx, transaction)
 	if err != nil {
 		return nil, err
@@ -233,6 +242,7 @@ func (c *constructionAPIService) ConstructionParse(
 	return &rTypes.ConstructionParseResponse{
 		Operations:               operations.ToRosetta(),
 		AccountIdentifierSigners: signers,
+		Metadata:                 metadata,
 	}, nil
 }
 
@@ -269,6 +279,7 @@ func (c *constructionAPIService) ConstructionPayloads(
 
 	if rErr = updateTransaction(
 		transaction,
+		transactionSetMemo(request.Metadata[types.MetadataKeyMemo]),
 		transactionSetNodeAccountId(c.getRandomNodeAccountId()),
 		transactionSetTransactionId(payer, validStartNanos),
 		transactionSetValidDuration(validDurationSeconds),
@@ -629,6 +640,25 @@ func updateTransaction(transaction interfaces.Transaction, updaters ...updater) 
 		}
 	}
 	return nil
+}
+
+func transactionSetMemo(memo interface{}) updater {
+	return func(transaction interfaces.Transaction) *rTypes.Error {
+		if memo == nil {
+			return nil
+		}
+
+		value, ok := memo.(string)
+		if !ok {
+			return errors.ErrInvalidTransactionMemo
+		}
+
+		if _, err := hedera.TransactionSetTransactionMemo(transaction, value); err != nil {
+			return errors.ErrInvalidTransactionMemo
+		}
+
+		return nil
+	}
 }
 
 func transactionSetNodeAccountId(nodeAccountId hedera.AccountID) updater {

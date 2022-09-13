@@ -207,7 +207,7 @@ func (c Client) GetOperator(index int) Operator {
 
 // Submit submits the operations to the network, goes through the construction preprocess, metadata, payloads, combine,
 // and submit workflow. Note payloads signing happens between payloads and combine.
-func (c Client) Submit(ctx context.Context, operations []*types.Operation, signers map[string]hedera.PrivateKey) (
+func (c Client) Submit(ctx context.Context, operations []*types.Operation, memo string, signers map[string]hedera.PrivateKey) (
 	string,
 	error,
 ) {
@@ -259,10 +259,14 @@ func (c Client) Submit(ctx context.Context, operations []*types.Operation, signe
 		}
 
 		// payloads
+		metadata := metadataResponse.Metadata
+		if len(memo) != 0 {
+			metadata["memo"] = memo
+		}
 		payloadsRequest := &types.ConstructionPayloadsRequest{
 			NetworkIdentifier: c.network,
 			Operations:        operations,
-			Metadata:          metadataResponse.Metadata,
+			Metadata:          metadata,
 		}
 		payloadsResponse, rosettaErr, err := offlineConstructor.ConstructionPayloads(ctx, payloadsRequest)
 		if err1 := c.handleError("Failed to handle payloads request", rosettaErr, err); err1 != nil {
