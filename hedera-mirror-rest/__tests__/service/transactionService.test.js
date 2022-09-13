@@ -31,8 +31,10 @@ setupIntegrationTest();
 
 const contractCallType = TransactionType.getProtoId('CONTRACTCALL');
 const contractCreateType = TransactionType.getProtoId('CONTRACTCREATEINSTANCE');
+const ethereumTxType = TransactionType.getProtoId('ETHEREUMTRANSACTION');
 const duplicateTransactionResult = TransactionResult.getProtoId('DUPLICATE_TRANSACTION');
 const successTransactionResult = TransactionResult.getProtoId('SUCCESS');
+const wrongNonceTransactionResult = TransactionResult.getProtoId('WRONG_NONCE');
 
 describe('TransactionService.getTransactionDetailsFromTransactionId tests', () => {
   const duplicateValidStartNs = 10;
@@ -144,5 +146,179 @@ describe('TransactionService.getTransactionDetailsFromTransactionId tests', () =
       [duplicateTransactionResult, successTransactionResult]
     );
     expect(actual).toHaveLength(0);
+  });
+});
+
+describe('TransactionService.getEthTransactionByHash tests', () => {
+  const ethereumTxHash = '4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392';
+  const ethereumTxHashBuffer = Buffer.from(ethereumTxHash, 'hex');
+
+  const inputTransactions = [
+    {
+      consensus_timestamp: 1,
+      payerAccountId: 10,
+      type: ethereumTxType,
+      result: successTransactionResult,
+      valid_start_timestamp: 1,
+    },
+    {
+      consensus_timestamp: 2,
+      payerAccountId: 10,
+      type: ethereumTxType,
+      result: duplicateTransactionResult,
+      valid_start_timestamp: 2,
+    },
+    {
+      consensus_timestamp: 3,
+      payerAccountId: 10,
+      type: ethereumTxType,
+      result: wrongNonceTransactionResult,
+      valid_start_timestamp: 3,
+    },
+    {
+      consensus_timestamp: 4,
+      payerAccountId: 10,
+      type: ethereumTxType,
+      result: successTransactionResult,
+      valid_start_timestamp: 4,
+    },
+    {
+      consensus_timestamp: 5,
+      payerAccountId: 10,
+      type: contractCreateType,
+    },
+  ];
+
+  const inputEthTransaction = [
+    {
+      consensus_timestamp: 1,
+      hash: ethereumTxHash,
+    },
+    {
+      consensus_timestamp: 2,
+      hash: ethereumTxHash,
+    },
+    {
+      consensus_timestamp: 3,
+      hash: ethereumTxHash,
+    },
+    {
+      consensus_timestamp: 4,
+      hash: ethereumTxHash,
+    },
+  ];
+
+  const expectedTransaction = {
+    consensusTimestamp: 1,
+    hash: ethereumTxHash,
+  };
+
+  // pick the fields of interests, otherwise expect will fail since the Transaction object has other fields
+  const pickTransactionFields = (transactions) => {
+    return transactions
+      .map((tx) => _.pick(tx, ['consensusTimestamp', 'hash']))
+      .map((tx) => ({...tx, hash: Buffer.from(tx.hash).toString('hex')}));
+  };
+
+  beforeEach(async () => {
+    await integrationDomainOps.loadTransactions(inputTransactions);
+    await integrationDomainOps.loadEthereumTransactions(inputEthTransaction);
+  });
+
+  test('No match', async () => {
+    await expect(
+      TransactionService.getEthTransactionByHash(
+        Buffer.from('4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6393', 'hex')
+      )
+    ).resolves.toHaveLength(0);
+  });
+
+  test('Match all transactions by same hash', async () => {
+    const ethTransactions = await TransactionService.getEthTransactionByHash(ethereumTxHashBuffer);
+    expect(pickTransactionFields(ethTransactions)).toIncludeSameMembers([
+      expectedTransaction,
+      {consensusTimestamp: 2, hash: ethereumTxHash},
+      {consensusTimestamp: 3, hash: ethereumTxHash},
+      {consensusTimestamp: 4, hash: ethereumTxHash},
+    ]);
+  });
+
+  test('Match all transactions with no duplicates and wrong nonces', async () => {
+    const ethTransactions = await TransactionService.getEthTransactionByHash(ethereumTxHashBuffer, [
+      duplicateTransactionResult,
+      wrongNonceTransactionResult,
+    ]);
+    expect(pickTransactionFields(ethTransactions)).toIncludeSameMembers([
+      expectedTransaction,
+      {consensusTimestamp: 4, hash: ethereumTxHash},
+    ]);
+  });
+
+  test('Match the oldest tx with no duplicates and wrong nonces', async () => {
+    const ethTransactions = await TransactionService.getEthTransactionByHash(
+      ethereumTxHashBuffer,
+      [duplicateTransactionResult, wrongNonceTransactionResult],
+      1
+    );
+    expect(pickTransactionFields(ethTransactions)).toIncludeSameMembers([expectedTransaction]);
+  });
+});
+
+describe('TransactionService.getEthTransactionByTimestamp tests', () => {
+  const ethereumTxHash = '4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392';
+
+  const inputTransactions = [
+    {
+      consensus_timestamp: 1,
+      payerAccountId: 10,
+      type: ethereumTxType,
+      result: successTransactionResult,
+      valid_start_timestamp: 1,
+    },
+    {
+      consensus_timestamp: 2,
+      payerAccountId: 10,
+      type: ethereumTxType,
+      result: duplicateTransactionResult,
+      valid_start_timestamp: 2,
+    },
+  ];
+
+  const inputEthTransactions = [
+    {
+      consensus_timestamp: 1,
+      hash: ethereumTxHash,
+    },
+    {
+      consensus_timestamp: 2,
+      hash: ethereumTxHash,
+    },
+  ];
+
+  const expectedTransaction = {
+    consensusTimestamp: 2,
+    hash: ethereumTxHash,
+  };
+
+  const pickTransactionFields = (transactions) => {
+    return transactions
+      .map((tx) => _.pick(tx, ['consensusTimestamp', 'hash']))
+      .map((tx) => ({...tx, hash: Buffer.from(tx.hash).toString('hex')}));
+  };
+
+  beforeEach(async () => {
+    await integrationDomainOps.loadTransactions(inputTransactions);
+  });
+
+  test('No match', async () => {
+    await expect(TransactionService.getEthTransactionByTimestamp('1')).resolves.toHaveLength(0);
+  });
+
+  test('Finds a matching eth transaction', async () => {
+    await integrationDomainOps.loadEthereumTransactions(inputEthTransactions);
+
+    const ethTransactions = await TransactionService.getEthTransactionByTimestamp('2');
+
+    expect(pickTransactionFields(ethTransactions)).toIncludeSameMembers([expectedTransaction]);
   });
 });
