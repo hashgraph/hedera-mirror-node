@@ -32,6 +32,13 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <!--FUTURE WORK MOVE hedera-evm TO CENTRAL REPO-->
+        <dependency>
+            <groupId>com.hedera</groupId>
+            <artifactId>hedera-evm</artifactId>
+            <version>0.29.0-SNAPSHOT</version>
+            <type>jar.lastUpdated</type>
+        </dependency>
         <dependency>
             <groupId>io.github.mweirauch</groupId>
             <artifactId>micrometer-jvm-extras</artifactId>

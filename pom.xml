@@ -137,6 +137,12 @@
     </dependencyManagement>
 
     <repositories>
+        <!--FUTURE WORK REMOVE local-maven-repo-->
+        <repository>
+            <id>local-maven-repo</id>
+            <name>Maven Local Repository</name>
+            <url>file:/Users/ivankavaldzhiev/.m2/repository</url>
+        </repository>
         <repository>
             <id>besu-repository</id>
             <url>https://hyperledger.jfrog.io/artifactory/besu-maven/</url>
