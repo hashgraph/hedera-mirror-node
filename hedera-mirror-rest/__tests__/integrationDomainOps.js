@@ -51,6 +51,7 @@ const setup = async (testDataJson) => {
   await loadCryptoAllowances(testDataJson.cryptoAllowances);
   await loadCustomFees(testDataJson.customfees);
   await loadEntities(testDataJson.entities);
+  await loadEntityStakes(testDataJson.entityStakes);
   await loadEthereumTransactions(testDataJson.ethereumtransactions);
   await loadFileData(testDataJson.filedata);
   await loadNetworkStakes(testDataJson.networkstakes);
@@ -213,6 +214,16 @@ const loadEntities = async (entities) => {
 
   for (const entity of entities) {
     await addEntity({}, entity);
+  }
+};
+
+const loadEntityStakes = async (entityStakes) => {
+  if (entityStakes == null) {
+    return;
+  }
+
+  for (const entityStake of entityStakes) {
+    await addEntityStake(entityStake);
   }
 };
 
@@ -484,6 +495,26 @@ const addEntity = async (defaults, custom) => {
   const table = getTableName('entity', entity);
   await insertDomainObject(table, insertFields, entity);
   return entity;
+};
+
+const defaultEntityStake = {
+  decline_reward_start: true,
+  end_stake_period: 1,
+  id: null,
+  pending_reward: 0,
+  staked_node_id_start: 1,
+  staked_to_me: 0,
+  stake_total_start: 0,
+};
+const entityStakeFields = Object.keys(defaultEntityStake);
+
+const addEntityStake = async (entityStake) => {
+  entityStake = {
+    ...defaultEntityStake,
+    ...entityStake,
+  };
+
+  await insertDomainObject('entity_stake', entityStakeFields, entityStake);
 };
 
 const addEthereumTransaction = async (ethereumTransaction) => {

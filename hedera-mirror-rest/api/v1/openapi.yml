@@ -758,6 +758,8 @@ paths:
           in: query
           example: 2
           schema:
+            format: int64
+            minimum: 0
             type: integer
         - $ref: '#/components/parameters/timestampQueryParam'
         - name: encoding
@@ -793,6 +795,8 @@ paths:
           description: Topic message sequence number
           example: 2
           schema:
+            format: int64
+            minimum: 0
             type: integer
       responses:
         200:
@@ -1272,7 +1276,7 @@ components:
     BlocksResponse:
       type: object
       properties:
-        schedules:
+        blocks:
           $ref: '#/components/schemas/Blocks'
         links:
           $ref: '#/components/schemas/Links'
@@ -1378,6 +1382,8 @@ components:
             format: byte
         version:
           description: The record file format version, either 5 or 6
+          format: int32
+          minimum: 0
           type: integer
       example:
         address_books:
@@ -1499,6 +1505,12 @@ components:
         memo:
           type: string
           nullable: true
+        pending_reward:
+          description: |
+            The pending reward in tinybars the account will receive in the next reward payout. Note the value is updated
+            at the end of each staking period and there may be delay to reflect the changes in the past staking period.
+          type: integer
+          format: int64
         receiver_sig_required:
           nullable: true
           type: boolean
@@ -1537,10 +1549,11 @@ components:
         key: null
         max_automatic_token_associations: 200
         memo: "entity memo"
+        pending_reward: 100
         receiver_sig_required: false
         staked_account_id: null
         staked_node_id: 3
-        stake_period_start: 2000
+        stake_period_start: "172800000.000000000"
     Accounts:
       type: array
       items:
@@ -1555,7 +1568,8 @@ components:
         account:
           $ref: '#/components/schemas/EntityId'
         balance:
-          type: number
+          format: int64
+          type: integer
         tokens:
           type: array
           items:
@@ -1593,8 +1607,9 @@ components:
         timestamp:
           $ref: '#/components/schemas/TimestampNullable'
         balance:
-          type: number
+          format: int64
           nullable: true
+          type: integer
         tokens:
           type: array
           items:
@@ -1603,7 +1618,8 @@ components:
               token_id:
                 $ref: '#/components/schemas/EntityId'
               balance:
-                type: number
+                format: int64
+                type: integer
       nullable: true
       example:
         timestamp: "0.000002345"
@@ -1624,9 +1640,11 @@ components:
           $ref: '#/components/schemas/TransactionId'
         number:
           example: 1
+          format: int32
           type: integer
         total:
           example: 2
+          format: int32
           type: integer
     Contract:
       type: object
@@ -1636,9 +1654,10 @@ components:
         auto_renew_account:
           $ref: '#/components/schemas/EntityId'
         auto_renew_period:
-          type: number
+          example: 7776000
+          format: int64
           nullable: true
-          example: null
+          type: integer
         contract_id:
           $ref: '#/components/schemas/EntityId'
         created_timestamp:
@@ -1677,12 +1696,31 @@ components:
         - $ref: '#/components/schemas/ContractResultLog'
         - type: object
           properties:
+            block_hash:
+              description: The hex encoded block (record file chain) hash
+              example: "0x553f9311833391c0a3b2f9ed64540a89f2190a511986cd94889f1c0cf7fa63e898b1c6730f14a61755d1fb4ca05fb073"
+              type: string
+            block_number:
+              description: The block number. Since Hedera does not have the native concept of blocks, this counts the number of record files seen since the mirror node's configured start date. This can vary between mirror nodes that use different start dates.
+              example: 10
+              format: int64
+              type: integer             
             root_contract_id:
               allOf:
                 - $ref: '#/components/schemas/EntityId'
                 - description: The executed contract that created this contract log
             timestamp:
               $ref: '#/components/schemas/Timestamp'
+            transaction_hash:
+              type: string
+              description: A hex encoded transaction hash
+              example: "0x397022d1e5baeb89d0ab66e6bf602640610e6fb7e55d78638db861e2c6339aa9"          
+            transaction_index:
+              description: The position of the transaction in the block
+              nullable: true
+              format: int32
+              type: integer
+              example: 1              
     ContractLogTopics:
       description: A list of hex encoded topics associated with this log event
       example:
@@ -1940,7 +1978,7 @@ components:
           description: The hex encoded EVM address of the contract
           example: '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
           pattern: ^0x[0-9A-Fa-f]{40}$
-          type: string
+          type: string       
         bloom:
           allOf:
             - $ref: '#/components/schemas/Bloom'
@@ -2096,20 +2134,24 @@ components:
       type: object
       properties:
         cent_equivalent:
-          type: number
+          format: int32
           example: 596987
+          type: integer
         expiration_time:
-          type: number
+          format: int64
           example: 1649689200
+          type: integer
         hbar_equivalent:
-          type: number
           example: 30000
+          format: int32
+          type: integer
     FixedFee:
       type: object
       properties:
         amount:
-          type: number
           example: 100
+          format: int64
+          type: integer
         collector_account_id:
           $ref: '#/components/schemas/EntityId'
         denominating_token_id:
@@ -2121,22 +2163,26 @@ components:
           type: object
           properties:
             numerator:
-              type: number
               example: 12
+              format: int64
+              type: integer
             denominator:
-              type: number
               example: 29
+              format: int64
+              type: integer
         collector_account_id:
           $ref: '#/components/schemas/EntityId'
         denominating_token_id:
           $ref: '#/components/schemas/EntityId'
         maximum:
-          type: number
-          nullable: true
           example: 120
+          format: int64
+          nullable: true
+          type: integer
         minimum:
-          type: number
           example: 30
+          format: int64
+          type: integer
         net_of_transfers:
           type: boolean
           example: true
@@ -2147,19 +2193,22 @@ components:
           type: object
           properties:
             numerator:
-              type: number
               example: 15
+              format: int64
+              type: integer
             denominator:
-              type: number
               example: 37
+              format: int64
+              type: integer
         collector_account_id:
           $ref: '#/components/schemas/EntityId'
         fallback_fee:
           type: object
           properties:
             amount:
-              type: number
               example: 100
+              format: int64
+              type: integer
             denominating_token_id:
               $ref: '#/components/schemas/EntityId'
     Key:
@@ -2225,7 +2274,8 @@ components:
           $ref: '#/components/schemas/EntityId'
         node_id:
           description: An identifier for the node
-          type: number
+          format: int64
+          type: integer
         node_cert_hash:
           description: hex encoded hash of the node’s TLS certificate
           nullable: true
@@ -2235,31 +2285,31 @@ components:
           nullable: true
           type: string
         reward_rate_start:
-          description: The total tinybars earned by this node in the last staking period
-          type: number
+          description: The total tinybars earned by this node per whole hbar in the last staking period
           format: int64
           nullable: true
+          type: integer
         service_endpoints:
           $ref: '#/components/schemas/ServiceEndpoints'
         stake:
           description: The node consensus weight at the beginning of the staking period
-          type: number
           format: int64
           nullable: true
+          type: integer
         stake_not_rewarded:
           description: |
             The sum (balance + stakedToMe) for all accounts staked to this node with declineReward=true at the
             beginning of the staking period
-          type: number
           format: int64
           nullable: true
+          type: integer
         stake_rewarded:
           description: |
             The sum (balance + staked) for all accounts staked to the node that are not declining rewards at the
             beginning of the staking period
-          type: number
           format: int64
           nullable: true
+          type: integer
         staking_period:
           allOf:
             - $ref: '#/components/schemas/TimestampRange'
@@ -2300,7 +2350,7 @@ components:
         gas:
           description: gas cost in tinybars
           format: int64
-          type: number
+          type: integer
         transaction_type:
           description: type of the transaction
           type: string
@@ -2388,7 +2438,9 @@ components:
         modified_timestamp:
           $ref: '#/components/schemas/TimestampNullable'
         serial_number:
-          type: number
+          example: 1
+          format: int64
+          type: integer
         spender:
           $ref: '#/components/schemas/EntityId'
         token_id:
@@ -2566,7 +2618,8 @@ components:
         ip_address_v4:
           type: string
         port:
-          type: number
+          format: int32
+          type: integer
       example:
         ip_address_v4: 127.0.0.1
         port: 50211
@@ -2635,7 +2688,8 @@ components:
         token_id:
           $ref: '#/components/schemas/EntityId'
         balance:
-          type: number
+          format: int64
+          type: integer
       example:
         token_id: 0.0.200001
         balance: 8
@@ -2647,7 +2701,8 @@ components:
           account:
             $ref: '#/components/schemas/EntityId'
           balance:
-            type: number
+            format: int64
+            type: integer
         required:
           - account
           - balance
@@ -2801,9 +2856,11 @@ components:
           type: string
           format: byte
         running_hash_version:
-          type: number
+          format: int32
+          type: integer
         sequence_number:
-          type: number
+          format: int64
+          type: integer
         topic_id:
           $ref: '#/components/schemas/EntityId'
       required:
@@ -2840,7 +2897,8 @@ components:
           format: byte
           nullable: true
         charged_tx_fee:
-          type: number
+          format: int64
+          type: integer
         consensus_timestamp:
           $ref: '#/components/schemas/Timestamp'
         entity_id:
@@ -2874,7 +2932,8 @@ components:
               account:
                 $ref: '#/components/schemas/EntityId'
               amount:
-                type: number
+                format: int64
+                type: integer
               is_approval:
                 type: boolean
             required:
@@ -2894,7 +2953,8 @@ components:
               account:
                 $ref: '#/components/schemas/EntityId'
               amount:
-                type: number
+                format: int64
+                type: integer
               is_approval:
                 type: boolean
             required:
@@ -2951,7 +3011,8 @@ components:
                 type: object
                 properties:
                   amount:
-                    type: number
+                    format: int64
+                    type: integer
                   collector_account_id:
                     $ref: '#/components/schemas/EntityId'
                   effective_payer_account_ids:
@@ -2972,7 +3033,8 @@ components:
                   sender_account_id:
                     $ref: '#/components/schemas/EntityId'
                   serial_number:
-                    type: number
+                    format: int64
+                    type: integer
                   token_id:
                     $ref: '#/components/schemas/EntityId'
                 required:
@@ -3043,6 +3105,7 @@ components:
           $ref: '#/components/schemas/EntityId'
         nonce:
           example: 0
+          format: int32
           type: integer
           minimum: 0
           nullable: true
@@ -3413,6 +3476,7 @@ components:
       description: The maximum number of items to return
       example: 2
       schema:
+        format: int32
         type: integer
         default: 25
         minimum: 1
@@ -3485,6 +3549,7 @@ components:
         all transactions with specified payer account ID and valid start timestamp match.
       example: 0
       schema:
+        format: int32
         type: integer
         minimum: 0
     nonceQueryParamWithDefault:
@@ -3496,6 +3561,7 @@ components:
         not specified.
       example: 1
       schema:
+        format: int32
         type: integer
         default: 0
         minimum: 0
@@ -3966,7 +4032,9 @@ components:
       description: The transaction index in the block
       example: 1
       schema:
-        type: number
+        format: int32
+        minimum: 0
+        type: integer
     internalQueryParam:
       name: internal
       in: query

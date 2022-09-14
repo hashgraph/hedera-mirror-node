@@ -349,6 +349,7 @@ describe('processRow', () => {
     key: Buffer.from([1, 2, 3, 4, 5, 6]),
     max_automatic_token_associations: 100,
     memo: 'entity memo',
+    pending_reward: 10,
     receiver_sig_required: false,
     staked_account_id: 0,
     staked_node_id: -1,
@@ -394,6 +395,7 @@ describe('processRow', () => {
     },
     max_automatic_token_associations: 100,
     memo: 'entity memo',
+    pending_reward: 10,
     receiver_sig_required: false,
     staked_account_id: null,
     staked_node_id: null,
@@ -486,6 +488,12 @@ describe('processRow', () => {
       ...expectedAccount,
       staked_node_id: 2,
       stake_period_start: '1655596800.000000000',
+    });
+
+    expect(subject.processRow({...inputAccount, staked_node_id: 2, stake_period_start: -1})).toEqual({
+      ...expectedAccount,
+      staked_node_id: 2,
+      stake_period_start: null,
     });
   });
 

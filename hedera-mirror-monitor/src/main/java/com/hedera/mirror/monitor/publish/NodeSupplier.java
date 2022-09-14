@@ -64,9 +64,6 @@ public class NodeSupplier {
     private final CopyOnWriteArrayList<NodeProperties> nodes = new CopyOnWriteArrayList<>();
     private final SecureRandom secureRandom = new SecureRandom();
 
-    @Getter(lazy = true, value = AccessLevel.PRIVATE)
-    private final Client validationClient = toClient(Map.of());
-
     @PostConstruct
     public void init() {
         var validationProperties = monitorProperties.getNodeValidation();
@@ -76,8 +73,6 @@ public class NodeSupplier {
         var scheduler = Schedulers.newParallel("validator", parallelism + 1);
         Flux.interval(Duration.ZERO, validationProperties.getFrequency(), scheduler)
                 .flatMap(i -> refresh()
-                        .collectList()
-                        .flatMapIterable(this::updateValidationClient)
                         .parallel(parallelism)
                         .runOn(scheduler)
                         .map(this::validateNode)
@@ -104,6 +99,7 @@ public class NodeSupplier {
     }
 
     public synchronized Flux<NodeProperties> refresh() {
+        boolean empty = nodes.isEmpty();
         Retry retrySpec = Retry.backoff(Long.MAX_VALUE, Duration.ofSeconds(1L))
                 .maxBackoff(Duration.ofSeconds(8L))
                 .scheduler(Schedulers.newSingle("nodes"))
@@ -115,7 +111,8 @@ public class NodeSupplier {
                 .switchIfEmpty(Flux.defer(this::getAddressBook))
                 .switchIfEmpty(Flux.fromIterable(monitorProperties.getNetwork().getNodes()))
                 .retryWhen(retrySpec)
-                .switchIfEmpty(Flux.error(new IllegalArgumentException("Nodes must not be empty")));
+                .switchIfEmpty(Flux.error(new IllegalArgumentException("Nodes must not be empty")))
+                .doOnNext(n -> {if (empty) { nodes.addIfAbsent(n);}}); // Populate on startup before validation
     }
 
     private Flux<NodeProperties> getAddressBook() {
@@ -146,20 +143,6 @@ public class NodeSupplier {
         return client;
     }
 
-    // Temporarily workaround https://github.com/hashgraph/hedera-sdk-java/issues/1084
-    Collection<NodeProperties> updateValidationClient(Collection<NodeProperties> nodes) {
-        try {
-            var client = getValidationClient();
-            var nodeMap = nodes.stream()
-                    .collect(Collectors.toMap(NodeProperties::getEndpoint,
-                            p -> AccountId.fromString(p.getAccountId())));
-            client.setNetwork(nodeMap);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-        return nodes;
-    }
-
     @VisibleForTesting
     boolean validateNode(NodeProperties node) {
         if (!monitorProperties.getNodeValidation().isEnabled()) {
@@ -169,11 +152,10 @@ public class NodeSupplier {
         }
 
         log.info("Validating node {}", node);
-        var client = getValidationClient();
         Hbar hbar = Hbar.fromTinybars(1L);
         AccountId nodeAccountId = AccountId.fromString(node.getAccountId());
 
-        try {
+        try (Client client = toClient(Map.of(node.getEndpoint(), nodeAccountId))) {
             Status receiptStatus = new TransferTransaction()
                     .addHbarTransfer(nodeAccountId, hbar)
                     .addHbarTransfer(client.getOperatorAccountId(), hbar.negated())

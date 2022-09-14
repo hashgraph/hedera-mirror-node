@@ -35,9 +35,21 @@ import {
   Entity,
   EthereumTransaction,
   Transaction,
+  RecordFile,
 } from '../model';
 
 const {default: defaultLimit} = getResponseLimit();
+const contractLogsFields = `${ContractLog.getFullName(ContractLog.BLOOM)},
+${ContractLog.getFullName(ContractLog.CONTRACT_ID)},
+${ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP)},
+${ContractLog.getFullName(ContractLog.DATA)},
+${ContractLog.getFullName(ContractLog.INDEX)},
+${ContractLog.getFullName(ContractLog.ROOT_CONTRACT_ID)},
+${ContractLog.getFullName(ContractLog.TOPIC0)},
+${ContractLog.getFullName(ContractLog.TOPIC1)},
+${ContractLog.getFullName(ContractLog.TOPIC2)},
+${ContractLog.getFullName(ContractLog.TOPIC3)}
+`;
 
 /**
  * Contract retrieval business logic
@@ -122,18 +134,27 @@ class ContractService extends BaseService {
            ${ContractStateChange.VALUE_WRITTEN}
     from ${ContractStateChange.tableName}`;
 
-  static contractLogsQuery = `
-    select ${ContractLog.BLOOM},
-           ${ContractLog.CONTRACT_ID},
-           ${ContractLog.CONSENSUS_TIMESTAMP},
-           ${ContractLog.DATA},
-           ${ContractLog.INDEX},
-           ${ContractLog.ROOT_CONTRACT_ID},
-           ${ContractLog.TOPIC0},
-           ${ContractLog.TOPIC1},
-           ${ContractLog.TOPIC2},
-           ${ContractLog.TOPIC3}
+  static contractLogsQuery = `select ${contractLogsFields}
   from ${ContractLog.tableName} ${ContractLog.tableAlias}`;
+
+  static contractLogsExtendedQuery = `select ${contractLogsFields},
+                                     ${ContractResult.getFullName(ContractResult.TRANSACTION_HASH)},
+                                     ${ContractResult.getFullName(ContractResult.TRANSACTION_INDEX)},
+                                     block.block_number,
+                                     block.block_hash
+    from ${ContractLog.tableName} ${ContractLog.tableAlias}
+    left join ${ContractResult.tableName} ${ContractResult.tableAlias} on
+    ${ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP)} = ${ContractResult.getFullName(
+    ContractResult.CONSENSUS_TIMESTAMP
+  )}
+    left join lateral (
+      select ${RecordFile.INDEX} as block_number, ${RecordFile.HASH} as block_hash
+      from ${RecordFile.tableName}
+      where ${RecordFile.CONSENSUS_END} >= ${ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP)}
+      order by ${RecordFile.CONSENSUS_END} asc
+      limit 1
+    ) as block on true
+  `;
 
   static contractIdByEvmAddressQuery = `
     select ${Entity.ID}
@@ -313,7 +334,7 @@ class ContractService extends BaseService {
       .filter((filters) => filters.length !== 0)
       .map((filters) =>
         super.buildSelectQuery(
-          ContractService.contractLogsQuery,
+          ContractService.contractLogsExtendedQuery,
           params,
           conditions,
           orderClause,
@@ -329,7 +350,7 @@ class ContractService extends BaseService {
     if (subQueries.length === 0) {
       // if all three filters are empty, the subqueries will be empty too, just create the query with empty filters
       sqlQuery = super.buildSelectQuery(
-        ContractService.contractLogsQuery,
+        ContractService.contractLogsExtendedQuery,
         params,
         conditions,
         orderClause,
@@ -367,6 +388,7 @@ class ContractService extends BaseService {
 
     const whereClause = `where ${ContractLog.CONSENSUS_TIMESTAMP} ${timestampsOpAndValue}`;
     const orderClause = `order by ${ContractLog.CONSENSUS_TIMESTAMP}, ${ContractLog.INDEX}`;
+
     const query = [ContractService.contractLogsQuery, whereClause, orderClause].join('\n');
     const rows = await super.getRows(query, params, 'getContractLogsByTimestamps');
     return rows.map((row) => new ContractLog(row));
