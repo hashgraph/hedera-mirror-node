@@ -33,6 +33,10 @@ describe('ContractLogViewModel', () => {
     topic1: Buffer.from([0x01, 0x02]),
     topic2: Buffer.from([0x01, 0x03]),
     topic3: Buffer.from([0x01, 0x04]),
+    transactionHash: Buffer.from(hexArray),
+    transactionIndex: 1,
+    blockHash: '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000abcd',
+    blockNumber: 100,
   };
   const defaultExpected = {
     address: '0x0000000000000000000000000000000000000001',
@@ -48,6 +52,10 @@ describe('ContractLogViewModel', () => {
       '0x0000000000000000000000000000000000000000000000000000000000000103',
       '0x0000000000000000000000000000000000000000000000000000000000000104',
     ],
+    transaction_hash: '0x0000000000000000000000000000000000001234',
+    transaction_index: 1,
+    block_hash: '0x00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000abcd',
+    block_number: 100,
   };
 
   test('ContractLogViewModel - default', () => {
