@@ -37,7 +37,7 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
      * <p>
      * 1. IF there is no such row in entity_stake (new entity created in the ending stake period), OR its
      * decline_reward_start is true (decline reward for the ending staking period), OR it didn't stake to a node for the
-     * ending staking period, OR there is no node stake for the node the entity staked to, the new pending reward is 0
+     * ending staking period, the new pending reward is 0
      * <p>
      * 2.IF there is no node stake info for the node the entity staked to, the pending reward keeps the same
      * <p>

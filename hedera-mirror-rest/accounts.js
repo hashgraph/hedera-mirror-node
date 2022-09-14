@@ -64,33 +64,42 @@ const processRow = (row) => {
     key: utils.encodeKey(row.key),
     max_automatic_token_associations: row.max_automatic_token_associations,
     memo: row.memo,
+    pending_reward: row.pending_reward,
     receiver_sig_required: row.receiver_sig_required,
     staked_account_id: EntityId.parse(row.staked_account_id, {isNullable: true}).toString(),
     staked_node_id: stakedToNode ? row.staked_node_id : null,
-    stake_period_start: stakedToNode ? utils.nsToSecNs(BigInt(row.stake_period_start) * constants.ONE_DAY_IN_NS) : null,
+    stake_period_start:
+      stakedToNode && row.stake_period_start !== -1
+        ? utils.nsToSecNs(BigInt(row.stake_period_start) * constants.ONE_DAY_IN_NS)
+        : null,
   };
 };
 
 // 'id' is different for different join types, so will add later when composing the query
 const entityFields = [
-  'alias',
-  'auto_renew_period',
-  'created_timestamp',
-  'decline_reward',
-  'deleted',
-  'ethereum_nonce',
-  'evm_address',
-  'expiration_timestamp',
-  'id',
-  'key',
-  'max_automatic_token_associations',
-  'memo',
-  'receiver_sig_required',
-  'staked_account_id',
-  'staked_node_id',
-  'stake_period_start',
-  'type',
-].join(',');
+  'e.alias',
+  'e.auto_renew_period',
+  'e.created_timestamp',
+  'e.decline_reward',
+  'e.deleted',
+  'e.ethereum_nonce',
+  'e.evm_address',
+  'e.expiration_timestamp',
+  'e.id',
+  'e.key',
+  'e.max_automatic_token_associations',
+  'e.memo',
+  'e.receiver_sig_required',
+  'e.staked_account_id',
+  'e.staked_node_id',
+  'e.stake_period_start',
+  'e.type',
+  `(case when es.pending_reward is null then 0
+         when e.decline_reward is true or coalesce(e.staked_node_id, -1) = -1 then 0
+         when e.stake_period_start >= es.end_stake_period then 0
+         else es.pending_reward
+    end) as pending_reward`,
+].join(',\n');
 
 /**
  * Gets the query for entity fields with hbar and token balance info
@@ -124,8 +133,8 @@ const getEntityBalanceQuery = (
     latest_record_file as (select max(consensus_end) as consensus_timestamp from record_file)
     select
       ${entityFields},
-      balance,
       latest_record_file.consensus_timestamp,
+      balance,
       (
         select json_agg(json_build_object('token_id', token_id, 'balance', balance))
         from (
@@ -135,7 +144,9 @@ const getEntityBalanceQuery = (
         order by token_id ${order}
         limit ${tokenBalanceLimit}) as account_token_balance
       ) as token_balances
-    from entity e, latest_account_balance, latest_record_file
+    from entity e left join entity_stake es on es.id = e.id,
+      latest_account_balance,
+      latest_record_file
     where ${whereCondition}
     order by e.id ${order}
     ${limitQuery}`;
@@ -168,7 +179,7 @@ const getAccountQuery = (
 
     const entityOnlyQuery = `
       select ${entityFields}
-      from entity e
+      from entity e left join entity_stake es on es.id = e.id
       where ${entityCondition}
       order by id ${limitAndOrderQuery.order}
       ${limitAndOrderQuery.query}`;
@@ -211,7 +222,7 @@ const getAccounts = async (req, res) => {
   utils.validateReq(req);
 
   // Parse the filter parameters for account-numbers, balances, publicKey and pagination
-  const entityAccountQuery = toQueryObject(utils.parseAccountIdQueryParam(req.query, 'id'));
+  const entityAccountQuery = toQueryObject(utils.parseAccountIdQueryParam(req.query, 'e.id'));
   const balanceQuery = toQueryObject(utils.parseBalanceQueryParam(req.query, 'e.balance'));
   const includeBalance = getBalanceParamValue(req.query);
   const limitAndOrderQuery = utils.parseLimitAndOrderParams(req, constants.orderFilterValues.ASC);
@@ -286,7 +297,7 @@ const getOneAccount = async (req, res) => {
 
   const accountIdParams = [encodedId];
   const {query: entityQuery, params: entityParams} = getAccountQuery(
-    {query: 'id = ?', params: accountIdParams},
+    {query: 'e.id = ?', params: accountIdParams},
     tokenBalanceResponseLimit.singleAccount
   );
   const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entityQuery);

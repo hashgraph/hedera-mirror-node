@@ -1505,6 +1505,12 @@ components:
         memo:
           type: string
           nullable: true
+        pending_reward:
+          description: |
+            The pending reward in tinybars the account will receive in the next reward payout. Note the value is updated
+            at the end of each staking period and there may be delay to reflect the changes in the past staking period.
+          type: integer
+          format: int64
         receiver_sig_required:
           nullable: true
           type: boolean
@@ -1543,10 +1549,11 @@ components:
         key: null
         max_automatic_token_associations: 200
         memo: "entity memo"
+        pending_reward: 100
         receiver_sig_required: false
         staked_account_id: null
         staked_node_id: 3
-        stake_period_start: 2000
+        stake_period_start: "172800000.000000000"
     Accounts:
       type: array
       items:
