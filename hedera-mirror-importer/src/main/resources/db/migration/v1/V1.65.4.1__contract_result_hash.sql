@@ -20,5 +20,4 @@ from results r
 where r.consensus_timestamp = contract_result.consensus_timestamp;
 
 alter table if exists contract_result
-    alter column transaction_hash set not null,
     alter column transaction_result set not null;
