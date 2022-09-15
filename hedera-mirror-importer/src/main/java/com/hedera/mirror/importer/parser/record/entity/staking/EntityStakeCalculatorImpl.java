@@ -62,7 +62,7 @@ public class EntityStakeCalculatorImpl implements EntityStakeCalculator {
             entityRepository.refreshEntityStateStart();
             log.info("Refreshed entity_state_start in {} ms", stopwatch.elapsed(TimeUnit.MILLISECONDS));
             int count = entityStakeRepository.updateEntityStake();
-            log.info("Finished pending reward calculation for {} entities in {}", count, stopwatch);
+            log.info("Completed pending reward calculation for {} entities in {}", count, stopwatch);
         } finally {
             running.set(false);
         }

@@ -35,9 +35,7 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
             ), entity_stake_info as (
               select coalesce((select end_stake_period from entity_stake limit 1), -1) as end_stake_period
             )
-            select case when epoch_day = -1 then true
-                        else epoch_day = end_stake_period
-                    end
+            select epoch_day = -1 or epoch_day = end_stake_period
             from last_epoch_day, entity_stake_info
             """, nativeQuery = true)
     boolean updated();

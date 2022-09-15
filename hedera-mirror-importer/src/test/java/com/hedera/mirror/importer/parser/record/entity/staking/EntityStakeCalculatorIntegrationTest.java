@@ -60,7 +60,7 @@ class EntityStakeCalculatorIntegrationTest extends IntegrationTest {
         long balanceTimestamp = DomainUtils.convertToNanosMax(newPeriodInstant.plusNanos(1000L));
         var accountBalanceFile = accountBalanceFileBuilder.accountBalanceFile(balanceTimestamp);
 
-        // account1 was created two previous staking periods ago, there should be a row in entity_stake
+        // account1 was created two staking periods ago, there should be a row in entity_stake
         var account1 = domainBuilder.entity()
                 .customize(e -> {
                     long stakePeriodStart = epochDay - 2;
@@ -146,7 +146,6 @@ class EntityStakeCalculatorIntegrationTest extends IntegrationTest {
 
         // then
         await().atMost(Durations.FIVE_SECONDS)
-                .with()
                 .pollInterval(Durations.ONE_HUNDRED_MILLISECONDS)
                 .untilAsserted(() -> assertThat(entityStakeRepository.findAll())
                         .containsExactlyInAnyOrder(expectedEntityStake1, expectedEntityStake2, expectedEntityStake3));
