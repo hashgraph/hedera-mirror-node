@@ -33,7 +33,7 @@ public class SimulatedMintLogic {
             final List<ByteString> metaDataList) {
 
         /* --- Load the model objects --- */
-        final var token = tokens.getImmutableRef(targetAddress);
+        final var token = tokens.getRef(targetAddress);
 
         validateTrue(token!=null, INVALID_TOKEN_ID);
         validateMinting(token, metaDataCount);

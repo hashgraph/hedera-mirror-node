@@ -33,7 +33,7 @@ import com.hedera.mirror.web3.repository.TokenRepository;
 import com.hedera.services.transaction.contracts.sources.EvmSigsVerifier;
 import com.hedera.services.transaction.store.contracts.precompile.utils.KeyActivationUtils;
 
-public class MintPrecompile implements Precompile {
+public class MintPrecompile extends AbstractReadOnlyPrecompile {
     private static final List<ByteString> NO_METADATA = Collections.emptyList();
     private static final String FAILURE_MESSAGE = "Invalid full prefix for %s precompile!";
     private static final String MINT = String.format(FAILURE_MESSAGE, "mint");

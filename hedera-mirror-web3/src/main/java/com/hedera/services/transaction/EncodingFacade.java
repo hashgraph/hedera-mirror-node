@@ -26,7 +26,9 @@ public class EncodingFacade {
     private static final TupleType nameType = TupleType.parse(STRING_RETURN_TYPE);
     private static final TupleType symbolType = TupleType.parse(STRING_RETURN_TYPE);
 
-    private static final List<Long> NO_MINTED_SERIAL_NUMBERS = new ArrayList<>();
+    public static final TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
+
+    private static final long[] NO_MINTED_SERIAL_NUMBERS = new long[0];
 
 
     @Inject
@@ -49,7 +51,7 @@ public class EncodingFacade {
                 .build();
     }
 
-    public Bytes encodeMintSuccess(final long totalSupply, final List<Long> serialNumbers) {
+    public Bytes encodeMintSuccess(final long totalSupply, final long[] serialNumbers) {
         return functionResultBuilder()
                 .forFunction(HAPI_MINT)
                 .withStatus(SUCCESS.getNumber())
@@ -79,13 +81,14 @@ public class EncodingFacade {
         private String name;
         private String symbol;
         private long totalSupply;
-        private List<Long> serialNumbers;
+        private long[] serialNumbers;
 
         private FunctionResultBuilder forFunction(final FunctionType functionType) {
             this.tupleType =
                     switch (functionType) {
                         case ERC_NAME -> nameType;
                         case ERC_SYMBOL -> symbolType;
+                        case HAPI_MINT -> mintReturnType;
                         default -> notSpecifiedType;
                     };
 
@@ -114,7 +117,7 @@ public class EncodingFacade {
             return this;
         }
 
-        private FunctionResultBuilder withSerialNumbers(final List<Long> serialNumbers) {
+        private FunctionResultBuilder withSerialNumbers(final long... serialNumbers) {
             this.serialNumbers = serialNumbers;
             return this;
         }

@@ -8,6 +8,6 @@ import com.hedera.mirror.common.domain.token.Nft;
 
 public interface NftRepository extends CrudRepository<Nft, Long> {
 
-    @Query(value = "select serial_number from nft order by serial_number desc limit 1)", nativeQuery=true)
+    @Query(value = "select serial_number from nft order by serial_number desc limit 1", nativeQuery=true)
     Optional<Long> findLatestSerialNumber();
 }

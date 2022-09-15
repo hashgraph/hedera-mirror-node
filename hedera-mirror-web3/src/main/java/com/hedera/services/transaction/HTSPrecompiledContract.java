@@ -134,6 +134,7 @@ public class HTSPrecompiledContract implements PrecompiledContract {
     }
 
     protected Bytes computeInternal(final MessageFrame frame) {
+        precompile.run(frame);
         Bytes result;
 
         result = precompile.getSuccessResultFor();

@@ -40,7 +40,7 @@ import com.hedera.mirror.web3.repository.TokenRepository;
 public class SimulatedToken {
 
     private static final long MAX_NUM_ALLOWED = 0xFFFFFFFFL;
-    private List<Long> mintedSerialNumbers = new ArrayList<>();
+    private long[] mintedSerialNumbers = new long[1];
     private byte[] supplyKey;
     private long totalSupply;
     private long maxSupply;
@@ -77,10 +77,10 @@ public class SimulatedToken {
         }
     }
 
-    public SimulatedToken(final List<Long> mintedSerialNumbers, final byte[] supplyKey, final long totalSupply,
-            final long maxSupply, final TokenTypeEnum type,
-            final TokenSupplyTypeEnum supplyType, final EntityId treasury,
-            final Address treasuryAddress) {
+    public SimulatedToken(final long[] mintedSerialNumbers, final byte[] supplyKey, final long totalSupply,
+                          final long maxSupply, final TokenTypeEnum type,
+                          final TokenSupplyTypeEnum supplyType, final EntityId treasury,
+                          final Address treasuryAddress, final SimulatedEntityAccess entityAccess) {
         this.mintedSerialNumbers = mintedSerialNumbers;
         this.supplyKey = supplyKey;
         this.totalSupply = totalSupply;
@@ -89,6 +89,7 @@ public class SimulatedToken {
         this.supplyType = supplyType;
         this.treasury = treasury;
         this.treasuryAddress = treasuryAddress;
+        this.entityAccess = entityAccess;
     }
 
     public void mint(final long amount, boolean ignoreSupplyKey) {
@@ -112,6 +113,7 @@ public class SimulatedToken {
     public void mint(
             final List<ByteString> metadata) {
         final var metadataCount = metadata.size();
+        var positionCounter = 0;
         validateFalse(
                 metadata.isEmpty(), INVALID_TOKEN_MINT_METADATA, "Cannot mint zero unique tokens");
         validateTrue(
@@ -125,7 +127,8 @@ public class SimulatedToken {
 
         for (ByteString m : metadata) {
             lastUsedSerialNumber++;
-            mintedSerialNumbers.add(lastUsedSerialNumber);
+            mintedSerialNumbers[positionCounter] = lastUsedSerialNumber;
+            positionCounter++;
         }
 
         changeSupply(metadataCount, FAIL_INVALID, false);
@@ -162,7 +165,7 @@ public class SimulatedToken {
         this.totalSupply = totalSupply;
     }
 
-    public List<Long> getSerialNumbers() {
+    public long[] getSerialNumbers() {
         return mintedSerialNumbers;
     }
 
@@ -170,12 +173,12 @@ public class SimulatedToken {
         return type;
     }
 
-    public Long getTotalSupply() {
+    public long getTotalSupply() {
         return totalSupply;
     }
 
     public SimulatedToken getSafeCopy() {
-        return new SimulatedToken(mintedSerialNumbers, supplyKey, totalSupply, maxSupply, type, supplyType, treasury, treasuryAddress);
+        return new SimulatedToken(mintedSerialNumbers, supplyKey, totalSupply, maxSupply, type, supplyType, treasury, treasuryAddress, entityAccess);
     }
 
     private String errorMessage(final String op, final long amount) {

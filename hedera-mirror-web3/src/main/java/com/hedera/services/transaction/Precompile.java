@@ -19,6 +19,9 @@ public interface Precompile {
     // Construct the synthetic transaction
     TransactionBody.Builder body(Bytes input, UnaryOperator<byte[]> aliasResolver);
 
+    // Change the world state through the given frame
+    void run(MessageFrame frame);
+
     // Customize fee charging
     long getMinimumFeeInTinybars(Timestamp consensusTime);
 
@@ -29,4 +32,6 @@ public interface Precompile {
     default Bytes getSuccessResultFor() {
         return UInt256.valueOf(22);
     }
+
+    long getGasRequirement(long blockTimestamp);
 }

@@ -9,7 +9,7 @@ import lombok.AllArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 
 @AllArgsConstructor
-public class NamePrecompile implements Precompile {
+public class NamePrecompile extends AbstractReadOnlyPrecompile {
     protected byte[] address;
     protected TokenRepository tokenRepository;
     protected EncodingFacade encoder;

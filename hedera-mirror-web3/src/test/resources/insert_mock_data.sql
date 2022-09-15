@@ -58,3 +58,9 @@ INSERT INTO entity (id, num, realm, shard, timestamp_range,
 						  type, evm_address, ethereum_nonce, deleted)
 VALUES (1254, 1254, 0, 0, int8range(12235235, 32323436), 'CONTRACT',
 		decode('00000000000000000000000000000000000004e6', 'hex'), 0, false);
+
+INSERT INTO public.token(token_id, created_timestamp, decimals, initial_supply, modified_timestamp, name, supply_key, symbol, total_supply, treasury_account_id, type)
+VALUES(4, 20220808000001, 2, 0, 20220808000001, 'testNFTToken', decode('4714643c568fbd7ab37677c3d64b6326de75e0ae', 'hex'),'tttNFT', 0, 1, 'NON_FUNGIBLE_UNIQUE');
+
+INSERT INTO public.nft(account_id, created_timestamp, deleted, modified_timestamp, metadata, serial_number, token_id)
+VALUES(1, 20220808000001, false, 20220808000001, decode('01', 'hex'), 1, 4);
