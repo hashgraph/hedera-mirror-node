@@ -4,7 +4,6 @@ import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import lombok.AllArgsConstructor;
 import javax.inject.Named;
 import java.util.Map;
 
