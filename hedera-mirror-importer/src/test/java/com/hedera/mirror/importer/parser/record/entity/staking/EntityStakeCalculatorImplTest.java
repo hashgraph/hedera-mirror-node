@@ -20,70 +20,127 @@ package com.hedera.mirror.importer.parser.record.entity.staking;
  * ‍
  */
 
+import static org.awaitility.Awaitility.await;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import java.util.Collections;
-import java.util.List;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.Semaphore;
+import org.awaitility.Durations;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
 
-import com.hedera.mirror.common.domain.DomainBuilder;
-import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.EntityStakeRepository;
 
 @ExtendWith(MockitoExtension.class)
 class EntityStakeCalculatorImplTest {
 
-    private final DomainBuilder domainBuilder = new DomainBuilder();
+    private EntityProperties entityProperties;
 
     @Mock
     private EntityRepository entityRepository;
 
-    @Mock
+    @Mock(lenient = true)
     private EntityStakeRepository entityStakeRepository;
-
-    @Mock
-    private ApplicationEventPublisher eventPublisher;
-
-    @Mock
-    private RecordStreamFileListener recordStreamFileListener;
 
     private EntityStakeCalculatorImpl entityStakeCalculator;
 
     @BeforeEach
     void setup() {
-        entityStakeCalculator = new EntityStakeCalculatorImpl(entityRepository, entityStakeRepository, eventPublisher,
-                recordStreamFileListener);
+        entityProperties = new EntityProperties();
+        entityStakeCalculator = new EntityStakeCalculatorImpl(entityProperties, entityRepository,
+                entityStakeRepository);
+        when(entityStakeRepository.updated()).thenReturn(false);
     }
 
     @Test
     void calculate() {
-        var inOrder = Mockito.inOrder(recordStreamFileListener, entityRepository, eventPublisher);
-        entityStakeCalculator.calculate(List.of(domainBuilder.nodeStake().get()));
-        inOrder.verify(recordStreamFileListener).flush();
-        inOrder.verify(entityRepository).refreshEntityStateStart();
-        inOrder.verify(eventPublisher).publishEvent(ArgumentMatchers.isA(NodeStakeUpdateEvent.class));
+        var inorder = inOrder(entityRepository, entityStakeRepository);
+        entityStakeCalculator.calculate();
+        inorder.verify(entityStakeRepository).updated();
+        inorder.verify(entityRepository).refreshEntityStateStart();
+        inorder.verify(entityStakeRepository).updateEntityStake();
+        inorder.verifyNoMoreInteractions();
     }
 
     @Test
-    void calculateWhenNodeStakesIsEmpty() {
-        entityStakeCalculator.calculate(Collections.emptyList());
-        verifyNoInteractions(entityRepository, recordStreamFileListener, eventPublisher);
+    void calculateWhenPendingRewardDisabled() {
+        entityProperties.getPersist().setPendingReward(false);
+        entityStakeCalculator.calculate();
+        verifyNoInteractions(entityRepository, entityStakeRepository);
     }
 
     @Test
-    void update() {
-        when(entityStakeRepository.updateEntityStake()).thenReturn(1);
-        entityStakeCalculator.update();
-        verify(entityStakeRepository).updateEntityStake();
+    void calculateWhenUpdated() {
+        when(entityStakeRepository.updated()).thenReturn(true);
+        entityStakeCalculator.calculate();
+        verify(entityStakeRepository).updated();
+        verify(entityRepository, never()).refreshEntityStateStart();
+        verify(entityStakeRepository, never()).updateEntityStake();
+    }
+
+    @Test
+    void calculateWhenExceptionThrown() {
+        when(entityStakeRepository.updated()).thenThrow(new RuntimeException());
+        assertThrows(RuntimeException.class, () -> entityStakeCalculator.calculate());
+        verify(entityStakeRepository).updated();
+        verify(entityRepository, never()).refreshEntityStateStart();
+        verify(entityStakeRepository, never()).updateEntityStake();
+
+        // calculate again
+        reset(entityStakeRepository);
+        var inorder = inOrder(entityRepository, entityStakeRepository);
+        when(entityStakeRepository.updated()).thenReturn(false);
+        entityStakeCalculator.calculate();
+        inorder.verify(entityStakeRepository).updated();
+        inorder.verify(entityRepository).refreshEntityStateStart();
+        inorder.verify(entityStakeRepository).updateEntityStake();
+        inorder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    @Timeout(5)
+    void concurrentCalculate() {
+        // given
+        var semaphore = new Semaphore(0);
+        when(entityStakeRepository.updated()).thenAnswer(invocation -> {
+            semaphore.acquire();
+            return false;
+        });
+
+        // when
+        var task1 = ForkJoinPool.commonPool().submit(() -> entityStakeCalculator.calculate());
+        var task2 = ForkJoinPool.commonPool().submit(() -> entityStakeCalculator.calculate());
+
+        // then
+        // verify that only one task is done
+        await()
+                .pollInterval(Durations.ONE_HUNDRED_MILLISECONDS)
+                .atMost(Durations.ONE_SECOND)
+                .until(() -> (task1.isDone() || task2.isDone()) && (task1.isDone() != task2.isDone()));
+        // unblock the remaining task
+        semaphore.release();
+
+        // verify that both tasks are done
+        await()
+                .pollInterval(Durations.ONE_HUNDRED_MILLISECONDS)
+                .atMost(Durations.ONE_SECOND)
+                .until(() -> task1.isDone() && task2.isDone());
+        var inorder = inOrder(entityRepository, entityStakeRepository);
+        inorder.verify(entityStakeRepository).updated();
+        inorder.verify(entityRepository).refreshEntityStateStart();
+        inorder.verify(entityStakeRepository).updateEntityStake();
+        inorder.verifyNoMoreInteractions();
     }
 }

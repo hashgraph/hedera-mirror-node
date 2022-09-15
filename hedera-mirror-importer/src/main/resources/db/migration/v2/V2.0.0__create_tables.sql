@@ -291,15 +291,62 @@ create table if not exists entity_stake
 comment on table entity_stake is 'Network entity stake state';
 
 create materialized view if not exists entity_state_start as
-select balance,
-       decline_reward,
-       id,
-       coalesce(staked_account_id, 0)   as staked_account_id,
-       coalesce(staked_node_id, -1)     as staked_node_id,
-       coalesce(stake_period_start, -1) as stake_period_start
-from entity
-where deleted is not true
-  and type in ('ACCOUNT', 'CONTRACT');
+with end_period as (
+  select max(consensus_timestamp) as consensus_timestamp from node_stake
+), balance_timestamp as (
+  select abf.consensus_timestamp
+  from account_balance_file abf, end_period ep
+  where abf.consensus_timestamp <= ep.consensus_timestamp
+  order by abf.consensus_timestamp desc
+  limit 1
+), entity_state as (
+  select
+    decline_reward,
+    id,
+    staked_account_id,
+    staked_node_id,
+    stake_period_start
+  from entity, end_period
+  where deleted is not true and type in ('ACCOUNT', 'CONTRACT') and timestamp_range @> end_period.consensus_timestamp
+  union all
+  select
+    decline_reward,
+    id,
+    staked_account_id,
+    staked_node_id,
+    stake_period_start
+  from entity_history, end_period
+  where deleted is not true and type in ('ACCOUNT', 'CONTRACT') and timestamp_range @> end_period.consensus_timestamp
+), balance_snapshot as (
+  select account_id, balance
+  from account_balance ab
+  join balance_timestamp bt on bt.consensus_timestamp = ab.consensus_timestamp
+)
+select
+    coalesce(balance, 0) + coalesce(change, 0) as balance,
+    decline_reward,
+    id,
+    coalesce(staked_account_id, 0)             as staked_account_id,
+    coalesce(staked_node_id, -1)               as staked_node_id,
+    coalesce(stake_period_start, -1)           as stake_period_start
+from entity_state
+  left join balance_snapshot on account_id = id
+  left join (
+    select entity_id, sum(amount) as change
+    from crypto_transfer ct, end_period ep
+    where ct.consensus_timestamp <= ep.consensus_timestamp
+      and ct.consensus_timestamp > (
+      select abf.consensus_timestamp
+      from account_balance_file abf
+      where abf.consensus_timestamp <= ep.consensus_timestamp
+      order by abf.consensus_timestamp desc
+      limit 1
+    )
+    group by entity_id
+    order by entity_id
+  ) balance_change on entity_id = id,
+balance_timestamp bt
+where bt.consensus_timestamp is not null;
 comment on materialized view entity_state_start is 'Network entity state at start of staking period';
 
 create table if not exists ethereum_transaction
