@@ -31,6 +31,8 @@ import com.hederahashgraph.api.proto.java.Key;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 
@@ -116,49 +118,58 @@ class EntityRepositoryTest extends AbstractRepositoryTest {
         assertThat(entityRepository.findByEvmAddress(new byte[] {1, 2, 3})).isEmpty();
     }
 
-    @Test
-    void refreshEntityStateStart() {
+    @ParameterizedTest
+    @CsvSource(value = {
+            "26, 0, 130, 190",
+            "26, 1, 100, 190",
+            "27, 0, 100, 190",
+            "27, 1, 100, 200"
+    })
+    void refreshEntityStateStart(int hapiMinor, int timeOffset, long expectedBalance1, long expectedBalance2) {
         // given
         long epochDay = 1000L;
-        long timestamp = DomainUtils.convertToNanosMax(TestUtils.asStartOfEpochDay(epochDay + 1)) + 1000L;
-        long previousTimestamp = DomainUtils.convertToNanosMax(TestUtils.asStartOfEpochDay(epochDay)) + 1000L;
+        long nodeStakeTimestamp = DomainUtils.convertToNanosMax(TestUtils.asStartOfEpochDay(epochDay + 1)) + 1000L;
+        long previousNodeStakeTimestamp = DomainUtils.convertToNanosMax(TestUtils.asStartOfEpochDay(epochDay)) + 1000L;
 
         domainBuilder.nodeStake()
-                .customize(ns -> ns.consensusTimestamp(previousTimestamp).epochDay(epochDay - 1))
+                .customize(ns -> ns.consensusTimestamp(previousNodeStakeTimestamp).epochDay(epochDay - 1))
                 .persist();
         domainBuilder.nodeStake()
-                .customize(ns -> ns.consensusTimestamp(timestamp).epochDay(epochDay))
+                .customize(ns -> ns.consensusTimestamp(nodeStakeTimestamp).epochDay(epochDay))
                 .persist();
 
         var account1 = domainBuilder.entity()
-                .customize(e -> e.timestampRange(Range.atLeast(timestamp - 1)))
+                .customize(e -> e.timestampRange(Range.atLeast(nodeStakeTimestamp - 1)))
                 .persist();
         var account2 = domainBuilder.entity()
-                .customize(e -> e.deleted(null).timestampRange(Range.atLeast(timestamp - 2)))
+                .customize(e -> e.deleted(null).timestampRange(Range.atLeast(nodeStakeTimestamp - 2)))
                 .persist();
         // account3 is valid after the node stake update timestamp
         var account3 = domainBuilder.entity()
-                .customize(e -> e.timestampRange(Range.atLeast(timestamp + 1)))
+                .customize(e -> e.timestampRange(Range.atLeast(nodeStakeTimestamp + 1)))
                 .persist();
         // history row for account3
         var account3History = domainBuilder.entityHistory()
                 .customize(e -> e.id(account3.getId()).num(account3.getNum()).stakedNodeId(3L)
-                        .timestampRange(Range.closedOpen(timestamp - 10, timestamp + 1)))
+                        .timestampRange(Range.closedOpen(nodeStakeTimestamp - 10, nodeStakeTimestamp + 1)))
                 .persist();
         // deleted account will not appear in entity_state_start
         var account4 = domainBuilder.entity()
-                .customize(e -> e.deleted(true).timestampRange(Range.atLeast(timestamp - 3)))
+                .customize(e -> e.deleted(true).timestampRange(Range.atLeast(nodeStakeTimestamp - 3)))
                 .persist(); // deleted
         // entity created after node stake timestamp will not appear in entity_state_start
-        domainBuilder.entity().customize(e -> e.timestampRange(Range.atLeast(timestamp + 1))).persist();
+        domainBuilder.entity().customize(e -> e.timestampRange(Range.atLeast(nodeStakeTimestamp + 1))).persist();
         var contract = domainBuilder.entity()
                 .customize(e -> e.stakedAccountId(null).stakedNodeId(null).stakePeriodStart(null)
-                        .timestampRange(Range.atLeast(timestamp - 4)).type(CONTRACT))
+                        .timestampRange(Range.atLeast(nodeStakeTimestamp - 4)).type(CONTRACT))
                 .persist();
-        domainBuilder.entity().customize(e -> e.type(TOPIC).timestampRange(Range.atLeast(timestamp - 5))).persist();
+        domainBuilder.entity().customize(
+                e -> e.type(TOPIC).timestampRange(Range.atLeast(nodeStakeTimestamp - 5))).persist();
 
-        long balanceTimestamp = timestamp - 100L;
-        domainBuilder.accountBalanceFile().customize(abf -> abf.consensusTimestamp(balanceTimestamp)).persist();
+        long balanceTimestamp = nodeStakeTimestamp - 1000L;
+        domainBuilder.accountBalanceFile()
+                .customize(abf -> abf.consensusTimestamp(balanceTimestamp).timeOffset(timeOffset))
+                .persist();
         domainBuilder.accountBalance()
                 .customize(ab -> ab.balance(100L)
                         .id(new AccountBalance.Id(balanceTimestamp, account1.toEntityId())))
@@ -175,24 +186,19 @@ class EntityRepositoryTest extends AbstractRepositoryTest {
                 .customize(ab -> ab.balance(500L)
                         .id(new AccountBalance.Id(balanceTimestamp, contract.toEntityId())))
                 .persist();
-        // crypto transfer at balanceTimestamp, should be ignored for account1 balance calculation
-        domainBuilder.cryptoTransfer()
-                .customize(ct -> ct.amount(20L).consensusTimestamp(balanceTimestamp).entityId(account1.getId()))
-                .persist();
-        domainBuilder.cryptoTransfer()
-                .customize(ct -> ct.amount(30L).consensusTimestamp(balanceTimestamp + 1).entityId(account1.getId()))
-                .persist();
-        domainBuilder.cryptoTransfer()
-                .customize(ct -> ct.amount(-10L).consensusTimestamp(balanceTimestamp + 2).entityId(account2.getId()))
-                .persist();
-        // account3 is created after the account balance file
-        domainBuilder.cryptoTransfer()
-                .customize(ct -> ct.amount(123L).consensusTimestamp(account3History.getTimestampLower())
-                        .entityId(account3History.getId()))
+        domainBuilder.recordFile()
+                .customize(rf -> rf.consensusStart(balanceTimestamp - 100L).consensusEnd(balanceTimestamp + 100L)
+                        .hapiVersionMinor(hapiMinor))
                 .persist();
 
-        var expectedAccount1 = account1.toBuilder().balance(130L).stakedAccountId(0L).build();
-        var expectedAccount2 = account2.toBuilder().balance(190L).stakedAccountId(0L).build();
+        persistCryptoTransfer(20L, balanceTimestamp, account1.getId());
+        persistCryptoTransfer(30L, balanceTimestamp + 1, account1.getId());
+        persistCryptoTransfer(-10L, balanceTimestamp + 54, account2.getId());
+        // account3 is created after the account balance file
+        persistCryptoTransfer(123L, account3History.getTimestampLower(), account3.getId());
+
+        var expectedAccount1 = account1.toBuilder().balance(expectedBalance1).stakedAccountId(0L).build();
+        var expectedAccount2 = account2.toBuilder().balance(expectedBalance2).stakedAccountId(0L).build();
         var expectedAccount3 = account3.toBuilder().balance(123L).stakedAccountId(0L).stakedNodeId(3L).build();
         var expectedContract = contract.toBuilder().balance(500L).stakedAccountId(0L).stakedNodeId(-1L)
                 .stakePeriodStart(-1L).build();
@@ -290,5 +296,11 @@ class EntityRepositoryTest extends AbstractRepositoryTest {
                 .hasSize(2)
                 .extracting(Entity::getType)
                 .allMatch(e -> e == CONTRACT);
+    }
+
+    private void persistCryptoTransfer(long amount, long consensusTimestamp, long entityId) {
+        domainBuilder.cryptoTransfer()
+                .customize(ct -> ct.amount(amount).consensusTimestamp(consensusTimestamp).entityId(entityId))
+                .persist();
     }
 }
