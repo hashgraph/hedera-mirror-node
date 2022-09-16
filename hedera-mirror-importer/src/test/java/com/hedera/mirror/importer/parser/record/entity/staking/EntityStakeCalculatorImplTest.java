@@ -29,7 +29,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Semaphore;
 import org.awaitility.Durations;
 import org.junit.jupiter.api.BeforeEach;
@@ -111,6 +111,7 @@ class EntityStakeCalculatorImplTest {
     @Test
     void concurrentCalculate() {
         // given
+        var pool = Executors.newFixedThreadPool(2);
         var semaphore = new Semaphore(0);
         when(entityStakeRepository.updated()).thenAnswer(invocation -> {
             semaphore.acquire();
@@ -118,15 +119,14 @@ class EntityStakeCalculatorImplTest {
         });
 
         // when
-        var task1 = ForkJoinPool.commonPool().submit(() -> entityStakeCalculator.calculate());
-        var task2 = ForkJoinPool.commonPool().submit(() -> entityStakeCalculator.calculate());
+        var task1 = pool.submit(() -> entityStakeCalculator.calculate());
+        var task2 = pool.submit(() -> entityStakeCalculator.calculate());
 
         // then
         // verify that only one task is done
-        var threeSeconds = Durations.ONE_SECOND.multipliedBy(3);
         await()
                 .pollInterval(Durations.ONE_HUNDRED_MILLISECONDS)
-                .atMost(threeSeconds)
+                .atMost(Durations.TWO_SECONDS)
                 .until(() -> (task1.isDone() || task2.isDone()) && (task1.isDone() != task2.isDone()));
         // unblock the remaining task
         semaphore.release();
@@ -134,12 +134,13 @@ class EntityStakeCalculatorImplTest {
         // verify that both tasks are done
         await()
                 .pollInterval(Durations.ONE_HUNDRED_MILLISECONDS)
-                .atMost(threeSeconds)
+                .atMost(Durations.TWO_SECONDS)
                 .until(() -> task1.isDone() && task2.isDone());
         var inorder = inOrder(entityRepository, entityStakeRepository);
         inorder.verify(entityStakeRepository).updated();
         inorder.verify(entityRepository).refreshEntityStateStart();
         inorder.verify(entityStakeRepository).updateEntityStake();
         inorder.verifyNoMoreInteractions();
+        pool.shutdown();
     }
 }
