@@ -60,6 +60,12 @@ class EntityStakeCalculatorIntegrationTest extends IntegrationTest {
         long balanceTimestamp = DomainUtils.convertToNanosMax(newPeriodInstant.plusNanos(1000L));
         var accountBalanceFile = accountBalanceFileBuilder.accountBalanceFile(balanceTimestamp);
 
+        // add a record file with HAPI version 0.25.0, so there's no 53ns fixed account balance offset
+        domainBuilder.recordFile()
+                .customize(rf -> rf.consensusStart(balanceTimestamp - 100L).consensusEnd(balanceTimestamp + 100L)
+                        .hapiVersionMinor(25))
+                .persist();
+
         // account1 was created two staking periods ago, there should be a row in entity_stake
         var account1 = domainBuilder.entity()
                 .customize(e -> {

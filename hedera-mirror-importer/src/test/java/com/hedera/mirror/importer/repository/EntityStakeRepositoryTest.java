@@ -133,6 +133,10 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
         domainBuilder.accountBalance()
                 .customize(ab -> ab.balance(1000L).id(new AccountBalance.Id(balanceTimestamp, entity10.toEntityId())))
                 .persist();
+        domainBuilder.recordFile()
+                .customize(rf -> rf.consensusStart(balanceTimestamp - 100L).consensusEnd(balanceTimestamp + 100L)
+                        .hapiVersionMinor(25))
+                .persist();
 
         long epochDay = nodeStake.getEpochDay();
         // existing entity stake, note entity4 has been deleted, its existing entity stake will no longer update
@@ -175,6 +179,10 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                 .persist();
         domainBuilder.accountBalance()
                 .customize(ab -> ab.balance(5L).id(new AccountBalance.Id(balanceTimestamp, contract.toEntityId())))
+                .persist();
+        domainBuilder.recordFile()
+                .customize(rf -> rf.consensusStart(balanceTimestamp - 100L).consensusEnd(balanceTimestamp + 100L)
+                        .hapiVersionMinor(25))
                 .persist();
         entityRepository.refreshEntityStateStart();
         var expectedEntityStakes = List.of(
@@ -226,7 +234,12 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
         domainBuilder.nodeStake()
                 .customize(ns -> ns.consensusTimestamp(timestamp).epochDay(nodeStakeEpochDay).nodeId(2L).rewardRate(0L))
                 .persist();
-        domainBuilder.accountBalanceFile().customize(abf -> abf.consensusTimestamp(timestamp - 1000L)).persist();
+        long balanceTimestamp = timestamp - 1000L;
+        domainBuilder.accountBalanceFile().customize(abf -> abf.consensusTimestamp(balanceTimestamp)).persist();
+        domainBuilder.recordFile()
+                .customize(rf -> rf.consensusStart(balanceTimestamp - 100L).consensusEnd(balanceTimestamp + 100L)
+                        .hapiVersionMinor(25))
+                .persist();
         // The following two are old NodeStake, which shouldn't be used in pending reward calculation
         domainBuilder.nodeStake().customize(ns -> ns.consensusTimestamp(timestamp - 100).nodeId(1L)).persist();
         domainBuilder.nodeStake().customize(ns -> ns.consensusTimestamp(timestamp - 100).nodeId(2L)).persist();

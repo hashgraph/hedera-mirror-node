@@ -675,9 +675,9 @@ with end_period as (
   with adjusted_balance_file as (
     select
       consensus_timestamp,
-      case when hapi_version_major = 0 and hapi_version_minor >= 27 then time_offset + 53
+      case when hapi_version_major > 0 or hapi_version_minor >= 27 then time_offset + 53
            else time_offset
-        end as time_offset
+      end as time_offset
     from account_balance_file,
          lateral (
            select hapi_version_major, hapi_version_minor
@@ -685,13 +685,14 @@ with end_period as (
            where consensus_end >= consensus_timestamp
            order by consensus_end
            limit 1
-           ) as hapi_version
+        ) as hapi_version
     order by consensus_timestamp desc
   )
   select abf.consensus_timestamp, (abf.consensus_timestamp + abf.time_offset) adjusted_consensus_timestamp
-  from adjusted_balance_file abf , end_period ep
+  from adjusted_balance_file abf, end_period ep
   where abf.consensus_timestamp + abf.time_offset <= ep.consensus_timestamp
-  order by abf.consensus_timestamp desc limit 1
+  order by abf.consensus_timestamp desc
+  limit 1
 ), entity_state as (
   select
     decline_reward,
@@ -718,7 +719,7 @@ with end_period as (
 ), balance_snapshot as (
   select account_id, balance
   from account_balance ab
-         join balance_timestamp bt on bt.consensus_timestamp = ab.consensus_timestamp
+  join balance_timestamp bt on bt.consensus_timestamp = ab.consensus_timestamp
 )
 select
     coalesce(balance, 0) + coalesce(change, 0) as balance,
@@ -728,15 +729,15 @@ select
     coalesce(staked_node_id, -1)               as staked_node_id,
     coalesce(stake_period_start, -1)           as stake_period_start
 from entity_state
-       left join balance_snapshot on account_id = id
-       left join (
-  select entity_id, sum(amount) as change
-  from crypto_transfer ct, balance_timestamp bt, end_period ep
-  where ct.consensus_timestamp <= ep.consensus_timestamp
-    and ct.consensus_timestamp > bt.adjusted_consensus_timestamp
-  group by entity_id
-  order by entity_id
-) balance_change on entity_id = id,
-     balance_timestamp bt
+  left join balance_snapshot on account_id = id
+  left join (
+    select entity_id, sum(amount) as change
+    from crypto_transfer ct, balance_timestamp bt, end_period ep
+    where ct.consensus_timestamp <= ep.consensus_timestamp
+      and ct.consensus_timestamp > bt.adjusted_consensus_timestamp
+    group by entity_id
+    order by entity_id
+  ) balance_change on entity_id = id,
+  balance_timestamp bt
 where bt.consensus_timestamp is not null;
 comment on materialized view entity_state_start is 'Network entity state at start of staking period';

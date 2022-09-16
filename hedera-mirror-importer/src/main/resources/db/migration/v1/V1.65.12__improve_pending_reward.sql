@@ -24,7 +24,7 @@ with end_period as (
   with adjusted_balance_file as (
     select
       consensus_timestamp,
-      case when hapi_version_major = 0 and hapi_version_minor >= 27 then time_offset + 53
+      case when hapi_version_major > 0 or hapi_version_minor >= 27 then time_offset + 53
            else time_offset
       end as time_offset
     from account_balance_file,
@@ -38,9 +38,10 @@ with end_period as (
     order by consensus_timestamp desc
   )
   select abf.consensus_timestamp, (abf.consensus_timestamp + abf.time_offset) adjusted_consensus_timestamp
-  from adjusted_balance_file abf , end_period ep
+  from adjusted_balance_file abf, end_period ep
   where abf.consensus_timestamp + abf.time_offset <= ep.consensus_timestamp
-  order by abf.consensus_timestamp desc limit 1
+  order by abf.consensus_timestamp desc
+  limit 1
 ), entity_state as (
   select
     decline_reward,
@@ -86,7 +87,7 @@ from entity_state
     group by entity_id
     order by entity_id
   ) balance_change on entity_id = id,
-balance_timestamp bt
+  balance_timestamp bt
 where bt.consensus_timestamp is not null;
 
 create unique index if not exists entity_state_start__id on entity_state_start (id);
