@@ -72,7 +72,7 @@ public class SimulatedToken {
 
         final var treasuryNum = treasury.getEntityNum();
         final var treasuryAddressBytes = entityRepository.findAddressByNum(treasuryNum).orElse(null);
-        if(treasuryAddressBytes!=null) {
+        if(treasuryAddressBytes != null) {
             treasuryAddress = Address.wrap(Bytes.wrap(treasuryAddressBytes));
         }
     }
@@ -100,7 +100,7 @@ public class SimulatedToken {
                 FAIL_INVALID,
                 "Fungible mint can be invoked only on fungible token type");
 
-        changeSupply(+amount, INVALID_TOKEN_MINT_AMOUNT, ignoreSupplyKey);
+        changeSupply(amount, INVALID_TOKEN_MINT_AMOUNT, ignoreSupplyKey);
     }
 
     /**
@@ -120,9 +120,10 @@ public class SimulatedToken {
                 type == TokenTypeEnum.NON_FUNGIBLE_UNIQUE,
                 FAIL_INVALID,
                 "Non-fungible mint can be invoked only on non-fungible token type");
-        var lastUsedSerialNumber = nftRepository.findLatestSerialNumber().orElse(Long.MAX_VALUE);
+        long lastUsedSerialNumber = nftRepository.findLatestSerialNumber().orElse(Long.MAX_VALUE);
         validateTrue(
-                (lastUsedSerialNumber + metadataCount) <= MAX_NUM_ALLOWED,
+                (lastUsedSerialNumber + metadataCount) > 0 &&
+                     (lastUsedSerialNumber + metadataCount) <= MAX_NUM_ALLOWED,
                 SERIAL_NUMBER_LIMIT_REACHED);
 
         for (ByteString m : metadata) {
@@ -138,7 +139,7 @@ public class SimulatedToken {
             final long amount,
             final ResponseCodeEnum negSupplyCode,
             final boolean ignoreSupplyKey) {
-        validateTrue(treasury != null, FAIL_INVALID, "Cannot mint with a null treasuryRel");
+        validateTrue(treasury != null, FAIL_INVALID, "Cannot mint with a null treasury");
 
         if (!ignoreSupplyKey) {
             validateTrue(supplyKey != null, TOKEN_HAS_NO_SUPPLY_KEY);

@@ -5,9 +5,7 @@ import com.hedera.mirror.web3.evm.PrecompilePricingUtils;
 import com.hedera.mirror.web3.evm.SimulatedAliasManager;
 import com.hedera.mirror.web3.evm.SimulatedBackingTokens;
 import com.hedera.mirror.web3.evm.SimulatedStackedWorldStateUpdater;
-
 import com.hedera.mirror.web3.evm.SimulatedTxnAwareEvmSigsVerifier;
-
 import java.util.Optional;
 import java.util.function.UnaryOperator;
 import org.apache.commons.lang3.tuple.Pair;
@@ -18,13 +16,12 @@ import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.jetbrains.annotations.NotNull;
-
 import com.hedera.mirror.web3.repository.TokenRepository;
 
 public class HTSPrecompiledContract implements PrecompiledContract {
     private static final Logger log = LogManager.getLogger(HTSPrecompiledContract.class);
 
-    private long gasRequirement = 0;
+    private final long gasRequirement = 0;
     private Precompile precompile;
     private static final Bytes STATIC_CALL_REVERT_REASON =
             Bytes.of("HTS precompiles are not static".getBytes());
@@ -99,7 +96,6 @@ public class HTSPrecompiledContract implements PrecompiledContract {
         this.updater = (SimulatedStackedWorldStateUpdater) frame.getWorldUpdater();
         this.tokens = updater.wrappedBackingTokens();
     }
-
 
     void prepareComputation(final Bytes input, final UnaryOperator<byte[]> aliasResolver) {
         int functionId = input.getInt(0);

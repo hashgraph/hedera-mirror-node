@@ -7,28 +7,21 @@ import static com.hedera.services.transaction.store.contracts.WorldStateTokenAcc
 
 import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.mirror.web3.repository.TokenRepository;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.bytes.Bytes32;
-import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Hash;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
-
 import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.services.transaction.store.contracts.AbstractLedgerWorldUpdater;
@@ -38,7 +31,6 @@ import com.hedera.services.transaction.store.contracts.HederaWorldUpdater;
 import com.hedera.services.transaction.store.contracts.UpdateTrackingLedgerAccount;
 import com.hedera.services.transaction.store.contracts.WorldStateAccount;
 import com.hedera.services.transaction.store.contracts.WorldStateTokenAccount;
-import com.hedera.services.transaction.utils.BytesComparator;
 
 @Named
 @RequiredArgsConstructor
@@ -119,10 +111,6 @@ public class SimulatedWorldState implements HederaMutableWorldState {
 
     public static class Updater extends AbstractLedgerWorldUpdater<HederaMutableWorldState, Account>
             implements HederaWorldUpdater {
-
-        Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> stateChanges =
-                new TreeMap<>(BytesComparator.INSTANCE);
-
         private int numAllocatedIds = 0;
         private long sbhRefund = 0L;
 
@@ -148,37 +136,6 @@ public class SimulatedWorldState implements HederaMutableWorldState {
             this.entityRepository = entityRepository;
             this.nftRepository = nftRepository;
             this.tokenRepository = tokenRepository;
-        }
-
-        public Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> getStateChanges() {
-            return stateChanges;
-        }
-
-        public Map<Address, Map<Bytes, Pair<Bytes, Bytes>>> getFinalStateChanges() {
-            this.addAllStorageUpdatesToStateChanges();
-            return stateChanges;
-        }
-
-        @SuppressWarnings("unchecked")
-        private void addAllStorageUpdatesToStateChanges() {
-            for (UpdateTrackingLedgerAccount<? extends Account> uta :
-                    (Collection<UpdateTrackingLedgerAccount<? extends Account>>)
-                            this.getTouchedAccounts()) {
-                final var storageUpdates = uta.getUpdatedStorage().entrySet();
-                if (!storageUpdates.isEmpty()) {
-                    final Map<Bytes, Pair<Bytes, Bytes>> accountChanges =
-                            stateChanges.computeIfAbsent(
-                                    uta.getAddress(), a -> new TreeMap<>(BytesComparator.INSTANCE));
-                    for (Map.Entry<UInt256, UInt256> entry : storageUpdates) {
-                        UInt256 key = entry.getKey();
-                        UInt256 originalStorageValue = uta.getOriginalStorageValue(key);
-                        UInt256 updatedStorageValue = uta.getStorageValue(key);
-                        accountChanges.put(
-                                key,
-                                new ImmutablePair<>(originalStorageValue, updatedStorageValue));
-                    }
-                }
-            }
         }
 
         @Override

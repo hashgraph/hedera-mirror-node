@@ -22,11 +22,6 @@ public class SymbolPrecompile extends AbstractReadOnlyPrecompile {
     }
 
     @Override
-    public long getMinimumFeeInTinybars(Timestamp consensusTime) {
-        return 0;
-    }
-
-    @Override
     public Bytes getSuccessResultFor() {
         final var token = tokenRepository.findByAddress(address);
         return encoder.encodeSymbol(token.get().getSymbol());

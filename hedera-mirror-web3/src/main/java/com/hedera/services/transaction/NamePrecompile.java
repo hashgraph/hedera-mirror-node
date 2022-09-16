@@ -19,12 +19,6 @@ public class NamePrecompile extends AbstractReadOnlyPrecompile {
             Bytes input, UnaryOperator<byte[]> aliasResolver) {
         return null;
     }
-
-    @Override
-    public long getMinimumFeeInTinybars(Timestamp consensusTime) {
-        return 0;
-    }
-
     @Override
     public Bytes getSuccessResultFor() {
         final var token = tokenRepository.findByAddress(address);

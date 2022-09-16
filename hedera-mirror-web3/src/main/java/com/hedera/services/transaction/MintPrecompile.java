@@ -106,22 +106,11 @@ public class MintPrecompile extends AbstractReadOnlyPrecompile {
         }
     }
 
-    @Override
-    public long getMinimumFeeInTinybars(final Timestamp consensusTime) {
-        final var isNftMint = Objects.requireNonNull(mintOp).type() == NON_FUNGIBLE_UNIQUE;
-        return pricingUtils.getMinimumPriceInTinybars(
-                isNftMint ? MINT_NFT : MINT_FUNGIBLE, consensusTime);
-    }
-
     public Bytes getSuccessResultFor() {
         final var simulatedToken = tokens.getImmutableRef(mintOp.tokenAddress());
         return encoder.encodeMintSuccess(
                 simulatedToken.getTotalSupply(),
                 simulatedToken.getSerialNumbers());
-    }
-
-    public Bytes getFailureResultFor(final ResponseCodeEnum status) {
-        return encoder.encodeMintFailure(status);
     }
 
     private MintWrapper decodeMint(final Bytes input) {

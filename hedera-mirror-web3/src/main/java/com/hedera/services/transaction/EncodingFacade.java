@@ -1,43 +1,27 @@
 package com.hedera.services.transaction;
 
 import static com.hedera.services.transaction.ParsingConstants.FunctionType.HAPI_MINT;
-import static com.hedera.services.transaction.ParsingConstants.notSpecifiedType;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
-
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
-
 import com.hedera.services.transaction.ParsingConstants.FunctionType;
-
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.units.bigints.UInt256;
-import org.jetbrains.annotations.NotNull;
 
 @Singleton
 public class EncodingFacade {
-    public static final Bytes SUCCESS_RESULT = resultFrom(SUCCESS);
     private static final String STRING_RETURN_TYPE = "(string)";
+    private static final String MINT_RETURN_TYPE = "(int32,uint64,int64[])";
     private static final TupleType nameType = TupleType.parse(STRING_RETURN_TYPE);
     private static final TupleType symbolType = TupleType.parse(STRING_RETURN_TYPE);
-
-    public static final TupleType mintReturnType = TupleType.parse("(int32,uint64,int64[])");
-
+    public static final TupleType mintReturnType = TupleType.parse(MINT_RETURN_TYPE);
     private static final long[] NO_MINTED_SERIAL_NUMBERS = new long[0];
 
 
     @Inject
     public EncodingFacade() {
-
-    }
-
-    public static Bytes resultFrom(final ResponseCodeEnum status) {
-        return UInt256.valueOf(status.getNumber());
     }
 
     public Bytes encodeName(final String name) {
@@ -60,16 +44,6 @@ public class EncodingFacade {
                 .build();
     }
 
-    public Bytes encodeMintFailure(@NotNull final ResponseCodeEnum status) {
-        return functionResultBuilder()
-                .forFunction(HAPI_MINT)
-                .withStatus(status.getNumber())
-                .withTotalSupply(0L)
-                .withSerialNumbers(NO_MINTED_SERIAL_NUMBERS)
-                .build();
-    }
-
-
     private FunctionResultBuilder functionResultBuilder() {
         return new FunctionResultBuilder();
     }
@@ -89,7 +63,6 @@ public class EncodingFacade {
                         case ERC_NAME -> nameType;
                         case ERC_SYMBOL -> symbolType;
                         case HAPI_MINT -> mintReturnType;
-                        default -> notSpecifiedType;
                     };
 
             this.functionType = functionType;
@@ -129,13 +102,9 @@ public class EncodingFacade {
                         case ERC_SYMBOL -> Tuple.of(symbol);
                         case HAPI_MINT -> Tuple.of(
                                 status, BigInteger.valueOf(totalSupply), serialNumbers);
-                        default -> Tuple.of(status);
                     };
 
             return Bytes.wrap(tupleType.encode(result).array());
         }
-
     }
-
-
 }

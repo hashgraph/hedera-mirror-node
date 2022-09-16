@@ -27,7 +27,7 @@ public class SimulatedBackingTokens {
         var simulatedToken = delegate.get(id);
         if(simulatedToken == null) {
             final var token = tokenRepository.findByAddress(id.toArray()).orElse(null);
-            if(token!=null) {
+            if(token != null) {
                 simulatedToken = new SimulatedToken(id, nftRepository, tokenRepository, entityRepository, entityAccess);
                 delegate.put(id, simulatedToken);
             }

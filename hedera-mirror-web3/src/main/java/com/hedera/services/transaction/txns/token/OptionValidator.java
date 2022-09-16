@@ -6,9 +6,5 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
  * Defines a type able to divine the validity of various options that can appear in HAPI gRPC
  * transactions.
  */
-public interface OptionValidator {
-
-    ResponseCodeEnum maxBatchSizeMintCheck(int length);
-
-    ResponseCodeEnum nftMetadataCheck(byte[] metadata);
-}
+// FUTURE WORK
+public interface OptionValidator {}
