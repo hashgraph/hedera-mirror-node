@@ -34,7 +34,6 @@ import java.util.concurrent.Semaphore;
 import org.awaitility.Durations;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -110,7 +109,6 @@ class EntityStakeCalculatorImplTest {
     }
 
     @Test
-    @Timeout(5)
     void concurrentCalculate() {
         // given
         var semaphore = new Semaphore(0);
@@ -125,9 +123,10 @@ class EntityStakeCalculatorImplTest {
 
         // then
         // verify that only one task is done
+        var threeSeconds = Durations.ONE_SECOND.multipliedBy(3);
         await()
                 .pollInterval(Durations.ONE_HUNDRED_MILLISECONDS)
-                .atMost(Durations.ONE_SECOND)
+                .atMost(threeSeconds)
                 .until(() -> (task1.isDone() || task2.isDone()) && (task1.isDone() != task2.isDone()));
         // unblock the remaining task
         semaphore.release();
@@ -135,7 +134,7 @@ class EntityStakeCalculatorImplTest {
         // verify that both tasks are done
         await()
                 .pollInterval(Durations.ONE_HUNDRED_MILLISECONDS)
-                .atMost(Durations.ONE_SECOND)
+                .atMost(threeSeconds)
                 .until(() -> task1.isDone() && task2.isDone());
         var inorder = inOrder(entityRepository, entityStakeRepository);
         inorder.verify(entityStakeRepository).updated();
