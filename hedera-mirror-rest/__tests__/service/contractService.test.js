@@ -38,10 +38,24 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       'asc',
       5
     );
-    const expected = `with etht as (select hash, consensus_timestamp from ethereum_transaction)
-                      select cr.*, etht.hash
+    const expected = `select
+                        cr.amount,
+                        cr.bloom,
+                        cr.call_result,
+                        cr.consensus_timestamp,
+                        cr.contract_id,
+                        cr.created_contract_ids,
+                        cr.error_message,
+                        cr.failed_initcode,
+                        cr.function_parameters,
+                        cr.gas_limit,
+                        cr.gas_used,
+                        cr.payer_account_id,
+                        cr.sender_id,
+                        cr.transaction_hash,
+                        cr.transaction_index,
+                        cr.transaction_result
                       from contract_result cr
-                             left join etht on cr.consensus_timestamp = etht.consensus_timestamp
                       where cr.contract_id = $1
                       order by cr.consensus_timestamp asc
                       limit $2`;
@@ -57,10 +71,24 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       'asc',
       5
     );
-    const expected = `with etht as (select hash, consensus_timestamp from ethereum_transaction)
-                      select cr.*, etht.hash
-                      from contract_result cr
-                             left join etht on cr.consensus_timestamp = etht.consensus_timestamp
+    const expected = `select
+						            cr.amount,
+						            cr.bloom,
+						            cr.call_result,
+						            cr.consensus_timestamp,
+						            cr.contract_id,
+						            cr.created_contract_ids,
+						            cr.error_message,
+						            cr.failed_initcode,
+						            cr.function_parameters,
+						            cr.gas_limit,
+						            cr.gas_used,
+						            cr.payer_account_id,
+						            cr.sender_id,
+						            cr.transaction_hash,
+						            cr.transaction_index,
+						            cr.transaction_result
+					            from contract_result cr
                       where cr.contract_id = $1
                         and cr.consensus_timestamp > $2
                         and cr.payer_account_id = $3
@@ -78,12 +106,26 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       'asc',
       5
     );
-    const expected = `with etht as (select hash, consensus_timestamp from ethereum_transaction),
-                           t as (select consensus_timestamp, index, nonce from transaction where transaction.nonce = $2)
-                      select cr.*, etht.hash
-                      from contract_result cr
-                             left join etht on cr.consensus_timestamp = etht.consensus_timestamp
-                             left join t on cr.consensus_timestamp = t.consensus_timestamp
+    const expected = `with t as (select consensus_timestamp, index, nonce from transaction where transaction.nonce = $2)
+					            select
+						            cr.amount,
+						            cr.bloom,
+						            cr.call_result,
+						            cr.consensus_timestamp,
+						            cr.contract_id,
+						            cr.created_contract_ids,
+						            cr.error_message,
+						            cr.failed_initcode,
+						            cr.function_parameters,
+						            cr.gas_limit,
+						            cr.gas_used,
+						            cr.payer_account_id,
+						            cr.sender_id,
+						            cr.transaction_hash,
+						            cr.transaction_index,
+						            cr.transaction_result
+					            from contract_result cr
+                        join t on cr.consensus_timestamp = t.consensus_timestamp
                       where cr.contract_id = $1
                         and t.nonce = $2
                       order by cr.consensus_timestamp asc
@@ -101,12 +143,26 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       'asc',
       5
     );
-    const expected = `with etht as (select hash, consensus_timestamp from ethereum_transaction),
-                           t as (select consensus_timestamp, index, nonce from transaction where transaction.index = $2)
-                      select cr.*, etht.hash
-                      from contract_result cr
-                             left join etht on cr.consensus_timestamp = etht.consensus_timestamp
-                             left join t on cr.consensus_timestamp = t.consensus_timestamp
+    const expected = `with t as (select consensus_timestamp, index, nonce from transaction where transaction.index = $2)
+					            select
+						            cr.amount,
+						            cr.bloom,
+						            cr.call_result,
+						            cr.consensus_timestamp,
+						            cr.contract_id,
+						            cr.created_contract_ids,
+						            cr.error_message,
+						            cr.failed_initcode,
+						            cr.function_parameters,
+						            cr.gas_limit,
+						            cr.gas_used,
+						            cr.payer_account_id,
+						            cr.sender_id,
+						            cr.transaction_hash,
+						            cr.transaction_index,
+						            cr.transaction_result
+					            from contract_result cr
+                        join t on cr.consensus_timestamp = t.consensus_timestamp
                       where cr.contract_id = $1
                         and t.index = $2
                       order by cr.consensus_timestamp asc

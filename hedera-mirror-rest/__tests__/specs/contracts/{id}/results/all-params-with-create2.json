@@ -46,7 +46,8 @@
         "contract_id": 5001,
         "created_contract_ids": [7002],
         "payer_account_id": 8001,
-        "gas_used": 103
+        "gas_used": 103,
+        "transaction_hash": "0x880102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
       },
       {
         "amount": 50,
@@ -135,7 +136,7 @@
         "function_parameters": "0x010102020303",
         "gas_limit": 1000,
         "gas_used": 102,
-        "hash": null,
+        "hash": "0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
         "timestamp": "787654.000123456",
         "to": "0x0000000000000000000000000000000000001389"
       },
@@ -150,7 +151,7 @@
         "function_parameters": "0x010102020303",
         "gas_limit": 1000,
         "gas_used": 103,
-        "hash": null,
+        "hash": "0x880102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
         "timestamp": "887654.000123456",
         "to": "0x0000000000000000000000000000000000001389"
       }

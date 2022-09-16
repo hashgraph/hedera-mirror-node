@@ -928,44 +928,30 @@ const addContractAction = async (contractActionInput) => {
   await insertDomainObject('contract_action', Object.keys(contractActionDefaults), action);
 };
 
-const insertFields = [
-  'amount',
-  'bloom',
-  'call_result',
-  'consensus_timestamp',
-  'contract_id',
-  'created_contract_ids',
-  'error_message',
-  'failed_initcode',
-  'function_parameters',
-  'function_result',
-  'gas_limit',
-  'gas_used',
-  'payer_account_id',
-  'sender_id',
-  'transaction_hash',
-  'transaction_index',
-  'transaction_result',
-];
+const contractResultDefaults = {
+  amount: 0,
+  bloom: null,
+  call_result: null,
+  consensus_timestamp: 1234510001,
+  contract_id: 0,
+  created_contract_ids: [],
+  error_message: '',
+  failed_initcode: null,
+  function_parameters: '0x010102020303',
+  function_result: null,
+  gas_limit: 1000,
+  gas_used: null,
+  payer_account_id: 101,
+  transaction_hash: Buffer.from([...Array(32).keys()]),
+  transaction_index: 1,
+  transaction_result: 22,
+};
+
+const contractResultInsertFields = Object.keys(contractResultDefaults);
 
 const addContractResult = async (contractResultInput) => {
   const contractResult = {
-    amount: 0,
-    bloom: null,
-    call_result: null,
-    consensus_timestamp: 1234510001,
-    contract_id: 0,
-    created_contract_ids: [],
-    error_message: '',
-    failed_initcode: null,
-    function_parameters: '0x010102020303',
-    function_result: null,
-    gas_limit: 1000,
-    gas_used: null,
-    payer_account_id: 101,
-    transaction_hash: '0x010203',
-    transaction_index: 1,
-    transaction_result: 22,
+    ...contractResultDefaults,
     ...contractResultInput,
   };
 
@@ -974,7 +960,7 @@ const addContractResult = async (contractResultInput) => {
     contractResult
   );
 
-  await insertDomainObject('contract_result', insertFields, contractResult);
+  await insertDomainObject('contract_result', contractResultInsertFields, contractResult);
 };
 
 const addContractLog = async (contractLogInput) => {
