@@ -1,27 +1,8 @@
 {
-  "description": "Contract results api call using contract id and timestamp where contract state was read but not written or a zero value was written",
+  "description": "Contract results api call using transactionId or an ethereum transaction hash",
   "setup": {
-    "contracts": [
-      {
-        "created_timestamp": "987654999123200",
-        "evm_address": "1d8bfdc5d46dc4f61d6b6115972536ebe6a8854c",
-        "file_id": "5001",
-        "key": [1, 1, 1],
-        "num": "8001",
-        "timestamp_range": "[987654999123200, 987654999123299]"
-      },
-      {
-        "created_timestamp": "987654999123200",
-        "evm_address": "70f2b2914a2a4b783faefb75f459a580616fcb5e",
-        "file_id": "5001",
-        "key": [1, 1, 1],
-        "num": "5001",
-        "timestamp_range": "[987654999123300,)"
-      }
-    ],
     "contractresults": [
       {
-        "amount": 30,
         "bloom": [5, 5],
         "call_result": [6, 6],
         "consensus_timestamp": "167654000123456",
@@ -30,10 +11,10 @@
         "error_message": "",
         "function_parameters": [7, 7],
         "function_result": [8, 8],
-        "gas_limit": 987654,
         "gas_used": 123,
         "payer_account_id": 8001,
-        "transaction_hash": "96ecf2e0cf1c8f7e2294ec731b2ad1aff95d9736f4ba15b5bbace1ad2766cc1c",
+        "sender_id": 8001,
+        "transaction_hash": "4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
         "transaction_result": 22,
         "transaction_index": 1
       }
@@ -63,62 +44,41 @@
       {
         "consensus_timestamp": "167654000123456",
         "contract_id": 5001,
-        "slot": [1, 1],
-        "value_written": null
+        "slot": [1, 1]
       },
       {
         "consensus_timestamp": "167654000123456",
         "contract_id": 5002,
-        "slot": [2, 2],
-        "value_written": []
-      },
-      {
-        "consensus_timestamp": "167654000123456",
-        "contract_id": 5003,
-        "slot": [3, 3],
-        "value_written": [0]
+        "slot": [2, 2]
       }
     ],
     "recordFiles": [
-      {
-        "index": 16,
-        "consensus_start": 167654000123439,
-        "consensus_end": 167654000123449,
-        "hash": "f292e5624f6f4cf8c134c9"
-      },
       {
         "index": 17,
         "gas_used": 50000000,
         "consensus_start": 167654000123450,
         "consensus_end": 167654000123460,
         "hash": "6ceecd8bb224da491"
-      },
-      {
-        "index": 18,
-        "consensus_start": 167654000123461,
-        "consensus_end": 167654000123470,
-        "hash": "e19f4a235bee1e6bb19258b"
       }
     ],
     "transactions": [
       {
         "consensus_timestamp": 167654000123456,
         "payerAccountId": "8001",
-        "transaction_hash": "96ecf2e0cf1c8f7e2294ec731b2ad1aff95d9736f4ba15b5bbace1ad2766cc1c10554fd34ae23bf39931e9b90542b781",
+        "transaction_hash": "4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb639200000000000000000000000000000000",
+        "type": 7,
         "valid_start_timestamp": 167654000123400
       }
     ]
   },
   "urls": [
-    "/api/v1/contracts/0.0.5001/results/167654.000123456",
-    "/api/v1/contracts/0.5001/results/167654.000123456",
-    "/api/v1/contracts/5001/results/167654.000123456",
-    "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/results/167654.000123456"
+    "/api/v1/contracts/results/4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
+    "/api/v1/contracts/results/0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392"
   ],
   "responseStatus": 200,
   "responseJson": {
     "access_list": null,
-    "amount": 30,
+    "amount": 0,
     "block_gas_used": 50000000,
     "block_hash": "0x6ceecd8bb224da491",
     "block_number": 17,
@@ -131,10 +91,10 @@
     "failed_initcode": null,
     "from": "0x0000000000000000000000000000000000001f41",
     "function_parameters": "0x0707",
-    "gas_limit": 987654,
+    "gas_limit": 1000,
     "gas_price": null,
     "gas_used": 123,
-    "hash": "0x96ecf2e0cf1c8f7e2294ec731b2ad1aff95d9736f4ba15b5bbace1ad2766cc1c",
+    "hash": "0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
     "logs": [
       {
         "address": "0x0000000000000000000000000000000000001389",
@@ -173,21 +133,14 @@
         "contract_id": "0.0.5001",
         "slot": "0x0000000000000000000000000000000000000000000000000000000000000101",
         "value_read": "0x0000000000000000000000000000000000000000000000000000000000000101",
-        "value_written": "0x"
+        "value_written": "0x000000000000000000000000000000000000000000000000000000000000a1a1"
       },
       {
         "address": "0x000000000000000000000000000000000000138a",
         "contract_id": "0.0.5002",
         "slot": "0x0000000000000000000000000000000000000000000000000000000000000202",
         "value_read": "0x0000000000000000000000000000000000000000000000000000000000000101",
-        "value_written": "0x"
-      },
-      {
-        "address": "0x000000000000000000000000000000000000138b",
-        "contract_id": "0.0.5003",
-        "slot": "0x0000000000000000000000000000000000000000000000000000000000000303",
-        "value_read": "0x0000000000000000000000000000000000000000000000000000000000000101",
-        "value_written": "0x0000000000000000000000000000000000000000000000000000000000000000"
+        "value_written": "0x000000000000000000000000000000000000000000000000000000000000a1a1"
       }
     ],
     "status": "0x1",

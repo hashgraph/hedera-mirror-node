@@ -25,6 +25,7 @@ import {ContractService} from '../../service';
 import {assertSqlQueryEqual} from '../testutils';
 import integrationDomainOps from '../integrationDomainOps';
 import {setupIntegrationTest} from '../integrationUtils';
+import {TransactionResult, TransactionType} from '../../model';
 import {orderFilterValues} from '../../constants';
 
 setupIntegrationTest();
@@ -710,24 +711,31 @@ describe('ContractService.getContractResultsByTimestamps tests', () => {
   });
 
   test('No match', async () => {
-    await expect(ContractService.getContractResultsByTimestamps('1')).resolves.toHaveLength(0);
+    const contractResults = await ContractService.getContractResultsByTimestamps('1');
+    expect(contractResults).toHaveLength(0);
   });
 
   test('Sing row match single timestamp', async () => {
-    const actual = await ContractService.getContractResultsByTimestamps(expected[0].consensusTimestamp);
-    expect(pickContractResultFields(actual)).toIncludeSameMembers(expected.slice(0, 1));
+    const contractResults = await ContractService.getContractResultsByTimestamps(expected[0].consensusTimestamp);
+    expect(pickContractResultFields(contractResults)).toIncludeSameMembers(expected.slice(0, 1));
   });
 
   test('Sing row match multiple timestamps', async () => {
-    const actual = await ContractService.getContractResultsByTimestamps([expected[0].consensusTimestamp, '100']);
-    expect(pickContractResultFields(actual)).toIncludeSameMembers(expected.slice(0, 1));
+    const contractResults = await ContractService.getContractResultsByTimestamps([
+      expected[0].consensusTimestamp,
+      '100',
+    ]);
+    expect(pickContractResultFields(contractResults)).toIncludeSameMembers(expected.slice(0, 1));
   });
 
   test('Multiple rows match multiple timestamps', async () => {
-    const actual = await ContractService.getContractResultsByTimestamps(expected.map((e) => e.consensusTimestamp));
-    expect(pickContractResultFields(actual)).toIncludeSameMembers(expected);
+    const contractResults = await ContractService.getContractResultsByTimestamps(
+      expected.map((e) => e.consensusTimestamp)
+    );
+    expect(pickContractResultFields(contractResults)).toIncludeSameMembers(expected);
   });
 });
+
 describe('ContractService.getContractLogs tests', () => {
   const defaultQuery = {
     lower: [],
@@ -1129,6 +1137,148 @@ describe('ContractService.getContractIdByEvmAddress tests', () => {
   });
 });
 
+describe('ContractService.getContractResultsByHash tests', () => {
+  const ethereumTxHash = '4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392';
+  const ethereumTxHashBuffer = Buffer.from(ethereumTxHash, 'hex');
+  const ethereumTxType = TransactionType.getProtoId('ETHEREUMTRANSACTION');
+  const contractCreateType = TransactionType.getProtoId('CONTRACTCREATEINSTANCE');
+  const duplicateTransactionResult = TransactionResult.getProtoId('DUPLICATE_TRANSACTION');
+  const successTransactionResult = TransactionResult.getProtoId('SUCCESS');
+  const wrongNonceTransactionResult = TransactionResult.getProtoId('WRONG_NONCE');
+
+  const inputContractResults = [
+    {
+      consensus_timestamp: 1,
+      payerAccountId: 10,
+      type: ethereumTxType,
+      transaction_result: successTransactionResult,
+      transaction_index: 1,
+      transaction_hash: ethereumTxHash,
+      gasLimit: 1000,
+    },
+    {
+      consensus_timestamp: 2,
+      payerAccountId: 10,
+      type: ethereumTxType,
+      transaction_result: duplicateTransactionResult,
+      transaction_index: 1,
+      transaction_hash: ethereumTxHash,
+      gasLimit: 1000,
+    },
+    {
+      consensus_timestamp: 3,
+      payerAccountId: 10,
+      type: ethereumTxType,
+      transaction_result: wrongNonceTransactionResult,
+      transaction_index: 1,
+      transaction_hash: ethereumTxHash,
+      gasLimit: 1000,
+    },
+    {
+      consensus_timestamp: 4,
+      payerAccountId: 10,
+      type: ethereumTxType,
+      transaction_result: successTransactionResult,
+      transaction_index: 1,
+      transaction_hash: ethereumTxHash,
+      gasLimit: 1000,
+    },
+    {
+      consensus_timestamp: 5,
+      payerAccountId: 10,
+      type: contractCreateType,
+      transaction_hash: '96ecf2e0cf1c8f7e2294ec731b2ad1aff95d9736f4ba15b5bbace1ad2766cc1c',
+      gasLimit: 1000,
+    },
+  ];
+
+  const inputEthTransaction = [
+    {
+      consensus_timestamp: 1,
+      hash: ethereumTxHash,
+    },
+    {
+      consensus_timestamp: 2,
+      hash: ethereumTxHash,
+    },
+    {
+      consensus_timestamp: 3,
+      hash: ethereumTxHash,
+    },
+    {
+      consensus_timestamp: 4,
+      hash: ethereumTxHash,
+    },
+  ];
+
+  const expectedTransaction = {
+    consensusTimestamp: 1,
+    transactionHash: ethereumTxHash,
+  };
+
+  // pick the fields of interests, otherwise expect will fail since the Transaction object has other fields
+  const pickTransactionFields = (transactions) => {
+    return transactions
+      .map((tx) => _.pick(tx, ['consensusTimestamp', 'transactionHash']))
+      .map((tx) => ({...tx, transactionHash: Buffer.from(tx.transactionHash).toString('hex')}));
+  };
+
+  beforeEach(async () => {
+    await integrationDomainOps.loadContractResults(inputContractResults);
+    await integrationDomainOps.loadEthereumTransactions(inputEthTransaction);
+  });
+
+  test('No match', async () => {
+    const contractResults = await ContractService.getContractResultsByHash(
+      Buffer.from('4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6393', 'hex')
+    );
+
+    expect(contractResults).toHaveLength(0);
+  });
+
+  test('Match all transactions by same hash', async () => {
+    const contractResults = await ContractService.getContractResultsByHash(ethereumTxHashBuffer);
+    expect(pickTransactionFields(contractResults)).toIncludeSameMembers([
+      expectedTransaction,
+      {consensusTimestamp: 2, transactionHash: ethereumTxHash},
+      {consensusTimestamp: 3, transactionHash: ethereumTxHash},
+      {consensusTimestamp: 4, transactionHash: ethereumTxHash},
+    ]);
+  });
+
+  test('Match all transactions with no duplicates and wrong nonces', async () => {
+    const contractResults = await ContractService.getContractResultsByHash(ethereumTxHashBuffer, [
+      duplicateTransactionResult,
+      wrongNonceTransactionResult,
+    ]);
+    expect(pickTransactionFields(contractResults)).toIncludeSameMembers([
+      expectedTransaction,
+      {consensusTimestamp: 4, transactionHash: ethereumTxHash},
+    ]);
+  });
+
+  test('Match the oldest tx with no duplicates and wrong nonces', async () => {
+    const contractResults = await ContractService.getContractResultsByHash(
+      ethereumTxHashBuffer,
+      [duplicateTransactionResult, wrongNonceTransactionResult],
+      1
+    );
+    expect(pickTransactionFields(contractResults)).toIncludeSameMembers([expectedTransaction]);
+  });
+
+  test('Match hedera transactions by eth hash', async () => {
+    const contractResults = await ContractService.getContractResultsByHash(
+      Buffer.from('96ecf2e0cf1c8f7e2294ec731b2ad1aff95d9736f4ba15b5bbace1ad2766cc1c', 'hex'),
+      [duplicateTransactionResult, wrongNonceTransactionResult],
+      1
+    );
+
+    expect(pickTransactionFields(contractResults)).toIncludeSameMembers([
+      {consensusTimestamp: 5, transactionHash: '96ecf2e0cf1c8f7e2294ec731b2ad1aff95d9736f4ba15b5bbace1ad2766cc1c'},
+    ]);
+  });
+});
+
 describe('ContractService.getContractActionsByConsensusTimestamp tests', () => {
   test('No match', async () => {
     const res = await ContractService.getContractActionsByConsensusTimestamp(
@@ -1139,6 +1289,7 @@ describe('ContractService.getContractActionsByConsensusTimestamp tests', () => {
     );
     expect(res.length).toEqual(0);
   });
+
   test('Multiple rows match', async () => {
     await integrationDomainOps.loadContractActions([
       {consensus_timestamp: '1676540001234390005'},
@@ -1152,6 +1303,7 @@ describe('ContractService.getContractActionsByConsensusTimestamp tests', () => {
     );
     expect(res.length).toEqual(2);
   });
+
   test('One row match', async () => {
     await integrationDomainOps.loadContractActions([
       {consensus_timestamp: '1676540001234390005'},

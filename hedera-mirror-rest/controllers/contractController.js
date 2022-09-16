@@ -890,24 +890,23 @@ class ContractController extends BaseController {
     const {contractId, timestamp} = await getAndValidateContractIdAndConsensusTimestampPathParams(req.params);
 
     // retrieve contract result, recordFile and transaction models concurrently
-    const [contractResults, recordFile, transaction, contractLogs, contractStateChanges] = await Promise.all([
+    const [ethTransactions, contractResults, recordFile, contractLogs, contractStateChanges] = await Promise.all([
+      TransactionService.getEthTransactionByTimestamp(timestamp),
       ContractService.getContractResultsByTimestamps(timestamp),
       RecordFileService.getRecordFileBlockDetailsFromTimestamp(timestamp),
-      TransactionService.getTransactionDetailsFromTimestamp(timestamp),
       ContractService.getContractLogsByTimestamps(timestamp),
       ContractService.getContractStateChangesByTimestamps(timestamp, contractId),
     ]);
-    if (_.isNil(transaction)) {
-      throw new NotFoundError('No correlating transaction');
-    }
 
     if (contractResults.length === 0) {
       throw new NotFoundError();
     }
 
+    const ethTransaction = ethTransactions[0];
+
     let fileData = null;
-    if (!_.isNil(transaction.callDataId)) {
-      fileData = await FileDataService.getLatestFileDataContents(transaction.callDataId, {whereQuery: []});
+    if (ethTransaction && !_.isNil(ethTransaction.callDataId)) {
+      fileData = await FileDataService.getLatestFileDataContents(ethTransaction.callDataId, {whereQuery: []});
     }
 
     if (_.isNil(contractResults[0].callResult)) {
@@ -920,7 +919,7 @@ class ContractController extends BaseController {
       res,
       contractResults[0],
       recordFile,
-      transaction,
+      ethTransaction,
       contractLogs,
       contractStateChanges,
       fileData
@@ -976,56 +975,54 @@ class ContractController extends BaseController {
 
     // extract filters from query param
     const {transactionIdOrHash} = req.params;
-    let transactions;
     let isFailedContractResult = false;
+    let ethTransactions;
+    let contractResults;
     // When getting transactions, exclude duplicate transactions. there can be at most one
     if (utils.isValidEthHash(transactionIdOrHash)) {
       const ethHash = Buffer.from(transactionIdOrHash.replace('0x', ''), 'hex');
-      // get transactions using ethereum hash and nonce
-      transactions = await TransactionService.getTransactionDetailsFromEthHash(
-        ethHash,
-        [duplicateTransactionResult, wrongNonceTransactionResult],
-        1
-      );
+      [ethTransactions, contractResults] = await Promise.all([
+        TransactionService.getEthTransactionByHash(
+          ethHash,
+          [duplicateTransactionResult, wrongNonceTransactionResult],
+          1
+        ),
+        ContractService.getContractResultsByHash(ethHash, [duplicateTransactionResult, wrongNonceTransactionResult], 1),
+      ]);
     } else {
       const transactionId = TransactionId.fromString(transactionIdOrHash);
       const nonce = getLastNonceParamValue(req.query);
-      // get transactions using id and nonce
-      transactions = await TransactionService.getTransactionDetailsFromTransactionId(
+      // Map the transactions id to a consensus timestamp
+      let transactions = await TransactionService.getTransactionDetailsFromTransactionId(
         transactionId,
         nonce,
         duplicateTransactionResult
       );
+
+      if (transactions.length === 0) {
+        throw new NotFoundError();
+      } else if (transactions.length > 1) {
+        logger.error(
+          'Transaction invariance breached: there should be at most one transaction with none-duplicate-transaction ' +
+            'result for a specific (payer + valid start timestamp + nonce) combination'
+        );
+        throw new Error('Transaction invariance breached');
+      }
+      let consensusTimestamp = transactions[0].consensusTimestamp;
+      // Fetch transactions details and contractResults by mapped timestamp
+
+      [ethTransactions, contractResults] = await Promise.all([
+        TransactionService.getEthTransactionByTimestamp(consensusTimestamp),
+        ContractService.getContractResultsByTimestamps(consensusTimestamp),
+      ]);
     }
 
-    if (transactions.length === 0) {
-      throw new NotFoundError('No correlating transaction');
-    } else if (transactions.length > 1) {
-      logger.error(
-        'Transaction invariance breached: there should be at most one transaction with none-duplicate-transaction ' +
-          'result for a specific (payer + valid start timestamp + nonce) combination'
-      );
-      throw new Error('Transaction invariance breached');
-    }
-
-    // retrieve contract result and recordFile models concurrently using transaction timestamp
-    const transaction = transactions[0];
-    const [contractResults, recordFile, contractLogs, contractStateChanges] = await Promise.all([
-      ContractService.getContractResultsByTimestamps(transaction.consensusTimestamp),
-      RecordFileService.getRecordFileBlockDetailsFromTimestamp(transaction.consensusTimestamp),
-      ContractService.getContractLogsByTimestamps(transaction.consensusTimestamp),
-      ContractService.getContractStateChangesByTimestamps(transaction.consensusTimestamp),
-    ]);
-
-    let fileData = null;
-    if (!_.isNil(transaction.callDataId)) {
-      fileData = await FileDataService.getLatestFileDataContents(transaction.callDataId, {whereQuery: []});
-    }
+    const ethTransaction = ethTransactions[0];
 
     if (contractResults.length === 0) {
       // should always return a contract results when
       // contract results are empty AND transaction type = ethereum transaction
-      isFailedContractResult = transaction.transactionType.toString() === ethereumTransactionType;
+      isFailedContractResult = ethTransaction && ethTransaction.transactionType.toString() === ethereumTransactionType;
       if (isFailedContractResult) {
         contractResults.push(this.getDefaultFailureContractResultByTransaction(transaction));
       } else {
@@ -1033,11 +1030,25 @@ class ContractController extends BaseController {
       }
     }
 
+    const contractResult = contractResults[0];
+
+    const [recordFile, contractLogs, contractStateChanges] = await Promise.all([
+      RecordFileService.getRecordFileBlockDetailsFromTimestamp(contractResult.consensusTimestamp),
+      ContractService.getContractLogsByTimestamps(contractResult.consensusTimestamp),
+      ContractService.getContractStateChangesByTimestamps(contractResult.consensusTimestamp),
+    ]);
+
+    let fileData = null;
+
+    if (ethTransaction && !_.isNil(ethTransaction.callDataId)) {
+      fileData = await FileDataService.getLatestFileDataContents(ethTransaction.callDataId, {whereQuery: []});
+    }
+
     this.setContractResultsResponse(
       res,
-      contractResults[0],
+      contractResult,
       recordFile,
-      transaction,
+      ethTransaction,
       contractLogs,
       contractStateChanges,
       fileData
@@ -1077,7 +1088,7 @@ class ContractController extends BaseController {
     let consensusTimestamp;
     if (utils.isValidEthHash(transactionIdOrHash)) {
       const hash = Buffer.from(transactionIdOrHash.replace('0x', ''), 'hex');
-      tx = await TransactionService.getTransactionDetailsFromEthHash(hash);
+      tx = await ContractService.getContractResultsByHash(hash);
     } else {
       const transactionId = TransactionId.fromString(transactionIdOrHash);
       tx = await TransactionService.getTransactionDetailsFromTransactionId(transactionId);
@@ -1122,7 +1133,7 @@ class ContractController extends BaseController {
     res,
     contractResult,
     recordFile,
-    transaction,
+    ethTransaction,
     contractLogs,
     contractStateChanges,
     fileData
@@ -1130,7 +1141,7 @@ class ContractController extends BaseController {
     res.locals[responseDataLabel] = new ContractResultDetailsViewModel(
       contractResult,
       recordFile,
-      transaction,
+      ethTransaction,
       contractLogs,
       contractStateChanges,
       fileData

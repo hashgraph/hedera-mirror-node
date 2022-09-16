@@ -52,7 +52,6 @@ import TransactionHash from './transactionHash';
 import TransactionId from './transactionId';
 import TransactionResult from './transactionResult';
 import TransactionType from './transactionType';
-import TransactionWithEthData from './transactionWithEthData';
 import FeeSchedule from './feeSchedule';
 
 export {
@@ -90,6 +89,5 @@ export {
   TransactionId,
   TransactionResult,
   TransactionType,
-  TransactionWithEthData,
   FeeSchedule,
 };
