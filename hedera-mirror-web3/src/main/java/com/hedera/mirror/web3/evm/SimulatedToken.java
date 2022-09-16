@@ -62,7 +62,7 @@ public class SimulatedToken {
         this.entityAccess = entityAccess;
 
         final var token = tokenRepository.findByAddress(tokenAddress.toArray()).orElse(null);
-        validateTrue(token!=null, INVALID_TOKEN_ID);
+        validateTrue(token != null, INVALID_TOKEN_ID);
         supplyType = token.getSupplyType();
         totalSupply = token.getTotalSupply();
         maxSupply = token.getMaxSupply();

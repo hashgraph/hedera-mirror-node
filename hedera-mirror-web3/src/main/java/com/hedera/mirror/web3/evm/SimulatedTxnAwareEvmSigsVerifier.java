@@ -23,7 +23,7 @@ public class SimulatedTxnAwareEvmSigsVerifier implements EvmSigsVerifier {
             @NotNull final SimulatedAliasManager aliasManager,
             @NotNull final TokenRepository tokenRepository) {
         final var token = tokenRepository.findByAddress(tokenAddress.toArray()).orElse(null);
-        validateTrue(token!=null, INVALID_TOKEN_ID);
+        validateTrue(token != null, INVALID_TOKEN_ID);
 
         final var supplyKey = token.getSupplyKey();
         validateTrue(supplyKey != null, TOKEN_HAS_NO_SUPPLY_KEY);

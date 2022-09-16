@@ -25,7 +25,7 @@ public class SimulatedMintLogic {
         /* --- Load the model objects --- */
         final var token = tokens.getRef(targetAddress);
 
-        validateTrue(token!=null, INVALID_TOKEN_ID);
+        validateTrue(token != null, INVALID_TOKEN_ID);
 
         /* --- Do the business logic --- */
         if (token.getType() == TokenTypeEnum.FUNGIBLE_COMMON) {
