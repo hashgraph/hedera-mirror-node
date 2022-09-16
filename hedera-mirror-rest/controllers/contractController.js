@@ -850,7 +850,6 @@ class ContractController extends BaseController {
    * @returns {Promise<void>}
    */
   getContractResultsById = async (req, res) => {
-    logger.info('xxxxx');
     const {contractId: contractIdParam, filters} = extractContractIdAndFiltersFromValidatedRequest(req);
 
     const contractId = await ContractService.computeContractIdFromString(contractIdParam);
