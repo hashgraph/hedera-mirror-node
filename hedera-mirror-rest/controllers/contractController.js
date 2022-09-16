@@ -850,6 +850,7 @@ class ContractController extends BaseController {
    * @returns {Promise<void>}
    */
   getContractResultsById = async (req, res) => {
+    logger.info('xxxxx');
     const {contractId: contractIdParam, filters} = extractContractIdAndFiltersFromValidatedRequest(req);
 
     const contractId = await ContractService.computeContractIdFromString(contractIdParam);
@@ -938,7 +939,7 @@ class ContractController extends BaseController {
 
     const rows = await ContractService.getContractResultsByIdAndFilters(conditions, params, order, limit);
     const response = {
-      results: rows.map((row) => new ContractResultViewModel(row, 'hash' in row ? row.hash : null)),
+      results: rows.map((row) => new ContractResultViewModel(row)),
       links: {
         next: null,
       },
