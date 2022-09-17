@@ -21,14 +21,12 @@ package com.hedera.mirror.importer.parser.record.entity.staking;
  */
 
 import com.google.common.base.Stopwatch;
-import java.util.Collection;
+import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Named;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 
-import com.hedera.mirror.common.domain.addressbook.NodeStake;
-import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.EntityStakeRepository;
 
@@ -37,29 +35,35 @@ import com.hedera.mirror.importer.repository.EntityStakeRepository;
 @RequiredArgsConstructor
 public class EntityStakeCalculatorImpl implements EntityStakeCalculator {
 
+    private final EntityProperties entityProperties;
     private final EntityRepository entityRepository;
     private final EntityStakeRepository entityStakeRepository;
-    private final ApplicationEventPublisher eventPublisher;
-    private final RecordStreamFileListener recordStreamFileListener;
+    private final AtomicBoolean running = new AtomicBoolean(false);
 
     @Override
-    public void calculate(Collection<NodeStake> nodeStakes) {
-        if (nodeStakes.isEmpty()) {
+    public void calculate() {
+        if (!entityProperties.getPersist().isPendingReward()) {
             return;
         }
 
-        var stopwatch = Stopwatch.createStarted();
-        // Flush data to final tables so the entity balance is accurate when refreshing the materialized view
-        recordStreamFileListener.flush();
-        entityRepository.refreshEntityStateStart();
-        eventPublisher.publishEvent(new NodeStakeUpdateEvent(this));
-        log.info("Flushed data from record file and refreshed entity_state_start materialized view in {} ", stopwatch);
-    }
+        if (running.compareAndExchange(false, true)) {
+            log.info("Skipping since the previous entity stake calculation is still running");
+            return;
+        }
 
-    @Override
-    public void update() {
-        var stopwatch = Stopwatch.createStarted();
-        int count = entityStakeRepository.updateEntityStake();
-        log.info("Updated pending reward and stake state for {} entities in {}", count, stopwatch);
+        try {
+            if (entityStakeRepository.updated()) {
+                log.info("Skipping since the entity stake is up-to-date");
+                return;
+            }
+
+            var stopwatch = Stopwatch.createStarted();
+            entityRepository.refreshEntityStateStart();
+            log.info("Refreshed entity_state_start in {}", stopwatch);
+            int count = entityStakeRepository.updateEntityStake();
+            log.info("Completed pending reward calculation for {} entities in {}", count, stopwatch);
+        } finally {
+            running.set(false);
+        }
     }
 }

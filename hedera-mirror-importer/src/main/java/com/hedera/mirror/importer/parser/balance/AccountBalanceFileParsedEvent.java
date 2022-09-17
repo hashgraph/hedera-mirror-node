@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser.record.entity.staking;
+package com.hedera.mirror.importer.parser.balance;
 
 /*-
  * ‌
@@ -23,18 +23,18 @@ package com.hedera.mirror.importer.parser.record.entity.staking;
 import java.io.Serial;
 import org.springframework.context.ApplicationEvent;
 
-public class NodeStakeUpdateEvent extends ApplicationEvent {
+public class AccountBalanceFileParsedEvent extends ApplicationEvent {
 
     @Serial
-    private static final long serialVersionUID = -1825194602305052810L;
+    private static final long serialVersionUID = -948181990490563242L;
 
     /**
-     * Create a new {@code NodeStakeUpdateEvent}.
+     * Create a new {@code AccountBalanceFileParsedEvent}.
      *
      * @param source the object on which the event initially occurred or with which the event is associated (never
      *               {@code null})
      */
-    public NodeStakeUpdateEvent(Object source) {
+    public AccountBalanceFileParsedEvent(Object source) {
         super(source);
     }
 }
