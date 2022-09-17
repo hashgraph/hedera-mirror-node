@@ -20,8 +20,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import java.util.ArrayList;
-import java.util.Collection;
 import javax.inject.Named;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +32,6 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
-import com.hedera.mirror.importer.parser.record.entity.staking.EntityStakeCalculator;
 import com.hedera.mirror.importer.repository.NodeStakeRepository;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -43,7 +40,6 @@ import com.hedera.mirror.importer.util.Utility;
 @RequiredArgsConstructor
 class NodeStakeUpdateTransactionHandler implements TransactionHandler {
     private final EntityListener entityListener;
-    private final EntityStakeCalculator entityStakeCalculator;
     private final NodeStakeRepository nodeStakeRepository;
 
     @Override
@@ -94,7 +90,6 @@ class NodeStakeUpdateTransactionHandler implements TransactionHandler {
         }
 
         nodeStakeRepository.evictNodeStakeCache();
-        Collection<NodeStake> nodeStakes = new ArrayList<>();
         for (var nodeStakeProto : nodeStakesProtos) {
             NodeStake nodeStake = new NodeStake();
             nodeStake.setConsensusTimestamp(consensusTimestamp);
@@ -107,10 +102,7 @@ class NodeStakeUpdateTransactionHandler implements TransactionHandler {
             nodeStake.setStakeNotRewarded(nodeStakeProto.getStakeNotRewarded());
             nodeStake.setStakeRewarded(nodeStakeProto.getStakeRewarded());
             nodeStake.setStakingPeriod(stakingPeriod);
-            nodeStakes.add(nodeStake);
             entityListener.onNodeStake(nodeStake);
         }
-
-        entityStakeCalculator.calculate(nodeStakes);
     }
 }

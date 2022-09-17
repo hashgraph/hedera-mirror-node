@@ -16,3 +16,5 @@ $$ language plpgsql;
 select change_access_privilege(true);
 alter materialized view if exists entity_state_start owner to ${db-user};
 select change_access_privilege(false);
+
+drop function change_access_privilege(grant_or_revoke boolean);

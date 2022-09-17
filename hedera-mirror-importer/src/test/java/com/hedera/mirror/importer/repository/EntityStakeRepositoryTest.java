@@ -32,6 +32,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityStake;
 
@@ -41,43 +42,102 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
     private final EntityRepository entityRepository;
     private final EntityStakeRepository entityStakeRepository;
 
+    @ParameterizedTest
+    @CsvSource({
+            ",,true",    // empty node_stake, empty entity_stake
+            ",5,true",   // empty node_stake, non-empty entity_stake
+            "5,,false",  // non-empty node_stake, empty entity_stake
+            "5,4,false", // node_stake is ahead of entity_stake
+            "5,5,true"   // entity_stake is up-to-date
+    })
+    void updated(Long epochDay, Long endStakePeriod, boolean expected) {
+        // given
+        if (epochDay != null) {
+            domainBuilder.nodeStake().customize(n -> n.epochDay(epochDay - 1)).persist();
+            domainBuilder.nodeStake().customize(n -> n.epochDay(epochDay)).persist(); // with a later timestamp
+        }
+
+        if (endStakePeriod != null) {
+            domainBuilder.entityStake().customize(e -> e.endStakePeriod(endStakePeriod)).persist();
+        }
+
+        // when
+        boolean actual = entityStakeRepository.updated();
+
+        // then
+        assertThat(actual).isEqualTo(expected);
+    }
+
     @Test
     void updateEntityStake() {
         // given
         var entity1 = domainBuilder.entity()
-                .customize(e -> e.balance(100L).stakedAccountId(null).stakedNodeId(1L))
+                .customize(e -> e.stakedAccountId(null).stakedNodeId(1L))
                 .persist();
         var entity2 = domainBuilder.entity()
-                .customize(e -> e.balance(200L).declineReward(true).stakedAccountId(entity1.getId()))
+                .customize(e -> e.declineReward(true).stakedAccountId(entity1.getId()))
                 .persist();
         var entity3 = domainBuilder.entity()
-                .customize(e -> e.balance(300L).stakedAccountId(entity1.getId()).stakedNodeId(null).type(CONTRACT))
+                .customize(e -> e.stakedAccountId(entity1.getId()).stakedNodeId(null).type(CONTRACT))
                 .persist();
         var entity4 = domainBuilder.entity()
-                // deleted is true and balance != 0 shouldn't happen, it's just used to test that deleted entities
-                // are handled properly for the entities themselves and entities they used to stake to
-                .customize(e -> e.balance(400L).deleted(true).stakedAccountId(entity1.getId()))
+                .customize(e -> e.deleted(true).stakedAccountId(entity1.getId()))
                 .persist();
         var entity5 = domainBuilder.entity()
-                .customize(e -> e.balance(500L).stakedAccountId(entity3.getId()))
+                .customize(e -> e.stakedAccountId(entity3.getId()))
                 .persist();
-        var entity6 = domainBuilder.entity().customize(e -> e.balance(600L)).persist();
+        var entity6 = domainBuilder.entity().persist();
         domainBuilder.topic().persist();
         var entity8 = domainBuilder.entity()
-                .customize(e -> e.balance(800L).stakedAccountId(entity6.getId()))
+                .customize(e -> e.stakedAccountId(entity6.getId()))
                 .persist();
         long entityId9 = entity8.getId() + 1;
         long entityId10 = entityId9 + 1;
         var entity9 = domainBuilder.entity()
-                .customize(e -> e.balance(900L).id(entityId9).num(entityId9).stakedAccountId(entityId10))
+                .customize(e -> e.id(entityId9).num(entityId9).stakedAccountId(entityId10))
                 .persist();
         var entity10 = domainBuilder.entity()
-                .customize(e -> e.balance(1000L).id(entityId10).num(entityId10).stakedAccountId(entityId9))
+                .customize(e -> e.id(entityId10).num(entityId10).stakedAccountId(entityId9))
                 .persist();
         long timestamp = domainBuilder.timestamp();
         var nodeStake = domainBuilder.nodeStake()
                 .customize(ns -> ns.consensusTimestamp(timestamp).nodeId(1L).rewardRate(0L))
                 .persist();
+        // account balance
+        long balanceTimestamp = nodeStake.getConsensusTimestamp() - 1000L;
+        domainBuilder.accountBalanceFile().customize(abf -> abf.consensusTimestamp(balanceTimestamp)).persist();
+        domainBuilder.accountBalance()
+                .customize(ab -> ab.balance(100L).id(new AccountBalance.Id(balanceTimestamp, entity1.toEntityId())))
+                .persist();
+        domainBuilder.accountBalance()
+                .customize(ab -> ab.balance(200L).id(new AccountBalance.Id(balanceTimestamp, entity2.toEntityId())))
+                .persist();
+        domainBuilder.accountBalance()
+                .customize(ab -> ab.balance(300L).id(new AccountBalance.Id(balanceTimestamp, entity3.toEntityId())))
+                .persist();
+        domainBuilder.accountBalance()
+                .customize(ab -> ab.balance(400L).id(new AccountBalance.Id(balanceTimestamp, entity4.toEntityId())))
+                .persist();
+        domainBuilder.accountBalance()
+                .customize(ab -> ab.balance(500L).id(new AccountBalance.Id(balanceTimestamp, entity5.toEntityId())))
+                .persist();
+        domainBuilder.accountBalance()
+                .customize(ab -> ab.balance(600L).id(new AccountBalance.Id(balanceTimestamp, entity6.toEntityId())))
+                .persist();
+        domainBuilder.accountBalance()
+                .customize(ab -> ab.balance(800L).id(new AccountBalance.Id(balanceTimestamp, entity8.toEntityId())))
+                .persist();
+        domainBuilder.accountBalance()
+                .customize(ab -> ab.balance(900L).id(new AccountBalance.Id(balanceTimestamp, entity9.toEntityId())))
+                .persist();
+        domainBuilder.accountBalance()
+                .customize(ab -> ab.balance(1000L).id(new AccountBalance.Id(balanceTimestamp, entity10.toEntityId())))
+                .persist();
+        domainBuilder.recordFile()
+                .customize(rf -> rf.consensusStart(balanceTimestamp - 100L).consensusEnd(balanceTimestamp + 100L)
+                        .hapiVersionMinor(25))
+                .persist();
+
         long epochDay = nodeStake.getEpochDay();
         // existing entity stake, note entity4 has been deleted, its existing entity stake will no longer update
         domainBuilder.entityStake().customize(es -> es.id(entity1.getId())).persist();
@@ -108,10 +168,22 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
     void updateEntityStakeForNewEntities() {
         // given
         var account = domainBuilder.entity().customize(e -> e.declineReward(true)).persist();
-        var contract = domainBuilder.entity().customize(e -> e.balance(5L).stakedNodeId(2L).type(CONTRACT)).persist();
+        var contract = domainBuilder.entity().customize(e -> e.stakedNodeId(2L).type(CONTRACT)).persist();
         domainBuilder.entity().customize(e -> e.deleted(true)).persist();
         domainBuilder.topic().persist();
         var nodeStake = domainBuilder.nodeStake().persist();
+        long balanceTimestamp = nodeStake.getConsensusTimestamp() - 1000L;
+        domainBuilder.accountBalanceFile().customize(abf -> abf.consensusTimestamp(balanceTimestamp)).persist();
+        domainBuilder.accountBalance()
+                .customize(ab -> ab.balance(0L).id(new AccountBalance.Id(balanceTimestamp, account.toEntityId())))
+                .persist();
+        domainBuilder.accountBalance()
+                .customize(ab -> ab.balance(5L).id(new AccountBalance.Id(balanceTimestamp, contract.toEntityId())))
+                .persist();
+        domainBuilder.recordFile()
+                .customize(rf -> rf.consensusStart(balanceTimestamp - 100L).consensusEnd(balanceTimestamp + 100L)
+                        .hapiVersionMinor(25))
+                .persist();
         entityRepository.refreshEntityStateStart();
         var expectedEntityStakes = List.of(
                 fromEntity(account, nodeStake.getEpochDay(), 0L, 0L),
@@ -153,12 +225,20 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
                         .stakedNodeIdStart(stakedNodeIdStart)
                         .stakeTotalStart(stakeTotalStart))
                 .persist();
+        // the entity timestamp lower is before node stake timestamp
         long timestamp = domainBuilder.timestamp();
         domainBuilder.nodeStake()
-                .customize(ns -> ns.consensusTimestamp(timestamp).epochDay(nodeStakeEpochDay).nodeId(1L).rewardRate(10L))
+                .customize(
+                        ns -> ns.consensusTimestamp(timestamp).epochDay(nodeStakeEpochDay).nodeId(1L).rewardRate(10L))
                 .persist();
         domainBuilder.nodeStake()
                 .customize(ns -> ns.consensusTimestamp(timestamp).epochDay(nodeStakeEpochDay).nodeId(2L).rewardRate(0L))
+                .persist();
+        long balanceTimestamp = timestamp - 1000L;
+        domainBuilder.accountBalanceFile().customize(abf -> abf.consensusTimestamp(balanceTimestamp)).persist();
+        domainBuilder.recordFile()
+                .customize(rf -> rf.consensusStart(balanceTimestamp - 100L).consensusEnd(balanceTimestamp + 100L)
+                        .hapiVersionMinor(25))
                 .persist();
         // The following two are old NodeStake, which shouldn't be used in pending reward calculation
         domainBuilder.nodeStake().customize(ns -> ns.consensusTimestamp(timestamp - 100).nodeId(1L)).persist();

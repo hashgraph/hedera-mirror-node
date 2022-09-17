@@ -29,6 +29,17 @@ import com.hedera.mirror.common.domain.entity.EntityStake;
 
 public interface EntityStakeRepository extends CrudRepository<EntityStake, Long> {
 
+    @Query(value = """
+            with last_epoch_day as (
+              select coalesce((select epoch_day from node_stake order by consensus_timestamp desc limit 1), -1) as epoch_day
+            ), entity_stake_info as (
+              select coalesce((select end_stake_period from entity_stake limit 1), -1) as end_stake_period
+            )
+            select epoch_day = -1 or epoch_day = end_stake_period
+            from last_epoch_day, entity_stake_info
+            """, nativeQuery = true)
+    boolean updated();
+
     /**
      * Updates entity stake state based on the current entity stake state, the ending period node reward rate and the
      * entity state snapshot at the beginning of the new staking period.
