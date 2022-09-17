@@ -20,17 +20,14 @@ package com.hedera.mirror.importer.parser.record.entity.staking;
  * ‍
  */
 
-import java.util.Collection;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-import com.hedera.mirror.common.domain.addressbook.NodeStake;
+import com.hedera.mirror.importer.parser.balance.AccountBalanceFileParsedEvent;
 
 public interface EntityStakeCalculator {
 
-    void calculate(Collection<NodeStake> nodeStakes);
-
     @Async
-    @TransactionalEventListener(classes = NodeStakeUpdateEvent.class)
-    void update();
+    @TransactionalEventListener(classes = AccountBalanceFileParsedEvent.class)
+    void calculate();
 }

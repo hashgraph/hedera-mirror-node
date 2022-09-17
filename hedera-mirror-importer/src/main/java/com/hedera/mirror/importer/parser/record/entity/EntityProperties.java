@@ -55,6 +55,8 @@ public class EntityProperties {
 
         private boolean nonFeeTransfers = false;
 
+        private boolean pendingReward = true;
+
         private boolean schedules = true;
 
         private boolean systemFiles = true;

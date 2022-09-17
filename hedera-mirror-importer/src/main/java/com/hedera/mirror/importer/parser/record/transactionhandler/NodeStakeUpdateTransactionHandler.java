@@ -20,11 +20,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import java.util.ArrayList;
-import java.util.Collection;
 import javax.inject.Named;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.common.domain.addressbook.NetworkStake;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
@@ -34,16 +32,13 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
-import com.hedera.mirror.importer.parser.record.entity.staking.EntityStakeCalculator;
 import com.hedera.mirror.importer.util.Utility;
 
-@Log4j2
+@CustomLog
 @Named
 @RequiredArgsConstructor
 class NodeStakeUpdateTransactionHandler implements TransactionHandler {
-
     private final EntityListener entityListener;
-    private final EntityStakeCalculator entityStakeCalculator;
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
@@ -87,7 +82,6 @@ class NodeStakeUpdateTransactionHandler implements TransactionHandler {
         networkStake.setStakingStartThreshold(transactionBody.getStakingStartThreshold());
         entityListener.onNetworkStake(networkStake);
 
-        Collection<NodeStake> nodeStakes = new ArrayList<>();
         for (var nodeStakeProto : transactionBody.getNodeStakeList()) {
             NodeStake nodeStake = new NodeStake();
             nodeStake.setConsensusTimestamp(consensusTimestamp);
@@ -100,10 +94,7 @@ class NodeStakeUpdateTransactionHandler implements TransactionHandler {
             nodeStake.setStakeNotRewarded(nodeStakeProto.getStakeNotRewarded());
             nodeStake.setStakeRewarded(nodeStakeProto.getStakeRewarded());
             nodeStake.setStakingPeriod(stakingPeriod);
-            nodeStakes.add(nodeStake);
             entityListener.onNodeStake(nodeStake);
         }
-
-        entityStakeCalculator.calculate(nodeStakes);
     }
 }
