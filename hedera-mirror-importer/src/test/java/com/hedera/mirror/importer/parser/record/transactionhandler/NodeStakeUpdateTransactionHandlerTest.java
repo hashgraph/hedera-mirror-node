@@ -34,7 +34,6 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
-import org.mockito.Mock;
 
 import com.hedera.mirror.common.domain.addressbook.NetworkStake;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
@@ -42,7 +41,6 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.repository.NodeStakeRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
@@ -53,12 +51,9 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
     @Captor
     private ArgumentCaptor<NodeStake> nodeStakes;
 
-    @Mock
-    private NodeStakeRepository nodeStakeRepository;
-
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new NodeStakeUpdateTransactionHandler(entityListener, nodeStakeRepository);
+        return new NodeStakeUpdateTransactionHandler(entityListener);
     }
 
     @Override
@@ -89,7 +84,7 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
                 .build();
         var transaction = new Transaction();
         transactionHandler.updateTransaction(transaction, recordItem);
-        verifyNoInteractions(entityListener, nodeStakeRepository);
+        verifyNoInteractions(entityListener);
     }
 
     @Test
