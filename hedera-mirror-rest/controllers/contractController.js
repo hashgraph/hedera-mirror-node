@@ -961,7 +961,7 @@ class ContractController extends BaseController {
   };
 
   /**
-   * Handler function for /contracts/results/:transactionId API
+   * Handler function for /contracts/results/:transactionIdOrHash API
    * @param {Request} req HTTP request object
    * @param {Response} res HTTP response object
    * @returns {Promise<void>}
@@ -973,30 +973,25 @@ class ContractController extends BaseController {
 
     utils.validateReq(req);
 
-    // extract filters from query param
-    const {transactionIdOrHash} = req.params;
-    let isFailedContractResult = false;
-    let ethTransactions;
     let contractResults;
-    // When getting transactions, exclude duplicate transactions. there can be at most one
+    let ethTransactions;
+    // Exclude duplicate transactions and ethereum transactions failed with wrong ethereum nonce
+    const excludeTransactionResults = [duplicateTransactionResult, wrongNonceTransactionResult];
+    const {transactionIdOrHash} = req.params;
     if (utils.isValidEthHash(transactionIdOrHash)) {
       const ethHash = Buffer.from(transactionIdOrHash.replace('0x', ''), 'hex');
       [ethTransactions, contractResults] = await Promise.all([
-        TransactionService.getEthTransactionByHash(
-          ethHash,
-          [duplicateTransactionResult, wrongNonceTransactionResult],
-          1
-        ),
-        ContractService.getContractResultsByHash(ethHash, [duplicateTransactionResult, wrongNonceTransactionResult], 1),
+        TransactionService.getEthTransactionByHash(ethHash, excludeTransactionResults, 1),
+        ContractService.getContractResultsByHash(ethHash, excludeTransactionResults, 1),
       ]);
     } else {
       const transactionId = TransactionId.fromString(transactionIdOrHash);
       const nonce = getLastNonceParamValue(req.query);
       // Map the transactions id to a consensus timestamp
-      let transactions = await TransactionService.getTransactionDetailsFromTransactionId(
+      const transactions = await TransactionService.getTransactionDetailsFromTransactionId(
         transactionId,
         nonce,
-        duplicateTransactionResult
+        excludeTransactionResults
       );
 
       if (transactions.length === 0) {
@@ -1008,29 +1003,26 @@ class ContractController extends BaseController {
         );
         throw new Error('Transaction invariance breached');
       }
-      let consensusTimestamp = transactions[0].consensusTimestamp;
-      // Fetch transactions details and contractResults by mapped timestamp
 
+      // Fetch transactions details and contractResults by mapped timestamp
+      const consensusTimestamp = transactions[0].consensusTimestamp;
       [ethTransactions, contractResults] = await Promise.all([
         TransactionService.getEthTransactionByTimestamp(consensusTimestamp),
         ContractService.getContractResultsByTimestamps(consensusTimestamp),
       ]);
     }
 
-    const ethTransaction = ethTransactions[0];
-
-    if (contractResults.length === 0) {
-      // should always return a contract results when
-      // contract results are empty AND transaction type = ethereum transaction
-      isFailedContractResult = ethTransaction && ethTransaction.transactionType.toString() === ethereumTransactionType;
-      if (isFailedContractResult) {
-        contractResults.push(this.getDefaultFailureContractResultByTransaction(transaction));
-      } else {
-        throw new NotFoundError();
-      }
+    if (ethTransactions.length === 0 && contractResults.length === 0) {
+      throw new NotFoundError();
     }
 
-    const contractResult = contractResults[0];
+    const ethTransaction = ethTransactions[0];
+
+    // If contractResults is empty and ethTransactions is not, create a default contract result
+    const contractResult =
+      contractResults.length !== 0
+        ? contractResults[0]
+        : this.getDefaultFailureContractResultByTransaction(ethTransaction);
 
     const [recordFile, contractLogs, contractStateChanges] = await Promise.all([
       RecordFileService.getRecordFileBlockDetailsFromTimestamp(contractResult.consensusTimestamp),
@@ -1054,7 +1046,7 @@ class ContractController extends BaseController {
       fileData
     );
 
-    if (_.isNil(contractResults[0].callResult)) {
+    if (_.isNil(contractResult.callResult)) {
       // set 206 partial response
       res.locals.statusCode = httpStatusCodes.PARTIAL_CONTENT.code;
       logger.debug(`getContractResultsByTransactionId returning partial content`);

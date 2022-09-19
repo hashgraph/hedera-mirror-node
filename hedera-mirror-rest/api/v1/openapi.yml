@@ -1704,7 +1704,7 @@ components:
               description: The block number. Since Hedera does not have the native concept of blocks, this counts the number of record files seen since the mirror node's configured start date. This can vary between mirror nodes that use different start dates.
               example: 10
               format: int64
-              type: integer             
+              type: integer
             root_contract_id:
               allOf:
                 - $ref: '#/components/schemas/EntityId'
@@ -1720,7 +1720,7 @@ components:
               nullable: true
               format: int32
               type: integer
-              example: 1              
+              example: 1
     ContractLogTopics:
       description: A list of hex encoded topics associated with this log event
       example:
