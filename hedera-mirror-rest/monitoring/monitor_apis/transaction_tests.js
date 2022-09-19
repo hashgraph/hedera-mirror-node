@@ -285,12 +285,8 @@ const getSuccessfulTransactionById = async (server) => {
   result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
     .withCheckSpec(checkRespObjDefined, {message: 'transactions is undefined'})
-    .withCheckSpec(checkRespArrayLength, {
-      func: (length) => length >= 1,
-      message: (elements) => `transactions.length of ${elements.length} was expected to be >= 1`,
-    })
     .withCheckSpec(checkRespObj, {
-      predicate: (data) => data.filter((tx) => tx.result === 'SUCCESS').length === 1,
+      predicate: (data) => data.filter((tx) => tx.result === 'SUCCESS').length >= 1,
       message: `Transactions array should have at least one successful transaction`,
     })
     .run(singleTransactions);
