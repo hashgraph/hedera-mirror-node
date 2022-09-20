@@ -121,12 +121,6 @@
             <scope>compile</scope>
         </dependency>
         <dependency>
-            <groupId>org.hyperledger.besu</groupId>
-            <artifactId>secp256k1</artifactId>
-            <version>0.5.0</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-cache</artifactId>
             <exclusions>
@@ -139,28 +133,6 @@
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
-        </dependency>
-      <dependency>
-        <groupId>com.esaulpaugh</groupId>
-        <artifactId>headlong</artifactId>
-        <version>6.6.2</version>
-        <scope>compile</scope>
-      </dependency>
-        <dependency>
-            <groupId>com.hedera.hashgraph</groupId>
-            <artifactId>hedera-protobuf-java-api</artifactId>
-            <version>0.30.0-alias-SNAPSHOT</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.data</groupId>
-            <artifactId>spring-data-jpa</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.hedera</groupId>
-            <artifactId>hedera-mirror-common</artifactId>
-            <version>${release.version}</version>
-            <scope>compile</scope>
         </dependency>
     </dependencies>
 
