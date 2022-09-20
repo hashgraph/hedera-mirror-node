@@ -20,9 +20,12 @@ package com.hedera.mirror.importer.migration;
  * ‍
  */
 
+import static com.hedera.mirror.importer.config.JdbcTemplateConfiguration.JDBC_TEMPLATE_OWNER;
+
 import com.google.common.base.Stopwatch;
 import java.io.IOException;
 import javax.inject.Named;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -49,7 +52,8 @@ public class BackfillTransactionHashMigration extends RepeatableMigration {
     private final JdbcTemplate jdbcTemplate;
 
     @Lazy
-    public BackfillTransactionHashMigration(EntityProperties entityProperties, JdbcTemplate jdbcTemplate,
+    public BackfillTransactionHashMigration(EntityProperties entityProperties,
+                                            @Qualifier(JDBC_TEMPLATE_OWNER) JdbcTemplate jdbcTemplate,
                                             MirrorProperties mirrorProperties) {
         super(mirrorProperties.getMigration());
         this.entityProperties = entityProperties;
