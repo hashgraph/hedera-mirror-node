@@ -38,7 +38,7 @@ class TokenAccountUpsertQueryGeneratorTest extends IntegrationTest {
     @Test
     void createTempIndexQuery() {
         var expected = "create index if not exists token_account_temp_idx on token_account_temp " +
-                "(token_id, account_id, modified_timestamp)";
+                "(token_id, account_id)";
         var createTempIndexQuery = upsertQueryGenerator.getCreateTempIndexQuery();
         assertThat(createTempIndexQuery).isEqualTo(expected);
     }

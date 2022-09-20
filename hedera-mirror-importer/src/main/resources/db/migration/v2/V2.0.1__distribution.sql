@@ -49,6 +49,8 @@ select create_distributed_table('token', 'token_id', colocate_with => 'entity');
 
 select create_distributed_table('token_account', 'token_id', colocate_with => 'entity');
 
+select create_distributed_table('token_account_history', 'token_id', colocate_with => 'token_account');
+
 select create_distributed_table('token_allowance', 'owner', colocate_with => 'entity');
 
 select create_distributed_table('token_allowance_history', 'owner', colocate_with => 'token_allowance');

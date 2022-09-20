@@ -92,7 +92,11 @@ import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.token.NftTransfer;
 import com.hedera.mirror.common.domain.token.NftTransferId;
 import com.hedera.mirror.common.domain.token.Token;
+import com.hedera.mirror.common.domain.token.TokenAccount;
+import com.hedera.mirror.common.domain.token.TokenAccountHistory;
+import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenId;
+import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
@@ -676,6 +680,34 @@ public class DomainBuilder {
                 .tokenId(new TokenId(entityId(TOKEN)))
                 .treasuryAccountId(entityId(ACCOUNT))
                 .wipeKey(key());
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<TokenAccount, TokenAccount.TokenAccountBuilder> tokenAccount() {
+        long timestamp = timestamp();
+        var builder = TokenAccount.builder()
+                .accountId(entityId(ACCOUNT).getId())
+                .automaticAssociation(false)
+                .associated(true)
+                .createdTimestamp(timestamp)
+                .freezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE)
+                .kycStatus(TokenKycStatusEnum.NOT_APPLICABLE)
+                .timestampRange(Range.closedOpen(timestamp, timestamp()))
+                .tokenId(entityId(TOKEN).getId());
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<TokenAccountHistory, TokenAccountHistory.TokenAccountHistoryBuilder> tokenAccountHistory() {
+        long timestamp = timestamp();
+        var builder = TokenAccountHistory.builder()
+                .accountId(entityId(ACCOUNT).getId())
+                .automaticAssociation(false)
+                .associated(true)
+                .createdTimestamp(timestamp)
+                .freezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE)
+                .kycStatus(TokenKycStatusEnum.NOT_APPLICABLE)
+                .timestampRange(Range.closedOpen(timestamp, timestamp()))
+                .tokenId(entityId(TOKEN).getId());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

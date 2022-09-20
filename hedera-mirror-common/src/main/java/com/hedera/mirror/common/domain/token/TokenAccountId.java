@@ -23,15 +23,13 @@ package com.hedera.mirror.common.domain.token;
 import java.io.Serializable;
 import javax.persistence.Convert;
 import javax.persistence.Embeddable;
-
-import com.hedera.mirror.common.domain.entity.EntityId;
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.converter.TokenIdConverter;
+import com.hedera.mirror.common.domain.entity.EntityId;
 
 /**
  * TokenAccount embedded Id. This needs to exist as a separate class to ensure JPAMetaModelEntityProcessor picks it up
@@ -43,11 +41,9 @@ import com.hedera.mirror.common.converter.TokenIdConverter;
 public class TokenAccountId implements Serializable {
     private static final long serialVersionUID = -4069569824910871771L;
 
-    @Convert(converter = TokenIdConverter.class)
-    private EntityId tokenId;
-
     @Convert(converter = AccountIdConverter.class)
     private EntityId accountId;
 
-    private long modifiedTimestamp;
+    @Convert(converter = TokenIdConverter.class)
+    private EntityId tokenId;
 }

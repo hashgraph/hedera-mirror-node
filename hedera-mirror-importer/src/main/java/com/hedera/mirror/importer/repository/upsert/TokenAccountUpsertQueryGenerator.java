@@ -30,7 +30,7 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
 
     @Override
     public String getCreateTempIndexQuery() {
-        var pattern = "create index if not exists {0}_idx on {0} (token_id, account_id, modified_timestamp)";
+        var pattern = "create index if not exists {0}_idx on {0} (token_id, account_id)";
         return MessageFormat.format(pattern, getTemporaryTableName());
     }
 
@@ -43,46 +43,67 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
     public String getUpsertQuery() {
         return """
                 with last as (
-                  select distinct on (token_account.account_id, token_account.token_id) token_account.*
-                  from token_account
-                  join token_account_temp on token_account_temp.account_id = token_account.account_id
-                    and token_account_temp.token_id = token_account.token_id
-                  order by token_account.account_id, token_account.token_id, token_account.modified_timestamp desc
+                        select distinct on (token_account.account_id, token_account.token_id) token_account.*
+                                from token_account
+                        join token_account_temp on token_account_temp.account_id = token_account.account_id
+                        and token_account_temp.token_id = token_account.token_id
+                        order by token_account.account_id, token_account.token_id desc
+                ),
+                existing_history as (
+                  insert into token_account_history (account_id,associated,automatic_association,created_timestamp,freeze_status,kyc_status,timestamp_range,token_id)
+                  select distinct on (account_id,token_id) last.account_id,last.associated,last.automatic_association,last.created_timestamp,last.freeze_status,last.kyc_status,int8range(lower(last.timestamp_range), lower(timestamp_range)) as timestamp_range,last.token_id
+                  from last
+                  where last.timestamp_range is not null and timestamp_range is not null
+                  order by account_id,token_id, timestamp_range asc
+                ),
+                temp_history as (
+                  insert into token_account_history (account_id,associated,automatic_association,created_timestamp,freeze_status,kyc_status,timestamp_range,token_id)
+                  select distinct coalesce(account_id, last.account_id, null),coalesce(associated, last.associated, false),coalesce(automatic_association, last.automatic_association, false),coalesce(created_timestamp, last.created_timestamp, null),freeze_status,kyc_status,coalesce(timestamp_range, last.timestamp_range, null),coalesce(token_id, last.token_id, null)
+                  from last
+                  where timestamp_range is not null and upper(timestamp_range) is not null
                 )
+
                 insert into token_account (
-                  account_id, associated, automatic_association, created_timestamp, freeze_status, kyc_status,
-                  modified_timestamp, token_id
+                        account_id, associated, automatic_association, created_timestamp, freeze_status, kyc_status,
+                        timestamp_range, token_id
                 )
                 select
-                  token_account_temp.account_id,
-                  coalesce(token_account_temp.associated, last.associated),
-                  coalesce(token_account_temp.automatic_association, last.automatic_association),
-                  coalesce(token_account_temp.created_timestamp, last.created_timestamp),
-                  case when token_account_temp.freeze_status is not null then token_account_temp.freeze_status
-                       when token_account_temp.created_timestamp is not null then
-                         case
-                           when token.freeze_key is null then 0
-                           when token.freeze_default is true then 1
-                           else 2
-                         end
-                       else last.freeze_status
-                  end freeze_status,
-                  case when token_account_temp.kyc_status is not null then token_account_temp.kyc_status
-                       when token_account_temp.created_timestamp is not null then
-                         case
-                           when token.kyc_key is null then 0
-                           else 2
-                          end
-                       else last.kyc_status
-                  end kyc_status,
-                  token_account_temp.modified_timestamp,
-                  token_account_temp.token_id
+                token_account_temp.account_id,
+                        coalesce(token_account_temp.associated, last.associated),
+                        coalesce(token_account_temp.automatic_association, last.automatic_association),
+                        coalesce(token_account_temp.created_timestamp, last.created_timestamp),
+                case when token_account_temp.freeze_status is not null then token_account_temp.freeze_status
+                when token_account_temp.created_timestamp is not null then
+                case
+                        when token.freeze_key is null then 0
+                when token.freeze_default is true then 1
+                               else 2
+                end
+                           else last.freeze_status
+                end freeze_status,
+                case when token_account_temp.kyc_status is not null then token_account_temp.kyc_status
+                when token_account_temp.created_timestamp is not null then
+                case
+                        when token.kyc_key is null then 0
+                               else 2
+                end
+                           else last.kyc_status
+                end kyc_status,
+                token_account_temp.timestamp_range,
+                        token_account_temp.token_id
                 from token_account_temp
                 join token on token_account_temp.token_id = token.token_id
                 left join last on last.account_id = token_account_temp.account_id and
-                  last.token_id = token_account_temp.token_id and last.associated is true
+                last.token_id = token_account_temp.token_id and last.associated is true
                 where token_account_temp.created_timestamp is not null or last.created_timestamp is not null
-                order by token_account_temp.modified_timestamp
+                on conflict (account_id,token_id) do
+                    update set
+                        associated = excluded.associated,
+                        automatic_association = excluded.automatic_association,
+                        created_timestamp = excluded.created_timestamp,
+                        freeze_status = excluded.freeze_status,
+                        kyc_status = excluded.kyc_status,
+                        timestamp_range = excluded.timestamp_range
                 """;
     }
 }

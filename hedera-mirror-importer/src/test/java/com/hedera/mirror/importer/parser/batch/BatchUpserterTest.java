@@ -25,6 +25,7 @@ import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.importer.config.MirrorImporterConfiguration.TOKEN_DISSOCIATE_BATCH_PERSISTER;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
 import java.nio.charset.StandardCharsets;
@@ -53,6 +54,7 @@ import com.hedera.mirror.common.domain.token.NftTransfer;
 import com.hedera.mirror.common.domain.token.NftTransferId;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
+import com.hedera.mirror.common.domain.token.TokenAccountHistory;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
@@ -67,6 +69,7 @@ import com.hedera.mirror.importer.repository.NftAllowanceRepository;
 import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.NftTransferRepository;
 import com.hedera.mirror.importer.repository.ScheduleRepository;
+import com.hedera.mirror.importer.repository.TokenAccountHistoryRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
@@ -87,6 +90,7 @@ class BatchUpserterTest extends IntegrationTest {
     private final NftTransferRepository nftTransferRepository;
     private final ScheduleRepository scheduleRepository;
     private final TokenRepository tokenRepository;
+    private final TokenAccountHistoryRepository tokenAccountHistoryRepository;
     private final TokenAccountRepository tokenAccountRepository;
     private final TokenAllowanceRepository tokenAllowanceRepository;
     private final TokenTransferRepository tokenTransferRepository;
@@ -266,10 +270,10 @@ class BatchUpserterTest extends IntegrationTest {
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
 
         var tokenAccounts = new ArrayList<TokenAccount>();
-        tokenAccounts.add(getTokenAccount("0.0.2000", "0.0.1001", 1L, true, 1L));
-        tokenAccounts.add(getTokenAccount("0.0.2001", "0.0.1001", 2L, true, 2L));
-        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4001", 3L, true, 3L));
-        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4002", 4L, true, 4L));
+        tokenAccounts.add(getTokenAccount("0.0.2000", "0.0.1001", 1L, true, null));
+        tokenAccounts.add(getTokenAccount("0.0.2001", "0.0.1001", 2L, true, null));
+        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4001", 3L, true, null));
+        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4002", 4L, true, null));
 
         persist(batchPersister, tokenAccounts);
 
@@ -277,7 +281,7 @@ class BatchUpserterTest extends IntegrationTest {
         assertThat(tokenAccountRepository
                 .findAll())
                 .isNotEmpty()
-                .extracting(TokenAccount::getCreatedTimestamp, ta -> ta.getId().getModifiedTimestamp())
+                .extracting(TokenAccount::getCreatedTimestamp, ta -> ta.getTimestampLower())
                 .containsExactlyInAnyOrder(
                         Tuple.tuple(1L, 1L),
                         Tuple.tuple(2L, 2L),
@@ -299,15 +303,15 @@ class BatchUpserterTest extends IntegrationTest {
 
         // associate
         var tokenAccounts = new ArrayList<TokenAccount>();
-        tokenAccounts.add(getTokenAccount("0.0.2000", "0.0.2001", 5L, true, 5L));
-        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.3001", 6L, true, 6L));
-        tokenAccounts.add(getTokenAccount("0.0.4000", "0.0.4001", 7L, true, 7L));
+        tokenAccounts.add(getTokenAccount("0.0.2000", "0.0.2001", 5L, true, null));
+        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.3001", 6L, true, null));
+        tokenAccounts.add(getTokenAccount("0.0.4000", "0.0.4001", 7L, true, null));
 
         persist(batchPersister, tokenAccounts);
 
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
         assertThat(tokenAccountRepository.findAll())
-                .extracting(ta -> ta.getId().getModifiedTimestamp(), TokenAccount::getFreezeStatus)
+                .extracting(ta -> ta.getCreatedTimestamp(), TokenAccount::getFreezeStatus)
                 .containsExactlyInAnyOrder(
                         Tuple.tuple(5L, TokenFreezeStatusEnum.NOT_APPLICABLE),
                         Tuple.tuple(6L, TokenFreezeStatusEnum.FROZEN),
@@ -316,21 +320,27 @@ class BatchUpserterTest extends IntegrationTest {
 
         // reverse freeze status
         tokenAccounts.clear();
-        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.3001", null, null, 10L,
-                TokenFreezeStatusEnum.UNFROZEN, null));
-        tokenAccounts.add(getTokenAccount("0.0.4000", "0.0.4001", null, null, 11L,
-                TokenFreezeStatusEnum.FROZEN, null));
+        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.3001", null, null,
+                TokenFreezeStatusEnum.UNFROZEN, null, null));
+        tokenAccounts.add(getTokenAccount("0.0.4000", "0.0.4001", null, null,
+                TokenFreezeStatusEnum.FROZEN, null, null));
 
         persist(batchPersister, tokenAccounts);
 
         assertThat(tokenAccountRepository.findAll())
-                .extracting(ta -> ta.getId().getModifiedTimestamp(), TokenAccount::getFreezeStatus)
+                .extracting(ta -> ta.getCreatedTimestamp(), TokenAccount::getFreezeStatus)
                 .containsExactlyInAnyOrder(
                         Tuple.tuple(5L, TokenFreezeStatusEnum.NOT_APPLICABLE),
+                        Tuple.tuple(6L, TokenFreezeStatusEnum.UNFROZEN),
+                        Tuple.tuple(7L, TokenFreezeStatusEnum.FROZEN)
+
+                );
+
+        assertThat(tokenAccountHistoryRepository.findAll())
+                .extracting(ta -> ta.getCreatedTimestamp(), TokenAccountHistory::getFreezeStatus)
+                .containsExactlyInAnyOrder(
                         Tuple.tuple(6L, TokenFreezeStatusEnum.FROZEN),
-                        Tuple.tuple(7L, TokenFreezeStatusEnum.UNFROZEN),
-                        Tuple.tuple(10L, TokenFreezeStatusEnum.UNFROZEN),
-                        Tuple.tuple(11L, TokenFreezeStatusEnum.FROZEN)
+                        Tuple.tuple(7L, TokenFreezeStatusEnum.UNFROZEN)
                 );
     }
 
@@ -345,14 +355,14 @@ class BatchUpserterTest extends IntegrationTest {
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
 
         var tokenAccounts = new ArrayList<TokenAccount>();
-        tokenAccounts.add(getTokenAccount("0.0.2000", "0.0.2001", 5L, true, 5L));
-        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.3001", 6L, true, 6L));
+        tokenAccounts.add(getTokenAccount("0.0.2000", "0.0.2001", 5L, true, null));
+        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.3001", 6L, true, null));
 
         persist(batchPersister, tokenAccounts);
 
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
         assertThat(tokenAccountRepository.findAll())
-                .extracting(ta -> ta.getId().getModifiedTimestamp(), TokenAccount::getKycStatus)
+                .extracting(ta -> ta.getCreatedTimestamp(), TokenAccount::getKycStatus)
                 .containsExactlyInAnyOrder(
                         Tuple.tuple(5L, TokenKycStatusEnum.NOT_APPLICABLE),
                         Tuple.tuple(6L, TokenKycStatusEnum.REVOKED)
@@ -360,27 +370,26 @@ class BatchUpserterTest extends IntegrationTest {
 
         // grant KYC
         tokenAccounts.clear();
-        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.3001", null, null, 11L,
-                null, TokenKycStatusEnum.GRANTED));
+        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.3001", null, null,
+                null, TokenKycStatusEnum.GRANTED, null));
 
         persist(batchPersister, tokenAccounts);
 
         assertThat(tokenAccountRepository.findAll())
-                .extracting(ta -> ta.getId().getModifiedTimestamp(), TokenAccount::getKycStatus)
+                .extracting(ta -> ta.getCreatedTimestamp(), TokenAccount::getKycStatus)
                 .containsExactlyInAnyOrder(
                         Tuple.tuple(5L, TokenKycStatusEnum.NOT_APPLICABLE),
-                        Tuple.tuple(6L, TokenKycStatusEnum.REVOKED),
-                        Tuple.tuple(11L, TokenKycStatusEnum.GRANTED)
+                        Tuple.tuple(6L, TokenKycStatusEnum.GRANTED)
                 );
     }
 
     @Test
     void tokenAccountInsertWithMissingToken() {
         var tokenAccounts = new ArrayList<TokenAccount>();
-        tokenAccounts.add(getTokenAccount("0.0.2000", "0.0.1001", 1L, false, 1L));
-        tokenAccounts.add(getTokenAccount("0.0.2001", "0.0.1001", 2L, false, 2L));
-        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4001", 3L, false, 3L));
-        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4002", 4L, false, 4L));
+        tokenAccounts.add(getTokenAccount("0.0.2000", "0.0.1001", 1L, false, null));
+        tokenAccounts.add(getTokenAccount("0.0.2001", "0.0.1001", 2L, false, null));
+        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4001", 3L, false, null));
+        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4002", 4L, false, null));
 
         persist(batchPersister, tokenAccounts);
         assertThat(tokenAccountRepository.findAll()).isEmpty();
@@ -399,34 +408,37 @@ class BatchUpserterTest extends IntegrationTest {
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
 
         var tokenAccounts = new ArrayList<TokenAccount>();
-        tokenAccounts.add(getTokenAccount("0.0.2000", "0.0.1001", 5L, true, 6L));
-        tokenAccounts.add(getTokenAccount("0.0.2001", "0.0.1001", 6L, true, 7L));
-        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4001", 7L, true, 8L));
-        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4002", 8L, true, 9L));
+        tokenAccounts.add(getTokenAccount("0.0.2000", "0.0.1001", 5L, true, Range.atLeast(6L)));
+        tokenAccounts.add(getTokenAccount("0.0.2001", "0.0.1001", 6L, true, Range.atLeast(7L)));
+        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4001", 7L, true, Range.atLeast(8L)));
+        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4002", 8L, true, Range.atLeast(9L)));
 
         persist(batchPersister, tokenAccounts);
 
         // update
         tokenAccounts.clear();
-        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4001", null, null, 10L));
-        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4002", null, null, 11L));
-        tokenAccounts.add(getTokenAccount("0.0.4000", "0.0.7001", 10L, true, 12L));
-        tokenAccounts.add(getTokenAccount("0.0.4000", "0.0.7002", 11L, true, 13L));
+        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4001", null, null, Range.atLeast(10L)));
+        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4002", null, null, Range.atLeast(11L)));
+        tokenAccounts.add(getTokenAccount("0.0.4000", "0.0.7001", 10L, true, Range.atLeast(12L)));
+        tokenAccounts.add(getTokenAccount("0.0.4000", "0.0.7002", 11L, true, Range.atLeast(13L)));
 
         persist(batchPersister, tokenAccounts);
 
+        //assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokenAccounts);
         assertThat(tokenAccountRepository.findAll())
-                .extracting(TokenAccount::getCreatedTimestamp, ta -> ta.getId().getModifiedTimestamp())
+                .extracting(TokenAccount::getCreatedTimestamp, ta -> ta.getTimestampLower())
                 .containsExactlyInAnyOrder(
                         Tuple.tuple(5L, 6L),
                         Tuple.tuple(6L, 7L),
-                        Tuple.tuple(7L, 8L),
                         Tuple.tuple(7L, 10L),
-                        Tuple.tuple(8L, 9L),
                         Tuple.tuple(8L, 11L),
                         Tuple.tuple(10L, 12L),
                         Tuple.tuple(11L, 13L)
                 );
+
+        assertThat(tokenAccountHistoryRepository.findAll())
+                .extracting(TokenAccountHistory::getCreatedTimestamp)
+                .containsExactlyInAnyOrder(7L, 8L);
     }
 
     @Test
@@ -737,22 +749,28 @@ class BatchUpserterTest extends IntegrationTest {
     }
 
     private TokenAccount getTokenAccount(String tokenId, String accountId, Long createdTimestamp, Boolean associated,
-                                         Long modifiedTimestamp) {
-        return getTokenAccount(tokenId, accountId, createdTimestamp, associated, modifiedTimestamp, null, null);
+                                         Range timestampRange) {
+        return getTokenAccount(tokenId, accountId, createdTimestamp, associated, null, null, timestampRange);
     }
 
     private TokenAccount getTokenAccount(String tokenId, String accountId, Long createdTimestamp, Boolean associated,
-                                         Long modifiedTimestamp, TokenFreezeStatusEnum freezeStatus,
-                                         TokenKycStatusEnum kycStatus) {
-        TokenAccount tokenAccount = new TokenAccount(EntityId.of(tokenId, TOKEN),
-                EntityId.of(accountId, ACCOUNT), modifiedTimestamp);
-        tokenAccount.setAssociated(associated);
-        tokenAccount.setAutomaticAssociation(false);
-        tokenAccount.setCreatedTimestamp(createdTimestamp);
-        tokenAccount.setFreezeStatus(freezeStatus);
-        tokenAccount.setKycStatus(kycStatus);
-
-        return tokenAccount;
+                                         TokenFreezeStatusEnum freezeStatus, TokenKycStatusEnum kycStatus,
+                                         Range timestampRange) {
+        Range<Long> range = timestampRange == null ? Range.atLeast(0L) : timestampRange;
+        if (timestampRange == null && createdTimestamp != null) {
+            range = Range.atLeast(createdTimestamp);
+        }
+        Range<Long> finalRange = range;
+        return domainBuilder.tokenAccount().customize(t -> t
+                .accountId(EntityId.of(accountId, ACCOUNT).getId())
+                .automaticAssociation(false)
+                .associated(associated)
+                .createdTimestamp(createdTimestamp)
+                .freezeStatus(freezeStatus)
+                .kycStatus(kycStatus)
+                .timestampRange(finalRange)
+                .tokenId(EntityId.of(tokenId, TOKEN).getId())
+        ).get();
     }
 
     private Schedule getSchedule(Long createdTimestamp, String scheduleId, Long executedTimestamp) {

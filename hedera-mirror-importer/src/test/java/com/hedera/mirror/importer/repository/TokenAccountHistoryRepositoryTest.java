@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.repository.upsert;
+package com.hedera.mirror.importer.repository;
 
 /*-
  * ‌
@@ -21,29 +21,33 @@ package com.hedera.mirror.importer.repository.upsert;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.importer.IntegrationTest;
-
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-class UpsertQueryGeneratorFactoryTest extends IntegrationTest {
+class TokenAccountHistoryRepositoryTest extends AbstractRepositoryTest {
 
-    private final UpsertQueryGeneratorFactory factory;
+    private final TokenAccountHistoryRepository tokenAccountHistoryRepository;
 
     @Test
-    void unsupportedClass() {
-        assertThatThrownBy(() -> factory.get(Object.class))
-                .isInstanceOf(UnsupportedOperationException.class)
-                .hasMessageContaining("not annotated with @Upsertable");
+    void prune() {
+        domainBuilder.tokenAccountHistory().persist();
+        var tokenAccountHistory2 = domainBuilder.tokenAccountHistory().persist();
+        var tokenAccountHistory3 = domainBuilder.tokenAccountHistory().persist();
+
+        tokenAccountHistoryRepository.prune(tokenAccountHistory2.getTimestampUpper());
+
+        assertThat(tokenAccountHistoryRepository.findAll()).containsExactly(tokenAccountHistory3);
     }
 
     @Test
-    void getGenericGenerator() {
-        assertThat(factory.get(Entity.class)).isInstanceOf(GenericUpsertQueryGenerator.class);
+    void save() {
+        var tokenAccountHistory = domainBuilder.tokenAccountHistory().get();
+        tokenAccountHistoryRepository.save(tokenAccountHistory);
+        assertThat(tokenAccountHistoryRepository.findById(tokenAccountHistory.getId()))
+                .get()
+                .isEqualTo(tokenAccountHistory);
     }
 }
