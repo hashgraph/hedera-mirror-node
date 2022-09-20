@@ -20,6 +20,7 @@ package com.hedera.mirror.web3.evm.properties;
  * ‍
  */
 
+import java.time.Instant;
 import java.util.Optional;
 import lombok.Value;
 import org.apache.tuweni.bytes.Bytes;
@@ -31,14 +32,34 @@ import org.hyperledger.besu.evm.frame.BlockValues;
  * Mirror-node adapted {@link BlockValues}
  */
 @Value
-public class SimulatedBlockMetaSource implements BlockValues {
+public class HederaBlockValues implements BlockValues {
 
-    private static Optional<Wei> zeroWei = Optional.of(Wei.ZERO);
+    protected final long gasLimit;
+    protected final long blockNo;
+    protected final Instant consTimestamp;
 
-    Optional<Wei> baseFee = zeroWei;
-    Bytes difficultyBytes = UInt256.ZERO;
+    @Override
+    public long getGasLimit() {
+        return gasLimit;
+    }
 
-    long gasLimit;
-    long number;
-    long timestamp;
+    @Override
+    public long getTimestamp() {
+        return consTimestamp.getEpochSecond();
+    }
+
+    @Override
+    public Optional<Wei> getBaseFee() {
+        return Optional.of(Wei.ZERO);
+    }
+
+    @Override
+    public Bytes getDifficultyBytes() {
+        return UInt256.ZERO;
+    }
+
+    @Override
+    public long getNumber() {
+        return blockNo;
+    }
 }

@@ -8,6 +8,11 @@ hedera:
         port: 5432
         sslMode: DISABLE
         username: mirror_web3
+      evm:
+        chain-id: 298
+        max-gas-refund-percentage: 20
+        are-nfts-enabled: false
+        enabled-sidecars: unrecognized
 logging:
   level:
     root: warn

@@ -109,11 +109,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.apache.tuweni</groupId>
-            <artifactId>tuweni-bytes</artifactId>
-            <version>${tuweni.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.hyperledger.besu</groupId>
             <artifactId>besu-datatypes</artifactId>
             <version>${besu.version}</version>
@@ -157,6 +152,22 @@
         <version>6.6.2</version>
         <scope>compile</scope>
       </dependency>
+        <dependency>
+            <groupId>com.hedera.hashgraph</groupId>
+            <artifactId>hedera-protobuf-java-api</artifactId>
+            <version>0.30.0-alias-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-jpa</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.hedera</groupId>
+            <artifactId>hedera-mirror-common</artifactId>
+            <version>0.65.0-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 
     <build>

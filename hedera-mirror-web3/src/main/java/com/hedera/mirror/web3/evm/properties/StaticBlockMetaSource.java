@@ -5,6 +5,7 @@ import com.hedera.mirror.web3.repository.RecordFileRepository;
 import lombok.RequiredArgsConstructor;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.datatypes.Hash;
+
 import com.hedera.mirror.web3.evm.exception.MissingResultException;
 
 import javax.inject.Named;
@@ -26,8 +27,7 @@ public class StaticBlockMetaSource implements BlockMetaSource {
     public BlockValues computeBlockValues(long gasLimit) {
         final var latestRecordFile = recordFileRepository.findLatest()
                 .orElseThrow(() -> new MissingResultException("No record file available."));
-        return new SimulatedBlockMetaSource(gasLimit, latestRecordFile.getIndex(), Instant.ofEpochSecond(0,
-                        latestRecordFile.getConsensusStart())
-                .getEpochSecond());
+        return new HederaBlockValues(gasLimit, latestRecordFile.getIndex(), Instant.ofEpochSecond(0,
+                latestRecordFile.getConsensusStart()));
     }
 }
