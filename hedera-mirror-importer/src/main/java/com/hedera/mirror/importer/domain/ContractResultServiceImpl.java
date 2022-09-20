@@ -122,8 +122,6 @@ public class ContractResultServiceImpl implements ContractResultService {
             case RECIPIENT_CONTRACT -> contractAction.setRecipientContract(EntityId.of(action.getRecipientContract()));
             case INVALID_SOLIDITY_ADDRESS ->
                     contractAction.setRecipientAddress(action.getInvalidSolidityAddress().toByteArray());
-            default -> throw new InvalidDatasetException("Invalid recipient for contract action: " +
-                    action.getRecipientCase());
         }
 
         switch (action.getResultDataCase()) {
