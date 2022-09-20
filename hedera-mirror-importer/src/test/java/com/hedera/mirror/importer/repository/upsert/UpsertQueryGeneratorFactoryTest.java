@@ -28,18 +28,25 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.importer.IntegrationTest;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class UpsertQueryGeneratorFactoryTest extends IntegrationTest {
 
     private final UpsertQueryGeneratorFactory factory;
+    private final TokenAccountUpsertQueryGenerator customUpsertQueryGenerator;
 
     @Test
     void unsupportedClass() {
         assertThatThrownBy(() -> factory.get(Object.class))
                 .isInstanceOf(UnsupportedOperationException.class)
                 .hasMessageContaining("not annotated with @Upsertable");
+    }
+
+    @Test
+    void getExistingGenerator() {
+        assertThat(factory.get(TokenAccount.class)).isEqualTo(customUpsertQueryGenerator);
     }
 
     @Test
