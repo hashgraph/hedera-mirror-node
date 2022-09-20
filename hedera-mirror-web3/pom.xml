@@ -121,12 +121,6 @@
             <scope>compile</scope>
         </dependency>
         <dependency>
-            <groupId>com.swirlds</groupId>
-            <artifactId>swirlds-common</artifactId>
-            <version>${swirlds.version}</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
             <groupId>org.hyperledger.besu</groupId>
             <artifactId>secp256k1</artifactId>
             <version>0.5.0</version>
