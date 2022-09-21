@@ -1792,7 +1792,7 @@ components:
           type: string
           enum: [ ACCOUNT, CONTRACT ]
           example: ACCOUNT
-          nullable: false
+          nullable: true
         result_data:
           description: The hex encoded result data
           example: '0x123456'

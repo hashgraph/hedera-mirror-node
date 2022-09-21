@@ -212,7 +212,13 @@ public class RecordItemBuilder {
                 .record(r -> r.setContractCreateResult(contractFunctionResult(contractId)
                         .addCreatedContractIDs(contractId)))
                 .sidecarRecords(r -> r.add(contractStateChanges(contractId)))
-                .sidecarRecords(r -> r.add(contractActions()))
+                .sidecarRecords(r -> {
+                    var contractActions = contractActions();
+                    contractActions.getActionsBuilder()
+                            .getContractActionsBuilderList()
+                            .forEach(ContractAction.Builder::clearRecipient);
+                    r.add(contractActions);
+                })
                 .sidecarRecords(r -> r.add(contractBytecode(contractId)));
     }
 
