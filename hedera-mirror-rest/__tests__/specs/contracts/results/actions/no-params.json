@@ -142,8 +142,8 @@
         "index": 2,
         "input": "0xabcd",
         "recipient_account": null,
-        "recipient_address": "0x70f2b2914a2a4b783faefb75f459a580616fcb5e",
-        "recipient_contract": 8002,
+        "recipient_address": null,
+        "recipient_contract": null,
         "result_data": "0x1234",
         "result_data_type": 11,
         "value": 200
@@ -224,9 +224,9 @@
         "gas_used": 900,
         "index": 2,
         "input": "0xabcd",
-        "to": "0x70f2b2914a2a4b783faefb75f459a580616fcb5e",
-        "recipient": "0.0.8002",
-        "recipient_type": "CONTRACT",
+        "to": null,
+        "recipient": null,
+        "recipient_type": null,
         "result_data": "0x1234",
         "result_data_type": "OUTPUT",
         "value": 200
