@@ -24,6 +24,7 @@ import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 import static com.hedera.services.stream.proto.ContractAction.CallerCase.CALLING_CONTRACT;
+import static com.hedera.services.stream.proto.ContractAction.RecipientCase.RECIPIENT_NOT_SET;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -185,16 +186,6 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
 
         assertThatThrownBy(() -> process(recordItem)).isInstanceOf(InvalidDatasetException.class)
                 .hasMessageContaining("Invalid caller");
-    }
-
-    @Test
-    void processContractActionInvalidRecipient() {
-        var recordItem = recordItemBuilder.contractCall()
-                .sidecarRecords(s -> s.get(1).getActionsBuilder().getContractActionsBuilder(0).clearRecipient())
-                .build();
-
-        assertThatThrownBy(() -> process(recordItem)).isInstanceOf(InvalidDatasetException.class)
-                .hasMessageContaining("Invalid recipient");
     }
 
     @Test
@@ -483,7 +474,8 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                             .satisfies(c -> assertThat(c.getResultData()).isNotEmpty())
                             .satisfiesAnyOf(c -> assertThat(c.getRecipientContract()).isNotNull(),
                                     c -> assertThat(c.getRecipientAccount()).isNotNull(),
-                                    c -> assertThat(c.getRecipientAddress()).isNotEmpty());
+                                    c -> assertThat(c.getRecipientAddress()).isNotEmpty(),
+                                    c -> assertThat(contractAction.getRecipientCase()).isEqualTo(RECIPIENT_NOT_SET));
                 });
         assertThat(contractActions).isExhausted();
     }
