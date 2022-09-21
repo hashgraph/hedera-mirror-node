@@ -52,11 +52,11 @@ class ContractActionViewModel {
    * @param {ContractAction} contractAction
    */
   constructor(contractAction) {
-    const recipientIsAccount = !!contractAction.recipientAccount;
-    const recipientId = recipientIsAccount ? contractAction.recipientAccount : contractAction.recipientContract;
-    const recipient = EntityId.parse(recipientId);
     const callerId = EntityId.parse(contractAction.caller);
     const callOperationType = contractAction.callOperationType || 0;
+    const recipientId = contractAction.recipientAccount || contractAction.recipientContract;
+    const recipient = EntityId.parse(recipientId, {isNullable: true});
+    const recipientIsAccount = !!contractAction.recipientAccount;
 
     this.call_depth = contractAction.callDepth;
     this.call_operation_type = ContractActionViewModel.callOperationTypes[callOperationType];
@@ -69,12 +69,12 @@ class ContractActionViewModel {
     this.index = contractAction.index;
     this.input = utils.toHexStringNonQuantity(contractAction.input);
     this.recipient = recipient.toString();
-    this.recipient_type = recipientIsAccount ? entityTypes.ACCOUNT : entityTypes.CONTRACT;
+    this.recipient_type = recipientId && (recipientIsAccount ? entityTypes.ACCOUNT : entityTypes.CONTRACT);
     this.result_data = utils.toHexStringNonQuantity(contractAction.resultData);
     this.result_data_type = ContractActionViewModel.resultDataTypes[contractAction.resultDataType];
     this.timestamp = utils.nsToSecNs(contractAction.consensusTimestamp);
     this.to = contractAction.recipientAddress
-      ? utils.toHexString(Buffer.from(contractAction.recipientAddress), true, 40)
+      ? utils.toHexString(contractAction.recipientAddress, true, 40)
       : recipient.toEvmAddress();
     this.value = contractAction.value;
   }
