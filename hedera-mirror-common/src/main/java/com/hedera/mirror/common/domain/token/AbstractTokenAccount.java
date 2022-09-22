@@ -60,7 +60,6 @@ public class AbstractTokenAccount implements History {
 
     private Boolean automaticAssociation;
 
-    @Column(updatable = false)
     private Long createdTimestamp;
 
     @Enumerated(EnumType.ORDINAL)

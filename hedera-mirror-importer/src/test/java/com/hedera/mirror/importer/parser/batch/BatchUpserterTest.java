@@ -321,9 +321,9 @@ class BatchUpserterTest extends IntegrationTest {
         // reverse freeze status
         tokenAccounts.clear();
         tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.3001", null, null,
-                TokenFreezeStatusEnum.UNFROZEN, null, null));
+                TokenFreezeStatusEnum.UNFROZEN, null, Range.atLeast(10L)));
         tokenAccounts.add(getTokenAccount("0.0.4000", "0.0.4001", null, null,
-                TokenFreezeStatusEnum.FROZEN, null, null));
+                TokenFreezeStatusEnum.FROZEN, null, Range.atLeast(11L)));
 
         persist(batchPersister, tokenAccounts);
 
@@ -371,7 +371,7 @@ class BatchUpserterTest extends IntegrationTest {
         // grant KYC
         tokenAccounts.clear();
         tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.3001", null, null,
-                null, TokenKycStatusEnum.GRANTED, null));
+                null, TokenKycStatusEnum.GRANTED, Range.atLeast(11L)));
 
         persist(batchPersister, tokenAccounts);
 

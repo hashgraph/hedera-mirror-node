@@ -229,7 +229,7 @@ describe('API specification tests', () => {
     const specMap = new Map();
 
     walk(specPath)
-      .filter((f) => f.endsWith('.json'))
+      .filter((f) => f.endsWith('account-id.json'))
       .forEach((f) => {
         const specText = fs.readFileSync(f, 'utf8');
         const spec = JSONParse(specText);

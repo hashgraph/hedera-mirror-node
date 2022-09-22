@@ -537,7 +537,7 @@ create table if not exists token_account
     timestamp_range       int8range not null,
     token_id              bigint    not null
 );
-comment on table token is 'Token account entity';
+comment on table token_account is 'Token account entity';
 
 --- token_account_history
 create table if not exists token_account_history

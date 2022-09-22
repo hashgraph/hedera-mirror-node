@@ -130,7 +130,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
                              select distinct on (account_id, token_id) *
                              from token_account
                              where account_id = $1
-                             order by account_id, token_id, modified_timestamp desc
+                             order by account_id, token_id desc
                            )
                            select t.token_id, symbol, e.key, t.type
                            from token t
@@ -176,7 +176,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
                              select distinct on (account_id, token_id) *
                              from token_account
                              where account_id = $1
-                             order by account_id, token_id, modified_timestamp desc
+                             order by account_id, token_id desc
                            )
                            select t.token_id, symbol, e.key, t.type
                            from token t
@@ -235,7 +235,7 @@ describe('token extractSqlFromTokenRequest tests', () => {
                              select distinct on (account_id, token_id) *
                              from token_account
                              where account_id = $1
-                             order by account_id, token_id, modified_timestamp desc
+                             order by account_id, token_id desc
                            )
                            select t.token_id, symbol, e.key, t.type
                            from token t

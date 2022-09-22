@@ -120,7 +120,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<NonFeeTransfer> nonFeeTransfers;
     private final Collection<Prng> prngs;
     private final Collection<StakingRewardTransfer> stakingRewardTransfers;
-    private final Map<AbstractTokenAccount.Id, TokenAccount> tokenAccounts;
+    private final Collection<TokenAccount> tokenAccounts;
     private final Collection<TokenAllowance> tokenAllowances;
     private final Collection<TokenTransfer> tokenDissociateTransfers;
     private final Collection<TokenTransfer> tokenTransfers;
@@ -180,6 +180,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         nonFeeTransfers = new ArrayList<>();
         prngs = new ArrayList<>();
         stakingRewardTransfers = new ArrayList<>();
+        tokenAccounts = new ArrayList<>();
         tokenAllowances = new ArrayList<>();
         tokenDissociateTransfers = new ArrayList<>();
         tokenTransfers = new ArrayList<>();
@@ -194,7 +195,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         nftTransferState = new HashMap<>();
         schedules = new HashMap<>();
         tokens = new HashMap<>();
-        tokenAccounts = new HashMap<>();
         tokenAccountState = new HashMap<>();
         tokenAllowanceState = new HashMap<>();
     }
@@ -298,7 +298,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             batchPersister.persist(nftAllowances);
             batchPersister.persist(tokens.values());
             // ingest tokenAccounts after tokens since some fields of token accounts depends on the associated token
-            batchPersister.persist(tokenAccounts.values());
+            batchPersister.persist(tokenAccounts);
             batchPersister.persist(tokenAllowances);
             batchPersister.persist(nfts.values()); // persist nft after token entity
             batchPersister.persist(schedules.values());
@@ -462,7 +462,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onTokenAccount(TokenAccount tokenAccount) throws ImporterException {
         TokenAccount merged = tokenAccountState.merge(tokenAccount.getId(), tokenAccount, this::mergeTokenAccount);
-        tokenAccounts.put(merged.getId(), merged);
+        tokenAccounts.add(merged);
     }
 
     @Override
@@ -718,13 +718,31 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     private TokenAccount mergeTokenAccount(TokenAccount lastTokenAccount, TokenAccount newTokenAccount) {
+        if(lastTokenAccount.getTimestampRange().equals(newTokenAccount.getTimestampRange())) {
+            // The token accounts are for the same range, accept the previous one
+            return null;
+        }
+
+        lastTokenAccount.setTimestampUpper(newTokenAccount.getTimestampLower());
+
+        if(newTokenAccount.getTimestampLower() != null && newTokenAccount.getCreatedTimestamp() != null &&
+                newTokenAccount.getCreatedTimestamp() > newTokenAccount.getTimestampLower()) {
+            newTokenAccount.setTimestampLower(newTokenAccount.getCreatedTimestamp());
+        }
+
+        if(newTokenAccount.getTimestampUpper() != null &&
+                newTokenAccount.getTimestampUpper() < lastTokenAccount.getTimestampUpper()) {
+            newTokenAccount.setTimestampUpper(lastTokenAccount.getTimestampUpper());
+        }
+
+        if (newTokenAccount.getCreatedTimestamp() != null) {
+            return newTokenAccount;
+        }
+
         // newTokenAccount is a partial update. It must have its id (tokenId, accountId) set.
         // copy the lifespan immutable fields createdTimestamp and automaticAssociation from the previous snapshot.
         // copy other fields from the previous snapshot if not set in newTokenAccount
-        if(lastTokenAccount.getCreatedTimestamp() != null && newTokenAccount.getCreatedTimestamp() != null &&
-            lastTokenAccount.getCreatedTimestamp() < newTokenAccount.getCreatedTimestamp()) {
-            newTokenAccount.setCreatedTimestamp(lastTokenAccount.getCreatedTimestamp());
-        }
+        newTokenAccount.setCreatedTimestamp(lastTokenAccount.getCreatedTimestamp());
 
         newTokenAccount.setAutomaticAssociation(lastTokenAccount.getAutomaticAssociation());
 
@@ -738,21 +756,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
         if (newTokenAccount.getKycStatus() == null) {
             newTokenAccount.setKycStatus(lastTokenAccount.getKycStatus());
-        }
-
-        if(newTokenAccount.getTimestampLower() != null &&
-                newTokenAccount.getTimestampLower() > lastTokenAccount.getTimestampLower()) {
-            newTokenAccount.setTimestampLower(lastTokenAccount.getTimestampLower());
-        }
-
-        if(newTokenAccount.getTimestampLower() != null && newTokenAccount.getCreatedTimestamp() != null &&
-                newTokenAccount.getCreatedTimestamp() > newTokenAccount.getTimestampLower()) {
-            newTokenAccount.setTimestampLower(newTokenAccount.getCreatedTimestamp());
-        }
-
-        if(newTokenAccount.getTimestampUpper() != null &&
-                newTokenAccount.getTimestampUpper() < lastTokenAccount.getTimestampUpper()) {
-            newTokenAccount.setTimestampUpper(lastTokenAccount.getTimestampUpper());
         }
 
         return newTokenAccount;

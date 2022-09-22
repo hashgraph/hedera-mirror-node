@@ -182,9 +182,9 @@ alter table token
 
 -- token_account
 alter table token_account
-    add constraint token_account__pk primary key (account_id, token_id, modified_timestamp);
+    add constraint token_account__pk primary key (account_id, token_id);
 alter table if exists token_account_history
-    add constraint token_account_history__pk primary key (account_id, token_id, modified_timestamp, timestamp_range);
+    add constraint token_account_history__pk primary key (account_id, token_id, timestamp_range);
 
 -- token_allowance
 alter table if exists token_allowance
