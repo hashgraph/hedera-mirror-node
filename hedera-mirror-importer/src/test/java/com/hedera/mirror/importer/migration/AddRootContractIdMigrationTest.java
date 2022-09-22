@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.migration;
  * ‍
  */
 
-import static com.hedera.mirror.importer.config.JdbcTemplateConfiguration.JDBC_TEMPLATE_OWNER;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.File;
@@ -33,7 +32,6 @@ import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcOperations;
@@ -41,6 +39,7 @@ import org.springframework.test.context.TestPropertySource;
 
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.config.Owner;
 
 @EnabledIfV1
 @Tag("migration")
@@ -48,7 +47,7 @@ import com.hedera.mirror.importer.IntegrationTest;
 class AddRootContractIdMigrationTest extends IntegrationTest {
 
     @Resource
-    @Qualifier(JDBC_TEMPLATE_OWNER)
+    @Owner
     private JdbcOperations jdbcOperations;
 
     @Value("classpath:db/migration/v1/V1.51.1__contract_logs_root_id.sql")

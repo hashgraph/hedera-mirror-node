@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.migration;
  * ‍
  */
 
-import static com.hedera.mirror.importer.config.JdbcTemplateConfiguration.JDBC_TEMPLATE_OWNER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -36,7 +35,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
@@ -50,6 +48,7 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
@@ -59,7 +58,7 @@ import com.hedera.mirror.importer.repository.TransactionRepository;
 @TestPropertySource(properties = "spring.flyway.target=1.35.5")
 class CleanupEntityMigrationTest extends IntegrationTest {
 
-    private final @Qualifier(JDBC_TEMPLATE_OWNER) JdbcOperations jdbcOperations;
+    private final @Owner JdbcOperations jdbcOperations;
     @Value("classpath:db/migration/v1/V1.36.2__entities_update.sql")
     private final File migrationSql;
     private final EntityRepository entityRepository;

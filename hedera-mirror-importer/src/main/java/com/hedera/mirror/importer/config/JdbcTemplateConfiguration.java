@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.config;
  */
 
 import javax.sql.DataSource;
+import org.springframework.boot.autoconfigure.jdbc.JdbcProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,18 +31,17 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import com.hedera.mirror.importer.db.DBProperties;
 
 @Configuration
-public class JdbcTemplateConfiguration {
-
-    public static final String JDBC_TEMPLATE_OWNER = "owner";
+class JdbcTemplateConfiguration {
 
     @Bean
     @Primary
-    public JdbcTemplate jdbcTemplate(DataSource dataSource) {
-        return new JdbcTemplate(dataSource);
+    JdbcTemplate jdbcTemplate(DataSource dataSource, JdbcProperties properties) {
+        return createJdbcTemplate(dataSource, properties);
     }
 
-    @Bean(JDBC_TEMPLATE_OWNER)
-    public JdbcTemplate jdbcTemplate(DBProperties dbProperties) {
+    @Bean
+    @Owner
+    JdbcTemplate jdbcTemplateOwner(DBProperties dbProperties, JdbcProperties properties) {
         String jdbcUrl = String.format("jdbc:postgresql://%s:%d/%s?tcpKeepAlive=true", dbProperties.getHost(),
                 dbProperties.getPort(), dbProperties.getName());
         var datasource = DataSourceBuilder.create()
@@ -49,6 +49,17 @@ public class JdbcTemplateConfiguration {
                 .url(jdbcUrl)
                 .username(dbProperties.getOwner())
                 .build();
-        return new JdbcTemplate(datasource);
+        return createJdbcTemplate(datasource, properties);
+    }
+
+    private JdbcTemplate createJdbcTemplate(DataSource dataSource, JdbcProperties properties) {
+        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+        JdbcProperties.Template template = properties.getTemplate();
+        jdbcTemplate.setFetchSize(template.getFetchSize());
+        jdbcTemplate.setMaxRows(template.getMaxRows());
+        if (template.getQueryTimeout() != null) {
+            jdbcTemplate.setQueryTimeout((int) template.getQueryTimeout().getSeconds());
+        }
+        return jdbcTemplate;
     }
 }

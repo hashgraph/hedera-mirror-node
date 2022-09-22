@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.migration;
  * ‍
  */
 
-import static com.hedera.mirror.importer.config.JdbcTemplateConfiguration.JDBC_TEMPLATE_OWNER;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Collections;
@@ -34,13 +33,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import com.hedera.mirror.common.domain.transaction.TransactionHash;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.repository.TransactionHashRepository;
 
@@ -53,7 +52,7 @@ class BackfillTransactionHashMigrationTest extends IntegrationTest {
     private static final String MIGRATION_NAME = "backfillTransactionHashMigration";
 
     private final EntityProperties entityProperties;
-    private final @Qualifier(JDBC_TEMPLATE_OWNER) JdbcTemplate jdbcTemplate;
+    private final @Owner JdbcTemplate jdbcTemplate;
     private final MirrorProperties mirrorProperties;
     private final TransactionHashRepository transactionHashRepository;
 
