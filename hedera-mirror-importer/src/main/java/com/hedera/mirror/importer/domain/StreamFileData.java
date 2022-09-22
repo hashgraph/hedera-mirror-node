@@ -26,10 +26,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import lombok.CustomLog;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Value;
-import lombok.extern.log4j.Log4j2;
 import org.apache.commons.compress.compressors.CompressorException;
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.commons.io.FileUtils;
@@ -38,21 +39,29 @@ import org.apache.commons.lang3.StringUtils;
 import com.hedera.mirror.importer.exception.FileOperationException;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 
-@Log4j2
+@CustomLog
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Value
 public class StreamFileData {
 
     private static final CompressorStreamFactory compressorStreamFactory = new CompressorStreamFactory(true);
 
+    @EqualsAndHashCode.Include
     private final StreamFilename streamFilename;
+
+    @EqualsAndHashCode.Include
     private final byte[] bytes;
+
     @Getter(lazy = true)
     private final byte[] decompressedBytes = decompressBytes();
+
+    private final Instant lastModified;
 
     public static StreamFileData from(@NonNull File file) {
         try {
             byte[] bytes = FileUtils.readFileToByteArray(file);
-            return new StreamFileData(new StreamFilename(file.getName()), bytes);
+            var lastModified = Instant.ofEpochMilli(file.lastModified());
+            return new StreamFileData(new StreamFilename(file.getName()), bytes, lastModified);
         } catch (InvalidStreamFileException e) {
             throw e;
         } catch (Exception e) {
@@ -62,20 +71,17 @@ public class StreamFileData {
 
     // Used for testing String based files like CSVs
     public static StreamFileData from(@NonNull String filename, @NonNull String contents) {
-        return new StreamFileData(new StreamFilename(filename), contents.getBytes(StandardCharsets.UTF_8));
+        return new StreamFileData(new StreamFilename(filename), contents.getBytes(StandardCharsets.UTF_8),
+                Instant.now());
     }
 
     // Used for testing with raw bytes
     public static StreamFileData from(@NonNull String filename, byte[] bytes) {
-        return new StreamFileData(new StreamFilename(filename), bytes);
+        return new StreamFileData(new StreamFilename(filename), bytes, Instant.now());
     }
 
     public InputStream getInputStream() {
         return new ByteArrayInputStream(getDecompressedBytes());
-    }
-
-    public Instant getInstant() {
-        return streamFilename.getInstant();
     }
 
     public String getFilename() {

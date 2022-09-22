@@ -23,12 +23,10 @@ package com.hedera.mirror.importer.downloader;
 import java.nio.file.Path;
 import java.time.Duration;
 
-import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.common.domain.StreamType;
+import com.hedera.mirror.importer.MirrorProperties;
 
 public interface DownloaderProperties {
-
-    int getBatchSize();
 
     CommonDownloaderProperties getCommon();
 
@@ -36,37 +34,27 @@ public interface DownloaderProperties {
 
     MirrorProperties getMirrorProperties();
 
-    String getPrefix();
-
-    default Path getNodeStreamPath(String nodeAccountId) {
-        return getStreamPath().resolve(getStreamType().getNodePrefix() + nodeAccountId);
+    default Path getNodeStreamPath(Long nodeId) {
+        return getStreamPath().resolve(getStreamType().getNodePrefix() + nodeId);
     }
 
     Path getStreamPath();
 
     StreamType getStreamType();
 
-    /**
-     * The number of current mainnet nodes used to download signatures in parallel. Should be adjusted when nodes
-     * change
-     */
-    int getThreads();
-
     boolean isEnabled();
-
-    boolean isPersistBytes();
-
-    boolean isWriteFiles();
-
-    boolean isWriteSignatures();
-
-    void setBatchSize(int batchSize);
 
     void setEnabled(boolean enabled);
 
+    boolean isPersistBytes();
+
     void setPersistBytes(boolean keepBytes);
 
+    boolean isWriteFiles();
+
     void setWriteFiles(boolean keepFiles);
+
+    boolean isWriteSignatures();
 
     void setWriteSignatures(boolean keepSignatures);
 }

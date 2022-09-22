@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.repository;
+package com.hedera.mirror.importer.addressbook;
 
 /*-
  * ‌
@@ -20,14 +20,12 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import java.util.Optional;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.CrudRepository;
+import java.util.Collection;
 
-import com.hedera.mirror.common.domain.addressbook.AddressBook;
+/**
+ * Maintains state about the current consensus nodes.
+ */
+public interface ConsensusNodeService {
 
-public interface AddressBookRepository extends CrudRepository<AddressBook, Long> {
-    @Query(value = "select * from address_book where start_consensus_timestamp <= ?1 and file_id = ?2 order by " +
-            "start_consensus_timestamp desc limit 1", nativeQuery = true)
-    Optional<AddressBook> findLatest(long consensusTimestamp, long encodedFileId);
+    Collection<ConsensusNode> getNodes();
 }

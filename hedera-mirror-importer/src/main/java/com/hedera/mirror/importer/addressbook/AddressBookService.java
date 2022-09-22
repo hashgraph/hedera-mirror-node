@@ -24,7 +24,7 @@ import com.hedera.mirror.common.domain.addressbook.AddressBook;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.file.FileData;
 
-public interface AddressBookService {
+public interface AddressBookService extends ConsensusNodeService {
 
     AddressBook getCurrent();
 

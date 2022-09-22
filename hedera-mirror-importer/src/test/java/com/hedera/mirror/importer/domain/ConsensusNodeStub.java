@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.repository;
+package com.hedera.mirror.importer.domain;
 
 /*-
  * ‌
@@ -20,14 +20,23 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import java.util.Optional;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.CrudRepository;
+import java.security.PublicKey;
+import lombok.Builder;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
-import com.hedera.mirror.common.domain.addressbook.AddressBook;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.importer.addressbook.ConsensusNode;
 
-public interface AddressBookRepository extends CrudRepository<AddressBook, Long> {
-    @Query(value = "select * from address_book where start_consensus_timestamp <= ?1 and file_id = ?2 order by " +
-            "start_consensus_timestamp desc limit 1", nativeQuery = true)
-    Optional<AddressBook> findLatest(long consensusTimestamp, long encodedFileId);
+@Builder
+@Data
+@EqualsAndHashCode(of = "nodeId")
+@ToString(exclude = "publicKey")
+public class ConsensusNodeStub implements ConsensusNode {
+    private EntityId nodeAccountId;
+    private long nodeId;
+    private PublicKey publicKey;
+    private long stake;
+    private long totalStake;
 }

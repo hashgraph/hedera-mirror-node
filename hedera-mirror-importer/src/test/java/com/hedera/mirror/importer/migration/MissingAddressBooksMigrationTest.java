@@ -106,13 +106,13 @@ class MissingAddressBooksMigrationTest extends IntegrationTest {
     void verifyAddressBookMigrationWithNewFileDataAfterCurrentAddressBook() {
         // store initial address books
         addressBookRepository
-                .save(addressBook(ab -> ab.fileId(AddressBookServiceImpl.ADDRESS_BOOK_101_ENTITY_ID), 1, 4));
+                .save(addressBook(ab -> ab.fileId(AddressBookServiceImpl.FILE_101), 1, 4));
         addressBookRepository
-                .save(addressBook(ab -> ab.fileId(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID), 2, 4));
+                .save(addressBook(ab -> ab.fileId(AddressBookServiceImpl.FILE_102), 2, 4));
         addressBookRepository
-                .save(addressBook(ab -> ab.fileId(AddressBookServiceImpl.ADDRESS_BOOK_101_ENTITY_ID), 11, 8));
+                .save(addressBook(ab -> ab.fileId(AddressBookServiceImpl.FILE_101), 11, 8));
         addressBookRepository
-                .save(addressBook(ab -> ab.fileId(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID), 12, 8));
+                .save(addressBook(ab -> ab.fileId(AddressBookServiceImpl.FILE_102), 12, 8));
         assertEquals(4, addressBookRepository.count());
 
         // un-parsed file_data
@@ -137,7 +137,7 @@ class MissingAddressBooksMigrationTest extends IntegrationTest {
         missingAddressBooksMigration.doMigrate();
         assertEquals(6, addressBookRepository.count());
         AddressBook newAddressBook = addressBookRepository
-                .findLatestAddressBook(205, AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID.getId()).get();
+                .findLatest(205, AddressBookServiceImpl.FILE_102.getId()).get();
         assertThat(newAddressBook.getStartConsensusTimestamp()).isEqualTo(203L);
         assertAddressBook(newAddressBook, FINAL);
     }
@@ -178,7 +178,7 @@ class MissingAddressBooksMigrationTest extends IntegrationTest {
                 .startConsensusTimestamp(startConsensusTimestamp)
                 .fileData("address book memo".getBytes())
                 .nodeCount(nodeCount)
-                .fileId(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID)
+                .fileId(AddressBookServiceImpl.FILE_102)
                 .entries(addressBookEntryList);
 
         if (addressBookCustomizer != null) {
@@ -208,8 +208,8 @@ class MissingAddressBooksMigrationTest extends IntegrationTest {
 
     private FileData createAndStoreFileData(byte[] contents, long consensusTimeStamp, boolean is102,
                                             TransactionType transactionType) {
-        EntityId entityId = is102 ? AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID :
-                AddressBookServiceImpl.ADDRESS_BOOK_101_ENTITY_ID;
+        EntityId entityId = is102 ? AddressBookServiceImpl.FILE_102 :
+                AddressBookServiceImpl.FILE_101;
         FileData fileData = new FileData(consensusTimeStamp, contents, entityId, transactionType.getProtoId());
         return fileDataRepository.save(fileData);
     }

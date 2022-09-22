@@ -21,28 +21,27 @@ package com.hedera.mirror.importer.downloader.record;
  */
 
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimaps;
 import io.micrometer.core.instrument.MeterRegistry;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.inject.Named;
-import lombok.Value;
 import org.springframework.scheduling.annotation.Scheduled;
-import software.amazon.awssdk.services.s3.S3AsyncClient;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.SidecarFile;
-import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.addressbook.AddressBookService;
+import com.hedera.mirror.importer.addressbook.ConsensusNode;
+import com.hedera.mirror.importer.addressbook.ConsensusNodeService;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.NodeSignatureVerifier;
-import com.hedera.mirror.importer.downloader.PendingDownload;
 import com.hedera.mirror.importer.downloader.StreamFileNotifier;
-import com.hedera.mirror.importer.exception.FileOperationException;
+import com.hedera.mirror.importer.downloader.provider.StreamFileProvider;
 import com.hedera.mirror.importer.exception.HashMismatchException;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.leader.Leader;
@@ -57,21 +56,22 @@ import com.hedera.services.stream.proto.TransactionSidecarRecord;
 @Named
 public class RecordFileDownloader extends Downloader<RecordFile> {
 
-    private static final String SIDECAR_FOLDER = "sidecar";
-
     private final SidecarFileReader sidecarFileReader;
-
     private final SidecarProperties sidecarProperties;
 
-    public RecordFileDownloader(AddressBookService addressBookService, RecordDownloaderProperties downloaderProperties,
+    public RecordFileDownloader(ConsensusNodeService consensusNodeService,
+                                RecordDownloaderProperties downloaderProperties,
                                 MeterRegistry meterRegistry,
                                 MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor,
-                                NodeSignatureVerifier nodeSignatureVerifier, S3AsyncClient s3Client,
-                                SidecarProperties sidecarProperties, SignatureFileReader signatureFileReader,
-                                RecordFileReader recordFileReader, SidecarFileReader sidecarFileReader,
-                                StreamFileNotifier streamFileNotifier) {
-        super(addressBookService, downloaderProperties, meterRegistry, mirrorDateRangePropertiesProcessor,
-                nodeSignatureVerifier, s3Client, signatureFileReader, recordFileReader, streamFileNotifier);
+                                NodeSignatureVerifier nodeSignatureVerifier,
+                                SidecarFileReader sidecarFileReader,
+                                SidecarProperties sidecarProperties,
+                                SignatureFileReader signatureFileReader,
+                                StreamFileNotifier streamFileNotifier,
+                                StreamFileProvider streamFileProvider,
+                                RecordFileReader streamFileReader) {
+        super(consensusNodeService, downloaderProperties, meterRegistry, mirrorDateRangePropertiesProcessor,
+                nodeSignatureVerifier, signatureFileReader, streamFileNotifier, streamFileProvider, streamFileReader);
         this.sidecarFileReader = sidecarFileReader;
         this.sidecarProperties = sidecarProperties;
     }
@@ -84,10 +84,9 @@ public class RecordFileDownloader extends Downloader<RecordFile> {
     }
 
     @Override
-    protected void onVerified(PendingDownload pendingDownload,
-                              RecordFile recordFile) throws ExecutionException, InterruptedException {
-        downloadAndReadSidecars(recordFile);
-        super.onVerified(pendingDownload, recordFile);
+    protected void onVerified(StreamFileData streamFileData, RecordFile recordFile, ConsensusNode node) throws InterruptedException {
+        downloadSidecars(recordFile, node);
+        super.onVerified(streamFileData, recordFile, node);
     }
 
     @Override
@@ -99,65 +98,50 @@ public class RecordFileDownloader extends Downloader<RecordFile> {
         }
     }
 
-    private void downloadAndReadSidecars(RecordFile recordFile) throws InterruptedException, ExecutionException {
+    private void downloadSidecars(RecordFile recordFile, ConsensusNode node) {
         if (!sidecarProperties.isEnabled() || recordFile.getSidecars().isEmpty()) {
             return;
         }
 
         var acceptedTypes = sidecarProperties.getTypes().stream().map(Enum::ordinal).collect(Collectors.toSet());
-        var pendingSidecarDownloads = new ArrayList<PendingSidecarDownload>();
-        var s3Prefix = getSidecarS3Prefix(recordFile.getNodeAccountId().toString());
 
-        // First pass, create sidecar pending downloads to download the files async
-        for (var sidecar : recordFile.getSidecars()) {
-            if (!acceptedTypes.isEmpty() && sidecar.getTypes().stream().noneMatch(acceptedTypes::contains)) {
-                log.info("Skipping sidecar file {} based on the sidecar type filter", sidecar.getName());
-                continue;
-            }
-
-            var pendingDownload = pendingDownload(new StreamFilename(sidecar.getName()), s3Prefix);
-            pendingSidecarDownloads.add(new PendingSidecarDownload(pendingDownload, sidecar));
-        }
-
-        // Second pass, read the downloaded sidecar files
-        ArrayListMultimap<Long, TransactionSidecarRecord> records = ArrayListMultimap.create();
-        for (var pendingSidecarDownload : pendingSidecarDownloads) {
-            var pendingDownload = pendingSidecarDownload.getPendingDownload();
-            var sidecar = pendingSidecarDownload.getSidecarFile();
-            if (!pendingDownload.waitForCompletion()) {
-                throw new FileOperationException("Failed to download sidecar file " + sidecar.getName());
-            }
-
-            var streamFileData = new StreamFileData(pendingDownload.getStreamFilename(), pendingDownload.getBytes());
-            sidecarFileReader.read(sidecar, streamFileData);
-            if (!Arrays.equals(sidecar.getHash(), sidecar.getActualHash())) {
-                throw new HashMismatchException(sidecar.getName(), sidecar.getHash(), sidecar.getActualHash(),
-                        sidecar.getHashAlgorithm().getName());
-            }
-
-            if (!sidecarProperties.isPersistBytes()) {
-                sidecar.setBytes(null);
-            }
-
-            for (var record : sidecar.getRecords()) {
-                int type = getSidecarType(record);
-                if (acceptedTypes.isEmpty() || acceptedTypes.contains(type)) {
-                    records.put(DomainUtils.timestampInNanosMax(record.getConsensusTimestamp()), record);
-                }
-            }
-        }
+        var records = Flux.fromIterable(recordFile.getSidecars())
+                .filter(sidecar -> acceptedTypes.isEmpty() || sidecar.getTypes().stream()
+                        .anyMatch(acceptedTypes::contains))
+                .flatMap(sidecar -> getSidecar(node, sidecar))
+                .flatMapIterable(SidecarFile::getRecords)
+                .filter(t -> acceptedTypes.isEmpty() || acceptedTypes.contains(getSidecarType(t)))
+                .collect(Multimaps.toMultimap(TransactionSidecarRecord::getConsensusTimestamp, Function.identity(),
+                        ArrayListMultimap::create))
+                .block();
 
         recordFile.getItems()
                 .doOnNext(recordItem -> {
-                    if (records.containsKey(recordItem.getConsensusTimestamp())) {
-                        recordItem.setSidecarRecords(records.get(recordItem.getConsensusTimestamp()));
+                    var timestamp = recordItem.getRecord().getConsensusTimestamp();
+                    if (records.containsKey(timestamp)) {
+                        recordItem.setSidecarRecords(records.get(timestamp));
                     }
                 })
                 .blockLast();
     }
 
-    private String getSidecarS3Prefix(String nodeAccountId) {
-        return getS3Prefix(nodeAccountId) + SIDECAR_FOLDER + "/";
+    private Mono<SidecarFile> getSidecar(ConsensusNode node, SidecarFile sidecar) {
+        var sidecarFilename = new StreamFilename(sidecar.getName());
+        return streamFileProvider.get(node, sidecarFilename)
+                .map(streamFileData -> {
+                    sidecarFileReader.read(sidecar, streamFileData);
+
+                    if (!Arrays.equals(sidecar.getHash(), sidecar.getActualHash())) {
+                        throw new HashMismatchException(sidecar.getName(), sidecar.getHash(), sidecar.getActualHash(),
+                                sidecar.getHashAlgorithm().getName());
+                    }
+
+                    if (!sidecarProperties.isPersistBytes()) {
+                        sidecar.setBytes(null);
+                    }
+
+                    return sidecar;
+                });
     }
 
     private int getSidecarType(TransactionSidecarRecord record) {
@@ -168,11 +152,5 @@ public class RecordFileDownloader extends Downloader<RecordFile> {
             default -> throw new InvalidDatasetException(
                     "Unknown sidecar transaction record type " + record.getSidecarRecordsCase());
         };
-    }
-
-    @Value
-    private static class PendingSidecarDownload {
-        private PendingDownload pendingDownload;
-        private SidecarFile sidecarFile;
     }
 }

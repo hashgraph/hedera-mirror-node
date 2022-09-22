@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.domain;
 
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIGNATURE;
+import static org.apache.commons.io.FilenameUtils.removeExtension;
 
 import com.google.common.base.Splitter;
 import java.time.Instant;
@@ -48,6 +49,7 @@ public class StreamFilename implements Comparable<StreamFilename> {
 
     public static final Comparator<StreamFilename> EXTENSION_COMPARATOR = Comparator
             .comparing(StreamFilename::getExtension);
+    public static final StreamFilename EPOCH;
 
     private static final Comparator<StreamFilename> COMPARATOR = Comparator.comparing(StreamFilename::getFilename);
     private static final char COMPATIBLE_TIME_SEPARATOR = '_';
@@ -65,12 +67,14 @@ public class StreamFilename implements Comparable<StreamFilename> {
             type.getSignatureExtensions().forEach(ext -> extensions.put(ext.getName(), ext));
             STREAM_TYPE_EXTENSION_MAP.put(type, extensions);
         }
+        EPOCH = new StreamFilename("1970-01-01T00_00_00Z.rcd");
     }
 
     private final String compressor;
     private final StreamType.Extension extension;
-    @EqualsAndHashCode.Include
     private final String filename;
+    @EqualsAndHashCode.Include
+    private final String filenameWithoutCompressor;
     private final FileType fileType;
     private final String fullExtension;
     private final Instant instant;
@@ -90,11 +94,9 @@ public class StreamFilename implements Comparable<StreamFilename> {
         this.fullExtension = this.compressor == null ? this.extension.getName() : StringUtils
                 .joinWith(".", this.extension.getName(), this.compressor);
 
+        // A compressed and uncompressed file can exist simultaneously, so we need uniqueness to not include .gz
+        this.filenameWithoutCompressor = isCompressed() ? removeExtension(this.filename) : this.filename;
         this.instant = extractInstant(filename, this.fullExtension, this.sidecarId, this.streamType.getSuffix());
-    }
-
-    public boolean isSidecar() {
-        return StringUtils.isNotEmpty(sidecarId);
     }
 
     /**
@@ -116,38 +118,6 @@ public class StreamFilename implements Comparable<StreamFilename> {
         }
 
         return StringUtils.joinWith(".", StringUtils.join(timestamp, suffix), extension);
-    }
-
-    /**
-     * Returns the filename after this file, in the order of timestamp. This is done by removing the separator '.' and
-     * extension from the filename, then appending '_', so that regardless of the extension being used, files after the
-     * generated filename will always be newer than this file.
-     *
-     * @return the filename to mark files after this stream filename
-     */
-    public String getFilenameAfter() {
-        return StringUtils.remove(filename, "." + fullExtension) + COMPATIBLE_TIME_SEPARATOR;
-    }
-
-    public String getSidecarFilename(int id) {
-        if (!(streamType == StreamType.RECORD && fileType == DATA)) {
-            throw new IllegalArgumentException(
-                    String.format("%s %s stream doesn't support sidecars", streamType, fileType));
-        }
-
-        String end = StringUtils.isEmpty(sidecarId) ? "." + fullExtension :
-                StringUtils.join(COMPATIBLE_TIME_SEPARATOR, sidecarId, ".", fullExtension);
-        return String.format("%s_%02d.%s", StringUtils.removeEnd(filename, end), id, fullExtension);
-    }
-
-    @Override
-    public int compareTo(StreamFilename other) {
-        return COMPARATOR.compare(this, other);
-    }
-
-    @Override
-    public String toString() {
-        return filename;
     }
 
     private static TypeInfo extractTypeInfo(String filename) {
@@ -184,6 +154,7 @@ public class StreamFilename implements Comparable<StreamFilename> {
                     Matcher matcher = SIDECAR_PATTERN.matcher(filename);
                     if (matcher.lookingAt()) {
                         sidecarIndex = matcher.group(matcher.groupCount());
+                        fileType = FileType.SIDECAR;
                     }
                 }
 
@@ -208,8 +179,46 @@ public class StreamFilename implements Comparable<StreamFilename> {
         }
     }
 
+    @Override
+    public int compareTo(StreamFilename other) {
+        return COMPARATOR.compare(this, other);
+    }
+
+    /**
+     * Returns the filename after this file, in the order of timestamp. This is done by removing the separator '.' and
+     * extension from the filename, then appending '_', so that regardless of the extension being used, files after the
+     * generated filename will always be newer than this file.
+     *
+     * @return the filename to mark files after this stream filename
+     */
+    public String getFilenameAfter() {
+        var filenameAfter = StringUtils.remove(filename, "." + fullExtension) + COMPATIBLE_TIME_SEPARATOR;
+        return filenameAfter;
+    }
+
+    public String getSidecarFilename(int id) {
+        if (streamType != StreamType.RECORD || fileType == SIGNATURE) {
+            throw new IllegalArgumentException(
+                    String.format("%s %s stream doesn't support sidecars", streamType, fileType));
+        }
+
+        String end = StringUtils.isEmpty(sidecarId) ? "." + fullExtension :
+                StringUtils.join(COMPATIBLE_TIME_SEPARATOR, sidecarId, ".", fullExtension);
+        return String.format("%s_%02d.%s", StringUtils.removeEnd(filename, end), id, fullExtension);
+    }
+
+    public boolean isCompressed() {
+        return compressor != null;
+    }
+
+    @Override
+    public String toString() {
+        return filename;
+    }
+
     public enum FileType {
         DATA,
+        SIDECAR,
         SIGNATURE
     }
 

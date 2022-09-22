@@ -66,7 +66,7 @@ public class SignatureFileReaderV5 implements SignatureFileReader {
             fileStreamSignature.setBytes(signatureFileData.getBytes());
             fileStreamSignature.setFileHash(fileHashObject.getHash());
             fileStreamSignature.setFileHashSignature(fileHashSignatureObject.getSignature());
-            fileStreamSignature.setFilename(filename);
+            fileStreamSignature.setFilename(signatureFileData.getStreamFilename());
             fileStreamSignature.setMetadataHash(metadataHashObject.getHash());
             fileStreamSignature.setMetadataHashSignature(metadataHashSignatureObject.getSignature());
             fileStreamSignature.setSignatureType(fileHashSignatureObject.getSignatureType());
