@@ -58,6 +58,7 @@ import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
 
 @EnabledIfV1
@@ -71,6 +72,7 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
     private static final EntityId NODE_ACCOUNT_ID = EntityId.of(0, 0, 3, EntityType.ACCOUNT);
 
     @Resource
+    @Owner
     private JdbcOperations jdbcOperations;
 
     @Value("classpath:db/migration/v1/V1.45.0__support_deleted_token_dissociate.sql")
@@ -276,7 +278,7 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
 
 
     private MigrationNft nft(EntityId accountId, long createdTimestamp, boolean deleted, long modifiedTimestamp,
-                    long serialNumber, EntityId tokenId) {
+                             long serialNumber, EntityId tokenId) {
         var nft = new MigrationNft();
         nft.setAccountId(accountId != null ? accountId.getId() : null);
         nft.setCreatedTimestamp(createdTimestamp);
