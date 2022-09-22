@@ -79,10 +79,10 @@ func newBlockchainOnlineRouter(
 	rosettaConfig *config.Config,
 	version *rTypes.Version,
 ) (http.Handler, error) {
-	accountRepo := persistence.NewAccountRepository(dbClient)
+	accountRepo := persistence.NewAccountRepository(dbClient, rosettaConfig.Network)
 	addressBookEntryRepo := persistence.NewAddressBookEntryRepository(dbClient)
-	blockRepo := persistence.NewBlockRepository(dbClient)
-	transactionRepo := persistence.NewTransactionRepository(dbClient)
+	blockRepo := persistence.NewBlockRepository(dbClient, rosettaConfig.Network)
+	transactionRepo := persistence.NewTransactionRepository(dbClient, rosettaConfig.Network)
 
 	baseService := services.NewOnlineBaseService(blockRepo, transactionRepo)
 

@@ -21,8 +21,16 @@
 package persistence
 
 const (
-	genesisTimestampQuery = `select consensus_timestamp + time_offset as timestamp
-                             from account_balance_file
+	genesisTimestampQuery = `select consensus_timestamp + time_offset + fixed_offset.value as timestamp
+                             from account_balance_file,
+                               lateral (
+                                 select
+                                   case
+                                     when @network = 'mainnet' and consensus_timestamp >= 1658420100626004000 then 53
+                                     when @network = 'testnet' and consensus_timestamp >= 1656693000269913000 then 53
+                                     else 0
+                                   end value
+                               ) fixed_offset
                              order by consensus_timestamp
                              limit 1`
 	genesisTimestampCte = " genesis as (" + genesisTimestampQuery + ") "

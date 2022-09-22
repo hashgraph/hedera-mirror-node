@@ -87,14 +87,26 @@ const (
                                 ) as associations
                               ) as token_associations`
 	latestBalanceBeforeConsensus = "with" + genesisTimestampCte + `, abm as (
-                                      select consensus_timestamp as max, time_offset
-                                      from account_balance_file
-                                      where consensus_timestamp <= @timestamp
+                                      select
+                                        consensus_timestamp max,
+                                        (consensus_timestamp + time_offset + fixed_offset.value) adjusted_timestamp
+                                      from account_balance_file,
+                                        lateral (
+                                          select
+                                            case
+                                              when @network = 'mainnet' and
+                                                consensus_timestamp >= 1658420100626004000 then 53
+                                              when @network = 'testnet' and
+                                                consensus_timestamp >= 1656693000269913000 then 53
+                                              else 0
+                                            end value
+                                        ) fixed_offset
+                                      where consensus_timestamp + time_offset + fixed_offset.value <= @timestamp
                                       order by consensus_timestamp desc
                                       limit 1
                                     )
                                     select
-                                      abm.max + abm.time_offset as consensus_timestamp,
+                                      adjusted_timestamp as consensus_timestamp,
                                       coalesce(ab.balance, 0) balance,
                                       coalesce((
                                         select json_agg(json_build_object(
@@ -156,12 +168,13 @@ type tokenAssociation struct {
 
 // accountRepository struct that has connection to the Database
 type accountRepository struct {
-	dbClient interfaces.DbClient
+	dbClient      interfaces.DbClient
+	networkSqlArg sql.NamedArg
 }
 
 // NewAccountRepository creates an instance of a accountRepository struct
-func NewAccountRepository(dbClient interfaces.DbClient) interfaces.AccountRepository {
-	return &accountRepository{dbClient}
+func NewAccountRepository(dbClient interfaces.DbClient, network string) interfaces.AccountRepository {
+	return &accountRepository{dbClient, sql.Named("network", network)}
 }
 
 func (ar *accountRepository) GetAccountAlias(ctx context.Context, accountId types.AccountId) (
@@ -348,6 +361,7 @@ func (ar *accountRepository) getLatestBalanceSnapshot(ctx context.Context, accou
 		latestBalanceBeforeConsensus,
 		sql.Named("account_id", accountId),
 		sql.Named("timestamp", timestamp),
+		ar.networkSqlArg,
 	).First(cb).Error; err != nil {
 		log.Errorf(
 			databaseErrorFormat,
@@ -395,6 +409,7 @@ func (ar *accountRepository) getBalanceChange(ctx context.Context, accountId, co
 		sql.Named("account_id", accountId),
 		sql.Named("start", consensusStart),
 		sql.Named("end", consensusEnd),
+		ar.networkSqlArg,
 	).First(change).Error; err != nil {
 		log.Errorf(
 			databaseErrorFormat,
@@ -446,6 +461,7 @@ func (ar *accountRepository) getNftBalance(
 		sql.Named("account_id", accountId),
 		sql.Named("start", consensusStart),
 		sql.Named("end", consensusEnd),
+		ar.networkSqlArg,
 	).Scan(&nftTransfers).Error; err != nil {
 		log.Errorf(
 			databaseErrorFormat,
