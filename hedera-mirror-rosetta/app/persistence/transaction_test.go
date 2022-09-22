@@ -348,21 +348,37 @@ func (suite *transactionRepositorySuite) TestFindBetweenTokenCreatedAtOrBeforeGe
 }
 
 func (suite *transactionRepositorySuite) TestFindBetweenHavingDisappearingTokenTransfer() {
+	suite.testFindBetweenHavingDisappearingTokenTransfer(100, "", false)
+}
+
+func (suite *transactionRepositorySuite) TestFindBetweenHavingDisappearingTokenTransferForMainnetWithFixedOffset() {
+	timestamp := firstAccountBalanceFileFixedOffsetTimestamps[mainnet]
+	suite.testFindBetweenHavingDisappearingTokenTransfer(timestamp, mainnet, true)
+}
+
+func (suite *transactionRepositorySuite) TestFindBetweenHavingDisappearingTokenTransferForMainnetWithoutFixedOffset() {
+	suite.testFindBetweenHavingDisappearingTokenTransfer(100, "mainnet", false)
+}
+
+func (suite *transactionRepositorySuite) testFindBetweenHavingDisappearingTokenTransfer(
+	genesisTimestamp int64,
+	network string,
+	expectEmptyOperations bool,
+) {
 	// given
 	// the disappearing token/nft transfers are in the corresponding db table
-	genesisTimestamp := int64(100)
 	tdomain.NewAccountBalanceFileBuilder(dbClient, genesisTimestamp).Persist()
 
 	token1 := tdomain.NewTokenBuilder(dbClient, encodedTokenId1, genesisTimestamp+1, treasury).Persist()
-	tdomain.NewEntityBuilderFromToken(dbClient, token1).Deleted(true).ModifiedAfter(100).Persist()
+	tdomain.NewEntityBuilderFromToken(dbClient, token1).Deleted(true).ModifiedAfter(10).Persist()
 
 	token2 := tdomain.NewTokenBuilder(dbClient, encodedTokenId2, genesisTimestamp+2, treasury).
 		Type(domain.TokenTypeNonFungibleUnique).
 		Persist()
-	entity2 := tdomain.NewEntityBuilderFromToken(dbClient, token2).Deleted(true).ModifiedAfter(100).Persist()
+	tdomain.NewEntityBuilderFromToken(dbClient, token2).Deleted(true).ModifiedAfter(10).Persist()
 
 	// token accounts
-	dissociateTimestamp := entity2.GetModifiedTimestamp() + 100
+	dissociateTimestamp := genesisTimestamp + 53
 	tdomain.NewTokenAccountBuilder(dbClient, account1, encodedTokenId1, token1.CreatedTimestamp+1).
 		Associated(false, dissociateTimestamp).
 		Persist()
@@ -447,7 +463,10 @@ func (suite *transactionRepositorySuite) TestFindBetweenHavingDisappearingTokenT
 			},
 		},
 	}
-	t := NewTransactionRepository(dbClient, "")
+	if expectEmptyOperations {
+		expected[0].Operations = types.OperationSlice{}
+	}
+	t := NewTransactionRepository(dbClient, network)
 
 	// when
 	actual, err := t.FindBetween(defaultContext, dissociateTimestamp, dissociateTimestamp)

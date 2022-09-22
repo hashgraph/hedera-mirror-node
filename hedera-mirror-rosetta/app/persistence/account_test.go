@@ -56,16 +56,17 @@ const (
 )
 
 const (
-	accountDeleteTimestamp   int64 = 280
-	consensusTimestamp       int64 = 200
-	dissociateTimestamp            = consensusTimestamp + 1
-	account1CreatedTimestamp int64 = 50
-	account2DeletedTimestamp       = account1CreatedTimestamp - 1
-	account2CreatedTimestamp       = account2DeletedTimestamp - 9
-	firstSnapshotTimestamp   int64 = 100
-	initialAccountBalance    int64 = 12345
-	secondSnapshotTimestamp        = consensusTimestamp - 20
-	thirdSnapshotTimestamp   int64 = 400
+	accountDeleteTimestamp   = secondSnapshotTimestamp + 180
+	account1CreatedTimestamp = firstSnapshotTimestamp - 100
+	account2DeletedTimestamp = account1CreatedTimestamp - 1
+	account2CreatedTimestamp = account2DeletedTimestamp - 9
+	consensusTimestamp       = firstSnapshotTimestamp + 200
+	dissociateTimestamp      = consensusTimestamp + 1
+	// timestamp of the first testnet account balance file with HAPI 0.27.0
+	firstSnapshotTimestamp  int64 = 1656693000269913000
+	initialAccountBalance   int64 = 12345
+	secondSnapshotTimestamp       = consensusTimestamp - 20
+	thirdSnapshotTimestamp        = secondSnapshotTimestamp + 200
 
 	// account3, account4, and account5 are for GetAccountAlias tests
 	account3CreatedTimestamp = consensusTimestamp + 100
@@ -402,34 +403,26 @@ func (suite *accountRepositorySuite) TestGetAccountIdDbConnectionError() {
 }
 
 func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlock() {
+	suite.testRetrieveBalanceAtBlockNoFixedOffset("")
+}
+
+func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockMainnet() {
+	suite.testRetrieveBalanceAtBlockNoFixedOffset(mainnet)
+}
+
+func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockTestnet() {
 	// given
 	// tokens created at or before first account balance snapshot will not show up in account balance response
 	// transfers before or at the snapshot timestamp should not affect balance calculation
 	accountId := suite.accountId
-	repo := NewAccountRepository(dbClient, "")
+	repo := NewAccountRepository(dbClient, testnet)
 
-	hbarAmount := &types.HbarAmount{Value: initialAccountBalance + sum(cryptoTransferAmounts)}
-	token1Amount := types.NewTokenAmount(token1, sum(token1TransferAmounts[:2]))
-	token2Amount := types.NewTokenAmount(token2, sum(token2TransferAmounts[:2]))
-	token3Amount := types.NewTokenAmount(token3, 2)
-	token4Amount := types.NewTokenAmount(token4, 0)
-	expectedAmounts := types.AmountSlice{hbarAmount, token1Amount, token2Amount, token3Amount, token4Amount}
+	hbarAmount := &types.HbarAmount{Value: initialAccountBalance}
+	expectedAmounts := types.AmountSlice{hbarAmount}
 
 	// when
 	// query
 	actualAmounts, accountIdString, err := repo.RetrieveBalanceAtBlock(defaultContext, accountId, consensusTimestamp)
-
-	// then
-	assert.Nil(suite.T(), err)
-	assert.Equal(suite.T(), suite.accountIdString, accountIdString)
-	assert.ElementsMatch(suite.T(), expectedAmounts, actualAmounts)
-
-	// when
-	// query at dissociateTimestamp, balances for token2 and token3 should be 0
-	actualAmounts, accountIdString, err = repo.RetrieveBalanceAtBlock(defaultContext, accountId, dissociateTimestamp)
-	token2Amount = types.NewTokenAmount(token2, 0)
-	token3Amount = types.NewTokenAmount(token3, 0)
-	expectedAmounts = types.AmountSlice{hbarAmount, token1Amount, token2Amount, token3Amount, token4Amount}
 
 	// then
 	assert.Nil(suite.T(), err)
@@ -673,6 +666,42 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockDbConnectionError
 	assert.Equal(suite.T(), errors.ErrDatabaseError, err)
 	assert.Empty(suite.T(), accountIdString)
 	assert.Nil(suite.T(), actualAmounts)
+}
+
+func (suite *accountRepositorySuite) testRetrieveBalanceAtBlockNoFixedOffset(network string) {
+	// given
+	// tokens created at or before first account balance snapshot will not show up in account balance response
+	// transfers before or at the snapshot timestamp should not affect balance calculation
+	accountId := suite.accountId
+	repo := NewAccountRepository(dbClient, network)
+
+	hbarAmount := &types.HbarAmount{Value: initialAccountBalance + sum(cryptoTransferAmounts)}
+	token1Amount := types.NewTokenAmount(token1, sum(token1TransferAmounts[:2]))
+	token2Amount := types.NewTokenAmount(token2, sum(token2TransferAmounts[:2]))
+	token3Amount := types.NewTokenAmount(token3, 2)
+	token4Amount := types.NewTokenAmount(token4, 0)
+	expectedAmounts := types.AmountSlice{hbarAmount, token1Amount, token2Amount, token3Amount, token4Amount}
+
+	// when
+	// query
+	actualAmounts, accountIdString, err := repo.RetrieveBalanceAtBlock(defaultContext, accountId, consensusTimestamp)
+
+	// then
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), suite.accountIdString, accountIdString)
+	assert.ElementsMatch(suite.T(), expectedAmounts, actualAmounts)
+
+	// when
+	// query at dissociateTimestamp, balances for token2 and token3 should be 0
+	actualAmounts, accountIdString, err = repo.RetrieveBalanceAtBlock(defaultContext, accountId, dissociateTimestamp)
+	token2Amount = types.NewTokenAmount(token2, 0)
+	token3Amount = types.NewTokenAmount(token3, 0)
+	expectedAmounts = types.AmountSlice{hbarAmount, token1Amount, token2Amount, token3Amount, token4Amount}
+
+	// then
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), suite.accountIdString, accountIdString)
+	assert.ElementsMatch(suite.T(), expectedAmounts, actualAmounts)
 }
 
 func sum(amounts []int64) int64 {

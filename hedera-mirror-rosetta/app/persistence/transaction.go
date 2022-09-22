@@ -75,12 +75,8 @@ const (
               from account_balance_file as abf,
                 lateral (
                   select
-                    case
-                      when @network = 'mainnet' and
-                        consensus_timestamp >= 1658420100626004000 then 53
-                      when @network = 'testnet' and
-                        consensus_timestamp >= 1656693000269913000 then 53
-                      else 0
+                    case when consensus_timestamp >= @first_fixed_offset_timestamp then 53
+                         else 0
                     end value
                 ) as fixed_offset
               where abf.consensus_timestamp + abf.time_offset + fixed_offset.value < d.consensus_timestamp
@@ -297,15 +293,18 @@ func (t tokenTransfer) getAmount() types.Amount {
 
 // transactionRepository struct that has connection to the Database
 type transactionRepository struct {
-	once          sync.Once
-	dbClient      interfaces.DbClient
-	networkSqlArg sql.NamedArg
-	types         map[int]string
+	once                            sync.Once
+	dbClient                        interfaces.DbClient
+	firstFixedOffsetTimestampSqlArg sql.NamedArg
+	types                           map[int]string
 }
 
 // NewTransactionRepository creates an instance of a TransactionRepository struct
 func NewTransactionRepository(dbClient interfaces.DbClient, network string) interfaces.TransactionRepository {
-	return &transactionRepository{dbClient: dbClient, networkSqlArg: sql.Named("network", network)}
+	return &transactionRepository{
+		dbClient:                        dbClient,
+		firstFixedOffsetTimestampSqlArg: getFirstAccountBalanceFileFixedOffsetTimestampSqlNamedArg(network),
+	}
 }
 
 func (tr *transactionRepository) FindBetween(ctx context.Context, start, end int64) (
@@ -327,7 +326,7 @@ func (tr *transactionRepository) FindBetween(ctx context.Context, start, end int
 				selectTransactionsInTimestampRangeOrdered,
 				sql.Named("start", start),
 				sql.Named("end", end),
-				tr.networkSqlArg,
+				tr.firstFixedOffsetTimestampSqlArg,
 			).
 			Limit(batchSize).
 			Find(&transactionsBatch).
@@ -394,7 +393,7 @@ func (tr *transactionRepository) FindByHashInBlock(
 		sql.Named("hash", transactionHash),
 		sql.Named("start", consensusStart),
 		sql.Named("end", consensusEnd),
-		tr.networkSqlArg,
+		tr.firstFixedOffsetTimestampSqlArg,
 	).Find(&transactions).Error; err != nil {
 		log.Errorf(databaseErrorFormat, hErrors.ErrDatabaseError.Message, err)
 		return nil, hErrors.ErrDatabaseError
@@ -585,7 +584,7 @@ func (tr *transactionRepository) processSuccessTokenDissociates(
 		selectDissociateTokenTransfersInTimestampRange,
 		sql.Named("start", start),
 		sql.Named("end", end),
-		tr.networkSqlArg,
+		tr.firstFixedOffsetTimestampSqlArg,
 	).Scan(&tokenDissociateTransactions).Error; err != nil {
 		log.Errorf(databaseErrorFormat, hErrors.ErrDatabaseError.Message, err)
 		return hErrors.ErrDatabaseError

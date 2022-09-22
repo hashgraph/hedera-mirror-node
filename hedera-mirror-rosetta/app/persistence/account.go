@@ -93,12 +93,8 @@ const (
                                       from account_balance_file,
                                         lateral (
                                           select
-                                            case
-                                              when @network = 'mainnet' and
-                                                consensus_timestamp >= 1658420100626004000 then 53
-                                              when @network = 'testnet' and
-                                                consensus_timestamp >= 1656693000269913000 then 53
-                                              else 0
+                                            case when consensus_timestamp >= @first_fixed_offset_timestamp then 53
+                                                 else 0
                                             end value
                                         ) fixed_offset
                                       where consensus_timestamp + time_offset + fixed_offset.value <= @timestamp
@@ -168,13 +164,16 @@ type tokenAssociation struct {
 
 // accountRepository struct that has connection to the Database
 type accountRepository struct {
-	dbClient      interfaces.DbClient
-	networkSqlArg sql.NamedArg
+	dbClient                        interfaces.DbClient
+	firstFixedOffsetTimestampSqlArg sql.NamedArg
 }
 
 // NewAccountRepository creates an instance of a accountRepository struct
 func NewAccountRepository(dbClient interfaces.DbClient, network string) interfaces.AccountRepository {
-	return &accountRepository{dbClient, sql.Named("network", network)}
+	return &accountRepository{
+		dbClient:                        dbClient,
+		firstFixedOffsetTimestampSqlArg: getFirstAccountBalanceFileFixedOffsetTimestampSqlNamedArg(network),
+	}
 }
 
 func (ar *accountRepository) GetAccountAlias(ctx context.Context, accountId types.AccountId) (
@@ -361,7 +360,7 @@ func (ar *accountRepository) getLatestBalanceSnapshot(ctx context.Context, accou
 		latestBalanceBeforeConsensus,
 		sql.Named("account_id", accountId),
 		sql.Named("timestamp", timestamp),
-		ar.networkSqlArg,
+		ar.firstFixedOffsetTimestampSqlArg,
 	).First(cb).Error; err != nil {
 		log.Errorf(
 			databaseErrorFormat,
@@ -409,7 +408,7 @@ func (ar *accountRepository) getBalanceChange(ctx context.Context, accountId, co
 		sql.Named("account_id", accountId),
 		sql.Named("start", consensusStart),
 		sql.Named("end", consensusEnd),
-		ar.networkSqlArg,
+		ar.firstFixedOffsetTimestampSqlArg,
 	).First(change).Error; err != nil {
 		log.Errorf(
 			databaseErrorFormat,
@@ -461,7 +460,7 @@ func (ar *accountRepository) getNftBalance(
 		sql.Named("account_id", accountId),
 		sql.Named("start", consensusStart),
 		sql.Named("end", consensusEnd),
-		ar.networkSqlArg,
+		ar.firstFixedOffsetTimestampSqlArg,
 	).Scan(&nftTransfers).Error; err != nil {
 		log.Errorf(
 			databaseErrorFormat,
