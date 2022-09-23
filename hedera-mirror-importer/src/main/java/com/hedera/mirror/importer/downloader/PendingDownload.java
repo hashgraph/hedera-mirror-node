@@ -21,8 +21,10 @@ package com.hedera.mirror.importer.downloader;
  */
 
 import com.google.common.base.Stopwatch;
+import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.extern.log4j.Log4j2;
@@ -43,6 +45,7 @@ public class PendingDownload {
     private final StreamFilename streamFilename;
     private final Stopwatch stopwatch;
     private final String s3key;
+    private final Duration timeout;
 
     @NonFinal
     private boolean alreadyWaited = false; // has waitForCompletion been called
@@ -51,19 +54,20 @@ public class PendingDownload {
     private boolean downloadSuccessful = false;
 
     PendingDownload(CompletableFuture<ResponseBytes<GetObjectResponse>> future, StreamFilename streamFilename,
-                    String s3key) {
+                    String s3key, Duration timeout) {
         this.future = future;
         stopwatch = Stopwatch.createStarted();
         this.streamFilename = streamFilename;
         this.s3key = s3key;
+        this.timeout = timeout;
     }
 
     public byte[] getBytes() throws ExecutionException, InterruptedException {
-        return future.get().asByteArrayUnsafe();
+        return get().asByteArrayUnsafe();
     }
 
     public GetObjectResponse getObjectResponse() throws ExecutionException, InterruptedException {
-        return future.get().response();
+        return get().response();
     }
 
     /**
@@ -75,7 +79,7 @@ public class PendingDownload {
         }
         alreadyWaited = true;
         try {
-            future.get();
+            get();
             log.debug("Finished downloading {} in {}", s3key, stopwatch);
             downloadSuccessful = true;
         } catch (InterruptedException e) {
@@ -87,5 +91,9 @@ public class PendingDownload {
             log.warn("Failed downloading {} after {}", s3key, stopwatch, ex);
         }
         return downloadSuccessful;
+    }
+
+    private ResponseBytes<GetObjectResponse> get() throws ExecutionException, InterruptedException {
+        return future.orTimeout(timeout.toMillis(), TimeUnit.MILLISECONDS).get();
     }
 }
