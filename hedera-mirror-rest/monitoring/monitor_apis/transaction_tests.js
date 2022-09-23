@@ -25,15 +25,16 @@ import config from './config';
 import {
   checkAPIResponseError,
   checkElementsOrder,
-  checkRespObjDefined,
-  checkRespArrayLength,
   checkMandatoryParams,
   checkResourceFreshness,
+  checkRespArrayLength,
+  checkRespObj,
+  checkRespObjDefined,
+  CheckRunner,
   DEFAULT_LIMIT,
   getAPIResponse,
   getUrl,
   testRunner,
-  CheckRunner,
 } from './utils';
 
 const transactionsPath = '/transactions';
@@ -281,12 +282,14 @@ const getSuccessfulTransactionById = async (server) => {
   const singleTransactions = await getAPIResponse(url, jsonRespKey);
 
   // only verify the single successful transaction
-  result = checkRunner
-    .resetCheckSpec(checkRespArrayLength, {
-      func: (length) => length >= 1,
-      message: (elements) => `transactions.length of ${elements.length} was expected to be >= 1`,
+  result = new CheckRunner()
+    .withCheckSpec(checkAPIResponseError)
+    .withCheckSpec(checkRespObjDefined, {message: 'transactions is undefined'})
+    .withCheckSpec(checkRespObj, {
+      predicate: (data) => data.filter((tx) => tx.result === 'SUCCESS').length >= 1,
+      message: `Transactions array should have at least one successful transaction`,
     })
-    .run(singleTransactions.filter((tx) => tx.result === 'SUCCESS'));
+    .run(singleTransactions);
   if (!result.passed) {
     return {url, ...result};
   }

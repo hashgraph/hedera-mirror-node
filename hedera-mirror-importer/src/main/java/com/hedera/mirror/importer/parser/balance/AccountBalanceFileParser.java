@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.inject.Named;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.transaction.annotation.Transactional;
@@ -49,17 +50,20 @@ import com.hedera.mirror.importer.repository.StreamFileRepository;
 @Named
 public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBalanceFile> {
 
+    private final ApplicationEventPublisher applicationEventPublisher;
     private final BatchPersister batchPersister;
     private final MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor;
     private final BalanceStreamFileListener streamFileListener;
 
-    public AccountBalanceFileParser(BatchPersister batchPersister,
+    public AccountBalanceFileParser(ApplicationEventPublisher applicationEventPublisher,
+                                    BatchPersister batchPersister,
                                     MeterRegistry meterRegistry,
                                     BalanceParserProperties parserProperties,
                                     StreamFileRepository<AccountBalanceFile, Long> accountBalanceFileRepository,
                                     MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor,
                                     BalanceStreamFileListener streamFileListener) {
         super(meterRegistry, parserProperties, accountBalanceFileRepository);
+        this.applicationEventPublisher = applicationEventPublisher;
         this.batchPersister = batchPersister;
         this.mirrorDateRangePropertiesProcessor = mirrorDateRangePropertiesProcessor;
         this.streamFileListener = streamFileListener;
@@ -119,5 +123,6 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
         accountBalanceFile.setLoadEnd(loadEnd.getEpochSecond());
         streamFileListener.onEnd(accountBalanceFile);
         streamFileRepository.save(accountBalanceFile);
+        applicationEventPublisher.publishEvent(new AccountBalanceFileParsedEvent(this));
     }
 }

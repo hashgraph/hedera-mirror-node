@@ -20,11 +20,13 @@
 
 import _ from 'lodash';
 
+import {NotFoundError} from '../../errors';
 import {ContractService} from '../../service';
 import {assertSqlQueryEqual} from '../testutils';
 import integrationDomainOps from '../integrationDomainOps';
-import {NotFoundError} from '../../errors';
 import {setupIntegrationTest} from '../integrationUtils';
+import {TransactionResult, TransactionType} from '../../model';
+import {orderFilterValues} from '../../constants';
 
 setupIntegrationTest();
 
@@ -36,10 +38,24 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       'asc',
       5
     );
-    const expected = `with etht as (select hash, consensus_timestamp from ethereum_transaction)
-                      select cr.*, etht.hash
+    const expected = `select
+                        cr.amount,
+                        cr.bloom,
+                        cr.call_result,
+                        cr.consensus_timestamp,
+                        cr.contract_id,
+                        cr.created_contract_ids,
+                        cr.error_message,
+                        cr.failed_initcode,
+                        cr.function_parameters,
+                        cr.gas_limit,
+                        cr.gas_used,
+                        cr.payer_account_id,
+                        cr.sender_id,
+                        cr.transaction_hash,
+                        cr.transaction_index,
+                        cr.transaction_result
                       from contract_result cr
-                             left join etht on cr.consensus_timestamp = etht.consensus_timestamp
                       where cr.contract_id = $1
                       order by cr.consensus_timestamp asc
                       limit $2`;
@@ -55,10 +71,24 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       'asc',
       5
     );
-    const expected = `with etht as (select hash, consensus_timestamp from ethereum_transaction)
-                      select cr.*, etht.hash
-                      from contract_result cr
-                             left join etht on cr.consensus_timestamp = etht.consensus_timestamp
+    const expected = `select
+						            cr.amount,
+						            cr.bloom,
+						            cr.call_result,
+						            cr.consensus_timestamp,
+						            cr.contract_id,
+						            cr.created_contract_ids,
+						            cr.error_message,
+						            cr.failed_initcode,
+						            cr.function_parameters,
+						            cr.gas_limit,
+						            cr.gas_used,
+						            cr.payer_account_id,
+						            cr.sender_id,
+						            cr.transaction_hash,
+						            cr.transaction_index,
+						            cr.transaction_result
+					            from contract_result cr
                       where cr.contract_id = $1
                         and cr.consensus_timestamp > $2
                         and cr.payer_account_id = $3
@@ -76,12 +106,26 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       'asc',
       5
     );
-    const expected = `with etht as (select hash, consensus_timestamp from ethereum_transaction),
-                           t as (select consensus_timestamp, index, nonce from transaction where transaction.nonce = $2)
-                      select cr.*, etht.hash
-                      from contract_result cr
-                             left join etht on cr.consensus_timestamp = etht.consensus_timestamp
-                             left join t on cr.consensus_timestamp = t.consensus_timestamp
+    const expected = `with t as (select consensus_timestamp, index, nonce from transaction where transaction.nonce = $2)
+					            select
+						            cr.amount,
+						            cr.bloom,
+						            cr.call_result,
+						            cr.consensus_timestamp,
+						            cr.contract_id,
+						            cr.created_contract_ids,
+						            cr.error_message,
+						            cr.failed_initcode,
+						            cr.function_parameters,
+						            cr.gas_limit,
+						            cr.gas_used,
+						            cr.payer_account_id,
+						            cr.sender_id,
+						            cr.transaction_hash,
+						            cr.transaction_index,
+						            cr.transaction_result
+					            from contract_result cr
+                        join t on cr.consensus_timestamp = t.consensus_timestamp
                       where cr.contract_id = $1
                         and t.nonce = $2
                       order by cr.consensus_timestamp asc
@@ -99,12 +143,26 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       'asc',
       5
     );
-    const expected = `with etht as (select hash, consensus_timestamp from ethereum_transaction),
-                           t as (select consensus_timestamp, index, nonce from transaction where transaction.index = $2)
-                      select cr.*, etht.hash
-                      from contract_result cr
-                             left join etht on cr.consensus_timestamp = etht.consensus_timestamp
-                             left join t on cr.consensus_timestamp = t.consensus_timestamp
+    const expected = `with t as (select consensus_timestamp, index, nonce from transaction where transaction.index = $2)
+					            select
+						            cr.amount,
+						            cr.bloom,
+						            cr.call_result,
+						            cr.consensus_timestamp,
+						            cr.contract_id,
+						            cr.created_contract_ids,
+						            cr.error_message,
+						            cr.failed_initcode,
+						            cr.function_parameters,
+						            cr.gas_limit,
+						            cr.gas_used,
+						            cr.payer_account_id,
+						            cr.sender_id,
+						            cr.transaction_hash,
+						            cr.transaction_index,
+						            cr.transaction_result
+					            from contract_result cr
+                        join t on cr.consensus_timestamp = t.consensus_timestamp
                       where cr.contract_id = $1
                         and t.index = $2
                       order by cr.consensus_timestamp asc
@@ -130,21 +188,33 @@ describe('ContractService.getContractLogsQuery tests', () => {
     });
     assertSqlQueryEqual(
       query,
-      `select bloom,
-              contract_id,
-              consensus_timestamp,
-              data,
-              index,
-              root_contract_id,
-              topic0,
-              topic1,
-              topic2,
-              topic3
-       from contract_log cl
-       where cl.contract_id = $1
-       order by cl.consensus_timestamp desc,
-                cl.index asc
-       limit $2`
+      `select
+            cl.bloom,
+            cl.contract_id,
+            cl.consensus_timestamp,
+            cl.data,
+            cl.index,
+            cl.root_contract_id,
+            cl.topic0,
+            cl.topic1,
+            cl.topic2,
+            cl.topic3,
+            cr.transaction_hash,
+            cr.transaction_index,
+            block.block_number,
+            block.block_hash
+      from contract_log cl
+      left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
+      left join lateral (
+        select index as block_number,hash as block_hash
+        from record_file
+        where consensus_end >= cl.consensus_timestamp
+        order by consensus_end asc
+        limit 1
+      ) as block on true
+      where cl.contract_id = $1
+      order by cl.consensus_timestamp desc, cl.index asc
+      limit $2`
     );
     expect(params).toEqual([2, 5]);
   });
@@ -174,25 +244,37 @@ describe('ContractService.getContractLogsQuery tests', () => {
     });
     assertSqlQueryEqual(
       query,
-      `select bloom,
-              contract_id,
-              consensus_timestamp,
-              data,
-              index,
-              root_contract_id,
-              topic0,
-              topic1,
-              topic2,
-              topic3
-       from contract_log cl
-       where cl.contract_id = $1
-         and cl.topic0 in ($2)
-         and cl.topic1 in ($3)
-         and cl.topic2 in ($4)
-         and cl.topic3 in ($5)
-       order by cl.consensus_timestamp desc,
-                cl.index desc
-       limit $6`
+
+      `select cl.bloom,
+              cl.contract_id,
+              cl.consensus_timestamp,
+              cl.data,cl.index,
+              cl.root_contract_id,
+              cl.topic0,
+              cl.topic1,
+              cl.topic2,
+              cl.topic3,
+              cr.transaction_hash,
+              cr.transaction_index,
+              block.block_number,
+              block.block_hash
+      from contract_log cl
+      left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
+      left join lateral (
+        select index as block_number,
+               hash as block_hash
+        from record_file
+        where consensus_end >= cl.consensus_timestamp
+        order by consensus_end asc
+        limit 1
+      ) as block on true
+      where cl.contract_id = $1
+       and cl.topic0 in ($2)
+       and cl.topic1 in ($3)
+       and cl.topic2 in ($4)
+       and cl.topic3 in ($5)
+     order by cl.consensus_timestamp desc, cl.index desc
+     limit $6`
     );
     expect(params).toEqual([
       1002,
@@ -219,44 +301,69 @@ describe('ContractService.getContractLogsQuery tests', () => {
     });
     assertSqlQueryEqual(
       query,
-      `(select
-       bloom,
-       contract_id,
-       consensus_timestamp,
-       data,
-       index,
-       root_contract_id,
-       topic0,
-       topic1,
-       topic2,
-       topic3
-      from contract_log cl
-      where cl.contract_id = $1
-        and cl.topic0 in ($2)
-        and cl.index >= $4
-        and cl.consensus_timestamp = $5
-      order by cl.consensus_timestamp desc,
-               cl.index desc
-      limit $3) union (
-        select
-          bloom,
-          contract_id,
-          consensus_timestamp,
-          data,
-          index,
-          root_contract_id,
-          topic0,
-          topic1,
-          topic2,
-          topic3
-        from contract_log cl
-        where cl.contract_id = $1
-        and cl.topic0 in ($2)
-        and cl.consensus_timestamp > $6
-        order by cl.consensus_timestamp desc, cl.index desc
-        limit $3)
-      order by consensus_timestamp desc, index desc
-      limit $3`
+      `(select cl.bloom,
+                        cl.contract_id,
+                        cl.consensus_timestamp,
+                        cl.data,
+                        cl.index,
+                        cl.root_contract_id,
+                        cl.topic0,
+                        cl.topic1,
+                        cl.topic2,
+                        cl.topic3,
+                        cr.transaction_hash,
+                        cr.transaction_index,
+                        block.block_number,
+                        block.block_hash
+                   from contract_log cl
+                   left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
+                   left join lateral (
+                      select index as block_number,
+                             hash as block_hash
+                      from record_file
+                      where consensus_end >= cl.consensus_timestamp
+                      order by consensus_end asc
+                      limit 1
+                   ) as block on true
+                   where cl.contract_id = $1
+                     and cl.topic0 in ($2)
+                     and cl.index >= $4
+                     and cl.consensus_timestamp = $5
+                   order by cl.consensus_timestamp desc,
+                   cl.index desc
+                   limit $3
+               ) union (
+                   select cl.bloom,
+                          cl.contract_id,
+                          cl.consensus_timestamp,
+                          cl.data,
+                          cl.index,
+                          cl.root_contract_id,
+                          cl.topic0,
+                          cl.topic1,
+                          cl.topic2,
+                          cl.topic3,
+                          cr.transaction_hash,
+                          cr.transaction_index,
+                          block.block_number,
+                          block.block_hash
+                   from contract_log cl
+                   left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
+                   left join lateral (
+                        select index as block_number,
+                               hash as block_hash
+                        from record_file
+                        where consensus_end >= cl.consensus_timestamp
+                        order by consensus_end asc
+                        limit 1
+                   ) as block on true
+                   where cl.contract_id = $1
+                   and cl.topic0 in ($2)
+                   and cl.consensus_timestamp > $6
+                   order by cl.consensus_timestamp desc, cl.index desc
+                   limit $3
+               ) order by consensus_timestamp desc, index desc
+               limit $3`
     );
     expect(params).toEqual([1002, Buffer.from('11', 'hex'), 5, '1', '1001', '1001']);
   });
@@ -282,66 +389,100 @@ describe('ContractService.getContractLogsQuery tests', () => {
     });
     assertSqlQueryEqual(
       query,
-      `(
-        select
-          bloom,
-          contract_id,
-          consensus_timestamp,
-          data,
-          index,
-          root_contract_id,
-          topic0,
-          topic1,
-          topic2,
-          topic3
-        from contract_log cl
-        where cl.contract_id = $1
-          and cl.topic0 in ($2)
-          and cl.index >= $4
-          and cl.consensus_timestamp = $5
-        order by cl.consensus_timestamp desc, cl.index desc
-        limit $3
-      ) union (
-        select
-          bloom,
-          contract_id,
-          consensus_timestamp,
-          data,
-          index,
-          root_contract_id,
-          topic0,
-          topic1,
-          topic2,
-          topic3
-        from contract_log cl
-        where cl.contract_id = $1
-        and cl.topic0 in ($2)
-        and cl.consensus_timestamp > $6
-        and cl.consensus_timestamp < $7
-        order by cl.consensus_timestamp desc, cl.index desc
-        limit $3
-      ) union (
-        select
-          bloom,
-          contract_id,
-          consensus_timestamp,
-          data,
-          index,
-          root_contract_id,
-          topic0,
-          topic1,
-          topic2,
-          topic3
-        from contract_log cl
-        where cl.contract_id = $1
-        and cl.topic0 in ($2)
-        and cl.index <= $8
-        and cl.consensus_timestamp = $9
-        order by cl.consensus_timestamp desc, cl.index desc
-        limit $3
-      )
-      order by consensus_timestamp desc, index desc
-      limit $3`
+      `(select cl.bloom,
+                        cl.contract_id,
+                        cl.consensus_timestamp,
+                        cl.data,
+                        cl.index,
+                        cl.root_contract_id,
+                        cl.topic0,
+                        cl.topic1,
+                        cl.topic2,
+                        cl.topic3,
+                        cr.transaction_hash,
+                        cr.transaction_index,
+                        block.block_number,
+                        block.block_hash
+                 from contract_log cl
+                 left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
+                 left join lateral (
+                    select index as block_number,
+                           hash as block_hash
+                    from record_file
+                    where consensus_end >= cl.consensus_timestamp
+                    order by consensus_end asc
+                    limit 1
+                 ) as block on true
+                 where cl.contract_id = $1
+                   and cl.topic0 in ($2)
+                   and cl.index >= $4
+                   and cl.consensus_timestamp = $5
+                 order by cl.consensus_timestamp desc, cl.index desc
+                 limit $3
+                ) union (
+                  select cl.bloom,
+                         cl.contract_id,
+                         cl.consensus_timestamp,
+                         cl.data,
+                         cl.index,
+                         cl.root_contract_id,
+                         cl.topic0,
+                         cl.topic1,
+                         cl.topic2,
+                         cl.topic3,
+                         cr.transaction_hash,
+                         cr.transaction_index,
+                         block.block_number,
+                         block.block_hash
+                  from contract_log cl
+                  left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
+                  left join lateral (
+                    select index as block_number,
+                           hash as block_hash
+                    from record_file
+                    where consensus_end >= cl.consensus_timestamp
+                    order by consensus_end asc
+                    limit 1
+                  ) as block on true
+                  where cl.contract_id = $1
+                    and cl.topic0 in ($2)
+                    and cl.consensus_timestamp > $6
+                    and cl.consensus_timestamp < $7
+                  order by cl.consensus_timestamp desc, cl.index desc
+                  limit $3
+                ) union (
+                  select cl.bloom,
+                         cl.contract_id,
+                         cl.consensus_timestamp,
+                         cl.data,
+                         cl.index,
+                         cl.root_contract_id,
+                         cl.topic0,
+                         cl.topic1,
+                         cl.topic2,
+                         cl.topic3,
+                         cr.transaction_hash,
+                         cr.transaction_index,
+                         block.block_number,
+                         block.block_hash
+                  from contract_log cl
+                  left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
+                  left join lateral (
+                    select index as block_number,
+                           hash as block_hash
+                    from record_file
+                    where consensus_end >= cl.consensus_timestamp
+                    order by consensus_end asc
+                    limit 1
+                  ) as block on true
+                  where cl.contract_id = $1
+                    and cl.topic0 in ($2)
+                    and cl.index <= $8
+                    and cl.consensus_timestamp = $9
+                  order by cl.consensus_timestamp desc, cl.index desc
+                  limit $3)
+                order by consensus_timestamp desc, index desc
+                limit $3`
     );
     expect(params).toEqual([1002, Buffer.from('11', 'hex'), 5, '1', '1001', '1001', '1005', '5', '1005']);
   });
@@ -358,7 +499,7 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
       {
         contract_id: 2,
         consensus_timestamp: 1,
-        function_parameters: '\\x0D',
+        function_parameters: '0x0D',
         amount: 10,
       },
     ]);
@@ -382,14 +523,14 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
       {
         contract_id: 1,
         consensus_timestamp: 1,
-        function_parameters: '\\x0D',
+        function_parameters: '0x0D',
         amount: 10,
         payer_account_id: 123,
       },
       {
         contract_id: 2,
         consensus_timestamp: 2,
-        function_parameters: '\\x0D',
+        function_parameters: '0x0D',
         amount: 10,
         payer_account_id: 123,
       },
@@ -415,35 +556,35 @@ describe('ContractService.getContractResultsByIdAndFilters tests', () => {
       {
         contract_id: 2,
         consensus_timestamp: 1,
-        function_parameters: '\\x0D',
+        function_parameters: '0x0D',
         amount: 10,
         payer_account_id: 123,
       },
       {
         contract_id: 2,
         consensus_timestamp: 2,
-        function_parameters: '\\x0D',
+        function_parameters: '0x0D',
         amount: 10,
         payer_account_id: 123,
       },
       {
         contract_id: 3,
         consensus_timestamp: 3,
-        function_parameters: '\\x0D',
+        function_parameters: '0x0D',
         amount: 10,
         payer_account_id: 124,
       },
       {
         contract_id: 3,
         consensus_timestamp: 4,
-        function_parameters: '\\x0D',
+        function_parameters: '0x0D',
         amount: 10,
         payer_account_id: 124,
       },
       {
         contract_id: 3,
         consensus_timestamp: 5,
-        function_parameters: '\\x0D',
+        function_parameters: '0x0D',
         amount: 10,
         payer_account_id: 124,
       },
@@ -479,34 +620,34 @@ describe('ContractService.getContractLogsByTimestamps tests', () => {
     {
       consensus_timestamp: 1,
       contract_id: 1,
-      data: '\\x0012',
+      data: '0x0012',
       index: 0,
       root_contract_id: 1,
-      topic0: '\\x000a',
+      topic0: '0x000a',
     },
     {
       consensus_timestamp: 1,
       contract_id: 2,
-      data: '\\x0013',
+      data: '0x0013',
       index: 1,
       root_contract_id: 1,
-      topic0: '\\x000b',
+      topic0: '0x000b',
     },
     {
       consensus_timestamp: 2,
       contract_id: 1,
-      data: '\\x0014',
+      data: '0x0014',
       index: 0,
       root_contract_id: 1,
-      topic0: '\\x000c',
+      topic0: '0x000c',
     },
     {
       consensus_timestamp: 2,
       contract_id: 3,
-      data: '\\x0015',
+      data: '0x0015',
       index: 1,
       root_contract_id: 1,
-      topic0: '\\x000d',
+      topic0: '0x000d',
     },
   ];
   const expected = [
@@ -568,14 +709,14 @@ describe('ContractService.getContractResultsByTimestamps tests', () => {
     {
       contract_id: 2,
       consensus_timestamp: 2,
-      function_parameters: '\\x0D',
+      function_parameters: '0x0D',
       amount: 10,
       payer_account_id: '5',
     },
     {
       contract_id: 3,
       consensus_timestamp: 6,
-      function_parameters: '\\x0D',
+      function_parameters: '0x0D',
       amount: 15,
       payer_account_id: '5',
     },
@@ -626,24 +767,31 @@ describe('ContractService.getContractResultsByTimestamps tests', () => {
   });
 
   test('No match', async () => {
-    await expect(ContractService.getContractResultsByTimestamps('1')).resolves.toHaveLength(0);
+    const contractResults = await ContractService.getContractResultsByTimestamps('1');
+    expect(contractResults).toHaveLength(0);
   });
 
   test('Sing row match single timestamp', async () => {
-    const actual = await ContractService.getContractResultsByTimestamps(expected[0].consensusTimestamp);
-    expect(pickContractResultFields(actual)).toIncludeSameMembers(expected.slice(0, 1));
+    const contractResults = await ContractService.getContractResultsByTimestamps(expected[0].consensusTimestamp);
+    expect(pickContractResultFields(contractResults)).toIncludeSameMembers(expected.slice(0, 1));
   });
 
   test('Sing row match multiple timestamps', async () => {
-    const actual = await ContractService.getContractResultsByTimestamps([expected[0].consensusTimestamp, '100']);
-    expect(pickContractResultFields(actual)).toIncludeSameMembers(expected.slice(0, 1));
+    const contractResults = await ContractService.getContractResultsByTimestamps([
+      expected[0].consensusTimestamp,
+      '100',
+    ]);
+    expect(pickContractResultFields(contractResults)).toIncludeSameMembers(expected.slice(0, 1));
   });
 
   test('Multiple rows match multiple timestamps', async () => {
-    const actual = await ContractService.getContractResultsByTimestamps(expected.map((e) => e.consensusTimestamp));
-    expect(pickContractResultFields(actual)).toIncludeSameMembers(expected);
+    const contractResults = await ContractService.getContractResultsByTimestamps(
+      expected.map((e) => e.consensusTimestamp)
+    );
+    expect(pickContractResultFields(contractResults)).toIncludeSameMembers(expected);
   });
 });
+
 describe('ContractService.getContractLogs tests', () => {
   const defaultQuery = {
     lower: [],
@@ -792,10 +940,10 @@ describe('ContractService.getContractLogs tests', () => {
       ],
       params: [
         3,
-        'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ea',
-        'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3eb',
-        'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ec',
-        'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ed',
+        Buffer.from('ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ea', 'hex'),
+        Buffer.from('ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3eb', 'hex'),
+        Buffer.from('ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ec', 'hex'),
+        Buffer.from('ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ed', 'hex'),
       ],
       timestampOrder: 'desc',
       indexOrder: 'asc',
@@ -805,86 +953,94 @@ describe('ContractService.getContractLogs tests', () => {
   });
 });
 
-// state changes
 describe('ContractService.getContractStateChangesByTimestamps tests', () => {
+  beforeEach(async () => {
+    await integrationDomainOps.loadContractStateChanges([
+      {
+        consensus_timestamp: 1,
+        contract_id: 3,
+        slot: '01',
+        value_read: '0101',
+        value_written: 'a1a1',
+      },
+      {
+        consensus_timestamp: 1,
+        contract_id: 4,
+        migration: true,
+        slot: '02',
+        value_read: '0202',
+        value_written: 'a2a2',
+      },
+      {
+        consensus_timestamp: 2,
+        contract_id: 5,
+        slot: '0a',
+        value_read: '0303',
+        value_written: 'a3a3',
+      },
+      {
+        consensus_timestamp: 2,
+        contract_id: 3,
+        migration: true,
+        slot: '0b',
+        value_read: '0404',
+        value_written: 'a4a4',
+      },
+      {
+        consensus_timestamp: 3,
+        contract_id: 4,
+        slot: '0c',
+        value_read: '0505',
+        value_written: 'a5a5',
+      },
+      {
+        consensus_timestamp: 4,
+        contract_id: 5,
+        slot: '0d',
+        value_read: '0606',
+        value_written: 'a6a6',
+      },
+    ]);
+  });
+
   test('No match', async () => {
-    const response = await ContractService.getContractStateChangesByTimestamps('1');
-    expect(response).toEqual([]);
+    const response = await ContractService.getContractStateChangesByTimestamps('10');
+    expect(response).toBeEmpty();
   });
 
   test('Row match', async () => {
-    await integrationDomainOps.loadContractStateChanges([
-      {
-        consensus_timestamp: 1,
-        contract_id: 2,
-      },
-    ]);
-
-    const expectedContractStateChange = [
+    const expected = [
       {
         consensusTimestamp: 1,
-        contractId: 2,
+        contractId: 3,
+        slot: Buffer.from([0x1]),
+        valueRead: Buffer.from([0x1, 0x1]),
+        valueWritten: Buffer.from([0xa1, 0xa1]),
       },
     ];
-
     const response = await ContractService.getContractStateChangesByTimestamps('1');
-    expect(response).toMatchObject(expectedContractStateChange);
+    expect(response).toMatchObject(expected);
   });
 
-  test('Id match', async () => {
-    await integrationDomainOps.loadContractStateChanges([
+  test('Row match with contractId', async () => {
+    const expected = [
       {
-        consensus_timestamp: 1,
-        contract_id: 3,
-        slot: '\\x000a',
-      },
-      {
-        consensus_timestamp: 1,
-        contract_id: 4,
-        slot: '\\x000b',
-      },
-      {
-        consensus_timestamp: 1,
-        contract_id: 5,
-        slot: '\\x000c',
-      },
-      {
-        consensus_timestamp: 2,
-        contract_id: 3,
-        slot: '\\x0001',
-      },
-      {
-        consensus_timestamp: 2,
-        contract_id: 4,
-        slot: '\\x0002',
-      },
-      {
-        consensus_timestamp: 2,
-        contract_id: 5,
-        slot: '\\x0003',
-      },
-    ]);
-
-    const expectedContractStateChange = [
-      {
-        consensusTimestamp: 2,
+        consensusTimestamp: 1,
         contractId: 3,
-        slot: Buffer.from([92, 120, 48, 48, 48, 49]),
+        slot: Buffer.from([0x1]),
+        valueRead: Buffer.from([0x1, 0x1]),
+        valueWritten: Buffer.from([0xa1, 0xa1]),
       },
       {
-        consensusTimestamp: 2,
+        consensusTimestamp: 1,
         contractId: 4,
-        slot: Buffer.from([92, 120, 48, 48, 48, 50]),
-      },
-      {
-        consensusTimestamp: 2,
-        contractId: 5,
-        slot: Buffer.from([92, 120, 48, 48, 48, 51]),
+        slot: Buffer.from([0x2]),
+        valueRead: Buffer.from([0x2, 0x2]),
+        valueWritten: Buffer.from([0xa2, 0xa2]),
       },
     ];
-
-    const response = await ContractService.getContractStateChangesByTimestamps('2');
-    expect(response).toMatchObject(expectedContractStateChange);
+    const response = await ContractService.getContractStateChangesByTimestamps('1', 4);
+    expect(response).toMatchObject(expected);
   });
 });
 
@@ -905,7 +1061,7 @@ describe('ContractService.getContractIdByEvmAddress tests', () => {
         deleted: false,
         expiration_timestamp: null,
         id: 111169,
-        key: "E'\\\\x326C0A221220F7ECD392568A9ECE84097C4B3C04C74AE52653D54398E132747B498B287245610A221220FA34ADAC826D3F878CCA5E4B074C7060DAE76259611543D6A876FF4E4B8B5C3A0A2212201ADBD17C33C48D59D0961356D5C0B19B391760A6504C3FC78D3094266FA290D2'",
+        key: "E'\\0x326C0A221220F7ECD392568A9ECE84097C4B3C04C74AE52653D54398E132747B498B287245610A221220FA34ADAC826D3F878CCA5E4B074C7060DAE76259611543D6A876FF4E4B8B5C3A0A2212201ADBD17C33C48D59D0961356D5C0B19B391760A6504C3FC78D3094266FA290D2'",
         memo: '',
         num: 111169,
         public_key: null,
@@ -924,7 +1080,7 @@ describe('ContractService.getContractIdByEvmAddress tests', () => {
         deleted: false,
         expiration_timestamp: null,
         id: 111278,
-        key: "E'\\\\x326C0A2212203053E42F8D8978BC5999080C4A625BBB1BF96CBCA6BAD6A4796808A6812564490A221220CC16FF9223B2E8F8151E8EFB054203CEF5EE9AF6171D2649D46734ECDD7F5A280A22122097C6975280B82DC1969ABA4E7DDE4F478E872E04CD6E0FE3849EAFB5D86315F1'",
+        key: "E'\\0x326C0A2212203053E42F8D8978BC5999080C4A625BBB1BF96CBCA6BAD6A4796808A6812564490A221220CC16FF9223B2E8F8151E8EFB054203CEF5EE9AF6171D2649D46734ECDD7F5A280A22122097C6975280B82DC1969ABA4E7DDE4F478E872E04CD6E0FE3849EAFB5D86315F1'",
         memo: '',
         num: 111278,
         public_key: null,
@@ -943,7 +1099,7 @@ describe('ContractService.getContractIdByEvmAddress tests', () => {
         deleted: false,
         expiration_timestamp: 1581285572000000000,
         id: 111482,
-        key: "E'\\\\x326C0A221220A13DDC50A38C7ED4A7F64CFD05E364746B8DABC3DAE8B2AFBE9A94FF2105AB1F0A2212202CECF7F1A3EADBBD678EC9D62EED162893A2069D456A4E5061E86F96C95F4FFF0A221220C6C448A8B628C11C55F773A3366D8B75E8188EEF46A50A2CCDDDA6B3B4EF55E3'",
+        key: "E'\\0x326C0A221220A13DDC50A38C7ED4A7F64CFD05E364746B8DABC3DAE8B2AFBE9A94FF2105AB1F0A2212202CECF7F1A3EADBBD678EC9D62EED162893A2069D456A4E5061E86F96C95F4FFF0A221220C6C448A8B628C11C55F773A3366D8B75E8188EEF46A50A2CCDDDA6B3B4EF55E3'",
         memo: '',
         num: 111482,
         public_key: null,
@@ -975,7 +1131,7 @@ describe('ContractService.getContractIdByEvmAddress tests', () => {
         deleted: false,
         expiration_timestamp: null,
         id: 111169,
-        key: "E'\\\\x326C0A221220F7ECD392568A9ECE84097C4B3C04C74AE52653D54398E132747B498B287245610A221220FA34ADAC826D3F878CCA5E4B074C7060DAE76259611543D6A876FF4E4B8B5C3A0A2212201ADBD17C33C48D59D0961356D5C0B19B391760A6504C3FC78D3094266FA290D2'",
+        key: "E'\\0x326C0A221220F7ECD392568A9ECE84097C4B3C04C74AE52653D54398E132747B498B287245610A221220FA34ADAC826D3F878CCA5E4B074C7060DAE76259611543D6A876FF4E4B8B5C3A0A2212201ADBD17C33C48D59D0961356D5C0B19B391760A6504C3FC78D3094266FA290D2'",
         memo: '',
         num: 111169,
         public_key: null,
@@ -994,7 +1150,7 @@ describe('ContractService.getContractIdByEvmAddress tests', () => {
         deleted: false,
         expiration_timestamp: null,
         id: 111278,
-        key: "E'\\\\x326C0A2212203053E42F8D8978BC5999080C4A625BBB1BF96CBCA6BAD6A4796808A6812564490A221220CC16FF9223B2E8F8151E8EFB054203CEF5EE9AF6171D2649D46734ECDD7F5A280A22122097C6975280B82DC1969ABA4E7DDE4F478E872E04CD6E0FE3849EAFB5D86315F1'",
+        key: "E'\\0x326C0A2212203053E42F8D8978BC5999080C4A625BBB1BF96CBCA6BAD6A4796808A6812564490A221220CC16FF9223B2E8F8151E8EFB054203CEF5EE9AF6171D2649D46734ECDD7F5A280A22122097C6975280B82DC1969ABA4E7DDE4F478E872E04CD6E0FE3849EAFB5D86315F1'",
         memo: '',
         num: 111278,
         public_key: null,
@@ -1013,7 +1169,7 @@ describe('ContractService.getContractIdByEvmAddress tests', () => {
         deleted: false,
         expiration_timestamp: 1581285572000000000,
         id: 111482,
-        key: "E'\\\\x326C0A221220A13DDC50A38C7ED4A7F64CFD05E364746B8DABC3DAE8B2AFBE9A94FF2105AB1F0A2212202CECF7F1A3EADBBD678EC9D62EED162893A2069D456A4E5061E86F96C95F4FFF0A221220C6C448A8B628C11C55F773A3366D8B75E8188EEF46A50A2CCDDDA6B3B4EF55E3'",
+        key: "E'\\0x326C0A221220A13DDC50A38C7ED4A7F64CFD05E364746B8DABC3DAE8B2AFBE9A94FF2105AB1F0A2212202CECF7F1A3EADBBD678EC9D62EED162893A2069D456A4E5061E86F96C95F4FFF0A221220C6C448A8B628C11C55F773A3366D8B75E8188EEF46A50A2CCDDDA6B3B4EF55E3'",
         memo: '',
         num: 111482,
         public_key: null,
@@ -1034,5 +1190,187 @@ describe('ContractService.getContractIdByEvmAddress tests', () => {
       create2_evm_address: evmAddress,
     });
     expect(contractId.toString()).toEqual('111169');
+  });
+});
+
+describe('ContractService.getContractResultsByHash tests', () => {
+  const ethereumTxHash = '4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392';
+  const ethereumTxHashBuffer = Buffer.from(ethereumTxHash, 'hex');
+  const ethereumTxType = TransactionType.getProtoId('ETHEREUMTRANSACTION');
+  const contractCreateType = TransactionType.getProtoId('CONTRACTCREATEINSTANCE');
+  const duplicateTransactionResult = TransactionResult.getProtoId('DUPLICATE_TRANSACTION');
+  const successTransactionResult = TransactionResult.getProtoId('SUCCESS');
+  const wrongNonceTransactionResult = TransactionResult.getProtoId('WRONG_NONCE');
+
+  const inputContractResults = [
+    {
+      consensus_timestamp: 1,
+      payerAccountId: 10,
+      type: ethereumTxType,
+      transaction_result: successTransactionResult,
+      transaction_index: 1,
+      transaction_hash: ethereumTxHash,
+      gasLimit: 1000,
+    },
+    {
+      consensus_timestamp: 2,
+      payerAccountId: 10,
+      type: ethereumTxType,
+      transaction_result: duplicateTransactionResult,
+      transaction_index: 1,
+      transaction_hash: ethereumTxHash,
+      gasLimit: 1000,
+    },
+    {
+      consensus_timestamp: 3,
+      payerAccountId: 10,
+      type: ethereumTxType,
+      transaction_result: wrongNonceTransactionResult,
+      transaction_index: 1,
+      transaction_hash: ethereumTxHash,
+      gasLimit: 1000,
+    },
+    {
+      consensus_timestamp: 4,
+      payerAccountId: 10,
+      type: ethereumTxType,
+      transaction_result: successTransactionResult,
+      transaction_index: 1,
+      transaction_hash: ethereumTxHash,
+      gasLimit: 1000,
+    },
+    {
+      consensus_timestamp: 5,
+      payerAccountId: 10,
+      type: contractCreateType,
+      transaction_hash: '96ecf2e0cf1c8f7e2294ec731b2ad1aff95d9736f4ba15b5bbace1ad2766cc1c',
+      gasLimit: 1000,
+    },
+  ];
+
+  const inputEthTransaction = [
+    {
+      consensus_timestamp: 1,
+      hash: ethereumTxHash,
+    },
+    {
+      consensus_timestamp: 2,
+      hash: ethereumTxHash,
+    },
+    {
+      consensus_timestamp: 3,
+      hash: ethereumTxHash,
+    },
+    {
+      consensus_timestamp: 4,
+      hash: ethereumTxHash,
+    },
+  ];
+
+  const expectedTransaction = {
+    consensusTimestamp: 1,
+    transactionHash: ethereumTxHash,
+  };
+
+  // pick the fields of interests, otherwise expect will fail since the Transaction object has other fields
+  const pickTransactionFields = (transactions) => {
+    return transactions
+      .map((tx) => _.pick(tx, ['consensusTimestamp', 'transactionHash']))
+      .map((tx) => ({...tx, transactionHash: Buffer.from(tx.transactionHash).toString('hex')}));
+  };
+
+  beforeEach(async () => {
+    await integrationDomainOps.loadContractResults(inputContractResults);
+    await integrationDomainOps.loadEthereumTransactions(inputEthTransaction);
+  });
+
+  test('No match', async () => {
+    const contractResults = await ContractService.getContractResultsByHash(
+      Buffer.from('4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6393', 'hex')
+    );
+
+    expect(contractResults).toHaveLength(0);
+  });
+
+  test('Match all transactions by same hash', async () => {
+    const contractResults = await ContractService.getContractResultsByHash(ethereumTxHashBuffer);
+    expect(pickTransactionFields(contractResults)).toIncludeSameMembers([
+      expectedTransaction,
+      {consensusTimestamp: 2, transactionHash: ethereumTxHash},
+      {consensusTimestamp: 3, transactionHash: ethereumTxHash},
+      {consensusTimestamp: 4, transactionHash: ethereumTxHash},
+    ]);
+  });
+
+  test('Match all transactions with no duplicates and wrong nonces', async () => {
+    const contractResults = await ContractService.getContractResultsByHash(ethereumTxHashBuffer, [
+      duplicateTransactionResult,
+      wrongNonceTransactionResult,
+    ]);
+    expect(pickTransactionFields(contractResults)).toIncludeSameMembers([
+      expectedTransaction,
+      {consensusTimestamp: 4, transactionHash: ethereumTxHash},
+    ]);
+  });
+
+  test('Match the oldest tx with no duplicates and wrong nonces', async () => {
+    const contractResults = await ContractService.getContractResultsByHash(
+      ethereumTxHashBuffer,
+      [duplicateTransactionResult, wrongNonceTransactionResult],
+      1
+    );
+    expect(pickTransactionFields(contractResults)).toIncludeSameMembers([expectedTransaction]);
+  });
+
+  test('Match hedera transactions by eth hash', async () => {
+    const contractResults = await ContractService.getContractResultsByHash(
+      Buffer.from('96ecf2e0cf1c8f7e2294ec731b2ad1aff95d9736f4ba15b5bbace1ad2766cc1c', 'hex'),
+      [duplicateTransactionResult, wrongNonceTransactionResult],
+      1
+    );
+
+    expect(pickTransactionFields(contractResults)).toIncludeSameMembers([
+      {consensusTimestamp: 5, transactionHash: '96ecf2e0cf1c8f7e2294ec731b2ad1aff95d9736f4ba15b5bbace1ad2766cc1c'},
+    ]);
+  });
+});
+
+describe('ContractService.getContractActionsByConsensusTimestamp tests', () => {
+  test('No match', async () => {
+    const res = await ContractService.getContractActionsByConsensusTimestamp(
+      '1676540001234390005',
+      [],
+      orderFilterValues.ASC,
+      100
+    );
+    expect(res.length).toEqual(0);
+  });
+
+  test('Multiple rows match', async () => {
+    await integrationDomainOps.loadContractActions([
+      {consensus_timestamp: '1676540001234390005'},
+      {consensus_timestamp: '1676540001234390005', index: 2},
+    ]);
+    const res = await ContractService.getContractActionsByConsensusTimestamp(
+      '1676540001234390005',
+      [],
+      orderFilterValues.ASC,
+      100
+    );
+    expect(res.length).toEqual(2);
+  });
+
+  test('One row match', async () => {
+    await integrationDomainOps.loadContractActions([
+      {consensus_timestamp: '1676540001234390005'},
+      {consensus_timestamp: '1676540001234390006'},
+    ]);
+    const res = await ContractService.getContractActionsByConsensusTimestamp(
+      '1676540001234390005',
+      [],
+      orderFilterValues.ASC,
+      100
+    );
+    expect(res.length).toEqual(1);
   });
 });

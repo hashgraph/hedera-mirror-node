@@ -42,6 +42,7 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -79,6 +80,7 @@ import com.hedera.mirror.common.domain.entity.CryptoAllowanceHistory;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityHistory;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityStake;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.NftAllowanceHistory;
@@ -86,6 +88,8 @@ import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowanceHistory;
 import com.hedera.mirror.common.domain.event.EventFile;
 import com.hedera.mirror.common.domain.file.FileData;
+import com.hedera.mirror.common.domain.job.ReconciliationJob;
+import com.hedera.mirror.common.domain.job.ReconciliationStatus;
 import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
@@ -111,9 +115,11 @@ import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.SidecarFile;
 import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
+import com.hedera.mirror.common.domain.transaction.TransactionHash;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.services.stream.proto.CallOperationType;
 import com.hedera.services.stream.proto.ContractAction.ResultDataCase;
 import com.hedera.services.stream.proto.ContractActionType;
 
@@ -244,6 +250,7 @@ public class DomainBuilder {
                 .callDepth(1)
                 .caller(entityId(CONTRACT))
                 .callerType(CONTRACT)
+                .callOperationType(CallOperationType.OP_CALL.getNumber())
                 .callType(ContractActionType.CALL.getNumber())
                 .consensusTimestamp(timestamp())
                 .gas(100L)
@@ -413,13 +420,24 @@ public class DomainBuilder {
                 .realm(0L)
                 .receiverSigRequired(true)
                 .shard(0L)
-                .stakedAccountId(-1L)
                 .stakedNodeId(-1L)
                 .stakePeriodStart(-1L)
                 .submitKey(key())
                 .timestampRange(Range.closedOpen(timestamp, timestamp()))
                 .type(ACCOUNT);
 
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<EntityStake, EntityStake.EntityStakeBuilder> entityStake() {
+        var builder = EntityStake.builder()
+                .declineRewardStart(false)
+                .endStakePeriod(0L)
+                .id(id())
+                .pendingReward(0L)
+                .stakedNodeIdStart(-1L)
+                .stakedToMe(0L)
+                .stakeTotalStart(0L);
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
@@ -587,6 +605,16 @@ public class DomainBuilder {
                 .consensusTimestamp(timestamp())
                 .range(Integer.MAX_VALUE)
                 .prngNumber(random.nextInt(Integer.MAX_VALUE));
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<ReconciliationJob, ReconciliationJob.ReconciliationJobBuilder> reconciliationJob() {
+        var builder = ReconciliationJob.builder()
+                .consensusTimestamp(timestamp())
+                .error("")
+                .status(ReconciliationStatus.SUCCESS)
+                .timestampStart(instant())
+                .timestampEnd(instant());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
@@ -804,6 +832,11 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
+    public DomainWrapper<TransactionHash, TransactionHash.TransactionHashBuilder> transactionHash() {
+        var builder = TransactionHash.builder().consensusTimestamp(timestamp()).hash(bytes(48));
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
     public DomainWrapper<TransactionSignature, TransactionSignature.TransactionSignatureBuilder> transactionSignature() {
         var builder = TransactionSignature.builder()
                 .consensusTimestamp(timestamp())
@@ -835,6 +868,11 @@ public class DomainBuilder {
 
     public long id() {
         return id.incrementAndGet();
+    }
+
+    // SQL timestamp type only supports up to microsecond granularity
+    private Instant instant() {
+        return now.truncatedTo(ChronoUnit.MILLIS).plusMillis(id());
     }
 
     public byte[] key() {

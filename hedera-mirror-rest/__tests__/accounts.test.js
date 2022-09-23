@@ -339,6 +339,7 @@ describe('processRow', () => {
     auto_renew_period: 7890000,
     balance: 123456789,
     consensus_timestamp: 9876500123456789n,
+    created_timestamp: 10123456789n,
     decline_reward: false,
     ethereum_nonce: 1,
     evm_address: Buffer.from('ac384c53f03855fa1b3616052f8ba32c6c2a2fec', 'hex'),
@@ -348,6 +349,7 @@ describe('processRow', () => {
     key: Buffer.from([1, 2, 3, 4, 5, 6]),
     max_automatic_token_associations: 100,
     memo: 'entity memo',
+    pending_reward: 10,
     receiver_sig_required: false,
     staked_account_id: 0,
     staked_node_id: -1,
@@ -381,6 +383,7 @@ describe('processRow', () => {
         },
       ],
     },
+    created_timestamp: '10.123456789',
     decline_reward: false,
     deleted: false,
     ethereum_nonce: 1,
@@ -392,6 +395,7 @@ describe('processRow', () => {
     },
     max_automatic_token_associations: 100,
     memo: 'entity memo',
+    pending_reward: 10,
     receiver_sig_required: false,
     staked_account_id: null,
     staked_node_id: null,
@@ -485,6 +489,12 @@ describe('processRow', () => {
       staked_node_id: 2,
       stake_period_start: '1655596800.000000000',
     });
+
+    expect(subject.processRow({...inputAccount, staked_node_id: 2, stake_period_start: -1})).toEqual({
+      ...expectedAccount,
+      staked_node_id: 2,
+      stake_period_start: null,
+    });
   });
 
   test('default contract', () => {
@@ -495,6 +505,13 @@ describe('processRow', () => {
     expect(subject.processRow({...inputContract, evm_address: null})).toEqual({
       ...expectedContract,
       evm_address: '0x00000000000000000000000000000000000004e2',
+    });
+  });
+
+  test('null created_timestamp', () => {
+    expect(subject.processRow({...inputAccount, created_timestamp: null})).toEqual({
+      ...expectedAccount,
+      created_timestamp: null,
     });
   });
 });

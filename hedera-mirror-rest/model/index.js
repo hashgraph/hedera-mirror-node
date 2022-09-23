@@ -24,6 +24,7 @@ import AddressBookServiceEndpoint from './addressBookServiceEndpoint';
 import AssessedCustomFee from './assessedCustomFee';
 import Contract from './contract';
 import CryptoAllowance from './cryptoAllowance';
+import ContractAction from './contractAction.js';
 import ContractLog from './contractLog';
 import ContractResult from './contractResult';
 import ContractStateChange from './contractStateChange';
@@ -47,10 +48,10 @@ import TokenKycStatus from './tokenKycStatus';
 import TokenTransfer from './tokenTransfer';
 import TopicMessage from './topicMessage';
 import Transaction from './transaction';
+import TransactionHash from './transactionHash';
 import TransactionId from './transactionId';
 import TransactionResult from './transactionResult';
 import TransactionType from './transactionType';
-import TransactionWithEthData from './transactionWithEthData';
 import FeeSchedule from './feeSchedule';
 
 export {
@@ -60,6 +61,7 @@ export {
   AssessedCustomFee,
   Contract,
   CryptoAllowance,
+  ContractAction,
   ContractLog,
   ContractResult,
   ContractStateChange,
@@ -83,9 +85,9 @@ export {
   TokenTransfer,
   TopicMessage,
   Transaction,
+  TransactionHash,
   TransactionId,
   TransactionResult,
   TransactionType,
-  TransactionWithEthData,
   FeeSchedule,
 };

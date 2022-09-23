@@ -14,15 +14,27 @@
         "function_result": [8, 8],
         "gas_limit": 987654,
         "gas_used": 123,
-        "payer_account_id": 8001
+        "payer_account_id": 8001,
+        "transaction_hash": "96ecf2e0cf1c8f7e2294ec731b2ad1aff95d9736f4ba15b5bbace1ad2766cc1c",
+        "transaction_result": 22,
+        "transaction_index": 1
       }
     ],
-    "recordFiles": [],
+    "contracts": [
+      {
+        "created_timestamp": "987654999123200",
+        "evm_address": "70f2b2914a2a4b783faefb75f459a580616fcb5e",
+        "file_id": "5001",
+        "key": [1, 1, 1],
+        "num": "5001",
+        "timestamp_range": "[987654999123300,)"
+      }
+    ],
     "transactions": [
       {
-        "consensus_timestamp": 167654000123456,
+        "consensus_timestamp": 167654000123457,
         "payerAccountId": "5",
-        "transaction_hash": "519a008fabde4d",
+        "transaction_hash": "96ecf2e0cf1c8f7e2294ec731b2ad1aff95d9736f4ba15b5bbace1ad2766cc1c10554fd34ae23bf39931e9b90542b781",
         "valid_start_timestamp": 167654000123400
       }
     ]

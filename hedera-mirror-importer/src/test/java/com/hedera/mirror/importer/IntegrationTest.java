@@ -99,7 +99,7 @@ public abstract class IntegrationTest {
         return findHistory(historyClass, ids, null);
     }
 
-    protected  <T> Collection<T> findHistory(Class<T> historyClass, String ids, String table) {
+    protected <T> Collection<T> findHistory(Class<T> historyClass, String ids, String table) {
         if (StringUtils.isEmpty(table)) {
             table = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, historyClass.getSimpleName());
         }

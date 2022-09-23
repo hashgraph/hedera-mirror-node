@@ -32,7 +32,8 @@
         "function_result": [4, 4],
         "gas_limit": 1234556,
         "gas_used": 987,
-        "payer_account_id": 6001
+        "payer_account_id": 6001,
+        "transaction_hash": "0x185602030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
       },
       {
         "amount": 30,
@@ -46,7 +47,8 @@
         "function_result": [8, 8],
         "gas_limit": 987654,
         "gas_used": 123,
-        "payer_account_id": 8001
+        "payer_account_id": 8001,
+        "transaction_hash": "0x985602030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f"
       }
     ],
     "transactions": [
@@ -70,16 +72,6 @@
         "payerAccountId": 9001,
         "index": 1
       }
-    ],
-    "ethereumtransactions": [
-      {
-        "consensus_timestamp": "187654000123456",
-        "hash": "0xffeb86b639c565a1efdeebd9e5269a8feabe3ff44aadf5bf31dfaf8cfc7a5ce6"
-      },
-      {
-        "consensus_timestamp": "987654000123456",
-        "hash": "0xfebbaa29c513d124a6377246ea3506ad917d740c21a88f61a1c55ba338fc2bb1"
-      }
     ]
   },
   "urls": ["/api/v1/contracts/results"],
@@ -97,7 +89,7 @@
         "function_parameters": "0x0707",
         "gas_limit": 987654,
         "gas_used": 123,
-        "hash": "0xfebbaa29c513d124a6377246ea3506ad917d740c21a88f61a1c55ba338fc2bb1",
+        "hash": "0x985602030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
         "timestamp": "987654.000123456",
         "to": "0x0000000000000000000000000000000000001771"
       },
@@ -112,7 +104,7 @@
         "function_parameters": "0x0303",
         "gas_limit": 1234556,
         "gas_used": 987,
-        "hash": "0xffeb86b639c565a1efdeebd9e5269a8feabe3ff44aadf5bf31dfaf8cfc7a5ce6",
+        "hash": "0x185602030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
         "timestamp": "187654.000123456",
         "to": "0x0000000000000000000000000000000000001389"
       }

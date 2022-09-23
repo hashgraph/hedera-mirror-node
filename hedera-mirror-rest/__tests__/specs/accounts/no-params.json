@@ -4,12 +4,15 @@
     "accounts": [
       {
         "balance": 10,
+        "created_timestamp": "9999123456789",
         "decline_reward": true,
         "num": 1,
-        "key": "1220bfc9d4a344389324119eed485eb3a875b1e5a54bd189d2fd5ad88ce1d3473dee"
+        "key": "1220bfc9d4a344389324119eed485eb3a875b1e5a54bd189d2fd5ad88ce1d3473dee",
+        "staked_node_id": 2
       },
       {
         "balance": "9223372036847275807",
+        "created_timestamp": "10000123456789",
         "num": 2,
         "key": "32240a221220bfc9d4a344389324119eed485eb3a875b1e5a54bd189d2fd5ad88ce1d3473dee",
         "staked_account_id": 0
@@ -151,6 +154,36 @@
         "stake_period_start": 1100
       }
     ],
+    "entityStakes": [
+      {
+        "decline_reward_start": false,
+        "end_stake_period": 2000,
+        "id": 1,
+        "pending_reward": 100,
+        "stake_total_start": 1000
+      },
+      {
+        "decline_reward_start": false,
+        "end_stake_period": 2000,
+        "id": 2,
+        "pending_reward": 200,
+        "stake_total_start": 2000
+      },
+      {
+        "decline_reward_start": false,
+        "end_stake_period": 2000,
+        "id": 3,
+        "pending_reward": 300,
+        "stake_total_start": 3000
+      },
+      {
+        "decline_reward_start": false,
+        "end_stake_period": 2000,
+        "id": 4,
+        "pending_reward": 400,
+        "stake_total_start": 4000
+      }
+    ],
     "recordFiles": [
       {
         "consensus_start": 1700,
@@ -181,6 +214,7 @@
         },
         "account": "0.0.1",
         "alias": null,
+        "created_timestamp": "9999.123456789",
         "decline_reward": true,
         "deleted": false,
         "ethereum_nonce": null,
@@ -193,9 +227,10 @@
         },
         "max_automatic_token_associations": 0,
         "memo": "entity memo",
+        "pending_reward": 0,
         "receiver_sig_required": false,
         "staked_account_id": null,
-        "staked_node_id": null,
+        "staked_node_id": 2,
         "stake_period_start": null
       },
       {
@@ -215,6 +250,7 @@
         },
         "account": "0.0.2",
         "alias": null,
+        "created_timestamp": "10000.123456789",
         "decline_reward": false,
         "deleted": false,
         "ethereum_nonce": null,
@@ -227,6 +263,7 @@
         },
         "max_automatic_token_associations": 0,
         "memo": "entity memo",
+        "pending_reward": 0,
         "receiver_sig_required": false,
         "staked_account_id": null,
         "staked_node_id": null,
@@ -240,6 +277,7 @@
         },
         "account": "0.0.3",
         "alias": null,
+        "created_timestamp": null,
         "decline_reward": false,
         "deleted": false,
         "ethereum_nonce": null,
@@ -252,6 +290,7 @@
         },
         "max_automatic_token_associations": 0,
         "memo": "entity memo",
+        "pending_reward": 0,
         "receiver_sig_required": false,
         "staked_account_id": "0.0.200",
         "staked_node_id": null,
@@ -265,6 +304,7 @@
         },
         "account": "0.0.4",
         "alias": null,
+        "created_timestamp": null,
         "decline_reward": false,
         "deleted": false,
         "ethereum_nonce": null,
@@ -277,6 +317,7 @@
         },
         "max_automatic_token_associations": 0,
         "memo": "entity memo",
+        "pending_reward": 400,
         "receiver_sig_required": false,
         "staked_account_id": null,
         "staked_node_id": 3,
@@ -299,6 +340,7 @@
         },
         "account": "0.0.5",
         "alias": null,
+        "created_timestamp": null,
         "decline_reward": false,
         "deleted": false,
         "ethereum_nonce": null,
@@ -311,6 +353,7 @@
         },
         "max_automatic_token_associations": 0,
         "memo": "entity memo",
+        "pending_reward": 0,
         "receiver_sig_required": false,
         "staked_account_id": null,
         "staked_node_id": null,
@@ -324,6 +367,7 @@
         },
         "account": "0.0.6",
         "alias": null,
+        "created_timestamp": null,
         "decline_reward": false,
         "deleted": false,
         "ethereum_nonce": null,
@@ -336,6 +380,7 @@
         },
         "max_automatic_token_associations": 0,
         "memo": "entity memo",
+        "pending_reward": 0,
         "receiver_sig_required": false,
         "staked_account_id": null,
         "staked_node_id": null,
@@ -349,6 +394,7 @@
         },
         "account": "0.0.7",
         "alias": null,
+        "created_timestamp": null,
         "decline_reward": false,
         "deleted": false,
         "ethereum_nonce": null,
@@ -358,6 +404,7 @@
         "key": null,
         "max_automatic_token_associations": 20,
         "memo": "contract memo",
+        "pending_reward": 0,
         "receiver_sig_required": null,
         "staked_account_id": null,
         "staked_node_id": null,
@@ -371,6 +418,7 @@
         },
         "account": "0.0.8",
         "alias": null,
+        "created_timestamp": null,
         "decline_reward": false,
         "deleted": false,
         "ethereum_nonce": null,
@@ -380,6 +428,7 @@
         "key": null,
         "max_automatic_token_associations": 0,
         "memo": "contract memo",
+        "pending_reward": 0,
         "receiver_sig_required": null,
         "staked_account_id": null,
         "staked_node_id": 5,
@@ -393,6 +442,7 @@
         },
         "account": "0.0.9",
         "alias": null,
+        "created_timestamp": null,
         "decline_reward": false,
         "ethereum_nonce": null,
         "evm_address": null,
@@ -402,6 +452,7 @@
         "deleted": false,
         "max_automatic_token_associations": 150,
         "memo": "entity memo",
+        "pending_reward": 0,
         "receiver_sig_required": null,
         "staked_account_id": null,
         "staked_node_id": null,
@@ -415,6 +466,7 @@
         },
         "account": "0.0.10",
         "alias": "32W353Y",
+        "created_timestamp": null,
         "decline_reward": false,
         "deleted": false,
         "ethereum_nonce": 9007199254740992,
@@ -422,6 +474,7 @@
         "expiry_timestamp": "9223372036.854775807",
         "auto_renew_period": null,
         "key": null,
+        "pending_reward": 0,
         "max_automatic_token_associations": 0,
         "memo": "entity memo",
         "receiver_sig_required": true,

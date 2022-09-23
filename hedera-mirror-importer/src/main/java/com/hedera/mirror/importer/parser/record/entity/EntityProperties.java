@@ -55,6 +55,8 @@ public class EntityProperties {
 
         private boolean nonFeeTransfers = false;
 
+        private boolean pendingReward = true;
+
         private boolean schedules = true;
 
         private boolean systemFiles = true;
@@ -64,6 +66,8 @@ public class EntityProperties {
         private boolean topics = true;
 
         private boolean trackBalance = true;
+
+        private boolean transactionHash = false;
 
         /**
          * If configured the mirror node will store the raw transaction bytes on the transaction table

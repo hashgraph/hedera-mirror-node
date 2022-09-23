@@ -49,6 +49,9 @@ create index if not exists contract_log__contract_id_timestamp_index
 alter table if exists contract_result
     add constraint contract_result__pk primary key (consensus_timestamp, payer_account_id);
 
+create index if not exists contract_result__hash
+    on contract_result using hash (transaction_hash);
+
 create index if not exists contract_result__id_payer_timestamp
     on contract_result (contract_id, payer_account_id, consensus_timestamp);
 
@@ -98,6 +101,15 @@ alter table if exists entity_history
 create index if not exists entity_history__alias on entity_history (alias) where alias is not null;
 create index if not exists entity_history__evm_address on entity_history (evm_address) where evm_address is not null;
 create index if not exists entity_history__timestamp_range on entity_history using gist (timestamp_range);
+
+-- entity_state_start
+create unique index if not exists entity_state_start__id on entity_state_start (id);
+create index if not exists entity_state_start__staked_account_id
+    on entity_state_start (staked_account_id) where staked_account_id <> 0;
+
+-- entity_stake
+alter table if exists entity_stake
+    add constraint entity_stake__pk primary key (id);
 
 -- ethereum_transaction
 alter table ethereum_transaction
@@ -153,6 +165,10 @@ create index if not exists non_fee_transfer__consensus_timestamp
 -- prng
 alter table prng
     add constraint prng__pk primary key (consensus_timestamp);
+
+-- reconciliation_job
+alter table reconciliation_job
+    add constraint reconciliation_job__pk primary key (timestamp_start);
 
 -- record_file
 alter table record_file
@@ -222,6 +238,10 @@ create index if not exists transaction__payer_account_id
     on transaction (payer_account_id);
 create index if not exists transaction__type_consensus_timestamp
     on transaction (type, consensus_timestamp);
+
+-- transaction_hash
+create index if not exists transaction_hash__hash
+    on transaction_hash using hash (hash);
 
 -- transaction_signature
 create index if not exists transaction_signature__entity_id

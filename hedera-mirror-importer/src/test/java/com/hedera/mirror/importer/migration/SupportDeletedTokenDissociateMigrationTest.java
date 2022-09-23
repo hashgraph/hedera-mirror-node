@@ -59,6 +59,7 @@ import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.config.Owner;
 
 @EnabledIfV1
 @Tag("migration")
@@ -71,6 +72,7 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
     private static final EntityId NODE_ACCOUNT_ID = EntityId.of(0, 0, 3, EntityType.ACCOUNT);
 
     @Resource
+    @Owner
     private JdbcOperations jdbcOperations;
 
     @Value("classpath:db/migration/v1/V1.45.0__support_deleted_token_dissociate.sql")
@@ -272,7 +274,7 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
 
 
     private MigrationNft nft(EntityId accountId, long createdTimestamp, boolean deleted, long modifiedTimestamp,
-                    long serialNumber, EntityId tokenId) {
+                             long serialNumber, EntityId tokenId) {
         var nft = new MigrationNft();
         nft.setAccountId(accountId != null ? accountId.getId() : null);
         nft.setCreatedTimestamp(createdTimestamp);
@@ -327,14 +329,13 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
         int[] argumentTypes = new int[] {Types.BIGINT, Types.BIGINT, Types.BOOLEAN, Types.BIGINT, Types.BIGINT,
                 Types.VARCHAR, Types.OTHER, Types.VARCHAR, Types.BIGINT, Types.BIGINT, Types.BIGINT, Types.OTHER};
 
-        jdbcOperations
-                .update(sql, arguments, argumentTypes);
+        jdbcOperations.update(sql, arguments, argumentTypes);
 
         return token;
     }
 
     private MigrationTokenAccount tokenAccount(EntityId accountId, boolean associated, long createdTimestamp,
-                                      long modifiedTimestamp, EntityId tokenId) {
+                                               long modifiedTimestamp, EntityId tokenId) {
         var tokenAccount = new MigrationTokenAccount();
         tokenAccount.setAccountId(accountId);
         tokenAccount.setAssociated(associated);
@@ -556,5 +557,4 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
         private long modifiedTimestamp;
         private EntityId tokenId;
     }
-
 }

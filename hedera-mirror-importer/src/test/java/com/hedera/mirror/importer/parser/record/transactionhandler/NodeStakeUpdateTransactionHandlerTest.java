@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static com.hedera.mirror.common.util.DomainUtils.TINYBARS_IN_ONE_HBAR;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -35,6 +34,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.Mock;
 
 import com.hedera.mirror.common.domain.addressbook.NetworkStake;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
@@ -42,6 +42,7 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.repository.NodeStakeRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
@@ -52,9 +53,12 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
     @Captor
     private ArgumentCaptor<NodeStake> nodeStakes;
 
+    @Mock
+    private NodeStakeRepository nodeStakeRepository;
+
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new NodeStakeUpdateTransactionHandler(entityListener);
+        return new NodeStakeUpdateTransactionHandler(entityListener, nodeStakeRepository);
     }
 
     @Override
@@ -85,7 +89,7 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
                 .build();
         var transaction = new Transaction();
         transactionHandler.updateTransaction(transaction, recordItem);
-        verifyNoInteractions(entityListener);
+        verifyNoInteractions(entityListener, nodeStakeRepository);
     }
 
     @Test
@@ -114,9 +118,10 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
         transactionHandler.updateTransaction(null, recordItem);
 
         // then
-        verify(entityListener, times(1)).onNetworkStake(networkStakes.capture());
+        verify(entityListener).onNetworkStake(networkStakes.capture());
         verify(entityListener, times(2)).onNodeStake(nodeStakes.capture());
         assertThat(nodeStakes.getAllValues()).containsExactlyInAnyOrderElementsOf(expectedNodeStakes);
+        verify(nodeStakeRepository).evictNodeStakeCache();
         assertThat(networkStakes.getAllValues())
                 .hasSize(1)
                 .first()
@@ -145,8 +150,9 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
         transactionHandler.updateTransaction(null, recordItem);
 
         // then
-        verify(entityListener, never()).onNodeStake(any());
-        verify(entityListener, times(1)).onNetworkStake(networkStakes.capture());
+        verify(entityListener).onNetworkStake(networkStakes.capture());
+        verify(entityListener, never()).onNodeStake(nodeStakes.capture());
+        verify(nodeStakeRepository, never()).evictNodeStakeCache();
     }
 
     private com.hederahashgraph.api.proto.java.NodeStake getNodeStakeProto(long stake, long stakeRewarded) {

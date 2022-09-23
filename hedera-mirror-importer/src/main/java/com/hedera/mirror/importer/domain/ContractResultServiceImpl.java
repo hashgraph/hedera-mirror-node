@@ -117,13 +117,12 @@ public class ContractResultServiceImpl implements ContractResultService {
                     throw new InvalidDatasetException("Invalid caller for contract action: " + action.getCallerCase());
         }
 
+        // ContractCreate transaction has no recipient
         switch (action.getRecipientCase()) {
             case RECIPIENT_ACCOUNT -> contractAction.setRecipientAccount(EntityId.of(action.getRecipientAccount()));
             case RECIPIENT_CONTRACT -> contractAction.setRecipientContract(EntityId.of(action.getRecipientContract()));
             case INVALID_SOLIDITY_ADDRESS ->
                     contractAction.setRecipientAddress(action.getInvalidSolidityAddress().toByteArray());
-            default -> throw new InvalidDatasetException("Invalid recipient for contract action: " +
-                    action.getRecipientCase());
         }
 
         switch (action.getResultDataCase()) {
@@ -135,6 +134,7 @@ public class ContractResultServiceImpl implements ContractResultService {
         }
 
         contractAction.setCallDepth(action.getCallDepth());
+        contractAction.setCallOperationType(action.getCallOperationTypeValue());
         contractAction.setCallType(action.getCallTypeValue());
         contractAction.setConsensusTimestamp(consensusTimestamp);
         contractAction.setGas(action.getGas());
@@ -220,13 +220,14 @@ public class ContractResultServiceImpl implements ContractResultService {
         }
     }
 
-    private void processContractStateChange(ContractStateChange stateChange, long consensusTimestamp,
-                                            EntityId payerAccountId) {
+    private void processContractStateChange(long consensusTimestamp, boolean migration, EntityId payerAccountId,
+                                            ContractStateChange stateChange) {
         var contractId = EntityId.of(stateChange.getContractId());
         for (var storageChange : stateChange.getStorageChangesList()) {
             var contractStateChange = new com.hedera.mirror.common.domain.contract.ContractStateChange();
             contractStateChange.setConsensusTimestamp(consensusTimestamp);
             contractStateChange.setContractId(contractId);
+            contractStateChange.setMigration(migration);
             contractStateChange.setPayerAccountId(payerAccountId);
             contractStateChange.setSlot(DomainUtils.toBytes(storageChange.getSlot()));
             contractStateChange.setValueRead(DomainUtils.toBytes(storageChange.getValueRead()));
@@ -285,15 +286,16 @@ public class ContractResultServiceImpl implements ContractResultService {
 
         var contractBytecodes = new ArrayList<ContractBytecode>();
         long consensusTimestamp = recordItem.getConsensusTimestamp();
+        int migrationCount = 0;
         var payerAccountId = recordItem.getPayerAccountId();
         var stopwatch = Stopwatch.createStarted();
-        var migrations = 0;
 
         for (var sidecarRecord : sidecarRecords) {
+            boolean migration = sidecarRecord.getMigration();
             if (sidecarRecord.hasStateChanges()) {
                 var stateChanges = sidecarRecord.getStateChanges();
                 for (var stateChange : stateChanges.getContractStateChangesList()) {
-                    processContractStateChange(stateChange, consensusTimestamp, payerAccountId);
+                    processContractStateChange(consensusTimestamp, migration, payerAccountId, stateChange);
                 }
             } else if (sidecarRecord.hasActions()) {
                 var actions = sidecarRecord.getActions();
@@ -301,20 +303,21 @@ public class ContractResultServiceImpl implements ContractResultService {
                     processContractAction(actions.getContractActions(actionIndex), actionIndex, consensusTimestamp);
                 }
             } else if (sidecarRecord.hasBytecode()) {
-                if (sidecarRecord.getMigration()) {
+                if (migration) {
                     contractBytecodes.add(sidecarRecord.getBytecode());
                 } else if (!recordItem.isSuccessful()) {
                     failedInitcode = sidecarRecord.getBytecode().getInitcode();
                 }
             }
 
-            if (sidecarRecord.getMigration()) {
-                ++migrations;
+            if (migration) {
+                ++migrationCount;
             }
         }
 
         sidecarContractMigration.migrate(contractBytecodes);
-        log.info("{} Sidecar records processed with {} migrations in {}", sidecarRecords.size(), migrations, stopwatch);
+        log.info("{} Sidecar records processed with {} migrations in {}", sidecarRecords.size(), migrationCount,
+                stopwatch);
         return failedInitcode;
     }
 

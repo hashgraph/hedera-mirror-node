@@ -21,8 +21,8 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import javax.inject.Named;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 
 import com.hedera.mirror.common.domain.addressbook.NetworkStake;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
@@ -32,14 +32,15 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
+import com.hedera.mirror.importer.repository.NodeStakeRepository;
 import com.hedera.mirror.importer.util.Utility;
 
-@Log4j2
+@CustomLog
 @Named
 @RequiredArgsConstructor
 class NodeStakeUpdateTransactionHandler implements TransactionHandler {
-
     private final EntityListener entityListener;
+    private final NodeStakeRepository nodeStakeRepository;
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
@@ -83,7 +84,13 @@ class NodeStakeUpdateTransactionHandler implements TransactionHandler {
         networkStake.setStakingStartThreshold(transactionBody.getStakingStartThreshold());
         entityListener.onNetworkStake(networkStake);
 
-        for (var nodeStakeProto : transactionBody.getNodeStakeList()) {
+        var nodeStakesProtos = transactionBody.getNodeStakeList();
+        if (nodeStakesProtos.isEmpty()) {
+            return;
+        }
+
+        nodeStakeRepository.evictNodeStakeCache();
+        for (var nodeStakeProto : nodeStakesProtos) {
             NodeStake nodeStake = new NodeStake();
             nodeStake.setConsensusTimestamp(consensusTimestamp);
             nodeStake.setEpochDay(epochDay);

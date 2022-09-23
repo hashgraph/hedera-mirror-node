@@ -728,7 +728,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "sum (rate (container_cpu_usage_seconds_total{image!=\"\",kubernetes_io_hostname=~\"^$Node$\",namespace=~\"$namespace\"}[$interval])) by (pod)",
+          "expr": "sum (rate (container_cpu_usage_seconds_total{kubernetes_io_hostname=~\"^$Node$\",namespace=~\"$namespace\"}[$interval])) by (pod)",
           "format": "time_series",
           "interval": "10s",
           "intervalFactor": 1,
@@ -953,7 +953,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "sum(rate(container_cpu_cfs_throttled_seconds_total{kubernetes_io_hostname=~\"^$Node$\", container!=\"\",namespace=~\"$namespace\"}[$interval])) by (container, pod)",
+          "expr": "sum(rate(container_cpu_cfs_throttled_seconds_total{kubernetes_io_hostname=~\"^$Node$\",namespace=~\"$namespace\"}[$interval])) by (container, pod)",
           "interval": "10s",
           "legendFormat": "{{ pod }}/{{container}}",
           "refId": "B"
@@ -1064,7 +1064,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "sum(rate(container_cpu_usage_seconds_total{image!=\"\",container!=\"POD\",kubernetes_io_hostname=~\"^$Node$\",namespace=~\"$namespace\"}[$interval])) by (container, pod)",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{container!=\"POD\",kubernetes_io_hostname=~\"^$Node$\",namespace=~\"$namespace\"}[$interval])) by (container, pod)",
           "format": "time_series",
           "hide": false,
           "interval": "10s",
@@ -1195,7 +1195,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "sum (container_memory_working_set_bytes{image!=\"\",kubernetes_io_hostname=~\"^$Node$\",namespace=~\"$namespace\"}) by (pod)",
+          "expr": "sum (container_memory_working_set_bytes{kubernetes_io_hostname=~\"^$Node$\",namespace=~\"$namespace\"}) by (pod)",
           "format": "time_series",
           "interval": "10s",
           "intervalFactor": 1,
@@ -1309,7 +1309,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "sum(container_memory_working_set_bytes{kubernetes_io_hostname=~\"^$Node$\",namespace=~\"$namespace\"}) by (pod, container) / sum(kube_pod_container_resource_limits{kubernetes_io_hostname=~\"^$Node$\",namespace=~\"$namespace\"}) by (pod, container)",
+          "expr": "sum(container_memory_working_set_bytes{kubernetes_io_hostname=~\"^$Node$\",namespace=~\"$namespace\"}) by (pod) / sum(kube_pod_container_resource_limits{kubernetes_io_hostname=~\"^$Node$\",namespace=~\"$namespace\"}) by (pod)",
           "interval": "10s",
           "legendFormat": "{{ pod }}",
           "refId": "B"
@@ -1417,7 +1417,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "sum (container_memory_working_set_bytes{image!=\"\",container!=\"POD\",kubernetes_io_hostname=~\"^$Node$\",namespace=~\"$namespace\"}) by (container, pod)",
+          "expr": "sum (container_memory_working_set_bytes{container!=\"POD\",kubernetes_io_hostname=~\"^$Node$\",namespace=~\"$namespace\"}) by (container, pod)",
           "format": "time_series",
           "interval": "10s",
           "intervalFactor": 1,

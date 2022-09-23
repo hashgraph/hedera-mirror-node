@@ -45,16 +45,16 @@ import {getPoolClass, isTestEnv} from './utils';
 import {
   handleError,
   metricsHandler,
+  openApiValidator,
   recordIpAndEndpoint,
   requestLogger,
   requestQueryParser,
   responseHandler,
   serveSwaggerDocs,
-  openApiValidator,
 } from './middleware';
 
 // routes
-import {AccountRoutes, ContractRoutes, NetworkRoutes, BlockRoutes} from './routes';
+import {AccountRoutes, BlockRoutes, ContractRoutes, NetworkRoutes} from './routes';
 
 // use a dummy port for jest unit tests
 const port = isTestEnv() ? 3000 : config.port;
@@ -172,7 +172,7 @@ app.getAsync(`${apiPrefix}/topics/messages/:consensusTimestamp`, topicmessage.ge
 
 // transactions routes
 app.getAsync(`${apiPrefix}/transactions`, transactions.getTransactions);
-app.getAsync(`${apiPrefix}/transactions/:transactionId`, transactions.getTransactionsById);
+app.getAsync(`${apiPrefix}/transactions/:transactionIdOrHash`, transactions.getTransactionsByIdOrHash);
 
 // record ip metrics if enabled
 if (config.metrics.ipMetrics) {

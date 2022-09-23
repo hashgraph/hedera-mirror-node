@@ -116,6 +116,7 @@ comment on table contract is 'Contract entity';
 create table if not exists contract_action
 (
     call_depth          integer                        not null,
+    call_operation_type integer                        null,
     call_type           integer                        not null,
     caller              bigint                         not null,
     caller_type         entity_type default 'CONTRACT' not null,
@@ -173,18 +174,22 @@ create table if not exists contract_result
     gas_limit            bigint       not null,
     gas_used             bigint       null,
     payer_account_id     bigint       not null,
-    sender_id            bigint       null
+    sender_id            bigint       null,
+    transaction_hash     bytea        not null,
+    transaction_index    integer      null,
+    transaction_result   smallint     not null
 );
 comment on table contract_result is 'Crypto contract execution results';
 
 create table if not exists contract_state_change
 (
-    consensus_timestamp bigint not null,
-    contract_id         bigint not null,
-    payer_account_id    bigint not null,
-    slot                bytea  not null,
-    value_read          bytea  not null,
-    value_written       bytea  null
+    consensus_timestamp bigint  not null,
+    contract_id         bigint  not null,
+    migration           boolean not null default false,
+    payer_account_id    bigint  not null,
+    slot                bytea   not null,
+    value_read          bytea   not null,
+    value_written       bytea   null
 );
 comment on table contract_state_change is 'Contract execution state changes';
 
@@ -272,6 +277,18 @@ create table if not exists entity_history
     like entity including defaults
 );
 comment on table entity_history is 'Network entity historical state';
+
+create table if not exists entity_stake
+(
+    decline_reward_start boolean not null,
+    end_stake_period     bigint  not null,
+    id                   bigint  not null,
+    pending_reward       bigint  not null,
+    staked_node_id_start bigint  not null,
+    staked_to_me         bigint  not null,
+    stake_total_start    bigint  not null
+);
+comment on table entity_stake is 'Network entity stake state';
 
 create table if not exists ethereum_transaction
 (
@@ -432,6 +449,17 @@ create table if not exists prng
     pseudorandom_number integer null
 );
 comment on table prng is 'Pseudorandom number generator';
+
+create table if not exists reconciliation_job
+(
+    consensus_timestamp bigint      not null,
+    count               bigint      not null,
+    error               text        not null default '',
+    timestamp_end       timestamptz null,
+    timestamp_start     timestamptz not null,
+    status              smallint    not null
+);
+comment on table reconciliation_job is 'Reconciliation job status';
 
 -- record_file
 create table if not exists record_file
@@ -627,6 +655,14 @@ create table if not exists transaction
 );
 comment on table transaction is 'Submitted network transactions';
 
+-- transaction_hash
+create table if not exists transaction_hash
+(
+    consensus_timestamp bigint not null,
+    hash                bytea  not null
+);
+comment on table transaction_hash is 'Network transaction hash to consensus timestamp mapping';
+
 -- transaction_signature
 create table if not exists transaction_signature
 (
@@ -637,3 +673,78 @@ create table if not exists transaction_signature
     type                smallint
 );
 comment on table transaction_signature is 'Transaction signatories';
+
+-- place it at the end since it depends on tables after it in alphabetic order
+create materialized view if not exists entity_state_start as
+with end_period as (
+  select max(consensus_timestamp) as consensus_timestamp from node_stake
+), balance_timestamp as (
+  with adjusted_balance_file as (
+    select
+      consensus_timestamp,
+      case when hapi_version_major > 0 or hapi_version_minor >= 27 then time_offset + 53
+           else time_offset
+      end as time_offset
+    from account_balance_file,
+         lateral (
+           select hapi_version_major, hapi_version_minor
+           from record_file
+           where consensus_end >= consensus_timestamp
+           order by consensus_end
+           limit 1
+        ) as hapi_version
+    order by consensus_timestamp desc
+  )
+  select abf.consensus_timestamp, (abf.consensus_timestamp + abf.time_offset) adjusted_consensus_timestamp
+  from adjusted_balance_file abf, end_period ep
+  where abf.consensus_timestamp + abf.time_offset <= ep.consensus_timestamp
+  order by abf.consensus_timestamp desc
+  limit 1
+), entity_state as (
+  select
+    decline_reward,
+    id,
+    staked_account_id,
+    staked_node_id,
+    stake_period_start
+  from entity, end_period
+  where deleted is not true and type in ('ACCOUNT', 'CONTRACT') and timestamp_range @> end_period.consensus_timestamp
+  union all
+  select *
+  from (
+         select
+           distinct on (id)
+           decline_reward,
+           id,
+           staked_account_id,
+           staked_node_id,
+           stake_period_start
+         from entity_history, end_period
+         where deleted is not true and type in ('ACCOUNT', 'CONTRACT') and timestamp_range @> end_period.consensus_timestamp
+         order by id, timestamp_range desc
+       ) as latest_history
+), balance_snapshot as (
+  select account_id, balance
+  from account_balance ab
+  join balance_timestamp bt on bt.consensus_timestamp = ab.consensus_timestamp
+)
+select
+    coalesce(balance, 0) + coalesce(change, 0) as balance,
+    decline_reward,
+    id,
+    coalesce(staked_account_id, 0)             as staked_account_id,
+    coalesce(staked_node_id, -1)               as staked_node_id,
+    coalesce(stake_period_start, -1)           as stake_period_start
+from entity_state
+  left join balance_snapshot on account_id = id
+  left join (
+    select entity_id, sum(amount) as change
+    from crypto_transfer ct, balance_timestamp bt, end_period ep
+    where ct.consensus_timestamp <= ep.consensus_timestamp
+      and ct.consensus_timestamp > bt.adjusted_consensus_timestamp
+    group by entity_id
+    order by entity_id
+  ) balance_change on entity_id = id,
+  balance_timestamp bt
+where bt.consensus_timestamp is not null;
+comment on materialized view entity_state_start is 'Network entity state at start of staking period';

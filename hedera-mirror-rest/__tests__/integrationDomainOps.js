@@ -26,7 +26,6 @@ import base32 from '../base32';
 import config from '../config';
 import * as constants from '../constants';
 import EntityId from '../entityId';
-import * as testUtils from './testutils';
 
 const NETWORK_FEE = 1n;
 const NODE_FEE = 2n;
@@ -45,12 +44,14 @@ const setup = async (testDataJson) => {
   await loadBalances(testDataJson.balances);
   await loadCryptoTransfers(testDataJson.cryptotransfers);
   await loadContracts(testDataJson.contracts);
+  await loadContractActions(testDataJson.contractactions);
   await loadContractLogs(testDataJson.contractlogs);
   await loadContractResults(testDataJson.contractresults);
   await loadContractStateChanges(testDataJson.contractStateChanges);
   await loadCryptoAllowances(testDataJson.cryptoAllowances);
   await loadCustomFees(testDataJson.customfees);
   await loadEntities(testDataJson.entities);
+  await loadEntityStakes(testDataJson.entityStakes);
   await loadEthereumTransactions(testDataJson.ethereumtransactions);
   await loadFileData(testDataJson.filedata);
   await loadNetworkStakes(testDataJson.networkstakes);
@@ -136,6 +137,16 @@ const loadContracts = async (contracts) => {
   }
 };
 
+const loadContractActions = async (contractActions) => {
+  if (contractActions == null) {
+    return;
+  }
+
+  for (const contractAction of contractActions) {
+    await addContractAction(contractAction);
+  }
+};
+
 const loadContractResults = async (contractResults) => {
   if (contractResults == null) {
     return;
@@ -203,6 +214,16 @@ const loadEntities = async (entities) => {
 
   for (const entity of entities) {
     await addEntity({}, entity);
+  }
+};
+
+const loadEntityStakes = async (entityStakes) => {
+  if (entityStakes == null) {
+    return;
+  }
+
+  for (const entityStake of entityStakes) {
+    await addEntityStake(entityStake);
   }
 };
 
@@ -335,6 +356,29 @@ const loadTopicMessages = async (messages) => {
   }
 };
 
+const hexRegex = /^(0x)?[0-9A-Fa-f]+$/;
+
+const valueToBuffer = (value) => {
+  if (value === null) {
+    return value;
+  }
+
+  if (typeof value === 'string') {
+    if (hexRegex.test(value)) {
+      return Buffer.from(value.replace(/^0x/, '').padStart(2, '0'), 'hex');
+    }
+
+    // base64
+    return Buffer.from(value, 'base64');
+  } else if (Array.isArray(value)) {
+    return Buffer.from(value);
+  }
+
+  return value;
+};
+
+const convertByteaFields = (fields, object) => fields.forEach((field) => _.update(object, field, valueToBuffer));
+
 const addAddressBook = async (addressBookInput) => {
   const insertFields = ['start_consensus_timestamp', 'end_consensus_timestamp', 'file_id', 'node_count', 'file_data'];
 
@@ -379,6 +423,7 @@ const addAddressBookEntry = async (addressBookEntryInput) => {
     ...addressBookEntryInput,
   };
 
+  // node_cert_hash is double hex encoded
   addressBookEntry.node_cert_hash =
     typeof addressBookEntryInput.node_cert_hash === 'string'
       ? Buffer.from(addressBookEntryInput.node_cert_hash, 'hex')
@@ -440,7 +485,7 @@ const addEntity = async (defaults, custom) => {
   };
   entity.id = EntityId.of(BigInt(entity.shard), BigInt(entity.realm), BigInt(entity.num)).getEncodedId();
   entity.alias = base32.decode(entity.alias);
-  entity.evm_address = entity.evm_address && Buffer.from(entity.evm_address, 'hex');
+  entity.evm_address = valueToBuffer(entity.evm_address);
   if (typeof entity.key === 'string') {
     entity.key = Buffer.from(entity.key, 'hex');
   } else if (entity.key != null) {
@@ -450,6 +495,26 @@ const addEntity = async (defaults, custom) => {
   const table = getTableName('entity', entity);
   await insertDomainObject(table, insertFields, entity);
   return entity;
+};
+
+const defaultEntityStake = {
+  decline_reward_start: true,
+  end_stake_period: 1,
+  id: null,
+  pending_reward: 0,
+  staked_node_id_start: 1,
+  staked_to_me: 0,
+  stake_total_start: 0,
+};
+const entityStakeFields = Object.keys(defaultEntityStake);
+
+const addEntityStake = async (entityStake) => {
+  entityStake = {
+    ...defaultEntityStake,
+    ...entityStake,
+  };
+
+  await insertDomainObject('entity_stake', entityStakeFields, entityStake);
 };
 
 const addEthereumTransaction = async (ethereumTransaction) => {
@@ -484,31 +549,26 @@ const addEthereumTransaction = async (ethereumTransaction) => {
     ...ethereumTransaction,
   };
 
-  const insertFields = Object.keys(ethTx);
+  convertByteaFields(
+    [
+      'access_list',
+      'call_data',
+      'chain_id',
+      'data',
+      'gas_price',
+      'hash',
+      'max_fee_per_gas',
+      'max_priority_fee_per_gas',
+      'signature_r',
+      'signature_s',
+      'signature_v',
+      'to_address',
+      'value',
+    ],
+    ethTx
+  );
 
-  const byteaFields = [
-    'access_list',
-    'call_data',
-    'chain_id',
-    'data',
-    'gas_price',
-    'hash',
-    'max_fee_per_gas',
-    'max_priority_fee_per_gas',
-    'signature_r',
-    'signature_s',
-    'signature_v',
-    'to_address',
-    'value',
-  ];
-  for (const field of byteaFields) {
-    if (!_.isNull(ethTx[field])) {
-      const stringValue = ethTx[field].toString();
-      ethTx[field] = Buffer.from(stringValue.replace(/^0x/, '').padStart(2, '0'), 'hex');
-    }
-  }
-
-  await insertDomainObject('ethereum_transaction', insertFields, ethTx);
+  await insertDomainObject('ethereum_transaction', Object.keys(ethTx), ethTx);
 };
 
 const hexEncodedFileIds = [111, 112];
@@ -646,29 +706,29 @@ const setAccountBalance = async (balance) => {
   }
 };
 
-const addTransaction = async (transaction) => {
-  const defaults = {
-    charged_tx_fee: NODE_FEE + NETWORK_FEE + SERVICE_FEE,
-    consensus_timestamp: null,
-    entity_id: null,
-    max_fee: 33,
-    node_account_id: null,
-    nonce: 0,
-    parent_consensus_timestamp: null,
-    payer_account_id: null,
-    result: 22,
-    scheduled: false,
-    transaction_bytes: 'bytes',
-    transaction_hash: 'hash',
-    type: 14,
-    valid_duration_seconds: 11,
-    valid_start_ns: null,
-    index: 1,
-  };
-  const insertFields = Object.keys(defaults);
+const defaultTransaction = {
+  charged_tx_fee: NODE_FEE + NETWORK_FEE + SERVICE_FEE,
+  consensus_timestamp: null,
+  entity_id: null,
+  max_fee: 33,
+  node_account_id: null,
+  nonce: 0,
+  parent_consensus_timestamp: null,
+  payer_account_id: null,
+  result: 22,
+  scheduled: false,
+  transaction_bytes: 'bytes',
+  transaction_hash: Buffer.from([...Array(49).keys()].splice(1)),
+  type: 14,
+  valid_duration_seconds: 11,
+  valid_start_ns: null,
+  index: 1,
+};
+const transactionFields = Object.keys(defaultTransaction);
 
+const addTransaction = async (transaction) => {
   transaction = {
-    ...defaults,
+    ...defaultTransaction,
     // transfer which aren't in the defaults
     non_fee_transfers: [],
     transfers: [],
@@ -679,6 +739,8 @@ const addTransaction = async (transaction) => {
     valid_start_ns: transaction.valid_start_timestamp,
   };
 
+  transaction.transaction_hash = valueToBuffer(transaction.transaction_hash);
+
   if (transaction.valid_start_ns === undefined) {
     // set valid_start_ns to consensus_timestamp - 1 if not set
     const consensusTimestamp = math.bignumber(transaction.consensus_timestamp);
@@ -686,8 +748,9 @@ const addTransaction = async (transaction) => {
   }
 
   const {node_account_id: nodeAccount, payer_account_id: payerAccount} = transaction;
-  await insertDomainObject('transaction', insertFields, transaction);
+  await insertDomainObject('transaction', transactionFields, transaction);
 
+  await addTransactionHash({consensus_timestamp: transaction.consensus_timestamp, hash: transaction.transaction_hash});
   await insertTransfers(
     'crypto_transfer',
     transaction.consensus_timestamp,
@@ -705,6 +768,11 @@ const addTransaction = async (transaction) => {
   );
   await insertTokenTransfers(transaction.consensus_timestamp, transaction.token_transfer_list, payerAccount);
   await insertNftTransfers(transaction.consensus_timestamp, transaction.nft_transfer_list, payerAccount);
+};
+
+const addTransactionHash = async (transactionHash) => {
+  transactionHash.hash = valueToBuffer(transactionHash.hash);
+  await insertDomainObject('transaction_hash', Object.keys(transactionHash), transactionHash);
 };
 
 const insertTransfers = async (
@@ -824,156 +892,117 @@ const addContract = async (custom) => {
     ...entity,
     ...custom,
   };
-  contract.initcode = contract.initcode != null ? Buffer.from(contract.initcode) : null;
-  contract.runtime_bytecode = contract.runtime_bytecode != null ? Buffer.from(contract.runtime_bytecode) : null;
-  const insertFields = Object.keys(contractDefaults).sort();
 
-  await insertDomainObject('contract', insertFields, contract);
+  convertByteaFields(['initcode', 'runtime_bytecode'], contract);
+
+  await insertDomainObject('contract', Object.keys(contractDefaults), contract);
 };
 
-const insertFields = [
-  'amount',
-  'bloom',
-  'call_result',
-  'consensus_timestamp',
-  'contract_id',
-  'created_contract_ids',
-  'error_message',
-  'failed_initcode',
-  'function_parameters',
-  'function_result',
-  'gas_limit',
-  'gas_used',
-  'payer_account_id',
-  'sender_id',
-  'transaction_hash',
-  'transaction_index',
-  'transaction_result',
-];
+const contractActionDefaults = {
+  call_depth: 1,
+  call_operation_type: 1,
+  call_type: 1,
+  caller: 8001,
+  caller_type: 'CONTRACT',
+  consensus_timestamp: 1234510001,
+  gas: 10000,
+  gas_used: 5000,
+  index: 1,
+  input: null,
+  recipient_account: null,
+  recipient_address: null,
+  recipient_contract: null,
+  result_data: null,
+  result_data_type: 11,
+  value: 100,
+};
+
+const addContractAction = async (contractActionInput) => {
+  const action = {
+    ...contractActionDefaults,
+    ...contractActionInput,
+  };
+
+  convertByteaFields(['input', 'recipient_address', 'result_data'], action);
+
+  await insertDomainObject('contract_action', Object.keys(contractActionDefaults), action);
+};
+
+const contractResultDefaults = {
+  amount: 0,
+  bloom: null,
+  call_result: null,
+  consensus_timestamp: 1234510001,
+  contract_id: 0,
+  created_contract_ids: [],
+  error_message: '',
+  failed_initcode: null,
+  function_parameters: '0x010102020303',
+  function_result: null,
+  gas_limit: 1000,
+  gas_used: null,
+  payer_account_id: 101,
+  transaction_hash: Buffer.from([...Array(32).keys()]),
+  transaction_index: 1,
+  transaction_result: 22,
+};
+
+const contractResultInsertFields = Object.keys(contractResultDefaults);
 
 const addContractResult = async (contractResultInput) => {
   const contractResult = {
-    amount: 0,
-    bloom: null,
-    call_result: null,
-    consensus_timestamp: 1234510001,
-    contract_id: 0,
-    created_contract_ids: [],
-    error_message: '',
-    failed_initcode: null,
-    function_parameters: Buffer.from([1, 1, 2, 2, 3, 3]),
-    function_result: null,
-    gas_limit: 1000,
-    gas_used: null,
-    payer_account_id: 101,
-    transaction_hash: Buffer.from([1, 2, 3]),
-    transaction_index: 1,
-    transaction_result: 22,
+    ...contractResultDefaults,
     ...contractResultInput,
   };
 
-  contractResult.bloom =
-    contractResultInput.bloom != null ? Buffer.from(contractResultInput.bloom) : contractResult.bloom;
-  contractResult.call_result =
-    contractResultInput.call_result != null ? Buffer.from(contractResultInput.call_result) : contractResult.call_result;
-  contractResult.failed_initcode =
-    contractResultInput.failed_initcode != null
-      ? Buffer.from(contractResultInput.failed_initcode)
-      : contractResult.failed_initcode;
-  contractResult.function_parameters =
-    contractResultInput.function_parameters != null
-      ? Buffer.from(contractResultInput.function_parameters)
-      : contractResult.function_parameters;
-  contractResult.function_result =
-    contractResultInput.function_result != null
-      ? Buffer.from(contractResultInput.function_result)
-      : contractResult.function_result;
-  contractResult.transaction_hash =
-    contractResultInput.transaction_hash != null
-      ? Buffer.from(contractResultInput.transaction_hash)
-      : contractResult.transaction_hash;
+  convertByteaFields(
+    ['bloom', 'call_result', 'failed_initcode', 'function_parameters', 'function_result', 'transaction_hash'],
+    contractResult
+  );
 
-  await insertDomainObject('contract_result', insertFields, contractResult);
+  await insertDomainObject('contract_result', contractResultInsertFields, contractResult);
 };
 
 const addContractLog = async (contractLogInput) => {
-  const insertFields = [
-    'bloom',
-    'consensus_timestamp',
-    'contract_id',
-    'data',
-    'index',
-    'payer_account_id',
-    'root_contract_id',
-    'topic0',
-    'topic1',
-    'topic2',
-    'topic3',
-  ];
-  const positions = _.range(1, insertFields.length + 1)
-    .map((position) => `$${position}`)
-    .join(',');
-
   const contractLog = {
-    bloom: '\\x0123',
+    bloom: '0x0123',
     consensus_timestamp: 1234510001,
     contract_id: 1,
-    data: '\\x0123',
+    data: '0x0123',
     index: 0,
     payer_account_id: 2,
     root_contract_id: null,
-    topic0: defaultFileData,
-    topic1: '\\x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925',
-    topic2: '\\xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
-    topic3: '\\xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67',
+    topic0: '0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750',
+    topic1: '0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925',
+    topic2: '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+    topic3: '0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67',
     ...contractLogInput,
   };
 
-  contractLog.bloom = testUtils.getBuffer(contractLogInput.bloom, contractLog.bloom);
-  contractLog.data = testUtils.getBuffer(contractLogInput.data, contractLog.data);
-  contractLog.topic0 = testUtils.getBuffer(contractLogInput.topic0, contractLog.topic0);
-  contractLog.topic1 = testUtils.getBuffer(contractLogInput.topic1, contractLog.topic1);
-  contractLog.topic2 = testUtils.getBuffer(contractLogInput.topic2, contractLog.topic2);
-  contractLog.topic3 = testUtils.getBuffer(contractLogInput.topic3, contractLog.topic3);
+  convertByteaFields(['bloom', 'data', 'topic0', 'topic1', 'topic2', 'topic3'], contractLog);
 
-  await pool.query(
-    `insert into contract_log (${insertFields.join(',')})
-    values (${positions})`,
-    insertFields.map((name) => contractLog[name])
-  );
+  await insertDomainObject('contract_log', Object.keys(contractLog), contractLog);
+};
+
+const defaultContractStateChange = {
+  consensus_timestamp: 1234510001,
+  contract_id: 1,
+  migration: false,
+  payer_account_id: 2,
+  slot: '0x1',
+  value_read: '0x0101',
+  value_written: '0xa1a1',
 };
 
 const addContractStateChange = async (contractStateChangeInput) => {
-  const insertFields = [
-    'consensus_timestamp',
-    'contract_id',
-    'payer_account_id',
-    'slot',
-    'value_read',
-    'value_written',
-  ];
-
   const contractStateChange = {
-    consensus_timestamp: 1234510001,
-    contract_id: 1,
-    payer_account_id: 2,
-    slot: '\\x0123',
-    value_read: defaultFileData,
-    value_written: '\\x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925',
+    ...defaultContractStateChange,
     ...contractStateChangeInput,
   };
 
-  contractStateChange.slot = testUtils.getBuffer(contractStateChangeInput.slot, contractStateChange.slot);
-  contractStateChange.value_read = testUtils.getBuffer(
-    contractStateChangeInput.value_read,
-    contractStateChange.value_read
-  );
-  contractStateChange.value_written = testUtils.getBuffer(
-    contractStateChangeInput.value_written,
-    contractStateChange.value_written
-  );
+  convertByteaFields(['slot', 'value_read', 'value_written'], contractStateChange);
 
-  await insertDomainObject('contract_state_change', insertFields, contractStateChange);
+  await insertDomainObject('contract_state_change', Object.keys(contractStateChange), contractStateChange);
 };
 
 const addCryptoAllowance = async (cryptoAllowanceInput) => {
@@ -1046,8 +1075,7 @@ const addTopicMessage = async (message) => {
     ...message,
   };
 
-  message.initial_transaction_id =
-    message.initial_transaction_id == null ? null : Buffer.from(message.initial_transaction_id);
+  message.initial_transaction_id = valueToBuffer(message.initial_transaction_id);
   await insertDomainObject(table, insertFields, message);
 };
 
@@ -1344,33 +1372,32 @@ const addRecordFile = async (recordFileInput) => {
     'version',
   ];
 
-  const bytes = Buffer.from([1, 1, 2, 2, 3, 3]);
   const recordFile = {
-    bytes,
-    gas_used: 0,
+    bytes: '0x010102020303',
     consensus_end: 1628751573995691000,
     consensus_start: 1628751572000852000,
     count: 1200,
     digest_algorithm: 0,
     file_hash: 'dee34bdd8bbe32fdb53ce7e3cf764a0495fa5e93b15ca567208cfb384231301bedf821de07b0d8dc3fb55c5b3c90ac61',
-    index: 123456789,
+    gas_used: 0,
     hapi_version_major: 0,
     hapi_version_minor: 11,
     hapi_version_patch: 0,
     hash: 'ed55d98d53fd55c9caf5f61affe88cd2978d37128ec54af5dace29b6fd271cbd079ebe487bda5f227087e2638b1100cf',
+    index: 123456789,
     load_end: 1629298236,
     load_start: 1629298233,
+    logs_bloom: Buffer.alloc(0),
     name: '2021-08-12T06_59_32.000852000Z.rcd',
     node_account_id: 3,
     prev_hash: '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
+    size: 6,
     version: 5,
-    logs_bloom: Buffer.alloc(0),
-    size: bytes.length,
     ...recordFileInput,
   };
-  recordFile.bytes = recordFileInput.bytes != null ? Buffer.from(recordFileInput.bytes) : recordFile.bytes;
-  recordFile.logs_bloom =
-    recordFileInput.logs_bloom != null ? Buffer.from(recordFileInput.logs_bloom, 'hex') : recordFile.logs_bloom;
+
+  convertByteaFields(['bytes', 'logs_bloom'], recordFile);
+  recordFile.size = recordFile.bytes !== null ? recordFile.bytes.length : recordFile.size;
 
   await insertDomainObject('record_file', insertFields, recordFile);
 };
@@ -1412,4 +1439,5 @@ export default {
   loadContractStateChanges,
   setAccountBalance,
   setup,
+  loadContractActions,
 };

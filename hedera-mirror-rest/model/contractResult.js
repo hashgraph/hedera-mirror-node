@@ -48,6 +48,9 @@ class ContractResult {
   static GAS_USED = 'gas_used';
   static PAYER_ACCOUNT_ID = 'payer_account_id';
   static SENDER_ID = 'sender_id';
+  static TRANSACTION_HASH = 'transaction_hash';
+  static TRANSACTION_INDEX = 'transaction_index';
+  static TRANSACTION_RESULT = 'transaction_result';
 
   /**
    * Gets full column name with table alias prepended.

@@ -29,11 +29,14 @@
         "created_contract_ids": [7001],
         "error_message": "",
         "function_result": [8, 8],
-        "gas_limit": 987654,
+        "gas_limit": 15000,
         "gas_used": 123,
         "payer_account_id": 8001,
         "sender_id": 8001,
-        "function_parameters": []
+        "function_parameters": [],
+        "transaction_hash": "4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
+        "transaction_result": 22,
+        "transaction_index": 1
       }
     ],
     "contractlogs": [
@@ -207,15 +210,15 @@
         "address": "0x0000000000000000000000000000000000001389",
         "contract_id": "0.0.5001",
         "slot": "0x0000000000000000000000000000000000000000000000000000000000000101",
-        "value_read": "0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750",
-        "value_written": "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925"
+        "value_read": "0x0000000000000000000000000000000000000000000000000000000000000101",
+        "value_written": "0x000000000000000000000000000000000000000000000000000000000000a1a1"
       },
       {
         "address": "0x000000000000000000000000000000000000138a",
         "contract_id": "0.0.5002",
         "slot": "0x0000000000000000000000000000000000000000000000000000000000000202",
-        "value_read": "0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750",
-        "value_written": "0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925"
+        "value_read": "0x0000000000000000000000000000000000000000000000000000000000000101",
+        "value_written": "0x000000000000000000000000000000000000000000000000000000000000a1a1"
       }
     ],
     "status": "0x1",

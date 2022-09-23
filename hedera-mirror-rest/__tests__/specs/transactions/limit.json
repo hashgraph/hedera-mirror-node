@@ -114,7 +114,7 @@
             "parent_consensus_timestamp": null,
             "result": "SUCCESS",
             "scheduled": false,
-            "transaction_hash": "aGFzaA==",
+            "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
             "transaction_id": "0.0.8-1565779666-711927000",
             "transfers": [
               {
@@ -149,7 +149,7 @@
             "parent_consensus_timestamp": null,
             "result": "SUCCESS",
             "scheduled": false,
-            "transaction_hash": "aGFzaA==",
+            "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
             "transaction_id": "0.0.8-1565779600-711927000",
             "transfers": [
               {
@@ -195,7 +195,7 @@
             "parent_consensus_timestamp": null,
             "result": "SUCCESS",
             "scheduled": false,
-            "transaction_hash": "aGFzaA==",
+            "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
             "transaction_id": "0.0.8-1565779666-711927000",
             "transfers": [
               {
@@ -230,7 +230,7 @@
             "parent_consensus_timestamp": null,
             "result": "SUCCESS",
             "scheduled": false,
-            "transaction_hash": "aGFzaA==",
+            "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
             "transaction_id": "0.0.8-1565779600-711927000",
             "transfers": [
               {
@@ -285,7 +285,7 @@
                 "token_id": "0.0.90000"
               }
             ],
-            "transaction_hash": "aGFzaA==",
+            "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
             "transaction_id": "0.0.300-1565779555-711927000",
             "transfers": [
               {
@@ -320,7 +320,7 @@
             "parent_consensus_timestamp": null,
             "result": "SUCCESS",
             "scheduled": false,
-            "transaction_hash": "aGFzaA==",
+            "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
             "transaction_id": "0.0.8-1565779333-711927000",
             "transfers": [
               {

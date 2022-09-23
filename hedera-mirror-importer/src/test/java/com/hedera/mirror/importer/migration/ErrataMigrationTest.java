@@ -74,7 +74,7 @@ public class ErrataMigrationTest extends IntegrationTest {
 
     @Test
     void checksum() {
-        assertThat(errataMigration.getChecksum()).isEqualTo(2);
+        assertThat(errataMigration.getChecksum()).isEqualTo(3);
     }
 
     @Test
@@ -123,9 +123,9 @@ public class ErrataMigrationTest extends IntegrationTest {
 
         assertBalanceOffsets(2);
         assertThat(contractResultRepository.count()).isEqualTo(1L);
-        assertErrataTransactions(ErrataType.INSERT, 31);
+        assertErrataTransactions(ErrataType.INSERT, 101);
         assertErrataTransactions(ErrataType.DELETE, 0);
-        assertErrataTransfers(ErrataType.INSERT, 92);
+        assertErrataTransfers(ErrataType.INSERT, 515);
         assertErrataTransfers(ErrataType.DELETE, 6)
                 .extracting(CryptoTransfer::getConsensusTimestamp)
                 .containsOnly(1L, 2L, RECEIVER_PAYER_TIMESTAMP);
@@ -143,9 +143,9 @@ public class ErrataMigrationTest extends IntegrationTest {
         migrateMainnet();
         errataMigration.doMigrate();
         assertBalanceOffsets(2);
-        assertErrataTransactions(ErrataType.INSERT, 31);
+        assertErrataTransactions(ErrataType.INSERT, 101);
         assertErrataTransactions(ErrataType.DELETE, 0);
-        assertErrataTransfers(ErrataType.INSERT, 92);
+        assertErrataTransfers(ErrataType.INSERT, 515);
         assertErrataTransfers(ErrataType.DELETE, 6);
         assertThat(contractResultRepository.count()).isEqualTo(1L);
     }

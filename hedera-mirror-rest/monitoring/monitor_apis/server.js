@@ -22,32 +22,10 @@ import bodyParser from 'body-parser';
 import compression from 'compression';
 import cors from 'cors';
 import express from 'express';
-import log4js from 'log4js';
-
-// Logger
-const logger = log4js.getLogger();
-log4js.configure({
-  appenders: {
-    console: {
-      layout: {
-        pattern: '%d{yyyy-MM-ddThh:mm:ss.SSSO} %p %m',
-        type: 'pattern',
-      },
-      type: 'stdout',
-    },
-  },
-  categories: {
-    default: {
-      appenders: ['console'],
-      level: 'info',
-    },
-  },
-});
-global.logger = log4js.getLogger();
-
-import config from './config';
 import common from './common';
+import logger from './logger';
 import {runEverything} from './monitor';
+import config from './config';
 
 const app = express();
 
@@ -100,15 +78,18 @@ if (process.env.NODE_ENV !== 'test') {
   });
 }
 
-const runMonitorTests = () => {
-  logger.info('Running tests');
-  runEverything(config.servers);
-};
+const servers = [...config.servers].map((server) => {
+  return {
+    ...server,
+    running: false,
+  };
+});
 
-runMonitorTests();
-setInterval(() => {
-  // Run all the tests periodically
-  runMonitorTests();
-}, config.interval * 1000);
+// Run tests on startup and every interval after that
+runEverything(servers).then(() => {
+  setInterval(async () => {
+    await runEverything(servers);
+  }, config.interval * 1000);
+});
 
 export default app;

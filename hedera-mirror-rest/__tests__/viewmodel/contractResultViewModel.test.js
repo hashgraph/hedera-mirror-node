@@ -33,6 +33,7 @@ describe('ContractResultViewModel', () => {
     functionParameters: Buffer.from([0x1, 0x2, 0x3, 0x4]),
     gasLimit: 6000,
     gasUsed: 3500,
+    transactionHash: Buffer.from([...Array(32).keys()]),
   };
   const defaultExpected = {
     amount: 10,
@@ -45,7 +46,7 @@ describe('ContractResultViewModel', () => {
     function_parameters: '0x01020304',
     gas_limit: 6000,
     gas_used: 3500,
-    hash: null,
+    hash: '0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f',
     timestamp: '900.123456789',
     to: '0x00000000000000000000000000000000000005dc',
   };
@@ -66,6 +67,7 @@ describe('ContractResultViewModel', () => {
         errorMessage: null,
         functionParameters: null,
         gasUsed: null,
+        transactionHash: null,
       })
     ).toEqual({
       ...defaultExpected,
@@ -77,7 +79,7 @@ describe('ContractResultViewModel', () => {
       error_message: null,
       function_parameters: '0x',
       gas_used: null,
-      hash: null,
+      hash: '0x',
       to: null,
     });
   });

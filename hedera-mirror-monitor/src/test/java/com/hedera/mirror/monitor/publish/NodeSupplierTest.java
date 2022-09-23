@@ -163,6 +163,7 @@ class NodeSupplierTest {
                 .expectNext(node)
                 .expectComplete()
                 .verify(Duration.ofMillis(100L));
+        assertThat(nodeSupplier.get()).isEqualTo(node);
     }
 
     @Test
@@ -173,7 +174,8 @@ class NodeSupplierTest {
                 .hasSize(1)
                 .first()
                 .returns(networkNode.getNodeAccountId(), NodeProperties::getAccountId)
-                .returns(networkNode.getServiceEndpoints().get(0).getIpAddressV4(), NodeProperties::getHost);
+                .returns(networkNode.getServiceEndpoints().get(0).getIpAddressV4(), NodeProperties::getHost)
+                .satisfies(node -> assertThat(nodeSupplier.get()).isEqualTo(node));
     }
 
     @Test
@@ -186,7 +188,8 @@ class NodeSupplierTest {
                 .hasSize(1)
                 .first()
                 .returns(networkNode.getNodeAccountId(), NodeProperties::getAccountId)
-                .returns(networkNode.getServiceEndpoints().get(0).getIpAddressV4(), NodeProperties::getHost);
+                .returns(networkNode.getServiceEndpoints().get(0).getIpAddressV4(), NodeProperties::getHost)
+                .satisfies(node -> assertThat(nodeSupplier.get()).isEqualTo(node));
     }
 
     @Test
@@ -226,7 +229,6 @@ class NodeSupplierTest {
     @Test
     @Timeout(3)
     void validationRecovers() {
-        nodeSupplier.updateValidationClient(monitorProperties.getNodes());
         // Given node validated as bad
         cryptoServiceStub.addTransactions(Mono.just(response(FREEZE_UPGRADE_IN_PROGRESS)));
         assertThat(nodeSupplier.validateNode(node)).isFalse();
@@ -257,7 +259,6 @@ class NodeSupplierTest {
         try {
             var node2 = new NodeProperties("0.0.4", "in-process:" + server3);
             monitorProperties.setNodes(Set.of(node, node2));
-            nodeSupplier.updateValidationClient(monitorProperties.getNodes());
 
             // Validate good node
             cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
@@ -285,7 +286,6 @@ class NodeSupplierTest {
     void validationSucceeds() {
         cryptoServiceStub.addQueries(Mono.just(receipt(SUCCESS)));
         cryptoServiceStub.addTransactions(Mono.just(response(OK)));
-        nodeSupplier.updateValidationClient(monitorProperties.getNodes());
         assertThat(nodeSupplier.validateNode(node)).isTrue();
     }
 

@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.migration;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -39,6 +39,7 @@ import org.springframework.test.context.TestPropertySource;
 
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.config.Owner;
 
 @EnabledIfV1
 @Tag("migration")
@@ -46,6 +47,7 @@ import com.hedera.mirror.importer.IntegrationTest;
 class TopicMessagePayerAccountIdMigrationTest extends IntegrationTest {
 
     @Resource
+    @Owner
     private JdbcOperations jdbcOperations;
 
     @Value("classpath:db/migration/v1/V1.53.0__topic_message_add_payer_account_id_and_initial_transaction_id.sql")
@@ -111,14 +113,13 @@ class TopicMessagePayerAccountIdMigrationTest extends IntegrationTest {
 
     private void persistTopicMessage(List<MigrationTopicMessage> topicMessages) {
         for (MigrationTopicMessage topicMessage : topicMessages) {
-            jdbcOperations
-                    .update("insert into topic_message (consensus_timestamp, message, payer_account_id, " +
-                                    "running_hash, running_hash_version, sequence_number, topic_id) " +
-                                    " values (?, ?, ?, ?, ?, ?, ?)",
-                            topicMessage.getConsensusTimestamp(), topicMessage.getMessage(),
-                            topicMessage.getPayerAccountId(), topicMessage.getRunninghHash(),
-                            topicMessage.getRunningHashVersion(), topicMessage.getSequenceNumber(),
-                            topicMessage.getTopicId());
+            jdbcOperations.update("insert into topic_message (consensus_timestamp, message, payer_account_id, " +
+                            "running_hash, running_hash_version, sequence_number, topic_id) " +
+                            " values (?, ?, ?, ?, ?, ?, ?)",
+                    topicMessage.getConsensusTimestamp(), topicMessage.getMessage(),
+                    topicMessage.getPayerAccountId(), topicMessage.getRunninghHash(),
+                    topicMessage.getRunningHashVersion(), topicMessage.getSequenceNumber(),
+                    topicMessage.getTopicId());
         }
     }
 
@@ -135,14 +136,10 @@ class TopicMessagePayerAccountIdMigrationTest extends IntegrationTest {
     }
 
     private void revertMigration() {
-        jdbcOperations
-                .update("delete from topic_message");
-        jdbcOperations
-                .update("delete from transaction");
-        jdbcOperations
-                .update("alter table topic_message alter column payer_account_id drop not null");
-        jdbcOperations
-                .update("alter table topic_message drop column initial_transaction_id");
+        jdbcOperations.update("delete from topic_message");
+        jdbcOperations.update("delete from transaction");
+        jdbcOperations.update("alter table topic_message alter column payer_account_id drop not null");
+        jdbcOperations.update("alter table topic_message drop column initial_transaction_id");
     }
 
     @Data

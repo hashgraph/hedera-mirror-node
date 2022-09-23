@@ -172,11 +172,11 @@ postgresql:
       create: true
     resources:
       limits:
-        cpu: 200m
-        memory: 256Mi
+        cpu: 300m
+        memory: 750Mi
       requests:
-        cpu: 100m
-        memory: 128Mi
+        cpu: 150m
+        memory: 256Mi
   postgresql:
     existingSecret: mirror-passwords
     extraEnvVarsSecret: mirror-passwords
@@ -239,11 +239,11 @@ redis:
       enabled: true
     resources:
       limits:
-        cpu: 100m
-        memory: 50Mi
+        cpu: 150m
+        memory: 256Mi
       requests:
-        cpu: 50m
-        memory: 25Mi
+        cpu: 75m
+        memory: 75Mi
   serviceAccount:
     create: true
 
@@ -314,7 +314,7 @@ test:
   enabled: false
   git:
     branch: ""  # Default to Chart app version
-    repository: https://github.com/hashgraph/hedera-mirror-node.git
+    repository: hashgraph/hedera-mirror-node
   image:
     pullPolicy: IfNotPresent
     repository: alpine

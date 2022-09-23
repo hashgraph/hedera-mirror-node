@@ -410,13 +410,19 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
     }
 
+    /*
+     * Extracts crypto transfers from the record. The extra logic around 'failedTransfer' is to detect and remove
+     * spurious non-fee transfers that occurred due to a services bug in the past as documented in
+     * ErrataMigration.spuriousTransfers().
+     */
     private void insertTransferList(RecordItem recordItem) {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
 
         var transferList = recordItem.getRecord().getTransferList();
         EntityId payerAccountId = recordItem.getPayerAccountId();
         var body = recordItem.getTransactionBody();
-        boolean failedTransfer = !recordItem.isSuccessful() && body.hasCryptoTransfer();
+        boolean failedTransfer =
+                !recordItem.isSuccessful() && body.hasCryptoTransfer() && consensusTimestamp < 1577836799000000000L;
 
         for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
             var aa = transferList.getAccountAmounts(i);

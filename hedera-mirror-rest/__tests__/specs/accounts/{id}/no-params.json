@@ -14,10 +14,13 @@
       },
       {
         "balance": 80,
+        "created_timestamp": "9999123456789",
         "num": 8,
         "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
         "evm_address": "ac384c53f03855fa1b3616052f8ba32c6c2a2fec",
-        "public_key": "519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9"
+        "public_key": "519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9",
+        "staked_node_id": 8,
+        "stake_period_start": 800
       },
       {
         "num": 9,
@@ -64,6 +67,16 @@
         "timestamp": 2200,
         "id": 9,
         "balance": 999
+      }
+    ],
+    "entityStakes": [
+      {
+        "decline_reward_start": false,
+        "end_stake_period": 810,
+        "id": 8,
+        "pending_reward": 123,
+        "staked_node_id_start": 8,
+        "stake_total_start": 80
       }
     ],
     "recordFiles": [
@@ -130,7 +143,7 @@
         "parent_consensus_timestamp": "1234567890.000000005",
         "result": "SUCCESS",
         "scheduled": false,
-        "transaction_hash": "aGFzaA==",
+        "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
         "transaction_id": "0.0.8-1234567890-000000005",
         "transfers": [
           {
@@ -165,7 +178,7 @@
         "parent_consensus_timestamp": null,
         "result": "SUCCESS",
         "scheduled": false,
-        "transaction_hash": "aGFzaA==",
+        "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
         "transaction_id": "0.0.8-1234567890-000000004",
         "transfers": [
           {
@@ -200,7 +213,7 @@
         "parent_consensus_timestamp": null,
         "result": "SUCCESS",
         "scheduled": false,
-        "transaction_hash": "aGFzaA==",
+        "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
         "transaction_id": "0.0.7-1234567890-000000000",
         "transfers": [
           {
@@ -239,6 +252,7 @@
     },
     "account": "0.0.8",
     "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
+    "created_timestamp": "9999.123456789",
     "decline_reward": false,
     "deleted": false,
     "ethereum_nonce": null,
@@ -248,10 +262,11 @@
     "key": null,
     "max_automatic_token_associations": 0,
     "memo": "entity memo",
+    "pending_reward": 123,
     "receiver_sig_required": false,
     "staked_account_id": null,
-    "staked_node_id": null,
-    "stake_period_start": null,
+    "staked_node_id": 8,
+    "stake_period_start": "69120000.000000000",
     "links": {
       "next": null
     }

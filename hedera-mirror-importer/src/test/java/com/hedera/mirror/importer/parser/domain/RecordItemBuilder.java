@@ -105,6 +105,7 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.util.Utility;
+import com.hedera.services.stream.proto.CallOperationType;
 import com.hedera.services.stream.proto.ContractAction;
 import com.hedera.services.stream.proto.ContractActionType;
 import com.hedera.services.stream.proto.ContractActions;
@@ -211,7 +212,13 @@ public class RecordItemBuilder {
                 .record(r -> r.setContractCreateResult(contractFunctionResult(contractId)
                         .addCreatedContractIDs(contractId)))
                 .sidecarRecords(r -> r.add(contractStateChanges(contractId)))
-                .sidecarRecords(r -> r.add(contractActions()))
+                .sidecarRecords(r -> {
+                    var contractActions = contractActions();
+                    contractActions.getActionsBuilder()
+                            .getContractActionsBuilderList()
+                            .forEach(ContractAction.Builder::clearRecipient);
+                    r.add(contractActions);
+                })
                 .sidecarRecords(r -> r.add(contractBytecode(contractId)));
     }
 
@@ -531,6 +538,7 @@ public class RecordItemBuilder {
         return ContractAction.newBuilder()
                 .setCallDepth(3)
                 .setCallingContract(contractId())
+                .setCallOperationType(CallOperationType.OP_CALL)
                 .setCallType(ContractActionType.CALL)
                 .setGas(100)
                 .setGasUsed(50)

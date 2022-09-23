@@ -21,16 +21,15 @@
 import extend from 'extend';
 import fs from 'fs';
 import _ from 'lodash';
-import log4js from 'log4js';
+import logger from './logger';
 import path from 'path';
 import {fileURLToPath} from 'url';
-
-const logger = log4js.getLogger();
 
 const REQUIRED_FIELDS = [
   'servers',
   'interval',
   'shard',
+  'timeout',
   'account.intervalMultiplier',
   'balance.freshnessThreshold',
   'balance.intervalMultiplier',

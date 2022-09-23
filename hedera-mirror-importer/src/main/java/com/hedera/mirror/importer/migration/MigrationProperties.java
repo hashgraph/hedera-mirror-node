@@ -20,6 +20,9 @@ package com.hedera.mirror.importer.migration;
  * ‍
  */
 
+import java.util.Collections;
+import java.util.Map;
+import javax.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
@@ -28,4 +31,7 @@ public class MigrationProperties {
     private int checksum = 1;
 
     private boolean enabled = true;
+
+    @NotNull
+    private Map<String, String> params = Collections.emptyMap();
 }

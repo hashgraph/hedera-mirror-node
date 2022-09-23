@@ -46,6 +46,7 @@ fullnameOverride: ""
 
 global:
   image: {}
+  middleware: false
   namespaceOverride: ""
   podAnnotations: {}
 
@@ -85,18 +86,6 @@ ingress:
         - "/rosetta/mempool"
         - "/rosetta/network"
         - "/rosetta/search"
-  middleware:
-    circuitBreaker: NetworkErrorRatio() > 0.25 || ResponseCodeRatio(500, 600, 0, 600) > 0.25
-    connectionsPerIP: 5
-    enabled: false
-    ipWhitelist:
-      - 0.0.0.0/0
-    rateLimit:
-      average: 10
-      sourceCriterion:
-        requestHost: true
-    stripPrefix:
-      - "/rosetta"
   tls:
     enabled: false
     secretName: ""
@@ -111,6 +100,25 @@ livenessProbe:
   initialDelaySeconds: 30
   periodSeconds: 10
   timeoutSeconds: 2
+
+middleware:
+  - circuitBreaker:
+      expression: NetworkErrorRatio() > 0.25 || ResponseCodeRatio(500, 600, 0, 600) > 0.25
+  - inFlightReq:
+      amount: 5
+      sourceCriterion:
+        ipStrategy:
+          depth: 1
+  - rateLimit:
+      average: 10
+      sourceCriterion:
+        requestHost: true
+  - retry:
+      attempts: 3
+      initialInterval: 100ms
+  - stripPrefix:
+      prefixes:
+        - "/rosetta"
 
 nodeSelector: {}
 
@@ -223,7 +231,9 @@ terminationGracePeriodSeconds: 60
 
 test:
   enabled: true
-  githubRef: ""
+  git:
+    branch: ""  # Default to Chart app version
+    repository: "hashgraph/hedera-mirror-node"
   image:
     pullPolicy: IfNotPresent
     repository: postman/newman

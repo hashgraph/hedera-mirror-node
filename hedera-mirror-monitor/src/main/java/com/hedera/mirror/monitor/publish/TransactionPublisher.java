@@ -82,7 +82,7 @@ public class TransactionPublisher implements AutoCloseable {
 
         return clients.elementAt(clientIndex)
                 .flatMap(client -> getTransactionResponse(request, client)
-                        .flatMap(r -> processTransactionResponse(client, request, r))
+                        .flatMap(r -> processTransactionResponse(client, request, r)))
                         .map(PublishResponse.PublishResponseBuilder::build)
                         .doOnNext(response -> {
                             if (log.isTraceEnabled() || properties.isLogResponse()) {
@@ -92,7 +92,7 @@ public class TransactionPublisher implements AutoCloseable {
                         .timeout(properties.getTimeout())
                         .onErrorMap(t -> !(t instanceof PublishException), t -> new PublishException(request, t))
                         .doOnNext(scenario::onNext)
-                        .doOnError(scenario::onError));
+                        .doOnError(scenario::onError);
     }
 
     private Mono<TransactionResponse> getTransactionResponse(PublishRequest request, Client client) {
