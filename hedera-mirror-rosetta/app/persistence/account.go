@@ -23,7 +23,6 @@ package persistence
 import (
 	"context"
 	"database/sql"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -237,6 +236,10 @@ func (ar *accountRepository) RetrieveBalanceAtBlock(
 		return nil, entityIdString, err
 	}
 
+	if entity == nil && accountId.HasAlias() {
+		return types.AmountSlice{&types.HbarAmount{}}, entityIdString, nil
+	}
+
 	balanceChangeEndTimestamp := consensusEnd
 	balanceSnapshotEndTimestamp := consensusEnd
 	if entity != nil && entity.Deleted != nil && *entity.Deleted && entity.GetModifiedTimestamp() <= consensusEnd {
@@ -313,15 +316,12 @@ func (ar *accountRepository) getCryptoEntity(ctx context.Context, accountId type
 
 	var query string
 	var args []interface{}
-	var notFoundError *rTypes.Error
 	if accountId.HasAlias() {
 		query = selectCryptoEntityByAlias
 		args = []interface{}{
 			sql.Named("alias", accountId.GetAlias()),
 			sql.Named("consensus_end", getInclusiveInt8Range(consensusEnd, consensusEnd)),
 		}
-		notFoundError = hErrors.AddErrorDetails(hErrors.ErrAccountNotFound, "reason",
-			fmt.Sprintf("Account with the alias '%s' not found", hex.EncodeToString(accountId.GetAlias())))
 	} else {
 		query = selectCryptoEntityById
 		args = []interface{}{sql.Named("id", accountId.GetId())}
@@ -338,7 +338,7 @@ func (ar *accountRepository) getCryptoEntity(ctx context.Context, accountId type
 	}
 
 	if len(entities) == 0 {
-		return nil, notFoundError
+		return nil, nil
 	}
 
 	// if it's by alias, return the first match which is the current one owns the alias, even though it may be deleted

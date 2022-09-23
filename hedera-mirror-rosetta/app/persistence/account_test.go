@@ -826,9 +826,7 @@ func (suite *accountRepositoryWithAliasSuite) TestGetAccountIdDeleted() {
 }
 
 func (suite *accountRepositoryWithAliasSuite) TestRetrieveBalanceAtBlockNoAccountEntity() {
-	// whey querying by alias and the account is not found, error is returned since without the alias to shard.realm.num
-	// mapping, no balance info for the account can be retrieved
-	// given
+	// whey querying by alias and the account is not found, expect 0 hbar balance returned
 	db.ExecSql(dbClient, truncateEntitySql)
 	repo := NewAccountRepository(dbClient, "")
 
@@ -840,7 +838,7 @@ func (suite *accountRepositoryWithAliasSuite) TestRetrieveBalanceAtBlockNoAccoun
 	)
 
 	// then
-	assert.NotNil(suite.T(), err)
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), types.AmountSlice{&types.HbarAmount{}}, actualAmounts)
 	assert.Empty(suite.T(), accountIdString)
-	assert.Nil(suite.T(), actualAmounts)
 }
