@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.downloader;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
+import java.time.Duration;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
@@ -30,6 +31,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
@@ -68,6 +70,10 @@ public class CommonDownloaderProperties {
     private String region = "us-east-1";
 
     private String secretKey;
+
+    @DurationMin(seconds = 1)
+    @NotNull
+    private Duration timeout = Duration.ofSeconds(30L);
 
     public String getBucketName() {
         return StringUtils.isNotBlank(bucketName) ? bucketName : mirrorProperties.getNetwork().getBucketName();
