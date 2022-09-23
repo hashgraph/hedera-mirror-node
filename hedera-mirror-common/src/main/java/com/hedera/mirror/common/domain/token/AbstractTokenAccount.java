@@ -25,8 +25,8 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.Range;
 import com.vladmihalcea.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
+import java.io.Serial;
 import java.io.Serializable;
-import javax.persistence.Column;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.persistence.IdClass;
@@ -85,6 +85,7 @@ public class AbstractTokenAccount implements History {
 
     @Data
     public static class Id implements Serializable {
+        @Serial
         private static final long serialVersionUID = 4078820027811154183L;
 
         private long accountId;
