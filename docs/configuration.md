@@ -452,8 +452,9 @@ Name                                                 | Default             | Des
 `hedera.mirror.rosetta.nodeVersion`                  | 0                   | The default canonical version of the node runtime
 `hedera.mirror.rosetta.online`                       | true                | The default online mode of the Rosetta interface
 `hedera.mirror.rosetta.port`                         | 5700                | The REST API port
-`hedera.mirror.rosetta.shard`                        | 0                   | The default shard number that this mirror node participates in
 `hedera.mirror.rosetta.realm`                        | 0                   | The default realm number within the shard
+`hedera.mirror.rosetta.shard`                        | 0                   | The default shard number that this mirror node participates in
+`hedera.mirror.rosetta.shutdownTimeout`              | 10s                 | The time to wait for the server to shutdown gracefully
 
 ## Web3 API
 

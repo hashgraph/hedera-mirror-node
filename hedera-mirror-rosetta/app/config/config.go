@@ -91,11 +91,11 @@ func LoadConfig() (*Config, error) {
 	v.SetEnvKeyReplacer(strings.NewReplacer(keyDelimiter, envKeyDelimiter))
 
 	var config fullConfig
-	composeDecodeHookFunc := mapstructure.ComposeDecodeHookFunc(
+	compositeDecodeHookFunc := mapstructure.ComposeDecodeHookFunc(
 		mapstructure.StringToTimeDurationHookFunc(),
 		nodeMapDecodeHookFunc,
 	)
-	if err := v.Unmarshal(&config, viper.DecodeHook(composeDecodeHookFunc)); err != nil {
+	if err := v.Unmarshal(&config, viper.DecodeHook(compositeDecodeHookFunc)); err != nil {
 		return nil, err
 	}
 
