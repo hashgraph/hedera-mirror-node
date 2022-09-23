@@ -260,7 +260,8 @@ public abstract class Downloader<T extends StreamFile> {
         // Wait for all tasks to complete.
         // invokeAll() does return Futures, but it waits for all to complete (so they're returned in a completed state).
         Stopwatch stopwatch = Stopwatch.createStarted();
-        signatureDownloadThreadPool.invokeAll(tasks);
+        var timeoutMillis = commonDownloaderProperties.getTimeout().toMillis();
+        signatureDownloadThreadPool.invokeAll(tasks, timeoutMillis, TimeUnit.MILLISECONDS);
         if (totalDownloads.get() > 0) {
             var rate = (int) (1000000.0 * totalDownloads.get() / stopwatch.elapsed(TimeUnit.MICROSECONDS));
             log.info("Downloaded {} signatures in {} ({}/s)", totalDownloads, stopwatch, rate);
@@ -286,7 +287,9 @@ public abstract class Downloader<T extends StreamFile> {
                 .maxKeys(listSize)
                 .requestPayer(RequestPayer.REQUESTER)
                 .build();
-        return s3Client.listObjects(listRequest).get().contents();
+        long timeoutMillis = commonDownloaderProperties.getTimeout().toMillis();
+        var future = s3Client.listObjects(listRequest);
+        return future.orTimeout(timeoutMillis, TimeUnit.MILLISECONDS).get().contents();
     }
 
     private List<PendingDownload> downloadSignatureFiles(String nodeAccountId, List<S3Object> s3Objects) {
@@ -369,7 +372,7 @@ public abstract class Downloader<T extends StreamFile> {
                 .requestPayer(RequestPayer.REQUESTER)
                 .build();
         var future = s3Client.getObject(request, AsyncResponseTransformer.toBytes());
-        return new PendingDownload(future, streamFilename, s3Key);
+        return new PendingDownload(future, streamFilename, s3Key, commonDownloaderProperties.getTimeout());
     }
 
     /**
