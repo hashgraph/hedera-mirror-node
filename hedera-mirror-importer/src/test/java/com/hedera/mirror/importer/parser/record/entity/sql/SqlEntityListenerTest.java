@@ -1345,19 +1345,18 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // when
         EntityId accountId1 = EntityId.of("0.0.7", ACCOUNT);
-        TokenAccount tokenAccountAssociate = getTokenAccount(tokenId1, accountId1, 5L, true, false, null, null, null);
+        TokenAccount tokenAccountAssociate = getTokenAccount(tokenId1, accountId1, 5L, true, false, null, null, Range.atLeast(5L));
         sqlEntityListener.onTokenAccount(tokenAccountAssociate);
 
-        TokenAccount tokenAccountKyc = getTokenAccount(tokenId1, accountId1, 5L, true, false, null,
-                TokenKycStatusEnum.GRANTED, Range.atLeast(6L));
+        TokenAccount tokenAccountKyc = getTokenAccount(tokenId1, accountId1, null, null, null, null,
+                TokenKycStatusEnum.GRANTED, Range.atLeast(15L));
         sqlEntityListener.onTokenAccount(tokenAccountKyc);
 
         completeFileAndCommit();
 
         // then
         TokenAccount tokenAccountMerged = getTokenAccount(tokenId1, accountId1, 5L, true, false,
-                TokenFreezeStatusEnum.UNFROZEN, TokenKycStatusEnum.GRANTED, Range.atLeast(5L));
-
+                TokenFreezeStatusEnum.UNFROZEN, TokenKycStatusEnum.GRANTED, Range.atLeast(15L));
         assertThat(tokenAccountRepository.findAll()).containsExactly(tokenAccountMerged);
     }
 
@@ -1375,26 +1374,27 @@ class SqlEntityListenerTest extends IntegrationTest {
         TokenAccount associate = getTokenAccount(tokenId1, accountId1, 5L, true, false,
                 TokenFreezeStatusEnum.FROZEN, TokenKycStatusEnum.REVOKED, null);
         tokenAccountRepository.save(associate);
-        expected.add(associate);
+        expected.add(getTokenAccount(tokenId1, accountId1, 5L, true, false,
+                TokenFreezeStatusEnum.FROZEN, TokenKycStatusEnum.REVOKED, Range.closedOpen(5L, 6L)));
 
         // when
         TokenAccount freeze = getTokenAccount(tokenId1, accountId1, null, null, null,
                 TokenFreezeStatusEnum.FROZEN, null, Range.atLeast(6L));
         sqlEntityListener.onTokenAccount(freeze);
         expected.add(getTokenAccount(tokenId1, accountId1, 5L, true, false, TokenFreezeStatusEnum.FROZEN,
-                TokenKycStatusEnum.REVOKED, Range.atLeast(6L)));
+                TokenKycStatusEnum.REVOKED, Range.closedOpen(6L, 7L)));
 
         TokenAccount kycGrant = getTokenAccount(tokenId1, accountId1, null, null, null, null,
                 TokenKycStatusEnum.GRANTED, Range.atLeast(7L));
         sqlEntityListener.onTokenAccount(kycGrant);
         expected.add(getTokenAccount(tokenId1, accountId1, 5L, true, false, TokenFreezeStatusEnum.FROZEN,
-                TokenKycStatusEnum.GRANTED, Range.atLeast(7L)));
+                TokenKycStatusEnum.GRANTED, Range.closedOpen(7L, 8L)));
 
         TokenAccount dissociate = getTokenAccount(tokenId1, accountId1, null, false, null, null, null,
                 Range.atLeast(8L));
         sqlEntityListener.onTokenAccount(dissociate);
         expected.add(getTokenAccount(tokenId1, accountId1, 5L, false, false, TokenFreezeStatusEnum.FROZEN,
-                TokenKycStatusEnum.GRANTED, Range.atLeast(8L)));
+                TokenKycStatusEnum.GRANTED, Range.closedOpen(8L, 9L)));
 
         // associate after dissociate, the token has freeze key with freezeDefault = false, the token also has kyc key,
         // so the new relationship should have UNFROZEN, REVOKED
@@ -1445,11 +1445,11 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // when
         TokenAccount freeze = getTokenAccount(tokenId1, accountId1, null, null, null,
-                TokenFreezeStatusEnum.FROZEN, null, null);
+                TokenFreezeStatusEnum.FROZEN, null, Range.atLeast(10L));
         sqlEntityListener.onTokenAccount(freeze);
 
         TokenAccount kycGrant = getTokenAccount(tokenId1, accountId1, null, null, null, null,
-                TokenKycStatusEnum.GRANTED, Range.atLeast(2L));
+                TokenKycStatusEnum.GRANTED, Range.atLeast(15L));
         sqlEntityListener.onTokenAccount(kycGrant);
 
         completeFileAndCommit();
@@ -1512,51 +1512,6 @@ class SqlEntityListenerTest extends IntegrationTest {
         assertThat(tokenAccountRepository.findAll()).containsExactly(expectedTokenAccount);
         final String idColumns = "account_id, token_id";
         assertThat(findHistory(TokenAccount.class, idColumns)).containsExactlyInAnyOrderElementsOf(expected);
-    }
-
-    @ValueSource(ints = {1}) // , 2, 3
-    @ParameterizedTest
-    void onTokenAccountHistory(int commitIndex) {
-        // given
-        final String idColumns = "account_id, token_id";
-        var builder = domainBuilder.tokenAccount();
-        TokenAccount tokenAccountCreate = builder.get();
-
-        TokenAccount tokenAccountUpdate1 = builder.customize(t -> t.freezeStatus(TokenFreezeStatusEnum.FROZEN))
-                .get();
-        tokenAccountUpdate1.setTimestampLower(tokenAccountCreate.getTimestampLower() + 1);
-
-        TokenAccount tokenAccountUpdate2 = builder.customize(t -> t.freezeStatus(TokenFreezeStatusEnum.UNFROZEN)).get();
-        tokenAccountUpdate2.setTimestampLower(tokenAccountCreate.getTimestampLower() + 2);
-
-        // Expected merged objects
-        TokenAccount mergedCreate = TestUtils.clone(tokenAccountCreate);
-        TokenAccount mergedUpdate1 = TestUtils.merge(tokenAccountCreate, tokenAccountUpdate1);
-        TokenAccount mergedUpdate2 = TestUtils.merge(mergedUpdate1, tokenAccountUpdate2);
-        mergedCreate.setTimestampUpper(tokenAccountUpdate1.getTimestampLower());
-
-        // when
-        sqlEntityListener.onTokenAccount(tokenAccountCreate);
-        if (commitIndex > 1) {
-            completeFileAndCommit();
-            assertThat(tokenAccountRepository.findAll()).containsExactly(tokenAccountCreate);
-            assertThat(findHistory(TokenAccount.class, idColumns)).isEmpty();
-        }
-
-        sqlEntityListener.onTokenAccount(tokenAccountUpdate1);
-        if (commitIndex > 2) {
-            completeFileAndCommit();
-            assertThat(tokenAccountRepository.findAll()).containsExactly(mergedUpdate1);
-            assertThat(findHistory(TokenAccount.class, idColumns)).containsExactly(mergedCreate);
-        }
-
-        sqlEntityListener.onTokenAccount(tokenAccountUpdate2);
-        completeFileAndCommit();
-
-        // then
-        mergedUpdate1.setTimestampUpper(tokenAccountUpdate2.getTimestampLower());
-        assertThat(tokenAccountRepository.findAll()).containsExactly(mergedUpdate2);
-        assertThat(findHistory(TokenAccount.class, idColumns)).containsExactly(mergedCreate, mergedUpdate1);
     }
 
     @Test

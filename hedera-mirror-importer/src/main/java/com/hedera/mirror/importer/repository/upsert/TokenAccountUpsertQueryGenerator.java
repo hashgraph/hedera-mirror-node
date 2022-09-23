@@ -151,18 +151,18 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                   coalesce(existing.created_timestamp, e_created_timestamp, null),
 
                   case when freeze_status is not null then freeze_status
-                      when created_timestamp = lower(timestamp_range) then
+                      when created_timestamp is not null then
                           case
                               when token.freeze_key is null then 0
                               when token.freeze_default is true then 1
                               else 2
                           end
-                          else coalesce(e_freeze_status, 0)
+                      else coalesce(freeze_status, e_freeze_status, 0)
                     end freeze_status,
 
 
                   case when kyc_status is not null then kyc_status
-                    when created_timestamp is not null then
+                      when created_timestamp is not null then
                         case
                           when token.kyc_key is null then 0
                           else 2
@@ -188,6 +188,7 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                 set
                   associated = excluded.associated,
                   automatic_association = excluded.automatic_association,
+                  created_timestamp = excluded.created_timestamp,
                   freeze_status = excluded.freeze_status,
                   kyc_status = excluded.kyc_status,
                   timestamp_range = excluded.timestamp_range
