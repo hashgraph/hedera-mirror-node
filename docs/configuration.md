@@ -1,7 +1,7 @@
 #./hedera-mirror-importer/target/test-classes/config/application.yml Configuration
 
 The four components of the Hedera Mirror Node (Importer, Monitor, REST API, and gRPC API) all support loading
-configuration from an `application.yml` file or via the environment.
+configuration from an `application.yml` file, an `application.properties` file,  or via the environment.
 
 ## Default Values
 
@@ -167,15 +167,22 @@ value, it is recommended to only populate overridden properties in the custom `a
 
 ### Event and Entity Filtering
 
-The mirror node may be configured to only store a subset of data for entities and/or events (transaction types) of
-interest -- essentially, which rows of data to retain.
-Note that the `exclude` properties take priority over the `include` properties - if you list the same
-value in both lists, it will be excluded.
-In addition, the various boolean `hedera.mirror.importer.record.entity.persist` properties may be
-specified to control which fields get stored (you can think of this as which columns of the matching rows get recorded).
+The mirror node may be configured to only store a subset of data for entities and/or events (transaction types) of interest -- essentially, which rows of data to retain.
+Note that the `exclude` properties take priority over the `include` properties - if you list the same value in both lists, it will be excluded.
+In addition, the various boolean `hedera.mirror.importer.record.entity.persist` properties may be specified to control which fields get stored (you can think of this as which columns of the matching rows get recorded).
 See the `hedera.mirror.importer.parser.include.*` and `hedera.mirror.importer.parser.exclude.*` properties listed in the table above for full details.
 
 #### Filtering Example
+The scenario we wish to model is the same for each of the three configuration formats.  Only choose one of the three ways to
+configure your instance of the mirror node.
+
+* We wish to omit all records (regardless of transaction type) that are associated with account **0.0.98**, which is the account representing the network (to which fees generally get paid to).
+* We are interested in all **CRYPTOTRANSFER** transactions, for all other accounts than **0.0.98**.
+* We are interested in accounts **0.0.111828** and **0.0.61457**, and wish to store all their transactions, regardless of transaction type.
+* We are partially interested in accounts **0.0.111703** and **0.0.111704**, and wish to store all their **FILECREATE**, **FILEDELETE**, and **FILEUPDATE** transactions (but not of any other transaction types than **CRYPTOTRANSFER**).
+* We do not wish to persist message topics for any transactions we do store.
+
+#### application.yml
 
 Including the following lines in your `application.yml` file:
 
@@ -185,19 +192,54 @@ hedera:
     importer:
       parser:
         exclude:
-          entity: 0.0.1000
+          - entity: [0.0.98]
         include:
-          entity: 0.0.3, 0.0.950
-          transaction: CONTRACTCALL, CONTRACTCREATEINSTANCE, CONTRACTDELETEINSTANCE, CONTRACTUPDATEINSTANCE
+          - transaction: [CRYPTOTRANSFER]
+          - entity: [0.0.111728, 0.0.61457]
+          - entity: [0.0.111703, 0.0.111704]
+            transaction: [FILECREATE, FILEDELETE, FILEUPDATE]
         record:
           entity:
             persist:
               topics: false
 ```
+will store only the transactions for the given scenario.
 
-will store all transactions involving entities 0.0.3 or 0.0.950, but not entity 0.0.1000, that are any of the four
-smart contract transaction types.  No information about topic messages will be retained.
+#### application.properties
 
+Including the following lines in your `application.properties` file:
+
+```yaml
+hedera.mirror.importer.parser.exclude[0].entity[0]=0.0.98
+hedera.mirror.importer.parser.include[0].entity[0]=0.0.111703
+hedera.mirror.importer.parser.include[0].entity[1]=0.0.111704
+hedera.mirror.importer.parser.include[0].transaction[0]=FILECREATE
+hedera.mirror.importer.parser.include[0].transaction[1]=FILEDELETE
+hedera.mirror.importer.parser.include[0].transaction[2]=FILEUPDATE
+hedera.mirror.importer.parser.include[1].entity[0]=0.0.111728
+hedera.mirror.importer.parser.include[1].entity[1]=0.0.61457
+hedera.mirror.importer.parser.include[2].transaction[0]=CRYPTOTRANSFER
+hedera.mirror.importer.parser.record.entity.persist.topics=false
+```
+will (again) store only the transactions for the given scenario.
+
+#### Environment variables
+
+Setting the following environmental variables:
+
+```yaml
+HEDERA_MIRROR_IMPORTER_PARSER_EXCLUDE_0_ENTITY_0_=0.0.98
+HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_0_ENTITY_0_=0.0.111703
+HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_0_ENTITY_1_=0.0.111704
+HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_0_TRANSACTION_0_=FILECREATE
+HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_0_TRANSACTION_1_=FILEDELETE
+HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_0_TRANSACTION_2_=FILEUPDATE
+HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_1_ENTITY_0_=0.0.111728
+HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_1_ENTITY_1_=0.0.61457
+HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_2_TRANSACTION_0_=CRYPTOTRANSFER
+HEDERA_MIRROR_IMPORTER_PARSER_RECORD_ENTITY_PERSIST_TOPICS=false
+```
+will (once again) store only the transactions for the given scenario.
 
 ## Export transactions to PubSub
 
