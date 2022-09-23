@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.domain;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -39,7 +39,8 @@ public class CustomFeeWrapper {
 
     public CustomFeeWrapper(Long amount, Long amountDenominator, Long collectorAccountId, long createdTimestamp,
                             Long denominatingTokenId, Long maximumAmount, long minimumAmount,
-                            Boolean netOfTransfers, Long royaltyDenominator, Long royaltyNumerator, long tokenId) {
+                            Boolean netOfTransfers, Long royaltyDenominator, Long royaltyNumerator, long tokenId,
+                            Boolean allCollectorsAreExempt) {
         customFee = new CustomFee();
         customFee.setAmount(amount);
         customFee.setAmountDenominator(amountDenominator);
@@ -58,5 +59,9 @@ public class CustomFeeWrapper {
         customFee.setRoyaltyDenominator(royaltyDenominator);
         customFee.setRoyaltyNumerator(royaltyNumerator);
         customFee.setId(new CustomFee.Id(createdTimestamp, EntityIdEndec.decode(tokenId, EntityType.TOKEN)));
+
+        if(allCollectorsAreExempt!=null) {
+            customFee.setAllCollectorsAreExempt(allCollectorsAreExempt);
+        }
     }
 }

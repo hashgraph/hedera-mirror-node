@@ -351,7 +351,8 @@ public class DomainBuilder {
                 .minimumAmount(1L)
                 .netOfTransfers(true)
                 .royaltyDenominator(10L)
-                .royaltyNumerator(20L);
+                .royaltyNumerator(20L)
+                .allCollectorsAreExempt(false);
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

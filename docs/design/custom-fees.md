@@ -45,7 +45,8 @@ create table if not exists custom_fee
     net_of_transfers          boolean,
     royalty_denominator       bigint,
     royalty_numerator         bigint,
-    token_id                  bigint not null
+    token_id                  bigint not null,
+    all_collectors_are_exempt   boolean not null default false
 );
 create index if not exists
     custom_fee__token_timestamp on custom_fee (token_id desc, created_timestamp desc);

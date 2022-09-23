@@ -1089,6 +1089,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             CustomFee customFee = new CustomFee();
             customFee.setId(id);
             customFee.setCollectorAccountId(collector);
+            customFee.setAllCollectorsAreExempt(protoCustomFee.getAllCollectorsAreExempt());
 
             var feeCase = protoCustomFee.getFeeCase();
             boolean chargedInAttachedToken;
@@ -1125,7 +1126,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             // for empty custom fees, add a single row with only the timestamp and tokenId.
             CustomFee customFee = new CustomFee();
             customFee.setId(id);
-
+            customFee.setAllCollectorsAreExempt(false);
             entityListener.onCustomFee(customFee);
         }
 
