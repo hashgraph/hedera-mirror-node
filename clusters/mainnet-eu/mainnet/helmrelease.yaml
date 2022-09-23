@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '0.63.0'
+      version: '0.64.4'
   dependsOn:
     - name: mirror
       namespace: common
@@ -32,10 +32,19 @@ spec:
       name: mirror
   values:
     importer:
+      config:
+        hedera:
+          mirror:
+            importer:
+              migration:
+                backfillTransactionHashMigration:
+                  params:
+                    startTimestamp: "1661472000121743002"
       env:
+        HEDERA_MIRROR_IMPORTER_PARSER_RECORD_ENTITY_PERSIST_TRANSACTIONHASH: "true"
         HEDERA_MIRROR_IMPORTER_NETWORK: "MAINNET"
+        HEDERA_MIRROR_MONITOR_NODEVALIDATION_ENABLED: "false"
         HEDERA_MIRROR_IMPORTER_PARSER_RECORD_SIDECAR_ENABLED: "true"
-        HEDERA_MIRROR_IMPORTER_RECONCILIATION_ENABLED: "false"
         HEDERA_MIRROR_IMPORTER_START_DATE: "1970-01-01T00:00:00.000000000Z"
     monitor:
       env:
@@ -54,6 +63,4 @@ spec:
     rosetta:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "mainnet"
-      test:
-        enabled: false
 
