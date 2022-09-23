@@ -21,7 +21,6 @@ package com.hedera.mirror.importer.migration;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -30,11 +29,12 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import javax.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
@@ -48,24 +48,20 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
 @EnabledIfV1
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.31.1")
 class RemoveInvalidEntityMigrationTest extends IntegrationTest {
 
-    @Resource
-    private JdbcOperations jdbcOperations;
-
+    private final @Owner JdbcOperations jdbcOperations;
     @Value("classpath:db/migration/v1/V1.31.2__remove_invalid_entities.sql")
-    private File migrationSql;
-
-    @Resource
-    private MirrorProperties mirrorProperties;
-
-    @Resource
-    private TransactionRepository transactionRepository;
+    private final File migrationSql;
+    private final MirrorProperties mirrorProperties;
+    private final TransactionRepository transactionRepository;
 
     @BeforeEach
     void before() {

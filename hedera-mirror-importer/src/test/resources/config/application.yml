@@ -4,10 +4,12 @@ hedera:
       db:
         # https://github.com/testcontainers/testcontainers-spring-boot#embedded-postgresql
         host: ${embedded.postgresql.host}
+        name: ${embedded.postgresql.database}
+        owner: ${embedded.postgresql.user}
+        ownerPassword: ${embedded.postgresql.password}
+        password: mirror_importer_pass
         port: ${embedded.postgresql.port}
-        name: ${embedded.postgresql.schema}
-        username: ${embedded.postgresql.user}
-        password: ${embedded.postgresql.password}
+        username: mirror_importer
       downloader:
         bucketName: test
       importHistoricalAccountInfo: false
@@ -25,12 +27,10 @@ hedera:
 
 spring:
   flyway:
-    password: ${hedera.mirror.importer.db.password}
     placeholders:
       compressionAge: 9223372036854775807 # use long max to avoid compression during test
     # disable repeatable migrations to avoid failures when running them with old version
     repeatableSqlMigrationPrefix: DISABLED
-    user: ${hedera.mirror.importer.db.username}
   redis:
     host: ${embedded.redis.host}
     password: ${embedded.redis.password}

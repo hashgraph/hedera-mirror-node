@@ -39,6 +39,7 @@ import com.hedera.mirror.common.domain.transaction.TransactionHash;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.repository.TransactionHashRepository;
 
@@ -51,7 +52,7 @@ class BackfillTransactionHashMigrationTest extends IntegrationTest {
     private static final String MIGRATION_NAME = "backfillTransactionHashMigration";
 
     private final EntityProperties entityProperties;
-    private final JdbcTemplate jdbcTemplate;
+    private final @Owner JdbcTemplate jdbcTemplate;
     private final MirrorProperties mirrorProperties;
     private final TransactionHashRepository transactionHashRepository;
 
