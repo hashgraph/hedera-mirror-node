@@ -570,7 +570,7 @@ comment on table token_account is 'Token account entity';
 --- token_account_history
 create table if not exists token_account_history
 (
-    like token_account including defaults,
+    like token_account including defaults
 );
 comment on table token_account_history is 'History of token_account';
 
