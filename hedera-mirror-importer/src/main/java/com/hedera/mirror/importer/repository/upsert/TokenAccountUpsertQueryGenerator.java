@@ -58,6 +58,16 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                     left join token_account e on e.account_id = t.account_id
                     and e.token_id = t.token_id
                 ),
+                last as (
+                  select distinct on (token_account.account_id, token_account.token_id)
+                  token_account.account_id,
+                  token_account.associated,
+                  token_account.created_timestamp,
+                  token_account.token_id
+                  from token_account
+                  join token_account_temp on token_account_temp.account_id = token_account.account_id
+                    and token_account_temp.token_id = token_account.token_id
+                ),
                 token as (
                     select distinct
                      token.token_id,
@@ -80,7 +90,7 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                       token_id
                     )
                   select
-                    distinct on (account_id, token_id) e_account_id,
+                    distinct on (existing.account_id, existing.token_id) e_account_id,
                     e_associated,
                     e_automatic_association,
                     e_created_timestamp,
@@ -90,12 +100,14 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                     e_token_id
                   from
                     existing
+                    left join last on last.account_id = existing.account_id and
+                      last.token_id = existing.token_id and last.associated is true
                   where
-                    e_timestamp_range is not null
-                    and timestamp_range is not null
+                    (existing.created_timestamp is not null or last.created_timestamp is not null) and
+                    (e_timestamp_range is not null and timestamp_range is not null)
                   order by
-                    account_id,
-                    token_id,
+                    existing.account_id,
+                    existing.token_id,
                     timestamp_range asc
                 ),
                 temp_history as (
@@ -111,23 +123,25 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                       token_id
                     )
                   select
-                    distinct coalesce(account_id, e_account_id, null),
-                    coalesce(associated, e_associated, false),
+                    distinct coalesce(existing.account_id, e_account_id, null),
+                    coalesce(existing.associated, e_associated, false),
                     coalesce(
                       automatic_association,
                       e_automatic_association,
                       false
                     ),
-                    coalesce(created_timestamp, e_created_timestamp, null),
+                    coalesce(existing.created_timestamp, e_created_timestamp, null),
                     coalesce(freeze_status, e_freeze_status, 0),
                     coalesce(kyc_status, e_kyc_status, 0),
                     coalesce(timestamp_range, e_timestamp_range, null),
-                    coalesce(token_id, e_token_id, null)
+                    coalesce(existing.token_id, e_token_id, null)
                   from
                     existing
+                    left join last on last.account_id = existing.account_id and
+                      last.token_id = existing.token_id and last.associated is true
                   where
-                    timestamp_range is not null
-                    and upper(timestamp_range) is not null
+                    (existing.created_timestamp is not null or last.created_timestamp is not null) and
+                    (timestamp_range is not null and upper(timestamp_range) is not null)
                 )
                 insert into
                   token_account (
@@ -141,48 +155,48 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                     token_id
                   )
                 select
-                  coalesce(account_id, e_account_id, null),
-                  coalesce(associated, e_associated, false),
+                  coalesce(existing.account_id, e_account_id, null),
+                  coalesce(existing.associated, e_associated, false),
                   coalesce(
-                    automatic_association,
+                    existing.automatic_association,
                     e_automatic_association,
                     false
                   ),
                   coalesce(existing.created_timestamp, e_created_timestamp, null),
-
-                  case when freeze_status is not null then freeze_status
-                      when created_timestamp is not null then
+                  case when existing.freeze_status is not null then existing.freeze_status
+                      when existing.created_timestamp is not null then
                           case
                               when token.freeze_key is null then 0
                               when token.freeze_default is true then 1
                               else 2
                           end
-                      else coalesce(freeze_status, e_freeze_status, 0)
-                    end freeze_status,
-
-
-                  case when kyc_status is not null then kyc_status
-                      when created_timestamp is not null then
+                      else coalesce(existing.freeze_status, e_freeze_status, 0)
+                  end freeze_status,
+                  case when existing.kyc_status is not null then existing.kyc_status
+                      when existing.created_timestamp is not null then
                         case
                           when token.kyc_key is null then 0
                           else 2
                         end
-                        else coalesce(e_kyc_status, 0)
+                        else coalesce(existing.kyc_status, e_kyc_status, 0)
                   end kyc_status,
-
-                  coalesce(timestamp_range, e_timestamp_range, null),
+                  coalesce(existing.timestamp_range, e_timestamp_range, null),
                   coalesce(existing.token_id, e_token_id, null)
                 from
                   existing
                   join token on existing.token_id = token.token_id
+                  left join last on last.account_id = existing.account_id and
+                      last.token_id = existing.token_id and last.associated is true
                 where
-                  (
-                    e_timestamp_range is not null
-                    and timestamp_range is null
-                  )
-                  or (
-                    timestamp_range is not null
-                    and upper(timestamp_range) is null
+                  (existing.created_timestamp is not null or last.created_timestamp is not null) and (
+                      (
+                        e_timestamp_range is not null
+                        and timestamp_range is null
+                      )
+                      or (
+                        existing.timestamp_range is not null
+                        and upper(existing.timestamp_range) is null
+                      )
                   ) on conflict (account_id, token_id) do
                 update
                 set

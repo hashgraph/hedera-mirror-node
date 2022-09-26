@@ -1456,6 +1456,8 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(tokenAccountRepository.count()).isZero();
+        final String idColumns = "account_id, token_id";
+        assertThat(findHistory(TokenAccount.class, idColumns)).size().isZero();
     }
 
     @Test
