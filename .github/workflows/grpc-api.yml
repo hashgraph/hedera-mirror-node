@@ -37,8 +37,8 @@ jobs:
         working-directory: .
 
       - name: Upload coverage report
+        uses: codecov/codecov-action@v3
         if: always()
-        run: bash <(curl -s https://codecov.io/bash)
 
       - name: Upload artifact
         if: startsWith(github.ref, 'refs/tags/v')
