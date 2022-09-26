@@ -206,6 +206,7 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
                         nftTransfer(account1Nft2DissociateTimestamp, null, account1, 2L, nftId2),
                         nftTransfer(account2Nft1DissociateTimestamp, null, account2, 4L, nftId1)
                 );
+        assertThat(findAllTokenAccounts()).containsExactlyInAnyOrderElementsOf(tokenAccounts);
         assertThat(findAllTokens()).usingElementComparatorIgnoringFields("pauseKey", "pauseStatus")
                 .containsExactlyInAnyOrder(ftClass1, ftClass2, nftClass1, nftClass2,
                         nftClass3);
@@ -249,6 +250,21 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
             nft.setSerialNumber(rs.getLong("serial_number"));
             nft.setTokenId(rs.getLong("token_id"));
             return nft;
+        });
+    }
+
+    public Collection<MigrationTokenAccount> findAllTokenAccounts() {
+        return jdbcOperations.query("select * from token_account", (rs, rowNum) -> {
+            var tokenAccount = new MigrationTokenAccount();
+            tokenAccount.setAccountId(EntityId.of(rs.getLong("account_id"), ACCOUNT));
+            tokenAccount.setAssociated(rs.getBoolean("associated"));
+            tokenAccount.setAutomaticAssociation(rs.getBoolean("automatic_association"));
+            tokenAccount.setCreatedTimestamp(rs.getLong("created_timestamp"));
+            tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE);
+            tokenAccount.setKycStatus(TokenKycStatusEnum.NOT_APPLICABLE);
+            tokenAccount.setModifiedTimestamp(rs.getLong("modified_timestamp"));
+            tokenAccount.setTokenId(EntityId.of(rs.getLong("token_id"), TOKEN));
+            return tokenAccount;
         });
     }
 
