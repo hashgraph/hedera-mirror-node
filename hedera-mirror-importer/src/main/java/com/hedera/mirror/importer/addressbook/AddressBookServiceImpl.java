@@ -36,13 +36,13 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
@@ -141,11 +141,12 @@ public class AddressBookServiceImpl implements AddressBookService {
         var addressBook = getCurrent();
         var totalStake = new AtomicLong(0L);
         var nodes = new ArrayList<ConsensusNode>();
+        var nodeStakes = new HashMap<Long, NodeStake>();
 
-        var nodeStakes = nodeStakeRepository.findLatest()
-                .stream()
-                .peek(nodeStake -> totalStake.addAndGet(nodeStake.getStake()))
-                .collect(Collectors.toMap(NodeStake::getNodeId, Function.identity()));
+        nodeStakeRepository.findLatest().forEach(nodeStake -> {
+            totalStake.addAndGet(nodeStake.getStake());
+            nodeStakes.put(nodeStake.getNodeId(), nodeStake);
+        });
 
         addressBook.getEntries().forEach(e -> {
             var nodeStake = nodeStakes.get(e.getNodeId());

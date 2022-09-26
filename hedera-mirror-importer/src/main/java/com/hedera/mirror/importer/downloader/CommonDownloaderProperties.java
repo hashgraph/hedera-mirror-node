@@ -46,7 +46,7 @@ import com.hedera.mirror.importer.MirrorProperties;
 @ConfigurationProperties("hedera.mirror.importer.downloader")
 public class CommonDownloaderProperties {
 
-    private final static MathContext MATH_CONTEXT = new MathContext(19, RoundingMode.DOWN);
+    private static final MathContext MATH_CONTEXT = new MathContext(19, RoundingMode.DOWN);
 
     private final MirrorProperties mirrorProperties;
 

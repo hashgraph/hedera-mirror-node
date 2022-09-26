@@ -84,7 +84,7 @@ public class RecordFileDownloader extends Downloader<RecordFile> {
     }
 
     @Override
-    protected void onVerified(StreamFileData streamFileData, RecordFile recordFile, ConsensusNode node) throws InterruptedException {
+    protected void onVerified(StreamFileData streamFileData, RecordFile recordFile, ConsensusNode node) {
         downloadSidecars(recordFile, node);
         super.onVerified(streamFileData, recordFile, node);
     }

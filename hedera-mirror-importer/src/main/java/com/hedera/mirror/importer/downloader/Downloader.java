@@ -373,9 +373,6 @@ public abstract class Downloader<T extends StreamFile> {
                 } catch (HashMismatchException e) {
                     log.warn("Failed to verify data file from node {} corresponding to {}. Will retry another node",
                             nodeId, sigFilename, e);
-                } catch (InterruptedException e) {
-                    log.warn("Failed to download data file from node {} corresponding to {}", nodeId, sigFilename, e);
-                    Thread.currentThread().interrupt();
                 } catch (Exception e) {
                     log.error("Error downloading data file from node {} corresponding to {}. Will retry another node",
                             nodeId, sigFilename, e);
@@ -392,7 +389,7 @@ public abstract class Downloader<T extends StreamFile> {
         }
     }
 
-    protected void onVerified(StreamFileData streamFileData, T streamFile, ConsensusNode node) throws InterruptedException {
+    protected void onVerified(StreamFileData streamFileData, T streamFile, ConsensusNode node) {
         setStreamFileIndex(streamFile);
         streamFileNotifier.verified(streamFile);
 

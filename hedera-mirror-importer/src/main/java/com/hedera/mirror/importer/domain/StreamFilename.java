@@ -192,8 +192,7 @@ public class StreamFilename implements Comparable<StreamFilename> {
      * @return the filename to mark files after this stream filename
      */
     public String getFilenameAfter() {
-        var filenameAfter = StringUtils.remove(filename, "." + fullExtension) + COMPATIBLE_TIME_SEPARATOR;
-        return filenameAfter;
+        return StringUtils.remove(filename, "." + fullExtension) + COMPATIBLE_TIME_SEPARATOR;
     }
 
     public String getSidecarFilename(int id) {

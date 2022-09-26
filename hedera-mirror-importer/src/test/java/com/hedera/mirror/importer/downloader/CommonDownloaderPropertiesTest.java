@@ -41,7 +41,7 @@ class CommonDownloaderPropertiesTest {
 
         var bucketName = "test";
         properties.setBucketName(bucketName);
-        assertThat(bucketName).isEqualTo(bucketName);
+        assertThat(properties.getBucketName()).isEqualTo(bucketName);
     }
 
     @Test
