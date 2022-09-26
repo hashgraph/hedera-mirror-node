@@ -31,6 +31,7 @@ import {
   Contract,
   ContractLog,
   ContractResult,
+  ContractState,
   Entity,
   RecordFile,
   Transaction,
@@ -45,6 +46,7 @@ import {
   ContractBytecodeViewModel,
   ContractLogViewModel,
   ContractResultDetailsViewModel,
+  ContractResultStateViewModel,
   ContractResultViewModel,
   ContractViewModel,
 } from '../viewmodel';
@@ -880,6 +882,75 @@ class ContractController extends BaseController {
     res.locals[responseDataLabel] = response;
   };
 
+  async extractContractStateByIdQuery(filters, contractId) {
+    let limit = defaultLimit;
+    let order = orderFilterValues.DESC;
+    // TODO: implement the index filter
+    const supportedParams = [filterKeys.LIMIT, filterKeys.ORDER];
+    const conditions = [`${ContractState.CONTRACT_ID} = $1`];
+    const params = [contractId];
+    for (const filter of filters) {
+      if (!supportedParams.includes(filter.key)) {
+        // param not supported for current endpoint
+        continue;
+      }
+
+      switch (filter.key) {
+        case filterKeys.LIMIT:
+          limit = filter.value;
+          break;
+        case filterKeys.ORDER:
+          order = filter.value;
+          break;
+        default:
+          break;
+      }
+    }
+
+    return {
+      conditions,
+      params,
+      order,
+      limit,
+    };
+  }
+
+  /**
+   * Handler function for /contracts/:contractId/state API
+   * @param {Request} req HTTP request object
+   * @param {Response} res HTTP response object
+   * @returns {Promise<void>}
+   */
+  getContractStateById = async (req, res) => {
+    const {contractId: contractIdParam, filters} = extractContractIdAndFiltersFromValidatedRequest(req);
+
+    const contractId = await ContractService.computeContractIdFromString(contractIdParam);
+    const {conditions, params, order, limit} = await this.extractContractStateByIdQuery(filters, contractId);
+    const rows = await ContractService.getContractStateByIdAndFilters(conditions, params, order, limit);
+    const state = rows.map((row) => new ContractResultStateViewModel(row));
+
+    let nextLink = null;
+    if (state.length) {
+      const lastRow = _.last(state);
+      const lastIndex = lastRow.index;
+      nextLink = utils.getPaginationLink(
+        req,
+        state.length !== limit,
+        {
+          [filterKeys.INDEX]: lastIndex,
+        },
+        order
+      );
+    }
+
+    res.locals[responseDataLabel] = {
+      state,
+      links: {
+        next: nextLink,
+      },
+    };
+  };
+
   /**
    * Handler function for /contracts/:contractId/results/:consensusTimestamp API
    * @param {Request} req HTTP request object
@@ -1184,6 +1255,7 @@ const contractController = exportControllerMethods([
   'getContractResultsById',
   'getContractResultsByTimestamp',
   'getContractResultsByTransactionIdOrHash',
+  'getContractStateById',
 ]);
 
 if (utils.isTestEnv()) {
