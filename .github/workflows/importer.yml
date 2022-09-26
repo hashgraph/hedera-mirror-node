@@ -38,6 +38,7 @@ jobs:
 
       - name: Upload coverage report
         uses: codecov/codecov-action@v3
+        if: always()
 
       - name: Upload artifact
         if: startsWith(github.ref, 'refs/tags/v')

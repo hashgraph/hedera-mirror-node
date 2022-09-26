@@ -44,6 +44,7 @@ jobs:
 
       - name: Upload coverage report
         uses: codecov/codecov-action@v3
+        if: always()
 
   image:
     if: github.event_name == 'push' || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
