@@ -21,6 +21,7 @@
 package services
 
 import (
+	"context"
 	"testing"
 
 	"github.com/coinbase/rosetta-sdk-go/server"
@@ -154,9 +155,19 @@ func TestBlockServiceSuite(t *testing.T) {
 type blockServiceSuite struct {
 	suite.Suite
 	blockService        server.BlockAPIServicer
+	cancelCtx           context.CancelFunc
+	ctx                 context.Context
 	mockAccountRepo     *mocks.MockAccountRepository
 	mockBlockRepo       *mocks.MockBlockRepository
 	mockTransactionRepo *mocks.MockTransactionRepository
+}
+
+func (suite *blockServiceSuite) SetupSuite() {
+	suite.ctx, suite.cancelCtx = context.WithCancel(context.Background())
+}
+
+func (suite *blockServiceSuite) TearDownSuite() {
+	suite.cancelCtx()
 }
 
 func (suite *blockServiceSuite) SetupTest() {
@@ -165,7 +176,7 @@ func (suite *blockServiceSuite) SetupTest() {
 	suite.mockTransactionRepo = &mocks.MockTransactionRepository{}
 
 	baseService := NewOnlineBaseService(suite.mockBlockRepo, suite.mockTransactionRepo)
-	suite.blockService = NewBlockAPIService(suite.mockAccountRepo, baseService, config.Cache{MaxSize: 1024})
+	suite.blockService = NewBlockAPIService(suite.mockAccountRepo, baseService, config.Cache{MaxSize: 1024}, suite.ctx)
 }
 
 func (suite *blockServiceSuite) TestNewBlockAPIService() {

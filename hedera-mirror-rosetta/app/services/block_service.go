@@ -45,8 +45,12 @@ func NewBlockAPIService(
 	accountRepo interfaces.AccountRepository,
 	baseService BaseService,
 	entityCacheConfig config.Cache,
+	serverContext context.Context,
 ) server.BlockAPIServicer {
-	entityCache := cache.New(cache.AsLRU[int64, types.AccountId](lru.WithCapacity(entityCacheConfig.MaxSize)))
+	entityCache := cache.NewContext(
+		serverContext,
+		cache.AsLRU[int64, types.AccountId](lru.WithCapacity(entityCacheConfig.MaxSize)),
+	)
 	return &blockAPIService{accountRepo: accountRepo, BaseService: baseService, entityCache: entityCache}
 }
 

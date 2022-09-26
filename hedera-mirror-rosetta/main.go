@@ -21,11 +21,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
+	"os/signal"
 	"runtime"
 	"strings"
+	"syscall"
 
 	rosettaAsserter "github.com/coinbase/rosetta-sdk-go/asserter"
 	"github.com/coinbase/rosetta-sdk-go/server"
@@ -77,6 +80,7 @@ func newBlockchainOnlineRouter(
 	dbClient interfaces.DbClient,
 	network *rTypes.NetworkIdentifier,
 	rosettaConfig *config.Config,
+	serverContext context.Context,
 	version *rTypes.Version,
 ) (http.Handler, error) {
 	accountRepo := persistence.NewAccountRepository(dbClient)
@@ -89,7 +93,8 @@ func newBlockchainOnlineRouter(
 	networkAPIService := services.NewNetworkAPIService(baseService, addressBookEntryRepo, network, version)
 	networkAPIController := server.NewNetworkAPIController(networkAPIService, asserter)
 
-	blockAPIService := services.NewBlockAPIService(accountRepo, baseService, rosettaConfig.Cache[config.EntityCacheKey])
+	blockAPIService := services.NewBlockAPIService(accountRepo, baseService, rosettaConfig.Cache[config.EntityCacheKey],
+		serverContext)
 	blockAPIController := server.NewBlockAPIController(blockAPIService, asserter)
 
 	mempoolAPIService := services.NewMempoolAPIService()
@@ -205,12 +210,12 @@ func main() {
 		log.Fatal(err)
 	}
 
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	var router http.Handler
-
 	if rosettaConfig.Online {
 		dbClient := db.ConnectToDb(rosettaConfig.Db)
 
-		router, err = newBlockchainOnlineRouter(asserter, dbClient, network, rosettaConfig, version)
+		router, err = newBlockchainOnlineRouter(asserter, dbClient, network, rosettaConfig, ctx, version)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -237,6 +242,19 @@ func main() {
 		WriteTimeout:      rosettaConfig.Http.WriteTimeout,
 	}
 
-	log.Infof("Listening on port %d", rosettaConfig.Port)
-	log.Fatal(httpServer.ListenAndServe())
+	go func() {
+		log.Infof("Listening on port %d", rosettaConfig.Port)
+		log.Error(httpServer.ListenAndServe())
+	}()
+
+	<-ctx.Done()
+	stop()
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), rosettaConfig.ShutdownTimeout)
+	defer cancel()
+	if err := httpServer.Shutdown(shutdownCtx); err == nil {
+		log.Info("Server shutdown gracefully")
+	} else {
+		log.Errorf("Error shutdown server %v", err)
+	}
 }
