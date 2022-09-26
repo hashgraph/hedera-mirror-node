@@ -19,7 +19,7 @@
         <hedera-sdk.version>2.17.3</hedera-sdk.version>
         <meanbean.version>3.0.0-M9</meanbean.version>
         <openapi-package>com.hedera.mirror.rest</openapi-package>
-        <openapi-generator.version>6.1.0</openapi-generator.version>
+        <openapi-generator.version>6.2.0</openapi-generator.version>
         <springdoc.version>1.6.11</springdoc.version>
         <swagger-annotations.version>1.6.6</swagger-annotations.version>
     </properties>
