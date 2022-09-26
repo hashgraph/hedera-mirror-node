@@ -182,7 +182,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         fixedFee3.setCollectorAccountId(FEE_COLLECTOR_ACCOUNT_ID_2);
         fixedFee3.setDenominatingTokenId(tokenId);
         fixedFee3.setId(id);
-        fixedFee3.setAllCollectorsAreExempt(false);
+        fixedFee3.setAllCollectorsAreExempt(true);
         customFees.add(fixedFee3);
 
         if (tokenType == FUNGIBLE_COMMON) {
@@ -204,7 +204,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             fractionalFee2.setMaximumAmount(110L);
             fractionalFee2.setNetOfTransfers(false);
             fractionalFee2.setId(id);
-            fractionalFee2.setAllCollectorsAreExempt(false);
+            fractionalFee2.setAllCollectorsAreExempt(true);
             customFees.add(fractionalFee2);
         } else {
             // royalty fees only apply for non-fungible tokens
@@ -225,7 +225,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             royaltyFee2.setAmount(103L);
             royaltyFee2.setDenominatingTokenId(FEE_DOMAIN_TOKEN_ID);
             royaltyFee2.setId(id);
-            royaltyFee2.setAllCollectorsAreExempt(false);
+            royaltyFee2.setAllCollectorsAreExempt(true);
             customFees.add(royaltyFee2);
         }
 
