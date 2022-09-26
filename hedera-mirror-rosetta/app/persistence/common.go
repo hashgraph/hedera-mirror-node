@@ -20,10 +20,36 @@
 
 package persistence
 
+import "database/sql"
+
 const (
-	genesisTimestampQuery = `select consensus_timestamp + time_offset as timestamp
-                             from account_balance_file
+	firstFixedOffsetTimestampSqlArgName = "first_fixed_offset_timestamp"
+	genesisTimestampQuery               = `select consensus_timestamp + time_offset + fixed_offset.value as timestamp
+                             from account_balance_file,
+                               lateral (
+                                 select
+                                   case when consensus_timestamp >= @first_fixed_offset_timestamp then 53
+                                        else 0
+                                   end value
+                               ) fixed_offset
                              order by consensus_timestamp
                              limit 1`
 	genesisTimestampCte = " genesis as (" + genesisTimestampQuery + ") "
+	mainnet             = "mainnet"
+	testnet             = "testnet"
 )
+
+var firstAccountBalanceFileFixedOffsetTimestamps = map[string]int64{
+	mainnet: 1658420100626004000,
+	testnet: 1656693000269913000,
+}
+
+func getFirstAccountBalanceFileFixedOffsetTimestampSqlNamedArg(network string) sql.NamedArg {
+	nullInt64 := sql.NullInt64{}
+	if timestamp, ok := firstAccountBalanceFileFixedOffsetTimestamps[network]; ok {
+		nullInt64.Int64 = timestamp
+		nullInt64.Valid = true
+	}
+
+	return sql.Named(firstFixedOffsetTimestampSqlArgName, nullInt64)
+}
