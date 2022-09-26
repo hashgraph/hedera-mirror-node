@@ -31,3 +31,4 @@ hedera:
       port: 5700
       realm: 0
       shard: 0
+      shutdownTimeout: 10s
