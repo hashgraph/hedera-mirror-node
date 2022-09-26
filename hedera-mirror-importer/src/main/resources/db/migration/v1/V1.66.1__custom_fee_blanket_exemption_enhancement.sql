@@ -2,7 +2,6 @@
 -- Support HIP-573 custom fee enhancement: Blanket exemptions for custom fee collectors
 -------------------
 
--- net_of_transfer, and royalty fraction
 alter table if exists custom_fee
     add column all_collectors_are_exempt boolean not null default false;
 
