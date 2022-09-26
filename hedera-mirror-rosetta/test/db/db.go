@@ -234,7 +234,7 @@ func runFlywayMigration(pool *dockertest.Pool, network *dockertest.Network, para
 	// run the container with tty and entrypoint "bin/sh" so it will stay alive in background
 	options := &dockertest.RunOptions{
 		Repository: "flyway/flyway",
-		Tag:        "9.3.1",
+		Tag:        "9",
 		Entrypoint: []string{"/bin/sh"},
 		Networks:   []*dockertest.Network{network},
 		Mounts:     []string{migrationPath + ":/flyway/sql"},
