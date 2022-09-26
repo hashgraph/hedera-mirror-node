@@ -1127,6 +1127,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             CustomFee customFee = new CustomFee();
             customFee.setId(id);
             customFee.setAllCollectorsAreExempt(false);
+
             entityListener.onCustomFee(customFee);
         }
 

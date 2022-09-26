@@ -342,6 +342,7 @@ public class DomainBuilder {
         id.setCreatedTimestamp(timestamp());
         id.setTokenId(entityId(TOKEN));
         var builder = CustomFee.builder()
+                .allCollectorsAreExempt(false)
                 .amount(100L)
                 .amountDenominator(10L)
                 .id(id)
@@ -351,8 +352,7 @@ public class DomainBuilder {
                 .minimumAmount(1L)
                 .netOfTransfers(true)
                 .royaltyDenominator(10L)
-                .royaltyNumerator(20L)
-                .allCollectorsAreExempt(false);
+                .royaltyNumerator(20L);
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

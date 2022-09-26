@@ -49,6 +49,8 @@ public class CustomFee implements Persistable<CustomFee.Id> {
     @JsonUnwrapped
     private Id id;
 
+    private boolean allCollectorsAreExempt;
+
     private Long amount;
 
     private Long amountDenominator;
@@ -68,8 +70,6 @@ public class CustomFee implements Persistable<CustomFee.Id> {
     private Long royaltyDenominator;
 
     private Long royaltyNumerator;
-
-    private boolean allCollectorsAreExempt;
 
     @JsonIgnore
     @Override

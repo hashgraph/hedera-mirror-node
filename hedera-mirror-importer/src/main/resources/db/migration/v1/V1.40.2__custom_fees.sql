@@ -45,7 +45,7 @@ comment on table assessed_custom_fee is 'Assessed custom fees for HTS transactio
 -- Add table custom_fee
 create table if not exists custom_fee
 (
-    all_collectors_are_exempt   boolean not null default false,
+
     amount                      bigint,
     amount_denominator          bigint,
     collector_account_id        bigint,

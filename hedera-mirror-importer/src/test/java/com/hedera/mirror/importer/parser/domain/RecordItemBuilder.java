@@ -391,21 +391,21 @@ public class RecordItemBuilder {
                 .receipt(r -> r.setAccountID(accountId));
     }
 
-    private CustomFee.Builder customFees() {
+    private CustomFee.Builder customFee() {
         var accountId = accountId();
         return CustomFee.newBuilder()
                 .setFeeCollectorAccountId(accountId)
-                .setFixedFee(fixedFees())
-                .setFractionalFee(fractionalFees())
+                .setFixedFee(fixedFee())
+                .setFractionalFee(fractionalFee())
                 .setAllCollectorsAreExempt(false)
-                .setRoyaltyFee(royaltyFees());
+                .setRoyaltyFee(royaltyFee());
     }
 
-    private FractionalFee.Builder fractionalFees() {
+    private FractionalFee.Builder fractionalFee() {
         return FractionalFee.newBuilder()
                 .setFractionalAmount(
                         Fraction.newBuilder()
-                                .setNumerator(0L)
+                                .setNumerator(1L)
                                 .setDenominator(100L)
                 )
                 .setMaximumAmount(1000L)
@@ -413,7 +413,7 @@ public class RecordItemBuilder {
                 .setNetOfTransfers(true);
     }
 
-    private RoyaltyFee.Builder royaltyFees() {
+    private RoyaltyFee.Builder royaltyFee() {
         return RoyaltyFee
                 .newBuilder()
                 .setExchangeValueFraction(
@@ -422,7 +422,7 @@ public class RecordItemBuilder {
                                 .setDenominator(10L));
     }
 
-    private FixedFee.Builder fixedFees() {
+    private FixedFee.Builder fixedFee() {
         return  FixedFee.newBuilder().setAmount(100L)
                                     .setDenominatingTokenId(TokenID.getDefaultInstance());
     }
@@ -553,7 +553,7 @@ public class RecordItemBuilder {
                 .setSupplyKey(key())
                 .setSymbol(text(4))
                 .setTreasury(accountId())
-                .addCustomFees(customFees())
+                .addCustomFees(customFee())
                 .setWipeKey(key());
         return new Builder<>(TransactionType.TOKENCREATION, transactionBody)
                   .receipt(r -> r.setTokenID(TokenID.newBuilder().setTokenNum(2).build()));
@@ -562,7 +562,7 @@ public class RecordItemBuilder {
     public Builder<TokenFeeScheduleUpdateTransactionBody.Builder> tokenFeeScheduleUpdate() {
         var transactionBody = TokenFeeScheduleUpdateTransactionBody.newBuilder()
                 .setTokenId(tokenId())
-                .addCustomFees(customFees());
+                .addCustomFees(customFee());
         return new Builder<>(TransactionType.TOKENFEESCHEDULEUPDATE, transactionBody);
     }
 
