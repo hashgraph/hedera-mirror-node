@@ -35,7 +35,3 @@ jobs:
 
       - name: Upload coverage report
         uses: codecov/codecov-action@v3
-        if: always()
-        run: bash <(curl -s https://codecov.io/bash)
-        with:
-          fail_ci_if_error: true
