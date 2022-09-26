@@ -56,16 +56,17 @@ const (
 )
 
 const (
-	accountDeleteTimestamp   int64 = 280
-	consensusTimestamp       int64 = 200
-	dissociateTimestamp            = consensusTimestamp + 1
-	account1CreatedTimestamp int64 = 50
-	account2DeletedTimestamp       = account1CreatedTimestamp - 1
-	account2CreatedTimestamp       = account2DeletedTimestamp - 9
-	firstSnapshotTimestamp   int64 = 100
-	initialAccountBalance    int64 = 12345
-	secondSnapshotTimestamp        = consensusTimestamp - 20
-	thirdSnapshotTimestamp   int64 = 400
+	accountDeleteTimestamp   = secondSnapshotTimestamp + 180
+	account1CreatedTimestamp = firstSnapshotTimestamp - 100
+	account2DeletedTimestamp = account1CreatedTimestamp - 1
+	account2CreatedTimestamp = account2DeletedTimestamp - 9
+	consensusTimestamp       = firstSnapshotTimestamp + 200
+	dissociateTimestamp      = consensusTimestamp + 1
+	// timestamp of the first testnet account balance file with HAPI 0.27.0
+	firstSnapshotTimestamp  int64 = 1656693000269913000
+	initialAccountBalance   int64 = 12345
+	secondSnapshotTimestamp       = consensusTimestamp - 20
+	thirdSnapshotTimestamp        = secondSnapshotTimestamp + 200
 
 	// account3, account4, and account5 are for GetAccountAlias tests
 	account3CreatedTimestamp = consensusTimestamp + 100
@@ -336,7 +337,7 @@ func (suite *accountRepositorySuite) TestGetAccountAlias() {
 		{encodedId: account4, expected: fmt.Sprintf("0.0.%d", account4)},
 	}
 
-	repo := NewAccountRepository(dbClient)
+	repo := NewAccountRepository(dbClient, "")
 
 	for _, tt := range tests {
 		name := fmt.Sprintf("%d", tt.encodedId)
@@ -352,7 +353,7 @@ func (suite *accountRepositorySuite) TestGetAccountAlias() {
 func (suite *accountRepositorySuite) TestGetAccountAliasDbConnectionError() {
 	// given
 	accountId := types.NewAccountIdFromEntityId(domain.MustDecodeEntityId(account3))
-	repo := NewAccountRepository(invalidDbClient)
+	repo := NewAccountRepository(invalidDbClient, "")
 
 	// when
 	actual, err := repo.GetAccountAlias(defaultContext, accountId)
@@ -365,7 +366,7 @@ func (suite *accountRepositorySuite) TestGetAccountAliasDbConnectionError() {
 func (suite *accountRepositorySuite) TestGetAccountId() {
 	// given
 	aliasAccountId, _ := types.NewAccountIdFromAlias(account4Alias, 0, 0)
-	repo := NewAccountRepository(dbClient)
+	repo := NewAccountRepository(dbClient, "")
 
 	// when
 	actual, err := repo.GetAccountId(defaultContext, aliasAccountId)
@@ -378,7 +379,7 @@ func (suite *accountRepositorySuite) TestGetAccountId() {
 func (suite *accountRepositorySuite) TestGetAccountIdNumericAccount() {
 	// given
 	accountId := types.NewAccountIdFromEntityId(domain.MustDecodeEntityId(account1))
-	repo := NewAccountRepository(dbClient)
+	repo := NewAccountRepository(dbClient, "")
 
 	// when
 	actual, err := repo.GetAccountId(defaultContext, accountId)
@@ -391,7 +392,7 @@ func (suite *accountRepositorySuite) TestGetAccountIdNumericAccount() {
 func (suite *accountRepositorySuite) TestGetAccountIdDbConnectionError() {
 	// given
 	aliasAccountId, _ := types.NewAccountIdFromAlias(account4Alias, 0, 0)
-	repo := NewAccountRepository(invalidDbClient)
+	repo := NewAccountRepository(invalidDbClient, "")
 
 	// when
 	actual, err := repo.GetAccountId(defaultContext, aliasAccountId)
@@ -402,34 +403,26 @@ func (suite *accountRepositorySuite) TestGetAccountIdDbConnectionError() {
 }
 
 func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlock() {
+	suite.testRetrieveBalanceAtBlockNoFixedOffset("")
+}
+
+func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockMainnet() {
+	suite.testRetrieveBalanceAtBlockNoFixedOffset(mainnet)
+}
+
+func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockTestnet() {
 	// given
 	// tokens created at or before first account balance snapshot will not show up in account balance response
 	// transfers before or at the snapshot timestamp should not affect balance calculation
 	accountId := suite.accountId
-	repo := NewAccountRepository(dbClient)
+	repo := NewAccountRepository(dbClient, testnet)
 
-	hbarAmount := &types.HbarAmount{Value: initialAccountBalance + sum(cryptoTransferAmounts)}
-	token1Amount := types.NewTokenAmount(token1, sum(token1TransferAmounts[:2]))
-	token2Amount := types.NewTokenAmount(token2, sum(token2TransferAmounts[:2]))
-	token3Amount := types.NewTokenAmount(token3, 2)
-	token4Amount := types.NewTokenAmount(token4, 0)
-	expectedAmounts := types.AmountSlice{hbarAmount, token1Amount, token2Amount, token3Amount, token4Amount}
+	hbarAmount := &types.HbarAmount{Value: initialAccountBalance}
+	expectedAmounts := types.AmountSlice{hbarAmount}
 
 	// when
 	// query
 	actualAmounts, accountIdString, err := repo.RetrieveBalanceAtBlock(defaultContext, accountId, consensusTimestamp)
-
-	// then
-	assert.Nil(suite.T(), err)
-	assert.Equal(suite.T(), suite.accountIdString, accountIdString)
-	assert.ElementsMatch(suite.T(), expectedAmounts, actualAmounts)
-
-	// when
-	// query at dissociateTimestamp, balances for token2 and token3 should be 0
-	actualAmounts, accountIdString, err = repo.RetrieveBalanceAtBlock(defaultContext, accountId, dissociateTimestamp)
-	token2Amount = types.NewTokenAmount(token2, 0)
-	token3Amount = types.NewTokenAmount(token3, 0)
-	expectedAmounts = types.AmountSlice{hbarAmount, token1Amount, token2Amount, token3Amount, token4Amount}
 
 	// then
 	assert.Nil(suite.T(), err)
@@ -487,7 +480,7 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockAfterSecondSnapsh
 	token3Amount := types.NewTokenAmount(token3, 3)
 	token4Amount := types.NewTokenAmount(token4, 0)
 	expectedAmount := types.AmountSlice{hbarAmount, token1Amount, token2Amount, token3Amount, token4Amount}
-	repo := NewAccountRepository(dbClient)
+	repo := NewAccountRepository(dbClient, "")
 
 	// when
 	actualAmounts, accountIdString, err := repo.RetrieveBalanceAtBlock(
@@ -516,7 +509,7 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockForDeletedAccount
 		types.NewTokenAmount(token3, 0),
 		types.NewTokenAmount(token4, 0),
 	}
-	repo := NewAccountRepository(dbClient)
+	repo := NewAccountRepository(dbClient, "")
 
 	// when
 	// account is deleted before the third account balance file, so there is no balance info in the file. querying the
@@ -548,7 +541,7 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockAtAccountDeletion
 		types.NewTokenAmount(token3, 0),
 		types.NewTokenAmount(token4, 0),
 	}
-	repo := NewAccountRepository(dbClient)
+	repo := NewAccountRepository(dbClient, "")
 
 	// when
 	actualAmounts, accountIdString, err := repo.RetrieveBalanceAtBlock(
@@ -573,7 +566,7 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockNoAccountEntity()
 	token3Amount := types.NewTokenAmount(token3, 2)
 	token4Amount := types.NewTokenAmount(token4, 0)
 	expectedAmounts := types.AmountSlice{hbarAmount, token1Amount, token2Amount, token3Amount, token4Amount}
-	repo := NewAccountRepository(dbClient)
+	repo := NewAccountRepository(dbClient, "")
 
 	// when
 	actualAmounts, accountIdString, err := repo.RetrieveBalanceAtBlock(
@@ -592,7 +585,7 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockNoTokenEntity() {
 	// given
 	accountId := suite.accountId
 	db.ExecSql(dbClient, truncateTokenSql)
-	repo := NewAccountRepository(dbClient)
+	repo := NewAccountRepository(dbClient, "")
 
 	// no token entities, so only hbar balance
 	hbarAmount := &types.HbarAmount{Value: initialAccountBalance + sum(cryptoTransferAmounts)}
@@ -623,7 +616,7 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockNoInitialBalance(
 	token4Amount := types.NewTokenAmount(token4, 0)
 	expectedAmounts := types.AmountSlice{hbarAmount, token1Amount, token2Amount, token3Amount, token4Amount}
 
-	repo := NewAccountRepository(dbClient)
+	repo := NewAccountRepository(dbClient, "")
 
 	// when
 	actualAmounts, accountIdString, err := repo.RetrieveBalanceAtBlock(
@@ -642,7 +635,7 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockNoAccountBalanceF
 	// given
 	db.ExecSql(dbClient, truncateAccountBalanceFileSql)
 	accountId := suite.accountId
-	repo := NewAccountRepository(dbClient)
+	repo := NewAccountRepository(dbClient, "")
 
 	// when
 	actualAmounts, accountIdString, err := repo.RetrieveBalanceAtBlock(
@@ -660,7 +653,7 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockNoAccountBalanceF
 func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockDbConnectionError() {
 	// given
 	accountId := suite.accountId
-	repo := NewAccountRepository(invalidDbClient)
+	repo := NewAccountRepository(invalidDbClient, "")
 
 	// when
 	actualAmounts, accountIdString, err := repo.RetrieveBalanceAtBlock(
@@ -673,6 +666,42 @@ func (suite *accountRepositorySuite) TestRetrieveBalanceAtBlockDbConnectionError
 	assert.Equal(suite.T(), errors.ErrDatabaseError, err)
 	assert.Empty(suite.T(), accountIdString)
 	assert.Nil(suite.T(), actualAmounts)
+}
+
+func (suite *accountRepositorySuite) testRetrieveBalanceAtBlockNoFixedOffset(network string) {
+	// given
+	// tokens created at or before first account balance snapshot will not show up in account balance response
+	// transfers before or at the snapshot timestamp should not affect balance calculation
+	accountId := suite.accountId
+	repo := NewAccountRepository(dbClient, network)
+
+	hbarAmount := &types.HbarAmount{Value: initialAccountBalance + sum(cryptoTransferAmounts)}
+	token1Amount := types.NewTokenAmount(token1, sum(token1TransferAmounts[:2]))
+	token2Amount := types.NewTokenAmount(token2, sum(token2TransferAmounts[:2]))
+	token3Amount := types.NewTokenAmount(token3, 2)
+	token4Amount := types.NewTokenAmount(token4, 0)
+	expectedAmounts := types.AmountSlice{hbarAmount, token1Amount, token2Amount, token3Amount, token4Amount}
+
+	// when
+	// query
+	actualAmounts, accountIdString, err := repo.RetrieveBalanceAtBlock(defaultContext, accountId, consensusTimestamp)
+
+	// then
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), suite.accountIdString, accountIdString)
+	assert.ElementsMatch(suite.T(), expectedAmounts, actualAmounts)
+
+	// when
+	// query at dissociateTimestamp, balances for token2 and token3 should be 0
+	actualAmounts, accountIdString, err = repo.RetrieveBalanceAtBlock(defaultContext, accountId, dissociateTimestamp)
+	token2Amount = types.NewTokenAmount(token2, 0)
+	token3Amount = types.NewTokenAmount(token3, 0)
+	expectedAmounts = types.AmountSlice{hbarAmount, token1Amount, token2Amount, token3Amount, token4Amount}
+
+	// then
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), suite.accountIdString, accountIdString)
+	assert.ElementsMatch(suite.T(), expectedAmounts, actualAmounts)
 }
 
 func sum(amounts []int64) int64 {
@@ -743,7 +772,7 @@ func (suite *accountRepositoryWithAliasSuite) TestGetAccountAlias() {
 		{encodedId: account4, expectedAlias: account4Alias},
 	}
 
-	repo := NewAccountRepository(dbClient)
+	repo := NewAccountRepository(dbClient, "")
 
 	for _, tt := range tests {
 		name := fmt.Sprintf("%d", tt.encodedId)
@@ -758,7 +787,7 @@ func (suite *accountRepositoryWithAliasSuite) TestGetAccountAlias() {
 
 func (suite *accountRepositoryWithAliasSuite) TestGetAccountAliasThrowWhenInvalidAlias() {
 	accountId := types.NewAccountIdFromEntityId(domain.MustDecodeEntityId(account5))
-	repo := NewAccountRepository(dbClient)
+	repo := NewAccountRepository(dbClient, "")
 	actual, err := repo.GetAccountAlias(defaultContext, accountId)
 	assert.NotNil(suite.T(), err)
 	assert.Equal(suite.T(), types.AccountId{}, actual)
@@ -768,7 +797,7 @@ func (suite *accountRepositoryWithAliasSuite) TestGetAccountId() {
 	// given
 	aliasAccountId, err := types.NewAccountIdFromAlias(account4Alias, 0, 0)
 	assert.NoError(suite.T(), err)
-	repo := NewAccountRepository(dbClient)
+	repo := NewAccountRepository(dbClient, "")
 	expected := types.NewAccountIdFromEntityId(domain.MustDecodeEntityId(account4))
 
 	// when
@@ -786,7 +815,7 @@ func (suite *accountRepositoryWithAliasSuite) TestGetAccountIdDeleted() {
 		ModifiedTimestamp(accountDeleteTimestamp).
 		Persist()
 	aliasAccountId, _ := types.NewAccountIdFromAlias(account4Alias, 0, 0)
-	repo := NewAccountRepository(dbClient)
+	repo := NewAccountRepository(dbClient, "")
 
 	// when
 	actual, rErr := repo.GetAccountId(defaultContext, aliasAccountId)
@@ -797,11 +826,9 @@ func (suite *accountRepositoryWithAliasSuite) TestGetAccountIdDeleted() {
 }
 
 func (suite *accountRepositoryWithAliasSuite) TestRetrieveBalanceAtBlockNoAccountEntity() {
-	// whey querying by alias and the account is not found, error is returned since without the alias to shard.realm.num
-	// mapping, no balance info for the account can be retrieved
-	// given
+	// whey querying by alias and the account is not found, expect 0 hbar balance returned
 	db.ExecSql(dbClient, truncateEntitySql)
-	repo := NewAccountRepository(dbClient)
+	repo := NewAccountRepository(dbClient, "")
 
 	// when
 	actualAmounts, accountIdString, err := repo.RetrieveBalanceAtBlock(
@@ -811,7 +838,7 @@ func (suite *accountRepositoryWithAliasSuite) TestRetrieveBalanceAtBlockNoAccoun
 	)
 
 	// then
-	assert.NotNil(suite.T(), err)
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), types.AmountSlice{&types.HbarAmount{}}, actualAmounts)
 	assert.Empty(suite.T(), accountIdString)
-	assert.Nil(suite.T(), actualAmounts)
 }
