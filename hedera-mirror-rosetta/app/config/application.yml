@@ -24,7 +24,7 @@ hedera:
         writeTimeout: 10000000000
       log:
         level: info
-      network: DEMO
+      network: demo
       nodes:
       nodeVersion: 0
       online: true

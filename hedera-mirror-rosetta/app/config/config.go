@@ -95,6 +95,7 @@ func LoadConfig() (*Config, error) {
 	}
 
 	rosettaConfig := &config.Hedera.Mirror.Rosetta
+	rosettaConfig.Network = strings.ToLower(rosettaConfig.Network)
 	if len(nodeMap) != 0 {
 		rosettaConfig.Nodes = nodeMap
 	}

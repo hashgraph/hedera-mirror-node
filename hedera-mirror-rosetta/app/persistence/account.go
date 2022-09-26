@@ -23,7 +23,6 @@ package persistence
 import (
 	"context"
 	"database/sql"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -87,14 +86,22 @@ const (
                                 ) as associations
                               ) as token_associations`
 	latestBalanceBeforeConsensus = "with" + genesisTimestampCte + `, abm as (
-                                      select consensus_timestamp as max, time_offset
-                                      from account_balance_file
-                                      where consensus_timestamp <= @timestamp
+                                      select
+                                        consensus_timestamp max,
+                                        (consensus_timestamp + time_offset + fixed_offset.value) adjusted_timestamp
+                                      from account_balance_file,
+                                        lateral (
+                                          select
+                                            case when consensus_timestamp >= @first_fixed_offset_timestamp then 53
+                                                 else 0
+                                            end value
+                                        ) fixed_offset
+                                      where consensus_timestamp + time_offset + fixed_offset.value <= @timestamp
                                       order by consensus_timestamp desc
                                       limit 1
                                     )
                                     select
-                                      abm.max + abm.time_offset as consensus_timestamp,
+                                      adjusted_timestamp as consensus_timestamp,
                                       coalesce(ab.balance, 0) balance,
                                       coalesce((
                                         select json_agg(json_build_object(
@@ -156,12 +163,16 @@ type tokenAssociation struct {
 
 // accountRepository struct that has connection to the Database
 type accountRepository struct {
-	dbClient interfaces.DbClient
+	dbClient                        interfaces.DbClient
+	firstFixedOffsetTimestampSqlArg sql.NamedArg
 }
 
 // NewAccountRepository creates an instance of a accountRepository struct
-func NewAccountRepository(dbClient interfaces.DbClient) interfaces.AccountRepository {
-	return &accountRepository{dbClient}
+func NewAccountRepository(dbClient interfaces.DbClient, network string) interfaces.AccountRepository {
+	return &accountRepository{
+		dbClient:                        dbClient,
+		firstFixedOffsetTimestampSqlArg: getFirstAccountBalanceFileFixedOffsetTimestampSqlNamedArg(network),
+	}
 }
 
 func (ar *accountRepository) GetAccountAlias(ctx context.Context, accountId types.AccountId) (
@@ -223,6 +234,10 @@ func (ar *accountRepository) RetrieveBalanceAtBlock(
 	entity, err := ar.getCryptoEntity(ctx, accountId, consensusEnd)
 	if err != nil {
 		return nil, entityIdString, err
+	}
+
+	if entity == nil && accountId.HasAlias() {
+		return types.AmountSlice{&types.HbarAmount{}}, entityIdString, nil
 	}
 
 	balanceChangeEndTimestamp := consensusEnd
@@ -301,15 +316,12 @@ func (ar *accountRepository) getCryptoEntity(ctx context.Context, accountId type
 
 	var query string
 	var args []interface{}
-	var notFoundError *rTypes.Error
 	if accountId.HasAlias() {
 		query = selectCryptoEntityByAlias
 		args = []interface{}{
 			sql.Named("alias", accountId.GetAlias()),
 			sql.Named("consensus_end", getInclusiveInt8Range(consensusEnd, consensusEnd)),
 		}
-		notFoundError = hErrors.AddErrorDetails(hErrors.ErrAccountNotFound, "reason",
-			fmt.Sprintf("Account with the alias '%s' not found", hex.EncodeToString(accountId.GetAlias())))
 	} else {
 		query = selectCryptoEntityById
 		args = []interface{}{sql.Named("id", accountId.GetId())}
@@ -326,7 +338,7 @@ func (ar *accountRepository) getCryptoEntity(ctx context.Context, accountId type
 	}
 
 	if len(entities) == 0 {
-		return nil, notFoundError
+		return nil, nil
 	}
 
 	// if it's by alias, return the first match which is the current one owns the alias, even though it may be deleted
@@ -348,6 +360,7 @@ func (ar *accountRepository) getLatestBalanceSnapshot(ctx context.Context, accou
 		latestBalanceBeforeConsensus,
 		sql.Named("account_id", accountId),
 		sql.Named("timestamp", timestamp),
+		ar.firstFixedOffsetTimestampSqlArg,
 	).First(cb).Error; err != nil {
 		log.Errorf(
 			databaseErrorFormat,
@@ -395,6 +408,7 @@ func (ar *accountRepository) getBalanceChange(ctx context.Context, accountId, co
 		sql.Named("account_id", accountId),
 		sql.Named("start", consensusStart),
 		sql.Named("end", consensusEnd),
+		ar.firstFixedOffsetTimestampSqlArg,
 	).First(change).Error; err != nil {
 		log.Errorf(
 			databaseErrorFormat,
@@ -446,6 +460,7 @@ func (ar *accountRepository) getNftBalance(
 		sql.Named("account_id", accountId),
 		sql.Named("start", consensusStart),
 		sql.Named("end", consensusEnd),
+		ar.firstFixedOffsetTimestampSqlArg,
 	).Scan(&nftTransfers).Error; err != nil {
 		log.Errorf(
 			databaseErrorFormat,
