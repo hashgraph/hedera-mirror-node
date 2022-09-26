@@ -21,7 +21,7 @@
   "dependencies": {
     "@awaitjs/express": "^0.9.0",
     "@godaddy/terminus": "^4.11.2",
-    "@hashgraph/proto": "^2.9.0",
+    "@hashgraph/proto": "^2.10.0",
     "asn1js": "^3.0.5",
     "aws-sdk": "^2.1218.0",
     "bigint-buffer": "^1.1.5",
