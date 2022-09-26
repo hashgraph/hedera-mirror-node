@@ -1225,18 +1225,14 @@ const addTokenAccount = async (tokenAccount) => {
     created_timestamp: 0,
     freeze_status: 0,
     kyc_status: 0,
-    modified_timestamp: 0,
+    timestamp_range: '[0,)',
     token_id: '0.0.0',
     ...tokenAccount,
   };
 
-  if (!tokenAccount.modified_timestamp) {
-    tokenAccount.modified_timestamp = tokenAccount.created_timestamp;
-  }
-
   await pool.query(
     `insert into token_account (account_id, associated, automatic_association, created_timestamp, freeze_status,
-                                kyc_status, modified_timestamp, token_id)
+                                kyc_status, timestamp_range, token_id)
     values ($1, $2, $3, $4, $5, $6, $7, $8);`,
     [
       EntityId.parse(tokenAccount.account_id).getEncodedId(),
@@ -1245,7 +1241,7 @@ const addTokenAccount = async (tokenAccount) => {
       tokenAccount.created_timestamp,
       tokenAccount.freeze_status,
       tokenAccount.kyc_status,
-      tokenAccount.modified_timestamp,
+      tokenAccount.timestamp_range,
       EntityId.parse(tokenAccount.token_id).getEncodedId(),
     ]
   );
