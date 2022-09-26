@@ -127,10 +127,10 @@ describe('token extractSqlFromTokenRequest tests', () => {
     ];
 
     const expectedquery = `with ta as (
-                             select distinct on (account_id, token_id) *
+                             select *
                              from token_account
                              where account_id = $1
-                             order by account_id, token_id desc
+                             order by token_id
                            )
                            select t.token_id, symbol, e.key, t.type
                            from token t
@@ -173,10 +173,10 @@ describe('token extractSqlFromTokenRequest tests', () => {
     ];
 
     const expectedquery = `with ta as (
-                             select distinct on (account_id, token_id) *
+                             select *
                              from token_account
                              where account_id = $1
-                             order by account_id, token_id desc
+                             order by token_id
                            )
                            select t.token_id, symbol, e.key, t.type
                            from token t
@@ -232,10 +232,10 @@ describe('token extractSqlFromTokenRequest tests', () => {
     ];
 
     const expectedquery = `with ta as (
-                             select distinct on (account_id, token_id) *
+                             select *
                              from token_account
                              where account_id = $1
-                             order by account_id, token_id desc
+                             order by token_id
                            )
                            select t.token_id, symbol, e.key, t.type
                            from token t
