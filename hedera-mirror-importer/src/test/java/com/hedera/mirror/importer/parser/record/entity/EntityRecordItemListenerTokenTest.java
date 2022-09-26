@@ -100,7 +100,7 @@ import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
 
-@lombok.RequiredArgsConstructor(onConstructor = @__(@org.springframework.beans.factory.annotation.Autowired))
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListenerTest {
 
     private static final long ASSOCIATE_TIMESTAMP = 5L;
