@@ -534,7 +534,7 @@ public class RecordItemBuilder {
                 .addCustomFees(customFee())
                 .setWipeKey(key());
         return new Builder<>(TransactionType.TOKENCREATION, transactionBody)
-                  .receipt(r -> r.setTokenID(TokenID.newBuilder().setTokenNum(2).build()));
+                  .receipt(r -> r.setTokenID(tokenId()));
     }
 
     public Builder<TokenFeeScheduleUpdateTransactionBody.Builder> tokenFeeScheduleUpdate() {
