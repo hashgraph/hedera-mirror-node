@@ -391,35 +391,13 @@ public class RecordItemBuilder {
                 .receipt(r -> r.setAccountID(accountId));
     }
 
+    //This custom fee is for testing purpose and therefore we are just setting the fixed fee.
     private CustomFee.Builder customFee() {
         var accountId = accountId();
         return CustomFee.newBuilder()
                 .setFeeCollectorAccountId(accountId)
                 .setFixedFee(fixedFee())
-                .setFractionalFee(fractionalFee())
-                .setAllCollectorsAreExempt(false)
-                .setRoyaltyFee(royaltyFee());
-    }
-
-    private FractionalFee.Builder fractionalFee() {
-        return FractionalFee.newBuilder()
-                .setFractionalAmount(
-                        Fraction.newBuilder()
-                                .setNumerator(1L)
-                                .setDenominator(100L)
-                )
-                .setMaximumAmount(1000L)
-                .setMinimumAmount(1L)
-                .setNetOfTransfers(true);
-    }
-
-    private RoyaltyFee.Builder royaltyFee() {
-        return RoyaltyFee
-                .newBuilder()
-                .setExchangeValueFraction(
-                        Fraction.newBuilder()
-                                .setNumerator(20L)
-                                .setDenominator(10L));
+                .setAllCollectorsAreExempt(false);
     }
 
     private FixedFee.Builder fixedFee() {
