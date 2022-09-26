@@ -224,6 +224,7 @@ comment on table crypto_transfer is 'Crypto account Hbar transfers';
 -- custom_fee
 create table if not exists custom_fee
 (
+    all_collectors_are_exempt   boolean not null default false,
     amount                      bigint,
     amount_denominator          bigint,
     collector_account_id        bigint,
@@ -234,8 +235,7 @@ create table if not exists custom_fee
     net_of_transfers            boolean,
     royalty_denominator         bigint,
     royalty_numerator           bigint,
-    token_id                    bigint not null,
-    all_collectors_are_exempt   boolean not null default false
+    token_id                    bigint not null
 );
 comment on table custom_fee is 'HTS Custom fees';
 

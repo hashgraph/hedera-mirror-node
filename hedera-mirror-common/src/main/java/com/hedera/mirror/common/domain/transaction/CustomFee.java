@@ -69,7 +69,7 @@ public class CustomFee implements Persistable<CustomFee.Id> {
 
     private Long royaltyNumerator;
 
-    private Boolean allCollectorsAreExempt;
+    private boolean allCollectorsAreExempt;
 
     @JsonIgnore
     @Override

@@ -2227,9 +2227,8 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             // fixed fee
             protoCustomFee.setFixedFee(convertFixedFee(customFee));
         }
-        if (customFee.getAllCollectorsAreExempt() != null) {
-            protoCustomFee.setAllCollectorsAreExempt(customFee.getAllCollectorsAreExempt());
-        }
+
+        protoCustomFee.setAllCollectorsAreExempt(customFee.isAllCollectorsAreExempt());
 
         return protoCustomFee.build();
     }
