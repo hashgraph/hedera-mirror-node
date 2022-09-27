@@ -73,7 +73,7 @@ class TokenAccountMigrationTest extends IntegrationTest {
             """;
 
     private final @Owner JdbcTemplate jdbcTemplate;
-    @Value("classpath:db/migration/v1/V1.66.0__token_account_history.sql")
+    @Value("classpath:db/migration/v1/V1.66.1__token_account_history.sql")
     private final File migrationSql;
     private final TokenAccountRepository tokenAccountRepository;
     private final TokenAccountHistoryRepository tokenAccountHistoryRepository;
