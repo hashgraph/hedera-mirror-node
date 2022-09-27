@@ -261,14 +261,14 @@ type transactionRepositorySuite struct {
 }
 
 func (suite *transactionRepositorySuite) TestNewTransactionRepository() {
-	t := NewTransactionRepository(dbClient)
+	t := NewTransactionRepository(dbClient, "")
 	assert.NotNil(suite.T(), t)
 }
 
 func (suite *transactionRepositorySuite) TestFindBetween() {
 	// given
 	expected := suite.setupDb(true)
-	t := NewTransactionRepository(dbClient)
+	t := NewTransactionRepository(dbClient, "")
 
 	// when
 	actual, err := t.FindBetween(defaultContext, consensusStart, consensusEnd)
@@ -337,7 +337,7 @@ func (suite *transactionRepositorySuite) TestFindBetweenTokenCreatedAtOrBeforeGe
 			},
 		},
 	}
-	t := NewTransactionRepository(dbClient)
+	t := NewTransactionRepository(dbClient, "")
 
 	// when
 	actual, err := t.FindBetween(defaultContext, transaction.ConsensusTimestamp, transaction.ConsensusTimestamp)
@@ -348,21 +348,37 @@ func (suite *transactionRepositorySuite) TestFindBetweenTokenCreatedAtOrBeforeGe
 }
 
 func (suite *transactionRepositorySuite) TestFindBetweenHavingDisappearingTokenTransfer() {
+	suite.testFindBetweenHavingDisappearingTokenTransfer(100, "", false)
+}
+
+func (suite *transactionRepositorySuite) TestFindBetweenHavingDisappearingTokenTransferForMainnetWithFixedOffset() {
+	timestamp := firstAccountBalanceFileFixedOffsetTimestamps[mainnet]
+	suite.testFindBetweenHavingDisappearingTokenTransfer(timestamp, mainnet, true)
+}
+
+func (suite *transactionRepositorySuite) TestFindBetweenHavingDisappearingTokenTransferForMainnetWithoutFixedOffset() {
+	suite.testFindBetweenHavingDisappearingTokenTransfer(100, "mainnet", false)
+}
+
+func (suite *transactionRepositorySuite) testFindBetweenHavingDisappearingTokenTransfer(
+	genesisTimestamp int64,
+	network string,
+	expectEmptyOperations bool,
+) {
 	// given
 	// the disappearing token/nft transfers are in the corresponding db table
-	genesisTimestamp := int64(100)
 	tdomain.NewAccountBalanceFileBuilder(dbClient, genesisTimestamp).Persist()
 
 	token1 := tdomain.NewTokenBuilder(dbClient, encodedTokenId1, genesisTimestamp+1, treasury).Persist()
-	tdomain.NewEntityBuilderFromToken(dbClient, token1).Deleted(true).ModifiedAfter(100).Persist()
+	tdomain.NewEntityBuilderFromToken(dbClient, token1).Deleted(true).ModifiedAfter(10).Persist()
 
 	token2 := tdomain.NewTokenBuilder(dbClient, encodedTokenId2, genesisTimestamp+2, treasury).
 		Type(domain.TokenTypeNonFungibleUnique).
 		Persist()
-	entity2 := tdomain.NewEntityBuilderFromToken(dbClient, token2).Deleted(true).ModifiedAfter(100).Persist()
+	tdomain.NewEntityBuilderFromToken(dbClient, token2).Deleted(true).ModifiedAfter(10).Persist()
 
 	// token accounts
-	dissociateTimestamp := entity2.GetModifiedTimestamp() + 100
+	dissociateTimestamp := genesisTimestamp + 53
 	tdomain.NewTokenAccountBuilder(dbClient, account1, encodedTokenId1, token1.CreatedTimestamp+1).
 		Associated(false, dissociateTimestamp).
 		Persist()
@@ -447,7 +463,10 @@ func (suite *transactionRepositorySuite) TestFindBetweenHavingDisappearingTokenT
 			},
 		},
 	}
-	t := NewTransactionRepository(dbClient)
+	if expectEmptyOperations {
+		expected[0].Operations = types.OperationSlice{}
+	}
+	t := NewTransactionRepository(dbClient, network)
 
 	// when
 	actual, err := t.FindBetween(defaultContext, dissociateTimestamp, dissociateTimestamp)
@@ -534,7 +553,7 @@ func (suite *transactionRepositorySuite) TestFindBetweenMissingDisappearingToken
 			},
 		},
 	}
-	t := NewTransactionRepository(dbClient)
+	t := NewTransactionRepository(dbClient, "")
 
 	// when
 	actual, err := t.FindBetween(defaultContext, dissociateTimestamp, dissociateTimestamp)
@@ -547,7 +566,7 @@ func (suite *transactionRepositorySuite) TestFindBetweenMissingDisappearingToken
 func (suite *transactionRepositorySuite) TestFindBetweenNoTokenEntity() {
 	// given
 	expected := suite.setupDb(false)
-	t := NewTransactionRepository(dbClient)
+	t := NewTransactionRepository(dbClient, "")
 
 	// when
 	actual, err := t.FindBetween(defaultContext, consensusStart, consensusEnd)
@@ -559,7 +578,7 @@ func (suite *transactionRepositorySuite) TestFindBetweenNoTokenEntity() {
 
 func (suite *transactionRepositorySuite) TestFindBetweenThrowsWhenStartAfterEnd() {
 	// given
-	t := NewTransactionRepository(dbClient)
+	t := NewTransactionRepository(dbClient, "")
 
 	// when
 	actual, err := t.FindBetween(defaultContext, consensusStart, consensusStart-1)
@@ -571,7 +590,7 @@ func (suite *transactionRepositorySuite) TestFindBetweenThrowsWhenStartAfterEnd(
 
 func (suite *transactionRepositorySuite) TestFindBetweenDbConnectionError() {
 	// given
-	t := NewTransactionRepository(invalidDbClient)
+	t := NewTransactionRepository(invalidDbClient, "")
 
 	// when
 	actual, err := t.FindBetween(defaultContext, consensusStart, consensusEnd)
@@ -584,7 +603,7 @@ func (suite *transactionRepositorySuite) TestFindBetweenDbConnectionError() {
 func (suite *transactionRepositorySuite) TestFindByHashInBlock() {
 	// given
 	expected := suite.setupDb(true)
-	t := NewTransactionRepository(dbClient)
+	t := NewTransactionRepository(dbClient, "")
 
 	// when
 	actual, err := t.FindByHashInBlock(defaultContext, expected[0].Hash, consensusStart, consensusEnd)
@@ -597,7 +616,7 @@ func (suite *transactionRepositorySuite) TestFindByHashInBlock() {
 func (suite *transactionRepositorySuite) TestFindByHashInBlockNoTokenEntity() {
 	// given
 	expected := suite.setupDb(false)
-	t := NewTransactionRepository(dbClient)
+	t := NewTransactionRepository(dbClient, "")
 
 	// when
 	actual, err := t.FindByHashInBlock(defaultContext, expected[1].Hash, consensusStart, consensusEnd)
@@ -609,7 +628,7 @@ func (suite *transactionRepositorySuite) TestFindByHashInBlockNoTokenEntity() {
 
 func (suite *transactionRepositorySuite) TestFindByHashInBlockThrowsInvalidHash() {
 	// given
-	t := NewTransactionRepository(dbClient)
+	t := NewTransactionRepository(dbClient, "")
 
 	// when
 	actual, err := t.FindByHashInBlock(defaultContext, "invalid hash", consensusStart, consensusEnd)
@@ -621,7 +640,7 @@ func (suite *transactionRepositorySuite) TestFindByHashInBlockThrowsInvalidHash(
 
 func (suite *transactionRepositorySuite) TestFindByHashInBlockThrowsNotFound() {
 	// given
-	t := NewTransactionRepository(dbClient)
+	t := NewTransactionRepository(dbClient, "")
 
 	// when
 	actual, err := t.FindByHashInBlock(defaultContext, "0x123456", consensusStart, consensusEnd)
@@ -633,7 +652,7 @@ func (suite *transactionRepositorySuite) TestFindByHashInBlockThrowsNotFound() {
 
 func (suite *transactionRepositorySuite) TestFindByHashInBlockDbConnectionError() {
 	// given
-	t := NewTransactionRepository(invalidDbClient)
+	t := NewTransactionRepository(invalidDbClient, "")
 
 	// when
 	actual, err := t.FindByHashInBlock(defaultContext, "0x123456", consensusStart, consensusEnd)
