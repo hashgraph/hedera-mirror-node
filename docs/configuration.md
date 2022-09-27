@@ -1,7 +1,7 @@
-#./hedera-mirror-importer/target/test-classes/config/application.yml Configuration
+# Configuration
 
 The four components of the Hedera Mirror Node (Importer, Monitor, REST API, and gRPC API) all support loading
-configuration from an `application.yml` file, an `application.properties` file,  or via the environment.
+configuration from an `application.yml` file or via the environment.
 
 ## Default Values
 
@@ -165,11 +165,11 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.startBlockNumber`                                   | null                           | The block number that will be set as the downloaded stream files starting index.                                                                                                                                                                                   |
 | `hedera.mirror.importer.verifyHashAfter`                                    | 1970-01-01T00:00:00Z           | Skip hash verification for stream files linked by hash until after (and not including) this point of time. Format: YYYY-MM-ddTHH:mm:ss.nnnnnnnnnZ                                                                                                                  |
 
-### Event and Entity Filtering
+### Transaction and Entity Filtering
 
-The mirror node may be configured to only store a subset of data for entities and/or events (transaction types) of interest -- essentially, which rows of data to retain.
+The mirror node may be configured to only store a subset of data for entities and/or transaction types of interest -- essentially, which rows of data to retain.
 Note that the `exclude` properties take priority over the `include` properties - if you list the same value in both lists, it will be excluded.
-In addition, the various boolean `hedera.mirror.importer.record.entity.persist` properties may be specified to control which fields get stored (you can think of this as which columns of the matching rows get recorded).
+In addition, the various boolean `hedera.mirror.importer.record.entity.persist` properties may be specified to control which additional fields get stored (which additional tables get recorded).
 See the `hedera.mirror.importer.parser.include.*` and `hedera.mirror.importer.parser.exclude.*` properties listed in the table above for full details.
 
 #### Filtering Example
@@ -177,14 +177,14 @@ The scenario we wish to model is the same for each of the three configuration fo
 configure your instance of the mirror node.
 
 * We wish to omit all records (regardless of transaction type) that are associated with account **0.0.98**, which is the account representing the network (to which fees generally get paid to).
-* We are interested in all **CRYPTOTRANSFER** transactions, for all other accounts than **0.0.98**.
-* We are interested in accounts **0.0.111828** and **0.0.61457**, and wish to store all their transactions, regardless of transaction type.
-* We are partially interested in accounts **0.0.111703** and **0.0.111704**, and wish to store all their **FILECREATE**, **FILEDELETE**, and **FILEUPDATE** transactions (but not of any other transaction types than **CRYPTOTRANSFER**).
+* We are interested in all **CRYPTOTRANSFER** transactions, for all accounts other than **0.0.98**.
+* We are interested in accounts **0.0.101** and **0.0.102**, and wish to store all their transactions, regardless of transaction type.
+* We are partially interested in accounts **0.0.1000** and **0.0.1001**, and wish to store all their **FILEAPPEND**, **FILECREATE**, **FILEDELETE**, and **FILEUPDATE** transactions (but not of any other transaction types than **CRYPTOTRANSFER**).
 * We do not wish to persist message topics for any transactions we do store.
 
 #### application.yml
 
-Including the following lines in your `application.yml` file:
+To configure the above scenario via `application.yml` file, include the following lines:
 
 ```yaml
 hedera:
@@ -195,53 +195,52 @@ hedera:
           - entity: [0.0.98]
         include:
           - transaction: [CRYPTOTRANSFER]
-          - entity: [0.0.111728, 0.0.61457]
-          - entity: [0.0.111703, 0.0.111704]
-            transaction: [FILECREATE, FILEDELETE, FILEUPDATE]
+          - entity: [0.0.101, 0.0.102]
+          - entity: [0.0.1000, 0.0.1001]
+            transaction: [FILEAPPEND, FILECREATE, FILEDELETE, FILEUPDATE]
         record:
           entity:
             persist:
               topics: false
 ```
-will store only the transactions for the given scenario.
 
 #### application.properties
 
-Including the following lines in your `application.properties` file:
+To configure the above scenario via `application.properties` file, include the following lines:
 
 ```yaml
 hedera.mirror.importer.parser.exclude[0].entity[0]=0.0.98
-hedera.mirror.importer.parser.include[0].entity[0]=0.0.111703
-hedera.mirror.importer.parser.include[0].entity[1]=0.0.111704
-hedera.mirror.importer.parser.include[0].transaction[0]=FILECREATE
-hedera.mirror.importer.parser.include[0].transaction[1]=FILEDELETE
-hedera.mirror.importer.parser.include[0].transaction[2]=FILEUPDATE
-hedera.mirror.importer.parser.include[1].entity[0]=0.0.111728
-hedera.mirror.importer.parser.include[1].entity[1]=0.0.61457
-hedera.mirror.importer.parser.include[2].transaction[0]=CRYPTOTRANSFER
+hedera.mirror.importer.parser.include[0].transaction[0]=CRYPTOTRANSFER
+hedera.mirror.importer.parser.include[1].entity[0]=0.0.101
+hedera.mirror.importer.parser.include[1].entity[1]=0.0.102
+hedera.mirror.importer.parser.include[2].entity[0]=0.0.1000
+hedera.mirror.importer.parser.include[2].entity[1]=0.0.1001
+hedera.mirror.importer.parser.include[2].transaction[0]=FILEAPPEND
+hedera.mirror.importer.parser.include[2].transaction[1]=FILECREATE
+hedera.mirror.importer.parser.include[2].transaction[2]=FILEDELETE
+hedera.mirror.importer.parser.include[2].transaction[3]=FILEUPDATE
 hedera.mirror.importer.parser.record.entity.persist.topics=false
 ```
-will (again) store only the transactions for the given scenario.
 
 #### Environment variables
 
-Setting the following environmental variables:
+To configure the above scenario via environmental variables, set the following:
 
 ```yaml
 HEDERA_MIRROR_IMPORTER_PARSER_EXCLUDE_0_ENTITY_0_: 0.0.98
-HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_0_ENTITY_0_: 0.0.111703
-HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_0_ENTITY_1_: 0.0.111704
-HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_0_TRANSACTION_0_: FILECREATE
-HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_0_TRANSACTION_1_: FILEDELETE
-HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_0_TRANSACTION_2_: FILEUPDATE
-HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_1_ENTITY_0_: 0.0.111728
-HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_1_ENTITY_1_: 0.0.61457
-HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_2_TRANSACTION_0_: CRYPTOTRANSFER
+HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_0_TRANSACTION_0_: CRYPTOTRANSFER
+HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_1_ENTITY_0_: 0.0.101
+HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_1_ENTITY_1_: 0.0.102
+HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_2_ENTITY_0_: 0.0.1000
+HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_2_ENTITY_1_: 0.0.1001
+HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_2_TRANSACTION_0_: FILEAPPEND
+HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_2_TRANSACTION_1_: FILECREATE
+HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_2_TRANSACTION_2_: FILEDELETE
+HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_2_TRANSACTION_3_: FILEUPDATE
 HEDERA_MIRROR_IMPORTER_PARSER_RECORD_ENTITY_PERSIST_TOPICS: "false"
 ```
-will (once again) store only the transactions for the given scenario.
 
-## Export transactions to PubSub
+### Export transactions to PubSub
 
 Importer can be configured to publish transactions (in json format) to a Pubsub topic using following properties:
 
@@ -255,7 +254,7 @@ Importer can be configured to publish transactions (in json format) to a Pubsub 
 See [Spring Cloud documentation](https://cloud.spring.io/spring-cloud-static/spring-cloud-gcp/1.2.2.RELEASE/reference/html/#pubsub-configuration)
 for more info about `spring.cloud.gcp.*` properties.
 
-## Connect to S3 with the Default Credentials Provider
+### Connect to S3 with the Default Credentials Provider
 
 When connecting to an AWS S3 bucket that requires authentication (such as a requester pays bucket), you can opt to allow
 the AWS Default Credentials Provider Chain to handle the authentication for you, instead of providing your static access
