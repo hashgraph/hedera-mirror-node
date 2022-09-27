@@ -22,6 +22,8 @@ package com.hedera.mirror.importer.domain;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import java.util.Collection;
+import java.util.Collections;
 
 import lombok.Value;
 
@@ -31,8 +33,21 @@ import lombok.Value;
 @Value
 public class TransactionFilterFields {
     /**
-     * Main entity associated with the transaction
+     * entities contains:
+     * (1) Main entity associated with the transaction
+     * (2) Transaction payer account (when present)
+     * (3) crypto transfer receivers/senders
      */
-    EntityId entity;
+    Collection<EntityId> entities;
     TransactionType transactionType;
+
+    public TransactionFilterFields(Collection<EntityId> entities, TransactionType transactionType) {
+        this.entities = entities;
+        this.transactionType = transactionType;
+    }
+
+    // for backwards compatibility with single-EntityId TransactionFilterFields
+    public TransactionFilterFields(EntityId entityId, TransactionType transactionType) {
+        this (Collections.singleton(entityId), transactionType);
+    }
 }

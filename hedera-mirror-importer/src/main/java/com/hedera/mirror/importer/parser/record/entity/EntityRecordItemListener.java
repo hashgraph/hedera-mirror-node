@@ -53,6 +53,7 @@ import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -135,6 +136,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
         long consensusTimestamp = DomainUtils.timeStampInNanos(txRecord.getConsensusTimestamp());
         EntityId entityId;
+        Collection<EntityId> entities = new HashSet<>();
         try {
             entityId = transactionHandler.getEntity(recordItem);
         } catch (InvalidEntityException e) { // transaction can have invalid topic/contract/file id
@@ -142,13 +144,58 @@ public class EntityRecordItemListener implements RecordItemListener {
             entityId = null;
         }
 
-        log.debug("Processing {} transaction {} for entity {}", transactionType, consensusTimestamp, entityId);
+        if (entityId != null) {
+            entities.add(entityId);
+        }
+
+        // Issue 4478: regardless of transaction type, we always filter on payer account and transfer receivers/senders
+        EntityId payerAccountId = recordItem.getPayerAccountId();
+
+        if (payerAccountId != null) {
+            entities.add(payerAccountId);
+        }
+        if (body.hasCryptoTransfer()) {
+            // MYK: here
+            // first, handle Hbar transfers from the "getTransfers()" list.
+            List<AccountAmount> accountAmountsList = body.getCryptoTransfer().getTransfers().getAccountAmountsList();
+            for (AccountAmount aa : accountAmountsList) {
+                entities.add(EntityId.of(aa.getAccountID()));
+            }
+
+            // next, handle transfers from the "getTransferList()" list.
+            var transferList = txRecord.getTransferList();
+            for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
+                var aa = transferList.getAccountAmounts(i);
+                entities.add(EntityId.of(aa.getAccountID()));
+            }
+
+            // finally, handle fungible and non-fungible token transfers
+            List<TokenTransferList> tokenTransfersList = body.getCryptoTransfer().getTokenTransfersList();
+            for (TokenTransferList tokenTransferList : tokenTransfersList) {
+                // Token Transfers
+                for (AccountAmount aa : tokenTransferList.getTransfersList()) {
+                    entities.add(EntityId.of(aa.getAccountID()));
+                }
+
+                // NFT Transfers, too
+                for (NftTransfer transfer : tokenTransferList.getNftTransfersList()) {
+                    if (transfer.getReceiverAccountID() != null) {
+                        entities.add(EntityId.of(transfer.getReceiverAccountID()));
+                    }
+                    if (transfer.getSenderAccountID() != null) {
+                        entities.add(EntityId.of(transfer.getSenderAccountID()));
+                    }
+                }
+            }
+        }
+
+        log.debug("Processing {} transaction {} for entities {}", transactionType, consensusTimestamp, entities);
 
         // to:do - exclude Freeze from Filter transaction type
-        TransactionFilterFields transactionFilterFields = new TransactionFilterFields(entityId, transactionType);
+        TransactionFilterFields transactionFilterFields = new TransactionFilterFields(entities, transactionType);
         if (!commonParserProperties.getFilter().test(transactionFilterFields)) {
-            log.debug("Ignoring transaction. consensusTimestamp={}, transactionType={}, entityId={}",
-                    consensusTimestamp, transactionType, entityId);
+            log.debug("Ignoring transaction. consensusTimestamp={}, transactionType={}, entities={}",
+                    consensusTimestamp, transactionType, entities);
             return;
         }
 

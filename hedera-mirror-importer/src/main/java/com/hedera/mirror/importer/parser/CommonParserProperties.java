@@ -29,6 +29,7 @@ import javax.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.Getter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.util.CollectionUtils;
 import org.springframework.validation.annotation.Validated;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -84,7 +85,7 @@ public class CommonParserProperties {
         private Collection<TransactionType> transaction = new LinkedHashSet<>();
 
         public Predicate<TransactionFilterFields> getFilter() {
-            return t -> (matches(t) && matches(t.getEntity()));
+            return t -> (matches(t) && matches(t.getEntities()));
         }
 
         private boolean matches(TransactionFilterFields t) {
@@ -95,12 +96,12 @@ public class CommonParserProperties {
             return transaction.contains(t.getTransactionType());
         }
 
-        private boolean matches(EntityId e) {
+        private boolean matches(Collection<EntityId> e) {
             if (entity.isEmpty()) {
                 return true;
             }
 
-            return e != null && entity.contains(e);
+            return e != null && CollectionUtils.containsAny(entity, e);
         }
     }
 }
