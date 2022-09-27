@@ -743,11 +743,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             newTokenAccount.setTimestampLower(newTokenAccount.getCreatedTimestamp());
         }
 
-        if (newTokenAccount.getTimestampUpper() != null &&
-                newTokenAccount.getTimestampUpper() < lastTokenAccount.getTimestampUpper()) {
-            newTokenAccount.setTimestampUpper(lastTokenAccount.getTimestampUpper());
-        }
-
         if (newTokenAccount.getCreatedTimestamp() != null) {
             return newTokenAccount;
         }
