@@ -47,7 +47,7 @@ describe('Response middleware', () => {
     };
     mockResponse = {
       locals: {
-        mirrorRestData: responseData,
+        responseData: responseData,
         statusCode: 200,
       },
       send: jest.fn(),
@@ -57,7 +57,7 @@ describe('Response middleware', () => {
   });
 
   test('No response data', async () => {
-    mockResponse.locals.mirrorRestData = undefined;
+    mockResponse.locals.responseData = undefined;
     await expect(responseHandler(mockRequest, mockResponse, null)).rejects.toThrow(NotFoundError);
   });
 
@@ -66,6 +66,7 @@ describe('Response middleware', () => {
     expect(mockResponse.send).toBeCalledWith(JSONStringify(responseData));
     expect(mockResponse.set).toHaveBeenNthCalledWith(1, headers.default);
     expect(mockResponse.set).toHaveBeenNthCalledWith(2, headers.path[mockRequest.route.path]);
+    expect(mockResponse.set).toHaveBeenNthCalledWith(3, 'Content-Type', 'application/json');
     expect(mockResponse.status).toBeCalledWith(mockResponse.locals.statusCode);
   });
 
@@ -75,6 +76,18 @@ describe('Response middleware', () => {
     expect(mockResponse.send).toBeCalledWith(JSONStringify(responseData));
     expect(mockResponse.set).toHaveBeenNthCalledWith(1, headers.default);
     expect(mockResponse.set).toHaveBeenNthCalledWith(2, undefined);
+    expect(mockResponse.set).toHaveBeenNthCalledWith(3, 'Content-Type', 'application/json');
+    expect(mockResponse.status).toBeCalledWith(mockResponse.locals.statusCode);
+  });
+
+  test('Custom Content-Type', async () => {
+    mockResponse.locals.responseContentType = 'text/plain';
+    mockResponse.locals.responseData = '123';
+    await responseHandler(mockRequest, mockResponse, null);
+    expect(mockResponse.send).toBeCalledWith(mockResponse.locals.responseData);
+    expect(mockResponse.set).toHaveBeenNthCalledWith(1, headers.default);
+    expect(mockResponse.set).toHaveBeenNthCalledWith(2, headers.path[mockRequest.route.path]);
+    expect(mockResponse.set).toHaveBeenNthCalledWith(3, 'Content-Type', mockResponse.locals.responseContentType);
     expect(mockResponse.status).toBeCalledWith(mockResponse.locals.statusCode);
   });
 });
