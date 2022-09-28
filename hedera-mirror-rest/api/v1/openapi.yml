@@ -2147,6 +2147,9 @@ components:
     FixedFee:
       type: object
       properties:
+        all_collectors_are_exempt:
+          type: boolean
+          example: false
         amount:
           example: 100
           format: int64
@@ -2155,12 +2158,12 @@ components:
           $ref: '#/components/schemas/EntityId'
         denominating_token_id:
           $ref: '#/components/schemas/EntityId'
-        all_collectors_are_exempt:
-          type: boolean
-          example: false
     FractionalFee:
       type: object
       properties:
+        all_collectors_are_exempt:
+          type: boolean
+          example: false
         amount:
           type: object
           properties:
@@ -2188,12 +2191,12 @@ components:
         net_of_transfers:
           type: boolean
           example: true
-        all_collectors_are_exempt:
-          type: boolean
-          example: false
     RoyaltyFee:
       type: object
       properties:
+        all_collectors_are_exempt:
+          type: boolean
+          example: false
         amount:
           type: object
           properties:
@@ -2216,9 +2219,6 @@ components:
               type: integer
             denominating_token_id:
               $ref: '#/components/schemas/EntityId'
-        all_collectors_are_exempt:
-          type: boolean
-          example: false
     Key:
       type: object
       nullable: true
