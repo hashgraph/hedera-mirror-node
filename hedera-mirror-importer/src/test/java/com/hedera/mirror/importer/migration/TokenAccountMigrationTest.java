@@ -20,14 +20,15 @@ package com.hedera.mirror.importer.migration;
  * ‍
  */
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import com.google.common.collect.Range;
-import java.io.File;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.function.Consumer;
+import com.hedera.mirror.common.domain.token.TokenAccount;
+import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
+import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
+import com.hedera.mirror.importer.EnabledIfV1;
+import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.config.Owner;
+import com.hedera.mirror.importer.repository.TokenAccountHistoryRepository;
+import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import lombok.Builder;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -41,19 +42,18 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.TestPropertySource;
 
-import com.hedera.mirror.common.domain.token.TokenAccount;
-import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
-import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
-import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.config.Owner;
-import com.hedera.mirror.importer.repository.TokenAccountHistoryRepository;
-import com.hedera.mirror.importer.repository.TokenAccountRepository;
+import java.io.File;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.function.Consumer;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @EnabledIfV1
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
-@TestPropertySource(properties = "spring.flyway.target=1.65.12")
+@TestPropertySource(properties = "spring.flyway.target=1.66.0")
 class TokenAccountMigrationTest extends IntegrationTest {
 
     private static final String REVERT_SQL = """
