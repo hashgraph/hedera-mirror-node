@@ -88,6 +88,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
     @Qualifier(CacheConfiguration.EXPIRE_AFTER_5M)
     private final CacheManager cacheManager;
     private final FileDataRepository fileDataRepository;
+    private final MirrorProperties mirrorProperties;
     private final NodeStakeRepository nodeStakeRepository;
     private final TransactionTemplate transactionTemplate;
 
@@ -979,6 +980,31 @@ class AddressBookServiceImplTest extends IntegrationTest {
                 .allMatch(c -> c.getStake() > 1L)
                 .extracting(ConsensusNode::getNodeId)
                 .containsExactly(0L, 1L, 2L, 3L);
+    }
+
+    @Test
+    void refresh() {
+        long timestamp = domainBuilder.timestamp();
+        domainBuilder.nodeStake().customize(n -> n.nodeId(0).consensusTimestamp(timestamp)).persist();
+        domainBuilder.nodeStake().customize(n -> n.nodeId(1).consensusTimestamp(timestamp)).persist();
+        domainBuilder.nodeStake().customize(n -> n.nodeId(2).consensusTimestamp(timestamp)).persist();
+        domainBuilder.nodeStake().customize(n -> n.nodeId(3).consensusTimestamp(timestamp)).persist();
+
+        // Verify cache is empty to start
+        assertNull(cacheManager.getCache(CACHE_NAME).get(SimpleKey.EMPTY));
+
+        // Verify getCurrent() adds an entry to the cache
+        var nodes = addressBookService.getNodes();
+        var nodesCache = cacheManager.getCache(CACHE_NAME).get(SimpleKey.EMPTY).get();
+        assertThat(nodes)
+                .isNotNull()
+                .isEqualTo(nodesCache)
+                .allMatch(node -> node.getStake() > 1)
+                .allMatch(node -> node.getTotalStake() > 1)
+                .allMatch(node -> node.getNodeAccountId() != null);
+
+        addressBookService.refresh();
+        assertNull(cacheManager.getCache(CACHE_NAME).get(SimpleKey.EMPTY));
     }
 
     private ServiceEndpoint getServiceEndpoint(String ip, int port) throws UnknownHostException {

@@ -89,6 +89,12 @@ public class AddressBookServiceImpl implements AddressBookService {
     private final NodeStakeRepository nodeStakeRepository;
     private final TransactionTemplate transactionTemplate;
 
+    @Override
+    @CacheEvict(allEntries = true)
+    public void refresh() {
+        log.info("Clearing node cache");
+    }
+
     /**
      * Updates mirror node with new address book details provided in fileData object
      *
@@ -115,11 +121,6 @@ public class AddressBookServiceImpl implements AddressBookService {
         parse(fileData);
     }
 
-    /**
-     * Retrieves the latest address book from db
-     *
-     * @return returns AddressBook containing network node details
-     */
     @Override
     public AddressBook getCurrent() {
         long consensusTimestamp = DomainUtils.convertToNanosMax(Instant.now());
@@ -129,12 +130,6 @@ public class AddressBookServiceImpl implements AddressBookService {
                 .orElseGet(this::migrate);
     }
 
-    /**
-     * Retrieves a list of consensus nodes. The data may be cached and not always reflect the current state of the
-     * database.
-     *
-     * @return an unmodifiable list of consensus nodes
-     */
     @Cacheable
     @Override
     public Collection<ConsensusNode> getNodes() {
