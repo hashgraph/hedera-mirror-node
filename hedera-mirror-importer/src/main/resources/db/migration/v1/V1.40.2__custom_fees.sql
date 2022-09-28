@@ -45,15 +45,14 @@ comment on table assessed_custom_fee is 'Assessed custom fees for HTS transactio
 -- Add table custom_fee
 create table if not exists custom_fee
 (
-
-    amount                      bigint,
-    amount_denominator          bigint,
-    collector_account_id        bigint,
-    created_timestamp           bigint not null,
-    denominating_token_id       bigint,
-    maximum_amount              bigint,
-    minimum_amount              bigint not null default 0,
-    token_id                    bigint not null
+    amount                bigint,
+    amount_denominator    bigint,
+    collector_account_id  bigint,
+    created_timestamp     bigint not null,
+    denominating_token_id bigint,
+    maximum_amount        bigint,
+    minimum_amount        bigint not null default 0,
+    token_id              bigint not null
 );
 create index if not exists custom_fee__token_timestamp
     on custom_fee (token_id desc, created_timestamp desc);

@@ -391,7 +391,6 @@ public class RecordItemBuilder {
                 .receipt(r -> r.setAccountID(accountId));
     }
 
-    //This custom fee is for testing purpose and therefore we are just setting the fixed fee.
     private CustomFee.Builder customFee() {
         var accountId = accountId();
         return CustomFee.newBuilder()
