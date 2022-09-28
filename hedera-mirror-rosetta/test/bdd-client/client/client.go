@@ -169,6 +169,23 @@ func (c Client) FindTransaction(ctx context.Context, hash string) (*types.Transa
 			}
 		}
 
+		for _, txId := range blockResponse.OtherTransactions {
+			if txId.Hash == hash {
+				log.Infof("Found transaction %s in block %d other transactions list", hash, blockIndex)
+				blockTransactionRequest := &types.BlockTransactionRequest{
+					NetworkIdentifier:     c.network,
+					BlockIdentifier:       blockResponse.Block.BlockIdentifier,
+					TransactionIdentifier: txId,
+				}
+				blockTransactionResponse, rosettaErr, err := blockApi.BlockTransaction(ctx, blockTransactionRequest)
+				if rosettaErr != nil || err != nil {
+					return false, rosettaErr, err
+				}
+				transaction = blockTransactionResponse.Transaction
+				return true, nil, nil
+			}
+		}
+
 		// only increase blockIndex when the block is successfully retrieved
 		log.Infof("Transaction %s not found in block %d", hash, blockIndex)
 		blockIndex += 1
