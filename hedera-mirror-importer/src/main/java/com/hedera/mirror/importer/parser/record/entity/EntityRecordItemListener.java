@@ -155,7 +155,6 @@ public class EntityRecordItemListener implements RecordItemListener {
             entities.add(payerAccountId);
         }
         if (body.hasCryptoTransfer()) {
-            // MYK: here
             // first, handle Hbar transfers from the "getTransfers()" list.
             List<AccountAmount> accountAmountsList = body.getCryptoTransfer().getTransfers().getAccountAmountsList();
             for (AccountAmount aa : accountAmountsList) {
