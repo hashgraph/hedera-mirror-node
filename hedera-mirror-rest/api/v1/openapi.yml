@@ -1977,7 +1977,7 @@ components:
           description: The hex encoded EVM address of the contract
           example: '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
           pattern: ^0x[0-9A-Fa-f]{40}$
-          type: string         
+          type: string       
         bloom:
           allOf:
             - $ref: '#/components/schemas/Bloom'
