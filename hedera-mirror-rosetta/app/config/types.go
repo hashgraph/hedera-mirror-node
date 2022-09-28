@@ -41,6 +41,7 @@ type Config struct {
 	Online      bool
 	Port        uint16
 	Realm       int64
+	Response    Response
 	Shard       int64
 }
 
@@ -90,4 +91,8 @@ type Pool struct {
 	MaxIdleConnections int `yaml:"maxIdleConnections"`
 	MaxLifetime        int `yaml:"maxLifetime"`
 	MaxOpenConnections int `yaml:"maxOpenConnections"`
+}
+
+type Response struct {
+	MaxTransactionsInBlock int `yaml:"maxTransactionsInBlock"`
 }

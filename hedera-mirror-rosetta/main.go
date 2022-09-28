@@ -89,7 +89,12 @@ func newBlockchainOnlineRouter(
 	networkAPIService := services.NewNetworkAPIService(baseService, addressBookEntryRepo, network, version)
 	networkAPIController := server.NewNetworkAPIController(networkAPIService, asserter)
 
-	blockAPIService := services.NewBlockAPIService(accountRepo, baseService, rosettaConfig.Cache[config.EntityCacheKey])
+	blockAPIService := services.NewBlockAPIService(
+		accountRepo,
+		baseService,
+		rosettaConfig.Cache[config.EntityCacheKey],
+		rosettaConfig.Response.MaxTransactionsInBlock,
+	)
 	blockAPIController := server.NewBlockAPIController(blockAPIService, asserter)
 
 	mempoolAPIService := services.NewMempoolAPIService()

@@ -75,7 +75,10 @@ func blockRequest() *rTypes.BlockRequest {
 	}
 }
 
-func expectedBlockResponse(transactions ...*rTypes.Transaction) *rTypes.BlockResponse {
+func expectedBlockResponse(
+	transactions []*rTypes.Transaction,
+	otherTransactions []*rTypes.TransactionIdentifier,
+) *rTypes.BlockResponse {
 	return &rTypes.BlockResponse{
 		Block: &rTypes.Block{
 			BlockIdentifier: &rTypes.BlockIdentifier{
@@ -90,7 +93,7 @@ func expectedBlockResponse(transactions ...*rTypes.Transaction) *rTypes.BlockRes
 			Transactions: transactions,
 			Metadata:     nil,
 		},
-		OtherTransactions: nil,
+		OtherTransactions: otherTransactions,
 	}
 }
 
@@ -165,7 +168,7 @@ func (suite *blockServiceSuite) SetupTest() {
 	suite.mockTransactionRepo = &mocks.MockTransactionRepository{}
 
 	baseService := NewOnlineBaseService(suite.mockBlockRepo, suite.mockTransactionRepo)
-	suite.blockService = NewBlockAPIService(suite.mockAccountRepo, baseService, config.Cache{MaxSize: 1024})
+	suite.blockService = NewBlockAPIService(suite.mockAccountRepo, baseService, config.Cache{MaxSize: 1024}, 4)
 }
 
 func (suite *blockServiceSuite) TestNewBlockAPIService() {
@@ -178,9 +181,39 @@ func (suite *blockServiceSuite) TestBlock() {
 		makeTransaction(nil, "123"),
 		makeTransaction(&entityId, "246"),
 	}
-	expected := expectedBlockResponse(
+	expected := expectedBlockResponse([]*rTypes.Transaction{
 		expectedTransaction(account, nil, "123"),
 		expectedTransaction(account, &entityId, "246"),
+	}, nil)
+	suite.mockAccountRepo.On("GetAccountAlias").Return(account, mocks.NilError)
+	suite.mockBlockRepo.On("FindByIdentifier").Return(block(), mocks.NilError)
+	suite.mockTransactionRepo.On("FindBetween").Return(exampleTransactions, mocks.NilError)
+
+	// when:
+	actual, e := suite.blockService.Block(nil, blockRequest())
+
+	// then:
+	assert.Nil(suite.T(), e)
+	assert.Equal(suite.T(), expected, actual)
+	suite.mockAccountRepo.AssertNumberOfCalls(suite.T(), "GetAccountAlias", 1)
+}
+
+func (suite *blockServiceSuite) TestBlockWithCappedTransactions() {
+	// given:
+	exampleTransactions := []*types.Transaction{
+		makeTransaction(nil, "123"),
+		makeTransaction(&entityId, "246"),
+		makeTransaction(nil, "333"),
+		makeTransaction(nil, "444"),
+		makeTransaction(nil, "555"),
+	}
+	expected := expectedBlockResponse([]*rTypes.Transaction{
+		expectedTransaction(account, nil, "123"),
+		expectedTransaction(account, &entityId, "246"),
+		expectedTransaction(account, nil, "333"),
+		expectedTransaction(account, nil, "444"),
+	},
+		[]*rTypes.TransactionIdentifier{{Hash: "555"}},
 	)
 	suite.mockAccountRepo.On("GetAccountAlias").Return(account, mocks.NilError)
 	suite.mockBlockRepo.On("FindByIdentifier").Return(block(), mocks.NilError)
@@ -201,10 +234,10 @@ func (suite *blockServiceSuite) TestBlockWithAccountAlias() {
 		makeTransaction(nil, "123"),
 		makeTransaction(&entityId, "246"),
 	}
-	expected := expectedBlockResponse(
+	expected := expectedBlockResponse([]*rTypes.Transaction{
 		expectedTransaction(accountAlias, nil, "123"),
 		expectedTransaction(accountAlias, &entityId, "246"),
-	)
+	}, nil)
 	suite.mockAccountRepo.On("GetAccountAlias").Return(accountAlias, mocks.NilError)
 	suite.mockBlockRepo.On("FindByIdentifier").Return(block(), mocks.NilError)
 	suite.mockTransactionRepo.On("FindBetween").Return(exampleTransactions, mocks.NilError)
