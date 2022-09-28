@@ -35,17 +35,18 @@ insert into t_transaction_types (proto_id, name, entity_type) values (45, 'TOKEN
 ```sql
 create table if not exists custom_fee
 (
-    amount                    bigint,
-    amount_denominator        bigint,
-    collector_account_id      bigint,
-    created_timestamp         bigint not null,
-    denominating_token_id     bigint,
-    maximum_amount            bigint,
-    minimum_amount            bigint not null default 0,
-    net_of_transfers          boolean,
-    royalty_denominator       bigint,
-    royalty_numerator         bigint,
-    token_id                  bigint not null
+    all_collectors_are_exempt   boolean not null default false,
+    amount                      bigint,
+    amount_denominator          bigint,
+    collector_account_id        bigint,
+    created_timestamp           bigint not null,
+    denominating_token_id       bigint,
+    maximum_amount              bigint,
+    minimum_amount              bigint not null default 0,
+    net_of_transfers            boolean,
+    royalty_denominator         bigint,
+    royalty_numerator           bigint,
+    token_id                    bigint not null
 );
 create index if not exists
     custom_fee__token_timestamp on custom_fee (token_id desc, created_timestamp desc);
