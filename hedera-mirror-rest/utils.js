@@ -220,6 +220,8 @@ const filterValidityChecks = (param, op, val) => {
     return ret;
   }
 
+  const basicOperators = ['eq', 'gt', 'gte', 'lt', 'lte'];
+
   // Validate the value
   switch (param) {
     case constants.filterKeys.ACCOUNT_BALANCE:
@@ -312,8 +314,7 @@ const filterValidityChecks = (param, op, val) => {
       ret = TransactionType.isValid(val);
       break;
     case constants.filterKeys.BLOCK_NUMBER:
-      const supportedOperators = ['eq', 'gt', 'gte', 'lt', 'lte'];
-      ret = (isPositiveLong(val, true) || isHexPositiveInt(val, true)) && _.includes(supportedOperators, op);
+      ret = (isPositiveLong(val, true) || isHexPositiveInt(val, true)) && _.includes(basicOperators, op);
       break;
     case constants.filterKeys.BLOCK_HASH:
       ret = isValidBlockHash(val) && _.includes(['eq'], op);
@@ -323,6 +324,9 @@ const filterValidityChecks = (param, op, val) => {
       break;
     case constants.filterKeys.TRANSACTION_INDEX:
       ret = isPositiveLong(val, true) && _.includes(['eq'], op);
+      break;
+    case constants.filterKeys.SLOT:
+      ret = isPositiveLong(val, true) && _.includes(basicOperators, op);
       break;
     default:
       // Every parameter should be included here. Otherwise, it will not be accepted.

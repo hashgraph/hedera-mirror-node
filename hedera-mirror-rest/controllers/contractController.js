@@ -884,9 +884,8 @@ class ContractController extends BaseController {
 
   async extractContractStateByIdQuery(filters, contractId) {
     let limit = defaultLimit;
-    let order = orderFilterValues.DESC;
-    // TODO: implement the index filter
-    const supportedParams = [filterKeys.LIMIT, filterKeys.ORDER];
+    let order = orderFilterValues.ASC;
+    const supportedParams = [filterKeys.LIMIT, filterKeys.ORDER, filterKeys.SLOT];
     const conditions = [`${ContractState.CONTRACT_ID} = $1`];
     const params = [contractId];
     for (const filter of filters) {
@@ -894,13 +893,16 @@ class ContractController extends BaseController {
         // param not supported for current endpoint
         continue;
       }
-
       switch (filter.key) {
         case filterKeys.LIMIT:
           limit = filter.value;
           break;
         case filterKeys.ORDER:
           order = filter.value;
+          break;
+        case filterKeys.SLOT:
+          conditions.push(`cast(encode(${ContractState.SLOT}::bytea, 'hex') as int) > $2`);
+          params.push(filter.value);
           break;
         default:
           break;
@@ -932,12 +934,12 @@ class ContractController extends BaseController {
     let nextLink = null;
     if (state.length) {
       const lastRow = _.last(state);
-      const lastIndex = lastRow.index;
+      const lastSlot = parseInt(lastRow.slot);
       nextLink = utils.getPaginationLink(
         req,
         state.length !== limit,
         {
-          [filterKeys.INDEX]: lastIndex,
+          [filterKeys.SLOT]: lastSlot,
         },
         order
       );

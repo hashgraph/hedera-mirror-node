@@ -63,6 +63,7 @@ const filterKeys = {
   TRANSACTION_INDEX: 'transaction.index',
   TRANSACTION_TYPE: 'transactiontype',
   HASH_OR_NUMBER: 'hashOrNumber',
+  SLOT: 'slot',
 };
 
 const entityTypes = {

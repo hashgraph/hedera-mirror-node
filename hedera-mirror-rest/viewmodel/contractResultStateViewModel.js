@@ -36,7 +36,7 @@ class ContractResultStateViewModel {
     this.address = contractId.toEvmAddress();
     this.contract_id = contractId.toString();
     this.slot = toHexString(contractState.slot, true, 64);
-    this.value = toHexString(contractState.valueRead, true, 64);
+    this.value = toHexString(contractState.value, true, 64);
   }
 }
 

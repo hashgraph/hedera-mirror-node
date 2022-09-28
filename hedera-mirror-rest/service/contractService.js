@@ -35,6 +35,7 @@ import {
   Entity,
   RecordFile,
   Transaction,
+  ContractState,
 } from '../model';
 
 const {default: defaultLimit} = getResponseLimit();
@@ -93,6 +94,14 @@ class ContractService extends BaseService {
            ${ContractStateChange.VALUE_READ},
            ${ContractStateChange.VALUE_WRITTEN}
     from ${ContractStateChange.tableName}`;
+
+  static contractStateQuery = `
+    select ${ContractState.CREATED_TIMESTAMP},
+           ${ContractState.MODIFIED_TIMESTAMP},
+           ${ContractState.CONTRACT_ID},
+           ${ContractState.SLOT},
+           ${ContractState.VALUE}
+    from ${ContractState.tableName}`;
 
   static contractLogsQuery = `select ${contractLogsFields} from ${ContractLog.tableName} ${ContractLog.tableAlias}`;
 
@@ -210,6 +219,22 @@ class ContractService extends BaseService {
         hash: cr.hash,
       };
     });
+  }
+
+  async getContractStateByIdAndFilters(
+    whereConditions = [],
+    whereParams = [],
+    order = orderFilterValues.DESC,
+    limit = defaultLimit
+  ) {
+    const whereClause = ` where ${whereConditions.join(' and ')} \n`;
+    const orderClause = ` order by ${ContractStateChange.SLOT} ${order} \n`;
+    const limitClause = ` limit ${limit}`;
+
+    const query = ContractService.contractStateQuery + whereClause + orderClause + limitClause;
+    const rows = await super.getRows(query, whereParams, 'getContractStateByIdAndFilters');
+
+    return rows.map((row) => new ContractState(row));
   }
 
   /**
