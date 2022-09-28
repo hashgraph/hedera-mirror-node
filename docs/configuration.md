@@ -178,8 +178,8 @@ configure your instance of the mirror node.
 
 * We wish to omit all records (regardless of transaction type) that are associated with account **0.0.98**, which is the account representing the network (to which fees generally get paid to).
 * We are interested in all **CRYPTOTRANSFER** transactions, for all accounts other than **0.0.98**.
-* We are interested in accounts **0.0.101** and **0.0.102**, and wish to store all their transactions, regardless of transaction type.
-* We are partially interested in accounts **0.0.1000** and **0.0.1001**, and wish to store all their **FILEAPPEND**, **FILECREATE**, **FILEDELETE**, and **FILEUPDATE** transactions (but not of any other transaction types than **CRYPTOTRANSFER**).
+* We are interested in accounts **0.0.1000** and **0.0.1001**, and wish to store all their transactions, regardless of transaction type.
+* We are also interested in system files **0.0.101** and **0.0.102**, and wish to store all their **FILEAPPEND**, **FILECREATE**, **FILEDELETE**, and **FILEUPDATE** transactions.
 * We do not wish to persist message topics for any transactions we do store.
 
 #### application.yml
@@ -195,8 +195,8 @@ hedera:
           - entity: [0.0.98]
         include:
           - transaction: [CRYPTOTRANSFER]
-          - entity: [0.0.101, 0.0.102]
           - entity: [0.0.1000, 0.0.1001]
+          - entity: [0.0.101, 0.0.102]
             transaction: [FILEAPPEND, FILECREATE, FILEDELETE, FILEUPDATE]
         record:
           entity:
@@ -211,10 +211,10 @@ To configure the above scenario via `application.properties` file, include the f
 ```yaml
 hedera.mirror.importer.parser.exclude[0].entity[0]=0.0.98
 hedera.mirror.importer.parser.include[0].transaction[0]=CRYPTOTRANSFER
-hedera.mirror.importer.parser.include[1].entity[0]=0.0.101
-hedera.mirror.importer.parser.include[1].entity[1]=0.0.102
-hedera.mirror.importer.parser.include[2].entity[0]=0.0.1000
-hedera.mirror.importer.parser.include[2].entity[1]=0.0.1001
+hedera.mirror.importer.parser.include[1].entity[0]=0.0.1000
+hedera.mirror.importer.parser.include[1].entity[1]=0.0.1001
+hedera.mirror.importer.parser.include[2].entity[0]=0.0.101
+hedera.mirror.importer.parser.include[2].entity[1]=0.0.102
 hedera.mirror.importer.parser.include[2].transaction[0]=FILEAPPEND
 hedera.mirror.importer.parser.include[2].transaction[1]=FILECREATE
 hedera.mirror.importer.parser.include[2].transaction[2]=FILEDELETE
@@ -229,10 +229,10 @@ To configure the above scenario via environmental variables, set the following:
 ```yaml
 HEDERA_MIRROR_IMPORTER_PARSER_EXCLUDE_0_ENTITY_0_: 0.0.98
 HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_0_TRANSACTION_0_: CRYPTOTRANSFER
-HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_1_ENTITY_0_: 0.0.101
-HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_1_ENTITY_1_: 0.0.102
-HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_2_ENTITY_0_: 0.0.1000
-HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_2_ENTITY_1_: 0.0.1001
+HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_1_ENTITY_0_: 0.0.1000
+HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_1_ENTITY_1_: 0.0.1001
+HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_2_ENTITY_0_: 0.0.101
+HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_2_ENTITY_1_: 0.0.102
 HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_2_TRANSACTION_0_: FILEAPPEND
 HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_2_TRANSACTION_1_: FILECREATE
 HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_2_TRANSACTION_2_: FILEDELETE
