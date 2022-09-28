@@ -1382,6 +1382,7 @@ describe('token extractSqlFromTokenInfoRequest tests', () => {
                    t.type,
                    wipe_key,
                    (select jsonb_agg(jsonb_build_object(
+                     'all_collectors_are_exempt', all_collectors_are_exempt,
                      'amount', amount,
                      'amount_denominator', amount_denominator,
                      'collector_account_id', collector_account_id::text,
