@@ -156,7 +156,7 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                     left join last on last.account_id = existing.account_id and
                       last.token_id = existing.token_id and last.associated is true
                   where
-                    last.created_timestamp is not null and
+                    (existing.created_timestamp is not null or last.created_timestamp is not null) and
                     upper(timestamp_range) is not null
                 )
                 insert into
