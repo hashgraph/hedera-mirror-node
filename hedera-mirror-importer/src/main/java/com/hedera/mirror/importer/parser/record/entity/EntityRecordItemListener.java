@@ -149,23 +149,46 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
 
         // Issue 4478: regardless of transaction type, we always filter on payer account and transfer receivers/senders
-        EntityId payerAccountId = recordItem.getPayerAccountId();
-
-        if (payerAccountId != null) {
-            entities.add(payerAccountId);
+        try {
+            EntityId payerAccountId = recordItem.getPayerAccountId();
+            if (payerAccountId != null) {
+                entities.add(payerAccountId);
+            }
+        } catch (InvalidEntityException e) {
+            log.warn("Invalid payer account identity encountered for consensusTimestamp {} : {}",
+                    consensusTimestamp, e.getMessage());
+            entityId = null;
         }
         if (body.hasCryptoTransfer()) {
             // first, handle Hbar transfers from the "getTransfers()" list.
             List<AccountAmount> accountAmountsList = body.getCryptoTransfer().getTransfers().getAccountAmountsList();
             for (AccountAmount aa : accountAmountsList) {
-                entities.add(EntityId.of(aa.getAccountID()));
+                try {
+                    entityId = EntityId.of(aa.getAccountID());
+                    if (entityId != null) {
+                        entities.add(entityId);
+                    }
+                } catch (InvalidEntityException e) {
+                    log.warn("Invalid transfer account amount identity encountered for consensusTimestamp {} : {}",
+                            consensusTimestamp, e.getMessage());
+                    entityId = null;
+                }
             }
 
             // next, handle transfers from the "getTransferList()" list.
             var transferList = txRecord.getTransferList();
             for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
                 var aa = transferList.getAccountAmounts(i);
-                entities.add(EntityId.of(aa.getAccountID()));
+                try {
+                    entityId = EntityId.of(aa.getAccountID());
+                    if (entityId != null) {
+                        entities.add(entityId);
+                    }
+                } catch (InvalidEntityException e) {
+                    log.warn("Invalid transfer list account amount identity encountered for consensusTimestamp {} : {}",
+                            consensusTimestamp, e.getMessage());
+                    entityId = null;
+                }
             }
 
             // finally, handle fungible and non-fungible token transfers
@@ -173,16 +196,43 @@ public class EntityRecordItemListener implements RecordItemListener {
             for (TokenTransferList tokenTransferList : tokenTransfersList) {
                 // Token Transfers
                 for (AccountAmount aa : tokenTransferList.getTransfersList()) {
-                    entities.add(EntityId.of(aa.getAccountID()));
+                    try {
+                        entityId = EntityId.of(aa.getAccountID());
+                        if (entityId != null) {
+                            entities.add(entityId);
+                        }
+                    } catch (InvalidEntityException e) {
+                        log.warn("Invalid token transfer list identity encountered for consensusTimestamp {} : {}",
+                                consensusTimestamp, e.getMessage());
+                        entityId = null;
+                    }
                 }
 
                 // NFT Transfers, too
                 for (NftTransfer transfer : tokenTransferList.getNftTransfersList()) {
                     if (transfer.getReceiverAccountID() != null) {
-                        entities.add(EntityId.of(transfer.getReceiverAccountID()));
+                        try {
+                            entityId = EntityId.of(transfer.getReceiverAccountID());
+                            if (entityId != null) {
+                                entities.add(entityId);
+                            }
+                        } catch (InvalidEntityException e) {
+                            log.warn("Invalid NFT receiver account identity encountered for consensusTimestamp {} : {}",
+                                    consensusTimestamp, e.getMessage());
+                            entityId = null;
+                        }
                     }
                     if (transfer.getSenderAccountID() != null) {
-                        entities.add(EntityId.of(transfer.getSenderAccountID()));
+                        try {
+                            entityId = EntityId.of(transfer.getSenderAccountID());
+                            if (entityId != null) {
+                                entities.add(entityId);
+                            }
+                        } catch (InvalidEntityException e) {
+                            log.warn("Invalid NFT sender account identity encountered for consensusTimestamp {} : {}",
+                                    consensusTimestamp, e.getMessage());
+                            entityId = null;
+                        }
                     }
                 }
             }
