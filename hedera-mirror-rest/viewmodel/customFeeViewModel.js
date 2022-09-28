@@ -59,6 +59,7 @@ class CustomFeeViewModel {
       // fixed fee
       Object.assign(this, this._parseFixedFee(customFee));
     }
+
     this.collector_account_id = EntityId.parse(customFee.collectorAccountId, {isNullable: true}).toString();
     this.all_collectors_are_exempt = customFee.all_collectors_are_exempt;
   }
