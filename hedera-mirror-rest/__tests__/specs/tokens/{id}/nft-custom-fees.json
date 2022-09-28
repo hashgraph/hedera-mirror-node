@@ -69,14 +69,16 @@
         "created_timestamp": "1234567899999999001",
         "maximum_amount": "980",
         "minimum_amount": "97",
-        "token_id": "0.0.1135"
+        "token_id": "0.0.1135",
+        "all_collectors_are_exempt": false
       },
       {
         "collector_account_id": "0.0.8901",
         "created_timestamp": "1234567899999999007",
         "royalty_denominator": "17",
         "royalty_numerator": "11",
-        "token_id": "0.0.1135"
+        "token_id": "0.0.1135",
+        "all_collectors_are_exempt": false
       },
       {
         "amount": "1300",
@@ -85,7 +87,8 @@
         "denominating_token_id": "0.0.1137",
         "royalty_denominator": "13",
         "royalty_numerator": "9",
-        "token_id": "0.0.1135"
+        "token_id": "0.0.1135",
+        "all_collectors_are_exempt": true
       },
       {
         "amount": "8",
@@ -93,20 +96,23 @@
         "created_timestamp": "1234567899999999007",
         "royalty_denominator": "131",
         "royalty_numerator": "41",
-        "token_id": "0.0.1135"
+        "token_id": "0.0.1135",
+        "all_collectors_are_exempt": true
       },
       {
         "amount": "12",
         "collector_account_id": "0.0.8904",
         "created_timestamp": "1234567899999999007",
         "denominating_token_id": "0.0.1137",
-        "token_id": "0.0.1135"
+        "token_id": "0.0.1135",
+        "all_collectors_are_exempt": false
       },
       {
         "amount": "13",
         "collector_account_id": "0.0.8905",
         "created_timestamp": "1234567899999999007",
-        "token_id": "0.0.1135"
+        "token_id": "0.0.1135",
+        "all_collectors_are_exempt": true
       }
     ]
   },
@@ -148,12 +154,14 @@
         {
           "amount": 12,
           "collector_account_id": "0.0.8904",
-          "denominating_token_id": "0.0.1137"
+          "denominating_token_id": "0.0.1137",
+          "all_collectors_are_exempt": false
         },
         {
           "amount": 13,
           "collector_account_id": "0.0.8905",
-          "denominating_token_id": null
+          "denominating_token_id": null,
+          "all_collectors_are_exempt": true
         }
       ],
       "royalty_fees": [
@@ -162,7 +170,8 @@
             "denominator": 17,
             "numerator": 11
           },
-          "collector_account_id": "0.0.8901"
+          "collector_account_id": "0.0.8901",
+          "all_collectors_are_exempt": false
         },
         {
           "amount": {
@@ -173,7 +182,8 @@
           "fallback_fee": {
             "amount": 1300,
             "denominating_token_id": "0.0.1137"
-          }
+          },
+          "all_collectors_are_exempt": true
         },
         {
           "amount": {
@@ -184,7 +194,8 @@
           "fallback_fee": {
             "amount": 8,
             "denominating_token_id": null
-          }
+          },
+          "all_collectors_are_exempt": true
         }
       ]
     }
