@@ -22,7 +22,7 @@ import _ from 'lodash';
 
 import BaseController from './baseController';
 import config from '../config';
-import {filterKeys, orderFilterValues, responseDataLabel} from '../constants';
+import {filterKeys, networkSupplyQuery, orderFilterValues, responseContentType, responseDataLabel} from '../constants';
 import entityId from '../entityId';
 import {InvalidArgumentError, NotFoundError} from '../errors';
 import {AddressBookEntry, FileData} from '../model';
@@ -36,13 +36,11 @@ import {
   NetworkSupplyViewModel,
 } from '../viewmodel';
 
-const defaultUnreleasedSupplyAccounts = config.network.unreleasedSupplyAccounts;
 const networkNodesDefaultSize = 10;
 const networkNodesMaxSize = 25;
 
 class NetworkController extends BaseController {
-  static totalSupply = 5000000000000000000n;
-  static unreleasedSupplyAccounts = defaultUnreleasedSupplyAccounts.map((a) => entityId.parse(a).getEncodedId());
+  static contentTypeTextPlain = 'text/plain';
 
   /**
    * Extracts SQL where conditions, params, order, and limit
@@ -154,6 +152,7 @@ class NetworkController extends BaseController {
   extractSupplyQuery = (filters) => {
     const conditions = [];
     const params = [];
+    let q;
 
     for (const filter of filters) {
       if (_.isNil(filter)) {
@@ -178,12 +177,15 @@ class NetworkController extends BaseController {
           'abf.consensus_timestamp',
           params.length + 1
         );
+      } else if (filter.key === filterKeys.Q) {
+        q = filter.value;
       }
     }
 
     return {
       params,
       conditions,
+      q,
     };
   };
 
@@ -262,14 +264,22 @@ class NetworkController extends BaseController {
    */
   getSupply = async (req, res) => {
     const filters = utils.buildAndValidateFilters(req.query);
-    const {conditions, params} = this.extractSupplyQuery(filters);
+    const {conditions, params, q} = this.extractSupplyQuery(filters);
     const networkSupply = await NetworkNodeService.getSupply(conditions, params);
 
     if (networkSupply === null || !networkSupply.consensus_timestamp) {
       throw new NotFoundError();
     }
 
-    res.locals[responseDataLabel] = new NetworkSupplyViewModel(networkSupply);
+    const viewModel = new NetworkSupplyViewModel(networkSupply);
+
+    if (q) {
+      res.locals[responseDataLabel] =
+        q === networkSupplyQuery.TOTALCOINS ? viewModel.total_supply : viewModel.released_supply;
+      res.locals[responseContentType] = NetworkController.contentTypeTextPlain;
+    } else {
+      res.locals[responseDataLabel] = viewModel;
+    }
   };
 
   /**
