@@ -59,18 +59,8 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                     left join token_account e on e.account_id = t.account_id
                     and e.token_id = t.token_id
                 ),
-                last as (
-                  select distinct on (token_account.account_id, token_account.token_id)
-                  token_account.account_id,
-                  token_account.associated,
-                  token_account.created_timestamp,
-                  token_account.token_id
-                  from token_account
-                  join token_account_temp on token_account_temp.account_id = token_account.account_id
-                    and token_account_temp.token_id = token_account.token_id
-                ),
                 token as (
-                  select 
+                  select
                     token_id, 
                     freeze_key, 
                     freeze_default, 
@@ -100,10 +90,8 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                     e_token_id
                   from
                     existing
-                    left join last on last.account_id = existing.account_id and
-                      last.token_id = existing.token_id and last.associated is true
                   where
-                    (existing.created_timestamp is not null or last.created_timestamp is not null) and
+                    (existing.created_timestamp is not null or e_created_timestamp is not null) and
                     (e_timestamp_range is not null and timestamp_range is not null)
                   order by
                     existing.account_id,
@@ -153,10 +141,8 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                   from
                     existing
                     join token on existing.token_id = token.token_id
-                    left join last on last.account_id = existing.account_id and
-                      last.token_id = existing.token_id and last.associated is true
                   where
-                    (existing.created_timestamp is not null or last.created_timestamp is not null) and
+                    (existing.created_timestamp is not null or e_created_timestamp is not null) and
                     upper(timestamp_range) is not null
                 )
                 insert into
@@ -201,11 +187,9 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                 from
                   existing
                   join token on existing.token_id = token.token_id
-                  left join last on last.account_id = existing.account_id and
-                      last.token_id = existing.token_id and last.associated is true
                 where
-                  (existing.created_timestamp is not null or last.created_timestamp is not null) 
-                  and upper(existing.timestamp_range) is null
+                  (existing.created_timestamp is not null or e_created_timestamp is not null) and
+                  upper(existing.timestamp_range) is null
                   on conflict (account_id, token_id) do
                 update
                 set
