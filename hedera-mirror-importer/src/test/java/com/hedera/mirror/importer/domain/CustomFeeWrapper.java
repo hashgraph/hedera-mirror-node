@@ -20,14 +20,13 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
-import com.hedera.mirror.common.domain.transaction.CustomFee;
-
 import lombok.Data;
 import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.core.RowMapper;
 
 import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.transaction.CustomFee;
 
 @Data
 public class CustomFeeWrapper {
@@ -60,7 +59,7 @@ public class CustomFeeWrapper {
         customFee.setRoyaltyNumerator(royaltyNumerator);
         customFee.setId(new CustomFee.Id(createdTimestamp, EntityIdEndec.decode(tokenId, EntityType.TOKEN)));
 
-        if(allCollectorsAreExempt!=null) {
+        if (allCollectorsAreExempt != null) {
             customFee.setAllCollectorsAreExempt(allCollectorsAreExempt);
         }
     }

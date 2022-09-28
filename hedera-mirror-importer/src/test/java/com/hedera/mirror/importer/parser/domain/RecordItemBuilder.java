@@ -54,8 +54,8 @@ import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.Fraction;
-import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
@@ -72,10 +72,10 @@ import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TopicID;
@@ -85,8 +85,6 @@ import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
-import com.hederahashgraph.api.proto.java.FixedFee;
-import com.hederahashgraph.api.proto.java.RoyaltyFee;
 import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -400,10 +398,9 @@ public class RecordItemBuilder {
     }
 
     private FixedFee.Builder fixedFee() {
-        return  FixedFee.newBuilder().setAmount(100L)
-                                    .setDenominatingTokenId(TokenID.getDefaultInstance());
+        return FixedFee.newBuilder().setAmount(100L)
+                .setDenominatingTokenId(TokenID.getDefaultInstance());
     }
-
 
     public Builder<EthereumTransactionBody.Builder> ethereumTransaction() {
         return ethereumTransaction(false);
@@ -533,7 +530,7 @@ public class RecordItemBuilder {
                 .addCustomFees(customFee())
                 .setWipeKey(key());
         return new Builder<>(TransactionType.TOKENCREATION, transactionBody)
-                  .receipt(r -> r.setTokenID(tokenId()));
+                .receipt(r -> r.setTokenID(tokenId()));
     }
 
     public Builder<TokenFeeScheduleUpdateTransactionBody.Builder> tokenFeeScheduleUpdate() {
