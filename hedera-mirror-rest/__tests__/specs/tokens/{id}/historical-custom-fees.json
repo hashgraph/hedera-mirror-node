@@ -155,6 +155,7 @@
       "fixed_fees": [],
       "fractional_fees": [
         {
+          "all_collectors_are_exempt": false,
           "amount": {
             "denominator": 13,
             "numerator": 10
@@ -163,8 +164,7 @@
           "denominating_token_id": "0.0.1135",
           "maximum": 980,
           "minimum": 97,
-          "net_of_transfers": false,
-          "all_collectors_are_exempt": false
+          "net_of_transfers": false
         }
       ]
     }
