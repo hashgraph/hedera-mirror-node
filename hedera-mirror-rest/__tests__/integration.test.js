@@ -228,17 +228,15 @@ describe('API specification tests', () => {
     const specPath = path.join(getModuleDirname(import.meta), 'specs', subSpecPath);
     const specMap = new Map();
 
-    walk(specPath)
-      .filter((f) => f.endsWith('account-id.json'))
-      .forEach((f) => {
-        const specText = fs.readFileSync(f, 'utf8');
-        const spec = JSONParse(specText);
-        spec.file = path.basename(f);
-        const key = path.dirname(f).replace(specPath, '');
-        const specs = specMap.get(key) || [];
-        specs.push(spec);
-        specMap.set(key, specs);
-      });
+    walk(specPath).forEach((f) => {
+      const specText = fs.readFileSync(f, 'utf8');
+      const spec = JSONParse(specText);
+      spec.file = path.basename(f);
+      const key = path.dirname(f).replace(specPath, '');
+      const specs = specMap.get(key) || [];
+      specs.push(spec);
+      specMap.set(key, specs);
+    });
 
     return specMap;
   };

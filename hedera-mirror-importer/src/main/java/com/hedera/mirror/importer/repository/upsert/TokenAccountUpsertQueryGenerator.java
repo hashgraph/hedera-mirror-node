@@ -20,9 +20,10 @@ package com.hedera.mirror.importer.repository.upsert;
  * ‍
  */
 
-import java.text.MessageFormat;
-import javax.inject.Named;
 import lombok.Value;
+
+import javax.inject.Named;
+import java.text.MessageFormat;
 
 @Named
 @Value
@@ -69,13 +70,12 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                     and token_account_temp.token_id = token_account.token_id
                 ),
                 token as (
-                    select distinct
-                     token.token_id,
-                     token.freeze_key,
-                     token.freeze_default,
-                     token.kyc_key
-                        from token
-                        join token_account_temp t on t.token_id = token.token_id
+                  select 
+                    token_id, 
+                    freeze_key, 
+                    freeze_default, 
+                    kyc_key 
+                  from token
                 ),
                 existing_history as (
                   insert into
@@ -123,7 +123,7 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                       token_id
                     )
                   select
-                    distinct coalesce(existing.account_id, e_account_id, null),
+                    coalesce(existing.account_id, e_account_id, null),
                     coalesce(existing.associated, e_associated, false),
                     coalesce(
                       automatic_association,
@@ -131,17 +131,33 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                       false
                     ),
                     coalesce(existing.created_timestamp, e_created_timestamp, null),
-                    coalesce(freeze_status, e_freeze_status, 0),
-                    coalesce(kyc_status, e_kyc_status, 0),
+                    case when existing.freeze_status is not null then existing.freeze_status
+                      when existing.created_timestamp is not null then
+                          case
+                              when token.freeze_key is null then 0
+                              when token.freeze_default is true then 1
+                              else 2
+                          end
+                      else e_freeze_status
+                    end freeze_status,
+                    case when existing.kyc_status is not null then existing.kyc_status
+                      when existing.created_timestamp is not null then
+                        case
+                          when token.kyc_key is null then 0
+                          else 2
+                        end
+                        else e_kyc_status
+                    end kyc_status,
                     coalesce(timestamp_range, e_timestamp_range, null),
                     coalesce(existing.token_id, e_token_id, null)
                   from
                     existing
+                    join token on existing.token_id = token.token_id
                     left join last on last.account_id = existing.account_id and
                       last.token_id = existing.token_id and last.associated is true
                   where
-                    (existing.created_timestamp is not null or last.created_timestamp is not null) and
-                    (timestamp_range is not null and upper(timestamp_range) is not null)
+                    last.created_timestamp is not null and
+                    upper(timestamp_range) is not null
                 )
                 insert into
                   token_account (
@@ -170,7 +186,7 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                               when token.freeze_default is true then 1
                               else 2
                           end
-                      else coalesce(existing.freeze_status, e_freeze_status, 0)
+                      else e_freeze_status
                   end freeze_status,
                   case when existing.kyc_status is not null then existing.kyc_status
                       when existing.created_timestamp is not null then
@@ -178,7 +194,7 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                           when token.kyc_key is null then 0
                           else 2
                         end
-                        else coalesce(existing.kyc_status, e_kyc_status, 0)
+                        else e_kyc_status
                   end kyc_status,
                   coalesce(existing.timestamp_range, e_timestamp_range, null),
                   coalesce(existing.token_id, e_token_id, null)
@@ -188,16 +204,9 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                   left join last on last.account_id = existing.account_id and
                       last.token_id = existing.token_id and last.associated is true
                 where
-                  (existing.created_timestamp is not null or last.created_timestamp is not null) and (
-                      (
-                        e_timestamp_range is not null
-                        and timestamp_range is null
-                      )
-                      or (
-                        existing.timestamp_range is not null
-                        and upper(existing.timestamp_range) is null
-                      )
-                  ) on conflict (account_id, token_id) do
+                  (existing.created_timestamp is not null or last.created_timestamp is not null) 
+                  and upper(existing.timestamp_range) is null
+                  on conflict (account_id, token_id) do
                 update
                 set
                   associated = excluded.associated,

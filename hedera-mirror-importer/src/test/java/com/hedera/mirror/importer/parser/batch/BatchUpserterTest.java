@@ -20,27 +20,8 @@ package com.hedera.mirror.importer.parser.batch;
  * ‍
  */
 
-import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
-import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
-import static com.hedera.mirror.importer.config.MirrorImporterConfiguration.TOKEN_DISSOCIATE_BATCH_PERSISTER;
-import static org.assertj.core.api.Assertions.assertThat;
-
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
-import com.hederahashgraph.api.proto.java.Key;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
-import org.apache.commons.codec.binary.Hex;
-import org.assertj.core.groups.Tuple;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.transaction.support.TransactionOperations;
-
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -74,6 +55,25 @@ import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
+import com.hederahashgraph.api.proto.java.Key;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import org.apache.commons.codec.binary.Hex;
+import org.assertj.core.groups.Tuple;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.transaction.support.TransactionOperations;
+
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
+import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
+import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
+import static com.hedera.mirror.importer.config.MirrorImporterConfiguration.TOKEN_DISSOCIATE_BATCH_PERSISTER;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class BatchUpserterTest extends IntegrationTest {
@@ -270,10 +270,10 @@ class BatchUpserterTest extends IntegrationTest {
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
 
         var tokenAccounts = new ArrayList<TokenAccount>();
-        tokenAccounts.add(getTokenAccount("0.0.2000", "0.0.1001", 1L, true, null));
-        tokenAccounts.add(getTokenAccount("0.0.2001", "0.0.1001", 2L, true, null));
-        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4001", 3L, true, null));
-        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4002", 4L, true, null));
+        tokenAccounts.add(getTokenAccount("0.0.2000", "0.0.1001", 1L, true, Range.atLeast(1L)));
+        tokenAccounts.add(getTokenAccount("0.0.2001", "0.0.1001", 2L, true, Range.atLeast(2L)));
+        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4001", 3L, true, Range.atLeast(3L)));
+        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4002", 4L, true, Range.atLeast(4L)));
 
         persist(batchPersister, tokenAccounts);
 
@@ -303,15 +303,15 @@ class BatchUpserterTest extends IntegrationTest {
 
         // associate
         var tokenAccounts = new ArrayList<TokenAccount>();
-        tokenAccounts.add(getTokenAccount("0.0.2000", "0.0.2001", 5L, true, null));
-        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.3001", 6L, true, null));
-        tokenAccounts.add(getTokenAccount("0.0.4000", "0.0.4001", 7L, true, null));
+        tokenAccounts.add(getTokenAccount("0.0.2000", "0.0.2001", 5L, true, Range.atLeast(5L)));
+        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.3001", 6L, true, Range.atLeast(6L)));
+        tokenAccounts.add(getTokenAccount("0.0.4000", "0.0.4001", 7L, true, Range.atLeast(7L)));
 
         persist(batchPersister, tokenAccounts);
 
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
         assertThat(tokenAccountRepository.findAll())
-                .extracting(ta -> ta.getCreatedTimestamp(), TokenAccount::getFreezeStatus)
+                .extracting(ta -> ta.getTimestampLower(), TokenAccount::getFreezeStatus)
                 .containsExactlyInAnyOrder(
                         Tuple.tuple(5L, TokenFreezeStatusEnum.NOT_APPLICABLE),
                         Tuple.tuple(6L, TokenFreezeStatusEnum.FROZEN),
@@ -328,12 +328,11 @@ class BatchUpserterTest extends IntegrationTest {
         persist(batchPersister, tokenAccounts);
 
         assertThat(tokenAccountRepository.findAll())
-                .extracting(ta -> ta.getCreatedTimestamp(), TokenAccount::getFreezeStatus)
+                .extracting(TokenAccount::getCreatedTimestamp, TokenAccount::getTimestampLower, TokenAccount::getFreezeStatus)
                 .containsExactlyInAnyOrder(
-                        Tuple.tuple(5L, TokenFreezeStatusEnum.NOT_APPLICABLE),
-                        Tuple.tuple(6L, TokenFreezeStatusEnum.UNFROZEN),
-                        Tuple.tuple(7L, TokenFreezeStatusEnum.FROZEN)
-
+                        Tuple.tuple(5L, 5L, TokenFreezeStatusEnum.NOT_APPLICABLE),
+                        Tuple.tuple(6L, 10L, TokenFreezeStatusEnum.UNFROZEN),
+                        Tuple.tuple(7L, 11L, TokenFreezeStatusEnum.FROZEN)
                 );
 
         assertThat(tokenAccountHistoryRepository.findAll())
@@ -355,8 +354,8 @@ class BatchUpserterTest extends IntegrationTest {
         assertThat(tokenRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokens);
 
         var tokenAccounts = new ArrayList<TokenAccount>();
-        tokenAccounts.add(getTokenAccount("0.0.2000", "0.0.2001", 5L, true, null));
-        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.3001", 6L, true, null));
+        tokenAccounts.add(getTokenAccount("0.0.2000", "0.0.2001", 5L, true, Range.atLeast(5L)));
+        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.3001", 6L, true, Range.atLeast(6L)));
 
         persist(batchPersister, tokenAccounts);
 
@@ -386,10 +385,10 @@ class BatchUpserterTest extends IntegrationTest {
     @Test
     void tokenAccountInsertWithMissingToken() {
         var tokenAccounts = new ArrayList<TokenAccount>();
-        tokenAccounts.add(getTokenAccount("0.0.2000", "0.0.1001", 1L, false, null));
-        tokenAccounts.add(getTokenAccount("0.0.2001", "0.0.1001", 2L, false, null));
-        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4001", 3L, false, null));
-        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4002", 4L, false, null));
+        tokenAccounts.add(getTokenAccount("0.0.2000", "0.0.1001", 1L, false, Range.atLeast(1L)));
+        tokenAccounts.add(getTokenAccount("0.0.2001", "0.0.1001", 2L, false, Range.atLeast(2L)));
+        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4001", 3L, false, Range.atLeast(3L)));
+        tokenAccounts.add(getTokenAccount("0.0.3000", "0.0.4002", 4L, false, Range.atLeast(4L)));
 
         persist(batchPersister, tokenAccounts);
         assertThat(tokenAccountRepository.findAll()).isEmpty();
@@ -756,11 +755,6 @@ class BatchUpserterTest extends IntegrationTest {
     private TokenAccount getTokenAccount(String tokenId, String accountId, Long createdTimestamp, Boolean associated,
                                          TokenFreezeStatusEnum freezeStatus, TokenKycStatusEnum kycStatus,
                                          Range timestampRange) {
-        Range<Long> range = timestampRange == null ? Range.atLeast(0L) : timestampRange;
-        if (timestampRange == null && createdTimestamp != null) {
-            range = Range.atLeast(createdTimestamp);
-        }
-        Range<Long> finalRange = range;
         return domainBuilder.tokenAccount().customize(t -> t
                 .accountId(EntityId.of(accountId, ACCOUNT).getId())
                 .automaticAssociation(false)
@@ -768,7 +762,7 @@ class BatchUpserterTest extends IntegrationTest {
                 .createdTimestamp(createdTimestamp)
                 .freezeStatus(freezeStatus)
                 .kycStatus(kycStatus)
-                .timestampRange(finalRange)
+                .timestampRange(timestampRange)
                 .tokenId(EntityId.of(tokenId, TOKEN).getId())
         ).get();
     }

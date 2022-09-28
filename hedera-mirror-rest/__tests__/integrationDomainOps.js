@@ -1225,10 +1225,14 @@ const addTokenAccount = async (tokenAccount) => {
     created_timestamp: 0,
     freeze_status: 0,
     kyc_status: 0,
-    timestamp_range: '[0,)',
+    timestamp_range: null,
     token_id: '0.0.0',
     ...tokenAccount,
   };
+
+  if (tokenAccount.timestamp_range === null) {
+    tokenAccount.timestamp_range = `[${tokenAccount.created_timestamp},)`;
+  }
 
   await pool.query(
     `insert into token_account (account_id, associated, automatic_association, created_timestamp, freeze_status,

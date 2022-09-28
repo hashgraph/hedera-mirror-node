@@ -20,31 +20,8 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
  * ‍
  */
 
-import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
-import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
-import static com.hedera.mirror.common.domain.entity.EntityType.SCHEDULE;
-import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
-
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
-import com.hederahashgraph.api.proto.java.Key;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Stream;
-import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
-import org.apache.commons.codec.binary.Hex;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.support.TransactionTemplate;
-
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractAction;
@@ -109,6 +86,29 @@ import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionHashRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.repository.TransactionSignatureRepository;
+import com.hederahashgraph.api.proto.java.Key;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import org.apache.commons.codec.binary.Hex;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.support.TransactionTemplate;
+
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
+
+import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
+import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
+import static com.hedera.mirror.common.domain.entity.EntityType.SCHEDULE;
+import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class SqlEntityListenerTest extends IntegrationTest {
@@ -1292,9 +1292,9 @@ class SqlEntityListenerTest extends IntegrationTest {
         EntityId accountId1 = EntityId.of("0.0.7", ACCOUNT);
         EntityId accountId2 = EntityId.of("0.0.11", ACCOUNT);
         TokenAccount tokenAccount1 = getTokenAccount(tokenId1, accountId1, 5L, true, false,
-                TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE, null);
+                TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE, Range.atLeast(5L));
         TokenAccount tokenAccount2 = getTokenAccount(tokenId2, accountId2, 6L, true, false,
-                TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE, null);
+                TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE, Range.atLeast(6L));
 
         // when
         sqlEntityListener.onTokenAccount(tokenAccount1);
@@ -1318,7 +1318,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         EntityId accountId1 = EntityId.of("0.0.7", ACCOUNT);
         TokenAccount associate = getTokenAccount(tokenId1, accountId1, 5L, true, false,
-                TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE, null);
+                TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE, Range.atLeast(5L));
         TokenAccount dissociate = getTokenAccount(tokenId1, accountId1, null, false, null, null, null,
                 Range.atLeast(6l));
 
@@ -1372,7 +1372,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         // token account was associated before this record file
         EntityId accountId1 = EntityId.of("0.0.7", ACCOUNT);
         TokenAccount associate = getTokenAccount(tokenId1, accountId1, 5L, true, false,
-                TokenFreezeStatusEnum.FROZEN, TokenKycStatusEnum.REVOKED, null);
+                TokenFreezeStatusEnum.FROZEN, TokenKycStatusEnum.REVOKED, Range.atLeast(5L));
         tokenAccountRepository.save(associate);
         expected.add(getTokenAccount(tokenId1, accountId1, 5L, true, false,
                 TokenFreezeStatusEnum.FROZEN, TokenKycStatusEnum.REVOKED, Range.closedOpen(5L, 6L)));
@@ -1394,12 +1394,12 @@ class SqlEntityListenerTest extends IntegrationTest {
                 Range.atLeast(8L));
         sqlEntityListener.onTokenAccount(dissociate);
         expected.add(getTokenAccount(tokenId1, accountId1, 5L, false, false, TokenFreezeStatusEnum.FROZEN,
-                TokenKycStatusEnum.GRANTED, Range.closedOpen(8L, 9L)));
+                TokenKycStatusEnum.GRANTED, Range.closedOpen(8L, 20L)));
 
         // associate after dissociate, the token has freeze key with freezeDefault = false, the token also has kyc key,
         // so the new relationship should have UNFROZEN, REVOKED
         TokenAccount reassociate = getTokenAccount(tokenId1, accountId1, 20L, true, false, null, null,
-                Range.atLeast(9L));
+                Range.atLeast(20L));
         sqlEntityListener.onTokenAccount(reassociate);
 
         var expectedToken = getTokenAccount(tokenId1, accountId1, 20L, true, false, TokenFreezeStatusEnum.UNFROZEN,
@@ -1421,7 +1421,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         // given no token row in db
 
         // when
-        TokenAccount associate = getTokenAccount(tokenId1, accountId1, 10L, true, false, null, null, null);
+        TokenAccount associate = getTokenAccount(tokenId1, accountId1, 10L, true, false, null, null, Range.atLeast(10L));
         sqlEntityListener.onTokenAccount(associate);
 
         TokenAccount kycGrant = getTokenAccount(tokenId1, accountId1, null, null, null, null,
@@ -1471,7 +1471,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         tokenRepository.save(token);
 
         // given association in a previous record file
-        TokenAccount associate = getTokenAccount(tokenId1, accountId1, 5L, true, false, null, null, null);
+        TokenAccount associate = getTokenAccount(tokenId1, accountId1, 5L, true, false, null, null, Range.atLeast(5L));
         sqlEntityListener.onTokenAccount(associate);
         expected.add(getTokenAccount(tokenId1, accountId1, 5L, true, false, TokenFreezeStatusEnum.UNFROZEN,
                 TokenKycStatusEnum.REVOKED, Range.closedOpen(5L, 10L)));
@@ -1770,11 +1770,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         tokenAccount.setCreatedTimestamp(createdTimestamp);
         tokenAccount.setFreezeStatus(freezeStatus);
         tokenAccount.setKycStatus(kycStatus);
-        Range<Long> range = timestampRange == null ? Range.atLeast(0L) : timestampRange;
-        if (timestampRange == null && createdTimestamp != null) {
-            range = Range.atLeast(createdTimestamp);
-        }
-        tokenAccount.setTimestampRange(range);
+        tokenAccount.setTimestampRange(timestampRange);
         tokenAccount.setTokenId(tokenId.getId());
         return tokenAccount;
     }

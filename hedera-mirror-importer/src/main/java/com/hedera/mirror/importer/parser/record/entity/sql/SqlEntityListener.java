@@ -20,21 +20,7 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
  * ‍
  */
 
-import static com.hedera.mirror.importer.config.MirrorImporterConfiguration.TOKEN_DISSOCIATE_BATCH_PERSISTER;
-
 import com.google.common.base.Stopwatch;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import javax.inject.Named;
-import lombok.extern.log4j.Log4j2;
-import org.springframework.beans.factory.BeanCreationNotAllowedException;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.core.annotation.Order;
-
 import com.hedera.mirror.common.domain.addressbook.NetworkStake;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
 import com.hedera.mirror.common.domain.contract.Contract;
@@ -85,6 +71,20 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.SidecarFileRepository;
+import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.factory.BeanCreationNotAllowedException;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.core.annotation.Order;
+
+import javax.inject.Named;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+
+import static com.hedera.mirror.importer.config.MirrorImporterConfiguration.TOKEN_DISSOCIATE_BATCH_PERSISTER;
 
 @Log4j2
 @Named
@@ -365,8 +365,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onTokenAccount(TokenAccount tokenAccount) throws ImporterException {
-        TokenAccount merged = tokenAccountState.merge(tokenAccount.getId(), tokenAccount, this::mergeTokenAccount);
-        tokenAccounts.add(merged);
+        var merged = mergeTokenAccount(tokenAccountState.get(tokenAccount.getId()), tokenAccount);
+        if (merged != null) {
+            tokenAccountState.put(tokenAccount.getId(), merged);
+            tokenAccounts.add(merged);
+        }
     }
 
     @Override
@@ -731,17 +734,16 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     private TokenAccount mergeTokenAccount(TokenAccount lastTokenAccount, TokenAccount newTokenAccount) {
+        if (lastTokenAccount == null) {
+            return newTokenAccount;
+        }
+
         if (lastTokenAccount.getTimestampRange().equals(newTokenAccount.getTimestampRange())) {
             // The token accounts are for the same range, accept the previous one
             return null;
         }
 
         lastTokenAccount.setTimestampUpper(newTokenAccount.getTimestampLower());
-
-        if (newTokenAccount.getTimestampLower() != null && newTokenAccount.getCreatedTimestamp() != null &&
-                newTokenAccount.getCreatedTimestamp() > newTokenAccount.getTimestampLower()) {
-            newTokenAccount.setTimestampLower(newTokenAccount.getCreatedTimestamp());
-        }
 
         if (newTokenAccount.getCreatedTimestamp() != null) {
             return newTokenAccount;
