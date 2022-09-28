@@ -1106,6 +1106,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             CustomFee customFee = new CustomFee();
             customFee.setId(id);
             customFee.setCollectorAccountId(collector);
+            customFee.setAllCollectorsAreExempt(protoCustomFee.getAllCollectorsAreExempt());
 
             var feeCase = protoCustomFee.getFeeCase();
             boolean chargedInAttachedToken;

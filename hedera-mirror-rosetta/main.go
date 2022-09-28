@@ -93,8 +93,13 @@ func newBlockchainOnlineRouter(
 	networkAPIService := services.NewNetworkAPIService(baseService, addressBookEntryRepo, network, version)
 	networkAPIController := server.NewNetworkAPIController(networkAPIService, asserter)
 
-	blockAPIService := services.NewBlockAPIService(accountRepo, baseService, rosettaConfig.Cache[config.EntityCacheKey],
-		serverContext)
+	blockAPIService := services.NewBlockAPIService(
+		accountRepo,
+		baseService,
+		rosettaConfig.Cache[config.EntityCacheKey],
+		rosettaConfig.Response.MaxTransactionsInBlock,
+		serverContext,
+	)
 	blockAPIController := server.NewBlockAPIController(blockAPIService, asserter)
 
 	mempoolAPIService := services.NewMempoolAPIService()
@@ -210,7 +215,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	var router http.Handler
 	if rosettaConfig.Online {
 		dbClient := db.ConnectToDb(rosettaConfig.Db)
@@ -244,7 +249,10 @@ func main() {
 
 	go func() {
 		log.Infof("Listening on port %d", rosettaConfig.Port)
-		log.Error(httpServer.ListenAndServe())
+		if err := httpServer.ListenAndServe(); err != nil {
+			log.Errorf("Error http listen and serve: %v", err)
+			stop()
+		}
 	}()
 
 	<-ctx.Done()
@@ -255,6 +263,6 @@ func main() {
 	if err := httpServer.Shutdown(shutdownCtx); err == nil {
 		log.Info("Server shutdown gracefully")
 	} else {
-		log.Errorf("Error shutdown server %v", err)
+		log.Errorf("Error shutdown server: %v", err)
 	}
 }
