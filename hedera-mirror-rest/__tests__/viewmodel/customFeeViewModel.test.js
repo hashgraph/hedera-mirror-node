@@ -37,6 +37,7 @@ describe('CustomFeeViewModel', () => {
   fixedFeeTestSpecs.forEach((testSpec) => {
     test(`fixed fee in ${testSpec.name}`, () => {
       const input = new CustomFee({
+        all_collectors_are_exempt: true,
         amount: 15,
         collector_account_id: 8901,
         created_timestamp: '10',
@@ -44,6 +45,7 @@ describe('CustomFeeViewModel', () => {
         token_id: 10015,
       });
       const expected = {
+        all_collectors_are_exempt: true,
         amount: 15,
         collector_account_id: '0.0.8901',
         denominating_token_id: testSpec.expectedDenominatingTokenId,
@@ -61,6 +63,7 @@ describe('CustomFeeViewModel', () => {
 
   test('fractional fee', () => {
     const input = new CustomFee({
+      all_collectors_are_exempt: true,
       amount: 15,
       amount_denominator: 31,
       collector_account_id: 8901,
@@ -71,6 +74,7 @@ describe('CustomFeeViewModel', () => {
       token_id: 10015,
     });
     const expected = {
+      all_collectors_are_exempt: true,
       amount: {
         numerator: 15,
         denominator: 31,
@@ -93,6 +97,7 @@ describe('CustomFeeViewModel', () => {
 
   test('fractional fee no maximum', () => {
     const input = new CustomFee({
+      all_collectors_are_exempt: false,
       amount: 15,
       amount_denominator: 31,
       collector_account_id: 8901,
@@ -102,6 +107,7 @@ describe('CustomFeeViewModel', () => {
       token_id: 10015,
     });
     const expected = {
+      all_collectors_are_exempt: false,
       amount: {
         numerator: 15,
         denominator: 31,
@@ -123,12 +129,14 @@ describe('CustomFeeViewModel', () => {
 
   test('royalty fee without fallback', () => {
     const input = new CustomFee({
+      all_collectors_are_exempt: true,
       collector_account_id: 8901,
       created_timestamp: '10',
       royalty_denominator: 31,
       royalty_numerator: 15,
     });
     const expected = {
+      all_collectors_are_exempt: true,
       amount: {
         numerator: 15,
         denominator: 31,
@@ -148,6 +156,7 @@ describe('CustomFeeViewModel', () => {
   fixedFeeTestSpecs.forEach((testSpec) => {
     test(`royalty fee with fallback in ${testSpec.name}`, () => {
       const input = new CustomFee({
+        all_collectors_are_exempt: false,
         amount: 11,
         collector_account_id: 8901,
         created_timestamp: '10',
@@ -156,6 +165,7 @@ describe('CustomFeeViewModel', () => {
         royalty_numerator: 15,
       });
       const expected = {
+        all_collectors_are_exempt: false,
         amount: {
           numerator: 15,
           denominator: 31,

@@ -642,7 +642,8 @@ const addCustomFee = async (customFee) => {
   }
 
   await pool.query(
-    `insert into custom_fee (amount,
+    `insert into custom_fee (all_collectors_are_exempt,
+                             amount,
                              amount_denominator,
                              collector_account_id,
                              created_timestamp,
@@ -653,8 +654,9 @@ const addCustomFee = async (customFee) => {
                              royalty_denominator,
                              royalty_numerator,
                              token_id)
-    values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);`,
+    values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);`,
     [
+      customFee.all_collectors_are_exempt || false,
       customFee.amount || null,
       customFee.amount_denominator || null,
       EntityId.parse(customFee.collector_account_id, {isNullable: true}).getEncodedId(),

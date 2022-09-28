@@ -419,6 +419,7 @@ const extractSqlFromTokenInfoRequest = (tokenId, filters) => {
 
   const aggregateCustomFeeQuery = `
     select jsonb_agg(jsonb_build_object(
+                       'all_collectors_are_exempt', ${CustomFee.ALL_COLLECTORS_ARE_EXEMPT},
                        'amount', ${CustomFee.AMOUNT},
                        'amount_denominator', ${CustomFee.AMOUNT_DENOMINATOR},
                        'collector_account_id', ${CustomFee.COLLECTOR_ACCOUNT_ID}::text,

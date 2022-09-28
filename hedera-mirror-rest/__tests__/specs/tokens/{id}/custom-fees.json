@@ -155,12 +155,14 @@
         {
           "amount": 12,
           "collector_account_id": "0.0.8904",
-          "denominating_token_id": "0.0.1137"
+          "denominating_token_id": "0.0.1137",
+          "all_collectors_are_exempt": false
         },
         {
           "amount": 13,
           "collector_account_id": "0.0.8905",
-          "denominating_token_id": null
+          "denominating_token_id": null,
+          "all_collectors_are_exempt": true
         }
       ],
       "fractional_fees": [
@@ -173,7 +175,8 @@
           "denominating_token_id": "0.0.1135",
           "maximum": 987,
           "minimum": 79,
-          "net_of_transfers": false
+          "net_of_transfers": false,
+          "all_collectors_are_exempt": false
         },
         {
           "amount": {
@@ -183,7 +186,8 @@
           "collector_account_id": "0.0.8902",
           "denominating_token_id": "0.0.1135",
           "minimum": 1,
-          "net_of_transfers": false
+          "net_of_transfers": false,
+          "all_collectors_are_exempt": true
         },
         {
           "amount": {
@@ -193,7 +197,8 @@
           "collector_account_id": "0.0.8904",
           "denominating_token_id": "0.0.1135",
           "minimum": 0,
-          "net_of_transfers": true
+          "net_of_transfers": true,
+          "all_collectors_are_exempt": false
         }
       ]
     }
