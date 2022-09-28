@@ -654,7 +654,7 @@ const addCustomFee = async (customFee) => {
                              royalty_denominator,
                              royalty_numerator,
                              token_id)
-    values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);`,
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);`,
     [
       customFee.all_collectors_are_exempt || false,
       customFee.amount || null,
