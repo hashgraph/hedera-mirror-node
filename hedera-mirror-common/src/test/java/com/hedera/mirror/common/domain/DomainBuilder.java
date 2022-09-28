@@ -721,7 +721,7 @@ public class DomainBuilder {
                 .createdTimestamp(timestamp)
                 .freezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE)
                 .kycStatus(TokenKycStatusEnum.NOT_APPLICABLE)
-                .timestampRange(Range.closedOpen(timestamp, timestamp()))
+                .timestampRange(Range.atLeast(timestamp))
                 .tokenId(id());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
