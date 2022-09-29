@@ -224,7 +224,7 @@ class ContractService extends BaseService {
   async getContractStateByIdAndFilters(
     whereConditions = [],
     whereParams = [],
-    order = orderFilterValues.DESC,
+    order = orderFilterValues.ASC,
     limit = defaultLimit
   ) {
     const whereClause = ` where ${whereConditions.join(' and ')} \n`;

@@ -65,6 +65,7 @@ const setup = async (testDataJson) => {
   await loadTokenAllowances(testDataJson.tokenAllowances);
   await loadTransactions(testDataJson.transactions);
   await loadTransactionSignatures(testDataJson.transactionsignatures);
+  await loadContractStates(testDataJson.contractStates);
 };
 
 const loadAccounts = async (accounts) => {
@@ -144,6 +145,16 @@ const loadContractActions = async (contractActions) => {
 
   for (const contractAction of contractActions) {
     await addContractAction(contractAction);
+  }
+};
+
+const loadContractStates = async (contractStates) => {
+  if (contractStates == null) {
+    return;
+  }
+
+  for (const contractState of contractStates) {
+    await addContractState(contractState);
   }
 };
 
@@ -917,6 +928,14 @@ const contractActionDefaults = {
   value: 100,
 };
 
+const contractStateDefaults = {
+  contract_id: null,
+  created_timestamp: 1664365660048674966,
+  modified_timestamp: 1664365660048674966,
+  slot: 1,
+  value: 1,
+};
+
 const addContractAction = async (contractActionInput) => {
   const action = {
     ...contractActionDefaults,
@@ -926,6 +945,17 @@ const addContractAction = async (contractActionInput) => {
   convertByteaFields(['input', 'recipient_address', 'result_data'], action);
 
   await insertDomainObject('contract_action', Object.keys(contractActionDefaults), action);
+};
+
+const addContractState = async (contractStateInput) => {
+  const state = {
+    ...contractStateDefaults,
+    ...contractStateInput,
+  };
+
+  convertByteaFields(['slot', 'value'], state);
+
+  await insertDomainObject('contract_state', Object.keys(contractStateDefaults), state);
 };
 
 const contractResultDefaults = {
@@ -1444,4 +1474,5 @@ export default {
   setAccountBalance,
   setup,
   loadContractActions,
+  loadContractStates,
 };

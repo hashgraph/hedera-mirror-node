@@ -901,7 +901,7 @@ class ContractController extends BaseController {
           order = filter.value;
           break;
         case filterKeys.SLOT:
-          conditions.push(`cast(encode(${ContractState.SLOT}::bytea, 'hex') as int) > $2`);
+          conditions.push(`cast(encode(${ContractState.SLOT}::bytea, 'hex') as int) ${filter.operator} $2`);
           params.push(filter.value);
           break;
         default:

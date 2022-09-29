@@ -1,0 +1,22 @@
+{
+  "description": "Contract state api call for a contract with invalid contract",
+  "setup": {
+    "contractStates": [
+      {
+        "created_timestamp": "1676540001234390005",
+        "modified_timestamp": "1676540001234390005",
+        "contract_id": 5001,
+        "slot": "01",
+        "value": "01"
+      }
+    ]
+  },
+  "urls": ["/api/v1/contracts/5005/state"],
+  "responseStatus": 200,
+  "responseJson": {
+    "state": [],
+    "links": {
+      "next": null
+    }
+  }
+}
