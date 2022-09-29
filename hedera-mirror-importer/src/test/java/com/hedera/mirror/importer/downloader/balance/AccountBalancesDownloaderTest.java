@@ -34,6 +34,7 @@ import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.downloader.AbstractDownloaderTest;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
+import com.hedera.mirror.importer.downloader.provider.S3StreamFileProvider;
 import com.hedera.mirror.importer.parser.balance.BalanceParserProperties;
 import com.hedera.mirror.importer.reader.balance.BalanceFileReader;
 import com.hedera.mirror.importer.reader.balance.BalanceFileReaderImplV1;
@@ -51,9 +52,10 @@ class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
     protected Downloader getDownloader() {
         BalanceFileReader balanceFileReader = new BalanceFileReaderImplV1(new BalanceParserProperties(),
                 new AccountBalanceLineParserV1(mirrorProperties));
-        return new AccountBalancesDownloader(addressBookService, (BalanceDownloaderProperties) downloaderProperties,
-                meterRegistry, dateRangeProcessor, nodeSignatureVerifier, s3AsyncClient, signatureFileReader,
-                balanceFileReader, streamFileNotifier);
+        var streamFileProvider = new S3StreamFileProvider(commonDownloaderProperties, s3AsyncClient);
+        return new AccountBalancesDownloader(consensusNodeService, (BalanceDownloaderProperties) downloaderProperties,
+                meterRegistry, dateRangeProcessor, nodeSignatureVerifier, signatureFileReader,
+                streamFileNotifier, streamFileProvider, balanceFileReader);
     }
 
     @Override
@@ -82,9 +84,11 @@ class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
         // .csv_sig files are intentionally made empty so if two account balance files are processed, they must be
         // the .pb.gz files
         ProtoBalanceFileReader protoBalanceFileReader = new ProtoBalanceFileReader();
-        downloader = new AccountBalancesDownloader(addressBookService,
+        var streamFileProvider = new S3StreamFileProvider(commonDownloaderProperties, s3AsyncClient);
+        downloader = new AccountBalancesDownloader(consensusNodeService,
                 (BalanceDownloaderProperties) downloaderProperties, meterRegistry, dateRangeProcessor,
-                nodeSignatureVerifier, s3AsyncClient, signatureFileReader, protoBalanceFileReader, streamFileNotifier);
+                nodeSignatureVerifier, signatureFileReader, streamFileNotifier, streamFileProvider,
+                protoBalanceFileReader);
         fileCopier = FileCopier.create(TestUtils.getResource("data").toPath(), s3Path)
                 .from(Path.of("accountBalances", "mixed"))
                 .to(commonDownloaderProperties.getBucketName(), streamType.getPath());

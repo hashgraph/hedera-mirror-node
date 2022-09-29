@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.domain;
  */
 
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
+import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIDECAR;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -42,8 +43,10 @@ class StreamFilenameTest {
             // @formatter:off
             "2020-06-03T16_45_00.1Z_Balances.csv_sig,, csv_sig, SIGNATURE, csv_sig, 2020-06-03T16:45:00.1Z, BALANCE",
             "2020-06-03T16_45_00.1Z_Balances.pb_sig,, pb_sig, SIGNATURE, pb_sig, 2020-06-03T16:45:00.1Z, BALANCE",
-            "2020-06-03T16_45_00.1Z_Balances.pb_sig.gz, gz, pb_sig, SIGNATURE, pb_sig.gz, 2020-06-03T16:45:00.1Z, BALANCE",
-            "2020-06-03T16_45_00.1Z_Balances.pb_sig.xz, xz, pb_sig, SIGNATURE, pb_sig.xz, 2020-06-03T16:45:00.1Z, BALANCE",
+            "2020-06-03T16_45_00.1Z_Balances.pb_sig.gz, gz, pb_sig, SIGNATURE, pb_sig.gz, 2020-06-03T16:45:00.1Z, " +
+                    "BALANCE",
+            "2020-06-03T16_45_00.1Z_Balances.pb_sig.xz, xz, pb_sig, SIGNATURE, pb_sig.xz, 2020-06-03T16:45:00.1Z, " +
+                    "BALANCE",
             "2020-06-03T16_45_00.1Z_Balances.csv,, csv, DATA, csv, 2020-06-03T16:45:00.1Z, BALANCE",
             "2020-06-03T16_45_00.1Z_Balances.pb.gz, gz, pb, DATA, pb.gz, 2020-06-03T16:45:00.1Z, BALANCE",
             "2020-06-03T16_45_00.1Z.evts_sig,, evts_sig, SIGNATURE, evts_sig, 2020-06-03T16:45:00.1Z, EVENT",
@@ -71,7 +74,7 @@ class StreamFilenameTest {
     void newStreamFileFromSidecarRecordFilename(String filename, String expectedSidecarId) {
         StreamFilename streamFilename = new StreamFilename(filename);
         assertThat(streamFilename)
-                .returns(true, StreamFilename::isSidecar)
+                .returns(SIDECAR, StreamFilename::getFileType)
                 .returns(expectedSidecarId, StreamFilename::getSidecarId);
     }
 
@@ -134,5 +137,22 @@ class StreamFilenameTest {
     void getSidecarFilenameThrows(String filename) {
         StreamFilename streamFilename = new StreamFilename(filename);
         assertThrows(IllegalArgumentException.class, () -> streamFilename.getSidecarFilename(1));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "2020-06-03T16_45_00.100200345Z_Balances.csv, false",
+            "2020-06-03T16_45_00.100200345Z_Balances.csv_sig, false",
+            "2020-06-03T16_45_00.100200345Z_Balances.pb.gz, true",
+            "2020-06-03T16_45_00.100200345Z_Balances.pb_sig.gz, true",
+            "2020-06-03T16_45_00.100200345Z.evts, false",
+            "2020-06-03T16_45_00.100200345Z.evts_sig, false",
+            "2020-06-03T16_45_00.100200345Z.rcd.gz, true",
+            "2020-06-03T16_45_00.100200345Z.rcd, false",
+            "2020-06-03T16_45_00.100200345Z.rcd_sig, false",
+            "2020-06-03T16_45_00.100200345Z_02.rcd.gz, true"
+    })
+    void isCompressed(String filename, boolean compressed) {
+        assertThat(new StreamFilename(filename).isCompressed()).isEqualTo(compressed);
     }
 }

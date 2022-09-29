@@ -52,7 +52,7 @@ public class EventFileReaderV3 implements EventFileReader {
         Stopwatch stopwatch = Stopwatch.createStarted();
         boolean success = false;
 
-        long consensusStart = DomainUtils.convertToNanosMax(streamFileData.getInstant());
+        long consensusStart = DomainUtils.convertToNanosMax(streamFileData.getStreamFilename().getInstant());
         EventFile eventFile = new EventFile();
         eventFile.setBytes(streamFileData.getBytes());
         eventFile.setConsensusEnd(consensusStart);

@@ -21,436 +21,212 @@ package com.hedera.mirror.importer.downloader;
  */
 
 import static com.hedera.mirror.common.util.DomainUtils.TINYBARS_IN_ONE_HBAR;
+import static com.hedera.mirror.importer.domain.FileStreamSignature.SignatureStatus.CONSENSUS_REACHED;
+import static com.hedera.mirror.importer.domain.FileStreamSignature.SignatureStatus.DOWNLOADED;
+import static com.hedera.mirror.importer.domain.FileStreamSignature.SignatureStatus.VERIFIED;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import javax.annotation.Resource;
-import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.mockito.Mock;
-import org.springframework.beans.factory.annotation.Autowired;
 
+import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.StreamType;
-import com.hedera.mirror.common.domain.addressbook.AddressBook;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.addressbook.AddressBookService;
+import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.domain.ConsensusNodeStub;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureType;
+import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
-import com.hedera.mirror.importer.repository.NodeStakeRepository;
 
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
-class ConsensusValidatorImplTest extends IntegrationTest {
-
-    private static final EntityId entity3 = EntityId.of(3L, EntityType.ACCOUNT);
-    private static final EntityId entity4 = EntityId.of(4L, EntityType.ACCOUNT);
-    private static final EntityId entity5 = EntityId.of(5L, EntityType.ACCOUNT);
+class ConsensusValidatorImplTest {
 
     private static final BigDecimal MAX_TINYBARS = BigDecimal.valueOf(50_000_000_000L)
             .multiply(BigDecimal.valueOf(TINYBARS_IN_ONE_HBAR));
 
-    @Mock
-    private AddressBookService addressBookService;
-    @Mock
-    private AddressBook currentAddressBook;
-    @Mock
+    private final DomainBuilder domainBuilder = new DomainBuilder();
     private CommonDownloaderProperties commonDownloaderProperties;
     private ConsensusValidatorImpl consensusValidator;
-    @Resource
-    private NodeStakeRepository nodeStakeRepository;
+    private long nodeId = 0;
 
     @BeforeEach
     void setup() {
-        consensusValidator = new ConsensusValidatorImpl(addressBookService, commonDownloaderProperties,
-                nodeStakeRepository);
-        when(addressBookService.getCurrent()).thenReturn(currentAddressBook);
-        var nodeIdNodeAccountIdMap = Map.of(100L, entity3, 101L, entity4, 102L, entity5);
-        when(currentAddressBook.getNodeIdNodeAccountIdMap()).thenReturn(nodeIdNodeAccountIdMap);
-        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(BigDecimal.ONE.divide(BigDecimal.valueOf(3),
-                19, RoundingMode.DOWN));
+        commonDownloaderProperties = new CommonDownloaderProperties(new MirrorProperties());
+        commonDownloaderProperties.setConsensusRatio(BigDecimal.ONE.divide(BigDecimal.valueOf(3), 19,
+                RoundingMode.DOWN));
+        consensusValidator = new ConsensusValidatorImpl(commonDownloaderProperties);
     }
 
     @Test
-    void testFailedVerificationWithEmptyAddressBook() {
-        when(addressBookService.getCurrent()).thenReturn(AddressBook.builder().entries(Collections.emptyList())
-                .build());
-        nodeStakes(3, 3, 3);
-        var fileStreamSignatures = List.of(buildFileStreamSignature());
-        assertConsensusNotReached(fileStreamSignatures);
-    }
-
-    @Test
-    void testVerifiedWithOneThirdNodeStakeConsensusNonVerifiedSignatures() {
-        nodeStakes(3, 3, 3);
-
-        FileStreamSignature fileStreamSignatureNode3 = buildFileStreamSignature();
-        FileStreamSignature fileStreamSignatureNode4 = buildFileStreamSignature();
-        fileStreamSignatureNode4.setNodeAccountId(entity4);
-        fileStreamSignatureNode4.setFileHash(fileStreamSignatureNode3.getFileHash());
-        fileStreamSignatureNode4.setStatus(FileStreamSignature.SignatureStatus.DOWNLOADED);
-        FileStreamSignature fileStreamSignatureNode5 = buildFileStreamSignature();
-        fileStreamSignatureNode5.setNodeAccountId(entity5);
-        fileStreamSignatureNode5.setFileHash(fileStreamSignatureNode3.getFileHash());
-        fileStreamSignatureNode5.setStatus(FileStreamSignature.SignatureStatus.DOWNLOADED);
-
-        var fileStreamSignatures = List.of(fileStreamSignatureNode3, fileStreamSignatureNode4,
-                fileStreamSignatureNode5);
-
-        consensusValidator.validate(fileStreamSignatures);
-        assertThat(fileStreamSignatures)
-                .map(FileStreamSignature::getStatus)
-                .containsExactly(FileStreamSignature.SignatureStatus.CONSENSUS_REACHED,
-                        FileStreamSignature.SignatureStatus.DOWNLOADED, FileStreamSignature.SignatureStatus.DOWNLOADED);
-    }
-
-    @Test
-    void testNodeStakesZeroValues() {
-        nodeStakes(0, 0, 1);
-
-        FileStreamSignature fileStreamSignatureNode3 = buildFileStreamSignature();
-        FileStreamSignature fileStreamSignatureNode4 = buildFileStreamSignature();
-        fileStreamSignatureNode4.setNodeAccountId(entity4);
-        fileStreamSignatureNode4.setFileHash(fileStreamSignatureNode3.getFileHash());
-        FileStreamSignature fileStreamSignatureNode5 = buildFileStreamSignature();
-        fileStreamSignatureNode5.setNodeAccountId(entity5);
-        fileStreamSignatureNode5.setFileHash(fileStreamSignatureNode3.getFileHash());
-
-        var fileStreamSignatures = List.of(fileStreamSignatureNode3, fileStreamSignatureNode4,
-                fileStreamSignatureNode5);
-
-        consensusValidator.validate(fileStreamSignatures);
-        assertThat(fileStreamSignatures)
-                .map(FileStreamSignature::getStatus)
-                .containsExactly(FileStreamSignature.SignatureStatus.CONSENSUS_REACHED,
-                        FileStreamSignature.SignatureStatus.CONSENSUS_REACHED,
-                        FileStreamSignature.SignatureStatus.CONSENSUS_REACHED);
-    }
-
-    @Test
-    void testFailedVerificationWithLargeStakes() {
+    void failureWithLargeStakes() {
         var oneThirdStake = MAX_TINYBARS.divide(BigDecimal.valueOf(3), 0, RoundingMode.CEILING);
         long nodeOneStake = oneThirdStake.subtract(BigDecimal.ONE).longValue();
         long nodeTwoStake = oneThirdStake.add(BigDecimal.ONE).longValue();
         long nodeThreeStake = oneThirdStake.subtract(BigDecimal.ONE).longValue();
+        var signatures = signatures(nodeOneStake, nodeTwoStake, nodeThreeStake);
+        signatures.remove(1);
+        signatures.remove(1);
 
-        nodeStakes(nodeOneStake, nodeTwoStake, nodeThreeStake);
-
-        var fileStreamSignatureNode3 = buildFileStreamSignature();
-        var fileStreamSignatureNode5 = buildFileStreamSignature();
-        fileStreamSignatureNode5.setFileHash(fileStreamSignatureNode3.getFileHash());
-        fileStreamSignatureNode5.setNodeAccountId(entity5);
-        fileStreamSignatureNode5.setStatus(FileStreamSignature.SignatureStatus.DOWNLOADED);
-        var fileStreamSignatures = List.of(
-                fileStreamSignatureNode3,
-                fileStreamSignatureNode5
-        );
-
-        assertConsensusNotReached(fileStreamSignatures);
+        assertConsensusNotReached(signatures);
     }
 
     @Test
-    void testVerificationWithLargeStakes() {
-        var oneThirdStake = MAX_TINYBARS.divide(BigDecimal.valueOf(3), 0, RoundingMode.CEILING);
-        long nodeOneStake = oneThirdStake.divide(BigDecimal.valueOf(2), 0, RoundingMode.CEILING).longValue();
-        long nodeTwoStake = oneThirdStake.multiply(BigDecimal.valueOf(2)).subtract(BigDecimal.ONE).longValue();
-        long nodeThreeStake = oneThirdStake.divide(BigDecimal.valueOf(2), 0, RoundingMode.CEILING)
-                .subtract(BigDecimal.ONE).longValue();
+    void successWithLargeStakes() {
+        var oneThirdStake = MAX_TINYBARS.divide(BigDecimal.valueOf(3), 0, RoundingMode.CEILING).longValue();
+        var signatures = signatures(oneThirdStake, oneThirdStake, oneThirdStake);
 
-        nodeStakes(nodeOneStake, nodeTwoStake, nodeThreeStake);
-
-        var fileStreamSignatureNode3 = buildFileStreamSignature();
-        var fileStreamSignatureNode5 = buildFileStreamSignature();
-        fileStreamSignatureNode5.setFileHash(fileStreamSignatureNode3.getFileHash());
-        fileStreamSignatureNode5.setNodeAccountId(entity5);
-        var fileStreamSignatures = List.of(
-                fileStreamSignatureNode3,
-                fileStreamSignatureNode5
-        );
-
-        consensusValidator.validate(fileStreamSignatures);
-        assertThat(fileStreamSignatures)
+        consensusValidator.validate(signatures);
+        assertThat(signatures)
+                .hasSize(signatures.size())
                 .map(FileStreamSignature::getStatus)
-                .containsExactly(FileStreamSignature.SignatureStatus.CONSENSUS_REACHED,
-                        FileStreamSignature.SignatureStatus.CONSENSUS_REACHED);
+                .containsOnly(CONSENSUS_REACHED);
     }
 
     @Test
-    void testVerificationWithMinimumStakes() {
-        nodeStakes(1, 1, 1);
-        var fileStreamSignatureNode3 = buildFileStreamSignature();
-        var fileStreamSignatures = List.of(
-                fileStreamSignatureNode3
-        );
+    void oneThirdStake() {
+        var signatures = signatures(1, 1, 1);
+        signatures.remove(0);
+        signatures.remove(0);
 
-        consensusValidator.validate(fileStreamSignatures);
-        assertThat(fileStreamSignatures)
+        consensusValidator.validate(signatures);
+        assertThat(signatures)
+                .hasSize(signatures.size())
                 .map(FileStreamSignature::getStatus)
-                .containsExactly(FileStreamSignature.SignatureStatus.CONSENSUS_REACHED);
+                .containsOnly(CONSENSUS_REACHED);
+    }
+
+    @Test
+    void oneThirdStakeWithZeroStake() {
+        var signatures = signatures(0, 0, 0); // Fallback to node counts when 0
+
+        consensusValidator.validate(signatures);
+        assertThat(signatures)
+                .hasSize(signatures.size())
+                .map(FileStreamSignature::getStatus)
+                .containsOnly(CONSENSUS_REACHED);
     }
 
     @ParameterizedTest
     @EnumSource(value = FileStreamSignature.SignatureStatus.class, names = {"DOWNLOADED", "CONSENSUS_REACHED",
             "NOT_FOUND"})
-    void testFailedVerificationInsufficientStake(FileStreamSignature.SignatureStatus status) {
-        nodeStakes(1, 5, 1);
-
-        var fileStreamSignatureNode3 = buildFileStreamSignature();
-        FileStreamSignature fileStreamSignatureNode4 = buildFileStreamSignature();
-        fileStreamSignatureNode4.setNodeAccountId(entity4);
-        fileStreamSignatureNode4.setStatus(status);
-        fileStreamSignatureNode4.setFileHash(fileStreamSignatureNode3.getFileHash());
-        var fileStreamSignatureNode5 = buildFileStreamSignature();
-        fileStreamSignatureNode5.setNodeAccountId(entity5);
-        var fileStreamSignatures = List.of(
-                fileStreamSignatureNode3,
-                fileStreamSignatureNode4,
-                fileStreamSignatureNode5
-        );
-        var signatures = fileStreamSignatures.stream().map(FileStreamSignature::getStatus).toList();
-
-        Exception e = assertThrows(SignatureVerificationException.class, () -> consensusValidator
-                .validate(fileStreamSignatures));
-        assertTrue(e.getMessage().contains("Consensus not reached for file"));
-
-        // Assert that signature status is unchanged
-        assertThat(fileStreamSignatures)
+    void notVerified(FileStreamSignature.SignatureStatus status) {
+        var signatures = signatures(3, 3, 3);
+        signatures.forEach(s -> s.setStatus(status));
+        assertThatThrownBy(() -> consensusValidator.validate(signatures))
+                .isInstanceOf(SignatureVerificationException.class)
+                .hasMessageContaining("Consensus not reached for file");
+        assertThat(signatures)
                 .map(FileStreamSignature::getStatus)
-                .containsExactlyElementsOf(signatures);
+                .containsOnly(status);
     }
 
     @Test
-    void testFailedVerifiedWithAddressBookMissingNodeAccountIdConsensus() {
-        var timestamp = domainBuilder.timestamp();
-        domainBuilder.nodeStake()
-                .customize(n -> n
-                        .nodeId(500)
-                        .consensusTimestamp(timestamp)
-                        .stake(3L))
-                .persist();
-        domainBuilder.nodeStake()
-                .customize(n -> n
-                        .nodeId(102)
-                        .consensusTimestamp(timestamp)
-                        .stake(3L))
-                .persist();
+    void fullNodeStakeConsensus() {
+        commonDownloaderProperties.setConsensusRatio(BigDecimal.ONE);
+        var oneThirdStake = MAX_TINYBARS.divide(BigDecimal.valueOf(3), 0, RoundingMode.CEILING).longValue();
+        var signatures = signatures(oneThirdStake, oneThirdStake, oneThirdStake - 1);
 
-        var fileStreamSignatures = List.of(buildFileStreamSignature());
-        assertConsensusNotReached(fileStreamSignatures);
-    }
-
-    @Test
-    void testVerifiedWithFullNodeStakeConsensus() {
-        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(BigDecimal.ONE);
-        var oneThirdStake = MAX_TINYBARS.divide(BigDecimal.valueOf(3), 0, RoundingMode.CEILING);
-        long nodeOneStake = oneThirdStake.subtract(BigDecimal.ONE).longValue();
-        long nodeTwoStake = oneThirdStake.longValue();
-        long nodeThreeStake = oneThirdStake.longValue();
-        nodeStakes(nodeOneStake, nodeTwoStake, nodeThreeStake);
-
-        FileStreamSignature fileStreamSignatureNode3 = buildFileStreamSignature();
-        FileStreamSignature fileStreamSignatureNode4 = buildFileStreamSignature();
-        fileStreamSignatureNode4.setNodeAccountId(entity4);
-        fileStreamSignatureNode4.setFileHash(fileStreamSignatureNode3.getFileHash());
-        FileStreamSignature fileStreamSignatureNode5 = buildFileStreamSignature();
-        fileStreamSignatureNode5.setNodeAccountId(entity5);
-        fileStreamSignatureNode5.setFileHash(fileStreamSignatureNode3.getFileHash());
-
-        var fileStreamSignatures = List.of(fileStreamSignatureNode3, fileStreamSignatureNode4,
-                fileStreamSignatureNode5);
-
-        consensusValidator.validate(fileStreamSignatures);
-        assertThat(fileStreamSignatures)
+        consensusValidator.validate(signatures);
+        assertThat(signatures)
+                .hasSize(signatures.size())
                 .map(FileStreamSignature::getStatus)
-                .containsOnly(FileStreamSignature.SignatureStatus.CONSENSUS_REACHED);
+                .containsOnly(CONSENSUS_REACHED);
     }
 
     @Test
-    void testFailedVerificationNoSignaturesNodeStakeConsensus() {
-        nodeStakes(3, 3, 3);
+    void noSignatures() {
         List<FileStreamSignature> emptyList = Collections.emptyList();
         assertConsensusNotReached(emptyList);
     }
 
     @Test
-    void testSkipNodeStakeConsensus() {
-        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(BigDecimal.ZERO);
-        nodeStakes(1, 3, 3);
-        var fileStreamSignatures = List.of(buildFileStreamSignature());
+    void skipConsensus() {
+        commonDownloaderProperties.setConsensusRatio(BigDecimal.ZERO);
+        var signatures = signatures(1, 7);
 
-        consensusValidator.validate(fileStreamSignatures);
-        assertThat(fileStreamSignatures)
+        consensusValidator.validate(signatures);
+        assertThat(signatures)
                 .map(FileStreamSignature::getStatus)
-                .doesNotContain(FileStreamSignature.SignatureStatus.CONSENSUS_REACHED);
+                .doesNotContain(CONSENSUS_REACHED);
     }
 
     @Test
-    void testSignaturesVerifiedWithOneThirdConsensusWithMissingSignatures() {
-        // Zero node stakes occurs when falling back to counting signatures
-        nodeStakes(0, 0, 0);
+    void multipleFileHashes() {
+        var signatures = signatures(0, 0, 0, 0, 0);
+        signatures.get(2).setFileHash(domainBuilder.bytes(256));
+        signatures.get(3).setFileHash(domainBuilder.bytes(256));
+        signatures.get(4).setFileHash(domainBuilder.bytes(256));
 
-        FileStreamSignature fileStreamSignatureNode3 = buildFileStreamSignature();
-
-        //Node 4 and 5 will not verify due to missing signature, but 1/3 verified will confirm consensus reached
-        FileStreamSignature fileStreamSignatureNode4 = buildFileStreamSignature();
-        fileStreamSignatureNode4.setNodeAccountId(entity4);
-        fileStreamSignatureNode4.setStatus(FileStreamSignature.SignatureStatus.DOWNLOADED);
-
-        FileStreamSignature fileStreamSignatureNode5 = buildFileStreamSignature();
-        fileStreamSignatureNode5.setNodeAccountId(entity5);
-        fileStreamSignatureNode5.setStatus(FileStreamSignature.SignatureStatus.DOWNLOADED);
-
-        var fileStreamSignatures = List.of(fileStreamSignatureNode3, fileStreamSignatureNode4,
-                fileStreamSignatureNode5);
-
-        consensusValidator.validate(fileStreamSignatures);
-        assertThat(fileStreamSignatures)
+        consensusValidator.validate(signatures);
+        assertThat(signatures)
                 .map(FileStreamSignature::getStatus)
-                .containsExactly(FileStreamSignature.SignatureStatus.CONSENSUS_REACHED,
-                        FileStreamSignature.SignatureStatus.DOWNLOADED, FileStreamSignature.SignatureStatus.DOWNLOADED);
+                .containsExactly(CONSENSUS_REACHED, CONSENSUS_REACHED, VERIFIED, VERIFIED, VERIFIED);
     }
 
     @Test
-    void testSignatureMultipleFileHashWithMultipleConsensusResults() {
-        // Zero node stakes occurs when falling back to counting signatures
-        nodeStakes(0, 0, 0);
-
-        // First FileHash
-        FileStreamSignature fileStreamSignature1 = buildFileStreamSignature();
-        fileStreamSignature1.setStatus(FileStreamSignature.SignatureStatus.DOWNLOADED);
-
-        // Second FileHash
-        FileStreamSignature fileStreamSignature2 = buildFileStreamSignature();
-        fileStreamSignature2.setFileHash(domainBuilder.bytes(256));
-
-        // Third FileHash
-        var thirdHash = domainBuilder.bytes(256);
-        FileStreamSignature fileStreamSignature3 = buildFileStreamSignature();
-        fileStreamSignature3.setFileHash(thirdHash);
-        FileStreamSignature fileStreamSignature4 = buildFileStreamSignature();
-        fileStreamSignature4.setStatus(FileStreamSignature.SignatureStatus.DOWNLOADED);
-        fileStreamSignature4.setFileHash(thirdHash);
-
-        // Forth FileHash
-        FileStreamSignature fileStreamSignature5 = buildFileStreamSignature();
-        fileStreamSignature5.setStatus(FileStreamSignature.SignatureStatus.DOWNLOADED);
-        fileStreamSignature5.setFileHash(domainBuilder.bytes(256));
-
-        var fileStreamSignatures = List.of(fileStreamSignature1, fileStreamSignature2, fileStreamSignature3,
-                fileStreamSignature4, fileStreamSignature5);
-
-        consensusValidator.validate(fileStreamSignatures);
-        assertThat(fileStreamSignatures)
+    void fullConsensusRatio() {
+        commonDownloaderProperties.setConsensusRatio(BigDecimal.ONE);
+        var signatures = signatures(0, 0, 0);
+        consensusValidator.validate(signatures);
+        assertThat(signatures)
                 .map(FileStreamSignature::getStatus)
-                .containsExactly(FileStreamSignature.SignatureStatus.DOWNLOADED,
-                        FileStreamSignature.SignatureStatus.CONSENSUS_REACHED,
-                        FileStreamSignature.SignatureStatus.CONSENSUS_REACHED,
-                        FileStreamSignature.SignatureStatus.DOWNLOADED,
-                        FileStreamSignature.SignatureStatus.DOWNLOADED);
+                .containsOnly(CONSENSUS_REACHED);
     }
 
-    @SneakyThrows
     @Test
-    void testSignaturesVerifiedWithFullConsensusRequired() {
+    void failureSignatureConsensus() {
         // Zero node stakes occurs when falling back to counting signatures
-        nodeStakes(0, 0, 0);
-        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(BigDecimal.ONE);
+        commonDownloaderProperties.setConsensusRatio(BigDecimal.ONE);
+        var signatures = signatures(0, 0, 0, 0);
+        signatures.get(1).setStatus(DOWNLOADED);
+        signatures.get(2).setStatus(DOWNLOADED);
+        signatures.get(3).setStatus(DOWNLOADED);
+        assertConsensusNotReached(signatures);
+    }
 
-        FileStreamSignature fileStreamSignatureNode3 = buildFileStreamSignature();
-        FileStreamSignature fileStreamSignatureNode4 = buildFileStreamSignature();
-        fileStreamSignatureNode4.setNodeAccountId(entity4);
-        fileStreamSignatureNode4.setFileHash(fileStreamSignatureNode3.getFileHash());
-
-        FileStreamSignature fileStreamSignatureNode5 = buildFileStreamSignature();
-        fileStreamSignatureNode5.setNodeAccountId(entity5);
-        fileStreamSignatureNode5.setFileHash(fileStreamSignatureNode3.getFileHash());
-
-        var fileStreamSignatures = List.of(fileStreamSignatureNode3, fileStreamSignatureNode4,
-                fileStreamSignatureNode5);
-
-        consensusValidator.validate(fileStreamSignatures);
-        assertThat(fileStreamSignatures)
+    private void assertConsensusNotReached(List<FileStreamSignature> signatures) {
+        assertThatThrownBy(() -> consensusValidator.validate(signatures))
+                .isInstanceOf(SignatureVerificationException.class)
+                .hasMessageContaining("Consensus not reached for file");
+        assertThat(signatures)
                 .map(FileStreamSignature::getStatus)
-                .containsOnly(FileStreamSignature.SignatureStatus.CONSENSUS_REACHED);
+                .doesNotContain(CONSENSUS_REACHED);
     }
 
-    @SneakyThrows
-    @Test
-    void testFailedVerificationSignatureConsensus() {
-        // Zero node stakes occurs when falling back to counting signatures
-        nodeStakes(0, 0, 0, 0);
-
-        var entity6 = EntityId.of(6L, EntityType.ACCOUNT);
-        var nodeIdNodeAccountIdMap = Map.of(100L, entity3, 101L, entity4, 102L, entity5, 103L, entity6);
-        when(currentAddressBook.getNodeIdNodeAccountIdMap()).thenReturn(nodeIdNodeAccountIdMap);
-        when(commonDownloaderProperties.getConsensusRatio()).thenReturn(BigDecimal.ONE);
-
-        FileStreamSignature fileStreamSignatureNode3 = buildFileStreamSignature();
-
-        FileStreamSignature fileStreamSignatureNode4 = buildFileStreamSignature();
-        fileStreamSignatureNode4.setNodeAccountId(entity4);
-        fileStreamSignatureNode4.setStatus(FileStreamSignature.SignatureStatus.DOWNLOADED);
-
-        FileStreamSignature fileStreamSignatureNode5 = buildFileStreamSignature();
-        fileStreamSignatureNode5.setNodeAccountId(entity5);
-        fileStreamSignatureNode5.setStatus(FileStreamSignature.SignatureStatus.DOWNLOADED);
-
-        FileStreamSignature fileStreamSignatureNode6 = buildFileStreamSignature();
-        fileStreamSignatureNode6.setNodeAccountId(entity6);
-        fileStreamSignatureNode6.setStatus(FileStreamSignature.SignatureStatus.DOWNLOADED);
-
-        var fileStreamSignatures = List.of(
-                fileStreamSignatureNode3,
-                fileStreamSignatureNode4,
-                fileStreamSignatureNode5,
-                fileStreamSignatureNode6
-        );
-        assertConsensusNotReached(fileStreamSignatures);
-    }
-
-    private void assertConsensusNotReached(List<FileStreamSignature> fileStreamSignatures) {
-        Exception e = assertThrows(SignatureVerificationException.class, () -> consensusValidator
-                .validate(fileStreamSignatures));
-        assertTrue(e.getMessage().contains("Consensus not reached for file"));
-        assertThat(fileStreamSignatures)
-                .map(FileStreamSignature::getStatus)
-                .doesNotContain(FileStreamSignature.SignatureStatus.CONSENSUS_REACHED);
-    }
-
-    private FileStreamSignature buildFileStreamSignature() {
-        FileStreamSignature fileStreamSignature = new FileStreamSignature();
-        fileStreamSignature.setFileHash(domainBuilder.bytes(256));
-        fileStreamSignature.setFilename("");
-        fileStreamSignature.setNodeAccountId(entity3);
-        fileStreamSignature.setSignatureType(SignatureType.SHA_384_WITH_RSA);
-        fileStreamSignature.setStatus(FileStreamSignature.SignatureStatus.VERIFIED);
-        fileStreamSignature.setStreamType(StreamType.RECORD);
-        return fileStreamSignature;
-    }
-
-    private void nodeStakes(long... stakes) {
-        var timestamp = domainBuilder.timestamp();
-        int nodeId = 100;
-        for (long stake : stakes) {
-            final int finalNodeId = nodeId;
-            domainBuilder.nodeStake()
-                    .customize(n -> n
-                            .nodeId(finalNodeId)
-                            .consensusTimestamp(timestamp)
-                            .stake(stake))
-                    .persist();
-            nodeId++;
+    private List<FileStreamSignature> signatures(long... stakes) {
+        List<FileStreamSignature> signatures = new ArrayList<>();
+        long totalStake = Arrays.stream(stakes).sum();
+        if (totalStake == 0) {
+            stakes = Arrays.stream(stakes).map(s -> 1L).toArray();
+            totalStake = stakes.length;
         }
+        var fileHash = domainBuilder.bytes(256);
+
+        for (long stake : stakes) {
+            var node = ConsensusNodeStub.builder()
+                    .nodeId(nodeId++)
+                    .stake(stake)
+                    .totalStake(totalStake)
+                    .build();
+
+            var signature = new FileStreamSignature();
+            signature.setFileHash(fileHash);
+            signature.setFilename(StreamFilename.EPOCH);
+            signature.setNode(node);
+            signature.setSignatureType(SignatureType.SHA_384_WITH_RSA);
+            signature.setStatus(FileStreamSignature.SignatureStatus.VERIFIED);
+            signature.setStreamType(StreamType.RECORD);
+            signatures.add(signature);
+        }
+
+        return signatures;
     }
 }

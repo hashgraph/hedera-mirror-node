@@ -21,7 +21,6 @@ package com.hedera.mirror.common.domain.addressbook;
  */
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import java.io.Serializable;
 import java.security.KeyFactory;
 import java.security.PublicKey;
@@ -31,28 +30,25 @@ import java.util.HashSet;
 import java.util.Set;
 import javax.persistence.CascadeType;
 import javax.persistence.Convert;
-import javax.persistence.Embeddable;
-import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.IdClass;
 import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.Transient;
-
-import com.hedera.mirror.common.domain.entity.EntityId;
-
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.apache.commons.codec.binary.Hex;
 import org.springframework.data.domain.Persistable;
 
 import com.hedera.mirror.common.converter.AccountIdConverter;
+import com.hedera.mirror.common.domain.entity.EntityId;
 
 @Builder(toBuilder = true)
 @Data
@@ -82,6 +78,12 @@ public class AddressBookEntry implements Persistable<AddressBookEntry.Id> {
     private String publicKey;
 
     @EqualsAndHashCode.Exclude
+    @Getter(lazy = true)
+    @ToString.Exclude
+    @Transient
+    private final PublicKey publicKeyObject = parsePublicKey();
+
+    @EqualsAndHashCode.Exclude
     @JoinColumn(name = "consensusTimestamp", referencedColumnName = "consensusTimestamp")
     @JoinColumn(name = "nodeId", referencedColumnName = "nodeId")
     @JsonIgnore
@@ -90,7 +92,7 @@ public class AddressBookEntry implements Persistable<AddressBookEntry.Id> {
 
     private Long stake;
 
-    public PublicKey getPublicKeyAsObject() {
+    private PublicKey parsePublicKey() {
         try {
             byte[] bytes = Hex.decodeHex(publicKey);
             EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(bytes);

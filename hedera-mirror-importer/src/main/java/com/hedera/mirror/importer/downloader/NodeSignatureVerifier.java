@@ -20,16 +20,12 @@ package com.hedera.mirror.importer.downloader;
  * ‍
  */
 
-import java.security.PublicKey;
 import java.security.Signature;
 import java.util.Collection;
-import java.util.Map;
 import javax.inject.Named;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 
-import com.hedera.mirror.common.domain.addressbook.AddressBook;
-import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureStatus;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
@@ -39,7 +35,6 @@ import com.hedera.mirror.importer.exception.SignatureVerificationException;
 @RequiredArgsConstructor
 public class NodeSignatureVerifier {
 
-    private final AddressBookService addressBookService;
     private final ConsensusValidator consensusValidator;
 
     /**
@@ -58,11 +53,9 @@ public class NodeSignatureVerifier {
      * @throws SignatureVerificationException
      */
     public void verify(Collection<FileStreamSignature> signatures) throws SignatureVerificationException {
-        AddressBook currentAddressBook = addressBookService.getCurrent();
-        Map<String, PublicKey> nodeAccountIDPubKeyMap = currentAddressBook.getNodeAccountIDPubKeyMap();
 
         for (FileStreamSignature fileStreamSignature : signatures) {
-            if (verifySignature(fileStreamSignature, nodeAccountIDPubKeyMap)) {
+            if (verifySignature(fileStreamSignature)) {
                 fileStreamSignature.setStatus(SignatureStatus.VERIFIED);
             }
         }
@@ -73,15 +66,14 @@ public class NodeSignatureVerifier {
     /**
      * check whether the given signature is valid
      *
-     * @param fileStreamSignature    the data that was signed
-     * @param nodeAccountIDPubKeyMap map of node account ids (as Strings) and their public keys
+     * @param fileStreamSignature the data that was signed
      * @return true if the signature is valid
      */
-    private boolean verifySignature(FileStreamSignature fileStreamSignature,
-                                    Map<String, PublicKey> nodeAccountIDPubKeyMap) {
-        PublicKey publicKey = nodeAccountIDPubKeyMap.get(fileStreamSignature.getNodeAccountIdString());
+    private boolean verifySignature(FileStreamSignature fileStreamSignature) {
+        var publicKey = fileStreamSignature.getNode().getPublicKey();
+
         if (publicKey == null) {
-            log.warn("Missing PublicKey for node {}", fileStreamSignature.getNodeAccountIdString());
+            log.warn("Missing PublicKey for node {}", fileStreamSignature.getNode());
             return false;
         }
 
@@ -113,6 +105,4 @@ public class NodeSignatureVerifier {
         }
         return false;
     }
-
-
 }

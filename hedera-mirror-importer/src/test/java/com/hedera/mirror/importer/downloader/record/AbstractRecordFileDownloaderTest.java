@@ -37,13 +37,14 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
-import software.amazon.awssdk.services.s3.model.ListObjectsRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 
 import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.downloader.AbstractLinkedStreamDownloaderTest;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
+import com.hedera.mirror.importer.downloader.provider.S3StreamFileProvider;
 import com.hedera.mirror.importer.parser.record.sidecar.SidecarProperties;
 import com.hedera.mirror.importer.reader.record.CompositeRecordFileReader;
 import com.hedera.mirror.importer.reader.record.ProtoRecordFileReader;
@@ -83,9 +84,10 @@ abstract class AbstractRecordFileDownloaderTest extends AbstractLinkedStreamDown
                 new RecordFileReaderImplV2(), new RecordFileReaderImplV5(), new ProtoRecordFileReader());
         sidecarProperties = new SidecarProperties();
         sidecarProperties.setEnabled(true);
-        return new RecordFileDownloader(addressBookService, (RecordDownloaderProperties) downloaderProperties,
-                meterRegistry, dateRangeProcessor, nodeSignatureVerifier, s3AsyncClient, sidecarProperties,
-                signatureFileReader, recordFileReader, new SidecarFileReaderImpl(), streamFileNotifier);
+        var streamFileProvider = new S3StreamFileProvider(commonDownloaderProperties, s3AsyncClient);
+        return new RecordFileDownloader(consensusNodeService, (RecordDownloaderProperties) downloaderProperties,
+                meterRegistry, dateRangeProcessor, nodeSignatureVerifier, new SidecarFileReaderImpl(),
+                sidecarProperties, signatureFileReader, streamFileNotifier, streamFileProvider, recordFileReader);
     }
 
     protected void setupRecordFiles(Map<String, RecordFile> recordFileMap) {
@@ -112,11 +114,11 @@ abstract class AbstractRecordFileDownloaderTest extends AbstractLinkedStreamDown
 
     @Test
     void timeoutList() {
-        commonDownloaderProperties.setTimeout(Duration.ofMillis(200L));
+        commonDownloaderProperties.setTimeout(Duration.ofMillis(200000L));
         var s3AsyncClient = mock(S3AsyncClient.class);
         var downloader = getDownloader(s3AsyncClient);
 
-        when(s3AsyncClient.listObjects(isA(ListObjectsRequest.class)))
+        when(s3AsyncClient.listObjectsV2(isA(ListObjectsV2Request.class)))
                 .thenReturn(future())
                 .thenReturn(future())
                 .thenReturn(future());

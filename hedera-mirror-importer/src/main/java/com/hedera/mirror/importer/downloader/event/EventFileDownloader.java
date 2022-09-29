@@ -23,14 +23,14 @@ package com.hedera.mirror.importer.downloader.event;
 import io.micrometer.core.instrument.MeterRegistry;
 import javax.inject.Named;
 import org.springframework.scheduling.annotation.Scheduled;
-import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import com.hedera.mirror.common.domain.event.EventFile;
-import com.hedera.mirror.importer.addressbook.AddressBookService;
+import com.hedera.mirror.importer.addressbook.ConsensusNodeService;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.NodeSignatureVerifier;
 import com.hedera.mirror.importer.downloader.StreamFileNotifier;
+import com.hedera.mirror.importer.downloader.provider.StreamFileProvider;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.reader.event.EventFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
@@ -38,14 +38,17 @@ import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
 @Named
 public class EventFileDownloader extends Downloader<EventFile> {
 
-    public EventFileDownloader(AddressBookService addressBookService, EventDownloaderProperties downloaderProperties,
+    public EventFileDownloader(ConsensusNodeService consensusNodeService,
+                               EventDownloaderProperties downloaderProperties,
                                MeterRegistry meterRegistry,
                                MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor,
-                               NodeSignatureVerifier nodeSignatureVerifier, S3AsyncClient s3Client,
+                               NodeSignatureVerifier nodeSignatureVerifier,
                                SignatureFileReader signatureFileReader,
-                               EventFileReader eventFileReader, StreamFileNotifier streamFileNotifier) {
-        super(addressBookService, downloaderProperties, meterRegistry, mirrorDateRangePropertiesProcessor,
-                nodeSignatureVerifier, s3Client, signatureFileReader, eventFileReader, streamFileNotifier);
+                               StreamFileNotifier streamFileNotifier,
+                               StreamFileProvider streamFileProvider,
+                               EventFileReader streamFileReader) {
+        super(consensusNodeService, downloaderProperties, meterRegistry, mirrorDateRangePropertiesProcessor,
+                nodeSignatureVerifier, signatureFileReader, streamFileNotifier, streamFileProvider, streamFileReader);
     }
 
     @Override

@@ -21,38 +21,60 @@ package com.hedera.mirror.importer.domain;
  */
 
 import java.util.Comparator;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 
 import com.hedera.mirror.common.domain.StreamType;
-import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.addressbook.ConsensusNode;
+import com.hedera.mirror.importer.reader.signature.ProtoSignatureFileReader;
 
+@AllArgsConstructor
+@Builder
 @Data
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
+@NoArgsConstructor
 @ToString(exclude = {"bytes", "fileHash", "fileHashSignature", "metadataHash", "metadataHashSignature"})
 public class FileStreamSignature implements Comparable<FileStreamSignature> {
 
+    private static final String COMPRESSED_EXTENSION = ".gz";
     private static final Comparator<FileStreamSignature> COMPARATOR = Comparator
-            .comparing(FileStreamSignature::getNodeAccountId)
+            .comparing(FileStreamSignature::getNode)
             .thenComparing(FileStreamSignature::getFilename);
 
     private byte[] bytes;
-    private String filename;
     private byte[] fileHash;
-    private EntityId nodeAccountId;
-    private SignatureType signatureType;
     private byte[] fileHashSignature;
-    private SignatureStatus status = SignatureStatus.DOWNLOADED;
+    @EqualsAndHashCode.Include
+    private StreamFilename filename;
     private byte[] metadataHash;
     private byte[] metadataHashSignature;
+    @EqualsAndHashCode.Include
+    private ConsensusNode node;
+    private SignatureType signatureType;
+    private SignatureStatus status = SignatureStatus.DOWNLOADED;
     private StreamType streamType;
     private byte version;
 
     @Override
     public int compareTo(FileStreamSignature other) {
         return COMPARATOR.compare(this, other);
+    }
+
+    public StreamFilename getDataFilename() {
+        String dataFilename = filename.getFilename().replace(StreamType.SIGNATURE_SUFFIX, "");
+
+        if (hasCompressedDataFile() && !dataFilename.endsWith(COMPRESSED_EXTENSION)) {
+            dataFilename += COMPRESSED_EXTENSION;
+        }
+
+        return new StreamFilename(dataFilename);
     }
 
     public String getFileHashAsHex() {
@@ -63,8 +85,8 @@ public class FileStreamSignature implements Comparable<FileStreamSignature> {
         return DomainUtils.bytesToHex(metadataHash);
     }
 
-    public String getNodeAccountIdString() {
-        return nodeAccountId.toString();
+    private boolean hasCompressedDataFile() {
+        return version >= ProtoSignatureFileReader.VERSION || filename.isCompressed();
     }
 
     public enum SignatureStatus {

@@ -467,9 +467,6 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                         .returns(EntityId.of(PAYER), Entity::getObtainerId)
                         .returns(permanentRemoval, Entity::getPermanentRemoval)
                         .returns(Range.atLeast(recordItem.getConsensusTimestamp()), Entity::getTimestampRange)
-                        .usingRecursiveComparison()
-                        .ignoringFields("deleted", "obtainerId", "permanentRemoval", "timestampRange")
-                        .isEqualTo(setupResult.entity)
         );
     }
 

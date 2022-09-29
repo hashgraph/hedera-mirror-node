@@ -20,22 +20,25 @@ package com.hedera.mirror.importer.addressbook;
  * ‍
  */
 
-import com.hedera.mirror.common.domain.addressbook.AddressBook;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.file.FileData;
+import java.util.Collection;
 
-public interface AddressBookService extends ConsensusNodeService {
+/**
+ * Maintains state about the current consensus nodes.
+ */
+public interface ConsensusNodeService {
+
 
     /**
-     * Retrieves the latest address book from db
+     * Retrieves a list of consensus nodes. The data may be cached and not always reflect the current state of the
+     * database.
      *
-     * @return returns AddressBook containing network node details
+     * @return an unmodifiable list of consensus nodes
      */
-    AddressBook getCurrent();
+    Collection<ConsensusNode> getNodes();
 
-    boolean isAddressBook(EntityId entityId);
-
-    AddressBook migrate();
-
-    void update(FileData fileData);
+    /**
+     * Requests that the service refreshes its node information. The implementation may choose to ignore this or
+     * execute it lazily on the next request.
+     */
+    void refresh();
 }

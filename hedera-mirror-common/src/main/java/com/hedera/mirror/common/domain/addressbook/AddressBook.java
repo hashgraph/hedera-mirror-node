@@ -20,12 +20,8 @@ package com.hedera.mirror.common.domain.addressbook;
  * ‍
  */
 
-import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 import javax.persistence.CascadeType;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
@@ -33,12 +29,11 @@ import javax.persistence.FetchType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
-import javax.persistence.Transient;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.Getter;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
@@ -58,6 +53,8 @@ public class AddressBook {
     // consensusTimestamp of transaction containing final fileAppend operation of next address book
     private Long endConsensusTimestamp;
 
+    @EqualsAndHashCode.Exclude
+    @Builder.Default
     @OneToMany(cascade = {CascadeType.ALL}, orphanRemoval = true, fetch = FetchType.EAGER)
     @JoinColumn(name = "consensusTimestamp")
     private List<AddressBookEntry> entries = new ArrayList<>();
@@ -69,26 +66,4 @@ public class AddressBook {
     private EntityId fileId;
 
     private Integer nodeCount;
-
-    @ToString.Exclude
-    @Transient
-    @Getter(lazy = true)
-    private final Map<String, PublicKey> nodeAccountIDPubKeyMap = this.getEntries()
-            .stream()
-            .collect(Collectors
-                    .toMap(e -> e.getNodeAccountId().toString(), AddressBookEntry::getPublicKeyAsObject));
-
-    @ToString.Exclude
-    @Transient
-    @Getter(lazy = true)
-    private final Map<Long, EntityId> nodeIdNodeAccountIdMap = this.getEntries()
-            .stream()
-            .collect(Collectors
-                    .toMap(e -> e.getNodeId(), AddressBookEntry::getNodeAccountId));
-
-    public Set<EntityId> getNodeSet() {
-        return entries.stream()
-                .map(AddressBookEntry::getNodeAccountId)
-                .collect(Collectors.toSet());
-    }
 }

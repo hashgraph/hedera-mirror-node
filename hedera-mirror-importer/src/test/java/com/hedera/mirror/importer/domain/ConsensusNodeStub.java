@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.addressbook;
+package com.hedera.mirror.importer.domain;
 
 /*-
  * ‌
@@ -20,22 +20,23 @@ package com.hedera.mirror.importer.addressbook;
  * ‍
  */
 
-import com.hedera.mirror.common.domain.addressbook.AddressBook;
+import java.security.PublicKey;
+import lombok.Builder;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
+
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.file.FileData;
+import com.hedera.mirror.importer.addressbook.ConsensusNode;
 
-public interface AddressBookService extends ConsensusNodeService {
-
-    /**
-     * Retrieves the latest address book from db
-     *
-     * @return returns AddressBook containing network node details
-     */
-    AddressBook getCurrent();
-
-    boolean isAddressBook(EntityId entityId);
-
-    AddressBook migrate();
-
-    void update(FileData fileData);
+@Builder
+@Data
+@EqualsAndHashCode(of = "nodeId")
+@ToString(exclude = "publicKey")
+public class ConsensusNodeStub implements ConsensusNode {
+    private EntityId nodeAccountId;
+    private long nodeId;
+    private PublicKey publicKey;
+    private long stake;
+    private long totalStake;
 }

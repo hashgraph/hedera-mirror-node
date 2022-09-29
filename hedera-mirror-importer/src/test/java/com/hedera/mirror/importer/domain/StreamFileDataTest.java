@@ -30,6 +30,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.zip.GZIPOutputStream;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;
@@ -44,7 +45,7 @@ class StreamFileDataTest {
     private static final String FILENAME = "2021-03-12T17_15_00Z.rcd";
 
     @TempDir
-    Path dataPath;
+    private Path dataPath;
 
     @ParameterizedTest(name = "create StreamFileData from {3}")
     @CsvSource({
@@ -67,6 +68,8 @@ class StreamFileDataTest {
 
             assertThat(streamFileData.getFilename()).isEqualTo(file.getName());
             assertThat(streamFileData.getInputStream()).isNotNull();
+            assertThat(streamFileData.getLastModified()).isNotNull()
+                    .isEqualTo(Instant.ofEpochMilli(file.lastModified()));
         } else {
             if (createDirectory) {
                 FileUtils.forceMkdir(file);
@@ -92,6 +95,7 @@ class StreamFileDataTest {
                 assertThat(is.readAllBytes()).isEqualTo(uncompressedBytes);
                 assertThat(streamFileData.getDecompressedBytes()).isEqualTo(uncompressedBytes);
                 assertThat(streamFileData.getBytes()).isEqualTo(baos.toByteArray());
+                assertThat(streamFileData.getLastModified()).isNotNull();
             }
         }
     }
