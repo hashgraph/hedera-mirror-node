@@ -954,10 +954,8 @@ class AddressBookServiceImplTest extends IntegrationTest {
     void getNodesEmptyNodeStake() {
         assertThat(addressBookService.getNodes())
                 .hasSize(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT)
-                .allSatisfy(c -> assertThat(c)
-                        .returns(1L, ConsensusNode::getStake)
-                        .returns(4L, ConsensusNode::getTotalStake)
-                )
+                .allMatch(c -> c.getStake() == 1L)
+                .allMatch(c -> c.getTotalStake() == 4L)
                 .allMatch(c -> c.getNodeAccountId().getEntityNum() - 3 == c.getNodeId())
                 .allSatisfy(c -> assertThat(c.getPublicKey()).isNotNull())
                 .extracting(ConsensusNode::getNodeId)
@@ -967,10 +965,10 @@ class AddressBookServiceImplTest extends IntegrationTest {
     @Test
     void getNodesWithNodeStake() {
         long timestamp = domainBuilder.timestamp();
-        var nodeStake0 = domainBuilder.nodeStake().customize(n -> n.nodeId(0).consensusTimestamp(timestamp)).persist();
-        var nodeStake1 = domainBuilder.nodeStake().customize(n -> n.nodeId(1).consensusTimestamp(timestamp)).persist();
-        var nodeStake2 = domainBuilder.nodeStake().customize(n -> n.nodeId(2).consensusTimestamp(timestamp)).persist();
-        var nodeStake3 = domainBuilder.nodeStake().customize(n -> n.nodeId(3).consensusTimestamp(timestamp)).persist();
+        var nodeStake0 = domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(0)).persist();
+        var nodeStake1 = domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(1)).persist();
+        var nodeStake2 = domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(2)).persist();
+        var nodeStake3 = domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(3)).persist();
         long totalStake = nodeStake0.getStake() + nodeStake1.getStake() + nodeStake2.getStake() + nodeStake3.getStake();
 
         assertThat(addressBookService.getNodes())
@@ -983,12 +981,29 @@ class AddressBookServiceImplTest extends IntegrationTest {
     }
 
     @Test
+    void getNodesWithNodeStakeCountMoreThanAddressBook() {
+        long timestamp = domainBuilder.timestamp();
+        domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(0).stake(0L)).persist();
+        domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(1).stake(0L)).persist();
+        domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(2).stake(0L)).persist();
+        domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(3).stake(0L)).persist();
+        domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(4).stake(0L)).persist();
+
+        assertThat(addressBookService.getNodes())
+                .hasSize(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT)
+                .allMatch(c -> c.getStake() == 1L)
+                .allMatch(c -> c.getTotalStake() == 5L)
+                .allMatch(c -> c.getNodeAccountId().getEntityNum() - 3 == c.getNodeId())
+                .allSatisfy(c -> assertThat(c.getPublicKey()).isNotNull());
+    }
+
+    @Test
     void refresh() {
         long timestamp = domainBuilder.timestamp();
-        domainBuilder.nodeStake().customize(n -> n.nodeId(0).consensusTimestamp(timestamp)).persist();
-        domainBuilder.nodeStake().customize(n -> n.nodeId(1).consensusTimestamp(timestamp)).persist();
-        domainBuilder.nodeStake().customize(n -> n.nodeId(2).consensusTimestamp(timestamp)).persist();
-        domainBuilder.nodeStake().customize(n -> n.nodeId(3).consensusTimestamp(timestamp)).persist();
+        domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(0)).persist();
+        domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(1)).persist();
+        domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(2)).persist();
+        domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(3)).persist();
 
         // Verify cache is empty to start
         assertNull(cacheManager.getCache(CACHE_NAME).get(SimpleKey.EMPTY));

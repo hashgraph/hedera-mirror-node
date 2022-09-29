@@ -33,7 +33,6 @@ import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -42,6 +41,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import javax.inject.Named;
@@ -135,7 +135,7 @@ public class AddressBookServiceImpl implements AddressBookService {
     public Collection<ConsensusNode> getNodes() {
         var addressBook = getCurrent();
         var totalStake = new AtomicLong(0L);
-        var nodes = new ArrayList<ConsensusNode>();
+        var nodes = new TreeSet<ConsensusNode>();
         var nodeStakes = new HashMap<Long, NodeStake>();
 
         nodeStakeRepository.findLatest().forEach(nodeStake -> {
@@ -143,9 +143,12 @@ public class AddressBookServiceImpl implements AddressBookService {
             nodeStakes.put(nodeStake.getNodeId(), nodeStake);
         });
 
+        // For partial mirror nodes, node stake will provide a more accurate count
+        long nodeCount = !nodeStakes.isEmpty() ? nodeStakes.size() : addressBook.getNodeCount();
+
         addressBook.getEntries().forEach(e -> {
             var nodeStake = nodeStakes.get(e.getNodeId());
-            nodes.add(new ConsensusNodeWrapper(e, nodeStake, addressBook.getNodeCount(), totalStake.get()));
+            nodes.add(new ConsensusNodeWrapper(e, nodeStake, nodeCount, totalStake.get()));
         });
 
         if (nodes.isEmpty()) {

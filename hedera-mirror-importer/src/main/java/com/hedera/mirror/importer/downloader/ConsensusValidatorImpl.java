@@ -55,10 +55,14 @@ public class ConsensusValidatorImpl implements ConsensusValidator {
     public void validate(Collection<FileStreamSignature> signatures) throws SignatureVerificationException {
         Multimap<String, FileStreamSignature> signatureHashMap = HashMultimap.create();
         StreamFilename filename = null;
+        BigDecimal stakeRequiredForConsensus = null;
+        long totalStake = 0L;
 
         for (var signature : signatures) {
             if (filename == null) {
                 filename = signature.getFilename();
+                totalStake = signature.getNode().getTotalStake();
+                stakeRequiredForConsensus = getStakeRequiredForConsensus(totalStake);
             }
 
             if (signature.getStatus() == FileStreamSignature.SignatureStatus.VERIFIED) {
@@ -73,8 +77,6 @@ public class ConsensusValidatorImpl implements ConsensusValidator {
 
         long debugStake = 0;
         long consensusCount = 0;
-        BigDecimal stakeRequiredForConsensus = null;
-        long totalStake = 0L;
 
         for (String key : signatureHashMap.keySet()) {
             var validatedSignatures = signatureHashMap.get(key);
@@ -82,11 +84,6 @@ public class ConsensusValidatorImpl implements ConsensusValidator {
 
             for (var signature : validatedSignatures) {
                 stake += signature.getNode().getStake();
-
-                if (stakeRequiredForConsensus == null) {
-                    totalStake = signature.getNode().getTotalStake();
-                    stakeRequiredForConsensus = getStakeRequiredForConsensus(totalStake);
-                }
             }
 
             if (canReachConsensus(stake, stakeRequiredForConsensus)) {
