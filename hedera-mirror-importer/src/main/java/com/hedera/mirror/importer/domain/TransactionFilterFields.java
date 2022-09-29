@@ -23,7 +23,7 @@ package com.hedera.mirror.importer.domain;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.Set;
 
 import lombok.Value;
 
@@ -41,13 +41,5 @@ public class TransactionFilterFields {
     Collection<EntityId> entities;
     TransactionType transactionType;
 
-    public TransactionFilterFields(Collection<EntityId> entities, TransactionType transactionType) {
-        this.entities = entities;
-        this.transactionType = transactionType;
-    }
-
-    // for backwards compatibility with single-EntityId TransactionFilterFields
-    public TransactionFilterFields(EntityId entityId, TransactionType transactionType) {
-        this (Collections.singleton(entityId), transactionType);
-    }
+    public static final TransactionFilterFields EMPTY = new TransactionFilterFields(Set.of(), TransactionType.UNKNOWN);
 }

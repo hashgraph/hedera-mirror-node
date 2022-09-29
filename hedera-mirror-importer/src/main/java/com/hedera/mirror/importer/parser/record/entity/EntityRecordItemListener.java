@@ -136,7 +136,6 @@ public class EntityRecordItemListener implements RecordItemListener {
 
         long consensusTimestamp = DomainUtils.timeStampInNanos(txRecord.getConsensusTimestamp());
         EntityId entityId;
-        Collection<EntityId> entities = new HashSet<>();
         try {
             entityId = transactionHandler.getEntity(recordItem);
         } catch (InvalidEntityException e) { // transaction can have invalid topic/contract/file id
@@ -144,104 +143,10 @@ public class EntityRecordItemListener implements RecordItemListener {
             entityId = null;
         }
 
-        if (entityId != null) {
-            entities.add(entityId);
-        }
-
-        // Issue 4478: regardless of transaction type, we always filter on payer account and transfer receivers/senders
-        try {
-            EntityId payerAccountId = recordItem.getPayerAccountId();
-            if (payerAccountId != null) {
-                entities.add(payerAccountId);
-            }
-        } catch (InvalidEntityException e) {
-            log.warn("Invalid payer account identity encountered for consensusTimestamp {} : {}",
-                    consensusTimestamp, e.getMessage());
-            entityId = null;
-        }
-        if (body.hasCryptoTransfer()) {
-            // first, handle Hbar transfers from the "getTransfers()" list.
-            List<AccountAmount> accountAmountsList = body.getCryptoTransfer().getTransfers().getAccountAmountsList();
-            for (AccountAmount aa : accountAmountsList) {
-                try {
-                    entityId = EntityId.of(aa.getAccountID());
-                    if (entityId != null) {
-                        entities.add(entityId);
-                    }
-                } catch (InvalidEntityException e) {
-                    log.warn("Invalid transfer account amount identity encountered for consensusTimestamp {} : {}",
-                            consensusTimestamp, e.getMessage());
-                    entityId = null;
-                }
-            }
-
-            // next, handle transfers from the "getTransferList()" list.
-            var transferList = txRecord.getTransferList();
-            for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
-                var aa = transferList.getAccountAmounts(i);
-                try {
-                    entityId = EntityId.of(aa.getAccountID());
-                    if (entityId != null) {
-                        entities.add(entityId);
-                    }
-                } catch (InvalidEntityException e) {
-                    log.warn("Invalid transfer list account amount identity encountered for consensusTimestamp {} : {}",
-                            consensusTimestamp, e.getMessage());
-                    entityId = null;
-                }
-            }
-
-            // finally, handle fungible and non-fungible token transfers
-            List<TokenTransferList> tokenTransfersList = body.getCryptoTransfer().getTokenTransfersList();
-            for (TokenTransferList tokenTransferList : tokenTransfersList) {
-                // Token Transfers
-                for (AccountAmount aa : tokenTransferList.getTransfersList()) {
-                    try {
-                        entityId = EntityId.of(aa.getAccountID());
-                        if (entityId != null) {
-                            entities.add(entityId);
-                        }
-                    } catch (InvalidEntityException e) {
-                        log.warn("Invalid token transfer list identity encountered for consensusTimestamp {} : {}",
-                                consensusTimestamp, e.getMessage());
-                        entityId = null;
-                    }
-                }
-
-                // NFT Transfers, too
-                for (NftTransfer transfer : tokenTransferList.getNftTransfersList()) {
-                    if (transfer.getReceiverAccountID() != null) {
-                        try {
-                            entityId = EntityId.of(transfer.getReceiverAccountID());
-                            if (entityId != null) {
-                                entities.add(entityId);
-                            }
-                        } catch (InvalidEntityException e) {
-                            log.warn("Invalid NFT receiver account identity encountered for consensusTimestamp {} : {}",
-                                    consensusTimestamp, e.getMessage());
-                            entityId = null;
-                        }
-                    }
-                    if (transfer.getSenderAccountID() != null) {
-                        try {
-                            entityId = EntityId.of(transfer.getSenderAccountID());
-                            if (entityId != null) {
-                                entities.add(entityId);
-                            }
-                        } catch (InvalidEntityException e) {
-                            log.warn("Invalid NFT sender account identity encountered for consensusTimestamp {} : {}",
-                                    consensusTimestamp, e.getMessage());
-                            entityId = null;
-                        }
-                    }
-                }
-            }
-        }
-
-        log.debug("Processing {} transaction {} for entities {}", transactionType, consensusTimestamp, entities);
-
         // to:do - exclude Freeze from Filter transaction type
-        TransactionFilterFields transactionFilterFields = new TransactionFilterFields(entities, transactionType);
+        TransactionFilterFields transactionFilterFields = getTransactionFilterFields(entityId, recordItem);
+        Collection<EntityId> entities = transactionFilterFields.getEntities();
+        log.debug("Processing {} transaction {} for entities {}", transactionType, consensusTimestamp, entities);
         if (!commonParserProperties.getFilter().test(transactionFilterFields)) {
             log.debug("Ignoring transaction. consensusTimestamp={}, transactionType={}, entities={}",
                     consensusTimestamp, transactionType, entities);
@@ -1270,4 +1175,53 @@ public class EntityRecordItemListener implements RecordItemListener {
             parseFixedFee(customFee, royaltyFee.getFallbackFee(), tokenId);
         }
     }
+
+    // regardless of transaction type, filter on entityId and payer account and transfer tokens/receivers/senders
+    private TransactionFilterFields getTransactionFilterFields(EntityId entityId, RecordItem recordItem) {
+        if (commonParserProperties.getInclude().isEmpty() && commonParserProperties.getExclude().isEmpty()) {
+            return TransactionFilterFields.EMPTY;
+        } else {
+            boolean hasEntityFilter = false;
+            for (CommonParserProperties.TransactionFilter filter : commonParserProperties.getInclude()) {
+                if (!filter.getEntity().isEmpty()) {
+                    hasEntityFilter = true;
+                    break;
+                }
+            }
+            for (CommonParserProperties.TransactionFilter filter : commonParserProperties.getExclude()) {
+                if (!filter.getEntity().isEmpty()) {
+                    hasEntityFilter = true;
+                    break;
+                }
+            }
+            if (!hasEntityFilter) {
+                return new TransactionFilterFields(Set.of(), TransactionType.of(recordItem.getTransactionType()));
+            }
+        }
+
+        var entities = new HashSet<EntityId>();
+        entities.add(entityId);
+        entities.add(recordItem.getPayerAccountId());
+
+        recordItem.getRecord().getTransferList().getAccountAmountsList().forEach(accountAmount ->
+                entities.add(EntityId.of(accountAmount.getAccountID()))
+        );
+
+        recordItem.getRecord().getTokenTransferListsList().forEach(transfer -> {
+            entities.add(EntityId.of(transfer.getToken()));
+
+            transfer.getTransfersList().forEach(accountAmount ->
+                    entities.add(EntityId.of(accountAmount.getAccountID()))
+            );
+
+            transfer.getNftTransfersList().forEach(nftTransfer -> {
+                entities.add(EntityId.of(nftTransfer.getReceiverAccountID()));
+                entities.add(EntityId.of(nftTransfer.getSenderAccountID()));
+            });
+        });
+
+        entities.remove(null);
+        return new TransactionFilterFields(entities, TransactionType.of(recordItem.getTransactionType()));
+    }
+
 }

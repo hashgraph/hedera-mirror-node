@@ -96,12 +96,12 @@ public class CommonParserProperties {
             return transaction.contains(t.getTransactionType());
         }
 
-        private boolean matches(Collection<EntityId> e) {
+        private boolean matches(Collection<EntityId> entities) {
             if (entity.isEmpty()) {
                 return true;
             }
 
-            return e != null && CollectionUtils.containsAny(entity, e);
+            return entities != null && CollectionUtils.containsAny(entity, entities);
         }
     }
 }
