@@ -20,15 +20,14 @@ package com.hedera.mirror.importer.migration;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.common.collect.Range;
-import com.hedera.mirror.common.domain.token.TokenAccount;
-import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
-import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
-import com.hedera.mirror.importer.EnabledIfV1;
-import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.config.Owner;
-import com.hedera.mirror.importer.repository.TokenAccountHistoryRepository;
-import com.hedera.mirror.importer.repository.TokenAccountRepository;
+import java.io.File;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.function.Consumer;
 import lombok.Builder;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -42,13 +41,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.TestPropertySource;
 
-import java.io.File;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.function.Consumer;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import com.hedera.mirror.common.domain.token.TokenAccount;
+import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
+import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
+import com.hedera.mirror.importer.EnabledIfV1;
+import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.config.Owner;
+import com.hedera.mirror.importer.repository.TokenAccountHistoryRepository;
+import com.hedera.mirror.importer.repository.TokenAccountRepository;
 
 @EnabledIfV1
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))

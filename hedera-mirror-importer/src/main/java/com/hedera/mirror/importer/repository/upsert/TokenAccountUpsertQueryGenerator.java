@@ -20,10 +20,9 @@ package com.hedera.mirror.importer.repository.upsert;
  * ‍
  */
 
-import lombok.Value;
-
-import javax.inject.Named;
 import java.text.MessageFormat;
+import javax.inject.Named;
+import lombok.Value;
 
 @Named
 @Value

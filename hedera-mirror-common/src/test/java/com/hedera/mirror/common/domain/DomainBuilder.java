@@ -20,8 +20,47 @@ package com.hedera.mirror.common.domain;
  * ‍
  */
 
+import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
+import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
+import static com.hedera.mirror.common.domain.entity.EntityType.FILE;
+import static com.hedera.mirror.common.domain.entity.EntityType.SCHEDULE;
+import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
+import static com.hedera.mirror.common.domain.entity.EntityType.TOPIC;
+import static com.hedera.mirror.common.util.DomainUtils.TINYBARS_IN_ONE_HBAR;
+
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.SignaturePair;
+import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TransactionID;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.security.SecureRandom;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+import javax.persistence.EntityManager;
+import lombok.RequiredArgsConstructor;
+import lombok.Value;
+import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.support.TransactionOperations;
+
 import com.hedera.mirror.common.aggregator.LogsBloomAggregator;
 import com.hedera.mirror.common.domain.addressbook.AddressBook;
 import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
@@ -83,45 +122,6 @@ import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.services.stream.proto.CallOperationType;
 import com.hedera.services.stream.proto.ContractAction.ResultDataCase;
 import com.hedera.services.stream.proto.ContractActionType;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.SignaturePair;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TransactionID;
-import lombok.RequiredArgsConstructor;
-import lombok.Value;
-import lombok.extern.log4j.Log4j2;
-import org.apache.commons.lang3.RandomStringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.config.ConfigurableBeanFactory;
-import org.springframework.context.annotation.Scope;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.support.TransactionOperations;
-
-import javax.persistence.EntityManager;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.security.SecureRandom;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.temporal.ChronoUnit;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-
-import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
-import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
-import static com.hedera.mirror.common.domain.entity.EntityType.FILE;
-import static com.hedera.mirror.common.domain.entity.EntityType.SCHEDULE;
-import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
-import static com.hedera.mirror.common.domain.entity.EntityType.TOPIC;
-import static com.hedera.mirror.common.util.DomainUtils.TINYBARS_IN_ONE_HBAR;
 
 @Component
 @Log4j2

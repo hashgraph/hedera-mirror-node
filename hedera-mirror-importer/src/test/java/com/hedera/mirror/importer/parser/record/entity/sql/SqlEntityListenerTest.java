@@ -20,8 +20,31 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
  * ‍
  */
 
+import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
+import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
+import static com.hedera.mirror.common.domain.entity.EntityType.SCHEDULE;
+import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
+import com.hederahashgraph.api.proto.java.Key;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import org.apache.commons.codec.binary.Hex;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.support.TransactionTemplate;
+
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractAction;
@@ -86,29 +109,6 @@ import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionHashRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.repository.TransactionSignatureRepository;
-import com.hederahashgraph.api.proto.java.Key;
-import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
-import org.apache.commons.codec.binary.Hex;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.support.TransactionTemplate;
-
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Stream;
-
-import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
-import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
-import static com.hedera.mirror.common.domain.entity.EntityType.SCHEDULE;
-import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class SqlEntityListenerTest extends IntegrationTest {

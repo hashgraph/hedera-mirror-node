@@ -20,8 +20,27 @@ package com.hedera.mirror.importer.parser.batch;
  * ‍
  */
 
+import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
+import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
+import static com.hedera.mirror.importer.config.MirrorImporterConfiguration.TOKEN_DISSOCIATE_BATCH_PERSISTER;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
+import com.hederahashgraph.api.proto.java.Key;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import org.apache.commons.codec.binary.Hex;
+import org.assertj.core.groups.Tuple;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.transaction.support.TransactionOperations;
+
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -55,25 +74,6 @@ import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
-import com.hederahashgraph.api.proto.java.Key;
-import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
-import org.apache.commons.codec.binary.Hex;
-import org.assertj.core.groups.Tuple;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.transaction.support.TransactionOperations;
-
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
-import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
-import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
-import static com.hedera.mirror.importer.config.MirrorImporterConfiguration.TOKEN_DISSOCIATE_BATCH_PERSISTER;
-import static org.assertj.core.api.Assertions.assertThat;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class BatchUpserterTest extends IntegrationTest {

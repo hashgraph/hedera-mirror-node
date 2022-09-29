@@ -20,7 +20,21 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
  * ‍
  */
 
+import static com.hedera.mirror.importer.config.MirrorImporterConfiguration.TOKEN_DISSOCIATE_BATCH_PERSISTER;
+
 import com.google.common.base.Stopwatch;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import javax.inject.Named;
+import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.factory.BeanCreationNotAllowedException;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.core.annotation.Order;
+
 import com.hedera.mirror.common.domain.addressbook.NetworkStake;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
 import com.hedera.mirror.common.domain.contract.Contract;
@@ -71,20 +85,6 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.SidecarFileRepository;
-import lombok.extern.log4j.Log4j2;
-import org.springframework.beans.factory.BeanCreationNotAllowedException;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.core.annotation.Order;
-
-import javax.inject.Named;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-
-import static com.hedera.mirror.importer.config.MirrorImporterConfiguration.TOKEN_DISSOCIATE_BATCH_PERSISTER;
 
 @Log4j2
 @Named
