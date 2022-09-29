@@ -33,7 +33,7 @@ class CustomFeeViewModel {
     if (!customFee.amount && !customFee.royaltyDenominator) {
       return;
     }
-
+    this.all_collectors_are_exempt = customFee.all_collectors_are_exempt;
     if (customFee.amountDenominator) {
       // fractional fee
       this.amount = {
@@ -61,7 +61,6 @@ class CustomFeeViewModel {
     }
 
     this.collector_account_id = EntityId.parse(customFee.collectorAccountId, {isNullable: true}).toString();
-    this.all_collectors_are_exempt = customFee.all_collectors_are_exempt;
   }
 
   hasFee() {
