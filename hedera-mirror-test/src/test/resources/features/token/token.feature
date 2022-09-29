@@ -69,9 +69,9 @@ Feature: HTS Base Coverage Feature
         And the mirror node REST API should return the transaction
         # create the second token with empty custom fees so we can associate recipient accounts
         And I successfully create a new token with custom fees schedule
-            | allCollectorsAreExempt | amount | numerator | denominator | collector | maximum | minimum | token |
-            | false                  | 50     |           |             | 0         |         |         |       |
-            | false                  | 20     |           |             | 0         |         |         | 0     |
+            | amount | numerator | denominator | collector | maximum | minimum | token |
+            | 50     |           |             | 0         |         |         |       |
+            | 20     |           |             | 0         |         |         | 0     |
         Then the mirror node REST API should confirm token 1 with custom fees schedule
         # create 4 recipients, 0 as hbar fee collector, 1 as fixed fee token collector, 2 as fractional fee collector,
         # and the last as token transfer recipient
@@ -93,10 +93,10 @@ Feature: HTS Base Coverage Feature
         And the mirror node REST API should return the transaction for token 1 fund flow
         # update token 1's custom fees schedule
         Given I update token 1 with new custom fees schedule
-            | allCollectorsAreExempt | amount | numerator | denominator | collector | maximum | minimum | token |
-            | false                  | 100    |           |             | 0         |         |         |       |
-            | false                  | 10     |           |             | 1         |         |         | 0     |
-            | false                  |        | 1         | 10          | 2         |         |         |       |
+            | amount | numerator | denominator | collector | maximum | minimum | token |
+            | 100    |           |             | 0         |         |         |       |
+            | 10     |           |             | 1         |         |         | 0     |
+            |        | 1         | 10          | 2         |         |         |       |
         And the mirror node REST API should return the transaction
         # make a transfer from sender 0 to the last recipient and verify the assessed custom fees
         When Sender 0 transfers 200 tokens 1 to recipient 3 with fractional fee 20
