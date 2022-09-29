@@ -33,7 +33,6 @@ class CustomFeeViewModel {
     if (!customFee.amount && !customFee.royaltyDenominator) {
       return;
     }
-    
     this.all_collectors_are_exempt = customFee.all_collectors_are_exempt;
     if (customFee.amountDenominator) {
       // fractional fee
