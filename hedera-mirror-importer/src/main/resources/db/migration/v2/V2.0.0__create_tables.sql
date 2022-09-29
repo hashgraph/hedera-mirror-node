@@ -175,7 +175,7 @@ create table if not exists contract_result
     gas_used             bigint       null,
     payer_account_id     bigint       not null,
     sender_id            bigint       null,
-    transaction_hash     bytea        not null,
+    transaction_hash     bytea        null,
     transaction_index    integer      null,
     transaction_result   smallint     not null
 );

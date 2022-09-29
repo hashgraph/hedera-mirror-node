@@ -37,7 +37,6 @@ import org.springframework.context.annotation.Primary;
 public class CacheConfiguration {
 
     public static final String EXPIRE_AFTER_5M = "cacheManagerExpireAfter5m";
-    public static final String EXPIRE_AFTER_24H = "cacheManagerExpireAfter24h";
     public static final String CACHE_MANAGER_ALIAS = "cacheManagerAlias";
 
     @Bean(EXPIRE_AFTER_5M)
@@ -53,15 +52,5 @@ public class CacheConfiguration {
         CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
         caffeineCacheManager.setCacheSpecification("maximumSize=100000,expireAfterWrite=30m");
         return caffeineCacheManager;
-    }
-
-    /*
-     * Note the size of this cache should be adjusted according to the maximum number of Nodes.
-     */
-    @Bean(EXPIRE_AFTER_24H)
-    CacheManager cacheManagerNodeStake() {
-        CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
-        caffeineCacheManager.setCacheSpecification("maximumSize=100,expireAfterWrite=24h");
-        return new TransactionAwareCacheManagerProxy(caffeineCacheManager);
     }
 }

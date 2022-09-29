@@ -28,7 +28,6 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
-import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -46,12 +45,6 @@ import com.hedera.mirror.importer.repository.ContractRepository;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
 class FillMissingContractInitsourceMigrationTest extends IntegrationTest {
-
-    private static final RecursiveComparisonConfiguration COMPARISON = RecursiveComparisonConfiguration
-            .builder()
-            .withComparedFields("fileId", "id", "initcode")
-            .withIgnoredFields("fileId.type")
-            .build();
 
     @Value("classpath:db/migration/v1/R__fill_missing_contract_initsource.sql")
     private final File migrationSql;
@@ -145,7 +138,6 @@ class FillMissingContractInitsourceMigrationTest extends IntegrationTest {
 
     private void assertContracts(Contract... contracts) {
         assertThat(contractRepository.findAll())
-                .usingRecursiveFieldByFieldElementComparator(COMPARISON)
                 .containsExactlyInAnyOrder(contracts);
     }
 }

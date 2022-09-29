@@ -20,8 +20,6 @@ package com.hedera.mirror.importer.downloader.record;
  * ‍
  */
 
-import static org.mockito.Mockito.doReturn;
-
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -57,9 +55,9 @@ class RecordFileV2DownloaderTest extends AbstractRecordFileDownloaderTest {
 
     @Test
     @DisplayName("Download and verify V1 files")
-    void downloadV1() throws Exception {
+    void downloadV1() {
         mirrorProperties.setStartBlockNumber(null);
-        doReturn(loadAddressBook("test-v1")).when(addressBookService).getCurrent();
+        loadAddressBook("test-v1");
         var allRecordFiles = TestRecordFiles.getAll();
         var testRecordFiles = Map.of(
                 "2019-07-01T14_13_00.317763Z.rcd", allRecordFiles.get("2019-07-01T14_13_00.317763Z.rcd"),
