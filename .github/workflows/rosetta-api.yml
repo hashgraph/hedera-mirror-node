@@ -142,6 +142,7 @@ jobs:
         run: |
           ONLINE_CONTAINER_ID=$(docker run -d -e HEDERA_MIRROR_IMPORTER_STARTDATE=$STARTDATE \
             -e NETWORK=testnet \
+            -e HEDERA_MIRROR_ROSETTA_RESPONSE_MAXTRANSACTIONSINBLOCK=4 \
             -v /tmp/application_importer.yml:/app/importer/application.yml \
             -v /tmp/application_rosetta.yml:/app/rosetta/application.yml \
             -p 5700:5700 "${MODULE}:latest")

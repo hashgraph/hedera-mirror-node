@@ -19,7 +19,7 @@
  */
 
 import config from '../config';
-import {requestStartTime, responseDataLabel} from '../constants';
+import {requestStartTime, responseContentType, responseDataLabel} from '../constants';
 import {NotFoundError} from '../errors';
 import {JSONStringify} from '../utils';
 
@@ -27,8 +27,11 @@ const {
   response: {headers},
 } = config;
 
-// response middleware that pulls response data passed through request and sets in json response
-// next param is required to ensure express maps to this middleware and can also be used to pass onto future middleware
+const contentTypeHeader = 'Content-Type';
+const applicationJson = 'application/json';
+
+// Response middleware that pulls response data passed through request and sets in response.
+// Next param is required to ensure express maps to this middleware and can also be used to pass onto future middleware
 const responseHandler = async (req, res, next) => {
   const responseData = res.locals[responseDataLabel];
   if (responseData === undefined) {
@@ -38,11 +41,16 @@ const responseHandler = async (req, res, next) => {
     res.set(headers.default);
     res.set(headers.path[req.route.path]);
 
-    // set response json
     const code = res.locals.statusCode;
+    const contentType = res.locals[responseContentType] || applicationJson;
     res.status(code);
-    res.set('Content-Type', 'application/json');
-    res.send(JSONStringify(responseData));
+    res.set(contentTypeHeader, contentType);
+
+    if (contentType === applicationJson) {
+      res.send(JSONStringify(responseData));
+    } else {
+      res.send(responseData);
+    }
 
     const startTime = res.locals[requestStartTime];
     const elapsed = startTime ? Date.now() - startTime : 0;
