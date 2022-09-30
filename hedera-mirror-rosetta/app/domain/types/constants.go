@@ -23,6 +23,8 @@ package types
 import "github.com/coinbase/rosetta-sdk-go/types"
 
 const (
+	MetadataKeyMemo = "memo"
+
 	OperationTypeCryptoCreateAccount = "CRYPTOCREATEACCOUNT"
 	OperationTypeCryptoTransfer      = "CRYPTOTRANSFER"
 	OperationTypeTokenAssociate      = "TOKENASSOCIATE"

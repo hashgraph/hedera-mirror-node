@@ -71,11 +71,13 @@ func addTransaction(
 	nonFeeTransfers []domain.NonFeeTransfer,
 	tokenTransfers []domain.TokenTransfer,
 	nftTransfers []domain.NftTransfer,
+	memo []byte,
 ) {
 	tx := &domain.Transaction{
 		ConsensusTimestamp:   consensusTimestamp,
 		ChargedTxFee:         17,
 		EntityId:             entityId,
+		Memo:                 memo,
 		NodeAccountId:        nodeAccountId,
 		Nonce:                0,
 		PayerAccountId:       payerAccountId,
