@@ -24,6 +24,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
@@ -34,6 +35,7 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
 import software.amazon.awssdk.core.interceptor.Context;
 import software.amazon.awssdk.core.interceptor.ExecutionAttributes;
 import software.amazon.awssdk.core.interceptor.ExecutionInterceptor;
@@ -41,7 +43,6 @@ import software.amazon.awssdk.http.SdkHttpRequest;
 import software.amazon.awssdk.http.nio.netty.NettyNioAsyncHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
-import software.amazon.awssdk.services.s3.S3AsyncClientBuilder;
 
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.downloader.StreamSourceProperties;
@@ -63,8 +64,7 @@ class CloudStorageConfiguration {
 
         for (var source : commonDownloaderProperties.getSources()) {
             var s3Client = switch (source.getType()) {
-                case GCP -> gcpClient(source);
-                case S3 -> s3Client(source);
+                case GCP, S3 -> s3Client(source);
             };
 
             var provider = new S3StreamFileProvider(commonDownloaderProperties, s3Client);
@@ -89,51 +89,42 @@ class CloudStorageConfiguration {
         return DefaultCredentialsProvider.create();
     }
 
-    private S3AsyncClient gcpClient(StreamSourceProperties sourceProperties) {
-        if (sourceProperties.getUri() == null) {
-            sourceProperties.setUri(URI.create(sourceProperties.getType().getEndpoint()));
-        }
-
-        var clientBuilder = asyncClientBuilder(sourceProperties);
-        var projectId = sourceProperties.getProjectId();
-
-        if (StringUtils.isNotBlank(projectId)) {
-            clientBuilder.overrideConfiguration(builder -> builder.addExecutionInterceptor(new ExecutionInterceptor() {
-                @Override
-                public SdkHttpRequest modifyHttpRequest(
-                        Context.ModifyHttpRequest context, ExecutionAttributes executionAttributes) {
-                    return context.httpRequest().toBuilder()
-                            .appendRawQueryParameter("userProject", projectId).build();
-                }
-            }));
-        }
-
-        return clientBuilder.build();
-    }
-
     private S3AsyncClient s3Client(StreamSourceProperties sourceProperties) {
-        var clientBuilder = asyncClientBuilder(sourceProperties);
-        var uri = sourceProperties.getUri();
-
-        if (uri != null) {
-            log.info("Overriding s3 client endpoint to {}", uri);
-            clientBuilder.endpointOverride(uri);
-        }
-
-        return clientBuilder.build();
-    }
-
-    private S3AsyncClientBuilder asyncClientBuilder(StreamSourceProperties sourceProperties) {
         var httpClient = NettyNioAsyncHttpClient.builder()
                 .connectionTimeout(sourceProperties.getConnectionTimeout())
                 .maxConcurrency(sourceProperties.getMaxConcurrency())
                 .connectionMaxIdleTime(Duration.ofSeconds(5))  // https://github.com/aws/aws-sdk-java-v2/issues/1122
                 .build();
 
+        if (sourceProperties.getUri() == null) {
+            sourceProperties.setUri(URI.create(sourceProperties.getType().getEndpoint()));
+        }
+
         return S3AsyncClient.builder()
                 .credentialsProvider(awsCredentialsProvider(sourceProperties))
-                .region(Region.of(sourceProperties.getRegion()))
+                .endpointOverride(sourceProperties.getUri())
                 .httpClient(httpClient)
-                .overrideConfiguration(c -> c.addExecutionInterceptor(metricsExecutionInterceptor));
+                .overrideConfiguration(c -> c.addExecutionInterceptor(metricsExecutionInterceptor))
+                .overrideConfiguration(overrideProject(sourceProperties))
+                .region(Region.of(sourceProperties.getRegion()))
+                .build();
+    }
+
+    private Consumer<ClientOverrideConfiguration.Builder> overrideProject(StreamSourceProperties sourceProperties) {
+        var projectId = sourceProperties.getProjectId();
+
+        if (StringUtils.isNotBlank(projectId)) {
+            return builder -> builder.addExecutionInterceptor(new ExecutionInterceptor() {
+                @Override
+                public SdkHttpRequest modifyHttpRequest(
+                        Context.ModifyHttpRequest context, ExecutionAttributes executionAttributes) {
+                    return context.httpRequest().toBuilder()
+                            .appendRawQueryParameter("userProject", projectId).build();
+                }
+            });
+        }
+
+        return builder -> {
+        };
     }
 }
