@@ -271,7 +271,7 @@ paths:
       description: Return the contract information given an id
       operationId: getContractById
       parameters:
-        - $ref: '#/components/parameters/contractIdPathParam'
+        - $ref: '#/components/parameters/contractIdOrAddressPathParam'
         - $ref: '#/components/parameters/timestampQueryParam'
       responses:
         200:
@@ -292,7 +292,7 @@ paths:
       description: Returns a list of all ContractResults for a contract's function executions.
       operationId: listContractResults
       parameters:
-        - $ref: '#/components/parameters/contractIdPathParam'
+        - $ref: '#/components/parameters/contractIdOrAddressPathParam'
         - $ref: '#/components/parameters/fromQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/orderQueryParamDesc'
@@ -312,13 +312,34 @@ paths:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
         - contracts
+  /api/v1/contracts/{contractId}/state:
+    get:
+      summary: The contract current state from a contract on the network
+      description: Returns a list of all contract's slots.
+      operationId: listContractResults
+      parameters:
+        - $ref: '#/components/parameters/contractIdPathParam'
+        - $ref: '#/components/parameters/slotQueryParam'
+        - $ref: '#/components/parameters/orderQueryParam'
+        - $ref: '#/components/parameters/limitQueryParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractStateResponse'
+        400:
+          $ref: '#/components/responses/InvalidParameterError'
+      tags:
+        - contracts
   /api/v1/contracts/{contractIdOrAddress}/results/{timestamp}:
     get:
       summary: Get the contract result from a contract on the network executed at a given timestamp
       description: Returns a single ContractResult for a contract's function executions at a specific timestamp.
       operationId: getContractResultByIdAndTimestamp
       parameters:
-        - $ref: '#/components/parameters/contractIdPathParam'
+        - $ref: '#/components/parameters/contractIdOrAddressPathParam'
         - $ref: '#/components/parameters/timestampPathParam'
       responses:
         200:
@@ -449,7 +470,7 @@ paths:
 
       operationId: listContractLogs
       parameters:
-        - $ref: '#/components/parameters/contractIdPathParam'
+        - $ref: '#/components/parameters/contractIdOrAddressPathParam'
         - $ref: '#/components/parameters/logIndexQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/orderQueryParamDesc'
@@ -1199,6 +1220,13 @@ components:
       properties:
         contracts:
           $ref: '#/components/schemas/ContractResults'
+        links:
+          $ref: '#/components/schemas/Links'
+    ContractStateResponse:
+      type: object
+      properties:
+        state:
+          $ref: '#/components/schemas/ContractResultStates'
         links:
           $ref: '#/components/schemas/Links'
     ContractActionsResponse:
@@ -1999,13 +2027,35 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/ContractResultLog'
-    ContractResultStateChange:
+    ContractResultState:
       type: object
       properties:
         address:
           $ref: '#/components/schemas/EvmAddress'
         contract_id:
           $ref: '#/components/schemas/EntityId'
+        slot:
+          description: The hex encoded storage slot.
+          format: binary
+          example: '0x00000000000000000000000000000000000000000000000000000000000000fa'
+          type: string
+        value:
+          description: The hex encoded value to the slot. `null` implies no value written.
+          example: '0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925'
+          format: binary
+          nullable: true
+          type: string
+    ContractResultStates:
+      type: array
+      items:
+        $ref: '#/components/schemas/ContractResultState'
+    ContractResultStateChange:
+      type: object
+      properties:
+        contract_id:
+          $ref: '#/components/schemas/EntityId'
+        address:
+          $ref: '#/components/schemas/EvmAddress'
         slot:
           description: The hex encoded storage slot changed.
           format: binary
@@ -3363,7 +3413,7 @@ components:
         oneOf:
           - $ref: '#/components/schemas/EntityIdQuery'
           - $ref: '#/components/schemas/EvmAddressWithShardRealm'
-    contractIdPathParam:
+    contractIdOrAddressPathParam:
       name: contractIdOrAddress
       in: path
       required: true
@@ -3372,6 +3422,14 @@ components:
         oneOf:
           - $ref: '#/components/schemas/EntityId'
           - $ref: '#/components/schemas/EvmAddressWithShardRealm'
+    contractIdPathParam:
+      name: contractId
+      in: path
+      required: true
+      description: The ID associated with this contract.
+      schema:
+        oneOf:
+          - $ref: '#/components/schemas/EntityId'
     hashOrNumberPathParam:
       name: hashOrNumber
       in: path
@@ -3989,6 +4047,36 @@ components:
       schema:
         type: string
         pattern: ^(eq:)?(\d{1,19}|0x[a-fA-f0-9]+)$
+        minimum: 0
+    slotQueryParam:
+      name: slot
+      in: query
+      description: The slot's number
+      examples:
+        noValue:
+          summary: --
+          value: ""
+        noOperator:
+          summary: Example of slot equals with no operator
+          value: 1
+        eqOperator:
+          summary: Example of slot equals operator
+          value: eq:2
+        gtOperator:
+          summary: Example of slot gt operator
+          value: gt:2
+        gteOperator:
+          summary: Example of slot gte operator
+          value: gte:2
+        ltOperator:
+          summary: Example of slot lt operator
+          value: lt:2
+        lteOperator:
+          summary: Example of slot lte operator
+          value: lte:2
+      schema:
+        type: string
+        pattern: ^((gte?|lte?|eq?|gt?|lt?)\:)?\d{1,10}$
         minimum: 0
     blockHashQueryParam:
       name: block.hash
