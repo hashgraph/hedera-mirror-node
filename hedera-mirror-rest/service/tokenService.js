@@ -19,7 +19,7 @@
  */
 
 import _ from 'lodash';
-import {Token} from '../model';
+import {Nft, Token} from '../model';
 
 /**
  * Token retrieval business logic
@@ -32,6 +32,18 @@ class TokenService {
   async getToken(tokenId) {
     const {rows} = await pool.queryQuietly(TokenService.tokenByIdQuery, tokenId);
     return _.isEmpty(rows) ? null : new Token(rows[0]);
+  }
+
+  /**
+   * Gets the tokens for the query
+   *
+   * @param query
+   * @return {Promise<Token[]>}
+   */
+  async getTokens(query) {
+    const {sqlQuery, params} = this.getQuery(query);
+    const rows = await super.getRows(sqlQuery, params, 'getTokens');
+    return rows.map((ta) => new Token(ta));
   }
 }
 
