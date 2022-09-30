@@ -30,4 +30,6 @@ hedera:
       online: true
       port: 5700
       realm: 0
+      response:
+        maxTransactionsInBlock: 6000
       shard: 0
