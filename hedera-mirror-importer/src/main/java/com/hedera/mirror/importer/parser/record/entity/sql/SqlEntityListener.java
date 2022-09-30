@@ -735,6 +735,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private TokenAccount mergeTokenAccount(TokenAccount lastTokenAccount, TokenAccount newTokenAccount) {
         if (lastTokenAccount.getTimestampRange().equals(newTokenAccount.getTimestampRange())) {
             // The token accounts are for the same range, accept the previous one
+            // This is a workaround for https://github.com/hashgraph/hedera-services/issues/3240
+            log.warn("Skipping duplicate token account association: {}", newTokenAccount);
             return lastTokenAccount;
         }
 
