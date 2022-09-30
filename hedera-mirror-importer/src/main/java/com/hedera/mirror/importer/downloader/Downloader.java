@@ -203,8 +203,7 @@ public abstract class Downloader<T extends StreamFile> {
         var nodes = consensusNodeService.getNodes();
         var tasks = new ArrayList<Callable<Object>>(nodes.size());
         var totalDownloads = new AtomicInteger();
-        int batchSize = downloaderProperties.getCommon().getBatchSize() * 2;
-        log.info("Searching for the next {} signature files per node after {}", batchSize, startAfterFilename);
+        log.debug("Asking for new signature files created after file: {}", startAfterFilename);
 
         /*
          * For each node, create a thread that will make requests as many times as necessary to
@@ -248,6 +247,9 @@ public abstract class Downloader<T extends StreamFile> {
         if (totalDownloads.get() > 0) {
             var rate = (int) (1000000.0 * totalDownloads.get() / stopwatch.elapsed(TimeUnit.MICROSECONDS));
             log.info("Downloaded {} signatures in {} ({}/s)", totalDownloads, stopwatch, rate);
+        } else {
+            log.info("No new signature files to download after file: {}. Retrying in {} s",
+                    startAfterFilename, downloaderProperties.getFrequency().toMillis() / 1_000f);
         }
 
         return sigFilesMap;
