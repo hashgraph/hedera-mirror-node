@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.parser.record;
  */
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
@@ -86,23 +85,6 @@ class CommonParserPropertiesTest {
 
         assertEquals(result, commonParserProperties.getFilter().test(
                 new TransactionFilterFields(entities(entityId), type)));
-    }
-
-    @DisplayName("Filter exception-causing entities using include")
-    @ParameterizedTest(name = "with entity {0} and type {1} resulting in exception")
-    @CsvSource({
-            "0.0.-1, UNKNOWN" // invalid entity id
-    })
-    void filterIncludeWithExpectedException(String entityId, TransactionType type) {
-        commonParserProperties.getInclude().add(filter("0.0.1", TransactionType.CONSENSUSSUBMITMESSAGE));
-        commonParserProperties.getInclude().add(filter("0.0.2", TransactionType.CRYPTOCREATEACCOUNT));
-        commonParserProperties.getInclude().add(filter("0.0.3", null));
-        commonParserProperties.getInclude().add(filter(null, TransactionType.FILECREATE));
-
-        Exception e = assertThrows(IllegalArgumentException.class, () -> {
-            commonParserProperties.getFilter().test(new TransactionFilterFields(entities(entityId), type));
-        });
-        assertEquals("Invalid entity ID: " + entityId, e.getMessage());
     }
 
     @DisplayName("Filter using exclude")
