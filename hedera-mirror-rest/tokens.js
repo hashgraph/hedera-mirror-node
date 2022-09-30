@@ -84,10 +84,10 @@ const entityNftsJoinQuery = 'left join entity e on e.id = nft.token_id';
 
 // token discovery sql queries
 const tokenAccountCte = `with ta as (
-  select distinct on (account_id, token_id) *
+  select *
   from token_account
   where account_id = $1
-  order by account_id, token_id, modified_timestamp desc
+  order by token_id
 )`;
 const tokensSelectQuery = 'select t.token_id, symbol, e.key, t.type from token t';
 const entityIdJoinQuery = 'join entity e on e.id = t.token_id';

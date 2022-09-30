@@ -113,14 +113,13 @@ class TopicMessagePayerAccountIdMigrationTest extends IntegrationTest {
 
     private void persistTopicMessage(List<MigrationTopicMessage> topicMessages) {
         for (MigrationTopicMessage topicMessage : topicMessages) {
-            jdbcOperations
-                    .update("insert into topic_message (consensus_timestamp, message, payer_account_id, " +
-                                    "running_hash, running_hash_version, sequence_number, topic_id) " +
-                                    " values (?, ?, ?, ?, ?, ?, ?)",
-                            topicMessage.getConsensusTimestamp(), topicMessage.getMessage(),
-                            topicMessage.getPayerAccountId(), topicMessage.getRunninghHash(),
-                            topicMessage.getRunningHashVersion(), topicMessage.getSequenceNumber(),
-                            topicMessage.getTopicId());
+            jdbcOperations.update("insert into topic_message (consensus_timestamp, message, payer_account_id, " +
+                            "running_hash, running_hash_version, sequence_number, topic_id) " +
+                            " values (?, ?, ?, ?, ?, ?, ?)",
+                    topicMessage.getConsensusTimestamp(), topicMessage.getMessage(),
+                    topicMessage.getPayerAccountId(), topicMessage.getRunninghHash(),
+                    topicMessage.getRunningHashVersion(), topicMessage.getSequenceNumber(),
+                    topicMessage.getTopicId());
         }
     }
 
@@ -137,14 +136,10 @@ class TopicMessagePayerAccountIdMigrationTest extends IntegrationTest {
     }
 
     private void revertMigration() {
-        jdbcOperations
-                .update("delete from topic_message");
-        jdbcOperations
-                .update("delete from transaction");
-        jdbcOperations
-                .update("alter table topic_message alter column payer_account_id drop not null");
-        jdbcOperations
-                .update("alter table topic_message drop column initial_transaction_id");
+        jdbcOperations.update("delete from topic_message");
+        jdbcOperations.update("delete from transaction");
+        jdbcOperations.update("alter table topic_message alter column payer_account_id drop not null");
+        jdbcOperations.update("alter table topic_message drop column initial_transaction_id");
     }
 
     @Data

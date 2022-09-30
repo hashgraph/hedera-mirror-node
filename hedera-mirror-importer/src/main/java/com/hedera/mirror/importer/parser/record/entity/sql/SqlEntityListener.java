@@ -26,7 +26,6 @@ import com.google.common.base.Stopwatch;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import javax.inject.Named;
@@ -53,14 +52,13 @@ import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.schedule.Schedule;
+import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.token.NftTransfer;
 import com.hedera.mirror.common.domain.token.NftTransferId;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
-import com.hedera.mirror.common.domain.token.TokenAccountId;
-import com.hedera.mirror.common.domain.token.TokenAccountKey;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
@@ -123,7 +121,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<NonFeeTransfer> nonFeeTransfers;
     private final Collection<Prng> prngs;
     private final Collection<StakingRewardTransfer> stakingRewardTransfers;
-    private final Map<TokenAccountId, TokenAccount> tokenAccounts;
+    private final Collection<TokenAccount> tokenAccounts;
     private final Collection<TokenAllowance> tokenAllowances;
     private final Collection<TokenTransfer> tokenDissociateTransfers;
     private final Collection<TokenTransfer> tokenTransfers;
@@ -146,7 +144,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     // for each <token, account> update, merge the state and the update, save the merged state to the batch.
     // during batch upsert, the merged state at time T is again merged with the initial state before the batch to
     // get the full state at time T
-    private final Map<TokenAccountKey, TokenAccount> tokenAccountState;
+    private final Map<AbstractTokenAccount.Id, TokenAccount> tokenAccountState;
 
     public SqlEntityListener(BatchPersister batchPersister,
                              EntityIdService entityIdService,
@@ -184,7 +182,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         nonFeeTransfers = new ArrayList<>();
         prngs = new ArrayList<>();
         stakingRewardTransfers = new ArrayList<>();
-        tokenAccounts = new LinkedHashMap<>();
+        tokenAccounts = new ArrayList<>();
         tokenAllowances = new ArrayList<>();
         tokenDissociateTransfers = new ArrayList<>();
         tokenTransfers = new ArrayList<>();
@@ -367,14 +365,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onTokenAccount(TokenAccount tokenAccount) throws ImporterException {
-        if (tokenAccounts.containsKey(tokenAccount.getId())) {
-            log.warn("Skipping duplicate token account association: {}", tokenAccount);
-            return;
+        var merged = tokenAccountState.merge(tokenAccount.getId(), tokenAccount, this::mergeTokenAccount);
+        if (merged == tokenAccount) {
+            tokenAccounts.add(merged);
         }
-
-        var key = new TokenAccountKey(tokenAccount.getId().getTokenId(), tokenAccount.getId().getAccountId());
-        TokenAccount merged = tokenAccountState.merge(key, tokenAccount, this::mergeTokenAccount);
-        tokenAccounts.put(merged.getId(), merged);
     }
 
     @Override
@@ -497,7 +491,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             batchPersister.persist(nftAllowances);
             batchPersister.persist(tokens.values());
             // ingest tokenAccounts after tokens since some fields of token accounts depends on the associated token
-            batchPersister.persist(tokenAccounts.values());
+            batchPersister.persist(tokenAccounts);
             batchPersister.persist(tokenAllowances);
             batchPersister.persist(nfts.values()); // persist nft after token entity
             batchPersister.persist(schedules.values());
@@ -739,14 +733,24 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     private TokenAccount mergeTokenAccount(TokenAccount lastTokenAccount, TokenAccount newTokenAccount) {
+        if (lastTokenAccount.getTimestampRange().equals(newTokenAccount.getTimestampRange())) {
+            // The token accounts are for the same range, accept the previous one
+            // This is a workaround for https://github.com/hashgraph/hedera-services/issues/3240
+            log.warn("Skipping duplicate token account association: {}", newTokenAccount);
+            return lastTokenAccount;
+        }
+
+        lastTokenAccount.setTimestampUpper(newTokenAccount.getTimestampLower());
+
         if (newTokenAccount.getCreatedTimestamp() != null) {
             return newTokenAccount;
         }
 
-        // newTokenAccount is a partial update. It must have its id (tokenId, accountId, modifiedTimestamp) set.
+        // newTokenAccount is a partial update. It must have its id (tokenId, accountId) set.
         // copy the lifespan immutable fields createdTimestamp and automaticAssociation from the previous snapshot.
         // copy other fields from the previous snapshot if not set in newTokenAccount
         newTokenAccount.setCreatedTimestamp(lastTokenAccount.getCreatedTimestamp());
+
         newTokenAccount.setAutomaticAssociation(lastTokenAccount.getAutomaticAssociation());
 
         if (newTokenAccount.getAssociated() == null) {

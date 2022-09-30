@@ -128,17 +128,25 @@ func (suite *accountRepositorySuite) SetupTest() {
 	associatedTokenAccounts = append(associatedTokenAccounts, ta)
 
 	token2 = tdomain.NewTokenBuilder(dbClient, encodedTokenId2, firstSnapshotTimestamp+2, treasury).Persist()
-	ta2 := tdomain.NewTokenAccountBuilder(dbClient, account1, encodedTokenId2, token2.CreatedTimestamp+2).Persist()
+	ta2 := tdomain.NewTokenAccountBuilder(dbClient, account1, encodedTokenId2, token2.CreatedTimestamp+2).
+		Historical(true).
+		TimestampRange(token2.CreatedTimestamp+2, dissociateTimestamp).
+		Persist()
 	tdomain.NewTokenAccountBuilderFromExisting(dbClient, ta2).
 		Associated(false, dissociateTimestamp).
+		Historical(false).
 		Persist()
 
 	token3 = tdomain.NewTokenBuilder(dbClient, encodedTokenId3, firstSnapshotTimestamp+3, treasury).
 		Type(domain.TokenTypeNonFungibleUnique).
 		Persist()
-	ta3 := tdomain.NewTokenAccountBuilder(dbClient, account1, encodedTokenId3, token3.CreatedTimestamp+2).Persist()
+	ta3 := tdomain.NewTokenAccountBuilder(dbClient, account1, encodedTokenId3, token3.CreatedTimestamp+2).
+		Historical(true).
+		TimestampRange(token3.CreatedTimestamp+2, dissociateTimestamp).
+		Persist()
 	tdomain.NewTokenAccountBuilderFromExisting(dbClient, ta3).
 		Associated(false, dissociateTimestamp).
+		Historical(false).
 		Persist()
 
 	// account1's token4 balance is always 0
@@ -311,6 +319,10 @@ func (suite *accountRepositorySuite) SetupTest() {
 
 	// dissociate other tokens before account delete timestamp
 	for _, ta := range associatedTokenAccounts {
+		tdomain.NewTokenAccountBuilderFromExisting(dbClient, ta).
+			Historical(true).
+			TimestampRange(ta.TimestampRange.Lower.Int, accountDeleteTimestamp-1).
+			Persist()
 		tdomain.NewTokenAccountBuilderFromExisting(dbClient, ta).
 			Associated(false, accountDeleteTimestamp-1).
 			Persist()

@@ -557,16 +557,23 @@ comment on table token is 'Token entity';
 --- token_account
 create table if not exists token_account
 (
-    account_id            bigint   not null,
-    associated            boolean  not null default false,
-    automatic_association boolean  not null default false,
-    created_timestamp     bigint   not null,
-    freeze_status         smallint not null default 0,
-    kyc_status            smallint not null default 0,
-    modified_timestamp    bigint   not null,
-    token_id              bigint   not null
+    account_id            bigint    not null,
+    associated            boolean   not null default false,
+    automatic_association boolean   not null default false,
+    created_timestamp     bigint    not null,
+    freeze_status         smallint  not null default 0,
+    kyc_status            smallint  not null default 0,
+    timestamp_range       int8range not null,
+    token_id              bigint    not null
 );
-comment on table token is 'Token account entity';
+comment on table token_account is 'Token account entity';
+
+--- token_account_history
+create table if not exists token_account_history
+(
+    like token_account including defaults
+);
+comment on table token_account_history is 'History of token_account';
 
 create table if not exists token_allowance
 (

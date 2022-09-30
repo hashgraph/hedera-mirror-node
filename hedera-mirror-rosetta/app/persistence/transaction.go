@@ -58,7 +58,7 @@ const (
         select ta.account_id, ta.token_id, t.type, t.decimals, sd.consensus_timestamp
         from token_account ta
         join success_dissociate sd
-          on ta.account_id = sd.account_id and ta.modified_timestamp = sd.consensus_timestamp
+          on ta.account_id = sd.account_id and lower(ta.timestamp_range) = sd.consensus_timestamp
         join token t
           on t.token_id = ta.token_id
         join entity e
