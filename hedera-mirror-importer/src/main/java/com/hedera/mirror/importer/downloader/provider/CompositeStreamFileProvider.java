@@ -94,7 +94,7 @@ final class CompositeStreamFileProvider implements StreamFileProvider {
         log.warn("Attempt #{} failed: {}", r.totalRetries() + 1, exception.getMessage());
 
         if (exception instanceof NoSuchKeyException) {
-            throw Exceptions.propagate(exception);
+            throw new TransientProviderException(exception);
         }
 
         // Ensure we always keep at least one provider available

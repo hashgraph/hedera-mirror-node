@@ -62,6 +62,7 @@ import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.downloader.provider.StreamFileProvider;
+import com.hedera.mirror.importer.downloader.provider.TransientProviderException;
 import com.hedera.mirror.importer.exception.HashMismatchException;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
 import com.hedera.mirror.importer.reader.StreamFileReader;
@@ -202,7 +203,8 @@ public abstract class Downloader<T extends StreamFile> {
         var nodes = consensusNodeService.getNodes();
         var tasks = new ArrayList<Callable<Object>>(nodes.size());
         var totalDownloads = new AtomicInteger();
-        log.trace("Asking for new signature files created after file: {}", startAfterFilename);
+        int batchSize = downloaderProperties.getCommon().getBatchSize() * 2;
+        log.info("Searching for the next {} signature files per node after {}", batchSize, startAfterFilename);
 
         /*
          * For each node, create a thread that will make requests as many times as necessary to
@@ -246,9 +248,6 @@ public abstract class Downloader<T extends StreamFile> {
         if (totalDownloads.get() > 0) {
             var rate = (int) (1000000.0 * totalDownloads.get() / stopwatch.elapsed(TimeUnit.MICROSECONDS));
             log.info("Downloaded {} signatures in {} ({}/s)", totalDownloads, stopwatch, rate);
-        } else {
-            log.info("No new signature files to download after file: {}. Retrying in {} s",
-                    startAfterFilename, downloaderProperties.getFrequency().toMillis() / 1_000f);
         }
 
         return sigFilesMap;
@@ -373,6 +372,9 @@ public abstract class Downloader<T extends StreamFile> {
                 } catch (HashMismatchException e) {
                     log.warn("Failed to verify data file from node {} corresponding to {}. Will retry another node",
                             nodeId, sigFilename, e);
+                } catch (TransientProviderException e) {
+                    log.warn("Error downloading data file from node {} corresponding to {}. Will retry another node",
+                            nodeId, sigFilename, e.getMessage());
                 } catch (Exception e) {
                     log.error("Error downloading data file from node {} corresponding to {}. Will retry another node",
                             nodeId, sigFilename, e);
