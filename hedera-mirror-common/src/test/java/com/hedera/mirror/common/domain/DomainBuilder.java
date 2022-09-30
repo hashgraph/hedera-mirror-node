@@ -729,14 +729,14 @@ public class DomainBuilder {
     public DomainWrapper<TokenAccountHistory, TokenAccountHistory.TokenAccountHistoryBuilder> tokenAccountHistory() {
         long timestamp = timestamp();
         var builder = TokenAccountHistory.builder()
-                .accountId(entityId(ACCOUNT).getId())
+                .accountId(id())
                 .automaticAssociation(false)
                 .associated(true)
                 .createdTimestamp(timestamp)
                 .freezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE)
                 .kycStatus(TokenKycStatusEnum.NOT_APPLICABLE)
                 .timestampRange(Range.closedOpen(timestamp, timestamp()))
-                .tokenId(entityId(TOKEN).getId());
+                .tokenId(id());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

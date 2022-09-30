@@ -50,7 +50,7 @@ import com.hedera.mirror.common.domain.Upsertable;
         defaultForType = Range.class,
         typeClass = PostgreSQLGuavaRangeType.class
 )
-@Upsertable
+@Upsertable(history = true)
 public class AbstractTokenAccount implements History {
 
     @javax.persistence.Id

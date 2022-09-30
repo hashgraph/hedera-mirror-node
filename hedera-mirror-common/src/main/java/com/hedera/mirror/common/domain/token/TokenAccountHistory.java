@@ -20,12 +20,13 @@ package com.hedera.mirror.common.domain.token;
  * ‍
  */
 
+import javax.persistence.Entity;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 @Data
-@javax.persistence.Entity
+@Entity
 @NoArgsConstructor
 @SuperBuilder
 public class TokenAccountHistory extends AbstractTokenAccount {
