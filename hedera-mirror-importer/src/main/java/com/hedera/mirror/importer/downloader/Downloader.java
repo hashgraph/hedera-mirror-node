@@ -62,6 +62,7 @@ import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.downloader.provider.StreamFileProvider;
+import com.hedera.mirror.importer.downloader.provider.TransientProviderException;
 import com.hedera.mirror.importer.exception.HashMismatchException;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
 import com.hedera.mirror.importer.reader.StreamFileReader;
@@ -202,7 +203,7 @@ public abstract class Downloader<T extends StreamFile> {
         var nodes = consensusNodeService.getNodes();
         var tasks = new ArrayList<Callable<Object>>(nodes.size());
         var totalDownloads = new AtomicInteger();
-        log.trace("Asking for new signature files created after file: {}", startAfterFilename);
+        log.debug("Asking for new signature files created after file: {}", startAfterFilename);
 
         /*
          * For each node, create a thread that will make requests as many times as necessary to
@@ -373,6 +374,9 @@ public abstract class Downloader<T extends StreamFile> {
                 } catch (HashMismatchException e) {
                     log.warn("Failed to verify data file from node {} corresponding to {}. Will retry another node",
                             nodeId, sigFilename, e);
+                } catch (TransientProviderException e) {
+                    log.warn("Error downloading data file from node {} corresponding to {}. Will retry another node",
+                            nodeId, sigFilename, e.getMessage());
                 } catch (Exception e) {
                     log.error("Error downloading data file from node {} corresponding to {}. Will retry another node",
                             nodeId, sigFilename, e);

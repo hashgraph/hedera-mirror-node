@@ -91,7 +91,7 @@ public final class S3StreamFileProvider implements StreamFileProvider {
                 .map(this::toStreamFilename)
                 .filter(s -> s != EPOCH && s.getFileType() == SIGNATURE)
                 .flatMapSequential(streamFilename -> get(node, streamFilename))
-                .doOnSubscribe(s -> log.info("Searching for the next {} files after {}/{}", batchSize,
+                .doOnSubscribe(s -> log.debug("Searching for the next {} files after {}/{}", batchSize,
                         commonDownloaderProperties.getBucketName(), startAfter));
     }
 

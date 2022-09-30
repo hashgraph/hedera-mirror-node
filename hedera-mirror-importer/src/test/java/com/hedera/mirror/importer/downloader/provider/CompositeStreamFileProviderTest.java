@@ -96,7 +96,9 @@ class CompositeStreamFileProviderTest {
         when(streamFileProvider1.get(NODE, FILENAME)).thenReturn(Mono.error(error));
         compositeStreamFileProvider.get(NODE, FILENAME)
                 .as(StepVerifier::create)
-                .expectError(NoSuchKeyException.class)
+                .expectErrorSatisfies(e -> assertThat(e)
+                        .hasRootCauseInstanceOf(NoSuchKeyException.class)
+                        .isInstanceOf(TransientProviderException.class))
                 .verify(Duration.ofMillis(250));
     }
 
