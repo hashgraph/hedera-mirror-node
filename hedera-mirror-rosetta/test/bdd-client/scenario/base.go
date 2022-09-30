@@ -46,11 +46,12 @@ func (b *baseFeature) findTransaction(ctx context.Context, operationType string)
 
 func (b *baseFeature) submit(
 	ctx context.Context,
+	memo string,
 	operations []*types.Operation,
 	signers map[string]hedera.PrivateKey,
 ) (err error) {
 	operationType := operations[0].Type
-	b.transactionHash, err = testClient.Submit(ctx, operations, signers)
+	b.transactionHash, err = testClient.Submit(ctx, memo, operations, signers)
 	if err != nil {
 		log.Errorf("Failed to submit %s transaction: %s", operationType, err)
 	} else {

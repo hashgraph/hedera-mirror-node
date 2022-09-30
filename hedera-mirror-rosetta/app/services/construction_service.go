@@ -173,7 +173,7 @@ func (c *constructionAPIService) ConstructionMetadata(
 	}
 
 	response := &rTypes.ConstructionMetadataResponse{
-		Metadata:     map[string]interface{}{},
+		Metadata:     request.Options,
 		SuggestedFee: []*rTypes.Amount{maxFee.ToRosetta()},
 	}
 
@@ -204,6 +204,7 @@ func (c *constructionAPIService) ConstructionMetadata(
 		accountMap = append(accountMap, fmt.Sprintf("%s:%s", accountAlias, found))
 	}
 	response.Metadata[metadataKeyAccountMap] = strings.Join(accountMap, ",")
+	delete(response.Metadata, optionKeyAccountAliases)
 
 	return response, nil
 }
@@ -216,6 +217,15 @@ func (c *constructionAPIService) ConstructionParse(
 	transaction, err := unmarshallTransactionFromHexString(request.Transaction)
 	if err != nil {
 		return nil, err
+	}
+
+	metadata := make(map[string]interface{})
+	if memo, err := hedera.TransactionGetTransactionMemo(transaction); err == nil {
+		if memo != "" {
+			metadata[types.MetadataKeyMemo] = memo
+		}
+	} else {
+		return nil, errors.ErrInvalidTransactionMemo
 	}
 
 	operations, accounts, err := c.transactionHandler.Parse(ctx, transaction)
@@ -231,8 +241,9 @@ func (c *constructionAPIService) ConstructionParse(
 	}
 
 	return &rTypes.ConstructionParseResponse{
-		Operations:               operations.ToRosetta(),
 		AccountIdentifierSigners: signers,
+		Metadata:                 metadata,
+		Operations:               operations.ToRosetta(),
 	}, nil
 }
 
@@ -269,6 +280,7 @@ func (c *constructionAPIService) ConstructionPayloads(
 
 	if rErr = updateTransaction(
 		transaction,
+		transactionSetMemo(request.Metadata[types.MetadataKeyMemo]),
 		transactionSetNodeAccountId(c.getRandomNodeAccountId()),
 		transactionSetTransactionId(payer, validStartNanos),
 		transactionSetValidDuration(validDurationSeconds),
@@ -322,18 +334,23 @@ func (c *constructionAPIService) ConstructionPreprocess(
 		requiredPublicKeys = append(requiredPublicKeys, &rTypes.AccountIdentifier{Address: signer.String()})
 	}
 
-	response := &rTypes.ConstructionPreprocessResponse{
-		Options:            map[string]interface{}{optionKeyOperationType: operations[0].Type},
-		RequiredPublicKeys: requiredPublicKeys,
+	options := make(map[string]interface{})
+	if len(request.Metadata) != 0 {
+		options = request.Metadata
 	}
+
+	options[optionKeyOperationType] = operations[0].Type
 
 	// the first signer is always the payer account
 	payer := signers[0]
 	if payer.HasAlias() {
-		response.Options[optionKeyAccountAliases] = fmt.Sprintf("%s", payer)
+		options[optionKeyAccountAliases] = payer.String()
 	}
 
-	return response, nil
+	return &rTypes.ConstructionPreprocessResponse{
+		Options:            options,
+		RequiredPublicKeys: requiredPublicKeys,
+	}, nil
 }
 
 // ConstructionSubmit implements the /construction/submit endpoint.
@@ -629,6 +646,25 @@ func updateTransaction(transaction interfaces.Transaction, updaters ...updater) 
 		}
 	}
 	return nil
+}
+
+func transactionSetMemo(memo interface{}) updater {
+	return func(transaction interfaces.Transaction) *rTypes.Error {
+		if memo == nil {
+			return nil
+		}
+
+		value, ok := memo.(string)
+		if !ok {
+			return errors.ErrInvalidTransactionMemo
+		}
+
+		if _, err := hedera.TransactionSetTransactionMemo(transaction, value); err != nil {
+			return errors.ErrInvalidTransactionMemo
+		}
+
+		return nil
+	}
 }
 
 func transactionSetNodeAccountId(nodeAccountId hedera.AccountID) updater {
