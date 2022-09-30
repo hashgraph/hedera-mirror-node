@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record;
  */
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
@@ -48,6 +49,7 @@ class CommonParserPropertiesTest {
     @DisplayName("Filter empty")
     @Test
     void filterEmpty() {
+        assertFalse(commonParserProperties.hasFilter());
         assertTrue(commonParserProperties.getFilter().test(
                 new TransactionFilterFields(entities("0.0.1"), TransactionType.CONSENSUSSUBMITMESSAGE)));
         // also test empty filter against a collection of entity ids
@@ -82,6 +84,7 @@ class CommonParserPropertiesTest {
         commonParserProperties.getInclude().add(filter("0.0.2", TransactionType.CRYPTOCREATEACCOUNT));
         commonParserProperties.getInclude().add(filter("0.0.3", null));
         commonParserProperties.getInclude().add(filter(null, TransactionType.FILECREATE));
+        assertTrue(commonParserProperties.hasFilter());
 
         assertEquals(result, commonParserProperties.getFilter().test(
                 new TransactionFilterFields(entities(entityId), type)));
