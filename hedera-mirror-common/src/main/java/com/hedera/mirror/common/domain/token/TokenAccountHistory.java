@@ -29,6 +29,6 @@ import lombok.experimental.SuperBuilder;
 @Entity
 @NoArgsConstructor
 @SuperBuilder
-public class TokenAccount extends AbstractTokenAccount {
+public class TokenAccountHistory extends AbstractTokenAccount {
     // Only the parent class should contain fields so that they're shared with both the history and non-history tables.
 }

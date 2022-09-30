@@ -68,11 +68,10 @@
       },
       {
         "token_id": "0.0.3",
-        "account_id": "0.0.2",
+        "account_id": "0.0.5",
         "created_timestamp": "1234567890000000006",
         "freeze_status": 1,
-        "kyc_status": 1,
-        "modified_timestamp": "1234567891000000006"
+        "kyc_status": 1
       },
       {
         "token_id": "0.0.4",

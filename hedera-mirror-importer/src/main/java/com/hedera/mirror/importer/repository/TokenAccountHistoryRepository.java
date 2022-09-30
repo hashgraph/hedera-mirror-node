@@ -20,10 +20,18 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
-import com.hedera.mirror.common.domain.token.TokenAccount;
+import com.hedera.mirror.common.domain.token.TokenAccountHistory;
 
-public interface TokenAccountRepository extends CrudRepository<TokenAccount, AbstractTokenAccount.Id> {
+public interface TokenAccountHistoryRepository extends CrudRepository<TokenAccountHistory, AbstractTokenAccount.Id>,
+        RetentionRepository {
+
+    @Modifying
+    @Override
+    @Query(nativeQuery = true, value = "delete from token_account_history where upper(timestamp_range) <= ?1")
+    int prune(long consensusTimestamp);
 }

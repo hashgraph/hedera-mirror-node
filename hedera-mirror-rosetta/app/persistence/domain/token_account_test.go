@@ -29,3 +29,7 @@ import (
 func TestTokenAccountTableName(t *testing.T) {
 	assert.Equal(t, "token_account", TokenAccount{}.TableName())
 }
+
+func TestTokenAccountHistoryTableName(t *testing.T) {
+	assert.Equal(t, "token_account_history", TokenAccount{}.HistoryTableName())
+}
