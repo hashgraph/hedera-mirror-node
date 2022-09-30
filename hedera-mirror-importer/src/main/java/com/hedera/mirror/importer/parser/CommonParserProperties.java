@@ -56,6 +56,10 @@ public class CommonParserProperties {
     @Getter(lazy = true)
     private final Predicate<TransactionFilterFields> filter = includeFilter().and(excludeFilter());
 
+    public boolean hasFilter() {
+        return (!exclude.isEmpty()) || (!include.isEmpty());
+    }
+
     private Predicate<TransactionFilterFields> excludeFilter() {
         if (exclude.isEmpty()) {
             return t -> true;
@@ -89,7 +93,7 @@ public class CommonParserProperties {
         }
 
         private boolean matches(TransactionFilterFields t) {
-            if (transaction.isEmpty()) {
+            if (transaction.isEmpty() || t.getTransactionType() == null) {
                 return true;
             }
 

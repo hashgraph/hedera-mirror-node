@@ -41,5 +41,5 @@ public class TransactionFilterFields {
     Collection<EntityId> entities;
     TransactionType transactionType;
 
-    public static final TransactionFilterFields EMPTY = new TransactionFilterFields(Set.of(), TransactionType.UNKNOWN);
+    public static final TransactionFilterFields EMPTY = new TransactionFilterFields(Set.of(), null);
 }

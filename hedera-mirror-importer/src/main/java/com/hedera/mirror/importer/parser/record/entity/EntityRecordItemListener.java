@@ -1178,25 +1178,8 @@ public class EntityRecordItemListener implements RecordItemListener {
 
     // regardless of transaction type, filter on entityId and payer account and transfer tokens/receivers/senders
     private TransactionFilterFields getTransactionFilterFields(EntityId entityId, RecordItem recordItem) {
-        if (commonParserProperties.getInclude().isEmpty() && commonParserProperties.getExclude().isEmpty()) {
+        if (!commonParserProperties.hasFilter()) {
             return TransactionFilterFields.EMPTY;
-        } else {
-            boolean hasEntityFilter = false;
-            for (CommonParserProperties.TransactionFilter filter : commonParserProperties.getInclude()) {
-                if (!filter.getEntity().isEmpty()) {
-                    hasEntityFilter = true;
-                    break;
-                }
-            }
-            for (CommonParserProperties.TransactionFilter filter : commonParserProperties.getExclude()) {
-                if (!filter.getEntity().isEmpty()) {
-                    hasEntityFilter = true;
-                    break;
-                }
-            }
-            if (!hasEntityFilter) {
-                return new TransactionFilterFields(Set.of(), TransactionType.of(recordItem.getTransactionType()));
-            }
         }
 
         var entities = new HashSet<EntityId>();
@@ -1204,14 +1187,14 @@ public class EntityRecordItemListener implements RecordItemListener {
         entities.add(recordItem.getPayerAccountId());
 
         recordItem.getRecord().getTransferList().getAccountAmountsList().forEach(accountAmount ->
-                entities.add(EntityId.of(accountAmount.getAccountID()))
+            entities.add(EntityId.of(accountAmount.getAccountID()))
         );
 
         recordItem.getRecord().getTokenTransferListsList().forEach(transfer -> {
             entities.add(EntityId.of(transfer.getToken()));
 
             transfer.getTransfersList().forEach(accountAmount ->
-                    entities.add(EntityId.of(accountAmount.getAccountID()))
+                entities.add(EntityId.of(accountAmount.getAccountID()))
             );
 
             transfer.getNftTransfersList().forEach(nftTransfer -> {
