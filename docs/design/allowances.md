@@ -72,11 +72,11 @@ Update `nft` table to add new columns and index for nft instance allowance.
 
 ```sql
 alter table nft
-   add column if not exists delegating_spender bigint default null,
-   add column if not exists spender bigint default null;
+  add column if not exists delegating_spender bigint default null,
+  add column if not exists spender            bigint default null;
 
 create index if not exists nft__allowance on nft (account_id, spender, token_id, serial_number)
-   where account_id is not null and spender is not null;
+  where account_id is not null and spender is not null;
 ```
 
 #### Token Allowance
@@ -108,21 +108,21 @@ create table if not exists token_allowance_history
 
 Add the following class members to the `Nft` domain class:
 
-  - `delegatingSpender`
-  - `spender`
+- `delegatingSpender`
+- `spender`
 
 #### Nft Allowance Parsing
 
 When parsing nft allowances,
 
-  - Persist approved for all nft allowances (either grant or revoke) to the `nft_allowance` table
-  - Persist nft allowances by (token id, serial number) to the `nft` table by updating `delegating_spender`,
-    `modified_timestamp` and `spender`
+- Persist approved for all nft allowances (either grant or revoke) to the `nft_allowance` table
+- Persist nft allowances by (token id, serial number) to the `nft` table by updating `delegating_spender`,
+  `modified_timestamp` and `spender`
 
 Update `EntityListener`
 
-  - Add `EntityListner.onNftAllowance(NftAllowance nft)` for approved for all nft allowances
-  - Update `EntityListner.onNft(Nft nft)` to handle nft allowances by (token id, serial number)
+- Add `EntityListner.onNftAllowance(NftAllowance nft)` for approved for all nft allowances
+- Update `EntityListner.onNft(Nft nft)` to handle nft allowances by (token id, serial number)
 
 ### REST API
 
@@ -159,7 +159,7 @@ Update `EntityListener`
 Optional Filters
 
 * `limit`: The maximum amount of items to return.
-* `order`: Order by `spender`. Accepts `asc` or `desc` with a default of `asc`.
+* `order`: Order by `spender`. Accepts `asc` or `desc` with a default of `desc`.
 * `spender.id`: Filter by the spender account ID. `ne` operator is not supported.
 
 #### NFT Allowances
@@ -262,7 +262,7 @@ Optional Filters
 Optional Filters
 
 * `limit`: The maximum amount of items to return.
-* `order`: Order by `spender` and `token_id`. Accepts `asc` or `desc` with a default of `asc`.
+* `order`: Order by `spender` and `token_id`. Accepts `asc` or `desc` with a default of `desc`.
 * `spender.id`: Filter by the spender account ID. `ne` operator is not supported.
 * `token.id`: Filter by the token ID. `ne` operator is not supported.
 
@@ -312,6 +312,7 @@ Optional Filters
 Update all APIs that show transfers to return `is_approval` in its response.
 
 ### Accounts Endpoint
+
 Update `/api/v1/accounts/{accountId}` to return `is_approval` for all transfers.
 
 ```json
@@ -425,6 +426,7 @@ Update `/api/v1/accounts/{accountId}` to return `is_approval` for all transfers.
   ]
 }
 ```
+
 ### Transactions Endpoint
 
 Update `/api/v1/transactions/{id}` to include `is_approval` for all transfers.
@@ -516,8 +518,11 @@ Update `/api/v1/transactions/{id}` to include `is_approval` for all transfers.
   ]
 }
 ```
+
 ### NFT Transaction History Endpoint
+
 Update `/api/v1/tokens/{tokenId}/nfts/{serialNumber}/transactions` to include `is_approval` for all transfers.
+
 ```json
 {
   "transactions": [
@@ -542,6 +547,7 @@ Update `/api/v1/tokens/{tokenId}/nfts/{serialNumber}/transactions` to include `i
   ]
 }
 ```
+
 ## Non-Functional Requirements
 
 * Ingest new transaction types at the same rate as consensus nodes
@@ -554,7 +560,7 @@ Update `/api/v1/tokens/{tokenId}/nfts/{serialNumber}/transactions` to include `i
 
 1) How will we handle adjust allowance for serial numbers?
 
-   Crypto approve allowance transactions can grant nft allowances by serial numbers and crypto delete allowance 
+   Crypto approve allowance transactions can grant nft allowances by serial numbers and crypto delete allowance
    transactions revoke them.
 
 2) What happens if client populates both `approvedForAll` and `serialNumbers`?
