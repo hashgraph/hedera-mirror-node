@@ -69,6 +69,18 @@ func assertTransactionAll(transaction *types.Transaction, funcs ...assertTransac
 	return t.err
 }
 
+func assertTransactionMemo(memo string) assertTransactionFunc {
+	return func(t *asserter, transaction *types.Transaction) {
+		if len(memo) == 0 {
+			assert.NotContains(t, transaction.Metadata, "memo")
+		} else {
+			assert.IsType(t, memo, transaction.Metadata["memo"])
+			actual, _ := transaction.Metadata["memo"].(string)
+			assert.Equal(t, memo, actual)
+		}
+	}
+}
+
 func assertTransactionOpTypesContains(expectedOpTypes ...string) assertTransactionFunc {
 	return func(t *asserter, transaction *types.Transaction) {
 		var actualOpTypes []string

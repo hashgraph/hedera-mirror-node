@@ -141,6 +141,7 @@ const (
 	selectTransactionsInTimestampRange = "with" + genesisTimestampCte + `select
                                             t.consensus_timestamp,
                                             t.entity_id,
+                                            t.memo,
                                             t.payer_account_id,
                                             t.result,
                                             t.transaction_hash as hash,
@@ -213,6 +214,7 @@ type transaction struct {
 	ConsensusTimestamp int64
 	EntityId           *domain.EntityId
 	Hash               []byte
+	Memo               []byte
 	PayerAccountId     domain.EntityId
 	Result             int16
 	Type               int16
@@ -415,7 +417,8 @@ func (tr *transactionRepository) constructTransaction(sameHashTransactions []*tr
 	*types.Transaction,
 	*rTypes.Error,
 ) {
-	tResult := &types.Transaction{Hash: sameHashTransactions[0].getHashString()}
+	firstTransaction := sameHashTransactions[0]
+	tResult := &types.Transaction{Hash: firstTransaction.getHashString(), Memo: firstTransaction.Memo}
 	operations := make(types.OperationSlice, 0)
 	success := types.TransactionResults[transactionResultSuccess]
 

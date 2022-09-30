@@ -65,6 +65,7 @@ const (
 	InvalidCurrency                   = "Invalid currency"
 	InvalidCurveType                  = "Invalid curve type"
 	InvalidOptions                    = "Invalid options"
+	InvalidTransactionMemo            = "Invalid transaction memo"
 	InternalServerError               = "Internal Server Error"
 )
 
@@ -108,6 +109,7 @@ var (
 	ErrEndpointNotSupportedInOfflineMode = newError(EndpointNotSupportedInOfflineMode, 136, false)
 	ErrInvalidCurveType                  = newError(InvalidCurveType, 137, false)
 	ErrInvalidOptions                    = newError(InvalidOptions, 138, false)
+	ErrInvalidTransactionMemo            = newError(InvalidTransactionMemo, 139, false)
 	ErrInternalServerError               = newError(InternalServerError, 500, true)
 
 	Errors = make([]*types.Error, 0)
