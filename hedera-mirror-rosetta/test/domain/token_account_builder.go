@@ -68,7 +68,7 @@ func (b *TokenAccountBuilder) Persist() domain.TokenAccount {
 	}
 	tx := b.dbClient.GetDb().Table(tableName)
 	if !b.historical {
-		// only entity table has unique id column
+		// only token_account table has unique (account_id, token_id)
 		tx = tx.Clauses(clause.OnConflict{
 			Columns:   []clause.Column{{Name: "account_id"}, {Name: "token_id"}},
 			DoUpdates: clause.AssignmentColumns([]string{"associated", "timestamp_range"}),
