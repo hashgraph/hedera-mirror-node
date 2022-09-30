@@ -365,9 +365,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onTokenAccount(TokenAccount tokenAccount) throws ImporterException {
-        var merged = mergeTokenAccount(tokenAccountState.get(tokenAccount.getId()), tokenAccount);
-        if (merged != null) {
-            tokenAccountState.put(tokenAccount.getId(), merged);
+        var merged = tokenAccountState.merge(tokenAccount.getId(), tokenAccount, this::mergeTokenAccount);
+        if (merged == tokenAccount) {
             tokenAccounts.add(merged);
         }
     }
@@ -734,13 +733,9 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     private TokenAccount mergeTokenAccount(TokenAccount lastTokenAccount, TokenAccount newTokenAccount) {
-        if (lastTokenAccount == null) {
-            return newTokenAccount;
-        }
-
         if (lastTokenAccount.getTimestampRange().equals(newTokenAccount.getTimestampRange())) {
             // The token accounts are for the same range, accept the previous one
-            return null;
+            return lastTokenAccount;
         }
 
         lastTokenAccount.setTimestampUpper(newTokenAccount.getTimestampLower());

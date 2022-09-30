@@ -32,6 +32,7 @@ import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.Key;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
@@ -1298,13 +1299,13 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // when
         sqlEntityListener.onTokenAccount(tokenAccount1);
-        sqlEntityListener.onTokenAccount(tokenAccount1);
+        sqlEntityListener.onTokenAccount(TestUtils.clone(tokenAccount1));
         sqlEntityListener.onTokenAccount(tokenAccount2);
         completeFileAndCommit();
 
         // then
         assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrder(tokenAccount1, tokenAccount2);
-        assertThat(findHistory(TokenAccount.class, "account_id, token_id")).isEmpty();
+        assertThat(findTokenAccountHistory()).isEmpty();
     }
 
     @Test
@@ -1325,7 +1326,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         // when
         sqlEntityListener.onTokenAccount(associate);
         sqlEntityListener.onTokenAccount(dissociate);
-        sqlEntityListener.onTokenAccount(dissociate);
+        sqlEntityListener.onTokenAccount(TestUtils.clone(dissociate));
         completeFileAndCommit();
 
         // then
@@ -1333,7 +1334,7 @@ class SqlEntityListenerTest extends IntegrationTest {
                 getTokenAccount(tokenId1, accountId1, 5L, false, false, TokenFreezeStatusEnum.NOT_APPLICABLE,
                         TokenKycStatusEnum.NOT_APPLICABLE, Range.atLeast(10L))
         );
-        assertThat(findHistory(TokenAccount.class, "account_id, token_id")).containsExactly(associate);
+        assertThat(findTokenAccountHistory()).containsExactly(associate);
     }
 
     @Test
@@ -1346,9 +1347,11 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // when
         EntityId accountId1 = EntityId.of("0.0.7", ACCOUNT);
-        TokenAccount tokenAccountAssociate = getTokenAccount(tokenId1, accountId1, 5L, true, false, null, null, Range.atLeast(5L));
+        TokenAccount tokenAccountAssociate = getTokenAccount(tokenId1, accountId1, 5L, true, false, null, null,
+                Range.atLeast(5L));
         sqlEntityListener.onTokenAccount(tokenAccountAssociate);
-        var expectedTokenAccountAssociate = getTokenAccount(tokenId1, accountId1, 5L, true, false, TokenFreezeStatusEnum.UNFROZEN,
+        var expectedTokenAccountAssociate = getTokenAccount(tokenId1, accountId1, 5L, true, false,
+                TokenFreezeStatusEnum.UNFROZEN,
                 TokenKycStatusEnum.REVOKED, Range.closedOpen(5L, 15L));
 
         TokenAccount tokenAccountKyc = getTokenAccount(tokenId1, accountId1, null, null, null, null,
@@ -1361,7 +1364,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         TokenAccount tokenAccountMerged = getTokenAccount(tokenId1, accountId1, 5L, true, false,
                 TokenFreezeStatusEnum.UNFROZEN, TokenKycStatusEnum.GRANTED, Range.atLeast(15L));
         assertThat(tokenAccountRepository.findAll()).containsExactly(tokenAccountMerged);
-        assertThat(findHistory(TokenAccount.class, "account_id, token_id")).containsExactly(expectedTokenAccountAssociate);
+        assertThat(findTokenAccountHistory()).containsExactly(expectedTokenAccountAssociate);
     }
 
     @Test
@@ -1412,7 +1415,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(tokenAccountRepository.findAll()).containsExactly(expectedToken);
-        assertThat(findHistory(TokenAccount.class, "account_id, token_id")).containsExactlyInAnyOrderElementsOf(expected);
+        assertThat(findTokenAccountHistory()).containsExactlyInAnyOrderElementsOf(expected);
     }
 
     @Test
@@ -1457,8 +1460,8 @@ class SqlEntityListenerTest extends IntegrationTest {
         completeFileAndCommit();
 
         // then
-        assertThat(tokenAccountRepository.count()).isZero();
-        assertThat(findHistory(TokenAccount.class, "account_id, token_id")).size().isZero();
+        assertThat(tokenAccountRepository.findAll()).isEmpty();
+        assertThat(findTokenAccountHistory()).isEmpty();
     }
 
     @Test
@@ -1492,7 +1495,8 @@ class SqlEntityListenerTest extends IntegrationTest {
         expected.add(getTokenAccount(tokenId1, accountId1, 5L, true, false, TokenFreezeStatusEnum.FROZEN,
                 TokenKycStatusEnum.GRANTED, Range.closedOpen(12L, 15L)));
 
-        TokenAccount dissociate = getTokenAccount(tokenId1, accountId1, null, false, null, null, null, Range.atLeast(15L));
+        TokenAccount dissociate = getTokenAccount(tokenId1, accountId1, null, false, null, null, null,
+                Range.atLeast(15L));
         sqlEntityListener.onTokenAccount(dissociate);
         expected.add(getTokenAccount(tokenId1, accountId1, 5L, false, false, TokenFreezeStatusEnum.FROZEN,
                 TokenKycStatusEnum.GRANTED, Range.closedOpen(15L, 20L)));
@@ -1513,7 +1517,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(tokenAccountRepository.findAll()).containsExactly(expectedTokenAccount);
-        assertThat(findHistory(TokenAccount.class, "account_id, token_id")).containsExactlyInAnyOrderElementsOf(expected);
+        assertThat(findTokenAccountHistory()).containsExactlyInAnyOrderElementsOf(expected);
     }
 
     @Test
@@ -1703,6 +1707,10 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         assertThat(recordFileRepository.findAll()).contains(recordFile);
         assertThat(sidecarFileRepository.findAll()).containsAll(recordFile.getSidecars());
+    }
+
+    private Collection<TokenAccount> findTokenAccountHistory() {
+        return findHistory(TokenAccount.class, "account_id, token_id");
     }
 
     @SneakyThrows
