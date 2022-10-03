@@ -14,7 +14,7 @@
     "lint": "eslint --ignore-pattern node_modules/ --fix .",
     "postinstall": "node ./npm_scripts/postinstall.js",
     "start": "node --experimental-specifier-resolution=node server.js",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --testPathPattern='__tests__/.*\\.test\\.js'"
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --maxWorkers 2 --testPathPattern='__tests__/.*\\.test\\.js'"
   },
   "author": "Hedera Mirror Node Team",
   "license": "Apache-2.0",
@@ -43,7 +43,7 @@
     "parse-duration": "^1.0.2",
     "pg": "~8.8.0",
     "pg-range": "^1.1.1",
-    "prom-client": "^14.1.0",
+    "prom-client": "^13.1.0",
     "qs": "^6.11.0",
     "quick-lru": "^6.1.1",
     "rfc4648": "^1.5.2",

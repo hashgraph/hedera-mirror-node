@@ -5,7 +5,7 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js jest --testPathPattern='tests/.*\\.test\\.js'",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js jest --maxWorkers 2 --testPathPattern='tests/.*\\.test\\.js'",
     "start": "node --experimental-specifier-resolution=node index.js"
   },
   "repository": {
