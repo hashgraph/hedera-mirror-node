@@ -28,6 +28,7 @@ import {CryptoAllowanceViewModel, NftViewModel} from '../viewmodel';
 import * as utils from '../utils';
 import {CryptoAllowance} from '../model';
 import _ from 'lodash';
+import TokenRelationshipViewModel from '../viewmodel/tokenRelationshipViewModel';
 
 const {default: defaultLimit} = getResponseLimit();
 
@@ -87,17 +88,17 @@ class TokenController extends BaseController {
    * @param {Response} res HTTP response object
    * @returns {Promise<void>}
    */
-  getTokensByAccountId = async (req, res) => {
+  getTokenRelationships = async (req, res) => {
     const accountId = await EntityService.getEncodedId(req.params[filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS]);
     const filters = utils.buildAndValidateFilters(req.query);
     const query = this.extractNftMultiUnionQuery(filters, accountId);
-    const nonFungibleTokens = await NftService.getNfts(query);
-    const nfts = nonFungibleTokens.map((nft) => new NftViewModel(nft));
+    const tokenRelationships = await TokenService.getTokens(query);
+    const tokens = tokenRelationships.map((token) => new TokenRelationshipViewModel(token));
 
     res.locals[responseDataLabel] = {
-      nfts,
+      tokens,
       links: {
-        next: this.getPaginationLink(req, nfts, query.bounds, query.limit, query.order),
+        next: this.getPaginationLink(req, tokens, query.bounds, query.limit, query.order),
       },
     };
   };
