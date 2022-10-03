@@ -20,14 +20,15 @@
 
 import _ from 'lodash';
 import {Nft, Token} from '../model';
+import TokenRelationship from '../model/tokenRelationship';
 
 /**
  * Token retrieval business logic
  */
 class TokenService {
   static tokenByIdQuery = `select *
-                           from ${Token.tableName}
-                           where ${Token.TOKEN_ID} = $1`;
+                           from ${TokenRelationship.tableName}
+                           where ${TokenRelationship.TOKEN_ID} = $1`;
 
   async getToken(tokenId) {
     const {rows} = await pool.queryQuietly(TokenService.tokenByIdQuery, tokenId);
@@ -43,7 +44,7 @@ class TokenService {
   async getTokens(query) {
     const {sqlQuery, params} = this.getQuery(query);
     const rows = await super.getRows(sqlQuery, params, 'getTokens');
-    return rows.map((ta) => new Token(ta));
+    return rows.map((ta) => new TokenRelationship(ta));
   }
 }
 
