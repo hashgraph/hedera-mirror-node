@@ -37,8 +37,8 @@ import org.junit.jupiter.api.TestFactory;
 
 import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.domain.StreamFileSignature;
 
 class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
 
@@ -60,13 +60,13 @@ class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
     @Test
     void testReadValidFile() {
         StreamFileData streamFileData = StreamFileData.from(signatureFile);
-        FileStreamSignature fileStreamSignature = fileReaderV2.read(streamFileData);
-        assertNotNull(fileStreamSignature);
-        assertThat(fileStreamSignature.getBytes()).isNotEmpty().isEqualTo(streamFileData.getBytes());
-        assertArrayEquals(Base64.decodeBase64(entireFileHashBase64.getBytes()), fileStreamSignature.getFileHash());
-        assertArrayEquals(Base64.decodeBase64(entireFileSignatureBase64.getBytes()), fileStreamSignature
+        StreamFileSignature streamFileSignature = fileReaderV2.read(streamFileData);
+        assertNotNull(streamFileSignature);
+        assertThat(streamFileSignature.getBytes()).isNotEmpty().isEqualTo(streamFileData.getBytes());
+        assertArrayEquals(Base64.decodeBase64(entireFileHashBase64.getBytes()), streamFileSignature.getFileHash());
+        assertArrayEquals(Base64.decodeBase64(entireFileSignatureBase64.getBytes()), streamFileSignature
                 .getFileHashSignature());
-        assertEquals(VERSION, fileStreamSignature.getVersion());
+        assertEquals(VERSION, streamFileSignature.getVersion());
     }
 
     @SuppressWarnings("java:S2699")

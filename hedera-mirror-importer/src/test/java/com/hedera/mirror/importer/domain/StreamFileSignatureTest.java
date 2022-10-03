@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-class FileStreamSignatureTest {
+class StreamFileSignatureTest {
 
     @ParameterizedTest
     @CsvSource({
@@ -36,9 +36,9 @@ class FileStreamSignatureTest {
             "2020-06-03T16_45_00.100200345Z.rcd_sig, 6, 2020-06-03T16_45_00.100200345Z.rcd.gz"
     })
     void getDataFilename(String filename, byte version, String expected) {
-        var fileStreamSignature = new FileStreamSignature();
-        fileStreamSignature.setFilename(new StreamFilename(filename));
-        fileStreamSignature.setVersion(version);
-        assertThat(fileStreamSignature.getDataFilename().getFilename()).isEqualTo(expected);
+        var streamFileSignature = new StreamFileSignature();
+        streamFileSignature.setFilename(new StreamFilename(filename));
+        streamFileSignature.setVersion(version);
+        assertThat(streamFileSignature.getDataFilename().getFilename()).isEqualTo(expected);
     }
 }

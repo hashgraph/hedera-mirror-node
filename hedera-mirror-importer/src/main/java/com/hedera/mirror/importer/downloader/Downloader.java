@@ -21,7 +21,7 @@ package com.hedera.mirror.importer.downloader;
  */
 
 import static com.hedera.mirror.common.domain.DigestAlgorithm.SHA_384;
-import static com.hedera.mirror.importer.domain.FileStreamSignature.SignatureStatus;
+import static com.hedera.mirror.importer.domain.StreamFileSignature.SignatureStatus;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Multimap;
@@ -58,8 +58,8 @@ import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import com.hedera.mirror.importer.addressbook.ConsensusNodeService;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
-import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.domain.StreamFileSignature;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.downloader.provider.StreamFileProvider;
 import com.hedera.mirror.importer.downloader.provider.TransientProviderException;
@@ -194,10 +194,10 @@ public abstract class Downloader<T extends StreamFile> {
      *
      * @return a multi-map of signature file objects from different nodes, grouped by filename
      */
-    private Multimap<StreamFilename, FileStreamSignature> downloadAndParseSigFiles()
+    private Multimap<StreamFilename, StreamFileSignature> downloadAndParseSigFiles()
             throws InterruptedException {
         var startAfterFilename = getStartAfterFilename();
-        Multimap<StreamFilename, FileStreamSignature> sigFilesMap =
+        Multimap<StreamFilename, StreamFileSignature> sigFilesMap =
                 Multimaps.synchronizedSortedSetMultimap(TreeMultimap.create());
 
         var nodes = consensusNodeService.getNodes();
@@ -217,10 +217,10 @@ public abstract class Downloader<T extends StreamFile> {
                     var count = streamFileProvider.list(node, startAfterFilename)
                             .doOnNext(s -> {
                                 try {
-                                    var fileStreamSignature = signatureFileReader.read(s);
-                                    fileStreamSignature.setNode(node);
-                                    fileStreamSignature.setStreamType(streamType);
-                                    sigFilesMap.put(fileStreamSignature.getFilename(), fileStreamSignature);
+                                    var streamFileSignature = signatureFileReader.read(s);
+                                    streamFileSignature.setNode(node);
+                                    streamFileSignature.setStreamType(streamType);
+                                    sigFilesMap.put(streamFileSignature.getFilename(), streamFileSignature);
                                 } catch (Exception ex) {
                                     log.warn("Failed to parse signature file {}: {}", "", ex);
                                 }
@@ -285,7 +285,7 @@ public abstract class Downloader<T extends StreamFile> {
      *
      * @param sigFilesMap signature files grouped by filename
      */
-    private void verifySigsAndDownloadDataFiles(Multimap<StreamFilename, FileStreamSignature> sigFilesMap) {
+    private void verifySigsAndDownloadDataFiles(Multimap<StreamFilename, StreamFileSignature> sigFilesMap) {
         Instant endDate = mirrorProperties.getEndDate();
         var nodeIds = consensusNodeService.getNodes()
                 .stream()
@@ -306,7 +306,7 @@ public abstract class Downloader<T extends StreamFile> {
                 nodeSignatureVerifier.verify(signatures);
 
                 var consensusCount = signatures.stream()
-                        .filter(s -> s.getStatus() == FileStreamSignature.SignatureStatus.CONSENSUS_REACHED)
+                        .filter(s -> s.getStatus() == StreamFileSignature.SignatureStatus.CONSENSUS_REACHED)
                         .count();
 
                 if (consensusCount == nodeIds.size()) {
@@ -331,7 +331,7 @@ public abstract class Downloader<T extends StreamFile> {
                 }
 
                 // Ignore signatures that didn't validate or weren't in the majority
-                if (signature.getStatus() != FileStreamSignature.SignatureStatus.CONSENSUS_REACHED) {
+                if (signature.getStatus() != StreamFileSignature.SignatureStatus.CONSENSUS_REACHED) {
                     continue;
                 }
 
@@ -422,7 +422,7 @@ public abstract class Downloader<T extends StreamFile> {
      * @param streamFile the stream file object
      * @param signature  the signature object corresponding to the stream file
      */
-    private void verify(StreamFile streamFile, FileStreamSignature signature) {
+    private void verify(StreamFile streamFile, StreamFileSignature signature) {
         String filename = streamFile.getName();
         String expectedPrevHash = lastStreamFile.get().map(StreamFile::getHash).orElse(null);
 
@@ -468,10 +468,10 @@ public abstract class Downloader<T extends StreamFile> {
         return streamFile.getPreviousHash().contentEquals(expectedPreviousHash);
     }
 
-    private Map<SignatureStatus, Collection<Long>> statusMap(Collection<FileStreamSignature> signatures,
+    private Map<SignatureStatus, Collection<Long>> statusMap(Collection<StreamFileSignature> signatures,
                                                              Set<Long> nodeIds) {
         Map<SignatureStatus, Collection<Long>> statusMap = signatures.stream()
-                .collect(Collectors.groupingBy(FileStreamSignature::getStatus,
+                .collect(Collectors.groupingBy(StreamFileSignature::getStatus,
                         Collectors.mapping(s -> s.getNode().getNodeId(), Collectors.toCollection(TreeSet::new))));
 
         var seenNodes = signatures.stream().map(s -> s.getNode().getNodeId()).collect(Collectors.toSet());
@@ -479,7 +479,7 @@ public abstract class Downloader<T extends StreamFile> {
         statusMap.put(SignatureStatus.NOT_FOUND, missingNodes);
 
         String signatureStreamType = signatures.stream()
-                .map(FileStreamSignature::getStreamType)
+                .map(StreamFileSignature::getStreamType)
                 .map(StreamType::toString)
                 .findFirst()
                 .orElse("UNKNOWN");

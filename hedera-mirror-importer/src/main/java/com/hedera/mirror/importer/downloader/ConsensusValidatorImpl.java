@@ -29,7 +29,7 @@ import javax.inject.Named;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 
-import com.hedera.mirror.importer.domain.FileStreamSignature;
+import com.hedera.mirror.importer.domain.StreamFileSignature;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
 
@@ -52,8 +52,8 @@ public class ConsensusValidatorImpl implements ConsensusValidator {
      * @throws SignatureVerificationException
      */
     @Override
-    public void validate(Collection<FileStreamSignature> signatures) throws SignatureVerificationException {
-        Multimap<String, FileStreamSignature> signatureHashMap = HashMultimap.create();
+    public void validate(Collection<StreamFileSignature> signatures) throws SignatureVerificationException {
+        Multimap<String, StreamFileSignature> signatureHashMap = HashMultimap.create();
         StreamFilename filename = null;
         BigDecimal stakeRequiredForConsensus = null;
         long totalStake = 0L;
@@ -65,7 +65,7 @@ public class ConsensusValidatorImpl implements ConsensusValidator {
                 stakeRequiredForConsensus = getStakeRequiredForConsensus(totalStake);
             }
 
-            if (signature.getStatus() == FileStreamSignature.SignatureStatus.VERIFIED) {
+            if (signature.getStatus() == StreamFileSignature.SignatureStatus.VERIFIED) {
                 signatureHashMap.put(signature.getFileHashAsHex(), signature);
             }
         }
@@ -88,7 +88,7 @@ public class ConsensusValidatorImpl implements ConsensusValidator {
 
             if (canReachConsensus(stake, stakeRequiredForConsensus)) {
                 consensusCount += validatedSignatures.size();
-                validatedSignatures.forEach(s -> s.setStatus(FileStreamSignature.SignatureStatus.CONSENSUS_REACHED));
+                validatedSignatures.forEach(s -> s.setStatus(StreamFileSignature.SignatureStatus.CONSENSUS_REACHED));
             }
 
             if (debugStake < stake) {

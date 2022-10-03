@@ -21,8 +21,8 @@ package com.hedera.mirror.importer.downloader;
  */
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
-import static com.hedera.mirror.importer.domain.FileStreamSignature.SignatureStatus.DOWNLOADED;
-import static com.hedera.mirror.importer.domain.FileStreamSignature.SignatureStatus.VERIFIED;
+import static com.hedera.mirror.importer.domain.StreamFileSignature.SignatureStatus.DOWNLOADED;
+import static com.hedera.mirror.importer.domain.StreamFileSignature.SignatureStatus.VERIFIED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.isA;
 
@@ -48,8 +48,8 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.ConsensusNodeStub;
-import com.hedera.mirror.importer.domain.FileStreamSignature;
-import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureType;
+import com.hedera.mirror.importer.domain.StreamFileSignature;
+import com.hedera.mirror.importer.domain.StreamFileSignature.SignatureType;
 import com.hedera.mirror.importer.domain.StreamFilename;
 
 @ExtendWith(MockitoExtension.class)
@@ -89,86 +89,86 @@ class NodeSignatureVerifierTest {
 
     @Test
     void v2() {
-        var signature = fileStreamSignature();
+        var signature = streamFileSignature();
         signature.setMetadataHash(null);
         signature.setMetadataHashSignature(null);
         var signatures = List.of(signature);
 
         nodeSignatureVerifier.verify(signatures);
 
-        assertThat(signatures).isNotEmpty().extracting(FileStreamSignature::getStatus).containsOnly(VERIFIED);
+        assertThat(signatures).isNotEmpty().extracting(StreamFileSignature::getStatus).containsOnly(VERIFIED);
     }
 
     @Test
     void v5() {
-        var signature = fileStreamSignature();
+        var signature = streamFileSignature();
         var signatures = List.of(signature);
 
         nodeSignatureVerifier.verify(signatures);
-        assertThat(signatures).isNotEmpty().extracting(FileStreamSignature::getStatus).containsOnly(VERIFIED);
+        assertThat(signatures).isNotEmpty().extracting(StreamFileSignature::getStatus).containsOnly(VERIFIED);
     }
 
     @Test
     void partialFailure() {
-        var signature1 = fileStreamSignature();
-        var signature2 = fileStreamSignature();
-        var signature3 = fileStreamSignature();
+        var signature1 = streamFileSignature();
+        var signature2 = streamFileSignature();
+        var signature3 = streamFileSignature();
         signature3.setFileHashSignature(corruptSignature(signature3.getFileHashSignature()));
         var signatures = List.of(signature1, signature2, signature3);
 
         nodeSignatureVerifier.verify(signatures);
-        assertThat(signatures).isNotEmpty().extracting(FileStreamSignature::getStatus)
+        assertThat(signatures).isNotEmpty().extracting(StreamFileSignature::getStatus)
                 .containsExactly(VERIFIED, VERIFIED, DOWNLOADED);
     }
 
     @Test
     void invalidFileSignature() {
-        var signature = fileStreamSignature();
+        var signature = streamFileSignature();
         signature.setFileHashSignature(corruptSignature(signature.getFileHashSignature()));
         var signatures = List.of(signature);
 
         nodeSignatureVerifier.verify(signatures);
-        assertThat(signatures).isNotEmpty().extracting(FileStreamSignature::getStatus).doesNotContain(VERIFIED);
+        assertThat(signatures).isNotEmpty().extracting(StreamFileSignature::getStatus).doesNotContain(VERIFIED);
     }
 
     @Test
     void invalidMetadataSignature() {
-        var signature = fileStreamSignature();
+        var signature = streamFileSignature();
         signature.setMetadataHashSignature(corruptSignature(signature.getMetadataHashSignature()));
         var signatures = List.of(signature);
 
         nodeSignatureVerifier.verify(signatures);
-        assertThat(signatures).isNotEmpty().extracting(FileStreamSignature::getStatus).doesNotContain(VERIFIED);
+        assertThat(signatures).isNotEmpty().extracting(StreamFileSignature::getStatus).doesNotContain(VERIFIED);
     }
 
     @Test
     void noSignatureType() {
-        var signature = fileStreamSignature();
+        var signature = streamFileSignature();
         signature.setSignatureType(null);
         var signatures = List.of(signature);
 
         nodeSignatureVerifier.verify(signatures);
-        assertThat(signatures).isNotEmpty().extracting(FileStreamSignature::getStatus).doesNotContain(VERIFIED);
+        assertThat(signatures).isNotEmpty().extracting(StreamFileSignature::getStatus).doesNotContain(VERIFIED);
     }
 
     @Test
     void noFileHashSignature() {
-        var signature = fileStreamSignature();
+        var signature = streamFileSignature();
         signature.setFileHashSignature(null);
         var signatures = List.of(signature);
 
         nodeSignatureVerifier.verify(signatures);
-        assertThat(signatures).isNotEmpty().extracting(FileStreamSignature::getStatus).doesNotContain(VERIFIED);
+        assertThat(signatures).isNotEmpty().extracting(StreamFileSignature::getStatus).doesNotContain(VERIFIED);
     }
 
     @Test
     void noFileHash() {
-        var signature = fileStreamSignature();
+        var signature = streamFileSignature();
         signature.setFileHash(null);
         var signatures = List.of(signature);
 
         nodeSignatureVerifier.verify(signatures);
-        assertThat(signatures).isNotEmpty().extracting(FileStreamSignature::getStatus).doesNotContain(VERIFIED);
+        assertThat(signatures).isNotEmpty().extracting(StreamFileSignature::getStatus).doesNotContain(VERIFIED);
     }
 
     @SneakyThrows
@@ -176,13 +176,13 @@ class NodeSignatureVerifierTest {
     void signedWithWrongAlgorithm() {
         signer = Signature.getInstance("SHA1withRSA", "SunRsaSign");
         signer.initSign(privateKey);
-        var signatures = List.of(fileStreamSignature());
+        var signatures = List.of(streamFileSignature());
 
         nodeSignatureVerifier.verify(signatures);
-        assertThat(signatures).isNotEmpty().extracting(FileStreamSignature::getStatus).doesNotContain(VERIFIED);
+        assertThat(signatures).isNotEmpty().extracting(StreamFileSignature::getStatus).doesNotContain(VERIFIED);
     }
 
-    private FileStreamSignature fileStreamSignature() {
+    private StreamFileSignature streamFileSignature() {
         var fileHash = TestUtils.generateRandomByteArray(48);
         var metadataHash = TestUtils.generateRandomByteArray(48);
         var node = ConsensusNodeStub.builder()
@@ -190,16 +190,16 @@ class NodeSignatureVerifierTest {
                 .publicKey(publicKey)
                 .build();
 
-        FileStreamSignature fileStreamSignature = new FileStreamSignature();
-        fileStreamSignature.setFileHash(fileHash);
-        fileStreamSignature.setFileHashSignature(signHash(fileHash));
-        fileStreamSignature.setFilename(StreamFilename.EPOCH);
-        fileStreamSignature.setMetadataHash(metadataHash);
-        fileStreamSignature.setMetadataHashSignature(signHash(metadataHash));
-        fileStreamSignature.setNode(node);
-        fileStreamSignature.setSignatureType(SignatureType.SHA_384_WITH_RSA);
-        fileStreamSignature.setStreamType(StreamType.RECORD);
-        return fileStreamSignature;
+        StreamFileSignature streamFileSignature = new StreamFileSignature();
+        streamFileSignature.setFileHash(fileHash);
+        streamFileSignature.setFileHashSignature(signHash(fileHash));
+        streamFileSignature.setFilename(StreamFilename.EPOCH);
+        streamFileSignature.setMetadataHash(metadataHash);
+        streamFileSignature.setMetadataHashSignature(signHash(metadataHash));
+        streamFileSignature.setNode(node);
+        streamFileSignature.setSignatureType(SignatureType.SHA_384_WITH_RSA);
+        streamFileSignature.setStreamType(StreamType.RECORD);
+        return streamFileSignature;
     }
 
     private byte[] corruptSignature(byte[] signature) {
