@@ -22,8 +22,8 @@ package com.hedera.mirror.importer.downloader;
 
 import java.util.Collection;
 
-import com.hedera.mirror.importer.domain.FileStreamSignature;
+import com.hedera.mirror.importer.domain.StreamFileSignature;
 
 public interface ConsensusValidator {
-    void validate(Collection<FileStreamSignature> signatures);
+    void validate(Collection<StreamFileSignature> signatures);
 }
