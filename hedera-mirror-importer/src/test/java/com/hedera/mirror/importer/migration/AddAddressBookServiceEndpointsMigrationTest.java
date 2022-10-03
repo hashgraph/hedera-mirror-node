@@ -88,7 +88,7 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
         int endPointPerNode = 3;
         int numEndPoints = nodeIdCount * (endPointPerNode + 1);
 
-        insertAddressBook(AddressBookServiceImpl.ADDRESS_BOOK_101_ENTITY_ID, consensusTimestamp, nodeIdCount);
+        insertAddressBook(AddressBookServiceImpl.FILE_101, consensusTimestamp, nodeIdCount);
         getAndSaveAddressBookEntries(true, consensusTimestamp, nodeIdCount, endPointPerNode);
 
         assertThat(addressBookEntryRepository.count()).isEqualTo(numEndPoints);
@@ -119,7 +119,7 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
         int endPointPerNode = 3;
         int numEndPoints = nodeIdCount * endPointPerNode;
 
-        insertAddressBook(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID, consensusTimestamp, nodeIdCount);
+        insertAddressBook(AddressBookServiceImpl.FILE_102, consensusTimestamp, nodeIdCount);
         getAndSaveAddressBookEntries(false, consensusTimestamp, nodeIdCount,
                 endPointPerNode);
 
@@ -151,7 +151,7 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
         int endPointPerNode = 0;
         int numEndPoints = nodeIdCount;
 
-        insertAddressBook(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID, consensusTimestamp, nodeIdCount);
+        insertAddressBook(AddressBookServiceImpl.FILE_102, consensusTimestamp, nodeIdCount);
         getAndSaveAddressBookEntries(true, consensusTimestamp, nodeIdCount,
                 endPointPerNode);
 
@@ -182,7 +182,7 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
         int nodeIdCount = 3;
         int endPointPerNode = 0;
 
-        insertAddressBook(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID, consensusTimestamp, nodeIdCount);
+        insertAddressBook(AddressBookServiceImpl.FILE_102, consensusTimestamp, nodeIdCount);
         getAndSaveAddressBookEntries(false, consensusTimestamp, nodeIdCount,
                 endPointPerNode);
 
@@ -219,7 +219,7 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
         int numEndPoints = nodeIds.size() * ports.size();
 
         // populate address_book and address_book_entry
-        insertAddressBook(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID, consensusTimestamp, nodeIdCount);
+        insertAddressBook(AddressBookServiceImpl.FILE_102, consensusTimestamp, nodeIdCount);
         nodeIds.forEach(nodeId -> {
             ports.forEach(port -> {
                 insertAddressBookEntry(
@@ -258,7 +258,7 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
         // verify address_book counts are updated
         assertThat(addressBookRepository.findById(consensusTimestamp))
                 .get()
-                .returns(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID, AddressBook::getFileId)
+                .returns(AddressBookServiceImpl.FILE_102, AddressBook::getFileId)
                 .returns(nodeIds.size(), AddressBook::getNodeCount)
                 .returns(null, AddressBook::getEndConsensusTimestamp);
     }
@@ -273,7 +273,7 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
                 .publicKey("rsa+public/key");
 
         List<Long> nodeIds = List.of(0L, 1L, 2L, 3L);
-        insertAddressBook(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID, consensusTimestamp, nodeIds.size());
+        insertAddressBook(AddressBookServiceImpl.FILE_102, consensusTimestamp, nodeIds.size());
         insertAddressBookEntry(builder.memo(baseAccountId + (nodeIds.get(0) + nodeAccountOffset)).build(), "", 0);
         insertAddressBookEntry(builder.memo(baseAccountId + (nodeIds.get(1) + nodeAccountOffset)).build(), "", 0);
         insertAddressBookEntry(builder.memo(baseAccountId + (nodeIds.get(2) + nodeAccountOffset)).build(), "", 0);
@@ -309,7 +309,7 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
                 .publicKey("rsa+public/key");
 
         List<Long> nodeIds = List.of(0L, 1L, 2L, 3L);
-        insertAddressBook(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID, consensusTimestamp, nodeIds.size());
+        insertAddressBook(AddressBookServiceImpl.FILE_102, consensusTimestamp, nodeIds.size());
         insertAddressBookEntry(
                 builder.memo(baseAccountId + (nodeIds.get(0) + nodeAccountOffset))
                         .consensusTimestamp(consensusTimestamp)
@@ -367,7 +367,7 @@ class AddAddressBookServiceEndpointsMigrationTest extends IntegrationTest {
         for (int id = 0; id < nodeCount; id++) {
             addressBookEntries.addAll(getAndSaveAddressBookEntry(
                     deprecatedIp,
-                    numEndpointsPerNode * id,
+                    (long) numEndpointsPerNode * id,
                     consensusTimestamp,
                     id,
                     endPointCount));

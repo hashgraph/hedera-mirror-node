@@ -159,6 +159,7 @@ func (suite *offlineNetworkServiceSuite) TestNetworkOptions() {
 		errors.ErrEndpointNotSupportedInOfflineMode,
 		errors.ErrInvalidCurveType,
 		errors.ErrInvalidOptions,
+		errors.ErrInvalidTransactionMemo,
 		errors.ErrInternalServerError,
 	}
 

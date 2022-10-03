@@ -26,8 +26,6 @@ import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
-
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class EthereumTransactionRepositoryTest extends AbstractRepositoryTest {
 
@@ -46,21 +44,17 @@ class EthereumTransactionRepositoryTest extends AbstractRepositoryTest {
 
     @Test
     void saveInitCode() {
-        EthereumTransaction ethereumTransaction = domainBuilder.ethereumTransaction(true).persist();
+        var ethereumTransaction = domainBuilder.ethereumTransaction(true).persist();
         assertThat(ethereumTransactionRepository.findById(ethereumTransaction.getId()))
                 .get()
-                .usingRecursiveComparison()
-                .ignoringFields("callDataId.type")
                 .isEqualTo(ethereumTransaction);
     }
 
     @Test
     void saveFileId() {
-        EthereumTransaction ethereumTransaction = domainBuilder.ethereumTransaction(false).persist();
+        var ethereumTransaction = domainBuilder.ethereumTransaction(false).persist();
         assertThat(ethereumTransactionRepository.findById(ethereumTransaction.getId()))
                 .get()
-                .usingRecursiveComparison()
-                .ignoringFields("callDataId.type")
                 .isEqualTo(ethereumTransaction);
     }
 }

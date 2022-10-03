@@ -672,6 +672,7 @@ public class TokenFeature {
                 CustomFixedFee sdkFixedFee = (CustomFixedFee) customFee;
                 MirrorFixedFee fixedFee = new MirrorFixedFee();
 
+                fixedFee.setAllCollectorsAreExempt(false);
                 fixedFee.setAmount(sdkFixedFee.getAmount());
                 fixedFee.setCollectorAccountId(sdkFixedFee.getFeeCollectorAccountId().toString());
 
@@ -687,6 +688,7 @@ public class TokenFeature {
                 MirrorFraction fraction = new MirrorFraction();
                 fraction.setNumerator(sdkFractionalFee.getNumerator());
                 fraction.setDenominator(sdkFractionalFee.getDenominator());
+                fractionalFee.setAllCollectorsAreExempt(false);
                 fractionalFee.setAmount(fraction);
 
                 fractionalFee.setCollectorAccountId(sdkFractionalFee.getFeeCollectorAccountId().toString());

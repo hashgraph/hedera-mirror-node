@@ -43,38 +43,40 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.db.username`                                        | mirror_node                    | The Importer username the processor uses to connect to the database                                                                                                                                                                                                |
 | `hedera.mirror.importer.downloader.accessKey`                               | ""                             | The cloud storage access key                                                                                                                                                                                                                                       |
 | `hedera.mirror.importer.downloader.allowAnonymousAccess`                    |                                | Whether the cloud storage bucket allows for anonymous access.                                                                                                                                                                                                      |
-| `hedera.mirror.importer.downloader.balance.batchSize`                       | 30                             | The number of signature files to download per node before downloading the signed files                                                                                                                                                                             |
 | `hedera.mirror.importer.downloader.balance.enabled`                         | true                           | Whether to enable balance file downloads                                                                                                                                                                                                                           |
 | `hedera.mirror.importer.downloader.balance.frequency`                       | 30s                            | The fixed period between invocations. Can accept duration units like `10s`, `2m`, etc.                                                                                                                                                                             |
 | `hedera.mirror.importer.downloader.balance.persistBytes`                    | false                          | Whether to persist the balance file bytes to the database.                                                                                                                                                                                                         |
-| `hedera.mirror.importer.downloader.balance.prefix`                          | accountBalances/balance        | The prefix to search cloud storage for balance files                                                                                                                                                                                                               |
-| `hedera.mirror.importer.downloader.balance.threads`                         | 15                             | The number of threads to search for new files to download                                                                                                                                                                                                          |
 | `hedera.mirror.importer.downloader.balance.writeFiles`                      | false                          | Whether to write verified stream files to the filesystem.                                                                                                                                                                                                          |
 | `hedera.mirror.importer.downloader.balance.writeSignatures`                 | false                          | Whether to write verified signature files to the filesystem.                                                                                                                                                                                                       |
+| `hedera.mirror.importer.downloader.batchSize`                               | 100                            | The number of signature files to download per node before downloading the signed files                                                                                                                                                                             |
 | `hedera.mirror.importer.downloader.bucketName`                              |                                | The cloud storage bucket name to download streamed files. This value takes priority over network hardcoded bucket names regardless of `hedera.mirror.importer.network` value.                                                                                      |
 | `hedera.mirror.importer.downloader.cloudProvider`                           | S3                             | The cloud provider to download files from. Either `S3` or `GCP`                                                                                                                                                                                                    |
 | `hedera.mirror.importer.downloader.consensusRatio`                          | 0.33333333333                  | The ratio of verified nodes (nodes used to come to consensus on the signature file hash) to total number of nodes available                                                                                                                                        |
 | `hedera.mirror.importer.downloader.endpointOverride`                        |                                | Can be specified to download streams from a source other than S3 and GCP. Should be S3 compatible                                                                                                                                                                  |
-| `hedera.mirror.importer.downloader.event.batchSize`                         | 100                            | The number of signature files to download per node before downloading the signed files                                                                                                                                                                             |
 | `hedera.mirror.importer.downloader.event.enabled`                           | false                          | Whether to enable event file downloads                                                                                                                                                                                                                             |
 | `hedera.mirror.importer.downloader.event.frequency`                         | 5s                             | The fixed period between invocations. Can accept duration units like `10s`, `2m`, etc.                                                                                                                                                                             |
 | `hedera.mirror.importer.downloader.event.persistBytes`                      | false                          | Whether to persist the event file bytes to the database.                                                                                                                                                                                                           |
-| `hedera.mirror.importer.downloader.event.prefix`                            | eventsStreams/events\_         | The prefix to search cloud storage for event files                                                                                                                                                                                                                 |
-| `hedera.mirror.importer.downloader.event.threads`                           | 15                             | The number of threads to search for new files to download                                                                                                                                                                                                          |
 | `hedera.mirror.importer.downloader.event.writeFiles`                        | false                          | Whether to write verified stream files to the filesystem.                                                                                                                                                                                                          |
 | `hedera.mirror.importer.downloader.event.writeSignatures`                   | false                          | Whether to write verified signature files to the filesystem.                                                                                                                                                                                                       |
 | `hedera.mirror.importer.downloader.gcpProjectId`                            |                                | GCP project id to bill for requests to GCS bucket which has Requester Pays enabled.                                                                                                                                                                                |
-| `hedera.mirror.importer.downloader.maxConcurrency`                          | 1000                           | The maximum number of allowed open HTTP connections. Used by AWS SDK directly.                                                                                                                                                                                     |
-| `hedera.mirror.importer.downloader.record.batchSize`                        | 40                             | The number of signature files to download per node before downloading the signed files                                                                                                                                                                             |
 | `hedera.mirror.importer.downloader.record.enabled`                          | true                           | Whether to enable record file downloads                                                                                                                                                                                                                            |
 | `hedera.mirror.importer.downloader.record.frequency`                        | 500ms                          | The fixed period between invocations. Can accept duration units like `10s`, `2m`, etc.                                                                                                                                                                             |
 | `hedera.mirror.importer.downloader.record.persistBytes`                     | false                          | Whether to persist the record file bytes to the database.                                                                                                                                                                                                          |
-| `hedera.mirror.importer.downloader.record.prefix`                           | recordstreams/record           | The prefix to search cloud storage for record files                                                                                                                                                                                                                |
-| `hedera.mirror.importer.downloader.record.threads`                          | 15                             | The number of threads to search for new files to download                                                                                                                                                                                                          |
 | `hedera.mirror.importer.downloader.record.writeFiles`                       | false                          | Whether to write verified stream files to the filesystem.                                                                                                                                                                                                          |
 | `hedera.mirror.importer.downloader.record.writeSignatures`                  | false                          | Whether to write verified signature files to the filesystem.                                                                                                                                                                                                       |
 | `hedera.mirror.importer.downloader.region`                                  | us-east-1                      | The region associated with the bucket                                                                                                                                                                                                                              |
 | `hedera.mirror.importer.downloader.secretKey`                               | ""                             | The cloud storage secret key                                                                                                                                                                                                                                       |
+| `hedera.mirror.importer.downloader.sources`                                 | []                             | A list of download sources to use for stream files. The grandfathered `hedera.mirror.importer.downloader` will also be utilized as the first source in the list.                                                                                                   |
+| `hedera.mirror.importer.downloader.sources.backoff`                         | 60s                            | The amount of time to wait before retrying a source after an exception                                                                                                                                                                                             |
+| `hedera.mirror.importer.downloader.sources.connectionTimeout`               | 5s                             | The amount of time to wait for a connection before throwing an exception                                                                                                                                                                                           |
+| `hedera.mirror.importer.downloader.sources.credentials.accessKey`           |                                | The cloud storage access key for the given source                                                                                                                                                                                                                  |
+| `hedera.mirror.importer.downloader.sources.credentials.secretKey`           |                                | The cloud storage secret key for the given source                                                                                                                                                                                                                  |
+| `hedera.mirror.importer.downloader.sources.maxConcurrency`                  | 1000                           | The maximum number of allowed open HTTP connections. Used by AWS SDK directly.                                                                                                                                                                                     |
+| `hedera.mirror.importer.downloader.sources.projectId`                       |                                | The cloud project ID to bill for requests to the bucket which has requester pays enabled.                                                                                                                                                                          |
+| `hedera.mirror.importer.downloader.region`                                  | us-east-1                      | The region associated with the bucket                                                                                                                                                                                                                              |
+| `hedera.mirror.importer.downloader.sources.type`                            |                                | The source type to download files from. Either `S3` or `GCP`.                                                                                                                                                                                                      |
+| `hedera.mirror.importer.downloader.sources.uri`                             |                                | The endpoint override URI to use as an alternate for the default URI provided by the source type.                                                                                                                                                                  |
+| `hedera.mirror.importer.downloader.threads`                                 | 30                             | The number of threads to search for new files to download                                                                                                                                                                                                          |
 | `hedera.mirror.importer.downloader.timeout`                                 | 30s                            | The amount of time to wait for a download before throwing an exception                                                                                                                                                                                             |
 | `hedera.mirror.importer.endDate`                                            | 2262-04-11T23:47:16.854775807Z | The end date (inclusive) of the data to import. Items after this date will be ignored. Format: YYYY-MM-ddTHH:mm:ss.nnnnnnnnnZ                                                                                                                                      |
 | `hedera.mirror.importer.importHistoricalAccountInfo`                        | true                           | Import historical account information that occurred before the last stream reset. Skipped if `startDate` is unset or after 2019-09-14T00:00:10Z.                                                                                                                   |
@@ -166,7 +168,82 @@ value, it is recommended to only populate overridden properties in the custom `a
 | `hedera.mirror.importer.startBlockNumber`                                   | null                           | The block number that will be set as the downloaded stream files starting index.                                                                                                                                                                                   |
 | `hedera.mirror.importer.verifyHashAfter`                                    | 1970-01-01T00:00:00Z           | Skip hash verification for stream files linked by hash until after (and not including) this point of time. Format: YYYY-MM-ddTHH:mm:ss.nnnnnnnnnZ                                                                                                                  |
 
-#### Export transactions to PubSub
+### Transaction and Entity Filtering
+
+The mirror node may be configured to only store a subset of data for entities and/or transaction types of interest -- essentially, which rows of data to retain.
+Note that the `exclude` properties take priority over the `include` properties - if you list the same value in both lists, it will be excluded.
+In addition, the various boolean `hedera.mirror.importer.record.entity.persist` properties may be specified to control which additional fields get stored (which additional tables get recorded).
+See the `hedera.mirror.importer.parser.include.*` and `hedera.mirror.importer.parser.exclude.*` properties listed in the table above for full details.
+
+#### Filtering Example
+The scenario we wish to model is the same for each of the three configuration formats.  Only choose one of the three ways to
+configure your instance of the mirror node.
+
+* We wish to omit all records (regardless of transaction type) that are associated with account **0.0.98**, which is the account representing the network (to which fees generally get paid to).
+* We are interested in all **CRYPTOTRANSFER** transactions, for all accounts other than **0.0.98**.
+* We are interested in accounts **0.0.1000** and **0.0.1001**, and wish to store all their transactions, regardless of transaction type.
+* We are also interested in system files **0.0.101** and **0.0.102**, and wish to store all their **FILEAPPEND**, **FILECREATE**, **FILEDELETE**, and **FILEUPDATE** transactions.
+* We do not wish to persist message topics for any transactions we do store.
+
+#### application.yml
+
+To configure the above scenario via `application.yml` file, include the following lines:
+
+```yaml
+hedera:
+  mirror:
+    importer:
+      parser:
+        exclude:
+          - entity: [0.0.98]
+        include:
+          - transaction: [CRYPTOTRANSFER]
+          - entity: [0.0.1000, 0.0.1001]
+          - entity: [0.0.101, 0.0.102]
+            transaction: [FILEAPPEND, FILECREATE, FILEDELETE, FILEUPDATE]
+        record:
+          entity:
+            persist:
+              topics: false
+```
+
+#### application.properties
+
+To configure the above scenario via `application.properties` file, include the following lines:
+
+```yaml
+hedera.mirror.importer.parser.exclude[0].entity[0]=0.0.98
+hedera.mirror.importer.parser.include[0].transaction[0]=CRYPTOTRANSFER
+hedera.mirror.importer.parser.include[1].entity[0]=0.0.1000
+hedera.mirror.importer.parser.include[1].entity[1]=0.0.1001
+hedera.mirror.importer.parser.include[2].entity[0]=0.0.101
+hedera.mirror.importer.parser.include[2].entity[1]=0.0.102
+hedera.mirror.importer.parser.include[2].transaction[0]=FILEAPPEND
+hedera.mirror.importer.parser.include[2].transaction[1]=FILECREATE
+hedera.mirror.importer.parser.include[2].transaction[2]=FILEDELETE
+hedera.mirror.importer.parser.include[2].transaction[3]=FILEUPDATE
+hedera.mirror.importer.parser.record.entity.persist.topics=false
+```
+
+#### Environment variables
+
+To configure the above scenario via environmental variables, set the following:
+
+```yaml
+HEDERA_MIRROR_IMPORTER_PARSER_EXCLUDE_0_ENTITY_0_: 0.0.98
+HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_0_TRANSACTION_0_: CRYPTOTRANSFER
+HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_1_ENTITY_0_: 0.0.1000
+HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_1_ENTITY_1_: 0.0.1001
+HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_2_ENTITY_0_: 0.0.101
+HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_2_ENTITY_1_: 0.0.102
+HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_2_TRANSACTION_0_: FILEAPPEND
+HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_2_TRANSACTION_1_: FILECREATE
+HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_2_TRANSACTION_2_: FILEDELETE
+HEDERA_MIRROR_IMPORTER_PARSER_INCLUDE_2_TRANSACTION_3_: FILEUPDATE
+HEDERA_MIRROR_IMPORTER_PARSER_RECORD_ENTITY_PERSIST_TOPICS: "false"
+```
+
+### Export transactions to PubSub
 
 Importer can be configured to publish transactions (in json format) to a Pubsub topic using following properties:
 
@@ -180,7 +257,7 @@ Importer can be configured to publish transactions (in json format) to a Pubsub 
 See [Spring Cloud documentation](https://cloud.spring.io/spring-cloud-static/spring-cloud-gcp/1.2.2.RELEASE/reference/html/#pubsub-configuration)
 for more info about `spring.cloud.gcp.*` properties.
 
-#### Connect to S3 with the Default Credentials Provider
+### Connect to S3 with the Default Credentials Provider
 
 When connecting to an AWS S3 bucket that requires authentication (such as a requester pays bucket), you can opt to allow
 the AWS Default Credentials Provider Chain to handle the authentication for you, instead of providing your static access

@@ -22,8 +22,6 @@ package com.hedera.mirror.importer.downloader.event;
 
 import java.nio.file.Path;
 import java.time.Duration;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -45,9 +43,6 @@ public class EventDownloaderProperties implements DownloaderProperties {
 
     private final CommonDownloaderProperties common;
 
-    @Min(1)
-    private int batchSize = 100;
-
     private boolean enabled = false;
 
     @NotNull
@@ -58,12 +53,6 @@ public class EventDownloaderProperties implements DownloaderProperties {
     private boolean writeFiles = false;
 
     private boolean writeSignatures = false;
-
-    @NotBlank
-    private String prefix = "eventsStreams/events_";
-
-    @Min(1)
-    private int threads = 15;
 
     @Override
     public Path getStreamPath() {

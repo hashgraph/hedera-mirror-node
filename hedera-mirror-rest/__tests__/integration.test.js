@@ -248,6 +248,7 @@ describe('API specification tests', () => {
       {
         url: spec.url,
         urls: spec.urls,
+        responseContentType: spec.responseContentType,
         responseJson: spec.responseJson,
         responseStatus: spec.responseStatus,
       },
@@ -255,8 +256,8 @@ describe('API specification tests', () => {
     return _.flatten(
       tests.map((test) => {
         const urls = test.urls || [test.url];
-        const {responseJson, responseStatus} = test;
-        return urls.map((url) => ({url, responseJson, responseStatus}));
+        const {responseContentType, responseJson, responseStatus} = test;
+        return urls.map((url) => ({url, responseContentType, responseJson, responseStatus}));
       })
     );
   };
@@ -271,11 +272,19 @@ describe('API specification tests', () => {
               const response = await request(server).get(tt.url);
 
               expect(response.status).toEqual(tt.responseStatus);
-              let jsonObj = response.text === '' ? {} : JSONParse(response.text);
-              if (response.status === 200 && dir.endsWith('stateproof')) {
-                jsonObj = transformStateProofResponse(jsonObj);
+              const contentType = response.get('Content-Type');
+              expect(contentType).not.toBeNull();
+
+              if (contentType.includes('application/json')) {
+                let jsonObj = response.text === '' ? {} : JSONParse(response.text);
+                if (response.status === 200 && dir.endsWith('stateproof')) {
+                  jsonObj = transformStateProofResponse(jsonObj);
+                }
+                expect(jsonObj).toEqual(tt.responseJson);
+              } else {
+                expect(contentType).toEqual(tt.responseContentType);
+                expect(response.text).toEqual(tt.responseJson);
               }
-              expect(jsonObj).toEqual(tt.responseJson);
             });
           });
         });

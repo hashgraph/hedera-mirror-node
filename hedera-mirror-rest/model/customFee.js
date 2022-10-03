@@ -25,6 +25,7 @@ class CustomFee {
    * Parses custom_fee table columns into object
    */
   constructor(customFee) {
+    this.allCollectorsAreExempt = customFee.all_collectors_are_exempt;
     this.amount = customFee.amount;
     this.amountDenominator = customFee.amount_denominator;
     this.collectorAccountId = customFee.collector_account_id;
@@ -41,6 +42,7 @@ class CustomFee {
   static tableAlias = 'cf';
   static tableName = 'custom_fee';
 
+  static ALL_COLLECTORS_ARE_EXEMPT = 'all_collectors_are_exempt';
   static AMOUNT = `amount`;
   static AMOUNT_DENOMINATOR = `amount_denominator`;
   static COLLECTOR_ACCOUNT_ID = `collector_account_id`;

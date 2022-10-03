@@ -50,7 +50,7 @@ public class ProtoSignatureFileReader implements SignatureFileReader {
             fileStreamSignature.setBytes(signatureFileData.getBytes());
             fileStreamSignature.setFileHash(DomainUtils.getHashBytes(fileSignature.getHashObject()));
             fileStreamSignature.setFileHashSignature(DomainUtils.toBytes(fileSignature.getSignature()));
-            fileStreamSignature.setFilename(filename);
+            fileStreamSignature.setFilename(signatureFileData.getStreamFilename());
             fileStreamSignature.setMetadataHash(DomainUtils.getHashBytes(metadataSignature.getHashObject()));
             fileStreamSignature.setMetadataHashSignature(DomainUtils.toBytes(metadataSignature.getSignature()));
             fileStreamSignature.setSignatureType(

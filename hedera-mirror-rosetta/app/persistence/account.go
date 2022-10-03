@@ -77,11 +77,18 @@ const (
                                   'type',  type
                                 ) order by token_id), '[]')
                                 from (
-                                  select distinct on (t.token_id) ta.associated, t.decimals, t.token_id, t.type
-                                  from token_account ta
-                                  join token t on t.token_id = ta.token_id
-                                  join genesis on t.created_timestamp > genesis.timestamp
-                                  where account_id = @account_id and ta.modified_timestamp <= @end
+                                  select ta.associated, t.decimals, t.token_id, t.type
+                                  from (
+                                    select associated, token_id, lower(timestamp_range) modified_timestamp
+                                    from token_account
+                                    where account_id = @account_id and timestamp_range @> @end_range
+                                    union all
+                                    select associated, token_id, lower(timestamp_range) modified_timestamp
+                                    from token_account_history
+                                    where account_id = @account_id and timestamp_range @> @end_range
+                                  ) ta
+                                    join token t on t.token_id = ta.token_id
+                                    join genesis on t.created_timestamp > genesis.timestamp
                                   order by t.token_id, ta.modified_timestamp desc
                                 ) as associations
                               ) as token_associations`
@@ -408,6 +415,7 @@ func (ar *accountRepository) getBalanceChange(ctx context.Context, accountId, co
 		sql.Named("account_id", accountId),
 		sql.Named("start", consensusStart),
 		sql.Named("end", consensusEnd),
+		sql.Named("end_range", getInclusiveInt8Range(consensusEnd, consensusEnd)),
 		ar.firstFixedOffsetTimestampSqlArg,
 	).First(change).Error; err != nil {
 		log.Errorf(

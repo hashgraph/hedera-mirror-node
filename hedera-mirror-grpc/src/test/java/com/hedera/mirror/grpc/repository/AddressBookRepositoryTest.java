@@ -22,9 +22,9 @@ package com.hedera.mirror.grpc.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import javax.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.addressbook.AddressBook;
@@ -32,13 +32,11 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.grpc.GrpcIntegrationTest;
 
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class AddressBookRepositoryTest extends GrpcIntegrationTest {
 
-    @Resource
-    private AddressBookRepository addressBookRepository;
-
-    @Resource
-    private DomainBuilder domainBuilder;
+    private final AddressBookRepository addressBookRepository;
+    private final DomainBuilder domainBuilder;
 
     @Test
     void findLatestTimestamp() {
@@ -55,24 +53,5 @@ class AddressBookRepositoryTest extends GrpcIntegrationTest {
         AddressBook addressBook3 = domainBuilder.addressBook().customize(a -> a.fileId(fileId)).persist();
         assertThat(addressBookRepository.findLatestTimestamp(fileId.getId())).get()
                 .isEqualTo(addressBook3.getStartConsensusTimestamp());
-    }
-
-    @Test
-    @Transactional
-    void cascade() {
-        AddressBook addressBook = domainBuilder.addressBook().persist();
-        assertThat(addressBookRepository.findById(addressBook.getStartConsensusTimestamp()))
-                .get()
-                .extracting(AddressBook::getEntries)
-                .isNull();
-
-        domainBuilder.addressBookEntry(1)
-                .customize(a -> a.consensusTimestamp(addressBook.getStartConsensusTimestamp()))
-                .persist();
-        assertThat(addressBookRepository.findById(addressBook.getStartConsensusTimestamp()))
-                .get()
-                .extracting(AddressBook::getEntries)
-                .as("Ensure entries aren't eagerly loaded")
-                .isNull();
     }
 }

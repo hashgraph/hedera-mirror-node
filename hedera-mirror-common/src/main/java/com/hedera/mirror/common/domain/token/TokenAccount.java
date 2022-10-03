@@ -20,41 +20,15 @@ package com.hedera.mirror.common.domain.token;
  * ‍
  */
 
-import com.fasterxml.jackson.annotation.JsonUnwrapped;
-import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;
-import javax.persistence.EnumType;
-import javax.persistence.Enumerated;
-
-import com.hedera.mirror.common.domain.Upsertable;
-import com.hedera.mirror.common.domain.entity.EntityId;
-
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 
 @Data
 @Entity
 @NoArgsConstructor
-@Upsertable
-public class TokenAccount {
-
-    @EmbeddedId
-    @JsonUnwrapped
-    private TokenAccountId id;
-
-    private Boolean associated;
-
-    private Boolean automaticAssociation;
-
-    private Long createdTimestamp;
-
-    @Enumerated(EnumType.ORDINAL)
-    private TokenFreezeStatusEnum freezeStatus;
-
-    @Enumerated(EnumType.ORDINAL)
-    private TokenKycStatusEnum kycStatus;
-
-    public TokenAccount(EntityId tokenId, EntityId accountId, long modifiedTimestamp) {
-        id = new TokenAccountId(tokenId, accountId, modifiedTimestamp);
-    }
+@SuperBuilder
+public class TokenAccount extends AbstractTokenAccount {
+    // Only the parent class should contain fields so that they're shared with both the history and non-history tables.
 }
