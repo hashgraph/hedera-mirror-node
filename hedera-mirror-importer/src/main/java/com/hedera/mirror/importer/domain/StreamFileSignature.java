@@ -41,12 +41,12 @@ import com.hedera.mirror.importer.reader.signature.ProtoSignatureFileReader;
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @NoArgsConstructor
 @ToString(exclude = {"bytes", "fileHash", "fileHashSignature", "metadataHash", "metadataHashSignature"})
-public class FileStreamSignature implements Comparable<FileStreamSignature> {
+public class StreamFileSignature implements Comparable<StreamFileSignature> {
 
     private static final String COMPRESSED_EXTENSION = ".gz";
-    private static final Comparator<FileStreamSignature> COMPARATOR = Comparator
-            .comparing(FileStreamSignature::getNode)
-            .thenComparing(FileStreamSignature::getFilename);
+    private static final Comparator<StreamFileSignature> COMPARATOR = Comparator
+            .comparing(StreamFileSignature::getNode)
+            .thenComparing(StreamFileSignature::getFilename);
 
     private byte[] bytes;
     private byte[] fileHash;
@@ -63,7 +63,7 @@ public class FileStreamSignature implements Comparable<FileStreamSignature> {
     private byte version;
 
     @Override
-    public int compareTo(FileStreamSignature other) {
+    public int compareTo(StreamFileSignature other) {
         return COMPARATOR.compare(this, other);
     }
 

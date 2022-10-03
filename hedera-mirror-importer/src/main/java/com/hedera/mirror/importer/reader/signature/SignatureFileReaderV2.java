@@ -24,8 +24,8 @@ import java.io.IOException;
 import javax.inject.Named;
 
 import com.hedera.mirror.common.domain.DigestAlgorithm;
-import com.hedera.mirror.importer.domain.FileStreamSignature;
-import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureType;
+import com.hedera.mirror.importer.domain.StreamFileSignature;
+import com.hedera.mirror.importer.domain.StreamFileSignature.SignatureType;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.mirror.importer.exception.SignatureFileParsingException;
@@ -40,7 +40,7 @@ public class SignatureFileReaderV2 implements SignatureFileReader {
     private static final byte VERSION = 2;
 
     @Override
-    public FileStreamSignature read(StreamFileData signatureFileData) {
+    public StreamFileSignature read(StreamFileData signatureFileData) {
         String filename = signatureFileData.getFilename();
 
         try (ValidatedDataInputStream vdis = new ValidatedDataInputStream(
@@ -56,15 +56,15 @@ public class SignatureFileReaderV2 implements SignatureFileReader {
                 throw new SignatureFileParsingException("Extra data discovered in signature file " + filename);
             }
 
-            FileStreamSignature fileStreamSignature = new FileStreamSignature();
-            fileStreamSignature.setBytes(signatureFileData.getBytes());
-            fileStreamSignature.setFileHash(fileHash);
-            fileStreamSignature.setFileHashSignature(signature);
-            fileStreamSignature.setFilename(signatureFileData.getStreamFilename());
-            fileStreamSignature.setSignatureType(SignatureType.SHA_384_WITH_RSA);
-            fileStreamSignature.setVersion(VERSION);
+            StreamFileSignature streamFileSignature = new StreamFileSignature();
+            streamFileSignature.setBytes(signatureFileData.getBytes());
+            streamFileSignature.setFileHash(fileHash);
+            streamFileSignature.setFileHashSignature(signature);
+            streamFileSignature.setFilename(signatureFileData.getStreamFilename());
+            streamFileSignature.setSignatureType(SignatureType.SHA_384_WITH_RSA);
+            streamFileSignature.setVersion(VERSION);
 
-            return fileStreamSignature;
+            return streamFileSignature;
         } catch (InvalidStreamFileException | IOException e) {
             throw new SignatureFileParsingException(e);
         }
