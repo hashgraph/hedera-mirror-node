@@ -93,6 +93,13 @@ const getBalances = async (req, res) => {
     limit,
   } = utils.parseLimitAndOrderParams(req, constants.orderFilterValues.DESC);
 
+  let sqlQuery;
+  // Use account balance table's timestamp for token balance if there is timestamp filter; otherwise, get the latest
+  // token balance
+  const tokenBalanceSubQuery = getTokenBalanceSubQuery(
+    order,
+    tsQuery ? 'ab.consensus_timestamp' : 'latest_account_balance.consensus_timestamp'
+  );
   // subquery to find the latest snapshot timestamp from the balance history table
   const tsSubQuery = `
     select consensus_timestamp
@@ -100,39 +107,41 @@ const getBalances = async (req, res) => {
     ${tsQuery && 'where ' + tsQuery}
     order by consensus_timestamp desc
     limit 1`;
-  const cte = tsQuery
-    ? ''
-    : // If there's no timestamp filter, get the current balance from entity table, use the consensus end of the latest
-      // record file as the balance timestamp, however, token balances are still from the latest network balance snapshot
-      // until current token balance tracking is implemented
-      `
+
+  if (tsQuery) {
+    // Only need to join entity if we're selecting on publickey
+    const joinEntityClause = pubKeyQuery ? entityJoin : '';
+    const whereClause = `
+      where ${[`ab.consensus_timestamp = (${tsSubQuery})`, accountQuery, pubKeyQuery, balanceQuery]
+        .filter(Boolean)
+        .join(' and ')}`;
+    sqlQuery = `
+      select ab.*, (${tokenBalanceSubQuery}) as token_balances
+      from account_balance ab ${joinEntityClause}
+      ${whereClause}
+      order by ab.account_id ${order}
+      ${limitQuery}`;
+  } else {
+    // use current balance from entity table when there's no timestamp query filter
+    const conditions = [accountQuery, pubKeyQuery, balanceQuery].filter(Boolean).join(' and ');
+    const whereClause = conditions && `where ${conditions}`;
+    sqlQuery = `
       with latest_account_balance as (${tsSubQuery}),
       latest_record_file as (select max(consensus_end) as consensus_timestamp from record_file),
       account_balance as (
         select id as account_id, balance, consensus_timestamp, public_key
         from entity, latest_record_file
         where type in ('ACCOUNT', 'CONTRACT')
-      )`;
-  // Only need to join entity if we're selecting on publickey
-  const joinEntityClause = tsSubQuery && pubKeyQuery ? entityJoin : '';
-  const fromItems = tsQuery ? `account_balance ab ${joinEntityClause}` : 'account_balance ab, latest_account_balance';
-  const tokenBalanceSubQuery = getTokenBalanceSubQuery(
-    order,
-    tsQuery ? 'ab.consensus_timestamp' : 'latest_account_balance.consensus_timestamp'
-  );
-  const conditions = [tsQuery && `ab.consensus_timestamp = (${tsSubQuery})`, accountQuery, pubKeyQuery, balanceQuery]
-    .filter(Boolean)
-    .join(' and ');
-  const whereClause = conditions && `where ${conditions}`;
-  const sqlQuery = `
-    ${cte}
-    select ab.*, (${tokenBalanceSubQuery}) as token_balances
-    from ${fromItems}
-    ${whereClause}
-    order by ab.account_id ${order}
-    ${limitQuery}`;
-  const sqlParams = utils.mergeParams(tsParams, accountParams, pubKeyParams, balanceParams, params);
+      )
+      select ab.*, (${tokenBalanceSubQuery}) as token_balances
+      from account_balance ab, latest_account_balance
+      ${whereClause}
+      order by ab.account_id ${order}
+      ${limitQuery}`;
+  }
+
   const pgSqlQuery = utils.convertMySqlStyleQueryToPostgres(sqlQuery);
+  const sqlParams = utils.mergeParams(tsParams, accountParams, pubKeyParams, balanceParams, params);
 
   if (logger.isTraceEnabled()) {
     logger.trace(`getBalance query: ${pgSqlQuery} ${utils.JSONStringify(sqlParams)}`);
