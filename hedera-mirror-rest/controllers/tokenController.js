@@ -87,7 +87,7 @@ class TokenController extends BaseController {
   getTokenRelationships = async (req, res) => {
     const accountId = await EntityService.getEncodedId(req.params[filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS]);
     const filters = utils.buildAndValidateFilters(req.query);
-    const query = this.extractNftMultiUnionQuery(filters, accountId);
+    const query = this.extractTokensRelationshipQuery(filters, accountId);
     const tokenRelationships = await TokenService.getTokens(query);
     const tokens = tokenRelationships.map((token) => new TokenRelationshipViewModel(token));
 
