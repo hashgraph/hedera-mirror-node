@@ -42,6 +42,7 @@ import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
+import com.hedera.mirror.common.domain.contract.ContractState;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.entity.AbstractCryptoAllowance;
 import com.hedera.mirror.common.domain.entity.AbstractNftAllowance;
@@ -110,6 +111,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<ContractLog> contractLogs;
     private final Collection<ContractResult> contractResults;
     private final Collection<ContractStateChange> contractStateChanges;
+    private final Collection<ContractState> contractStates;
     private final Collection<CryptoAllowance> cryptoAllowances;
     private final Collection<CryptoTransfer> cryptoTransfers;
     private final Collection<CustomFee> customFees;
@@ -171,6 +173,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         contractLogs = new ArrayList<>();
         contractResults = new ArrayList<>();
         contractStateChanges = new ArrayList<>();
+        contractStates = new ArrayList<>();
         cryptoAllowances = new ArrayList<>();
         cryptoTransfers = new ArrayList<>();
         customFees = new ArrayList<>();
@@ -256,6 +259,16 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onContractStateChange(ContractStateChange contractStateChange) {
         contractStateChanges.add(contractStateChange);
+
+        if (contractStateChange.getValueWritten() != null) {
+            var contractState = new ContractState();
+            contractState.setContractId(contractStateChange.getContractId());
+            contractState.setCreatedTimestamp(contractStateChange.getConsensusTimestamp());
+            contractState.setModifiedTimestamp(contractStateChange.getConsensusTimestamp());
+            contractState.setSlot(contractStateChange.getSlot());
+            contractState.setValue(contractStateChange.getValueWritten());
+            contractStates.add(contractState);
+        }
     }
 
     @Override
@@ -428,6 +441,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             contractLogs.clear();
             contractResults.clear();
             contractStateChanges.clear();
+            contractStates.clear();
             cryptoAllowances.clear();
             cryptoAllowanceState.clear();
             cryptoTransfers.clear();
@@ -477,6 +491,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             batchPersister.persist(contractLogs);
             batchPersister.persist(contractResults);
             batchPersister.persist(contractStateChanges);
+            batchPersister.persist(contractStates);
             batchPersister.persist(cryptoTransfers);
             batchPersister.persist(customFees);
             batchPersister.persist(ethereumTransactions);

@@ -181,6 +181,17 @@ create table if not exists contract_result
 );
 comment on table contract_result is 'Crypto contract execution results';
 
+-- contract_state
+create table if not exists contract_state
+(
+    contract_id        bigint not null,
+    created_timestamp  bigint not null,
+    modified_timestamp bigint not null,
+    slot               bytea  not null,
+    value              bytea  null,
+);
+comment on table contract_state is 'Current contract state';
+
 create table if not exists contract_state_change
 (
     consensus_timestamp bigint  not null,

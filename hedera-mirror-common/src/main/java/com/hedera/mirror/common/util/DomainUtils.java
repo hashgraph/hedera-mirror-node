@@ -170,6 +170,27 @@ public class DomainUtils {
     }
 
     /**
+     * Pad a byte array with leading zeros to a given length.
+     *
+     * @param bytes
+     * @param length
+     */
+    public static byte[] leftPadBytes(byte[] bytes, int length) {
+        if (bytes == null) {
+            return null;
+        }
+
+        int paddingSize = length - bytes.length;
+        if (paddingSize <= 0) {
+            return bytes;
+        }
+
+        var leftPaddedBytes = new byte[length];
+        System.arraycopy(bytes, 0, leftPaddedBytes, paddingSize, bytes.length);
+        return leftPaddedBytes;
+    }
+
+    /**
      * Convert Timestamp to a Long type timeStampInNanos
      */
     public static Long timeStampInNanos(Timestamp timestamp) {

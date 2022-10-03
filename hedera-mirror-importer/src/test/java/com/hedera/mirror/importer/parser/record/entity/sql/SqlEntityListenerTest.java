@@ -50,6 +50,7 @@ import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
+import com.hedera.mirror.common.domain.contract.ContractState;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -76,6 +77,7 @@ import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionHash;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
@@ -85,6 +87,7 @@ import com.hedera.mirror.importer.repository.ContractLogRepository;
 import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.ContractStateChangeRepository;
+import com.hedera.mirror.importer.repository.ContractStateRepository;
 import com.hedera.mirror.importer.repository.CryptoAllowanceRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
@@ -123,6 +126,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     private final ContractRepository contractRepository;
     private final ContractResultRepository contractResultRepository;
     private final ContractStateChangeRepository contractStateChangeRepository;
+    private final ContractStateRepository contractStateRepository;
     private final CryptoAllowanceRepository cryptoAllowanceRepository;
     private final CryptoTransferRepository cryptoTransferRepository;
     private final DomainBuilder domainBuilder;
@@ -262,6 +266,13 @@ class SqlEntityListenerTest extends IntegrationTest {
     void onContractStateChange() {
         // given
         ContractStateChange contractStateChange = domainBuilder.contractStateChange().get();
+        ContractState expectedContractState = ContractState.builder()
+                .contractId(contractStateChange.getContractId())
+                .createdTimestamp(contractStateChange.getConsensusTimestamp())
+                .modifiedTimestamp(contractStateChange.getConsensusTimestamp())
+                .slot(contractStateChange.getSlot())
+                .value(DomainUtils.leftPadBytes(contractStateChange.getValueWritten(), 32))
+                .build();
 
         // when
         sqlEntityListener.onContractStateChange(contractStateChange);
@@ -269,6 +280,51 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(contractStateChangeRepository.findAll()).containsExactlyInAnyOrder(contractStateChange);
+        assertThat(contractStateRepository.findAll()).containsExactlyInAnyOrder(expectedContractState);
+    }
+
+    @Test
+    void onContractState() {
+        // given
+        var createdTimestamp = domainBuilder.timestamp();
+        var contractStateChange = domainBuilder.contractStateChange()
+                .customize(c -> c.consensusTimestamp(createdTimestamp)).get();
+        var contractStateChangeNoValue = TestUtils.clone(contractStateChange);
+        contractStateChangeNoValue.setValueWritten(null);
+
+        var modifiedTimestamp = createdTimestamp + 1;
+        var contractStateChangeValueWritten = TestUtils.clone(contractStateChange);
+        contractStateChangeValueWritten.setContractId(EntityId.of(contractStateChange.getContractId(), CONTRACT));
+        contractStateChangeValueWritten.setConsensusTimestamp(modifiedTimestamp);
+        contractStateChangeValueWritten.setValueWritten(domainBuilder.bytes(10));
+
+        var expectedContractState = ContractState.builder()
+                .contractId(contractStateChange.getContractId())
+                .createdTimestamp(createdTimestamp)
+                .modifiedTimestamp(createdTimestamp)
+                .slot(contractStateChange.getSlot())
+                .value(DomainUtils.leftPadBytes(contractStateChange.getValueWritten(), 32))
+                .build();
+
+        // when
+        sqlEntityListener.onContractStateChange(contractStateChange);
+        completeFileAndCommit();
+
+        assertThat(contractStateRepository.findAll()).containsExactly(expectedContractState);
+
+        sqlEntityListener.onContractStateChange(contractStateChangeNoValue);
+        completeFileAndCommit();
+
+        assertThat(contractStateRepository.findAll()).containsExactly(expectedContractState);
+
+        sqlEntityListener.onContractStateChange(contractStateChangeValueWritten);
+        completeFileAndCommit();
+
+        expectedContractState.setModifiedTimestamp(modifiedTimestamp);
+        expectedContractState.setValue(DomainUtils.leftPadBytes(contractStateChangeValueWritten.getValueWritten(), 32));
+
+        // then
+        assertThat(contractStateRepository.findAll()).containsExactlyInAnyOrder(expectedContractState);
     }
 
     @Test
