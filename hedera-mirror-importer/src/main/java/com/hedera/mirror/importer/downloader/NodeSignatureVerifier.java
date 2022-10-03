@@ -23,12 +23,10 @@ package com.hedera.mirror.importer.downloader;
 import java.security.Signature;
 import java.util.Collection;
 import javax.inject.Named;
-
-import com.hedera.mirror.importer.domain.StreamFileSignature;
-
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 
+import com.hedera.mirror.importer.domain.StreamFileSignature;
 import com.hedera.mirror.importer.domain.StreamFileSignature.SignatureStatus;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
 

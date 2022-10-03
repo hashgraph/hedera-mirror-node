@@ -33,9 +33,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
-import com.hedera.mirror.importer.domain.StreamFileSignature;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -45,6 +42,7 @@ import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.ConsensusNodeStub;
+import com.hedera.mirror.importer.domain.StreamFileSignature;
 import com.hedera.mirror.importer.domain.StreamFileSignature.SignatureType;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;

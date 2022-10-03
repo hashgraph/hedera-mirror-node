@@ -24,14 +24,12 @@ import static com.hedera.mirror.common.domain.DigestAlgorithm.SHA_384;
 
 import java.io.IOException;
 import javax.inject.Named;
-
-import com.hedera.mirror.importer.domain.StreamFileSignature;
-
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
-import com.hedera.mirror.importer.domain.StreamFileSignature.SignatureType;
 import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.domain.StreamFileSignature;
+import com.hedera.mirror.importer.domain.StreamFileSignature.SignatureType;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 import com.hedera.mirror.importer.reader.AbstractStreamObject;

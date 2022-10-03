@@ -30,9 +30,6 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
-
-import com.hedera.mirror.importer.domain.StreamFileSignature;
-
 import org.apache.commons.codec.binary.Base64;
 import org.junit.jupiter.api.DynamicTest;
 import org.junit.jupiter.api.Test;
@@ -41,6 +38,7 @@ import org.junit.jupiter.api.TestFactory;
 import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.domain.StreamFileSignature;
 
 class SignatureFileReaderV2Test extends AbstractSignatureFileReaderTest {
 

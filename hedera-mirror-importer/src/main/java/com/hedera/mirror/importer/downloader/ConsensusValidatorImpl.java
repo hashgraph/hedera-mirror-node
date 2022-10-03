@@ -26,12 +26,10 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Collection;
 import javax.inject.Named;
-
-import com.hedera.mirror.importer.domain.StreamFileSignature;
-
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 
+import com.hedera.mirror.importer.domain.StreamFileSignature;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
 

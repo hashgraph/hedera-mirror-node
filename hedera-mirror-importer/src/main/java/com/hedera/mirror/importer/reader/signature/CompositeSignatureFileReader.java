@@ -23,14 +23,12 @@ package com.hedera.mirror.importer.reader.signature;
 import java.io.DataInputStream;
 import java.io.IOException;
 import javax.inject.Named;
-
-import com.hedera.mirror.importer.domain.StreamFileSignature;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.context.annotation.Primary;
 
 import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.domain.StreamFileSignature;
 import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 
 @Log4j2
