@@ -85,13 +85,11 @@
         "id": 21,
         "balance": 300
       }
-    ],
-    "transactions": [],
-    "cryptotransfers": []
+    ]
   },
   "tests": [
     {
-      "url": "/api/v1/balances?account.balance=gte:300&limit=2&order=asc",
+      "url": "/api/v1/balances?account.balance=gte:300&limit=2&order=asc&timestamp=0.0010023",
       "responseStatus": 200,
       "responseJson": {
         "timestamp": "0.000002345",
@@ -122,12 +120,12 @@
           }
         ],
         "links": {
-          "next": "/api/v1/balances?account.balance=gte:300&limit=2&order=asc&account.id=gt:0.0.19"
+          "next": "/api/v1/balances?account.balance=gte:300&limit=2&order=asc&timestamp=0.0010023&account.id=gt:0.0.19"
         }
       }
     },
     {
-      "url": "/api/v1/balances?account.balance=gte:300&limit=5&order=asc",
+      "url": "/api/v1/balances?account.balance=gte:300&limit=5&order=asc&timestamp=0.0010023",
       "responseStatus": 200,
       "responseJson": {
         "timestamp": "0.000002345",
@@ -177,7 +175,7 @@
           }
         ],
         "links": {
-          "next": "/api/v1/balances?account.balance=gte:300&limit=5&order=asc&account.id=gt:0.0.21"
+          "next": "/api/v1/balances?account.balance=gte:300&limit=5&order=asc&timestamp=0.0010023&account.id=gt:0.0.21"
         }
       }
     }

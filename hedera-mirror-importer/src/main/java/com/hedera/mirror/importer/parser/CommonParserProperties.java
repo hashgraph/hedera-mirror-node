@@ -29,6 +29,7 @@ import javax.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.Getter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.util.CollectionUtils;
 import org.springframework.validation.annotation.Validated;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -54,6 +55,10 @@ public class CommonParserProperties {
 
     @Getter(lazy = true)
     private final Predicate<TransactionFilterFields> filter = includeFilter().and(excludeFilter());
+
+    public boolean hasFilter() {
+        return (!exclude.isEmpty()) || (!include.isEmpty());
+    }
 
     private Predicate<TransactionFilterFields> excludeFilter() {
         if (exclude.isEmpty()) {
@@ -84,23 +89,23 @@ public class CommonParserProperties {
         private Collection<TransactionType> transaction = new LinkedHashSet<>();
 
         public Predicate<TransactionFilterFields> getFilter() {
-            return t -> (matches(t) && matches(t.getEntity()));
+            return t -> (matches(t) && matches(t.getEntities()));
         }
 
         private boolean matches(TransactionFilterFields t) {
-            if (transaction.isEmpty()) {
+            if (transaction.isEmpty() || t.getTransactionType() == null) {
                 return true;
             }
 
             return transaction.contains(t.getTransactionType());
         }
 
-        private boolean matches(EntityId e) {
+        private boolean matches(Collection<EntityId> entities) {
             if (entity.isEmpty()) {
                 return true;
             }
 
-            return e != null && entity.contains(e);
+            return entities != null && CollectionUtils.containsAny(entity, entities);
         }
     }
 }

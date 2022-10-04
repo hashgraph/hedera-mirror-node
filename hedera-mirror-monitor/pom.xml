@@ -21,7 +21,7 @@
         <openapi-package>com.hedera.mirror.rest</openapi-package>
         <openapi-generator.version>6.2.0</openapi-generator.version>
         <springdoc.version>1.6.11</springdoc.version>
-        <swagger-annotations.version>1.6.6</swagger-annotations.version>
+        <swagger-annotations.version>1.6.7</swagger-annotations.version>
     </properties>
 
     <dependencies>

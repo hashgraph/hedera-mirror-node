@@ -34,8 +34,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.domain.StreamFileSignature;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.services.stream.proto.HashAlgorithm;
 import com.hedera.services.stream.proto.HashObject;
@@ -76,18 +76,18 @@ class ProtoSignatureFileReaderTest extends AbstractSignatureFileReaderTest {
                            String metadataHashAsHex, String metadataSignatureAsHex) {
         var signatureFile = TestUtils.getResource(Path.of("data", "signature", "v6", filename).toString());
         var streamFileData = StreamFileData.from(signatureFile);
-        var fileStreamSignature = protoSignatureFileReader.read(streamFileData);
+        var streamFileSignature = protoSignatureFileReader.read(streamFileData);
 
-        assertThat(fileStreamSignature)
+        assertThat(streamFileSignature)
                 .isNotNull()
-                .returns(streamFileData.getBytes(), FileStreamSignature::getBytes)
+                .returns(streamFileData.getBytes(), StreamFileSignature::getBytes)
                 .returns(filename, s -> s.getFilename().toString())
-                .returns(entireFileHashAsHex, FileStreamSignature::getFileHashAsHex)
+                .returns(entireFileHashAsHex, StreamFileSignature::getFileHashAsHex)
                 .returns(entireFileSignatureHex, f -> DomainUtils.bytesToHex(f.getFileHashSignature()))
-                .returns(metadataHashAsHex, FileStreamSignature::getMetadataHashAsHex)
+                .returns(metadataHashAsHex, StreamFileSignature::getMetadataHashAsHex)
                 .returns(metadataSignatureAsHex, f -> DomainUtils.bytesToHex(f.getMetadataHashSignature()))
-                .returns(FileStreamSignature.SignatureType.SHA_384_WITH_RSA, FileStreamSignature::getSignatureType)
-                .returns(VERSION, FileStreamSignature::getVersion);
+                .returns(StreamFileSignature.SignatureType.SHA_384_WITH_RSA, StreamFileSignature::getSignatureType)
+                .returns(VERSION, StreamFileSignature::getVersion);
     }
 
     @Test

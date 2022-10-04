@@ -54,6 +54,7 @@ import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -143,13 +144,13 @@ public class EntityRecordItemListener implements RecordItemListener {
             entityId = null;
         }
 
-        log.debug("Processing {} transaction {} for entity {}", transactionType, consensusTimestamp, entityId);
-
         // to:do - exclude Freeze from Filter transaction type
-        TransactionFilterFields transactionFilterFields = new TransactionFilterFields(entityId, transactionType);
+        TransactionFilterFields transactionFilterFields = getTransactionFilterFields(entityId, recordItem);
+        Collection<EntityId> entities = transactionFilterFields.getEntities();
+        log.debug("Processing {} transaction {} for entities {}", transactionType, consensusTimestamp, entities);
         if (!commonParserProperties.getFilter().test(transactionFilterFields)) {
-            log.debug("Ignoring transaction. consensusTimestamp={}, transactionType={}, entityId={}",
-                    consensusTimestamp, transactionType, entityId);
+            log.debug("Ignoring transaction. consensusTimestamp={}, transactionType={}, entities={}",
+                    consensusTimestamp, transactionType, entities);
             return;
         }
 
@@ -1192,4 +1193,36 @@ public class EntityRecordItemListener implements RecordItemListener {
             parseFixedFee(customFee, royaltyFee.getFallbackFee(), tokenId);
         }
     }
+
+    // regardless of transaction type, filter on entityId and payer account and transfer tokens/receivers/senders
+    private TransactionFilterFields getTransactionFilterFields(EntityId entityId, RecordItem recordItem) {
+        if (!commonParserProperties.hasFilter()) {
+            return TransactionFilterFields.EMPTY;
+        }
+
+        var entities = new HashSet<EntityId>();
+        entities.add(entityId);
+        entities.add(recordItem.getPayerAccountId());
+
+        recordItem.getRecord().getTransferList().getAccountAmountsList().forEach(accountAmount ->
+            entities.add(EntityId.of(accountAmount.getAccountID()))
+        );
+
+        recordItem.getRecord().getTokenTransferListsList().forEach(transfer -> {
+            entities.add(EntityId.of(transfer.getToken()));
+
+            transfer.getTransfersList().forEach(accountAmount ->
+                entities.add(EntityId.of(accountAmount.getAccountID()))
+            );
+
+            transfer.getNftTransfersList().forEach(nftTransfer -> {
+                entities.add(EntityId.of(nftTransfer.getReceiverAccountID()));
+                entities.add(EntityId.of(nftTransfer.getSenderAccountID()));
+            });
+        });
+
+        entities.remove(null);
+        return new TransactionFilterFields(entities, TransactionType.of(recordItem.getTransactionType()));
+    }
+
 }

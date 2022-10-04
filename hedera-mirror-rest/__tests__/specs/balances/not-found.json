@@ -49,9 +49,7 @@
         "id": 21,
         "balance": 110
       }
-    ],
-    "transactions": [],
-    "cryptotransfers": []
+    ]
   },
   "url": "/api/v1/balances?account.id=0.0.3",
   "responseStatus": 200,

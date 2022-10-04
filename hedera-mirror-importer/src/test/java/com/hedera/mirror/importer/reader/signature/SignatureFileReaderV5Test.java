@@ -37,8 +37,8 @@ import org.junit.jupiter.api.TestFactory;
 
 import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.domain.FileStreamSignature;
-import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureType;
+import com.hedera.mirror.importer.domain.StreamFileSignature;
+import com.hedera.mirror.importer.domain.StreamFileSignature.SignatureType;
 import com.hedera.mirror.importer.domain.StreamFileData;
 
 class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
@@ -77,15 +77,15 @@ class SignatureFileReaderV5Test extends AbstractSignatureFileReaderTest {
     @Test
     void testReadValidFile() {
         StreamFileData streamFileData = StreamFileData.from(signatureFile);
-        FileStreamSignature fileStreamSignature = fileReaderV5.read(streamFileData);
+        StreamFileSignature streamFileSignature = fileReaderV5.read(streamFileData);
 
-        assertNotNull(fileStreamSignature);
-        assertThat(fileStreamSignature.getBytes()).isNotEmpty().isEqualTo(streamFileData.getBytes());
-        assertArrayEquals(base64Codec.decode(entireFileHashBase64), fileStreamSignature.getFileHash());
-        assertArrayEquals(base64Codec.decode(entireFileSignatureBase64), fileStreamSignature.getFileHashSignature());
-        assertArrayEquals(base64Codec.decode(metadataHashBase64), fileStreamSignature.getMetadataHash());
-        assertArrayEquals(base64Codec.decode(metadataSignatureBase64), fileStreamSignature.getMetadataHashSignature());
-        assertEquals(VERSION, fileStreamSignature.getVersion());
+        assertNotNull(streamFileSignature);
+        assertThat(streamFileSignature.getBytes()).isNotEmpty().isEqualTo(streamFileData.getBytes());
+        assertArrayEquals(base64Codec.decode(entireFileHashBase64), streamFileSignature.getFileHash());
+        assertArrayEquals(base64Codec.decode(entireFileSignatureBase64), streamFileSignature.getFileHashSignature());
+        assertArrayEquals(base64Codec.decode(metadataHashBase64), streamFileSignature.getMetadataHash());
+        assertArrayEquals(base64Codec.decode(metadataSignatureBase64), streamFileSignature.getMetadataHashSignature());
+        assertEquals(VERSION, streamFileSignature.getVersion());
     }
 
     @SuppressWarnings("java:S2699")

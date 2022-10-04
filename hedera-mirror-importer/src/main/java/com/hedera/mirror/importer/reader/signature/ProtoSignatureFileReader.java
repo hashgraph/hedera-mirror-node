@@ -27,8 +27,8 @@ import java.io.IOException;
 import javax.inject.Named;
 
 import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.domain.StreamFileSignature;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.services.stream.proto.SignatureFile;
 
@@ -38,7 +38,7 @@ public class ProtoSignatureFileReader implements SignatureFileReader {
     public static final byte VERSION = 6;
 
     @Override
-    public FileStreamSignature read(StreamFileData signatureFileData) {
+    public StreamFileSignature read(StreamFileData signatureFileData) {
         var filename = signatureFileData.getFilename();
         try {
             var signatureFile = readSignatureFile(signatureFileData);
@@ -46,18 +46,18 @@ public class ProtoSignatureFileReader implements SignatureFileReader {
             var fileSignature = signatureFile.getFileSignature();
             var metadataSignature = signatureFile.getMetadataSignature();
 
-            var fileStreamSignature = new FileStreamSignature();
-            fileStreamSignature.setBytes(signatureFileData.getBytes());
-            fileStreamSignature.setFileHash(DomainUtils.getHashBytes(fileSignature.getHashObject()));
-            fileStreamSignature.setFileHashSignature(DomainUtils.toBytes(fileSignature.getSignature()));
-            fileStreamSignature.setFilename(signatureFileData.getStreamFilename());
-            fileStreamSignature.setMetadataHash(DomainUtils.getHashBytes(metadataSignature.getHashObject()));
-            fileStreamSignature.setMetadataHashSignature(DomainUtils.toBytes(metadataSignature.getSignature()));
-            fileStreamSignature.setSignatureType(
-                    FileStreamSignature.SignatureType.valueOf(fileSignature.getType().toString()));
-            fileStreamSignature.setVersion(VERSION);
+            var streamFileSignature = new StreamFileSignature();
+            streamFileSignature.setBytes(signatureFileData.getBytes());
+            streamFileSignature.setFileHash(DomainUtils.getHashBytes(fileSignature.getHashObject()));
+            streamFileSignature.setFileHashSignature(DomainUtils.toBytes(fileSignature.getSignature()));
+            streamFileSignature.setFilename(signatureFileData.getStreamFilename());
+            streamFileSignature.setMetadataHash(DomainUtils.getHashBytes(metadataSignature.getHashObject()));
+            streamFileSignature.setMetadataHashSignature(DomainUtils.toBytes(metadataSignature.getSignature()));
+            streamFileSignature.setSignatureType(
+                    StreamFileSignature.SignatureType.valueOf(fileSignature.getType().toString()));
+            streamFileSignature.setVersion(VERSION);
 
-            return fileStreamSignature;
+            return streamFileSignature;
         } catch (IllegalArgumentException | IOException e) {
             throw new InvalidStreamFileException(filename, e);
         }
