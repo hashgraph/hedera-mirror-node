@@ -34,6 +34,11 @@ select
     contract_id,
     created_timestamp,
     modified_timestamp,
-    slot,
+    case when length(slot) >= 32
+        then slot
+        else
+            substring('\x00000000000000000000000000000000000000000000000000000000000000000000'::bytea FROM 0 FOR 33 - length(slot))
+                || slot
+    end,
     value
     from latest_contract_state;

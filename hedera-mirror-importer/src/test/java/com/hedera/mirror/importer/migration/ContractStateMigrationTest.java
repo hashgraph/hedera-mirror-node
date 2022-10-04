@@ -87,9 +87,13 @@ class ContractStateMigrationTest extends IntegrationTest {
         contractStateChange1.setConsensusTimestamp(contractStateChange1.getConsensusTimestamp() + 2);
         contractStateChangeRepository.save(contractStateChange1);
 
-        var contractStateChange2 = domainBuilder.contractStateChange().persist();
+        // Migrate is false, this should not be migrated to contract_state
+        domainBuilder.contractStateChange().persist();
+
+        var contractState3Slot = domainBuilder.bytes(5);
         var contractStateChange3 = domainBuilder.contractStateChange()
-                .customize(c -> c.migration(true).consensusTimestamp(createdTimestamp)).persist();
+                .customize(c -> c.migration(true).consensusTimestamp(createdTimestamp)
+                        .slot(contractState3Slot)).persist();
 
         var expected = new ArrayList<ContractState>();
         expected.add(this.convert(contractStateChange1, createdTimestamp));
