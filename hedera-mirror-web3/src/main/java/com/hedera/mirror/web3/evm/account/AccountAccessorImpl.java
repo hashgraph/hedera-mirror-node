@@ -49,7 +49,7 @@ public class AccountAccessorImpl implements AccountAccessor {
         final var shard = BigInteger.valueOf(accountID.getShardNum());
         final var accountNum = BigInteger.valueOf(accountID.getAccountNum());
 
-        final var type = accountRepository.isTokenAddress(realm, shard, accountNum);
+        final var type = accountRepository.getType(realm, shard, accountNum);
         return type.isPresent() && type.get().equals(TOKEN);
     }
 

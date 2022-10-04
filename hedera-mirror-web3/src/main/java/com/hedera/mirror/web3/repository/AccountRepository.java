@@ -24,8 +24,8 @@ public interface AccountRepository extends CrudRepository<Entity, BigInteger> {
 
     @Query(value = "select type from entity where realm = ?1 and shard = ?2 and num = ?3 and deleted <> true"
             , nativeQuery = true)
-    Optional<EntityType> isTokenAddress(final BigInteger realmNum, final BigInteger shardNum,
-                                        final BigInteger accountNum);
+    Optional<EntityType> getType(final BigInteger realmNum, final BigInteger shardNum,
+                                 final BigInteger accountNum);
 
     @Query(value = "select alias from entity where realm = ?1 and shard = ?2 and num = ?3 and deleted <> true",
             nativeQuery = true)
