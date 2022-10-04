@@ -79,9 +79,7 @@
           }
         ]
       }
-    ],
-    "transactions": [],
-    "cryptotransfers": []
+    ]
   },
   "url": "/api/v1/balances?timestamp=1566560004.000000000",
   "responseStatus": 200,

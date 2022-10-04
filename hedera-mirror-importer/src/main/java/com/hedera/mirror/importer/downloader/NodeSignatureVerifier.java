@@ -26,8 +26,8 @@ import javax.inject.Named;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 
-import com.hedera.mirror.importer.domain.FileStreamSignature;
-import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureStatus;
+import com.hedera.mirror.importer.domain.StreamFileSignature;
+import com.hedera.mirror.importer.domain.StreamFileSignature.SignatureStatus;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
 
 @Named
@@ -52,11 +52,11 @@ public class NodeSignatureVerifier {
      * @param signatures a list of signature files which have the same filename
      * @throws SignatureVerificationException
      */
-    public void verify(Collection<FileStreamSignature> signatures) throws SignatureVerificationException {
+    public void verify(Collection<StreamFileSignature> signatures) throws SignatureVerificationException {
 
-        for (FileStreamSignature fileStreamSignature : signatures) {
-            if (verifySignature(fileStreamSignature)) {
-                fileStreamSignature.setStatus(SignatureStatus.VERIFIED);
+        for (StreamFileSignature streamFileSignature : signatures) {
+            if (verifySignature(streamFileSignature)) {
+                streamFileSignature.setStatus(SignatureStatus.VERIFIED);
             }
         }
 
@@ -66,42 +66,42 @@ public class NodeSignatureVerifier {
     /**
      * check whether the given signature is valid
      *
-     * @param fileStreamSignature the data that was signed
+     * @param streamFileSignature the data that was signed
      * @return true if the signature is valid
      */
-    private boolean verifySignature(FileStreamSignature fileStreamSignature) {
-        var publicKey = fileStreamSignature.getNode().getPublicKey();
+    private boolean verifySignature(StreamFileSignature streamFileSignature) {
+        var publicKey = streamFileSignature.getNode().getPublicKey();
 
         if (publicKey == null) {
-            log.warn("Missing PublicKey for node {}", fileStreamSignature.getNode());
+            log.warn("Missing PublicKey for node {}", streamFileSignature.getNode());
             return false;
         }
 
-        if (fileStreamSignature.getFileHashSignature() == null) {
-            log.error("Missing signature data: {}", fileStreamSignature);
+        if (streamFileSignature.getFileHashSignature() == null) {
+            log.error("Missing signature data: {}", streamFileSignature);
             return false;
         }
 
         try {
-            log.trace("Verifying signature: {}", fileStreamSignature);
+            log.trace("Verifying signature: {}", streamFileSignature);
 
-            Signature sig = Signature.getInstance(fileStreamSignature.getSignatureType().getAlgorithm(),
-                    fileStreamSignature.getSignatureType().getProvider());
+            Signature sig = Signature.getInstance(streamFileSignature.getSignatureType().getAlgorithm(),
+                    streamFileSignature.getSignatureType().getProvider());
             sig.initVerify(publicKey);
-            sig.update(fileStreamSignature.getFileHash());
+            sig.update(streamFileSignature.getFileHash());
 
-            if (!sig.verify(fileStreamSignature.getFileHashSignature())) {
+            if (!sig.verify(streamFileSignature.getFileHashSignature())) {
                 return false;
             }
 
-            if (fileStreamSignature.getMetadataHashSignature() != null) {
-                sig.update(fileStreamSignature.getMetadataHash());
-                return sig.verify(fileStreamSignature.getMetadataHashSignature());
+            if (streamFileSignature.getMetadataHashSignature() != null) {
+                sig.update(streamFileSignature.getMetadataHash());
+                return sig.verify(streamFileSignature.getMetadataHashSignature());
             }
 
             return true;
         } catch (Exception e) {
-            log.error("Failed to verify signature with public key {}: {}", publicKey, fileStreamSignature, e);
+            log.error("Failed to verify signature with public key {}: {}", publicKey, streamFileSignature, e);
         }
         return false;
     }

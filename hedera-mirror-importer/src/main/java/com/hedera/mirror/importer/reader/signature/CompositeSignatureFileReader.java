@@ -27,8 +27,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.context.annotation.Primary;
 
-import com.hedera.mirror.importer.domain.FileStreamSignature;
 import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.domain.StreamFileSignature;
 import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 
 @Log4j2
@@ -42,7 +42,7 @@ public class CompositeSignatureFileReader implements SignatureFileReader {
     private final ProtoSignatureFileReader protoSignatureFileReader;
 
     @Override
-    public FileStreamSignature read(StreamFileData signatureFileData) {
+    public StreamFileSignature read(StreamFileData signatureFileData) {
         try (DataInputStream dataInputStream = new DataInputStream(signatureFileData.getInputStream())) {
             byte version = dataInputStream.readByte();
             SignatureFileReader fileReader;

@@ -21,9 +21,9 @@ package com.hedera.mirror.importer.downloader;
  */
 
 import static com.hedera.mirror.common.util.DomainUtils.TINYBARS_IN_ONE_HBAR;
-import static com.hedera.mirror.importer.domain.FileStreamSignature.SignatureStatus.CONSENSUS_REACHED;
-import static com.hedera.mirror.importer.domain.FileStreamSignature.SignatureStatus.DOWNLOADED;
-import static com.hedera.mirror.importer.domain.FileStreamSignature.SignatureStatus.VERIFIED;
+import static com.hedera.mirror.importer.domain.StreamFileSignature.SignatureStatus.CONSENSUS_REACHED;
+import static com.hedera.mirror.importer.domain.StreamFileSignature.SignatureStatus.DOWNLOADED;
+import static com.hedera.mirror.importer.domain.StreamFileSignature.SignatureStatus.VERIFIED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -42,8 +42,8 @@ import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.ConsensusNodeStub;
-import com.hedera.mirror.importer.domain.FileStreamSignature;
-import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureType;
+import com.hedera.mirror.importer.domain.StreamFileSignature;
+import com.hedera.mirror.importer.domain.StreamFileSignature.SignatureType;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
 
@@ -86,7 +86,7 @@ class ConsensusValidatorImplTest {
         consensusValidator.validate(signatures);
         assertThat(signatures)
                 .hasSize(signatures.size())
-                .map(FileStreamSignature::getStatus)
+                .map(StreamFileSignature::getStatus)
                 .containsOnly(CONSENSUS_REACHED);
     }
 
@@ -99,7 +99,7 @@ class ConsensusValidatorImplTest {
         consensusValidator.validate(signatures);
         assertThat(signatures)
                 .hasSize(signatures.size())
-                .map(FileStreamSignature::getStatus)
+                .map(StreamFileSignature::getStatus)
                 .containsOnly(CONSENSUS_REACHED);
     }
 
@@ -110,21 +110,21 @@ class ConsensusValidatorImplTest {
         consensusValidator.validate(signatures);
         assertThat(signatures)
                 .hasSize(signatures.size())
-                .map(FileStreamSignature::getStatus)
+                .map(StreamFileSignature::getStatus)
                 .containsOnly(CONSENSUS_REACHED);
     }
 
     @ParameterizedTest
-    @EnumSource(value = FileStreamSignature.SignatureStatus.class, names = {"DOWNLOADED", "CONSENSUS_REACHED",
+    @EnumSource(value = StreamFileSignature.SignatureStatus.class, names = {"DOWNLOADED", "CONSENSUS_REACHED",
             "NOT_FOUND"})
-    void notVerified(FileStreamSignature.SignatureStatus status) {
+    void notVerified(StreamFileSignature.SignatureStatus status) {
         var signatures = signatures(3, 3, 3);
         signatures.forEach(s -> s.setStatus(status));
         assertThatThrownBy(() -> consensusValidator.validate(signatures))
                 .isInstanceOf(SignatureVerificationException.class)
                 .hasMessageContaining("Consensus not reached for file");
         assertThat(signatures)
-                .map(FileStreamSignature::getStatus)
+                .map(StreamFileSignature::getStatus)
                 .containsOnly(status);
     }
 
@@ -137,13 +137,13 @@ class ConsensusValidatorImplTest {
         consensusValidator.validate(signatures);
         assertThat(signatures)
                 .hasSize(signatures.size())
-                .map(FileStreamSignature::getStatus)
+                .map(StreamFileSignature::getStatus)
                 .containsOnly(CONSENSUS_REACHED);
     }
 
     @Test
     void noSignatures() {
-        List<FileStreamSignature> emptyList = Collections.emptyList();
+        List<StreamFileSignature> emptyList = Collections.emptyList();
         assertConsensusNotReached(emptyList);
     }
 
@@ -154,7 +154,7 @@ class ConsensusValidatorImplTest {
 
         consensusValidator.validate(signatures);
         assertThat(signatures)
-                .map(FileStreamSignature::getStatus)
+                .map(StreamFileSignature::getStatus)
                 .doesNotContain(CONSENSUS_REACHED);
     }
 
@@ -167,7 +167,7 @@ class ConsensusValidatorImplTest {
 
         consensusValidator.validate(signatures);
         assertThat(signatures)
-                .map(FileStreamSignature::getStatus)
+                .map(StreamFileSignature::getStatus)
                 .containsExactly(CONSENSUS_REACHED, CONSENSUS_REACHED, VERIFIED, VERIFIED, VERIFIED);
     }
 
@@ -177,7 +177,7 @@ class ConsensusValidatorImplTest {
         var signatures = signatures(0, 0, 0);
         consensusValidator.validate(signatures);
         assertThat(signatures)
-                .map(FileStreamSignature::getStatus)
+                .map(StreamFileSignature::getStatus)
                 .containsOnly(CONSENSUS_REACHED);
     }
 
@@ -192,17 +192,17 @@ class ConsensusValidatorImplTest {
         assertConsensusNotReached(signatures);
     }
 
-    private void assertConsensusNotReached(List<FileStreamSignature> signatures) {
+    private void assertConsensusNotReached(List<StreamFileSignature> signatures) {
         assertThatThrownBy(() -> consensusValidator.validate(signatures))
                 .isInstanceOf(SignatureVerificationException.class)
                 .hasMessageContaining("Consensus not reached for file");
         assertThat(signatures)
-                .map(FileStreamSignature::getStatus)
+                .map(StreamFileSignature::getStatus)
                 .doesNotContain(CONSENSUS_REACHED);
     }
 
-    private List<FileStreamSignature> signatures(long... stakes) {
-        List<FileStreamSignature> signatures = new ArrayList<>();
+    private List<StreamFileSignature> signatures(long... stakes) {
+        List<StreamFileSignature> signatures = new ArrayList<>();
         long totalStake = Arrays.stream(stakes).sum();
         if (totalStake == 0) {
             stakes = Arrays.stream(stakes).map(s -> 1L).toArray();
@@ -217,12 +217,12 @@ class ConsensusValidatorImplTest {
                     .totalStake(totalStake)
                     .build();
 
-            var signature = new FileStreamSignature();
+            var signature = new StreamFileSignature();
             signature.setFileHash(fileHash);
             signature.setFilename(StreamFilename.EPOCH);
             signature.setNode(node);
             signature.setSignatureType(SignatureType.SHA_384_WITH_RSA);
-            signature.setStatus(FileStreamSignature.SignatureStatus.VERIFIED);
+            signature.setStatus(StreamFileSignature.SignatureStatus.VERIFIED);
             signature.setStreamType(StreamType.RECORD);
             signatures.add(signature);
         }
