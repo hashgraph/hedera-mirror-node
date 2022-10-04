@@ -20,6 +20,7 @@ package com.hedera.mirror.common.util;
  * ‍
  */
 
+import static com.google.protobuf.Internal.EMPTY_BYTE_ARRAY;
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 
 import com.google.protobuf.ByteOutput;
@@ -177,7 +178,7 @@ public class DomainUtils {
      */
     public static byte[] leftPadBytes(byte[] bytes, int length) {
         if (bytes == null) {
-            return null;
+            return EMPTY_BYTE_ARRAY;
         }
 
         int paddingSize = length - bytes.length;

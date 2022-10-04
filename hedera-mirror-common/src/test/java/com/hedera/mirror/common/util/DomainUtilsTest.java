@@ -76,7 +76,7 @@ class DomainUtilsTest {
                 arguments(new byte[]{}, 3, new byte[]{0, 0, 0}),
                 arguments(new byte[]{1}, 5, new byte[]{0, 0, 0, 0, 1}),
                 arguments(new byte[]{1, 2}, -2, new byte[]{1, 2}),
-                arguments(null, 15, null)
+                arguments(null, 15, new byte[]{})
         );
     }
 
