@@ -19,20 +19,47 @@
  */
 
 import _ from 'lodash';
-import {Nft, Token} from '../model';
+import {Token} from '../model';
 import TokenRelationship from '../model/tokenRelationship';
+import {OrderSpec} from '../sql';
+import BaseService from './baseService';
 
 /**
  * Token retrieval business logic
  */
-class TokenService {
+class TokenService extends BaseService {
   static tokenByIdQuery = `select *
                            from ${TokenRelationship.tableName}
-                           where ${TokenRelationship.TOKEN_ID} = $1`;
+                           where ${TokenRelationship.ACCOUNT_ID} = $1`;
 
   async getToken(tokenId) {
     const {rows} = await pool.queryQuietly(TokenService.tokenByIdQuery, tokenId);
     return _.isEmpty(rows) ? null : new Token(rows[0]);
+  }
+
+  /**
+   * Gets the full sql query and params to retrieve an account's token relationships
+   *
+   * @param query
+   * @return {{sqlQuery: string, params: *[]}}
+   */
+  getQuery(query) {
+    console.log('Query: ' + query);
+    const {conditions, order, ownerAccountId, limit} = query;
+    const params = [ownerAccountId, limit];
+    const accountIdCondition = `${TokenRelationship.ACCOUNT_ID} = $1`;
+    const limitClause = super.getLimitQuery(limit);
+    const orderClause = super.getOrderByQuery(OrderSpec.from(TokenRelationship.TOKEN_ID, order));
+    console.log('Conditions are: ' + conditions);
+    let sqlQuery = [
+      TokenService.tokenByIdQuery,
+      `where ${conditions.join(' and ')}`,
+      accountIdCondition,
+      orderClause,
+      limitClause,
+    ].join('\n');
+
+    return {sqlQuery, params};
   }
 
   /**

@@ -41,6 +41,7 @@ class TokenRelationship {
   static tableAlias = 'token_account';
   static tableName = this.tableAlias;
   static TOKEN_ID = `token_id`;
+  static ACCOUNT_ID = `account_id`;
   static TYPE = {
     FUNGIBLE_COMMON: 'FUNGIBLE_COMMON',
     NON_FUNGIBLE_UNIQUE: 'NON_FUNGIBLE_UNIQUE',
@@ -55,7 +56,6 @@ class TokenRelationship {
     this.created_timestamp = tokenRelationship.created_timestamp;
     this.freeze_status = tokenRelationship.freeze_status;
     this.kyc_status = tokenRelationship.kyc_status;
-    this.symbol = tokenRelationship.symbol;
     this.token_id = tokenRelationship.token_id;
   }
 
@@ -67,7 +67,6 @@ class TokenRelationship {
   static CREATED_TIMESTAMP = 'created_timestamp';
   static FREEZE_STATUS = `freeze_status`;
   static KYC_STATUS = 'kyc_status';
-  static SYMBOL = 'symbol';
   static TOKEN_ID = 'token_id';
 
   /**
