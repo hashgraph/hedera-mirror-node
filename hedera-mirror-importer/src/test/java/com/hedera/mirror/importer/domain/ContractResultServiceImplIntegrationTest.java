@@ -557,8 +557,8 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                         .contractId(c.getContractId())
                         .createdTimestamp(c.getConsensusTimestamp())
                         .modifiedTimestamp(c.getConsensusTimestamp())
-                        .slot(c.getSlot())
-                        .value(DomainUtils.leftPadBytes(c.getValueWritten(), 32))
+                        .slot(DomainUtils.leftPadBytes(c.getSlot(), 32))
+                        .value(c.getValueWritten())
                         .build())
                 .toList();
 

@@ -1110,7 +1110,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                                     && c.getContractId() == contractId.getId() && Arrays.equals(c.getSlot(), slot))
                             .hasSize(1)
                             .first()
-                            .returns(DomainUtils.leftPadBytes(valueWritten, 32), ContractState::getValue);
+                            .returns(DomainUtils.leftPadBytes(slot, 32), ContractState::getSlot);
                     ++count;
                 }
             }

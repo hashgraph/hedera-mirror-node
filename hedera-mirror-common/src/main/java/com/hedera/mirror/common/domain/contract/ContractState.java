@@ -46,7 +46,7 @@ import com.hedera.mirror.common.util.DomainUtils;
 @Upsertable
 public class ContractState {
 
-    private static final int VALUE_BYTE_LENGTH = 32;
+    private static final int SLOT_BYTE_LENGTH = 32;
 
     @Convert(converter = ContractIdConverter.class)
     @javax.persistence.Id
@@ -72,8 +72,8 @@ public class ContractState {
         return id;
     }
 
-    public void setValue(byte[] value) {
-        this.value = DomainUtils.leftPadBytes(value, VALUE_BYTE_LENGTH);
+    public void setSlot(byte[] slot) {
+        this.slot = DomainUtils.leftPadBytes(slot, SLOT_BYTE_LENGTH);
     }
 
     @Data
