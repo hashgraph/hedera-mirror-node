@@ -188,7 +188,7 @@ create table if not exists contract_state
     created_timestamp  bigint not null,
     modified_timestamp bigint not null,
     slot               bytea  not null,
-    value              bytea  null,
+    value              bytea  null
 );
 comment on table contract_state is 'Current contract state';
 
