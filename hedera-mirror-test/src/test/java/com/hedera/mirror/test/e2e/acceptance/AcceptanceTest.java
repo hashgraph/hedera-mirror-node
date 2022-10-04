@@ -21,6 +21,7 @@ package com.hedera.mirror.test.e2e.acceptance;
  */
 
 import io.cucumber.spring.CucumberContextConfiguration;
+import org.junit.jupiter.api.Tag;
 import org.junit.platform.suite.api.IncludeEngines;
 import org.junit.platform.suite.api.SelectClasspathResource;
 import org.junit.platform.suite.api.Suite;
@@ -31,5 +32,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 @SelectClasspathResource("features")
 @SpringBootTest(properties = "spring.main.banner-mode=off")
 @CucumberContextConfiguration
+@Tag("acceptance")
 public class AcceptanceTest {
 }

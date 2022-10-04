@@ -13,8 +13,6 @@ logging:
     root: warn
     com.hedera.mirror.web3: info
     org.springframework.cloud.kubernetes.fabric8.config: error
-  pattern:
-    console: "%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(%p) %clr(%t){faint} %clr(%logger{30}){cyan} %m %rEx{30}%n"
 management:
   endpoints:
     web:
