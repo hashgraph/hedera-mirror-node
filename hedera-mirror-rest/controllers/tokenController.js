@@ -18,44 +18,43 @@
  * ‍
  */
 
-import BaseController from './baseController';
 import {getResponseLimit} from '../config';
 import {filterKeys, orderFilterValues, responseDataLabel} from '../constants';
+import BaseController from './baseController';
+import Bound from './bound';
 import {InvalidArgumentError} from '../errors';
+import {EntityService, TokenService} from '../service';
 import * as utils from '../utils';
-import {CryptoAllowance} from '../model';
 import TokenRelationshipViewModel from '../viewmodel/tokenRelationshipViewModel';
+import TokenRelationship from '../model/tokenRelationship';
 
 const {default: defaultLimit} = getResponseLimit();
 
 class TokenController extends BaseController {
   /**
-   * Extracts SQL where conditions, params, order, and limit from crypto allowances query
+   * Extracts multiple queries to be combined in union.
    *
-   * @param {[]} filters parsed and validated filters
-   * @param {Number} tokenId parsed accountId from path
+   * @param {[]} filters req filters
+   * @param {BigInt} ownerAccountId Encoded owner entityId
+   * @returns {{bounds: {string: Bound}, lower: *[], inner: *[], upper: *[],
+   *  accountId: BigInt, order: 'asc'|'desc', limit: number}}
    */
-  extractTokensRelationshipQuery = (filters, tokenId) => {
+  extractTokensRelationshipQuery = (filters, ownerAccountId) => {
+    let whereQuery = [];
     let limit = defaultLimit;
     let order = orderFilterValues.DESC;
-    const conditions = [`${Token.TOKEN_ID} = $1`];
-    const params = [tokenId];
-    const spenderInValues = [];
 
     for (const filter of filters) {
       switch (filter.key) {
-        case filterKeys.SPENDER_ID:
+        case filterKeys.TOKEN_ID:
+          //new Bound(filterKeys.TOKEN_ID, 'token_id').parse(filter);
           if (utils.opsMap.ne === filter.operator) {
             throw new InvalidArgumentError(`Not equal (ne) comparison operator is not supported for ${filter.key}`);
           }
-          this.updateConditionsAndParamsWithInValues(
-            filter,
-            spenderInValues,
-            params,
-            conditions,
-            CryptoAllowance.SPENDER,
-            conditions.length + 1
-          );
+          whereQuery = {
+            query: TokenRelationship.TOKEN_ID + ` ${filter.operator}`,
+            param: filter.value,
+          };
           break;
         case filterKeys.LIMIT:
           limit = filter.value;
@@ -68,12 +67,10 @@ class TokenController extends BaseController {
       }
     }
 
-    this.updateQueryFiltersWithInValues(params, conditions, spenderInValues, CryptoAllowance.SPENDER);
-
     return {
-      conditions,
-      params,
+      whereQuery,
       order,
+      ownerAccountId,
       limit,
     };
   };

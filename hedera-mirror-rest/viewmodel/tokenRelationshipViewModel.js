@@ -36,7 +36,6 @@ class TokenRelationshipViewModel {
     this.created_timestamp = tokenRelationship.createdTimestamp;
     this.freeze_status = tokenRelationship.freezeStatus;
     this.kyc_status = tokenRelationship.kycStatus;
-    this.symbol = tokenRelationship.symbol;
     this.token_id = EntityId.parse(tokenRelationship.tokenId).toString();
   }
 }
