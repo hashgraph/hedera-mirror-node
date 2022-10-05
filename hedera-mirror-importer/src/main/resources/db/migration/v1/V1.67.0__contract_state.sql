@@ -36,9 +36,7 @@ select
     modified_timestamp,
     case when length(slot) >= 32
         then slot
-        else
-            substring('\x00000000000000000000000000000000000000000000000000000000000000000000'::bytea FROM 0 FOR 33 - length(slot))
-                || slot
+        else decode(lpad(encode(slot, 'hex'), 64, '0'), 'hex')
     end,
     value
     from latest_contract_state;
