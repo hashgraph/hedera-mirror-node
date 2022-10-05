@@ -36,6 +36,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -299,7 +300,7 @@ public abstract class Downloader<T extends StreamFile> {
 
             Instant startTime = Instant.now();
             var sigFilename = sigFilenameIter.next();
-            var signatures = sigFilesMap.get(sigFilename);
+            var signatures = new ArrayList<>(sigFilesMap.get(sigFilename));
             boolean valid = false;
 
             try {
@@ -325,6 +326,8 @@ public abstract class Downloader<T extends StreamFile> {
                 throw new SignatureVerificationException(ex.getMessage() + ": " + statusMapMessage);
             }
 
+            // Shuffle the signatures to randomly pick a node to download the data file from
+            Collections.shuffle(signatures);
             for (var signature : signatures) {
                 if (ShutdownHelper.isStopping()) {
                     return;
@@ -342,7 +345,7 @@ public abstract class Downloader<T extends StreamFile> {
                     var node = signature.getNode();
                     var streamFileData = streamFileProvider.get(node, dataFilename).block();
                     T streamFile = streamFileReader.read(streamFileData);
-                    streamFile.setNodeAccountId(signature.getNode().getNodeAccountId());
+                    streamFile.setNodeId(nodeId);
 
                     verify(streamFile, signature);
 
@@ -376,7 +379,7 @@ public abstract class Downloader<T extends StreamFile> {
                             nodeId, sigFilename, e);
                 } catch (TransientProviderException e) {
                     log.warn("Error downloading data file from node {} corresponding to {}. Will retry another node",
-                            nodeId, sigFilename, e.getMessage());
+                            nodeId, sigFilename, e);
                 } catch (Exception e) {
                     log.error("Error downloading data file from node {} corresponding to {}. Will retry another node",
                             nodeId, sigFilename, e);

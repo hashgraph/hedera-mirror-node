@@ -162,7 +162,7 @@ public class DomainBuilder {
                 .loadEnd(timestamp + 1)
                 .loadStart(timestamp)
                 .name(name)
-                .nodeAccountId(entityId(ACCOUNT))
+                .nodeId(id())
                 .timeOffset(0);
         return new DomainWrapperImpl<>(builder, builder::build);
     }
@@ -487,7 +487,7 @@ public class DomainBuilder {
                 .loadEnd(now.plusSeconds(1).getEpochSecond())
                 .loadStart(now.getEpochSecond())
                 .name(now.toString().replace(':', '_') + ".rcd")
-                .nodeAccountId(entityId(ACCOUNT))
+                .nodeId(id())
                 .previousHash(text(96))
                 .version(3);
         return new DomainWrapperImpl<>(builder, builder::build);
@@ -643,7 +643,7 @@ public class DomainBuilder {
                 .loadEnd(now.plusSeconds(1).getEpochSecond())
                 .loadStart(now.getEpochSecond())
                 .name(instantString + ".rcd.gz")
-                .nodeAccountId(entityId(ACCOUNT))
+                .nodeId(id())
                 .previousHash(text(96))
                 .sidecarCount(1)
                 .sidecars(List.of(sidecarFile()
