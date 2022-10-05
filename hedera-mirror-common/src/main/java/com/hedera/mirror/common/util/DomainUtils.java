@@ -172,7 +172,6 @@ public class DomainUtils {
 
     /**
      * Pad a byte array with leading zeros to a given length.
-     *
      * @param bytes
      * @param length
      */
