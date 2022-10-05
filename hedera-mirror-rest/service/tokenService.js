@@ -45,19 +45,18 @@ class TokenService extends BaseService {
    */
   getQuery(query) {
     console.log('Query: ' + query);
-    const {conditions, order, ownerAccountId, limit} = query;
+    const {filters, order, ownerAccountId, limit} = query;
     const params = [ownerAccountId, limit];
     const accountIdCondition = `${TokenRelationship.ACCOUNT_ID} = $1`;
+    let conditionsClause;
+    if (filters !== undefined && filters.length != 0) {
+      params.push(filters[0].value);
+      conditionsClause = `
+      and ${filters[0].key} = $${filters[0].value}`;
+    }
     const limitClause = super.getLimitQuery(limit);
     const orderClause = super.getOrderByQuery(OrderSpec.from(TokenRelationship.TOKEN_ID, order));
-    console.log('Conditions are: ' + conditions);
-    let sqlQuery = [
-      TokenService.tokenByIdQuery,
-      `where ${conditions.join(' and ')}`,
-      accountIdCondition,
-      orderClause,
-      limitClause,
-    ].join('\n');
+    let sqlQuery = [TokenService.tokenByIdQuery, conditionsClause, orderClause, limitClause].join('\n');
 
     return {sqlQuery, params};
   }
