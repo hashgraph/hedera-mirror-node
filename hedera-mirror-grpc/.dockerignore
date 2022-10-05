@@ -1,3 +1,5 @@
 *
+!Dockerfile
+!build/libs/*.jar
 !target/container
 !target/*.jar

@@ -68,8 +68,8 @@ jobs:
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
 
-      - name: Maven Sonar
-        run: ./mvnw compile sonar:sonar -Dsonar.login=$SONAR_TOKEN
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+#      - name: Maven Sonar
+#        run: ./mvnw compile sonar:sonar -Dsonar.login=$SONAR_TOKEN
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
