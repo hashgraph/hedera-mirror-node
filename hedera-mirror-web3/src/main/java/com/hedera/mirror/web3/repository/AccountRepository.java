@@ -18,7 +18,7 @@ public interface AccountRepository extends CrudRepository<Entity, BigInteger> {
     Optional<BigInteger> getBalance(final BigInteger realmNum, final BigInteger shardNum,
                                     final BigInteger accountNum);
 
-    @Query(value = "select nft.account_id > 0 from nft where account_id = ?1"
+    @Query(value = "select account_id > 0 from nft where account_id = ?1"
             , nativeQuery = true)
     Optional<Boolean> ownsNfts(final BigInteger accountNum);
 
