@@ -40,7 +40,7 @@ class TokenController extends BaseController {
    *  accountId: BigInt, order: 'asc'|'desc', limit: number}}
    */
   extractTokensRelationshipQuery = (filters, ownerAccountId) => {
-    let whereQuery = [];
+    let conditions = [];
     let limit = defaultLimit;
     let order = orderFilterValues.DESC;
 
@@ -51,10 +51,7 @@ class TokenController extends BaseController {
           if (utils.opsMap.ne === filter.operator) {
             throw new InvalidArgumentError(`Not equal (ne) comparison operator is not supported for ${filter.key}`);
           }
-          whereQuery = {
-            query: TokenRelationship.TOKEN_ID + ` ${filter.operator}`,
-            param: filter.value,
-          };
+          conditions = [TokenRelationship.TOKEN_ID + ` ${filter.operator} ` + filter.value];
           break;
         case filterKeys.LIMIT:
           limit = filter.value;
@@ -68,7 +65,7 @@ class TokenController extends BaseController {
     }
 
     return {
-      whereQuery,
+      conditions,
       order,
       ownerAccountId,
       limit,

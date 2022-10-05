@@ -28,7 +28,7 @@ const {eq, gt, gte, lt, lte} = opsMap;
 
 describe('getQuery', () => {
   const defaultQuery = {
-    conditions: [],
+    filters: [],
     order: 'asc',
     ownerAccountId: 1,
     limit: 25,
@@ -39,27 +39,27 @@ describe('getQuery', () => {
       name: 'default',
       query: defaultQuery,
       expected: {
-        sqlQuery: 'select * from token_account where account_id = $1 order by token_id asc limit $2',
-        params: [2],
+        sqlQuery: 'select * from token_account where account_id = $1 order by token_id asc limit $25',
+        params: [1, 25],
       },
     },
     {
       name: 'order desc',
       query: {...defaultQuery, order: 'desc'},
       expected: {
-        sqlQuery: 'select * from token_account where account_id = $1 order by token_id desc limit $2',
-        params: [2],
+        sqlQuery: 'select * from token_account where account_id = $1 order by token_id desc limit $25',
+        params: [1, 25],
       },
     }, // Going onwards fix it
     {
       name: 'token_id eq',
-      query: {...defaultQuery, lower: [{key: TOKEN_ID, operator: eq, value: 2}]},
+      query: {...defaultQuery, filters: [{key: 'TOKEN_ID', operator: '=', value: 2}]},
       expected: {
         sqlQuery: `select * from token_account
           where account_id = $1 and token_id = $2
           order by token_id asc
-          limit $2`,
-        params: [25, 2],
+          limit $25`,
+        params: [1, 25, 2],
       },
     },
     /*
