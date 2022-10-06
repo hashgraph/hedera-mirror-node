@@ -21,7 +21,6 @@
 import {getResponseLimit} from '../config';
 import {filterKeys, orderFilterValues, responseDataLabel} from '../constants';
 import BaseController from './baseController';
-import Bound from './bound';
 import {InvalidArgumentError} from '../errors';
 import {EntityService, TokenService} from '../service';
 import * as utils from '../utils';

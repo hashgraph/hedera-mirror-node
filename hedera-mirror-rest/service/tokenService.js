@@ -52,9 +52,9 @@ class TokenService extends BaseService {
     if (filters !== undefined && filters.length != 0) {
       params.push(filters[0].value);
       conditionsClause = `
-      and ${filters[0].key} = $${filters[0].value}`;
+      and ${filters[0].key} ${filters[0].operator} $${params.length}`;
     }
-    const limitClause = super.getLimitQuery(params.length);
+    const limitClause = super.getLimitQuery(2);
     const orderClause = super.getOrderByQuery(OrderSpec.from(TokenRelationship.TOKEN_ID, order));
     let sqlQuery = [TokenService.tokenByIdQuery, conditionsClause, orderClause, limitClause].join('\n');
 

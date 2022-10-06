@@ -18,13 +18,8 @@
  * ‍
  */
 
-import {filterKeys} from '../../constants';
-import {opsMap} from '../../utils';
 import {assertSqlQueryEqual} from '../testutils';
-import {TokenAllowanceService, TokenService} from '../../service';
-
-const {TOKEN_ID} = filterKeys;
-const {eq, gt, gte, lt, lte} = opsMap;
+import {TokenService} from '../../service';
 
 describe('getQuery', () => {
   const defaultQuery = {
@@ -56,109 +51,34 @@ describe('getQuery', () => {
       query: {...defaultQuery, filters: [{key: 'TOKEN_ID', operator: '=', value: 2}]},
       expected: {
         sqlQuery: `select * from token_account
-          where account_id = $1 and token_id = $2
+          where account_id = $1 and token_id = $3
           order by token_id asc
-          limit $3`,
+          limit $2`,
         params: [98, 25, 2],
       },
     },
-    /*
     {
       name: 'token_id gt',
-      query: {
-        ...defaultQuery,
-        lower: [
-          {key: SPENDER_ID, operator: eq, value: 2},
-          {key: TOKEN_ID, operator: gt, value: 3},
-        ],
-        inner: [
-          {key: SPENDER_ID, operator: gt, value: 2},
-          {key: SPENDER_ID, operator: lte, value: 11},
-        ],
-      },
+      query: {...defaultQuery, filters: [{key: 'TOKEN_ID', operator: '>', value: 10}]},
       expected: {
-        sqlQuery: `(select * from token_allowance
-            where owner = $1 and spender = $3 and token_id > $4
-            order by spender asc, token_id asc
-            limit $2
-          ) union all (
-            select * from token_allowance
-            where owner = $1 and spender > $5 and spender <= $6
-            order by spender asc, token_id asc
-            limit $2
-          )
-          order by spender asc, token_id asc
+        sqlQuery: `select * from token_account
+          where account_id = $1 and token_id > $3
+          order by token_id asc
           limit $2`,
-        params: [1, 25, 2, 3, 2, 11],
+        params: [98, 25, 10],
       },
     },
     {
-      name: 'spender closed range and token lt',
-      query: {
-        ...defaultQuery,
-        inner: [
-          {key: SPENDER_ID, operator: gte, value: 2},
-          {key: SPENDER_ID, operator: lt, value: 11},
-        ],
-        upper: [
-          {key: SPENDER_ID, operator: eq, value: 11},
-          {key: TOKEN_ID, operator: lt, value: 3},
-        ],
-      },
+      name: 'token_id lt',
+      query: {...defaultQuery, filters: [{key: 'TOKEN_ID', operator: '<', value: 5}]},
       expected: {
-        sqlQuery: `(select * from token_allowance
-            where owner = $1 and spender >= $3 and spender < $4
-            order by spender asc, token_id asc
-            limit $2
-          ) union all (
-            select * from token_allowance
-            where owner = $1 and spender = $5 and token_id < $6
-            order by spender asc, token_id asc
-            limit $2
-          )
-          order by spender asc, token_id asc
+        sqlQuery: `select * from token_account
+          where account_id = $1 and token_id < $3
+          order by token_id asc
           limit $2`,
-        params: [1, 25, 2, 11, 11, 3],
+        params: [98, 25, 5],
       },
     },
-    {
-      name: 'spender closed range and token closed range',
-      query: {
-        ...defaultQuery,
-        lower: [
-          {key: SPENDER_ID, operator: eq, value: 2},
-          {key: TOKEN_ID, operator: gte, value: 100},
-        ],
-        inner: [
-          {key: SPENDER_ID, operator: gt, value: 2},
-          {key: SPENDER_ID, operator: lt, value: 8},
-        ],
-        upper: [
-          {key: SPENDER_ID, operator: eq, value: 8},
-          {key: TOKEN_ID, operator: lte, value: 200},
-        ],
-      },
-      expected: {
-        sqlQuery: `(select * from token_allowance
-            where owner = $1 and spender = $3 and token_id >= $4
-            order by spender asc, token_id asc
-            limit $2
-          ) union all (
-            select * from token_allowance
-            where owner = $1 and spender > $5 and spender < $6
-            order by spender asc, token_id asc
-            limit $2
-          ) union all (
-            select * from token_allowance
-            where owner = $1 and spender = $7 and token_id <= $8
-            order by spender asc, token_id asc
-            limit $2
-          )
-          order by spender asc, token_id asc
-          limit $2`,
-        params: [1, 25, 2, 100, 2, 8, 8, 200],
-      },
-    },*/
   ];
 
   specs.forEach((spec) => {
