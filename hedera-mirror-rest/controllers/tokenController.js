@@ -30,6 +30,9 @@ import TokenRelationship from '../model/tokenRelationship';
 
 const {default: defaultLimit} = getResponseLimit();
 
+const tokenRelationshipDefaultLimit = 25;
+const tokenRelationshipMaxLimit = 100;
+
 class TokenController extends BaseController {
   /**
    * Extracts multiple queries to be combined in union.
@@ -41,7 +44,7 @@ class TokenController extends BaseController {
    */
   extractTokensRelationshipQuery = (filters, ownerAccountId) => {
     let conditions = [];
-    let limit = defaultLimit;
+    let limit = tokenRelationshipDefaultLimit;
     let order = orderFilterValues.DESC;
 
     for (const filter of filters) {
@@ -54,7 +57,11 @@ class TokenController extends BaseController {
           conditions = [TokenRelationship.TOKEN_ID + ` ${filter.operator} ` + filter.value];
           break;
         case filterKeys.LIMIT:
-          limit = filter.value;
+          if (filter.value > tokenRelationshipMaxLimit) {
+            limit = tokenRelationshipMaxLimit;
+          } else {
+            limit = filter.value;
+          }
           break;
         case filterKeys.ORDER:
           order = filter.value;
@@ -88,7 +95,7 @@ class TokenController extends BaseController {
     res.locals[responseDataLabel] = {
       tokens,
       links: {
-        next: this.getPaginationLink(req, tokens, query.bounds, query.limit, query.order),
+        next: null,
       },
     };
   };

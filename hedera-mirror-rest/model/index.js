@@ -45,6 +45,7 @@ import Token from './token';
 import TokenAllowance from './tokenAllowance';
 import TokenFreezeStatus from './tokenFreezeStatus';
 import TokenKycStatus from './tokenKycStatus';
+import TokenRelationship from './tokenRelationship';
 import TokenTransfer from './tokenTransfer';
 import TopicMessage from './topicMessage';
 import Transaction from './transaction';
@@ -82,6 +83,7 @@ export {
   TokenAllowance,
   TokenFreezeStatus,
   TokenKycStatus,
+  TokenRelationship,
   TokenTransfer,
   TopicMessage,
   Transaction,

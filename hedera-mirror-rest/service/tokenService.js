@@ -54,7 +54,7 @@ class TokenService extends BaseService {
       conditionsClause = `
       and ${filters[0].key} = $${filters[0].value}`;
     }
-    const limitClause = super.getLimitQuery(limit);
+    const limitClause = super.getLimitQuery(params.length);
     const orderClause = super.getOrderByQuery(OrderSpec.from(TokenRelationship.TOKEN_ID, order));
     let sqlQuery = [TokenService.tokenByIdQuery, conditionsClause, orderClause, limitClause].join('\n');
 
