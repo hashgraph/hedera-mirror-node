@@ -54,8 +54,7 @@ public class AcceptanceTestProperties {
     @Max(5)
     private int maxRetries = 2;
 
-    @NotNull
-    private Long maxTinyBarTransactionFee = 2_000_000_000L;
+    private long maxTinyBarTransactionFee = 40_00_000_000L;
 
     @NotNull
     private Duration messageTimeout = Duration.ofSeconds(20);
@@ -68,7 +67,7 @@ public class AcceptanceTestProperties {
 
     private Set<NodeProperties> nodes = new LinkedHashSet<>();
 
-    private long operatorBalance = 18_000_000_000L;
+    private long operatorBalance = 200_00_000_000L;
 
     @NotBlank
     private String operatorId = "0.0.2";

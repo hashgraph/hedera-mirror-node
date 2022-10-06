@@ -112,10 +112,6 @@ public class ScheduleClient extends AbstractNetworkClient {
 
     @SneakyThrows
     public ScheduleInfo getScheduleInfo(ScheduleId scheduleId) {
-        return retryTemplate.execute(x ->
-                new ScheduleInfoQuery()
-                        .setScheduleId(scheduleId)
-                        .setNodeAccountIds(List.of(sdkClient.getRandomNodeAccountId()))
-                        .execute(client));
+        return executeQuery(new ScheduleInfoQuery().setScheduleId(scheduleId));
     }
 }
