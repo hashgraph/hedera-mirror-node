@@ -23,21 +23,13 @@ import * as constants from '../../constants';
 import * as utils from '../../utils';
 import tokenController from '../../controllers/tokenController';
 
-const {default: defaultLimit} = getResponseLimit();
-const {
-  filterKeys: {TOKEN_ID, ORDER, LIMIT},
-} = constants;
-const {
-  opsMap: {eq, gt, gte, lt, lte},
-} = utils;
-
 const ownerAccountId = BigInt(98);
-
-const tokenIdEqFilter = {key: TOKEN_ID, operator: eq, value: 100};
-const tokenIdGtFilter = {key: TOKEN_ID, operator: gt, value: 101};
-const tokenIdGteFilter = {key: TOKEN_ID, operator: gte, value: 102};
-const tokenIdLtFilter = {key: TOKEN_ID, operator: lt, value: 150};
-const tokenIdLteFilter = {key: TOKEN_ID, operator: lte, value: 151};
+const TOKEN_ID = constants.filterKeys.TOKEN_ID;
+const tokenIdEqFilter = {key: TOKEN_ID, operator: utils.opsMap.eq, value: 10};
+const tokenIdGtFilter = {key: TOKEN_ID, operator: utils.opsMap.gt, value: 101};
+const tokenIdGteFilter = {key: TOKEN_ID, operator: utils.opsMap.gte, value: 102};
+const tokenIdLtFilter = {key: TOKEN_ID, operator: utils.opsMap.lt, value: 150};
+const tokenIdLteFilter = {key: TOKEN_ID, operator: utils.opsMap.lte, value: 151};
 
 describe('extractTokenRelationshipQuery', () => {
   const defaultExpected = {
@@ -82,19 +74,53 @@ describe('extractTokenRelationshipQuery', () => {
       },
     },
     {
-      name: 'token.id',
+      name: 'token eq',
       input: {
-        filters: [
-          {
-            key: constants.filterKeys.TOKEN_ID,
-            operator: utils.opsMap.eq,
-            value: '10',
-          },
-        ],
+        filters: [tokenIdEqFilter],
       },
       expected: {
         ...defaultExpected,
         conditions: ['token_id  =  10'],
+      },
+    },
+    {
+      name: 'token gt',
+      input: {
+        filters: [tokenIdGtFilter],
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: ['token_id  >  101'],
+      },
+    },
+    {
+      name: 'token gte',
+      input: {
+        filters: [tokenIdGteFilter],
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: ['token_id  >=  102'],
+      },
+    },
+    {
+      name: 'token lt',
+      input: {
+        filters: [tokenIdLtFilter],
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: ['token_id  <  150'],
+      },
+    },
+    {
+      name: 'token lte',
+      input: {
+        filters: [tokenIdLteFilter],
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: ['token_id  <=  151'],
       },
     },
   ];
