@@ -28,10 +28,6 @@ import BaseService from './baseService';
  * Token retrieval business logic
  */
 class TokenService extends BaseService {
-  static tokenByIdQuery = `select *
-                           from ${TokenRelationship.tableName}
-                           where ${TokenRelationship.ACCOUNT_ID} = $1`;
-
   async getToken(tokenId) {
     const {rows} = await pool.queryQuietly(TokenService.tokenByIdQuery, tokenId);
     return _.isEmpty(rows) ? null : new Token(rows[0]);
@@ -47,16 +43,26 @@ class TokenService extends BaseService {
     console.log('Query: ' + query);
     const {filters, order, ownerAccountId, limit} = query;
     const params = [ownerAccountId, limit];
-    const accountIdCondition = `${TokenRelationship.ACCOUNT_ID} = $1`;
+    const tableAlias = `ta`;
+    const tokenBalanceJoin =
+      'join (select token_id,balance from token_balance where account_id = $1 and consensus_timestamp = (select max(consensus_timestamp) from account_balance_file)) tb on ' +
+      tableAlias +
+      '.token_id = tb.token_id';
+    const tokenByIdQuery =
+      `select ${tableAlias}.*
+                           from ${TokenRelationship.tableName} ${tableAlias} ` +
+      tokenBalanceJoin +
+      `
+    where ${tableAlias}.${TokenRelationship.ACCOUNT_ID} = $1`;
     let conditionsClause;
     if (filters !== undefined && filters.length != 0) {
       params.push(filters[0].value);
       conditionsClause = `
-      and ${filters[0].key} ${filters[0].operator} $${params.length}`;
+      and ${tableAlias}.${filters[0].key} ${filters[0].operator} $${params.length}`;
     }
     const limitClause = super.getLimitQuery(2);
-    const orderClause = super.getOrderByQuery(OrderSpec.from(TokenRelationship.TOKEN_ID, order));
-    let sqlQuery = [TokenService.tokenByIdQuery, conditionsClause, orderClause, limitClause].join('\n');
+    const orderClause = `order by ` + tableAlias + `.` + TokenRelationship.TOKEN_ID + ` ` + order;
+    let sqlQuery = [tokenByIdQuery, conditionsClause, orderClause, limitClause].join('\n');
 
     return {sqlQuery, params};
   }
