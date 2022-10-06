@@ -28,13 +28,18 @@ describe('getQuery', () => {
     ownerAccountId: 98,
     limit: 25,
   };
+  const tokenBalanceJoin =
+    'join (select token_id,balance from token_balance where account_id = $1 and consensus_timestamp = (select max(consensus_timestamp) from account_balance_file)) tb on ta.token_id = tb.token_id';
 
   const specs = [
     {
       name: 'default',
       query: defaultQuery,
       expected: {
-        sqlQuery: 'select * from token_account where account_id = $1 order by token_id asc limit $2',
+        sqlQuery:
+          'select ta.* from token_account ta ' +
+          tokenBalanceJoin +
+          ' where ta.account_id = $1 order by ta.token_id asc limit $2',
         params: [98, 25],
       },
     },
@@ -42,7 +47,10 @@ describe('getQuery', () => {
       name: 'order desc',
       query: {...defaultQuery, order: 'desc'},
       expected: {
-        sqlQuery: 'select * from token_account where account_id = $1 order by token_id desc limit $2',
+        sqlQuery:
+          'select ta.* from token_account ta ' +
+          tokenBalanceJoin +
+          ' where ta.account_id = $1 order by ta.token_id desc limit $2',
         params: [98, 25],
       },
     }, // Going onwards fix it
@@ -50,9 +58,11 @@ describe('getQuery', () => {
       name: 'token_id eq',
       query: {...defaultQuery, filters: [{key: 'TOKEN_ID', operator: '=', value: 2}]},
       expected: {
-        sqlQuery: `select * from token_account
-          where account_id = $1 and token_id = $3
-          order by token_id asc
+        sqlQuery:
+          `select ta.* from token_account ta ` +
+          tokenBalanceJoin +
+          ` where ta.account_id = $1 and ta.token_id = $3
+          order by ta.token_id asc
           limit $2`,
         params: [98, 25, 2],
       },
@@ -61,9 +71,11 @@ describe('getQuery', () => {
       name: 'token_id gt',
       query: {...defaultQuery, filters: [{key: 'TOKEN_ID', operator: '>', value: 10}]},
       expected: {
-        sqlQuery: `select * from token_account
-          where account_id = $1 and token_id > $3
-          order by token_id asc
+        sqlQuery:
+          `select ta.* from token_account ta ` +
+          tokenBalanceJoin +
+          ` where ta.account_id = $1 and ta.token_id > $3
+          order by ta.token_id asc
           limit $2`,
         params: [98, 25, 10],
       },
@@ -72,9 +84,11 @@ describe('getQuery', () => {
       name: 'token_id lt',
       query: {...defaultQuery, filters: [{key: 'TOKEN_ID', operator: '<', value: 5}]},
       expected: {
-        sqlQuery: `select * from token_account
-          where account_id = $1 and token_id < $3
-          order by token_id asc
+        sqlQuery:
+          `select ta.* from token_account ta ` +
+          tokenBalanceJoin +
+          ` where ta.account_id = $1 and ta.token_id < $3
+          order by ta.token_id asc
           limit $2`,
         params: [98, 25, 5],
       },
