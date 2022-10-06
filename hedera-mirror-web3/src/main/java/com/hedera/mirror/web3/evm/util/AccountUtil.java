@@ -3,11 +3,14 @@ package com.hedera.mirror.web3.evm.util;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.hederahashgraph.api.proto.java.AccountID;
-import lombok.experimental.UtilityClass;
 import java.util.Arrays;
+import lombok.experimental.UtilityClass;
+import org.hyperledger.besu.datatypes.Address;
+
 @UtilityClass
 public class AccountUtil {
-    public static AccountID accountIdFromEvmAddress(final byte[] bytes) {
+    public static AccountID accountIdFromEvmAddress(final Address address) {
+        final byte[] bytes = address.toArrayUnsafe();
         return AccountID.newBuilder()
                 .setShardNum(shardFromEvmAddress(bytes))
                 .setRealmNum(realmFromEvmAddress(bytes))
