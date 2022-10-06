@@ -30,7 +30,7 @@ describe('getQuery', () => {
   const defaultQuery = {
     filters: [],
     order: 'asc',
-    ownerAccountId: 1,
+    ownerAccountId: 98,
     limit: 25,
   };
 
@@ -39,16 +39,16 @@ describe('getQuery', () => {
       name: 'default',
       query: defaultQuery,
       expected: {
-        sqlQuery: 'select * from token_account where account_id = $1 order by token_id asc limit $25',
-        params: [1, 25],
+        sqlQuery: 'select * from token_account where account_id = $1 order by token_id asc limit $2',
+        params: [98, 25],
       },
     },
     {
       name: 'order desc',
       query: {...defaultQuery, order: 'desc'},
       expected: {
-        sqlQuery: 'select * from token_account where account_id = $1 order by token_id desc limit $25',
-        params: [1, 25],
+        sqlQuery: 'select * from token_account where account_id = $1 order by token_id desc limit $2',
+        params: [98, 25],
       },
     }, // Going onwards fix it
     {
@@ -58,8 +58,8 @@ describe('getQuery', () => {
         sqlQuery: `select * from token_account
           where account_id = $1 and token_id = $2
           order by token_id asc
-          limit $25`,
-        params: [1, 25, 2],
+          limit $3`,
+        params: [98, 25, 2],
       },
     },
     /*
