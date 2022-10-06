@@ -287,45 +287,29 @@ class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onContractState() {
         // given
-        var createdTimestamp = domainBuilder.timestamp();
-        var modifiedTimestamp = createdTimestamp + 1;
-        var contractStateChange = domainBuilder.contractStateChange()
-                .customize(c -> c.consensusTimestamp(createdTimestamp).slot(domainBuilder.bytes(10))).get();
-        var contractStateChangeNoValue = TestUtils.clone(contractStateChange);
-        contractStateChangeNoValue.setContractId(EntityId.of(contractStateChange.getContractId(), CONTRACT));
-        contractStateChangeNoValue.setConsensusTimestamp(modifiedTimestamp);
-        contractStateChangeNoValue.setValueWritten(null);
-
-        modifiedTimestamp++;
-        var contractStateChangeValueWritten = TestUtils.clone(contractStateChange);
-        contractStateChangeValueWritten.setContractId(EntityId.of(contractStateChange.getContractId(), CONTRACT));
-        contractStateChangeValueWritten.setConsensusTimestamp(modifiedTimestamp);
-        contractStateChangeValueWritten.setValueWritten(domainBuilder.bytes(10));
-
-        var expectedContractState = ContractState.builder()
-                .contractId(contractStateChange.getContractId())
-                .createdTimestamp(createdTimestamp)
-                .modifiedTimestamp(createdTimestamp)
-                .slot(DomainUtils.leftPadBytes(contractStateChange.getSlot(), 32))
-                .value(contractStateChange.getValueWritten())
-                .build();
+        var builder = domainBuilder.contractStateChange()
+                .customize(c -> c.slot(domainBuilder.bytes(15)));
+        var contractStateChangeCreate = builder.get();
+        var contractStateChangeValueWritten = builder.customize(c -> c
+                .valueWritten(domainBuilder.bytes(120))
+                .consensusTimestamp(contractStateChangeCreate.getConsensusTimestamp() + 1)).get();
+        var contractStateChangeNoValue = builder.customize(c -> c
+                .valueWritten(null)
+                .consensusTimestamp(contractStateChangeCreate.getConsensusTimestamp() + 2)).get();
 
         // when
-        sqlEntityListener.onContractStateChange(contractStateChange);
-        completeFileAndCommit();
-
-        assertThat(contractStateRepository.findAll()).containsExactly(expectedContractState);
-
+        sqlEntityListener.onContractStateChange(contractStateChangeCreate);
+        sqlEntityListener.onContractStateChange(contractStateChangeValueWritten);
         sqlEntityListener.onContractStateChange(contractStateChangeNoValue);
         completeFileAndCommit();
 
-        assertThat(contractStateRepository.findAll()).containsExactly(expectedContractState);
-
-        sqlEntityListener.onContractStateChange(contractStateChangeValueWritten);
-        completeFileAndCommit();
-
-        expectedContractState.setModifiedTimestamp(modifiedTimestamp);
-        expectedContractState.setValue(contractStateChangeValueWritten.getValueWritten());
+        var expectedContractState = ContractState.builder()
+                .contractId(contractStateChangeCreate.getContractId())
+                .createdTimestamp(contractStateChangeCreate.getConsensusTimestamp())
+                .modifiedTimestamp(contractStateChangeValueWritten.getConsensusTimestamp())
+                .slot(DomainUtils.leftPadBytes(contractStateChangeCreate.getSlot(), 32))
+                .value(contractStateChangeValueWritten.getValueWritten())
+                .build();
 
         // then
         assertThat(contractStateRepository.findAll()).containsExactlyInAnyOrder(expectedContractState);

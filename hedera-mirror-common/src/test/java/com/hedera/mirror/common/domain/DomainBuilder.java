@@ -307,8 +307,8 @@ public class DomainBuilder {
                 .contractId(entityId(CONTRACT).getId())
                 .createdTimestamp(createdTimestamp)
                 .modifiedTimestamp(createdTimestamp)
-                .slot(bytes(128))
-                .value(bytes(30));
+                .slot(bytes(32))
+                .value(bytes(32));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

@@ -26,9 +26,9 @@ with contract_state_initial as (
     from contract_state_change csc
     join contract_state_initial csi on csi.contract_id = csc.contract_id and csi.slot = csc.slot
     where csc.migration is true
+      or (csc.migration is false and csc.value_written is not null)
     order by csc.contract_id, csc.slot, consensus_timestamp desc
 )
-
 insert into contract_state (contract_id, created_timestamp, modified_timestamp, slot, value)
 select
     contract_id,

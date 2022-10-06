@@ -109,7 +109,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<ContractLog> contractLogs;
     private final Collection<ContractResult> contractResults;
     private final Collection<ContractStateChange> contractStateChanges;
-    private final Collection<ContractState> contractStates;
     private final Collection<CryptoAllowance> cryptoAllowances;
     private final Collection<CryptoTransfer> cryptoTransfers;
     private final Collection<CustomFee> customFees;
@@ -133,6 +132,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<TransactionSignature> transactionSignatures;
 
     // maps of upgradable domains
+    private final Map<ContractState.Id, ContractState> contractStates;
     private final Map<AbstractCryptoAllowance.Id, CryptoAllowance> cryptoAllowanceState;
     private final Map<Long, Entity> entityState;
     private final Map<NftId, Nft> nfts;
@@ -171,7 +171,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         contractLogs = new ArrayList<>();
         contractResults = new ArrayList<>();
         contractStateChanges = new ArrayList<>();
-        contractStates = new ArrayList<>();
         cryptoAllowances = new ArrayList<>();
         cryptoTransfers = new ArrayList<>();
         customFees = new ArrayList<>();
@@ -194,6 +193,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         transactionHashes = new ArrayList<>();
         transactionSignatures = new ArrayList<>();
 
+        contractStates = new HashMap<>();
         cryptoAllowanceState = new HashMap<>();
         entityState = new HashMap<>();
         nfts = new HashMap<>();
@@ -259,13 +259,14 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         contractStateChanges.add(contractStateChange);
 
         if (contractStateChange.getValueWritten() != null) {
-            var contractState = new ContractState();
-            contractState.setContractId(contractStateChange.getContractId());
-            contractState.setCreatedTimestamp(contractStateChange.getConsensusTimestamp());
-            contractState.setModifiedTimestamp(contractStateChange.getConsensusTimestamp());
-            contractState.setSlot(contractStateChange.getSlot());
-            contractState.setValue(contractStateChange.getValueWritten());
-            contractStates.add(contractState);
+            var state = new ContractState();
+            state.setContractId(contractStateChange.getContractId());
+            state.setCreatedTimestamp(contractStateChange.getConsensusTimestamp());
+            state.setModifiedTimestamp(contractStateChange.getConsensusTimestamp());
+            state.setSlot(contractStateChange.getSlot());
+            state.setValue(contractStateChange.getValueWritten());
+
+            contractStates.merge(state.getId(), state, this::mergeContractState);
         }
     }
 
@@ -485,7 +486,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             batchPersister.persist(contractLogs);
             batchPersister.persist(contractResults);
             batchPersister.persist(contractStateChanges);
-            batchPersister.persist(contractStates);
             batchPersister.persist(cryptoTransfers);
             batchPersister.persist(customFees);
             batchPersister.persist(ethereumTransactions);
@@ -501,6 +501,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
             // insert operations with conflict management
             batchPersister.persist(contracts);
+            batchPersister.persist(contractStates.values());
             batchPersister.persist(cryptoAllowances);
             batchPersister.persist(entities);
             batchPersister.persist(nftAllowances);
@@ -528,6 +529,16 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         } finally {
             cleanup();
         }
+    }
+
+    private ContractState mergeContractState(ContractState previous, ContractState current) {
+        if (current.getValue() != null) {
+            previous.setValue(current.getValue());
+        }
+
+        previous.setModifiedTimestamp(current.getModifiedTimestamp());
+
+        return previous;
     }
 
     private CryptoAllowance mergeCryptoAllowance(CryptoAllowance previous, CryptoAllowance current) {
