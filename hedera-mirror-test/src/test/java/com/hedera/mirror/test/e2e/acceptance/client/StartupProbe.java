@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.extern.log4j.Log4j2;
+import com.google.common.util.concurrent.Uninterruptibles;
 
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Client;
@@ -196,7 +197,7 @@ public class StartupProbe {
 
 	for ( retries = 1; retries <= maxRetries; retries++) {
             try {
-                TimeUnit.SECONDS.sleep(1);
+                Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
                 if (messageReceived.get()) {  // we already had a previous success - no need to submit more trabsactions
                     break;
                 }
@@ -206,7 +207,11 @@ public class StartupProbe {
                     .execute(client)
                     .getReceipt(client);
 
-                TimeUnit.SECONDS.sleep(1);
+                Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
+                if (Instant.now().compareTo(timeoutInstant) >= 0) {
+                    throw new TimeoutException("Ran out of time on second HAPI call - getting submit transaction "
+                            + " receipt.");
+                }
             } catch (PrecheckStatusException pse) {
                 log.warn("PrecheckStatusException on GRPC API call to submit a transaction", pse);
                 throw new IllegalArgumentException("PrecheckStatusException on GRPC call (submitting transaction):"
@@ -214,13 +219,6 @@ public class StartupProbe {
             } catch (ReceiptStatusException rse) {
                 log.warn("ReceiptStatusException on trying to get receipt from GRPC API call", rse);
                 // try again
-            } catch (InterruptedException ie) {
-                log.warn("InterruptedException on trying to get submit transaction receipt", ie);
-                Thread.currentThread().interrupt();
-                if (Instant.now().compareTo(timeoutInstant) >= 0) {
-                    throw new TimeoutException("Ran out of time on second HAPI call - getting submit transaction "
-                            + " receipt:" + ie.getMessage());
-                }
             }
         }
 
