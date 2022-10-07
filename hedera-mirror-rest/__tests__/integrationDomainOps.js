@@ -1273,7 +1273,10 @@ const addTokenAccount = async (tokenAccount) => {
   tokenAccount = {
     account_id: '0.0.0',
     associated: true,
+    automatic_association: false,
     created_timestamp: 0,
+    freeze_status: 0,
+    kyc_status: 0,
     timestamp_range: null,
     token_id: '0.0.0',
     ...tokenAccount,
