@@ -45,11 +45,11 @@ class TokenService extends BaseService {
     const params = [ownerAccountId, limit];
     const tableAlias = `ta`;
     const tokenBalanceJoin =
-      'join (select token_id,balance from token_balance where account_id = $1 and consensus_timestamp = (select max(consensus_timestamp) from account_balance_file)) tb on ' +
+      'left join (select token_id,balance from token_balance where account_id = $1 and consensus_timestamp = (select max(consensus_timestamp) from account_balance_file)) tb on ' +
       tableAlias +
       '.token_id = tb.token_id';
     const tokenByIdQuery =
-      `select ${tableAlias}.*
+      `select ${tableAlias}.*, tb.balance
                            from ${TokenRelationship.tableName} ${tableAlias} ` +
       tokenBalanceJoin +
       `
@@ -63,7 +63,7 @@ class TokenService extends BaseService {
     const limitClause = super.getLimitQuery(2);
     const orderClause = `order by ` + tableAlias + `.` + TokenRelationship.TOKEN_ID + ` ` + order;
     let sqlQuery = [tokenByIdQuery, conditionsClause, orderClause, limitClause].join('\n');
-
+    //let sqlQuery = 'select * from token_account where account_id=$1 order by token_id desc limit $2';
     return {sqlQuery, params};
   }
 

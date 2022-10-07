@@ -20,6 +20,8 @@
 
 import BaseAllowanceViewModel from './baseAllowanceViewModel.js';
 import EntityId from '../entityId.js';
+import {TokenFreezeStatus, TokenKycStatus} from '../model';
+import {nsToSecNs} from '../utils';
 
 /**
  * TokenRelationship view model
@@ -33,9 +35,9 @@ class TokenRelationshipViewModel {
   constructor(tokenRelationship) {
     this.automatic_association = tokenRelationship.automaticAssociation;
     this.balance = tokenRelationship.balance;
-    this.created_timestamp = tokenRelationship.createdTimestamp;
-    this.freeze_status = tokenRelationship.freezeStatus;
-    this.kyc_status = tokenRelationship.kycStatus;
+    this.created_timestamp = nsToSecNs(tokenRelationship.createdTimestamp);
+    this.freeze_status = new TokenFreezeStatus(tokenRelationship.freezeStatus);
+    this.kyc_status = new TokenKycStatus(tokenRelationship.kycStatus);
     this.token_id = EntityId.parse(tokenRelationship.tokenId).toString();
   }
 }

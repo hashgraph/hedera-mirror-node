@@ -223,8 +223,8 @@ describe('API specification tests', () => {
   });
 
   const getSpecs = () => {
-    const subSpecPath =
-      !process.env.CI && process.env.INTEGRATION_TEST_SUB_SPEC_PATH ? process.env.INTEGRATION_TEST_SUB_SPEC_PATH : '';
+    const subSpecPath = 'accounts/{id}/tokens';
+    //!process.env.CI && process.env.INTEGRATION_TEST_SUB_SPEC_PATH ? process.env.INTEGRATION_TEST_SUB_SPEC_PATH : '';
     const specPath = path.join(getModuleDirname(import.meta), 'specs', subSpecPath);
     const specMap = new Map();
 

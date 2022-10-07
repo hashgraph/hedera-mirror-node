@@ -48,15 +48,15 @@ class TokenRelationship {
   };
 
   /**
-   * Parses token_transfer table columns into object
+   * Parses token_account table columns into object
    */
   constructor(tokenRelationship) {
-    this.automatic_association = tokenRelationship.automatic_association;
+    this.automaticAssociation = tokenRelationship.automatic_association;
     this.balance = tokenRelationship.balance;
-    this.created_timestamp = tokenRelationship.created_timestamp;
-    this.freeze_status = tokenRelationship.freeze_status;
-    this.kyc_status = tokenRelationship.kyc_status;
-    this.token_id = tokenRelationship.token_id;
+    this.createdTimestamp = tokenRelationship.created_timestamp;
+    this.freezeStatus = tokenRelationship.freeze_status;
+    this.kycStatus = tokenRelationship.kyc_status;
+    this.tokenId = tokenRelationship.token_id;
   }
 
   static tableAlias = 'tk_tr';
