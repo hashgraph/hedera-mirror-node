@@ -60,6 +60,7 @@ public class SDKClient implements AutoCloseable {
     private final Map<String, AccountId> validateNetworkMap;
     private final AcceptanceTestProperties acceptanceTestProperties;
     private final MirrorNodeClient mirrorNodeClient;
+    private final StartupProbe startupProbe;
 
     @Getter
     private final ExpandedAccountId expandedOperatorAccountId;
@@ -69,6 +70,14 @@ public class SDKClient implements AutoCloseable {
         this.mirrorNodeClient = mirrorNodeClient;
         maxTransactionFee = Hbar.fromTinybars(acceptanceTestProperties.getMaxTinyBarTransactionFee());
         this.acceptanceTestProperties = acceptanceTestProperties;
+        this.startupProbe = new StartupProbe(acceptanceTestProperties, mirrorNodeClient);
+        // the call must be made before any network activity in this constructor
+        try {
+            this.startupProbe.validateEnvironment();
+        } catch (TimeoutException e) {
+            log.error("Startup probe unsuccessful: {}", e.getMessage(), e);
+            throw new RuntimeException(e);
+        }
         this.client = getValidatedClient();
         expandedOperatorAccountId = getOperatorAccount();
         this.client.setOperator(expandedOperatorAccountId.getAccountId(), expandedOperatorAccountId.getPrivateKey());

@@ -43,15 +43,15 @@ public class RestPollingProperties {
 
     @Min(1)
     @Max(60)
-    private int maxAttempts = 60;
+    private int maxAttempts = 10;
 
     @NotNull
     @DurationMin(millis = 500L)
-    private Duration maxBackoff = Duration.ofSeconds(8L);
+    private Duration maxBackoff = Duration.ofSeconds(4L);
 
     @NotNull
     @DurationMin(millis = 100L)
-    private Duration minBackoff = Duration.ofMillis(250L);
+    private Duration minBackoff = Duration.ofMillis(500L);
 
     @NotNull
     private Set<Class> retryableExceptions = Set.of(Exception.class);

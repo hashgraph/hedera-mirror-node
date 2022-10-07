@@ -79,6 +79,8 @@ public class AcceptanceTestProperties {
 
     private boolean retrieveAddressBook = true;
 
+    private Duration startupTimeout = Duration.ofMinutes(30);
+
     public enum HederaNetwork {
         MAINNET,
         OTHER,
