@@ -22,16 +22,14 @@ package com.hedera.mirror.importer.addressbook;
 
 import java.security.PublicKey;
 import java.util.Objects;
-import lombok.Builder;
 import lombok.Value;
 
 import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
 import com.hedera.mirror.common.domain.entity.EntityId;
 
-@Builder
 @Value
-public final class ConsensusNodeWrapper implements ConsensusNode {
+final class ConsensusNodeWrapper implements ConsensusNode {
 
     private final AddressBookEntry addressBookEntry;
     private final NodeStake nodeStake;

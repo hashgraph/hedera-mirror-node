@@ -82,9 +82,12 @@ public abstract class Downloader<T extends StreamFile> {
 
     private static final Comparator<StreamFileSignature> STREAM_FILE_SIGNATURE_COMPARATOR = (left, right) -> {
         if (Objects.equals(left, right)) {
+            // Ensures values are unique when used in a Set
             return 0;
         }
 
+        // The arbitrary ordering compares objects by identity, thus when used in a sorted collection, it gives a random
+        // order of the StreamFileSignatures w.r.t the nodes
         return Ordering.arbitrary().compare(left, right);
     };
 

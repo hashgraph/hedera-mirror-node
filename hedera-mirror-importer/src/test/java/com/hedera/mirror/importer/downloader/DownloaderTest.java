@@ -28,10 +28,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.hedera.mirror.common.domain.addressbook.AddressBookEntry;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
-import com.hedera.mirror.importer.addressbook.ConsensusNodeWrapper;
+import com.hedera.mirror.importer.domain.ConsensusNodeStub;
 import com.hedera.mirror.importer.domain.StreamFileSignature;
 import com.hedera.mirror.importer.domain.StreamFilename;
 
@@ -69,9 +68,7 @@ class DownloaderTest {
     private StreamFileSignature streamFileSignature(long nodeId, StreamFilename streamFilename) {
         return StreamFileSignature.builder()
                 .filename(streamFilename)
-                .node(ConsensusNodeWrapper.builder()
-                        .addressBookEntry(AddressBookEntry.builder().nodeId(nodeId).build())
-                        .build())
+                .node(ConsensusNodeStub.builder().nodeId(nodeId).build())
                 .build();
     }
 }
