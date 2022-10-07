@@ -1,24 +1,6 @@
 {
-  "description": "Token relationship api call for all tokens for an account",
+  "description": "Token relationship api call for tokens with invalid param values",
   "setup": {
-    "accounts": [
-      {
-        "num": 1001,
-        "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
-        "evm_address": "ebb9a1be370150759408cd7af48e9eda2b8ead57",
-        "public_key": "519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9"
-      }
-    ],
-    "entities": [
-      {
-        "num": 1500,
-        "type": "TOKEN"
-      },
-      {
-        "num": 2500,
-        "type": "TOKEN"
-      }
-    ],
     "tokens": [
       {
         "token_id": "0.0.1135",
@@ -84,39 +66,21 @@
       }
     ]
   },
-  "urls": [
-    "/api/v1/accounts/1001/tokens",
-    "/api/v1/accounts/0.1001/tokens",
-    "/api/v1/accounts/0.0.1001/tokens",
-    "/api/v1/accounts/KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/tokens",
-    "/api/v1/accounts/0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/tokens",
-    "/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/tokens",
-    "/api/v1/accounts/ebb9a1be370150759408cd7af48e9eda2b8ead57/tokens",
-    "/api/v1/accounts/0xebb9a1be370150759408cd7af48e9eda2b8ead57/tokens",
-    "/api/v1/accounts/0.0.ebb9a1be370150759408cd7af48e9eda2b8ead57/tokens"
-  ],
-  "responseStatus": 200,
+  "url": "/api/v1/accounts/0.0.1001/tokens?token.id=x&&order=12&limit=a",
+  "responseStatus": 400,
   "responseJson": {
-    "tokens": [
-      {
-        "automatic_association": true,
-        "balance": 25,
-        "created_timestamp": "1234567890.000000006",
-        "freeze_status": "UNFROZEN",
-        "kyc_status": "GRANTED",
-        "token_id": "0.23.45678"
-      },
-      {
-        "automatic_association": true,
-        "balance": 15,
-        "created_timestamp": "1234567890.000000002",
-        "freeze_status": "UNFROZEN",
-        "kyc_status": "GRANTED",
-        "token_id": "0.0.1135"
-      }
-    ],
-    "links": {
-      "next": null
+    "_status": {
+      "messages": [
+        {
+          "message": "Invalid parameter: token.id"
+        },
+        {
+          "message": "Invalid parameter: order"
+        },
+        {
+          "message": "Invalid parameter: limit"
+        }
+      ]
     }
   }
 }
