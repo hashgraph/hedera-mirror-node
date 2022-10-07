@@ -39,13 +39,14 @@ uses [Spring Boot](https://spring.io/projects/spring-boot) properties to configu
 under `hedera.mirror.test.acceptance` include:
 
 - `backOffPeriod` - The number of milliseconds client should wait before retrying a retryable failure.
+- `createOperatorAccount` - Whether to create an operator account to run the acceptance tests 
 - `emitBackgroundMessages` - Flag to set if background messages should be emitted. For operations use in non-production
   `environments.
-- `featureProperties`
+- `feature`
   - `maxContractFunctionGas` - The maximum amount of gas an account is willing to pay for a contract function call.
-- `maxRetries` - The number of times client should retryable on supported failures.
-- `maxTinyBarTransactionFee` - The maximum transaction fee you're willing to pay on a transaction.
-- `messageTimeout` - The number of seconds to wait on messages representing transactions (default is 20).
+- `maxRetries` - The number of times client should retry on supported failures.
+- `maxTinyBarTransactionFee` - The maximum transaction fee.
+- `messageTimeout` - The time to wait on messages representing transactions (default is 20 seconds).
 - `mirrorNodeAddress` - The mirror node grpc server endpoint including IP address and port. Refer to
   public [documentation](https://docs.hedera.com/guides/mirrornet/hedera-mirror-node) for a list of available endpoints.
 - `network` - The desired Hedera network environment to point to. Options currently include `MAINNET`, `PREVIEWNET`,
@@ -64,7 +65,8 @@ under `hedera.mirror.test.acceptance` include:
   - `retryableExceptions` - List of retryable exception class types
 - `retrieveAddressBook` - Whether to download the address book from the network and use those nodes over the default
   nodes. Populating `hedera.mirror.test.acceptance.nodes` will take priority over this.
-- `sdkProperties`
+- `sdk`
+  - `grpcDeadline` - The maximum amount of time to wait for a grpc call to complete. 
   - `maxAttempts` - The maximum number of times the sdk should try to submit a transaction to the network.
 - `webclient`
   - `connectionTimeout` - The timeout duration to wait to establish a connection with the server
