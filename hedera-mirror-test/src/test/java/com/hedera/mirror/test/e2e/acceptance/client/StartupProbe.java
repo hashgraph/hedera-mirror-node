@@ -25,7 +25,8 @@ import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import lombok.extern.log4j.Log4j2;
+import lombok.CustomLog;
+
 import com.google.common.util.concurrent.Uninterruptibles;
 
 import com.hedera.hashgraph.sdk.AccountId;
@@ -45,10 +46,10 @@ import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 
-@Log4j2
 /**
  * StartupProbe -- a helper class to validate a SDKClient before using it.
  */
+@CustomLog
 public class StartupProbe {
 
     private final AcceptanceTestProperties acceptanceTestProperties;
