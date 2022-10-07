@@ -106,7 +106,6 @@ public final class Client implements AutoCloseable, WithPing, WithPingAll {
      * @return the executor service
      */
     static ExecutorService createExecutor() {
-        System.out.println("createExecutor");
         var threadFactory = new ThreadFactoryBuilder()
                 .setNameFormat("hedera-sdk-%d")
                 .setDaemon(true)
