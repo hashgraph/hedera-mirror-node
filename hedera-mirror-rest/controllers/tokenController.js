@@ -34,8 +34,7 @@ const tokenRelationshipMaxLimit = 100;
 
 class TokenController extends BaseController {
   /**
-   * Extracts multiple queries to be combined in union.
-   *
+   * Extracts the sql where clause, params, order and limit values to be used from the provided token relationship query.
    * @param {[]} filters req filters
    * @param {BigInt} ownerAccountId Encoded owner entityId
    * @returns {conditions:{key:'token.id', operator:'=', value:10}, order: 'asc'|'desc',accountId: BigInt, limit: number}
