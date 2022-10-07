@@ -32,7 +32,7 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.Iterables;
 import com.hederahashgraph.api.proto.java.NodeAddressBook;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.logging.LoggingMeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -126,7 +126,7 @@ public abstract class AbstractDownloaderTest {
     protected S3AsyncClient s3AsyncClient;
     protected DownloaderProperties downloaderProperties;
     protected Downloader downloader;
-    protected MeterRegistry meterRegistry = new LoggingMeterRegistry();
+    protected MeterRegistry meterRegistry = new SimpleMeterRegistry();
     protected String file1;
     protected String file2;
     protected Instant file1Instant;

@@ -24,11 +24,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import org.springframework.retry.support.RetryTemplate;
 
 import com.hedera.hashgraph.sdk.AccountAllowanceApproveTransaction;
-import com.hedera.hashgraph.sdk.AccountBalanceQuery;
 import com.hedera.hashgraph.sdk.AccountCreateTransaction;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Hbar;
@@ -84,23 +82,6 @@ public class AccountClient extends AbstractNetworkClient {
         }
 
         return accountId;
-    }
-
-    @Override
-    public long getBalance() {
-        return getBalance(sdkClient.getExpandedOperatorAccountId());
-    }
-
-    @SneakyThrows
-    public long getBalance(ExpandedAccountId accountId) {
-        Hbar balance = new AccountBalanceQuery()
-                .setAccountId(accountId.getAccountId())
-                .execute(client)
-                .hbars;
-
-        log.info("{} balance is {}", accountId, balance);
-
-        return balance.toTinybars();
     }
 
     public TransferTransaction getCryptoTransferTransaction(AccountId sender, AccountId recipient, Hbar hbarAmount,

@@ -9,9 +9,9 @@ package com.hedera.mirror.web3.config;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,19 +22,19 @@ package com.hedera.mirror.web3.config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
+import java.io.StringWriter;
 import java.time.Duration;
 import lombok.CustomLog;
-import org.assertj.core.api.InstanceOfAssertFactories;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.Logger;
+import org.apache.logging.log4j.core.appender.WriterAppender;
+import org.apache.logging.log4j.core.layout.PatternLayout;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.slf4j.LoggerFactory;
 import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
 import org.springframework.mock.web.server.MockServerWebExchange;
 import reactor.core.publisher.Mono;
@@ -48,22 +48,30 @@ class LoggingFilterTest {
     private static final Duration WAIT = Duration.ofSeconds(5);
 
     private LoggingFilter loggingFilter;
-    private Logger logger;
-    private ListAppender<ILoggingEvent> appender;
+    private StringWriter logOutput;
+    private WriterAppender appender;
 
     @BeforeEach
     void setup() {
-        appender = new ListAppender<>();
-        appender.start();
-        logger = (Logger) LoggerFactory.getLogger(LoggingFilter.class);
-        logger.addAppender(appender);
-        logger.setLevel(Level.DEBUG);
         loggingFilter = new LoggingFilter();
+        logOutput = new StringWriter();
+        appender = WriterAppender.newBuilder()
+                .setLayout(PatternLayout.newBuilder().withPattern("%p|%m%n").build())
+                .setName("stringAppender")
+                .setTarget(logOutput)
+                .build();
+        Logger logger = (Logger) LogManager.getLogger(loggingFilter);
+        logger.addAppender(appender);
+        logger.setLevel(org.apache.logging.log4j.Level.DEBUG);
+        appender.start();
     }
 
     @AfterEach
     void cleanup() {
-        logger.detachAndStopAllAppenders();
+        appender.stop();
+        org.apache.logging.log4j.core.Logger logger =
+                (org.apache.logging.log4j.core.Logger) LogManager.getLogger(loggingFilter);
+        logger.removeAppender(appender);
     }
 
     @CsvSource({
@@ -127,11 +135,10 @@ class LoggingFilterTest {
     }
 
     private void assertLog(Level level, String pattern) {
-        assertThat(appender.list)
-                .hasSize(1)
-                .first()
-                .returns(level, ILoggingEvent::getLevel)
-                .extracting(ILoggingEvent::getFormattedMessage, InstanceOfAssertFactories.STRING)
+        assertThat(logOutput)
+                .asString()
+                .hasLineCount(1)
+                .contains(level.toString())
                 .containsPattern(pattern);
     }
 }

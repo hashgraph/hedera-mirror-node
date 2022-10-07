@@ -31,8 +31,6 @@ import lombok.experimental.UtilityClass;
 import org.apache.commons.codec.binary.Hex;
 
 import com.hedera.mirror.common.domain.DigestAlgorithm;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.SidecarFile;
 import com.hedera.mirror.common.util.DomainUtils;
@@ -228,7 +226,6 @@ public class TestRecordFiles {
     }
 
     public List<RecordFile> getV2V5Files() {
-        EntityId nodeAccountId = EntityId.of(0, 0, 3, EntityType.ACCOUNT);
         RecordFile recordFileV2 = RecordFile.builder()
                 .consensusStart(1611188151568507001L)
                 .consensusEnd(1611188151568507001L)
@@ -238,7 +235,7 @@ public class TestRecordFiles {
                         "e7d9e71efd239bde3adcad8eb0571c38f91f77ae76a4af69bb44f19b2785ad3594ac1d265351a592ab14301da9bb1950")
                 .hash("e7d9e71efd239bde3adcad8eb0571c38f91f77ae76a4af69bb44f19b2785ad3594ac1d265351a592ab14301da9bb1950")
                 .name("2021-01-21T00_15_51.568507001Z.rcd")
-                .nodeAccountId(nodeAccountId)
+                .nodeId(0L)
                 .previousHash(
                         "d27ba83c736bfa2ffc9a6f062b27ea4856800bbbe820b77b32e08faf3d7475d81ef5a16f90ce065d35eefa999677edaa")
                 .size(389)
@@ -258,7 +255,7 @@ public class TestRecordFiles {
                 .metadataHash(
                         "1d83206a166a06c8579f9de637cf50a565341928b55bfbdc774ce85ac2169b46c23db42729723e7c39e5a042bd9e3b98")
                 .name("2021-01-21T00_19_43.558496000Z.rcd")
-                .nodeAccountId(nodeAccountId)
+                .nodeId(0L)
                 .previousHash(recordFileV2.getHash())
                 .size(495)
                 .version(5)
@@ -267,21 +264,20 @@ public class TestRecordFiles {
     }
 
     public List<RecordFile> getV5V6Files() {
-        EntityId nodeAccountId = EntityId.of(0, 0, 3, EntityType.ACCOUNT);
         RecordFile recordFileV5 = RecordFile.builder()
-                .nodeAccountId(nodeAccountId)
                 .name("2022-06-21T09_14_34.364804003Z.rcd")
                 .digestAlgorithm(DigestAlgorithm.SHA_384)
                 .index(0L)
+                .nodeId(0L)
                 .size(492)
                 .version(5)
                 .build();
 
         RecordFile recordFileV6 = RecordFile.builder()
                 .name("2022-06-21T09_15_38.325469003Z.rcd.gz")
-                .nodeAccountId(nodeAccountId)
                 .digestAlgorithm(DigestAlgorithm.SHA_384)
                 .index(-9223372036854775797L)
+                .nodeId(0L)
                 .size(788)
                 .version(6)
                 .build();

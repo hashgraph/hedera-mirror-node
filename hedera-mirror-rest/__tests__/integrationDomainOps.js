@@ -733,9 +733,9 @@ const setAccountBalance = async (balance) => {
 
   await pool.query(
     `insert into account_balance_file
-    (consensus_timestamp, count, load_start, load_end, name, node_account_id)
+    (consensus_timestamp, count, load_start, load_end, name, node_id)
     values ($1, $2, $3, $4, $5, $6) on CONFLICT DO NOTHING;`,
-    [balance.timestamp, 1, balance.timestamp, balance.timestamp, `${balance.timestamp}_Balances.pb.gz`, 3]
+    [balance.timestamp, 1, balance.timestamp, balance.timestamp, `${balance.timestamp}_Balances.pb.gz`, 0]
   );
 
   if (balance.tokens) {
@@ -1440,7 +1440,7 @@ const addRecordFile = async (recordFileInput) => {
     'load_start',
     'logs_bloom',
     'name',
-    'node_account_id',
+    'node_id',
     'prev_hash',
     'size',
     'version',
@@ -1463,7 +1463,7 @@ const addRecordFile = async (recordFileInput) => {
     load_start: 1629298233,
     logs_bloom: Buffer.alloc(0),
     name: '2021-08-12T06_59_32.000852000Z.rcd',
-    node_account_id: 3,
+    node_id: 0,
     prev_hash: '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
     size: 6,
     version: 5,

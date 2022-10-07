@@ -28,7 +28,7 @@ create table if not exists account_balance_file
     load_end            bigint        not null,
     load_start          bigint        not null,
     name                varchar(250)  not null,
-    node_account_id     bigint        not null,
+    node_id             bigint        not null,
     time_offset         int default 0 not null
 );
 comment on table account_balance_file is 'Account balances stream files';
@@ -330,7 +330,7 @@ create table if not exists event_file
     load_end         bigint                 not null,
     load_start       bigint                 not null,
     name             character varying(250) not null,
-    node_account_id  bigint                 not null,
+    node_id          bigint                 not null,
     previous_hash    character varying(96)  not null,
     version          integer                not null
 );
@@ -481,7 +481,7 @@ create table if not exists record_file
     load_end           bigint                 not null,
     logs_bloom         bytea                  null,
     name               character varying(250) not null,
-    node_account_id    bigint                 not null,
+    node_id            bigint                 not null,
     prev_hash          character varying(96)  not null,
     sidecar_count      int                    not null default 0,
     size               int                    null,
