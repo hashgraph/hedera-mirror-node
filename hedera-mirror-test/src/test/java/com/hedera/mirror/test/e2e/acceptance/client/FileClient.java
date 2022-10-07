@@ -21,7 +21,6 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  */
 
 import javax.inject.Named;
-import lombok.SneakyThrows;
 import org.springframework.retry.support.RetryTemplate;
 
 import com.hedera.hashgraph.sdk.FileAppendTransaction;
@@ -107,10 +106,7 @@ public class FileClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
-    @SneakyThrows
     public FileInfo getFileInfo(FileId fileId) {
-        return retryTemplate.execute(x -> new FileInfoQuery()
-                .setFileId(fileId)
-                .execute(client));
+        return executeQuery(() -> new FileInfoQuery().setFileId(fileId));
     }
 }
