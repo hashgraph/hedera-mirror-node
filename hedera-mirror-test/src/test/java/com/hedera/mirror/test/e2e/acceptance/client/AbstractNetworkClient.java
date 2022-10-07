@@ -21,6 +21,7 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  */
 
 import java.time.Instant;
+import java.util.function.Supplier;
 import lombok.Data;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
@@ -62,9 +63,9 @@ public abstract class AbstractNetworkClient {
     }
 
     @SneakyThrows
-    public <O, T extends Query<O, T>> O executeQuery(Query<O, T> query) {
-        query.setGrpcDeadline(sdkClient.getAcceptanceTestProperties().getSdkProperties().getGrpcDeadline());
-        return retryTemplate.execute(x -> query.execute(client));
+    public <O, T extends Query<O, T>> O executeQuery(Supplier<Query<O, T>> querySupplier) {
+        var grpcDeadline = sdkClient.getAcceptanceTestProperties().getSdkProperties().getGrpcDeadline();
+        return retryTemplate.execute(x -> querySupplier.get().setGrpcDeadline(grpcDeadline).execute(client));
     }
 
     @SneakyThrows
@@ -131,7 +132,9 @@ public abstract class AbstractNetworkClient {
     }
 
     public TransactionReceipt getTransactionReceipt(TransactionId transactionId) {
-        return executeQuery(new TransactionReceiptQuery().setTransactionId(transactionId));
+        // TransactionReceiptQuery is free
+        var query = new TransactionReceiptQuery().setTransactionId(transactionId);
+        return executeQuery(() -> query);
     }
 
     @SneakyThrows
@@ -159,7 +162,9 @@ public abstract class AbstractNetworkClient {
     }
 
     public long getBalance(ExpandedAccountId accountId) {
-        var balance = executeQuery(new AccountBalanceQuery().setAccountId(accountId.getAccountId())).hbars;
+        // AccountBalanceQuery is free
+        var query = new AccountBalanceQuery().setAccountId(accountId.getAccountId());
+        var balance = executeQuery(() -> query).hbars;
         log.info("{} balance is {}", accountId, balance);
         return balance.toTinybars();
     }

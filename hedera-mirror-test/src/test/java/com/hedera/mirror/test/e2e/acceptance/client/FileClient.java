@@ -107,6 +107,6 @@ public class FileClient extends AbstractNetworkClient {
     }
 
     public FileInfo getFileInfo(FileId fileId) {
-        return executeQuery(new FileInfoQuery().setFileId(fileId));
+        return executeQuery(() -> new FileInfoQuery().setFileId(fileId));
     }
 }

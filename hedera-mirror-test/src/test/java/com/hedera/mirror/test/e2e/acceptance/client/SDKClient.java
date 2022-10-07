@@ -196,7 +196,7 @@ public class SDKClient implements AutoCloseable {
                     .setGrpcDeadline(acceptanceTestProperties.getSdkProperties().getGrpcDeadline())
                     .setNodeAccountIds(List.of(nodeAccountId))
                     .execute(client, Duration.ofSeconds(10L));
-            log.debug("Validated node: {}", nodeAccountId);
+            log.info("Validated node: {}", nodeAccountId);
             valid = true;
         } catch (Exception e) {
             log.warn("Unable to validate node {}: {}", nodeAccountId, e.getMessage());

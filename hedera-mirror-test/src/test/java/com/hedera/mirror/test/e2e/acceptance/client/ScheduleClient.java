@@ -110,6 +110,6 @@ public class ScheduleClient extends AbstractNetworkClient {
     }
 
     public ScheduleInfo getScheduleInfo(ScheduleId scheduleId) {
-        return executeQuery(new ScheduleInfoQuery().setScheduleId(scheduleId));
+        return executeQuery(() -> new ScheduleInfoQuery().setScheduleId(scheduleId));
     }
 }

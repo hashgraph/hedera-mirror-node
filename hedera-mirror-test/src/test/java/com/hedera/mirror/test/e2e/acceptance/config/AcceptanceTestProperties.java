@@ -31,6 +31,7 @@ import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
+import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.mirror.test.e2e.acceptance.props.NodeProperties;
 
 @Named
@@ -54,7 +55,7 @@ public class AcceptanceTestProperties {
     @Max(5)
     private int maxRetries = 2;
 
-    private long maxTinyBarTransactionFee = 40_00_000_000L;
+    private long maxTinyBarTransactionFee = Hbar.from(40).toTinybars();
 
     @NotNull
     private Duration messageTimeout = Duration.ofSeconds(20);
@@ -67,7 +68,7 @@ public class AcceptanceTestProperties {
 
     private Set<NodeProperties> nodes = new LinkedHashSet<>();
 
-    private long operatorBalance = 200_00_000_000L;
+    private long operatorBalance = Hbar.from(200).toTinybars();
 
     @NotBlank
     private String operatorId = "0.0.2";

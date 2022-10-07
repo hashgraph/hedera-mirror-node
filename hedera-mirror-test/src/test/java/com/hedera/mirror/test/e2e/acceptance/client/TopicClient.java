@@ -186,6 +186,6 @@ public class TopicClient extends AbstractNetworkClient {
     }
 
     public TopicInfo getTopicInfo(TopicId topicId) {
-        return executeQuery(new TopicInfoQuery().setTopicId(topicId));
+        return executeQuery(() -> new TopicInfoQuery().setTopicId(topicId));
     }
 }
