@@ -42,6 +42,7 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -112,7 +113,7 @@ public final class Client implements AutoCloseable, WithPing, WithPingAll {
                 .build();
 
         return Executors.newFixedThreadPool(
-                Runtime.getRuntime().availableProcessors(),
+                Math.max(Runtime.getRuntime().availableProcessors(), 2),
                 threadFactory);
     }
 
@@ -1043,6 +1044,19 @@ public final class Client implements AutoCloseable, WithPing, WithPingAll {
         var closeDeadline = Instant.now().plus(timeout);
         network.beginClose();
         mirrorNetwork.beginClose();
+        executor.shutdown();
+
+        try {
+            if (!executor.awaitTermination(timeout.getSeconds(), TimeUnit.SECONDS)) {
+                logger.warn("There are still tasks running, trying to shutdown the executor now");
+                executor.shutdownNow(); // Cancel currently executing tasks
+            }
+        } catch (InterruptedException ex) {
+            // (Re-)Cancel if current thread also interrupted
+            executor.shutdownNow();
+            // Preserve interrupt status
+            Thread.currentThread().interrupt();
+        }
 
         var networkError = network.awaitClose(closeDeadline, null);
         var mirrorNetworkError = mirrorNetwork.awaitClose(closeDeadline, networkError);
