@@ -38,8 +38,7 @@ class TokenController extends BaseController {
    *
    * @param {[]} filters req filters
    * @param {BigInt} ownerAccountId Encoded owner entityId
-   * @returns {{bounds: {string: Bound}, lower: *[], inner: *[], upper: *[],
-   *  accountId: BigInt, order: 'asc'|'desc', limit: number}}
+   * @returns {conditions:{key:'token.id', operator:'=', value:10}, order: 'asc'|'desc',accountId: BigInt, limit: number}
    */
   extractTokensRelationshipQuery = (filters, ownerAccountId) => {
     let conditions = [];
@@ -49,7 +48,6 @@ class TokenController extends BaseController {
     for (const filter of filters) {
       switch (filter.key) {
         case filterKeys.TOKEN_ID:
-          //new Bound(filterKeys.TOKEN_ID, 'token_id').parse(filter);
           if (utils.opsMap.ne === filter.operator) {
             throw new InvalidArgumentError(`Not equal (ne) comparison operator is not supported for ${filter.key}`);
           }
