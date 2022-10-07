@@ -41,7 +41,7 @@ class TokenService extends BaseService {
    */
   getQuery(query) {
     console.log('Query: ' + query);
-    const {filters, order, ownerAccountId, limit} = query;
+    const {conditions, order, ownerAccountId, limit} = query;
     const params = [ownerAccountId, limit];
     const tableAlias = `ta`;
     const tokenBalanceJoin =
@@ -55,10 +55,10 @@ class TokenService extends BaseService {
       `
     where ${tableAlias}.${TokenRelationship.ACCOUNT_ID} = $1`;
     let conditionsClause;
-    if (filters !== undefined && filters.length != 0) {
-      params.push(filters[0].value);
+    if (conditions !== undefined && conditions.length != 0) {
+      params.push(conditions[0].value);
       conditionsClause = `
-      and ${tableAlias}.${filters[0].key} ${filters[0].operator} $${params.length}`;
+      and ${tableAlias}.${conditions[0].key} ${conditions[0].operator} $${params.length}`;
     }
     const limitClause = super.getLimitQuery(2);
     const orderClause = `order by ` + tableAlias + `.` + TokenRelationship.TOKEN_ID + ` ` + order;

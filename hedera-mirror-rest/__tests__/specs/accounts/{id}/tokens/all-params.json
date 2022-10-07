@@ -1,5 +1,5 @@
 {
-  "description": "Token relationship api call for all tokens for an account",
+  "description": "Token relationship api call for tokens with all applicable params",
   "setup": {
     "accounts": [
       {
@@ -7,16 +7,6 @@
         "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
         "evm_address": "ebb9a1be370150759408cd7af48e9eda2b8ead57",
         "public_key": "519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9"
-      }
-    ],
-    "entities": [
-      {
-        "num": 1500,
-        "type": "TOKEN"
-      },
-      {
-        "num": 2500,
-        "type": "TOKEN"
       }
     ],
     "tokens": [
@@ -84,28 +74,10 @@
       }
     ]
   },
-  "urls": [
-    "/api/v1/accounts/1001/tokens",
-    "/api/v1/accounts/0.1001/tokens",
-    "/api/v1/accounts/0.0.1001/tokens",
-    "/api/v1/accounts/KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/tokens",
-    "/api/v1/accounts/0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/tokens",
-    "/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/tokens",
-    "/api/v1/accounts/ebb9a1be370150759408cd7af48e9eda2b8ead57/tokens",
-    "/api/v1/accounts/0xebb9a1be370150759408cd7af48e9eda2b8ead57/tokens",
-    "/api/v1/accounts/0.0.ebb9a1be370150759408cd7af48e9eda2b8ead57/tokens"
-  ],
+  "url": "/api/v1/accounts/0.0.1001/tokens?token.id=gte:1135&order=asc&limit=2",
   "responseStatus": 200,
   "responseJson": {
     "tokens": [
-      {
-        "automatic_association": true,
-        "balance": 25,
-        "created_timestamp": "1234567890.000000006",
-        "freeze_status": "UNFROZEN",
-        "kyc_status": "GRANTED",
-        "token_id": "0.23.45678"
-      },
       {
         "automatic_association": true,
         "balance": 15,
@@ -113,6 +85,14 @@
         "freeze_status": "UNFROZEN",
         "kyc_status": "GRANTED",
         "token_id": "0.0.1135"
+      },
+      {
+        "automatic_association": true,
+        "balance": 25,
+        "created_timestamp": "1234567890.000000006",
+        "freeze_status": "UNFROZEN",
+        "kyc_status": "GRANTED",
+        "token_id": "0.23.45678"
       }
     ],
     "links": {

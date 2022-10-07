@@ -629,7 +629,7 @@ const addAccount = async (account) => {
 const addAccountBalanceFile = async (accountBalanceFile) => {
   accountBalanceFile = {
     consensus_timestamp: 0,
-    node_account_id: 3,
+    node_account_id: 0,
     file_hash: 'dee34bdd8bbe32fdb53ce7e3cf764a0495fa5e93b15ca567208cfb384231301bedf821de07b0d8dc3fb55c5b3c90ac61',
     load_end: 1629298236,
     load_start: 1629298233,
