@@ -37,6 +37,7 @@ const defaultFileData = '\\x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc2064864
 
 const setup = async (testDataJson) => {
   await loadAccounts(testDataJson.accounts);
+  await loadAccountBalanceFiles(testDataJson.accountBalanceFile);
   await loadAddressBooks(testDataJson.addressbooks);
   await loadAddressBookEntries(testDataJson.addressbookentries);
   await loadAddressBookServiceEndpoints(testDataJson.addressbookserviceendpoints);
@@ -63,6 +64,7 @@ const setup = async (testDataJson) => {
   await loadTokens(testDataJson.tokens);
   await loadTokenAccounts(testDataJson.tokenaccounts);
   await loadTokenAllowances(testDataJson.tokenAllowances);
+  await loadTokenBalances(testDataJson.tokenBalance);
   await loadTransactions(testDataJson.transactions);
   await loadTransactionSignatures(testDataJson.transactionsignatures);
 };
@@ -74,6 +76,15 @@ const loadAccounts = async (accounts) => {
 
   for (const account of accounts) {
     await addAccount(account);
+  }
+};
+const loadAccountBalanceFiles = async (accountBalanceFiles) => {
+  if (accountBalanceFiles == null) {
+    return;
+  }
+
+  for (const accountBalanceFile of accountBalanceFiles) {
+    await addAccountBalanceFile(accountBalanceFile);
   }
 };
 
@@ -323,6 +334,16 @@ const loadTokenAllowances = async (tokenAllowances) => {
 
   for (const tokenAllowance of tokenAllowances) {
     await addTokenAllowance(tokenAllowance);
+  }
+};
+
+const loadTokenBalances = async (tokenBalances) => {
+  if (tokenBalances == null) {
+    return;
+  }
+
+  for (const tokenBalance of tokenBalances) {
+    await addTokenBalance(tokenBalance);
   }
 };
 
@@ -602,6 +623,35 @@ const addAccount = async (account) => {
       type: constants.entityTypes.ACCOUNT,
     },
     account
+  );
+};
+
+const addAccountBalanceFile = async (accountBalanceFile) => {
+  accountBalanceFile = {
+    consensus_timestamp: 0,
+    node_account_id: 3,
+    file_hash: 'dee34bdd8bbe32fdb53ce7e3cf764a0495fa5e93b15ca567208cfb384231301bedf821de07b0d8dc3fb55c5b3c90ac61',
+    load_end: 1629298236,
+    load_start: 1629298233,
+    time_offset: 0,
+    ...accountBalanceFile,
+  };
+
+  await pool.query(
+    `insert into account_balance_file (consensus_timestamp,count,load_start,load_end,
+                                  file_hash,name,node_account_id,bytes,time_offset)
+    values ($1, $2, $3, $4, $5, $6, $7, $8, $9);`,
+    [
+      accountBalanceFile.consensus_timestamp,
+      accountBalanceFile.count,
+      accountBalanceFile.load_start,
+      accountBalanceFile.load_end,
+      accountBalanceFile.file_hash,
+      accountBalanceFile.name,
+      accountBalanceFile.node_account_id,
+      accountBalanceFile.bytes,
+      accountBalanceFile.time_offset,
+    ]
   );
 };
 
@@ -1223,10 +1273,7 @@ const addTokenAccount = async (tokenAccount) => {
   tokenAccount = {
     account_id: '0.0.0',
     associated: true,
-    automatic_association: false,
     created_timestamp: 0,
-    freeze_status: 0,
-    kyc_status: 0,
     timestamp_range: null,
     token_id: '0.0.0',
     ...tokenAccount,
@@ -1270,6 +1317,27 @@ const addTokenAllowance = async (tokenAllowance) => {
   await insertDomainObject(table, insertFields, tokenAllowance);
 };
 
+const addTokenBalance = async (tokenBalance) => {
+  // create token account object
+  tokenBalance = {
+    consensus_timestamp: 0,
+    account_id: '0.0.0',
+    balance: 0,
+    token_id: '0.0.0',
+    ...tokenBalance,
+  };
+
+  await pool.query(
+    `insert into token_balance (consensus_timestamp,account_id, balance, token_id)
+    values ($1, $2, $3, $4);`,
+    [
+      tokenBalance.consensus_timestamp,
+      EntityId.parse(tokenBalance.account_id).getEncodedId(),
+      tokenBalance.balance,
+      EntityId.parse(tokenBalance.token_id).getEncodedId(),
+    ]
+  );
+};
 const addNetworkStake = async (networkStakeInput) => {
   const stakingPeriodEnd = 86_400_000_000_000n - 1n;
   const networkStake = {
