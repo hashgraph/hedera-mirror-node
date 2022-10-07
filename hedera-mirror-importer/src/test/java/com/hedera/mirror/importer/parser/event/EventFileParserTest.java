@@ -33,8 +33,6 @@ import reactor.core.publisher.Flux;
 
 import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.common.domain.StreamFile;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.event.EventFile;
 import com.hedera.mirror.common.domain.event.EventItem;
 import com.hedera.mirror.importer.domain.StreamFilename;
@@ -92,7 +90,7 @@ class EventFileParserTest extends AbstractStreamFileParserTest<EventFileParser> 
         eventFile.setLoadEnd(id);
         eventFile.setLoadStart(id);
         eventFile.setName(filename);
-        eventFile.setNodeAccountId(EntityId.of("0.0.3", EntityType.ACCOUNT));
+        eventFile.setNodeId(0L);
         eventFile.setPreviousHash("previousHash" + (id - 1));
         eventFile.setVersion(1);
         eventFile.setItems(Flux.just(new EventItem()));
