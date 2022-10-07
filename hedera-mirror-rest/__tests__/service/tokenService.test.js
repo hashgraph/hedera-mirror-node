@@ -59,7 +59,8 @@ describe('getQuery', () => {
       query: {...defaultQuery, conditions: [{key: 'TOKEN_ID', operator: '=', value: 2}]},
       expected: {
         sqlQuery:
-          `select ta.*,tb.balance from token_account ta ` +
+          `select ta.*, tb.balance
+           from token_account ta ` +
           tokenBalanceJoin +
           ` where ta.account_id = $1 and ta.token_id = $3
           order by ta.token_id asc
@@ -72,7 +73,8 @@ describe('getQuery', () => {
       query: {...defaultQuery, conditions: [{key: 'TOKEN_ID', operator: '>', value: 10}]},
       expected: {
         sqlQuery:
-          `select ta.*,tb.balance from token_account ta ` +
+          `select ta.*, tb.balance
+           from token_account ta ` +
           tokenBalanceJoin +
           ` where ta.account_id = $1 and ta.token_id > $3
           order by ta.token_id asc
@@ -85,7 +87,8 @@ describe('getQuery', () => {
       query: {...defaultQuery, conditions: [{key: 'TOKEN_ID', operator: '<', value: 5}]},
       expected: {
         sqlQuery:
-          `select ta.*,tb.balance from token_account ta ` +
+          `select ta.*, tb.balance
+           from token_account ta ` +
           tokenBalanceJoin +
           ` where ta.account_id = $1 and ta.token_id < $3
           order by ta.token_id asc

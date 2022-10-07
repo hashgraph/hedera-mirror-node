@@ -80,7 +80,13 @@ describe('extractTokenRelationshipQuery', () => {
       },
       expected: {
         ...defaultExpected,
-        conditions: ['token_id  =  10'],
+        conditions: [
+          {
+            key: 'token_id',
+            operator: ' = ',
+            value: 10,
+          },
+        ],
       },
     },
     {
@@ -90,7 +96,13 @@ describe('extractTokenRelationshipQuery', () => {
       },
       expected: {
         ...defaultExpected,
-        conditions: ['token_id  >  101'],
+        conditions: [
+          {
+            key: 'token_id',
+            operator: ' > ',
+            value: 101,
+          },
+        ],
       },
     },
     {
@@ -100,7 +112,13 @@ describe('extractTokenRelationshipQuery', () => {
       },
       expected: {
         ...defaultExpected,
-        conditions: ['token_id  >=  102'],
+        conditions: [
+          {
+            key: 'token_id',
+            operator: ' >= ',
+            value: 102,
+          },
+        ],
       },
     },
     {
@@ -110,7 +128,13 @@ describe('extractTokenRelationshipQuery', () => {
       },
       expected: {
         ...defaultExpected,
-        conditions: ['token_id  <  150'],
+        conditions: [
+          {
+            key: 'token_id',
+            operator: ' < ',
+            value: 150,
+          },
+        ],
       },
     },
     {
@@ -120,7 +144,13 @@ describe('extractTokenRelationshipQuery', () => {
       },
       expected: {
         ...defaultExpected,
-        conditions: ['token_id  <=  151'],
+        conditions: [
+          {
+            key: 'token_id',
+            operator: ' <= ',
+            value: 151,
+          },
+        ],
       },
     },
   ];
