@@ -22,18 +22,10 @@ package com.hedera.mirror.test.e2e.acceptance.client;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.lang3.RandomUtils;
-import org.springframework.util.CollectionUtils;
 
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Client;
@@ -49,10 +41,7 @@ import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.TransactionResponse;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
-import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties.HederaNetwork;
-import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
-import com.hedera.mirror.test.e2e.acceptance.props.NodeProperties;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 
 @Log4j2
@@ -207,7 +196,7 @@ public class StartupProbe {
 
 	for ( retries = 1; retries <= maxRetries; retries++) {
             try {
-                Thread.sleep(1000);
+                TimeUnit.SECONDS.sleep(1);
                 if (messageReceived.get()) {  // we already had a previous success - no need to submit more trabsactions
                     break;
                 }
@@ -217,7 +206,7 @@ public class StartupProbe {
                     .execute(client)
                     .getReceipt(client);
 
-                Thread.sleep(1500);
+                TimeUnit.SECONDS.sleep(1);
             } catch (PrecheckStatusException pse) {
                 log.warn("PrecheckStatusException on GRPC API call to submit a transaction", pse);
                 throw new IllegalArgumentException("PrecheckStatusException on GRPC call (submitting transaction):"
