@@ -4,8 +4,7 @@ create table if not exists contract_state
   created_timestamp  bigint not null,
   modified_timestamp bigint not null,
   slot               bytea  not null,
-  value              bytea  null,
-  primary key (contract_id, slot)
+  value              bytea  null
 );
 
 -- migrate contract_state from contract_state_changes
@@ -40,3 +39,5 @@ select
     end,
     value
     from latest_contract_state;
+
+alter table contract_state add primary key (contract_id, slot);

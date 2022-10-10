@@ -41,7 +41,6 @@ import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.config.Owner;
-import com.hedera.mirror.importer.repository.ContractStateChangeRepository;
 import com.hedera.mirror.importer.repository.ContractStateRepository;
 
 @EnabledIfV1
@@ -57,7 +56,6 @@ class ContractStateMigrationTest extends IntegrationTest {
     private final @Owner JdbcTemplate jdbcTemplate;
     @Value("classpath:db/migration/v1/V1.67.0__contract_state.sql")
     private final File migrationSql;
-    private final ContractStateChangeRepository contractStateChangeRepository;
     private final ContractStateRepository contractStateRepository;
 
     @AfterEach
@@ -75,44 +73,69 @@ class ContractStateMigrationTest extends IntegrationTest {
     @Test
     void migrate() {
         // given
-        long createdTimestamp = 1L;
-        var contractStateChange1 = domainBuilder.contractStateChange()
-                .customize(c -> c.migration(true).consensusTimestamp(createdTimestamp)).persist();
+        var builder = domainBuilder.contractStateChange()
+                .customize(c -> c
+                        .consensusTimestamp(1L)
+                        .migration(true)
+                        .contractId(1000)
+                        .slot(new byte[]{1})
+                        .valueRead("a".getBytes())
+                        .valueWritten(null)
+                );
 
-        contractStateChange1.setValueWritten(domainBuilder.bytes(100));
-        contractStateChange1.setConsensusTimestamp(contractStateChange1.getConsensusTimestamp() + 1);
-        contractStateChangeRepository.save(contractStateChange1);
-
-        contractStateChange1.setValueWritten(domainBuilder.bytes(100));
-        contractStateChange1.setConsensusTimestamp(contractStateChange1.getConsensusTimestamp() + 2);
-        contractStateChangeRepository.save(contractStateChange1);
-
-        // Migrate is false and valueWritten is null, this should not be migrated to contract_state
-        domainBuilder.contractStateChange().customize(c -> c.valueWritten(null)).persist();
-
-        var contractState3Slot = domainBuilder.bytes(5);
-        var contractStateChange3 = domainBuilder.contractStateChange()
-                .customize(c -> c.migration(true).consensusTimestamp(createdTimestamp)
-                        .slot(contractState3Slot)).persist();
-
-        var expected = new ArrayList<ContractState>();
-        expected.add(this.convert(contractStateChange1, createdTimestamp));
-        expected.add(this.convert(contractStateChange3, createdTimestamp));
+        builder.persist();
+        var contractStateChange2 = builder.customize(c -> c
+                .consensusTimestamp(2L)
+                .valueRead("b".getBytes())
+        ).persist();
+        builder.customize(c -> c
+                .slot(new byte[]{2})
+                .valueRead("c".getBytes())
+        ).persist();
+        var contractStateChange4 = builder.customize(c -> c
+                .contractId(1001)
+                .consensusTimestamp(2L)
+                .slot(new byte[]{1})
+                .valueRead("d".getBytes())
+        ).persist();
+        var contractStateChange5 = builder.customize(c -> c
+                .contractId(1000)
+                .consensusTimestamp(3L)
+                .migration(false)
+                .slot(new byte[]{2})
+                .valueRead("c".getBytes())
+                .valueWritten("e".getBytes())
+        ).persist();
+        builder.customize(c -> c
+                .contractId(1001)
+                .consensusTimestamp(4L)
+                .migration(false)
+                .slot(new byte[]{1})
+                .valueRead("f".getBytes())
+                .valueWritten(null)
+        ).persist();
 
         // when
         runMigration();
+
+        var expected = new ArrayList<ContractState>();
+        expected.add(this.convert(contractStateChange2, 1L));
+        expected.add(this.convert(contractStateChange4, 2L));
+        expected.add(this.convert(contractStateChange5, 2L));
 
         // then
         assertThat(contractStateRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
     }
 
     private ContractState convert(ContractStateChange contractStateChange, long createdTimestamp) {
+        var value = contractStateChange.getValueWritten() == null ?
+                contractStateChange.getValueRead() : contractStateChange.getValueWritten();
         return ContractState.builder()
                 .contractId(contractStateChange.getContractId())
                 .createdTimestamp(createdTimestamp)
                 .modifiedTimestamp(contractStateChange.getConsensusTimestamp())
                 .slot(DomainUtils.leftPadBytes(contractStateChange.getSlot(), 32))
-                .value(contractStateChange.getValueWritten())
+                .value(value)
                 .build();
     }
 

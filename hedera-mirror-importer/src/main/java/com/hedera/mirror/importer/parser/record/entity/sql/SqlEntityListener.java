@@ -258,14 +258,16 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     public void onContractStateChange(ContractStateChange contractStateChange) {
         contractStateChanges.add(contractStateChange);
 
-        if (contractStateChange.getValueWritten() != null) {
+        var valueRead = contractStateChange.getValueRead();
+        var valueWritten = contractStateChange.getValueWritten();
+        if (valueWritten != null || contractStateChange.isMigration()) {
+            var value = valueWritten == null ? valueRead : valueWritten;
             var state = new ContractState();
             state.setContractId(contractStateChange.getContractId());
             state.setCreatedTimestamp(contractStateChange.getConsensusTimestamp());
             state.setModifiedTimestamp(contractStateChange.getConsensusTimestamp());
             state.setSlot(contractStateChange.getSlot());
-            state.setValue(contractStateChange.getValueWritten());
-
+            state.setValue(value);
             contractStates.merge(state.getId(), state, this::mergeContractState);
         }
     }
@@ -532,12 +534,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     private ContractState mergeContractState(ContractState previous, ContractState current) {
-        if (current.getValue() != null) {
-            previous.setValue(current.getValue());
-        }
-
+        previous.setValue(current.getValue());
         previous.setModifiedTimestamp(current.getModifiedTimestamp());
-
         return previous;
     }
 

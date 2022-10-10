@@ -20,7 +20,6 @@ package com.hedera.mirror.common.util;
  * ‍
  */
 
-import static com.google.protobuf.Internal.EMPTY_BYTE_ARRAY;
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 
 import com.google.protobuf.ByteOutput;
@@ -35,8 +34,8 @@ import java.nio.ByteBuffer;
 import java.time.Instant;
 import java.util.List;
 import javax.annotation.Nullable;
+import lombok.CustomLog;
 import lombok.experimental.UtilityClass;
-import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -45,10 +44,11 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hedera.services.stream.proto.HashObject;
 
-@Log4j2
+@CustomLog
 @UtilityClass
 public class DomainUtils {
 
+    private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
     public static final int EVM_ADDRESS_LENGTH = 20;
     public static final long TINYBARS_IN_ONE_HBAR = 100_000_000L;
 

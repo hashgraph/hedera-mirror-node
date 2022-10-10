@@ -304,7 +304,7 @@ public class DomainBuilder {
     public DomainWrapper<ContractState, ContractState.ContractStateBuilder> contractState() {
         var createdTimestamp = timestamp();
         var builder = ContractState.builder()
-                .contractId(entityId(CONTRACT).getId())
+                .contractId(id())
                 .createdTimestamp(createdTimestamp)
                 .modifiedTimestamp(createdTimestamp)
                 .slot(bytes(32))
