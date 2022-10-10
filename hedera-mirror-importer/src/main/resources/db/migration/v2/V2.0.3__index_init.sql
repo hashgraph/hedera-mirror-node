@@ -15,9 +15,9 @@ alter table account_balance
 
 -- account_balance_file
 alter table account_balance_file
-    add constraint account_balance_file__pk primary key (consensus_timestamp);
+    add constraint account_balance_file__pk primary key (consensus_timestamp, node_id);
 create unique index if not exists account_balance_file__name
-    on account_balance_file (name);
+    on account_balance_file (name, node_id);
 
 -- address_book
 alter table address_book
@@ -122,7 +122,7 @@ create index if not exists ethereum_transaction__hash on ethereum_transaction (h
 
 -- event_file
 alter table event_file
-    add constraint event_file__pk primary key (consensus_end, node_account_id);
+    add constraint event_file__pk primary key (consensus_end, node_id);
 create index if not exists event_file__hash
     on event_file (hash);
 
@@ -176,7 +176,7 @@ alter table reconciliation_job
 
 -- record_file
 alter table record_file
-    add constraint record_file__pk primary key (consensus_end, node_account_id);
+    add constraint record_file__pk primary key (consensus_end, node_id);
 create index if not exists record_file__index_node
     on record_file (index);
 create index if not exists record_file__hash

@@ -23,8 +23,6 @@ package com.hedera.mirror.common.domain;
 import lombok.NonNull;
 import reactor.core.publisher.Flux;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
-
 public interface StreamFile<T extends StreamItem> {
 
     StreamFile<T> copy();
@@ -74,9 +72,9 @@ public interface StreamFile<T extends StreamItem> {
 
     void setName(String name);
 
-    EntityId getNodeAccountId();
+    Long getNodeId();
 
-    void setNodeAccountId(@NonNull EntityId nodeAccountId);
+    void setNodeId(@NonNull Long nodeId);
 
     // Get the chained hash of the previous stream file
     default String getPreviousHash() {

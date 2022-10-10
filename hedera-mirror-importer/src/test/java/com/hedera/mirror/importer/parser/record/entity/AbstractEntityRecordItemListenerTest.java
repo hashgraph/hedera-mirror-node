@@ -95,7 +95,6 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
     protected static final AccountID SPENDER = AccountID.newBuilder().setAccountNum(2005).build();
     protected static final AccountID DEFAULT_ACCOUNT_ID = AccountID.getDefaultInstance();
     protected static final AccountID NODE = AccountID.newBuilder().setAccountNum(3).build();
-    protected static final EntityId NODE_ACCOUNT_ID = EntityId.of(NODE);
     protected static final AccountID TREASURY = AccountID.newBuilder().setAccountNum(98).build();
     protected static final AccountID PROXY = AccountID.newBuilder().setAccountNum(1003).build();
     protected static final AccountID PROXY_UPDATE = AccountID.newBuilder().setAccountNum(3000).build();
@@ -450,7 +449,7 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
                 .loadEnd(Instant.now().getEpochSecond())
                 .loadStart(Instant.now().getEpochSecond())
                 .name(filename)
-                .nodeAccountId(NODE_ACCOUNT_ID)
+                .nodeId(0L)
                 .previousHash("")
                 .build();
     }

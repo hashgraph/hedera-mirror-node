@@ -20,7 +20,6 @@ package com.hedera.mirror.common.domain.event;
  * ‍
  */
 
-import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Enumerated;
 import javax.persistence.Id;
@@ -34,11 +33,9 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import reactor.core.publisher.Flux;
 
-import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.domain.DigestAlgorithm;
 import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.common.domain.StreamType;
-import com.hedera.mirror.common.domain.entity.EntityId;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder(toBuilder = true)
@@ -77,8 +74,7 @@ public class EventFile implements StreamFile<EventItem> {
 
     private String name;
 
-    @Convert(converter = AccountIdConverter.class)
-    private EntityId nodeAccountId;
+    private Long nodeId;
 
     @ToString.Exclude
     private String previousHash;

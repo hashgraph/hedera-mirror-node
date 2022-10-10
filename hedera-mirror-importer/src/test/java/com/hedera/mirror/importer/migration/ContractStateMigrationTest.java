@@ -46,7 +46,7 @@ import com.hedera.mirror.importer.repository.ContractStateRepository;
 @EnabledIfV1
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
-@TestPropertySource(properties = "spring.flyway.target=1.66.1")
+@TestPropertySource(properties = "spring.flyway.target=1.67.0")
 class ContractStateMigrationTest extends IntegrationTest {
 
     private static final String REVERT_SQL = """
@@ -54,7 +54,7 @@ class ContractStateMigrationTest extends IntegrationTest {
             """;
 
     private final @Owner JdbcTemplate jdbcTemplate;
-    @Value("classpath:db/migration/v1/V1.67.0__contract_state.sql")
+    @Value("classpath:db/migration/v1/V1.67.1__contract_state.sql")
     private final File migrationSql;
     private final ContractStateRepository contractStateRepository;
 
