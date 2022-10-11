@@ -2,8 +2,8 @@
   "port": 3000,
   "servers": [
     {
-      "baseUrl": "http://127.0.0.1:5551",
-      "name": "local"
+      "baseUrl": "http://testnet.mirrornode.hedera.com",
+      "name": "testnet"
     }
   ],
   "interval": 60,
@@ -22,6 +22,11 @@
     "enabled": true,
     "freshnessThreshold": 1000,
     "intervalMultiplier": 1,
+    "limit": 10
+  },
+  "block": {
+    "enabled": true,
+    "freshnessThreshold": 1000,
     "limit": 10
   },
   "network": {
