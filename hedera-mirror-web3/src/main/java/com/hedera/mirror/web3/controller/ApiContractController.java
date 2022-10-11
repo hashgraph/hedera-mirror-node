@@ -2,7 +2,6 @@ package com.hedera.mirror.web3.controller;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -15,11 +14,9 @@ import org.springframework.core.codec.DecodingException;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -60,22 +57,18 @@ public class ApiContractController {
                 return response(request, new JsonRpcErrorResponse(
                         JsonRpcErrorCode.METHOD_NOT_FOUND));
             }
-
-            final var params = (List<Object>) request.getParams();
-            final var ethParams = (Map<String, String>) params.get(0);
-//            final var ethParamsConverted = new EthParams(ethParams.get("from"),
-//                    ethParams.get("to"), ethParams.get("gas"), ethParams.get("gasPrice"), ethParams.get("value"),
-//                    ethParams.get("data"));
-//            final var txnResult = new EthRpcCallBody(ethParamsConverted, (String) params.get(1));
-//            Object result = apiContractService.get(txnResult);
+            //get the params from the body and populate a EthParam value bean used
+            //to build EthRpcCallBody passed as an argument to the EthCallService
 
             JsonRpcSuccessResponse jsonRpcSuccessResponse = new JsonRpcSuccessResponse();
             jsonRpcSuccessResponse.setId(request.getId());
+            //depending on the estimate flag we populate different field from the jsonRpcSuccessResponse
             if (estimate) {
                 jsonRpcSuccessResponse.setGas("0x1");
+//                jsonRpcSuccessResponse.setGas(ethCallService.get(ethBody));
             } else {
                 jsonRpcSuccessResponse.setResult("0x1");
-//                jsonRpcSuccessResponse.setResult(result);
+//                jsonRpcSuccessResponse.setResult(ethCallService.get(ethBody));
             }
 
             return response(request, jsonRpcSuccessResponse);
@@ -88,7 +81,7 @@ public class ApiContractController {
         }
     }
 
-    @RequestMapping(value = "*", method = RequestMethod.POST)
+    @PostMapping(value = "*")
     @ResponseBody
     public Mono<JsonRpcResponse> getFallback() {
         return null;
@@ -156,8 +149,7 @@ public class ApiContractController {
     }
 
     private String formatError(ObjectError error) {
-        if (error instanceof FieldError) {
-            FieldError fieldError = (FieldError) error;
+        if (error instanceof FieldError fieldError) {
             return fieldError.getField() + " field " + fieldError.getDefaultMessage();
         }
         return error.getDefaultMessage();

@@ -10,11 +10,11 @@ import org.apache.tuweni.units.bigints.UInt256;
 @RequiredArgsConstructor
 public class EthCallService implements ApiContractEthService<EthRpcCallBody, String> {
 
-    static final String ETH_CALL_METHOD = "eth_call";
+    static final String CALL_METHOD = "call";
 
     @Override
     public String getMethod() {
-        return ETH_CALL_METHOD;
+        return CALL_METHOD;
     }
 
     @Override
@@ -27,7 +27,7 @@ public class EthCallService implements ApiContractEthService<EthRpcCallBody, Str
 
         //get the result from the txnProcessor.getOutput().toHexString();
 
-        //temporary output for poc
+        //temporary output
         final var successResult = UInt256.valueOf(ResponseCodeEnum.SUCCESS_VALUE);
         return successResult.toHexString();
     }
