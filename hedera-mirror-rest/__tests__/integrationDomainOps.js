@@ -627,7 +627,10 @@ const addAccount = async (account) => {
 };
 
 const defaultAccountBalanceFile = {
+  bytes: '0x010102020303',
   consensus_timestamp: 0,
+  count: 0,
+  name: 'Balance File name',
   node_id: 0,
   file_hash: 'dee34bdd8bbe32fdb53ce7e3cf764a0495fa5e93b15ca567208cfb384231301bedf821de07b0d8dc3fb55c5b3c90ac61',
   load_end: 1629298236,
@@ -1259,24 +1262,14 @@ const addToken = async (token) => {
   }
 };
 
-const defaultTokenAccount = {
-  account_id: '0.0.0',
-  associated: true,
-  automatic_association: false,
-  created_timestamp: 0,
-  freeze_status: 0,
-  kyc_status: 0,
-  timestamp_range: null,
-  token_id: '0.0.0',
-};
-
-const tokenAccountFields = Object.keys(defaultTokenAccount);
-
 const addTokenAccount = async (tokenAccount) => {
   // create token account object
-
   tokenAccount = {
-    ...defaultTokenAccount,
+    account_id: '0.0.0',
+    associated: true,
+    created_timestamp: 0,
+    timestamp_range: null,
+    token_id: '0.0.0',
     ...tokenAccount,
   };
 
@@ -1284,7 +1277,21 @@ const addTokenAccount = async (tokenAccount) => {
     tokenAccount.timestamp_range = `[${tokenAccount.created_timestamp},)`;
   }
 
-  await insertDomainObject('token_account', tokenAccountFields, tokenAccount);
+  await pool.query(
+    `insert into token_account (account_id, associated, automatic_association, created_timestamp, freeze_status,
+                                kyc_status, timestamp_range, token_id)
+    values ($1, $2, $3, $4, $5, $6, $7, $8);`,
+    [
+      EntityId.parse(tokenAccount.account_id).getEncodedId(),
+      tokenAccount.associated,
+      tokenAccount.automatic_association,
+      tokenAccount.created_timestamp,
+      tokenAccount.freeze_status,
+      tokenAccount.kyc_status,
+      tokenAccount.timestamp_range,
+      EntityId.parse(tokenAccount.token_id).getEncodedId(),
+    ]
+  );
 };
 
 const addTokenAllowance = async (tokenAllowance) => {

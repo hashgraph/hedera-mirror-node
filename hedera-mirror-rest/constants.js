@@ -27,6 +27,7 @@ const filterKeys = {
   ACCOUNT_BALANCE: 'account.balance',
   ACCOUNT_ID: 'account.id',
   ACCOUNT_PUBLICKEY: 'account.publickey',
+  ASSOCIATED: 'associated',
   BALANCE: 'balance',
   BLOCK_HASH: 'block.hash',
   BLOCK_NUMBER: 'block.number',
