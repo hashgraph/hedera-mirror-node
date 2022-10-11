@@ -29,12 +29,13 @@ const tokenIdGtFilter = {key: TOKEN_ID, operator: utils.opsMap.gt, value: 101};
 const tokenIdGteFilter = {key: TOKEN_ID, operator: utils.opsMap.gte, value: 102};
 const tokenIdLtFilter = {key: TOKEN_ID, operator: utils.opsMap.lt, value: 150};
 const tokenIdLteFilter = {key: TOKEN_ID, operator: utils.opsMap.lte, value: 151};
+const associatedFilter = {key: constants.filterKeys.ASSOCIATED, operator: utils.opsMap.eq, value: true};
 
 describe('extractTokenRelationshipQuery', () => {
   const defaultExpected = {
     conditions: [],
     ownerAccountId: ownerAccountId,
-    order: constants.orderFilterValues.DESC,
+    order: constants.orderFilterValues.ASC,
     limit: 25,
   };
 
@@ -148,6 +149,22 @@ describe('extractTokenRelationshipQuery', () => {
             key: 'token_id',
             operator: ' <= ',
             value: 151,
+          },
+        ],
+      },
+    },
+    {
+      name: 'associated filter',
+      input: {
+        filters: [associatedFilter],
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: [
+          {
+            key: 'associated',
+            operator: ' = ',
+            value: true,
           },
         ],
       },

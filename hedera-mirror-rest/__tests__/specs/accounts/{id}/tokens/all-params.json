@@ -27,6 +27,7 @@
       {
         "token_id": "0.0.1135",
         "account_id": "1001",
+        "associated": true,
         "automatic_association": true,
         "created_timestamp": "1234567890000000002",
         "freeze_status": 2,
@@ -35,6 +36,7 @@
       {
         "token_id": "0.0.45678",
         "account_id": "1001",
+        "associated": true,
         "created_timestamp": "1234567890000000006",
         "freeze_status": 2,
         "kyc_status": 1,
@@ -74,7 +76,7 @@
       }
     ]
   },
-  "url": "/api/v1/accounts/0.0.1001/tokens?token.id=gte:1135&order=asc&limit=2",
+  "url": "/api/v1/accounts/0.0.1001/tokens?token.id=gte:1135&order=asc&limit=2&associated=true",
   "responseStatus": 200,
   "responseJson": {
     "tokens": [

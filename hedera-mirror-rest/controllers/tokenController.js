@@ -20,7 +20,7 @@
 
 import {filterKeys, orderFilterValues, responseDataLabel} from '../constants';
 import BaseController from './baseController';
-import {InvalidArgumentError} from '../errors';
+import {InvalidArgumentError, NotFoundError} from '../errors';
 import {EntityService, TokenService} from '../service';
 import * as utils from '../utils';
 import TokenRelationshipViewModel from '../viewmodel/tokenRelationshipViewModel';
@@ -49,6 +49,13 @@ class TokenController extends BaseController {
           }
           conditions = [{key: TokenAccount.TOKEN_ID, operator: filter.operator, value: filter.value}];
           break;
+        case filterKeys.ASSOCIATED:
+          if (utils.opsMap.eq === filter.operator) {
+            conditions = [{key: TokenAccount.ASSOCIATED, operator: filter.operator, value: filter.value}];
+          } else {
+            throw new InvalidArgumentError(`${filter.operator} comparison operator is not supported for ${filter.key}`);
+          }
+          break;
         case filterKeys.LIMIT:
           limit = filter.value;
           break;
@@ -76,6 +83,10 @@ class TokenController extends BaseController {
    */
   getTokenRelationships = async (req, res) => {
     const accountId = await EntityService.getEncodedId(req.params[filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS]);
+    const isValidAccount = await EntityService.isValidAccount(accountId);
+    if (!isValidAccount) {
+      throw new NotFoundError();
+    }
     const filters = utils.buildAndValidateFilters(req.query);
     const query = this.extractTokensRelationshipQuery(filters, accountId);
     const tokenRelationships = await TokenService.getTokens(query);
