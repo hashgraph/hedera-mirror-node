@@ -20,7 +20,6 @@
 
 import {TokenAccount, TokenBalance, AccountBalanceFile, ContractResult} from '../model';
 import BaseService from './baseService';
-import tokenService from './tokenService';
 import {OrderSpec} from '../sql';
 
 /**
