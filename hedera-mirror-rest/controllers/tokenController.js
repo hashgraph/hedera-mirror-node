@@ -18,16 +18,13 @@
  * ‍
  */
 
-import {getResponseLimit} from '../config';
 import {filterKeys, orderFilterValues, responseDataLabel} from '../constants';
 import BaseController from './baseController';
 import {InvalidArgumentError} from '../errors';
 import {EntityService, TokenService} from '../service';
 import * as utils from '../utils';
 import TokenRelationshipViewModel from '../viewmodel/tokenRelationshipViewModel';
-import TokenRelationship from '../model/tokenRelationship';
-
-const {default: defaultLimit} = getResponseLimit();
+import TokenAccount from '../model/tokenAccount';
 
 const tokenRelationshipDefaultLimit = 25;
 const tokenRelationshipMaxLimit = 100;
@@ -50,7 +47,7 @@ class TokenController extends BaseController {
           if (utils.opsMap.ne === filter.operator) {
             throw new InvalidArgumentError(`Not equal (ne) comparison operator is not supported for ${filter.key}`);
           }
-          conditions = [{key: TokenRelationship.TOKEN_ID, operator: filter.operator, value: filter.value}];
+          conditions = [{key: TokenAccount.TOKEN_ID, operator: filter.operator, value: filter.value}];
           break;
         case filterKeys.LIMIT:
           if (filter.value > tokenRelationshipMaxLimit) {

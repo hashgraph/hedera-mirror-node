@@ -18,15 +18,11 @@
  * ‍
  */
 
-class TokenRelationship {
+class TokenAccount {
   static tableAlias = 'token_account';
   static tableName = this.tableAlias;
   static TOKEN_ID = `token_id`;
   static ACCOUNT_ID = `account_id`;
-  static TYPE = {
-    FUNGIBLE_COMMON: 'FUNGIBLE_COMMON',
-    NON_FUNGIBLE_UNIQUE: 'NON_FUNGIBLE_UNIQUE',
-  };
 
   /**
    * Parses token_account table columns into object
@@ -61,4 +57,4 @@ class TokenRelationship {
   }
 }
 
-export default TokenRelationship;
+export default TokenAccount;

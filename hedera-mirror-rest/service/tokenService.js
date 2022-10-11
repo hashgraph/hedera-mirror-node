@@ -20,7 +20,7 @@
 
 import _ from 'lodash';
 import {Token} from '../model';
-import TokenRelationship from '../model/tokenRelationship';
+import TokenAccount from '../model/tokenAccount';
 import {OrderSpec} from '../sql';
 import BaseService from './baseService';
 
@@ -28,11 +28,6 @@ import BaseService from './baseService';
  * Token retrieval business logic
  */
 class TokenService extends BaseService {
-  async getToken(tokenId) {
-    const {rows} = await pool.queryQuietly(TokenService.tokenByIdQuery, tokenId);
-    return _.isEmpty(rows) ? null : new Token(rows[0]);
-  }
-
   /**
    * Gets the full sql query and params to retrieve an account's token relationships
    *
@@ -40,7 +35,6 @@ class TokenService extends BaseService {
    * @return {{sqlQuery: string, params: *[]}}
    */
   getQuery(query) {
-    console.log('Query: ' + query);
     const {conditions, order, ownerAccountId, limit} = query;
     const params = [ownerAccountId, limit];
     const tableAlias = `ta`;
@@ -51,10 +45,10 @@ class TokenService extends BaseService {
       '.token_id = tb.token_id';
     const tokenByIdQuery =
       `select ${tableAlias}.*, tb.balance
-       from ${TokenRelationship.tableName} ${tableAlias} ` +
+       from ${TokenAccount.tableName} ${tableAlias} ` +
       tokenBalanceJoin +
       `
-    where ${tableAlias}.${TokenRelationship.ACCOUNT_ID} = $1`;
+    where ${tableAlias}.${TokenAccount.ACCOUNT_ID} = $1`;
     let conditionsClause;
     if (conditions !== undefined && conditions.length != 0) {
       params.push(conditions[0].value);
@@ -62,7 +56,7 @@ class TokenService extends BaseService {
       and ${tableAlias}.${conditions[0].key} ${conditions[0].operator} $${params.length}`;
     }
     const limitClause = super.getLimitQuery(2);
-    const orderClause = `order by ` + tableAlias + `.` + TokenRelationship.TOKEN_ID + ` ` + order;
+    const orderClause = `order by ` + tableAlias + `.` + TokenAccount.TOKEN_ID + ` ` + order;
     let sqlQuery = [tokenByIdQuery, conditionsClause, orderClause, limitClause].join('\n');
     return {sqlQuery, params};
   }
@@ -76,7 +70,7 @@ class TokenService extends BaseService {
   async getTokens(query) {
     const {sqlQuery, params} = this.getQuery(query);
     const rows = await super.getRows(sqlQuery, params, 'getTokens');
-    return rows.map((ta) => new TokenRelationship(ta));
+    return rows.map((ta) => new TokenAccount(ta));
   }
 }
 
