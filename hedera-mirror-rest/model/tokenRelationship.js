@@ -40,7 +40,7 @@ class TokenRelationship {
     this.tokenId = tokenRelationship.token_id;
   }
 
-  static tableAlias = 'tk_tr';
+  static tableAlias = 'ta';
   static tableName = 'token_account';
 
   static AUTOMATIC_ASSOCIATION = 'associated';
