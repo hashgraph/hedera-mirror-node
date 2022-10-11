@@ -1446,6 +1446,13 @@ components:
           $ref: '#/components/schemas/TokenDistribution'
         links:
           $ref: '#/components/schemas/Links'
+    TokenRelationshipResponse:
+      type: object
+      properties:
+        tokens:
+          $ref: '#/components/schemas/TokenRelationship'
+        links:
+          $ref: '#/components/schemas/Links'
     TokensResponse:
       type: object
       properties:
@@ -2822,20 +2829,36 @@ components:
         automatic_association:
           type: boolean
           description:
+          example: true
           nullable: false
         balance:
           format: int64
           type: integer
+          description: Fungible token balance for the given token.
+          example: 5
+          nullable: false
         created_timestamp:
           $ref: '#/components/schemas/TimestampNullable'
+          description: Creation timestamp of the token account relationship.
+          example: 123456789.000000001
+          nullable: false
         freeze_status:
           type: string
+          description: Freeze status for the given token.
+          example: UNFROZEN
           enum: [NOT_APPLICABLE, FROZEN, UNFROZEN]
+          nullable: false
         kyc_status:
           type: string
+          description: KYC status for the given token.
+          example: GRANTED
           enum: [ NOT_APPLICABLE, GRANTED, REVOKED ]
+          nullable: false
         token_id:
           $ref: '#/components/schemas/EntityId'
+          description: Id of the token associated with the given account.
+          example: 0.0.27335
+          nullable: false
       required:
         - automatic_association
         - balance
