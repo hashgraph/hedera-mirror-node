@@ -626,33 +626,24 @@ const addAccount = async (account) => {
   );
 };
 
+const defaultAccountBalanceFile = {
+  consensus_timestamp: 0,
+  node_id: 0,
+  file_hash: 'dee34bdd8bbe32fdb53ce7e3cf764a0495fa5e93b15ca567208cfb384231301bedf821de07b0d8dc3fb55c5b3c90ac61',
+  load_end: 1629298236,
+  load_start: 1629298233,
+  time_offset: 0,
+};
+
+const accountBalanceFileFields = Object.keys(defaultAccountBalanceFile);
+
 const addAccountBalanceFile = async (accountBalanceFile) => {
   accountBalanceFile = {
-    consensus_timestamp: 0,
-    node_id: 0,
-    file_hash: 'dee34bdd8bbe32fdb53ce7e3cf764a0495fa5e93b15ca567208cfb384231301bedf821de07b0d8dc3fb55c5b3c90ac61',
-    load_end: 1629298236,
-    load_start: 1629298233,
-    time_offset: 0,
+    ...defaultAccountBalanceFile,
     ...accountBalanceFile,
   };
 
-  await pool.query(
-    `insert into account_balance_file (consensus_timestamp,count,load_start,load_end,
-                                  file_hash,name,node_id,bytes,time_offset)
-    values ($1, $2, $3, $4, $5, $6, $7, $8, $9);`,
-    [
-      accountBalanceFile.consensus_timestamp,
-      accountBalanceFile.count,
-      accountBalanceFile.load_start,
-      accountBalanceFile.load_end,
-      accountBalanceFile.file_hash,
-      accountBalanceFile.name,
-      accountBalanceFile.node_id,
-      accountBalanceFile.bytes,
-      accountBalanceFile.time_offset,
-    ]
-  );
+  await insertDomainObject('account_balance_file', accountBalanceFileFields, accountBalanceFile);
 };
 
 const addAssessedCustomFee = async (assessedCustomFee) => {
@@ -1268,17 +1259,24 @@ const addToken = async (token) => {
   }
 };
 
+const defaultTokenAccount = {
+  account_id: '0.0.0',
+  associated: true,
+  automatic_association: false,
+  created_timestamp: 0,
+  freeze_status: 0,
+  kyc_status: 0,
+  timestamp_range: null,
+  token_id: '0.0.0',
+};
+
+const tokenAccountFields = Object.keys(defaultTokenAccount);
+
 const addTokenAccount = async (tokenAccount) => {
   // create token account object
+
   tokenAccount = {
-    account_id: '0.0.0',
-    associated: true,
-    automatic_association: false,
-    created_timestamp: 0,
-    freeze_status: 0,
-    kyc_status: 0,
-    timestamp_range: null,
-    token_id: '0.0.0',
+    ...defaultTokenAccount,
     ...tokenAccount,
   };
 
@@ -1286,21 +1284,7 @@ const addTokenAccount = async (tokenAccount) => {
     tokenAccount.timestamp_range = `[${tokenAccount.created_timestamp},)`;
   }
 
-  await pool.query(
-    `insert into token_account (account_id, associated, automatic_association, created_timestamp, freeze_status,
-                                kyc_status, timestamp_range, token_id)
-    values ($1, $2, $3, $4, $5, $6, $7, $8);`,
-    [
-      EntityId.parse(tokenAccount.account_id).getEncodedId(),
-      tokenAccount.associated,
-      tokenAccount.automatic_association,
-      tokenAccount.created_timestamp,
-      tokenAccount.freeze_status,
-      tokenAccount.kyc_status,
-      tokenAccount.timestamp_range,
-      EntityId.parse(tokenAccount.token_id).getEncodedId(),
-    ]
-  );
+  await insertDomainObject('token_account', tokenAccountFields, tokenAccount);
 };
 
 const addTokenAllowance = async (tokenAllowance) => {
@@ -1320,26 +1304,22 @@ const addTokenAllowance = async (tokenAllowance) => {
   await insertDomainObject(table, insertFields, tokenAllowance);
 };
 
+const defaultTokenBalance = {
+  consensus_timestamp: 0,
+  account_id: '0.0.0',
+  balance: 0,
+  token_id: '0.0.0',
+};
+const tokenBalanceFields = Object.keys(defaultTokenBalance);
+
 const addTokenBalance = async (tokenBalance) => {
-  // create token account object
+  // create token balance object
   tokenBalance = {
-    consensus_timestamp: 0,
-    account_id: '0.0.0',
-    balance: 0,
-    token_id: '0.0.0',
+    ...defaultTokenBalance,
     ...tokenBalance,
   };
 
-  await pool.query(
-    `insert into token_balance (consensus_timestamp,account_id, balance, token_id)
-    values ($1, $2, $3, $4);`,
-    [
-      tokenBalance.consensus_timestamp,
-      EntityId.parse(tokenBalance.account_id).getEncodedId(),
-      tokenBalance.balance,
-      EntityId.parse(tokenBalance.token_id).getEncodedId(),
-    ]
-  );
+  await insertDomainObject('token_balance', tokenBalanceFields, tokenBalance);
 };
 const addNetworkStake = async (networkStakeInput) => {
   const stakingPeriodEnd = 86_400_000_000_000n - 1n;

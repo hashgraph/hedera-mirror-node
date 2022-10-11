@@ -2828,13 +2828,13 @@ components:
       properties:
         automatic_association:
           type: boolean
-          description:
+          description: Specifies if the relationship is implicitly/explicity (true/false) associated.
           example: true
           nullable: false
         balance:
           format: int64
           type: integer
-          description: Fungible token balance for the given token.
+          description: For FUNGIBLE_COMMON the balance that the Account holds in the smallest denomination.NON_FUNGIBLE_UNIQUE - the number of NFTs held by the account.
           example: 5
           nullable: false
         created_timestamp:
@@ -2844,13 +2844,13 @@ components:
           nullable: false
         freeze_status:
           type: string
-          description: Freeze status for the given token.
+          description: The Freeze status of the account.
           example: UNFROZEN
           enum: [NOT_APPLICABLE, FROZEN, UNFROZEN]
           nullable: false
         kyc_status:
           type: string
-          description: KYC status for the given token.
+          description: The KYC status of the account.
           example: GRANTED
           enum: [ NOT_APPLICABLE, GRANTED, REVOKED ]
           nullable: false

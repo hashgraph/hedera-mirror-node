@@ -1,5 +1,5 @@
 {
-  "description": "Token relationship api call for tokens with invalid token.id path",
+  "description": "Token relationship api call for all tokens with no match",
   "setup": {
     "accounts": [
       {
@@ -7,16 +7,6 @@
         "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
         "evm_address": "ebb9a1be370150759408cd7af48e9eda2b8ead57",
         "public_key": "519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9"
-      }
-    ],
-    "entities": [
-      {
-        "num": 1500,
-        "type": "TOKEN"
-      },
-      {
-        "num": 2500,
-        "type": "TOKEN"
       }
     ],
     "tokens": [
@@ -85,21 +75,15 @@
     ]
   },
   "urls": [
-    "/api/v1/accounts/x/tokens",
-    "/api/v1/accounts/0.x/tokens",
-    "/api/v1/accounts/0.0.x/tokens",
-    "/api/v1/accounts/KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL/tokens",
-    "/api/v1/accounts/0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL/tokens",
-    "/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL/tokens"
+    "/api/v1/accounts/3001/tokens",
+    "/api/v1/accounts/0.1001/tokens?token.id=0.1.1135",
+    "/api/v1/accounts/0.0.1001/tokens?token.id=0.1.1135"
   ],
-  "responseStatus": 400,
+  "responseStatus": 200,
   "responseJson": {
-    "_status": {
-      "messages": [
-        {
-          "message": "Invalid parameter: idOrAliasOrEvmAddress"
-        }
-      ]
+    "tokens": [],
+    "links": {
+      "next": null
     }
   }
 }

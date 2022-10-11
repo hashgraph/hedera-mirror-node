@@ -74,7 +74,8 @@
       }
     ]
   },
-  "url": "/api/v1/accounts/0.0.1001/tokens?token.id=gt:1000&token.id=lte:2500&order=asc",
+  "url": ["/api/v1/accounts/0.0.1001/tokens?token.id=gt:1000", "/api/v1/accounts/0.0.1001/tokens?token.id=lte:2500"],
+
   "responseStatus": 200,
   "responseJson": {
     "tokens": [
