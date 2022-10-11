@@ -31,13 +31,16 @@ describe('getQuery', () => {
   const tokenBalanceJoin =
     'left join (select token_id,balance from token_balance where account_id = $1 and consensus_timestamp = (select max(consensus_timestamp) from account_balance_file)) tb on ta.token_id = tb.token_id';
 
+  const tokenAccountFields = 'ta.automatic_association,ta.created_timestamp,ta.freeze_status,ta.kyc_status,ta.token_id';
   const specs = [
     {
       name: 'default',
       query: defaultQuery,
       expected: {
         sqlQuery:
-          'select ta.*,tb.balance from token_account ta ' +
+          'select ' +
+          tokenAccountFields +
+          ',tb.balance from token_account ta ' +
           tokenBalanceJoin +
           ' where ta.account_id = $1 order by ta.token_id asc limit $2',
         params: [98, 25],
@@ -48,7 +51,9 @@ describe('getQuery', () => {
       query: {...defaultQuery, order: 'desc'},
       expected: {
         sqlQuery:
-          'select ta.*,tb.balance from token_account ta ' +
+          'select ' +
+          tokenAccountFields +
+          ',tb.balance from token_account ta ' +
           tokenBalanceJoin +
           ' where ta.account_id = $1 order by ta.token_id desc limit $2',
         params: [98, 25],
@@ -59,7 +64,9 @@ describe('getQuery', () => {
       query: {...defaultQuery, conditions: [{key: 'TOKEN_ID', operator: '=', value: 2}]},
       expected: {
         sqlQuery:
-          `select ta.*, tb.balance
+          `select ` +
+          tokenAccountFields +
+          `, tb.balance
            from token_account ta ` +
           tokenBalanceJoin +
           ` where ta.account_id = $1 and ta.token_id = $3
@@ -73,7 +80,9 @@ describe('getQuery', () => {
       query: {...defaultQuery, conditions: [{key: 'TOKEN_ID', operator: '>', value: 10}]},
       expected: {
         sqlQuery:
-          `select ta.*, tb.balance
+          `select ` +
+          tokenAccountFields +
+          `, tb.balance
            from token_account ta ` +
           tokenBalanceJoin +
           ` where ta.account_id = $1 and ta.token_id > $3
@@ -87,7 +96,9 @@ describe('getQuery', () => {
       query: {...defaultQuery, conditions: [{key: 'TOKEN_ID', operator: '<', value: 5}]},
       expected: {
         sqlQuery:
-          `select ta.*, tb.balance
+          `select ` +
+          tokenAccountFields +
+          `, tb.balance
            from token_account ta ` +
           tokenBalanceJoin +
           ` where ta.account_id = $1 and ta.token_id < $3

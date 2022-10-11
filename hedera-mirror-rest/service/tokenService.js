@@ -33,7 +33,7 @@ class TokenService extends BaseService {
   static tokenBalanceJoin = `left join (select ${TokenBalance.TOKEN_ID},${TokenBalance.BALANCE}
                 from ${TokenBalance.tableName}
                 where ${TokenBalance.ACCOUNT_ID} = $1
-                and ${TokenBalance.CONSENSUS_TIMESTAMP} = (${tokenService.accountBalanceQuery})) ${
+                and ${TokenBalance.CONSENSUS_TIMESTAMP} = (${TokenService.accountBalanceQuery})) ${
     TokenBalance.tableAlias
   }
                 on ${TokenAccount.getFullName(TokenAccount.TOKEN_ID)} = ${TokenBalance.getFullName(
@@ -45,9 +45,9 @@ class TokenService extends BaseService {
             ${TokenAccount.getFullName(TokenAccount.FREEZE_STATUS)},
             ${TokenAccount.getFullName(TokenAccount.KYC_STATUS)},
             ${TokenAccount.getFullName(TokenAccount.TOKEN_ID)},
-       ${TokenBalance.getFullName(TokenBalance.BALANCE)} from ${TokenAccount.tableName} ${TokenAccount.tableAlias} ${
-    tokenService.tokenBalanceJoin
-  }  where ${TokenAccount.tableAlias}.${TokenAccount.ACCOUNT_ID} = $1`;
+       ${TokenBalance.getFullName(TokenBalance.BALANCE)} from ${TokenAccount.tableName} ${TokenAccount.tableAlias}
+       ${TokenService.tokenBalanceJoin}
+       where ${TokenAccount.tableAlias}.${TokenAccount.ACCOUNT_ID} = $1`;
 
   /**
    * Gets the full sql query and params to retrieve an account's token relationships
@@ -62,13 +62,15 @@ class TokenService extends BaseService {
 
     let conditionsClause;
     if (conditions !== undefined && conditions.length != 0) {
-      params.push(conditions[0].value);
-      conditionsClause = `
-      and ${TokenAccount.tableAlias}.${conditions[0].key} ${conditions[0].operator} $${params.length}`;
+      for (const index in conditions) {
+        params.push(conditions[index].value);
+        conditionsClause = `
+      and ${TokenAccount.tableAlias}.${conditions[index].key} ${conditions[index].operator} $${params.length}`;
+      }
     }
     const limitClause = super.getLimitQuery(2);
-    const orderClause = this.getOrderByQuery(OrderSpec.from(TokenAccount.TOKEN_ID, order));
-    let sqlQuery = [tokenService.tokenRelationshipsQuery, conditionsClause, orderClause, limitClause].join('\n');
+    const orderClause = this.getOrderByQuery(OrderSpec.from(TokenAccount.getFullName(TokenAccount.TOKEN_ID), order));
+    const sqlQuery = [TokenService.tokenRelationshipsQuery, conditionsClause, orderClause, limitClause].join('\n');
     return {sqlQuery, params};
   }
 

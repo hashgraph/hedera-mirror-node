@@ -38,6 +38,7 @@ class TokenAccount {
   static tableName = 'token_account';
 
   static AUTOMATIC_ASSOCIATION = 'automatic_association';
+  static ASSOCIATED = 'associated';
   static BALANCE = 'balance';
   static CREATED_TIMESTAMP = 'created_timestamp';
   static FREEZE_STATUS = `freeze_status`;

@@ -100,19 +100,19 @@
     "tokens": [
       {
         "automatic_association": true,
-        "balance": 25,
-        "created_timestamp": "1234567890.000000006",
-        "freeze_status": "UNFROZEN",
-        "kyc_status": "GRANTED",
-        "token_id": "0.0.45678"
-      },
-      {
-        "automatic_association": true,
         "balance": 15,
         "created_timestamp": "1234567890.000000002",
         "freeze_status": "UNFROZEN",
         "kyc_status": "GRANTED",
         "token_id": "0.0.1135"
+      },
+      {
+        "automatic_association": true,
+        "balance": 25,
+        "created_timestamp": "1234567890.000000006",
+        "freeze_status": "UNFROZEN",
+        "kyc_status": "GRANTED",
+        "token_id": "0.0.45678"
       }
     ],
     "links": {

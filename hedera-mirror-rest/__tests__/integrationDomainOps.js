@@ -1267,7 +1267,10 @@ const addTokenAccount = async (tokenAccount) => {
   tokenAccount = {
     account_id: '0.0.0',
     associated: true,
+    automatic_association: false,
     created_timestamp: 0,
+    freeze_status: 0,
+    kyc_status: 0,
     timestamp_range: null,
     token_id: '0.0.0',
     ...tokenAccount,
@@ -1311,22 +1314,26 @@ const addTokenAllowance = async (tokenAllowance) => {
   await insertDomainObject(table, insertFields, tokenAllowance);
 };
 
-const defaultTokenBalance = {
-  consensus_timestamp: 0,
-  account_id: '0.0.0',
-  balance: 0,
-  token_id: '0.0.0',
-};
-const tokenBalanceFields = Object.keys(defaultTokenBalance);
-
 const addTokenBalance = async (tokenBalance) => {
-  // create token balance object
+  // create token account object
   tokenBalance = {
-    ...defaultTokenBalance,
+    consensus_timestamp: 0,
+    account_id: '0.0.0',
+    balance: 0,
+    token_id: '0.0.0',
     ...tokenBalance,
   };
 
-  await insertDomainObject('token_balance', tokenBalanceFields, tokenBalance);
+  await pool.query(
+    `insert into token_balance (consensus_timestamp,account_id, balance, token_id)
+    values ($1, $2, $3, $4);`,
+    [
+      tokenBalance.consensus_timestamp,
+      EntityId.parse(tokenBalance.account_id).getEncodedId(),
+      tokenBalance.balance,
+      EntityId.parse(tokenBalance.token_id).getEncodedId(),
+    ]
+  );
 };
 const addNetworkStake = async (networkStakeInput) => {
   const stakingPeriodEnd = 86_400_000_000_000n - 1n;
