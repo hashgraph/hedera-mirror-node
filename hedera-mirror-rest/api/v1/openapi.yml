@@ -2821,9 +2821,11 @@ components:
       properties:
         automatic_association:
           type: boolean
+          description:
+          nullable: false
         balance:
+          format: int64
           type: integer
-          minimum: 0
         created_timestamp:
           $ref: '#/components/schemas/TimestampNullable'
         freeze_status:
@@ -2832,25 +2834,24 @@ components:
         kyc_status:
           type: string
           enum: [ NOT_APPLICABLE, GRANTED, REVOKED ]
-        symbol:
-          type: string
         token_id:
           $ref: '#/components/schemas/EntityId'
       required:
-        - token_id
-        - balance
         - automatic_association
+        - balance
         - created_timestamp
         - freeze_status
         - kyc_status
         - symbol
+        - token_id
       example:
-        token_id: 0.0.27335
-        symbol: F
+        automatic_association: true
         balance: 5
         created_timestamp: 123456789.000000001
         freeze_status: UNFROZEN
         kyc_status: GRANTED
+        symbol: F
+        token_id: 0.0.27335
     LogTopicQueryParam:
       type: array
       items:

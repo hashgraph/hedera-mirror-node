@@ -18,16 +18,37 @@
  * ‍
  */
 
-import _ from 'lodash';
-import {Token} from '../model';
-import TokenAccount from '../model/tokenAccount';
-import {OrderSpec} from '../sql';
+import {TokenAccount, TokenBalance, AccountBalanceFile, ContractResult} from '../model';
 import BaseService from './baseService';
+import tokenService from './tokenService';
+import {OrderSpec} from '../sql';
 
 /**
  * Token retrieval business logic
  */
 class TokenService extends BaseService {
+  static accountBalanceQuery = `select max(${AccountBalanceFile.CONSENSUS_TIMESTAMP})
+                from ${AccountBalanceFile.tableName}`;
+
+  static tokenBalanceJoin = `left join (select ${TokenBalance.TOKEN_ID},${TokenBalance.BALANCE}
+                from ${TokenBalance.tableName}
+                where ${TokenBalance.ACCOUNT_ID} = $1
+                and ${TokenBalance.CONSENSUS_TIMESTAMP} = (${tokenService.accountBalanceQuery})) ${
+    TokenBalance.tableAlias
+  }
+                on ${TokenAccount.getFullName(TokenAccount.TOKEN_ID)} = ${TokenBalance.getFullName(
+    TokenBalance.TOKEN_ID
+  )}`;
+
+  static tokenRelationshipsQuery = `select ${TokenAccount.getFullName(TokenAccount.AUTOMATIC_ASSOCIATION)},
+            ${TokenAccount.getFullName(TokenAccount.CREATED_TIMESTAMP)},
+            ${TokenAccount.getFullName(TokenAccount.FREEZE_STATUS)},
+            ${TokenAccount.getFullName(TokenAccount.KYC_STATUS)},
+            ${TokenAccount.getFullName(TokenAccount.TOKEN_ID)},
+       ${TokenBalance.getFullName(TokenBalance.BALANCE)} from ${TokenAccount.tableName} ${TokenAccount.tableAlias} ${
+    tokenService.tokenBalanceJoin
+  }  where ${TokenAccount.tableAlias}.${TokenAccount.ACCOUNT_ID} = $1`;
+
   /**
    * Gets the full sql query and params to retrieve an account's token relationships
    *
@@ -37,27 +58,17 @@ class TokenService extends BaseService {
   getQuery(query) {
     const {conditions, order, ownerAccountId, limit} = query;
     const params = [ownerAccountId, limit];
-    const tableAlias = `ta`;
     // This is the inner query to get the latest balance for a token, account pair.
-    const tokenBalanceJoin =
-      'left join (select token_id,balance from token_balance where account_id = $1 and consensus_timestamp = (select max(consensus_timestamp) from account_balance_file)) tb on ' +
-      tableAlias +
-      '.token_id = tb.token_id';
-    const tokenByIdQuery =
-      `select ${tableAlias}.*, tb.balance
-       from ${TokenAccount.tableName} ${tableAlias} ` +
-      tokenBalanceJoin +
-      `
-    where ${tableAlias}.${TokenAccount.ACCOUNT_ID} = $1`;
+
     let conditionsClause;
     if (conditions !== undefined && conditions.length != 0) {
       params.push(conditions[0].value);
       conditionsClause = `
-      and ${tableAlias}.${conditions[0].key} ${conditions[0].operator} $${params.length}`;
+      and ${TokenAccount.tableAlias}.${conditions[0].key} ${conditions[0].operator} $${params.length}`;
     }
     const limitClause = super.getLimitQuery(2);
-    const orderClause = `order by ` + tableAlias + `.` + TokenAccount.TOKEN_ID + ` ` + order;
-    let sqlQuery = [tokenByIdQuery, conditionsClause, orderClause, limitClause].join('\n');
+    const orderClause = this.getOrderByQuery(OrderSpec.from(TokenAccount.TOKEN_ID, order));
+    let sqlQuery = [tokenService.tokenRelationshipsQuery, conditionsClause, orderClause, limitClause].join('\n');
     return {sqlQuery, params};
   }
 

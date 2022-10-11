@@ -25,9 +25,9 @@ import {EntityService, TokenService} from '../service';
 import * as utils from '../utils';
 import TokenRelationshipViewModel from '../viewmodel/tokenRelationshipViewModel';
 import TokenAccount from '../model/tokenAccount';
+import {getResponseLimit} from '../config';
 
-const tokenRelationshipDefaultLimit = 25;
-const tokenRelationshipMaxLimit = 100;
+const {default: defaultLimit} = getResponseLimit();
 
 class TokenController extends BaseController {
   /**
@@ -38,8 +38,8 @@ class TokenController extends BaseController {
    */
   extractTokensRelationshipQuery = (filters, ownerAccountId) => {
     let conditions = [];
-    let limit = tokenRelationshipDefaultLimit;
-    let order = orderFilterValues.DESC;
+    let limit = defaultLimit;
+    let order = orderFilterValues.ASC;
 
     for (const filter of filters) {
       switch (filter.key) {
@@ -50,11 +50,7 @@ class TokenController extends BaseController {
           conditions = [{key: TokenAccount.TOKEN_ID, operator: filter.operator, value: filter.value}];
           break;
         case filterKeys.LIMIT:
-          if (filter.value > tokenRelationshipMaxLimit) {
-            limit = tokenRelationshipMaxLimit;
-          } else {
-            limit = filter.value;
-          }
+          limit = filter.value;
           break;
         case filterKeys.ORDER:
           order = filter.value;

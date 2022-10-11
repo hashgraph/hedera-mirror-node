@@ -18,31 +18,13 @@
  * ‍
  */
 
-class TokenAccount {
+class TokenBalance {
+  static tableAlias = 'tb';
+  static tableName = 'token_balance';
   static TOKEN_ID = `token_id`;
   static ACCOUNT_ID = `account_id`;
-
-  /**
-   * Parses token_account table columns into object
-   */
-  constructor(tokenRelationship) {
-    this.automaticAssociation = tokenRelationship.automatic_association;
-    this.balance = tokenRelationship.balance;
-    this.createdTimestamp = tokenRelationship.created_timestamp;
-    this.freezeStatus = tokenRelationship.freeze_status;
-    this.kycStatus = tokenRelationship.kyc_status;
-    this.tokenId = tokenRelationship.token_id;
-  }
-
-  static tableAlias = 'ta';
-  static tableName = 'token_account';
-
-  static AUTOMATIC_ASSOCIATION = 'automatic_association';
   static BALANCE = 'balance';
-  static CREATED_TIMESTAMP = 'created_timestamp';
-  static FREEZE_STATUS = `freeze_status`;
-  static KYC_STATUS = 'kyc_status';
-  static TOKEN_ID = 'token_id';
+  static CONSENSUS_TIMESTAMP = 'consensus_timestamp';
 
   /**
    * Gets full column name with table alias prepended.
@@ -55,4 +37,4 @@ class TokenAccount {
   }
 }
 
-export default TokenAccount;
+export default TokenBalance;
