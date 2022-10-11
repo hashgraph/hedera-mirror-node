@@ -118,7 +118,7 @@ paths:
         - $ref: '#/components/parameters/accountIdOrAliasOrEvmAddressPathParam'
         - $ref: '#/components/parameters/tokenIdQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
-        - $ref: '#/components/parameters/orderQueryParamDesc'
+        - $ref: '#/components/parameters/orderQueryParam'
       responses:
         200:
           description: OK
