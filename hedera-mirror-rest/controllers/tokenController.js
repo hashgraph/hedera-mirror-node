@@ -26,6 +26,7 @@ import * as utils from '../utils';
 import TokenRelationshipViewModel from '../viewmodel/tokenRelationshipViewModel';
 import TokenAccount from '../model/tokenAccount';
 import {getResponseLimit} from '../config';
+import _ from 'lodash';
 
 const {default: defaultLimit} = getResponseLimit();
 
@@ -92,10 +93,19 @@ class TokenController extends BaseController {
     const tokenRelationships = await TokenService.getTokens(query);
     const tokens = tokenRelationships.map((token) => new TokenRelationshipViewModel(token));
 
+    let nextLink = null;
+    if (tokens.length === query.limit) {
+      const lastRow = _.last(tokens);
+      const last = {
+        [filterKeys.TOKEN_ID]: lastRow.token_id,
+      };
+      nextLink = utils.getPaginationLink(req, false, last, query.order);
+    }
+
     res.locals[responseDataLabel] = {
       tokens,
       links: {
-        next: null,
+        next: nextLink,
       },
     };
   };
