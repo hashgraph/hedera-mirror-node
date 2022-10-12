@@ -29,7 +29,6 @@ const tokenIdGtFilter = {key: TOKEN_ID, operator: utils.opsMap.gt, value: 101};
 const tokenIdGteFilter = {key: TOKEN_ID, operator: utils.opsMap.gte, value: 102};
 const tokenIdLtFilter = {key: TOKEN_ID, operator: utils.opsMap.lt, value: 150};
 const tokenIdLteFilter = {key: TOKEN_ID, operator: utils.opsMap.lte, value: 151};
-const associatedFilter = {key: constants.filterKeys.ASSOCIATED, operator: utils.opsMap.eq, value: true};
 
 describe('extractTokenRelationshipQuery', () => {
   const defaultExpected = {

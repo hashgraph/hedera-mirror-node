@@ -78,8 +78,8 @@ class TokenService extends BaseService {
    * @return {Promise<Token[]>}
    */
   async getTokens(query) {
-    const {sqlQuery, params} = this.getQuery(query);
-    const rows = await super.getRows(sqlQuery, params, 'getTokenRelationshipsQuery');
+    const {sqlQuery, params} = this.getTokenRelationshipsQuery(query);
+    const rows = await super.getRows(sqlQuery, params, 'getTokens');
     return rows.map((ta) => new TokenAccount(ta));
   }
 }
