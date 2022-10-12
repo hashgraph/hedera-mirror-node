@@ -48,7 +48,7 @@ class TokenController extends BaseController {
           if (utils.opsMap.ne === filter.operator) {
             throw new InvalidArgumentError(`Not equal (ne) comparison operator is not supported for ${filter.key}`);
           }
-          conditions = [{key: TokenAccount.TOKEN_ID, operator: filter.operator, value: filter.value}];
+          conditions.push({key: TokenAccount.TOKEN_ID, operator: filter.operator, value: filter.value});
           break;
         case filterKeys.LIMIT:
           limit = filter.value;
