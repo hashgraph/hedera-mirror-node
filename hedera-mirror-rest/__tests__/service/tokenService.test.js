@@ -111,7 +111,7 @@ describe('getQuery', () => {
 
   specs.forEach((spec) => {
     test(spec.name, () => {
-      const actual = TokenService.getQuery(spec.query);
+      const actual = TokenService.getTokenRelationshipsQuery(spec.query);
       assertSqlQueryEqual(actual.sqlQuery, spec.expected.sqlQuery);
       expect(actual.params).toEqual(spec.expected.params);
     });
