@@ -49,6 +49,7 @@ import TokenKycStatus from './tokenKycStatus';
 import TokenAccount from './tokenAccount';
 import TokenBalance from './tokenBalance';
 import TokenTransfer from './tokenTransfer';
+import TokenType from './tokenType';
 import TopicMessage from './topicMessage';
 import Transaction from './transaction';
 import TransactionHash from './transactionHash';
@@ -89,6 +90,7 @@ export {
   TokenAccount,
   TokenBalance,
   TokenTransfer,
+  TokenType,
   TopicMessage,
   Transaction,
   TransactionHash,
