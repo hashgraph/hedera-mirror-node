@@ -1335,6 +1335,7 @@ const addTokenBalance = async (tokenBalance) => {
     ]
   );
 };
+
 const addNetworkStake = async (networkStakeInput) => {
   const stakingPeriodEnd = 86_400_000_000_000n - 1n;
   const networkStake = {
