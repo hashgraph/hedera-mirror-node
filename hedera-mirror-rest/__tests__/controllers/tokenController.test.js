@@ -70,7 +70,6 @@ describe('extractTokenRelationshipQuery', () => {
       expected: {
         ...defaultExpected,
         order: constants.orderFilterValues.DESC,
-        conditions: [],
       },
     },
     {

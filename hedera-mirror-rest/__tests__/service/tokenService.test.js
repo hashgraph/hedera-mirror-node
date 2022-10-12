@@ -62,7 +62,7 @@ describe('getQuery', () => {
     }, // Going onwards fix it
     {
       name: 'token_id eq',
-      query: {...defaultQuery, inConditions: [{key: 'TOKEN_ID', operator: '=', value: 2}]},
+      query: {...defaultQuery, inConditions: [{key: 'token_id', operator: '=', value: 2}]},
       expected: {
         sqlQuery:
           `select ` +
@@ -78,7 +78,7 @@ describe('getQuery', () => {
     },
     {
       name: 'token_id gt',
-      query: {...defaultQuery, conditions: [{key: 'TOKEN_ID', operator: '>', value: 10}]},
+      query: {...defaultQuery, conditions: [{key: 'token_id', operator: '>', value: 10}]},
       expected: {
         sqlQuery:
           `select ` +
@@ -94,7 +94,7 @@ describe('getQuery', () => {
     },
     {
       name: 'token_id lt',
-      query: {...defaultQuery, conditions: [{key: 'TOKEN_ID', operator: '<', value: 5}]},
+      query: {...defaultQuery, conditions: [{key: 'token_id', operator: '<', value: 5}]},
       expected: {
         sqlQuery:
           `select ` +
