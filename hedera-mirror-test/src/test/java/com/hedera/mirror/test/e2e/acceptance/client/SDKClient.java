@@ -89,6 +89,7 @@ public class SDKClient implements AutoCloseable {
             try {
                 new AccountDeleteTransaction()
                         .setAccountId(createdAccountId)
+                        .setGrpcDeadline(acceptanceTestProperties.getSdkProperties().getGrpcDeadline())
                         .setTransferAccountId(operatorId)
                         .execute(client);
                 log.info("Deleted temporary operator account {}", createdAccountId);
@@ -192,12 +193,13 @@ public class SDKClient implements AutoCloseable {
         try (Client client = toClient(Map.of(endpoint, nodeAccountId))) {
             new AccountBalanceQuery()
                     .setAccountId(nodeAccountId)
+                    .setGrpcDeadline(acceptanceTestProperties.getSdkProperties().getGrpcDeadline())
                     .setNodeAccountIds(List.of(nodeAccountId))
                     .execute(client, Duration.ofSeconds(10L));
-            log.debug("Validated node: {}", nodeAccountId);
+            log.info("Validated node: {}", nodeAccountId);
             valid = true;
         } catch (Exception e) {
-            log.warn("Unable to validate node {}: ", nodeAccountId, e.getMessage());
+            log.warn("Unable to validate node {}: {}", nodeAccountId, e.getMessage());
         }
 
         return valid;
