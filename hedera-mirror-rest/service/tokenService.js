@@ -18,9 +18,10 @@
  * ‍
  */
 
-import {TokenAccount, TokenBalance, AccountBalanceFile} from '../model';
+import {TokenAccount, TokenBalance, AccountBalanceFile, Nft} from '../model';
 import BaseService from './baseService';
 import {OrderSpec} from '../sql';
+import _ from 'lodash';
 
 /**
  * Token retrieval business logic
@@ -44,7 +45,7 @@ class TokenService extends BaseService {
         ) ${TokenBalance.tableAlias}
         on ${TokenAccount.getFullName(TokenAccount.TOKEN_ID)} = ${TokenBalance.getFullName(TokenBalance.TOKEN_ID)}
         where ${TokenAccount.tableAlias}.${TokenAccount.ACCOUNT_ID} = $1
-        and ${TokenAccount.tableAlias}.${TokenAccount.ASSOCIATED} = true`;
+        and ${TokenAccount.tableAlias}.${TokenAccount.ASSOCIATED} = true `;
 
   /**
    * Gets the full sql query and params to retrieve an account's token relationships
@@ -53,24 +54,41 @@ class TokenService extends BaseService {
    * @return {{sqlQuery: string, params: *[]}}
    */
   getTokenRelationshipsQuery(query) {
-    const {conditions, order, ownerAccountId, limit} = query;
+    const {conditions, inConditions, order, ownerAccountId, limit} = query;
     const params = [ownerAccountId, limit];
     // This is the inner query to get the latest balance for a token, account pair.
-
-    let conditionsClause;
-    if (conditions !== undefined && conditions.length != 0) {
-      for (const index in conditions) {
-        params.push(conditions[index].value);
-        conditionsClause = `
-      and ${TokenAccount.tableAlias}.${conditions[index].key} ${conditions[index].operator} $${params.length}`;
-      }
-    }
+    const moreConditionsExist = conditions.length > 0 ? ` and ` : ``;
+    const conditionClause =
+      moreConditionsExist +
+      conditions
+        .map((condition) => {
+          params.push(condition.value);
+          return `${TokenAccount.getFullName(condition.key)} ${condition.operator} $${params.length}`;
+        })
+        .join(' and ');
+    let inConditionClause = this.getInClauseSubQuery(inConditions, params);
     const limitClause = super.getLimitQuery(2);
     const orderClause = this.getOrderByQuery(OrderSpec.from(TokenAccount.getFullName(TokenAccount.TOKEN_ID), order));
-    const sqlQuery = [TokenService.tokenRelationshipsQuery, conditionsClause, orderClause, limitClause].join('\n');
+    const sqlQuery = [
+      TokenService.tokenRelationshipsQuery,
+      conditionClause,
+      inConditionClause,
+      orderClause,
+      limitClause,
+    ].join('\n');
     return {sqlQuery, params};
   }
 
+  getInClauseSubQuery(inConditions, params) {
+    const tokenIdInParams = [];
+    inConditions.map((condition) => {
+      tokenIdInParams.push(condition.value);
+    });
+
+    if (!_.isEmpty(tokenIdInParams)) {
+      return ` and ${TokenAccount.getFullName(TokenAccount.TOKEN_ID)} in (${tokenIdInParams})`;
+    }
+  }
   /**
    * Gets the tokens for the query
    *

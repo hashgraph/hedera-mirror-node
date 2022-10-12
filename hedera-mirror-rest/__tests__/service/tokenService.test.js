@@ -23,7 +23,8 @@ import {TokenService} from '../../service';
 
 describe('getQuery', () => {
   const defaultQuery = {
-    filters: [],
+    conditions: [],
+    inConditions: [],
     order: 'asc',
     ownerAccountId: 98,
     limit: 25,
@@ -61,7 +62,7 @@ describe('getQuery', () => {
     }, // Going onwards fix it
     {
       name: 'token_id eq',
-      query: {...defaultQuery, conditions: [{key: 'TOKEN_ID', operator: '=', value: 2}]},
+      query: {...defaultQuery, inConditions: [{key: 'TOKEN_ID', operator: '=', value: 2}]},
       expected: {
         sqlQuery:
           `select ` +
@@ -69,10 +70,10 @@ describe('getQuery', () => {
           `, tb.balance
            from token_account ta ` +
           tokenBalanceJoin +
-          ` where ta.account_id = $1 and ta.associated = true and ta.token_id = $3
+          ` where ta.account_id = $1 and ta.associated = true and ta.token_id in (2)
           order by ta.token_id asc
           limit $2`,
-        params: [98, 25, 2],
+        params: [98, 25],
       },
     },
     {

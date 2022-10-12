@@ -33,6 +33,7 @@ const tokenIdLteFilter = {key: TOKEN_ID, operator: utils.opsMap.lte, value: 151}
 describe('extractTokenRelationshipQuery', () => {
   const defaultExpected = {
     conditions: [],
+    inConditions: [],
     ownerAccountId: ownerAccountId,
     order: constants.orderFilterValues.ASC,
     limit: 25,
@@ -79,7 +80,7 @@ describe('extractTokenRelationshipQuery', () => {
       },
       expected: {
         ...defaultExpected,
-        conditions: [
+        inConditions: [
           {
             key: 'token_id',
             operator: ' = ',
