@@ -79,6 +79,12 @@ class TokenService extends BaseService {
     return {sqlQuery, params};
   }
 
+  /**
+   * Gets the In clause query for Token.id
+   * @param inConditions
+   * @param params
+   * @returns {string}
+   */
   getInClauseSubQuery(inConditions, params) {
     const tokenIdInParams = [];
     inConditions.map((condition) => {
@@ -89,6 +95,7 @@ class TokenService extends BaseService {
       return ` and ${TokenAccount.getFullName(TokenAccount.TOKEN_ID)} in (${tokenIdInParams})`;
     }
   }
+
   /**
    * Gets the tokens for the query
    *
