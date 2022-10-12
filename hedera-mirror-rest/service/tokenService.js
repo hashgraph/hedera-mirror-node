@@ -33,7 +33,7 @@ class TokenService extends BaseService {
                ${TokenAccount.getFullName(TokenAccount.FREEZE_STATUS)},
                ${TokenAccount.getFullName(TokenAccount.KYC_STATUS)},
                ${TokenAccount.getFullName(TokenAccount.TOKEN_ID)},
-               ${TokenBalance.getFullName(TokenBalance.BALANCE)}
+               coalesce(${TokenBalance.getFullName(TokenBalance.BALANCE)}, 0) balance
         from ${TokenAccount.tableName} ${TokenAccount.tableAlias}
         left join (
                 select ${TokenBalance.TOKEN_ID},
