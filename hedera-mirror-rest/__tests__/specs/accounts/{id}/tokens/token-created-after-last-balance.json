@@ -92,7 +92,7 @@
       },
       {
         "automatic_association": true,
-        "balance": null,
+        "balance": 0,
         "created_timestamp": "1234567890.009000002",
         "freeze_status": "UNFROZEN",
         "kyc_status": "GRANTED",
