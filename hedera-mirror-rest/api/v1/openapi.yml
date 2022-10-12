@@ -2840,7 +2840,7 @@ components:
           example: 5
           nullable: false
         created_timestamp:
-          $ref: '#/components/schemas/TimestampNullable'
+          $ref: '#/components/schemas/Timestamp'
           description: Creation timestamp of the token account relationship.
           example: 123456789.000000001
           nullable: false
