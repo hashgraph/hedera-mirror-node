@@ -1450,7 +1450,9 @@ components:
       type: object
       properties:
         tokens:
-          $ref: '#/components/schemas/TokenRelationship'
+          type: array
+          items:
+            $ref: '#/components/schemas/TokenRelationship'
         links:
           $ref: '#/components/schemas/Links'
     TokensResponse:
