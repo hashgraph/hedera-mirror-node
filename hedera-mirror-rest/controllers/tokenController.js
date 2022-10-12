@@ -23,8 +23,8 @@ import BaseController from './baseController';
 import {InvalidArgumentError, NotFoundError} from '../errors';
 import {EntityService, TokenService} from '../service';
 import * as utils from '../utils';
-import TokenRelationshipViewModel from '../viewmodel/tokenRelationshipViewModel';
-import TokenAccount from '../model/tokenAccount';
+import {TokenRelationshipViewModel} from '../viewmodel';
+import {TokenAccount} from '../model';
 import {getResponseLimit} from '../config';
 import _ from 'lodash';
 
