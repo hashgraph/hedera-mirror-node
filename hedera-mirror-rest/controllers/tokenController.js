@@ -38,7 +38,7 @@ class TokenController extends BaseController {
    * @returns {conditions:{key:'token.id', operator:'=', value:10}, order: 'asc'|'desc',accountId: BigInt, limit: number}
    */
   extractTokensRelationshipQuery = (filters, ownerAccountId) => {
-    let conditions = [];
+    const conditions = [];
     let limit = defaultLimit;
     let order = orderFilterValues.ASC;
 
