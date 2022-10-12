@@ -42,7 +42,7 @@ describe('getQuery', () => {
           tokenAccountFields +
           ',tb.balance from token_account ta ' +
           tokenBalanceJoin +
-          ' where ta.account_id = $1 order by ta.token_id asc limit $2',
+          ' where ta.account_id = $1 and ta.associated = true order by ta.token_id asc limit $2',
         params: [98, 25],
       },
     },
@@ -55,7 +55,7 @@ describe('getQuery', () => {
           tokenAccountFields +
           ',tb.balance from token_account ta ' +
           tokenBalanceJoin +
-          ' where ta.account_id = $1 order by ta.token_id desc limit $2',
+          ' where ta.account_id = $1 and ta.associated = true order by ta.token_id desc limit $2',
         params: [98, 25],
       },
     }, // Going onwards fix it
@@ -69,7 +69,7 @@ describe('getQuery', () => {
           `, tb.balance
            from token_account ta ` +
           tokenBalanceJoin +
-          ` where ta.account_id = $1 and ta.token_id = $3
+          ` where ta.account_id = $1 and ta.associated = true and ta.token_id = $3
           order by ta.token_id asc
           limit $2`,
         params: [98, 25, 2],
@@ -85,7 +85,7 @@ describe('getQuery', () => {
           `, tb.balance
            from token_account ta ` +
           tokenBalanceJoin +
-          ` where ta.account_id = $1 and ta.token_id > $3
+          ` where ta.account_id = $1 and ta.associated = true and ta.token_id > $3
           order by ta.token_id asc
           limit $2`,
         params: [98, 25, 10],
@@ -101,26 +101,10 @@ describe('getQuery', () => {
           `, tb.balance
            from token_account ta ` +
           tokenBalanceJoin +
-          ` where ta.account_id = $1 and ta.token_id < $3
+          ` where ta.account_id = $1 and ta.associated = true and ta.token_id < $3
           order by ta.token_id asc
           limit $2`,
         params: [98, 25, 5],
-      },
-    },
-    {
-      name: 'associated false',
-      query: {...defaultQuery, conditions: [{key: 'associated', operator: '=', value: false}]},
-      expected: {
-        sqlQuery:
-          `select ` +
-          tokenAccountFields +
-          `, tb.balance
-           from token_account ta ` +
-          tokenBalanceJoin +
-          ` where ta.account_id = $1 and ta.associated = $3
-          order by ta.token_id asc
-          limit $2`,
-        params: [98, 25, false],
       },
     },
   ];

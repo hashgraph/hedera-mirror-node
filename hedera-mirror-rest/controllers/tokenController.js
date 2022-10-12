@@ -50,13 +50,6 @@ class TokenController extends BaseController {
           }
           conditions = [{key: TokenAccount.TOKEN_ID, operator: filter.operator, value: filter.value}];
           break;
-        case filterKeys.ASSOCIATED:
-          if (utils.opsMap.eq === filter.operator) {
-            conditions = [{key: TokenAccount.ASSOCIATED, operator: filter.operator, value: filter.value}];
-          } else {
-            throw new InvalidArgumentError(`${filter.operator} comparison operator is not supported for ${filter.key}`);
-          }
-          break;
         case filterKeys.LIMIT:
           limit = filter.value;
           break;

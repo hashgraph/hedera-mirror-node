@@ -43,7 +43,6 @@ class TokenAccount {
   static CREATED_TIMESTAMP = 'created_timestamp';
   static FREEZE_STATUS = `freeze_status`;
   static KYC_STATUS = 'kyc_status';
-  static TOKEN_ID = 'token_id';
 
   /**
    * Gets full column name with table alias prepended.

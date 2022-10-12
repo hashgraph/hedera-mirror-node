@@ -153,22 +153,6 @@ describe('extractTokenRelationshipQuery', () => {
         ],
       },
     },
-    {
-      name: 'associated filter',
-      input: {
-        filters: [associatedFilter],
-      },
-      expected: {
-        ...defaultExpected,
-        conditions: [
-          {
-            key: 'associated',
-            operator: ' = ',
-            value: true,
-          },
-        ],
-      },
-    },
   ];
 
   specs.forEach((spec) => {

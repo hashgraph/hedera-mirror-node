@@ -76,7 +76,7 @@
       }
     ]
   },
-  "url": "/api/v1/accounts/0.0.1001/tokens?token.id=gte:1135&order=asc&limit=2&associated=true",
+  "url": "/api/v1/accounts/0.0.1001/tokens?token.id=gte:1135&order=asc&limit=2",
   "responseStatus": 200,
   "responseJson": {
     "tokens": [
@@ -98,7 +98,7 @@
       }
     ],
     "links": {
-      "next": "/api/v1/accounts/0.0.1001/tokens?order=asc&limit=2&associated=true&token.id=gt:0.0.45678"
+      "next": "/api/v1/accounts/0.0.1001/tokens?order=asc&limit=2&token.id=gt:0.0.45678"
     }
   }
 }

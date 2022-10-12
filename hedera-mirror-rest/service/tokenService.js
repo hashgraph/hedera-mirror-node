@@ -18,7 +18,7 @@
  * ‍
  */
 
-import {TokenAccount, TokenBalance, AccountBalanceFile, ContractResult} from '../model';
+import {TokenAccount, TokenBalance, AccountBalanceFile} from '../model';
 import BaseService from './baseService';
 import {OrderSpec} from '../sql';
 
@@ -26,27 +26,25 @@ import {OrderSpec} from '../sql';
  * Token retrieval business logic
  */
 class TokenService extends BaseService {
-  static accountBalanceQuery = `select max(${AccountBalanceFile.CONSENSUS_TIMESTAMP})
-                from ${AccountBalanceFile.tableName}`;
-
-  static tokenBalanceJoin = `left join (select ${TokenBalance.TOKEN_ID},${TokenBalance.BALANCE}
+  static tokenRelationshipsQuery = `
+        select ${TokenAccount.getFullName(TokenAccount.AUTOMATIC_ASSOCIATION)},
+               ${TokenAccount.getFullName(TokenAccount.CREATED_TIMESTAMP)},
+               ${TokenAccount.getFullName(TokenAccount.FREEZE_STATUS)},
+               ${TokenAccount.getFullName(TokenAccount.KYC_STATUS)},
+               ${TokenAccount.getFullName(TokenAccount.TOKEN_ID)},
+               ${TokenBalance.getFullName(TokenBalance.BALANCE)}
+        from ${TokenAccount.tableName} ${TokenAccount.tableAlias}
+        left join (
+                select ${TokenBalance.TOKEN_ID},
+                       ${TokenBalance.BALANCE}
                 from ${TokenBalance.tableName}
                 where ${TokenBalance.ACCOUNT_ID} = $1
-                and ${TokenBalance.CONSENSUS_TIMESTAMP} = (${TokenService.accountBalanceQuery})) ${
-    TokenBalance.tableAlias
-  }
-                on ${TokenAccount.getFullName(TokenAccount.TOKEN_ID)} = ${TokenBalance.getFullName(
-    TokenBalance.TOKEN_ID
-  )}`;
-
-  static tokenRelationshipsQuery = `select ${TokenAccount.getFullName(TokenAccount.AUTOMATIC_ASSOCIATION)},
-            ${TokenAccount.getFullName(TokenAccount.CREATED_TIMESTAMP)},
-            ${TokenAccount.getFullName(TokenAccount.FREEZE_STATUS)},
-            ${TokenAccount.getFullName(TokenAccount.KYC_STATUS)},
-            ${TokenAccount.getFullName(TokenAccount.TOKEN_ID)},
-       ${TokenBalance.getFullName(TokenBalance.BALANCE)} from ${TokenAccount.tableName} ${TokenAccount.tableAlias}
-       ${TokenService.tokenBalanceJoin}
-       where ${TokenAccount.tableAlias}.${TokenAccount.ACCOUNT_ID} = $1`;
+                and ${TokenBalance.CONSENSUS_TIMESTAMP} = (select max(${AccountBalanceFile.CONSENSUS_TIMESTAMP})
+                from ${AccountBalanceFile.tableName})
+        ) ${TokenBalance.tableAlias}
+        on ${TokenAccount.getFullName(TokenAccount.TOKEN_ID)} = ${TokenBalance.getFullName(TokenBalance.TOKEN_ID)}
+        where ${TokenAccount.tableAlias}.${TokenAccount.ACCOUNT_ID} = $1
+        and ${TokenAccount.tableAlias}.${TokenAccount.ASSOCIATED} = true`;
 
   /**
    * Gets the full sql query and params to retrieve an account's token relationships

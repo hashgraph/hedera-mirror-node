@@ -42,7 +42,7 @@
       {
         "token_id": "0.0.2500",
         "account_id": "1001",
-        "associated": false,
+        "associated": true,
         "created_timestamp": "1234567890000000010",
         "freeze_status": 1,
         "kyc_status": 2,
@@ -51,7 +51,7 @@
       {
         "token_id": "0.0.45678",
         "account_id": "1001",
-        "associated": true,
+        "associated": false,
         "created_timestamp": "1234567890000000006",
         "freeze_status": 2,
         "kyc_status": 1,

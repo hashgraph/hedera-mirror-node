@@ -117,7 +117,6 @@ paths:
       parameters:
         - $ref: '#/components/parameters/accountIdOrAliasOrEvmAddressPathParam'
         - $ref: '#/components/parameters/tokenIdQueryParam'
-        - $ref: '#/components/parameters/associatedQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/orderQueryParam'
       responses:
@@ -2866,7 +2865,6 @@ components:
         - created_timestamp
         - freeze_status
         - kyc_status
-        - symbol
         - token_id
       example:
         automatic_association: true
@@ -2874,7 +2872,6 @@ components:
         created_timestamp: 123456789.000000001
         freeze_status: UNFROZEN
         kyc_status: GRANTED
-        symbol: F
         token_id: 0.0.27335
     LogTopicQueryParam:
       type: array
@@ -3389,15 +3386,6 @@ components:
       example: 3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be
       schema:
         type: string
-    associatedQueryParam:
-      name: associated
-      in: query
-      description: >-
-        Filter transactions by the associated flag. If true, return information for the token accounts with
-        associated set as true. If false,return information for the tokens with associated false. If not present,
-        return information for all associated tokens.
-      schema:
-        type: boolean
     balanceQueryParam:
       name: balance
       in: query
