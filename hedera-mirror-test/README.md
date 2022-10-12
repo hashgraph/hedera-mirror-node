@@ -66,7 +66,7 @@ under `hedera.mirror.test.acceptance` include:
 - `retrieveAddressBook` - Whether to download the address book from the network and use those nodes over the default
   nodes. Populating `hedera.mirror.test.acceptance.nodes` will take priority over this.
 - `sdk`
-  - `grpcDeadline` - The maximum amount of time to wait for a grpc call to complete. 
+  - `grpcDeadline` - The maximum amount of time to wait for a grpc call to complete.
   - `maxAttempts` - The maximum number of times the sdk should try to submit a transaction to the network.
 - `webclient`
   - `connectionTimeout` - The timeout duration to wait to establish a connection with the server
