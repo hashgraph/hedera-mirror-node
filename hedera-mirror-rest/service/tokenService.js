@@ -52,7 +52,7 @@ class TokenService extends BaseService {
    * @param query
    * @return {{sqlQuery: string, params: *[]}}
    */
-  getQuery(query) {
+  getTokenRelationshipsQuery(query) {
     const {conditions, order, ownerAccountId, limit} = query;
     const params = [ownerAccountId, limit];
     // This is the inner query to get the latest balance for a token, account pair.
