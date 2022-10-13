@@ -188,6 +188,90 @@ const getSingleAccount = async (server) => {
 };
 
 /**
+ * Verify that we return token relationships for an existing account
+ * @param {Object} server API host endpoint
+ */
+const getSingleAccountTokenRelationships = async (server) => {
+  // get tokens
+  const tokensPath = '/tokens';
+  const tokensJsonRespKey = 'tokens';
+  const tokenMandatoryParams = ['token_id', 'symbol', 'admin_key'];
+  const token_url = getUrl(server, tokensPath, {limit: resourceLimit});
+  const tokens = await getAPIResponse(token_url, tokensJsonRespKey);
+
+  const token_result = new CheckRunner()
+    .withCheckSpec(checkAPIResponseError)
+    .withCheckSpec(checkRespObjDefined, {message: 'tokens is undefined'})
+    .withCheckSpec(checkRespArrayLength, {
+      limit: resourceLimit,
+      message: (elements, limit) => `tokens.length of ${elements.length} is less than limit ${limit}`,
+    })
+    .withCheckSpec(checkMandatoryParams, {
+      params: tokenMandatoryParams,
+      message: 'token object is missing some mandatory fields',
+    })
+    .run(tokens);
+  if (!token_result.passed) {
+    return {token_url, ...token_result};
+  }
+
+  let accountId = null;
+  do {
+    const token_id = tokens[0].token_id;
+    const tokenBalancesPath = (tokenId) => `${tokensPath}/${tokenId}/balances`;
+    const tokenBalancesJsonRespKey = 'balances';
+
+    // get balances for a token and get account id from it
+    let balances_url = getUrl(server, tokenBalancesPath(token_id), {limit: 1});
+    let balances = await getAPIResponse(balances_url, tokenBalancesJsonRespKey);
+
+    const checkRunner = new CheckRunner()
+      .withCheckSpec(checkAPIResponseError)
+      .withCheckSpec(checkRespObjDefined, {message: 'balances is undefined'})
+      .withCheckSpec(checkRespArrayLength, {
+        limit: 1,
+        message: (elements) => `token balances.length of ${elements.length} was expected to be 1`,
+      });
+    let balancesResult = checkRunner.run(balances);
+    if (!balancesResult.passed) {
+      return {balances_url, ...balancesResult};
+    }
+    if (balances.length > 0) {
+      accountId = balances[0].account;
+    }
+  } while (accountId === null);
+
+  // Use that account id to call my endpoint
+
+  const accountsTokenPath = `/accounts/${accountId}/tokens`;
+  console.log(accountsTokenPath);
+  let url = getUrl(server, accountsTokenPath, {limit: resourceLimit});
+  const accounts = await getAPIResponse(url, jsonRespKey);
+
+  let result = new CheckRunner()
+    .withCheckSpec(checkAPIResponseError)
+    .withCheckSpec(checkRespObjDefined, {message: 'accounts is undefined'})
+    .withCheckSpec(checkRespArrayLength, {
+      limit: resourceLimit,
+      message: (accts, limit) => `accounts.length of ${accts.length} was expected to be ${limit}`,
+    })
+    .withCheckSpec(checkMandatoryParams, {
+      params: mandatoryParams,
+      message: 'account object is missing some mandatory fields',
+    })
+    .run(accounts);
+  if (!result.passed) {
+    return {url, ...result};
+  }
+
+  return {
+    url,
+    passed: true,
+    message: 'Successfully called accounts for token relationships',
+  };
+};
+
+/**
  * Run all account tests in an asynchronous fashion waiting for all tests to complete
  * @param {Object} server object provided by the user
  * @param {ServerTestResult} testResult shared server test result object capturing tests for given endpoint
@@ -198,6 +282,7 @@ const runTests = async (server, testResult) => {
     runTest(getAccountsWithAccountCheck),
     runTest(getAccountsWithTimeAndLimitParams),
     runTest(getSingleAccount),
+    runTest(getSingleAccountTokenRelationships),
   ]);
 };
 
