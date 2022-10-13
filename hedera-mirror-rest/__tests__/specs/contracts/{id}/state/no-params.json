@@ -18,7 +18,16 @@
       }
     ]
   },
-  "urls": ["/api/v1/contracts/5001/state"],
+  "urls": [
+    "/api/v1/contracts/5001/state",
+    "/api/v1/contracts/0.0.5001/state",
+    "/api/v1/contracts/0.5001/state",
+    "/api/v1/contracts/5001/state",
+    "/api/v1/contracts/0000000000000000000000000000000000001389/state",
+    "/api/v1/contracts/0.0000000000000000000000000000000000001389/state",
+    "/api/v1/contracts/0.0.0000000000000000000000000000000000001389/state",
+    "/api/v1/contracts/0x0000000000000000000000000000000000001389/state"
+  ],
   "responseStatus": 200,
   "responseJson": {
     "state": [
