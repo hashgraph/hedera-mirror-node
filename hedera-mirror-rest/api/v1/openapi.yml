@@ -3417,36 +3417,16 @@ components:
           summary: Example of id less than or equals operator
           value: lte:0.0.700
       schema:
-<<<<<<< HEAD
-        oneOf:
-          - $ref: '#/components/schemas/EntityIdQuery'
-          - $ref: '#/components/schemas/EvmAddressWithShardRealm'
-    contractIdOrAddressPathParam:
-=======
         pattern: ^((gte?|lte?|eq|ne)\:)?(\d{1,10}\.\d{1,10}\.)?\d{1,10}|(\d{1,10}\.){0,2}[A-Fa-f0-9]{40}$
         type: string
-    contractIdPathParam:
->>>>>>> main
+    contractIdOrAddressPathParam:
       name: contractIdOrAddress
       in: path
       required: true
       description: The ID or hex encoded EVM address associated with this contract.
       schema:
-<<<<<<< HEAD
-        oneOf:
-          - $ref: '#/components/schemas/EntityId'
-          - $ref: '#/components/schemas/EvmAddressWithShardRealm'
-    contractIdPathParam:
-      name: contractId
-      in: path
-      required: true
-      description: The ID associated with this contract.
-      schema:
-        $ref: '#/components/schemas/EntityId'
-=======
         pattern: ^(\d{1,10}\.){0,2}(\d{1,10}|[A-Fa-f0-9]{40})$
         type: string
->>>>>>> main
     hashOrNumberPathParam:
       name: hashOrNumber
       in: path
