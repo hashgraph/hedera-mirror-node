@@ -222,7 +222,7 @@ class ContractService extends BaseService {
 
   async getContractStateByIdAndFilters(whereConditions = [], order = orderFilterValues.ASC, limit = defaultLimit) {
     const orderClause = this.getOrderByQuery(OrderSpec.from(ContractStateChange.SLOT, order));
-    const {where, params} = this.buildWhereSqlStatement(whereConditions);
+    const {where, params} = this.buildWhereSqlStatement(whereConditions, [], false);
     const limitClause = this.getLimitQuery(params.length + 1);
     params.push(limit);
 

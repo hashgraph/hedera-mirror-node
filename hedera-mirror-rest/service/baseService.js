@@ -24,14 +24,16 @@ import _ from 'lodash';
  * Base service class that other services should inherit from for their retrieval business logic
  */
 class BaseService {
-  buildWhereSqlStatement(whereQuery, params = []) {
+  buildWhereSqlStatement(whereQuery, params = [], incrementWithParamsLength = true) {
     if (_.isEmpty(whereQuery)) {
       return {where: '', params};
     }
 
     let where = params.length === 0 ? 'where' : 'and';
     for (let i = 1; i <= whereQuery.length; i++) {
-      where += `${i === 1 ? '' : 'and'} ${whereQuery[i - 1].query} $${i + params.length} `;
+      where += `${i === 1 ? '' : 'and'} ${whereQuery[i - 1].query} $${
+        i + (incrementWithParamsLength ? params.length : 0)
+      } `;
       params.push(whereQuery[i - 1].param);
     }
 
