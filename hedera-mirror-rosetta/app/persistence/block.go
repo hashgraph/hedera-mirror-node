@@ -127,14 +127,19 @@ func (rb *recordBlock) ToBlock(genesisBlock recordBlock) *types.Block {
 
 // blockRepository struct that has connection to the Database
 type blockRepository struct {
-	dbClient     interfaces.DbClient
-	genesisBlock recordBlock
-	once         sync.Once
+	dbClient                        interfaces.DbClient
+	firstFixedOffsetTimestampSqlArg sql.NamedArg
+	genesisBlock                    recordBlock
+	once                            sync.Once
 }
 
 // NewBlockRepository creates an instance of a blockRepository struct
-func NewBlockRepository(dbClient interfaces.DbClient) interfaces.BlockRepository {
-	return &blockRepository{dbClient: dbClient, genesisBlock: recordBlock{ConsensusStart: genesisConsensusStartUnset}}
+func NewBlockRepository(dbClient interfaces.DbClient, network string) interfaces.BlockRepository {
+	return &blockRepository{
+		dbClient:                        dbClient,
+		firstFixedOffsetTimestampSqlArg: getFirstAccountBalanceFileFixedOffsetTimestampSqlNamedArg(network),
+		genesisBlock:                    recordBlock{ConsensusStart: genesisConsensusStartUnset},
+	}
 }
 
 func (br *blockRepository) FindByHash(ctx context.Context, hash string) (*types.Block, *rTypes.Error) {
@@ -254,7 +259,7 @@ func (br *blockRepository) initGenesisRecordFile(ctx context.Context) *rTypes.Er
 	defer cancel()
 
 	var rb recordBlock
-	if err := db.Raw(selectGenesis).First(&rb).Error; err != nil {
+	if err := db.Raw(selectGenesis, br.firstFixedOffsetTimestampSqlArg).First(&rb).Error; err != nil {
 		return handleDatabaseError(err, hErrors.ErrNodeIsStarting)
 	}
 

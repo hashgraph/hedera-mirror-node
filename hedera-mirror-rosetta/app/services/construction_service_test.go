@@ -61,20 +61,21 @@ var (
 		"10.0.0.3:50211": hedera.AccountID{Account: 5},
 		"10.0.0.4:50211": hedera.AccountID{Account: 6},
 	}
-	singleNode             = config.NodeMap{"10.0.0.1:50211": hedera.AccountID{Account: 3}}
-	freezeKeyStr           = "302a300506032b65700321006663a95da28adcb0fc129d1b4eda4be7dd90b54a337cd2dd953e1d2dc03ca6d1"
-	freezeKey, _           = hedera.PublicKeyFromString(freezeKeyStr)
-	invalidTransaction     = "InvalidTxHexString"
-	invalidTypeTransaction = "0x0a332a310a2d0a140a0c08a6e4cb840610f6a3aeef0112041882810c12021805188084af5f22020878c20107320508d0c8e1031200"
-	nodeAccountId          = hedera.AccountID{Account: 7}
-	offlineBaseService     = NewOfflineBaseService()
-	onlineBaseService      = NewOnlineBaseService(&mocks.MockBlockRepository{}, &mocks.MockTransactionRepository{})
-	payerId                = hedera.AccountID{Account: 100}
-	publicKeyStr           = "eba8cc093a83a4ca5e813e30d8c503babb35c22d57d34b6ec5ac0303a6aaba77" // without ed25519PubKeyPrefix
-	privateKey, _          = hedera.PrivateKeyFromString("302e020100300506032b6570042204207904b9687878e08e101723f7b724cd61a42bbff93923177bf3fcc2240b0dd3bc")
-	aliasStr               = ed25519AliasPrefix + publicKeyStr
-	aliasAccount, _        = types.NewAccountIdFromString(aliasStr, 0, 0)
-	validSignedTransaction = "0x0aaa012aa7010a3d0a140a0c08feafcb840610ae86c0db03120418d8c307120218041880c2d72f2202087872180a160a090a0418d8c30710cf0f0a090a0418fec40710d00f12660a640a20eba8cc093a83a4ca5e813e30d8c503babb35c22d57d34b6ec5ac0303a6aaba771a40793de745bc19dd8fe8e817891f51b8fe1e259c2e6428bd7fa075b181585a2d40e3666a7c9a1873abb5433ffe1414502836d8d37082eaf94a648b530e9fa78108"
+	singleNode                  = config.NodeMap{"10.0.0.1:50211": hedera.AccountID{Account: 3}}
+	freezeKeyStr                = "302a300506032b65700321006663a95da28adcb0fc129d1b4eda4be7dd90b54a337cd2dd953e1d2dc03ca6d1"
+	freezeKey, _                = hedera.PublicKeyFromString(freezeKeyStr)
+	invalidTransaction          = "InvalidTxHexString"
+	invalidTypeTransaction      = "0x0a332a310a2d0a140a0c08a6e4cb840610f6a3aeef0112041882810c12021805188084af5f22020878c20107320508d0c8e1031200"
+	nodeAccountId               = hedera.AccountID{Account: 7}
+	offlineBaseService          = NewOfflineBaseService()
+	onlineBaseService           = NewOnlineBaseService(&mocks.MockBlockRepository{}, &mocks.MockTransactionRepository{})
+	payerId                     = hedera.AccountID{Account: 100}
+	publicKeyStr                = "eba8cc093a83a4ca5e813e30d8c503babb35c22d57d34b6ec5ac0303a6aaba77" // without ed25519PubKeyPrefix
+	privateKey, _               = hedera.PrivateKeyFromString("302e020100300506032b6570042204207904b9687878e08e101723f7b724cd61a42bbff93923177bf3fcc2240b0dd3bc")
+	aliasStr                    = ed25519AliasPrefix + publicKeyStr
+	aliasAccount, _             = types.NewAccountIdFromString(aliasStr, 0, 0)
+	unsignedTransactionWithMemo = "0x0a332a310a2d0a0f0a0708959aef3a107b120418d8c307120218031880c2d72f220308b40132087472616e7366657272020a001200"
+	validSignedTransaction      = "0x0aaa012aa7010a3d0a140a0c08feafcb840610ae86c0db03120418d8c307120218041880c2d72f2202087872180a160a090a0418d8c30710cf0f0a090a0418fec40710d00f12660a640a20eba8cc093a83a4ca5e813e30d8c503babb35c22d57d34b6ec5ac0303a6aaba771a40793de745bc19dd8fe8e817891f51b8fe1e259c2e6428bd7fa075b181585a2d40e3666a7c9a1873abb5433ffe1414502836d8d37082eaf94a648b530e9fa78108"
 )
 
 func getConstructionCombineRequest() *rTypes.ConstructionCombineRequest {
@@ -90,7 +91,7 @@ func getConstructionCombineRequest() *rTypes.ConstructionCombineRequest {
 	)
 }
 
-func getConstructionPreprocessRequest(valid bool) *rTypes.ConstructionPreprocessRequest {
+func getConstructionPreprocessRequest(valid bool, metadata map[string]interface{}) *rTypes.ConstructionPreprocessRequest {
 	operations := types.OperationSlice{
 		getOperation(0, types.OperationTypeCryptoTransfer, defaultCryptoAccountId1, defaultSendAmount),
 		getOperation(1, types.OperationTypeCryptoTransfer, defaultCryptoAccountId2, defaultReceiveAmount),
@@ -103,6 +104,7 @@ func getConstructionPreprocessRequest(valid bool) *rTypes.ConstructionPreprocess
 	}
 
 	return &rTypes.ConstructionPreprocessRequest{
+		Metadata:          metadata,
 		NetworkIdentifier: networkIdentifier(),
 		Operations:        operations.ToRosetta(),
 	}
@@ -532,13 +534,16 @@ func TestConstructionMetadataOnline(t *testing.T) {
 	request := &rTypes.ConstructionMetadataRequest{
 		NetworkIdentifier: networkIdentifier(),
 		Options: map[string]interface{}{
+			types.MetadataKeyMemo:   "tx memo",
 			optionKeyAccountAliases: aliasStr,
 			optionKeyOperationType:  types.OperationTypeCryptoTransfer,
 		},
 	}
 	expectedResponse := &rTypes.ConstructionMetadataResponse{
 		Metadata: map[string]interface{}{
-			metadataKeyAccountMap: fmt.Sprintf("%s:%s", aliasStr, accountId),
+			types.MetadataKeyMemo:  "tx memo",
+			metadataKeyAccountMap:  fmt.Sprintf("%s:%s", aliasStr, accountId),
+			optionKeyOperationType: types.OperationTypeCryptoTransfer,
 		},
 		SuggestedFee: []*rTypes.Amount{{Value: "100", Currency: types.CurrencyHbar}},
 	}
@@ -573,7 +578,7 @@ func TestConstructionMetadataOffline(t *testing.T) {
 		Options:           map[string]interface{}{optionKeyOperationType: types.OperationTypeCryptoTransfer},
 	}
 	expectedResponse := &rTypes.ConstructionMetadataResponse{
-		Metadata:     map[string]interface{}{},
+		Metadata:     map[string]interface{}{optionKeyOperationType: types.OperationTypeCryptoTransfer},
 		SuggestedFee: []*rTypes.Amount{{Value: "100", Currency: types.CurrencyHbar}},
 	}
 
@@ -771,32 +776,42 @@ func TestConstructionMetadataFailsWhenTransactionConstructorFails(t *testing.T) 
 
 func TestConstructionParse(t *testing.T) {
 	var tests = []struct {
-		name    string
-		signed  bool
-		signers []*rTypes.AccountIdentifier
+		name     string
+		metadata map[string]interface{}
+		request  *rTypes.ConstructionParseRequest
+		signers  []*rTypes.AccountIdentifier
 	}{
 		{
-			name:    "NotSigned",
-			signers: []*rTypes.AccountIdentifier{},
+			name:     "NotSigned",
+			metadata: map[string]interface{}{},
+			request:  getConstructionParseRequest(validSignedTransaction, false),
+			signers:  []*rTypes.AccountIdentifier{},
 		},
 		{
-			name:    "Signed",
-			signed:  true,
-			signers: []*rTypes.AccountIdentifier{defaultCryptoAccountId1.ToRosetta()},
+			name:     "Signed",
+			metadata: map[string]interface{}{},
+			request:  getConstructionParseRequest(validSignedTransaction, true),
+			signers:  []*rTypes.AccountIdentifier{defaultCryptoAccountId1.ToRosetta()},
+		},
+		{
+			name:     "memo",
+			metadata: map[string]interface{}{"memo": "transfer"},
+			request:  getConstructionParseRequest(unsignedTransactionWithMemo, false),
+			signers:  []*rTypes.AccountIdentifier{},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// given:
-			request := getConstructionParseRequest(validSignedTransaction, tt.signed)
 			operations := types.OperationSlice{
 				getOperation(0, types.OperationTypeCryptoTransfer, defaultCryptoAccountId1, defaultSendAmount),
 				getOperation(1, types.OperationTypeCryptoTransfer, defaultCryptoAccountId2, defaultReceiveAmount),
 			}
-			expectedConstructionParseResponse := &rTypes.ConstructionParseResponse{
+			expected := &rTypes.ConstructionParseResponse{
 				Operations:               operations.ToRosetta(),
 				AccountIdentifierSigners: tt.signers,
+				Metadata:                 tt.metadata,
 			}
 			mockConstructor := &mocks.MockTransactionConstructor{}
 			mockConstructor.
@@ -806,10 +821,10 @@ func TestConstructionParse(t *testing.T) {
 				mockConstructor)
 
 			// when:
-			res, e := service.ConstructionParse(defaultContext, request)
+			actual, e := service.ConstructionParse(defaultContext, tt.request)
 
 			// then:
-			assert.Equal(t, expectedConstructionParseResponse, res)
+			assert.Equal(t, expected, actual)
 			assert.Nil(t, e)
 			mockConstructor.AssertExpectations(t)
 		})
@@ -894,6 +909,24 @@ func TestConstructionPayloads(t *testing.T) {
 					{
 						AccountIdentifier: aliasAccount.ToRosetta(),
 						Bytes:             hexutil.MustDecode("0x0a0d0a0708959aef3a107b12021864120218031880c2d72f220308b40172020a00"),
+						SignatureType:     rTypes.Ed25519,
+					},
+				},
+			},
+		},
+		{
+			name: "transaction memo",
+			metadata: map[string]interface{}{
+				"memo":                     "transfer",
+				metadataKeyValidStartNanos: "123456789000000123",
+			},
+			payerAccountId: defaultCryptoAccountId1,
+			expected: &rTypes.ConstructionPayloadsResponse{
+				UnsignedTransaction: "0x0a332a310a2d0a0f0a0708959aef3a107b120418d8c307120218031880c2d72f220308b40132087472616e7366657272020a001200",
+				Payloads: []*rTypes.SigningPayload{
+					{
+						AccountIdentifier: defaultCryptoAccountId1.ToRosetta(),
+						Bytes:             hexutil.MustDecode("0x0a0f0a0708959aef3a107b120418d8c307120218031880c2d72f220308b40132087472616e7366657272020a00"),
 						SignatureType:     rTypes.Ed25519,
 					},
 				},
@@ -1160,6 +1193,7 @@ func TestConstructionSubmitOffline(t *testing.T) {
 func TestConstructionPreprocess(t *testing.T) {
 	tests := []struct {
 		name     string
+		metadata map[string]interface{}
 		signers  []types.AccountId
 		expected *rTypes.ConstructionPreprocessResponse
 	}{
@@ -1172,10 +1206,12 @@ func TestConstructionPreprocess(t *testing.T) {
 			},
 		},
 		{
-			name:    "alias account signer",
-			signers: []types.AccountId{aliasAccount},
+			name:     "alias account signer",
+			metadata: map[string]interface{}{"memo": "tx memo"},
+			signers:  []types.AccountId{aliasAccount},
 			expected: &rTypes.ConstructionPreprocessResponse{
 				Options: map[string]interface{}{
+					"memo":                  "tx memo",
 					optionKeyAccountAliases: aliasStr,
 					optionKeyOperationType:  types.OperationTypeCryptoTransfer,
 				},
@@ -1194,7 +1230,7 @@ func TestConstructionPreprocess(t *testing.T) {
 			service, _ := NewConstructionAPIService(nil, onlineBaseService, defaultNetwork, defaultNodes, 0, 0, mockConstructor)
 
 			// when:
-			actual, err := service.ConstructionPreprocess(defaultContext, getConstructionPreprocessRequest(true))
+			actual, err := service.ConstructionPreprocess(defaultContext, getConstructionPreprocessRequest(true, tt.metadata))
 
 			// then:
 			assert.Equal(t, tt.expected, actual)
@@ -1212,7 +1248,7 @@ func TestConstructionPreprocessThrowsWithConstructorPreprocessFailure(t *testing
 	service, _ := NewConstructionAPIService(nil, onlineBaseService, defaultNetwork, defaultNodes, 0, 0, mockConstructor)
 
 	// when:
-	actual, e := service.ConstructionPreprocess(defaultContext, getConstructionPreprocessRequest(false))
+	actual, e := service.ConstructionPreprocess(defaultContext, getConstructionPreprocessRequest(false, nil))
 
 	// then:
 	assert.Nil(t, actual)
@@ -1457,6 +1493,57 @@ func TestUnmarshallTransactionFromHexStringThrowsWithUnsupportedTransactionType(
 	// then
 	assert.NotNil(t, err)
 	assert.Nil(t, actual)
+}
+
+func TestTransactionSetMemo(t *testing.T) {
+	tests := []struct {
+		name     string
+		memo     interface{}
+		expected string
+	}{
+		{
+			name:     "empty",
+			memo:     "",
+			expected: "",
+		},
+		{
+			name:     "nil",
+			memo:     nil,
+			expected: "",
+		},
+		{
+			name:     "transfer",
+			memo:     "transfer",
+			expected: "transfer",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// given
+			transaction := hedera.NewTransferTransaction()
+			update := transactionSetMemo(tt.memo)
+
+			// when
+			err := update(transaction)
+
+			// then
+			assert.Nil(t, err)
+			assert.Equal(t, tt.expected, transaction.GetTransactionMemo())
+		})
+	}
+}
+
+func TestTransactionSetMemoFailure(t *testing.T) {
+	// given
+	transaction := hedera.NewTransferTransaction()
+	update := transactionSetMemo(100)
+
+	// when
+	err := update(transaction)
+
+	// then
+	assert.NotNil(t, err)
 }
 
 func TestTransactionSetTransactionId(t *testing.T) {

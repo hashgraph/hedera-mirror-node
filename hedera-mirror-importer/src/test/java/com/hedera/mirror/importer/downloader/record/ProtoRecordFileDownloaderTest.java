@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 
@@ -58,10 +58,9 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
     private static final String RECORD_FILE_WITH_SIDECAR = "2022-07-13T08_46_11.304284003Z.rcd.gz";
     private static final String SIDECAR_FILENAME = "2022-07-13T08_46_11.304284003Z_01.rcd.gz";
 
-    @BeforeAll
-    protected static void beforeAll() throws IOException {
-        addressBook = loadAddressBook("test-v6-sidecar-4n.bin");
-        allNodeAccountIds = addressBook.getNodeSet();
+    @BeforeEach
+    void setup() {
+        loadAddressBook("test-v6-sidecar-4n.bin");
     }
 
     @Test
@@ -79,7 +78,8 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
         expectLastStreamFile(Instant.EPOCH);
         downloader.download();
 
-        super.verifyStreamFiles(List.of(file1, file2), s -> {});
+        super.verifyStreamFiles(List.of(file1, file2), s -> {
+        });
         assertThat(downloaderProperties.getStreamPath()).doesNotExist();
     }
 
@@ -189,7 +189,8 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
 
     @Override
     protected Map<String, Long> getExpectedFileIndexMap() {
-        return getRecordFileMap().values().stream().collect(Collectors.toMap(RecordFile::getName, RecordFile::getIndex));
+        return getRecordFileMap().values().stream()
+                .collect(Collectors.toMap(RecordFile::getName, RecordFile::getIndex));
     }
 
     @Override

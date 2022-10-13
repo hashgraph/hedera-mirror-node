@@ -674,6 +674,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                         .returns(DomainUtils.timestampInNanosMax(record.getConsensusTimestamp()),
                                 Entity::getTimestampLower)
                         .usingRecursiveComparison()
+                        .usingOverriddenEquals()
                         .ignoringFields("deleted", "timestampRange")
                         .isEqualTo(dbAccountEntityBefore)
         );

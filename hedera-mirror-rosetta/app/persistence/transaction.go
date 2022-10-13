@@ -58,7 +58,7 @@ const (
         select ta.account_id, ta.token_id, t.type, t.decimals, sd.consensus_timestamp
         from token_account ta
         join success_dissociate sd
-          on ta.account_id = sd.account_id and ta.modified_timestamp = sd.consensus_timestamp
+          on ta.account_id = sd.account_id and lower(ta.timestamp_range) = sd.consensus_timestamp
         join token t
           on t.token_id = ta.token_id
         join entity e
@@ -71,9 +71,15 @@ const (
           d.*,
           (
             with snapshot as (
-              select abf.consensus_timestamp + abf.time_offset as timestamp
-              from account_balance_file as abf
-              where abf.consensus_timestamp < d.consensus_timestamp
+              select abf.consensus_timestamp + abf.time_offset + fixed_offset.value as timestamp
+              from account_balance_file as abf,
+                lateral (
+                  select
+                    case when consensus_timestamp >= @first_fixed_offset_timestamp then 53
+                         else 0
+                    end value
+                ) as fixed_offset
+              where abf.consensus_timestamp + abf.time_offset + fixed_offset.value < d.consensus_timestamp
               order by abf.consensus_timestamp desc
               limit 1
             )
@@ -135,6 +141,7 @@ const (
 	selectTransactionsInTimestampRange = "with" + genesisTimestampCte + `select
                                             t.consensus_timestamp,
                                             t.entity_id,
+                                            t.memo,
                                             t.payer_account_id,
                                             t.result,
                                             t.transaction_hash as hash,
@@ -207,6 +214,7 @@ type transaction struct {
 	ConsensusTimestamp int64
 	EntityId           *domain.EntityId
 	Hash               []byte
+	Memo               []byte
 	PayerAccountId     domain.EntityId
 	Result             int16
 	Type               int16
@@ -287,14 +295,18 @@ func (t tokenTransfer) getAmount() types.Amount {
 
 // transactionRepository struct that has connection to the Database
 type transactionRepository struct {
-	once     sync.Once
-	dbClient interfaces.DbClient
-	types    map[int]string
+	once                            sync.Once
+	dbClient                        interfaces.DbClient
+	firstFixedOffsetTimestampSqlArg sql.NamedArg
+	types                           map[int]string
 }
 
 // NewTransactionRepository creates an instance of a TransactionRepository struct
-func NewTransactionRepository(dbClient interfaces.DbClient) interfaces.TransactionRepository {
-	return &transactionRepository{dbClient: dbClient}
+func NewTransactionRepository(dbClient interfaces.DbClient, network string) interfaces.TransactionRepository {
+	return &transactionRepository{
+		dbClient:                        dbClient,
+		firstFixedOffsetTimestampSqlArg: getFirstAccountBalanceFileFixedOffsetTimestampSqlNamedArg(network),
+	}
 }
 
 func (tr *transactionRepository) FindBetween(ctx context.Context, start, end int64) (
@@ -312,7 +324,12 @@ func (tr *transactionRepository) FindBetween(ctx context.Context, start, end int
 	for start <= end {
 		transactionsBatch := make([]*transaction, 0)
 		err := db.
-			Raw(selectTransactionsInTimestampRangeOrdered, sql.Named("start", start), sql.Named("end", end)).
+			Raw(
+				selectTransactionsInTimestampRangeOrdered,
+				sql.Named("start", start),
+				sql.Named("end", end),
+				tr.firstFixedOffsetTimestampSqlArg,
+			).
 			Limit(batchSize).
 			Find(&transactionsBatch).
 			Error
@@ -378,6 +395,7 @@ func (tr *transactionRepository) FindByHashInBlock(
 		sql.Named("hash", transactionHash),
 		sql.Named("start", consensusStart),
 		sql.Named("end", consensusEnd),
+		tr.firstFixedOffsetTimestampSqlArg,
 	).Find(&transactions).Error; err != nil {
 		log.Errorf(databaseErrorFormat, hErrors.ErrDatabaseError.Message, err)
 		return nil, hErrors.ErrDatabaseError
@@ -399,7 +417,8 @@ func (tr *transactionRepository) constructTransaction(sameHashTransactions []*tr
 	*types.Transaction,
 	*rTypes.Error,
 ) {
-	tResult := &types.Transaction{Hash: sameHashTransactions[0].getHashString()}
+	firstTransaction := sameHashTransactions[0]
+	tResult := &types.Transaction{Hash: firstTransaction.getHashString(), Memo: firstTransaction.Memo}
 	operations := make(types.OperationSlice, 0)
 	success := types.TransactionResults[transactionResultSuccess]
 
@@ -568,6 +587,7 @@ func (tr *transactionRepository) processSuccessTokenDissociates(
 		selectDissociateTokenTransfersInTimestampRange,
 		sql.Named("start", start),
 		sql.Named("end", end),
+		tr.firstFixedOffsetTimestampSqlArg,
 	).Scan(&tokenDissociateTransactions).Error; err != nil {
 		log.Errorf(databaseErrorFormat, hErrors.ErrDatabaseError.Message, err)
 		return hErrors.ErrDatabaseError

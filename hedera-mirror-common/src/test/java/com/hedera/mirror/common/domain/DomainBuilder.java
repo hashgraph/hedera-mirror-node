@@ -74,6 +74,7 @@ import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
+import com.hedera.mirror.common.domain.contract.ContractState;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.CryptoAllowanceHistory;
@@ -96,7 +97,11 @@ import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.token.NftTransfer;
 import com.hedera.mirror.common.domain.token.NftTransferId;
 import com.hedera.mirror.common.domain.token.Token;
+import com.hedera.mirror.common.domain.token.TokenAccount;
+import com.hedera.mirror.common.domain.token.TokenAccountHistory;
+import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenId;
+import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
@@ -158,7 +163,7 @@ public class DomainBuilder {
                 .loadEnd(timestamp + 1)
                 .loadStart(timestamp)
                 .name(name)
-                .nodeAccountId(entityId(ACCOUNT))
+                .nodeId(id())
                 .timeOffset(0);
         return new DomainWrapperImpl<>(builder, builder::build);
     }
@@ -296,6 +301,17 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
+    public DomainWrapper<ContractState, ContractState.ContractStateBuilder> contractState() {
+        var createdTimestamp = timestamp();
+        var builder = ContractState.builder()
+                .contractId(id())
+                .createdTimestamp(createdTimestamp)
+                .modifiedTimestamp(createdTimestamp)
+                .slot(bytes(32))
+                .value(bytes(32));
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
     public DomainWrapper<ContractStateChange, ContractStateChange.ContractStateChangeBuilder> contractStateChange() {
         var builder = ContractStateChange.builder()
                 .consensusTimestamp(timestamp())
@@ -342,6 +358,7 @@ public class DomainBuilder {
         id.setCreatedTimestamp(timestamp());
         id.setTokenId(entityId(TOKEN));
         var builder = CustomFee.builder()
+                .allCollectorsAreExempt(false)
                 .amount(100L)
                 .amountDenominator(10L)
                 .id(id)
@@ -482,7 +499,7 @@ public class DomainBuilder {
                 .loadEnd(now.plusSeconds(1).getEpochSecond())
                 .loadStart(now.getEpochSecond())
                 .name(now.toString().replace(':', '_') + ".rcd")
-                .nodeAccountId(entityId(ACCOUNT))
+                .nodeId(id())
                 .previousHash(text(96))
                 .version(3);
         return new DomainWrapperImpl<>(builder, builder::build);
@@ -638,7 +655,7 @@ public class DomainBuilder {
                 .loadEnd(now.plusSeconds(1).getEpochSecond())
                 .loadStart(now.getEpochSecond())
                 .name(instantString + ".rcd.gz")
-                .nodeAccountId(entityId(ACCOUNT))
+                .nodeId(id())
                 .previousHash(text(96))
                 .sidecarCount(1)
                 .sidecars(List.of(sidecarFile()
@@ -704,6 +721,34 @@ public class DomainBuilder {
                 .tokenId(new TokenId(entityId(TOKEN)))
                 .treasuryAccountId(entityId(ACCOUNT))
                 .wipeKey(key());
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<TokenAccount, TokenAccount.TokenAccountBuilder> tokenAccount() {
+        long timestamp = timestamp();
+        var builder = TokenAccount.builder()
+                .accountId(id())
+                .automaticAssociation(false)
+                .associated(true)
+                .createdTimestamp(timestamp)
+                .freezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE)
+                .kycStatus(TokenKycStatusEnum.NOT_APPLICABLE)
+                .timestampRange(Range.atLeast(timestamp))
+                .tokenId(id());
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<TokenAccountHistory, TokenAccountHistory.TokenAccountHistoryBuilder> tokenAccountHistory() {
+        long timestamp = timestamp();
+        var builder = TokenAccountHistory.builder()
+                .accountId(id())
+                .automaticAssociation(false)
+                .associated(true)
+                .createdTimestamp(timestamp)
+                .freezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE)
+                .kycStatus(TokenKycStatusEnum.NOT_APPLICABLE)
+                .timestampRange(Range.closedOpen(timestamp, timestamp()))
+                .tokenId(id());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

@@ -3,8 +3,8 @@ module github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta
 go 1.18
 
 require (
-	github.com/Code-Hex/go-generics-cache v1.1.0
-	github.com/coinbase/rosetta-sdk-go v0.8.0
+	github.com/Code-Hex/go-generics-cache v1.2.0
+	github.com/coinbase/rosetta-sdk-go v0.8.1
 	github.com/cucumber/godog v0.12.5
 	github.com/ethereum/go-ethereum v1.10.25
 	github.com/go-playground/validator/v10 v10.11.1
@@ -26,8 +26,8 @@ require (
 	github.com/weaveworks/common v0.0.0-20210901124008-1fa3f9fa874c
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/yaml.v2 v2.4.0
-	gorm.io/driver/postgres v1.3.9
-	gorm.io/gorm v1.23.9
+	gorm.io/driver/postgres v1.4.4
+	gorm.io/gorm v1.24.0
 )
 
 require (
@@ -66,12 +66,12 @@ require (
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
-	github.com/jackc/pgconn v1.12.1 // indirect
+	github.com/jackc/pgconn v1.13.0 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
-	github.com/jackc/pgproto3/v2 v2.3.0 // indirect
+	github.com/jackc/pgproto3/v2 v2.3.1 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20200714003250-2b9c44734f2b // indirect
-	github.com/jackc/pgx/v4 v4.16.1 // indirect
+	github.com/jackc/pgx/v4 v4.17.2 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.4 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
@@ -108,7 +108,7 @@ require (
 	go.opentelemetry.io/otel v1.10.0 // indirect
 	go.opentelemetry.io/otel/trace v1.10.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
-	golang.org/x/crypto v0.0.0-20220622213112-05595931fe9d // indirect
+	golang.org/x/crypto v0.0.0-20220722155217-630584e8d5aa // indirect
 	golang.org/x/exp v0.0.0-20220426173459-3bcf042a4bf5 // indirect
 	golang.org/x/net v0.0.0-20220909164309-bea034e7d591 // indirect
 	golang.org/x/sys v0.0.0-20220728004956-3c1f35247d10 // indirect
@@ -118,5 +118,7 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace github.com/hashgraph/hedera-sdk-go/v2 => github.com/xin-hedera/hedera-sdk-go/v2 v2.8.0-beta.1.0.20220913034050-c1eb810845f7
 
 replace google.golang.org/protobuf => google.golang.org/protobuf v1.26.1-0.20210525005349-febffdd88e85

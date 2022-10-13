@@ -23,7 +23,6 @@ package com.hedera.mirror.test.e2e.acceptance.client;
 import java.time.Duration;
 import java.util.List;
 import javax.inject.Named;
-import lombok.SneakyThrows;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.retry.support.RetryTemplate;
 
@@ -509,15 +508,12 @@ public class TokenClient extends AbstractNetworkClient {
         return response;
     }
 
-    @SneakyThrows
     public long getTokenBalance(AccountId accountId, TokenId tokenId) {
-        long balance = new AccountBalanceQuery()
-                .setAccountId(accountId)
-                .execute(client)
-                .tokens.get(tokenId);
-
+        // AccountBalanceQuery is free
+        var query = new AccountBalanceQuery().setAccountId(accountId);
+        var accountBalance = executeQuery(() -> query);
+        long balance = accountBalance.tokens.get(tokenId);
         log.debug("{}'s token balance is {} {} tokens", accountId, balance, tokenId);
-
         return balance;
     }
 }

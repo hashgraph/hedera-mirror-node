@@ -83,6 +83,7 @@
         "token_id": "0.0.1135"
       },
       {
+        "all_collectors_are_exempt": true,
         "amount": "9",
         "amount_denominator": "13",
         "collector_account_id": "0.0.8902",
@@ -91,6 +92,7 @@
         "token_id": "0.0.1135"
       },
       {
+        "all_collectors_are_exempt": true,
         "amount": "41",
         "amount_denominator": "131",
         "collector_account_id": "0.0.8904",
@@ -107,6 +109,7 @@
         "token_id": "0.0.1135"
       },
       {
+        "all_collectors_are_exempt": true,
         "amount": "13",
         "collector_account_id": "0.0.8905",
         "created_timestamp": "1234567899999999007",
@@ -153,11 +156,13 @@
       "created_timestamp": "1234567899.999999007",
       "fixed_fees": [
         {
+          "all_collectors_are_exempt": false,
           "amount": 12,
           "collector_account_id": "0.0.8904",
           "denominating_token_id": "0.0.1137"
         },
         {
+          "all_collectors_are_exempt": true,
           "amount": 13,
           "collector_account_id": "0.0.8905",
           "denominating_token_id": null
@@ -165,6 +170,7 @@
       ],
       "fractional_fees": [
         {
+          "all_collectors_are_exempt": false,
           "amount": {
             "denominator": 17,
             "numerator": 11
@@ -176,6 +182,7 @@
           "net_of_transfers": false
         },
         {
+          "all_collectors_are_exempt": true,
           "amount": {
             "denominator": 13,
             "numerator": 9
@@ -186,6 +193,7 @@
           "net_of_transfers": false
         },
         {
+          "all_collectors_are_exempt": true,
           "amount": {
             "denominator": 131,
             "numerator": 41

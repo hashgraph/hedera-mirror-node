@@ -653,7 +653,8 @@ const addCustomFee = async (customFee) => {
   }
 
   await pool.query(
-    `insert into custom_fee (amount,
+    `insert into custom_fee (all_collectors_are_exempt,
+                             amount,
                              amount_denominator,
                              collector_account_id,
                              created_timestamp,
@@ -664,8 +665,9 @@ const addCustomFee = async (customFee) => {
                              royalty_denominator,
                              royalty_numerator,
                              token_id)
-    values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);`,
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);`,
     [
+      customFee.all_collectors_are_exempt || false,
       customFee.amount || null,
       customFee.amount_denominator || null,
       EntityId.parse(customFee.collector_account_id, {isNullable: true}).getEncodedId(),
@@ -692,9 +694,9 @@ const setAccountBalance = async (balance) => {
 
   await pool.query(
     `insert into account_balance_file
-    (consensus_timestamp, count, load_start, load_end, name, node_account_id)
+    (consensus_timestamp, count, load_start, load_end, name, node_id)
     values ($1, $2, $3, $4, $5, $6) on CONFLICT DO NOTHING;`,
-    [balance.timestamp, 1, balance.timestamp, balance.timestamp, `${balance.timestamp}_Balances.pb.gz`, 3]
+    [balance.timestamp, 1, balance.timestamp, balance.timestamp, `${balance.timestamp}_Balances.pb.gz`, 0]
   );
 
   if (balance.tokens) {
@@ -1255,18 +1257,18 @@ const addTokenAccount = async (tokenAccount) => {
     created_timestamp: 0,
     freeze_status: 0,
     kyc_status: 0,
-    modified_timestamp: 0,
+    timestamp_range: null,
     token_id: '0.0.0',
     ...tokenAccount,
   };
 
-  if (!tokenAccount.modified_timestamp) {
-    tokenAccount.modified_timestamp = tokenAccount.created_timestamp;
+  if (tokenAccount.timestamp_range === null) {
+    tokenAccount.timestamp_range = `[${tokenAccount.created_timestamp},)`;
   }
 
   await pool.query(
     `insert into token_account (account_id, associated, automatic_association, created_timestamp, freeze_status,
-                                kyc_status, modified_timestamp, token_id)
+                                kyc_status, timestamp_range, token_id)
     values ($1, $2, $3, $4, $5, $6, $7, $8);`,
     [
       EntityId.parse(tokenAccount.account_id).getEncodedId(),
@@ -1275,7 +1277,7 @@ const addTokenAccount = async (tokenAccount) => {
       tokenAccount.created_timestamp,
       tokenAccount.freeze_status,
       tokenAccount.kyc_status,
-      tokenAccount.modified_timestamp,
+      tokenAccount.timestamp_range,
       EntityId.parse(tokenAccount.token_id).getEncodedId(),
     ]
   );
@@ -1400,7 +1402,7 @@ const addRecordFile = async (recordFileInput) => {
     'load_start',
     'logs_bloom',
     'name',
-    'node_account_id',
+    'node_id',
     'prev_hash',
     'size',
     'version',
@@ -1423,7 +1425,7 @@ const addRecordFile = async (recordFileInput) => {
     load_start: 1629298233,
     logs_bloom: Buffer.alloc(0),
     name: '2021-08-12T06_59_32.000852000Z.rcd',
-    node_account_id: 3,
+    node_id: 0,
     prev_hash: '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
     size: 6,
     version: 5,

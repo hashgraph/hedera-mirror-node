@@ -37,7 +37,8 @@ import (
 type blockAPIService struct {
 	accountRepo interfaces.AccountRepository
 	BaseService
-	entityCache *cache.Cache[int64, types.AccountId]
+	entityCache            *cache.Cache[int64, types.AccountId]
+	maxTransactionsInBlock int
 }
 
 // NewBlockAPIService creates a new instance of a blockAPIService.
@@ -45,9 +46,19 @@ func NewBlockAPIService(
 	accountRepo interfaces.AccountRepository,
 	baseService BaseService,
 	entityCacheConfig config.Cache,
+	maxTransactionsInBlock int,
+	serverContext context.Context,
 ) server.BlockAPIServicer {
-	entityCache := cache.New(cache.AsLRU[int64, types.AccountId](lru.WithCapacity(entityCacheConfig.MaxSize)))
-	return &blockAPIService{accountRepo: accountRepo, BaseService: baseService, entityCache: entityCache}
+	entityCache := cache.NewContext(
+		serverContext,
+		cache.AsLRU[int64, types.AccountId](lru.WithCapacity(entityCacheConfig.MaxSize)),
+	)
+	return &blockAPIService{
+		accountRepo:            accountRepo,
+		BaseService:            baseService,
+		entityCache:            entityCache,
+		maxTransactionsInBlock: maxTransactionsInBlock,
+	}
 }
 
 // Block implements the /block endpoint.
@@ -64,11 +75,20 @@ func (s *blockAPIService) Block(
 		return nil, err
 	}
 
+	var otherTransactions []*rTypes.TransactionIdentifier
+	if len(block.Transactions) > s.maxTransactionsInBlock {
+		otherTransactions = make([]*rTypes.TransactionIdentifier, 0, len(block.Transactions)-s.maxTransactionsInBlock)
+		for _, transaction := range block.Transactions[s.maxTransactionsInBlock:] {
+			otherTransactions = append(otherTransactions, &rTypes.TransactionIdentifier{Hash: transaction.Hash})
+		}
+		block.Transactions = block.Transactions[0:s.maxTransactionsInBlock]
+	}
+
 	if err = s.updateOperationAccountAlias(ctx, block.Transactions...); err != nil {
 		return nil, err
 	}
 
-	return &rTypes.BlockResponse{Block: block.ToRosetta()}, nil
+	return &rTypes.BlockResponse{Block: block.ToRosetta(), OtherTransactions: otherTransactions}, nil
 }
 
 // BlockTransaction implements the /block/transaction endpoint.

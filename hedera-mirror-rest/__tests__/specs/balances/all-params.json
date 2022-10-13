@@ -103,9 +103,7 @@
         "realm_num": 1,
         "balance": 999
       }
-    ],
-    "transactions": [],
-    "cryptotransfers": []
+    ]
   },
   "url": "/api/v1/balances?account.id=gte:0.1.18&account.id=lt:0.1.20&account.balance=gt:45&account.publicKey=3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be&timestamp=1566560003.000000000&order=asc",
   "responseStatus": 200,

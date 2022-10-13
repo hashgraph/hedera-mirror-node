@@ -166,6 +166,7 @@ class AccountBalanceFileParserTest extends IntegrationTest {
                     .first()
                     .matches(a -> a.getLoadEnd() != null)
                     .usingRecursiveComparison()
+                    .usingOverriddenEquals()
                     .ignoringFields("bytes", "items", "loadEnd")
                     .isEqualTo(accountBalanceFile);
         }
@@ -184,6 +185,7 @@ class AccountBalanceFileParserTest extends IntegrationTest {
                     .first()
                     .matches(a -> a.getLoadEnd() != null)
                     .usingRecursiveComparison()
+                    .usingOverriddenEquals()
                     .ignoringFields("bytes", "items", "loadEnd")
                     .isEqualTo(accountBalanceFile);
         }

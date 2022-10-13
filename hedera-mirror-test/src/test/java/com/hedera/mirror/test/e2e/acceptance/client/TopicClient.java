@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Named;
-import lombok.SneakyThrows;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.retry.support.RetryTemplate;
 
@@ -186,12 +185,7 @@ public class TopicClient extends AbstractNetworkClient {
         return recordPublishInstants.get(0L);
     }
 
-    @SneakyThrows
     public TopicInfo getTopicInfo(TopicId topicId) {
-        return retryTemplate.execute(x ->
-                new TopicInfoQuery()
-                        .setTopicId(topicId)
-                        .setNodeAccountIds(List.of(sdkClient.getRandomNodeAccountId()))
-                        .execute(client));
+        return executeQuery(() -> new TopicInfoQuery().setTopicId(topicId));
     }
 }

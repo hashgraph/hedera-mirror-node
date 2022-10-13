@@ -44,6 +44,7 @@ const filterKeys = {
   NODE_ID: 'node.id',
   NONCE: 'nonce',
   ORDER: 'order',
+  Q: 'q',
   RESULT: 'result',
   SCHEDULED: 'scheduled',
   SCHEDULEID: 'scheduleid',
@@ -96,7 +97,8 @@ const transactionColumns = {
 
 const requestIdLabel = 'requestId';
 const requestStartTime = 'requestStartTime';
-const responseDataLabel = 'mirrorRestData';
+const responseContentType = 'responseContentType';
+const responseDataLabel = 'responseData';
 
 const orderFilterValues = {
   ASC: 'asc',
@@ -107,6 +109,11 @@ const orderFilterValues = {
 const characterEncoding = {
   BASE64: 'base64',
   UTF8: 'utf-8',
+};
+
+const networkSupplyQuery = {
+  CIRCULATING: 'circulating',
+  TOTALCOINS: 'totalcoins',
 };
 
 const transactionResultFilter = {
@@ -214,12 +221,14 @@ export {
   httpStatusCodes,
   keyTypes,
   networks,
+  networkSupplyQuery,
   orderFilterValues,
   queryParamOperators,
   queryParamOperatorPatterns,
   recordStreamPrefix,
   requestIdLabel,
   requestStartTime,
+  responseContentType,
   responseDataLabel,
   tokenTypeFilter,
   transactionColumns,

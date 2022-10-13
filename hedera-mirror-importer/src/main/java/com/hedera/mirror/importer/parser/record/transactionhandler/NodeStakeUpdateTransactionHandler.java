@@ -31,16 +31,17 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.addressbook.ConsensusNodeService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
-import com.hedera.mirror.importer.repository.NodeStakeRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @CustomLog
 @Named
 @RequiredArgsConstructor
 class NodeStakeUpdateTransactionHandler implements TransactionHandler {
+
+    private final ConsensusNodeService consensusNodeService;
     private final EntityListener entityListener;
-    private final NodeStakeRepository nodeStakeRepository;
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
@@ -89,7 +90,8 @@ class NodeStakeUpdateTransactionHandler implements TransactionHandler {
             return;
         }
 
-        nodeStakeRepository.evictNodeStakeCache();
+        consensusNodeService.refresh();
+
         for (var nodeStakeProto : nodeStakesProtos) {
             NodeStake nodeStake = new NodeStake();
             nodeStake.setConsensusTimestamp(consensusTimestamp);

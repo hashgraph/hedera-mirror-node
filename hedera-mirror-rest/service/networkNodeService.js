@@ -35,9 +35,14 @@ import entityId from '../entityId.js';
  * Network node business model
  */
 class NetworkNodeService extends BaseService {
-  static unreleasedSupplyAccounts = config.network.unreleasedSupplyAccounts.map((a) =>
-    entityId.parse(a).getEncodedId()
-  );
+  static unreleasedSupplyAccounts = (column) =>
+    config.network.unreleasedSupplyAccounts
+      .map((range) => {
+        const from = entityId.parse(range.from).getEncodedId();
+        const to = entityId.parse(range.to).getEncodedId();
+        return `(${column} >= ${from} and ${column} <= ${to})`;
+      })
+      .join(' or ');
 
   // add node filter
   static networkNodesBaseQuery = `with ${AddressBook.tableAlias} as (
@@ -110,12 +115,12 @@ class NetworkNodeService extends BaseService {
              from record_file
            )                         as consensus_timestamp
     from entity
-    where id in (${NetworkNodeService.unreleasedSupplyAccounts})`;
+    where (${NetworkNodeService.unreleasedSupplyAccounts('id')})`;
 
   static networkSupplyByTimestampQuery = `
     select coalesce(sum(balance), 0) as unreleased_supply, max(consensus_timestamp) as consensus_timestamp
     from account_balance
-    where account_id in (${NetworkNodeService.unreleasedSupplyAccounts})
+    where (${NetworkNodeService.unreleasedSupplyAccounts('account_id')})
       and consensus_timestamp = (
       select max(consensus_timestamp)
       from account_balance_file abf

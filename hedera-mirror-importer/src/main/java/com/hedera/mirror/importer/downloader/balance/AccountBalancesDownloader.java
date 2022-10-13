@@ -24,14 +24,14 @@ import io.micrometer.core.instrument.MeterRegistry;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.scheduling.annotation.Scheduled;
-import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
-import com.hedera.mirror.importer.addressbook.AddressBookService;
+import com.hedera.mirror.importer.addressbook.ConsensusNodeService;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.NodeSignatureVerifier;
 import com.hedera.mirror.importer.downloader.StreamFileNotifier;
+import com.hedera.mirror.importer.downloader.provider.StreamFileProvider;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.reader.balance.BalanceFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
@@ -40,15 +40,17 @@ import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
 @Named
 public class AccountBalancesDownloader extends Downloader<AccountBalanceFile> {
 
-    public AccountBalancesDownloader(AddressBookService addressBookService,
+    public AccountBalancesDownloader(ConsensusNodeService consensusNodeService,
                                      BalanceDownloaderProperties downloaderProperties,
                                      MeterRegistry meterRegistry,
                                      MirrorDateRangePropertiesProcessor mirrorDateRangePropertiesProcessor,
-                                     NodeSignatureVerifier nodeSignatureVerifier, S3AsyncClient s3Client,
-                                     SignatureFileReader signatureFileReader, BalanceFileReader balanceFileReader,
-                                     StreamFileNotifier streamFileNotifier) {
-        super(addressBookService, downloaderProperties, meterRegistry, mirrorDateRangePropertiesProcessor,
-                nodeSignatureVerifier, s3Client, signatureFileReader, balanceFileReader, streamFileNotifier);
+                                     NodeSignatureVerifier nodeSignatureVerifier,
+                                     SignatureFileReader signatureFileReader,
+                                     StreamFileNotifier streamFileNotifier,
+                                     StreamFileProvider streamFileProvider,
+                                     BalanceFileReader streamFileReader) {
+        super(consensusNodeService, downloaderProperties, meterRegistry, mirrorDateRangePropertiesProcessor,
+                nodeSignatureVerifier, signatureFileReader, streamFileNotifier, streamFileProvider, streamFileReader);
     }
 
     @Override

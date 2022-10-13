@@ -3,35 +3,43 @@
   "setup": {
     "accounts": [
       {
+        "balance": 151,
         "num": 1,
         "realm": 15
       },
       {
+        "balance": 152,
         "num": 2,
         "realm": 15
       },
       {
+        "balance": 155,
         "num": 5,
         "realm": 15
       },
       {
+        "balance": 156,
         "num": 6,
         "realm": 15
       },
       {
+        "balance": 157,
         "num": 7,
         "realm": 15
       },
       {
+        "balance": 158,
         "num": 8,
         "realm": 15
       },
       {
+        "balance": 159,
         "num": 9,
         "realm": 15,
         "expiration_timestamp": "-9223372036854775808"
       },
       {
+        "balance": 1510,
         "num": 10,
         "realm": 15,
         "expiration_timestamp": "9223372036854775807"
@@ -121,93 +129,191 @@
     ],
     "contracts": [
       {
+        "balance": 153,
         "num": 3,
         "realm": 15
       },
       {
+        "balance": 154,
         "num": 4,
         "realm": 15
       }
     ],
-    "transactions": [],
-    "cryptotransfers": []
-  },
-  "url": "/api/v1/balances",
-  "responseStatus": 200,
-  "responseJson": {
-    "timestamp": "0.000002000",
-    "balances": [
+    "recordFiles": [
       {
-        "account": "0.15.10",
-        "balance": 100,
-        "tokens": []
+        "consensus_start": 8000000000,
+        "consensus_end": 10000000000,
+        "hash": "cb6e2dd117c887a54efdf5dc1db5ca9bee1bd3ef970825af07621a7f21bf0f07fa05f8a3be83cd544caf1be79110f9f4",
+        "name": "1970-01-01T00_00_08Z.rcd"
       },
       {
-        "account": "0.15.9",
-        "balance": 90,
-        "tokens": []
-      },
-      {
-        "account": "0.15.8",
-        "balance": 80,
-        "tokens": []
-      },
-      {
-        "account": "0.15.7",
-        "balance": 70,
-        "tokens": []
-      },
-      {
-        "account": "0.15.6",
-        "balance": 60,
-        "tokens": []
-      },
-      {
-        "account": "0.15.5",
-        "balance": 50,
-        "tokens": []
-      },
-      {
-        "account": "0.15.4",
-        "balance": 40,
-        "tokens": []
-      },
-      {
-        "account": "0.15.3",
-        "balance": 30,
-        "tokens": []
-      },
-      {
-        "account": "0.15.2",
-        "balance": 9223372036847275807,
-        "tokens": [
-          {
-            "token_id": "0.0.90002",
-            "balance": 9223372036847275807
-          },
-          {
-            "token_id": "0.0.90000",
-            "balance": 1000
-          }
-        ]
-      },
-      {
-        "account": "0.15.1",
-        "balance": 10,
-        "tokens": [
-          {
-            "token_id": "0.0.90001",
-            "balance": 180
-          },
-          {
-            "token_id": "0.0.90000",
-            "balance": 80
-          }
-        ]
+        "consensus_start": 10000000001,
+        "consensus_end": 12000000000,
+        "hash": "c73067d7e07eaab5a6156237f928acab0a9a2783083651996237a885230a2e0f147b322fb5d0e19a0c44cf3840bd3ba9",
+        "name": "1970-01-01T00_00_10.000000001Z.rcd"
       }
-    ],
-    "links": {
-      "next": null
+    ]
+  },
+  "tests": [
+    {
+      "url": "/api/v1/balances?timestamp=10",
+      "responseStatus": 200,
+      "responseJson": {
+        "timestamp": "0.000002000",
+        "balances": [
+          {
+            "account": "0.15.10",
+            "balance": 100,
+            "tokens": []
+          },
+          {
+            "account": "0.15.9",
+            "balance": 90,
+            "tokens": []
+          },
+          {
+            "account": "0.15.8",
+            "balance": 80,
+            "tokens": []
+          },
+          {
+            "account": "0.15.7",
+            "balance": 70,
+            "tokens": []
+          },
+          {
+            "account": "0.15.6",
+            "balance": 60,
+            "tokens": []
+          },
+          {
+            "account": "0.15.5",
+            "balance": 50,
+            "tokens": []
+          },
+          {
+            "account": "0.15.4",
+            "balance": 40,
+            "tokens": []
+          },
+          {
+            "account": "0.15.3",
+            "balance": 30,
+            "tokens": []
+          },
+          {
+            "account": "0.15.2",
+            "balance": 9223372036847275807,
+            "tokens": [
+              {
+                "token_id": "0.0.90002",
+                "balance": 9223372036847275807
+              },
+              {
+                "token_id": "0.0.90000",
+                "balance": 1000
+              }
+            ]
+          },
+          {
+            "account": "0.15.1",
+            "balance": 10,
+            "tokens": [
+              {
+                "token_id": "0.0.90001",
+                "balance": 180
+              },
+              {
+                "token_id": "0.0.90000",
+                "balance": 80
+              }
+            ]
+          }
+        ],
+        "links": {
+          "next": null
+        }
+      }
+    },
+    {
+      "url": "/api/v1/balances",
+      "responseStatus": 200,
+      "responseJson": {
+        "timestamp": "12.000000000",
+        "balances": [
+          {
+            "account": "0.15.10",
+            "balance": 1510,
+            "tokens": []
+          },
+          {
+            "account": "0.15.9",
+            "balance": 159,
+            "tokens": []
+          },
+          {
+            "account": "0.15.8",
+            "balance": 158,
+            "tokens": []
+          },
+          {
+            "account": "0.15.7",
+            "balance": 157,
+            "tokens": []
+          },
+          {
+            "account": "0.15.6",
+            "balance": 156,
+            "tokens": []
+          },
+          {
+            "account": "0.15.5",
+            "balance": 155,
+            "tokens": []
+          },
+          {
+            "account": "0.15.4",
+            "balance": 154,
+            "tokens": []
+          },
+          {
+            "account": "0.15.3",
+            "balance": 153,
+            "tokens": []
+          },
+          {
+            "account": "0.15.2",
+            "balance": 152,
+            "tokens": [
+              {
+                "token_id": "0.0.90002",
+                "balance": 9223372036847275807
+              },
+              {
+                "token_id": "0.0.90000",
+                "balance": 1000
+              }
+            ]
+          },
+          {
+            "account": "0.15.1",
+            "balance": 151,
+            "tokens": [
+              {
+                "token_id": "0.0.90001",
+                "balance": 180
+              },
+              {
+                "token_id": "0.0.90000",
+                "balance": 80
+              }
+            ]
+          }
+        ],
+        "links": {
+          "next": null
+        }
+      }
     }
-  }
+  ]
 }

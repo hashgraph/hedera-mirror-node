@@ -22,6 +22,7 @@ package com.hedera.mirror.common.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.params.provider.Arguments.arguments;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Internal;
@@ -33,12 +34,15 @@ import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import java.nio.ByteBuffer;
 import java.time.Instant;
+import java.util.stream.Stream;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.RandomUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
@@ -63,6 +67,19 @@ class DomainUtilsTest {
             "ed7495515c1e88a40f58fd6f94f8d9f14613470ba873d395293ea5542ddea56550f44d5760f57394693a889a43ab6f73b3a55448" +
             "8ecadacc328cb02594a2a5e9e46602010e2430203010001";
 
+    private static Stream<Arguments> paddingByteProvider() {
+        return Stream.of(
+                arguments(new byte[]{1, 3, 4}, 0, new byte[]{1, 3, 4}),
+                arguments(new byte[]{1, 3, 4}, 1, new byte[]{1, 3, 4}),
+                arguments(new byte[]{1, 3, 4}, 3, new byte[]{1, 3, 4}),
+                arguments(new byte[]{1, 3, 4}, 5, new byte[]{0, 0, 1, 3, 4}),
+                arguments(new byte[]{}, 3, new byte[]{0, 0, 0}),
+                arguments(new byte[]{1}, 5, new byte[]{0, 0, 0, 0, 1}),
+                arguments(new byte[]{1, 2}, -2, new byte[]{1, 2}),
+                arguments(null, 15, new byte[]{})
+        );
+    }
+
     @Test
     void getPublicKeyWhenNull() {
         assertThat(DomainUtils.getPublicKey(null)).isNull();
@@ -70,7 +87,7 @@ class DomainUtilsTest {
 
     @Test
     void getPublicKeyWhenError() {
-        assertThat(DomainUtils.getPublicKey(new byte[] {0, 1, 2})).isNull();
+        assertThat(DomainUtils.getPublicKey(new byte[]{0, 1, 2})).isNull();
     }
 
     @Test
@@ -209,6 +226,12 @@ class DomainUtilsTest {
     })
     void convertInstantToNanosMax(Instant instant, long expected) {
         assertThat(DomainUtils.convertToNanosMax(instant)).isEqualTo(expected);
+    }
+
+    @ParameterizedTest(name = "leftPadBytes: ({0}, {1}): {2}")
+    @MethodSource("paddingByteProvider")
+    void leftPadBytes(byte[] bytes, int paddingLength, byte[] expected) {
+        assertThat(DomainUtils.leftPadBytes(bytes, paddingLength)).isEqualTo(expected);
     }
 
     @Test

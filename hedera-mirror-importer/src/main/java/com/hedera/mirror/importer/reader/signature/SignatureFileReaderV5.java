@@ -27,9 +27,9 @@ import javax.inject.Named;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 
-import com.hedera.mirror.importer.domain.FileStreamSignature;
-import com.hedera.mirror.importer.domain.FileStreamSignature.SignatureType;
 import com.hedera.mirror.importer.domain.StreamFileData;
+import com.hedera.mirror.importer.domain.StreamFileSignature;
+import com.hedera.mirror.importer.domain.StreamFileSignature.SignatureType;
 import com.hedera.mirror.importer.exception.InvalidStreamFileException;
 import com.hedera.mirror.importer.exception.SignatureFileParsingException;
 import com.hedera.mirror.importer.reader.AbstractStreamObject;
@@ -42,7 +42,7 @@ public class SignatureFileReaderV5 implements SignatureFileReader {
     protected static final byte VERSION = 5;
 
     @Override
-    public FileStreamSignature read(StreamFileData signatureFileData) {
+    public StreamFileSignature read(StreamFileData signatureFileData) {
         String filename = signatureFileData.getFilename();
 
         try (ValidatedDataInputStream vdis = new ValidatedDataInputStream(
@@ -62,17 +62,17 @@ public class SignatureFileReaderV5 implements SignatureFileReader {
                 throw new SignatureFileParsingException("Extra data discovered in signature file " + filename);
             }
 
-            FileStreamSignature fileStreamSignature = new FileStreamSignature();
-            fileStreamSignature.setBytes(signatureFileData.getBytes());
-            fileStreamSignature.setFileHash(fileHashObject.getHash());
-            fileStreamSignature.setFileHashSignature(fileHashSignatureObject.getSignature());
-            fileStreamSignature.setFilename(filename);
-            fileStreamSignature.setMetadataHash(metadataHashObject.getHash());
-            fileStreamSignature.setMetadataHashSignature(metadataHashSignatureObject.getSignature());
-            fileStreamSignature.setSignatureType(fileHashSignatureObject.getSignatureType());
-            fileStreamSignature.setVersion(VERSION);
+            StreamFileSignature streamFileSignature = new StreamFileSignature();
+            streamFileSignature.setBytes(signatureFileData.getBytes());
+            streamFileSignature.setFileHash(fileHashObject.getHash());
+            streamFileSignature.setFileHashSignature(fileHashSignatureObject.getSignature());
+            streamFileSignature.setFilename(signatureFileData.getStreamFilename());
+            streamFileSignature.setMetadataHash(metadataHashObject.getHash());
+            streamFileSignature.setMetadataHashSignature(metadataHashSignatureObject.getSignature());
+            streamFileSignature.setSignatureType(fileHashSignatureObject.getSignatureType());
+            streamFileSignature.setVersion(VERSION);
 
-            return fileStreamSignature;
+            return streamFileSignature;
         } catch (InvalidStreamFileException | IOException e) {
             throw new SignatureFileParsingException(e);
         }

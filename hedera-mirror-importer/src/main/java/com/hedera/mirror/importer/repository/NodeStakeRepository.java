@@ -20,11 +20,7 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
-import static com.hedera.mirror.importer.config.CacheConfiguration.EXPIRE_AFTER_24H;
-
 import java.util.List;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
@@ -33,9 +29,6 @@ import com.hedera.mirror.common.domain.addressbook.NodeStake;
 
 public interface NodeStakeRepository extends CrudRepository<NodeStake, NodeStake.Id>, RetentionRepository {
 
-    String NODE_STAKE_CACHE = "node_stake";
-
-    @Cacheable(cacheManager = EXPIRE_AFTER_24H, cacheNames = NODE_STAKE_CACHE)
     @Query(value = "select * from node_stake where consensus_timestamp = (select max(consensus_timestamp) from " +
             "node_stake)", nativeQuery = true)
     List<NodeStake> findLatest();
@@ -45,8 +38,4 @@ public interface NodeStakeRepository extends CrudRepository<NodeStake, NodeStake
     @Query(nativeQuery = true, value = "delete from node_stake where consensus_timestamp <= ?1 " +
             "and epoch_day < (select max(epoch_day) from node_stake) - 366")
     int prune(long consensusTimestamp);
-
-    @CacheEvict(allEntries = true, cacheManager = EXPIRE_AFTER_24H, cacheNames = NODE_STAKE_CACHE)
-    default void evictNodeStakeCache() {
-    }
 }

@@ -26,7 +26,7 @@ import static com.hedera.mirror.common.domain.entity.EntityIdEndec.SHARD_BITS;
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.FILE;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -52,29 +52,12 @@ class EntityIdEndecTest {
 
     @Test
     void throwsExceptionEncoding() {
-        assertThrows(InvalidEntityException.class, () -> {
-            EntityIdEndec.encode(1L << SHARD_BITS, 0, 0);
-        });
-
-        assertThrows(InvalidEntityException.class, () -> {
-            EntityIdEndec.encode(0, 1L << REALM_BITS, 0);
-        });
-
-        assertThrows(InvalidEntityException.class, () -> {
-            EntityIdEndec.encode(0, 0, 1L << NUM_BITS);
-        });
-
-        assertThrows(InvalidEntityException.class, () -> {
-            EntityIdEndec.encode(-1, 0, 0);
-        });
-
-        assertThrows(InvalidEntityException.class, () -> {
-            EntityIdEndec.encode(0, -1, 0);
-        });
-
-        assertThrows(InvalidEntityException.class, () -> {
-            EntityIdEndec.encode(0, 0, -1);
-        });
+        assertThatThrownBy(() -> EntityIdEndec.encode(1L << SHARD_BITS, 0, 0)).isInstanceOf(InvalidEntityException.class);
+        assertThatThrownBy(() -> EntityIdEndec.encode(0, 1L << REALM_BITS, 0)).isInstanceOf(InvalidEntityException.class);
+        assertThatThrownBy(() -> EntityIdEndec.encode(0, 0, 1L << NUM_BITS)).isInstanceOf(InvalidEntityException.class);
+        assertThatThrownBy(() -> EntityIdEndec.encode(-1, 0, 0)).isInstanceOf(InvalidEntityException.class);
+        assertThatThrownBy(() -> EntityIdEndec.encode(0, -1, 0)).isInstanceOf(InvalidEntityException.class);
+        assertThatThrownBy(() -> EntityIdEndec.encode(0, 0, -1)).isInstanceOf(InvalidEntityException.class);
     }
 
     @ParameterizedTest
@@ -93,8 +76,6 @@ class EntityIdEndecTest {
 
     @Test
     void throwsExceptionDecoding() {
-        assertThrows(InvalidEntityException.class, () -> {
-            EntityIdEndec.decode(-1, FILE);
-        });
+        assertThatThrownBy(() -> EntityIdEndec.decode(-1, FILE)).isInstanceOf(InvalidEntityException.class);
     }
 }

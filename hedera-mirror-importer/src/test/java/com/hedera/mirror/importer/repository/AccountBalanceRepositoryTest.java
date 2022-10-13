@@ -23,7 +23,6 @@ package com.hedera.mirror.importer.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
@@ -46,10 +45,7 @@ class AccountBalanceRepositoryTest extends AbstractRepositoryTest {
         create(2L, 1, 50, 1);
 
         List<AccountBalance> result = accountBalanceRepository.findByIdConsensusTimestamp(1);
-        result.forEach(ab -> ab.getTokenBalances().sort(Comparator.comparing(o -> o.getId().getTokenId())));
-        assertThat(result)
-                .usingRecursiveFieldByFieldElementComparator()
-                .containsExactlyInAnyOrder(accountBalance1, accountBalance2);
+        assertThat(result).containsExactlyInAnyOrder(accountBalance1, accountBalance2);
     }
 
     @Test

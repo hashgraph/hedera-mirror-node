@@ -27,8 +27,6 @@ import (
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
 )
 
-var defaultNodeAccountId = domain.MustDecodeEntityId(3)
-
 type AccountBalanceFileBuilder struct {
 	accountBalances    []domain.AccountBalance
 	consensusTimestamp int64
@@ -68,7 +66,6 @@ func (b *AccountBalanceFileBuilder) Persist() {
 		ConsensusTimestamp: b.consensusTimestamp,
 		FileHash:           fmt.Sprintf("%d", b.consensusTimestamp),
 		Name:               fmt.Sprintf("account_balance_file_%d", b.consensusTimestamp),
-		NodeAccountId:      defaultNodeAccountId,
 		TimeOffset:         b.timeOffset,
 	}
 	db.Create(&accountBalanceFile)

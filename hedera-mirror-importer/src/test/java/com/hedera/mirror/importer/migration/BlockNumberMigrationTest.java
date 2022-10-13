@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.groups.Tuple;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,6 +51,11 @@ class BlockNumberMigrationTest extends IntegrationTest {
     private final BlockNumberMigration blockNumberMigration;
     private final MirrorProperties mirrorProperties;
     private final RecordFileRepository recordFileRepository;
+
+    @BeforeEach
+    void setup() {
+        mirrorProperties.setNetwork(TESTNET);
+    }
 
     @Test
     void checksum() {

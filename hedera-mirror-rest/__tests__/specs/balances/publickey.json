@@ -3,14 +3,17 @@
   "setup": {
     "accounts": [
       {
+        "balance": 7,
         "num": 7,
         "public_key": "6ceecd8bb224da4914d53f292e5624f6f4cf8c134c920e1cac8d06f879df5819"
       },
       {
+        "balance": 8,
         "num": 8,
         "public_key": "519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9"
       },
       {
+        "balance": 9,
         "num": 9,
         "public_key": "3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be"
       }
@@ -39,31 +42,70 @@
     ],
     "contracts": [
       {
+        "balance": 10,
         "num": 10,
         "public_key": "519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9"
       }
     ],
-    "transactions": [],
-    "cryptotransfers": []
-  },
-  "url": "/api/v1/balances?account.publickey=519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9",
-  "responseStatus": 200,
-  "responseJson": {
-    "timestamp": "0.000002345",
-    "balances": [
+    "recordFiles": [
       {
-        "account": "0.0.10",
-        "balance": 115,
-        "tokens": []
+        "consensus_start": 8000000000,
+        "consensus_end": 10000000000,
+        "hash": "cb6e2dd117c887a54efdf5dc1db5ca9bee1bd3ef970825af07621a7f21bf0f07fa05f8a3be83cd544caf1be79110f9f4",
+        "name": "1970-01-01T00_00_08Z.rcd"
       },
       {
-        "account": "0.0.8",
-        "balance": 80,
-        "tokens": []
+        "consensus_start": 10000000001,
+        "consensus_end": 12000000000,
+        "hash": "c73067d7e07eaab5a6156237f928acab0a9a2783083651996237a885230a2e0f147b322fb5d0e19a0c44cf3840bd3ba9",
+        "name": "1970-01-01T00_00_10.000000001Z.rcd"
       }
-    ],
-    "links": {
-      "next": null
+    ]
+  },
+  "tests": [
+    {
+      "url": "/api/v1/balances?account.publickey=519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9&timestamp=10",
+      "responseStatus": 200,
+      "responseJson": {
+        "timestamp": "0.000002345",
+        "balances": [
+          {
+            "account": "0.0.10",
+            "balance": 115,
+            "tokens": []
+          },
+          {
+            "account": "0.0.8",
+            "balance": 80,
+            "tokens": []
+          }
+        ],
+        "links": {
+          "next": null
+        }
+      }
+    },
+    {
+      "url": "/api/v1/balances?account.publickey=519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9",
+      "responseStatus": 200,
+      "responseJson": {
+        "timestamp": "12.000000000",
+        "balances": [
+          {
+            "account": "0.0.10",
+            "balance": 10,
+            "tokens": []
+          },
+          {
+            "account": "0.0.8",
+            "balance": 8,
+            "tokens": []
+          }
+        ],
+        "links": {
+          "next": null
+        }
+      }
     }
-  }
+  ]
 }

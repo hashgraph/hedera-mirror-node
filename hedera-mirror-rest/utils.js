@@ -277,6 +277,9 @@ const filterValidityChecks = (param, op, val) => {
       // Acceptable words: asc or desc
       ret = isValidValueIgnoreCase(val, Object.values(constants.orderFilterValues));
       break;
+    case constants.filterKeys.Q:
+      ret = isValidValueIgnoreCase(val, Object.values(constants.networkSupplyQuery));
+      break;
     case constants.filterKeys.RESULT:
       // Acceptable words: success or fail
       ret = isValidValueIgnoreCase(val, Object.values(constants.transactionResultFilter));

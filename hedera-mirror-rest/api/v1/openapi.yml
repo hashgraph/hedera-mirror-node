@@ -1124,7 +1124,7 @@ tags:
     description: The tokens object represents the information associated with a token entity and returns a list of token information.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.66.0-SNAPSHOT
+  version: 0.67.0-SNAPSHOT
   license:
     name: Apache-2.0
     url: 'https://www.apache.org/licenses/LICENSE-2.0.html'
@@ -1746,7 +1746,7 @@ components:
             transaction_hash:
               type: string
               description: A hex encoded transaction hash
-              example: "0x397022d1e5baeb89d0ab66e6bf602640610e6fb7e55d78638db861e2c6339aa9"          
+              example: "0x397022d1e5baeb89d0ab66e6bf602640610e6fb7e55d78638db861e2c6339aa9"
             transaction_index:
               description: The position of the transaction in the block
               nullable: true
@@ -1770,14 +1770,14 @@ components:
           nullable: false
           type: integer
         call_operation_type:
-          description:  The type of the call operation
-          enum: [CALL, CALLCODE, CREATE, CREATE2, DELEGATECALL, STATICCALL, UNKNOWN]
+          description: The type of the call operation
+          enum: [ CALL, CALLCODE, CREATE, CREATE2, DELEGATECALL, STATICCALL, UNKNOWN ]
           example: CALL
           nullable: false
           type: string
         call_type:
           description: The type of the call
-          enum: [NO_ACTION, CALL, CREATE, PRECOMPILE, SYSTEM]
+          enum: [ NO_ACTION, CALL, CREATE, PRECOMPILE, SYSTEM ]
           example: CALL
           nullable: false
           type: string
@@ -1832,7 +1832,7 @@ components:
           type: string
         result_data_type:
           description: The type of the result data
-          enum: [OUTPUT, REVERT_REASON, ERROR]
+          enum: [ OUTPUT, REVERT_REASON, ERROR ]
           example: OUTPUT
           nullable: false
           type: string
@@ -2009,7 +2009,7 @@ components:
           description: The hex encoded EVM address of the contract
           example: '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
           pattern: ^0x[0-9A-Fa-f]{40}$
-          type: string       
+          type: string
         bloom:
           allOf:
             - $ref: '#/components/schemas/Bloom'
@@ -2197,6 +2197,10 @@ components:
     FixedFee:
       type: object
       properties:
+        all_collectors_are_exempt:
+          type: boolean
+          example: false
+          nullable: false
         amount:
           example: 100
           format: int64
@@ -2208,6 +2212,9 @@ components:
     FractionalFee:
       type: object
       properties:
+        all_collectors_are_exempt:
+          type: boolean
+          example: false
         amount:
           type: object
           properties:
@@ -2238,6 +2245,9 @@ components:
     RoyaltyFee:
       type: object
       properties:
+        all_collectors_are_exempt:
+          type: boolean
+          example: false
         amount:
           type: object
           properties:
@@ -3250,11 +3260,8 @@ components:
         evmAddressWithShardAndRealm:
           value: 0.0.ac384c53f03855fa1b3616052f8ba32c6c2a2fec
       schema:
-        oneOf:
-          - $ref: '#/components/schemas/AccountAlias'
-          - $ref: '#/components/schemas/EntityId'
-          - $ref: '#/components/schemas/EvmAddress'
-          - $ref: '#/components/schemas/EvmAddressWithShardRealm'
+        pattern: ^(\d{1,10}\.){0,2}(\d{1,10}|(0x)?[A-Fa-f0-9]{40}|(?:[A-Z2-7]{8})*(?:[A-Z2-7]{2}|[A-Z2-7]{4,5}|[A-Z2-7]{7,8}))$
+        type: string
     accountBalanceQueryParam:
       name: account.balance
       in: query
@@ -3410,15 +3417,22 @@ components:
           summary: Example of id less than or equals operator
           value: lte:0.0.700
       schema:
+<<<<<<< HEAD
         oneOf:
           - $ref: '#/components/schemas/EntityIdQuery'
           - $ref: '#/components/schemas/EvmAddressWithShardRealm'
     contractIdOrAddressPathParam:
+=======
+        pattern: ^((gte?|lte?|eq|ne)\:)?(\d{1,10}\.\d{1,10}\.)?\d{1,10}|(\d{1,10}\.){0,2}[A-Fa-f0-9]{40}$
+        type: string
+    contractIdPathParam:
+>>>>>>> main
       name: contractIdOrAddress
       in: path
       required: true
       description: The ID or hex encoded EVM address associated with this contract.
       schema:
+<<<<<<< HEAD
         oneOf:
           - $ref: '#/components/schemas/EntityId'
           - $ref: '#/components/schemas/EvmAddressWithShardRealm'
@@ -3429,16 +3443,18 @@ components:
       description: The ID associated with this contract.
       schema:
         $ref: '#/components/schemas/EntityId'
+=======
+        pattern: ^(\d{1,10}\.){0,2}(\d{1,10}|[A-Fa-f0-9]{40})$
+        type: string
+>>>>>>> main
     hashOrNumberPathParam:
       name: hashOrNumber
       in: path
       required: true
       description: Accepts both eth and hedera hash format or block number
       schema:
-        oneOf:
-          - $ref: '#/components/schemas/HederaHash'
-          - $ref: '#/components/schemas/EthereumHash'
-          - $ref: '#/components/schemas/PositiveNumber'
+        pattern: ^(\d{1,10}|(0x)?([A-Fa-f0-9]{64}|[A-Fa-f0-9]{96}))$
+        type: string
     entityIdPathParam:
       name: entityId
       in: path
@@ -3494,9 +3510,8 @@ components:
       in: query
       description: Account ID or EVM address executing the contract
       schema:
-        oneOf:
-          - $ref: '#/components/schemas/EntityId'
-          - $ref: '#/components/schemas/EvmAddress'
+        pattern: ^\d{1,10}\.\d{1,10}\.\d{1,10}|(0x)?[A-Fa-f0-9]{40}$
+        type: string
     logIndexQueryParam:
       name: index
       in: query
@@ -4132,9 +4147,8 @@ components:
       name: transactionIdOrHash
       in: path
       schema:
-        oneOf:
-          - $ref: '#/components/schemas/EthereumHash'
-          - $ref: '#/components/schemas/TransactionIdStr'
+        pattern: ^(0x)?[A-Fa-f0-9]{64}|(\d{1,10})\.(\d{1,10})\.(\d{1,10})-(\d{1,19})-(\d{1,9})$
+        type: string
       required: true
       description: Transaction Id or a 32 byte hash with optional 0x prefix
       examples:
