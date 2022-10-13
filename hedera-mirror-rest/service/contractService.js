@@ -96,8 +96,7 @@ class ContractService extends BaseService {
     from ${ContractStateChange.tableName}`;
 
   static contractStateQuery = `
-    select ${ContractState.CREATED_TIMESTAMP},
-           ${ContractState.MODIFIED_TIMESTAMP},
+    select ${ContractState.MODIFIED_TIMESTAMP},
            ${ContractState.CONTRACT_ID},
            ${ContractState.SLOT},
            ${ContractState.VALUE}
@@ -221,18 +220,14 @@ class ContractService extends BaseService {
     });
   }
 
-  async getContractStateByIdAndFilters(
-    whereConditions = [],
-    whereParams = [],
-    order = orderFilterValues.ASC,
-    limit = defaultLimit
-  ) {
-    const whereClause = ` where ${whereConditions.join(' and ')} \n`;
-    const orderClause = ` order by ${ContractStateChange.SLOT} ${order} \n`;
-    const limitClause = ` limit ${limit}`;
+  async getContractStateByIdAndFilters(whereConditions = [], order = orderFilterValues.ASC, limit = defaultLimit) {
+    const orderClause = this.getOrderByQuery(OrderSpec.from(ContractStateChange.SLOT, order));
+    const {where, params} = this.buildWhereSqlStatement(whereConditions);
+    const limitClause = this.getLimitQuery(params.length + 1);
+    params.push(limit);
 
-    const query = ContractService.contractStateQuery + whereClause + orderClause + limitClause;
-    const rows = await super.getRows(query, whereParams, 'getContractStateByIdAndFilters');
+    const query = [ContractService.contractStateQuery, where, orderClause, limitClause].join(' ');
+    const rows = await super.getRows(query, params, 'getContractStateByIdAndFilters');
 
     return rows.map((row) => new ContractState(row));
   }

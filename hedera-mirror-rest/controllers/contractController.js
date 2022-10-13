@@ -46,7 +46,7 @@ import {
   ContractBytecodeViewModel,
   ContractLogViewModel,
   ContractResultDetailsViewModel,
-  ContractResultStateViewModel,
+  ContractStateViewModel,
   ContractResultViewModel,
   ContractViewModel,
 } from '../viewmodel';
@@ -886,8 +886,8 @@ class ContractController extends BaseController {
     let limit = defaultLimit;
     let order = orderFilterValues.ASC;
     const supportedParams = [filterKeys.LIMIT, filterKeys.ORDER, filterKeys.SLOT];
-    const conditions = [`${ContractState.CONTRACT_ID} = $1`];
-    const params = [contractId];
+    const conditions = [this.getFilterWhereCondition(ContractState.CONTRACT_ID, {operator: '=', value: contractId})];
+
     for (const filter of filters) {
       if (!supportedParams.includes(filter.key)) {
         // param not supported for current endpoint
@@ -901,8 +901,12 @@ class ContractController extends BaseController {
           order = filter.value;
           break;
         case filterKeys.SLOT:
-          conditions.push(`cast(encode(${ContractState.SLOT}::bytea, 'hex') as int) ${filter.operator} $2`);
-          params.push(filter.value);
+          conditions.push(
+            this.getFilterWhereCondition(ContractState.SLOT, {
+              operator: filter.operator,
+              value: Buffer.from(filter.value.replace('0x', ''), 'hex'),
+            })
+          );
           break;
         default:
           break;
@@ -911,7 +915,6 @@ class ContractController extends BaseController {
 
     return {
       conditions,
-      params,
       order,
       limit,
     };
@@ -927,9 +930,9 @@ class ContractController extends BaseController {
     const {contractId: contractIdParam, filters} = extractContractIdAndFiltersFromValidatedRequest(req);
 
     const contractId = await ContractService.computeContractIdFromString(contractIdParam);
-    const {conditions, params, order, limit} = await this.extractContractStateByIdQuery(filters, contractId);
-    const rows = await ContractService.getContractStateByIdAndFilters(conditions, params, order, limit);
-    const state = rows.map((row) => new ContractResultStateViewModel(row));
+    const {conditions, order, limit} = await this.extractContractStateByIdQuery(filters, contractId);
+    const rows = await ContractService.getContractStateByIdAndFilters(conditions, order, limit);
+    const state = rows.map((row) => new ContractStateViewModel(row));
 
     let nextLink = null;
     if (state.length) {

@@ -220,7 +220,9 @@ const filterValidityChecks = (param, op, val) => {
     return ret;
   }
 
-  const basicOperators = ['eq', 'gt', 'gte', 'lt', 'lte'];
+  const basicOperators = Object.values(constants.queryParamOperators).filter(
+    (o) => o !== constants.queryParamOperators.ne
+  );
 
   // Validate the value
   switch (param) {
@@ -326,7 +328,7 @@ const filterValidityChecks = (param, op, val) => {
       ret = isPositiveLong(val, true) && _.includes(['eq'], op);
       break;
     case constants.filterKeys.SLOT:
-      ret = isPositiveLong(val, true) && _.includes(basicOperators, op);
+      ret = isHexPositiveInt(val, true) && _.includes(basicOperators, op);
       break;
     default:
       // Every parameter should be included here. Otherwise, it will not be accepted.

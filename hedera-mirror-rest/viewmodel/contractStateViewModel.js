@@ -20,12 +20,12 @@
 
 import {filterKeys} from '../constants';
 import EntityId from '../entityId';
-import {toHexString} from '../utils';
+import {nsToSecNs, toHexString} from '../utils';
 
 /**
  * Contract result state view model
  */
-class ContractResultStateViewModel {
+class ContractStateViewModel {
   /**
    * Constructs contractResultStates view model
    *
@@ -35,9 +35,10 @@ class ContractResultStateViewModel {
     const contractId = EntityId.parse(contractState.contractId, {paramName: filterKeys.CONTRACTID});
     this.address = contractId.toEvmAddress();
     this.contract_id = contractId.toString();
+    this.timestamp = nsToSecNs(contractState.modifiedTimestamp);
     this.slot = toHexString(contractState.slot, true, 64);
     this.value = toHexString(contractState.value, true, 64);
   }
 }
 
-export default ContractResultStateViewModel;
+export default ContractStateViewModel;
