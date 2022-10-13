@@ -1377,7 +1377,7 @@ describe('ContractService.getContractActionsByConsensusTimestamp tests', () => {
 
 describe('ContractService.getContractStateByIdAndFilters tests', () => {
   test('No match', async () => {
-    const res = await ContractService.getContractStateByIdAndFilters(['contract_id = $1'], [1000]);
+    const res = await ContractService.getContractStateByIdAndFilters([{query: 'contract_id =', param: 1000}]);
 
     expect(res.length).toEqual(0);
   });
@@ -1387,7 +1387,7 @@ describe('ContractService.getContractStateByIdAndFilters tests', () => {
       {contract_id: 9999, slot: '01', value: 10},
       {contract_id: 9999, slot: '02', value: 20},
     ]);
-    const res = await ContractService.getContractStateByIdAndFilters(['contract_id = $1'], [9999]);
+    const res = await ContractService.getContractStateByIdAndFilters([{query: 'contract_id =', param: 9999}]);
 
     expect(res.length).toEqual(2);
   });
@@ -1397,7 +1397,7 @@ describe('ContractService.getContractStateByIdAndFilters tests', () => {
       {contract_id: 9999, slot: '01', value: 10},
       {contract_id: 9000, slot: '02', value: 20},
     ]);
-    const res = await ContractService.getContractStateByIdAndFilters(['contract_id = $1'], [9999]);
+    const res = await ContractService.getContractStateByIdAndFilters([{query: 'contract_id =', param: 9999}]);
 
     expect(res.length).toEqual(1);
   });
@@ -1407,7 +1407,7 @@ describe('ContractService.getContractStateByIdAndFilters tests', () => {
       {contract_id: 9999, slot: '01', value: 10},
       {contract_id: 9999, slot: '02', value: 20},
     ]);
-    const res = await ContractService.getContractStateByIdAndFilters(['contract_id = $1'], [9999]);
+    const res = await ContractService.getContractStateByIdAndFilters([{query: 'contract_id =', param: 9999}]);
 
     expect(res[0].slot.readInt8()).toEqual(1);
     expect(res[1].slot.readInt8()).toEqual(2);
@@ -1420,8 +1420,7 @@ describe('ContractService.getContractStateByIdAndFilters tests', () => {
       {contract_id: 9999, slot: '02', value: 20},
     ]);
     const res = await ContractService.getContractStateByIdAndFilters(
-      ['contract_id = $1'],
-      [9999],
+      [{query: 'contract_id =', param: 9999}],
       orderFilterValues.ASC,
       1
     );
