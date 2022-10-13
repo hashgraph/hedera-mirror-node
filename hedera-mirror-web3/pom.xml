@@ -101,6 +101,12 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <groupId>com.hedera.evm</groupId>
+            <artifactId>hedera-evm-api</artifactId>
+            <version>{hedera-evm-api.version}</version>
+            <type>module</type>
+        </dependency>
 
         <!-- Test -->
         <dependency>
@@ -123,12 +129,6 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.hedera.evm</groupId>
-            <artifactId>hedera-evm-api</artifactId>
-            <version>{hedera-еvm-api.version}</version>
-            <type>module</type>
         </dependency>
     </dependencies>
 
