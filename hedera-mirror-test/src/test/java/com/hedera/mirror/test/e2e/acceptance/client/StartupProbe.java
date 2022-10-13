@@ -22,9 +22,13 @@ package com.hedera.mirror.test.e2e.acceptance.client;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.CustomLog;
 import lombok.SneakyThrows;
@@ -34,6 +38,7 @@ import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.Uninterruptibles;
 import org.springframework.http.MediaType;
 import org.springframework.retry.support.RetryTemplate;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.util.retry.Retry;
 import reactor.util.retry.RetryBackoffSpec;
@@ -49,6 +54,9 @@ import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.TransactionResponse;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
+import com.hedera.mirror.test.e2e.acceptance.props.NodeProperties;
+
+import static com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties.HederaNetwork.OTHER;
 
 /**
  * StartupProbe -- a helper class to validate a SDKClient before using it.
@@ -79,7 +87,8 @@ public class StartupProbe {
         // exception) if it happens.
         AccountId operator = AccountId.fromString(acceptanceTestProperties.getOperatorId());
         PrivateKey privateKey = PrivateKey.fromString(acceptanceTestProperties.getOperatorKey());
-        try (Client client = Client.forName(acceptanceTestProperties.getNetwork().toString().toLowerCase())) {
+        Map<String, AccountId> network = getNetworkMapWithoutAddressBook();
+        try (Client client = toClient(network)) {
             client.setOperator(operator, privateKey);  // this account pays for (and signs) all transactions run here.
 
             Stopwatch stopwatch = Stopwatch.createStarted();
@@ -161,4 +170,37 @@ public class StartupProbe {
                 .anyMatch(ex -> ex.isInstance(t) || ex.isInstance(Throwables.getRootCause(t)));
     }
 
+    // based on SDKClient::getNetworkMap, but omits the part that can call getAddressBook()
+    private Map<String, AccountId> getNetworkMapWithoutAddressBook() {
+        var customNodes = acceptanceTestProperties.getNodes();
+        var network = acceptanceTestProperties.getNetwork();
+
+        if (!CollectionUtils.isEmpty(customNodes)) {
+            log.debug("Creating SDK client for {} network with nodes: {}", network, customNodes);
+            return getNetworkMap(customNodes);
+        }
+
+        if (network == OTHER && CollectionUtils.isEmpty(customNodes)) {
+            throw new IllegalArgumentException("nodes must not be empty when network is OTHER");
+        }
+
+        Client client = Client.forName(network.toString().toLowerCase());
+        return client.getNetwork();
+    }
+
+    // copied from n SDKClient::getNetworkMap with parameter
+    private Map<String, AccountId> getNetworkMap(Set<NodeProperties> nodes) {
+        return nodes.stream()
+                .collect(Collectors.toMap(NodeProperties::getEndpoint, p -> AccountId.fromString(p.getAccountId())));
+    }
+
+    // copied from SDKClient::toClient
+    private Client toClient(Map<String, AccountId> network) throws InterruptedException {
+        var operatorId = AccountId.fromString(acceptanceTestProperties.getOperatorId());
+        var operatorKey = PrivateKey.fromString(acceptanceTestProperties.getOperatorKey());
+        Client client = Client.forNetwork(network);
+        client.setOperator(operatorId, operatorKey);
+        client.setMirrorNetwork(List.of(acceptanceTestProperties.getMirrorNodeAddress()));
+        return client;
+    }
 }
