@@ -152,6 +152,27 @@ describe('extractTokenRelationshipQuery', () => {
         ],
       },
     },
+    {
+      name: 'token gt and token lte',
+      input: {
+        filters: [tokenIdGtFilter, tokenIdLteFilter],
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: [
+          {
+            key: 'token_id',
+            operator: ' > ',
+            value: 101,
+          },
+          {
+            key: 'token_id',
+            operator: ' <= ',
+            value: 151,
+          },
+        ],
+      },
+    },
   ];
 
   specs.forEach((spec) => {
