@@ -192,7 +192,7 @@ const getSingleAccount = async (server) => {
  * @param {Object} server API host endpoint
  */
 const getSingleAccountTokenRelationships = async (server) => {
-  // get tokens
+  // Call the get /tokens endpoint to get a list of tokens.
   const tokensPath = '/tokens';
   const tokensJsonRespKey = 'tokens';
   const tokenMandatoryParams = ['token_id', 'symbol', 'admin_key'];
@@ -202,10 +202,6 @@ const getSingleAccountTokenRelationships = async (server) => {
   const token_result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
     .withCheckSpec(checkRespObjDefined, {message: 'tokens is undefined'})
-    .withCheckSpec(checkRespArrayLength, {
-      limit: resourceLimit,
-      message: (elements, limit) => `tokens.length of ${elements.length} is less than limit ${limit}`,
-    })
     .withCheckSpec(checkMandatoryParams, {
       params: tokenMandatoryParams,
       message: 'token object is missing some mandatory fields',
@@ -215,19 +211,20 @@ const getSingleAccountTokenRelationships = async (server) => {
     return {token_url, ...token_result};
   }
 
+  // get balances for a token and retrieve an  account id from it.
+
   const token_id = tokens[0].token_id;
   const tokenBalancesPath = (tokenId) => `${tokensPath}/${tokenId}/balances`;
   const tokenBalancesJsonRespKey = 'balances';
 
-  // get balances for a token and get account id from it
   let balances_url = getUrl(server, tokenBalancesPath(token_id), {limit: 1});
   let balances = await getAPIResponse(balances_url, tokenBalancesJsonRespKey);
-
+  const balancesLimit = 1;
   const checkRunner = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
     .withCheckSpec(checkRespObjDefined, {message: 'balances is undefined'})
     .withCheckSpec(checkRespArrayLength, {
-      limit: 1,
+      limit: balancesLimit,
       message: (elements) => `token balances.length of ${elements.length} was expected to be 1`,
     });
   let balancesResult = checkRunner.run(balances);
@@ -236,25 +233,13 @@ const getSingleAccountTokenRelationships = async (server) => {
   }
   const accountId = balances[0].account;
 
-  // Use that account id to call my endpoint
-
+  // Use that account id to call the /accounts/${accountId}/tokens endpoint
   const accountsTokenPath = `/accounts/${accountId}/tokens`;
   console.log(accountsTokenPath);
-  let url = getUrl(server, accountsTokenPath, {limit: resourceLimit});
+  let url = getUrl(server, accountsTokenPath, {limit: 1});
   const accounts = await getAPIResponse(url, jsonRespKey);
-
-  let result = new CheckRunner()
-    .withCheckSpec(checkAPIResponseError)
-    .withCheckSpec(checkRespObjDefined, {message: 'accounts is undefined'})
-    .withCheckSpec(checkRespArrayLength, {
-      limit: resourceLimit,
-      message: (accts, limit) => `accounts.length of ${accts.length} was expected to be ${limit}`,
-    })
-    .withCheckSpec(checkMandatoryParams, {
-      params: mandatoryParams,
-      message: 'account object is missing some mandatory fields',
-    })
-    .run(accounts);
+  const accountsLimit = 1;
+  let result = new CheckRunner().withCheckSpec(checkAPIResponseError).run(accounts);
   if (!result.passed) {
     return {url, ...result};
   }
