@@ -356,10 +356,7 @@ const filterValidityChecks = (param, op, val) => {
       ret = isPositiveLong(val, true) && _.includes(['eq'], op);
       break;
     case constants.filterKeys.SLOT:
-      ret =
-        hasLengthBetween(val, 1, 64, true) &&
-        isHexPositiveInt(addHexPrefix(val), true) &&
-        _.includes(basicOperators, op);
+      ret = hasLengthBetween(val, 1, 64, true) && isNumeric(val) && _.includes(basicOperators, op);
       break;
     default:
       // Every parameter should be included here. Otherwise, it will not be accepted.
