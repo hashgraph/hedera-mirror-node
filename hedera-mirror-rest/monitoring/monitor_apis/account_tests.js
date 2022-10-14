@@ -34,7 +34,6 @@ import {
   getUrl,
   testRunner,
 } from './utils';
-import {JSONStringify} from '../../utils';
 
 const accountsPath = '/accounts';
 const resource = 'account';
