@@ -235,10 +235,9 @@ const getSingleAccountTokenRelationships = async (server) => {
 
   // Use that account id to call the /accounts/${accountId}/tokens endpoint
   const accountsTokenPath = `/accounts/${accountId}/tokens`;
-  console.log(accountsTokenPath);
-  let url = getUrl(server, accountsTokenPath, {limit: 1});
-  const accounts = await getAPIResponse(url, jsonRespKey);
   const accountsLimit = 1;
+  let url = getUrl(server, accountsTokenPath, {limit: accountsLimit, order: 'asc'});
+  const accounts = await getAPIResponse(url, jsonRespKey);
   let result = new CheckRunner().withCheckSpec(checkAPIResponseError).run(accounts);
   if (!result.passed) {
     return {url, ...result};
