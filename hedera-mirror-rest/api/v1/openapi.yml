@@ -265,7 +265,7 @@ paths:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
         - contracts
-  /api/v1/contracts/{contractId}:
+  /api/v1/contracts/{contractIdPathParam}:
     get:
       summary: Get contract by id
       description: Return the contract information given an id
@@ -286,7 +286,7 @@ paths:
           $ref: '#/components/responses/NotFoundError'
       tags:
         - contracts
-  /api/v1/contracts/{contractId}/results:
+  /api/v1/contracts/{contractIdPathParam}/results:
     get:
       summary: List contract results from a contract on the network
       description: Returns a list of all ContractResults for a contract's function executions.
@@ -318,7 +318,7 @@ paths:
       description: Returns a list of all contract's slots.
       operationId: listContractState
       parameters:
-        - $ref: '#/components/parameters/contractId'
+        - $ref: '#/components/parameters/contractIdOrAddressPathParam'
         - $ref: '#/components/parameters/slotQueryParam'
         - $ref: '#/components/parameters/orderQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
@@ -335,7 +335,7 @@ paths:
           $ref: '#/components/responses/NotFoundError'
       tags:
         - contracts
-  /api/v1/contracts/{contractId}/results/{timestamp}:
+  /api/v1/contracts/{contractIdPathParam}/results/{timestamp}:
     get:
       summary: Get the contract result from a contract on the network executed at a given timestamp
       description: Returns a single ContractResult for a contract's function executions at a specific timestamp.
@@ -437,7 +437,7 @@ paths:
           $ref: '#/components/responses/NotFoundError'
       tags:
         - contracts
-  /api/v1/contracts/{contractId}/results/logs:
+  /api/v1/contracts/{contractIdPathParam}/results/logs:
     get:
       summary: List contract logs from a contract on the network
       description: |
