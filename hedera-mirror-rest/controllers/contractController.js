@@ -937,7 +937,7 @@ class ContractController extends BaseController {
     let nextLink = null;
     if (state.length) {
       const lastRow = _.last(state);
-      const lastSlot = parseInt(lastRow.slot);
+      const lastSlot = lastRow.slot;
       nextLink = utils.getPaginationLink(
         req,
         state.length !== limit,
