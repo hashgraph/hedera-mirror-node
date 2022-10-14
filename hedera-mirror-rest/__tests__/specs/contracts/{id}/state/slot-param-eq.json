@@ -1,5 +1,5 @@
 {
-  "description": "Contract state api call for a contract",
+  "description": "Contract state api call for a contract with slot param eq",
   "setup": {
     "contractStates": [
       {
@@ -19,25 +19,18 @@
     ]
   },
   "urls": [
-    "/api/v1/contracts/5001/state",
-    "/api/v1/contracts/0.0.5001/state",
-    "/api/v1/contracts/0.5001/state",
-    "/api/v1/contracts/5001/state",
-    "/api/v1/contracts/0000000000000000000000000000000000001389/state",
-    "/api/v1/contracts/0.0000000000000000000000000000000000001389/state",
-    "/api/v1/contracts/0.0.0000000000000000000000000000000000001389/state",
-    "/api/v1/contracts/0x0000000000000000000000000000000000001389/state"
+    "/api/v1/contracts/5001/state?slot=eq:0x0000000000000000000000000000000000000000000000000000000000000002",
+    "/api/v1/contracts/5001/state?slot=0x0000000000000000000000000000000000000000000000000000000000000002",
+    "/api/v1/contracts/5001/state?slot=eq:0000000000000000000000000000000000000000000000000000000000000002",
+    "/api/v1/contracts/5001/state?slot=0000000000000000000000000000000000000000000000000000000000000002",
+    "/api/v1/contracts/5001/state?slot=eq:0x2",
+    "/api/v1/contracts/5001/state?slot=0x2",
+    "/api/v1/contracts/5001/state?slot=eq:2",
+    "/api/v1/contracts/5001/state?slot=2"
   ],
   "responseStatus": 200,
   "responseJson": {
     "state": [
-      {
-        "address": "0x0000000000000000000000000000000000001389",
-        "contract_id": "0.0.5001",
-        "timestamp": "1676540001.234390005",
-        "slot": "0x0000000000000000000000000000000000000000000000000000000000000001",
-        "value": "0x0000000000000000000000000000000000000000000000000000000000000010"
-      },
       {
         "address": "0x0000000000000000000000000000000000001389",
         "contract_id": "0.0.5001",

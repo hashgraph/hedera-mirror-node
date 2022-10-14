@@ -1,0 +1,23 @@
+{
+  "description": "Get contract state with invalid params",
+  "setup": {},
+  "urls": [
+    "/api/v1/contracts/5001/state?slot=00000000000000000000000000000000000000000000000000000000000000000001&order=test&limit=test"
+  ],
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Invalid parameter: slot"
+        },
+        {
+          "message": "Invalid parameter: order"
+        },
+        {
+          "message": "Invalid parameter: limit"
+        }
+      ]
+    }
+  }
+}

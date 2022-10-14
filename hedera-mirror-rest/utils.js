@@ -89,6 +89,31 @@ const isPositiveLong = (num, allowZero = false) => {
 };
 
 /**
+ * Strip the 0x prefix
+ * @param val
+ * @returns {*}
+ */
+const stripHexPrefix = (val) => {
+  return val.replace(hexPrefix, '');
+};
+
+/**
+ * Validates that input has length between minLength and maxLength params
+ * @param val
+ * @param minLength
+ * @param maxLength
+ * @param stripHexPrefixFlag
+ * @returns {boolean}
+ */
+const hasLengthBetween = (val, minLength, maxLength, stripHexPrefixFlag = false) => {
+  if (stripHexPrefixFlag) {
+    val = stripHexPrefix(val);
+  }
+
+  return val.length >= minLength && val.length <= maxLength;
+};
+
+/**
  * Validates that hex encoded num is a positive int.
  * @param num
  * @param allowZero
@@ -331,7 +356,10 @@ const filterValidityChecks = (param, op, val) => {
       ret = isPositiveLong(val, true) && _.includes(['eq'], op);
       break;
     case constants.filterKeys.SLOT:
-      ret = isHexPositiveInt(val, true) && _.includes(basicOperators, op);
+      ret =
+        hasLengthBetween(val, 1, 64, true) &&
+        isHexPositiveInt(addHexPrefix(val), true) &&
+        _.includes(basicOperators, op);
       break;
     default:
       // Every parameter should be included here. Otherwise, it will not be accepted.
@@ -1497,4 +1525,5 @@ export {
   validateAndParseFilters,
   validateFilters,
   validateReq,
+  stripHexPrefix,
 };

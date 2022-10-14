@@ -904,7 +904,7 @@ class ContractController extends BaseController {
           conditions.push(
             this.getFilterWhereCondition(ContractState.SLOT, {
               operator: filter.operator,
-              value: Buffer.from(filter.value.replace('0x', ''), 'hex'),
+              value: Buffer.from(utils.stripHexPrefix(filter.value).padStart(64, 0), 'hex'),
             })
           );
           break;
