@@ -31,7 +31,7 @@
       }
     ],
     "links": {
-      "next": "/api/v1/contracts/5001/state?limit=1&slot=gt:1"
+      "next": "/api/v1/contracts/5001/state?limit=1&slot=gt:0x0000000000000000000000000000000000000000000000000000000000000001"
     }
   }
 }
