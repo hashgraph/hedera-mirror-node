@@ -52,6 +52,7 @@ import com.hedera.hashgraph.sdk.TopicMessageQuery;
 import com.hedera.hashgraph.sdk.TopicMessageSubmitTransaction;
 import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
+import com.hedera.hashgraph.sdk.TransactionReceiptQuery;
 import com.hedera.hashgraph.sdk.TransactionResponse;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 import com.hedera.mirror.test.e2e.acceptance.props.NodeProperties;
@@ -92,6 +93,7 @@ public class StartupProbe {
             client.setOperator(operator, privateKey);  // this account pays for (and signs) all transactions run here.
 
             Stopwatch stopwatch = Stopwatch.createStarted();
+            log.info("MYK: starting step 1...");
             // step 1: Create a new topic for the subsequent HCS submit message action.
             RetryTemplate retryTemplate = RetryTemplate.builder()
                     .infiniteRetry()
@@ -99,15 +101,20 @@ public class StartupProbe {
                     .fixedBackoff(1000L)
                     .build();
         
+            log.info("MYK: retryTemplate set.");
             TransactionResponse response = retryTemplate.execute(x -> new TopicCreateTransaction()
-                .setGrpcDeadline(Duration.ofSeconds(10L))
+                .setGrpcDeadline(acceptanceTestProperties.getSdkProperties().getGrpcDeadline())
                 .setMaxAttempts(Integer.MAX_VALUE)
                 .execute(client, startupTimeout.minus(stopwatch.elapsed())));
             TransactionId transactionId = response.transactionId;
+            log.info("MYK: transactionId = {}", transactionId);
 
             // step 2: Query for the receipt of that HCS submit transaction (until successful or time runs out)
-            TransactionReceipt transactionReceipt = response.getReceipt(client,
-                    startupTimeout.minus(stopwatch.elapsed()));
+            TransactionReceipt transactionReceipt = retryTemplate.execute(x -> new TransactionReceiptQuery()
+                .setGrpcDeadline(acceptanceTestProperties.getSdkProperties().getGrpcDeadline())
+                .setMaxAttempts(Integer.MAX_VALUE)
+                .execute(client, startupTimeout.minus(stopwatch.elapsed())));
+            log.info("MYK: transactionReceipt = {}", transactionReceipt);
 
             // step 3: Query the mirror node for the transaction by ID (until successful or time runs out)
             // Instead of using MirrorNodeClient.getTransactions(restTransactionId), we directly call webClient.
@@ -116,9 +123,11 @@ public class StartupProbe {
             RetryBackoffSpec retrySpec = Retry.backoff(Integer.MAX_VALUE, properties.getMinBackoff())
                     .maxBackoff(properties.getMaxBackoff())
                     .filter(this::shouldRetryRestCall);
+            log.info("MYK: retrySpec set.");
 
             String restTransactionId = transactionId.accountId.toString() + "-"
                     + transactionId.validStart.getEpochSecond() + "-" + transactionId.validStart.getNano();
+            log.info("MYK: restTransactionId = {}", restTransactionId);
 
             webClient.get()
                     .uri("/transactions/", restTransactionId)
@@ -130,6 +139,7 @@ public class StartupProbe {
                     .timeout(startupTimeout.minus(stopwatch.elapsed()))
                     .block();
 
+            log.info("MYK: step 3 finished.");
             // step 4: Query the mirror node gRPC API for a message on the topic created in step 2, until successful or
             //         time runs out
             TopicId topicId = transactionReceipt.topicId;
@@ -140,19 +150,19 @@ public class StartupProbe {
                     .subscribe(client, resp -> {
                         messageReceived.set(true);
                     }));
+            log.info("MYK: step 4a finished.");
 
-            retryTemplate.execute(x -> {
-                int counter = 0;
-                while (!(messageReceived.get()) && startupTimeout.minus(stopwatch.elapsed()).toMillis() > 0) {
-                    new TopicMessageSubmitTransaction()
-                            .setTopicId(topicId)
-                            .setMessage("Hello, HCS! " + ++counter)
-                            .execute(client, startupTimeout.minus(stopwatch.elapsed()))
-                            .getReceipt(client);
-                    Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
-                }
-                return null;
-            });
+            TransactionResponse secondResponse = retryTemplate.execute(x -> new TopicMessageSubmitTransaction()
+                .setTopicId(topicId)
+                .setMessage("Hello, HCS!")
+                .execute(client, startupTimeout.minus(stopwatch.elapsed())));
+            log.info("MYK: step 4b finished.");
+
+            transactionReceipt = retryTemplate.execute(x -> new TransactionReceiptQuery()
+                .setGrpcDeadline(acceptanceTestProperties.getSdkProperties().getGrpcDeadline())
+                .setMaxAttempts(Integer.MAX_VALUE)
+                .execute(client, startupTimeout.minus(stopwatch.elapsed())));
+            log.info("MYK: step 4c finished.");
 
             if (messageReceived.get()) {
                 log.info("Startup probe successful.");
