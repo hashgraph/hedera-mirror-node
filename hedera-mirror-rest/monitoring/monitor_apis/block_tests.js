@@ -43,11 +43,13 @@ const mandatoryParams = [
   'gas_used',
   'hapi_version',
   'hash',
+  'logs_bloom',
   'name',
   'number',
   'previous_hash',
   'size',
-  'timestamp',
+  'timestamp.from',
+  'timestamp.to',
 ];
 
 /**
