@@ -2,7 +2,7 @@
   "port": 3000,
   "servers": [
     {
-      "baseUrl": "http://testnet.mirrornode.hedera.com",
+      "baseUrl": "https://testnet.mirrornode.hedera.com",
       "name": "testnet"
     }
   ],
@@ -27,6 +27,7 @@
   "block": {
     "enabled": true,
     "freshnessThreshold": 1000,
+    "intervalMultiplier": 1,
     "limit": 10
   },
   "network": {

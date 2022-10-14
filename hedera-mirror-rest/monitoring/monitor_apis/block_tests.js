@@ -39,23 +39,32 @@ const blocksPath = '/blocks';
 const resource = 'block';
 const resourceLimit = config[resource].limit || DEFAULT_LIMIT;
 const jsonRespKey = 'blocks';
-const mandatoryParams = ['count', 'gas_used', 'hapi_version', 'hash', 'name', 'number', 'previous_hash', 'size'];
+const mandatoryParams = [
+  'count',
+  'gas_used',
+  'hapi_version',
+  'hash',
+  'name',
+  'number',
+  'previous_hash',
+  'size',
+  'timestamp',
+];
 
 /**
- * Verify base blocks call
+ * Verify single block can be retrieved
  * @param {String} server API host endpoint
  */
-const getBlockCheck = async (server) => {
-  console.log('MYK: debug: starting getBlockCheck');
-  const url = getUrl(server, blocksPath, {limit: resourceLimit});
+const getSingleBlockById = async (server) => {
+  let url = getUrl(server, blocksPath, {limit: 10});
   const blocks = await getAPIResponse(url, jsonRespKey);
 
-  const result = new CheckRunner()
+  let result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
     .withCheckSpec(checkRespObjDefined, {message: 'blocks is undefined'})
     .withCheckSpec(checkRespArrayLength, {
-      limit: resourceLimit,
-      message: (elements, limit) => `blocks.length of ${elements.length} is less than limit ${limit}`,
+      limit: 10,
+      message: (elements) => `blocks.length of ${elements.length} was expected to be 10`,
     })
     .withCheckSpec(checkMandatoryParams, {
       params: mandatoryParams,
@@ -63,14 +72,34 @@ const getBlockCheck = async (server) => {
     })
     .run(blocks);
   if (!result.passed) {
+    return {blockUrl, ...result};
+  }
+
+  const highestBlock = _.max(_.map(blocks, (block) => block.number));
+  url = getUrl(server, `${blocksPath}/${highestBlock}`);
+  const singleBlock = await getAPIResponse(url);
+
+  result = new CheckRunner()
+    .withCheckSpec(checkAPIResponseError)
+    .withCheckSpec(checkRespObjDefined, {message: 'single block return object is undefined'})
+    .run(singleBlock);
+  if (!result.passed) {
     return {url, ...result};
   }
 
   return {
     url,
     passed: true,
-    message: 'Successfully called blocks and performed account check',
+    message: 'Successfully called blocks for single block',
   };
+};
+
+/**
+ * Verify the freshness of blocks returned by the api
+ * @param {String} server API host endpoint
+ */
+const checkBlockFreshness = async (server) => {
+  return checkResourceFreshness(server, blocksPath, resource, (data) => data.timestamp.to, jsonRespKey);
 };
 
 /**
@@ -81,11 +110,7 @@ const getBlockCheck = async (server) => {
  */
 const runTests = async (server, testResult) => {
   const runTest = testRunner(server, testResult, resource);
-  return Promise.all([
-    /*
-    runTest(getBlockCheck),
-*/
-  ]);
+  return Promise.all([runTest(getSingleBlockById), runTest(checkBlockFreshness)]);
 };
 
 export default {
