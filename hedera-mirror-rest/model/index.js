@@ -18,6 +18,7 @@
  * ‍
  */
 
+import AccountBalanceFile from './accountBalanceFile';
 import AddressBook from './addressBook';
 import AddressBookEntry from './addressBookEntry';
 import AddressBookServiceEndpoint from './addressBookServiceEndpoint';
@@ -45,8 +46,10 @@ import Token from './token';
 import TokenAllowance from './tokenAllowance';
 import TokenFreezeStatus from './tokenFreezeStatus';
 import TokenKycStatus from './tokenKycStatus';
-import TokenRelationship from './tokenRelationship';
+import TokenAccount from './tokenAccount';
+import TokenBalance from './tokenBalance';
 import TokenTransfer from './tokenTransfer';
+import TokenType from './tokenType';
 import TopicMessage from './topicMessage';
 import Transaction from './transaction';
 import TransactionHash from './transactionHash';
@@ -56,6 +59,7 @@ import TransactionType from './transactionType';
 import FeeSchedule from './feeSchedule';
 
 export {
+  AccountBalanceFile,
   AddressBook,
   AddressBookEntry,
   AddressBookServiceEndpoint,
@@ -83,8 +87,10 @@ export {
   TokenAllowance,
   TokenFreezeStatus,
   TokenKycStatus,
-  TokenRelationship,
+  TokenAccount,
+  TokenBalance,
   TokenTransfer,
+  TokenType,
   TopicMessage,
   Transaction,
   TransactionHash,

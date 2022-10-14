@@ -18,7 +18,6 @@
  * ‍
  */
 
-import BaseAllowanceViewModel from './baseAllowanceViewModel.js';
 import EntityId from '../entityId.js';
 import {TokenFreezeStatus, TokenKycStatus} from '../model';
 import {nsToSecNs} from '../utils';

@@ -41,6 +41,7 @@ import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
+import com.hedera.mirror.common.domain.contract.ContractState;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.entity.AbstractCryptoAllowance;
 import com.hedera.mirror.common.domain.entity.AbstractNftAllowance;
@@ -131,6 +132,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<TransactionSignature> transactionSignatures;
 
     // maps of upgradable domains
+    private final Map<ContractState.Id, ContractState> contractStates;
     private final Map<AbstractCryptoAllowance.Id, CryptoAllowance> cryptoAllowanceState;
     private final Map<Long, Entity> entityState;
     private final Map<NftId, Nft> nfts;
@@ -191,6 +193,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         transactionHashes = new ArrayList<>();
         transactionSignatures = new ArrayList<>();
 
+        contractStates = new HashMap<>();
         cryptoAllowanceState = new HashMap<>();
         entityState = new HashMap<>();
         nfts = new HashMap<>();
@@ -254,6 +257,19 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onContractStateChange(ContractStateChange contractStateChange) {
         contractStateChanges.add(contractStateChange);
+
+        var valueRead = contractStateChange.getValueRead();
+        var valueWritten = contractStateChange.getValueWritten();
+        if (valueWritten != null || contractStateChange.isMigration()) {
+            var value = valueWritten == null ? valueRead : valueWritten;
+            var state = new ContractState();
+            state.setContractId(contractStateChange.getContractId());
+            state.setCreatedTimestamp(contractStateChange.getConsensusTimestamp());
+            state.setModifiedTimestamp(contractStateChange.getConsensusTimestamp());
+            state.setSlot(contractStateChange.getSlot());
+            state.setValue(value);
+            contractStates.merge(state.getId(), state, this::mergeContractState);
+        }
     }
 
     @Override
@@ -422,6 +438,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             contractLogs.clear();
             contractResults.clear();
             contractStateChanges.clear();
+            contractStates.clear();
             cryptoAllowances.clear();
             cryptoAllowanceState.clear();
             cryptoTransfers.clear();
@@ -486,6 +503,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
             // insert operations with conflict management
             batchPersister.persist(contracts);
+            batchPersister.persist(contractStates.values());
             batchPersister.persist(cryptoAllowances);
             batchPersister.persist(entities);
             batchPersister.persist(nftAllowances);
@@ -513,6 +531,12 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         } finally {
             cleanup();
         }
+    }
+
+    private ContractState mergeContractState(ContractState previous, ContractState current) {
+        previous.setValue(current.getValue());
+        previous.setModifiedTimestamp(current.getModifiedTimestamp());
+        return previous;
     }
 
     private CryptoAllowance mergeCryptoAllowance(CryptoAllowance previous, CryptoAllowance current) {

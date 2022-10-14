@@ -18,19 +18,17 @@
  * ‍
  */
 
-import {getResponseLimit} from '../config';
 import {filterKeys, orderFilterValues, responseDataLabel} from '../constants';
 import BaseController from './baseController';
-import {InvalidArgumentError} from '../errors';
+import {InvalidArgumentError, NotFoundError} from '../errors';
 import {EntityService, TokenService} from '../service';
 import * as utils from '../utils';
-import TokenRelationshipViewModel from '../viewmodel/tokenRelationshipViewModel';
-import TokenRelationship from '../model/tokenRelationship';
+import {TokenRelationshipViewModel} from '../viewmodel';
+import {TokenAccount} from '../model';
+import {getResponseLimit} from '../config';
+import _ from 'lodash';
 
 const {default: defaultLimit} = getResponseLimit();
-
-const tokenRelationshipDefaultLimit = 25;
-const tokenRelationshipMaxLimit = 100;
 
 class TokenController extends BaseController {
   /**
@@ -40,9 +38,10 @@ class TokenController extends BaseController {
    * @returns {conditions:{key:'token.id', operator:'=', value:10}, order: 'asc'|'desc',accountId: BigInt, limit: number}
    */
   extractTokensRelationshipQuery = (filters, ownerAccountId) => {
-    let conditions = [];
-    let limit = tokenRelationshipDefaultLimit;
-    let order = orderFilterValues.DESC;
+    const conditions = [];
+    const inConditions = [];
+    let limit = defaultLimit;
+    let order = orderFilterValues.ASC;
 
     for (const filter of filters) {
       switch (filter.key) {
@@ -50,14 +49,14 @@ class TokenController extends BaseController {
           if (utils.opsMap.ne === filter.operator) {
             throw new InvalidArgumentError(`Not equal (ne) comparison operator is not supported for ${filter.key}`);
           }
-          conditions = [{key: TokenRelationship.TOKEN_ID, operator: filter.operator, value: filter.value}];
+          if (utils.opsMap.eq === filter.operator) {
+            inConditions.push({key: TokenAccount.TOKEN_ID, operator: filter.operator, value: filter.value});
+          } else {
+            conditions.push({key: TokenAccount.TOKEN_ID, operator: filter.operator, value: filter.value});
+          }
           break;
         case filterKeys.LIMIT:
-          if (filter.value > tokenRelationshipMaxLimit) {
-            limit = tokenRelationshipMaxLimit;
-          } else {
-            limit = filter.value;
-          }
+          limit = filter.value;
           break;
         case filterKeys.ORDER:
           order = filter.value;
@@ -69,6 +68,7 @@ class TokenController extends BaseController {
 
     return {
       conditions,
+      inConditions,
       order,
       ownerAccountId,
       limit,
@@ -83,15 +83,28 @@ class TokenController extends BaseController {
    */
   getTokenRelationships = async (req, res) => {
     const accountId = await EntityService.getEncodedId(req.params[filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS]);
+    const isValidAccount = await EntityService.isValidAccount(accountId);
+    if (!isValidAccount) {
+      throw new NotFoundError();
+    }
     const filters = utils.buildAndValidateFilters(req.query);
     const query = this.extractTokensRelationshipQuery(filters, accountId);
     const tokenRelationships = await TokenService.getTokens(query);
     const tokens = tokenRelationships.map((token) => new TokenRelationshipViewModel(token));
 
+    let nextLink = null;
+    if (tokens.length === query.limit) {
+      const lastRow = _.last(tokens);
+      const last = {
+        [filterKeys.TOKEN_ID]: lastRow.token_id,
+      };
+      nextLink = utils.getPaginationLink(req, false, last, query.order);
+    }
+
     res.locals[responseDataLabel] = {
       tokens,
       links: {
-        next: null,
+        next: nextLink,
       },
     };
   };

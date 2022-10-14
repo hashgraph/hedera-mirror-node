@@ -18,7 +18,6 @@
  * ‍
  */
 
-import {getResponseLimit} from '../../config';
 import * as constants from '../../constants';
 import * as utils from '../../utils';
 import tokenController from '../../controllers/tokenController';
@@ -34,8 +33,9 @@ const tokenIdLteFilter = {key: TOKEN_ID, operator: utils.opsMap.lte, value: 151}
 describe('extractTokenRelationshipQuery', () => {
   const defaultExpected = {
     conditions: [],
+    inConditions: [],
     ownerAccountId: ownerAccountId,
-    order: constants.orderFilterValues.DESC,
+    order: constants.orderFilterValues.ASC,
     limit: 25,
   };
 
@@ -70,7 +70,6 @@ describe('extractTokenRelationshipQuery', () => {
       expected: {
         ...defaultExpected,
         order: constants.orderFilterValues.DESC,
-        conditions: [],
       },
     },
     {
@@ -80,7 +79,7 @@ describe('extractTokenRelationshipQuery', () => {
       },
       expected: {
         ...defaultExpected,
-        conditions: [
+        inConditions: [
           {
             key: 'token_id',
             operator: ' = ',
@@ -145,6 +144,27 @@ describe('extractTokenRelationshipQuery', () => {
       expected: {
         ...defaultExpected,
         conditions: [
+          {
+            key: 'token_id',
+            operator: ' <= ',
+            value: 151,
+          },
+        ],
+      },
+    },
+    {
+      name: 'token gt and token lte',
+      input: {
+        filters: [tokenIdGtFilter, tokenIdLteFilter],
+      },
+      expected: {
+        ...defaultExpected,
+        conditions: [
+          {
+            key: 'token_id',
+            operator: ' > ',
+            value: 101,
+          },
           {
             key: 'token_id',
             operator: ' <= ',

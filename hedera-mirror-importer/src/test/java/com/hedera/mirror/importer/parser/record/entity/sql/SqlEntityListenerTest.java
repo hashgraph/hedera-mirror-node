@@ -51,6 +51,7 @@ import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
+import com.hedera.mirror.common.domain.contract.ContractState;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -77,6 +78,7 @@ import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionHash;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
@@ -86,6 +88,7 @@ import com.hedera.mirror.importer.repository.ContractLogRepository;
 import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.ContractStateChangeRepository;
+import com.hedera.mirror.importer.repository.ContractStateRepository;
 import com.hedera.mirror.importer.repository.CryptoAllowanceRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
@@ -124,6 +127,7 @@ class SqlEntityListenerTest extends IntegrationTest {
     private final ContractRepository contractRepository;
     private final ContractResultRepository contractResultRepository;
     private final ContractStateChangeRepository contractStateChangeRepository;
+    private final ContractStateRepository contractStateRepository;
     private final CryptoAllowanceRepository cryptoAllowanceRepository;
     private final CryptoTransferRepository cryptoTransferRepository;
     private final DomainBuilder domainBuilder;
@@ -263,6 +267,13 @@ class SqlEntityListenerTest extends IntegrationTest {
     void onContractStateChange() {
         // given
         ContractStateChange contractStateChange = domainBuilder.contractStateChange().get();
+        ContractState expectedContractState = ContractState.builder()
+                .contractId(contractStateChange.getContractId())
+                .createdTimestamp(contractStateChange.getConsensusTimestamp())
+                .modifiedTimestamp(contractStateChange.getConsensusTimestamp())
+                .slot(DomainUtils.leftPadBytes(contractStateChange.getSlot(), 32))
+                .value(contractStateChange.getValueWritten())
+                .build();
 
         // when
         sqlEntityListener.onContractStateChange(contractStateChange);
@@ -270,6 +281,105 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(contractStateChangeRepository.findAll()).containsExactlyInAnyOrder(contractStateChange);
+        assertThat(contractStateRepository.findAll()).containsExactlyInAnyOrder(expectedContractState);
+    }
+
+    @Test
+    void onContractState() {
+        // given
+        var builder = domainBuilder.contractStateChange()
+                .customize(c -> c.slot(domainBuilder.bytes(15)));
+        var contractStateChangeCreate = builder.get();
+        var contractStateChangeValueWritten = builder.customize(c -> c
+                .valueWritten(domainBuilder.bytes(32))
+                .consensusTimestamp(contractStateChangeCreate.getConsensusTimestamp() + 1)).get();
+        var contractStateChangeNoValue = builder.customize(c -> c
+                .valueWritten(null)
+                .consensusTimestamp(contractStateChangeCreate.getConsensusTimestamp() + 2)).get();
+
+        // when
+        sqlEntityListener.onContractStateChange(contractStateChangeCreate);
+        sqlEntityListener.onContractStateChange(contractStateChangeValueWritten);
+        sqlEntityListener.onContractStateChange(contractStateChangeNoValue);
+        completeFileAndCommit();
+
+        var expectedContractState = ContractState.builder()
+                .contractId(contractStateChangeCreate.getContractId())
+                .createdTimestamp(contractStateChangeCreate.getConsensusTimestamp())
+                .modifiedTimestamp(contractStateChangeValueWritten.getConsensusTimestamp())
+                .slot(DomainUtils.leftPadBytes(contractStateChangeCreate.getSlot(), 32))
+                .value(contractStateChangeValueWritten.getValueWritten())
+                .build();
+
+        // then
+        assertThat(contractStateRepository.findAll()).containsExactlyInAnyOrder(expectedContractState);
+    }
+
+    @Test
+    void onContractStateMigrateFalse() {
+        // given
+        var builder = domainBuilder.contractStateChange()
+                .customize(c -> c.contractId(1000).consensusTimestamp(1L).slot(new byte[]{1}).valueWritten("a".getBytes()));
+
+        var contractStateChange1Create = builder.get();
+        var contractStateChange1Update = builder.customize(c -> c.consensusTimestamp(2L).valueWritten("b".getBytes())).get();
+        var contractStateChange2Create = builder.customize(c -> c.contractId(1001).consensusTimestamp(2L).valueWritten("c".getBytes())).get();
+        var contractStateChange2Update = builder.customize(c -> c.consensusTimestamp(3L).valueWritten(null)).get();
+        var contractStateChange1Update2 = builder.customize(c -> c.contractId(1000).consensusTimestamp(4L).valueWritten("d".getBytes())).get();
+        var contractStateChange2Update2 = builder.customize(c -> c.contractId(1001).consensusTimestamp(4L).valueWritten("e".getBytes())).get();
+
+        // when
+        sqlEntityListener.onContractStateChange(contractStateChange1Create);
+        sqlEntityListener.onContractStateChange(contractStateChange2Create);
+        completeFileAndCommit();
+
+        sqlEntityListener.onContractStateChange(contractStateChange1Update);
+        sqlEntityListener.onContractStateChange(contractStateChange2Update);
+        completeFileAndCommit();
+
+        sqlEntityListener.onContractStateChange(contractStateChange1Update2);
+        sqlEntityListener.onContractStateChange(contractStateChange2Update2);
+        completeFileAndCommit();
+
+        var expected = List.of(getContractState(contractStateChange1Update2, 1L),
+                getContractState(contractStateChange2Update2, 2L));
+
+        // then
+        assertThat(contractStateRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
+    }
+
+    @Test
+    void onContractStateMigrateTrue() {
+        // given
+        var builder = domainBuilder.contractStateChange()
+                .customize(c -> c.contractId(1000).consensusTimestamp(1L).migration(true).slot(new byte[]{1})
+                        .valueRead("a".getBytes()).valueWritten(null));
+
+        var contractStateChange1Create = builder.get();
+        var contractStateChange1Update = builder.customize(c -> c.consensusTimestamp(2L).valueWritten("b".getBytes())).get();
+        var contractStateChange2Create = builder.customize(c -> c.contractId(1001).consensusTimestamp(2L).valueRead("c".getBytes())).get();
+        var contractStateChange2Update = builder.customize(c -> c.consensusTimestamp(3L).valueWritten(null)).get();
+        var contractStateChange1Update2 = builder.customize(c -> c.contractId(1000).consensusTimestamp(4L).valueRead("d".getBytes())).get();
+        var contractStateChange2Update2 = builder.customize(c -> c.contractId(1001).consensusTimestamp(4L).valueRead("e".getBytes())).get();
+
+        // when
+        sqlEntityListener.onContractStateChange(contractStateChange1Create);
+        sqlEntityListener.onContractStateChange(contractStateChange2Create);
+        completeFileAndCommit();
+
+        sqlEntityListener.onContractStateChange(contractStateChange1Update);
+        sqlEntityListener.onContractStateChange(contractStateChange2Update);
+        completeFileAndCommit();
+
+        sqlEntityListener.onContractStateChange(contractStateChange1Update2);
+        sqlEntityListener.onContractStateChange(contractStateChange2Update2);
+        completeFileAndCommit();
+
+        var expected = List.of(getContractState(contractStateChange1Update2, 1L),
+                getContractState(contractStateChange2Update2, 2L));
+
+        // then
+        assertThat(contractStateRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
     }
 
     @Test
@@ -1708,6 +1818,18 @@ class SqlEntityListenerTest extends IntegrationTest {
 
     private Collection<TokenAccount> findTokenAccountHistory() {
         return findHistory(TokenAccount.class, "account_id, token_id");
+    }
+
+    private ContractState getContractState(ContractStateChange contractStateChange, long createdTimestamp) {
+        var value = contractStateChange.getValueWritten() == null ?
+                contractStateChange.getValueRead() : contractStateChange.getValueWritten();
+        return ContractState.builder()
+                .contractId(contractStateChange.getContractId())
+                .createdTimestamp(createdTimestamp)
+                .modifiedTimestamp(contractStateChange.getConsensusTimestamp())
+                .slot(DomainUtils.leftPadBytes(contractStateChange.getSlot(), 32))
+                .value(value)
+                .build();
     }
 
     @SneakyThrows

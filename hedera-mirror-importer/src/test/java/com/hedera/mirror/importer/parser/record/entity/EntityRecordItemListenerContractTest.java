@@ -73,6 +73,7 @@ import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
+import com.hedera.mirror.common.domain.contract.ContractState;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -83,6 +84,7 @@ import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.repository.ContractActionRepository;
 import com.hedera.mirror.importer.repository.ContractLogRepository;
 import com.hedera.mirror.importer.repository.ContractStateChangeRepository;
+import com.hedera.mirror.importer.repository.ContractStateRepository;
 import com.hedera.mirror.importer.util.Utility;
 import com.hedera.services.stream.proto.ContractBytecode;
 
@@ -93,6 +95,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     private final ContractActionRepository contractActionRepository;
     private final ContractLogRepository contractLogRepository;
     private final ContractStateChangeRepository contractStateChangeRepository;
+    private final ContractStateRepository contractStateRepository;
+
     // saves the mapping from proto ContractID to EntityId so as not to use EntityIdService to verify itself
     private Map<ContractID, EntityId> contractIds;
 
@@ -1086,6 +1090,33 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         }
 
         contractStateChanges.hasSize(count);
+
+        assertContractState(sidecarStateChanges, recordItem.getConsensusTimestamp());
+    }
+
+    private void assertContractState(ArrayList<com.hedera.services.stream.proto.ContractStateChange> sidecarStateChanges,
+                                     long consensusTimestamp) {
+        int count = 0;
+        var contractStates = assertThat(contractStateRepository.findAll());
+        for (var contractStateChange : sidecarStateChanges) {
+            EntityId contractId = EntityId.of(contractStateChange.getContractId());
+            for (var storageChange : contractStateChange.getStorageChangesList()) {
+                byte[] slot = DomainUtils.toBytes(storageChange.getSlot());
+                byte[] valueWritten = storageChange.hasValueWritten() ? storageChange.getValueWritten().getValue()
+                        .toByteArray() : null;
+
+                if (valueWritten != null) {
+                    contractStates.filteredOn(c -> c.getModifiedTimestamp() == consensusTimestamp
+                                    && c.getContractId() == contractId.getId() && Arrays.equals(c.getSlot(), slot))
+                            .hasSize(1)
+                            .first()
+                            .returns(DomainUtils.leftPadBytes(slot, 32), ContractState::getSlot);
+                    ++count;
+                }
+            }
+        }
+
+        contractStates.hasSize(count);
     }
 
     private void assertPartialContractCreateResult(ContractCreateTransactionBody transactionBody,
