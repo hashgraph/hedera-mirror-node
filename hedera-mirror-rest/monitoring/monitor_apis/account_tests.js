@@ -196,7 +196,7 @@ const getSingleAccountTokenRelationships = async (server) => {
   const tokensPath = '/tokens';
   const tokensJsonRespKey = 'tokens';
   const tokenMandatoryParams = ['token_id', 'symbol', 'admin_key'];
-  const token_url = getUrl(server, tokensPath, [{limit: resourceLimit}, {order: 'asc'}]);
+  const token_url = getUrl(server, tokensPath, {limit: resourceLimit, order: 'asc'});
   const tokens = await getAPIResponse(token_url, tokensJsonRespKey);
 
   const token_result = new CheckRunner()
@@ -215,31 +215,26 @@ const getSingleAccountTokenRelationships = async (server) => {
     return {token_url, ...token_result};
   }
 
-  let accountId = null;
-  do {
-    const token_id = tokens[0].token_id;
-    const tokenBalancesPath = (tokenId) => `${tokensPath}/${tokenId}/balances`;
-    const tokenBalancesJsonRespKey = 'balances';
+  const token_id = tokens[0].token_id;
+  const tokenBalancesPath = (tokenId) => `${tokensPath}/${tokenId}/balances`;
+  const tokenBalancesJsonRespKey = 'balances';
 
-    // get balances for a token and get account id from it
-    let balances_url = getUrl(server, tokenBalancesPath(token_id), {limit: 1});
-    let balances = await getAPIResponse(balances_url, tokenBalancesJsonRespKey);
+  // get balances for a token and get account id from it
+  let balances_url = getUrl(server, tokenBalancesPath(token_id), {limit: 1});
+  let balances = await getAPIResponse(balances_url, tokenBalancesJsonRespKey);
 
-    const checkRunner = new CheckRunner()
-      .withCheckSpec(checkAPIResponseError)
-      .withCheckSpec(checkRespObjDefined, {message: 'balances is undefined'})
-      .withCheckSpec(checkRespArrayLength, {
-        limit: 1,
-        message: (elements) => `token balances.length of ${elements.length} was expected to be 1`,
-      });
-    let balancesResult = checkRunner.run(balances);
-    if (!balancesResult.passed) {
-      return {balances_url, ...balancesResult};
-    }
-    if (balances.length > 0) {
-      accountId = balances[0].account;
-    }
-  } while (accountId === null);
+  const checkRunner = new CheckRunner()
+    .withCheckSpec(checkAPIResponseError)
+    .withCheckSpec(checkRespObjDefined, {message: 'balances is undefined'})
+    .withCheckSpec(checkRespArrayLength, {
+      limit: 1,
+      message: (elements) => `token balances.length of ${elements.length} was expected to be 1`,
+    });
+  let balancesResult = checkRunner.run(balances);
+  if (!balancesResult.passed) {
+    return {balances_url, ...balancesResult};
+  }
+  const accountId = balances[0].account;
 
   // Use that account id to call my endpoint
 
