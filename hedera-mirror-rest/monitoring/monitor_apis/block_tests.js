@@ -19,7 +19,6 @@
  */
 
 import _ from 'lodash';
-import * as math from 'mathjs';
 import config from './config';
 
 import {
