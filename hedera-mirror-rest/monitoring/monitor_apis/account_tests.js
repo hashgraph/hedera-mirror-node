@@ -34,6 +34,7 @@ import {
   getUrl,
   testRunner,
 } from './utils';
+import {JSONStringify} from '../../utils';
 
 const accountsPath = '/accounts';
 const resource = 'account';
@@ -237,8 +238,11 @@ const getSingleAccountTokenRelationships = async (server) => {
   const accountsTokenPath = `/accounts/${accountId}/tokens`;
   const accountsLimit = 1;
   let url = getUrl(server, accountsTokenPath, {limit: accountsLimit, order: 'asc'});
-  const accounts = await getAPIResponse(url, jsonRespKey);
-  let result = new CheckRunner().withCheckSpec(checkAPIResponseError).run(accounts);
+  const tokenRelationships = await getAPIResponse(url, tokensJsonRespKey);
+  let result = new CheckRunner()
+    .withCheckSpec(checkAPIResponseError)
+    .withCheckSpec(checkRespObjDefined, {message: 'tokens is undefined '})
+    .run(tokenRelationships);
   if (!result.passed) {
     return {url, ...result};
   }
