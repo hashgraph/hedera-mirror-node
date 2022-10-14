@@ -18,20 +18,9 @@
  * ‍
  */
 
-import AccountController from './accountController';
-import ContractController from './contractController';
-import CryptoAllowanceController from './cryptoAllowanceController';
-import NetworkController from './networkController';
-import TokenController from './tokenController';
-import TokenAllowanceController from './tokenAllowanceController';
-import BlockController from './blockController';
+class AccountBalanceFile {
+  static tableName = 'account_balance_file';
+  static CONSENSUS_TIMESTAMP = 'consensus_timestamp';
+}
 
-export {
-  AccountController,
-  ContractController,
-  CryptoAllowanceController,
-  NetworkController,
-  TokenController,
-  TokenAllowanceController,
-  BlockController,
-};
+export default AccountBalanceFile;

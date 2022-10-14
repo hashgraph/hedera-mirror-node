@@ -18,20 +18,29 @@
  * ‍
  */
 
-import AccountController from './accountController';
-import ContractController from './contractController';
-import CryptoAllowanceController from './cryptoAllowanceController';
-import NetworkController from './networkController';
-import TokenController from './tokenController';
-import TokenAllowanceController from './tokenAllowanceController';
-import BlockController from './blockController';
+import {InvalidArgumentError} from '../errors';
 
-export {
-  AccountController,
-  ContractController,
-  CryptoAllowanceController,
-  NetworkController,
-  TokenController,
-  TokenAllowanceController,
-  BlockController,
-};
+class TokenType {
+  static TYPE = ['FUNGIBLE_COMMON', 'NON_FUNGIBLE_UNIQUE'];
+
+  constructor(id) {
+    this._id = Number(id);
+    if (Number.isNaN(this._id) || this._id < 0 || this._id > 2) {
+      throw new InvalidArgumentError(`Invalid token type id ${id}`);
+    }
+  }
+
+  getId() {
+    return this._id;
+  }
+
+  toJSON() {
+    return this.toString();
+  }
+
+  toString() {
+    return TokenType.TYPE[this._id];
+  }
+}
+
+export default TokenType;
