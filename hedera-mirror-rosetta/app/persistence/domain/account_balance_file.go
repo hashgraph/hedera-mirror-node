@@ -30,7 +30,7 @@ type AccountBalanceFile struct {
 	LoadEnd            int64
 	LoadStart          int64
 	Name               string
-	NodeAccountId      EntityId
+	NodeId             int64
 	TimeOffset         int32
 }
 

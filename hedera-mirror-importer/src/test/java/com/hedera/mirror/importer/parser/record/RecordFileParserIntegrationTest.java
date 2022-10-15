@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,19 +27,16 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.stream.Collectors;
-import javax.annotation.Resource;
-
-import com.hedera.mirror.common.domain.entity.EntityType;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
-import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.reader.record.RecordFileReader;
@@ -49,37 +46,19 @@ import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
 @Disabled("Fails in CI")
-@RequiredArgsConstructor
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class RecordFileParserIntegrationTest extends IntegrationTest {
 
-    private final static EntityId NODE_ACCOUNT_ID = EntityId.of("0.0.3", EntityType.ACCOUNT);
-
+    private final CryptoTransferRepository cryptoTransferRepository;
+    private final EntityRepository entityRepository;
+    private final RecordFileParser recordFileParser;
+    private final RecordFileReader recordFileReader;
+    private final RecordFileRepository recordFileRepository;
+    private final TransactionRepository transactionRepository;
     @Value("classpath:data/recordstreams/v2/record0.0.3/2019-08-30T18_10_00.419072Z.rcd")
-    Path recordFilePath1;
-
+    private final Path recordFilePath1;
     @Value("classpath:data/recordstreams/v2/record0.0.3/2019-08-30T18_10_05.249678Z.rcd")
-    Path recordFilePath2;
-
-    @Resource
-    private RecordFileParser recordFileParser;
-
-    @Resource
-    private RecordParserProperties parserProperties;
-
-    @Resource
-    private CryptoTransferRepository cryptoTransferRepository;
-
-    @Resource
-    private TransactionRepository transactionRepository;
-
-    @Resource
-    private EntityRepository entityRepository;
-
-    @Resource
-    private RecordFileRepository recordFileRepository;
-
-    @Resource
-    private RecordFileReader recordFileReader;
+    private final Path recordFilePath2;
 
     private RecordFileDescriptor recordFileDescriptor1;
     private RecordFileDescriptor recordFileDescriptor2;
@@ -154,7 +133,7 @@ class RecordFileParserIntegrationTest extends IntegrationTest {
     RecordFile recordFile(File file, long index) {
         RecordFile recordFile = recordFileReader.read(StreamFileData.from(file));
         recordFile.setIndex(index);
-        recordFile.setNodeAccountId(NODE_ACCOUNT_ID);
+        recordFile.setNodeId(0L);
         return recordFile;
     }
 

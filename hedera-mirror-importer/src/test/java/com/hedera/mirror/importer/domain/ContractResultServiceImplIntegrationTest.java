@@ -56,6 +56,7 @@ import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
+import com.hedera.mirror.common.domain.contract.ContractState;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -72,6 +73,7 @@ import com.hedera.mirror.importer.repository.ContractLogRepository;
 import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.ContractStateChangeRepository;
+import com.hedera.mirror.importer.repository.ContractStateRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.services.stream.proto.CallOperationType;
 import com.hedera.services.stream.proto.ContractActionType;
@@ -90,6 +92,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     private final ContractResultRepository contractResultRepository;
     private final ContractResultService contractResultService;
     private final ContractStateChangeRepository contractStateChangeRepository;
+    private final ContractStateRepository contractStateRepository;
     private final EntityRepository entityRepository;
     private final RecordItemBuilder recordItemBuilder;
     private final RecordStreamFileListener recordStreamFileListener;
@@ -210,6 +213,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
         assertContractLogs(recordItem);
         assertThat(contractActionRepository.count()).isZero();
         assertThat(contractStateChangeRepository.count()).isZero();
+        assertThat(contractStateRepository.count()).isZero();
         assertThat(contractRepository.count()).isZero();
     }
 
@@ -266,6 +270,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
         assertContractStateChanges(recordItem);
         assertThat(contractActionRepository.count()).isZero();
         assertThat(contractStateChangeRepository.count()).isZero();
+        assertThat(contractStateRepository.count()).isZero();
     }
 
     @Test
@@ -523,7 +528,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     }
 
     private void assertContractStateChanges(RecordItem recordItem) {
-        var expected = recordItem.getSidecarRecords()
+        var contractStateChanges = recordItem.getSidecarRecords()
                 .stream()
                 .filter(TransactionSidecarRecord::hasStateChanges)
                 .flatMap(r -> r.getStateChanges().getContractStateChangesList().stream()
@@ -545,7 +550,20 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                         })
                 )
                 .toList();
-        assertThat(contractStateChangeRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
+
+        var contractStates = contractStateChanges.stream()
+                .filter(c -> c.getValueWritten() != null)
+                .map(c -> ContractState.builder()
+                        .contractId(c.getContractId())
+                        .createdTimestamp(c.getConsensusTimestamp())
+                        .modifiedTimestamp(c.getConsensusTimestamp())
+                        .slot(DomainUtils.leftPadBytes(c.getSlot(), 32))
+                        .value(c.getValueWritten())
+                        .build())
+                .toList();
+
+        assertThat(contractStateChangeRepository.findAll()).containsExactlyInAnyOrderElementsOf(contractStateChanges);
+        assertThat(contractStateRepository.findAll()).containsExactlyInAnyOrderElementsOf(contractStates);
     }
 
     protected void process(RecordItem recordItem) {

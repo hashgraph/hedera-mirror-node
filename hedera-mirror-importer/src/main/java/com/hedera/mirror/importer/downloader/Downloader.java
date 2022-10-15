@@ -26,6 +26,7 @@ import static com.hedera.mirror.importer.domain.StreamFileSignature.SignatureSta
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
+import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.google.common.collect.TreeMultimap;
 import io.micrometer.core.instrument.Counter;
@@ -36,6 +37,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -73,9 +75,21 @@ import com.hedera.mirror.importer.util.Utility;
 public abstract class Downloader<T extends StreamFile> {
 
     public static final String STREAM_CLOSE_LATENCY_METRIC_NAME = "hedera.mirror.stream.close.latency";
+
     private static final String HASH_TYPE_FILE = "File";
     private static final String HASH_TYPE_METADATA = "Metadata";
     private static final String HASH_TYPE_RUNNING = "Running";
+
+    private static final Comparator<StreamFileSignature> STREAM_FILE_SIGNATURE_COMPARATOR = (left, right) -> {
+        if (Objects.equals(left, right)) {
+            // Ensures values are unique when used in a Set
+            return 0;
+        }
+
+        // The arbitrary ordering compares objects by identity, thus when used in a sorted collection, it gives a random
+        // order of the StreamFileSignatures w.r.t the nodes
+        return Ordering.arbitrary().compare(left, right);
+    };
 
     protected final Logger log = LogManager.getLogger(getClass());
     protected final DownloaderProperties downloaderProperties;
@@ -188,6 +202,12 @@ public abstract class Downloader<T extends StreamFile> {
         streamFile.setIndex(index);
     }
 
+    Multimap<StreamFilename, StreamFileSignature> getStreamFileSignatureMultiMap() {
+        // The custom comparator ensures there is no duplicate key-value pairs and randomly sorts the values associated
+        // with the same key
+        return TreeMultimap.create(Ordering.natural(), STREAM_FILE_SIGNATURE_COMPARATOR);
+    }
+
     /**
      * Download and parse all signature files with a timestamp later than the last valid file. Put signature files into
      * a multi-map sorted and grouped by the timestamp.
@@ -197,8 +217,7 @@ public abstract class Downloader<T extends StreamFile> {
     private Multimap<StreamFilename, StreamFileSignature> downloadAndParseSigFiles()
             throws InterruptedException {
         var startAfterFilename = getStartAfterFilename();
-        Multimap<StreamFilename, StreamFileSignature> sigFilesMap =
-                Multimaps.synchronizedSortedSetMultimap(TreeMultimap.create());
+        var sigFilesMap = Multimaps.synchronizedMultimap(getStreamFileSignatureMultiMap());
 
         var nodes = consensusNodeService.getNodes();
         var tasks = new ArrayList<Callable<Object>>(nodes.size());
@@ -342,7 +361,7 @@ public abstract class Downloader<T extends StreamFile> {
                     var node = signature.getNode();
                     var streamFileData = streamFileProvider.get(node, dataFilename).block();
                     T streamFile = streamFileReader.read(streamFileData);
-                    streamFile.setNodeAccountId(signature.getNode().getNodeAccountId());
+                    streamFile.setNodeId(nodeId);
 
                     verify(streamFile, signature);
 
@@ -375,7 +394,7 @@ public abstract class Downloader<T extends StreamFile> {
                     log.warn("Failed to verify data file from node {} corresponding to {}. Will retry another node",
                             nodeId, sigFilename, e);
                 } catch (TransientProviderException e) {
-                    log.warn("Error downloading data file from node {} corresponding to {}. Will retry another node",
+                    log.warn("Error downloading data file from node {} corresponding to {}. Will retry another node: {}",
                             nodeId, sigFilename, e.getMessage());
                 } catch (Exception e) {
                     log.error("Error downloading data file from node {} corresponding to {}. Will retry another node",

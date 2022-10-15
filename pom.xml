@@ -55,7 +55,7 @@
     </parent>
 
     <properties>
-        <besu.version>22.7.3</besu.version>
+        <besu.version>22.7.6</besu.version>
         <dependency-check.version>7.2.1</dependency-check.version>
         <disruptor.version>3.4.4</disruptor.version> <!-- Used for asynchronous logging -->
         <docker-maven-plugin.version>0.40.2</docker-maven-plugin.version>
@@ -69,10 +69,11 @@
         <flyway.version>8.5.9</flyway.version>
         <git-commit-id-plugin.version>4.0.4</git-commit-id-plugin.version>
         <grpc-spring-boot.version>2.13.1.RELEASE</grpc-spring-boot.version>
-        <grpc.version>1.49.2</grpc.version>
+        <grpc.version>1.50.0</grpc.version>
         <gson.version>2.8.9</gson.version> <!-- Temporary until Apache jclouds supports gson 2.9 -->
         <guava.version>31.1-jre</guava.version>
         <headlong.version>7.0.0</headlong.version>
+        <hedera-evm.version>0.31.0-SNAPSHOT</hedera-evm.version>
         <hedera-protobuf.version>0.31.0-SNAPSHOT</hedera-protobuf.version>
         <hibernate-types.version>2.19.2</hibernate-types.version>
         <jacoco.version>0.8.8</jacoco.version>
@@ -121,7 +122,7 @@
             <dependency>
                 <groupId>org.springframework.cloud</groupId>
                 <artifactId>spring-cloud-dependencies</artifactId>
-                <version>2021.0.3</version>
+                <version>2021.0.4</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
