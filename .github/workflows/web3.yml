@@ -13,6 +13,7 @@ defaults:
 
 env:
   MODULE: hedera-mirror-web3
+  SPRING_CLOUD_KUBERNETES_ENABLED: "false" # https://github.com/spring-cloud/spring-cloud-kubernetes/issues/1089
 
 jobs:
   test:
