@@ -25,9 +25,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.CustomLog;
@@ -80,12 +80,13 @@ public class StartupProbe {
 
     @SneakyThrows
     public void validateEnvironment() throws TimeoutException {
+        log.info("MYK: entering validateEnvironment()...");
         // if we previously validated successfully, just immediately return.
         if (validated) {
             return;
         }
-        // any of these can throw IllegalArgumentException; if it does, retries wouldn't help, so exit early (with that
-        // exception) if it happens.
+        // Any of these (before the "try") can throw IllegalArgumentException; if it does, retries wouldn't help,
+        // so exit early (with that exception) if it does happen.
         AccountId operator = AccountId.fromString(acceptanceTestProperties.getOperatorId());
         PrivateKey privateKey = PrivateKey.fromString(acceptanceTestProperties.getOperatorKey());
         Map<String, AccountId> network = getNetworkMapWithoutAddressBook();
@@ -111,6 +112,7 @@ public class StartupProbe {
 
             // step 2: Query for the receipt of that HCS submit transaction (until successful or time runs out)
             TransactionReceipt transactionReceipt = retryTemplate.execute(x -> new TransactionReceiptQuery()
+                .setTransactionId(transactionId)
                 .setGrpcDeadline(acceptanceTestProperties.getSdkProperties().getGrpcDeadline())
                 .setMaxAttempts(Integer.MAX_VALUE)
                 .execute(client, startupTimeout.minus(stopwatch.elapsed())));
@@ -122,20 +124,21 @@ public class StartupProbe {
             var properties = acceptanceTestProperties.getRestPollingProperties();
             RetryBackoffSpec retrySpec = Retry.backoff(Integer.MAX_VALUE, properties.getMinBackoff())
                     .maxBackoff(properties.getMaxBackoff())
-                    .filter(this::shouldRetryRestCall);
+                    .filter(properties::shouldRetry);
             log.info("MYK: retrySpec set.");
 
             String restTransactionId = transactionId.accountId.toString() + "-"
                     + transactionId.validStart.getEpochSecond() + "-" + transactionId.validStart.getNano();
             log.info("MYK: restTransactionId = {}", restTransactionId);
 
+            String uri = "/transactions/" + restTransactionId;
             webClient.get()
-                    .uri("/transactions/", restTransactionId)
+                    .uri(uri)
                     .accept(MediaType.APPLICATION_JSON)
                     .retrieve()
                     .bodyToMono(String.class)
                     .retryWhen(retrySpec)
-                    .doOnError(x -> log.error("Endpoint failed, returning: {}", x.getMessage()))
+                    .doOnError(x -> log.warn("Endpoint {} failed, returning: {}", uri, x.getMessage()))
                     .timeout(startupTimeout.minus(stopwatch.elapsed()))
                     .block();
 
@@ -143,12 +146,12 @@ public class StartupProbe {
             // step 4: Query the mirror node gRPC API for a message on the topic created in step 2, until successful or
             //         time runs out
             TopicId topicId = transactionReceipt.topicId;
-            AtomicBoolean messageReceived = new AtomicBoolean();
+            CountDownLatch messageLatch = new CountDownLatch(1);
 
             retryTemplate.execute(x -> new TopicMessageQuery()
                     .setTopicId(topicId)
                     .subscribe(client, resp -> {
-                        messageReceived.set(true);
+                        messageLatch.countDown();
                     }));
             log.info("MYK: step 4a finished.");
 
@@ -157,27 +160,26 @@ public class StartupProbe {
                 .setMessage("Hello, HCS!")
                 .execute(client, startupTimeout.minus(stopwatch.elapsed())));
             log.info("MYK: step 4b finished.");
+            TransactionId secondTransactionId = secondResponse.transactionId;
+            log.info("MYK: secondTransactionId = {}", secondTransactionId);
 
             transactionReceipt = retryTemplate.execute(x -> new TransactionReceiptQuery()
+                .setTransactionId(secondTransactionId)
                 .setGrpcDeadline(acceptanceTestProperties.getSdkProperties().getGrpcDeadline())
                 .setMaxAttempts(Integer.MAX_VALUE)
                 .execute(client, startupTimeout.minus(stopwatch.elapsed())));
             log.info("MYK: step 4c finished.");
 
-            if (messageReceived.get()) {
+            if (messageLatch.await(startupTimeout.minus(stopwatch.elapsed()).toNanos(), TimeUnit.NANOSECONDS)) {
                 log.info("Startup probe successful.");
                 validated = true;
             } else {
+                log.info("MYK: about to throw TimeoutException.");
                 throw new TimeoutException("Timer expired while trying to receive topic messages.");
             }
+            log.info("MYK: about to end 'try' statement.");
         }
-    }
-
-    // used by the retrySpec created in validateEnvironment(); this routine copied from MirrorNodeClient.java.
-    private boolean shouldRetryRestCall(Throwable t) {
-        return acceptanceTestProperties.getRestPollingProperties().getRetryableExceptions()
-                .stream()
-                .anyMatch(ex -> ex.isInstance(t) || ex.isInstance(Throwables.getRootCause(t)));
+        log.info("MYK: exiting validateEnvironment().");
     }
 
     // based on SDKClient::getNetworkMap, but omits the part that can call getAddressBook()
@@ -198,7 +200,7 @@ public class StartupProbe {
         return client.getNetwork();
     }
 
-    // copied from n SDKClient::getNetworkMap with parameter
+    // copied from SDKClient::getNetworkMap with parameter
     private Map<String, AccountId> getNetworkMap(Set<NodeProperties> nodes) {
         return nodes.stream()
                 .collect(Collectors.toMap(NodeProperties::getEndpoint, p -> AccountId.fromString(p.getAccountId())));

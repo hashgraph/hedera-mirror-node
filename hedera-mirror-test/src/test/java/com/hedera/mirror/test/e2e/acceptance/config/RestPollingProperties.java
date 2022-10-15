@@ -20,6 +20,7 @@ package com.hedera.mirror.test.e2e.acceptance.config;
  * ‍
  */
 
+import com.google.common.base.Throwables;
 import java.time.Duration;
 import java.util.Set;
 import javax.validation.constraints.Max;
@@ -55,4 +56,9 @@ public class RestPollingProperties {
 
     @NotNull
     private Set<Class> retryableExceptions = Set.of(Exception.class);
+
+    public boolean shouldRetry(Throwable t) {
+        return retryableExceptions.stream()
+                .anyMatch(ex -> ex.isInstance(t) || ex.isInstance(Throwables.getRootCause(t)));
+    }
 }

@@ -65,7 +65,7 @@ public class MirrorNodeClient {
         var properties = acceptanceTestProperties.getRestPollingProperties();
         retrySpec = Retry.backoff(properties.getMaxAttempts(), properties.getMinBackoff())
                 .maxBackoff(properties.getMaxBackoff())
-                .filter(this::shouldRetryRestCall);
+                .filter(properties::shouldRetry);
     }
 
     public SubscriptionResponse subscribeToTopic(SDKClient sdkClient, TopicMessageQuery topicMessageQuery) throws Throwable {
@@ -207,12 +207,6 @@ public class MirrorNodeClient {
     public void unSubscribeFromTopic(SubscriptionHandle subscription) {
         subscription.unsubscribe();
         log.info("Unsubscribed from {}", subscription);
-    }
-
-    protected boolean shouldRetryRestCall(Throwable t) {
-        return acceptanceTestProperties.getRestPollingProperties().getRetryableExceptions()
-                .stream()
-                .anyMatch(ex -> ex.isInstance(t) || ex.isInstance(Throwables.getRootCause(t)));
     }
 
     private <T> T callRestEndpoint(String uri, Class<T> classType, Object... uriVariables) {
