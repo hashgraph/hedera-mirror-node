@@ -150,6 +150,8 @@ public class StartupProbe {
                 }));
 
         TransactionResponse secondResponse = retryTemplate.execute(x -> new TopicMessageSubmitTransaction()
+                .setGrpcDeadline(acceptanceTestProperties.getSdkProperties().getGrpcDeadline())
+                .setMaxAttempts(Integer.MAX_VALUE)
                 .setTopicId(topicId)
                 .setMessage("Hello, HCS!")
                 .execute(client, startupTimeout.minus(stopwatch.elapsed())));
