@@ -141,18 +141,18 @@ public class StartupProbe {
         CountDownLatch messageLatch = new CountDownLatch(1);
 
         SubscriptionHandle subscription = retryTemplate.execute(x -> new TopicMessageQuery()
+                .setTopicId(topicId)
                 .setMaxAttempts(Integer.MAX_VALUE)
                 .setRetryHandler(t -> true)
                 .setStartTime(Instant.EPOCH)
-                .setTopicId(topicId)
                 .subscribe(client, resp -> {
                     messageLatch.countDown();
                 }));
 
         TransactionResponse secondResponse = retryTemplate.execute(x -> new TopicMessageSubmitTransaction()
+                .setTopicId(topicId)
                 .setGrpcDeadline(acceptanceTestProperties.getSdkProperties().getGrpcDeadline())
                 .setMaxAttempts(Integer.MAX_VALUE)
-                .setTopicId(topicId)
                 .setMessage("Hello, HCS!")
                 .execute(client, startupTimeout.minus(stopwatch.elapsed())));
         TransactionId secondTransactionId = secondResponse.transactionId;
