@@ -72,8 +72,14 @@ public class SDKClient implements AutoCloseable {
         maxTransactionFee = Hbar.fromTinybars(acceptanceTestProperties.getMaxTinyBarTransactionFee());
         this.acceptanceTestProperties = acceptanceTestProperties;
         this.startupProbe = startupProbe;
-        // this next call must be made before any network activity in this constructor
-        startupProbe.validateEnvironment();
+
+        Map<String, AccountId> network = getNetworkMap();
+        // Client in next line is only used by the Startup probe.  Validated Client for SDKClient set afterwards.
+        try (Client unvalidatedClient = toClient(network)) {
+            startupProbe.validateEnvironment(unvalidatedClient);
+        } catch (Exception e) {
+            log.warn("Startup Probe Failed: {}", e.getMessage());
+        } 
         this.client = getValidatedClient();
         expandedOperatorAccountId = getOperatorAccount();
         this.client.setOperator(expandedOperatorAccountId.getAccountId(), expandedOperatorAccountId.getPrivateKey());

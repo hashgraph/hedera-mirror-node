@@ -46,6 +46,7 @@ import reactor.util.retry.RetryBackoffSpec;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.PrivateKey;
+import com.hedera.hashgraph.sdk.SubscriptionHandle;
 import com.hedera.hashgraph.sdk.TopicCreateTransaction;
 import com.hedera.hashgraph.sdk.TopicId;
 import com.hedera.hashgraph.sdk.TopicMessageQuery;
@@ -79,8 +80,7 @@ public class StartupProbe {
     }
 
     @SneakyThrows
-    public void validateEnvironment() throws TimeoutException {
-        log.info("MYK: entering validateEnvironment()...");
+    public void validateEnvironment(Client client) throws TimeoutException {
         // if we previously validated successfully, just immediately return.
         if (validated) {
             return;
@@ -89,130 +89,86 @@ public class StartupProbe {
         // so exit early (with that exception) if it does happen.
         AccountId operator = AccountId.fromString(acceptanceTestProperties.getOperatorId());
         PrivateKey privateKey = PrivateKey.fromString(acceptanceTestProperties.getOperatorKey());
-        Map<String, AccountId> network = getNetworkMapWithoutAddressBook();
-        try (Client client = toClient(network)) {
-            client.setOperator(operator, privateKey);  // this account pays for (and signs) all transactions run here.
 
-            Stopwatch stopwatch = Stopwatch.createStarted();
-            log.info("MYK: starting step 1...");
-            // step 1: Create a new topic for the subsequent HCS submit message action.
-            RetryTemplate retryTemplate = RetryTemplate.builder()
-                    .infiniteRetry()
-                    .notRetryOn(TimeoutException.class)
-                    .fixedBackoff(1000L)
-                    .build();
+        client.setOperator(operator, privateKey);  // this account pays for (and signs) all transactions run here.
+
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        // step 1: Create a new topic for the subsequent HCS submit message action.
+        RetryTemplate retryTemplate = RetryTemplate.builder()
+                .infiniteRetry()
+                .notRetryOn(TimeoutException.class)
+                .fixedBackoff(1000L)
+                .build();
         
-            log.info("MYK: retryTemplate set.");
-            TransactionResponse response = retryTemplate.execute(x -> new TopicCreateTransaction()
+        TransactionResponse response = retryTemplate.execute(x -> new TopicCreateTransaction()
                 .setGrpcDeadline(acceptanceTestProperties.getSdkProperties().getGrpcDeadline())
                 .setMaxAttempts(Integer.MAX_VALUE)
                 .execute(client, startupTimeout.minus(stopwatch.elapsed())));
-            TransactionId transactionId = response.transactionId;
-            log.info("MYK: transactionId = {}", transactionId);
+        TransactionId transactionId = response.transactionId;
 
-            // step 2: Query for the receipt of that HCS submit transaction (until successful or time runs out)
-            TransactionReceipt transactionReceipt = retryTemplate.execute(x -> new TransactionReceiptQuery()
+        // step 2: Query for the receipt of that HCS submit transaction (until successful or time runs out)
+        TransactionReceipt transactionReceipt = retryTemplate.execute(x -> new TransactionReceiptQuery()
                 .setTransactionId(transactionId)
                 .setGrpcDeadline(acceptanceTestProperties.getSdkProperties().getGrpcDeadline())
                 .setMaxAttempts(Integer.MAX_VALUE)
                 .execute(client, startupTimeout.minus(stopwatch.elapsed())));
-            log.info("MYK: transactionReceipt = {}", transactionReceipt);
 
-            // step 3: Query the mirror node for the transaction by ID (until successful or time runs out)
-            // Instead of using MirrorNodeClient.getTransactions(restTransactionId), we directly call webClient.
-            // retry infinitely or until timeout (or success), not a maximum of properties.getMaxAttempts() times.
-            var properties = acceptanceTestProperties.getRestPollingProperties();
-            RetryBackoffSpec retrySpec = Retry.backoff(Integer.MAX_VALUE, properties.getMinBackoff())
-                    .maxBackoff(properties.getMaxBackoff())
-                    .filter(properties::shouldRetry);
-            log.info("MYK: retrySpec set.");
+        // step 3: Query the mirror node for the transaction by ID (until successful or time runs out)
+        // Instead of using MirrorNodeClient.getTransactions(restTransactionId), we directly call webClient.
+        // retry infinitely or until timeout (or success), not a maximum of properties.getMaxAttempts() times.
+        var properties = acceptanceTestProperties.getRestPollingProperties();
+        RetryBackoffSpec retrySpec = Retry.backoff(Integer.MAX_VALUE, properties.getMinBackoff())
+                .maxBackoff(properties.getMaxBackoff())
+                .filter(properties::shouldRetry);
 
-            String restTransactionId = transactionId.accountId.toString() + "-"
-                    + transactionId.validStart.getEpochSecond() + "-" + transactionId.validStart.getNano();
-            log.info("MYK: restTransactionId = {}", restTransactionId);
+        String restTransactionId = transactionId.accountId.toString() + "-"
+                + transactionId.validStart.getEpochSecond() + "-" + transactionId.validStart.getNano();
 
-            String uri = "/transactions/" + restTransactionId;
-            webClient.get()
-                    .uri(uri)
-                    .accept(MediaType.APPLICATION_JSON)
-                    .retrieve()
-                    .bodyToMono(String.class)
-                    .retryWhen(retrySpec)
-                    .doOnError(x -> log.warn("Endpoint {} failed, returning: {}", uri, x.getMessage()))
-                    .timeout(startupTimeout.minus(stopwatch.elapsed()))
-                    .block();
+        String uri = "/transactions/" + restTransactionId;
+        webClient.get()
+                .uri(uri)
+                .accept(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .bodyToMono(String.class)
+                .retryWhen(retrySpec)
+                .doOnError(x -> log.warn("Endpoint {} failed, returning: {}", uri, x.getMessage()))
+                .timeout(startupTimeout.minus(stopwatch.elapsed()))
+                .block();
 
-            log.info("MYK: step 3 finished.");
-            // step 4: Query the mirror node gRPC API for a message on the topic created in step 2, until successful or
-            //         time runs out
-            TopicId topicId = transactionReceipt.topicId;
-            CountDownLatch messageLatch = new CountDownLatch(1);
+        // step 4: Query the mirror node gRPC API for a message on the topic created in step 2, until successful or
+        //         time runs out
+        TopicId topicId = transactionReceipt.topicId;
+        CountDownLatch messageLatch = new CountDownLatch(1);
 
-            retryTemplate.execute(x -> new TopicMessageQuery()
-                    .setTopicId(topicId)
-                    .subscribe(client, resp -> {
-                        messageLatch.countDown();
-                    }));
-            log.info("MYK: step 4a finished.");
+        SubscriptionHandle subscription = retryTemplate.execute(x -> new TopicMessageQuery()
+                .setMaxAttempts(Integer.MAX_VALUE)
+                .setRetryHandler(t -> true)
+                .setStartTime(Instant.EPOCH)
+                .setTopicId(topicId)
+                .subscribe(client, resp -> {
+                    messageLatch.countDown();
+                }));
 
-            TransactionResponse secondResponse = retryTemplate.execute(x -> new TopicMessageSubmitTransaction()
+        TransactionResponse secondResponse = retryTemplate.execute(x -> new TopicMessageSubmitTransaction()
                 .setTopicId(topicId)
                 .setMessage("Hello, HCS!")
                 .execute(client, startupTimeout.minus(stopwatch.elapsed())));
-            log.info("MYK: step 4b finished.");
-            TransactionId secondTransactionId = secondResponse.transactionId;
-            log.info("MYK: secondTransactionId = {}", secondTransactionId);
+        TransactionId secondTransactionId = secondResponse.transactionId;
 
-            transactionReceipt = retryTemplate.execute(x -> new TransactionReceiptQuery()
+        retryTemplate.execute(x -> new TransactionReceiptQuery()
                 .setTransactionId(secondTransactionId)
                 .setGrpcDeadline(acceptanceTestProperties.getSdkProperties().getGrpcDeadline())
                 .setMaxAttempts(Integer.MAX_VALUE)
                 .execute(client, startupTimeout.minus(stopwatch.elapsed())));
-            log.info("MYK: step 4c finished.");
 
-            if (messageLatch.await(startupTimeout.minus(stopwatch.elapsed()).toNanos(), TimeUnit.NANOSECONDS)) {
-                log.info("Startup probe successful.");
-                validated = true;
-            } else {
-                log.info("MYK: about to throw TimeoutException.");
-                throw new TimeoutException("Timer expired while trying to receive topic messages.");
-            }
-            log.info("MYK: about to end 'try' statement.");
+        if (messageLatch.await(startupTimeout.minus(stopwatch.elapsed()).toNanos(), TimeUnit.NANOSECONDS)) {
+            // clean up - cancel the subscription from step 4a
+            subscription.unsubscribe();
+            log.info("Startup probe successful.");
+            validated = true;
+        } else {
+            throw new TimeoutException("Timer expired while waiting on message latch.");
         }
-        log.info("MYK: exiting validateEnvironment().");
     }
 
-    // based on SDKClient::getNetworkMap, but omits the part that can call getAddressBook()
-    private Map<String, AccountId> getNetworkMapWithoutAddressBook() {
-        var customNodes = acceptanceTestProperties.getNodes();
-        var network = acceptanceTestProperties.getNetwork();
-
-        if (!CollectionUtils.isEmpty(customNodes)) {
-            log.debug("Creating SDK client for {} network with nodes: {}", network, customNodes);
-            return getNetworkMap(customNodes);
-        }
-
-        if (network == OTHER && CollectionUtils.isEmpty(customNodes)) {
-            throw new IllegalArgumentException("nodes must not be empty when network is OTHER");
-        }
-
-        Client client = Client.forName(network.toString().toLowerCase());
-        return client.getNetwork();
-    }
-
-    // copied from SDKClient::getNetworkMap with parameter
-    private Map<String, AccountId> getNetworkMap(Set<NodeProperties> nodes) {
-        return nodes.stream()
-                .collect(Collectors.toMap(NodeProperties::getEndpoint, p -> AccountId.fromString(p.getAccountId())));
-    }
-
-    // copied from SDKClient::toClient
-    private Client toClient(Map<String, AccountId> network) throws InterruptedException {
-        var operatorId = AccountId.fromString(acceptanceTestProperties.getOperatorId());
-        var operatorKey = PrivateKey.fromString(acceptanceTestProperties.getOperatorKey());
-        Client client = Client.forNetwork(network);
-        client.setOperator(operatorId, operatorKey);
-        client.setMirrorNetwork(List.of(acceptanceTestProperties.getMirrorNodeAddress()));
-        return client;
-    }
 }
