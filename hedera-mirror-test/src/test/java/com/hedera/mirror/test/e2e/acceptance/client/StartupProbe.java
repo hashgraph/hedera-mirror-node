@@ -140,36 +140,42 @@ public class StartupProbe {
         TopicId topicId = transactionReceipt.topicId;
         CountDownLatch messageLatch = new CountDownLatch(1);
 
-        SubscriptionHandle subscription = retryTemplate.execute(x -> new TopicMessageQuery()
-                .setTopicId(topicId)
-                .setMaxAttempts(Integer.MAX_VALUE)
-                .setRetryHandler(t -> true)
-                .setStartTime(Instant.EPOCH)
-                .subscribe(client, resp -> {
-                    messageLatch.countDown();
-                }));
+        SubscriptionHandle subscription = null;
+        try {
+            subscription = retryTemplate.execute(x -> new TopicMessageQuery()
+                    .setTopicId(topicId)
+                    .setMaxAttempts(Integer.MAX_VALUE)
+                    .setRetryHandler(t -> true)
+                    .setStartTime(Instant.EPOCH)
+                    .subscribe(client, resp -> {
+                        messageLatch.countDown();
+                    }));
 
-        TransactionResponse secondResponse = retryTemplate.execute(x -> new TopicMessageSubmitTransaction()
-                .setTopicId(topicId)
-                .setGrpcDeadline(acceptanceTestProperties.getSdkProperties().getGrpcDeadline())
-                .setMaxAttempts(Integer.MAX_VALUE)
-                .setMessage("Hello, HCS!")
-                .execute(client, startupTimeout.minus(stopwatch.elapsed())));
-        TransactionId secondTransactionId = secondResponse.transactionId;
+            TransactionResponse secondResponse = retryTemplate.execute(x -> new TopicMessageSubmitTransaction()
+                    .setTopicId(topicId)
+                    .setGrpcDeadline(acceptanceTestProperties.getSdkProperties().getGrpcDeadline())
+                    .setMaxAttempts(Integer.MAX_VALUE)
+                    .setMessage("Hello, HCS!")
+                    .execute(client, startupTimeout.minus(stopwatch.elapsed())));
+            TransactionId secondTransactionId = secondResponse.transactionId;
 
-        retryTemplate.execute(x -> new TransactionReceiptQuery()
-                .setTransactionId(secondTransactionId)
-                .setGrpcDeadline(acceptanceTestProperties.getSdkProperties().getGrpcDeadline())
-                .setMaxAttempts(Integer.MAX_VALUE)
-                .execute(client, startupTimeout.minus(stopwatch.elapsed())));
+            retryTemplate.execute(x -> new TransactionReceiptQuery()
+                    .setTransactionId(secondTransactionId)
+                    .setGrpcDeadline(acceptanceTestProperties.getSdkProperties().getGrpcDeadline())
+                    .setMaxAttempts(Integer.MAX_VALUE)
+                    .execute(client, startupTimeout.minus(stopwatch.elapsed())));
 
-        if (messageLatch.await(startupTimeout.minus(stopwatch.elapsed()).toNanos(), TimeUnit.NANOSECONDS)) {
+            if (messageLatch.await(startupTimeout.minus(stopwatch.elapsed()).toNanos(), TimeUnit.NANOSECONDS)) {
+                log.info("Startup probe successful.");
+                validated = true;
+            } else {
+                throw new TimeoutException("Timer expired while waiting on message latch.");
+            }
+        } finally {
             // clean up - cancel the subscription from step 4a
-            subscription.unsubscribe();
-            log.info("Startup probe successful.");
-            validated = true;
-        } else {
-            throw new TimeoutException("Timer expired while waiting on message latch.");
+            if (subscription != null) {
+                subscription.unsubscribe();
+            }
         }
     }
 

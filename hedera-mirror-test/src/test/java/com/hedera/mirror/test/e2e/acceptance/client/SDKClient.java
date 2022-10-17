@@ -77,8 +77,6 @@ public class SDKClient implements AutoCloseable {
         // Client in next line is only used by the Startup probe.  Validated Client for SDKClient set afterwards.
         try (Client unvalidatedClient = toClient(network)) {
             startupProbe.validateEnvironment(unvalidatedClient);
-        } catch (Exception e) {
-            log.warn("Startup Probe Failed: {}", e.getMessage());
         } 
         this.client = getValidatedClient();
         expandedOperatorAccountId = getOperatorAccount();
