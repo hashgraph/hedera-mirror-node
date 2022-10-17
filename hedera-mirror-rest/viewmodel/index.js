@@ -38,6 +38,7 @@ import NftTransactionHistoryViewModel from './nftTransactionHistoryViewModel';
 import NftTransferViewModel from './nftTransferViewModel';
 import NftViewModel from './nftViewModel';
 import TokenAllowanceViewModel from './tokenAllowanceViewModel';
+import TokenRelationshipViewModel from './tokenRelationshipViewModel';
 import TopicMessageViewModel from './topicMessageViewModel';
 import TransactionIdViewModel from './transactionIdViewModel';
 import BlockViewModel from './blockViewModel';
@@ -65,6 +66,7 @@ export {
   NftTransferViewModel,
   NftViewModel,
   TokenAllowanceViewModel,
+  TokenRelationshipViewModel,
   TopicMessageViewModel,
   TransactionIdViewModel,
   BlockViewModel,

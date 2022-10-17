@@ -18,20 +18,23 @@
  * ‍
  */
 
-import AccountController from './accountController';
-import ContractController from './contractController';
-import CryptoAllowanceController from './cryptoAllowanceController';
-import NetworkController from './networkController';
-import TokenController from './tokenController';
-import TokenAllowanceController from './tokenAllowanceController';
-import BlockController from './blockController';
+class TokenBalance {
+  static tableAlias = 'tb';
+  static tableName = 'token_balance';
+  static TOKEN_ID = `token_id`;
+  static ACCOUNT_ID = `account_id`;
+  static BALANCE = 'balance';
+  static CONSENSUS_TIMESTAMP = 'consensus_timestamp';
 
-export {
-  AccountController,
-  ContractController,
-  CryptoAllowanceController,
-  NetworkController,
-  TokenController,
-  TokenAllowanceController,
-  BlockController,
-};
+  /**
+   * Gets full column name with table alias prepended.
+   *
+   * @param {string} columnName
+   * @private
+   */
+  static getFullName(columnName) {
+    return `${this.tableAlias}.${columnName}`;
+  }
+}
+
+export default TokenBalance;

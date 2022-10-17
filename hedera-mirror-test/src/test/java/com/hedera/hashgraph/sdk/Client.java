@@ -19,6 +19,9 @@
  */
 package com.hedera.hashgraph.sdk;
 
+import static com.hedera.hashgraph.sdk.BaseNodeAddress.PORT_NODE_PLAIN;
+import static com.hedera.hashgraph.sdk.BaseNodeAddress.PORT_NODE_TLS;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.gson.Gson;
@@ -40,12 +43,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,7 +59,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Managed client for use on the Hedera Hashgraph network.
  */
-public final class Client implements AutoCloseable, WithPing, WithPingAll {
+public final class Client implements AutoCloseable {
     static final int DEFAULT_MAX_ATTEMPTS = 10;
     static final Duration DEFAULT_MAX_BACKOFF = Duration.ofSeconds(8L);
     static final Duration DEFAULT_MIN_BACKOFF = Duration.ofMillis(250L);
@@ -61,6 +67,10 @@ public final class Client implements AutoCloseable, WithPing, WithPingAll {
     static final Duration DEFAULT_MIN_NODE_BACKOFF = Duration.ofSeconds(8L);
     static final Duration DEFAULT_CLOSE_TIMEOUT = Duration.ofSeconds(30L);
     static final Duration DEFAULT_REQUEST_TIMEOUT = Duration.ofMinutes(2L);
+    static final Duration DEFAULT_NETWORK_UPDATE_PERIOD = Duration.ofHours(24);
+    // Initial delay of 10 seconds before we update the network for the first time,
+    // so that this doesn't happen in unit tests.
+    static final Duration NETWORK_UPDATE_INITIAL_DELAY = Duration.ofSeconds(10);
     private static final Hbar DEFAULT_MAX_QUERY_PAYMENT = new Hbar(1);
     final ExecutorService executor;
     private final Logger logger = LoggerFactory.getLogger(getClass());
@@ -87,6 +97,13 @@ public final class Client implements AutoCloseable, WithPing, WithPingAll {
 
     private boolean defaultRegenerateTransactionId = true;
 
+    // If networkUpdatePeriod is null, any network updates in progress will not complete
+    @Nullable
+    private Duration networkUpdatePeriod;
+
+    @Nullable
+    private CompletableFuture<Void> networkUpdateFuture;
+
     /**
      * Constructor.
      *
@@ -95,10 +112,18 @@ public final class Client implements AutoCloseable, WithPing, WithPingAll {
      * @param mirrorNetwork the mirror network
      */
     @VisibleForTesting
-    Client(ExecutorService executor, Network network, MirrorNetwork mirrorNetwork) {
+    Client(
+            ExecutorService executor,
+            Network network,
+            MirrorNetwork mirrorNetwork,
+            @Nullable Duration networkUpdateInitialDelay,
+            @Nullable Duration networkUpdatePeriod
+    ) {
         this.executor = executor;
         this.network = network;
         this.mirrorNetwork = mirrorNetwork;
+        this.networkUpdatePeriod = networkUpdatePeriod;
+        scheduleNetworkUpdate(networkUpdateInitialDelay);
     }
 
     /**
@@ -134,7 +159,7 @@ public final class Client implements AutoCloseable, WithPing, WithPingAll {
         var network = Network.forNetwork(executor, networkMap);
         var mirrorNetwork = MirrorNetwork.forNetwork(executor, new ArrayList<>());
 
-        return new Client(executor, network, mirrorNetwork);
+        return new Client(executor, network, mirrorNetwork, null, null);
     }
 
     /**
@@ -167,7 +192,8 @@ public final class Client implements AutoCloseable, WithPing, WithPingAll {
         var network = Network.forMainnet(executor);
         var mirrorNetwork = MirrorNetwork.forMainnet(executor);
 
-        return new Client(executor, network, mirrorNetwork);
+        return new Client(executor, network, mirrorNetwork, NETWORK_UPDATE_INITIAL_DELAY,
+                DEFAULT_NETWORK_UPDATE_PERIOD);
     }
 
     /**
@@ -181,7 +207,8 @@ public final class Client implements AutoCloseable, WithPing, WithPingAll {
         var network = Network.forTestnet(executor);
         var mirrorNetwork = MirrorNetwork.forTestnet(executor);
 
-        return new Client(executor, network, mirrorNetwork);
+        return new Client(executor, network, mirrorNetwork, NETWORK_UPDATE_INITIAL_DELAY,
+                DEFAULT_NETWORK_UPDATE_PERIOD);
     }
 
     /**
@@ -196,7 +223,8 @@ public final class Client implements AutoCloseable, WithPing, WithPingAll {
         var network = Network.forPreviewnet(executor);
         var mirrorNetwork = MirrorNetwork.forPreviewnet(executor);
 
-        return new Client(executor, network, mirrorNetwork);
+        return new Client(executor, network, mirrorNetwork, NETWORK_UPDATE_INITIAL_DELAY,
+                DEFAULT_NETWORK_UPDATE_PERIOD);
     }
 
     /**
@@ -275,13 +303,13 @@ public final class Client implements AutoCloseable, WithPing, WithPingAll {
                 String mirror = config.mirrorNetwork.getAsString();
                 switch (mirror) {
                     case "mainnet":
-                        client.setMirrorNetwork(List.of("mainnet-public.mirrornode.hedera.com:5600"));
+                        client.mirrorNetwork = MirrorNetwork.forMainnet(client.executor);
                         break;
                     case "testnet":
-                        client.setMirrorNetwork(List.of("hcs.testnet.mirrornode.hedera.com:5600"));
+                        client.mirrorNetwork = MirrorNetwork.forTestnet(client.executor);
                         break;
                     case "previewnet":
-                        client.setMirrorNetwork(List.of("hcs.previewnet.mirrornode.hedera.com:5600"));
+                        client.mirrorNetwork = MirrorNetwork.forPreviewnet(client.executor);
                         break;
                     default:
                         throw new JsonParseException("Illegal argument for mirrorNetwork.");
@@ -340,6 +368,53 @@ public final class Client implements AutoCloseable, WithPing, WithPingAll {
         return this;
     }
 
+    private synchronized void scheduleNetworkUpdate(@Nullable Duration delay) {
+        if (delay == null) {
+            networkUpdateFuture = null;
+            return;
+        }
+        networkUpdateFuture = Delayer.delayFor(delay.toMillis(), executor);
+        networkUpdateFuture.thenRun(() -> {
+            // Checking networkUpdatePeriod != null must be synchronized, so I've put it in a synchronized method.
+            requireNetworkUpdatePeriodNotNull(() -> {
+                new AddressBookQuery().setFileId(FileId.ADDRESS_BOOK).executeAsync(this).thenCompose(addressBook -> {
+                    return requireNetworkUpdatePeriodNotNull(() -> {
+                        try {
+                            this.setNetworkFromAddressBook(addressBook);
+                        } catch (Throwable error) {
+                            return CompletableFuture.failedFuture(error);
+                        }
+                        return CompletableFuture.completedFuture(null);
+                    });
+                }).exceptionally(error -> {
+                    logger.warn("Failed to update address book via mirror node query", error);
+                    return null;
+                });
+                scheduleNetworkUpdate(networkUpdatePeriod);
+                return null;
+            });
+        });
+    }
+
+    private synchronized CompletionStage<?> requireNetworkUpdatePeriodNotNull(Supplier<CompletionStage<?>> task) {
+        return networkUpdatePeriod != null ? task.get() : CompletableFuture.completedFuture(null);
+    }
+
+    private void cancelScheduledNetworkUpdate() {
+        if (networkUpdateFuture != null) {
+            networkUpdateFuture.cancel(true);
+        }
+    }
+
+    public synchronized Client setNetworkFromAddressBook(NodeAddressBook addressBook) throws InterruptedException,
+            TimeoutException {
+        network.setNetwork(Network.addressBookToNetwork(
+                addressBook.nodeAddresses,
+                isTransportSecurity() ? PORT_NODE_TLS : PORT_NODE_PLAIN
+        ));
+        return this;
+    }
+
     /**
      * Extract the network.
      *
@@ -363,7 +438,20 @@ public final class Client implements AutoCloseable, WithPing, WithPingAll {
     }
 
     /**
-     * Is tls enabled.
+     * Set if transport security should be used to connect to mirror nodes.
+     * <p>
+     * If transport security is enabled all connections to mirror nodes will use TLS.
+     *
+     * @param transportSecurity - enable or disable transport security for mirror nodes
+     * @return {@code this} for fluent API usage.
+     */
+    public Client setMirrorTransportSecurity(boolean transportSecurity) throws InterruptedException {
+        mirrorNetwork.setTransportSecurity(transportSecurity);
+        return this;
+    }
+
+    /**
+     * Is tls enabled for consensus nodes.
      *
      * @return is tls enabled
      */
@@ -372,21 +460,29 @@ public final class Client implements AutoCloseable, WithPing, WithPingAll {
     }
 
     /**
-     * Set if transport security should be used.
+     * Set if transport security should be used to connect to consensus nodes.
      * <p>
-     * If transport security is enabled all connections to nodes will use TLS, and the server's certificate hash will be
-     * compared to the hash stored in the {@link NodeAddressBook} for the given network.
+     * If transport security is enabled all connections to consensus nodes will use TLS, and the server's certificate
+     * hash will be compared to the hash stored in the {@link NodeAddressBook} for the given network.
      * <p>
      * *Note*: If transport security is enabled, but {@link Client#isVerifyCertificates()} is disabled then server
      * certificates will not be verified.
      *
-     * @param transportSecurity - enable or disable transport security
+     * @param transportSecurity - enable or disable transport security for consensus nodes
      * @return {@code this} for fluent API usage.
      */
     public Client setTransportSecurity(boolean transportSecurity) throws InterruptedException {
         network.setTransportSecurity(transportSecurity);
-        mirrorNetwork.setTransportSecurity(transportSecurity);
         return this;
+    }
+
+    /**
+     * Is tls enabled for mirror nodes.
+     *
+     * @return is tls enabled
+     */
+    public boolean mirrorIsTransportSecurity() {
+        return mirrorNetwork.isTransportSecurity();
     }
 
     /**
@@ -414,13 +510,22 @@ public final class Client implements AutoCloseable, WithPing, WithPingAll {
      *
      * @param nodeAccountId Account ID of the node to ping
      */
-    @Override
     public Void ping(AccountId nodeAccountId) {
+        return ping(nodeAccountId, getRequestTimeout());
+    }
+
+    /**
+     * Send a ping to the given node.
+     *
+     * @param nodeAccountId Account ID of the node to ping
+     * @param timeout       The timeout after which the execution attempt will be cancelled.
+     */
+    public Void ping(AccountId nodeAccountId, Duration timeout) {
         try {
             new AccountBalanceQuery()
                     .setAccountId(nodeAccountId)
                     .setNodeAccountIds(Collections.singletonList(nodeAccountId))
-                    .execute(this);
+                    .execute(this, timeout);
         } catch (Exception e) {
             logger.debug("pinging account {} failed with exception {}", nodeAccountId, e.getMessage());
         }
@@ -429,16 +534,25 @@ public final class Client implements AutoCloseable, WithPing, WithPingAll {
     }
 
     /**
-     * Send a ping to the given node.
+     * Send a ping to the given node asynchronously.
      *
      * @param nodeAccountId Account ID of the node to ping
      */
-    @Override
-    public synchronized CompletableFuture<Void> pingAsync(AccountId nodeAccountId) {
+    public CompletableFuture<Void> pingAsync(AccountId nodeAccountId) {
+        return pingAsync(nodeAccountId, getRequestTimeout());
+    }
+
+    /**
+     * Send a ping to the given node asynchronously.
+     *
+     * @param nodeAccountId Account ID of the node to ping
+     * @param timeout       The timeout after which the execution attempt will be cancelled.
+     */
+    public CompletableFuture<Void> pingAsync(AccountId nodeAccountId, Duration timeout) {
         return new AccountBalanceQuery()
                 .setAccountId(nodeAccountId)
                 .setNodeAccountIds(Collections.singletonList(nodeAccountId))
-                .executeAsync(this)
+                .executeAsync(this, timeout)
                 .handle((balance, e) -> {
                     // Do nothing
                     return null;
@@ -446,32 +560,139 @@ public final class Client implements AutoCloseable, WithPing, WithPingAll {
     }
 
     /**
-     * Sends pings to all nodes in the client's network. Synchronizes well with setMaxAttempts(1) to remove all dead
-     * nodes from the network.
+     * Send a ping to the given node asynchronously.
+     *
+     * @param nodeAccountId Account ID of the node to ping
+     * @param callback      a BiConsumer which handles the result or error.
      */
-    @Override
+    public void pingAsync(AccountId nodeAccountId, BiConsumer<Void, Throwable> callback) {
+        ConsumerHelper.biConsumer(pingAsync(nodeAccountId), callback);
+    }
+
+    /**
+     * Send a ping to the given node asynchronously.
+     *
+     * @param nodeAccountId Account ID of the node to ping
+     * @param timeout       The timeout after which the execution attempt will be cancelled.
+     * @param callback      a BiConsumer which handles the result or error.
+     */
+    public void pingAsync(AccountId nodeAccountId, Duration timeout, BiConsumer<Void, Throwable> callback) {
+        ConsumerHelper.biConsumer(pingAsync(nodeAccountId, timeout), callback);
+    }
+
+    /**
+     * Send a ping to the given node asynchronously.
+     *
+     * @param nodeAccountId Account ID of the node to ping
+     * @param onSuccess     a Consumer which consumes the result on success.
+     * @param onFailure     a Consumer which consumes the error on failure.
+     */
+    public void pingAsync(AccountId nodeAccountId, Consumer<Void> onSuccess, Consumer<Throwable> onFailure) {
+        ConsumerHelper.twoConsumers(pingAsync(nodeAccountId), onSuccess, onFailure);
+    }
+
+    /**
+     * Send a ping to the given node asynchronously.
+     *
+     * @param nodeAccountId Account ID of the node to ping
+     * @param timeout       The timeout after which the execution attempt will be cancelled.
+     * @param onSuccess     a Consumer which consumes the result on success.
+     * @param onFailure     a Consumer which consumes the error on failure.
+     */
+    public void pingAsync(AccountId nodeAccountId, Duration timeout, Consumer<Void> onSuccess,
+                          Consumer<Throwable> onFailure) {
+        ConsumerHelper.twoConsumers(pingAsync(nodeAccountId, timeout), onSuccess, onFailure);
+    }
+
+    /**
+     * Sends pings to all nodes in the client's network. Combines well with setMaxAttempts(1) to remove all dead nodes
+     * from the network.
+     */
     public synchronized Void pingAll() {
+        return pingAll(getRequestTimeout());
+    }
+
+    /**
+     * Sends pings to all nodes in the client's network. Combines well with setMaxAttempts(1) to remove all dead nodes
+     * from the network.
+     *
+     * @param timeoutPerPing The timeout after which each execution attempt will be cancelled.
+     */
+    public synchronized Void pingAll(Duration timeoutPerPing) {
         for (var nodeAccountId : network.getNetwork().values()) {
-            ping(nodeAccountId);
+            ping(nodeAccountId, timeoutPerPing);
         }
 
         return null;
     }
 
     /**
-     * Sends pings to all nodes in the client's network. Synchronizes well with setMaxAttempts(1) to remove all dead
-     * nodes from the network.
+     * Sends pings to all nodes in the client's network asynchronously. Combines well with setMaxAttempts(1) to remove
+     * all dead nodes from the network.
      */
-    @Override
     public synchronized CompletableFuture<Void> pingAllAsync() {
+        return pingAllAsync(getRequestTimeout());
+    }
+
+    /**
+     * Sends pings to all nodes in the client's network asynchronously. Combines well with setMaxAttempts(1) to remove
+     * all dead nodes from the network.
+     *
+     * @param timeoutPerPing The timeout after which each execution attempt will be cancelled.
+     */
+    public synchronized CompletableFuture<Void> pingAllAsync(Duration timeoutPerPing) {
         var network = this.network.getNetwork();
         var list = new ArrayList<CompletableFuture<Void>>(network.size());
 
         for (var nodeAccountId : network.values()) {
-            list.add(pingAsync(nodeAccountId));
+            list.add(pingAsync(nodeAccountId, timeoutPerPing));
         }
 
         return CompletableFuture.allOf(list.toArray(new CompletableFuture<?>[0])).thenApply((v) -> null);
+    }
+
+    /**
+     * Sends pings to all nodes in the client's network asynchronously. Combines well with setMaxAttempts(1) to remove
+     * all dead nodes from the network.
+     *
+     * @param callback a BiConsumer which handles the result or error.
+     */
+    public void pingAllAsync(BiConsumer<Void, Throwable> callback) {
+        ConsumerHelper.biConsumer(pingAllAsync(), callback);
+    }
+
+    /**
+     * Sends pings to all nodes in the client's network asynchronously. Combines well with setMaxAttempts(1) to remove
+     * all dead nodes from the network.
+     *
+     * @param timeoutPerPing The timeout after which each execution attempt will be cancelled.
+     * @param callback       a BiConsumer which handles the result or error.
+     */
+    public void pingAllAsync(Duration timeoutPerPing, BiConsumer<Void, Throwable> callback) {
+        ConsumerHelper.biConsumer(pingAllAsync(timeoutPerPing), callback);
+    }
+
+    /**
+     * Sends pings to all nodes in the client's network asynchronously. Combines well with setMaxAttempts(1) to remove
+     * all dead nodes from the network.
+     *
+     * @param onSuccess a Consumer which consumes the result on success.
+     * @param onFailure a Consumer which consumes the error on failure.
+     */
+    public void pingAllAsync(Consumer<Void> onSuccess, Consumer<Throwable> onFailure) {
+        ConsumerHelper.twoConsumers(pingAllAsync(), onSuccess, onFailure);
+    }
+
+    /**
+     * Sends pings to all nodes in the client's network asynchronously. Combines well with setMaxAttempts(1) to remove
+     * all dead nodes from the network.
+     *
+     * @param timeoutPerPing The timeout after which each execution attempt will be cancelled.
+     * @param onSuccess      a Consumer which consumes the result on success.
+     * @param onFailure      a Consumer which consumes the error on failure.
+     */
+    public void pingAllAsync(Duration timeoutPerPing, Consumer<Void> onSuccess, Consumer<Throwable> onFailure) {
+        ConsumerHelper.twoConsumers(pingAllAsync(timeoutPerPing), onSuccess, onFailure);
     }
 
     /**
@@ -955,7 +1176,6 @@ public final class Client implements AutoCloseable, WithPing, WithPingAll {
      *
      * @return the timeout value
      */
-    @Override
     @SuppressFBWarnings(
             value = "EI_EXPOSE_REP",
             justification = "A Duration can't actually be mutated"
@@ -1019,6 +1239,26 @@ public final class Client implements AutoCloseable, WithPing, WithPingAll {
         return this.operator;
     }
 
+    @SuppressFBWarnings(
+            value = "EI_EXPOSE_REP",
+            justification = "A Duration can't actually be mutated"
+    )
+    @Nullable
+    public synchronized Duration getNetworkUpdatePeriod() {
+        return this.networkUpdatePeriod;
+    }
+
+    @SuppressFBWarnings(
+            value = "EI_EXPOSE_REP2",
+            justification = "A Duration can't actually be mutated"
+    )
+    public synchronized Client setNetworkUpdatePeriod(Duration networkUpdatePeriod) {
+        cancelScheduledNetworkUpdate();
+        this.networkUpdatePeriod = networkUpdatePeriod;
+        scheduleNetworkUpdate(networkUpdatePeriod);
+        return this;
+    }
+
     /**
      * Initiates an orderly shutdown of all channels (to the Hedera network) in which preexisting transactions or
      * queries continue but more would be immediately cancelled.
@@ -1042,6 +1282,10 @@ public final class Client implements AutoCloseable, WithPing, WithPingAll {
      */
     public synchronized void close(Duration timeout) throws TimeoutException {
         var closeDeadline = Instant.now().plus(timeout);
+
+        networkUpdatePeriod = null;
+        cancelScheduledNetworkUpdate();
+
         network.beginClose();
         mirrorNetwork.beginClose();
         executor.shutdown();
