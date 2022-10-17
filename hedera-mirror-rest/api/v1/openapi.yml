@@ -2066,6 +2066,12 @@ components:
         $ref: '#/components/schemas/ContractResultLog'
     ContractState:
       type: object
+      required:
+        - address
+        - contract_id
+        - timestamp
+        - slot
+        - value
       properties:
         address:
           $ref: '#/components/schemas/EvmAddress'
@@ -2077,12 +2083,13 @@ components:
           description: The hex encoded storage slot.
           format: binary
           example: '0x00000000000000000000000000000000000000000000000000000000000000fa'
+          nullable: false
           type: string
         value:
-          description: The hex encoded value to the slot. `null` implies no value written.
+          description: The hex encoded value to the slot. `0x` implies no value written.
           example: '0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925'
           format: binary
-          nullable: true
+          nullable: false
           type: string
     ContractResultStateChange:
       type: object
