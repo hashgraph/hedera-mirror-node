@@ -24,7 +24,7 @@ import _ from 'lodash';
  * Base service class that other services should inherit from for their retrieval business logic
  */
 class BaseService {
-  async buildWhereSqlStatementIncludingMultipleORs(whereQuery, params = []) {
+  buildWhereSqlStatementIncludingMultipleORs(whereQuery, params = []) {
     if (_.isEmpty(whereQuery)) {
       return {where: '', params};
     }
