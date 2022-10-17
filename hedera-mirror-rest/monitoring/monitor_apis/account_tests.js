@@ -201,7 +201,7 @@ const getSingleAccountTokenRelationships = async (server) => {
   const token_url = getUrl(server, tokensPath, {limit: tokensLimit, order: 'asc'});
   const tokens = await getAPIResponse(token_url, tokensJsonRespKey);
 
-  const token_result = new CheckRunner()
+  const tokenResult = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
     .withCheckSpec(checkRespObjDefined, {message: 'tokens is undefined'})
     .withCheckSpec(checkMandatoryParams, {
@@ -210,10 +210,12 @@ const getSingleAccountTokenRelationships = async (server) => {
     })
     .run(tokens);
   if (tokens.length === 0) {
-    return {message: 'no tokens returned'};
+    tokenResult.passed = true;
+    tokenResult.message = 'No tokens were returned';
+    return {token_url, ...tokenResult};
   }
-  if (!token_result.passed) {
-    return {token_url, ...token_result};
+  if (!tokenResult.passed) {
+    return {token_url, ...tokenResult};
   }
 
   // get balances for a token and retrieve an  account id from it.
@@ -229,8 +231,10 @@ const getSingleAccountTokenRelationships = async (server) => {
     .withCheckSpec(checkAPIResponseError)
     .withCheckSpec(checkRespObjDefined, {message: 'balances is undefined'});
   let balancesResult = checkRunner.run(balances);
-  if (balancesResult.length === 0) {
-    return {message: 'no balances returned'};
+  if (balances.length === 0) {
+    balancesResult.passed = true;
+    balancesResult.message = 'No balances were returned';
+    return {balances_url, ...balancesResult};
   }
   if (!balancesResult.passed) {
     return {balances_url, ...balancesResult};

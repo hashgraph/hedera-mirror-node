@@ -417,6 +417,10 @@ const getTransferDistinctTimestampsQuery = function (
     ${namedLimitQuery}`;
 };
 
+// the condition to exclude synthetic transactions attached to a user submitted transaction
+const transactionByPayerExcludeSyntheticCondition = `${Transaction.getFullName(Transaction.NONCE)} = 0 or
+  ${Transaction.getFullName(Transaction.PARENT_CONSENSUS_TIMESTAMP)} is not null`;
+
 /**
  * Transactions queries are organized as follows: First there's an inner query that selects the
  * required number of unique transactions (identified by consensus_timestamp). And then queries other tables to
@@ -450,7 +454,10 @@ const getTransactionsInnerQuery = function (
   const namedLimitQuery = convertToNamedQuery(limitQuery, 'limit');
   const namedCreditDebitQuery = convertToNamedQuery(creditDebitQuery, 'cd');
 
-  const transactionAccountQuery = namedAccountQuery.replace(/ctl\.entity_id/g, 't.payer_account_id');
+  const transactionAccountQuery = namedAccountQuery
+    ? `${namedAccountQuery.replace(/ctl\.entity_id/g, 't.payer_account_id')}
+      and (${transactionByPayerExcludeSyntheticCondition})`
+    : '';
   const transactionWhereClause = buildWhereClause(
     transactionAccountQuery,
     namedTsQuery,

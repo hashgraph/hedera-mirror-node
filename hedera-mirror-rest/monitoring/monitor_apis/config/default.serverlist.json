@@ -25,6 +25,12 @@
     "intervalMultiplier": 1,
     "limit": 10
   },
+  "block": {
+    "enabled": true,
+    "freshnessThreshold": 50,
+    "intervalMultiplier": 1,
+    "limit": 10
+  },
   "network": {
     "enabled": true,
     "intervalMultiplier": 1
