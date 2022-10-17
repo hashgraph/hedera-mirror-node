@@ -19,25 +19,16 @@ package com.hedera.mirror.test.e2e.acceptance.response;
  * limitations under the License.
  * ‍
  */
-
 import lombok.Data;
 
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorCustomFees;
-
 @Data
-public class MirrorTokenResponse {
-
-    private String automaticAssociation;
-
-    private String balance;
+public class MirrorTokenRelationshipResponse {
 
     private String createdTimestamp;
 
-    private MirrorCustomFees customFees;
+    private String freezeStatus;
 
-    private String modifiedTimestamp;
-
-    private String pauseStatus;
+    private String kycStatus;
 
     private String tokenId;
 }

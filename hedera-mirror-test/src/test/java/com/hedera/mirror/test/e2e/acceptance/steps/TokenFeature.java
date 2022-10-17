@@ -71,6 +71,7 @@ import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenRelationshipResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
@@ -402,6 +403,22 @@ public class TokenFeature {
         TokenId tokenId = tokenIds.get(getIndexOrDefault(tokenIndex));
         verifyTokenWithCustomFeesSchedule(tokenId, transaction.getConsensusTimestamp());
     }
+
+
+    @Then("the mirror node REST API should return the token relationship {int}")
+    @Retryable(value = {AssertionError.class},
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
+            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
+    public void verifyMirrorTokenRelationshipAPIResponses(Integer tokenIndex) {
+        AccountId accountId = getRecipientAccountId(0);
+        TokenId tokenId = tokenIds.get(getIndexOrDefault(tokenIndex));
+        MirrorTokenRelationshipResponse mirrorTokenRelationship = mirrorClient.getTokenRelationships(accountId.toString(), tokenId.toString());
+        assertNotNull(mirrorTokenRelationship);
+        assertThat(mirrorTokenRelationship.getTokenId()).isEqualTo(tokenId.toString());
+        assertThat(mirrorTokenRelationship.getFreezeStatus()).isEqualTo(TokenFreezeStatus.Unfrozen_VALUE);
+        assertThat(mirrorTokenRelationship.getKycStatus()).isEqualTo(TokenKycStatus.Granted_VALUE);
+    }
+
 
     @After
     public void cleanup() {

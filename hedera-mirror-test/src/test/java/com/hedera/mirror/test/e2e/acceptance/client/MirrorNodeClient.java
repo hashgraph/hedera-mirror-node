@@ -48,6 +48,7 @@ import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorScheduleResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenRelationshipResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 
 @Log4j2
@@ -203,6 +204,13 @@ public class MirrorNodeClient {
         return callRestEndpoint("/transactions/{transactionId}",
                 MirrorTransactionsResponse.class, transactionId);
     }
+
+    public MirrorTokenRelationshipResponse getTokenRelationships(String accountId, String tokenId) {
+        log.info("Verify tokenRelationship  for account '{}' and token '{}' is returned by Mirror Node", accountId, tokenId);
+        return callRestEndpoint("/accounts/{accountId}/tokens?token.id={tokenId}",
+                MirrorTokenRelationshipResponse.class, accountId, tokenId);
+    }
+
 
     public void unSubscribeFromTopic(SubscriptionHandle subscription) {
         subscription.unsubscribe();
