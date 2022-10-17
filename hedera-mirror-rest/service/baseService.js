@@ -24,17 +24,41 @@ import _ from 'lodash';
  * Base service class that other services should inherit from for their retrieval business logic
  */
 class BaseService {
-  buildWhereSqlStatement(whereQuery, params = [], incrementWithParamsLength = true) {
+  async buildWhereSqlStatementIncludingMultipleORs(whereQuery, params = []) {
     if (_.isEmpty(whereQuery)) {
       return {where: '', params};
     }
 
     let where = params.length === 0 ? 'where' : 'and';
-    for (let i = 1; i <= whereQuery.length; i++) {
-      where += `${i === 1 ? '' : 'and'} ${whereQuery[i - 1].query} $${
-        i + (incrementWithParamsLength ? params.length : 0)
-      } `;
-      params.push(whereQuery[i - 1].param);
+    let grouped = _.groupBy(whereQuery, 'query');
+
+    for (let [index, value] of Object.values(grouped).entries()) {
+      if (value.length > 1) {
+        let innerOr = '';
+        for (let i = 0; i < value.length; i++) {
+          params.push(value[i].param);
+          innerOr += `${i === 0 ? 'and(' : 'or'} ${value[i].query} $${params.length}`;
+        }
+        where += innerOr + ')';
+      } else {
+        params.push(value[0].param);
+        where += `${index === 0 ? '' : 'and'} ${value[0].query} $${params.length}`;
+      }
+    }
+
+    return {where, params};
+  }
+
+  buildWhereSqlStatement(whereQuery, params = []) {
+    if (_.isEmpty(whereQuery)) {
+      return {where: '', params};
+    }
+
+    let where = params.length === 0 ? 'where' : 'and';
+    for (let i = 0; i < whereQuery.length; i++) {
+      const query = whereQuery[i];
+      params.push(query.param);
+      where += `${i === 0 ? '' : 'and'} ${query.query} $${params.length}`;
     }
 
     return {where, params};

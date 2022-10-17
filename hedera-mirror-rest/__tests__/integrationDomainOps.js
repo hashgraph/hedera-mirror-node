@@ -934,7 +934,7 @@ const contractStateDefaults = {
   contract_id: null,
   created_timestamp: 1664365660048674966,
   modified_timestamp: 1664365660048674966,
-  slot: 1,
+  slot: '0000000000000000000000000000000000000000000000000000000000000001',
   value: 1,
 };
 
