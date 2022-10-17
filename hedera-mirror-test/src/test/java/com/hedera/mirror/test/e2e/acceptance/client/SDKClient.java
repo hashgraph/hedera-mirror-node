@@ -60,15 +60,24 @@ public class SDKClient implements AutoCloseable {
     private final Map<String, AccountId> validateNetworkMap;
     private final AcceptanceTestProperties acceptanceTestProperties;
     private final MirrorNodeClient mirrorNodeClient;
+    private final StartupProbe startupProbe;
 
     @Getter
     private final ExpandedAccountId expandedOperatorAccountId;
 
-    public SDKClient(AcceptanceTestProperties acceptanceTestProperties, MirrorNodeClient mirrorNodeClient)
-            throws InterruptedException {
+    public SDKClient(AcceptanceTestProperties acceptanceTestProperties, MirrorNodeClient mirrorNodeClient,
+            StartupProbe startupProbe)
+            throws InterruptedException, TimeoutException {
         this.mirrorNodeClient = mirrorNodeClient;
         maxTransactionFee = Hbar.fromTinybars(acceptanceTestProperties.getMaxTinyBarTransactionFee());
         this.acceptanceTestProperties = acceptanceTestProperties;
+        this.startupProbe = startupProbe;
+
+        Map<String, AccountId> network = getNetworkMap();
+        // Client in next line is only used by the Startup probe.  Validated Client for SDKClient set afterwards.
+        try (Client unvalidatedClient = toClient(network)) {
+            startupProbe.validateEnvironment(unvalidatedClient);
+        } 
         this.client = getValidatedClient();
         expandedOperatorAccountId = getOperatorAccount();
         this.client.setOperator(expandedOperatorAccountId.getAccountId(), expandedOperatorAccountId.getPrivateKey());
