@@ -38,6 +38,7 @@ import {
 const accountsPath = '/accounts';
 const resource = 'account';
 const resourceLimit = config[resource].limit || DEFAULT_LIMIT;
+const tokenRelationshipEnabled = config[resource].tokenRelationshipEnabled || false;
 const jsonRespKey = 'accounts';
 const mandatoryParams = [
   'balance',
@@ -195,8 +196,9 @@ const getSingleAccountTokenRelationships = async (server) => {
   // Call the get /tokens endpoint to get a list of tokens.
   const tokensPath = '/tokens';
   const tokensJsonRespKey = 'tokens';
+  const tokensLimit = 1;
   const tokenMandatoryParams = ['token_id'];
-  const token_url = getUrl(server, tokensPath, {limit: resourceLimit, order: 'asc'});
+  const token_url = getUrl(server, tokensPath, {limit: tokensLimit, order: 'asc'});
   const tokens = await getAPIResponse(token_url, tokensJsonRespKey);
 
   const token_result = new CheckRunner()
@@ -207,6 +209,9 @@ const getSingleAccountTokenRelationships = async (server) => {
       message: 'token object is missing some mandatory fields',
     })
     .run(tokens);
+  if (tokens.length === 0) {
+    return {message: 'no tokens returned'};
+  }
   if (!token_result.passed) {
     return {token_url, ...token_result};
   }
@@ -217,17 +222,16 @@ const getSingleAccountTokenRelationships = async (server) => {
   const tokenBalancesPath = (tokenId) => `${tokensPath}/${tokenId}/balances`;
   const tokenBalancesJsonRespKey = 'balances';
 
-  let balances_url = getUrl(server, tokenBalancesPath(token_id), {limit: 1});
-  let balances = await getAPIResponse(balances_url, tokenBalancesJsonRespKey);
   const balancesLimit = 1;
+  let balances_url = getUrl(server, tokenBalancesPath(token_id), {limit: balancesLimit});
+  let balances = await getAPIResponse(balances_url, tokenBalancesJsonRespKey);
   const checkRunner = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
-    .withCheckSpec(checkRespObjDefined, {message: 'balances is undefined'})
-    .withCheckSpec(checkRespArrayLength, {
-      limit: balancesLimit,
-      message: (elements) => `token balances.length of ${elements.length} was expected to be 1`,
-    });
+    .withCheckSpec(checkRespObjDefined, {message: 'balances is undefined'});
   let balancesResult = checkRunner.run(balances);
+  if (balancesResult.length === 0) {
+    return {message: 'no balances returned'};
+  }
   if (!balancesResult.passed) {
     return {balances_url, ...balancesResult};
   }
@@ -241,6 +245,10 @@ const getSingleAccountTokenRelationships = async (server) => {
   let result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
     .withCheckSpec(checkRespObjDefined, {message: 'tokens is undefined '})
+    .withCheckSpec(checkRespArrayLength, {
+      limit: accountsLimit,
+      message: (accts, limit) => `tokens.length of ${accts.length} was expected to be ${limit}`,
+    })
     .run(tokenRelationships);
   if (!result.passed) {
     return {url, ...result};
@@ -264,7 +272,7 @@ const runTests = async (server, testResult) => {
     runTest(getAccountsWithAccountCheck),
     runTest(getAccountsWithTimeAndLimitParams),
     runTest(getSingleAccount),
-    runTest(getSingleAccountTokenRelationships),
+    tokenRelationshipEnabled ? runTest(getSingleAccountTokenRelationships) : '',
   ]);
 };
 
