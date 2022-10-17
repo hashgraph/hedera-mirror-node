@@ -195,7 +195,7 @@ const getSingleAccountTokenRelationships = async (server) => {
   // Call the get /tokens endpoint to get a list of tokens.
   const tokensPath = '/tokens';
   const tokensJsonRespKey = 'tokens';
-  const tokenMandatoryParams = ['token_id', 'symbol', 'admin_key'];
+  const tokenMandatoryParams = ['token_id'];
   const token_url = getUrl(server, tokensPath, {limit: resourceLimit, order: 'asc'});
   const tokens = await getAPIResponse(token_url, tokensJsonRespKey);
 
