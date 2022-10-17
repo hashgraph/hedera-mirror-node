@@ -94,23 +94,11 @@ const isPositiveLong = (num, allowZero = false) => {
  * @returns {*}
  */
 const stripHexPrefix = (val) => {
-  return val.replace(hexPrefix, '');
-};
-
-/**
- * Validates that input has length between minLength and maxLength params
- * @param val
- * @param minLength
- * @param maxLength
- * @param stripHexPrefixFlag
- * @returns {boolean}
- */
-const hasLengthBetween = (val, minLength, maxLength, stripHexPrefixFlag = false) => {
-  if (stripHexPrefixFlag) {
-    val = stripHexPrefix(val);
+  if (typeof val === 'string' && val.startsWith(hexPrefix)) {
+    return val.substring(2);
   }
 
-  return val.length >= minLength && val.length <= maxLength;
+  return val;
 };
 
 /**
@@ -196,6 +184,9 @@ const isValidEthHash = (hash) => {
   return ethHashPattern.test(hash);
 };
 
+const slotPattern = /^(0x)?[0-9A-Fa-f]{1,64}$/;
+const isValidSlot = (slot) => slotPattern.test(slot);
+
 const isValidValueIgnoreCase = (value, validValues) => validValues.includes(value.toLowerCase());
 
 const addressBookFileIdPattern = ['101', '0.101', '0.0.101', '102', '0.102', '0.0.102'];
@@ -237,11 +228,6 @@ const basicOperators = Object.values(constants.queryParamOperators).filter(
   (o) => o !== constants.queryParamOperators.ne
 );
 
-const isHexPattern = /^(0x)?[0-9A-Fa-f]+$/;
-const isHex = (string) => {
-  return isHexPattern.test(string);
-};
-
 const filterValidityChecks = (param, op, val) => {
   let ret = false;
 
@@ -259,12 +245,6 @@ const filterValidityChecks = (param, op, val) => {
     case constants.filterKeys.ACCOUNT_BALANCE:
       ret = isPositiveLong(val, true);
       break;
-    case constants.filterKeys.FILE_ID:
-      ret =
-        op === constants.queryParamOperators.eq &&
-        EntityId.isValidEntityId(val) &&
-        isValidAddressBookFileIdPattern(val);
-      break;
     case constants.filterKeys.ACCOUNT_ID:
       ret = EntityId.isValidEntityId(val);
       break;
@@ -273,6 +253,12 @@ const filterValidityChecks = (param, op, val) => {
       break;
     case constants.filterKeys.BALANCE:
       ret = isValidBooleanOpAndValue(op, val);
+      break;
+    case constants.filterKeys.BLOCK_HASH:
+      ret = isValidBlockHash(val) && op === constants.queryParamOperators.eq;
+      break;
+    case constants.filterKeys.BLOCK_NUMBER:
+      ret = (isPositiveLong(val, true) || isHexPositiveInt(val, true)) && _.includes(basicOperators, op);
       break;
     case constants.filterKeys.CONTRACT_ID:
       ret = isValidContractIdQueryParam(op, val);
@@ -288,11 +274,20 @@ const filterValidityChecks = (param, op, val) => {
     case constants.filterKeys.ENTITY_PUBLICKEY:
       ret = isValidPublicKeyQuery(val);
       break;
+    case constants.filterKeys.FILE_ID:
+      ret =
+        op === constants.queryParamOperators.eq &&
+        EntityId.isValidEntityId(val) &&
+        isValidAddressBookFileIdPattern(val);
+      break;
     case constants.filterKeys.FROM:
       ret = EntityId.isValidEntityId(val, true, constants.EvmAddressType.NO_SHARD_REALM);
       break;
     case constants.filterKeys.INDEX:
       ret = isNumeric(val) && val >= 0;
+      break;
+    case constants.filterKeys.INTERNAL:
+      ret = isValidBooleanOpAndValue(op, val);
       break;
     case constants.filterKeys.LIMIT:
       ret = isPositiveLong(val);
@@ -317,11 +312,23 @@ const filterValidityChecks = (param, op, val) => {
     case constants.filterKeys.SCHEDULED:
       ret = isValidBooleanOpAndValue(op, val);
       break;
+    case constants.filterKeys.SCHEDULE_ID:
+      ret = EntityId.isValidEntityId(val);
+      break;
+    case constants.filterKeys.SEQUENCE_NUMBER:
+      ret = isPositiveLong(val);
+      break;
     case constants.filterKeys.SERIAL_NUMBER:
       ret = isPositiveLong(val);
       break;
+    case constants.filterKeys.SLOT:
+      ret = isValidSlot(val) && _.includes(basicOperators, op);
+      break;
     case constants.filterKeys.SPENDER_ID:
       ret = EntityId.isValidEntityId(val);
+      break;
+    case constants.filterKeys.TIMESTAMP:
+      ret = isValidTimestampParam(val);
       break;
     case constants.filterKeys.TOKEN_ID:
       ret = EntityId.isValidEntityId(val);
@@ -335,33 +342,12 @@ const filterValidityChecks = (param, op, val) => {
     case constants.filterKeys.TOPIC3:
       ret = isValidOpAndTopic(op, val);
       break;
-    case constants.filterKeys.SEQUENCE_NUMBER:
-      ret = isPositiveLong(val);
-      break;
-    case constants.filterKeys.TIMESTAMP:
-      ret = isValidTimestampParam(val);
-      break;
-    case constants.filterKeys.SCHEDULE_ID:
-      ret = EntityId.isValidEntityId(val);
+    case constants.filterKeys.TRANSACTION_INDEX:
+      ret = isPositiveLong(val, true) && op === constants.queryParamOperators.eq;
       break;
     case constants.filterKeys.TRANSACTION_TYPE:
       // Accepted forms: valid transaction type string
       ret = TransactionType.isValid(val);
-      break;
-    case constants.filterKeys.BLOCK_NUMBER:
-      ret = (isPositiveLong(val, true) || isHexPositiveInt(val, true)) && _.includes(basicOperators, op);
-      break;
-    case constants.filterKeys.BLOCK_HASH:
-      ret = isValidBlockHash(val) && _.includes(['eq'], op);
-      break;
-    case constants.filterKeys.INTERNAL:
-      ret = isValidBooleanOpAndValue(op, val);
-      break;
-    case constants.filterKeys.TRANSACTION_INDEX:
-      ret = isPositiveLong(val, true) && _.includes(['eq'], op);
-      break;
-    case constants.filterKeys.SLOT:
-      ret = hasLengthBetween(val, 1, 64, true) && isHex(val) && _.includes(basicOperators, op);
       break;
     default:
       // Every parameter should be included here. Otherwise, it will not be accepted.
@@ -1496,6 +1482,7 @@ export {
   isValidEthHash,
   isValidOperatorQuery,
   isValidPublicKeyQuery,
+  isValidSlot,
   isValidTimestampParam,
   isValidValueIgnoreCase,
   ltLte,
@@ -1528,5 +1515,4 @@ export {
   validateFilters,
   validateReq,
   stripHexPrefix,
-  isHex,
 };

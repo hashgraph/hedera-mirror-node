@@ -46,8 +46,8 @@ import {
   ContractBytecodeViewModel,
   ContractLogViewModel,
   ContractResultDetailsViewModel,
-  ContractStateViewModel,
   ContractResultViewModel,
+  ContractStateViewModel,
   ContractViewModel,
 } from '../viewmodel';
 
@@ -885,14 +885,10 @@ class ContractController extends BaseController {
   async extractContractStateByIdQuery(filters, contractId) {
     let limit = defaultLimit;
     let order = orderFilterValues.ASC;
-    const supportedParams = [filterKeys.LIMIT, filterKeys.ORDER, filterKeys.SLOT];
     const conditions = [this.getFilterWhereCondition(ContractState.CONTRACT_ID, {operator: '=', value: contractId})];
+    const slotInValues = [];
 
     for (const filter of filters) {
-      if (!supportedParams.includes(filter.key)) {
-        // param not supported for current endpoint
-        continue;
-      }
       switch (filter.key) {
         case filterKeys.LIMIT:
           limit = filter.value;
@@ -901,16 +897,25 @@ class ContractController extends BaseController {
           order = filter.value;
           break;
         case filterKeys.SLOT:
-          conditions.push(
-            this.getFilterWhereCondition(ContractState.SLOT, {
-              operator: filter.operator,
-              value: Buffer.from(utils.stripHexPrefix(filter.value).padStart(64, 0), 'hex'),
-            })
-          );
+          const slot = Buffer.from(utils.stripHexPrefix(filter.value).padStart(64, 0), 'hex');
+          if (filter.operator === utils.opsMap.eq) {
+            slotInValues.push(slot);
+          } else {
+            conditions.push(
+              this.getFilterWhereCondition(ContractState.SLOT, {
+                operator: filter.operator,
+                value: slot,
+              })
+            );
+          }
           break;
         default:
           break;
       }
+    }
+
+    if (slotInValues.length !== 0) {
+      conditions.push(this.getFilterWhereCondition(ContractState.SLOT, {operator: 'in', value: slotInValues}));
     }
 
     return {
