@@ -1,4 +1,4 @@
-package com.hedera.mirror.test.e2e.acceptance.response;
+package com.hedera.mirror.test.e2e.acceptance.props;
 
 /*-
  * ‌
@@ -20,15 +20,19 @@ package com.hedera.mirror.test.e2e.acceptance.response;
  * ‍
  */
 
-import java.util.List;
-import lombok.Data;
+@lombok.Data
+public class MirrorTokenAccount {
 
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorTokenAccount;
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorLinks;
+    private Boolean automaticAssociation;
 
-@Data
-public class MirrorTokenRelationshipResponse {
+    private Integer balance;
 
-    private List<MirrorTokenAccount> tokens ;
-    private MirrorLinks links;
-}
+    private String createdTimestamp;
+
+    private MirrorFreezeStatus freezeStatus;
+
+    private MirrorKycStatus kycStatus;
+
+    private String tokenId;
+
+    }

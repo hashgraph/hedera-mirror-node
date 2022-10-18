@@ -27,10 +27,6 @@ import com.hedera.mirror.test.e2e.acceptance.props.MirrorCustomFees;
 @Data
 public class MirrorTokenResponse {
 
-    private String automaticAssociation;
-
-    private String balance;
-
     private String createdTimestamp;
 
     private MirrorCustomFees customFees;

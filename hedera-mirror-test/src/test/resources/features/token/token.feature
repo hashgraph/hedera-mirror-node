@@ -7,7 +7,7 @@ Feature: HTS Base Coverage Feature
         Then the mirror node REST API should return the transaction
         When I associate a new recipient account with token
         Then the mirror node REST API should return the transaction
-        Then the mirror node REST API should return the token relationship 0
+        Then the mirror node REST API should return the token relationship for token <type>
         And I set new account freeze status to <freezeStatus>
         Then the mirror node REST API should return the transaction
         And I set new account kyc status to <kycStatus>
@@ -33,8 +33,8 @@ Feature: HTS Base Coverage Feature
         Then I delete the token
         And the mirror node REST API should return the transaction
         Examples:
-            | amount | freezeStatus | kycStatus | modifySupplyAmount |
-            | 2350   | 2            | 1         | 100                |
+            | amount | freezeStatus | kycStatus | modifySupplyAmount | type              |
+            | 2350   | 2            | 1         | 100                | "FUNGIBLE_COMMON" |
 
     @acceptance @nft @critical @release
     Scenario Outline: Validate Full NFT Flow - Create, Associate, Mint, Transfer, Burn, Wipe, Update Treasury, Delete
@@ -42,7 +42,7 @@ Feature: HTS Base Coverage Feature
         Then the mirror node REST API should return the transaction
         When I associate a new recipient account with token
         And the mirror node REST API should return the transaction
-        Then the mirror node REST API should return the token relationship 0
+        Then the mirror node REST API should return the token relationship for token <type>
         Then I mint a serial number from the token
         And the mirror node REST API should return the transaction for token 0 serial number 0 transaction flow
         Then I transfer serial number of token to recipient
@@ -59,8 +59,8 @@ Feature: HTS Base Coverage Feature
         Then I delete the token
         And the mirror node REST API should return the transaction for token 0 serial number 1 transaction flow
         Examples:
-            | supplyType |
-            | "INFINITE" |
+            | supplyType | type                  |
+            | "INFINITE" | "NON_FUNGIBLE_UNIQUE" |
 
     @acceptance @customfees
     Scenario Outline: Validate Base Token Flow with Custom Fees Schedule - Create, Associate, Fund, Transfer

@@ -64,14 +64,17 @@ import com.hedera.mirror.test.e2e.acceptance.props.MirrorCustomFees;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorFixedFee;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorFraction;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorFractionalFee;
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorFreezeStatus;
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorKycStatus;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorNftTransaction;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorNftTransfer;
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorTokenTransfer;
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftTransactionsResponse;
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorTokenAccount;
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorTokenTransfer;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenRelationshipResponse;
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
@@ -404,19 +407,28 @@ public class TokenFeature {
         verifyTokenWithCustomFeesSchedule(tokenId, transaction.getConsensusTimestamp());
     }
 
-
-    @Then("the mirror node REST API should return the token relationship {int}")
+    @Then("the mirror node REST API should return the token relationship for token {string}")
     @Retryable(value = {AssertionError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
-    public void verifyMirrorTokenRelationshipAPIResponses(Integer tokenIndex) {
+    public void verifyMirrorTokenRelationshipAPIResponses(String tokenType) {
         AccountId accountId = getRecipientAccountId(0);
-        TokenId tokenId = tokenIds.get(getIndexOrDefault(tokenIndex));
+        TokenId tokenId = tokenIds.get(0);
         MirrorTokenRelationshipResponse mirrorTokenRelationship = mirrorClient.getTokenRelationships(accountId.toString(), tokenId.toString());
         assertNotNull(mirrorTokenRelationship);
-        assertThat(mirrorTokenRelationship.getTokenId()).isEqualTo(tokenId.toString());
-        assertThat(mirrorTokenRelationship.getFreezeStatus()).isEqualTo(TokenFreezeStatus.Unfrozen_VALUE);
-        assertThat(mirrorTokenRelationship.getKycStatus()).isEqualTo(TokenKycStatus.Granted_VALUE);
+        assertNotNull(mirrorTokenRelationship.getTokens());
+        assertNotNull(mirrorTokenRelationship.getLinks());
+        assertNotEquals(mirrorTokenRelationship.getTokens().size(),0);
+        MirrorTokenAccount token  = mirrorTokenRelationship.getTokens().get(0);
+        assertThat(token.getTokenId()).isEqualTo(tokenId.toString());
+        if (tokenType.equals(TokenType.FUNGIBLE_COMMON.name())) {
+            assertThat(token.getFreezeStatus()).isEqualTo(MirrorFreezeStatus.UNFROZEN);
+            assertThat(token.getKycStatus()).isEqualTo(MirrorKycStatus.GRANTED);
+        } else {
+            assertThat(token.getFreezeStatus()).isEqualTo(MirrorFreezeStatus.NOT_APPLICABLE);
+            assertThat(token.getKycStatus()).isEqualTo(MirrorKycStatus.NOT_APPLICABLE);
+        }
+        assertThat(mirrorTokenRelationship.getLinks().getNext()).isEqualTo(null);
     }
 
 
