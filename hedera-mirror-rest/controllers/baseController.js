@@ -234,6 +234,19 @@ class BaseController {
 
     return utils.getPaginationLink(req, false, lastValues, order);
   }
+
+  /**
+   * Formats the filter where condition
+   * @param key
+   * @param filter
+   * @returns {{param, query: string}}
+   */
+  getFilterWhereCondition = (key, filter) => {
+    return {
+      query: `${key} ${filter.operator}`,
+      param: filter.value,
+    };
+  };
 }
 
 export default BaseController;

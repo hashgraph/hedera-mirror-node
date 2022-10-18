@@ -67,13 +67,6 @@ class BlockController extends BaseController {
     return limit ? (limit.value > maxLimit ? defaultLimit : limit.value) : defaultLimit;
   };
 
-  getFilterWhereCondition = (key, filter) => {
-    return {
-      query: `${key} ${filter.operator}`,
-      param: filter.value,
-    };
-  };
-
   extractSqlFromBlockFilters = (filters) => {
     const filterQuery = {
       order: this.extractOrderFromFilters(filters),
