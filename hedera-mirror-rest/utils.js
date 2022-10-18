@@ -293,7 +293,7 @@ const filterValidityChecks = (param, op, val) => {
       ret = isPositiveLong(val);
       break;
     case constants.filterKeys.NODE_ID:
-      ret = isNumeric(val) && val >= 0;
+      ret = isPositiveLong(val, true);
       break;
     case constants.filterKeys.NONCE:
       ret = op === constants.queryParamOperators.eq && isNonNegativeInt32(val);
