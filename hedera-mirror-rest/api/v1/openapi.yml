@@ -4162,7 +4162,7 @@ components:
           value: lte:2
       schema:
         type: string
-        pattern: ^((eq|gte?|lte?)\:)?/(0x)?[0-9A-Fa-f]{1,64}$
+        pattern: ^((eq|gte?|lte?)\:)?(0x)?[0-9A-Fa-f]{1,64}$
     blockHashQueryParam:
       name: block.hash
       in: query
