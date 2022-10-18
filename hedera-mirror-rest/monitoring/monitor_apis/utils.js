@@ -347,7 +347,6 @@ const checkResourceFreshness = async (
 
   const url = getUrl(server, path, query);
   const resp = await getAPIResponse(url, jsonRespKey);
-
   const checkRunner = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
     .withCheckSpec(checkRespObjDefined, {message: `${resource}: response object is undefined`});

@@ -126,6 +126,7 @@ const getSingleBalanceById = async (server) => {
  */
 const checkBalanceFreshness = async (server) => {
   const now = new Date().getTime() / 1000;
+
   return checkResourceFreshness(server, balancesPath, resource, (data) => data.timestamp, undefined, {
     timestamp: now,
     limit: 1,
