@@ -332,13 +332,16 @@ const checkElementsOrder = (elements, option) => {
  * @param jsonRespKey json response key to extract data from json response
  * @return {Promise<>}
  */
-const checkResourceFreshness = async (server, path, resource, timestamp, jsonRespKey) => {
+const checkResourceFreshness = async (server, path, resource, timestamp, jsonRespKey, query = undefined) => {
   const {freshnessThreshold} = config[resource];
   if (freshnessThreshold === 0) {
     return {skipped: true};
   }
+  if (query === undefined) {
+    query = {limit: 1, order: 'desc'};
+  }
 
-  const url = getUrl(server, path, {limit: 1, order: 'desc'});
+  const url = getUrl(server, path, query);
   const resp = await getAPIResponse(url, jsonRespKey);
 
   const checkRunner = new CheckRunner()
