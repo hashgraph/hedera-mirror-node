@@ -39,7 +39,7 @@ uses [Spring Boot](https://spring.io/projects/spring-boot) properties to configu
 under `hedera.mirror.test.acceptance` include:
 
 - `backOffPeriod` - The number of milliseconds client should wait before retrying a retryable failure.
-- `createOperatorAccount` - Whether to create an operator account to run the acceptance tests 
+- `createOperatorAccount` - Whether to create an operator account to run the acceptance tests
 - `emitBackgroundMessages` - Flag to set if background messages should be emitted. For operations use in non-production
   `environments.
 - `feature`
@@ -66,8 +66,10 @@ under `hedera.mirror.test.acceptance` include:
 - `retrieveAddressBook` - Whether to download the address book from the network and use those nodes over the default
   nodes. Populating `hedera.mirror.test.acceptance.nodes` will take priority over this.
 - `sdk`
-  - `grpcDeadline` - The maximum amount of time to wait for a grpc call to complete. 
+  - `grpcDeadline` - The maximum amount of time to wait for a grpc call to complete.
   - `maxAttempts` - The maximum number of times the sdk should try to submit a transaction to the network.
+- `startupTimeout` - How long the startup probe should wait for the network as a whole to be healthy before failing the
+  tests
 - `webclient`
   - `connectionTimeout` - The timeout duration to wait to establish a connection with the server
   - `readTimeout` - The timeout duration to wait for data to be read.
@@ -114,7 +116,8 @@ hedera:
 
 #### Feature Tags
 
-Tags: Tags allow you to filter which Cucumber scenarios and files are run. By default, tests marked with the `@acceptance`
+Tags: Tags allow you to filter which Cucumber scenarios and files are run. By default, tests marked with
+the `@acceptance`
 tag are run. To run a different set of files different tags can be specified
 
 Test Suite Tags
@@ -143,7 +146,8 @@ To execute run
 
     ./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="<tag name>"
 
-> **_NOTE:_** Feature tags can be combined - See [Tag expressions](https://cucumber.io/docs/cucumber/api/). To run a subset of tags
+> **_NOTE:_** Feature tags can be combined - See [Tag expressions](https://cucumber.io/docs/cucumber/api/). To run a
+> subset of tags
 > - `@acceptance and @topicmessagesbase` - all token acceptance scenarios
 > - `@acceptance and not @tokenbase` - all acceptance except token scenarios
 

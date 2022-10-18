@@ -28,6 +28,7 @@ import javax.validation.constraints.Max;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
+import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
@@ -79,6 +80,8 @@ public class AcceptanceTestProperties {
 
     private boolean retrieveAddressBook = true;
 
+    @DurationMin(seconds = 0L)
+    @NotNull
     private Duration startupTimeout = Duration.ofMinutes(30);
 
     public enum HederaNetwork {
