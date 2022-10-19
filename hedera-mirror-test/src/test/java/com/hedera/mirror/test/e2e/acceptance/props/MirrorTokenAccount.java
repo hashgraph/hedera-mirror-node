@@ -20,7 +20,9 @@ package com.hedera.mirror.test.e2e.acceptance.props;
  * ‍
  */
 
-@lombok.Data
+import lombok.Data;
+
+@Data
 public class MirrorTokenAccount {
 
     private Boolean automaticAssociation;
