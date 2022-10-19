@@ -414,7 +414,10 @@ public class TokenFeature {
     public void verifyMirrorTokenRelationshipAPIResponses(String tokenType) {
         AccountId accountId = getRecipientAccountId(0);
         TokenId tokenId = tokenIds.get(0);
+
         MirrorTokenRelationshipResponse mirrorTokenRelationship = mirrorClient.getTokenRelationships(accountId.toString(), tokenId.toString());
+
+        //Asserting values
         assertNotNull(mirrorTokenRelationship);
         assertNotNull(mirrorTokenRelationship.getTokens());
         assertNotNull(mirrorTokenRelationship.getLinks());
@@ -422,8 +425,9 @@ public class TokenFeature {
         MirrorTokenAccount token  = mirrorTokenRelationship.getTokens().get(0);
         assertThat(token.getTokenId()).isEqualTo(tokenId.toString());
         if (tokenType.equals(TokenType.FUNGIBLE_COMMON.name())) {
+            // Freeze Status UNFROZEN and Kyc Status REVOKED are default values respectively.
             assertThat(token.getFreezeStatus()).isEqualTo(MirrorFreezeStatus.UNFROZEN);
-            assertThat(token.getKycStatus()).isEqualTo(MirrorKycStatus.GRANTED);
+            assertThat(token.getKycStatus()).isEqualTo(MirrorKycStatus.REVOKED);
         } else {
             assertThat(token.getFreezeStatus()).isEqualTo(MirrorFreezeStatus.NOT_APPLICABLE);
             assertThat(token.getKycStatus()).isEqualTo(MirrorKycStatus.NOT_APPLICABLE);
