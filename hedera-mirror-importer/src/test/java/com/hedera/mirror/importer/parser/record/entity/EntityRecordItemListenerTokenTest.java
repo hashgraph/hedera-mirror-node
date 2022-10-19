@@ -99,7 +99,6 @@ import com.hedera.mirror.importer.domain.CustomFeeWrapper;
 import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.NftTransferRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
-import com.hedera.mirror.importer.repository.TokenBalanceRepository;
 import com.hedera.mirror.importer.repository.TokenRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
 
@@ -135,9 +134,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
     @Resource
     private TokenRepository tokenRepository;
-
-    @Resource
-    private TokenBalanceRepository tokenBalanceRepository;
 
     @Resource
     private TokenAccountRepository tokenAccountRepository;
@@ -483,9 +479,6 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         TokenPauseStatusEnum pauseStatus = pauseKey ? TokenPauseStatusEnum.UNPAUSED :
                 TokenPauseStatusEnum.NOT_APPLICABLE;
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, CREATE_TIMESTAMP, SYMBOL, 0, pauseStatus);
-
-        var test = tokenBalanceRepository.findAll();
-
         assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedTokenAccounts);
         assertCustomFeesInDb(customFees);
         assertThat(tokenTransferRepository.count()).isZero();
