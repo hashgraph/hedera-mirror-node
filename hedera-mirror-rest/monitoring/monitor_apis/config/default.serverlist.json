@@ -16,11 +16,18 @@
   "account": {
     "enabled": true,
     "intervalMultiplier": 1,
-    "limit": 10
+    "limit": 10,
+    "tokenRelationshipEnabled": true
   },
   "balance": {
     "enabled": true,
     "freshnessThreshold": 1000,
+    "intervalMultiplier": 1,
+    "limit": 10
+  },
+  "block": {
+    "enabled": true,
+    "freshnessThreshold": 50,
     "intervalMultiplier": 1,
     "limit": 10
   },

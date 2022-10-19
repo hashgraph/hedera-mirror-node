@@ -38,10 +38,12 @@ import NftTransactionHistoryViewModel from './nftTransactionHistoryViewModel';
 import NftTransferViewModel from './nftTransferViewModel';
 import NftViewModel from './nftViewModel';
 import TokenAllowanceViewModel from './tokenAllowanceViewModel';
+import TokenRelationshipViewModel from './tokenRelationshipViewModel';
 import TopicMessageViewModel from './topicMessageViewModel';
 import TransactionIdViewModel from './transactionIdViewModel';
 import BlockViewModel from './blockViewModel';
 import FeeScheduleViewModel from './feeScheduleViewModel';
+import ContractStateViewModel from './contractStateViewModel';
 
 export {
   AddressBookServiceEndpointViewModel,
@@ -64,8 +66,10 @@ export {
   NftTransferViewModel,
   NftViewModel,
   TokenAllowanceViewModel,
+  TokenRelationshipViewModel,
   TopicMessageViewModel,
   TransactionIdViewModel,
   BlockViewModel,
   FeeScheduleViewModel,
+  ContractStateViewModel,
 };

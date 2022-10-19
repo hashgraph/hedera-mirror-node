@@ -72,11 +72,17 @@ const getSuccessfulTransactionConsensusNs = async (transactionId, nonce, schedul
  *                                              downloaded from
  */
 const getRCDFileInfoByConsensusNs = async (consensusNs) => {
-  const sqlQuery = `SELECT bytes, name, node_account_id, version
-       FROM record_file
-       WHERE consensus_end >= $1
-       ORDER BY consensus_end
-       LIMIT 1`;
+  const sqlQuery = `select bytes, name, node_account_id, version
+       from record_file rf, lateral (
+         select node_account_id
+         from address_book_entry abe
+         where abe.node_id = rf.node_id and consensus_timestamp < rf.consensus_start
+         order by consensus_timestamp desc
+         limit 1
+       ) node
+       where consensus_end >= $1
+       order by consensus_end
+       limit 1`;
   if (logger.isTraceEnabled()) {
     logger.trace(`getRCDFileNameByConsensusNs: ${sqlQuery}, ${consensusNs}`);
   }

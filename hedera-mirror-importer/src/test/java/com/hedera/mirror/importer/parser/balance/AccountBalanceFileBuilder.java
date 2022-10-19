@@ -35,8 +35,6 @@ import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.importer.domain.StreamFilename;
 
 @Named
@@ -84,7 +82,7 @@ public class AccountBalanceFileBuilder {
                     .items(Flux.fromIterable(accountBalanceList))
                     .loadStart(domainBuilder.timestamp())
                     .name(filename)
-                    .nodeAccountId(EntityId.of(3, EntityType.ACCOUNT))
+                    .nodeId(0L)
                     .build();
         }
     }

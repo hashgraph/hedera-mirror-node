@@ -32,9 +32,9 @@ import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import javax.inject.Named;
+import lombok.CustomLog;
 import lombok.Getter;
 import lombok.Value;
-import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.RandomUtils;
 import org.springframework.util.CollectionUtils;
 
@@ -50,7 +50,7 @@ import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.props.NodeProperties;
 
-@Log4j2
+@CustomLog
 @Named
 @Value
 public class SDKClient implements AutoCloseable {
@@ -64,12 +64,15 @@ public class SDKClient implements AutoCloseable {
     @Getter
     private final ExpandedAccountId expandedOperatorAccountId;
 
-    public SDKClient(AcceptanceTestProperties acceptanceTestProperties, MirrorNodeClient mirrorNodeClient)
-            throws InterruptedException {
+    public SDKClient(AcceptanceTestProperties acceptanceTestProperties, MirrorNodeClient mirrorNodeClient,
+                     StartupProbe startupProbe)
+            throws InterruptedException, TimeoutException {
         this.mirrorNodeClient = mirrorNodeClient;
         maxTransactionFee = Hbar.fromTinybars(acceptanceTestProperties.getMaxTinyBarTransactionFee());
         this.acceptanceTestProperties = acceptanceTestProperties;
-        this.client = getValidatedClient();
+        this.client = createClient();
+        startupProbe.validateEnvironment(client);
+        validateClient();
         expandedOperatorAccountId = getOperatorAccount();
         this.client.setOperator(expandedOperatorAccountId.getAccountId(), expandedOperatorAccountId.getPrivateKey());
         validateNetworkMap = this.client.getNetwork();
@@ -89,6 +92,7 @@ public class SDKClient implements AutoCloseable {
             try {
                 new AccountDeleteTransaction()
                         .setAccountId(createdAccountId)
+                        .setGrpcDeadline(acceptanceTestProperties.getSdkProperties().getGrpcDeadline())
                         .setTransferAccountId(operatorId)
                         .execute(client);
                 log.info("Deleted temporary operator account {}", createdAccountId);
@@ -100,18 +104,18 @@ public class SDKClient implements AutoCloseable {
         client.close();
     }
 
-    private Map<String, AccountId> getNetworkMap() {
+    private Client createClient() throws InterruptedException {
         var customNodes = acceptanceTestProperties.getNodes();
         var network = acceptanceTestProperties.getNetwork();
 
         if (!CollectionUtils.isEmpty(customNodes)) {
             log.debug("Creating SDK client for {} network with nodes: {}", network, customNodes);
-            return getNetworkMap(customNodes);
+            return toClient(getNetworkMap(customNodes));
         }
 
         if (acceptanceTestProperties.isRetrieveAddressBook()) {
             try {
-                return getAddressBook();
+                return toClient(getAddressBook());
             } catch (Exception e) {
                 log.warn("Error retrieving address book", e);
             }
@@ -121,8 +125,7 @@ public class SDKClient implements AutoCloseable {
             throw new IllegalArgumentException("nodes must not be empty when network is OTHER");
         }
 
-        Client client = Client.forName(network.toString().toLowerCase());
-        return client.getNetwork();
+        return Client.forName(network.toString().toLowerCase());
     }
 
     private Map<String, AccountId> getNetworkMap(Set<NodeProperties> nodes) {
@@ -138,7 +141,7 @@ public class SDKClient implements AutoCloseable {
                 var accountId = new AccountCreateTransaction()
                         .setInitialBalance(Hbar.fromTinybars(acceptanceTestProperties.getOperatorBalance()))
                         .setKey(publicKey)
-                        .setMaxTransactionFee(getMaxTransactionFee())
+                        .setMaxTransactionFee(maxTransactionFee)
                         .execute(client)
                         .getReceipt(client)
                         .accountId;
@@ -154,8 +157,8 @@ public class SDKClient implements AutoCloseable {
         return new ExpandedAccountId(operatorId, operatorKey);
     }
 
-    private Client getValidatedClient() throws InterruptedException {
-        Map<String, AccountId> network = getNetworkMap();
+    private void validateClient() throws InterruptedException, TimeoutException {
+        var network = client.getNetwork();
         Map<String, AccountId> validNodes = new LinkedHashMap<>();
 
         for (var nodeEntry : network.entrySet()) {
@@ -173,8 +176,8 @@ public class SDKClient implements AutoCloseable {
             throw new IllegalStateException("All provided nodes are unreachable!");
         }
 
-        log.info("Creating validated client using nodes: {}", validNodes);
-        return toClient(validNodes);
+        client.setNetwork(validNodes);
+        log.info("Validated client with nodes: {}", validNodes);
     }
 
     private Client toClient(Map<String, AccountId> network) throws InterruptedException {
@@ -192,12 +195,13 @@ public class SDKClient implements AutoCloseable {
         try (Client client = toClient(Map.of(endpoint, nodeAccountId))) {
             new AccountBalanceQuery()
                     .setAccountId(nodeAccountId)
+                    .setGrpcDeadline(acceptanceTestProperties.getSdkProperties().getGrpcDeadline())
                     .setNodeAccountIds(List.of(nodeAccountId))
                     .execute(client, Duration.ofSeconds(10L));
-            log.debug("Validated node: {}", nodeAccountId);
+            log.info("Validated node: {}", nodeAccountId);
             valid = true;
         } catch (Exception e) {
-            log.warn("Unable to validate node {}: ", nodeAccountId, e.getMessage());
+            log.warn("Unable to validate node {}: {}", nodeAccountId, e.getMessage());
         }
 
         return valid;

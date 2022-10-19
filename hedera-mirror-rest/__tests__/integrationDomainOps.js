@@ -37,6 +37,7 @@ const defaultFileData = '\\x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc2064864
 
 const setup = async (testDataJson) => {
   await loadAccounts(testDataJson.accounts);
+  await loadAccountBalanceFiles(testDataJson.accountBalanceFile);
   await loadAddressBooks(testDataJson.addressbooks);
   await loadAddressBookEntries(testDataJson.addressbookentries);
   await loadAddressBookServiceEndpoints(testDataJson.addressbookserviceendpoints);
@@ -63,8 +64,10 @@ const setup = async (testDataJson) => {
   await loadTokens(testDataJson.tokens);
   await loadTokenAccounts(testDataJson.tokenaccounts);
   await loadTokenAllowances(testDataJson.tokenAllowances);
+  await loadTokenBalances(testDataJson.tokenBalance);
   await loadTransactions(testDataJson.transactions);
   await loadTransactionSignatures(testDataJson.transactionsignatures);
+  await loadContractStates(testDataJson.contractStates);
 };
 
 const loadAccounts = async (accounts) => {
@@ -74,6 +77,15 @@ const loadAccounts = async (accounts) => {
 
   for (const account of accounts) {
     await addAccount(account);
+  }
+};
+const loadAccountBalanceFiles = async (accountBalanceFiles) => {
+  if (accountBalanceFiles == null) {
+    return;
+  }
+
+  for (const accountBalanceFile of accountBalanceFiles) {
+    await addAccountBalanceFile(accountBalanceFile);
   }
 };
 
@@ -144,6 +156,16 @@ const loadContractActions = async (contractActions) => {
 
   for (const contractAction of contractActions) {
     await addContractAction(contractAction);
+  }
+};
+
+const loadContractStates = async (contractStates) => {
+  if (contractStates == null) {
+    return;
+  }
+
+  for (const contractState of contractStates) {
+    await addContractState(contractState);
   }
 };
 
@@ -323,6 +345,16 @@ const loadTokenAllowances = async (tokenAllowances) => {
 
   for (const tokenAllowance of tokenAllowances) {
     await addTokenAllowance(tokenAllowance);
+  }
+};
+
+const loadTokenBalances = async (tokenBalances) => {
+  if (tokenBalances == null) {
+    return;
+  }
+
+  for (const tokenBalance of tokenBalances) {
+    await addTokenBalance(tokenBalance);
   }
 };
 
@@ -605,6 +637,29 @@ const addAccount = async (account) => {
   );
 };
 
+const defaultAccountBalanceFile = {
+  bytes: '0x010102020303',
+  consensus_timestamp: 0,
+  count: 0,
+  name: 'Balance File name',
+  node_id: 0,
+  file_hash: 'dee34bdd8bbe32fdb53ce7e3cf764a0495fa5e93b15ca567208cfb384231301bedf821de07b0d8dc3fb55c5b3c90ac61',
+  load_end: 1629298236,
+  load_start: 1629298233,
+  time_offset: 0,
+};
+
+const accountBalanceFileFields = Object.keys(defaultAccountBalanceFile);
+
+const addAccountBalanceFile = async (accountBalanceFile) => {
+  accountBalanceFile = {
+    ...defaultAccountBalanceFile,
+    ...accountBalanceFile,
+  };
+
+  await insertDomainObject('account_balance_file', accountBalanceFileFields, accountBalanceFile);
+};
+
 const addAssessedCustomFee = async (assessedCustomFee) => {
   assessedCustomFee = {
     effective_payer_account_ids: [],
@@ -683,9 +738,9 @@ const setAccountBalance = async (balance) => {
 
   await pool.query(
     `insert into account_balance_file
-    (consensus_timestamp, count, load_start, load_end, name, node_account_id)
+    (consensus_timestamp, count, load_start, load_end, name, node_id)
     values ($1, $2, $3, $4, $5, $6) on CONFLICT DO NOTHING;`,
-    [balance.timestamp, 1, balance.timestamp, balance.timestamp, `${balance.timestamp}_Balances.pb.gz`, 3]
+    [balance.timestamp, 1, balance.timestamp, balance.timestamp, `${balance.timestamp}_Balances.pb.gz`, 0]
   );
 
   if (balance.tokens) {
@@ -919,6 +974,14 @@ const contractActionDefaults = {
   value: 100,
 };
 
+const contractStateDefaults = {
+  contract_id: null,
+  created_timestamp: 1664365660048674966,
+  modified_timestamp: 1664365660048674966,
+  slot: '0000000000000000000000000000000000000000000000000000000000000001',
+  value: 1,
+};
+
 const addContractAction = async (contractActionInput) => {
   const action = {
     ...contractActionDefaults,
@@ -928,6 +991,17 @@ const addContractAction = async (contractActionInput) => {
   convertByteaFields(['input', 'recipient_address', 'result_data'], action);
 
   await insertDomainObject('contract_action', Object.keys(contractActionDefaults), action);
+};
+
+const addContractState = async (contractStateInput) => {
+  const state = {
+    ...contractStateDefaults,
+    ...contractStateInput,
+  };
+
+  convertByteaFields(['slot', 'value'], state);
+
+  await insertDomainObject('contract_state', Object.keys(contractStateDefaults), state);
 };
 
 const contractResultDefaults = {
@@ -1270,6 +1344,28 @@ const addTokenAllowance = async (tokenAllowance) => {
   await insertDomainObject(table, insertFields, tokenAllowance);
 };
 
+const addTokenBalance = async (tokenBalance) => {
+  // create token account object
+  tokenBalance = {
+    consensus_timestamp: 0,
+    account_id: '0.0.0',
+    balance: 0,
+    token_id: '0.0.0',
+    ...tokenBalance,
+  };
+
+  await pool.query(
+    `insert into token_balance (consensus_timestamp,account_id, balance, token_id)
+    values ($1, $2, $3, $4);`,
+    [
+      tokenBalance.consensus_timestamp,
+      EntityId.parse(tokenBalance.account_id).getEncodedId(),
+      tokenBalance.balance,
+      EntityId.parse(tokenBalance.token_id).getEncodedId(),
+    ]
+  );
+};
+
 const addNetworkStake = async (networkStakeInput) => {
   const stakingPeriodEnd = 86_400_000_000_000n - 1n;
   const networkStake = {
@@ -1372,7 +1468,7 @@ const addRecordFile = async (recordFileInput) => {
     'load_start',
     'logs_bloom',
     'name',
-    'node_account_id',
+    'node_id',
     'prev_hash',
     'size',
     'version',
@@ -1395,7 +1491,7 @@ const addRecordFile = async (recordFileInput) => {
     load_start: 1629298233,
     logs_bloom: Buffer.alloc(0),
     name: '2021-08-12T06_59_32.000852000Z.rcd',
-    node_account_id: 3,
+    node_id: 0,
     prev_hash: '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
     size: 6,
     version: 5,
@@ -1446,4 +1542,5 @@ export default {
   setAccountBalance,
   setup,
   loadContractActions,
+  loadContractStates,
 };

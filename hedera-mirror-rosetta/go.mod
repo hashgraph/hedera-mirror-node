@@ -3,7 +3,7 @@ module github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta
 go 1.18
 
 require (
-	github.com/Code-Hex/go-generics-cache v1.2.0
+	github.com/Code-Hex/go-generics-cache v1.2.1
 	github.com/coinbase/rosetta-sdk-go v0.8.1
 	github.com/cucumber/godog v0.12.5
 	github.com/ethereum/go-ethereum v1.10.25
@@ -26,8 +26,8 @@ require (
 	github.com/weaveworks/common v0.0.0-20210901124008-1fa3f9fa874c
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/yaml.v2 v2.4.0
-	gorm.io/driver/postgres v1.3.10
-	gorm.io/gorm v1.23.10
+	gorm.io/driver/postgres v1.4.4
+	gorm.io/gorm v1.24.0
 )
 
 require (

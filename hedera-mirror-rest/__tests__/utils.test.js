@@ -275,6 +275,31 @@ describe('Utils isValidTimestampParam tests', () => {
   });
 });
 
+describe('isValidSlot', () => {
+  describe('valid', () => {
+    test.each([
+      '1',
+      '01',
+      'ab',
+      'AB',
+      '0xab',
+      '0xAB',
+      '0000000000000000000000000000000000000000000000000000000000000001',
+      '0x0000000000000000000000000000000000000000000000000000000000000001',
+    ])('%s', (slot) => expect(utils.isValidSlot(slot)).toBeTrue());
+  });
+
+  describe('invalid', () => {
+    test.each([
+      null,
+      '',
+      '1g',
+      '00000000000000000000000000000000000000000000000000000000000000011',
+      '0x00000000000000000000000000000000000000000000000000000000000000011',
+    ])('%s', (slot) => expect(utils.isValidSlot(slot)).toBeFalse());
+  });
+});
+
 describe('parseInteger', () => {
   [
     {input: '1', expected: 1},
@@ -1752,5 +1777,18 @@ describe('Utils getStakingPeriod tests', () => {
     test(spec.name, () => {
       expect(utils.getStakingPeriod(spec.args)).toEqual(spec.expected);
     });
+  });
+});
+
+describe('stripHexPrefix', () => {
+  test.each([
+    ['', ''],
+    ['1', '1'],
+    ['0x1', '1'],
+    [1, 1],
+    [null, null],
+    [undefined, undefined],
+  ])('%s expect %s', (input, expected) => {
+    expect(utils.stripHexPrefix(input)).toEqual(expected);
   });
 });

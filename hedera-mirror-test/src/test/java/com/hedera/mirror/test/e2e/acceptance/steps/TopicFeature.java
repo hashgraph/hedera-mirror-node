@@ -165,8 +165,7 @@ public class TopicFeature {
         Instant startTime = FeatureInputHandler.messageQueryDateStringToInstant(startTimestamp, testInstantReference);
         log.debug("Subscribe TopicMessageQuery startTime : {}", startTime);
 
-        topicMessageQuery
-                .setStartTime(startTime);
+        topicMessageQuery.setStartTime(startTime);
 
         log.debug("Set TopicMessageQuery with topic: {}, startTime: {}", consensusTopicId, startTime);
     }

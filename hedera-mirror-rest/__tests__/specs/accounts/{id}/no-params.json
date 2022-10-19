@@ -87,6 +87,7 @@
     ],
     "transactions": [
       {
+        "charged_tx_fee": 0,
         "payerAccountId": "0.0.8",
         "nodeAccountId": "0.0.3",
         "consensus_timestamp": "1234567890000000006",
@@ -94,7 +95,19 @@
         "nonce": 1,
         "parent_consensus_timestamp": "1234567890000000005",
         "type": "15",
+        "valid_start_timestamp": "1234567890000000004",
         "entity_id": "0.0.9"
+      },
+      {
+        "charged_tx_fee": 0,
+        "payerAccountId": "0.0.8",
+        "nodeAccountId": "0.0.3",
+        "consensus_timestamp": "1234567890000000010",
+        "name": "CONTRACTDELETEINSTANCE",
+        "nonce": 2,
+        "type": 22,
+        "valid_start_timestamp": "1234567890000000004",
+        "entity_id": "0.0.200"
       }
     ],
     "cryptotransfers": [
@@ -132,7 +145,7 @@
     "transactions": [
       {
         "bytes": "Ynl0ZXM=",
-        "charged_tx_fee": 7,
+        "charged_tx_fee": 0,
         "consensus_timestamp": "1234567890.000000006",
         "entity_id": "0.0.9",
         "max_fee": "33",
@@ -144,26 +157,10 @@
         "result": "SUCCESS",
         "scheduled": false,
         "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
-        "transaction_id": "0.0.8-1234567890-000000005",
-        "transfers": [
-          {
-            "account": "0.0.3",
-            "amount": 2,
-            "is_approval": false
-          },
-          {
-            "account": "0.0.8",
-            "amount": -3,
-            "is_approval": false
-          },
-          {
-            "account": "0.0.98",
-            "amount": 1,
-            "is_approval": false
-          }
-        ],
+        "transaction_id": "0.0.8-1234567890-000000004",
+        "transfers": [],
         "valid_duration_seconds": "11",
-        "valid_start_timestamp": "1234567890.000000005"
+        "valid_start_timestamp": "1234567890.000000004"
       },
       {
         "bytes": "Ynl0ZXM=",

@@ -21,6 +21,7 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  */
 
 import java.time.Instant;
+import java.util.function.Supplier;
 import lombok.Data;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
@@ -33,10 +34,14 @@ import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.Key;
 import com.hedera.hashgraph.sdk.KeyList;
 import com.hedera.hashgraph.sdk.PrivateKey;
+import com.hedera.hashgraph.sdk.Query;
+import com.hedera.hashgraph.sdk.Status;
 import com.hedera.hashgraph.sdk.Transaction;
 import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
+import com.hedera.hashgraph.sdk.TransactionReceiptQuery;
 import com.hedera.hashgraph.sdk.TransactionRecord;
+import com.hedera.hashgraph.sdk.TransactionRecordQuery;
 import com.hedera.hashgraph.sdk.TransactionResponse;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
@@ -57,11 +62,15 @@ public abstract class AbstractNetworkClient {
         this.retryTemplate = retryTemplate;
     }
 
+    @SneakyThrows
+    public <O, T extends Query<O, T>> O executeQuery(Supplier<Query<O, T>> querySupplier) {
+        var grpcDeadline = sdkClient.getAcceptanceTestProperties().getSdkProperties().getGrpcDeadline();
+        return retryTemplate.execute(x -> querySupplier.get().setGrpcDeadline(grpcDeadline).execute(client));
+    }
+
+    @SneakyThrows
     public TransactionId executeTransaction(Transaction transaction, KeyList keyList, ExpandedAccountId payer) {
         int numSignatures = 0;
-
-        // set max retries on sdk
-        transaction.setMaxAttempts(sdkClient.getAcceptanceTestProperties().getSdkProperties().getMaxAttempts());
 
         if (payer != null) {
             transaction.setTransactionId(TransactionId.generate(payer.getAccountId()));
@@ -80,8 +89,13 @@ public abstract class AbstractNetworkClient {
             numSignatures += keyList.size();
         }
 
-        TransactionResponse transactionResponse = retryTemplate.execute(x -> executeTransaction(transaction));
-        TransactionId transactionId = transactionResponse.transactionId;
+        // Set properties from config
+        var sdkProperties = sdkClient.getAcceptanceTestProperties().getSdkProperties();
+        transaction.setGrpcDeadline(sdkProperties.getGrpcDeadline());
+        transaction.setMaxAttempts(sdkProperties.getMaxAttempts());
+
+        var transactionResponse = (TransactionResponse) retryTemplate.execute(x -> transaction.execute(client));
+        var transactionId = transactionResponse.transactionId;
         log.debug("Executed transaction {} with {} signatures.", transactionId, numSignatures);
 
         return transactionId;
@@ -91,22 +105,11 @@ public abstract class AbstractNetworkClient {
         return executeTransaction(transaction, keyList, null);
     }
 
-    @SneakyThrows
-    private TransactionResponse executeTransaction(Transaction transaction) {
-        return (TransactionResponse) transaction.execute(client);
-    }
-
     public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction transaction, KeyList keyList,
                                                                            ExpandedAccountId payer) {
         long startBalance = log.isTraceEnabled() ? getBalance() : 0L;
-        TransactionId transactionId = executeTransaction(transaction, keyList, payer);
-        TransactionReceipt transactionReceipt = null;
-
-        try {
-            transactionReceipt = getTransactionReceipt(transactionId);
-        } catch (Exception e) {
-            log.error("Failed to get transaction receipt for {}: {}", transactionId, e.getMessage());
-        }
+        var transactionId = executeTransaction(transaction, keyList, payer);
+        var transactionReceipt = getTransactionReceipt(transactionId);
 
         if (log.isTraceEnabled()) {
             log.trace("Executed transaction {} cost {} tℏ", transactionId, startBalance - getBalance());
@@ -128,23 +131,42 @@ public abstract class AbstractNetworkClient {
         return executeTransactionAndRetrieveReceipt(transaction, null, null);
     }
 
-    @SneakyThrows
     public TransactionReceipt getTransactionReceipt(TransactionId transactionId) {
-        return retryTemplate.execute(x -> transactionId.getReceipt(client));
+        // TransactionReceiptQuery is free
+        var query = new TransactionReceiptQuery().setTransactionId(transactionId);
+        return executeQuery(() -> query);
     }
 
     @SneakyThrows
     public TransactionRecord getTransactionRecord(TransactionId transactionId) {
-        return retryTemplate.execute(x -> transactionId.getRecord(client));
+        var grpcDeadline = sdkClient.getAcceptanceTestProperties().getSdkProperties().getGrpcDeadline();
+        return retryTemplate.execute(x -> {
+            var receipt = new TransactionReceiptQuery()
+                    .setTransactionId(transactionId)
+                    .setGrpcDeadline(grpcDeadline)
+                    .execute(client);
+            if (receipt.status != Status.SUCCESS) {
+                throw new RuntimeException(String.format("Transaction %s is unsuccessful: %s", transactionId,
+                        receipt.status));
+            }
+
+            return new TransactionRecordQuery()
+                    .setTransactionId(transactionId)
+                    .setGrpcDeadline(grpcDeadline)
+                    .execute(client);
+        });
     }
 
-    @SneakyThrows
     public long getBalance() {
-        return new AccountBalanceQuery()
-                .setAccountId(sdkClient.getExpandedOperatorAccountId().getAccountId())
-                .execute(client)
-                .hbars
-                .toTinybars();
+        return getBalance(sdkClient.getExpandedOperatorAccountId());
+    }
+
+    public long getBalance(ExpandedAccountId accountId) {
+        // AccountBalanceQuery is free
+        var query = new AccountBalanceQuery().setAccountId(accountId.getAccountId());
+        var balance = executeQuery(() -> query).hbars;
+        log.info("{} balance is {}", accountId, balance);
+        return balance.toTinybars();
     }
 
     protected String getMemo(String message) {
