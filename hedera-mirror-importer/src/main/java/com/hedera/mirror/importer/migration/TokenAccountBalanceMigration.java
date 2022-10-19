@@ -63,7 +63,7 @@ public class TokenAccountBalanceMigration extends RepeatableMigration {
 
     @Override
     protected MigrationVersion getMinimumVersion() {
-        return MigrationVersion.fromVersion("1.66.1");
+        return MigrationVersion.fromVersion("1.67.1");
     }
 
     @Override
