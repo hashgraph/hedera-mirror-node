@@ -386,6 +386,12 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         }
 
         tokenTransfers.add(tokenTransfer);
+
+        if (entityProperties.getPersist().isTrackBalance()) {
+            var accountId = tokenTransfer.getId().getAccountId().getId();
+            var tokenId = tokenTransfer.getId().getTokenId().getId();
+            getTokenAccount(accountId, tokenId, tokenTransfer.getAmount());
+        }
     }
 
     @Override
@@ -456,6 +462,24 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         } catch (BeanCreationNotAllowedException e) {
             // This error can occur during shutdown
         }
+    }
+
+    private void getTokenAccount(long accountId, long tokenId, long amount) {
+        var tokenAccountId = new AbstractTokenAccount.Id();
+        tokenAccountId.setAccountId(accountId);
+        tokenAccountId.setTokenId(tokenId);
+
+        var tokenAccount = tokenAccountState.get(tokenAccountId);
+        if (tokenAccount != null) {
+            tokenAccount.setBalance(tokenAccount.getBalance() + amount);
+            return;
+        }
+
+        tokenAccount = new TokenAccount();
+        tokenAccount.setAccountId(accountId);
+        tokenAccount.setTokenId(tokenId);
+        tokenAccount.setBalance(amount);
+        onTokenAccount(tokenAccount);
     }
 
     private void flush() {
@@ -733,6 +757,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     private TokenAccount mergeTokenAccount(TokenAccount lastTokenAccount, TokenAccount newTokenAccount) {
+        if (newTokenAccount.getTimestampRange() == null || lastTokenAccount.getTimestampRange() == null) {
+            newTokenAccount.setBalance(newTokenAccount.getBalance() + lastTokenAccount.getBalance());
+            return newTokenAccount;
+        }
+
         if (lastTokenAccount.getTimestampRange().equals(newTokenAccount.getTimestampRange())) {
             // The token accounts are for the same range, accept the previous one
             // This is a workaround for https://github.com/hashgraph/hedera-services/issues/3240
