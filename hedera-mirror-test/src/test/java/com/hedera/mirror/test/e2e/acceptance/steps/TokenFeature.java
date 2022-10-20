@@ -407,34 +407,37 @@ public class TokenFeature {
         verifyTokenWithCustomFeesSchedule(tokenId, transaction.getConsensusTimestamp());
     }
 
-    @Then("the mirror node REST API should return the token relationship for token {string}")
+    @Then("the mirror node REST API should return the token relationship for token")
     @Retryable(value = {AssertionError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
-    public void verifyMirrorTokenRelationshipAPIResponses(String tokenType) {
-        AccountId accountId = getRecipientAccountId(0);
+    public void verifyMirrorTokenRelationshipTokenAPIResponses() {
         TokenId tokenId = tokenIds.get(0);
-
-        MirrorTokenRelationshipResponse mirrorTokenRelationship = mirrorClient.getTokenRelationships(accountId.toString(), tokenId.toString());
-
+        MirrorTokenRelationshipResponse mirrorTokenRelationship = callTokenRelationship(tokenId);
         //Asserting values
-        assertNotNull(mirrorTokenRelationship);
-        assertNotNull(mirrorTokenRelationship.getTokens());
-        assertNotNull(mirrorTokenRelationship.getLinks());
-        assertNotEquals(mirrorTokenRelationship.getTokens().size(),0);
+        assertTokenRelationship(mirrorTokenRelationship);
         MirrorTokenAccount token  = mirrorTokenRelationship.getTokens().get(0);
         assertThat(token.getTokenId()).isEqualTo(tokenId.toString());
-        if (tokenType.equals(TokenType.FUNGIBLE_COMMON.name())) {
-            // Freeze Status UNFROZEN and Kyc Status REVOKED are default values respectively.
-            assertThat(token.getFreezeStatus()).isEqualTo(MirrorFreezeStatus.UNFROZEN);
-            assertThat(token.getKycStatus()).isEqualTo(MirrorKycStatus.REVOKED);
-        } else {
-            assertThat(token.getFreezeStatus()).isEqualTo(MirrorFreezeStatus.NOT_APPLICABLE);
-            assertThat(token.getKycStatus()).isEqualTo(MirrorKycStatus.NOT_APPLICABLE);
-        }
-        assertThat(mirrorTokenRelationship.getLinks().getNext()).isEqualTo(null);
+        assertThat(token.getFreezeStatus()).isEqualTo(MirrorFreezeStatus.UNFROZEN);
+        assertThat(token.getKycStatus()).isEqualTo(MirrorKycStatus.REVOKED);
+
     }
 
+    @Then("the mirror node REST API should return the token relationship for nft")
+    @Retryable(value = {AssertionError.class},
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
+            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
+    public void verifyMirrorTokenRelationshipNftAPIResponses() {
+        TokenId tokenId = tokenIds.get(0);
+        MirrorTokenRelationshipResponse mirrorTokenRelationship = callTokenRelationship(tokenId);
+        //Asserting values
+        assertTokenRelationship(mirrorTokenRelationship);
+        MirrorTokenAccount token  = mirrorTokenRelationship.getTokens().get(0);
+        assertThat(token.getTokenId()).isEqualTo(tokenId.toString());
+        assertThat(token.getFreezeStatus()).isEqualTo(MirrorFreezeStatus.NOT_APPLICABLE);
+        assertThat(token.getKycStatus()).isEqualTo(MirrorKycStatus.NOT_APPLICABLE);
+
+    }
 
     @After
     public void cleanup() {
@@ -751,5 +754,18 @@ public class TokenFeature {
 
     private int getIndexOrDefault(Integer index) {
         return index != null ? index : 0;
+    }
+
+    private MirrorTokenRelationshipResponse callTokenRelationship(TokenId tokenId) {
+        AccountId accountId = getRecipientAccountId(0);
+        return mirrorClient.getTokenRelationships(accountId.toString(), tokenId.toString());
+    }
+
+    private void assertTokenRelationship(MirrorTokenRelationshipResponse mirrorTokenRelationship) {
+        assertNotNull(mirrorTokenRelationship);
+        assertNotNull(mirrorTokenRelationship.getTokens());
+        assertNotNull(mirrorTokenRelationship.getLinks());
+        assertNotEquals(mirrorTokenRelationship.getTokens().size(),0);
+        assertThat(mirrorTokenRelationship.getLinks().getNext()).isEqualTo(null);
     }
 }
