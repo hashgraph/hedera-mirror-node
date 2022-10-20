@@ -1,0 +1,110 @@
+{
+  "description": "Get contract state with invalid params",
+  "setup": {},
+  "tests": [
+    {
+      "url": "/api/v1/contracts/5001/state?slot=",
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Invalid parameter: slot"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "url": "/api/v1/contracts/5001/state?slot=00000000000000000000000000000000000000000000000000000000000000000001",
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Invalid parameter: slot"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "url": "/api/v1/contracts/5001/state?slot=0x00000000000000000000000000000000000000000000000000000000000000000001",
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Invalid parameter: slot"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "url": "/api/v1/contracts/5001/state?slot=x",
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Invalid parameter: slot"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "url": "/api/v1/contracts/5001/state?slot=ne:1",
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Invalid parameter: slot"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "url": "/api/v1/contracts/5001/state?slot=ne:1",
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Invalid parameter: slot"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "url": "/api/v1/contracts/5001/state?limit=test",
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Invalid parameter: limit"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "url": "/api/v1/contracts/5001/state?order=test",
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Invalid parameter: order"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

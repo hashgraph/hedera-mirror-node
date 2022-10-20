@@ -57,6 +57,7 @@ import TransactionId from './transactionId';
 import TransactionResult from './transactionResult';
 import TransactionType from './transactionType';
 import FeeSchedule from './feeSchedule';
+import ContractState from './contractState';
 
 export {
   AccountBalanceFile,
@@ -98,4 +99,5 @@ export {
   TransactionResult,
   TransactionType,
   FeeSchedule,
+  ContractState,
 };

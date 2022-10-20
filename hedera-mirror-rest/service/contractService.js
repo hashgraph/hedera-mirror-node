@@ -31,6 +31,7 @@ import {
   ContractAction,
   ContractLog,
   ContractResult,
+  ContractState,
   ContractStateChange,
   Entity,
   RecordFile,
@@ -93,6 +94,13 @@ class ContractService extends BaseService {
            ${ContractStateChange.VALUE_READ},
            ${ContractStateChange.VALUE_WRITTEN}
     from ${ContractStateChange.tableName}`;
+
+  static contractStateQuery = `
+    select ${ContractState.MODIFIED_TIMESTAMP},
+           ${ContractState.CONTRACT_ID},
+           ${ContractState.SLOT},
+           ${ContractState.VALUE}
+    from ${ContractState.tableName}`;
 
   static contractLogsQuery = `select ${contractLogsFields} from ${ContractLog.tableName} ${ContractLog.tableAlias}`;
 
@@ -210,6 +218,17 @@ class ContractService extends BaseService {
         hash: cr.hash,
       };
     });
+  }
+
+  async getContractStateByIdAndFilters(whereConditions = [], order = orderFilterValues.ASC, limit = defaultLimit) {
+    const orderClause = this.getOrderByQuery(OrderSpec.from(ContractStateChange.SLOT, order));
+    const {where, params} = this.buildWhereSqlStatement(whereConditions);
+    const limitClause = this.getLimitQuery(params.push(limit));
+
+    const query = [ContractService.contractStateQuery, where, orderClause, limitClause].join(' ');
+    const rows = await super.getRows(query, params, 'getContractStateByIdAndFilters');
+
+    return rows.map((row) => new ContractState(row));
   }
 
   /**

@@ -289,13 +289,13 @@ paths:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
         - contracts
-  /api/v1/contracts/{contractIdOrAddress}:
+  /api/v1/contracts/{contractIdOrAddressPathParam}:
     get:
       summary: Get contract by id
       description: Return the contract information given an id
       operationId: getContractById
       parameters:
-        - $ref: '#/components/parameters/contractIdPathParam'
+        - $ref: '#/components/parameters/contractIdOrAddressPathParam'
         - $ref: '#/components/parameters/timestampQueryParam'
       responses:
         200:
@@ -310,13 +310,13 @@ paths:
           $ref: '#/components/responses/NotFoundError'
       tags:
         - contracts
-  /api/v1/contracts/{contractIdOrAddress}/results:
+  /api/v1/contracts/{contractIdOrAddressPathParam}/results:
     get:
       summary: List contract results from a contract on the network
       description: Returns a list of all ContractResults for a contract's function executions.
       operationId: listContractResults
       parameters:
-        - $ref: '#/components/parameters/contractIdPathParam'
+        - $ref: '#/components/parameters/contractIdOrAddressPathParam'
         - $ref: '#/components/parameters/fromQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/orderQueryParamDesc'
@@ -336,13 +336,36 @@ paths:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
         - contracts
-  /api/v1/contracts/{contractIdOrAddress}/results/{timestamp}:
+  /api/v1/contracts/{contractIdOrAddressPathParam}/state:
+    get:
+      summary: The contract current state from a contract on the network
+      description: Returns a list of all contract's slots.
+      operationId: listContractState
+      parameters:
+        - $ref: '#/components/parameters/contractIdOrAddressPathParam'
+        - $ref: '#/components/parameters/slotQueryParam'
+        - $ref: '#/components/parameters/orderQueryParam'
+        - $ref: '#/components/parameters/limitQueryParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractStateResponse'
+        400:
+          $ref: '#/components/responses/InvalidParameterError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+      tags:
+        - contracts
+  /api/v1/contracts/{contractIdOrAddressPathParam}/results/{timestamp}:
     get:
       summary: Get the contract result from a contract on the network executed at a given timestamp
       description: Returns a single ContractResult for a contract's function executions at a specific timestamp.
       operationId: getContractResultByIdAndTimestamp
       parameters:
-        - $ref: '#/components/parameters/contractIdPathParam'
+        - $ref: '#/components/parameters/contractIdOrAddressPathParam'
         - $ref: '#/components/parameters/timestampPathParam'
       responses:
         200:
@@ -438,7 +461,7 @@ paths:
           $ref: '#/components/responses/NotFoundError'
       tags:
         - contracts
-  /api/v1/contracts/{contractIdOrAddress}/results/logs:
+  /api/v1/contracts/{contractIdOrAddressPathParam}/results/logs:
     get:
       summary: List contract logs from a contract on the network
       description: |
@@ -473,7 +496,7 @@ paths:
 
       operationId: listContractLogs
       parameters:
-        - $ref: '#/components/parameters/contractIdPathParam'
+        - $ref: '#/components/parameters/contractIdOrAddressPathParam'
         - $ref: '#/components/parameters/logIndexQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/orderQueryParamDesc'
@@ -1125,7 +1148,7 @@ tags:
     description: The tokens object represents the information associated with a token entity and returns a list of token information.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.67.0-SNAPSHOT
+  version: 0.68.0-SNAPSHOT
   license:
     name: Apache-2.0
     url: 'https://www.apache.org/licenses/LICENSE-2.0.html'
@@ -1223,6 +1246,15 @@ components:
       properties:
         contracts:
           $ref: '#/components/schemas/ContractResults'
+        links:
+          $ref: '#/components/schemas/Links'
+    ContractStateResponse:
+      type: object
+      properties:
+        state:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContractState'
         links:
           $ref: '#/components/schemas/Links'
     ContractActionsResponse:
@@ -2032,6 +2064,33 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/ContractResultLog'
+    ContractState:
+      type: object
+      required:
+        - address
+        - contract_id
+        - timestamp
+        - slot
+        - value
+      properties:
+        address:
+          $ref: '#/components/schemas/EvmAddress'
+        contract_id:
+          $ref: '#/components/schemas/EntityId'
+        timestamp:
+          $ref: '#/components/schemas/Timestamp'
+        slot:
+          description: The hex encoded storage slot.
+          format: binary
+          example: '0x00000000000000000000000000000000000000000000000000000000000000fa'
+          nullable: false
+          type: string
+        value:
+          description: The hex encoded value to the slot. `0x` implies no value written.
+          example: '0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925'
+          format: binary
+          nullable: false
+          type: string
     ContractResultStateChange:
       type: object
       properties:
@@ -3452,13 +3511,13 @@ components:
       schema:
         pattern: ^((gte?|lte?|eq|ne)\:)?(\d{1,10}\.\d{1,10}\.)?\d{1,10}|(\d{1,10}\.){0,2}[A-Fa-f0-9]{40}$
         type: string
-    contractIdPathParam:
+    contractIdOrAddressPathParam:
       name: contractIdOrAddress
       in: path
       required: true
-      description: The ID or hex encoded EVM address associated with this contract.
+      description: The ID or hex encoded EVM address (with or without 0x prefix) associated with this contract.
       schema:
-        pattern: ^(\d{1,10}\.){0,2}(\d{1,10}|[A-Fa-f0-9]{40})$
+        pattern: ^(\d{1,10}\.){0,2}(\d{1,10}|(0x)?[A-Fa-f0-9]{40})$
         type: string
     hashOrNumberPathParam:
       name: hashOrNumber
@@ -4075,6 +4134,35 @@ components:
         type: string
         pattern: ^(eq:)?(\d{1,19}|0x[a-fA-f0-9]+)$
         minimum: 0
+    slotQueryParam:
+      name: slot
+      in: query
+      description: The slot's number
+      examples:
+        noValue:
+          summary: --
+          value: ""
+        noOperator:
+          summary: Example of slot equals with no operator
+          value: 1
+        eqOperator:
+          summary: Example of slot equals operator
+          value: eq:2
+        gtOperator:
+          summary: Example of slot gt operator
+          value: gt:2
+        gteOperator:
+          summary: Example of slot gte operator
+          value: gte:2
+        ltOperator:
+          summary: Example of slot lt operator
+          value: lt:2
+        lteOperator:
+          summary: Example of slot lte operator
+          value: lte:2
+      schema:
+        type: string
+        pattern: ^((eq|gte?|lte?)\:)?(0x)?[0-9A-Fa-f]{1,64}$
     blockHashQueryParam:
       name: block.hash
       in: query
