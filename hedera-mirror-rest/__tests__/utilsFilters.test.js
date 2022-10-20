@@ -521,8 +521,8 @@ describe('utils validateAndParseFilters entity key tests', () => {
 });
 
 describe('utils validateAndParseFilters integer key tests', () => {
-  const booleanFilterKeys = [constants.filterKeys.SEQUENCE_NUMBER];
-  booleanFilterKeys.forEach((key) => {
+  const integerFilterKeys = [constants.filterKeys.SEQUENCE_NUMBER, constants.filterKeys.NODE_ID];
+  integerFilterKeys.forEach((key) => {
     const invalidFilters = [
       // erroneous data
       utils.buildComparatorFilter(key, 'test'),
