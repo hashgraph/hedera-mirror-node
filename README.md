@@ -8,7 +8,7 @@ The Hedera Mirror Node acts as an archive node and stores historical data for th
 
 ## Overview
 
-Mirror nodes  receive information from the Hedera nodes and can provide value-added services such as APIs, auditing,
+Mirror nodes receive information from the Hedera nodes and can provide value-added services such as APIs, auditing,
 analytics, visibility services, security threat modeling, data monetization services, etc. Mirror nodes can also run
 additional business logic to support applications built using the Hedera network.
 
