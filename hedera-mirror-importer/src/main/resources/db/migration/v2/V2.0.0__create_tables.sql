@@ -669,24 +669,8 @@ create materialized view if not exists entity_state_start as
 with end_period as (
   select max(consensus_timestamp) as consensus_timestamp from node_stake
 ), balance_timestamp as (
-  with adjusted_balance_file as (
-    select
-      consensus_timestamp,
-      case when hapi_version_major > 0 or hapi_version_minor >= 27 then time_offset + 53
-           else time_offset
-      end as time_offset
-    from account_balance_file,
-         lateral (
-           select hapi_version_major, hapi_version_minor
-           from record_file
-           where consensus_end >= consensus_timestamp
-           order by consensus_end
-           limit 1
-        ) as hapi_version
-    order by consensus_timestamp desc
-  )
   select abf.consensus_timestamp, (abf.consensus_timestamp + abf.time_offset) adjusted_consensus_timestamp
-  from adjusted_balance_file abf, end_period ep
+  from account_balance_file abf, end_period ep
   where abf.consensus_timestamp + abf.time_offset <= ep.consensus_timestamp
   order by abf.consensus_timestamp desc
   limit 1

@@ -95,8 +95,7 @@ class SidecarContractMigrationTest extends IntegrationTest {
         persistEntities(entities);
         persistContracts(contracts);
 
-        var contractBytecodes = contractBytecodesMap.entrySet().stream()
-                .map(b -> b.getValue()).toList();
+        var contractBytecodes = contractBytecodesMap.values().stream().toList();
 
         // when
         sidecarContractMigration.migrate(contractBytecodes);
