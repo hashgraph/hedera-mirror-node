@@ -16,8 +16,6 @@ alter table account_balance
 -- account_balance_file
 alter table account_balance_file
     add constraint account_balance_file__pk primary key (consensus_timestamp, node_id);
-create unique index if not exists account_balance_file__name
-    on account_balance_file (name, node_id);
 
 -- address_book
 alter table address_book

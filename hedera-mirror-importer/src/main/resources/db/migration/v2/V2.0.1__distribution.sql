@@ -12,6 +12,8 @@ select create_distributed_table('entity', 'id');
 
 select create_distributed_table('event_file', 'node_id');
 
+select create_distributed_table('transaction_hash', 'hash');
+
 select create_distributed_table('record_file', 'node_id');
 
 -- Tables that will be colocated with tables above

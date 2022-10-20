@@ -27,6 +27,7 @@ import static com.hedera.services.stream.proto.ContractAction.CallerCase.CALLING
 import static com.hedera.services.stream.proto.ContractAction.RecipientCase.RECIPIENT_NOT_SET;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
@@ -39,7 +40,9 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
@@ -457,32 +460,44 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     }
 
     private void assertContractActions(RecordItem recordItem) {
-        var contractActions = contractActionRepository.findAll().iterator();
-        recordItem.getSidecarRecords()
+        var expected = recordItem.getSidecarRecords()
                 .stream()
                 .map(TransactionSidecarRecord::getActions)
-                .flatMap(c -> c.getContractActionsList().stream())
-                .forEach(contractAction -> {
-                    assertThat(contractActions).hasNext();
-                    assertThat(contractActions.next())
-                            .returns(contractAction.getCallDepth(), ContractAction::getCallDepth)
-                            .returns(contractAction.getCallOperationTypeValue(), ContractAction::getCallOperationType)
-                            .returns(contractAction.getCallTypeValue(), ContractAction::getCallType)
-                            .returns(recordItem.getConsensusTimestamp(), ContractAction::getConsensusTimestamp)
-                            .returns(contractAction.getGas(), ContractAction::getGas)
-                            .returns(contractAction.getGasUsed(), ContractAction::getGasUsed)
-                            .returns(contractAction.getCallerCase() == CALLING_CONTRACT ? CONTRACT : ACCOUNT,
-                                    ContractAction::getCallerType)
-                            .returns(contractAction.getResultDataCase().getNumber(), ContractAction::getResultDataType)
-                            .returns(contractAction.getValue(), ContractAction::getValue)
-                            .satisfies(c -> assertThat(c.getCaller()).isNotNull())
-                            .satisfies(c -> assertThat(c.getResultData()).isNotEmpty())
-                            .satisfiesAnyOf(c -> assertThat(c.getRecipientContract()).isNotNull(),
-                                    c -> assertThat(c.getRecipientAccount()).isNotNull(),
-                                    c -> assertThat(c.getRecipientAddress()).isNotEmpty(),
-                                    c -> assertThat(contractAction.getRecipientCase()).isEqualTo(RECIPIENT_NOT_SET));
-                });
-        assertThat(contractActions).isExhausted();
+                .map(actions -> {
+                    var actionsMap = new HashMap<ContractAction.Id, com.hedera.services.stream.proto.ContractAction>();
+                    for (int i = 0; i < actions.getContractActionsCount(); i++) {
+                        var action = actions.getContractActions(i);
+                        actionsMap.put(new ContractAction.Id(recordItem.getConsensusTimestamp(), i), action);
+                    }
+                    return actionsMap;
+                })
+                .flatMap(actionsMap -> actionsMap.entrySet().stream())
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        assertThat(contractActionRepository.findAll())
+                .hasSize(expected.size())
+                .allSatisfy(a -> assertAll(
+                                () -> assertThat(a)
+                                        .satisfies(actual -> assertThat(actual.getCaller()).isNotNull())
+                                        .satisfies(actual -> assertThat(actual.getResultData()).isNotEmpty()),
+                                () -> assertThat(expected.get(a.getId()))
+                                        .isNotNull()
+                                        .returns(a.getCallDepth(), e -> e.getCallDepth())
+                                        .returns(a.getCallOperationType(), e -> e.getCallOperationTypeValue())
+                                        .returns(a.getCallType(), e -> e.getCallTypeValue())
+                                        .returns(a.getConsensusTimestamp(), e -> recordItem.getConsensusTimestamp())
+                                        .returns(a.getGas(), e -> e.getGas())
+                                        .returns(a.getGasUsed(), e -> e.getGasUsed())
+                                        .returns(a.getCallerType(),
+                                                e -> e.getCallerCase() == CALLING_CONTRACT ? CONTRACT : ACCOUNT)
+                                        .returns(a.getResultDataType(), e -> e.getResultDataCase().getNumber())
+                                        .returns(a.getValue(), e -> e.getValue())
+                                        .satisfiesAnyOf(e -> assertThat(a.getRecipientContract()).isNotNull(),
+                                                e -> assertThat(a.getRecipientAccount()).isNotNull(),
+                                                e -> assertThat(a.getRecipientAddress()).isNotEmpty(),
+                                                e -> assertThat(e.getRecipientCase()).isEqualTo(RECIPIENT_NOT_SET))
+                        )
+                );
     }
 
     private void assertContractRuntimeBytecode(RecordItem recordItem) {

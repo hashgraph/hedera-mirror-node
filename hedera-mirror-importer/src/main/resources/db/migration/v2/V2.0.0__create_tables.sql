@@ -83,32 +83,10 @@ comment on table assessed_custom_fee is 'Assessed custom fees for HTS transactio
 -- contract
 create table if not exists contract
 (
-    auto_renew_account_id            bigint                         null,
-    auto_renew_period                bigint                         null,
-    created_timestamp                bigint                         null,
-    decline_reward                   boolean     default false      not null,
-    deleted                          boolean                        null,
-    evm_address                      bytea                          null,
-    expiration_timestamp             bigint                         null,
-    file_id                          bigint                         null,
-    id                               bigint                         not null,
-    initcode                         bytea                          null,
-    key                              bytea                          null,
-    max_automatic_token_associations integer                        null,
-    memo                             text        default ''         not null,
-    num                              bigint                         not null,
-    obtainer_id                      bigint                         null,
-    permanent_removal                boolean                        null,
-    proxy_account_id                 bigint                         null,
-    public_key                       character varying              null,
-    realm                            bigint                         not null,
-    runtime_bytecode                 bytea                          null,
-    shard                            bigint                         not null,
-    staked_account_id                bigint                         null,
-    staked_node_id                   bigint      default -1         null,
-    stake_period_start               bigint      default -1         null,
-    timestamp_range                  int8range                      not null,
-    type                             entity_type default 'CONTRACT' not null
+    file_id          bigint null,
+    id               bigint not null,
+    initcode         bytea  null,
+    runtime_bytecode bytea  null
 );
 comment on table contract is 'Contract entity';
 
@@ -457,8 +435,8 @@ create table if not exists prng
 (
     consensus_timestamp bigint  not null,
     range               integer not null,
-    pseudorandom_bytes  bytea   null,
-    pseudorandom_number integer null
+    prng_bytes          bytea   null,
+    prng_number         integer null
 );
 comment on table prng is 'Pseudorandom number generator';
 

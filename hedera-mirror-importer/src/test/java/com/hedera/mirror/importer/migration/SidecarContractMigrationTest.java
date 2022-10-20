@@ -155,12 +155,11 @@ class SidecarContractMigrationTest extends IntegrationTest {
 
     private void persistContracts(List<Contract> contracts) {
         jdbcTemplate.batchUpdate(
-                "insert into contract (file_id, id, runtime_bytecode) " +
-                        "values (?::entity_id, ?, ?)",
+                "insert into contract (file_id, id, runtime_bytecode) values (?, ?, ?)",
                 contracts,
                 contracts.size(),
                 (ps, contract) -> {
-                    ps.setString(1, contract.getFileId().getId().toString());
+                    ps.setLong(1, contract.getFileId().getId());
                     ps.setLong(2, contract.getId());
                     ps.setBytes(3, contract.getRuntimeBytecode());
                 }
