@@ -34,6 +34,7 @@ import com.google.common.base.Stopwatch;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.Uninterruptibles;
 import io.micrometer.core.instrument.Metrics;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
@@ -44,6 +45,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import javax.inject.Named;
+
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
@@ -90,7 +92,11 @@ class BalanceReconciliationService {
             group by token_id, account_id""";
 
     final AtomicReference<ReconciliationStatus> status = Metrics.gauge(METRIC, new AtomicReference<>(UNKNOWN),
-            s -> s.get().ordinal());
+            s -> {
+                var val = s.get().ordinal();
+                log.info("status gauge - {}", val);
+                return val;
+            });
 
     private final AccountBalanceFileRepository accountBalanceFileRepository;
     private final JdbcOperations jdbcOperations;
