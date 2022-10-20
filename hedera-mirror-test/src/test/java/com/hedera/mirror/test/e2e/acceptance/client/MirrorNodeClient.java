@@ -206,7 +206,7 @@ public class MirrorNodeClient {
     }
 
     public MirrorTokenRelationshipResponse getTokenRelationships(String accountId, String tokenId) {
-        log.info("Verify tokenRelationship  for account '{}' and token '{}' is returned by Mirror Node", accountId, tokenId);
+        log.debug("Verify tokenRelationship  for account '{}' and token '{}' is returned by Mirror Node", accountId, tokenId);
         return callRestEndpoint("/accounts/{accountId}/tokens?token.id={tokenId}",
                 MirrorTokenRelationshipResponse.class, accountId, tokenId);
     }
