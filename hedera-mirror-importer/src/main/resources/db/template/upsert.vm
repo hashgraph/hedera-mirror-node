@@ -1,4 +1,5 @@
 ## @formatter:off
+## The inner join then left join is a workaround for citus
 with current as (
   select e.*
   from $tempTable t

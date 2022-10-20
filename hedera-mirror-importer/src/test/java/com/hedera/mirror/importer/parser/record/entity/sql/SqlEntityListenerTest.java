@@ -319,19 +319,18 @@ class SqlEntityListenerTest extends IntegrationTest {
     void onContractStateMigrateFalse() {
         // given
         var builder = domainBuilder.contractStateChange()
-                .customize(c -> c.contractId(1000).consensusTimestamp(1L).slot(new byte[] {1}).valueWritten(
-                        "a".getBytes()));
+                .customize(c -> c.contractId(1000).consensusTimestamp(1L).valueWritten("a".getBytes()));
 
         var contractStateChange1Create = builder.get();
-        var contractStateChange1Update = builder.customize(
-                c -> c.consensusTimestamp(2L).valueWritten("b".getBytes())).get();
-        var contractStateChange2Create = builder.customize(
-                c -> c.contractId(1001).consensusTimestamp(2L).valueWritten("c".getBytes())).get();
+        var contractStateChange1Update = builder
+                .customize(c -> c.consensusTimestamp(2L).valueWritten("b".getBytes())).get();
+        var contractStateChange2Create = builder
+                .customize(c -> c.contractId(1001).consensusTimestamp(2L).valueWritten("c".getBytes())).get();
         var contractStateChange2Update = builder.customize(c -> c.consensusTimestamp(3L).valueWritten(null)).get();
-        var contractStateChange1Update2 = builder.customize(
-                c -> c.contractId(1000).consensusTimestamp(4L).valueWritten("d".getBytes())).get();
-        var contractStateChange2Update2 = builder.customize(
-                c -> c.contractId(1001).consensusTimestamp(4L).valueWritten("e".getBytes())).get();
+        var contractStateChange1Update2 = builder
+                .customize(c -> c.contractId(1000).consensusTimestamp(4L).valueWritten("d".getBytes())).get();
+        var contractStateChange2Update2 = builder
+                .customize(c -> c.contractId(1001).consensusTimestamp(4L).valueWritten("e".getBytes())).get();
 
         // when
         sqlEntityListener.onContractStateChange(contractStateChange1Create);
