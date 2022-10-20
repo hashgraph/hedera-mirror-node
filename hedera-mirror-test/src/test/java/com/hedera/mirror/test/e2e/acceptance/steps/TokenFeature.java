@@ -116,10 +116,8 @@ public class TokenFeature {
         );
     }
 
-    @Given("I successfully create a new token with freeze status {string} and kyc status {string}")
-    public void createNewToken(String freezeStatusName, String kycStatusName) {
-        int freezeStatus = TokenFreezeStatus.valueOf(freezeStatusName).getNumber();
-        int kycStatus = TokenKycStatus.valueOf(kycStatusName).getNumber();
+    @Given("I successfully create a new token with freeze status {int} and kyc status {int}")
+    public void createNewToken(int freezeStatus, int kycStatus) {
         createNewToken(RandomStringUtils.randomAlphabetic(4).toUpperCase(), freezeStatus, kycStatus);
     }
 
@@ -158,14 +156,12 @@ public class TokenFeature {
     }
 
     @When("^I set new account (?:(.*) )?freeze status to (.*)$")
-    public void setFreezeStatus(Integer recipientIndex, String freezeStatusName) {
-        int freezeStatus = TokenFreezeStatus.valueOf(freezeStatusName).getNumber();
+    public void setFreezeStatus(Integer recipientIndex, int freezeStatus) {
         setFreezeStatus(freezeStatus, recipients.get(getIndexOrDefault(recipientIndex)));
     }
 
     @When("^I set new account (?:(.*) )?kyc status to (.*)$")
-    public void setKycStatus(Integer recipientIndex, String kycStatusName) {
-        int kycStatus = TokenKycStatus.valueOf(kycStatusName).getNumber();
+    public void setKycStatus(Integer recipientIndex, int kycStatus) {
         setKycStatus(kycStatus, recipients.get(getIndexOrDefault(recipientIndex)));
     }
 

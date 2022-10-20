@@ -3,14 +3,14 @@ Feature: HTS Base Coverage Feature
 
     @critical @release @acceptance
     Scenario Outline: Validate Token Flow - Create, Associate, Freeze, GrantKyc, Fund, Update, Burn, Mint, Wipe, Pause, Unpause, Dissociate, Delete
-        Given I successfully create a new token with freeze status <freezeStatus> and kyc status <kycStatus>
+        Given I successfully create a new token with freeze status 2 and kyc status 1
         Then the mirror node REST API should return the transaction
         When I associate a new recipient account with token
         Then the mirror node REST API should return the transaction
         Then the mirror node REST API should return the token relationship for token <type>
-        And I set new account freeze status to Unfrozen
+        And I set new account freeze status to <freezeStatus>
         Then the mirror node REST API should return the transaction
-        And I set new account kyc status to Granted
+        And I set new account kyc status to <kycStatus>
         Then the mirror node REST API should return the transaction
         Then I transfer <amount> tokens to recipient
         Then the mirror node REST API should return the transaction for token fund flow
@@ -34,7 +34,7 @@ Feature: HTS Base Coverage Feature
         And the mirror node REST API should return the transaction
         Examples:
             | amount | freezeStatus | kycStatus | modifySupplyAmount | type              |
-            | 2350   | "Unfrozen"   | "Revoked" | 100                | "FUNGIBLE_COMMON" |
+            | 2350   | 2            | 1         | 100                | "FUNGIBLE_COMMON" |
 
     @acceptance @nft @critical @release
     Scenario Outline: Validate Full NFT Flow - Create, Associate, Mint, Transfer, Burn, Wipe, Update Treasury, Delete

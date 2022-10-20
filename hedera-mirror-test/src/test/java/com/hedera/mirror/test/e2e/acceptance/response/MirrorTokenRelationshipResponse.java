@@ -29,6 +29,6 @@ import com.hedera.mirror.test.e2e.acceptance.props.MirrorLinks;
 @Data
 public class MirrorTokenRelationshipResponse {
 
-    private List<MirrorTokenAccount> tokens ;
+    private List<MirrorTokenAccount> tokens;
     private MirrorLinks links;
 }
