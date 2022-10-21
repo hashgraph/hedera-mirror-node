@@ -16,7 +16,7 @@ WORKDIR /hedera-mirror-node
 RUN ./mvnw clean package -DskipTests -pl hedera-mirror-importer,hedera-mirror-rosetta
 WORKDIR /app
 RUN mkdir importer rosetta scripts \
-    && cp /hedera-mirror-node/hedera-mirror-rosetta/build/* . \
+    && cp /hedera-mirror-node/hedera-mirror-rosetta/container/* . \
     && cp /hedera-mirror-node/hedera-mirror-importer/target/hedera-mirror-importer*.jar ./importer/hedera-mirror-importer.jar \
     && cp /hedera-mirror-node/hedera-mirror-rosetta/bin/hedera-mirror-rosetta ./rosetta \
     && cp /hedera-mirror-node/hedera-mirror-importer/src/main/resources/db/scripts/init.sh ./scripts

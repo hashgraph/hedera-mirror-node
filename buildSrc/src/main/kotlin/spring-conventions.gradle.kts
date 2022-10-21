@@ -18,18 +18,26 @@
  * ‍
  */
 
-import {jest} from '@jest/globals';
-import matchers from 'jest-extended';
-import log4js from 'log4js';
+plugins {
+    id("docker-conventions")
+    id("java-conventions")
+    id("org.springframework.boot")
+}
 
-global.logger = log4js.getLogger();
+springBoot {
+    // Creates META-INF/build-info.properties for Spring Boot Actuator
+    buildInfo()
+}
 
-expect.extend(matchers); // add matchers from jest-extended
-jest.setTimeout(4000);
+// Copy jar to target/ while we're still maintaining both Gradle and Maven to avoid changing all the Dockerfiles
+val copyJar = tasks.register<Copy>("copyJar") {
+    dependsOn(tasks.getByName("bootJar"))
+    from(layout.buildDirectory.dir("libs")) {
+        exclude("*-plain.jar")
+    }
+    into(layout.projectDirectory.dir("target"))
+}
 
-// set test configuration file path
-process.env.CONFIG_PATH = '__tests__';
-
-beforeEach(() => {
-  logger.info(expect.getState().currentTestName);
-});
+tasks.named("dockerBuild") {
+    dependsOn(copyJar)
+}

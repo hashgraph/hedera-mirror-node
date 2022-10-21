@@ -10,7 +10,6 @@
   },
   "scripts": {
     "dev": "HEDERA_MIRROR_REST_LOG_LEVEL=trace nodemon --experimental-specifier-resolution=node server.js",
-    "integrationtest": "node --experimental-vm-modules node_modules/jest/bin/jest --testPathPattern='/__tests__/integration.test.js|/__tests__/service/.*\\.test\\.js' --collectCoverage=false",
     "lint": "eslint --ignore-pattern node_modules/ --fix .",
     "postinstall": "node ./npm_scripts/postinstall.js",
     "start": "node --experimental-specifier-resolution=node server.js",
@@ -99,6 +98,7 @@
     "jest-circus": "^29.1.2",
     "jest-extended": "^3.1.0",
     "jest-junit": "^14.0.1",
+    "jest-standard-reporter": "^2.0.0",
     "node-flywaydb": "^3.0.7",
     "nodemon": "^2.0.20",
     "pg-format": "^1.0.4",
@@ -118,7 +118,7 @@
     "globalSetup": "./__tests__/globalSetup.js",
     "maxWorkers": "50%",
     "reporters": [
-      "default",
+      "jest-standard-reporter",
       "jest-junit"
     ],
     "setupFilesAfterEnv": [
