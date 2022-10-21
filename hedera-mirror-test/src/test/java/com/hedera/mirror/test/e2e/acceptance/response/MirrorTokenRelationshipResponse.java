@@ -20,20 +20,15 @@ package com.hedera.mirror.test.e2e.acceptance.response;
  * ‍
  */
 
+import java.util.List;
 import lombok.Data;
 
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorCustomFees;
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorTokenAccount;
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorLinks;
 
 @Data
-public class MirrorTokenResponse {
+public class MirrorTokenRelationshipResponse {
 
-    private String createdTimestamp;
-
-    private MirrorCustomFees customFees;
-
-    private String modifiedTimestamp;
-
-    private String pauseStatus;
-
-    private String tokenId;
+    private List<MirrorTokenAccount> tokens;
+    private MirrorLinks links;
 }
