@@ -27,10 +27,7 @@ plugins {
 dependencies {
     implementation(platform("org.springframework.cloud:spring-cloud-dependencies"))
     implementation(project(":common"))
-    implementation("com.hedera.evm:hedera-evm-api") {
-        exclude("com.swirlds", "swirlds-common")
-    }
-    implementation("com.swirlds:swirlds-common:0.31.0")
+    implementation("com.hedera.evm:hedera-evm-api")
     implementation("io.github.mweirauch:micrometer-jvm-extras")
     implementation("io.micrometer:micrometer-registry-prometheus")
     implementation(group = "io.netty", name = "netty-resolver-dns-native-macos", classifier = "osx-aarch_64")

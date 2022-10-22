@@ -106,6 +106,7 @@
             <artifactId>hedera-evm-api</artifactId>
             <version>${hedera-evm.version}</version>
         </dependency>
+        <!-- workaround for hedera-mirror-web3 build failure -->
         <dependency>
             <groupId>com.swirlds</groupId>
             <artifactId>swirlds-common</artifactId>
