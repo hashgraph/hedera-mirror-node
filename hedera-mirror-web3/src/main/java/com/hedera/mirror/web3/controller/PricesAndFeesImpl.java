@@ -23,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import java.math.BigInteger;
 import java.time.Instant;
 import java.util.EnumMap;
 import java.util.Map;
@@ -44,6 +45,7 @@ public class PricesAndFeesImpl implements PricesAndFeesProvider {
     private EnumMap<HederaFunctionality, Map<SubType, FeeData>> currFunctionUsagePrices;
     private EnumMap<HederaFunctionality, Map<SubType, FeeData>> nextFunctionUsagePrices;
     private static final long DEFAULT_FEE = 100_000L;
+    private static final int FEE_DIVISOR_FACTOR = 1000;
     private static final FeeComponents DEFAULT_PROVIDER_RESOURCE_PRICES = FeeComponents.newBuilder()
             .setMin(DEFAULT_FEE)
             .setMax(DEFAULT_FEE)
@@ -69,7 +71,9 @@ public class PricesAndFeesImpl implements PricesAndFeesProvider {
 
     @Override
     public long estimatedGasPriceInTinybars(HederaFunctionality function, Timestamp at) {
-        return 0;
+        var rates = rate(at);
+        var prices = defaultPricesGiven(function, at);
+        return gasPriceInTinybars(prices, rates);
     }
 
     private ExchangeRate rateAt(final long now) {
@@ -190,6 +194,22 @@ public class PricesAndFeesImpl implements PricesAndFeesProvider {
     private boolean onlyNextScheduleApplies(final Timestamp at) {
         return at.getSeconds() >= currFunctionUsagePricesExpiry.getSeconds() &&
                 at.getSeconds() < nextFunctionUsagePricesExpiry.getSeconds();
+    }
+
+    private long gasPriceInTinybars(FeeData prices, ExchangeRate rates) {
+        long priceInTinyCents = prices.getServicedata().getGas() / FEE_DIVISOR_FACTOR;
+        long priceInTinyBars = getTinybarsFromTinyCents(rates, priceInTinyCents);
+        return Math.max(priceInTinyBars, 1L);
+    }
+
+    private static long getTinybarsFromTinyCents(ExchangeRate exchangeRate, long tinyCentsFee) {
+        return getAFromB(tinyCentsFee, exchangeRate.getHbarEquiv(), exchangeRate.getCentEquiv());
+    }
+
+    private static long getAFromB(final long bAmount, final int aEquiv, final int bEquiv) {
+        final var aMultiplier = BigInteger.valueOf(aEquiv);
+        final var bDivisor = BigInteger.valueOf(bEquiv);
+        return BigInteger.valueOf(bAmount).multiply(aMultiplier).divide(bDivisor).longValueExact();
     }
 }
 
