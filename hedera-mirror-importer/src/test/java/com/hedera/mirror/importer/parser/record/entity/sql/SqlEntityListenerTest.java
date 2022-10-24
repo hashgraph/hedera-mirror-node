@@ -1748,7 +1748,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
     @ValueSource(ints = {1, 2})
     @ParameterizedTest
-    void onTokenAccountDissociateBalance(int commitIndex) {
+    void onTokenAccountFreezeBalance(int commitIndex) {
         EntityId tokenId1 = EntityId.of("0.0.3", TOKEN);
 
         // save token entities first
