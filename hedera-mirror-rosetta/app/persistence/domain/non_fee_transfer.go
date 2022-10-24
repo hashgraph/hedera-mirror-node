@@ -25,7 +25,7 @@ const tableNameNonFeeTransfer = "non_fee_transfer"
 type NonFeeTransfer struct {
 	Amount             int64
 	ConsensusTimestamp int64
-	EntityId           EntityId
+	EntityId           *EntityId
 	PayerAccountId     EntityId
 }
 
