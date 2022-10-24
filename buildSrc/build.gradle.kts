@@ -29,7 +29,7 @@ repositories {
 
 dependencies {
     implementation("com.bmuschko:gradle-docker-plugin:8.1.0")
-    implementation("com.github.node-gradle:gradle-node-plugin:3.4.0")
+    implementation("com.github.node-gradle:gradle-node-plugin:3.5.0")
     implementation("com.google.protobuf:protobuf-gradle-plugin:0.9.1")
     implementation("io.freefair.gradle:lombok-plugin:6.5.1")
     implementation("io.spring.gradle:dependency-management-plugin:1.0.14.RELEASE")
