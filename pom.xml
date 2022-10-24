@@ -75,7 +75,7 @@
         <headlong.version>7.0.0</headlong.version>
         <hedera-evm.version>0.31.0-SNAPSHOT</hedera-evm.version>
         <hedera-protobuf.version>0.31.0-SNAPSHOT</hedera-protobuf.version>
-        <hibernate-types.version>2.19.2</hibernate-types.version>
+        <hibernate-types.version>2.20.0</hibernate-types.version>
         <jacoco.version>0.8.8</jacoco.version>
         <java.version>17</java.version>
         <javax.version>1</javax.version>
