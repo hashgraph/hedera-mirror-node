@@ -5,6 +5,7 @@ import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import java.time.Instant;
 
 public interface PricesAndFeesProvider {
     FeeData defaultPricesGiven(HederaFunctionality function, Timestamp at);
@@ -12,4 +13,6 @@ public interface PricesAndFeesProvider {
     ExchangeRate rate(Timestamp at) throws InvalidProtocolBufferException;
 
     long estimatedGasPriceInTinybars(HederaFunctionality function, Timestamp at);
+
+    long currentGasPrice(final Instant now, final HederaFunctionality function);
 }
