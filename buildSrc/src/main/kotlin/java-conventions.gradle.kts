@@ -40,6 +40,12 @@ repositories {
     maven {
         url = uri("https://hyperledger.jfrog.io/artifactory/besu-maven/")
     }
+    maven {
+        url = uri("https://us-maven.pkg.dev/swirlds-registry/maven-prerelease-channel")
+    }
+    maven {
+        url = uri("https://us-maven.pkg.dev/swirlds-registry/maven-develop-snapshots")
+    }
 }
 
 dependencyManagement {

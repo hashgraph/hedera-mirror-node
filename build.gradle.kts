@@ -55,7 +55,6 @@ dependencies {
         api("com.playtika.testcontainers:embedded-postgresql:$testcontainersSpringBootVersion")
         api("com.playtika.testcontainers:embedded-redis:$testcontainersSpringBootVersion")
         api("com.salesforce.servicelibs:reactor-grpc-stub:$reactorGrpcVersion")
-        api("com.swirlds:swirlds-common:0.31.0") // workaround for hedera-mirror-web3 build failure
         api("com.vladmihalcea:hibernate-types-55:2.19.2")
         api("commons-beanutils:commons-beanutils:1.9.4")
         api("commons-io:commons-io:2.11.0")
