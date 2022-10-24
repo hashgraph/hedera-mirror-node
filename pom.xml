@@ -152,6 +152,14 @@
                 <enabled>true</enabled>
             </snapshots>
         </repository>
+        <repository>
+            <id>swirlds-prerelease</id>
+            <url>https://us-maven.pkg.dev/swirlds-registry/maven-prerelease-channel</url>
+        </repository>
+        <repository>
+            <id>swirlds-develop-snapshots</id>
+            <url>https://us-maven.pkg.dev/swirlds-registry/maven-develop-snapshots</url>
+        </repository>
     </repositories>
 
     <dependencies>
