@@ -76,7 +76,7 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-dependencies:2021.0.4")
         api("org.testcontainers:junit-jupiter:1.17.5")
         api("org.web3j:core:5.0.0")
-        api("software.amazon.awssdk:bom:2.17.290")
+        api("software.amazon.awssdk:bom:2.18.1")
     }
 }
 
