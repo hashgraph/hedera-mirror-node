@@ -74,7 +74,7 @@ jobs:
           build-args: GIT_REF=${{ env.GIT_REF }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          context: ./hedera-mirror-rosetta/build
+          context: ./hedera-mirror-rosetta/container
           outputs: type=docker,dest=/tmp/${{ env.MODULE }}.tar
           tags: ${{ env.MODULE }}:latest
 
