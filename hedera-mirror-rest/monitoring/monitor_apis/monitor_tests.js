@@ -24,6 +24,7 @@ import * as utils from './utils';
 
 import accountTests from './account_tests';
 import balanceTests from './balance_tests';
+import blockTests from './block_tests';
 import networkTests from './network_tests';
 import stateproofTests from './stateproof_tests';
 import tokenTests from './token_tests';
@@ -33,6 +34,7 @@ import transactionTests from './transaction_tests';
 const allTestModules = [
   accountTests,
   balanceTests,
+  blockTests,
   networkTests,
   stateproofTests,
   tokenTests,

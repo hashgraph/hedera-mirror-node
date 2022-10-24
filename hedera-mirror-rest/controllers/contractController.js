@@ -31,6 +31,7 @@ import {
   Contract,
   ContractLog,
   ContractResult,
+  ContractState,
   Entity,
   RecordFile,
   Transaction,
@@ -46,6 +47,7 @@ import {
   ContractLogViewModel,
   ContractResultDetailsViewModel,
   ContractResultViewModel,
+  ContractStateViewModel,
   ContractViewModel,
 } from '../viewmodel';
 
@@ -880,6 +882,85 @@ class ContractController extends BaseController {
     res.locals[responseDataLabel] = response;
   };
 
+  async extractContractStateByIdQuery(filters, contractId) {
+    let limit = defaultLimit;
+    let order = orderFilterValues.ASC;
+    const conditions = [this.getFilterWhereCondition(ContractState.CONTRACT_ID, {operator: '=', value: contractId})];
+    const slotInValues = [];
+
+    for (const filter of filters) {
+      switch (filter.key) {
+        case filterKeys.LIMIT:
+          limit = filter.value;
+          break;
+        case filterKeys.ORDER:
+          order = filter.value;
+          break;
+        case filterKeys.SLOT:
+          const slot = Buffer.from(utils.stripHexPrefix(filter.value).padStart(64, 0), 'hex');
+          if (filter.operator === utils.opsMap.eq) {
+            slotInValues.push(slot);
+          } else {
+            conditions.push(
+              this.getFilterWhereCondition(ContractState.SLOT, {
+                operator: filter.operator,
+                value: slot,
+              })
+            );
+          }
+          break;
+        default:
+          break;
+      }
+    }
+
+    if (slotInValues.length !== 0) {
+      conditions.push(this.getFilterWhereCondition(ContractState.SLOT, {operator: 'in', value: slotInValues}));
+    }
+
+    return {
+      conditions,
+      order,
+      limit,
+    };
+  }
+
+  /**
+   * Handler function for /contracts/:contractId/state API
+   * @param {Request} req HTTP request object
+   * @param {Response} res HTTP response object
+   * @returns {Promise<void>}
+   */
+  getContractStateById = async (req, res) => {
+    const {contractId: contractIdParam, filters} = extractContractIdAndFiltersFromValidatedRequest(req);
+
+    const contractId = await ContractService.computeContractIdFromString(contractIdParam);
+    const {conditions, order, limit} = await this.extractContractStateByIdQuery(filters, contractId);
+    const rows = await ContractService.getContractStateByIdAndFilters(conditions, order, limit);
+    const state = rows.map((row) => new ContractStateViewModel(row));
+
+    let nextLink = null;
+    if (state.length) {
+      const lastRow = _.last(state);
+      const lastSlot = lastRow.slot;
+      nextLink = utils.getPaginationLink(
+        req,
+        state.length !== limit,
+        {
+          [filterKeys.SLOT]: lastSlot,
+        },
+        order
+      );
+    }
+
+    res.locals[responseDataLabel] = {
+      state,
+      links: {
+        next: nextLink,
+      },
+    };
+  };
+
   /**
    * Handler function for /contracts/:contractId/results/:consensusTimestamp API
    * @param {Request} req HTTP request object
@@ -1184,6 +1265,7 @@ const contractController = exportControllerMethods([
   'getContractResultsById',
   'getContractResultsByTimestamp',
   'getContractResultsByTransactionIdOrHash',
+  'getContractStateById',
 ]);
 
 if (utils.isTestEnv()) {

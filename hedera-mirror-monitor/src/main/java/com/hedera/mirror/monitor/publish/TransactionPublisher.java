@@ -35,12 +35,12 @@ import com.hedera.hashgraph.sdk.Client;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.HbarUnit;
 import com.hedera.hashgraph.sdk.PrivateKey;
+import com.hedera.hashgraph.sdk.Query;
 import com.hedera.hashgraph.sdk.Transaction;
 import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.hashgraph.sdk.TransactionReceiptQuery;
 import com.hedera.hashgraph.sdk.TransactionRecordQuery;
 import com.hedera.hashgraph.sdk.TransactionResponse;
-import com.hedera.hashgraph.sdk.WithExecute;
 import com.hedera.mirror.monitor.MonitorProperties;
 import com.hedera.mirror.monitor.NodeProperties;
 
@@ -83,16 +83,16 @@ public class TransactionPublisher implements AutoCloseable {
         return clients.elementAt(clientIndex)
                 .flatMap(client -> getTransactionResponse(request, client)
                         .flatMap(r -> processTransactionResponse(client, request, r)))
-                        .map(PublishResponse.PublishResponseBuilder::build)
-                        .doOnNext(response -> {
-                            if (log.isTraceEnabled() || properties.isLogResponse()) {
-                                log.info("Received response : {}", response);
-                            }
-                        })
-                        .timeout(properties.getTimeout())
-                        .onErrorMap(t -> !(t instanceof PublishException), t -> new PublishException(request, t))
-                        .doOnNext(scenario::onNext)
-                        .doOnError(scenario::onError);
+                .map(PublishResponse.PublishResponseBuilder::build)
+                .doOnNext(response -> {
+                    if (log.isTraceEnabled() || properties.isLogResponse()) {
+                        log.info("Received response : {}", response);
+                    }
+                })
+                .timeout(properties.getTimeout())
+                .onErrorMap(t -> !(t instanceof PublishException), t -> new PublishException(request, t))
+                .doOnNext(scenario::onNext)
+                .doOnError(scenario::onError);
     }
 
     private Mono<TransactionResponse> getTransactionResponse(PublishRequest request, Client client) {
@@ -131,7 +131,15 @@ public class TransactionPublisher implements AutoCloseable {
         return Mono.just(builder);
     }
 
-    private <T> Mono<T> execute(Client client, WithExecute<T> executable) {
+    private Mono<TransactionResponse> execute(Client client, Transaction<?> executable) {
+        if (publishProperties.isAsync()) {
+            return Mono.fromFuture(executable.executeAsync(client));
+        } else {
+            return Mono.fromCallable(() -> executable.execute(client));
+        }
+    }
+
+    private <T> Mono<T> execute(Client client, Query<T, ?> executable) {
         if (publishProperties.isAsync()) {
             return Mono.fromFuture(executable.executeAsync(client));
         } else {

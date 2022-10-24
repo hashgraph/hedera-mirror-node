@@ -1,0 +1,46 @@
+{
+  "description": "Contract state api call for a contract with slot param lt, lte",
+  "setup": {
+    "contractStates": [
+      {
+        "created_timestamp": "1676540001234390005",
+        "modified_timestamp": "1676540001234390005",
+        "contract_id": 5001,
+        "slot": "0000000000000000000000000000000000000000000000000000000000000001",
+        "value": "10"
+      },
+      {
+        "created_timestamp": "1676540001234390005",
+        "modified_timestamp": "1676540001234390005",
+        "contract_id": 5001,
+        "slot": "0000000000000000000000000000000000000000000000000000000000000002",
+        "value": "20"
+      }
+    ]
+  },
+  "urls": [
+    "/api/v1/contracts/5001/state?slot=lt:0x0000000000000000000000000000000000000000000000000000000000000002",
+    "/api/v1/contracts/5001/state?slot=lte:0x0000000000000000000000000000000000000000000000000000000000000001",
+    "/api/v1/contracts/5001/state?slot=lt:0000000000000000000000000000000000000000000000000000000000000002",
+    "/api/v1/contracts/5001/state?slot=lte:0000000000000000000000000000000000000000000000000000000000000001",
+    "/api/v1/contracts/5001/state?slot=lt:0x2",
+    "/api/v1/contracts/5001/state?slot=lte:0x1",
+    "/api/v1/contracts/5001/state?slot=lt:2",
+    "/api/v1/contracts/5001/state?slot=lte:1"
+  ],
+  "responseStatus": 200,
+  "responseJson": {
+    "state": [
+      {
+        "address": "0x0000000000000000000000000000000000001389",
+        "contract_id": "0.0.5001",
+        "timestamp": "1676540001.234390005",
+        "slot": "0x0000000000000000000000000000000000000000000000000000000000000001",
+        "value": "0x0000000000000000000000000000000000000000000000000000000000000010"
+      }
+    ],
+    "links": {
+      "next": null
+    }
+  }
+}

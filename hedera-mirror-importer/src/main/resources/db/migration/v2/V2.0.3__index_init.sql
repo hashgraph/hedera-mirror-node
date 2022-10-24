@@ -61,6 +61,10 @@ create index if not exists contract_result__id_timestamp
 create index if not exists contract_result__payer_timestamp
     on contract_result (payer_account_id, consensus_timestamp);
 
+-- contract_state
+alter table if exists contract_state
+    add constraint contract_state__pk primary key (contract_id, slot);
+
 -- contract_state_change
 alter table if exists contract_state_change
     add constraint contract_state_change__pk primary key (consensus_timestamp, contract_id, slot, payer_account_id);

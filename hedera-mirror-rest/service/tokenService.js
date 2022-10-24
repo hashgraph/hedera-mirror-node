@@ -18,20 +18,94 @@
  * ‍
  */
 
+import {TokenAccount, TokenBalance, AccountBalanceFile, Nft} from '../model';
+import BaseService from './baseService';
+import {OrderSpec} from '../sql';
 import _ from 'lodash';
-import {Token} from '../model';
 
 /**
  * Token retrieval business logic
  */
-class TokenService {
-  static tokenByIdQuery = `select *
-                           from ${Token.tableName}
-                           where ${Token.TOKEN_ID} = $1`;
+class TokenService extends BaseService {
+  static tokenRelationshipsQuery = `
+        select ${TokenAccount.getFullName(TokenAccount.AUTOMATIC_ASSOCIATION)},
+               ${TokenAccount.getFullName(TokenAccount.CREATED_TIMESTAMP)},
+               ${TokenAccount.getFullName(TokenAccount.FREEZE_STATUS)},
+               ${TokenAccount.getFullName(TokenAccount.KYC_STATUS)},
+               ${TokenAccount.getFullName(TokenAccount.TOKEN_ID)},
+               coalesce(${TokenBalance.getFullName(TokenBalance.BALANCE)}, 0) balance
+        from ${TokenAccount.tableName} ${TokenAccount.tableAlias}
+        left join (
+                select ${TokenBalance.TOKEN_ID},
+                       ${TokenBalance.BALANCE}
+                from ${TokenBalance.tableName}
+                where ${TokenBalance.ACCOUNT_ID} = $1
+                and ${TokenBalance.CONSENSUS_TIMESTAMP} = (select max(${AccountBalanceFile.CONSENSUS_TIMESTAMP})
+                from ${AccountBalanceFile.tableName})
+        ) ${TokenBalance.tableAlias}
+        on ${TokenAccount.getFullName(TokenAccount.TOKEN_ID)} = ${TokenBalance.getFullName(TokenBalance.TOKEN_ID)}
+        where ${TokenAccount.tableAlias}.${TokenAccount.ACCOUNT_ID} = $1
+        and ${TokenAccount.tableAlias}.${TokenAccount.ASSOCIATED} = true `;
 
-  async getToken(tokenId) {
-    const {rows} = await pool.queryQuietly(TokenService.tokenByIdQuery, tokenId);
-    return _.isEmpty(rows) ? null : new Token(rows[0]);
+  /**
+   * Gets the full sql query and params to retrieve an account's token relationships
+   *
+   * @param query
+   * @return {{sqlQuery: string, params: *[]}}
+   */
+  getTokenRelationshipsQuery(query) {
+    const {conditions, inConditions, order, ownerAccountId, limit} = query;
+    const params = [ownerAccountId, limit];
+    // This is the inner query to get the latest balance for a token, account pair.
+    const moreConditionsExist = conditions.length > 0 ? ` and ` : ``;
+    const conditionClause =
+      moreConditionsExist +
+      conditions
+        .map((condition) => {
+          params.push(condition.value);
+          return `${TokenAccount.getFullName(condition.key)} ${condition.operator} $${params.length}`;
+        })
+        .join(' and ');
+    let inConditionClause = this.getInClauseSubQuery(inConditions, params);
+    const limitClause = super.getLimitQuery(2);
+    const orderClause = this.getOrderByQuery(OrderSpec.from(TokenAccount.getFullName(TokenAccount.TOKEN_ID), order));
+    const sqlQuery = [
+      TokenService.tokenRelationshipsQuery,
+      conditionClause,
+      inConditionClause,
+      orderClause,
+      limitClause,
+    ].join('\n');
+    return {sqlQuery, params};
+  }
+
+  /**
+   * Gets the In clause query for Token.id
+   * @param inConditions
+   * @param params
+   * @returns {string}
+   */
+  getInClauseSubQuery(inConditions, params) {
+    const tokenIdInParams = [];
+    inConditions.map((condition) => {
+      tokenIdInParams.push(condition.value);
+    });
+
+    if (!_.isEmpty(tokenIdInParams)) {
+      return ` and ${TokenAccount.getFullName(TokenAccount.TOKEN_ID)} in (${tokenIdInParams})`;
+    }
+  }
+
+  /**
+   * Gets the tokens for the query
+   *
+   * @param query
+   * @return {Promise<Token[]>}
+   */
+  async getTokens(query) {
+    const {sqlQuery, params} = this.getTokenRelationshipsQuery(query);
+    const rows = await super.getRows(sqlQuery, params, 'getTokens');
+    return rows.map((ta) => new TokenAccount(ta));
   }
 }
 

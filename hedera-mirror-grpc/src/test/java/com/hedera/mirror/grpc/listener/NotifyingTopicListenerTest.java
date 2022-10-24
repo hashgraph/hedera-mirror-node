@@ -22,9 +22,10 @@ package com.hedera.mirror.grpc.listener;
 
 import java.time.Duration;
 import java.time.Instant;
-import javax.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -35,13 +36,26 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest {
 
-    @Resource
-    private NotifyingTopicListener topicListener;
-
-    @Resource
-    private JdbcTemplate jdbcTemplate;
+    private static final String JSON = """
+            {
+              "@type":"TopicMessage",
+              "chunk_num":1,
+              "chunk_total":2,
+              "consensus_timestamp":1594401417000000000,
+              "message":"AQID",
+              "payer_account_id":4294968296,
+              "running_hash":"BAUG",
+              "running_hash_version":2,
+              "sequence_number":1,
+              "topic_id":1001,
+              "valid_start_timestamp":1594401416000000000
+            }""";
+    private static boolean INITIALIZED = false;
+    private final NotifyingTopicListener topicListener;
+    private final JdbcTemplate jdbcTemplate;
 
     @Override
     protected ListenerProperties.ListenerType getType() {
@@ -50,27 +64,27 @@ class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest {
 
     @BeforeEach
     void warmup() {
-        // Warm up the database connection
-        topicListener.channel.block(Duration.ofSeconds(1));
+        if (!INITIALIZED) {
+            try {
+                // Warm up the database connection
+                var filter = TopicMessageFilter.builder().build();
+                topicListener.listen(filter)
+                        .as(StepVerifier::create)
+                        .thenAwait(Duration.ofMillis(1000))
+                        .then(() -> jdbcTemplate.execute("notify topic_message, '" + JSON + "'"))
+                        .expectNextCount(1)
+                        .thenCancel()
+                        .verify(Duration.ofSeconds(5L));
+                INITIALIZED = true;
+            } catch (AssertionError e) {
+                log.warn("Unable to warmup connection: {}", e.getMessage());
+            }
+        }
     }
 
     // Test deserialization from JSON to verify contract with PostgreSQL listen/notify
     @Test
     void json() {
-        String json = "{" +
-                "\"@type\":\"TopicMessage\"," +
-                "\"chunk_num\":1," +
-                "\"chunk_total\":2," +
-                "\"consensus_timestamp\":1594401417000000000," +
-                "\"message\":\"AQID\"," +
-                "\"payer_account_id\":4294968296," +
-                "\"running_hash\":\"BAUG\"," +
-                "\"running_hash_version\":2," +
-                "\"sequence_number\":1," +
-                "\"topic_id\":1001," +
-                "\"valid_start_timestamp\":1594401416000000000" +
-                "}";
-
         TopicMessage topicMessage = TopicMessage.builder().chunkNum(1)
                 .chunkTotal(2)
                 .consensusTimestamp(Instant.ofEpochSecond(1594401417))
@@ -90,7 +104,7 @@ class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest {
         topicListener.listen(filter)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(50))
-                .then(() -> jdbcTemplate.execute("NOTIFY topic_message, '" + json + "'"))
+                .then(() -> jdbcTemplate.execute("notify topic_message, '" + JSON + "'"))
                 .expectNext(topicMessage)
                 .thenCancel()
                 .verify(Duration.ofMillis(500L));
@@ -106,7 +120,7 @@ class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest {
         topicListener.listen(filter)
                 .as(StepVerifier::create)
                 .thenAwait(Duration.ofMillis(50))
-                .then(() -> jdbcTemplate.execute("NOTIFY topic_message, 'invalid'"))
+                .then(() -> jdbcTemplate.execute("notify topic_message, 'invalid'"))
                 .expectNoEvent(Duration.ofMillis(500L))
                 .thenCancel()
                 .verify(Duration.ofMillis(600L));
