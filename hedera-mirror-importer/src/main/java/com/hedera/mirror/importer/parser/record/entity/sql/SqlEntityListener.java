@@ -404,10 +404,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         tokenTransfers.add(tokenTransfer);
 
         if (entityProperties.getPersist().isTrackBalance()) {
-            //var accountId = tokenTransfer.getId().getAccountId().getId();
-            //var tokenId = tokenTransfer.getId().getTokenId().getId();
-            //getTokenAccount(accountId, tokenId, tokenTransfer.getAmount());
-
             var tokenAccount = new TokenAccount();
             tokenAccount.setAccountId(tokenTransfer.getId().getAccountId().getId());
             tokenAccount.setTokenId(tokenTransfer.getId().getTokenId().getId());
@@ -486,24 +482,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             // This error can occur during shutdown
         }
     }
-
-//    private void getTokenAccount(long accountId, long tokenId, long amount) {
-//        var tokenAccountId = new AbstractTokenAccount.Id();
-//        tokenAccountId.setAccountId(accountId);
-//        tokenAccountId.setTokenId(tokenId);
-//
-//        var tokenAccount = tokenAccountState.get(tokenAccountId);
-//        if (tokenAccount != null) {
-//            tokenAccount.setBalance(tokenAccount.getBalance() + amount);
-//            return;
-//        }
-//
-//        tokenAccount = new TokenAccount();
-//        tokenAccount.setAccountId(accountId);
-//        tokenAccount.setTokenId(tokenId);
-//        tokenAccount.setBalance(amount);
-//        onTokenAccount(tokenAccount);
-//    }
 
     private void flush() {
         try {
