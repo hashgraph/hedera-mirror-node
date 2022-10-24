@@ -693,9 +693,9 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 			PayerAccountId: firstEntityId},
 	}
 	nonFeeTransfers := []domain.NonFeeTransfer{
-		{Amount: -135, ConsensusTimestamp: consensusTimestamp, EntityId: firstEntityId,
+		{Amount: -135, ConsensusTimestamp: consensusTimestamp, EntityId: &firstEntityId,
 			PayerAccountId: firstEntityId},
-		{Amount: 135, ConsensusTimestamp: consensusTimestamp, EntityId: secondEntityId,
+		{Amount: 135, ConsensusTimestamp: consensusTimestamp, EntityId: &secondEntityId,
 			PayerAccountId: firstEntityId},
 	}
 	addTransaction(dbClient, consensusTimestamp, nil, &nodeEntityId, firstEntityId, 22,
@@ -758,9 +758,9 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 			PayerAccountId: firstEntityId},
 	}
 	nonFeeTransfers = []domain.NonFeeTransfer{
-		{Amount: -215, ConsensusTimestamp: consensusTimestamp, EntityId: firstEntityId,
+		{Amount: -215, ConsensusTimestamp: consensusTimestamp, EntityId: &firstEntityId,
 			PayerAccountId: firstEntityId},
-		{Amount: 215, ConsensusTimestamp: consensusTimestamp, EntityId: secondEntityId,
+		{Amount: 215, ConsensusTimestamp: consensusTimestamp, EntityId: &secondEntityId,
 			PayerAccountId: firstEntityId},
 	}
 	tokenTransfers := []domain.TokenTransfer{
@@ -997,6 +997,8 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 				Status: resultSuccess},
 			{AccountId: nodeAccountId, Amount: &types.HbarAmount{Value: 20}, Type: types.OperationTypeFee,
 				Status: resultSuccess},
+			{AccountId: firstAccountId, Amount: &types.HbarAmount{}, Type: types.OperationTypeCryptoTransfer,
+				Status: types.TransactionResults[28]},
 		},
 	}
 
@@ -1010,8 +1012,9 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 		{Amount: 20, ConsensusTimestamp: consensusTimestamp, EntityId: nodeEntityId, PayerAccountId: firstEntityId},
 	}
 	nonFeeTransfers = []domain.NonFeeTransfer{
-		{Amount: -500, ConsensusTimestamp: consensusTimestamp, EntityId: firstEntityId, PayerAccountId: firstEntityId},
-		{Amount: 500, ConsensusTimestamp: consensusTimestamp, EntityId: newEntityId, PayerAccountId: firstEntityId},
+		{Amount: -500, ConsensusTimestamp: consensusTimestamp, EntityId: &firstEntityId, PayerAccountId: firstEntityId},
+		{Amount: -500, ConsensusTimestamp: consensusTimestamp, PayerAccountId: firstEntityId}, // with nil entity id
+		{Amount: 500, ConsensusTimestamp: consensusTimestamp, EntityId: &newEntityId, PayerAccountId: firstEntityId},
 	}
 	transactionHash = randstr.Bytes(6)
 	addTransaction(dbClient, consensusTimestamp, &newEntityId, &nodeEntityId, firstEntityId, 22, transactionHash,
