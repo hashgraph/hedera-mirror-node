@@ -55,7 +55,7 @@
     </parent>
 
     <properties>
-        <besu.version>22.7.6</besu.version>
+        <besu.version>22.7.7</besu.version>
         <dependency-check.version>7.2.1</dependency-check.version>
         <disruptor.version>3.4.4</disruptor.version> <!-- Used for asynchronous logging -->
         <docker-maven-plugin.version>0.40.2</docker-maven-plugin.version>
@@ -65,7 +65,7 @@
         <docker.push.repository>gcr.io/mirrornode</docker.push.repository>
         <docker.resources>${project.build.directory}/container</docker.resources>
         <docker.tag.version>${release.version}</docker.tag.version>
-        <embedded.testcontainers.version>2.2.9</embedded.testcontainers.version>
+        <embedded.testcontainers.version>2.2.10</embedded.testcontainers.version>
         <flyway.version>8.5.9</flyway.version>
         <git-commit-id-plugin.version>4.0.4</git-commit-id-plugin.version>
         <grpc-spring-boot.version>2.13.1.RELEASE</grpc-spring-boot.version>
@@ -75,7 +75,7 @@
         <headlong.version>7.0.0</headlong.version>
         <hedera-evm.version>0.31.0-SNAPSHOT</hedera-evm.version>
         <hedera-protobuf.version>0.31.0-SNAPSHOT</hedera-protobuf.version>
-        <hibernate-types.version>2.19.2</hibernate-types.version>
+        <hibernate-types.version>2.20.0</hibernate-types.version>
         <jacoco.version>0.8.8</jacoco.version>
         <java.version>17</java.version>
         <javax.version>1</javax.version>
@@ -151,6 +151,14 @@
             <snapshots>
                 <enabled>true</enabled>
             </snapshots>
+        </repository>
+        <repository>
+            <id>swirlds-prerelease</id>
+            <url>https://us-maven.pkg.dev/swirlds-registry/maven-prerelease-channel</url>
+        </repository>
+        <repository>
+            <id>swirlds-develop-snapshots</id>
+            <url>https://us-maven.pkg.dev/swirlds-registry/maven-develop-snapshots</url>
         </repository>
     </repositories>
 
