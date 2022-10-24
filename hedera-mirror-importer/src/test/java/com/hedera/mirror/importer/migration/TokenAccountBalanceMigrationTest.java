@@ -46,6 +46,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
     private long consensusTimestamp;
     private TokenAccount tokenAccount;
     private TokenAccount tokenAccount2;
+    private TokenBalance tokenBalance;
     private final TokenAccountRepository tokenAccountRepository;
     private final TokenAccountHistoryRepository tokenAccountHistoryRepository;
     private final TokenBalanceRepository tokenBalanceRepository;
@@ -62,11 +63,32 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
         // given
         setup();
 
+        // updates between the consensusTimestamp of the balance file and the current timestamp
+        var balanceUpdatedAfterBalanceFileConsensusTimestamp = 12345L;
+        var tokenBalanceId = new TokenBalance.Id(consensusTimestamp + 1,
+                EntityId.of("0.0.3", ACCOUNT), EntityId.of("0.0.1000", TOKEN));
+        tokenBalance.setId(tokenBalanceId);
+        tokenBalance.setBalance(balanceUpdatedAfterBalanceFileConsensusTimestamp);
+        tokenBalanceRepository.save(tokenBalance);
+
+        var updated = tokenBalanceRepository.findById(tokenBalance.getId());
+
+        var newTokenBalanceId = new TokenBalance.Id(consensusTimestamp + 1,
+                EntityId.of("0.0.3", ACCOUNT), EntityId.of("0.0.1005", TOKEN));
+        var newTokenBalance = domainBuilder.tokenBalance().customize(
+                b -> b.id(newTokenBalanceId).balance(9999L)).persist();
+        var newTokenAccount = domainBuilder.tokenAccount()
+                .customize(c -> c.accountId(newTokenBalance.getId().getAccountId().getId())
+                        .tokenId(newTokenBalance.getId().getTokenId().getId()))
+                .persist();
+
         // when
         tokenAccountBalanceMigration.doMigrate();
 
         // then
-        assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrder(tokenAccount, tokenAccount2);
+        tokenAccount.setBalance(balanceUpdatedAfterBalanceFileConsensusTimestamp);
+        newTokenAccount.setBalance(9999L);
+        assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrder(tokenAccount, tokenAccount2, newTokenAccount);
         assertThat(tokenAccountHistoryRepository.findAll()).isEmpty();
     }
 
@@ -124,7 +146,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
         var tokenBalanceId2 = new TokenBalance.Id(consensusTimestamp,
                 EntityId.of("0.0.3", ACCOUNT), EntityId.of("0.0.1001", TOKEN));
 
-        var tokenBalance = domainBuilder.tokenBalance()
+        tokenBalance = domainBuilder.tokenBalance()
                 .customize(c -> c.id(tokenBalanceId).balance(100L)).persist();
         var tokenBalance2 = domainBuilder.tokenBalance()
                 .customize(c -> c.id(tokenBalanceId2).balance(33L)).persist();

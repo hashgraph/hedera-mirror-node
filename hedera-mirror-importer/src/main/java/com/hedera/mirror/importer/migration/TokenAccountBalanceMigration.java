@@ -21,32 +21,31 @@ package com.hedera.mirror.importer.migration;
  */
 
 import com.google.common.base.Stopwatch;
-import java.util.ArrayList;
-import java.util.List;
 import javax.inject.Named;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.JdbcOperations;
 
-import com.hedera.mirror.common.domain.balance.TokenBalance;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
-import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.importer.MirrorProperties;
 
 @Named
 public class TokenAccountBalanceMigration extends RepeatableMigration {
-
-    private static final int BATCH_SIZE = 100;
-
-    private static final String ACCOUNT_BALANCE_SQL = "select consensus_timestamp from account_balance_file " +
-            "order by consensus_timestamp desc limit 1";
-    private static final String TOKEN_BALANCE_QUERY = "select account_id, token_id, balance from token_balance " +
-            "where consensus_timestamp = ?";
-    private static final String UPDATE_BALANCE_SQL = "update token_account set balance = ? " +
-            "where account_id = ? and token_id = ?";
+    private static final String UPDATE_TOKEN_ACCOUNT_SQL = """
+                with account_balance as (
+                    select consensus_timestamp from account_balance_file
+                    order by consensus_timestamp desc limit 1
+                ),
+                token_balance as (
+                    select distinct tb.account_id, tb.consensus_timestamp, tb.token_id, tb.balance 
+                    from token_balance tb
+                    join account_balance ab on ab.consensus_timestamp <= tb.consensus_timestamp
+                    where tb.consensus_timestamp >= ab.consensus_timestamp
+                    order by tb.consensus_timestamp asc
+                ) 
+                update token_account t set balance = token_balance.balance
+                from token_balance
+                where t.account_id = token_balance.account_id and t.token_id = token_balance.token_id
+            """;
 
     private final JdbcOperations jdbcOperations;
 
@@ -69,57 +68,7 @@ public class TokenAccountBalanceMigration extends RepeatableMigration {
     @Override
     protected void doMigrate() {
         var stopwatch = Stopwatch.createStarted();
-        var tokenAccounts = new ArrayList<TokenAccount>();
-
-        var latestTimestamp = latestAccountBalanceFileTimestamp();
-        if (latestTimestamp == null) {
-            log.info("No account balance file found, skipping token account balance migration");
-            return;
-        }
-
-        var tokenBalances = getTokenBalances(latestTimestamp);
-        for (var tokenBalance : tokenBalances) {
-            var id = new AbstractTokenAccount.Id();
-            id.setAccountId(tokenBalance.getId().getAccountId().getId());
-            id.setTokenId(tokenBalance.getId().getTokenId().getId());
-            var tokenAccount = new TokenAccount();
-            tokenAccount.setAccountId(tokenBalance.getId().getAccountId().getId());
-            tokenAccount.setTokenId(tokenBalance.getId().getTokenId().getId());
-            tokenAccount.setBalance(tokenBalance.getBalance());
-            tokenAccounts.add(tokenAccount);
-        }
-
-        jdbcOperations.batchUpdate(
-                UPDATE_BALANCE_SQL,
-                tokenAccounts,
-                BATCH_SIZE,
-                (ps, tokenAccount) -> {
-                    ps.setLong(1, tokenAccount.getBalance());
-                    ps.setLong(2, tokenAccount.getAccountId());
-                    ps.setLong(3, tokenAccount.getTokenId());
-                });
-        log.info("Migrated {} token account balances in {}", tokenAccounts.size(), stopwatch);
-    }
-
-    private Long latestAccountBalanceFileTimestamp() {
-        try {
-            return jdbcOperations.queryForObject(ACCOUNT_BALANCE_SQL, Long.class);
-        } catch (EmptyResultDataAccessException e) {
-            return null;
-        }
-    }
-
-    private List<TokenBalance> getTokenBalances(long consensusTimestamp) {
-        var tokenBalances = new ArrayList<TokenBalance>();
-        jdbcOperations.query(TOKEN_BALANCE_QUERY, rs -> {
-            long accountId = rs.getLong(1);
-            long tokenId = rs.getLong(2);
-            long balance = rs.getLong(3);
-            var id = new TokenBalance.Id(consensusTimestamp, EntityId.of(accountId, EntityType.ACCOUNT),
-                    EntityId.of(tokenId, EntityType.TOKEN));
-            tokenBalances.add(new TokenBalance(balance, id));
-        }, consensusTimestamp);
-
-        return tokenBalances;
+        int count = jdbcOperations.update(UPDATE_TOKEN_ACCOUNT_SQL);
+        log.info("Migrated {} token account balances in {}", count, stopwatch);
     }
 }

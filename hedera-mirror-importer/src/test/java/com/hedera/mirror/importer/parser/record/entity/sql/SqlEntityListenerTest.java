@@ -1403,7 +1403,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         EntityId accountId1 = EntityId.of("0.0.7", ACCOUNT);
         EntityId accountId2 = EntityId.of("0.0.11", ACCOUNT);
         TokenAccount tokenAccount1 = getTokenAccount(tokenId1, accountId1, 5L, true, false,
-                10, TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE, Range.atLeast(5L));
+                0, TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE, Range.atLeast(5L));
         TokenAccount tokenAccount2 = getTokenAccount(tokenId2, accountId2, 6L, true, false,
                 0, TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE, Range.atLeast(6L));
 
@@ -1430,7 +1430,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         EntityId accountId1 = EntityId.of("0.0.7", ACCOUNT);
         TokenAccount associate = getTokenAccount(tokenId1, accountId1, 5L, true, false,
                 0, TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE, Range.atLeast(5L));
-        TokenAccount dissociate = getTokenAccount(tokenId1, accountId1, null, false, null, 10, null, null,
+        TokenAccount dissociate = getTokenAccount(tokenId1, accountId1, null, false, null, 0, null, null,
                 Range.atLeast(10L));
 
         // when
@@ -1441,7 +1441,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         assertThat(tokenAccountRepository.findAll()).containsExactly(
-                getTokenAccount(tokenId1, accountId1, 5L, false, false, 10, TokenFreezeStatusEnum.NOT_APPLICABLE,
+                getTokenAccount(tokenId1, accountId1, 5L, false, false, 0, TokenFreezeStatusEnum.NOT_APPLICABLE,
                         TokenKycStatusEnum.NOT_APPLICABLE, Range.atLeast(10L))
         );
         assertThat(findTokenAccountHistory()).containsExactly(associate);
@@ -1457,14 +1457,14 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // when
         EntityId accountId1 = EntityId.of("0.0.7", ACCOUNT);
-        TokenAccount tokenAccountAssociate = getTokenAccount(tokenId1, accountId1, 5L, true, false, 10, null, null,
+        TokenAccount tokenAccountAssociate = getTokenAccount(tokenId1, accountId1, 5L, true, false, 0, null, null,
                 Range.atLeast(5L));
         sqlEntityListener.onTokenAccount(tokenAccountAssociate);
         var expectedTokenAccountAssociate = getTokenAccount(tokenId1, accountId1, 5L, true, false,
-                10, TokenFreezeStatusEnum.UNFROZEN,
+                0, TokenFreezeStatusEnum.UNFROZEN,
                 TokenKycStatusEnum.REVOKED, Range.closedOpen(5L, 15L));
 
-        TokenAccount tokenAccountKyc = getTokenAccount(tokenId1, accountId1, null, null, null, 20, null,
+        TokenAccount tokenAccountKyc = getTokenAccount(tokenId1, accountId1, null, null, null, 0, null,
                 TokenKycStatusEnum.GRANTED, Range.atLeast(15L));
         sqlEntityListener.onTokenAccount(tokenAccountKyc);
 
@@ -1472,7 +1472,7 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // then
         TokenAccount tokenAccountMerged = getTokenAccount(tokenId1, accountId1, 5L, true, false,
-                20, TokenFreezeStatusEnum.UNFROZEN, TokenKycStatusEnum.GRANTED, Range.atLeast(15L));
+                0, TokenFreezeStatusEnum.UNFROZEN, TokenKycStatusEnum.GRANTED, Range.atLeast(15L));
         assertThat(tokenAccountRepository.findAll()).containsExactly(tokenAccountMerged);
         assertThat(findTokenAccountHistory()).containsExactly(expectedTokenAccountAssociate);
     }
@@ -1489,37 +1489,37 @@ class SqlEntityListenerTest extends IntegrationTest {
         // token account was associated before this record file
         EntityId accountId1 = EntityId.of("0.0.7", ACCOUNT);
         TokenAccount associate = getTokenAccount(tokenId1, accountId1, 5L, true, false,
-                10, TokenFreezeStatusEnum.FROZEN, TokenKycStatusEnum.REVOKED, Range.atLeast(5L));
+                0, TokenFreezeStatusEnum.FROZEN, TokenKycStatusEnum.REVOKED, Range.atLeast(5L));
         tokenAccountRepository.save(associate);
         expected.add(getTokenAccount(tokenId1, accountId1, 5L, true, false,
-                10, TokenFreezeStatusEnum.FROZEN, TokenKycStatusEnum.REVOKED, Range.closedOpen(5L, 6L)));
+                0, TokenFreezeStatusEnum.FROZEN, TokenKycStatusEnum.REVOKED, Range.closedOpen(5L, 6L)));
 
         // when
         TokenAccount freeze = getTokenAccount(tokenId1, accountId1, null, null, null,
-                10, TokenFreezeStatusEnum.FROZEN, null, Range.atLeast(6L));
+                0, TokenFreezeStatusEnum.FROZEN, null, Range.atLeast(6L));
         sqlEntityListener.onTokenAccount(freeze);
-        expected.add(getTokenAccount(tokenId1, accountId1, 5L, true, false, 20, TokenFreezeStatusEnum.FROZEN,
+        expected.add(getTokenAccount(tokenId1, accountId1, 5L, true, false, 0, TokenFreezeStatusEnum.FROZEN,
                 TokenKycStatusEnum.REVOKED, Range.closedOpen(6L, 7L)));
 
-        TokenAccount kycGrant = getTokenAccount(tokenId1, accountId1, null, null, null, 10, null,
+        TokenAccount kycGrant = getTokenAccount(tokenId1, accountId1, null, null, null, 0, null,
                 TokenKycStatusEnum.GRANTED, Range.atLeast(7L));
         sqlEntityListener.onTokenAccount(kycGrant);
-        expected.add(getTokenAccount(tokenId1, accountId1, 5L, true, false, 20, TokenFreezeStatusEnum.FROZEN,
+        expected.add(getTokenAccount(tokenId1, accountId1, 5L, true, false, 0, TokenFreezeStatusEnum.FROZEN,
                 TokenKycStatusEnum.GRANTED, Range.closedOpen(7L, 8L)));
 
-        TokenAccount dissociate = getTokenAccount(tokenId1, accountId1, null, false, null, 10, null, null,
+        TokenAccount dissociate = getTokenAccount(tokenId1, accountId1, null, false, null, 0, null, null,
                 Range.atLeast(8L));
         sqlEntityListener.onTokenAccount(dissociate);
-        expected.add(getTokenAccount(tokenId1, accountId1, 5L, false, false, 20, TokenFreezeStatusEnum.FROZEN,
+        expected.add(getTokenAccount(tokenId1, accountId1, 5L, false, false, 0, TokenFreezeStatusEnum.FROZEN,
                 TokenKycStatusEnum.GRANTED, Range.closedOpen(8L, 20L)));
 
         // associate after dissociate, the token has freeze key with freezeDefault = false, the token also has kyc key,
         // so the new relationship should have UNFROZEN, REVOKED
-        TokenAccount reassociate = getTokenAccount(tokenId1, accountId1, 20L, true, false, 10, null, null,
+        TokenAccount reassociate = getTokenAccount(tokenId1, accountId1, 20L, true, false, 0, null, null,
                 Range.atLeast(20L));
         sqlEntityListener.onTokenAccount(reassociate);
 
-        var expectedToken = getTokenAccount(tokenId1, accountId1, 20L, true, false, 20, TokenFreezeStatusEnum.UNFROZEN,
+        var expectedToken = getTokenAccount(tokenId1, accountId1, 20L, true, false, 0, TokenFreezeStatusEnum.UNFROZEN,
                 TokenKycStatusEnum.REVOKED, Range.atLeast(20L));
         completeFileAndCommit();
 
@@ -1536,10 +1536,10 @@ class SqlEntityListenerTest extends IntegrationTest {
         // given no token row in db
 
         // when
-        TokenAccount associate = getTokenAccount(tokenId1, accountId1, 10L, true, false, 10, null, null, Range.atLeast(10L));
+        TokenAccount associate = getTokenAccount(tokenId1, accountId1, 10L, true, false, 0, null, null, Range.atLeast(10L));
         sqlEntityListener.onTokenAccount(associate);
 
-        TokenAccount kycGrant = getTokenAccount(tokenId1, accountId1, null, null, null, 10, null,
+        TokenAccount kycGrant = getTokenAccount(tokenId1, accountId1, null, null, null, 0, null,
                 TokenKycStatusEnum.GRANTED, Range.atLeast(11L));
         sqlEntityListener.onTokenAccount(kycGrant);
 
@@ -1560,10 +1560,10 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         // when
         TokenAccount freeze = getTokenAccount(tokenId1, accountId1, null, null, null,
-                10, TokenFreezeStatusEnum.FROZEN, null, Range.atLeast(10L));
+                0, TokenFreezeStatusEnum.FROZEN, null, Range.atLeast(10L));
         sqlEntityListener.onTokenAccount(freeze);
 
-        TokenAccount kycGrant = getTokenAccount(tokenId1, accountId1, null, null, null, 10, null,
+        TokenAccount kycGrant = getTokenAccount(tokenId1, accountId1, null, null, null, 0, null,
                 TokenKycStatusEnum.GRANTED, Range.atLeast(15L));
         sqlEntityListener.onTokenAccount(kycGrant);
 
@@ -1585,44 +1585,44 @@ class SqlEntityListenerTest extends IntegrationTest {
         tokenRepository.save(token);
 
         // given association in a previous record file
-        TokenAccount associate = getTokenAccount(tokenId1, accountId1, 5L, true, false, 1, null, null, Range.atLeast(5L));
+        TokenAccount associate = getTokenAccount(tokenId1, accountId1, 5L, true, false, 0, null, null, Range.atLeast(5L));
         sqlEntityListener.onTokenAccount(associate);
-        expected.add(getTokenAccount(tokenId1, accountId1, 5L, true, false, 1, TokenFreezeStatusEnum.UNFROZEN,
+        expected.add(getTokenAccount(tokenId1, accountId1, 5L, true, false, 0, TokenFreezeStatusEnum.UNFROZEN,
                 TokenKycStatusEnum.REVOKED, Range.closedOpen(5L, 10L)));
 
         completeFileAndCommit();
 
         // when in the next record file we have freeze, kycGrant, dissociate, associate, kycGrant
-        TokenAccount freeze = getTokenAccount(tokenId1, accountId1, null, null, null, 1, TokenFreezeStatusEnum.FROZEN,
+        TokenAccount freeze = getTokenAccount(tokenId1, accountId1, null, null, null, 0, TokenFreezeStatusEnum.FROZEN,
                 null, Range.atLeast(10L));
         sqlEntityListener.onTokenAccount(freeze);
-        expected.add(getTokenAccount(tokenId1, accountId1, 5L, true, false, 2, TokenFreezeStatusEnum.FROZEN,
+        expected.add(getTokenAccount(tokenId1, accountId1, 5L, true, false, 0, TokenFreezeStatusEnum.FROZEN,
                 TokenKycStatusEnum.REVOKED, Range.closedOpen(10L, 12L)));
 
-        TokenAccount kycGrant = getTokenAccount(tokenId1, accountId1, null, null, null, 1, null,
+        TokenAccount kycGrant = getTokenAccount(tokenId1, accountId1, null, null, null, 0, null,
                 TokenKycStatusEnum.GRANTED, Range.atLeast(12L));
         sqlEntityListener.onTokenAccount(kycGrant);
-        expected.add(getTokenAccount(tokenId1, accountId1, 5L, true, false, 2, TokenFreezeStatusEnum.FROZEN,
+        expected.add(getTokenAccount(tokenId1, accountId1, 5L, true, false, 0, TokenFreezeStatusEnum.FROZEN,
                 TokenKycStatusEnum.GRANTED, Range.closedOpen(12L, 15L)));
 
-        TokenAccount dissociate = getTokenAccount(tokenId1, accountId1, null, false, null, 1, null, null,
+        TokenAccount dissociate = getTokenAccount(tokenId1, accountId1, null, false, null, 0, null, null,
                 Range.atLeast(15L));
         sqlEntityListener.onTokenAccount(dissociate);
-        expected.add(getTokenAccount(tokenId1, accountId1, 5L, false, false, 2, TokenFreezeStatusEnum.FROZEN,
+        expected.add(getTokenAccount(tokenId1, accountId1, 5L, false, false, 0, TokenFreezeStatusEnum.FROZEN,
                 TokenKycStatusEnum.GRANTED, Range.closedOpen(15L, 20L)));
 
-        associate = getTokenAccount(tokenId1, accountId1, 20L, true, true, 1, null, null, Range.atLeast(20L));
+        associate = getTokenAccount(tokenId1, accountId1, 20L, true, true, 0, null, null, Range.atLeast(20L));
         sqlEntityListener.onTokenAccount(associate);
-        expected.add(getTokenAccount(tokenId1, accountId1, 20L, true, true, 2, TokenFreezeStatusEnum.UNFROZEN,
+        expected.add(getTokenAccount(tokenId1, accountId1, 20L, true, true, 0, TokenFreezeStatusEnum.UNFROZEN,
                 TokenKycStatusEnum.REVOKED, Range.closedOpen(20L, 22L)));
 
-        kycGrant = getTokenAccount(tokenId1, accountId1, null, null, null, 1, null,
+        kycGrant = getTokenAccount(tokenId1, accountId1, null, null, null, 0, null,
                 TokenKycStatusEnum.GRANTED, Range.atLeast(22L));
         sqlEntityListener.onTokenAccount(kycGrant);
 
         completeFileAndCommit();
 
-        var expectedTokenAccount = getTokenAccount(tokenId1, accountId1, 20L, true, true, 2, TokenFreezeStatusEnum.UNFROZEN,
+        var expectedTokenAccount = getTokenAccount(tokenId1, accountId1, 20L, true, true, 0, TokenFreezeStatusEnum.UNFROZEN,
                 TokenKycStatusEnum.GRANTED, Range.atLeast(22L));
 
         // then
@@ -1708,8 +1708,9 @@ class SqlEntityListenerTest extends IntegrationTest {
                 .containsExactlyInAnyOrder(tokenTransfer1, tokenTransfer2, tokenTransfer3);
     }
 
-    @Test
-    void tokenTransferTokenAccountBalance() {
+    @ValueSource(ints = {1, 2})
+    @ParameterizedTest
+    void tokenTransferTokenAccountBalance(int commitIndex) {
         // given
         EntityId tokenId1 = EntityId.of("0.0.3", TOKEN);
 
@@ -1720,26 +1721,73 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         EntityId accountId1 = EntityId.of("0.0.7", ACCOUNT);
         TokenAccount tokenAccount = getTokenAccount(tokenId1, accountId1, 5L, true, false,
-                10, TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE, Range.atLeast(5L));
+                0, TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE, Range.atLeast(5L));
+
+        // when
+        sqlEntityListener.onTokenAccount(tokenAccount);
+        if (commitIndex > 1) {
+            completeFileAndCommit();
+            assertThat(tokenAccountRepository.findAll()).containsExactly(tokenAccount);
+            assertThat(findTokenAccountHistory()).isEmpty();
+        }
 
         var tokenTransferId = new TokenTransfer.Id();
         tokenTransferId.setAccountId(EntityId.of(tokenAccount.getAccountId(), ACCOUNT));
         tokenTransferId.setTokenId(EntityId.of(tokenAccount.getTokenId(), TOKEN));
         tokenTransferId.setConsensusTimestamp(tokenAccount.getCreatedTimestamp() + 1);
-
         TokenTransfer tokenTransfer1 = domainBuilder.tokenTransfer().customize(t -> t.id(tokenTransferId)).get();
-
-        // when
-        sqlEntityListener.onTokenAccount(tokenAccount);
         sqlEntityListener.onTokenTransfer(tokenTransfer1);
         completeFileAndCommit();
 
         // then
+        tokenAccount.setBalance(tokenTransfer1.getAmount());
         assertThat(tokenTransferRepository.findAll()).containsExactly(tokenTransfer1);
-
-        tokenAccount.setBalance(110);
         assertThat(tokenAccountRepository.findAll()).containsExactly(tokenAccount);
         assertThat(findTokenAccountHistory()).isEmpty();
+    }
+
+    @ValueSource(ints = {1, 2})
+    @ParameterizedTest
+    void onTokenAccountDissociateBalance(int commitIndex) {
+        EntityId tokenId1 = EntityId.of("0.0.3", TOKEN);
+
+        // save token entities first
+        Token token1 = getToken(tokenId1, EntityId.of("0.0.500", ACCOUNT), 1L, 1L);
+        sqlEntityListener.onToken(token1);
+        completeFileAndCommit();
+
+        EntityId accountId1 = EntityId.of("0.0.7", ACCOUNT);
+        TokenAccount associate = getTokenAccount(tokenId1, accountId1, 5L, true, false,
+                0, TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE, Range.atLeast(5L));
+        var tokenTransferId = new TokenTransfer.Id();
+        tokenTransferId.setAccountId(EntityId.of(associate.getAccountId(), ACCOUNT));
+        tokenTransferId.setTokenId(EntityId.of(associate.getTokenId(), TOKEN));
+        tokenTransferId.setConsensusTimestamp(associate.getCreatedTimestamp() + 1);
+        TokenTransfer tokenTransfer1 = domainBuilder.tokenTransfer().customize(t -> t.id(tokenTransferId).amount(3000L)).get();
+        TokenAccount freeze = getTokenAccount(tokenId1, accountId1, null, null, null,
+                0, TokenFreezeStatusEnum.FROZEN, null, Range.atLeast(associate.getCreatedTimestamp() + 2));
+
+        var expected = getTokenAccount(tokenId1, accountId1, 5L, true, false, tokenTransfer1.getAmount(), TokenFreezeStatusEnum.NOT_APPLICABLE,
+                TokenKycStatusEnum.NOT_APPLICABLE, associate.getTimestampRange());
+
+        // when
+        sqlEntityListener.onTokenAccount(associate);
+        sqlEntityListener.onTokenTransfer(tokenTransfer1);
+        if (commitIndex > 1) {
+            completeFileAndCommit();
+            assertThat(tokenAccountRepository.findAll()).containsExactly(expected);
+            assertThat(findTokenAccountHistory()).isEmpty();
+        }
+
+        sqlEntityListener.onTokenAccount(freeze);
+        expected.setFreezeStatus(TokenFreezeStatusEnum.FROZEN);
+        expected.setTimestampRange(freeze.getTimestampRange());
+        associate.setTimestampRange(Range.closedOpen(associate.getTimestampLower(), freeze.getTimestampLower()));
+        completeFileAndCommit();
+
+        // then
+        assertThat(tokenAccountRepository.findAll()).containsExactly(expected);
+        assertThat(findTokenAccountHistory()).containsExactly(associate);
     }
 
     @Test
@@ -1752,9 +1800,10 @@ class SqlEntityListenerTest extends IntegrationTest {
         sqlEntityListener.onToken(token1);
         completeFileAndCommit();
 
+        long balance = 10;
         EntityId accountId1 = EntityId.of("0.0.7", ACCOUNT);
         TokenAccount tokenAccount = getTokenAccount(tokenId1, accountId1, 5L, true, false,
-                10, TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE, Range.atLeast(5L));
+                balance, TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE, Range.atLeast(5L));
         sqlEntityListener.onTokenAccount(tokenAccount);
         completeFileAndCommit();
 
@@ -1762,20 +1811,63 @@ class SqlEntityListenerTest extends IntegrationTest {
         tokenTransferId.setAccountId(EntityId.of(tokenAccount.getAccountId(), ACCOUNT));
         tokenTransferId.setTokenId(EntityId.of(tokenAccount.getTokenId(), TOKEN));
         tokenTransferId.setConsensusTimestamp(tokenAccount.getCreatedTimestamp() + 1);
+        // tokenTransfer has a default amount of 100.
         TokenTransfer tokenTransfer1 = domainBuilder.tokenTransfer().customize(t -> t.id(tokenTransferId)).get();
-        TokenTransfer tokenTransfer2 = domainBuilder.tokenTransfer().customize(t -> t.id(tokenTransferId).payerAccountId(EntityId.of(10, ACCOUNT))).get();
-        TokenTransfer tokenTransfer3 = domainBuilder.tokenTransfer().customize(t -> t.id(tokenTransferId).amount(-50L)).get();
+
+        tokenTransferId.setConsensusTimestamp(tokenTransferId.getConsensusTimestamp() + 1);
+        TokenTransfer tokenTransfer2 = domainBuilder.tokenTransfer().customize(t -> t.id(tokenTransferId).amount(-50L)).get();
 
         // when
         sqlEntityListener.onTokenTransfer(tokenTransfer1);
         sqlEntityListener.onTokenTransfer(tokenTransfer2);
-        sqlEntityListener.onTokenTransfer(tokenTransfer3);
         completeFileAndCommit();
 
         // then
-        tokenAccount.setBalance(160);
+        tokenAccount.setBalance(balance + tokenTransfer1.getAmount() + tokenTransfer2.getAmount());
         assertThat(tokenAccountRepository.findAll()).containsExactly(tokenAccount);
         assertThat(findTokenAccountHistory()).isEmpty();
+    }
+
+    @Test
+    void tokenTransferTokenAccountNewTokenAccountNotNull() {
+        // given
+        EntityId tokenId1 = EntityId.of("0.0.3", TOKEN);
+
+        // save token entities first
+        Token token1 = getToken(tokenId1, EntityId.of("0.0.500", ACCOUNT), 1L, 1L);
+        sqlEntityListener.onToken(token1);
+        completeFileAndCommit();
+
+        EntityId accountId1 = EntityId.of("0.0.7", ACCOUNT);
+        TokenAccount tokenAccount = getTokenAccount(tokenId1, accountId1, 5L, true, false,
+                0, TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE, Range.atLeast(5L));
+        sqlEntityListener.onTokenAccount(tokenAccount);
+        completeFileAndCommit();
+
+        var tokenTransferId = new TokenTransfer.Id();
+        tokenTransferId.setAccountId(EntityId.of(tokenAccount.getAccountId(), ACCOUNT));
+        tokenTransferId.setTokenId(EntityId.of(tokenAccount.getTokenId(), TOKEN));
+        tokenTransferId.setConsensusTimestamp(tokenAccount.getCreatedTimestamp() + 1);
+        // tokenTransfer has a default amount of 100.
+        TokenTransfer tokenTransfer1 = domainBuilder.tokenTransfer().customize(t -> t.id(tokenTransferId)).get();
+
+        tokenTransferId.setConsensusTimestamp(tokenTransferId.getConsensusTimestamp() + 1);
+        TokenTransfer tokenTransfer2 = domainBuilder.tokenTransfer().customize(t -> t.id(tokenTransferId).amount(-50L)).get();
+
+        TokenAccount freeze = getTokenAccount(tokenId1, accountId1, null, null, null, -9999, TokenFreezeStatusEnum.FROZEN, null, Range.atLeast(tokenAccount.getTimestampLower() + 1));
+        var expected = getTokenAccount(tokenId1, accountId1, 5L, true, false,
+                tokenTransfer1.getAmount() + tokenTransfer2.getAmount(), TokenFreezeStatusEnum.FROZEN, TokenKycStatusEnum.NOT_APPLICABLE, Range.atLeast(tokenAccount.getTimestampLower() + 1));
+
+        // when
+        sqlEntityListener.onTokenTransfer(tokenTransfer1);
+        sqlEntityListener.onTokenTransfer(tokenTransfer2);
+        sqlEntityListener.onTokenAccount(freeze);
+        completeFileAndCommit();
+
+        // then
+        tokenAccount.setTimestampRange(Range.closedOpen(tokenAccount.getTimestampLower(), freeze.getTimestampLower()));
+        assertThat(tokenAccountRepository.findAll()).containsExactly(expected);
+        assertThat(findTokenAccountHistory()).containsExactly(tokenAccount);
     }
 
     @ValueSource(ints = {1, 2})

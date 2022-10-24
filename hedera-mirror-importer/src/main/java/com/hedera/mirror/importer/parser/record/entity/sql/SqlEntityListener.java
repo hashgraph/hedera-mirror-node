@@ -404,9 +404,15 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         tokenTransfers.add(tokenTransfer);
 
         if (entityProperties.getPersist().isTrackBalance()) {
-            var accountId = tokenTransfer.getId().getAccountId().getId();
-            var tokenId = tokenTransfer.getId().getTokenId().getId();
-            getTokenAccount(accountId, tokenId, tokenTransfer.getAmount());
+            //var accountId = tokenTransfer.getId().getAccountId().getId();
+            //var tokenId = tokenTransfer.getId().getTokenId().getId();
+            //getTokenAccount(accountId, tokenId, tokenTransfer.getAmount());
+
+            var tokenAccount = new TokenAccount();
+            tokenAccount.setAccountId(tokenTransfer.getId().getAccountId().getId());
+            tokenAccount.setTokenId(tokenTransfer.getId().getTokenId().getId());
+            tokenAccount.setBalance(tokenTransfer.getAmount());
+            onTokenAccount(tokenAccount);
         }
     }
 
@@ -481,23 +487,23 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         }
     }
 
-    private void getTokenAccount(long accountId, long tokenId, long amount) {
-        var tokenAccountId = new AbstractTokenAccount.Id();
-        tokenAccountId.setAccountId(accountId);
-        tokenAccountId.setTokenId(tokenId);
-
-        var tokenAccount = tokenAccountState.get(tokenAccountId);
-        if (tokenAccount != null) {
-            tokenAccount.setBalance(tokenAccount.getBalance() + amount);
-            return;
-        }
-
-        tokenAccount = new TokenAccount();
-        tokenAccount.setAccountId(accountId);
-        tokenAccount.setTokenId(tokenId);
-        tokenAccount.setBalance(amount);
-        onTokenAccount(tokenAccount);
-    }
+//    private void getTokenAccount(long accountId, long tokenId, long amount) {
+//        var tokenAccountId = new AbstractTokenAccount.Id();
+//        tokenAccountId.setAccountId(accountId);
+//        tokenAccountId.setTokenId(tokenId);
+//
+//        var tokenAccount = tokenAccountState.get(tokenAccountId);
+//        if (tokenAccount != null) {
+//            tokenAccount.setBalance(tokenAccount.getBalance() + amount);
+//            return;
+//        }
+//
+//        tokenAccount = new TokenAccount();
+//        tokenAccount.setAccountId(accountId);
+//        tokenAccount.setTokenId(tokenId);
+//        tokenAccount.setBalance(amount);
+//        onTokenAccount(tokenAccount);
+//    }
 
     private void flush() {
         try {
@@ -781,9 +787,24 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     private TokenAccount mergeTokenAccount(TokenAccount lastTokenAccount, TokenAccount newTokenAccount) {
-        if (newTokenAccount.getTimestampRange() == null || lastTokenAccount.getTimestampRange() == null) {
-            newTokenAccount.setBalance(newTokenAccount.getBalance() + lastTokenAccount.getBalance());
-            return newTokenAccount;
+        if (lastTokenAccount.getTimestampRange() == null) {
+            if (newTokenAccount.getTimestampRange() == null) {
+                lastTokenAccount.setBalance(newTokenAccount.getBalance() + lastTokenAccount.getBalance());
+                return lastTokenAccount;
+            } else {
+                lastTokenAccount.setAutomaticAssociation(newTokenAccount.getAutomaticAssociation());
+                lastTokenAccount.setAssociated(newTokenAccount.getAssociated());
+                lastTokenAccount.setCreatedTimestamp(newTokenAccount.getCreatedTimestamp());
+                lastTokenAccount.setFreezeStatus(newTokenAccount.getFreezeStatus());
+                lastTokenAccount.setKycStatus(newTokenAccount.getKycStatus());
+                lastTokenAccount.setTimestampRange(newTokenAccount.getTimestampRange());
+                return lastTokenAccount;
+            }
+        }
+
+        if (lastTokenAccount.getTimestampRange() != null && newTokenAccount.getTimestampRange() == null) {
+            lastTokenAccount.setBalance(newTokenAccount.getBalance() + lastTokenAccount.getBalance());
+            return lastTokenAccount;
         }
 
         if (lastTokenAccount.getTimestampRange().equals(newTokenAccount.getTimestampRange())) {
@@ -793,6 +814,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             return lastTokenAccount;
         }
 
+        newTokenAccount.setBalance(lastTokenAccount.getBalance());
         lastTokenAccount.setTimestampUpper(newTokenAccount.getTimestampLower());
 
         if (newTokenAccount.getCreatedTimestamp() != null) {
