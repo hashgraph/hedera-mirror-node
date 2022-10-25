@@ -64,13 +64,17 @@ import com.hedera.mirror.test.e2e.acceptance.props.MirrorCustomFees;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorFixedFee;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorFraction;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorFractionalFee;
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorFreezeStatus;
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorKycStatus;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorNftTransaction;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorNftTransfer;
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorTokenAccount;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTokenTransfer;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenRelationshipResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 
@@ -403,6 +407,38 @@ public class TokenFeature {
         verifyTokenWithCustomFeesSchedule(tokenId, transaction.getConsensusTimestamp());
     }
 
+    @Then("the mirror node REST API should return the token relationship for token")
+    @Retryable(value = {AssertionError.class},
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
+            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
+    public void verifyMirrorTokenRelationshipTokenAPIResponses() {
+        TokenId tokenId = tokenIds.get(0);
+        MirrorTokenRelationshipResponse mirrorTokenRelationship = callTokenRelationship(tokenId);
+        //Asserting values
+        assertTokenRelationship(mirrorTokenRelationship);
+        MirrorTokenAccount token  = mirrorTokenRelationship.getTokens().get(0);
+        assertThat(token.getTokenId()).isEqualTo(tokenId.toString());
+        assertThat(token.getFreezeStatus()).isEqualTo(MirrorFreezeStatus.UNFROZEN);
+        assertThat(token.getKycStatus()).isEqualTo(MirrorKycStatus.REVOKED);
+
+    }
+
+    @Then("the mirror node REST API should return the token relationship for nft")
+    @Retryable(value = {AssertionError.class},
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
+            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
+    public void verifyMirrorTokenRelationshipNftAPIResponses() {
+        TokenId tokenId = tokenIds.get(0);
+        MirrorTokenRelationshipResponse mirrorTokenRelationship = callTokenRelationship(tokenId);
+        //Asserting values
+        assertTokenRelationship(mirrorTokenRelationship);
+        MirrorTokenAccount token  = mirrorTokenRelationship.getTokens().get(0);
+        assertThat(token.getTokenId()).isEqualTo(tokenId.toString());
+        assertThat(token.getFreezeStatus()).isEqualTo(MirrorFreezeStatus.NOT_APPLICABLE);
+        assertThat(token.getKycStatus()).isEqualTo(MirrorKycStatus.NOT_APPLICABLE);
+
+    }
+
     @After
     public void cleanup() {
         // dissociate all applicable accounts from token to reduce likelihood of max token association error
@@ -718,5 +754,18 @@ public class TokenFeature {
 
     private int getIndexOrDefault(Integer index) {
         return index != null ? index : 0;
+    }
+
+    private MirrorTokenRelationshipResponse callTokenRelationship(TokenId tokenId) {
+        AccountId accountId = getRecipientAccountId(0);
+        return mirrorClient.getTokenRelationships(accountId.toString(), tokenId.toString());
+    }
+
+    private void assertTokenRelationship(MirrorTokenRelationshipResponse mirrorTokenRelationship) {
+        assertNotNull(mirrorTokenRelationship);
+        assertNotNull(mirrorTokenRelationship.getTokens());
+        assertNotNull(mirrorTokenRelationship.getLinks());
+        assertNotEquals(mirrorTokenRelationship.getTokens().size(),0);
+        assertThat(mirrorTokenRelationship.getLinks().getNext()).isEqualTo(null);
     }
 }

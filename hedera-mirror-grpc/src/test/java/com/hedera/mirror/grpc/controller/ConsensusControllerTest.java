@@ -78,8 +78,9 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
         ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder().build();
         grpcConsensusService.subscribeTopic(Mono.just(query))
                 .as(StepVerifier::create)
-                .expectErrorSatisfies(t -> assertException(t, Status.Code.INVALID_ARGUMENT, "topicId: must not be null"))
-                .verify(Duration.ofMillis(500));
+                .expectErrorSatisfies(t -> assertException(t, Status.Code.INVALID_ARGUMENT, "topicId: must not be " +
+                        "null"))
+                .verify(Duration.ofSeconds(2));
     }
 
     @Test
@@ -90,7 +91,7 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
         grpcConsensusService.subscribeTopic(Mono.just(query))
                 .as(StepVerifier::create)
                 .expectErrorSatisfies(t -> assertException(t, Status.Code.INVALID_ARGUMENT, "Invalid entity ID"))
-                .verify(Duration.ofMillis(500));
+                .verify(Duration.ofSeconds(2));
     }
 
     @Test
@@ -104,7 +105,7 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
                 .as(StepVerifier::create)
                 .expectErrorSatisfies(t -> assertException(t, Status.Code.INVALID_ARGUMENT, "limit: must be greater " +
                         "than or equal to 0"))
-                .verify(Duration.ofMillis(500));
+                .verify(Duration.ofSeconds(2));
     }
 
     @Test
@@ -130,7 +131,7 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
                 .then(() -> generator.blockLast())
                 .expectNextCount(2)
                 .expectComplete()
-                .verify(Duration.ofMillis(500));
+                .verify(Duration.ofSeconds(2));
     }
 
     @Test
@@ -174,7 +175,7 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
                 .then(() -> generator.blockLast())
                 .expectNextCount(2)
                 .expectComplete()
-                .verify(Duration.ofMillis(500));
+                .verify(Duration.ofSeconds(2));
     }
 
     @Test
@@ -202,7 +203,7 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
                 .then(() -> generator.blockLast())
                 .expectNextCount(2)
                 .expectComplete()
-                .verify(Duration.ofMillis(500));
+                .verify(Duration.ofSeconds(2));
     }
 
     @Test
@@ -227,7 +228,7 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
                 .then(() -> generator.blockLast())
                 .expectNext(4L, 5L, 6L, 7L)
                 .expectComplete()
-                .verify(Duration.ofMillis(1000));
+                .verify(Duration.ofSeconds(2));
     }
 
     @Test
@@ -270,7 +271,7 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
                 .then(generator::blockLast)
                 .expectNext(2, 3, 0) // incoming messages
                 .thenCancel()
-                .verify(Duration.ofMillis(2000));
+                .verify(Duration.ofSeconds(2));
     }
 
     void assertException(Throwable t, Status.Code status, String message) {

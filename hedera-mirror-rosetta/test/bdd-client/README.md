@@ -44,7 +44,7 @@ Please refer to the [appendix](#test-configuration-properties) for the complete 
 1. Build the Rosetta All-in-One Docker Image
 
    ```shell
-   $ cd ../../build
+   $ cd ../../container
    $ docker build --build-arg GIT_REF=${RELEASE_TAG} -t hedera-mirror-rosetta:${RELEASE_TAG} .
    ```
 
@@ -82,7 +82,8 @@ Please refer to the [appendix](#test-configuration-properties) for the complete 
    $ go test -v --godog.tags=crypto
    ```
 
-   `--godog.tags` also supports complex expressions, please refer to the [official documentation](https://github.com/cucumber/godog#tags).
+   `--godog.tags` also supports complex expressions, please refer to
+   the [official documentation](https://github.com/cucumber/godog#tags).
 
 ## Appendix
 
