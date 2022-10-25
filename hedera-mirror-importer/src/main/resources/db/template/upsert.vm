@@ -1,8 +1,13 @@
 ## @formatter:off
-with existing as (
+## The inner join then left join is a workaround for citus
+with current as (
+  select e.*
+  from $tempTable t
+  join $finalTable e on $idJoin
+), existing as (
   select $existingColumnsAs, t.*
   from $tempTable t
-  left join $finalTable e on $idJoin
+  left join current e on $idJoin
 )
 insert into $finalTable ($insertColumns)
 select $coalesceColumns

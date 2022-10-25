@@ -6,11 +6,11 @@
 
 
 -- Tables distributed on id
-select create_distributed_table('account_balance_file', 'node_id');
-
 select create_distributed_table('entity', 'id');
 
 select create_distributed_table('event_file', 'node_id');
+
+select create_distributed_table('transaction_hash', 'hash');
 
 select create_distributed_table('record_file', 'node_id');
 
@@ -66,3 +66,4 @@ select create_distributed_table('transaction', 'payer_account_id', colocate_with
 select create_distributed_table('transaction_signature', 'entity_id', colocate_with => 'entity');
 
 -- Reference tables
+select create_reference_table('account_balance_file');
