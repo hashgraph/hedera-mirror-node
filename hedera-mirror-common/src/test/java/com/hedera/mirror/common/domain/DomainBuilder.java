@@ -188,6 +188,7 @@ public class DomainBuilder {
         var builder = AddressBookEntry.builder()
                 .consensusTimestamp(consensusTimestamp)
                 .description(text(10))
+                .fileId(entityId(FILE))
                 .memo(text(10))
                 .nodeId(nodeId)
                 .nodeAccountId(EntityId.of(0L, 0L, nodeId + 3, ACCOUNT))
@@ -218,6 +219,7 @@ public class DomainBuilder {
 
         var builder = AddressBookServiceEndpoint.builder()
                 .consensusTimestamp(timestamp())
+                .fileId(entityId(FILE))
                 .ipAddressV4(ipAddress)
                 .nodeId(id())
                 .port(50211);
@@ -517,6 +519,7 @@ public class DomainBuilder {
     public DomainWrapper<LiveHash, LiveHash.LiveHashBuilder> liveHash() {
         var builder = LiveHash.builder()
                 .consensusTimestamp(timestamp())
+                .entityId(entityId(ACCOUNT))
                 .livehash(bytes(64));
         return new DomainWrapperImpl<>(builder, builder::build);
     }

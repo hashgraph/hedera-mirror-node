@@ -49,6 +49,7 @@ create table if not exists address_book_entry
 (
     consensus_timestamp bigint        not null,
     description         varchar(100)  null,
+    file_id             bigint        not null,
     memo                varchar(128)  null,
     node_account_id     bigint        not null,
     node_cert_hash      bytea         null,
@@ -62,6 +63,7 @@ comment on table address_book_entry is 'Network address book node entries';
 create table if not exists address_book_service_endpoint
 (
     consensus_timestamp bigint             not null,
+    file_id             bigint             not null,
     ip_address_v4       varchar(15)        not null,
     node_id             bigint             not null,
     port                integer default -1 not null
@@ -360,7 +362,8 @@ comment on table file_data is 'File data entity entries';
 create table if not exists live_hash
 (
     livehash            bytea,
-    consensus_timestamp bigint not null
+    consensus_timestamp bigint not null,
+    entity_id           bigint
 );
 
 create table if not exists network_stake

@@ -152,6 +152,7 @@ class MissingAddressBooksMigrationTest extends IntegrationTest {
         for (int j = 1; j <= serviceEndpointCount; ++j) {
             AddressBookServiceEndpoint addressBookServiceEndpoint = new AddressBookServiceEndpoint();
             addressBookServiceEndpoint.setConsensusTimestamp(j);
+            addressBookServiceEndpoint.setFileId(AddressBookServiceImpl.FILE_101);
             addressBookServiceEndpoint.setIpAddressV4("127.0.0.1");
             addressBookServiceEndpoint.setPort(443);
             addressBookServiceEndpoint.setNodeId(100L);
@@ -169,6 +170,7 @@ class MissingAddressBooksMigrationTest extends IntegrationTest {
             long nodeAccountId = 3 + nodeId;
             addressBookEntryList
                     .add(addressBookEntry(a -> a.consensusTimestamp(startConsensusTimestamp)
+                            .fileId(AddressBookServiceImpl.FILE_101)
                             .nodeId(nodeId)
                             .memo("0.0." + nodeAccountId)
                             .nodeAccountId(EntityId.of("0.0." + nodeAccountId, EntityType.ACCOUNT))));

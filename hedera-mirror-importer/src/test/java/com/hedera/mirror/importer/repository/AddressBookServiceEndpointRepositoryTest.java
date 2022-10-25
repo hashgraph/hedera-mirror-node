@@ -88,10 +88,11 @@ class AddressBookServiceEndpointRepositoryTest extends AbstractRepositoryTest {
                 .containsExactlyInAnyOrder(80, 443, 80, 443, 8080, 8443, 8080, 8443, 50211, 50212, 50211, 50212);
     }
 
-    private AddressBookServiceEndpoint addressBookServiceEndpoint(long consensusTimestamp, String ip, int port,
+    private AddressBookServiceEndpoint addressBookServiceEndpoint(long consensusTimestamp, EntityId fileId, String ip, int port,
                                                                   long nodeId) {
         AddressBookServiceEndpoint addressBookServiceEndpoint = new AddressBookServiceEndpoint();
         addressBookServiceEndpoint.setConsensusTimestamp(consensusTimestamp);
+        addressBookServiceEndpoint.setFileId(fileId);
         addressBookServiceEndpoint.setIpAddressV4(ip);
         addressBookServiceEndpoint.setPort(port);
         addressBookServiceEndpoint.setNodeId(nodeId);
@@ -104,6 +105,7 @@ class AddressBookServiceEndpointRepositoryTest extends AbstractRepositoryTest {
         EntityId nodeAccountEntityId = EntityId.of(nodeAccountIdString, EntityType.ACCOUNT);
         AddressBookEntry.AddressBookEntryBuilder builder = AddressBookEntry.builder()
                 .consensusTimestamp(consensusTimestamp)
+                .fileId(addressBookEntityId102)
                 .memo(nodeAccountIdString)
                 .nodeAccountId(nodeAccountEntityId)
                 .nodeCertHash("nodeCertHash".getBytes())
@@ -115,6 +117,7 @@ class AddressBookServiceEndpointRepositoryTest extends AbstractRepositoryTest {
             for (int i = 0; i < portNums.size(); i++) {
                 serviceEndpoints.add(addressBookServiceEndpoint(
                         consensusTimestamp,
+                        addressBookEntityId102,
                         InetAddress.getByName("127.0.0." + i).getHostAddress(),
                         portNums.get(i),
                         nodeId));

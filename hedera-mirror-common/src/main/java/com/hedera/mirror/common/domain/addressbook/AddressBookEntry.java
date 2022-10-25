@@ -48,6 +48,7 @@ import org.apache.commons.codec.binary.Hex;
 import org.springframework.data.domain.Persistable;
 
 import com.hedera.mirror.common.converter.AccountIdConverter;
+import com.hedera.mirror.common.converter.FileIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
 
 @Builder(toBuilder = true)
@@ -62,6 +63,9 @@ public class AddressBookEntry implements Persistable<AddressBookEntry.Id> {
     private long consensusTimestamp;
 
     private String description;
+
+    @Convert(converter = FileIdConverter.class)
+    private EntityId fileId;
 
     private String memo;
 

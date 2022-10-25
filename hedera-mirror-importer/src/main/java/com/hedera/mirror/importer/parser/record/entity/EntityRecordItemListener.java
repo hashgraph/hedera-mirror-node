@@ -382,6 +382,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         if (entityProperties.getPersist().isClaims()) {
             LiveHash liveHash = new LiveHash();
             liveHash.setConsensusTimestamp(consensusTimestamp);
+            liveHash.setEntityId(EntityId.of(transactionBody.getLiveHash().getAccountId()));
             liveHash.setLivehash(DomainUtils.toBytes(transactionBody.getLiveHash().getHash()));
             entityListener.onLiveHash(liveHash);
         }

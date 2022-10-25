@@ -21,6 +21,8 @@ package com.hedera.mirror.common.domain.transaction;
  */
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import lombok.AccessLevel;
@@ -29,6 +31,10 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.domain.Persistable;
+
+import com.hedera.mirror.common.converter.AccountIdConverter;
+import com.hedera.mirror.common.converter.EntityIdSerializer;
+import com.hedera.mirror.common.domain.entity.EntityId;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
@@ -39,6 +45,10 @@ public class LiveHash implements Persistable<Long> {
 
     @Id
     private Long consensusTimestamp;
+
+    @Convert(converter = AccountIdConverter.class)
+    @JsonSerialize(using = EntityIdSerializer.class)
+    private EntityId entityId;
 
     private byte[] livehash;
 

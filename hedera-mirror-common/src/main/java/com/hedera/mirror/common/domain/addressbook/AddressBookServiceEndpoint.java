@@ -23,6 +23,7 @@ package com.hedera.mirror.common.domain.addressbook;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.io.Serializable;
 import javax.persistence.Column;
+import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.IdClass;
 import lombok.AccessLevel;
@@ -31,6 +32,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.domain.Persistable;
+
+import com.hedera.mirror.common.converter.FileIdConverter;
+import com.hedera.mirror.common.domain.entity.EntityId;
 
 @Builder(toBuilder = true)
 @Data
@@ -42,6 +46,9 @@ public class AddressBookServiceEndpoint implements Persistable<AddressBookServic
 
     @javax.persistence.Id
     private long consensusTimestamp;
+
+    @Convert(converter = FileIdConverter.class)
+    private EntityId fileId;
 
     @javax.persistence.Id
     @Column(name = "ip_address_v4")
