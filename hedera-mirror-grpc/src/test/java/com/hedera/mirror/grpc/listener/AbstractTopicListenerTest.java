@@ -93,7 +93,7 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
                 .expectSubscription()
-                .expectTimeout(Duration.ofMillis(500L))
+                .expectTimeout(Duration.ofSeconds(2))
                 .verify();
     }
 
@@ -107,11 +107,11 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
         topicListener.listen(filter)
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
-                .thenAwait(Duration.ofMillis(50))
+                .thenAwait(Duration.ofMillis(250))
                 .then(() -> publish(domainBuilder.topicMessages(2, future)))
                 .expectNext(1L, 2L)
                 .thenCancel()
-                .verify(Duration.ofMillis(500));
+                .verify(Duration.ofSeconds(2));
     }
 
     @Test
@@ -127,11 +127,11 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
         topicListener.listen(filter)
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
-                .thenAwait(Duration.ofMillis(50))
+                .thenAwait(Duration.ofMillis(250))
                 .then(() -> publish(domainBuilder.topicMessages(2, future)))
                 .expectNext(1L, 2L)
                 .thenCancel()
-                .verify(Duration.ofMillis(500));
+                .verify(Duration.ofSeconds(2));
 
         listenerProperties.setMaxPageSize(maxPageSize);
     }
@@ -149,11 +149,11 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
         topicListener.listen(filter)
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
-                .thenAwait(Duration.ofMillis(50))
+                .thenAwait(Duration.ofMillis(250))
                 .then(() -> publish(domainBuilder.topicMessages(3, future)))
                 .expectNext(1L, 2L, 3L)
                 .thenCancel()
-                .verify(Duration.ofMillis(500));
+                .verify(Duration.ofSeconds(2));
 
         listenerProperties.setMaxPageSize(maxPageSize);
     }
@@ -168,11 +168,11 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
         topicListener.listen(filter)
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
-                .thenAwait(Duration.ofMillis(50))
+                .thenAwait(Duration.ofMillis(250))
                 .then(() -> publish(domainBuilder.topicMessages(10, future)))
                 .expectNext(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L)
                 .thenCancel()
-                .verify(Duration.ofMillis(1000));
+                .verify(Duration.ofSeconds(2));
     }
 
     @Test
@@ -186,11 +186,11 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
         topicListener.listen(filter)
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
-                .thenAwait(Duration.ofMillis(50))
+                .thenAwait(Duration.ofMillis(250))
                 .then(() -> publish(topicMessage))
                 .expectNext(1L)
                 .thenCancel()
-                .verify(Duration.ofMillis(500));
+                .verify(Duration.ofSeconds(2));
     }
 
     @Test
@@ -203,11 +203,11 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
 
         topicListener.listen(filter)
                 .as(StepVerifier::create)
-                .thenAwait(Duration.ofMillis(100))
+                .thenAwait(Duration.ofMillis(250))
                 .then(() -> publish(topicMessage))
                 .expectNextCount(0)
                 .thenCancel()
-                .verify(Duration.ofMillis(500));
+                .verify(Duration.ofSeconds(2));
     }
 
     @Test
@@ -226,26 +226,22 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
         topicListener.listen(filter)
                 .map(TopicMessage::getSequenceNumber)
                 .as(StepVerifier::create)
-                .thenAwait(Duration.ofMillis(50))
+                .thenAwait(Duration.ofMillis(250))
                 .then(() -> publish(generator))
                 .expectNext(2L)
                 .thenCancel()
-                .verify(Duration.ofMillis(500));
+                .verify(Duration.ofSeconds(2));
     }
 
     @Test
     void multipleSubscribers() {
         // @formatter:off
         Flux<TopicMessage> generator = Flux.concat(
-                domainBuilder
-                        .topicMessage(t -> t.topicId(1).sequenceNumber(1).consensusTimestamp(future.plusNanos(1L))),
-                domainBuilder
-                        .topicMessage(t -> t.topicId(1).sequenceNumber(2).consensusTimestamp(future.plusNanos(2L))),
-                domainBuilder
-                        .topicMessage(t -> t.topicId(2).sequenceNumber(7).consensusTimestamp(future.plusNanos(3L))),
-                domainBuilder
-                        .topicMessage(t -> t.topicId(2).sequenceNumber(8).consensusTimestamp(future.plusNanos(4L))),
-                domainBuilder.topicMessage(t -> t.topicId(1).sequenceNumber(3).consensusTimestamp(future.plusNanos(5L)))
+            domainBuilder.topicMessage(t -> t.topicId(1).sequenceNumber(1).consensusTimestamp(future.plusNanos(1L))),
+            domainBuilder.topicMessage(t -> t.topicId(1).sequenceNumber(2).consensusTimestamp(future.plusNanos(2L))),
+            domainBuilder.topicMessage(t -> t.topicId(2).sequenceNumber(7).consensusTimestamp(future.plusNanos(3L))),
+            domainBuilder.topicMessage(t -> t.topicId(2).sequenceNumber(8).consensusTimestamp(future.plusNanos(4L))),
+            domainBuilder.topicMessage(t -> t.topicId(1).sequenceNumber(3).consensusTimestamp(future.plusNanos(5L)))
         );
         // @formatter:on
 
@@ -277,8 +273,8 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
         Uninterruptibles.sleepUninterruptibly(50, TimeUnit.MILLISECONDS);
         publish(generator);
 
-        stepVerifier1.verify(Duration.ofMillis(500));
-        stepVerifier2.verify(Duration.ofMillis(500));
+        stepVerifier1.verify(Duration.ofSeconds(2));
+        stepVerifier2.verify(Duration.ofSeconds(2));
 
         topicListener
                 .listen(filter1)
@@ -287,6 +283,6 @@ public abstract class AbstractTopicListenerTest extends GrpcIntegrationTest {
                 .as("Verify can still re-subscribe after poller cancelled when no subscriptions")
                 .expectNextCount(0)
                 .thenCancel()
-                .verify(Duration.ofMillis(100));
+                .verify(Duration.ofSeconds(2));
     }
 }

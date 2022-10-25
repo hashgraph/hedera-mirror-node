@@ -7,6 +7,7 @@ Feature: HTS Base Coverage Feature
         Then the mirror node REST API should return the transaction
         When I associate a new recipient account with token
         Then the mirror node REST API should return the transaction
+        Then the mirror node REST API should return the token relationship for token
         And I set new account freeze status to <freezeStatus>
         Then the mirror node REST API should return the transaction
         And I set new account kyc status to <kycStatus>
@@ -41,6 +42,7 @@ Feature: HTS Base Coverage Feature
         Then the mirror node REST API should return the transaction
         When I associate a new recipient account with token
         And the mirror node REST API should return the transaction
+        Then the mirror node REST API should return the token relationship for nft
         Then I mint a serial number from the token
         And the mirror node REST API should return the transaction for token 0 serial number 0 transaction flow
         Then I transfer serial number of token to recipient

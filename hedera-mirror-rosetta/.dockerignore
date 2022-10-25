@@ -4,9 +4,10 @@
 *.txt
 *.xml
 .*
-Dockerfile
+!Dockerfile
 bin/
 build/
+container/
 scripts/
 target/
 test/

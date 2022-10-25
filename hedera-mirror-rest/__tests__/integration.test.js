@@ -126,7 +126,7 @@ describe('API specification tests', () => {
     logger.debug(`uploaded ${s3ObjectKeys.length} file objects: ${s3ObjectKeys}`);
   };
 
-  jest.setTimeout(40000);
+  jest.setTimeout(60000);
 
   beforeAll(async () => {
     s3Ops = new IntegrationS3Ops();
