@@ -198,14 +198,9 @@ public class PricesAndFeesImpl implements PricesAndFeesProvider {
         long feeInTinyCents = currentFeeInTinycents(now, function, resourcePriceFn);
         long feeInTinyBars = getTinybarsFromTinyCents(rate(timestamp), feeInTinyCents);
         final var unscaledPrice = Math.max(1L, feeInTinyBars);
-
-        final var maxMultiplier = Long.MAX_VALUE / feeInTinyBars;
         final var curMultiplier = 1L;
-        if (curMultiplier > maxMultiplier) {
-            return Long.MAX_VALUE;
-        } else {
-            return unscaledPrice * curMultiplier;
-        }
+
+        return unscaledPrice * curMultiplier;
     }
 
     private long currentFeeInTinycents(final Instant now, final HederaFunctionality function,
