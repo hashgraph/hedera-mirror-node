@@ -104,11 +104,6 @@ create index if not exists entity_history__alias on entity_history (alias) where
 create index if not exists entity_history__evm_address on entity_history (evm_address) where evm_address is not null;
 create index if not exists entity_history__timestamp_range on entity_history using gist (timestamp_range);
 
--- entity_state_start
-create unique index if not exists entity_state_start__id on entity_state_start (id);
-create index if not exists entity_state_start__staked_account_id
-    on entity_state_start (staked_account_id) where staked_account_id <> 0;
-
 -- entity_stake
 alter table if exists entity_stake
     add constraint entity_stake__pk primary key (id);
