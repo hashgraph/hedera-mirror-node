@@ -17,7 +17,6 @@
     </parent>
 
     <properties>
-        <awaitility.version>4.2.0</awaitility.version>
         <bouncycastle.version>1.71</bouncycastle.version>
         <commons-beanutils.version>1.9.4</commons-beanutils.version>
         <commons-compress.version>1.21</commons-compress.version>
@@ -219,7 +218,6 @@
         <dependency>
             <groupId>org.awaitility</groupId>
             <artifactId>awaitility</artifactId>
-            <version>${awaitility.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>

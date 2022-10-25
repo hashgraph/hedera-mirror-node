@@ -11,7 +11,6 @@ USER 1000:1000
 WORKDIR /app
 
 # Copy artifacts
-COPY --from=builder /app/container/* ./
 COPY --from=builder /app/dependencies/ ./
 COPY --from=builder /app/snapshot-dependencies/ ./
 RUN true  # Workaround https://github.com/moby/moby/issues/37965
