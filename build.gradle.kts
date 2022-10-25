@@ -31,7 +31,7 @@ extra.apply {
     set("gson.version", "2.8.9") // Temporary until Apache jclouds supports gson 2.9
     set("protobufVersion", "3.21.8")
     set("reactorGrpcVersion", "1.2.3")
-    set("testcontainersSpringBootVersion", "2.2.9")
+    set("testcontainersSpringBootVersion", "2.2.10")
 }
 
 // Creates a platform/BOM with specific versions so subprojects don't need to specify a version when using a dependency
