@@ -576,8 +576,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
                 nfts.clear();
                 nftTransferState.clear();
                 // tokenTransfers.clear();
-            } catch (BeanCreationNotAllowedException e) {
-                // This error can occur during shutdown
             }
         }
     }
