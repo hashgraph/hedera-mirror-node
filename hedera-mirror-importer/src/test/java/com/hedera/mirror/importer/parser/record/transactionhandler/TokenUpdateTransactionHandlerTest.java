@@ -125,11 +125,6 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         Transaction transaction = new Transaction();
         transaction.setEntityId(entity.toEntityId());
         transactionHandler.updateTransaction(transaction, recordItem);
-
-        TransactionBody body = recordItem.getTransactionBody();
-        var payerAccount = EntityId.of(body.getTransactionID().getAccountID()).toEntity().getId();
-        verify(nftRepository).updateTreasury(tokenID.getTokenNum(), previousAccountId.getAccountNum(),
-                newAccountId.getAccountNum(), consensusTimestamp, payerAccount, false);
     }
 
     @Test

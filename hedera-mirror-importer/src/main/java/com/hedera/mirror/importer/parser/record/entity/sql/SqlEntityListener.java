@@ -84,6 +84,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
+import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.SidecarFileRepository;
 
@@ -97,6 +98,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final EntityIdService entityIdService;
     private final EntityProperties entityProperties;
     private final ApplicationEventPublisher eventPublisher;
+    private final NftRepository nftRepository;
     private final RecordFileRepository recordFileRepository;
     private final SidecarFileRepository sidecarFileRepository;
     private final SqlProperties sqlProperties;
@@ -152,6 +154,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
                              EntityIdService entityIdService,
                              EntityProperties entityProperties,
                              ApplicationEventPublisher eventPublisher,
+                             NftRepository nftRepository,
                              RecordFileRepository recordFileRepository,
                              SidecarFileRepository sidecarFileRepository,
                              SqlProperties sqlProperties,
@@ -160,6 +163,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         this.entityIdService = entityIdService;
         this.entityProperties = entityProperties;
         this.eventPublisher = eventPublisher;
+        this.nftRepository = nftRepository;
         this.recordFileRepository = recordFileRepository;
         this.sidecarFileRepository = sidecarFileRepository;
         this.sqlProperties = sqlProperties;
@@ -344,6 +348,22 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onNftTransfer(NftTransfer nftTransfer) throws ImporterException {
+        if (nftTransfer.getId().getSerialNumber() == NftTransferId.WILDCARD_SERIAL_NUMBER) {
+            // 1. flush nft state to db
+            flushNftState();
+            // 2. nftRepository.updateTreasury
+
+            NftTransferId nftTransferId = nftTransfer.getId();
+            long payerAccountId = nftTransfer.getPayerAccountId().getId();
+            EntityId newTreasury = nftTransfer.getReceiverAccountId();
+            EntityId previousTreasury = nftTransfer.getSenderAccountId();
+            EntityId tokenId = nftTransferId.getTokenId();
+
+            nftRepository.updateTreasury(tokenId.getId(), previousTreasury.getId(), newTreasury.getId(),
+                    nftTransferId.getConsensusTimestamp(), payerAccountId, nftTransfer.getIsApproval());
+            return;
+        }
+
         nftTransferState.merge(nftTransfer.getId(), nftTransfer, this::mergeNftTransfer);
     }
 
@@ -530,6 +550,35 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             throw new ParserException(e);
         } finally {
             cleanup();
+        }
+    }
+
+    private void flushNftState() {
+        // like flush(), but only for the Nft table
+        try {
+            // batch save action may run asynchronously, triggering it before other operations can reduce latency
+            eventPublisher.publishEvent(new EntityBatchSaveEvent(this));
+
+            Stopwatch stopwatch = Stopwatch.createStarted();
+
+            // insert operations with conflict management
+            batchPersister.persist(nfts.values()); // persist nft after token entity
+            batchPersister.persist(nftTransferState.values());
+            //?? batchPersister.persist(tokenTransfers);
+
+            log.info("Completed nft-only batch inserts in {}", stopwatch);
+        } catch (ParserException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ParserException(e);
+        } finally {
+            try {
+                nfts.clear();
+                nftTransferState.clear();
+                // tokenTransfers.clear();
+            } catch (BeanCreationNotAllowedException e) {
+                // This error can occur during shutdown
+            }
         }
     }
 

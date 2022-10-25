@@ -1247,6 +1247,91 @@ class SqlEntityListenerTest extends IntegrationTest {
     }
 
     @Test
+    void onNftTransferTreasuryWithUntransferredNfts() {
+        // create token first
+        EntityId tokenId = EntityId.of("0.0.1", TOKEN);
+        EntityId accountId1 = EntityId.of("0.0.2", ACCOUNT); // holder of pre-transfered NFT
+        EntityId accountId2 = EntityId.of("0.0.4", ACCOUNT); // eventual new treasury account
+        EntityId treasuryId = EntityId.of("0.0.98", ACCOUNT); // original treasury account
+        String metadata1 = "nft1";
+        String metadata2 = "nft2";
+        String metadata3 = "nft3";
+        String metadata4 = "nft4";
+        String metadata5 = "nft5";
+
+        Token token1 = getToken(tokenId, treasuryId, 1L, 1L);
+        sqlEntityListener.onToken(token1);
+
+        // create nft 1
+        sqlEntityListener.onNft(getNft(tokenId, 1L, null, 3L, false, metadata1, 3L)); // mint
+        sqlEntityListener.onNft(getNft(tokenId, 1L, accountId1, null, null, null, 3L)); // transfer
+
+        // create nft 2
+        sqlEntityListener.onNft(getNft(tokenId, 2L, null, 4L, false, metadata2, 4L)); // mint
+        sqlEntityListener.onNft(getNft(tokenId, 2L, accountId1, null, null, null, 4L)); // transfer
+
+        completeFileAndCommit();
+
+        // create more nfts, but don't transfer them in advance
+        sqlEntityListener.onNft(getNft(tokenId, 3L, null, 5L, false, metadata3, 5L)); // mint
+        sqlEntityListener.onNft(getNft(tokenId, 4L, null, 6L, false, metadata4, 6L)); // mint
+        Nft treasuryNft = getNft(tokenId, -1L, accountId2, 7L, false, metadata5, 7L); // transfer treasury
+
+        completeFileAndCommit();
+
+        Nft nft1 = getNft(tokenId, 1L, accountId1, 3L, false, metadata1, 3L);
+        Nft nft2 = getNft(tokenId, 2L, accountId1, 4L, false, metadata2, 4L);
+        Nft nft3 = getNft(tokenId, 3L, null, 5L, false, metadata3, 5L); // does not actually get transfered w treasury
+        Nft nft4 = getNft(tokenId, 4L, null, 6L, false, metadata4, 6L); // does not actually get transfered w treasury
+
+        assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(nft1, nft2, nft3, nft4);
+    }
+
+    @Test
+    void onNftTransferTreasuryAfterTransferredNfts() {
+        // create token first
+        EntityId tokenId = EntityId.of("0.0.1", TOKEN);
+        EntityId accountId1 = EntityId.of("0.0.2", ACCOUNT); // holder of pre-transfered NFT
+        EntityId accountId2 = EntityId.of("0.0.3", ACCOUNT); // eventual new treasury account
+        EntityId accountId3 = EntityId.of("0.0.4", ACCOUNT); // holder of NFTs transfered before treasury transfer
+        EntityId treasuryId = EntityId.of("0.0.98", ACCOUNT); // original treasury account
+        String metadata1 = "nft1";
+        String metadata2 = "nft2";
+        String metadata3 = "nft3";
+        String metadata4 = "nft4";
+        String metadata5 = "nft5";
+
+        Token token1 = getToken(tokenId, treasuryId, 1L, 1L);
+        sqlEntityListener.onToken(token1);
+
+        // create nft 1
+        sqlEntityListener.onNft(getNft(tokenId, 1L, null, 3L, false, metadata1, 3L)); // mint
+        sqlEntityListener.onNft(getNft(tokenId, 1L, accountId1, null, null, null, 3L)); // transfer
+
+        // create nft 2
+        sqlEntityListener.onNft(getNft(tokenId, 2L, null, 4L, false, metadata2, 4L)); // mint
+        sqlEntityListener.onNft(getNft(tokenId, 2L, accountId1, null, null, null, 4L)); // transfer
+
+        completeFileAndCommit();
+
+        // create more nfts, and transfer them at the same time as the treasury transfer
+        sqlEntityListener.onNft(getNft(tokenId, 3L, null, 5L, false, metadata3, 5L)); // mint
+        sqlEntityListener.onNft(getNft(tokenId, 3L, accountId3, null, null, null, 5L)); // transfer
+        sqlEntityListener.onNft(getNft(tokenId, 4L, null, 6L, false, metadata4, 6L)); // mint
+        sqlEntityListener.onNft(getNft(tokenId, 4L, accountId3, null, null, null, 6L)); // transfer
+        Nft treasuryNft = getNft(tokenId, -1L, accountId2, 7L, false, metadata5, 7L); // transfer treasury
+
+        completeFileAndCommit();
+
+        Nft nft1 = getNft(tokenId, 1L, accountId1, 3L, false, metadata1, 3L);
+        Nft nft2 = getNft(tokenId, 2L, accountId1, 4L, false, metadata2, 4L);
+        Nft nft3 = getNft(tokenId, 3L, accountId3, 5L, false, metadata3, 5L);
+        Nft nft4 = getNft(tokenId, 4L, accountId3, 6L, false, metadata4, 6L);
+
+        assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(nft1, nft2, nft3, nft4);
+    }
+
+    @Test
     void onNodeStake() {
         // given
         var nodeStake1 = domainBuilder.nodeStake().get();

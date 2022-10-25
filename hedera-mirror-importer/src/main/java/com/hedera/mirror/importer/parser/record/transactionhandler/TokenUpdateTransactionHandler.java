@@ -76,7 +76,6 @@ class TokenUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler
             entity.setMemo(transactionBody.getMemo().getValue());
         }
 
-        updateTreasury(recordItem);
         entityListener.onEntity(entity);
     }
 

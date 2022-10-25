@@ -802,11 +802,6 @@ public class EntityRecordItemListener implements RecordItemListener {
             List<com.hederahashgraph.api.proto.java.NftTransfer> nftTransfersList) {
         for (NftTransfer nftTransfer : nftTransfersList) {
             long serialNumber = nftTransfer.getSerialNumber();
-            if (serialNumber == NftTransferId.WILDCARD_SERIAL_NUMBER) {
-                // do not persist nft transfers with the wildcard serial number (-1) which signify an nft token
-                // treasury change
-                return;
-            }
 
             EntityId receiverId = EntityId.of(nftTransfer.getReceiverAccountID());
             EntityId senderId = EntityId.of(nftTransfer.getSenderAccountID());
