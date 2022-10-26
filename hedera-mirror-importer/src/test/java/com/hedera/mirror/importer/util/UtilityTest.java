@@ -57,7 +57,7 @@ public class UtilityTest {
 
         assertThat(Utility.aliasToEvmAddress(ALIAS_ECDSA_SECP256K1)).isEqualTo(EVM_ADDRESS);
         assertThat(Utility.aliasToEvmAddress(aliasEcdsa2)).isEqualTo(evmAddress2);
-        assertThat(Utility.aliasToEvmAddress(aliasUncompressedEcdsa)).isEqualTo(null);
+        assertThat(Utility.aliasToEvmAddress(aliasUncompressedEcdsa)).isNull();
         assertThat(Utility.aliasToEvmAddress(aliasEd25519)).isNull();
         assertThat(Utility.aliasToEvmAddress(null)).isNull();
         assertThat(Utility.aliasToEvmAddress(new byte[] {})).isNull();
