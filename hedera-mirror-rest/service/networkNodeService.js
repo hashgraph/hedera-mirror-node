@@ -109,13 +109,13 @@ class NetworkNodeService extends BaseService {
             (select max(${NetworkStake.CONSENSUS_TIMESTAMP}) from ${NetworkStake.tableName})`;
 
   static networkSupplyQuery = `
-    select coalesce(sum(balance), 0) as unreleased_supply,
-           (
-             select max(consensus_end)
-             from record_file
-           )                         as consensus_timestamp
-    from entity
-    where (${NetworkNodeService.unreleasedSupplyAccounts('id')})`;
+    with unreleased as (
+      select coalesce(sum(balance), 0) as unreleased_supply
+      from entity
+      where (${NetworkNodeService.unreleasedSupplyAccounts('id')})
+    )
+    select unreleased_supply, (select max(consensus_end) from record_file) as consensus_timestamp
+    from unreleased`;
 
   static networkSupplyByTimestampQuery = `
     select coalesce(sum(balance), 0) as unreleased_supply, max(consensus_timestamp) as consensus_timestamp
