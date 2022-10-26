@@ -1708,19 +1708,27 @@ class SqlEntityListenerTest extends IntegrationTest {
                 .containsExactlyInAnyOrder(tokenTransfer1, tokenTransfer2, tokenTransfer3);
     }
 
-    @ValueSource(ints = {1, 2})
+    @ValueSource(ints = {1, 2, 3, 4})
     @ParameterizedTest
-    void tokenTransferTokenAccountBalance(int commitIndex) {
+    void onTokenTransferTokenAccountBalance(int commitIndex) {
         // given
-        EntityId tokenId1 = EntityId.of("0.0.3", TOKEN);
+        var tokenId1 = EntityId.of("0.0.3", TOKEN);
 
         // save token entities first
-        Token token1 = getToken(tokenId1, EntityId.of("0.0.500", ACCOUNT), 1L, 1L);
+        var token1 = domainBuilder.token().customize(c -> c
+                .createdTimestamp(1L)
+                .modifiedTimestamp(1L)
+                .tokenId(new TokenId(tokenId1))
+                .totalSupply(1_000_000_000L)
+                .treasuryAccountId(EntityId.of("0.0.500", ACCOUNT))
+                .type(TokenTypeEnum.FUNGIBLE_COMMON)
+        ).get();
+
         sqlEntityListener.onToken(token1);
         completeFileAndCommit();
 
-        EntityId accountId1 = EntityId.of("0.0.7", ACCOUNT);
-        TokenAccount tokenAccount = getTokenAccount(tokenId1, accountId1, 5L, true, false,
+        var accountId1 = EntityId.of("0.0.7", ACCOUNT);
+        var tokenAccount = getTokenAccount(tokenId1, accountId1, 5L, true, false,
                 0, TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE, Range.atLeast(5L));
 
         // when
@@ -1729,6 +1737,7 @@ class SqlEntityListenerTest extends IntegrationTest {
             completeFileAndCommit();
             assertThat(tokenAccountRepository.findAll()).containsExactly(tokenAccount);
             assertThat(findTokenAccountHistory()).isEmpty();
+            assertThat(tokenTransferRepository.findAll()).isEmpty();
         }
 
         var tokenTransferId = new TokenTransfer.Id();
@@ -1736,138 +1745,46 @@ class SqlEntityListenerTest extends IntegrationTest {
         tokenTransferId.setTokenId(EntityId.of(tokenAccount.getTokenId(), TOKEN));
         tokenTransferId.setConsensusTimestamp(tokenAccount.getCreatedTimestamp() + 1);
         TokenTransfer tokenTransfer1 = domainBuilder.tokenTransfer().customize(t -> t.id(tokenTransferId)).get();
+        var expected = getTokenAccount(tokenId1, accountId1, 5L, true, false,
+                tokenTransfer1.getAmount(), TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE, Range.atLeast(5L));
+
         sqlEntityListener.onTokenTransfer(tokenTransfer1);
-        completeFileAndCommit();
-
-        // then
-        tokenAccount.setBalance(tokenTransfer1.getAmount());
-        assertThat(tokenTransferRepository.findAll()).containsExactly(tokenTransfer1);
-        assertThat(tokenAccountRepository.findAll()).containsExactly(tokenAccount);
-        assertThat(findTokenAccountHistory()).isEmpty();
-    }
-
-    @ValueSource(ints = {1, 2})
-    @ParameterizedTest
-    void onTokenAccountFreezeBalance(int commitIndex) {
-        EntityId tokenId1 = EntityId.of("0.0.3", TOKEN);
-
-        // save token entities first
-        Token token1 = getToken(tokenId1, EntityId.of("0.0.500", ACCOUNT), 1L, 1L);
-        sqlEntityListener.onToken(token1);
-        completeFileAndCommit();
-
-        EntityId accountId1 = EntityId.of("0.0.7", ACCOUNT);
-        TokenAccount associate = getTokenAccount(tokenId1, accountId1, 5L, true, false,
-                0, TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE, Range.atLeast(5L));
-        var tokenTransferId = new TokenTransfer.Id();
-        tokenTransferId.setAccountId(EntityId.of(associate.getAccountId(), ACCOUNT));
-        tokenTransferId.setTokenId(EntityId.of(associate.getTokenId(), TOKEN));
-        tokenTransferId.setConsensusTimestamp(associate.getCreatedTimestamp() + 1);
-        TokenTransfer tokenTransfer1 = domainBuilder.tokenTransfer().customize(t -> t.id(tokenTransferId).amount(3000L)).get();
-        TokenAccount freeze = getTokenAccount(tokenId1, accountId1, null, null, null,
-                0, TokenFreezeStatusEnum.FROZEN, null, Range.atLeast(associate.getCreatedTimestamp() + 2));
-
-        var expected = getTokenAccount(tokenId1, accountId1, 5L, true, false, tokenTransfer1.getAmount(), TokenFreezeStatusEnum.NOT_APPLICABLE,
-                TokenKycStatusEnum.NOT_APPLICABLE, associate.getTimestampRange());
-
-        // when
-        sqlEntityListener.onTokenAccount(associate);
-        sqlEntityListener.onTokenTransfer(tokenTransfer1);
-        if (commitIndex > 1) {
+        if (commitIndex > 2) {
             completeFileAndCommit();
+            tokenAccount.setBalance(tokenTransfer1.getAmount());
             assertThat(tokenAccountRepository.findAll()).containsExactly(expected);
             assertThat(findTokenAccountHistory()).isEmpty();
+            assertThat(tokenTransferRepository.findAll()).containsExactly(tokenTransfer1);
         }
 
-        sqlEntityListener.onTokenAccount(freeze);
+        TokenAccount freeze = getTokenAccount(tokenId1, accountId1, null, null, null,
+                0, TokenFreezeStatusEnum.FROZEN, null, Range.atLeast(6L));
         expected.setFreezeStatus(TokenFreezeStatusEnum.FROZEN);
-        expected.setTimestampRange(freeze.getTimestampRange());
-        associate.setTimestampRange(Range.closedOpen(associate.getTimestampLower(), freeze.getTimestampLower()));
-        completeFileAndCommit();
+        expected.setTimestampRange(Range.atLeast(6L));
+        tokenAccount.setTimestampRange(Range.closedOpen(5L, 6L));
 
-        // then
-        assertThat(tokenAccountRepository.findAll()).containsExactly(expected);
-        assertThat(findTokenAccountHistory()).containsExactly(associate);
-    }
-
-    @Test
-    void tokenTransferNewTokenAccount() {
-        // given
-        EntityId tokenId1 = EntityId.of("0.0.3", TOKEN);
-
-        // save token entities first
-        Token token1 = getToken(tokenId1, EntityId.of("0.0.500", ACCOUNT), 1L, 1L);
-        sqlEntityListener.onToken(token1);
-        completeFileAndCommit();
-
-        long balance = 10;
-        EntityId accountId1 = EntityId.of("0.0.7", ACCOUNT);
-        TokenAccount tokenAccount = getTokenAccount(tokenId1, accountId1, 5L, true, false,
-                balance, TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE, Range.atLeast(5L));
-        sqlEntityListener.onTokenAccount(tokenAccount);
-        completeFileAndCommit();
-
-        var tokenTransferId = new TokenTransfer.Id();
-        tokenTransferId.setAccountId(EntityId.of(tokenAccount.getAccountId(), ACCOUNT));
-        tokenTransferId.setTokenId(EntityId.of(tokenAccount.getTokenId(), TOKEN));
-        tokenTransferId.setConsensusTimestamp(tokenAccount.getCreatedTimestamp() + 1);
-        // tokenTransfer has a default amount of 100.
-        TokenTransfer tokenTransfer1 = domainBuilder.tokenTransfer().customize(t -> t.id(tokenTransferId)).get();
-
-        tokenTransferId.setConsensusTimestamp(tokenTransferId.getConsensusTimestamp() + 1);
-        TokenTransfer tokenTransfer2 = domainBuilder.tokenTransfer().customize(t -> t.id(tokenTransferId).amount(-50L)).get();
-
-        // when
-        sqlEntityListener.onTokenTransfer(tokenTransfer1);
-        sqlEntityListener.onTokenTransfer(tokenTransfer2);
-        completeFileAndCommit();
-
-        // then
-        tokenAccount.setBalance(balance + tokenTransfer1.getAmount() + tokenTransfer2.getAmount());
-        assertThat(tokenAccountRepository.findAll()).containsExactly(tokenAccount);
-        assertThat(findTokenAccountHistory()).isEmpty();
-    }
-
-    @Test
-    void tokenTransferTokenAccountNewTokenAccountNotNull() {
-        // given
-        EntityId tokenId1 = EntityId.of("0.0.3", TOKEN);
-
-        // save token entities first
-        Token token1 = getToken(tokenId1, EntityId.of("0.0.500", ACCOUNT), 1L, 1L);
-        sqlEntityListener.onToken(token1);
-        completeFileAndCommit();
-
-        EntityId accountId1 = EntityId.of("0.0.7", ACCOUNT);
-        TokenAccount tokenAccount = getTokenAccount(tokenId1, accountId1, 5L, true, false,
-                0, TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE, Range.atLeast(5L));
-        sqlEntityListener.onTokenAccount(tokenAccount);
-        completeFileAndCommit();
-
-        var tokenTransferId = new TokenTransfer.Id();
-        tokenTransferId.setAccountId(EntityId.of(tokenAccount.getAccountId(), ACCOUNT));
-        tokenTransferId.setTokenId(EntityId.of(tokenAccount.getTokenId(), TOKEN));
-        tokenTransferId.setConsensusTimestamp(tokenAccount.getCreatedTimestamp() + 1);
-        // tokenTransfer has a default amount of 100.
-        TokenTransfer tokenTransfer1 = domainBuilder.tokenTransfer().customize(t -> t.id(tokenTransferId)).get();
-
-        tokenTransferId.setConsensusTimestamp(tokenTransferId.getConsensusTimestamp() + 1);
-        TokenTransfer tokenTransfer2 = domainBuilder.tokenTransfer().customize(t -> t.id(tokenTransferId).amount(-50L)).get();
-
-        TokenAccount freeze = getTokenAccount(tokenId1, accountId1, null, null, null, -9999, TokenFreezeStatusEnum.FROZEN, null, Range.atLeast(tokenAccount.getTimestampLower() + 1));
-        var expected = getTokenAccount(tokenId1, accountId1, 5L, true, false,
-                tokenTransfer1.getAmount() + tokenTransfer2.getAmount(), TokenFreezeStatusEnum.FROZEN, TokenKycStatusEnum.NOT_APPLICABLE, Range.atLeast(tokenAccount.getTimestampLower() + 1));
-
-        // when
-        sqlEntityListener.onTokenTransfer(tokenTransfer1);
-        sqlEntityListener.onTokenTransfer(tokenTransfer2);
         sqlEntityListener.onTokenAccount(freeze);
+        if (commitIndex > 3) {
+            completeFileAndCommit();
+            assertThat(tokenAccountRepository.findAll()).containsExactly(expected);
+            assertThat(findTokenAccountHistory()).containsExactly(tokenAccount);
+            assertThat(tokenTransferRepository.findAll()).containsExactly(tokenTransfer1);
+        }
+
+        var tokenTransferId2 = new TokenTransfer.Id();
+        tokenTransferId2.setAccountId(EntityId.of(tokenAccount.getAccountId(), ACCOUNT));
+        tokenTransferId2.setTokenId(EntityId.of(tokenAccount.getTokenId(), TOKEN));
+        tokenTransferId2.setConsensusTimestamp(tokenAccount.getCreatedTimestamp() + 2);
+        TokenTransfer tokenTransfer2 = domainBuilder.tokenTransfer().customize(t -> t.id(tokenTransferId2).amount(-50L)).get();
+        
+        sqlEntityListener.onTokenTransfer(tokenTransfer2);
         completeFileAndCommit();
+        expected.setBalance(tokenTransfer1.getAmount() + tokenTransfer2.getAmount());
 
         // then
-        tokenAccount.setTimestampRange(Range.closedOpen(tokenAccount.getTimestampLower(), freeze.getTimestampLower()));
         assertThat(tokenAccountRepository.findAll()).containsExactly(expected);
         assertThat(findTokenAccountHistory()).containsExactly(tokenAccount);
+        assertThat(tokenTransferRepository.findAll()).containsExactlyInAnyOrder(tokenTransfer1, tokenTransfer2);
     }
 
     @ValueSource(ints = {1, 2})

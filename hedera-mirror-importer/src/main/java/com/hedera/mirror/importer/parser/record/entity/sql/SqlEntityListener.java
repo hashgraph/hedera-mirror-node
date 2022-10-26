@@ -765,10 +765,9 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     private TokenAccount mergeTokenAccount(TokenAccount lastTokenAccount, TokenAccount newTokenAccount) {
-        if (lastTokenAccount.getTimestampRange() == null) {
-            if (newTokenAccount.getTimestampRange() == null) {
+        if (!lastTokenAccount.isHistory()) {
+            if (!newTokenAccount.isHistory()) {
                 lastTokenAccount.setBalance(newTokenAccount.getBalance() + lastTokenAccount.getBalance());
-                return lastTokenAccount;
             } else {
                 lastTokenAccount.setAutomaticAssociation(newTokenAccount.getAutomaticAssociation());
                 lastTokenAccount.setAssociated(newTokenAccount.getAssociated());
@@ -776,11 +775,12 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
                 lastTokenAccount.setFreezeStatus(newTokenAccount.getFreezeStatus());
                 lastTokenAccount.setKycStatus(newTokenAccount.getKycStatus());
                 lastTokenAccount.setTimestampRange(newTokenAccount.getTimestampRange());
-                return lastTokenAccount;
             }
+
+            return lastTokenAccount;
         }
 
-        if (lastTokenAccount.getTimestampRange() != null && newTokenAccount.getTimestampRange() == null) {
+        if (lastTokenAccount.isHistory() && !newTokenAccount.isHistory()) {
             lastTokenAccount.setBalance(newTokenAccount.getBalance() + lastTokenAccount.getBalance());
             return lastTokenAccount;
         }
@@ -792,7 +792,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             return lastTokenAccount;
         }
 
-        newTokenAccount.setBalance(lastTokenAccount.getBalance());
         lastTokenAccount.setTimestampUpper(newTokenAccount.getTimestampLower());
 
         if (newTokenAccount.getCreatedTimestamp() != null) {
@@ -803,7 +802,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         // copy the lifespan immutable fields createdTimestamp and automaticAssociation from the previous snapshot.
         // copy other fields from the previous snapshot if not set in newTokenAccount
         newTokenAccount.setCreatedTimestamp(lastTokenAccount.getCreatedTimestamp());
-
+        newTokenAccount.setBalance(lastTokenAccount.getBalance());
         newTokenAccount.setAutomaticAssociation(lastTokenAccount.getAutomaticAssociation());
 
         if (newTokenAccount.getAssociated() == null) {

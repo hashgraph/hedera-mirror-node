@@ -32,11 +32,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.TokenAccount;
+import com.hedera.mirror.common.domain.token.TokenId;
+import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
+import com.hedera.mirror.common.domain.token.TokenTransfer;
+import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.TokenAccountHistoryRepository;
 import com.hedera.mirror.importer.repository.TokenAccountRepository;
 import com.hedera.mirror.importer.repository.TokenBalanceRepository;
+import com.hedera.mirror.importer.repository.TokenTransferRepository;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
@@ -46,11 +51,14 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
     private long consensusTimestamp;
     private TokenAccount tokenAccount;
     private TokenAccount tokenAccount2;
+    private TokenAccount tokenAccount3;
+    private TokenAccount tokenAccount4;
     private TokenBalance tokenBalance;
     private final TokenAccountRepository tokenAccountRepository;
     private final TokenAccountHistoryRepository tokenAccountHistoryRepository;
     private final TokenBalanceRepository tokenBalanceRepository;
     private final TokenAccountBalanceMigration tokenAccountBalanceMigration;
+    private final TokenTransferRepository tokenTransferRepository;
 
     @Test
     void migrateWhenEmpty() {
@@ -63,32 +71,39 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
         // given
         setup();
 
-        // updates between the consensusTimestamp of the balance file and the current timestamp
+        // when
+        tokenAccountBalanceMigration.doMigrate();
+
+        // then
+        assertThat(tokenAccountRepository.findAll())
+                .containsExactlyInAnyOrder(tokenAccount, tokenAccount2, tokenAccount3, tokenAccount4);
+        assertThat(tokenAccountHistoryRepository.findAll()).isEmpty();
+    }
+
+    @Test
+    void migrateTokenTransfer() {
+        // given
+        setup();
+
+        // token transfer between the consensusTimestamp of the balance file and the current timestamp
         var balanceUpdatedAfterBalanceFileConsensusTimestamp = 12345L;
-        var tokenBalanceId = new TokenBalance.Id(consensusTimestamp + 1,
-                EntityId.of("0.0.3", ACCOUNT), EntityId.of("0.0.1000", TOKEN));
-        tokenBalance.setId(tokenBalanceId);
-        tokenBalance.setBalance(balanceUpdatedAfterBalanceFileConsensusTimestamp);
-        tokenBalanceRepository.save(tokenBalance);
-
-        var updated = tokenBalanceRepository.findById(tokenBalance.getId());
-
-        var newTokenBalanceId = new TokenBalance.Id(consensusTimestamp + 1,
-                EntityId.of("0.0.3", ACCOUNT), EntityId.of("0.0.1005", TOKEN));
-        var newTokenBalance = domainBuilder.tokenBalance().customize(
-                b -> b.id(newTokenBalanceId).balance(9999L)).persist();
-        var newTokenAccount = domainBuilder.tokenAccount()
-                .customize(c -> c.accountId(newTokenBalance.getId().getAccountId().getId())
-                        .tokenId(newTokenBalance.getId().getTokenId().getId()))
-                .persist();
+        var tokenTransferId = new TokenTransfer.Id(consensusTimestamp + 1, tokenBalance.getId().getTokenId(),
+                tokenBalance.getId().getAccountId());
+        domainBuilder.tokenTransfer()
+                .customize(c -> c.id(tokenTransferId).amount(balanceUpdatedAfterBalanceFileConsensusTimestamp).build()).persist();
+        var secondBalanceUpdate = 222L;
+        var tokenTransferId2 = new TokenTransfer.Id(consensusTimestamp + 2, tokenBalance.getId().getTokenId(),
+                tokenBalance.getId().getAccountId());
+        domainBuilder.tokenTransfer()
+                .customize(c -> c.id(tokenTransferId2).amount(secondBalanceUpdate).build()).persist();
 
         // when
         tokenAccountBalanceMigration.doMigrate();
 
         // then
-        tokenAccount.setBalance(balanceUpdatedAfterBalanceFileConsensusTimestamp);
-        newTokenAccount.setBalance(9999L);
-        assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrder(tokenAccount, tokenAccount2, newTokenAccount);
+        tokenAccount.setBalance(balanceUpdatedAfterBalanceFileConsensusTimestamp + secondBalanceUpdate + tokenAccount.getBalance());
+        assertThat(tokenAccountRepository.findAll())
+                .containsExactlyInAnyOrder(tokenAccount, tokenAccount2, tokenAccount3, tokenAccount4);
         assertThat(tokenAccountHistoryRepository.findAll()).isEmpty();
     }
 
@@ -103,8 +118,11 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
 
         // then
         tokenAccount.setBalance(0L);
-        tokenAccount2.setBalance(300L);
-        assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrder(tokenAccount, tokenAccount2);
+        tokenAccount2.setBalance(0L);
+        tokenAccount3.setBalance(0L);
+        tokenAccount4.setBalance(0L);
+        assertThat(tokenAccountRepository.findAll())
+                .containsExactlyInAnyOrder(tokenAccount, tokenAccount2, tokenAccount3, tokenAccount4);
     }
 
     @Test
@@ -118,8 +136,27 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
 
         // then
         tokenAccount.setBalance(0L);
-        tokenAccount2.setBalance(300L);
-        assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrder(tokenAccount, tokenAccount2);
+        tokenAccount2.setBalance(0L);
+        tokenAccount3.setBalance(0L);
+        tokenAccount4.setBalance(0L);
+        assertThat(tokenAccountRepository.findAll())
+                .containsExactlyInAnyOrder(tokenAccount, tokenAccount2, tokenAccount3, tokenAccount4);
+    }
+
+    @Test
+    void migrateWhenNoTokenTransfer() {
+        // given
+        setup();
+        tokenTransferRepository.prune(consensusTimestamp + 10);
+
+        // when
+        tokenAccountBalanceMigration.doMigrate();
+
+        // then
+        tokenAccount.setBalance(100L);
+        tokenAccount2.setBalance(33L);
+        assertThat(tokenAccountRepository.findAll())
+                .containsExactlyInAnyOrder(tokenAccount, tokenAccount2, tokenAccount3, tokenAccount4);
     }
 
     @Test
@@ -137,31 +174,80 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
 
     private void setup() {
         consensusTimestamp = domainBuilder.timestamp();
+
+        var accountId1 = EntityId.of("0.0.3", ACCOUNT);
+        var accountId4 = EntityId.of("0.0.4", ACCOUNT);
+        var tokenId1 = EntityId.of("0.0.1000", TOKEN);
+        var tokenId2 = EntityId.of("0.0.1001", TOKEN);
+        var tokenId3 = EntityId.of("0.0.1002", TOKEN);
+        domainBuilder.token().customize(c -> c.supplyType(TokenSupplyTypeEnum.FINITE)
+                .tokenId(new TokenId(tokenId1))
+                .totalSupply(1_000_000_000L)
+                .type(TokenTypeEnum.FUNGIBLE_COMMON).build()).persist();
+        domainBuilder.token().customize(c -> c.supplyType(TokenSupplyTypeEnum.FINITE)
+                .tokenId(new TokenId(tokenId2))
+                .totalSupply(1_000_000_000L)
+                .type(TokenTypeEnum.FUNGIBLE_COMMON).build()).persist();
+        domainBuilder.token().customize(c -> c.supplyType(TokenSupplyTypeEnum.FINITE)
+                .tokenId(new TokenId(tokenId3))
+                .totalSupply(1_000_000_000L)
+                .type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE).build()).persist();
+
         domainBuilder.accountBalanceFile()
                 .customize(a -> a.consensusTimestamp(consensusTimestamp))
                 .persist();
 
-        var tokenBalanceId = new TokenBalance.Id(consensusTimestamp,
-                EntityId.of("0.0.3", ACCOUNT), EntityId.of("0.0.1000", TOKEN));
-        var tokenBalanceId2 = new TokenBalance.Id(consensusTimestamp,
-                EntityId.of("0.0.3", ACCOUNT), EntityId.of("0.0.1001", TOKEN));
+        var tokenBalanceId = new TokenBalance.Id(consensusTimestamp, accountId1, tokenId1);
+        var tokenBalanceId2 = new TokenBalance.Id(consensusTimestamp, accountId1, tokenId2);
+        var tokenBalanceId3 = new TokenBalance.Id(consensusTimestamp, accountId1, tokenId3);
+        var tokenBalanceId4 = new TokenBalance.Id(consensusTimestamp, accountId4, tokenId1);
 
+        var tokenBalance1Amount = 100L;
         tokenBalance = domainBuilder.tokenBalance()
-                .customize(c -> c.id(tokenBalanceId).balance(100L)).persist();
-        var tokenBalance2 = domainBuilder.tokenBalance()
-                .customize(c -> c.id(tokenBalanceId2).balance(33L)).persist();
-
+                .customize(c -> c.id(tokenBalanceId).balance(tokenBalance1Amount)).persist();
         tokenAccount = domainBuilder.tokenAccount()
-                .customize(c -> c.accountId(tokenBalance.getId().getAccountId().getId())
-                        .tokenId(tokenBalance.getId().getTokenId().getId()))
+                .customize(c -> c.accountId(accountId1.getId())
+                        .tokenId(tokenId1.getId()))
                 .persist();
         tokenAccount2 = domainBuilder.tokenAccount()
-                .customize(c -> c.accountId(tokenBalance2.getId().getAccountId().getId())
-                        .tokenId(tokenBalance2.getId().getTokenId().getId())
-                        .balance(300L))
+                .customize(c -> c.accountId(accountId1.getId())
+                        .tokenId(tokenId2.getId()))
+                .persist();
+        tokenAccount3 = domainBuilder.tokenAccount()
+                .customize(c -> c.accountId(accountId1.getId())
+                        .tokenId(tokenId3.getId()))
+                .persist();
+        tokenAccount4 = domainBuilder.tokenAccount()
+                .customize(c -> c.accountId(accountId4.getId())
+                        .tokenId(tokenId1.getId()))
                 .persist();
 
-        tokenAccount.setBalance(100L);
-        tokenAccount2.setBalance(33L);
+        var tokenBalance2Amount = 33L;
+        domainBuilder.tokenBalance()
+                .customize(c -> c.id(tokenBalanceId2).balance(tokenBalance2Amount)).persist();
+
+        var tokenBalance3Amount = 11111L;
+        domainBuilder.tokenBalance()
+                .customize(c -> c.id(tokenBalanceId3).balance(tokenBalance3Amount)).persist();
+
+        var tokenBalance4Amount = 4444L;
+        domainBuilder.tokenBalance()
+                .customize(c -> c.id(tokenBalanceId4).balance(tokenBalance4Amount)).persist();
+
+        var tokenTransfer2Amount = 1L;
+        var tokenTransferId2 = new TokenTransfer.Id(consensusTimestamp + 10, tokenId2,
+                accountId1);
+        domainBuilder.tokenTransfer()
+                .customize(c -> c.id(tokenTransferId2).amount(tokenTransfer2Amount).build()).persist();
+
+        var tokenTransferId3 = new TokenTransfer.Id(consensusTimestamp + 10, tokenId3,
+                accountId1);
+        domainBuilder.tokenTransfer()
+                .customize(c -> c.id(tokenTransferId3).amount(9999999).build()).persist();
+
+        tokenAccount.setBalance(tokenBalance1Amount);
+        tokenAccount2.setBalance(tokenBalance2Amount + tokenTransfer2Amount);
+        tokenAccount3.setBalance(-1L);
+        tokenAccount4.setBalance(tokenBalance4Amount);
     }
 }
