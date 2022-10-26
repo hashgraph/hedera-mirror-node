@@ -354,7 +354,7 @@ func (suite *transactionRepositorySuite) TestFindBetweenHavingDisappearingTokenT
 }
 
 func (suite *transactionRepositorySuite) TestFindBetweenHavingDisappearingTokenTransferForMainnetWithFixedOffset() {
-	timestamp := firstAccountBalanceFileFixedOffsetTimestamps[mainnet]
+	timestamp := firstAccountBalanceFileFixedOffsetTimestamps[mainnet].Lower.Int
 	suite.testFindBetweenHavingDisappearingTokenTransfer(timestamp, mainnet, true)
 }
 

@@ -20,15 +20,19 @@
 
 package persistence
 
-import "database/sql"
+import (
+	"database/sql"
+
+	"github.com/jackc/pgtype"
+)
 
 const (
-	firstFixedOffsetTimestampSqlArgName = "first_fixed_offset_timestamp"
+	fixedOffsetTimestampRangeSqlArgName = "fixed_offset_timestamp_range"
 	genesisTimestampQuery               = `select consensus_timestamp + time_offset + fixed_offset.value as timestamp
                              from account_balance_file,
                                lateral (
                                  select
-                                   case when consensus_timestamp >= @first_fixed_offset_timestamp then 53
+                                   case when consensus_timestamp <@ @fixed_offset_timestamp_range ::int8range then 53
                                         else 0
                                    end value
                                ) fixed_offset
@@ -39,17 +43,26 @@ const (
 	testnet             = "testnet"
 )
 
-var firstAccountBalanceFileFixedOffsetTimestamps = map[string]int64{
-	mainnet: 1658420100626004000,
-	testnet: 1656693000269913000,
+var nullTimestampRangeSqlNamedArg = sql.Named(fixedOffsetTimestampRangeSqlArgName, pgtype.Int8range{Status: pgtype.Null})
+var firstAccountBalanceFileFixedOffsetTimestamps = map[string]pgtype.Int8range{
+	mainnet: getInclusiveInt8Range(1658420100626004000, 1666368000880378770),
+	testnet: getInclusiveInt8Range(1656693000269913000, 1665072000124462000),
 }
 
-func getFirstAccountBalanceFileFixedOffsetTimestampSqlNamedArg(network string) sql.NamedArg {
-	nullInt64 := sql.NullInt64{}
-	if timestamp, ok := firstAccountBalanceFileFixedOffsetTimestamps[network]; ok {
-		nullInt64.Int64 = timestamp
-		nullInt64.Valid = true
+func getAccountBalanceFileFixedOffsetTimestampRangeSqlNamedArg(network string) sql.NamedArg {
+	if timestampRange, ok := firstAccountBalanceFileFixedOffsetTimestamps[network]; ok {
+		return sql.Named(fixedOffsetTimestampRangeSqlArgName, timestampRange)
 	}
 
-	return sql.Named(firstFixedOffsetTimestampSqlArgName, nullInt64)
+	return nullTimestampRangeSqlNamedArg
+}
+
+func getInclusiveInt8Range(lower, upper int64) pgtype.Int8range {
+	return pgtype.Int8range{
+		Lower:     pgtype.Int8{Int: lower, Status: pgtype.Present},
+		Upper:     pgtype.Int8{Int: upper, Status: pgtype.Present},
+		LowerType: pgtype.Inclusive,
+		UpperType: pgtype.Inclusive,
+		Status:    pgtype.Present,
+	}
 }

@@ -32,7 +32,6 @@ import (
 	hErrors "github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/errors"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/interfaces"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/persistence/domain"
-	"github.com/jackc/pgtype"
 	log "github.com/sirupsen/logrus"
 	"gorm.io/gorm"
 )
@@ -99,7 +98,8 @@ const (
                                       from account_balance_file,
                                         lateral (
                                           select
-                                            case when consensus_timestamp >= @first_fixed_offset_timestamp then 53
+                                            case when consensus_timestamp <@ @fixed_offset_timestamp_range ::int8range
+                                                   then 53
                                                  else 0
                                             end value
                                         ) fixed_offset
@@ -171,14 +171,14 @@ type tokenAssociation struct {
 // accountRepository struct that has connection to the Database
 type accountRepository struct {
 	dbClient                        interfaces.DbClient
-	firstFixedOffsetTimestampSqlArg sql.NamedArg
+	fixedOffsetTimestampRangeSqlArg sql.NamedArg
 }
 
 // NewAccountRepository creates an instance of a accountRepository struct
 func NewAccountRepository(dbClient interfaces.DbClient, network string) interfaces.AccountRepository {
 	return &accountRepository{
 		dbClient:                        dbClient,
-		firstFixedOffsetTimestampSqlArg: getFirstAccountBalanceFileFixedOffsetTimestampSqlNamedArg(network),
+		fixedOffsetTimestampRangeSqlArg: getAccountBalanceFileFixedOffsetTimestampRangeSqlNamedArg(network),
 	}
 }
 
@@ -367,7 +367,7 @@ func (ar *accountRepository) getLatestBalanceSnapshot(ctx context.Context, accou
 		latestBalanceBeforeConsensus,
 		sql.Named("account_id", accountId),
 		sql.Named("timestamp", timestamp),
-		ar.firstFixedOffsetTimestampSqlArg,
+		ar.fixedOffsetTimestampRangeSqlArg,
 	).First(cb).Error; err != nil {
 		log.Errorf(
 			databaseErrorFormat,
@@ -416,7 +416,7 @@ func (ar *accountRepository) getBalanceChange(ctx context.Context, accountId, co
 		sql.Named("start", consensusStart),
 		sql.Named("end", consensusEnd),
 		sql.Named("end_range", getInclusiveInt8Range(consensusEnd, consensusEnd)),
-		ar.firstFixedOffsetTimestampSqlArg,
+		ar.fixedOffsetTimestampRangeSqlArg,
 	).First(change).Error; err != nil {
 		log.Errorf(
 			databaseErrorFormat,
@@ -468,7 +468,7 @@ func (ar *accountRepository) getNftBalance(
 		sql.Named("account_id", accountId),
 		sql.Named("start", consensusStart),
 		sql.Named("end", consensusEnd),
-		ar.firstFixedOffsetTimestampSqlArg,
+		ar.fixedOffsetTimestampRangeSqlArg,
 	).Scan(&nftTransfers).Error; err != nil {
 		log.Errorf(
 			databaseErrorFormat,
@@ -546,14 +546,4 @@ func getUpdatedTokenAmounts(
 	}
 
 	return amounts
-}
-
-func getInclusiveInt8Range(lower, upper int64) pgtype.Int8range {
-	return pgtype.Int8range{
-		Lower:     pgtype.Int8{Int: lower, Status: pgtype.Present},
-		Upper:     pgtype.Int8{Int: upper, Status: pgtype.Present},
-		LowerType: pgtype.Inclusive,
-		UpperType: pgtype.Inclusive,
-		Status:    pgtype.Present,
-	}
 }
