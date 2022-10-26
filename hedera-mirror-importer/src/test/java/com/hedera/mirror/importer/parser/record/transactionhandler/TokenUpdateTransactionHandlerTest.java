@@ -54,7 +54,6 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.domain.token.NftTransferId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.util.DomainUtils;
@@ -76,8 +75,7 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
     protected TransactionHandler getTransactionHandler() {
         recordParserProperties = new RecordParserProperties();
-        return new TokenUpdateTransactionHandler(entityIdService, entityListener, nftRepository,
-                recordParserProperties);
+        return new TokenUpdateTransactionHandler(entityIdService, entityListener, recordParserProperties);
     }
 
     @Override
