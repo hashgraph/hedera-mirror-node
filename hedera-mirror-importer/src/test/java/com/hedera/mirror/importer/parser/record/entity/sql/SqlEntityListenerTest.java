@@ -319,14 +319,18 @@ class SqlEntityListenerTest extends IntegrationTest {
     void onContractStateMigrateFalse() {
         // given
         var builder = domainBuilder.contractStateChange()
-                .customize(c -> c.contractId(1000).consensusTimestamp(1L).slot(new byte[]{1}).valueWritten("a".getBytes()));
+                .customize(c -> c.contractId(1000).consensusTimestamp(1L).valueWritten("a".getBytes()));
 
         var contractStateChange1Create = builder.get();
-        var contractStateChange1Update = builder.customize(c -> c.consensusTimestamp(2L).valueWritten("b".getBytes())).get();
-        var contractStateChange2Create = builder.customize(c -> c.contractId(1001).consensusTimestamp(2L).valueWritten("c".getBytes())).get();
+        var contractStateChange1Update = builder
+                .customize(c -> c.consensusTimestamp(2L).valueWritten("b".getBytes())).get();
+        var contractStateChange2Create = builder
+                .customize(c -> c.contractId(1001).consensusTimestamp(2L).valueWritten("c".getBytes())).get();
         var contractStateChange2Update = builder.customize(c -> c.consensusTimestamp(3L).valueWritten(null)).get();
-        var contractStateChange1Update2 = builder.customize(c -> c.contractId(1000).consensusTimestamp(4L).valueWritten("d".getBytes())).get();
-        var contractStateChange2Update2 = builder.customize(c -> c.contractId(1001).consensusTimestamp(4L).valueWritten("e".getBytes())).get();
+        var contractStateChange1Update2 = builder
+                .customize(c -> c.contractId(1000).consensusTimestamp(4L).valueWritten("d".getBytes())).get();
+        var contractStateChange2Update2 = builder
+                .customize(c -> c.contractId(1001).consensusTimestamp(4L).valueWritten("e".getBytes())).get();
 
         // when
         sqlEntityListener.onContractStateChange(contractStateChange1Create);
@@ -352,15 +356,19 @@ class SqlEntityListenerTest extends IntegrationTest {
     void onContractStateMigrateTrue() {
         // given
         var builder = domainBuilder.contractStateChange()
-                .customize(c -> c.contractId(1000).consensusTimestamp(1L).migration(true).slot(new byte[]{1})
+                .customize(c -> c.contractId(1000).consensusTimestamp(1L).migration(true).slot(new byte[] {1})
                         .valueRead("a".getBytes()).valueWritten(null));
 
         var contractStateChange1Create = builder.get();
-        var contractStateChange1Update = builder.customize(c -> c.consensusTimestamp(2L).valueWritten("b".getBytes())).get();
-        var contractStateChange2Create = builder.customize(c -> c.contractId(1001).consensusTimestamp(2L).valueRead("c".getBytes())).get();
+        var contractStateChange1Update = builder.customize(
+                c -> c.consensusTimestamp(2L).valueWritten("b".getBytes())).get();
+        var contractStateChange2Create = builder.customize(
+                c -> c.contractId(1001).consensusTimestamp(2L).valueRead("c".getBytes())).get();
         var contractStateChange2Update = builder.customize(c -> c.consensusTimestamp(3L).valueWritten(null)).get();
-        var contractStateChange1Update2 = builder.customize(c -> c.contractId(1000).consensusTimestamp(4L).valueRead("d".getBytes())).get();
-        var contractStateChange2Update2 = builder.customize(c -> c.contractId(1001).consensusTimestamp(4L).valueRead("e".getBytes())).get();
+        var contractStateChange1Update2 = builder.customize(
+                c -> c.contractId(1000).consensusTimestamp(4L).valueRead("d".getBytes())).get();
+        var contractStateChange2Update2 = builder.customize(
+                c -> c.contractId(1001).consensusTimestamp(4L).valueRead("e".getBytes())).get();
 
         // when
         sqlEntityListener.onContractStateChange(contractStateChange1Create);
@@ -396,14 +404,14 @@ class SqlEntityListenerTest extends IntegrationTest {
         // then
         assertThat(entityRepository.count()).isZero();
         assertThat(cryptoAllowanceRepository.findAll()).containsExactlyInAnyOrder(cryptoAllowance1, cryptoAllowance2);
-        assertThat(findHistory(CryptoAllowance.class, "payer_account_id, spender")).isEmpty();
+        assertThat(findHistory(CryptoAllowance.class, "owner, spender")).isEmpty();
     }
 
     @ValueSource(ints = {1, 2, 3})
     @ParameterizedTest
     void onCryptoAllowanceHistory(int commitIndex) {
         // given
-        final String idColumns = "payer_account_id, spender";
+        final String idColumns = "owner, spender";
         var builder = domainBuilder.cryptoAllowance();
         CryptoAllowance cryptoAllowanceCreate = builder.get();
 

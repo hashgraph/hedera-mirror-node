@@ -1,3 +1,5 @@
+package com.hedera.mirror.importer;
+
 /*-
  * ‌
  * Hedera Mirror Node
@@ -18,17 +20,14 @@
  * ‍
  */
 
-package domain
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
+import org.springframework.test.context.TestPropertySource;
 
-const tableNameNonFeeTransfer = "non_fee_transfer"
-
-type NonFeeTransfer struct {
-	Amount             int64
-	ConsensusTimestamp int64
-	EntityId           *EntityId
-	PayerAccountId     EntityId
-}
-
-func (NonFeeTransfer) TableName() string {
-	return tableNameNonFeeTransfer
+@Target({ElementType.TYPE})
+@TestPropertySource(properties = "spring.flyway.repeatableSqlMigrationPrefix = DISABLED")
+@Retention(RetentionPolicy.RUNTIME)
+public @interface DisableRepeatableSqlMigration {
 }

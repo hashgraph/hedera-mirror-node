@@ -29,9 +29,9 @@ plugins {
 // Can't use typed variable syntax due to Dependabot limitations
 extra.apply {
     set("gson.version", "2.8.9") // Temporary until Apache jclouds supports gson 2.9
-    set("protobufVersion", "3.21.7")
+    set("protobufVersion", "3.21.8")
     set("reactorGrpcVersion", "1.2.3")
-    set("testcontainersSpringBootVersion", "2.2.9")
+    set("testcontainersSpringBootVersion", "2.2.10")
 }
 
 // Creates a platform/BOM with specific versions so subprojects don't need to specify a version when using a dependency
@@ -76,7 +76,7 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-dependencies:2021.0.4")
         api("org.testcontainers:junit-jupiter:1.17.5")
         api("org.web3j:core:5.0.0")
-        api("software.amazon.awssdk:bom:2.17.290")
+        api("software.amazon.awssdk:bom:2.18.3")
     }
 }
 
