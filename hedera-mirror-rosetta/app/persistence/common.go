@@ -44,13 +44,14 @@ const (
 )
 
 var nullTimestampRangeSqlNamedArg = sql.Named(fixedOffsetTimestampRangeSqlArgName, pgtype.Int8range{Status: pgtype.Null})
-var firstAccountBalanceFileFixedOffsetTimestamps = map[string]pgtype.Int8range{
+var accountBalanceFileFixedOffsetTimestampRanges = map[string]pgtype.Int8range{
+	// the lower is the first 0.27 account balance file, and the upper is the last 0.29 account balance file
 	mainnet: getInclusiveInt8Range(1658420100626004000, 1666368000880378770),
 	testnet: getInclusiveInt8Range(1656693000269913000, 1665072000124462000),
 }
 
 func getAccountBalanceFileFixedOffsetTimestampRangeSqlNamedArg(network string) sql.NamedArg {
-	if timestampRange, ok := firstAccountBalanceFileFixedOffsetTimestamps[network]; ok {
+	if timestampRange, ok := accountBalanceFileFixedOffsetTimestampRanges[network]; ok {
 		return sql.Named(fixedOffsetTimestampRangeSqlArgName, timestampRange)
 	}
 
