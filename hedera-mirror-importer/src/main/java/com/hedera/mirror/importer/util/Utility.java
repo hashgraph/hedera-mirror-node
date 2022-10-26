@@ -54,6 +54,8 @@ import com.hedera.mirror.importer.exception.ParserException;
 public class Utility {
 
     public static final Instant MAX_INSTANT_LONG = Instant.ofEpochSecond(0, Long.MAX_VALUE);
+
+    private static final int ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH = 33;
     private static final ECCurve SECP256K1_CURVE = new SecP256K1Curve();
 
     /**
@@ -73,6 +75,12 @@ public class Utility {
 
             if (key.getKeyCase() == Key.KeyCase.ECDSA_SECP256K1) {
                 var rawCompressedKey = DomainUtils.toBytes(key.getECDSASecp256K1());
+                if (rawCompressedKey.length != ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH) {
+                    log.warn("Skipping generating evm address for non-compressed {}-byte ECDSA key",
+                            rawCompressedKey.length);
+                    return null;
+                }
+
                 ECPoint ecPoint = SECP256K1_CURVE.decodePoint(rawCompressedKey);
                 byte[] uncompressedKeyDer = ecPoint.getEncoded(false);
                 byte[] uncompressedKeyRaw = new byte[64];
