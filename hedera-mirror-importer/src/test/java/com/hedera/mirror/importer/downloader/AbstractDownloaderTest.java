@@ -234,6 +234,7 @@ public abstract class AbstractDownloaderTest {
         s3AsyncClient = S3AsyncClient.builder()
                 .credentialsProvider(AnonymousCredentialsProvider.create())
                 .endpointOverride(URI.create(commonDownloaderProperties.getEndpointOverride()))
+                .forcePathStyle(true)
                 .region(Region.of(commonDownloaderProperties.getRegion()))
                 .build();
 

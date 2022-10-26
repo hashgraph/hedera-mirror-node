@@ -76,6 +76,7 @@ class S3StreamFileProviderTest {
         s3AsyncClient = S3AsyncClient.builder()
                 .credentialsProvider(AnonymousCredentialsProvider.create())
                 .endpointOverride(URI.create("http://localhost:" + S3_PROXY_PORT))
+                .forcePathStyle(true)
                 .region(Region.of(properties.getRegion()))
                 .build();
         streamFileProvider = new S3StreamFileProvider(properties, s3AsyncClient);
