@@ -103,31 +103,6 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
     }
 
     @Test
-    void updateTreasury() {
-        AbstractEntity entity = getExpectedUpdatedEntity();
-        AccountID previousAccountId = AccountID.newBuilder().setAccountNum(1L).build();
-        AccountID newAccountId = AccountID.newBuilder().setAccountNum(2L).build();
-        TokenID tokenID = TokenID.newBuilder().setTokenNum(3L).build();
-        long consensusTimestamp = DomainUtils.timestampInNanosMax(MODIFIED_TIMESTAMP);
-        TokenTransferList tokenTransferList = TokenTransferList.newBuilder()
-                .setToken(tokenID)
-                .addNftTransfers(NftTransfer.newBuilder()
-                        .setReceiverAccountID(newAccountId)
-                        .setSenderAccountID(previousAccountId)
-                        .setSerialNumber(NftTransferId.WILDCARD_SERIAL_NUMBER)
-                        .build())
-                .build();
-        TransactionRecord record = getDefaultTransactionRecord().addTokenTransferLists(tokenTransferList).build();
-        RecordItem recordItem = getRecordItem(getDefaultTransactionBody().build(), record);
-        when(entityIdService.lookup(AccountID.newBuilder().setAccountNum(DEFAULT_AUTO_RENEW_ACCOUNT_NUM).build()))
-                .thenReturn(EntityIdEndec.decode(DEFAULT_AUTO_RENEW_ACCOUNT_NUM, EntityType.ACCOUNT));
-
-        Transaction transaction = new Transaction();
-        transaction.setEntityId(entity.toEntityId());
-        transactionHandler.updateTransaction(transaction, recordItem);
-    }
-
-    @Test
     void noTreasuryUpdate() {
         AbstractEntity entity = getExpectedUpdatedEntity();
         TokenTransferList tokenTransferList = TokenTransferList.newBuilder()

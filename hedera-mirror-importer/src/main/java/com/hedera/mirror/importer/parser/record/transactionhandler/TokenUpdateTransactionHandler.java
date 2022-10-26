@@ -79,20 +79,4 @@ class TokenUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler
         entityListener.onEntity(entity);
     }
 
-    private void updateTreasury(RecordItem recordItem) {
-        var payerAccountId = EntityId.of(
-                recordItem.getTransactionBody().getTransactionID().getAccountID()).getId();
-        for (TokenTransferList tokenTransferList : recordItem.getRecord().getTokenTransferListsList()) {
-            for (NftTransfer nftTransfer : tokenTransferList.getNftTransfersList()) {
-                if (nftTransfer.getSerialNumber() == NftTransferId.WILDCARD_SERIAL_NUMBER) {
-                    EntityId newTreasury = EntityId.of(nftTransfer.getReceiverAccountID());
-                    EntityId previousTreasury = EntityId.of(nftTransfer.getSenderAccountID());
-                    EntityId tokenId = EntityId.of(tokenTransferList.getToken());
-
-                    nftRepository.updateTreasury(tokenId.getId(), previousTreasury.getId(), newTreasury.getId(),
-                            recordItem.getConsensusTimestamp(), payerAccountId, nftTransfer.getIsApproval());
-                }
-            }
-        }
-    }
 }

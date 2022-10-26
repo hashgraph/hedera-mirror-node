@@ -802,7 +802,6 @@ public class EntityRecordItemListener implements RecordItemListener {
             List<com.hederahashgraph.api.proto.java.NftTransfer> nftTransfersList) {
         for (NftTransfer nftTransfer : nftTransfersList) {
             long serialNumber = nftTransfer.getSerialNumber();
-
             EntityId receiverId = EntityId.of(nftTransfer.getReceiverAccountID());
             EntityId senderId = EntityId.of(nftTransfer.getSenderAccountID());
 
