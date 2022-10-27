@@ -41,18 +41,10 @@ public class TokenAccountBalanceMigration extends RepeatableMigration {
                     from token_transfer
                     where consensus_timestamp >= (select max(consensus_timestamp) from account_balance_file)
                     group by account_id, token_id
-                ),
-                token as (
-                    select * from token
                 )
-                update token_account t set balance = 
-                 case 
-                    when token.type = 'NON_FUNGIBLE_UNIQUE' then -1 
-                    else coalesce(tt.amount + token_balance.balance, token_balance.balance, 0)
-                 end
+                update token_account t set balance = coalesce(tt.amount + token_balance.balance, token_balance.balance, 0)
                 from token_balance
                 left join token_transfer tt on tt.token_id = token_balance.token_id and tt.account_id = token_balance.account_id
-                join token on token.token_id = token_balance.token_id
                 where t.account_id = token_balance.account_id and t.token_id = token_balance.token_id
             """;
 
