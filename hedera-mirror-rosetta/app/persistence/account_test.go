@@ -94,7 +94,7 @@ var (
 	account4Alias = hexutil.MustDecode("0x12205a081255a92b7c262bc2ea3ab7114b8a815345b3cc40f800b2b40914afecc44e")
 	account5Alias = randstr.Bytes(48)
 	// alias with invalid public key, the Key message is valid, but it's formed from an invalid 16-byte ED25519 pub key
-	account6Alias = hexutil.MustDecode("0x1210b7114b8a815345b3cc40f800b2b40914afecc44e")
+	account6Alias = hexutil.MustDecode("0x1210815345b3cc40f800b2b40914afecc44e")
 )
 
 // run the suite
@@ -763,6 +763,7 @@ func (suite *accountRepositoryWithAliasSuite) SetupSuite() {
 	suite.account3Alias = account3Alias
 	suite.account4Alias = account4Alias
 	suite.account5Alias = account5Alias
+	suite.account6Alias = account6Alias
 }
 
 func (suite *accountRepositoryWithAliasSuite) SetupTest() {
