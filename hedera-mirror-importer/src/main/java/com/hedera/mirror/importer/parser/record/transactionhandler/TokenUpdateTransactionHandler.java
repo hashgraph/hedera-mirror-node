@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.TokenTransferList;
 import javax.inject.Named;
 
 import com.hedera.mirror.common.domain.entity.Entity;
