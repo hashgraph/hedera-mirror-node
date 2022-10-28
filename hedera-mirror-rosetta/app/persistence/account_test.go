@@ -44,6 +44,7 @@ const (
 	account3
 	account4
 	account5
+	account6
 )
 
 const (
@@ -72,6 +73,7 @@ const (
 	account3CreatedTimestamp = consensusTimestamp + 100
 	account4CreatedTimestamp = consensusTimestamp + 110
 	account5CreatedTimestamp = consensusTimestamp + 120
+	account6CreatedTimestamp = consensusTimestamp + 130
 )
 
 var (
@@ -91,6 +93,8 @@ var (
 	account3Alias = hexutil.MustDecode("0x3a2103d9a822b91df7850274273a338c152e7bcfa2036b24cd9e3b29d07efd949b387a")
 	account4Alias = hexutil.MustDecode("0x12205a081255a92b7c262bc2ea3ab7114b8a815345b3cc40f800b2b40914afecc44e")
 	account5Alias = randstr.Bytes(48)
+	// alias with invalid public key, the Key message is valid, but it's formed from an invalid 16-byte ED25519 pub key
+	account6Alias = hexutil.MustDecode("0x1210815345b3cc40f800b2b40914afecc44e")
 )
 
 // run the suite
@@ -107,6 +111,7 @@ type accountRepositorySuite struct {
 	account3Alias   []byte
 	account4Alias   []byte
 	account5Alias   []byte
+	account6Alias   []byte
 }
 
 func (suite *accountRepositorySuite) SetupSuite() {
@@ -337,6 +342,9 @@ func (suite *accountRepositorySuite) SetupTest() {
 		Persist()
 	tdomain.NewEntityBuilder(dbClient, account5, account5CreatedTimestamp, domain.EntityTypeAccount).
 		Alias(suite.account5Alias).
+		Persist()
+	tdomain.NewEntityBuilder(dbClient, account6, account6CreatedTimestamp, domain.EntityTypeAccount).
+		Alias(suite.account6Alias).
 		Persist()
 }
 
@@ -755,6 +763,7 @@ func (suite *accountRepositoryWithAliasSuite) SetupSuite() {
 	suite.account3Alias = account3Alias
 	suite.account4Alias = account4Alias
 	suite.account5Alias = account5Alias
+	suite.account6Alias = account6Alias
 }
 
 func (suite *accountRepositoryWithAliasSuite) SetupTest() {
@@ -797,12 +806,26 @@ func (suite *accountRepositoryWithAliasSuite) TestGetAccountAlias() {
 	}
 }
 
-func (suite *accountRepositoryWithAliasSuite) TestGetAccountAliasThrowWhenInvalidAlias() {
-	accountId := types.NewAccountIdFromEntityId(domain.MustDecodeEntityId(account5))
+func (suite *accountRepositoryWithAliasSuite) TestGetAccountAliasWithInvalidAlias() {
+	tests := []struct {
+		encodedId int64
+		expected  string
+	}{
+		{encodedId: account5, expected: fmt.Sprintf("0.0.%d", account5)},
+		{encodedId: account6, expected: fmt.Sprintf("0.0.%d", account6)},
+	}
+
 	repo := NewAccountRepository(dbClient, "")
-	actual, err := repo.GetAccountAlias(defaultContext, accountId)
-	assert.NotNil(suite.T(), err)
-	assert.Equal(suite.T(), types.AccountId{}, actual)
+
+	for _, tt := range tests {
+		name := fmt.Sprintf("%d", tt.encodedId)
+		suite.T().Run(name, func(t *testing.T) {
+			accountId := types.NewAccountIdFromEntityId(domain.MustDecodeEntityId(tt.encodedId))
+			actual, err := repo.GetAccountAlias(defaultContext, accountId)
+			assert.Nil(t, err)
+			assert.Equal(t, tt.expected, actual.String())
+		})
+	}
 }
 
 func (suite *accountRepositoryWithAliasSuite) TestGetAccountId() {
