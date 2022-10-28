@@ -83,8 +83,8 @@
         <msgpack.version>0.9.3</msgpack.version>
         <postgresql.version>42.4.1</postgresql.version>
         <protobuf.version>3.21.6</protobuf.version>
-        <release.version>0.66.4</release.version> <!-- Used to replace release versions in all files -->
-        <release.chartVersion>0.66.4</release.chartVersion>
+        <release.version>0.66.5</release.version> <!-- Used to replace release versions in all files -->
+        <release.chartVersion>0.66.5</release.chartVersion>
         <replacer.version>1.5.3</replacer.version>
         <!--suppress UnresolvedMavenProperty -->
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
