@@ -73,25 +73,18 @@ public class Utility {
                 return null;
             }
 
+            byte[] evmAddress = null;
             var key = Key.parseFrom(alias);
-            if (key.getKeyCase() == Key.KeyCase.ECDSA_SECP256K1) {
-                var rawCompressedKey = DomainUtils.toBytes(key.getECDSASecp256K1());
-                if (rawCompressedKey.length != ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH) {
-                    log.warn("Skipping recovering EVM address for non-compressed {}-byte ECDSA key",
-                            rawCompressedKey.length);
-                    return null;
-                }
-
-                var evmAddress = recoverAddressFromPubKey(rawCompressedKey);
-                if (evmAddress != null) {
-                    return evmAddress;
-                } else {
+            if (key.getKeyCase() == Key.KeyCase.ECDSA_SECP256K1 &&
+                    key.getECDSASecp256K1().size() == ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH) {
+                byte[] rawCompressedKey = DomainUtils.toBytes(key.getECDSASecp256K1());
+                evmAddress = recoverAddressFromPubKey(rawCompressedKey);
+                if (evmAddress == null) {
                     log.warn("Unable to recover EVM address from {}", Hex.encodeHexString(rawCompressedKey));
-                    return null;
                 }
             }
 
-            return null;
+            return evmAddress;
         } catch (Exception e) {
             var aliasHex = Hex.encodeHexString(alias);
             throw new ParserException("Unable to decode alias to EVM address: " + aliasHex, e);
@@ -188,6 +181,7 @@ public class Utility {
         return CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, text);
     }
 
+    // This method is copied from hedera-services EthTxSigs::recoverAddressFromPubKey and should be kept in sync
     private static byte[] recoverAddressFromPubKey(byte[] pubKeyBytes) {
         LibSecp256k1.secp256k1_pubkey pubKey = new LibSecp256k1.secp256k1_pubkey();
         var parseResult = LibSecp256k1.secp256k1_ec_pubkey_parse(CONTEXT, pubKey, pubKeyBytes, pubKeyBytes.length);
@@ -198,6 +192,7 @@ public class Utility {
         }
     }
 
+    // This method is copied from hedera-services EthTxSigs::recoverAddressFromPubKey and should be kept in sync
     private static byte[] recoverAddressFromPubKey(LibSecp256k1.secp256k1_pubkey pubKey) {
         final ByteBuffer recoveredFullKey = ByteBuffer.allocate(65);
         final LongByReference fullKeySize = new LongByReference(recoveredFullKey.limit());
