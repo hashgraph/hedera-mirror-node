@@ -203,9 +203,8 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                   existing
                   join token on existing.token_id = token.token_id
                 where
-                  (e_timestamp_range is not null and existing.timestamp_range is null)
-                    or
-                  (existing.timestamp_range is not null and upper(existing.timestamp_range) is null)
+                  (existing.created_timestamp is not null or e_created_timestamp is not null) and
+                  upper(existing.timestamp_range) is null
                   on conflict (account_id, token_id) do
                 update
                 set
