@@ -23,6 +23,7 @@ alter default privileges in schema public grant insert, update, delete on tables
 -- Partition privileges
 create schema if not exists partman authorization mirror_node;
 alter schema partman owner to mirror_node;
+create extension pg_partman schema partman;
 grant create on database mirror_node to mirror_node;
 grant all on schema partman to mirror_node;
 grant all on all tables in schema partman to mirror_node;
