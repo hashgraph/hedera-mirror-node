@@ -1263,17 +1263,34 @@ class SqlEntityListenerTest extends IntegrationTest {
         sqlEntityListener.onToken(token1);
         completeFileAndCommit();
 
-        // create nft 1
+        // create nfts 1 and 2
         sqlEntityListener.onNft(getNft(tokenId, 1L, treasuryId, 3L, false, metadata1, 3L)); // mint
-        sqlEntityListener.onNft(getNft(tokenId, 1L, accountId1, null, null, null, 3L)); // transfer
-
-        // create nft 2
         sqlEntityListener.onNft(getNft(tokenId, 2L, treasuryId, 4L, false, metadata2, 4L)); // mint
+        // unless we specify these "transfer" onNft() calls, they end up assigned to accountId2 as well.
+        sqlEntityListener.onNft(getNft(tokenId, 1L, accountId1, null, null, null, 3L)); // transfer
         sqlEntityListener.onNft(getNft(tokenId, 2L, accountId1, null, null, null, 4L)); // transfer
-
         completeFileAndCommit();
 
-        // create more nfts, but don't transfer them in advance
+        // transfer nfts 1 and 2 from treasury account to account id 1 at timestamp 4
+        var nft1Transfer = domainBuilder.nftTransfer().get();
+        nft1Transfer.setSenderAccountId(treasuryId);
+        nft1Transfer.setReceiverAccountId(accountId1);
+        nft1Transfer.setIsApproval(true);
+        nft1Transfer.setId(new NftTransferId(4L, 1L, tokenId));
+        nft1Transfer.setPayerAccountId(treasuryId);
+        sqlEntityListener.onNftTransfer(nft1Transfer);
+        completeFileAndCommit();
+
+        var nft2Transfer = domainBuilder.nftTransfer().get();
+        nft2Transfer.setSenderAccountId(treasuryId);
+        nft2Transfer.setReceiverAccountId(accountId1);
+        nft2Transfer.setIsApproval(true);
+        nft2Transfer.setId(new NftTransferId(4L, 2L, tokenId));
+        nft2Transfer.setPayerAccountId(treasuryId);
+        sqlEntityListener.onNftTransfer(nft2Transfer);
+        completeFileAndCommit();
+
+        // create more nfts, but don't transfer them in advance of the treasury getting transfered
         sqlEntityListener.onNft(getNft(tokenId, 3L, treasuryId, 5L, false, metadata3, 5L)); // mint
         sqlEntityListener.onNft(getNft(tokenId, 4L, treasuryId, 6L, false, metadata4, 6L)); // mint
         completeFileAndCommit();
@@ -1284,33 +1301,33 @@ class SqlEntityListenerTest extends IntegrationTest {
         transferTreasury.setReceiverAccountId(accountId2); // new treasury
         transferTreasury.setIsApproval(true);
         transferTreasury.setId(new NftTransferId(7L, -1, tokenId));
-        transferTreasury.setPayerAccountId(EntityId.EMPTY); // not interested in payerAccountId field, so leave it empty
+        transferTreasury.setPayerAccountId(treasuryId);
         sqlEntityListener.onNftTransfer(transferTreasury);
 
-        // expected transfer repository contents
-        var transfer1 = domainBuilder.nftTransfer().get();
-        transfer1.setSenderAccountId(treasuryId); // old treasury
-        transfer1.setReceiverAccountId(accountId2); // new treasury
-        transfer1.setIsApproval(true);
-        transfer1.setId(new NftTransferId(7L, 3, tokenId));
-        transfer1.setPayerAccountId(EntityId.EMPTY);
-        sqlEntityListener.onNftTransfer(transferTreasury);
+        // expected transfer repository contents -- just for the nfts that were still assigned to the treasury account
+        var nft3Transfer = domainBuilder.nftTransfer().get();
+        nft3Transfer.setSenderAccountId(treasuryId); // old treasury
+        nft3Transfer.setReceiverAccountId(accountId2); // new treasury
+        nft3Transfer.setIsApproval(true);
+        nft3Transfer.setId(new NftTransferId(7L, 3, tokenId));
+        nft3Transfer.setPayerAccountId(treasuryId);
 
-        var transfer2 = domainBuilder.nftTransfer().get();
-        transfer2.setSenderAccountId(treasuryId); // old treasury
-        transfer2.setReceiverAccountId(accountId2); // new treasury
-        transfer2.setIsApproval(true);
-        transfer2.setId(new NftTransferId(7L, 4, tokenId));
-        transfer2.setPayerAccountId(EntityId.EMPTY);
+        var nft4Transfer = domainBuilder.nftTransfer().get();
+        nft4Transfer.setSenderAccountId(treasuryId); // old treasury
+        nft4Transfer.setReceiverAccountId(accountId2); // new treasury
+        nft4Transfer.setIsApproval(true);
+        nft4Transfer.setId(new NftTransferId(7L, 4, tokenId));
+        nft4Transfer.setPayerAccountId(treasuryId);
         completeFileAndCommit();
 
         var nft1 = getNft(tokenId, 1L, accountId1, 3L, false, metadata1, 3L);
         var nft2 = getNft(tokenId, 2L, accountId1, 4L, false, metadata2, 4L);
-        var nft3 = getNft(tokenId, 3L, accountId2, 5L, false, metadata3, 7L); // gets transferred w treasury @time 7L
-        var nft4 = getNft(tokenId, 4L, accountId2, 6L, false, metadata4, 7L); // gets transferred w treasury @time 7L
+        var nft3 = getNft(tokenId, 3L, accountId2, 5L, false, metadata3, 7L); // gets transferred w treasury @time 7
+        var nft4 = getNft(tokenId, 4L, accountId2, 6L, false, metadata4, 7L); // gets transferred w treasury @time 7
 
         assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(nft1, nft2, nft3, nft4);
-        assertThat(nftTransferRepository.findAll()).containsExactlyInAnyOrder(transfer1, transfer2);
+        assertThat(nftTransferRepository.findAll())
+                .containsExactlyInAnyOrder(nft1Transfer, nft2Transfer, nft3Transfer, nft4Transfer);
     }
 
     @Test
@@ -1339,11 +1356,49 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         completeFileAndCommit();
 
+        // transfer nfts 1 and 2 from treasury account to account id 1 at timestamp 4
+        var nft1Transfer = domainBuilder.nftTransfer().get();
+        nft1Transfer.setSenderAccountId(treasuryId);
+        nft1Transfer.setReceiverAccountId(accountId1);
+        nft1Transfer.setIsApproval(true);
+        nft1Transfer.setId(new NftTransferId(4L, 1L, tokenId));
+        nft1Transfer.setPayerAccountId(treasuryId);
+        sqlEntityListener.onNftTransfer(nft1Transfer);
+        completeFileAndCommit();
+
+        var nft2Transfer = domainBuilder.nftTransfer().get();
+        nft2Transfer.setSenderAccountId(treasuryId);
+        nft2Transfer.setReceiverAccountId(accountId1);
+        nft2Transfer.setIsApproval(true);
+        nft2Transfer.setId(new NftTransferId(4L, 2L, tokenId));
+        nft2Transfer.setPayerAccountId(treasuryId);
+        sqlEntityListener.onNftTransfer(nft2Transfer);
+        completeFileAndCommit();
+
         // create more nfts, and transfer them at the same time as the treasury transfer
         sqlEntityListener.onNft(getNft(tokenId, 3L, treasuryId, 5L, false, metadata3, 5L)); // mint
         sqlEntityListener.onNft(getNft(tokenId, 3L, accountId3, null, null, null, 5L)); // transfer
         sqlEntityListener.onNft(getNft(tokenId, 4L, treasuryId, 6L, false, metadata4, 6L)); // mint
         sqlEntityListener.onNft(getNft(tokenId, 4L, accountId3, null, null, null, 6L)); // transfer
+        completeFileAndCommit();
+
+        // transfer nfts 3 and 4 from treasury account to account id 3 at timestamps 5 and 6, respectively
+        var nft3Transfer = domainBuilder.nftTransfer().get();
+        nft3Transfer.setSenderAccountId(treasuryId);
+        nft3Transfer.setReceiverAccountId(accountId3);
+        nft3Transfer.setIsApproval(true);
+        nft3Transfer.setId(new NftTransferId(5L, 3L, tokenId));
+        nft3Transfer.setPayerAccountId(treasuryId);
+        sqlEntityListener.onNftTransfer(nft3Transfer);
+        completeFileAndCommit();
+
+        var nft4Transfer = domainBuilder.nftTransfer().get();
+        nft4Transfer.setSenderAccountId(treasuryId);
+        nft4Transfer.setReceiverAccountId(accountId1);
+        nft4Transfer.setIsApproval(true);
+        nft4Transfer.setId(new NftTransferId(6L, 4L, tokenId));
+        nft4Transfer.setPayerAccountId(treasuryId);
+        sqlEntityListener.onNftTransfer(nft4Transfer);
         completeFileAndCommit();
 
         var transferTreasury = domainBuilder.nftTransfer().get();
@@ -1360,7 +1415,8 @@ class SqlEntityListenerTest extends IntegrationTest {
         var nft4 = getNft(tokenId, 4L, accountId3, 6L, false, metadata4, 6L);
 
         assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(nft1, nft2, nft3, nft4);
-        assertThat(nftTransferRepository.findAll()).isEmpty();
+        assertThat(nftTransferRepository.findAll())
+                .containsExactlyInAnyOrder(nft1Transfer, nft2Transfer, nft3Transfer, nft4Transfer);
     }
 
     @Test

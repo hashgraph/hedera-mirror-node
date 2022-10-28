@@ -555,12 +555,17 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     private void flushNftState() {
         // like flush(), but only for the Nft table
-        Stopwatch stopwatch = Stopwatch.createStarted();
-
-        // insert nft operations with conflict management
-        batchPersister.persist(nfts.values()); // persist nft after token entity
-        nfts.clear();
-        log.info("Completed nft-only batch inserts in {}", stopwatch);
+        try {
+            Stopwatch stopwatch = Stopwatch.createStarted();
+            batchPersister.persist(nfts.values());
+            log.info("Completed nft-only batch inserts in {}", stopwatch);
+        } catch (ParserException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ParserException(e);
+        } finally {
+            nfts.clear();
+        }
     }
 
     private ContractState mergeContractState(ContractState previous, ContractState current) {
