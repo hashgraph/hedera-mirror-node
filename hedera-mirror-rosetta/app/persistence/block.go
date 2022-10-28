@@ -128,7 +128,7 @@ func (rb *recordBlock) ToBlock(genesisBlock recordBlock) *types.Block {
 // blockRepository struct that has connection to the Database
 type blockRepository struct {
 	dbClient                        interfaces.DbClient
-	firstFixedOffsetTimestampSqlArg sql.NamedArg
+	fixedOffsetTimestampRangeSqlArg sql.NamedArg
 	genesisBlock                    recordBlock
 	once                            sync.Once
 }
@@ -137,7 +137,7 @@ type blockRepository struct {
 func NewBlockRepository(dbClient interfaces.DbClient, network string) interfaces.BlockRepository {
 	return &blockRepository{
 		dbClient:                        dbClient,
-		firstFixedOffsetTimestampSqlArg: getFirstAccountBalanceFileFixedOffsetTimestampSqlNamedArg(network),
+		fixedOffsetTimestampRangeSqlArg: getAccountBalanceFileFixedOffsetTimestampRangeSqlNamedArg(network),
 		genesisBlock:                    recordBlock{ConsensusStart: genesisConsensusStartUnset},
 	}
 }
@@ -259,7 +259,7 @@ func (br *blockRepository) initGenesisRecordFile(ctx context.Context) *rTypes.Er
 	defer cancel()
 
 	var rb recordBlock
-	if err := db.Raw(selectGenesis, br.firstFixedOffsetTimestampSqlArg).First(&rb).Error; err != nil {
+	if err := db.Raw(selectGenesis, br.fixedOffsetTimestampRangeSqlArg).First(&rb).Error; err != nil {
 		return handleDatabaseError(err, hErrors.ErrNodeIsStarting)
 	}
 
