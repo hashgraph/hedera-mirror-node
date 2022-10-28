@@ -129,7 +129,6 @@ class RecordFileService extends BaseService {
       limit ${filters.limit}
     `;
     const rows = await super.getRows(query, params, 'getBlocks');
-
     return rows.map((recordFile) => new RecordFile(recordFile));
   }
 
@@ -138,26 +137,15 @@ class RecordFileService extends BaseService {
     const params = [];
     if (hash) {
       hash = hash.toLowerCase();
-      if (hash.length === RecordFileService.HEX_HASH_PREFIX_SIZE) {
-        whereStatement += `${RecordFile.HASH} like $1 collate "C"`;
-        params.push(hash + '%');
-      } else {
-        whereStatement += `${RecordFile.HASH} = $1 collate "C"`;
-        params.push(hash);
-      }
+      whereStatement += `${RecordFile.HASH} like $1`;
+      params.push(hash + '%');
     } else {
       whereStatement += `${RecordFile.INDEX} = $1`;
       params.push(number);
     }
 
-    const query =
-      RecordFileService.blocksQuery +
-      `
-      where ${whereStatement}
-    `;
-
+    const query = `${RecordFileService.blocksQuery} where ${whereStatement}`;
     const row = await super.getSingleRow(query, params, 'getByHashOrNumber');
-
     return row ? new RecordFile(row) : null;
   }
 }

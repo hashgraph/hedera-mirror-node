@@ -104,16 +104,22 @@ class ContractService extends BaseService {
 
   static contractLogsQuery = `select ${contractLogsFields} from ${ContractLog.tableName} ${ContractLog.tableAlias}`;
 
-  static contractLogsExtendedQuery = `select ${contractLogsFields},
-                                     ${ContractResult.getFullName(ContractResult.TRANSACTION_HASH)},
-                                     ${ContractResult.getFullName(ContractResult.TRANSACTION_INDEX)},
-                                     block.block_number,
-                                     block.block_hash
+  static contractLogsExtendedQuery = `
+    with ${RecordFile.tableName} as (
+      select ${RecordFile.CONSENSUS_END}, ${RecordFile.HASH}, ${RecordFile.INDEX}
+      from ${RecordFile.tableName}
+    )
+    select ${contractLogsFields},
+      ${ContractResult.getFullName(ContractResult.TRANSACTION_HASH)},
+      ${ContractResult.getFullName(ContractResult.TRANSACTION_INDEX)},
+      block_number,
+      block_hash
     from ${ContractLog.tableName} ${ContractLog.tableAlias}
-    left join ${ContractResult.tableName} ${ContractResult.tableAlias} on
-    ${ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP)} = ${ContractResult.getFullName(
-    ContractResult.CONSENSUS_TIMESTAMP
-  )}
+    left join ${ContractResult.tableName} ${ContractResult.tableAlias}
+      on ${ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP)} =
+        ${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)} and
+		   ${ContractLog.getFullName(ContractLog.PAYER_ACCOUNT_ID)} =
+		   ${ContractResult.getFullName(ContractResult.PAYER_ACCOUNT_ID)}
     left join lateral (
       select ${RecordFile.INDEX} as block_number, ${RecordFile.HASH} as block_hash
       from ${RecordFile.tableName}
