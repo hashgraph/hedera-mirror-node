@@ -20,6 +20,9 @@ package com.hedera.mirror.importer.util;
  * ‍
  */
 
+import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.CONTEXT;
+import static org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1.SECP256K1_EC_UNCOMPRESSED;
+
 import com.google.common.base.CaseFormat;
 import com.google.common.collect.Iterables;
 import com.google.protobuf.ByteString;
@@ -30,6 +33,8 @@ import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.sun.jna.ptr.LongByReference;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -42,9 +47,7 @@ import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.StringUtils;
 import org.bouncycastle.jcajce.provider.digest.Keccak;
-import org.bouncycastle.math.ec.ECCurve;
-import org.bouncycastle.math.ec.ECPoint;
-import org.bouncycastle.math.ec.custom.sec.SecP256K1Curve;
+import org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1;
 
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.exception.ParserException;
@@ -56,7 +59,6 @@ public class Utility {
     public static final Instant MAX_INSTANT_LONG = Instant.ofEpochSecond(0, Long.MAX_VALUE);
 
     private static final int ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH = 33;
-    private static final ECCurve SECP256K1_CURVE = new SecP256K1Curve();
 
     /**
      * Converts an ECDSA secp256k1 alias to a 20 byte EVM address by taking the keccak hash of it. Logic copied from
@@ -72,21 +74,21 @@ public class Utility {
             }
 
             var key = Key.parseFrom(alias);
-
             if (key.getKeyCase() == Key.KeyCase.ECDSA_SECP256K1) {
                 var rawCompressedKey = DomainUtils.toBytes(key.getECDSASecp256K1());
                 if (rawCompressedKey.length != ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH) {
-                    log.warn("Skipping generating evm address for non-compressed {}-byte ECDSA key",
+                    log.warn("Skipping recovering EVM address for non-compressed {}-byte ECDSA key",
                             rawCompressedKey.length);
                     return null;
                 }
 
-                ECPoint ecPoint = SECP256K1_CURVE.decodePoint(rawCompressedKey);
-                byte[] uncompressedKeyDer = ecPoint.getEncoded(false);
-                byte[] uncompressedKeyRaw = new byte[64];
-                System.arraycopy(uncompressedKeyDer, 1, uncompressedKeyRaw, 0, 64);
-                byte[] hashedKey = new Keccak.Digest256().digest(uncompressedKeyRaw);
-                return Arrays.copyOfRange(hashedKey, 12, 32);
+                var evmAddress = recoverAddressFromPubKey(rawCompressedKey);
+                if (evmAddress != null) {
+                    return evmAddress;
+                } else {
+                    log.warn("Unable to recover EVM address from {}", Hex.encodeHexString(rawCompressedKey));
+                    return null;
+                }
             }
 
             return null;
@@ -184,5 +186,30 @@ public class Utility {
             return text;
         }
         return CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, text);
+    }
+
+    private static byte[] recoverAddressFromPubKey(byte[] pubKeyBytes) {
+        LibSecp256k1.secp256k1_pubkey pubKey = new LibSecp256k1.secp256k1_pubkey();
+        var parseResult = LibSecp256k1.secp256k1_ec_pubkey_parse(CONTEXT, pubKey, pubKeyBytes, pubKeyBytes.length);
+        if (parseResult == 1) {
+            return recoverAddressFromPubKey(pubKey);
+        } else {
+            return null;
+        }
+    }
+
+    private static byte[] recoverAddressFromPubKey(LibSecp256k1.secp256k1_pubkey pubKey) {
+        final ByteBuffer recoveredFullKey = ByteBuffer.allocate(65);
+        final LongByReference fullKeySize = new LongByReference(recoveredFullKey.limit());
+        LibSecp256k1.secp256k1_ec_pubkey_serialize(CONTEXT, recoveredFullKey, fullKeySize, pubKey,
+                SECP256K1_EC_UNCOMPRESSED);
+
+        recoveredFullKey.get(); // read and discard - recoveryId is not part of the account hash
+        var preHash = new byte[64];
+        recoveredFullKey.get(preHash, 0, 64);
+        var keyHash = new Keccak.Digest256().digest(preHash);
+        var address = new byte[20];
+        System.arraycopy(keyHash, 12, address, 0, 20);
+        return address;
     }
 }
