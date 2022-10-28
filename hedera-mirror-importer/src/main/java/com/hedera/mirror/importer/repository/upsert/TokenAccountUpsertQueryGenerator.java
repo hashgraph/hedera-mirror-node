@@ -175,7 +175,10 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                     e_automatic_association,
                     false
                   ),
-                  coalesce(e_balance, 0) + coalesce(existing.balance, 0),
+                  case when e_created_timestamp is null or e_created_timestamp <> existing.created_timestamp then 
+                    coalesce(existing.balance)
+                    else coalesce(e_balance, 0) + coalesce(existing.balance, 0)
+                  end,
                   coalesce(existing.created_timestamp, e_created_timestamp, null),
                   case when existing.freeze_status is not null then existing.freeze_status
                       when existing.created_timestamp is not null then
@@ -200,10 +203,9 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                   existing
                   join token on existing.token_id = token.token_id
                 where
-                  (e_timestamp_range is not null and existing.timestamp_range is null) 
-                  or 
-                  ((existing.created_timestamp is not null or e_created_timestamp is not null) and
-                    upper(existing.timestamp_range) is null)
+                  (e_timestamp_range is not null and existing.timestamp_range is null)
+                    or
+                  (existing.timestamp_range is not null and upper(existing.timestamp_range) is null)
                   on conflict (account_id, token_id) do
                 update
                 set

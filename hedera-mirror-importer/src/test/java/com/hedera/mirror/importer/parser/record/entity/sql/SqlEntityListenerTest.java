@@ -1716,7 +1716,7 @@ class SqlEntityListenerTest extends IntegrationTest {
                 .containsExactlyInAnyOrder(tokenTransfer1, tokenTransfer2, tokenTransfer3);
     }
 
-    @ValueSource(ints = {1, 2, 3, 4})
+    @ValueSource(ints = {1, 2, 3, 4, 5})
     @ParameterizedTest
     void onTokenTransferTokenAccountBalance(int commitIndex) {
         // given
@@ -1784,15 +1784,31 @@ class SqlEntityListenerTest extends IntegrationTest {
         tokenTransferId2.setTokenId(EntityId.of(tokenAccount.getTokenId(), TOKEN));
         tokenTransferId2.setConsensusTimestamp(tokenAccount.getCreatedTimestamp() + 2);
         TokenTransfer tokenTransfer2 = domainBuilder.tokenTransfer().customize(t -> t.id(tokenTransferId2).amount(-50L)).get();
-        
-        sqlEntityListener.onTokenTransfer(tokenTransfer2);
-        completeFileAndCommit();
         expected.setBalance(tokenTransfer1.getAmount() + tokenTransfer2.getAmount());
+
+        sqlEntityListener.onTokenTransfer(tokenTransfer2);
+        if (commitIndex > 4) {
+            completeFileAndCommit();
+            assertThat(tokenAccountRepository.findAll()).containsExactly(expected);
+            assertThat(findTokenAccountHistory()).containsExactly(tokenAccount);
+            assertThat(tokenTransferRepository.findAll()).containsExactly(tokenTransfer1, tokenTransfer2);
+        }
+
+        var tokenTransferId3 = new TokenTransfer.Id();
+        tokenTransferId3.setAccountId(EntityId.of(tokenAccount.getAccountId(), ACCOUNT));
+        tokenTransferId3.setTokenId(EntityId.of(tokenAccount.getTokenId(), TOKEN));
+        tokenTransferId3.setConsensusTimestamp(tokenAccount.getCreatedTimestamp() + 3);
+        TokenTransfer tokenTransfer3 = domainBuilder.tokenTransfer().customize(t -> t.id(tokenTransferId3).amount(20L)).get();
+
+        sqlEntityListener.onTokenTransfer(tokenTransfer3);
+        completeFileAndCommit();
+        expected.setBalance(tokenTransfer1.getAmount() + tokenTransfer2.getAmount() + tokenTransfer3.getAmount());
 
         // then
         assertThat(tokenAccountRepository.findAll()).containsExactly(expected);
         assertThat(findTokenAccountHistory()).containsExactly(tokenAccount);
-        assertThat(tokenTransferRepository.findAll()).containsExactlyInAnyOrder(tokenTransfer1, tokenTransfer2);
+        assertThat(tokenTransferRepository.findAll()).containsExactlyInAnyOrder(tokenTransfer1, tokenTransfer2,
+                tokenTransfer3);
     }
 
     @ValueSource(ints = {1, 2})
