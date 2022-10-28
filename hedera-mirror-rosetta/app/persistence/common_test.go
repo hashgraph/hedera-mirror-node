@@ -24,35 +24,48 @@ import (
 	"database/sql"
 	"testing"
 
+	"github.com/jackc/pgtype"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestGetFirstAccountBalanceFileFixedOffsetTimestampSqlNamedArg(t *testing.T) {
+func TestGetAccountBalanceFileFixedOffsetTimestampRangeSqlNamedArg(t *testing.T) {
 	tests := []struct {
 		network  string
 		expected sql.NamedArg
 	}{
 		{
-			network:  "mainnet",
-			expected: sql.Named(firstFixedOffsetTimestampSqlArgName, sql.NullInt64{Int64: 1658420100626004000, Valid: true}),
+			network: "mainnet",
+			expected: sql.Named(fixedOffsetTimestampRangeSqlArgName, pgtype.Int8range{
+				Lower:     pgtype.Int8{Int: 1658420100626004000, Status: pgtype.Present},
+				Upper:     pgtype.Int8{Int: 1666368000880378770, Status: pgtype.Present},
+				LowerType: pgtype.Inclusive,
+				UpperType: pgtype.Inclusive,
+				Status:    pgtype.Present,
+			}),
 		},
 		{
-			network:  "testnet",
-			expected: sql.Named(firstFixedOffsetTimestampSqlArgName, sql.NullInt64{Int64: 1656693000269913000, Valid: true}),
+			network: "testnet",
+			expected: sql.Named(fixedOffsetTimestampRangeSqlArgName, pgtype.Int8range{
+				Lower:     pgtype.Int8{Int: 1656693000269913000, Status: pgtype.Present},
+				Upper:     pgtype.Int8{Int: 1665072000124462000, Status: pgtype.Present},
+				LowerType: pgtype.Inclusive,
+				UpperType: pgtype.Inclusive,
+				Status:    pgtype.Present,
+			}),
 		},
 		{
 			network:  "",
-			expected: sql.Named(firstFixedOffsetTimestampSqlArgName, sql.NullInt64{}),
+			expected: sql.Named(fixedOffsetTimestampRangeSqlArgName, pgtype.Int8range{Status: pgtype.Null}),
 		},
 		{
 			network:  "demo",
-			expected: sql.Named(firstFixedOffsetTimestampSqlArgName, sql.NullInt64{}),
+			expected: sql.Named(fixedOffsetTimestampRangeSqlArgName, pgtype.Int8range{Status: pgtype.Null}),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.network, func(t *testing.T) {
-			actual := getFirstAccountBalanceFileFixedOffsetTimestampSqlNamedArg(tt.network)
+			actual := getAccountBalanceFileFixedOffsetTimestampRangeSqlNamedArg(tt.network)
 			assert.Equal(t, tt.expected, actual)
 		})
 	}
