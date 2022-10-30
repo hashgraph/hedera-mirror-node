@@ -96,7 +96,7 @@ sonarqube {
         property("sonar.host.url", "https://sonarcloud.io")
         property("sonar.organization", "hashgraph")
         property("sonar.projectKey", project.name)
-        property("sonar.issue.ignore.multicriteria", "e1,e2,e3,e4")
+        property("sonar.issue.ignore.multicriteria", "e1,e2,e3,e4,e5")
         property("sonar.issue.ignore.multicriteria.e1.resourceKey", "**/*.java")
         property("sonar.issue.ignore.multicriteria.e1.ruleKey", "java:S6212")
         property("sonar.issue.ignore.multicriteria.e2.resourceKey", "**/*.java")
@@ -105,5 +105,7 @@ sonarqube {
         property("sonar.issue.ignore.multicriteria.e3.ruleKey", "java:S2187")
         property("sonar.issue.ignore.multicriteria.e4.resourceKey", "**/*.js")
         property("sonar.issue.ignore.multicriteria.e4.ruleKey", "javascript:S3758")
+        property("sonar.issue.ignore.multicriteria.e5.resourceKey", "**/*.sql")
+        property("sonar.issue.ignore.multicriteria.e5.ruleKey", "plsql:S1192")
     }
 }
