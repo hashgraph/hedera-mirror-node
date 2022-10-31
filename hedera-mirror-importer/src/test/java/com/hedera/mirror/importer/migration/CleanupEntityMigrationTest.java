@@ -45,6 +45,7 @@ import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
@@ -52,6 +53,7 @@ import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
+@DisableRepeatableSqlMigration
 @EnabledIfV1
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")

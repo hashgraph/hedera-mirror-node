@@ -83,32 +83,10 @@ comment on table assessed_custom_fee is 'Assessed custom fees for HTS transactio
 -- contract
 create table if not exists contract
 (
-    auto_renew_account_id            bigint                         null,
-    auto_renew_period                bigint                         null,
-    created_timestamp                bigint                         null,
-    decline_reward                   boolean     default false      not null,
-    deleted                          boolean                        null,
-    evm_address                      bytea                          null,
-    expiration_timestamp             bigint                         null,
-    file_id                          bigint                         null,
-    id                               bigint                         not null,
-    initcode                         bytea                          null,
-    key                              bytea                          null,
-    max_automatic_token_associations integer                        null,
-    memo                             text        default ''         not null,
-    num                              bigint                         not null,
-    obtainer_id                      bigint                         null,
-    permanent_removal                boolean                        null,
-    proxy_account_id                 bigint                         null,
-    public_key                       character varying              null,
-    realm                            bigint                         not null,
-    runtime_bytecode                 bytea                          null,
-    shard                            bigint                         not null,
-    staked_account_id                bigint                         null,
-    staked_node_id                   bigint      default -1         null,
-    stake_period_start               bigint      default -1         null,
-    timestamp_range                  int8range                      not null,
-    type                             entity_type default 'CONTRACT' not null
+    file_id          bigint null,
+    id               bigint not null,
+    initcode         bytea  null,
+    runtime_bytecode bytea  null
 );
 comment on table contract is 'Contract entity';
 
@@ -457,8 +435,8 @@ create table if not exists prng
 (
     consensus_timestamp bigint  not null,
     range               integer not null,
-    pseudorandom_bytes  bytea   null,
-    pseudorandom_number integer null
+    prng_bytes          bytea   null,
+    prng_number         integer null
 );
 comment on table prng is 'Pseudorandom number generator';
 
@@ -686,77 +664,3 @@ create table if not exists transaction_signature
 );
 comment on table transaction_signature is 'Transaction signatories';
 
--- place it at the end since it depends on tables after it in alphabetic order
-create materialized view if not exists entity_state_start as
-with end_period as (
-  select max(consensus_timestamp) as consensus_timestamp from node_stake
-), balance_timestamp as (
-  with adjusted_balance_file as (
-    select
-      consensus_timestamp,
-      case when hapi_version_major > 0 or hapi_version_minor >= 27 then time_offset + 53
-           else time_offset
-      end as time_offset
-    from account_balance_file,
-         lateral (
-           select hapi_version_major, hapi_version_minor
-           from record_file
-           where consensus_end >= consensus_timestamp
-           order by consensus_end
-           limit 1
-        ) as hapi_version
-    order by consensus_timestamp desc
-  )
-  select abf.consensus_timestamp, (abf.consensus_timestamp + abf.time_offset) adjusted_consensus_timestamp
-  from adjusted_balance_file abf, end_period ep
-  where abf.consensus_timestamp + abf.time_offset <= ep.consensus_timestamp
-  order by abf.consensus_timestamp desc
-  limit 1
-), entity_state as (
-  select
-    decline_reward,
-    id,
-    staked_account_id,
-    staked_node_id,
-    stake_period_start
-  from entity, end_period
-  where deleted is not true and type in ('ACCOUNT', 'CONTRACT') and timestamp_range @> end_period.consensus_timestamp
-  union all
-  select *
-  from (
-         select
-           distinct on (id)
-           decline_reward,
-           id,
-           staked_account_id,
-           staked_node_id,
-           stake_period_start
-         from entity_history, end_period
-         where deleted is not true and type in ('ACCOUNT', 'CONTRACT') and timestamp_range @> end_period.consensus_timestamp
-         order by id, timestamp_range desc
-       ) as latest_history
-), balance_snapshot as (
-  select account_id, balance
-  from account_balance ab
-  join balance_timestamp bt on bt.consensus_timestamp = ab.consensus_timestamp
-)
-select
-    coalesce(balance, 0) + coalesce(change, 0) as balance,
-    decline_reward,
-    id,
-    coalesce(staked_account_id, 0)             as staked_account_id,
-    coalesce(staked_node_id, -1)               as staked_node_id,
-    coalesce(stake_period_start, -1)           as stake_period_start
-from entity_state
-  left join balance_snapshot on account_id = id
-  left join (
-    select entity_id, sum(amount) as change
-    from crypto_transfer ct, balance_timestamp bt, end_period ep
-    where ct.consensus_timestamp <= ep.consensus_timestamp
-      and ct.consensus_timestamp > bt.adjusted_consensus_timestamp
-    group by entity_id
-    order by entity_id
-  ) balance_change on entity_id = id,
-  balance_timestamp bt
-where bt.consensus_timestamp is not null;
-comment on materialized view entity_state_start is 'Network entity state at start of staking period';

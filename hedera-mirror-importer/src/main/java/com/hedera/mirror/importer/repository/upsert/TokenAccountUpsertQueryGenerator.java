@@ -42,7 +42,13 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
     @Override
     public String getUpsertQuery() {
         return """
-                with existing as (
+                with current as (
+                  select e.*
+                  from token_account e
+                  join token_account_temp t on e.account_id = t.account_id
+                    and e.token_id = t.token_id
+                  where upper(t.timestamp_range) is null
+                ), existing as (
                   select
                     e.account_id as e_account_id,
                     e.associated as e_associated,
@@ -55,13 +61,13 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                     t.*
                   from
                     token_account_temp t
-                    left join token_account e on e.account_id = t.account_id
+                    left join current e on e.account_id = t.account_id
                     and e.token_id = t.token_id
                 ),
                 token as (
                   select
-                    token_id, 
-                    freeze_key, 
+                    token_id,
+                    freeze_key,
                     freeze_default, 
                     kyc_key 
                   from token
