@@ -120,14 +120,10 @@ class EntityRepositoryTest extends AbstractRepositoryTest {
 
     @ParameterizedTest
     @CsvSource(value = {
-            "0, 26, 0, 130, 190",
-            "0, 26, 1, 100, 190",
-            "0, 27, 0, 100, 190",
-            "0, 27, 1, 100, 200",
-            "1, 0, 0, 100, 190"
+            "0, 130, 190",
+            "1, 100, 190",
     })
-    void refreshEntityStateStart(int hapiMajor, int hapiMinor, int timeOffset, long expectedBalance1,
-                                 long expectedBalance2) {
+    void refreshEntityStateStart(int timeOffset, long expectedBalance1, long expectedBalance2) {
         // given
         long epochDay = 1000L;
         long nodeStakeTimestamp = DomainUtils.convertToNanosMax(TestUtils.asStartOfEpochDay(epochDay + 1)) + 1000L;
@@ -187,10 +183,6 @@ class EntityRepositoryTest extends AbstractRepositoryTest {
         domainBuilder.accountBalance()
                 .customize(ab -> ab.balance(500L)
                         .id(new AccountBalance.Id(balanceTimestamp, contract.toEntityId())))
-                .persist();
-        domainBuilder.recordFile()
-                .customize(rf -> rf.consensusStart(balanceTimestamp - 100L).consensusEnd(balanceTimestamp + 100L)
-                        .hapiVersionMajor(hapiMajor).hapiVersionMinor(hapiMinor))
                 .persist();
 
         persistCryptoTransfer(20L, balanceTimestamp, account1.getId());
