@@ -105,7 +105,7 @@ sonarqube {
         property("sonar.issue.ignore.multicriteria.e3.ruleKey", "java:S2187")
         property("sonar.issue.ignore.multicriteria.e4.resourceKey", "**/*.js")
         property("sonar.issue.ignore.multicriteria.e4.ruleKey", "javascript:S3758")
-        property("sonar.issue.ignore.multicriteria.e5.resourceKey", "**/*.sql")
+        property("sonar.issue.ignore.multicriteria.e5.resourceKey", "**/stateproof/record_file.sql")
         property("sonar.issue.ignore.multicriteria.e5.ruleKey", "plsql:S1192")
     }
 }
