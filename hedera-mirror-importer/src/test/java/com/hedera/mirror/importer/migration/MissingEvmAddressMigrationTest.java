@@ -41,9 +41,11 @@ import org.springframework.test.context.TestPropertySource;
 
 import com.hedera.mirror.common.domain.History;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 
+@DisableRepeatableSqlMigration
 @EnabledIfV1
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.55.4")

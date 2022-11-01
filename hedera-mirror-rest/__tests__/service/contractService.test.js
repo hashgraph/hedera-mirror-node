@@ -188,23 +188,13 @@ describe('ContractService.getContractLogsQuery tests', () => {
     });
     assertSqlQueryEqual(
       query,
-      `select
-            cl.bloom,
-            cl.contract_id,
-            cl.consensus_timestamp,
-            cl.data,
-            cl.index,
-            cl.root_contract_id,
-            cl.topic0,
-            cl.topic1,
-            cl.topic2,
-            cl.topic3,
-            cr.transaction_hash,
-            cr.transaction_index,
-            block.block_number,
-            block.block_hash
+      `with record_file as (select consensus_end,hash,index from record_file)
+      select cl.bloom, cl.contract_id, cl.consensus_timestamp, cl.data, cl.index, cl.root_contract_id,
+             cl.topic0, cl.topic1, cl.topic2, cl.topic3, cr.transaction_hash, cr.transaction_index,
+             block_number,block_hash
       from contract_log cl
       left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
+        and cl.payer_account_id = cr.payer_account_id
       left join lateral (
         select index as block_number,hash as block_hash
         from record_file
@@ -244,37 +234,23 @@ describe('ContractService.getContractLogsQuery tests', () => {
     });
     assertSqlQueryEqual(
       query,
-
-      `select cl.bloom,
-              cl.contract_id,
-              cl.consensus_timestamp,
-              cl.data,cl.index,
-              cl.root_contract_id,
-              cl.topic0,
-              cl.topic1,
-              cl.topic2,
-              cl.topic3,
-              cr.transaction_hash,
-              cr.transaction_index,
-              block.block_number,
-              block.block_hash
+      `with record_file as (select consensus_end,hash,index from record_file)
+      select cl.bloom, cl.contract_id, cl.consensus_timestamp, cl.data, cl.index, cl.root_contract_id,
+             cl.topic0, cl.topic1, cl.topic2, cl.topic3, cr.transaction_hash, cr.transaction_index,
+             block_number, block_hash
       from contract_log cl
       left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
+        and cl.payer_account_id = cr.payer_account_id
       left join lateral (
-        select index as block_number,
-               hash as block_hash
+        select index as block_number,hash as block_hash
         from record_file
         where consensus_end >= cl.consensus_timestamp
         order by consensus_end asc
         limit 1
       ) as block on true
-      where cl.contract_id = $1
-       and cl.topic0 in ($2)
-       and cl.topic1 in ($3)
-       and cl.topic2 in ($4)
-       and cl.topic3 in ($5)
-     order by cl.consensus_timestamp desc, cl.index desc
-     limit $6`
+      where cl.contract_id = $1 and cl.topic0 in ($2) and cl.topic1 in ($3) and cl.topic2 in ($4) and cl.topic3 in ($5)
+      order by cl.consensus_timestamp desc, cl.index desc
+      limit $6`
     );
     expect(params).toEqual([
       1002,
@@ -301,69 +277,43 @@ describe('ContractService.getContractLogsQuery tests', () => {
     });
     assertSqlQueryEqual(
       query,
-      `(select cl.bloom,
-                        cl.contract_id,
-                        cl.consensus_timestamp,
-                        cl.data,
-                        cl.index,
-                        cl.root_contract_id,
-                        cl.topic0,
-                        cl.topic1,
-                        cl.topic2,
-                        cl.topic3,
-                        cr.transaction_hash,
-                        cr.transaction_index,
-                        block.block_number,
-                        block.block_hash
-                   from contract_log cl
-                   left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
-                   left join lateral (
-                      select index as block_number,
-                             hash as block_hash
-                      from record_file
-                      where consensus_end >= cl.consensus_timestamp
-                      order by consensus_end asc
-                      limit 1
-                   ) as block on true
-                   where cl.contract_id = $1
-                     and cl.topic0 in ($2)
-                     and cl.index >= $4
-                     and cl.consensus_timestamp = $5
-                   order by cl.consensus_timestamp desc,
-                   cl.index desc
-                   limit $3
-               ) union (
-                   select cl.bloom,
-                          cl.contract_id,
-                          cl.consensus_timestamp,
-                          cl.data,
-                          cl.index,
-                          cl.root_contract_id,
-                          cl.topic0,
-                          cl.topic1,
-                          cl.topic2,
-                          cl.topic3,
-                          cr.transaction_hash,
-                          cr.transaction_index,
-                          block.block_number,
-                          block.block_hash
-                   from contract_log cl
-                   left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
-                   left join lateral (
-                        select index as block_number,
-                               hash as block_hash
-                        from record_file
-                        where consensus_end >= cl.consensus_timestamp
-                        order by consensus_end asc
-                        limit 1
-                   ) as block on true
-                   where cl.contract_id = $1
-                   and cl.topic0 in ($2)
-                   and cl.consensus_timestamp > $6
-                   order by cl.consensus_timestamp desc, cl.index desc
-                   limit $3
-               ) order by consensus_timestamp desc, index desc
-               limit $3`
+      `(
+        with record_file as (select consensus_end,hash,index from record_file)
+        select cl.bloom,cl.contract_id,cl.consensus_timestamp,cl.data,cl.index,cl.root_contract_id,cl.topic0,
+          cl.topic1,cl.topic2,cl.topic3,cr.transaction_hash,cr.transaction_index,block_number,block_hash
+        from contract_log cl
+        left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
+          and cl.payer_account_id = cr.payer_account_id
+        left join lateral (
+          select index as block_number,hash as block_hash
+          from record_file
+          where consensus_end >= cl.consensus_timestamp
+          order by consensus_end asc
+          limit 1
+        ) as block on true
+        where cl.contract_id = $1 and cl.topic0 in ($2) and cl.index >= $4 and cl.consensus_timestamp = $5
+        order by cl.consensus_timestamp desc, cl.index desc
+        limit $3
+      ) union (
+        with record_file as (select consensus_end,hash,index from record_file)
+        select cl.bloom,cl.contract_id,cl.consensus_timestamp,cl.data,cl.index,cl.root_contract_id,cl.topic0,
+          cl.topic1,cl.topic2,cl.topic3,cr.transaction_hash,cr.transaction_index,block_number,block_hash
+        from contract_log cl
+        left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
+          and cl.payer_account_id = cr.payer_account_id
+        left join lateral (
+          select index as block_number,hash as block_hash
+          from record_file
+          where consensus_end >= cl.consensus_timestamp
+          order by consensus_end asc
+          limit 1
+        ) as block on true
+        where cl.contract_id = $1 and cl.topic0 in ($2) and cl.consensus_timestamp > $6
+        order by cl.consensus_timestamp desc, cl.index desc
+        limit $3
+      )
+      order by consensus_timestamp desc, index desc
+      limit $3`
     );
     expect(params).toEqual([1002, Buffer.from('11', 'hex'), 5, '1', '1001', '1001']);
   });
@@ -389,100 +339,117 @@ describe('ContractService.getContractLogsQuery tests', () => {
     });
     assertSqlQueryEqual(
       query,
-      `(select cl.bloom,
-                        cl.contract_id,
-                        cl.consensus_timestamp,
-                        cl.data,
-                        cl.index,
-                        cl.root_contract_id,
-                        cl.topic0,
-                        cl.topic1,
-                        cl.topic2,
-                        cl.topic3,
-                        cr.transaction_hash,
-                        cr.transaction_index,
-                        block.block_number,
-                        block.block_hash
-                 from contract_log cl
-                 left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
-                 left join lateral (
-                    select index as block_number,
-                           hash as block_hash
-                    from record_file
-                    where consensus_end >= cl.consensus_timestamp
-                    order by consensus_end asc
-                    limit 1
-                 ) as block on true
-                 where cl.contract_id = $1
-                   and cl.topic0 in ($2)
-                   and cl.index >= $4
-                   and cl.consensus_timestamp = $5
-                 order by cl.consensus_timestamp desc, cl.index desc
-                 limit $3
-                ) union (
-                  select cl.bloom,
-                         cl.contract_id,
-                         cl.consensus_timestamp,
-                         cl.data,
-                         cl.index,
-                         cl.root_contract_id,
-                         cl.topic0,
-                         cl.topic1,
-                         cl.topic2,
-                         cl.topic3,
-                         cr.transaction_hash,
-                         cr.transaction_index,
-                         block.block_number,
-                         block.block_hash
-                  from contract_log cl
-                  left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
-                  left join lateral (
-                    select index as block_number,
-                           hash as block_hash
-                    from record_file
-                    where consensus_end >= cl.consensus_timestamp
-                    order by consensus_end asc
-                    limit 1
-                  ) as block on true
-                  where cl.contract_id = $1
-                    and cl.topic0 in ($2)
-                    and cl.consensus_timestamp > $6
-                    and cl.consensus_timestamp < $7
-                  order by cl.consensus_timestamp desc, cl.index desc
-                  limit $3
-                ) union (
-                  select cl.bloom,
-                         cl.contract_id,
-                         cl.consensus_timestamp,
-                         cl.data,
-                         cl.index,
-                         cl.root_contract_id,
-                         cl.topic0,
-                         cl.topic1,
-                         cl.topic2,
-                         cl.topic3,
-                         cr.transaction_hash,
-                         cr.transaction_index,
-                         block.block_number,
-                         block.block_hash
-                  from contract_log cl
-                  left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
-                  left join lateral (
-                    select index as block_number,
-                           hash as block_hash
-                    from record_file
-                    where consensus_end >= cl.consensus_timestamp
-                    order by consensus_end asc
-                    limit 1
-                  ) as block on true
-                  where cl.contract_id = $1
-                    and cl.topic0 in ($2)
-                    and cl.index <= $8
-                    and cl.consensus_timestamp = $9
-                  order by cl.consensus_timestamp desc, cl.index desc
-                  limit $3)
-                order by consensus_timestamp desc, index desc
-                limit $3`
+      `(
+        with record_file as (select  consensus_end, hash, index from record_file)
+        select
+          cl.bloom,
+          cl.contract_id,
+          cl.consensus_timestamp,
+          cl.data,
+          cl.index,
+          cl.root_contract_id,
+          cl.topic0,
+          cl.topic1,
+          cl.topic2,
+          cl.topic3,
+          cr.transaction_hash,
+          cr.transaction_index,
+          block_number,
+          block_hash
+        from
+          contract_log cl
+          left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
+            and cl.payer_account_id = cr.payer_account_id
+          left join lateral (
+            select index as block_number, hash as block_hash
+            from  record_file
+            where consensus_end >= cl.consensus_timestamp
+            order by consensus_end asc
+            limit 1
+          ) as block on true
+        where  cl.contract_id = $1
+          and cl.topic0 in ($2)
+          and cl.index >= $4
+          and cl.consensus_timestamp = $5
+        order by
+          cl.consensus_timestamp desc,
+          cl.index desc
+        limit $3
+      ) union (
+        with record_file as (select consensus_end, hash, index from record_file)
+        select
+          cl.bloom,
+          cl.contract_id,
+          cl.consensus_timestamp,
+          cl.data,
+          cl.index,
+          cl.root_contract_id,
+          cl.topic0,
+          cl.topic1,
+          cl.topic2,
+          cl.topic3,
+          cr.transaction_hash,
+          cr.transaction_index,
+          block_number,
+          block_hash
+        from
+          contract_log cl
+          left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
+            and cl.payer_account_id = cr.payer_account_id
+          left join lateral (
+            select index as block_number, hash as block_hash
+            from record_file
+            where  consensus_end >= cl.consensus_timestamp
+            order by consensus_end asc
+            limit 1
+          ) as block on true
+        where
+          cl.contract_id = $1
+          and cl.topic0 in ($2)
+          and cl.consensus_timestamp > $6
+          and cl.consensus_timestamp < $7
+        order by
+          cl.consensus_timestamp desc,
+          cl.index desc
+        limit $3
+      ) union (
+        with record_file as (select consensus_end, hash, index from record_file)
+        select
+          cl.bloom,
+          cl.contract_id,
+          cl.consensus_timestamp,
+          cl.data,
+          cl.index,
+          cl.root_contract_id,
+          cl.topic0,
+          cl.topic1,
+          cl.topic2,
+          cl.topic3,
+          cr.transaction_hash,
+          cr.transaction_index,
+          block_number,
+          block_hash
+        from
+          contract_log cl
+          left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
+            and cl.payer_account_id = cr.payer_account_id
+          left join lateral (
+            select index as block_number, hash as block_hash
+            from  record_file
+            where consensus_end >= cl.consensus_timestamp
+            order by consensus_end asc
+            limit 1
+          ) as block on true
+        where
+          cl.contract_id = $1
+          and cl.topic0 in ($2)
+          and cl.index <= $8
+          and cl.consensus_timestamp = $9
+        order by cl.consensus_timestamp desc, cl.index desc
+        limit $3
+      )
+      order by consensus_timestamp desc, index desc
+      limit $3`
     );
     expect(params).toEqual([1002, Buffer.from('11', 'hex'), 5, '1', '1001', '1001', '1005', '5', '1005']);
   });

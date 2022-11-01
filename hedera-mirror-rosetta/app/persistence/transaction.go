@@ -75,7 +75,7 @@ const (
               from account_balance_file as abf,
                 lateral (
                   select
-                    case when consensus_timestamp >= @first_fixed_offset_timestamp then 53
+                    case when consensus_timestamp <@ @fixed_offset_timestamp_range ::int8range then 53
                          else 0
                     end value
                 ) as fixed_offset
@@ -298,7 +298,7 @@ func (t tokenTransfer) getAmount() types.Amount {
 type transactionRepository struct {
 	once                            sync.Once
 	dbClient                        interfaces.DbClient
-	firstFixedOffsetTimestampSqlArg sql.NamedArg
+	fixedOffsetTimestampRangeSqlArg sql.NamedArg
 	types                           map[int]string
 }
 
@@ -306,7 +306,7 @@ type transactionRepository struct {
 func NewTransactionRepository(dbClient interfaces.DbClient, network string) interfaces.TransactionRepository {
 	return &transactionRepository{
 		dbClient:                        dbClient,
-		firstFixedOffsetTimestampSqlArg: getFirstAccountBalanceFileFixedOffsetTimestampSqlNamedArg(network),
+		fixedOffsetTimestampRangeSqlArg: getAccountBalanceFileFixedOffsetTimestampRangeSqlNamedArg(network),
 	}
 }
 
@@ -329,7 +329,7 @@ func (tr *transactionRepository) FindBetween(ctx context.Context, start, end int
 				selectTransactionsInTimestampRangeOrdered,
 				sql.Named("start", start),
 				sql.Named("end", end),
-				tr.firstFixedOffsetTimestampSqlArg,
+				tr.fixedOffsetTimestampRangeSqlArg,
 			).
 			Limit(batchSize).
 			Find(&transactionsBatch).
@@ -396,7 +396,7 @@ func (tr *transactionRepository) FindByHashInBlock(
 		sql.Named("hash", transactionHash),
 		sql.Named("start", consensusStart),
 		sql.Named("end", consensusEnd),
-		tr.firstFixedOffsetTimestampSqlArg,
+		tr.fixedOffsetTimestampRangeSqlArg,
 	).Find(&transactions).Error; err != nil {
 		log.Errorf(databaseErrorFormat, hErrors.ErrDatabaseError.Message, err)
 		return nil, hErrors.ErrDatabaseError
@@ -599,7 +599,7 @@ func (tr *transactionRepository) processSuccessTokenDissociates(
 		selectDissociateTokenTransfersInTimestampRange,
 		sql.Named("start", start),
 		sql.Named("end", end),
-		tr.firstFixedOffsetTimestampSqlArg,
+		tr.fixedOffsetTimestampRangeSqlArg,
 	).Scan(&tokenDissociateTransactions).Error; err != nil {
 		log.Errorf(databaseErrorFormat, hErrors.ErrDatabaseError.Message, err)
 		return hErrors.ErrDatabaseError

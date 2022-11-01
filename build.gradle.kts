@@ -31,7 +31,7 @@ extra.apply {
     set("gson.version", "2.8.9") // Temporary until Apache jclouds supports gson 2.9
     set("protobufVersion", "3.21.8")
     set("reactorGrpcVersion", "1.2.3")
-    set("testcontainersSpringBootVersion", "2.2.9")
+    set("testcontainersSpringBootVersion", "2.2.10")
 }
 
 // Creates a platform/BOM with specific versions so subprojects don't need to specify a version when using a dependency
@@ -65,18 +65,20 @@ dependencies {
         api("io.vertx:vertx-pg-client:4.3.4")
         api("javax.inject:javax.inject:1")
         api("net.devh:grpc-spring-boot-starter:2.13.1.RELEASE")
+        api("net.java.dev.jna:jna:5.12.1")
         api("org.apache.commons:commons-compress:1.21")
         api("org.apache.commons:commons-math3:3.6.1")
         api("org.apache.tuweni:tuweni-bytes:2.2.0")
         api("org.apache.velocity:velocity-engine-core:2.3")
         api("org.gaul:s3proxy:2.0.0")
+        api("org.hyperledger.besu:secp256k1:0.6.1")
         api("org.hyperledger.besu:evm:22.7.6")
         api("org.msgpack:jackson-dataformat-msgpack:0.9.3")
         api("org.springdoc:springdoc-openapi-webflux-ui:1.6.11")
         api("org.springframework.cloud:spring-cloud-dependencies:2021.0.4")
         api("org.testcontainers:junit-jupiter:1.17.5")
         api("org.web3j:core:5.0.0")
-        api("software.amazon.awssdk:bom:2.17.290")
+        api("software.amazon.awssdk:bom:2.18.3")
     }
 }
 

@@ -26,7 +26,7 @@ const DEFAULT_DB_NAME = 'mirror_node_integration';
 const POSTGRES_PORT = 5432;
 
 const v1DatabaseImage = 'postgres:14-alpine';
-const v2DatabaseImage = 'citusdata/citus:10.2.2-alpine';
+const v2DatabaseImage = 'citusdata/citus:11.1.4-pg14';
 
 const isV2Schema = () => process.env.MIRROR_NODE_SCHEMA === 'v2';
 

@@ -73,13 +73,11 @@ const getSuccessfulTransactionConsensusNs = async (transactionId, nonce, schedul
  */
 const getRCDFileInfoByConsensusNs = async (consensusNs) => {
   const sqlQuery = `select bytes, name, node_account_id, version
-       from record_file rf, lateral (
-         select node_account_id
-         from address_book_entry abe
-         where abe.node_id = rf.node_id and consensus_timestamp < rf.consensus_start
-         order by consensus_timestamp desc
-         limit 1
-       ) node
+       from record_file rf
+       join address_book ab
+         on (ab.end_consensus_timestamp is null and ab.start_consensus_timestamp < rf.consensus_start) or
+            (ab.start_consensus_timestamp < rf.consensus_start and rf.consensus_start <= ab.end_consensus_timestamp)
+       join address_book_entry abe on rf.node_id = abe.node_id and abe.consensus_timestamp = ab.start_consensus_timestamp
        where consensus_end >= $1
        order by consensus_end
        limit 1`;
