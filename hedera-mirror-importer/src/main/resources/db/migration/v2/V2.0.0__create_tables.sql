@@ -16,7 +16,7 @@ create table if not exists account_balance
     account_id          bigint not null,
     balance             bigint not null,
     consensus_timestamp bigint not null
-) partition by range (consensus_timestamp);
+);
 comment on table account_balance is 'Account balances (historical) in tinybars at different consensus timestamps';
 
 create table if not exists account_balance_file
@@ -207,7 +207,7 @@ create table if not exists crypto_transfer
     errata              errata_type null,
     is_approval         boolean     null,
     payer_account_id    bigint      not null
-) partition by range (consensus_timestamp);
+);
 comment on table crypto_transfer is 'Crypto account Hbar transfers';
 
 -- custom_fee
@@ -259,13 +259,13 @@ create table if not exists entity
     submit_key                       bytea                 null,
     timestamp_range                  int8range             not null,
     type                             entity_type           not null
-) partition by range (id);
+);
 comment on table entity is 'Network entity with state';
 
 create table if not exists entity_history
 (
     like entity including defaults
-) partition by range (id);
+);
 comment on table entity_history is 'Network entity historical state';
 
 create table if not exists entity_stake
@@ -401,7 +401,7 @@ create table if not exists nft_transfer
     sender_account_id   bigint,
     serial_number       bigint  not null,
     token_id            bigint  not null
-) partition by range (consensus_timestamp);
+);
 comment on table nft_transfer is 'Crypto account nft transfers';
 
 create table if not exists node_stake
@@ -427,7 +427,7 @@ create table if not exists non_fee_transfer
     is_approval         boolean null,
     entity_id           bigint  null,
     payer_account_id    bigint  not null
-) partition by range (consensus_timestamp);
+);
 comment on table non_fee_transfer is 'Crypto account non fee Hbar transfers';
 
 -- prng
@@ -475,7 +475,7 @@ create table if not exists record_file
     sidecar_count      int                    not null default 0,
     size               int                    null,
     version            int                    not null
-) partition by range (consensus_end);
+);
 comment on table record_file is 'Network record file stream entries';
 
 -- schedule
@@ -588,7 +588,7 @@ create table if not exists token_balance
     balance             bigint not null,
     consensus_timestamp bigint not null,
     token_id            bigint not null
-) partition by range (consensus_timestamp);
+);
 comment on table token_balance is 'Crypto account token balances';
 
 --- token_transfer
@@ -600,7 +600,7 @@ create table if not exists token_transfer
     is_approval         boolean null,
     payer_account_id    bigint  not null,
     token_id            bigint  not null
-) partition by range (consensus_timestamp);
+);
 comment on table token_transfer is 'Crypto account token transfers';
 
 -- topic_message
@@ -617,7 +617,7 @@ create table if not exists topic_message
     sequence_number        bigint   not null,
     topic_id               bigint   not null,
     valid_start_timestamp  bigint
-) partition by range (consensus_timestamp);
+);
 comment on table topic_message is 'Topic entity sequenced messages';
 
 -- transaction
@@ -642,7 +642,7 @@ create table if not exists transaction
     type                       smallint    not null,
     valid_start_ns             bigint      not null,
     valid_duration_seconds     bigint
-) partition by range (consensus_timestamp);
+);
 comment on table transaction is 'Submitted network transactions';
 
 -- transaction_hash
@@ -663,3 +663,4 @@ create table if not exists transaction_signature
     type                smallint
 );
 comment on table transaction_signature is 'Transaction signatories';
+
