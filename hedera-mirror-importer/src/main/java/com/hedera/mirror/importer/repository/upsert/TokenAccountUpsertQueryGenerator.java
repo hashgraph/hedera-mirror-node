@@ -127,7 +127,10 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                       e_automatic_association,
                       false
                     ),
-                    coalesce(e_balance, 0) + coalesce(existing.balance, 0),
+                    case when e_created_timestamp is null or e_created_timestamp <> existing.created_timestamp then 
+                      coalesce(existing.balance)
+                      else coalesce(e_balance, 0) + coalesce(existing.balance, 0)
+                    end,
                     coalesce(existing.created_timestamp, e_created_timestamp, null),
                     case when existing.freeze_status is not null then existing.freeze_status
                       when existing.created_timestamp is not null then
