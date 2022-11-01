@@ -434,6 +434,7 @@ const addAddressBook = async (addressBookInput) => {
 const addAddressBookEntry = async (addressBookEntryInput) => {
   const insertFields = [
     'consensus_timestamp',
+    'file_id',
     'memo',
     'public_key',
     'node_id',
@@ -445,6 +446,7 @@ const addAddressBookEntry = async (addressBookEntryInput) => {
 
   const addressBookEntry = {
     consensus_timestamp: 0,
+    file_id: 101,
     memo: '0.0.3',
     public_key: '4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
     node_id: 2000,
@@ -465,10 +467,11 @@ const addAddressBookEntry = async (addressBookEntryInput) => {
 };
 
 const addAddressBookServiceEndpoint = async (addressBookServiceEndpointInput) => {
-  const insertFields = ['consensus_timestamp', 'ip_address_v4', 'node_id', 'port'];
+  const insertFields = ['consensus_timestamp', 'file_id', 'ip_address_v4', 'node_id', 'port'];
 
   const addressBookServiceEndpoint = {
     consensus_timestamp: 0,
+    file_id: 101,
     ip_address_v4: '127.0.0.1',
     node_id: 0,
     port: 50211,

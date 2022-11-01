@@ -119,7 +119,7 @@ const getAddressBooksAndNodeAccountIdsByConsensusNs = async (consensusNs) => {
        LEFT JOIN address_book_entry abe
          ON ab.start_consensus_timestamp = abe.consensus_timestamp
        WHERE start_consensus_timestamp <= $1
-         AND file_id = 102
+         AND ab.file_id = 102
        GROUP BY start_consensus_timestamp`;
   if (config.stateproof.addressBookHistory) {
     sqlQuery += `

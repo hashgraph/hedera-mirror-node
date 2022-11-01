@@ -59,6 +59,7 @@ class NetworkNodeService extends BaseService {
         (select max(${NodeStake.CONSENSUS_TIMESTAMP}) from ${NodeStake.tableName})
     )
     select ${AddressBookEntry.getFullName(AddressBookEntry.DESCRIPTION)},
+      ${AddressBookEntry.getFullName(AddressBookEntry.FILE_ID)},
       ${AddressBookEntry.getFullName(AddressBookEntry.MEMO)},
       ${AddressBookEntry.getFullName(AddressBookEntry.NODE_ID)},
       ${AddressBookEntry.getFullName(AddressBookEntry.NODE_ACCOUNT_ID)},
@@ -78,8 +79,9 @@ class NetworkNodeService extends BaseService {
       ${NodeStake.getFullName(NodeStake.STAKING_PERIOD)},
       coalesce((
         select jsonb_agg(jsonb_build_object(
-        '${AddressBookServiceEndpoint.IP_ADDRESS_V4}', ${AddressBookServiceEndpoint.IP_ADDRESS_V4},
-        '${AddressBookServiceEndpoint.PORT}', ${AddressBookServiceEndpoint.PORT}
+         '${AddressBookServiceEndpoint.FILE_ID}', ${AddressBookServiceEndpoint.FILE_ID},
+         '${AddressBookServiceEndpoint.IP_ADDRESS_V4}', ${AddressBookServiceEndpoint.IP_ADDRESS_V4}, 
+         '${AddressBookServiceEndpoint.PORT}', ${AddressBookServiceEndpoint.PORT}
         ) order by ${AddressBookServiceEndpoint.IP_ADDRESS_V4} asc, ${AddressBookServiceEndpoint.PORT} asc)
         from ${AddressBookServiceEndpoint.tableName} ${AddressBookServiceEndpoint.tableAlias}
         where ${AddressBookServiceEndpoint.getFullName(AddressBookServiceEndpoint.CONSENSUS_TIMESTAMP)} =

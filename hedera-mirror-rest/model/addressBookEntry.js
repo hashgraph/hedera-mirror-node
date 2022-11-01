@@ -26,6 +26,7 @@ class AddressBookEntry {
     // explicitly assign properties to restrict properties and allow for composition in other models
     this.consensusTimestamp = addressBookEntry.consensus_timestamp;
     this.description = addressBookEntry.description;
+    this.fileId = addressBookEntry.file_id;
     this.memo = addressBookEntry.memo;
     this.nodeAccountId = addressBookEntry.node_account_id;
     this.nodeCertHash = addressBookEntry.node_cert_hash;
@@ -38,6 +39,7 @@ class AddressBookEntry {
   static tableName = 'address_book_entry';
 
   static CONSENSUS_TIMESTAMP = 'consensus_timestamp';
+  static FILE_ID = 'file_id';
   static MEMO = 'memo';
   static PUBLIC_KEY = 'public_key';
   static NODE_ID = 'node_id';

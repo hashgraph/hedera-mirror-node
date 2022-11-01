@@ -41,6 +41,7 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
       )
       select
         abe.description,
+        abe.file_id,
         abe.memo,
         abe.node_id,
         abe.node_account_id,
@@ -59,7 +60,7 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
         coalesce(
           (
             select jsonb_agg(
-              jsonb_build_object('ip_address_v4',ip_address_v4,'port',port) order by ip_address_v4 asc,port asc)
+              jsonb_build_object('file_id',file_id,'ip_address_v4',ip_address_v4,'port',port) order by ip_address_v4 asc,port asc)
             from address_book_service_endpoint abse
             where abse.consensus_timestamp = abe.consensus_timestamp and abse.node_id = abe.node_id
           ),
@@ -88,6 +89,7 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
     )
     select
       abe.description,
+      abe.file_id,
       abe.memo,
       abe.node_id,
       abe.node_account_id,
@@ -106,7 +108,7 @@ describe('NetworkNodeService.getNetworkNodesWithFiltersQuery tests', () => {
       coalesce(
         (
           select jsonb_agg(
-            jsonb_build_object('ip_address_v4',ip_address_v4,'port',port) order by ip_address_v4 asc,port asc)
+            jsonb_build_object('file_id',file_id,'ip_address_v4',ip_address_v4,'port',port) order by ip_address_v4 asc,port asc)
           from address_book_service_endpoint abse
           where abse.consensus_timestamp = abe.consensus_timestamp and abse.node_id = abe.node_id
         ),
@@ -139,6 +141,7 @@ const defaultInputAddressBooks = [
 const defaultInputAddressBookEntries = [
   {
     consensus_timestamp: 1,
+    file_id: 101,
     memo: 'memo 1',
     node_id: 0,
     node_account_id: 3,
@@ -148,6 +151,7 @@ const defaultInputAddressBookEntries = [
   },
   {
     consensus_timestamp: 1,
+    file_id: 102,
     memo: 'memo 2',
     node_id: 1,
     node_account_id: 4,
@@ -157,6 +161,7 @@ const defaultInputAddressBookEntries = [
   },
   {
     consensus_timestamp: 2,
+    file_id: 103,
     memo: '0.0.3',
     node_id: 0,
     node_account_id: 3,
@@ -166,6 +171,7 @@ const defaultInputAddressBookEntries = [
   },
   {
     consensus_timestamp: 2,
+    file_id: 104,
     memo: '0.0.4',
     node_id: 1,
     node_account_id: 4,
@@ -178,24 +184,28 @@ const defaultInputAddressBookEntries = [
 const defaultInputServiceEndpointBooks = [
   {
     consensus_timestamp: 1,
+    file_id: 101,
     ip_address_v4: '127.0.0.1',
     node_id: 0,
     port: 50211,
   },
   {
     consensus_timestamp: 1,
+    file_id: 101,
     ip_address_v4: '127.0.0.2',
     node_id: 1,
     port: 50212,
   },
   {
     consensus_timestamp: 2,
+    file_id: 102,
     ip_address_v4: '128.0.0.1',
     node_id: 0,
     port: 50212,
   },
   {
     consensus_timestamp: 2,
+    file_id: 102,
     ip_address_v4: '128.0.0.2',
     node_id: 1,
     port: 50212,
@@ -295,12 +305,14 @@ const defaultExpectedNetworkNode101 = [
     },
     addressBookEntry: {
       description: 'desc 2',
+      fileId: 101,
       memo: 'memo 2',
       nodeAccountId: 4,
       nodeId: 1,
     },
     addressBookServiceEndpoints: [
       {
+        fileId: 101,
         ipAddressV4: '127.0.0.2',
         port: 50212,
       },
@@ -322,12 +334,14 @@ const defaultExpectedNetworkNode101 = [
     },
     addressBookEntry: {
       description: 'desc 1',
+      fileId: 101,
       memo: 'memo 1',
       nodeAccountId: 3,
       nodeId: 0,
     },
     addressBookServiceEndpoints: [
       {
+        fileId: 101,
         ipAddressV4: '127.0.0.1',
         port: 50211,
       },
@@ -352,6 +366,7 @@ const defaultExpectedNetworkNode102 = [
       startConsensusTimestamp: 2,
     },
     addressBookEntry: {
+      fileId: 102,
       description: 'desc 3',
       memo: '0.0.3',
       nodeAccountId: 3,
@@ -359,6 +374,7 @@ const defaultExpectedNetworkNode102 = [
     },
     addressBookServiceEndpoints: [
       {
+        fileId: 102,
         ipAddressV4: '128.0.0.1',
         port: 50212,
       },
@@ -381,12 +397,14 @@ const defaultExpectedNetworkNode102 = [
     },
     addressBookEntry: {
       description: 'desc 4',
+      fileId: 102,
       memo: '0.0.4',
       nodeAccountId: 4,
       nodeId: 1,
     },
     addressBookServiceEndpoints: [
       {
+        fileId: 102,
         ipAddressV4: '128.0.0.2',
         port: 50212,
       },
@@ -412,12 +430,14 @@ const defaultExpectedNetworkNodeEmptyNodeStake = [
     },
     addressBookEntry: {
       description: 'desc 3',
+      fileId: 102,
       memo: '0.0.3',
       nodeAccountId: 3,
       nodeId: 0,
     },
     addressBookServiceEndpoints: [
       {
+        fileId: 102,
         ipAddressV4: '128.0.0.1',
         port: 50212,
       },
@@ -437,12 +457,14 @@ const defaultExpectedNetworkNodeEmptyNodeStake = [
     },
     addressBookEntry: {
       description: 'desc 4',
+      fileId: 102,
       memo: '0.0.4',
       nodeAccountId: 4,
       nodeId: 1,
     },
     addressBookServiceEndpoints: [
       {
+        fileId: 102,
         ipAddressV4: '128.0.0.2',
         port: 50212,
       },

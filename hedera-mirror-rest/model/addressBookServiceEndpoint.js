@@ -25,6 +25,7 @@ class AddressBookServiceEndpoint {
   constructor(serviceEndpoint) {
     // explicitly assign properties to restict properties and allow for composition in other models
     this.consensusTimestamp = serviceEndpoint.consensus_timestamp;
+    this.fileId = serviceEndpoint.file_id;
     this.ipAddressV4 = serviceEndpoint.ip_address_v4;
     this.nodeId = serviceEndpoint.node_id;
     this.port = serviceEndpoint.port;
@@ -34,6 +35,7 @@ class AddressBookServiceEndpoint {
   static tableName = 'address_book_service_endpoint';
 
   static CONSENSUS_TIMESTAMP = 'consensus_timestamp';
+  static FILE_ID = 'file_id';
   static IP_ADDRESS_V4 = 'ip_address_v4';
   static NODE_ID = 'node_id';
   static PORT = 'port';
