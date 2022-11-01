@@ -322,7 +322,7 @@ create table if not exists event_file
     node_id          bigint                 not null,
     previous_hash    character varying(96)  not null,
     version          integer                not null
-);
+) partition by range (consensus_end);
 
 -- file_data
 create table if not exists file_data

@@ -1,3 +1,4 @@
 embedded:
   postgresql:
-    docker-image: citusdata/citus:11.1.4-pg14
+    docker-image: mgoelswirlds/mirror:citus
+    initScriptPath: db/scripts/init-v2.sql

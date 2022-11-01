@@ -4,25 +4,21 @@ set -e
 PGCONF="${PGCONF:-/var/lib/postgresql/data}"
 PGHBA="${PGCONF}/pg_hba.conf"
 DB_SPECIFIC_EXTENSION_SQL=
-DB_SPECIFIC_EXTENSION_PARTMAN_SQL=
-DB_SPECIFIC_SCHEMA_CREATION=
-DB_SPECIFIC_SCHEMA_OWNERSHIP_CHANGE=
-DB_SPECIFIC_GRANT_PERMISSIONS=
 DB_SPECIFIC_SQL="alter user :ownerUsername with createrole;"
 
 # v2 schema no longer creates the REST API user, while v1 schema still does
 if [[ "${SCHEMA_V2}" == "true" ]]; then
-  DB_SPECIFIC_EXTENSION_SQL="create extension citus;"
-  DB_SPECIFIC_EXTENSION_PARTMAN_SQL="create extension pg_partman schema partman;"
-  DB_SPECIFIC_SCHEMA_CREATION="create schema if not exists partman authorization :ownerUsername;"
-  DB_SPECIFIC_SCHEMA_OWNERSHIP_CHANGE="alter schema partman owner to :ownerUsername;"
-  DB_SPECIFIC_GRANT_PERMISSIONS="grant create on database :dbName to :ownerUsername;
-                                 grant all on schema partman to :ownerUsername;
-                                 grant all on all tables in schema partman to :ownerUsername;
-                                 grant execute on all functions in schema partman to :ownerUsername;
-                                 grant execute on all procedures in schema partman to :ownerUsername;
-                                 grant all on schema public to :ownerUsername;
-                                 grant temporary on database :dbName to :ownerUsername;"
+  DB_SPECIFIC_EXTENSION_SQL="create extension citus;
+                             create schema if not exists partman authorization :ownerUsername;
+                             create extension pg_partman schema partman;
+                             alter schema partman owner to :ownerUsername;
+                             grant create on database :dbName to :ownerUsername;
+                             grant all on schema partman to :ownerUsername;
+                             grant all on all tables in schema partman to :ownerUsername;
+                             grant execute on all functions in schema partman to :ownerUsername;
+                             grant execute on all procedures in schema partman to :ownerUsername;
+                             grant all on schema public to :ownerUsername;
+                             grant temporary on database :dbName to :ownerUsername;"
   DB_SPECIFIC_SQL="create user :restUsername with login password :'restPassword' in role readonly;"
 fi
 
@@ -90,10 +86,7 @@ alter default privileges in schema :dbSchema grant usage on sequences to readwri
 
 -- Partition privileges
 \connect :dbName postgres
-${DB_SPECIFIC_SCHEMA_CREATION}
-${DB_SPECIFIC_SCHEMA_OWNERSHIP_CHANGE}
-${DB_SPECIFIC_EXTENSION_PARTMAN_SQL}
-${DB_SPECIFIC_GRANT_PERMISSIONS}
+${DB_SPECIFIC_EXTENSION_SQL}
 
 -- Alter search path
 \connect postgres postgres
