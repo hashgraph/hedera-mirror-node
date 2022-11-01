@@ -61,9 +61,10 @@ class TransactionService extends BaseService {
     ${Transaction.getFullName(Transaction.RESULT)}
   from ${EthereumTransaction.tableName} ${EthereumTransaction.tableAlias}
   join ${Transaction.tableName} ${Transaction.tableAlias}
-  on ${EthereumTransaction.getFullName(EthereumTransaction.CONSENSUS_TIMESTAMP)} = ${Transaction.getFullName(
-    Transaction.CONSENSUS_TIMESTAMP
-  )}`;
+  on ${EthereumTransaction.getFullName(EthereumTransaction.CONSENSUS_TIMESTAMP)} =
+     ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} and
+     ${EthereumTransaction.getFullName(EthereumTransaction.PAYER_ACCOUNT_ID)} =
+     ${Transaction.getFullName(Transaction.PAYER_ACCOUNT_ID)}`;
 
   /**
    * Retrieves the transaction based on the transaction id and its nonce
