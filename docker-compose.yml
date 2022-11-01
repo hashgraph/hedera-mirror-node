@@ -3,7 +3,7 @@ services:
   citus:
      image: citusdata/citus:11.1.4
      deploy:
-      replicas: 1
+      replicas: 0
      environment:
        PGDATA: /var/lib/postgresql/data
        # These should all be changed from the default before running in production
