@@ -7,14 +7,3 @@
 #        gcpProjectId: {projectId} # N/A for AWS
 #        secretKey: {GOOG1E/AWS....}
 #      network: PREVIEWNET/TESTNET/MAINNET # Select one network
-
-
-hedera:
-  mirror:
-    importer:
-      startDate: 2022-10-20T00:00:00Z
-      network: testnet
-      downloader:
-        cloudProvider: GCP
-        accessKey: GOOG1EO647N4HGU2LEYRBNHJHIR27YBRLSWAD3ZK4NAVSGJPAOSS3PLGWCULA
-        secretKey: zatZK+0e7bPDyfOENrlIPd/tKRiq3HlQ/FzX2AhV
