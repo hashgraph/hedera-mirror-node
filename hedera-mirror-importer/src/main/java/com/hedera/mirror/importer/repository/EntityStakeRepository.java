@@ -63,11 +63,25 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
      */
     @Modifying
     @Query(value = """
-            with ending_period_node_stake as (
-              select node_id, epoch_day, reward_rate, es.id as entity_id
+            with ending_period as (
+              select epoch_day, consensus_timestamp
               from node_stake
-              inner join entity_stake es on es.id = node_id
               where consensus_timestamp = (select max(consensus_timestamp) from node_stake)
+              limit 1
+            ), ending_period_stake_state as (
+              select
+                decline_reward_start,
+                id as entity_id,
+                pending_reward,
+                staked_node_id_start,
+                stake_total_start,
+                reward_rate
+              from entity_stake es
+              left join (
+                select node_id, reward_rate
+                from node_stake ns, ending_period
+                where ns.consensus_timestamp = ending_period.consensus_timestamp
+              ) node_stake on es.staked_node_id_start = node_id
             ), proxy_staking as (
               select staked_account_id, sum(balance) as staked_to_me
               from entity_state_start
@@ -76,16 +90,16 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
             ), updated as (
               select
                 ess.decline_reward as decline_reward_start,
-                (select epoch_day from ending_period_node_stake limit 1) as end_stake_period,
+                epoch_day as end_stake_period,
                 ess.id,
                 (case
-                   when coalesce(es.decline_reward_start, true) is true
-                        or coalesce(es.staked_node_id_start, -1) = -1
+                   when coalesce(decline_reward_start, true) is true
+                        or coalesce(staked_node_id_start, -1) = -1
                         then 0
-                   when node_id is null then es.pending_reward
+                   when reward_rate is null then pending_reward
                    when ess.stake_period_start >= epoch_day
-                        then reward_rate * (es.stake_total_start / 100000000)
-                   else es.pending_reward + reward_rate * (es.stake_total_start / 100000000)
+                        then reward_rate * (stake_total_start / 100000000)
+                   else pending_reward + reward_rate * (stake_total_start / 100000000)
                   end) as pending_reward,
                 ess.staked_node_id as staked_node_id_start,
                 coalesce(ps.staked_to_me, 0) as staked_to_me,
@@ -93,9 +107,9 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
                       else ess.balance + coalesce(ps.staked_to_me, 0)
                   end) as stake_total_start
               from entity_state_start ess
-              left join entity_stake es on es.id = ess.id
-              left join ending_period_node_stake on entity_id = ess.id
-              left join proxy_staking ps on ps.staked_account_id = ess.id
+                left join ending_period_stake_state on entity_id = ess.id
+                left join proxy_staking ps on ps.staked_account_id = ess.id,
+                ending_period
             )
             insert into entity_stake
             table updated
@@ -105,7 +119,7 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
                   pending_reward       = excluded.pending_reward,
                   staked_node_id_start = excluded.staked_node_id_start,
                   staked_to_me         = excluded.staked_to_me,
-                  stake_total_start    = excluded.stake_total_start;
+                  stake_total_start    = excluded.stake_total_start;            
             """, nativeQuery = true)
     @Transactional
     int updateEntityStake();
