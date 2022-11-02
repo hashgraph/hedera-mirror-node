@@ -428,10 +428,10 @@ comment on table non_fee_transfer is 'Crypto account non fee Hbar transfers';
 create table if not exists prng
 (
     consensus_timestamp bigint  not null,
-    range               integer not null,
     payer_account_id    bigint  not null,
     prng_bytes          bytea   null,
-    prng_number         integer null
+    prng_number         integer null,
+    range               integer not null
 );
 comment on table prng is 'Pseudorandom number generator';
 
