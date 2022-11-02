@@ -10,7 +10,7 @@ DB_SPECIFIC_SQL="alter user :ownerUsername with createrole;"
 if [[ "${SCHEMA_V2}" == "true" ]]; then
   DB_SPECIFIC_EXTENSION_SQL="create extension citus;
                              create schema if not exists partman authorization :ownerUsername;
-                             create extension pg_partman schema partman;
+                             create extension if not exists pg_partman schema partman;
                              alter schema partman owner to :ownerUsername;
                              grant create on database :dbName to :ownerUsername;
                              grant all on schema partman to :ownerUsername;
