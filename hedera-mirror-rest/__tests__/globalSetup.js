@@ -64,18 +64,21 @@ const createDbContainer = async (maxWorkers) => {
 
     if (isV2Schema()) {
       // create citus extension
+      const query =
+        'create extension if not exists citus;' +
+        `create schema if not exists partman authorization ${dbAdminUser};` +
+        'create extension if not exists pg_partman schema partman;' +
+        `alter schema partman owner to ${dbAdminUser};` +
+        `grant create on database ${dbName} to ${dbAdminUser};` +
+        `grant all on schema partman to ${dbAdminUser};` +
+        `grant all on all tables in schema partman to ${dbAdminUser};` +
+        `grant execute on all functions in schema partman to ${dbAdminUser};` +
+        `grant execute on all procedures in schema partman to ${dbAdminUser};` +
+        `grant all on schema public to ${dbAdminUser};` +
+        `grant temporary on database ${dbName} to ${dbAdminUser};`;
+
       const workerPool = new pg.Pool({...poolConfig, database: dbName});
-      await workerPool.query('create extension if not exists citus');
-      await workerPool.query(`create schema if not exists partman authorization ${dbAdminUser}`);
-      await workerPool.query('create extension if not exists pg_partman schema partman');
-      await workerPool.query(`alter schema partman owner to ${dbAdminUser}`);
-      await workerPool.query(`grant create on database ${dbName} to ${dbAdminUser}`);
-      await workerPool.query(`grant all on schema partman to ${dbAdminUser}`);
-      await workerPool.query(`grant all on all tables in schema partman to ${dbAdminUser}`);
-      await workerPool.query(`grant execute on all functions in schema partman to ${dbAdminUser}`);
-      await workerPool.query(`grant execute on all procedures in schema partman to ${dbAdminUser}`);
-      await workerPool.query(`grant all on schema public to ${dbAdminUser}`);
-      await workerPool.query(`grant temporary on database ${dbName} to ${dbAdminUser}`);
+      await workerPool.query(query);
       await workerPool.end();
     }
   }
