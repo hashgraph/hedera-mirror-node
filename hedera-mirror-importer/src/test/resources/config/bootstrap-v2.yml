@@ -1,6 +1,6 @@
 embedded:
   postgresql:
-    docker-image: mgoelswirlds/mirror:citus
+    docker-image: mgoelswirlds/citus:11.1.4-pg14
     initScriptPath: db/scripts/init-v2.sql
     password: mirror_node_pass
     user: mirror_node

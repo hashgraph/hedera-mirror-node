@@ -26,7 +26,7 @@ const DEFAULT_DB_NAME = 'mirror_node_integration';
 const POSTGRES_PORT = 5432;
 
 const v1DatabaseImage = 'postgres:14-alpine';
-const v2DatabaseImage = 'mgoelswirlds/mirror:citus';
+const v2DatabaseImage = 'mgoelswirlds/citus:11.1.4-pg14';
 
 const isV2Schema = () => process.env.MIRROR_NODE_SCHEMA === 'v2';
 
@@ -66,6 +66,16 @@ const createDbContainer = async (maxWorkers) => {
       // create citus extension
       const workerPool = new pg.Pool({...poolConfig, database: dbName});
       await workerPool.query('create extension if not exists citus');
+      await workerPool.query(`create schema if not exists partman authorization ${dbAdminUser}`);
+      await workerPool.query('create extension if not exists pg_partman schema partman');
+      await workerPool.query(`alter schema partman owner to ${dbAdminUser}`);
+      await workerPool.query(`grant create on database ${dbName} to ${dbAdminUser}`);
+      await workerPool.query(`grant all on schema partman to ${dbAdminUser}`);
+      await workerPool.query(`grant all on all tables in schema partman to ${dbAdminUser}`);
+      await workerPool.query(`grant execute on all functions in schema partman to ${dbAdminUser}`);
+      await workerPool.query(`grant execute on all procedures in schema partman to ${dbAdminUser}`);
+      await workerPool.query(`grant all on schema public to ${dbAdminUser}`);
+      await workerPool.query(`grant temporary on database ${dbName} to ${dbAdminUser}`);
       await workerPool.end();
     }
   }
