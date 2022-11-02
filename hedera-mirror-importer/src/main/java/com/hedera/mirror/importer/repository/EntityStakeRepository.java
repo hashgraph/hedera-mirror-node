@@ -64,8 +64,9 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
     @Modifying
     @Query(value = """
             with ending_period_node_stake as (
-              select node_id, epoch_day, reward_rate
+              select node_id, epoch_day, reward_rate, es.id as entity_id
               from node_stake
+              inner join entity_stake es on es.id = node_id
               where consensus_timestamp = (select max(consensus_timestamp) from node_stake)
             ), proxy_staking as (
               select staked_account_id, sum(balance) as staked_to_me
@@ -93,7 +94,7 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
                   end) as stake_total_start
               from entity_state_start ess
               left join entity_stake es on es.id = ess.id
-              left join ending_period_node_stake on node_id = es.staked_node_id_start
+              left join ending_period_node_stake on entity_id = ess.id
               left join proxy_staking ps on ps.staked_account_id = ess.id
             )
             insert into entity_stake
