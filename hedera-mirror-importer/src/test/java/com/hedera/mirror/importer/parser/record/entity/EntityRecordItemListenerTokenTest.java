@@ -1863,8 +1863,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     }
 
     private RecordItem getRecordItem(long consensusTimestamp, Transaction transaction) {
-        return getRecordItem(consensusTimestamp, transaction, builder -> {
-        });
+        return getRecordItem(consensusTimestamp, transaction, builder -> {});
     }
 
     private RecordItem getRecordItem(long consensusTimestamp, Transaction transaction,
@@ -1879,8 +1878,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     }
 
     private void insertAndParseTransaction(long consensusTimestamp, Transaction transaction) {
-        insertAndParseTransaction(consensusTimestamp, transaction, builder -> {
-        });
+        insertAndParseTransaction(consensusTimestamp, transaction, builder -> {});
     }
 
     private void insertAndParseTransaction(long consensusTimestamp, Transaction transaction,
