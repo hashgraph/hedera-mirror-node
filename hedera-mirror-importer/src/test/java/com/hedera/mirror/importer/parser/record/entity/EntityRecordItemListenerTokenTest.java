@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record.entity;
  * ‍
  */
 
+import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -64,6 +65,7 @@ import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.api.ObjectAssert;
+import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.assertj.core.util.Lists;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -90,9 +92,11 @@ import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
+import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.AssessedCustomFeeWrapper;
 import com.hedera.mirror.importer.domain.CustomFeeWrapper;
@@ -110,12 +114,12 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     private static final long CREATE_TIMESTAMP = 1L;
     private static final Timestamp EXPIRY_TIMESTAMP = Timestamp.newBuilder().setSeconds(360L).build();
     private static final long EXPIRY_NS = EXPIRY_TIMESTAMP.getSeconds() * 1_000_000_000 + EXPIRY_TIMESTAMP.getNanos();
-    private static final EntityId FEE_COLLECTOR_ACCOUNT_ID_1 = EntityIdEndec.decode(1199, EntityType.ACCOUNT);
-    private static final EntityId FEE_COLLECTOR_ACCOUNT_ID_2 = EntityIdEndec.decode(1200, EntityType.ACCOUNT);
-    private static final EntityId FEE_COLLECTOR_ACCOUNT_ID_3 = EntityIdEndec.decode(1201, EntityType.ACCOUNT);
+    private static final EntityId FEE_COLLECTOR_ACCOUNT_ID_1 = EntityIdEndec.decode(1199, ACCOUNT);
+    private static final EntityId FEE_COLLECTOR_ACCOUNT_ID_2 = EntityIdEndec.decode(1200, ACCOUNT);
+    private static final EntityId FEE_COLLECTOR_ACCOUNT_ID_3 = EntityIdEndec.decode(1201, ACCOUNT);
     private static final EntityId FEE_DOMAIN_TOKEN_ID = EntityIdEndec.decode(9800, EntityType.TOKEN);
-    private static final EntityId FEE_PAYER_1 = EntityIdEndec.decode(1500, EntityType.ACCOUNT);
-    private static final EntityId FEE_PAYER_2 = EntityIdEndec.decode(1501, EntityType.ACCOUNT);
+    private static final EntityId FEE_PAYER_1 = EntityIdEndec.decode(1500, ACCOUNT);
+    private static final EntityId FEE_PAYER_2 = EntityIdEndec.decode(1501, ACCOUNT);
     private static final long INITIAL_SUPPLY = 1_000_000L;
     private static final String METADATA = "METADATA";
     private static final long SERIAL_NUMBER_1 = 1L;
@@ -423,7 +427,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                                               boolean freezeKey, boolean kycKey, boolean pauseKey,
                                               List<TokenAccount> expectedTokenAccounts) {
         List<EntityId> autoAssociatedAccounts = expectedTokenAccounts.stream()
-                .map(t -> EntityId.of(t.getAccountId(), EntityType.ACCOUNT))
+                .map(t -> EntityId.of(t.getAccountId(), ACCOUNT))
                 .collect(Collectors.toList());
         tokenCreate(customFees, freezeDefault, freezeKey, kycKey, pauseKey, expectedTokenAccounts,
                 autoAssociatedAccounts);
@@ -457,7 +461,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         Entity expected = createEntity(DOMAIN_TOKEN_ID, TOKEN_REF_KEY, PAYER.getAccountNum(), AUTO_RENEW_PERIOD,
                 false, EXPIRY_NS, TOKEN_CREATE_MEMO, null, CREATE_TIMESTAMP, CREATE_TIMESTAMP);
         List<EntityId> autoAssociatedAccounts = expectedTokenAccounts.stream()
-                .map(t -> EntityId.of(t.getAccountId(), EntityType.ACCOUNT))
+                .map(t -> EntityId.of(t.getAccountId(), ACCOUNT))
                 .collect(Collectors.toList());
 
         // when
@@ -789,6 +793,117 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 domainNftTransfer(mintTimestamp, PAYER, DEFAULT_ACCOUNT_ID, 1L, TOKEN_ID, PAYER),
                 domainNftTransfer(updateTimestamp, PAYER2, PAYER, 1L, TOKEN_ID, PAYER)
         );
+    }
+
+    @Test
+    void nftUpdateTreasuryWithNftStateChange() {
+        // given
+        var account = domainBuilder.entityId(ACCOUNT);
+        var oldTreasury = domainBuilder.entityId(ACCOUNT);
+        var newTreasury = domainBuilder.entityId(ACCOUNT);
+        var token = domainBuilder.token()
+                .customize(t -> t.treasuryAccountId(oldTreasury).type(TokenTypeEnum.NON_FUNGIBLE_UNIQUE))
+                .persist();
+        var tokenId = token.getTokenId().getTokenId();
+        var nft1 = domainBuilder.nft()
+                .customize(n -> n.id(new NftId(1L, tokenId)).accountId(oldTreasury))
+                .persist();
+        var nft2 = domainBuilder.nft()
+                .customize(n -> n.id(new NftId(2L, tokenId)).accountId(oldTreasury))
+                .persist();
+
+        var protoAccount = AccountID.newBuilder().setAccountNum(account.getEntityNum()).build();
+        var protoOldTreasury = AccountID.newBuilder().setAccountNum(oldTreasury.getEntityNum()).build();
+        var protoNewTreasury = AccountID.newBuilder().setAccountNum(newTreasury.getEntityNum()).build();
+        var protoTokenId = TokenID.newBuilder().setTokenNum(tokenId.getEntityNum()).build();
+
+        // when
+        // mint serial number 3
+        var nftMintTransfer = NftTransfer.newBuilder()
+                .setSerialNumber(3L)
+                .setReceiverAccountID(protoOldTreasury)
+                .build();
+        var nftMintTransferList = TokenTransferList.newBuilder()
+                .setToken(protoTokenId)
+                .addNftTransfers(nftMintTransfer)
+                .build();
+        var nftMintRecordItem = recordItemBuilder.tokenMint(NON_FUNGIBLE_UNIQUE)
+                .transactionBody(b -> b.setToken(protoTokenId))
+                .record(r -> r.addTokenTransferLists(nftMintTransferList))
+                .receipt(r -> r.addSerialNumbers(3L))
+                .build();
+
+        // transfer serial number 2 to account
+        var nftTransfer = NftTransfer.newBuilder()
+                .setSerialNumber(2L)
+                .setReceiverAccountID(protoAccount)
+                .setSenderAccountID(protoOldTreasury)
+                .build();
+        var nftTransferList = TokenTransferList.newBuilder()
+                .setToken(protoTokenId)
+                .addNftTransfers(nftTransfer)
+                .build();
+        var nftTransferRecordItem = recordItemBuilder.cryptoTransfer()
+                .record(r -> r.addTokenTransferLists(nftTransferList))
+                .build();
+
+        // token update which changes treasury
+        var nftTreasuryUpdate = NftTransfer.newBuilder()
+                .setSerialNumber(NftTransferId.WILDCARD_SERIAL_NUMBER)
+                .setReceiverAccountID(protoNewTreasury)
+                .setSenderAccountID(protoOldTreasury)
+                .build();
+        var nftTreasuryUpdateTransferList = TokenTransferList.newBuilder()
+                .setToken(protoTokenId)
+                .addNftTransfers(nftTreasuryUpdate)
+                .build();
+        var nftUpdateRecordItem = recordItemBuilder.tokenUpdate()
+                .transactionBody(b -> b.setToken(protoTokenId).setTreasury(protoNewTreasury))
+                .record(r -> r.addTokenTransferLists(nftTreasuryUpdateTransferList))
+                .build();
+
+        parseRecordItemsAndCommit(List.of(nftMintRecordItem, nftTransferRecordItem, nftUpdateRecordItem));
+
+        // then
+        nft1.setAccountId(newTreasury);
+        nft1.setModifiedTimestamp(nftUpdateRecordItem.getConsensusTimestamp());
+        nft2.setAccountId(account);
+        nft2.setModifiedTimestamp(nftTransferRecordItem.getConsensusTimestamp());
+        var nft3 = Nft.builder()
+                .id(new NftId(3L, tokenId))
+                .accountId(newTreasury)
+                .createdTimestamp(nftMintRecordItem.getConsensusTimestamp())
+                .deleted(false)
+                .metadata(DomainUtils.toBytes(nftMintRecordItem.getTransactionBody().getTokenMint().getMetadata(0)))
+                .modifiedTimestamp(nftUpdateRecordItem.getConsensusTimestamp())
+                .build();
+        assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(nft1, nft2, nft3);
+
+        var nftTransfer1 = com.hedera.mirror.common.domain.token.NftTransfer.builder()
+                .id(new NftTransferId(nftUpdateRecordItem.getConsensusTimestamp(), 1L, tokenId))
+                .senderAccountId(oldTreasury)
+                .receiverAccountId(newTreasury)
+                .build();
+        var nftTransfer2 = com.hedera.mirror.common.domain.token.NftTransfer.builder()
+                .id(new NftTransferId(nftTransferRecordItem.getConsensusTimestamp(), 2L, tokenId))
+                .senderAccountId(oldTreasury)
+                .receiverAccountId(account)
+                .build();
+        var nftTransfer3 = com.hedera.mirror.common.domain.token.NftTransfer.builder()
+                .id(new NftTransferId(nftMintRecordItem.getConsensusTimestamp(), 3L, tokenId))
+                .receiverAccountId(oldTreasury)
+                .build();
+        var nftTransfer4 = com.hedera.mirror.common.domain.token.NftTransfer.builder()
+                .id(new NftTransferId(nftUpdateRecordItem.getConsensusTimestamp(), 3L, tokenId))
+                .senderAccountId(oldTreasury)
+                .receiverAccountId(newTreasury)
+                .build();
+        assertThat(nftTransferRepository.findAll())
+                .usingRecursiveFieldByFieldElementComparator(RecursiveComparisonConfiguration.builder()
+                        .withComparatorForType(EntityId::compareTo, EntityId.class)
+                        .withIgnoredFields("isApproval", "payerAccountId")
+                        .build())
+                .containsExactlyInAnyOrder(nftTransfer1, nftTransfer2, nftTransfer3, nftTransfer4);
     }
 
     @Test
