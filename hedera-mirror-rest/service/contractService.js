@@ -113,8 +113,11 @@ class ContractService extends BaseService {
       ${ContractResult.getFullName(ContractResult.TRANSACTION_HASH)},
       ${ContractResult.getFullName(ContractResult.TRANSACTION_INDEX)},
       block_number,
-      block_hash
+      block_hash,
+      ${Entity.EVM_ADDRESS}
     from ${ContractLog.tableName} ${ContractLog.tableAlias}
+    left join ${Entity.tableName} ${Entity.tableAlias}
+      on ${Entity.ID} = ${ContractLog.CONTRACT_ID}
     left join ${ContractResult.tableName} ${ContractResult.tableAlias}
       on ${ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP)} =
         ${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)} and
