@@ -9,6 +9,8 @@ RUN apt-get update \
 
 # add citus to default PostgreSQL config
 RUN echo "shared_preload_libraries='citus,pg_partman_bgw'" >> /usr/share/postgresql/postgresql.conf.sample
+RUN echo "max_locks_per_transaction = 1024" >> /usr/share/postgresql/postgresql.conf.sample
+
 
 # add scripts to run after initdb
 COPY 001-create-citus-extension.sql /docker-entrypoint-initdb.d/
