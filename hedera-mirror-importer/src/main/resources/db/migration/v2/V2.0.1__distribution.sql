@@ -21,13 +21,13 @@ select create_distributed_table('account_balance', 'account_id', colocate_with =
 
 select create_distributed_table('contract', 'id', colocate_with => 'entity');
 
-select create_distributed_table('contract_action', 'caller', colocate_with => 'entity');
-
-select create_distributed_table('contract_history', 'id', colocate_with => 'contract');
+select create_distributed_table('contract_action', 'payer_account_id', colocate_with => 'entity');
 
 select create_distributed_table('contract_log', 'payer_account_id', colocate_with => 'entity');
 
 select create_distributed_table('contract_result', 'payer_account_id', colocate_with => 'entity');
+
+select create_distributed_table('contract_state', 'contract_id', colocate_with => 'entity');
 
 select create_distributed_table('contract_state_change', 'payer_account_id', colocate_with => 'entity');
 
@@ -54,6 +54,8 @@ select create_distributed_table('nft_allowance_history', 'owner', colocate_with 
 select create_distributed_table('nft_transfer', 'payer_account_id', colocate_with => 'entity');
 
 select create_distributed_table('non_fee_transfer', 'payer_account_id', colocate_with => 'entity');
+
+select create_distributed_table('prng', 'payer_account_id', colocate_with => 'entity');
 
 select create_distributed_table('schedule', 'schedule_id', colocate_with => 'entity');
 

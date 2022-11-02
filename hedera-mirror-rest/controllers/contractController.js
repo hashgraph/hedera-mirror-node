@@ -1157,24 +1157,28 @@ class ContractController extends BaseController {
 
     // extract filters from query param
     const {transactionIdOrHash} = req.params;
-    let tx;
     let consensusTimestamp;
+    let transactionId;
+    let tx;
     if (utils.isValidEthHash(transactionIdOrHash)) {
       const hash = Buffer.from(transactionIdOrHash.replace('0x', ''), 'hex');
       tx = await ContractService.getContractResultsByHash(hash);
     } else {
-      const transactionId = TransactionId.fromString(transactionIdOrHash);
+      transactionId = TransactionId.fromString(transactionIdOrHash);
       tx = await TransactionService.getTransactionDetailsFromTransactionId(transactionId);
     }
 
+    let payerAccountId;
     if (tx.length) {
       consensusTimestamp = tx[0].consensusTimestamp;
+      payerAccountId = transactionId ? transactionId.getEntityId().getEncodedId() : tx[0].payerAccountId;
     } else {
       throw new NotFoundError();
     }
 
     const rows = await ContractService.getContractActionsByConsensusTimestamp(
       consensusTimestamp,
+      payerAccountId,
       filters,
       order,
       limit

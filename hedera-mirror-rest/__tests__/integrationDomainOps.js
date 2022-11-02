@@ -967,6 +967,7 @@ const contractActionDefaults = {
   gas_used: 5000,
   index: 1,
   input: null,
+  payer_account_id: DEFAULT_PAYER_ACCOUNT_ID,
   recipient_account: null,
   recipient_address: null,
   recipient_contract: null,

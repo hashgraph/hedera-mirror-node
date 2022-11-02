@@ -40,6 +40,8 @@ public class Prng implements Persistable<Long> {
     @Id
     private long consensusTimestamp;
 
+    private long payerAccountId;
+
     private byte[] prngBytes;
 
     private Integer prngNumber;

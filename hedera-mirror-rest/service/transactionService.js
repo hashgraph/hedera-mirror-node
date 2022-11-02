@@ -33,11 +33,10 @@ class TransactionService extends BaseService {
     super();
   }
 
-  static transactionDetailsFromTransactionIdQuery = `select
-      ${Transaction.CONSENSUS_TIMESTAMP}
-    from ${Transaction.tableName} ${Transaction.tableAlias}
-    where ${Transaction.PAYER_ACCOUNT_ID} = $1
-      and ${Transaction.VALID_START_NS} = $2`;
+  static transactionDetailsFromTransactionIdQuery = `
+    select ${Transaction.CONSENSUS_TIMESTAMP}
+    from ${Transaction.tableName}
+    where ${Transaction.PAYER_ACCOUNT_ID} = $1 and ${Transaction.VALID_START_NS} = $2`;
 
   static ethereumTransactionDetailsQuery = `
   select
@@ -159,7 +158,7 @@ class TransactionService extends BaseService {
       previous.push(`$${length}`);
       return previous;
     }, []);
-    return ` and ${Transaction.getFullName(Transaction.RESULT)} not in (${positions})`;
+    return ` and ${Transaction.RESULT} not in (${positions})`;
   };
 }
 

@@ -152,8 +152,8 @@ class ContractService extends BaseService {
            ${ContractAction.RESULT_DATA},
            ${ContractAction.RESULT_DATA_TYPE},
            ${ContractAction.VALUE}
-    from ${ContractAction.tableName} ${ContractAction.tableAlias}
-    where ${ContractAction.getFullName(ContractAction.CONSENSUS_TIMESTAMP)} = $1`;
+    from ${ContractAction.tableName}
+    where ${ContractAction.CONSENSUS_TIMESTAMP} = $1 and ${ContractAction.PAYER_ACCOUNT_ID} = $2`;
 
   static contractByEvmAddressQueryFilters = [
     {
@@ -267,7 +267,7 @@ class ContractService extends BaseService {
    * @return {Promise<{ContractResult}[]>}
    */
   async getContractResultsByHash(hash, excludeTransactionResults = [], limit = undefined) {
-    let params = [hash];
+    const params = [hash];
     let transactionsFilter = '';
 
     if (excludeTransactionResults != null) {
@@ -447,8 +447,8 @@ class ContractService extends BaseService {
     return EntityId.parse(contractIdValue, {paramName: filterKeys.CONTRACTID}).getEncodedId();
   }
 
-  async getContractActionsByConsensusTimestamp(consensusTimestamp, filters, order, limit) {
-    const params = [consensusTimestamp];
+  async getContractActionsByConsensusTimestamp(consensusTimestamp, payerAccountId, filters, order, limit) {
+    const params = [consensusTimestamp, payerAccountId];
     return this.getContractActions(
       ContractService.contractActionsByConsensusTimestampQuery,
       params,
@@ -463,22 +463,20 @@ class ContractService extends BaseService {
     if (filters && filters.length) {
       for (const filter of filters) {
         if (filter.key === 'index') {
-          whereClause += `\nand ${ContractAction.getFullName(ContractAction.INDEX)}${filter.operator}$${
-            params.length + 1
-          }`;
           params.push(filter.value);
+          whereClause += `\nand ${ContractAction.INDEX}${filter.operator}$${params.length}`;
         }
       }
     }
 
-    const orderClause = super.getOrderByQuery(OrderSpec.from(ContractAction.getFullName(ContractAction.INDEX), order));
+    const orderClause = super.getOrderByQuery(OrderSpec.from(ContractAction.INDEX, order));
 
     params.push(limit);
     const limitClause = super.getLimitQuery(params.length);
 
     const query = [baseQuery, whereClause, orderClause, limitClause].join('\n');
 
-    const rows = await super.getRows(query, params, 'getActionsByHash');
+    const rows = await super.getRows(query, params, 'getContractActions');
     return rows.map((row) => new ContractAction(row));
   }
 }

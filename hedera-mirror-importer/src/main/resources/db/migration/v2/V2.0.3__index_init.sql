@@ -35,7 +35,7 @@ alter table if exists contract
 
 -- contract_action
 alter table if exists contract_action
-    add constraint contract_action__pk primary key (consensus_timestamp, index, caller);
+    add constraint contract_action__pk primary key (consensus_timestamp, index, payer_account_id);
 
 -- contract_log
 alter table if exists contract_log
@@ -161,7 +161,7 @@ create index if not exists non_fee_transfer__consensus_timestamp
 
 -- prng
 alter table prng
-    add constraint prng__pk primary key (consensus_timestamp);
+    add constraint prng__pk primary key (consensus_timestamp, payer_account_id);
 
 -- reconciliation_job
 alter table reconciliation_job
