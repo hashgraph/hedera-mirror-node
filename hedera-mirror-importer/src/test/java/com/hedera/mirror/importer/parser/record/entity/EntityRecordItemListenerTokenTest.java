@@ -898,6 +898,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .senderAccountId(oldTreasury)
                 .receiverAccountId(newTreasury)
                 .build();
+        assertThat(nftTransferRepository.count()).isEqualTo(4L);
         assertThat(nftTransferRepository.findAll())
                 .usingRecursiveFieldByFieldElementComparator(RecursiveComparisonConfiguration.builder()
                         .withComparatorForType(EntityId::compareTo, EntityId.class)
