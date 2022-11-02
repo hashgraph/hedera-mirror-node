@@ -188,7 +188,7 @@ describe('ContractService.getContractLogsQuery tests', () => {
     });
     assertSqlQueryEqual(
       query,
-      `with record_file as (select consensus_end,hash,index from record_file)
+      `with record_file as (select consensus_end,hash,index from record_file), entity as (select evm_address, id from entity)
       select cl.bloom, cl.contract_id, cl.consensus_timestamp, cl.data, cl.index, cl.root_contract_id,
              cl.topic0, cl.topic1, cl.topic2, cl.topic3, cr.transaction_hash, cr.transaction_index,
              block_number,block_hash,evm_address
@@ -235,7 +235,7 @@ describe('ContractService.getContractLogsQuery tests', () => {
     });
     assertSqlQueryEqual(
       query,
-      `with record_file as (select consensus_end,hash,index from record_file)
+      `with record_file as (select consensus_end,hash,index from record_file), entity as (select evm_address, id from entity)
       select cl.bloom, cl.contract_id, cl.consensus_timestamp, cl.data, cl.index, cl.root_contract_id,
              cl.topic0, cl.topic1, cl.topic2, cl.topic3, cr.transaction_hash, cr.transaction_index,
              block_number, block_hash, evm_address
@@ -280,7 +280,7 @@ describe('ContractService.getContractLogsQuery tests', () => {
     assertSqlQueryEqual(
       query,
       `(
-        with record_file as (select consensus_end,hash,index from record_file)
+        with record_file as (select consensus_end,hash,index from record_file), entity as (select evm_address, id from entity)
         select cl.bloom,cl.contract_id,cl.consensus_timestamp,cl.data,cl.index,cl.root_contract_id,cl.topic0,
           cl.topic1,cl.topic2,cl.topic3,cr.transaction_hash,cr.transaction_index,block_number,block_hash,evm_address
         from contract_log cl
@@ -298,7 +298,7 @@ describe('ContractService.getContractLogsQuery tests', () => {
         order by cl.consensus_timestamp desc, cl.index desc
         limit $3
       ) union (
-        with record_file as (select consensus_end,hash,index from record_file)
+        with record_file as (select consensus_end,hash,index from record_file), entity as (select evm_address, id from entity)
         select cl.bloom,cl.contract_id,cl.consensus_timestamp,cl.data,cl.index,cl.root_contract_id,cl.topic0,
           cl.topic1,cl.topic2,cl.topic3,cr.transaction_hash,cr.transaction_index,block_number,block_hash,evm_address
         from contract_log cl
@@ -344,7 +344,7 @@ describe('ContractService.getContractLogsQuery tests', () => {
     assertSqlQueryEqual(
       query,
       `(
-        with record_file as (select  consensus_end, hash, index from record_file)
+        with record_file as (select  consensus_end, hash, index from record_file), entity as (select evm_address, id from entity)
         select
           cl.bloom,
           cl.contract_id,
@@ -382,7 +382,7 @@ describe('ContractService.getContractLogsQuery tests', () => {
           cl.index desc
         limit $3
       ) union (
-        with record_file as (select consensus_end, hash, index from record_file)
+        with record_file as (select consensus_end, hash, index from record_file), entity as (select evm_address, id from entity)
         select
           cl.bloom,
           cl.contract_id,
@@ -421,7 +421,7 @@ describe('ContractService.getContractLogsQuery tests', () => {
           cl.index desc
         limit $3
       ) union (
-        with record_file as (select consensus_end, hash, index from record_file)
+        with record_file as (select consensus_end, hash, index from record_file), entity as (select evm_address, id from entity)
         select
           cl.bloom,
           cl.contract_id,

@@ -108,6 +108,9 @@ class ContractService extends BaseService {
     with ${RecordFile.tableName} as (
       select ${RecordFile.CONSENSUS_END}, ${RecordFile.HASH}, ${RecordFile.INDEX}
       from ${RecordFile.tableName}
+    ), ${Entity.tableName} as (
+      select ${Entity.EVM_ADDRESS}, ${Entity.ID}
+      from ${Entity.tableName}
     )
     select ${contractLogsFields},
       ${ContractResult.getFullName(ContractResult.TRANSACTION_HASH)},
