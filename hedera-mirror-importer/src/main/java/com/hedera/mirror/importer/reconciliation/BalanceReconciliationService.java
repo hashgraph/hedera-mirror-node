@@ -48,7 +48,6 @@ import lombok.Builder;
 import lombok.CustomLog;
 import lombok.Value;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.data.util.Version;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.scheduling.annotation.Scheduled;
 
@@ -67,8 +66,6 @@ class BalanceReconciliationService {
 
     static final long FIFTY_BILLION_HBARS = 50_000_000_000L * 100_000_000L;
     static final String METRIC = "hedera.mirror.reconciliation";
-    static final long OFFSET_NANOS = 53;
-    static final Version VERSION_27 = new Version(0, 27, 0); // First version with 53 ns offset issue
 
     // Due to the number of rows returned, it's considerably more performant to not use JPA
     private static final String BALANCE_QUERY = "select account_id, balance from account_balance " +
@@ -181,7 +178,7 @@ class BalanceReconciliationService {
 
     private ReconciliationJob getLatestJob() {
         long startDate = DomainUtils.convertToNanosMax(reconciliationProperties.getStartDate());
-        var consensusTimestamp = reconciliationJobRepository.findLatest()
+        long consensusTimestamp = reconciliationJobRepository.findLatest()
                 .map(ReconciliationJob::getConsensusTimestamp)
                 .orElse(startDate);
         consensusTimestamp = Math.max(startDate, consensusTimestamp);
@@ -361,13 +358,7 @@ class BalanceReconciliationService {
         private final Map<TokenAccountId, Long> tokenBalances;
 
         private long getTimestamp() {
-            long offset = accountBalanceFile.getTimeOffset();
-
-            if (recordFile.isPresent() && VERSION_27.isLessThanOrEqualTo(recordFile.get().getHapiVersion())) {
-                offset += OFFSET_NANOS;
-            }
-
-            return accountBalanceFile.getConsensusTimestamp() + offset;
+            return accountBalanceFile.getConsensusTimestamp() + accountBalanceFile.getTimeOffset();
         }
     }
 }
