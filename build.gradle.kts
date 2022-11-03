@@ -31,6 +31,8 @@ extra.apply {
     set("gson.version", "2.8.9") // Temporary until Apache jclouds supports gson 2.9
     set("protobufVersion", "3.21.9")
     set("reactorGrpcVersion", "1.2.3")
+    set("snakeyaml.version", "1.33") // Temporary fix for transient dependency security issue
+    set("spring-security.version", "5.7.5") // Temporary fix for transient dependency security issue
     set("testcontainersSpringBootVersion", "2.2.10")
 }
 
@@ -44,7 +46,7 @@ dependencies {
         api("com.esaulpaugh:headlong:7.0.0")
         api("com.github.meanbeanlib:meanbean:3.0.0-M9")
         api("com.github.vertical-blank:sql-formatter:2.0.3")
-        api("com.google.cloud:spring-cloud-gcp-dependencies:3.3.0")
+        api("com.google.cloud:spring-cloud-gcp-dependencies:3.4.0")
         api("com.google.guava:guava:31.1-jre")
         api("com.google.protobuf:protobuf-java:$protobufVersion")
         api("com.hedera.evm:hedera-evm-api:0.31.0-SNAPSHOT")
@@ -105,7 +107,7 @@ sonarqube {
         property("sonar.issue.ignore.multicriteria.e3.ruleKey", "java:S2187")
         property("sonar.issue.ignore.multicriteria.e4.resourceKey", "**/*.js")
         property("sonar.issue.ignore.multicriteria.e4.ruleKey", "javascript:S3758")
-        property("sonar.issue.ignore.multicriteria.e5.resourceKey", "**/stateproof/record_file.sql")
+        property("sonar.issue.ignore.multicriteria.e5.resourceKey", "**/stateproof/*.sql")
         property("sonar.issue.ignore.multicriteria.e5.ruleKey", "plsql:S1192")
     }
 }

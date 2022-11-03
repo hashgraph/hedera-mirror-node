@@ -87,6 +87,7 @@
         <release.version>0.68.0-SNAPSHOT</release.version> <!-- Used to replace release versions in all files -->
         <release.chartVersion>0.68.0-SNAPSHOT</release.chartVersion>
         <replacer.version>1.5.3</replacer.version>
+        <snakeyaml.version>1.33</snakeyaml.version> <!-- Temporary fix for transient dependency security issue -->
         <!--suppress UnresolvedMavenProperty -->
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.organization>hashgraph</sonar.organization>
@@ -100,8 +101,11 @@
         <sonar.issue.ignore.multicriteria.e3.ruleKey>java:S2187</sonar.issue.ignore.multicriteria.e3.ruleKey>
         <sonar.issue.ignore.multicriteria.e4.resourceKey>**/*.js</sonar.issue.ignore.multicriteria.e4.resourceKey>
         <sonar.issue.ignore.multicriteria.e4.ruleKey>javascript:S3758</sonar.issue.ignore.multicriteria.e4.ruleKey>
-        <sonar.issue.ignore.multicriteria.e5.resourceKey>**/stateproof/record_file.sql</sonar.issue.ignore.multicriteria.e5.resourceKey>
+        <sonar.issue.ignore.multicriteria.e5.resourceKey>**/stateproof/*.sql
+        </sonar.issue.ignore.multicriteria.e5.resourceKey>
         <sonar.issue.ignore.multicriteria.e5.ruleKey>plsql:S1192</sonar.issue.ignore.multicriteria.e5.ruleKey>
+        <!-- Temporary fix for transient dependency security issue -->
+        <spring-security.version>5.7.5</spring-security.version>
         <web3j.version>4.9.2</web3j.version>
     </properties>
 
@@ -132,7 +136,7 @@
             <dependency>
                 <groupId>com.google.cloud</groupId>
                 <artifactId>spring-cloud-gcp-dependencies</artifactId>
-                <version>3.3.0</version>
+                <version>3.4.0</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
