@@ -53,6 +53,7 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                     e.account_id as e_account_id,
                     e.associated as e_associated,
                     e.automatic_association as e_automatic_association,
+                    e.balance as e_balance,
                     e.created_timestamp as e_created_timestamp,
                     e.freeze_status as e_freeze_status,
                     e.kyc_status as e_kyc_status,
@@ -78,6 +79,7 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                       account_id,
                       associated,
                       automatic_association,
+                      balance,
                       created_timestamp,
                       freeze_status,
                       kyc_status,
@@ -88,6 +90,7 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                     distinct on (existing.account_id, existing.token_id) e_account_id,
                     e_associated,
                     e_automatic_association,
+                    e_balance,
                     e_created_timestamp,
                     e_freeze_status,
                     e_kyc_status,
@@ -109,6 +112,7 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                       account_id,
                       associated,
                       automatic_association,
+                      balance,
                       created_timestamp,
                       freeze_status,
                       kyc_status,
@@ -123,6 +127,10 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                       e_automatic_association,
                       false
                     ),
+                    case when e_created_timestamp is null or e_created_timestamp <> existing.created_timestamp then 
+                      coalesce(existing.balance)
+                      else coalesce(e_balance, 0) + coalesce(existing.balance, 0)
+                    end,
                     coalesce(existing.created_timestamp, e_created_timestamp, null),
                     case when existing.freeze_status is not null then existing.freeze_status
                       when existing.created_timestamp is not null then
@@ -148,13 +156,14 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                     join token on existing.token_id = token.token_id
                   where
                     (existing.created_timestamp is not null or e_created_timestamp is not null) and
-                    upper(timestamp_range) is not null
+                    (existing.timestamp_range is not null and upper(timestamp_range) is not null)
                 )
                 insert into
                   token_account (
                     account_id,
                     associated,
                     automatic_association,
+                    balance,
                     created_timestamp,
                     freeze_status,
                     kyc_status,
@@ -169,6 +178,10 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                     e_automatic_association,
                     false
                   ),
+                  case when e_created_timestamp is null or e_created_timestamp <> existing.created_timestamp then 
+                    coalesce(existing.balance)
+                    else coalesce(e_balance, 0) + coalesce(existing.balance, 0)
+                  end,
                   coalesce(existing.created_timestamp, e_created_timestamp, null),
                   case when existing.freeze_status is not null then existing.freeze_status
                       when existing.created_timestamp is not null then
@@ -200,6 +213,7 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                 set
                   associated = excluded.associated,
                   automatic_association = excluded.automatic_association,
+                  balance = excluded.balance,
                   created_timestamp = excluded.created_timestamp,
                   freeze_status = excluded.freeze_status,
                   kyc_status = excluded.kyc_status,

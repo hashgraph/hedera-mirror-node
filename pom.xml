@@ -83,7 +83,7 @@
         <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
         <msgpack.version>0.9.3</msgpack.version>
         <postgresql.version>42.4.1</postgresql.version>
-        <protobuf.version>3.21.8</protobuf.version>
+        <protobuf.version>3.21.9</protobuf.version>
         <release.version>0.68.0-SNAPSHOT</release.version> <!-- Used to replace release versions in all files -->
         <release.chartVersion>0.68.0-SNAPSHOT</release.chartVersion>
         <replacer.version>1.5.3</replacer.version>
@@ -91,7 +91,7 @@
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.organization>hashgraph</sonar.organization>
         <sonar.projectKey>${project.artifactId}</sonar.projectKey>
-        <sonar.issue.ignore.multicriteria>e1,e2,e3,e4</sonar.issue.ignore.multicriteria>
+        <sonar.issue.ignore.multicriteria>e1,e2,e3,e4,e5</sonar.issue.ignore.multicriteria>
         <sonar.issue.ignore.multicriteria.e1.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.e1.resourceKey>
         <sonar.issue.ignore.multicriteria.e1.ruleKey>java:S6212</sonar.issue.ignore.multicriteria.e1.ruleKey>
         <sonar.issue.ignore.multicriteria.e2.resourceKey>**/*.java</sonar.issue.ignore.multicriteria.e2.resourceKey>
@@ -100,6 +100,8 @@
         <sonar.issue.ignore.multicriteria.e3.ruleKey>java:S2187</sonar.issue.ignore.multicriteria.e3.ruleKey>
         <sonar.issue.ignore.multicriteria.e4.resourceKey>**/*.js</sonar.issue.ignore.multicriteria.e4.resourceKey>
         <sonar.issue.ignore.multicriteria.e4.ruleKey>javascript:S3758</sonar.issue.ignore.multicriteria.e4.ruleKey>
+        <sonar.issue.ignore.multicriteria.e5.resourceKey>**/stateproof/record_file.sql</sonar.issue.ignore.multicriteria.e5.resourceKey>
+        <sonar.issue.ignore.multicriteria.e5.ruleKey>plsql:S1192</sonar.issue.ignore.multicriteria.e5.ruleKey>
         <web3j.version>4.9.2</web3j.version>
     </properties>
 
@@ -357,6 +359,7 @@
                         </execution>
                     </executions>
                     <configuration>
+                        <imagePullPolicy>Always</imagePullPolicy>
                         <images>
                             <image>
                                 <build>

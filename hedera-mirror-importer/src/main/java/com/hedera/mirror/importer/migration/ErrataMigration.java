@@ -149,16 +149,24 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
      * 1570120372315307000) have a corner case where the credit has the payer to be same as the receiver.
      */
     private void spuriousTransfers() {
-        String sql = "with spurious_transfer as (" +
-                "  update crypto_transfer ct set errata = 'DELETE' from transaction t " +
-                "  where t.consensus_timestamp = ct.consensus_timestamp and t.type = 14 and t.result <> 22 and " +
-                "  t.consensus_timestamp < 1577836799000000000 and amount > 0 and ct.entity_id <> 98 and " +
-                "  (ct.entity_id < 3 or ct.entity_id > 27) and ((ct.entity_id <> ct.payer_account_id) or " +
-                "  (ct.consensus_timestamp in (1570118944399195000, 1570120372315307000) " +
-                "  and ct.entity_id = ct.payer_account_id)) returning ct.*" +
-                ")" +
-                "update crypto_transfer ct set errata = 'DELETE' from spurious_transfer st " +
-                "where ct.consensus_timestamp = st.consensus_timestamp and ct.amount = st.amount * -1";
+        String sql = """
+                with spurious_transfer as (
+                  update crypto_transfer ct
+                  set errata = 'DELETE'
+                  from transaction t
+                  where t.consensus_timestamp = ct.consensus_timestamp and t.payer_account_id = ct.payer_account_id and
+                    t.type = 14 and t.result <> 22 and
+                    t.consensus_timestamp < 1577836799000000000 and amount > 0 and ct.entity_id <> 98 and
+                    (ct.entity_id < 3 or ct.entity_id > 27) and ((ct.entity_id <> ct.payer_account_id) or
+                      (ct.consensus_timestamp in (1570118944399195000, 1570120372315307000)
+                        and ct.entity_id = ct.payer_account_id))
+                  returning ct.*
+                )
+                update crypto_transfer ct
+                set errata = 'DELETE'
+                from spurious_transfer st
+                where ct.consensus_timestamp = st.consensus_timestamp and ct.amount = st.amount * -1
+                """;
         int count = jdbcOperations.getJdbcOperations().update(sql);
         log.info("Updated {} spurious transfers", count * 2);
     }

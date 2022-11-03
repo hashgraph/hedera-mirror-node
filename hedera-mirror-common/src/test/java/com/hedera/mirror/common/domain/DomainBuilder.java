@@ -258,6 +258,7 @@ public class DomainBuilder {
                 .gasUsed(50L)
                 .index((int) id())
                 .input(bytes(256))
+                .payerAccountId(entityId(ACCOUNT))
                 .recipientAccount(entityId(ACCOUNT))
                 .resultData(bytes(256))
                 .resultDataType(ResultDataCase.OUTPUT.getNumber())
@@ -616,6 +617,7 @@ public class DomainBuilder {
     public DomainWrapper<Prng, Prng.PrngBuilder> prng() {
         var builder = Prng.builder()
                 .consensusTimestamp(timestamp())
+                .payerAccountId(id())
                 .range(Integer.MAX_VALUE)
                 .prngNumber(random.nextInt(Integer.MAX_VALUE));
         return new DomainWrapperImpl<>(builder, builder::build);

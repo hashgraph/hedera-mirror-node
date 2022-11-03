@@ -37,7 +37,6 @@ import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.binary.Hex;
 
 import com.hedera.mirror.common.domain.contract.Contract;
-import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -56,6 +55,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 import com.hedera.mirror.importer.util.Utility;
+import com.hedera.services.stream.proto.ContractAction;
 import com.hedera.services.stream.proto.ContractBytecode;
 import com.hedera.services.stream.proto.ContractStateChange;
 
@@ -107,9 +107,9 @@ public class ContractResultServiceImpl implements ContractResultService {
         return transactionBody.hasContractCall() || transactionBody.hasContractCreateInstance();
     }
 
-    private void processContractAction(com.hedera.services.stream.proto.ContractAction action, int index,
-                                       long consensusTimestamp) {
-        var contractAction = new ContractAction();
+    private void processContractAction(ContractAction action, long consensusTimestamp, int index,
+                                       EntityId payerAccountId) {
+        var contractAction = new com.hedera.mirror.common.domain.contract.ContractAction();
         switch (action.getCallerCase()) {
             case CALLING_CONTRACT -> contractAction.setCaller(EntityId.of(action.getCallingContract()));
             case CALLING_ACCOUNT -> contractAction.setCaller(EntityId.of(action.getCallingAccount()));
@@ -141,6 +141,7 @@ public class ContractResultServiceImpl implements ContractResultService {
         contractAction.setGasUsed(action.getGasUsed());
         contractAction.setIndex(index);
         contractAction.setInput(DomainUtils.toBytes(action.getInput()));
+        contractAction.setPayerAccountId(payerAccountId);
         contractAction.setResultDataType(action.getResultDataCase().getNumber());
         contractAction.setValue(action.getValue());
 
@@ -300,7 +301,8 @@ public class ContractResultServiceImpl implements ContractResultService {
             } else if (sidecarRecord.hasActions()) {
                 var actions = sidecarRecord.getActions();
                 for (int actionIndex = 0; actionIndex < actions.getContractActionsCount(); actionIndex++) {
-                    processContractAction(actions.getContractActions(actionIndex), actionIndex, consensusTimestamp);
+                    processContractAction(actions.getContractActions(actionIndex), consensusTimestamp, actionIndex,
+                            payerAccountId);
                 }
             } else if (sidecarRecord.hasBytecode()) {
                 if (migration) {

@@ -29,7 +29,7 @@ plugins {
 // Can't use typed variable syntax due to Dependabot limitations
 extra.apply {
     set("gson.version", "2.8.9") // Temporary until Apache jclouds supports gson 2.9
-    set("protobufVersion", "3.21.8")
+    set("protobufVersion", "3.21.9")
     set("reactorGrpcVersion", "1.2.3")
     set("testcontainersSpringBootVersion", "2.2.10")
 }
@@ -55,12 +55,12 @@ dependencies {
         api("com.playtika.testcontainers:embedded-postgresql:$testcontainersSpringBootVersion")
         api("com.playtika.testcontainers:embedded-redis:$testcontainersSpringBootVersion")
         api("com.salesforce.servicelibs:reactor-grpc-stub:$reactorGrpcVersion")
-        api("com.vladmihalcea:hibernate-types-55:2.19.2")
+        api("com.vladmihalcea:hibernate-types-55:2.20.0")
         api("commons-beanutils:commons-beanutils:1.9.4")
         api("commons-io:commons-io:2.11.0")
         api("io.cucumber:cucumber-bom:7.8.1")
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
-        api("io.grpc:grpc-bom:1.50.0")
+        api("io.grpc:grpc-bom:1.50.2")
         api("io.swagger:swagger-annotations:1.6.7")
         api("io.vertx:vertx-pg-client:4.3.4")
         api("javax.inject:javax.inject:1")
@@ -74,7 +74,7 @@ dependencies {
         api("org.hyperledger.besu:secp256k1:0.6.1")
         api("org.hyperledger.besu:evm:22.7.6")
         api("org.msgpack:jackson-dataformat-msgpack:0.9.3")
-        api("org.springdoc:springdoc-openapi-webflux-ui:1.6.11")
+        api("org.springdoc:springdoc-openapi-webflux-ui:1.6.12")
         api("org.springframework.cloud:spring-cloud-dependencies:2021.0.4")
         api("org.testcontainers:junit-jupiter:1.17.5")
         api("org.web3j:core:5.0.0")
@@ -96,7 +96,7 @@ sonarqube {
         property("sonar.host.url", "https://sonarcloud.io")
         property("sonar.organization", "hashgraph")
         property("sonar.projectKey", project.name)
-        property("sonar.issue.ignore.multicriteria", "e1,e2,e3,e4")
+        property("sonar.issue.ignore.multicriteria", "e1,e2,e3,e4,e5")
         property("sonar.issue.ignore.multicriteria.e1.resourceKey", "**/*.java")
         property("sonar.issue.ignore.multicriteria.e1.ruleKey", "java:S6212")
         property("sonar.issue.ignore.multicriteria.e2.resourceKey", "**/*.java")
@@ -105,5 +105,7 @@ sonarqube {
         property("sonar.issue.ignore.multicriteria.e3.ruleKey", "java:S2187")
         property("sonar.issue.ignore.multicriteria.e4.resourceKey", "**/*.js")
         property("sonar.issue.ignore.multicriteria.e4.ruleKey", "javascript:S3758")
+        property("sonar.issue.ignore.multicriteria.e5.resourceKey", "**/stateproof/record_file.sql")
+        property("sonar.issue.ignore.multicriteria.e5.ruleKey", "plsql:S1192")
     }
 }

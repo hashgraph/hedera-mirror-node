@@ -47,8 +47,6 @@ import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.config.Owner;
-import com.hedera.mirror.importer.repository.TokenAccountHistoryRepository;
-import com.hedera.mirror.importer.repository.TokenAccountRepository;
 
 @EnabledIfV1
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -75,8 +73,6 @@ class TokenAccountMigrationTest extends IntegrationTest {
     private final @Owner JdbcTemplate jdbcTemplate;
     @Value("classpath:db/migration/v1/V1.66.1__token_account_history.sql")
     private final File migrationSql;
-    private final TokenAccountRepository tokenAccountRepository;
-    private final TokenAccountHistoryRepository tokenAccountHistoryRepository;
 
     @AfterEach
     @SneakyThrows
@@ -87,15 +83,15 @@ class TokenAccountMigrationTest extends IntegrationTest {
     @Test
     void empty() {
         runMigration();
-        assertThat(tokenAccountRepository.findAll()).isEmpty();
-        assertThat(findHistory()).isEmpty();
+        assertThat(findAllTokenAccounts()).isEmpty();
+        assertThat(findHistory().stream().count()).isZero();
     }
 
     @Test
     void migrate() {
         // given
-        List<TokenAccount> expected = new LinkedList<>();
-        List<TokenAccount> expectedHistory = new LinkedList<>();
+        List<TokenAccountRange> expected = new LinkedList<>();
+        List<TokenAccountRange> expectedHistory = new LinkedList<>();
 
         // token account relationships for account 100 and token 1000
         var last = MigrationTokenAccount.builder()
@@ -143,14 +139,14 @@ class TokenAccountMigrationTest extends IntegrationTest {
         runMigration();
 
         // then
-        assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
-        assertThat(findHistory()).containsExactlyInAnyOrderElementsOf(expectedHistory);
+        assertThat(findAllTokenAccounts()).containsExactlyInAnyOrderElementsOf(expected);
+        assertThat(findHistory()).map(t -> convert(t)).containsExactlyInAnyOrderElementsOf(expectedHistory);
     }
 
-    private TokenAccount convert(MigrationTokenAccount last, Long upperTimestamp) {
+    private TokenAccountRange convert(MigrationTokenAccount last, Long upperTimestamp) {
         Range<Long> range = upperTimestamp != null ? Range.closedOpen(last.getModifiedTimestamp(), upperTimestamp) :
                 Range.atLeast(last.getModifiedTimestamp());
-        return TokenAccount.builder()
+        return TokenAccountRange.builder()
                 .accountId(last.getAccountId())
                 .associated(last.isAssociated())
                 .automaticAssociation(last.isAutomaticAssociation())
@@ -159,6 +155,19 @@ class TokenAccountMigrationTest extends IntegrationTest {
                 .kycStatus(last.getKycStatus())
                 .timestampRange(range)
                 .tokenId(last.getTokenId())
+                .build();
+    }
+
+    private TokenAccountRange convert(TokenAccount tokenAccount) {
+        return TokenAccountRange.builder()
+                .accountId(tokenAccount.getAccountId())
+                .associated(tokenAccount.getAssociated())
+                .automaticAssociation(tokenAccount.getAutomaticAssociation())
+                .createdTimestamp(tokenAccount.getCreatedTimestamp())
+                .freezeStatus(tokenAccount.getFreezeStatus())
+                .kycStatus(tokenAccount.getKycStatus())
+                .timestampRange(tokenAccount.getTimestampRange())
+                .tokenId(tokenAccount.getTokenId())
                 .build();
     }
 
@@ -212,5 +221,43 @@ class TokenAccountMigrationTest extends IntegrationTest {
         private TokenFreezeStatusEnum freezeStatus;
         private TokenKycStatusEnum kycStatus;
         private long tokenId;
+    }
+
+    @Builder(toBuilder = true)
+    @Data
+    private static class TokenAccountRange {
+        private long accountId;
+        private boolean associated;
+        private boolean automaticAssociation;
+        private long createdTimestamp;
+        private TokenFreezeStatusEnum freezeStatus;
+        private TokenKycStatusEnum kycStatus;
+        private Range timestampRange;
+        private long tokenId;
+    }
+
+    private List<TokenAccountRange> findAllTokenAccounts() {
+        return jdbcTemplate.query("select " +
+                        "account_id, " +
+                        "associated, " +
+                        "automatic_association, " +
+                        "created_timestamp, " +
+                        "freeze_status, " +
+                        "kyc_status, " +
+                        "lower(timestamp_range), " +
+                        "token_id " +
+                        "from token_account",
+                (rs, index) ->
+                        TokenAccountRange.builder()
+                                .accountId(rs.getLong("account_id"))
+                                .associated(rs.getBoolean("associated"))
+                                .automaticAssociation(rs.getBoolean("automatic_association"))
+                                .createdTimestamp(rs.getLong("created_timestamp"))
+                                .freezeStatus(TokenFreezeStatusEnum.values()[rs.getInt("freeze_status")])
+                                .kycStatus(TokenKycStatusEnum.values()[rs.getInt("kyc_status")])
+                                .timestampRange(Range.atLeast(rs.getLong(7)))
+                                .tokenId(rs.getLong("token_id"))
+                                .build()
+        );
     }
 }

@@ -103,6 +103,7 @@ create table if not exists contract_action
     gas_used            bigint                         not null,
     index               integer                        not null,
     input               bytea                          null,
+    payer_account_id    bigint                         not null,
     recipient_account   bigint                         null,
     recipient_address   bytea                          null,
     recipient_contract  bigint                         null,
@@ -111,13 +112,6 @@ create table if not exists contract_action
     value               bigint                         not null
 );
 comment on table contract_action is 'Contract action';
-
--- contract_history
-create table if not exists contract_history
-(
-    like contract including defaults
-);
-comment on table contract_history is 'Contract entity historical state';
 
 -- contract_log
 create table if not exists contract_log
@@ -434,9 +428,10 @@ comment on table non_fee_transfer is 'Crypto account non fee Hbar transfers';
 create table if not exists prng
 (
     consensus_timestamp bigint  not null,
-    range               integer not null,
+    payer_account_id    bigint  not null,
     prng_bytes          bytea   null,
-    prng_number         integer null
+    prng_number         integer null,
+    range               integer not null
 );
 comment on table prng is 'Pseudorandom number generator';
 
@@ -549,6 +544,7 @@ create table if not exists token_account
     account_id            bigint    not null,
     associated            boolean   not null default false,
     automatic_association boolean   not null default false,
+    balance               bigint    not null default 0,
     created_timestamp     bigint    not null,
     freeze_status         smallint  not null default 0,
     kyc_status            smallint  not null default 0,
