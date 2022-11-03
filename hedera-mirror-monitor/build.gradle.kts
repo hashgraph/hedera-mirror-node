@@ -35,7 +35,6 @@ dependencies {
     implementation("io.grpc:grpc-stub")
     implementation("io.micrometer:micrometer-registry-elastic")
     implementation("io.micrometer:micrometer-registry-prometheus")
-    implementation(group = "io.netty", name = "netty-resolver-dns-native-macos", classifier = "osx-aarch_64")
     implementation("io.swagger:swagger-annotations")
     implementation("javax.inject:javax.inject")
     implementation("org.apache.commons:commons-lang3")
@@ -48,7 +47,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.springframework.cloud:spring-cloud-starter-bootstrap")
     implementation("org.springframework.cloud:spring-cloud-starter-kubernetes-fabric8-config")
-    runtimeOnly("io.netty:netty-resolver-dns-native-macos")
+    runtimeOnly(group = "io.netty", name = "netty-resolver-dns-native-macos", classifier = "osx-aarch_64")
     testImplementation("com.github.meanbeanlib:meanbean")
     testImplementation("io.projectreactor:reactor-test")
 }
