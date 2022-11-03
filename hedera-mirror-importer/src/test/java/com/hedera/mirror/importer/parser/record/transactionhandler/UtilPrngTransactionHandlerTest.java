@@ -26,6 +26,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import com.hederahashgraph.api.proto.java.TransactionRecord;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -59,15 +60,19 @@ class UtilPrngTransactionHandlerTest extends AbstractTransactionHandlerTest {
         int range = 8;
         var recordItem = recordItemBuilder.prng(range).build();
         int randomNumber = recordItem.getRecord().getPrngNumber();
-        var expectedRandomGenerate =
-                getExpectedRandomGenerate(recordItem.getConsensusTimestamp(), range, null, randomNumber);
+        var expected = Prng.builder()
+                .consensusTimestamp(recordItem.getConsensusTimestamp())
+                .payerAccountId(recordItem.getPayerAccountId().getId())
+                .prngNumber(randomNumber)
+                .range(range)
+                .build();
 
         // when
         transactionHandler.updateTransaction(null, recordItem);
 
         // then
         verify(entityListener).onPrng(pseudoRandomGenerates.capture());
-        assertThat(pseudoRandomGenerates.getAllValues()).containsOnly(expectedRandomGenerate);
+        assertThat(pseudoRandomGenerates.getAllValues()).containsOnly(expected);
     }
 
     @Test
@@ -76,15 +81,19 @@ class UtilPrngTransactionHandlerTest extends AbstractTransactionHandlerTest {
         int range = 0;
         var recordItem = recordItemBuilder.prng(range).build();
         byte[] randomBytes = recordItem.getRecord().getPrngBytes().toByteArray();
-        var expectedRandomGenerate =
-                getExpectedRandomGenerate(recordItem.getConsensusTimestamp(), range, randomBytes, null);
+        var expected = Prng.builder()
+                .consensusTimestamp(recordItem.getConsensusTimestamp())
+                .payerAccountId(recordItem.getPayerAccountId().getId())
+                .prngBytes(randomBytes)
+                .range(range)
+                .build();
 
         // when
         transactionHandler.updateTransaction(null, recordItem);
 
         // then
         verify(entityListener).onPrng(pseudoRandomGenerates.capture());
-        assertThat(pseudoRandomGenerates.getAllValues()).containsOnly(expectedRandomGenerate);
+        assertThat(pseudoRandomGenerates.getAllValues()).containsOnly(expected);
     }
 
     @Test
@@ -105,7 +114,7 @@ class UtilPrngTransactionHandlerTest extends AbstractTransactionHandlerTest {
     void updateTransactionEntropyNotSet() {
         // given
         var recordItem = recordItemBuilder.prng(1)
-                .record(r -> r.clearEntropy())
+                .record(TransactionRecord.Builder::clearEntropy)
                 .build();
 
         // when
@@ -113,15 +122,5 @@ class UtilPrngTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         // then
         verifyNoInteractions(entityListener);
-    }
-
-    private Prng getExpectedRandomGenerate(long consensusTimestamp, int range, byte[] randomBytes,
-                                           Integer randomNumber) {
-        return Prng.builder()
-                .consensusTimestamp(consensusTimestamp)
-                .range(range)
-                .prngBytes(randomBytes)
-                .prngNumber(randomNumber)
-                .build();
     }
 }

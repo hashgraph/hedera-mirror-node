@@ -27,7 +27,7 @@ public class MirrorTokenAccount {
 
     private Boolean automaticAssociation;
 
-    private Integer balance;
+    private Long balance;
 
     private String createdTimestamp;
 
@@ -36,5 +36,4 @@ public class MirrorTokenAccount {
     private MirrorKycStatus kycStatus;
 
     private String tokenId;
-
-    }
+}

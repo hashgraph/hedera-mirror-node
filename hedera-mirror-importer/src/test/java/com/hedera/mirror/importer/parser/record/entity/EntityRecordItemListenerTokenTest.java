@@ -249,9 +249,11 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 List.of(treasury, FEE_COLLECTOR_ACCOUNT_ID_2, FEE_COLLECTOR_ACCOUNT_ID_3) :
                 List.of(treasury, FEE_COLLECTOR_ACCOUNT_ID_2);
 
+        List<Long> autoEnabledAccountBalances = tokenType == FUNGIBLE_COMMON ? List.of(1000000L, 0L, 0L) : List.of(0L, 0L, 0L);
         return Stream.of(
                 TokenCreateArguments.builder()
                         .autoEnabledAccounts(List.of(treasury))
+                        .balances(autoEnabledAccountBalances)
                         .createdTimestamp(CREATE_TIMESTAMP)
                         .customFees(deletedDbCustomFees(CREATE_TIMESTAMP, DOMAIN_TOKEN_ID))
                         .customFeesDescription("empty custom fees")
@@ -260,6 +262,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                         .toArguments(),
                 TokenCreateArguments.builder()
                         .autoEnabledAccounts(autoEnabledAccounts)
+                        .balances(autoEnabledAccountBalances)
                         .createdTimestamp(CREATE_TIMESTAMP)
                         .customFees(nonEmptyCustomFees)
                         .customFeesDescription("non-empty custom fees")
@@ -270,6 +273,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                         .toArguments(),
                 TokenCreateArguments.builder()
                         .autoEnabledAccounts(autoEnabledAccounts)
+                        .balances(autoEnabledAccountBalances)
                         .createdTimestamp(CREATE_TIMESTAMP)
                         .customFees(nonEmptyCustomFees)
                         .customFeesDescription("non-empty custom fees")
@@ -281,6 +285,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                         .toArguments(),
                 TokenCreateArguments.builder()
                         .autoEnabledAccounts(autoEnabledAccounts)
+                        .balances(autoEnabledAccountBalances)
                         .createdTimestamp(CREATE_TIMESTAMP)
                         .customFees(nonEmptyCustomFees)
                         .customFeesDescription("non-empty custom fees")
@@ -291,6 +296,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                         .toArguments(),
                 TokenCreateArguments.builder()
                         .autoEnabledAccounts(autoEnabledAccounts)
+                        .balances(autoEnabledAccountBalances)
                         .createdTimestamp(CREATE_TIMESTAMP)
                         .customFees(nonEmptyCustomFees)
                         .customFeesDescription("non-empty custom fees")
@@ -299,6 +305,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                         .toArguments(),
                 TokenCreateArguments.builder()
                         .autoEnabledAccounts(autoEnabledAccounts)
+                        .balances(autoEnabledAccountBalances)
                         .createdTimestamp(CREATE_TIMESTAMP)
                         .customFees(nonEmptyCustomFees)
                         .customFeesDescription("non-empty custom fees")
@@ -484,7 +491,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         Transaction associateTransaction = tokenAssociate(List.of(TOKEN_ID), PAYER2);
         insertAndParseTransaction(ASSOCIATE_TIMESTAMP, associateTransaction);
 
-        assertTokenAccountInRepository(TOKEN_ID, PAYER2, ASSOCIATE_TIMESTAMP, true,
+        assertTokenAccountInRepository(TOKEN_ID, PAYER2, 0, ASSOCIATE_TIMESTAMP, true,
                 TokenFreezeStatusEnum.UNFROZEN, TokenKycStatusEnum.REVOKED, ASSOCIATE_TIMESTAMP);
     }
 
@@ -499,7 +506,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             contractFunctionResultAtomic.set(builder.getContractCallResult());
         });
 
-        assertTokenAccountInRepository(TOKEN_ID, PAYER2, ASSOCIATE_TIMESTAMP, true,
+        assertTokenAccountInRepository(TOKEN_ID, PAYER2, 0, ASSOCIATE_TIMESTAMP, true,
                 TokenFreezeStatusEnum.UNFROZEN, TokenKycStatusEnum.REVOKED, ASSOCIATE_TIMESTAMP);
 
         assertContractResult(ASSOCIATE_TIMESTAMP, contractFunctionResultAtomic.get());
@@ -553,7 +560,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             contractFunctionResultAtomic.set(builder.getContractCallResult());
         });
 
-        assertTokenAccountInRepository(TOKEN_ID, PAYER2, ASSOCIATE_TIMESTAMP, false,
+        assertTokenAccountInRepository(TOKEN_ID, PAYER2, 0, ASSOCIATE_TIMESTAMP, false,
                 TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE, dissociateTimeStamp);
 
         assertContractResult(dissociateTimeStamp, contractFunctionResultAtomic.get());
@@ -800,7 +807,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         long freezeTimeStamp = 15L;
         insertAndParseTransaction(freezeTimeStamp, transaction);
 
-        assertTokenAccountInRepository(TOKEN_ID, PAYER2, ASSOCIATE_TIMESTAMP, true,
+        assertTokenAccountInRepository(TOKEN_ID, PAYER2, 0, ASSOCIATE_TIMESTAMP, true,
                 TokenFreezeStatusEnum.FROZEN, TokenKycStatusEnum.NOT_APPLICABLE, freezeTimeStamp);
     }
 
@@ -822,7 +829,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         long unfreezeTimeStamp = 444;
         insertAndParseTransaction(unfreezeTimeStamp, unfreezeTransaction);
 
-        assertTokenAccountInRepository(TOKEN_ID, PAYER2, ASSOCIATE_TIMESTAMP, true,
+        assertTokenAccountInRepository(TOKEN_ID, PAYER2, 0, ASSOCIATE_TIMESTAMP, true,
                 TokenFreezeStatusEnum.UNFROZEN,
                 TokenKycStatusEnum.NOT_APPLICABLE,
                 unfreezeTimeStamp);
@@ -837,7 +844,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         long grantTimeStamp = 10L;
         insertAndParseTransaction(grantTimeStamp, transaction);
 
-        assertTokenAccountInRepository(TOKEN_ID, PAYER2, ASSOCIATE_TIMESTAMP, true,
+        assertTokenAccountInRepository(TOKEN_ID, PAYER2, 0, ASSOCIATE_TIMESTAMP, true,
                 TokenFreezeStatusEnum.NOT_APPLICABLE,
                 TokenKycStatusEnum.GRANTED,
                 grantTimeStamp);
@@ -873,7 +880,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         long revokeTimestamp = 333;
         insertAndParseTransaction(revokeTimestamp, revokeTransaction);
 
-        assertTokenAccountInRepository(TOKEN_ID, PAYER2, ASSOCIATE_TIMESTAMP, true,
+        assertTokenAccountInRepository(TOKEN_ID, PAYER2, 0, ASSOCIATE_TIMESTAMP, true,
                 TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.REVOKED, revokeTimestamp);
     }
 
@@ -1639,7 +1646,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
 
         // Verify token, tokenAccount and tokenTransfer
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, wipeTimestamp, SYMBOL, newTotalSupply);
-        assertTokenAccountInRepository(TOKEN_ID, PAYER2, ASSOCIATE_TIMESTAMP, true,
+        assertTokenAccountInRepository(TOKEN_ID, PAYER2, 999000L, ASSOCIATE_TIMESTAMP, true,
                 TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE, ASSOCIATE_TIMESTAMP);
         assertThat(tokenTransferRepository.count()).isEqualTo(2L);
         assertTokenTransferInRepository(TOKEN_ID, PAYER2, CREATE_TIMESTAMP, INITIAL_SUPPLY);
@@ -1709,6 +1716,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .accountId(EntityId.of(accountId).getId())
                 .associated(true)
                 .automaticAssociation(true)
+                .balance(1000L)
                 .createdTimestamp(TRANSFER_TIMESTAMP)
                 .freezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE)
                 .kycStatus(TokenKycStatusEnum.NOT_APPLICABLE)
@@ -2031,13 +2039,14 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         }
     }
 
-    private void assertTokenAccountInRepository(TokenID tokenID, AccountID accountId, long createdTimestamp,
+    private void assertTokenAccountInRepository(TokenID tokenID, AccountID accountId, long balance, long createdTimestamp,
                                                 boolean associated, TokenFreezeStatusEnum freezeStatus,
                                                 TokenKycStatusEnum kycStatus, long timestampLowerBound) {
         var expected = TokenAccount.builder()
                 .accountId(EntityId.of(accountId).getId())
                 .associated(associated)
                 .automaticAssociation(false)
+                .balance(balance)
                 .createdTimestamp(createdTimestamp)
                 .freezeStatus(freezeStatus)
                 .kycStatus(kycStatus)
@@ -2155,7 +2164,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         Transaction associateTransaction = tokenAssociate(List.of(tokenID), accountID);
         insertAndParseTransaction(associateTimestamp, associateTransaction);
 
-        assertTokenAccountInRepository(tokenID, accountID, associateTimestamp, true,
+        assertTokenAccountInRepository(tokenID, accountID, 0, associateTimestamp, true,
                 setFreezeKey ? TokenFreezeStatusEnum.UNFROZEN : TokenFreezeStatusEnum.NOT_APPLICABLE,
                 setKycKey ? TokenKycStatusEnum.REVOKED : TokenKycStatusEnum.NOT_APPLICABLE,
                 associateTimestamp);
@@ -2264,6 +2273,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     @Builder
     static class TokenCreateArguments {
         List<EntityId> autoEnabledAccounts;
+        List<Long> balances;
         long createdTimestamp;
         List<CustomFee> customFees;
         String customFeesDescription;
@@ -2297,6 +2307,10 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                             .timestampRange(Range.atLeast(createdTimestamp))
                             .build())
                     .collect(Collectors.toList());
+
+            for (int i = 0; i < autoEnabledAccounts.size(); i++) {
+                tokenAccounts.get(i).setBalance(balances.get(i));
+            }
 
             return Arguments.of(description, customFees, freezeDefault, freezeKey, kycKey, pauseKey, tokenAccounts);
         }

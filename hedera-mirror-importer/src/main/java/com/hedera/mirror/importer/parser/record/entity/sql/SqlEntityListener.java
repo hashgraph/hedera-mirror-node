@@ -402,6 +402,14 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         }
 
         tokenTransfers.add(tokenTransfer);
+
+        if (entityProperties.getPersist().isTrackBalance()) {
+            var tokenAccount = new TokenAccount();
+            tokenAccount.setAccountId(tokenTransfer.getId().getAccountId().getId());
+            tokenAccount.setTokenId(tokenTransfer.getId().getTokenId().getId());
+            tokenAccount.setBalance(tokenTransfer.getAmount());
+            onTokenAccount(tokenAccount);
+        }
     }
 
     @Override
@@ -757,6 +765,26 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     private TokenAccount mergeTokenAccount(TokenAccount lastTokenAccount, TokenAccount newTokenAccount) {
+        if (!lastTokenAccount.isHistory()) {
+            if (!newTokenAccount.isHistory()) {
+                lastTokenAccount.setBalance(newTokenAccount.getBalance() + lastTokenAccount.getBalance());
+            } else {
+                lastTokenAccount.setAutomaticAssociation(newTokenAccount.getAutomaticAssociation());
+                lastTokenAccount.setAssociated(newTokenAccount.getAssociated());
+                lastTokenAccount.setCreatedTimestamp(newTokenAccount.getCreatedTimestamp());
+                lastTokenAccount.setFreezeStatus(newTokenAccount.getFreezeStatus());
+                lastTokenAccount.setKycStatus(newTokenAccount.getKycStatus());
+                lastTokenAccount.setTimestampRange(newTokenAccount.getTimestampRange());
+            }
+
+            return lastTokenAccount;
+        }
+
+        if (lastTokenAccount.isHistory() && !newTokenAccount.isHistory()) {
+            lastTokenAccount.setBalance(newTokenAccount.getBalance() + lastTokenAccount.getBalance());
+            return lastTokenAccount;
+        }
+
         if (lastTokenAccount.getTimestampRange().equals(newTokenAccount.getTimestampRange())) {
             // The token accounts are for the same range, accept the previous one
             // This is a workaround for https://github.com/hashgraph/hedera-services/issues/3240
@@ -774,7 +802,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         // copy the lifespan immutable fields createdTimestamp and automaticAssociation from the previous snapshot.
         // copy other fields from the previous snapshot if not set in newTokenAccount
         newTokenAccount.setCreatedTimestamp(lastTokenAccount.getCreatedTimestamp());
-
+        newTokenAccount.setBalance(lastTokenAccount.getBalance());
         newTokenAccount.setAutomaticAssociation(lastTokenAccount.getAutomaticAssociation());
 
         if (newTokenAccount.getAssociated() == null) {
