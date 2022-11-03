@@ -48,4 +48,10 @@ spec:
       enabled: false
     test:
       enabled: true
+      config:
+        hedera:
+          mirror:
+            test:
+              acceptance:
+                network: OTHER
 
