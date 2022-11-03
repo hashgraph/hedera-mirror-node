@@ -61,6 +61,7 @@ import com.hedera.mirror.importer.repository.TransactionRepository;
 public class ErrataMigration extends RepeatableMigration implements BalanceStreamFileListener {
 
     private final static int ACCOUNT_BALANCE_FILE_FIXED_TIME_OFFSET = 53;
+    // The consensus timestamps of the first and the last account balance files in mainnet to add the fixed 53ns offset
     private final static long FIRST_ACCOUNT_BALANCE_FILE_TIMESTAMP = 1658420100626004000L;
     private final static long LAST_ACCOUNT_BALANCE_FILE_TIMESTAMP = 1666368000880378770L;
 
