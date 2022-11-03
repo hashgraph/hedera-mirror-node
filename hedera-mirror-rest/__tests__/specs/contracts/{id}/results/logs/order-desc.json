@@ -91,7 +91,7 @@
   "responseJson": {
     "logs": [
       {
-        "address": "0x00000000000000000000000000000000000003e8",
+        "address": "0x60f3f640a8508fc6a86d45df051962668e1e8ac7",
         "bloom": "0x0123",
         "contract_id": "0.0.1000",
         "data": "0x0123",
@@ -109,7 +109,7 @@
         "block_number": 2
       },
       {
-        "address": "0x00000000000000000000000000000000000003e8",
+        "address": "0x60f3f640a8508fc6a86d45df051962668e1e8ac7",
         "bloom": "0x0123",
         "contract_id": "0.0.1000",
         "data": "0x0123",
@@ -128,7 +128,7 @@
         "block_number": 1
       },
       {
-        "address": "0x00000000000000000000000000000000000003e8",
+        "address": "0x60f3f640a8508fc6a86d45df051962668e1e8ac7",
         "bloom": "0x0123",
         "contract_id": "0.0.1000",
         "data": "0x0123",
