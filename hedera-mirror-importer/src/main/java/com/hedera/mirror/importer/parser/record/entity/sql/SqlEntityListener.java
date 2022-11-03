@@ -348,12 +348,12 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onNftTransfer(NftTransfer nftTransfer) throws ImporterException {
-        if (nftTransfer.getId().getSerialNumber() == NftTransferId.WILDCARD_SERIAL_NUMBER) {
+        var nftTransferId = nftTransfer.getId();
+        if (nftTransferId != null && nftTransferId.getSerialNumber() == NftTransferId.WILDCARD_SERIAL_NUMBER) {
             // 1. flush nft state to db
             flushNftState();
             // 2. nftRepository.updateTreasury
 
-            NftTransferId nftTransferId = nftTransfer.getId();
             long payerAccountId = nftTransfer.getPayerAccountId().getId();
             EntityId newTreasury = nftTransfer.getReceiverAccountId();
             EntityId previousTreasury = nftTransfer.getSenderAccountId();
@@ -364,7 +364,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             return;
         }
 
-        nftTransferState.merge(nftTransfer.getId(), nftTransfer, this::mergeNftTransfer);
+        nftTransferState.merge(nftTransferId, nftTransfer, this::mergeNftTransfer);
     }
 
     @Override
