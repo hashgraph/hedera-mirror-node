@@ -347,6 +347,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     @Override
+    @SuppressWarnings({"java:S2259"}) // If nftTransferId is null, this will throw an NPE.  That behavior is correct, for that case.
     public void onNftTransfer(NftTransfer nftTransfer) throws ImporterException {
         var nftTransferId = nftTransfer.getId();
         if (nftTransferId.getSerialNumber() == NftTransferId.WILDCARD_SERIAL_NUMBER) { 
