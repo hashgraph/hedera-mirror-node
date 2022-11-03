@@ -351,9 +351,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     public void onNftTransfer(NftTransfer nftTransfer) throws ImporterException {
         var nftTransferId = nftTransfer.getId();
         if (nftTransferId.getSerialNumber() == NftTransferId.WILDCARD_SERIAL_NUMBER) { 
-            // 1. flush nft state to db
             flushNftState();
-            // 2. nftRepository.updateTreasury
 
             long payerAccountId = nftTransfer.getPayerAccountId().getId();
             EntityId newTreasury = nftTransfer.getReceiverAccountId();
@@ -557,9 +555,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private void flushNftState() {
         // like flush(), but only for the Nft table
         try {
-            Stopwatch stopwatch = Stopwatch.createStarted();
             batchPersister.persist(nfts.values());
-            log.info("Completed nft-only batch inserts in {}", stopwatch);
         } catch (ParserException e) {
             throw e;
         } catch (Exception e) {
