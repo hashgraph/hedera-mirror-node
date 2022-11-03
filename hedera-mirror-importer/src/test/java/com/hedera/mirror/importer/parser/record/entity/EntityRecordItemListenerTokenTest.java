@@ -54,6 +54,7 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -898,10 +899,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .senderAccountId(oldTreasury)
                 .receiverAccountId(newTreasury)
                 .build();
-        assertThat(nftTransferRepository.count()).isEqualTo(4L);
         assertThat(nftTransferRepository.findAll())
                 .usingRecursiveFieldByFieldElementComparator(RecursiveComparisonConfiguration.builder()
-                        .withComparatorForType(EntityId::compareTo, EntityId.class)
+                        .withComparatorForType(Comparator.nullsFirst(EntityId::compareTo), EntityId.class)
                         .withIgnoredFields("isApproval", "payerAccountId")
                         .build())
                 .containsExactlyInAnyOrder(nftTransfer1, nftTransfer2, nftTransfer3, nftTransfer4);
