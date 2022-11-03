@@ -60,6 +60,7 @@ class UtilPrngTransactionHandler implements TransactionHandler {
         var transactionRecord = recordItem.getRecord();
         var prng = new Prng();
         prng.setConsensusTimestamp(consensusTimestamp);
+        prng.setPayerAccountId(recordItem.getPayerAccountId().getId());
         prng.setRange(range);
         switch (transactionRecord.getEntropyCase()) {
             case PRNG_BYTES:

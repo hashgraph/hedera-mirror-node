@@ -550,35 +550,35 @@ const addEntityStake = async (entityStake) => {
   await insertDomainObject('entity_stake', entityStakeFields, entityStake);
 };
 
+const ethereumTransactionDefaults = {
+  access_list: null,
+  call_data_id: null,
+  call_data: null,
+  chain_id: null,
+  consensus_timestamp: '187654000123456',
+  data: '0x000000000',
+  gas_limit: 1000000,
+  gas_price: '0x4a817c80',
+  hash: '0x0000000000000000000000000000000000000000000000000000000000000123',
+  max_fee_per_gas: null,
+  max_gas_allowance: 10000,
+  max_priority_fee_per_gas: null,
+  nonce: 1,
+  payer_account_id: 5001,
+  recovery_id: 1,
+  signature_r: '0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042',
+  signature_s: '0x24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354',
+  signature_v: '0x1b',
+  to_address: null,
+  type: 2,
+  value: '0x0',
+};
+
 const addEthereumTransaction = async (ethereumTransaction) => {
   // any attribute starting with '_' is not a db column
   ethereumTransaction = _.omitBy(ethereumTransaction, (_v, k) => k.startsWith('_'));
-  const localDefaults = {
-    access_list: null,
-    call_data_id: null,
-    call_data: null,
-    chain_id: null,
-    consensus_timestamp: '187654000123456',
-    data: '0x000000000',
-    gas_limit: 1000000,
-    gas_price: '0x4a817c80',
-    hash: '0x0000000000000000000000000000000000000000000000000000000000000123',
-    max_fee_per_gas: null,
-    max_gas_allowance: 10000,
-    max_priority_fee_per_gas: null,
-    nonce: 1,
-    payer_account_id: 5001,
-    recovery_id: 1,
-    signature_r: '0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042',
-    signature_s: '0x24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354',
-    signature_v: '0x1b',
-    to_address: null,
-    type: 2,
-    value: '0x0',
-  };
-
   const ethTx = {
-    ...localDefaults,
+    ...ethereumTransactionDefaults,
     ...ethereumTransaction,
   };
 
@@ -967,6 +967,7 @@ const contractActionDefaults = {
   gas_used: 5000,
   index: 1,
   input: null,
+  payer_account_id: DEFAULT_PAYER_ACCOUNT_ID,
   recipient_account: null,
   recipient_address: null,
   recipient_contract: null,

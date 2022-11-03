@@ -1,4 +1,4 @@
-FROM node:16.14.2-alpine3.15
+FROM node:16.18.0-alpine3.16
 LABEL maintainer="mirrornode@hedera.com"
 
 # Setup
@@ -8,6 +8,7 @@ HEALTHCHECK --interval=10s --retries=3 --start-period=25s --timeout=2s CMD wget 
 WORKDIR /home/node/app/
 RUN chown -R node:node .
 COPY --chown=node:node . ./
+RUN apk update && apk upgrade && rm -rf /var/cache/apk/*    # install OS updates
 USER node
 
 # Build

@@ -1306,6 +1306,7 @@ describe('ContractService.getContractActionsByConsensusTimestamp tests', () => {
   test('No match', async () => {
     const res = await ContractService.getContractActionsByConsensusTimestamp(
       '1676540001234390005',
+      2000,
       [],
       orderFilterValues.ASC,
       100
@@ -1315,11 +1316,12 @@ describe('ContractService.getContractActionsByConsensusTimestamp tests', () => {
 
   test('Multiple rows match', async () => {
     await integrationDomainOps.loadContractActions([
-      {consensus_timestamp: '1676540001234390005'},
-      {consensus_timestamp: '1676540001234390005', index: 2},
+      {consensus_timestamp: '1676540001234390005', payer_account_id: 2000},
+      {consensus_timestamp: '1676540001234390005', index: 2, payer_account_id: 2000},
     ]);
     const res = await ContractService.getContractActionsByConsensusTimestamp(
       '1676540001234390005',
+      2000,
       [],
       orderFilterValues.ASC,
       100
@@ -1329,11 +1331,12 @@ describe('ContractService.getContractActionsByConsensusTimestamp tests', () => {
 
   test('One row match', async () => {
     await integrationDomainOps.loadContractActions([
-      {consensus_timestamp: '1676540001234390005'},
-      {consensus_timestamp: '1676540001234390006'},
+      {consensus_timestamp: '1676540001234390005', payer_account_id: 2000},
+      {consensus_timestamp: '1676540001234390006', payer_account_id: 2000},
     ]);
     const res = await ContractService.getContractActionsByConsensusTimestamp(
       '1676540001234390005',
+      2000,
       [],
       orderFilterValues.ASC,
       100
