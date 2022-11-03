@@ -107,9 +107,8 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
                       else ess.balance + coalesce(ps.staked_to_me, 0)
                   end) as stake_total_start
               from entity_state_start ess
-                left join ending_period_stake_state on entity_id = ess.id
-                left join proxy_staking ps on ps.staked_account_id = ess.id,
-                ending_period
+              left join ending_period_stake_state on entity_id = ess.id
+              left join proxy_staking ps on ps.staked_account_id = ess.id, ending_period
             )
             insert into entity_stake
             table updated
@@ -119,7 +118,7 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
                   pending_reward       = excluded.pending_reward,
                   staked_node_id_start = excluded.staked_node_id_start,
                   staked_to_me         = excluded.staked_to_me,
-                  stake_total_start    = excluded.stake_total_start;            
+                  stake_total_start    = excluded.stake_total_start;
             """, nativeQuery = true)
     @Transactional
     int updateEntityStake();
