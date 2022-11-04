@@ -54,7 +54,6 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.domain.token.NftTransferId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.util.DomainUtils;
@@ -76,8 +75,7 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
     protected TransactionHandler getTransactionHandler() {
         recordParserProperties = new RecordParserProperties();
-        return new TokenUpdateTransactionHandler(entityIdService, entityListener, nftRepository,
-                recordParserProperties);
+        return new TokenUpdateTransactionHandler(entityIdService, entityListener, recordParserProperties);
     }
 
     @Override
@@ -100,36 +98,6 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
     protected EntityType getExpectedEntityIdType() {
         return EntityType.TOKEN;
-    }
-
-    @Test
-    void updateTreasury() {
-        AbstractEntity entity = getExpectedUpdatedEntity();
-        AccountID previousAccountId = AccountID.newBuilder().setAccountNum(1L).build();
-        AccountID newAccountId = AccountID.newBuilder().setAccountNum(2L).build();
-        TokenID tokenID = TokenID.newBuilder().setTokenNum(3L).build();
-        long consensusTimestamp = DomainUtils.timestampInNanosMax(MODIFIED_TIMESTAMP);
-        TokenTransferList tokenTransferList = TokenTransferList.newBuilder()
-                .setToken(tokenID)
-                .addNftTransfers(NftTransfer.newBuilder()
-                        .setReceiverAccountID(newAccountId)
-                        .setSenderAccountID(previousAccountId)
-                        .setSerialNumber(NftTransferId.WILDCARD_SERIAL_NUMBER)
-                        .build())
-                .build();
-        TransactionRecord record = getDefaultTransactionRecord().addTokenTransferLists(tokenTransferList).build();
-        RecordItem recordItem = getRecordItem(getDefaultTransactionBody().build(), record);
-        when(entityIdService.lookup(AccountID.newBuilder().setAccountNum(DEFAULT_AUTO_RENEW_ACCOUNT_NUM).build()))
-                .thenReturn(EntityIdEndec.decode(DEFAULT_AUTO_RENEW_ACCOUNT_NUM, EntityType.ACCOUNT));
-
-        Transaction transaction = new Transaction();
-        transaction.setEntityId(entity.toEntityId());
-        transactionHandler.updateTransaction(transaction, recordItem);
-
-        TransactionBody body = recordItem.getTransactionBody();
-        var payerAccount = EntityId.of(body.getTransactionID().getAccountID()).toEntity().getId();
-        verify(nftRepository).updateTreasury(tokenID.getTokenNum(), previousAccountId.getAccountNum(),
-                newAccountId.getAccountNum(), consensusTimestamp, payerAccount, false);
     }
 
     @Test
