@@ -57,7 +57,7 @@ select create_distributed_table('prng', 'payer_account_id', colocate_with => 'en
 
 select create_distributed_table('schedule', 'schedule_id', colocate_with => 'entity');
 
-select create_distributed_table('staking_reward_transfer', 'payer_account_id', colocate_with => 'entity');
+select create_distributed_table('staking_reward_transfer', 'account_id', colocate_with => 'entity');
 
 select create_distributed_table('token', 'token_id', colocate_with => 'entity');
 
