@@ -5,7 +5,7 @@
 SELECT cron.unschedule(jobid) FROM cron.job;
 
 SELECT cron.schedule('create-partitions-account-balance',
-                     '@daily',
+                     '@monthly',
                      $$select partman.create_parent('public.account_balance', 'consensus_timestamp', 'native', 'yearly', p_epoch := 'nanoseconds' , p_premake := 2,
                       p_start_partition := to_char(CURRENT_TIMESTAMP-'3 years'::interval, 'YYYY-MM-DD HH24:MI:SS')) $$);
 

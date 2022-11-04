@@ -77,32 +77,13 @@ const flywayMigrate = async () => {
   const exePath = path.join('.', 'node_modules', 'node-flywaydb', 'bin', 'flyway');
   const flywayDataPath = '.node-flywaydb';
   const flywayConfigPath = path.join(os.tmpdir(), `config_worker_${workerId}.json`); // store configs in temp dir
-  const locations = path.join('..', schemaConfigs.locations);
-  const destination = path.join(process.cwd(), 'temp');
-
-  // Creating a temp folder without the repeatable partitioning file.
-
-  fs.mkdir(destination, (err) => {
-    if (err) {
-      console.error(`${destination} was not created!`);
-    }
-  });
-
-  fs.readdirSync(locations).forEach((file) => {
-    const destFile = destination + '/' + file;
-    if (destFile !== destination + '/V2.0.2.2__repeatable_partitioning.sql') {
-      fs.copyFile(file, destFile, function (err) {
-        if (err) {
-          console.error(`${file} was not copied!`);
-        }
-      });
-    }
-  });
+  const scriptLocation = path.join('..', schemaConfigs.locations);
+  const locations = process.env.MIRROR_NODE_SCHEMA === 'v2' ? V2CreateTempFolder(scriptLocation) : scriptLocation;
 
   const flywayConfig = `{
     "flywayArgs": {
       "baselineVersion": "${schemaConfigs.baselineVersion}",
-      "locations": "filesystem:${destination}",
+      "locations": "filesystem:${locations}",
       "password": "${dbConnectionParams.password}",
       "placeholders.api-password": "${defaultDbConfig.password}",
       "placeholders.api-user": "${apiUsername}",
@@ -144,14 +125,33 @@ const flywayMigrate = async () => {
   }
 
   execSync(`node ${exePath} -c ${flywayConfigPath} migrate`, {stdio: 'inherit'});
-
-  //Deleting the temp folder.
-  fs.rmdir(destination, {recursive: true}, (err) => {
-    if (err) {
-      console.warn(`${destination} was not deleted!`);
-    }
-  });
 };
+
+function V2CreateTempFolder(locations) {
+  const destination = path.join(process.cwd(), 'temp');
+  // Creating a temp folder without the repeatable partitioning file.
+  if (!fs.existsSync(destination)) {
+    fs.mkdir(destination, (err) => {
+      if (err) {
+        console.error(err);
+        console.error(`${destination} was not created!`);
+      }
+    });
+
+    fs.readdirSync(locations).forEach((file) => {
+      const destFile = destination + '/' + file;
+      if (destFile !== destination + '/R__partitioning.sql') {
+        fs.copyFile(file, destFile, function (err) {
+          if (err) {
+            console.error(err);
+            console.error(`${file} was not copied!`);
+          }
+        });
+      }
+    });
+  }
+  return destination;
+}
 
 const cleanupSql = fs.readFileSync(
   path.join(
