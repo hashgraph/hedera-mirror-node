@@ -60,6 +60,11 @@ import com.hedera.mirror.importer.repository.TransactionRepository;
 @Named
 public class ErrataMigration extends RepeatableMigration implements BalanceStreamFileListener {
 
+    private static final int ACCOUNT_BALANCE_FILE_FIXED_TIME_OFFSET = 53;
+    // The consensus timestamps of the first and the last account balance files in mainnet to add the fixed 53ns offset
+    private static final long FIRST_ACCOUNT_BALANCE_FILE_TIMESTAMP = 1658420100626004000L;
+    private static final long LAST_ACCOUNT_BALANCE_FILE_TIMESTAMP = 1666368000880378770L;
+
     @Value("classpath:errata/mainnet/balance-offsets.txt")
     private final Resource balanceOffsets;
     private final EntityRecordItemListener entityRecordItemListener;
@@ -103,8 +108,15 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
 
     @Override
     public void onEnd(AccountBalanceFile accountBalanceFile) {
-        if (isMainnet() && getTimestamps().contains(accountBalanceFile.getConsensusTimestamp())) {
-            accountBalanceFile.setTimeOffset(-1);
+        if (isMainnet()) {
+            long consensusTimestamp = accountBalanceFile.getConsensusTimestamp();
+            if (getTimestamps().contains(consensusTimestamp)) {
+                accountBalanceFile.setTimeOffset(-1);
+            }
+
+            if (shouldApplyFixedTimeOffset(consensusTimestamp)) {
+                accountBalanceFile.setTimeOffset(ACCOUNT_BALANCE_FILE_FIXED_TIME_OFFSET);
+            }
         }
     }
 
@@ -131,11 +143,23 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
         }
     }
 
-    // Adjusts the balance file's consensus timestamp by -1 for use when querying transfers.
     private void balanceFileAdjustment() {
-        String sql = "update account_balance_file set time_offset = -1 " +
-                "where consensus_timestamp in (:timestamps) and time_offset <> -1";
+        // Adjusts the balance file's consensus timestamp by -1 for use when querying transfers.
+        String sql = """
+                update account_balance_file set time_offset = -1
+                where consensus_timestamp in (:timestamps) and time_offset <> -1
+                """;
         int count = jdbcOperations.update(sql, new MapSqlParameterSource("timestamps", getTimestamps()));
+
+        // Set the fixed time offset for account balance files in the applicable range
+        sql = """
+                update account_balance_file set time_offset = :fixedTimeOffset
+                where consensus_timestamp >= :firstTimestamp and consensus_timestamp <= :lastTimestamp
+                """;
+        var paramSource = new MapSqlParameterSource("fixedTimeOffset", ACCOUNT_BALANCE_FILE_FIXED_TIME_OFFSET)
+                .addValue("firstTimestamp", FIRST_ACCOUNT_BALANCE_FILE_TIMESTAMP)
+                .addValue("lastTimestamp", LAST_ACCOUNT_BALANCE_FILE_TIMESTAMP);
+        count += jdbcOperations.update(sql, paramSource);
         log.info("Updated {} account balance files", count);
     }
 
@@ -251,5 +275,10 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
 
     private boolean isMainnet() {
         return mirrorProperties.getNetwork() == MirrorProperties.HederaNetwork.MAINNET;
+    }
+
+    private boolean shouldApplyFixedTimeOffset(long consensusTimestamp) {
+        return consensusTimestamp >= FIRST_ACCOUNT_BALANCE_FILE_TIMESTAMP &&
+                consensusTimestamp <= LAST_ACCOUNT_BALANCE_FILE_TIMESTAMP;
     }
 }
