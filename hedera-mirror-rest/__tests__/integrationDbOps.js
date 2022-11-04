@@ -78,10 +78,31 @@ const flywayMigrate = async () => {
   const flywayDataPath = '.node-flywaydb';
   const flywayConfigPath = path.join(os.tmpdir(), `config_worker_${workerId}.json`); // store configs in temp dir
   const locations = path.join('..', schemaConfigs.locations);
+  const destination = path.join(process.cwd(), 'temp');
+
+  // Creating a temp folder without the repeatable partitioning file.
+
+  fs.mkdir(destination, (err) => {
+    if (err) {
+      console.error(`${destination} was not created!`);
+    }
+  });
+
+  fs.readdirSync(locations).forEach((file) => {
+    const destFile = destination + '/' + file;
+    if (destFile !== destination + '/V2.0.2.2__repeatable_partitioning.sql') {
+      fs.copyFile(file, destFile, function (err) {
+        if (err) {
+          console.error(`${file} was not copied!`);
+        }
+      });
+    }
+  });
+
   const flywayConfig = `{
     "flywayArgs": {
       "baselineVersion": "${schemaConfigs.baselineVersion}",
-      "locations": "filesystem:${locations}",
+      "locations": "filesystem:${destination}",
       "password": "${dbConnectionParams.password}",
       "placeholders.api-password": "${defaultDbConfig.password}",
       "placeholders.api-user": "${apiUsername}",
@@ -123,6 +144,13 @@ const flywayMigrate = async () => {
   }
 
   execSync(`node ${exePath} -c ${flywayConfigPath} migrate`, {stdio: 'inherit'});
+
+  //Deleting the temp folder.
+  fs.rmdir(destination, {recursive: true}, (err) => {
+    if (err) {
+      console.warn(`${destination} was not deleted!`);
+    }
+  });
 };
 
 const cleanupSql = fs.readFileSync(
