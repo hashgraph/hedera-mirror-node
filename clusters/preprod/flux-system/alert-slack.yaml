@@ -25,7 +25,10 @@ spec:
       namespace: dev
     - kind: HelmRelease
       name: '*'
-      namespace: previewnet  
+      namespace: previewnet
+    - kind: HelmRelease
+      name: '*'
+      namespace: staging-sm
     - kind: Kustomization
       name: '*'
       namespace: flux-system
