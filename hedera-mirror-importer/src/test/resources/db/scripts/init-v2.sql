@@ -22,7 +22,7 @@ alter default privileges in schema public grant insert, update, delete on tables
 
 -- Partition privileges
 grant connect on database mirror_node to readwrite;
-grant all privileges on database :dbName to :ownerUsername;
+grant all privileges on database mirror_node to mirror_node;
 create extension if not exists pg_cron;
 create schema if not exists partman authorization mirror_node;
 create extension if not exists pg_partman schema partman;
