@@ -131,22 +131,12 @@ function V2CreateTempFolder(locations) {
   const destination = path.join(process.cwd(), 'temp');
   // Creating a temp folder without the repeatable partitioning file.
   if (!fs.existsSync(destination)) {
-    fs.mkdir(destination, (err) => {
-      if (err) {
-        console.error(err);
-        console.error(`${destination} was not created!`);
-      }
-    });
-
+    fs.mkdirSync(destination);
     fs.readdirSync(locations).forEach((file) => {
       const destFile = destination + '/' + file;
+      const srcFile = locations + '/' + file;
       if (destFile !== destination + '/R__partitioning.sql') {
-        fs.copyFile(file, destFile, function (err) {
-          if (err) {
-            console.error(err);
-            console.error(`${file} was not copied!`);
-          }
-        });
+        fs.copyFileSync(srcFile, destFile);
       }
     });
   }
