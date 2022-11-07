@@ -50,7 +50,7 @@ class UtilPrngTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public void updateTransaction(Transaction transaction, RecordItem recordItem) {
+    public void updateTransactionNoEntity(Transaction transaction, RecordItem recordItem) {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         var range = recordItem.getTransactionBody().getUtilPrng().getRange();
         if (!recordItem.isSuccessful()) {

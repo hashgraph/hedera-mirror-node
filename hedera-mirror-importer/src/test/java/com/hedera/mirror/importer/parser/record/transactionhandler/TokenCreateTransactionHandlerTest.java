@@ -32,7 +32,7 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new TokenCreateTransactionHandler(entityIdService, entityListener, new RecordParserProperties());
+        return new TokenCreateTransactionHandler(entityIdService, new RecordParserProperties());
     }
 
     @Override

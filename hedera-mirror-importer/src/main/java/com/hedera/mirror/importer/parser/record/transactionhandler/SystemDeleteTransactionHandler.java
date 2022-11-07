@@ -22,20 +22,17 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import javax.inject.Named;
 
-import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
-import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @Named
 class SystemDeleteTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
-    SystemDeleteTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
-                                   RecordParserProperties recordParserProperties) {
-        super(entityIdService, entityListener, recordParserProperties, TransactionType.SYSTEMDELETE);
+    SystemDeleteTransactionHandler(EntityIdService entityIdService, RecordParserProperties recordParserProperties) {
+        super(entityIdService, recordParserProperties, TransactionType.SYSTEMDELETE);
     }
 
     @Override
@@ -49,10 +46,5 @@ class SystemDeleteTransactionHandler extends AbstractEntityCrudTransactionHandle
         }
 
         return null;
-    }
-
-    @Override
-    protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
-        entityListener.onEntity(entity);
     }
 }

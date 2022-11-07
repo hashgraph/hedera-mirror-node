@@ -29,14 +29,12 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
-import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @Named
 class FileUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
-    FileUpdateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
-                                 RecordParserProperties recordParserProperties) {
-        super(entityIdService, entityListener, recordParserProperties, TransactionType.FILEUPDATE);
+    FileUpdateTransactionHandler(EntityIdService entityIdService, RecordParserProperties recordParserProperties) {
+        super(entityIdService, recordParserProperties, TransactionType.FILEUPDATE);
     }
 
     @Override
@@ -59,7 +57,5 @@ class FileUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler 
         if (transactionBody.hasMemo()) {
             entity.setMemo(transactionBody.getMemo().getValue());
         }
-
-        entityListener.onEntity(entity);
     }
 }

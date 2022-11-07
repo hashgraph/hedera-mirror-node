@@ -36,15 +36,11 @@ import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.exception.AliasNotFoundException;
 import com.hedera.mirror.importer.parser.PartialDataAction;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
-import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
 abstract class AbstractEntityCrudTransactionHandler implements TransactionHandler {
 
     protected final EntityIdService entityIdService;
-
-    protected final EntityListener entityListener;
-
     protected final RecordParserProperties recordParserProperties;
 
     @Getter
@@ -62,20 +58,26 @@ abstract class AbstractEntityCrudTransactionHandler implements TransactionHandle
     }
 
     @Override
-    public final void updateTransaction(Transaction transaction, RecordItem recordItem) {
+    public final Optional<Entity> updateTransaction(Transaction transaction, RecordItem recordItem) {
         doUpdateTransaction(transaction, recordItem);
         EntityId entityId = transaction.getEntityId();
         EntityOperation entityOperation = type.getEntityOperation();
 
         if (entityOperation != EntityOperation.NONE && !EntityId.isEmpty(entityId) && recordItem.isSuccessful()) {
-            updateEntity(entityId, recordItem);
+            return updateEntity(entityId, recordItem);
         }
+
+        return Optional.empty();
     }
 
     protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
     }
 
-    protected final void updateEntity(EntityId entityId, RecordItem recordItem) {
+    protected final Optional<Entity> updateEntity(EntityId entityId, RecordItem recordItem) {
+        if (!shouldUpdateEntity()) {
+            return Optional.empty();
+        }
+
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         Entity entity = entityId.toEntity();
         EntityOperation entityOperation = type.getEntityOperation();
@@ -91,7 +93,13 @@ abstract class AbstractEntityCrudTransactionHandler implements TransactionHandle
 
         entity.setTimestampLower(consensusTimestamp);
         doUpdateEntity(entity, recordItem);
+        return Optional.of(entity);
     }
 
-    protected abstract void doUpdateEntity(Entity entity, RecordItem recordItem);
+    protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
+    }
+
+    protected boolean shouldUpdateEntity() {
+        return true;
+    }
 }

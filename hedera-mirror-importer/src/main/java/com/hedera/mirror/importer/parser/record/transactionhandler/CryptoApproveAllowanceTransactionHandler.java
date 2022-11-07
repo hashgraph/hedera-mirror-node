@@ -67,7 +67,7 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public void updateTransaction(Transaction transaction, RecordItem recordItem) {
+    public void updateTransactionNoEntity(Transaction transaction, RecordItem recordItem) {
         if (!recordItem.isSuccessful()) {
             return;
         }

@@ -28,14 +28,12 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
-import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @Named
 class CryptoDeleteTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
-    CryptoDeleteTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
-                                   RecordParserProperties recordParserProperties) {
-        super(entityIdService, entityListener, recordParserProperties, TransactionType.CRYPTODELETE);
+    CryptoDeleteTransactionHandler(EntityIdService entityIdService, RecordParserProperties recordParserProperties) {
+        super(entityIdService, recordParserProperties, TransactionType.CRYPTODELETE);
     }
 
     @Override
@@ -48,6 +46,5 @@ class CryptoDeleteTransactionHandler extends AbstractEntityCrudTransactionHandle
         var transactionBody = recordItem.getTransactionBody().getCryptoDelete();
         var obtainerId = entityIdService.lookup(transactionBody.getTransferAccountID());
         entity.setObtainerId(obtainerId);
-        entityListener.onEntity(entity);
     }
 }

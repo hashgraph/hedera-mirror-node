@@ -25,7 +25,7 @@ import static com.hedera.mirror.common.domain.entity.EntityType.TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -36,6 +36,7 @@ import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.Optional;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -59,7 +60,7 @@ class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHand
     @Override
     protected TransactionHandler getTransactionHandler() {
         recordParserProperties = new RecordParserProperties();
-        return new ConsensusUpdateTopicTransactionHandler(entityIdService, entityListener, recordParserProperties);
+        return new ConsensusUpdateTopicTransactionHandler(entityIdService, recordParserProperties);
     }
 
     @Override
@@ -91,8 +92,8 @@ class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHand
         var transaction = domainBuilder.transaction().
                 customize(t -> t.consensusTimestamp(timestamp).entityId(topicId)).get();
         when(entityIdService.lookup(any(AccountID.class))).thenReturn(EntityIdEndec.decode(10L, ACCOUNT));
-        transactionHandler.updateTransaction(transaction, recordItem);
-        assertConsensusTopicUpdate(timestamp, topicId, id -> assertEquals(10L, id));
+        var actualEntity = transactionHandler.updateTransaction(transaction, recordItem);
+        assertConsensusTopicUpdate(actualEntity, timestamp, topicId, id -> assertEquals(10L, id));
     }
 
     @Test
@@ -107,8 +108,8 @@ class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHand
                 customize(t -> t.consensusTimestamp(timestamp).entityId(topicId)).get();
         when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
                 .thenReturn(EntityIdEndec.decode(10L, ACCOUNT));
-        transactionHandler.updateTransaction(transaction, recordItem);
-        assertConsensusTopicUpdate(timestamp, topicId, id -> assertEquals(10L, id));
+        var actualEntity = transactionHandler.updateTransaction(transaction, recordItem);
+        assertConsensusTopicUpdate(actualEntity, timestamp, topicId, id -> assertEquals(10L, id));
     }
 
     @ParameterizedTest(name = "{0}")
@@ -144,8 +145,8 @@ class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHand
                 customize(t -> t.consensusTimestamp(timestamp).entityId(topicId)).get();
         when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
                 .thenThrow(new AliasNotFoundException("alias", ACCOUNT));
-        transactionHandler.updateTransaction(transaction, recordItem);
-        assertConsensusTopicUpdate(timestamp, topicId, Assertions::assertNull);
+        var actualEntity = transactionHandler.updateTransaction(transaction, recordItem);
+        assertConsensusTopicUpdate(actualEntity, timestamp, topicId, Assertions::assertNull);
     }
 
     @Test
@@ -157,13 +158,15 @@ class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHand
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder.transaction().
                 customize(t -> t.consensusTimestamp(timestamp).entityId(topicId)).get();
-        transactionHandler.updateTransaction(transaction, recordItem);
-        assertConsensusTopicUpdate(timestamp, topicId, id -> assertEquals(0L, id));
+        var actualEntity = transactionHandler.updateTransaction(transaction, recordItem);
+        assertConsensusTopicUpdate(actualEntity, timestamp, topicId, id -> assertEquals(0L, id));
     }
 
-    private void assertConsensusTopicUpdate(long timestamp, EntityId topicId, Consumer<Long> assertAutoRenewAccountId) {
-        verify(entityListener, times(1)).onEntity(assertArg(t -> assertThat(t)
-                .isNotNull()
+    private void assertConsensusTopicUpdate(Optional<Entity> actualEntity, long timestamp, EntityId topicId,
+                                            Consumer<Long> assertAutoRenewAccountId) {
+        verify(entityListener, never()).onEntity(any(Entity.class));
+        assertThat(actualEntity)
+                .get()
                 .satisfies(e -> assertAutoRenewAccountId.accept(e.getAutoRenewAccountId()))
                 .satisfies(e -> assertThat(e.getAutoRenewPeriod()).isPositive())
                 .returns(null, Entity::getCreatedTimestamp)
@@ -174,7 +177,6 @@ class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHand
                 .returns(topicId.getRealmNum(), Entity::getRealm)
                 .returns(topicId.getShardNum(), Entity::getShard)
                 .returns(Range.atLeast(timestamp), Entity::getTimestampRange)
-                .returns(TOPIC, Entity::getType)
-        ));
+                .returns(TOPIC, Entity::getType);
     }
 }

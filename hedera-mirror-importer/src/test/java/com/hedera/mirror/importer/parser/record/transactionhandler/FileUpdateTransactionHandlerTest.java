@@ -31,7 +31,7 @@ class FileUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new FileUpdateTransactionHandler(entityIdService, entityListener, new RecordParserProperties());
+        return new FileUpdateTransactionHandler(entityIdService, new RecordParserProperties());
     }
 
     @Override

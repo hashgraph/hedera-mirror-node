@@ -41,12 +41,14 @@ import com.hedera.mirror.importer.util.Utility;
 @Named
 class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
+    private final EntityListener entityListener;
     private final EntityProperties entityProperties;
 
     ContractCreateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
                                      EntityProperties entityProperties,
                                      RecordParserProperties recordParserProperties) {
-        super(entityIdService, entityListener, recordParserProperties, TransactionType.CONTRACTCREATEINSTANCE);
+        super(entityIdService, recordParserProperties, TransactionType.CONTRACTCREATEINSTANCE);
+        this.entityListener = entityListener;
         this.entityProperties = entityProperties;
     }
 
@@ -73,10 +75,6 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
     @Override
     @SuppressWarnings({"deprecation", "java:S1874"})
     protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
-        if (!entityProperties.getPersist().isContracts()) {
-            return;
-        }
-
         var contractCreateResult = recordItem.getRecord().getContractCreateResult();
         var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
 
@@ -107,7 +105,11 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
         entity.setMemo(transactionBody.getMemo());
         updateStakingInfo(recordItem, entity);
         createContract(recordItem, entity);
-        entityListener.onEntity(entity);
+    }
+
+    @Override
+    protected boolean shouldUpdateEntity() {
+        return entityProperties.getPersist().isContracts();
     }
 
     private void createContract(RecordItem recordItem, Entity entity) {

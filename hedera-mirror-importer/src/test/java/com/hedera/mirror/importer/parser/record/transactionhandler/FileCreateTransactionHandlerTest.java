@@ -33,7 +33,7 @@ class FileCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new FileCreateTransactionHandler(entityIdService, entityListener, new RecordParserProperties());
+        return new FileCreateTransactionHandler(entityIdService, new RecordParserProperties());
     }
 
     @Override

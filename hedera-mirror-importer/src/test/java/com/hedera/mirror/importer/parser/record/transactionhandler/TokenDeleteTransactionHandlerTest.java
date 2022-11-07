@@ -31,7 +31,7 @@ class TokenDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTransact
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new TokenDeleteTransactionHandler(entityIdService, entityListener, new RecordParserProperties());
+        return new TokenDeleteTransactionHandler(entityIdService, new RecordParserProperties());
     }
 
     @Override

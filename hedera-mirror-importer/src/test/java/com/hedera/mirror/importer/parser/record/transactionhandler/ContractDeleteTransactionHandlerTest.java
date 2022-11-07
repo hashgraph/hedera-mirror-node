@@ -54,7 +54,7 @@ class ContractDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTrans
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new ContractDeleteTransactionHandler(entityIdService, entityListener, new RecordParserProperties());
+        return new ContractDeleteTransactionHandler(entityIdService, new RecordParserProperties());
     }
 
     @Override

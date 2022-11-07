@@ -1544,11 +1544,11 @@ class SqlEntityListenerTest extends IntegrationTest {
         // given no token row in db
 
         // when
-        TokenAccount associate = getTokenAccount(tokenId1, accountId1, 10L, true, false, 0, null, null, Range.atLeast(10L));
+        var associate = getTokenAccount(tokenId1, accountId1, 10L, true, false, 0, null, null, Range.atLeast(10L));
         sqlEntityListener.onTokenAccount(associate);
 
-        TokenAccount kycGrant = getTokenAccount(tokenId1, accountId1, null, null, null, 0, null,
-                TokenKycStatusEnum.GRANTED, Range.atLeast(11L));
+        var kycGrant = getTokenAccount(tokenId1, accountId1, null, null, null, 0, null, TokenKycStatusEnum.GRANTED,
+                Range.atLeast(11L));
         sqlEntityListener.onTokenAccount(kycGrant);
 
         completeFileAndCommit();
@@ -1593,7 +1593,8 @@ class SqlEntityListenerTest extends IntegrationTest {
         tokenRepository.save(token);
 
         // given association in a previous record file
-        TokenAccount associate = getTokenAccount(tokenId1, accountId1, 5L, true, false, 0, null, null, Range.atLeast(5L));
+        TokenAccount associate = getTokenAccount(tokenId1, accountId1, 5L, true, false, 0, null, null,
+                Range.atLeast(5L));
         sqlEntityListener.onTokenAccount(associate);
         expected.add(getTokenAccount(tokenId1, accountId1, 5L, true, false, 0, TokenFreezeStatusEnum.UNFROZEN,
                 TokenKycStatusEnum.REVOKED, Range.closedOpen(5L, 10L)));
@@ -1630,8 +1631,8 @@ class SqlEntityListenerTest extends IntegrationTest {
 
         completeFileAndCommit();
 
-        var expectedTokenAccount = getTokenAccount(tokenId1, accountId1, 20L, true, true, 0, TokenFreezeStatusEnum.UNFROZEN,
-                TokenKycStatusEnum.GRANTED, Range.atLeast(22L));
+        var expectedTokenAccount = getTokenAccount(tokenId1, accountId1, 20L, true, true, 0,
+                TokenFreezeStatusEnum.UNFROZEN, TokenKycStatusEnum.GRANTED, Range.atLeast(22L));
 
         // then
         assertThat(tokenAccountRepository.findAll()).containsExactly(expectedTokenAccount);
@@ -1754,7 +1755,8 @@ class SqlEntityListenerTest extends IntegrationTest {
         tokenTransferId.setConsensusTimestamp(tokenAccount.getCreatedTimestamp() + 1);
         TokenTransfer tokenTransfer1 = domainBuilder.tokenTransfer().customize(t -> t.id(tokenTransferId)).get();
         var expected = getTokenAccount(tokenId1, accountId1, 5L, true, false,
-                tokenTransfer1.getAmount(), TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE, Range.atLeast(5L));
+                tokenTransfer1.getAmount(), TokenFreezeStatusEnum.NOT_APPLICABLE, TokenKycStatusEnum.NOT_APPLICABLE,
+                Range.atLeast(5L));
 
         sqlEntityListener.onTokenTransfer(tokenTransfer1);
         if (commitIndex > 2) {
@@ -1783,7 +1785,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         tokenTransferId2.setAccountId(EntityId.of(tokenAccount.getAccountId(), ACCOUNT));
         tokenTransferId2.setTokenId(EntityId.of(tokenAccount.getTokenId(), TOKEN));
         tokenTransferId2.setConsensusTimestamp(tokenAccount.getCreatedTimestamp() + 2);
-        TokenTransfer tokenTransfer2 = domainBuilder.tokenTransfer().customize(t -> t.id(tokenTransferId2).amount(-50L)).get();
+        var tokenTransfer2 = domainBuilder.tokenTransfer().customize(t -> t.id(tokenTransferId2).amount(-50L)).get();
         expected.setBalance(tokenTransfer1.getAmount() + tokenTransfer2.getAmount());
 
         sqlEntityListener.onTokenTransfer(tokenTransfer2);
@@ -1791,14 +1793,15 @@ class SqlEntityListenerTest extends IntegrationTest {
             completeFileAndCommit();
             assertThat(tokenAccountRepository.findAll()).containsExactly(expected);
             assertThat(findTokenAccountHistory()).containsExactly(tokenAccount);
-            assertThat(tokenTransferRepository.findAll()).containsExactly(tokenTransfer1, tokenTransfer2);
+            assertThat(tokenTransferRepository.findAll()).containsExactlyInAnyOrder(tokenTransfer1, tokenTransfer2);
         }
 
         var tokenTransferId3 = new TokenTransfer.Id();
         tokenTransferId3.setAccountId(EntityId.of(tokenAccount.getAccountId(), ACCOUNT));
         tokenTransferId3.setTokenId(EntityId.of(tokenAccount.getTokenId(), TOKEN));
         tokenTransferId3.setConsensusTimestamp(tokenAccount.getCreatedTimestamp() + 3);
-        TokenTransfer tokenTransfer3 = domainBuilder.tokenTransfer().customize(t -> t.id(tokenTransferId3).amount(20L)).get();
+        var tokenTransfer3 = domainBuilder.tokenTransfer().customize(
+                t -> t.id(tokenTransferId3).amount(20L)).get();
 
         sqlEntityListener.onTokenTransfer(tokenTransfer3);
         completeFileAndCommit();

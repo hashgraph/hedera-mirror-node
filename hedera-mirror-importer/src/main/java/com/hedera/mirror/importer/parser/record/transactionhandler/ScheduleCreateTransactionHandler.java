@@ -37,11 +37,13 @@ import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 @Named
 class ScheduleCreateTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
+    private final EntityListener entityListener;
     private final EntityProperties entityProperties;
 
     ScheduleCreateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
                                      EntityProperties entityProperties, RecordParserProperties recordParserProperties) {
-        super(entityIdService, entityListener, recordParserProperties, TransactionType.SCHEDULECREATE);
+        super(entityIdService, recordParserProperties, TransactionType.SCHEDULECREATE);
+        this.entityListener = entityListener;
         this.entityProperties = entityProperties;
     }
 
@@ -59,7 +61,6 @@ class ScheduleCreateTransactionHandler extends AbstractEntityCrudTransactionHand
         }
 
         entity.setMemo(transactionBody.getMemo());
-        entityListener.onEntity(entity);
     }
 
     @Override

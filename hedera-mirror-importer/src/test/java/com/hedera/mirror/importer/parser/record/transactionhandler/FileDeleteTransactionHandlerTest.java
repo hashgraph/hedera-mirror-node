@@ -31,7 +31,7 @@ class FileDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTransacti
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new FileDeleteTransactionHandler(entityIdService, entityListener, new RecordParserProperties());
+        return new FileDeleteTransactionHandler(entityIdService, new RecordParserProperties());
     }
 
     @Override

@@ -89,17 +89,17 @@ class ScheduleCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         var transaction = domainBuilder.transaction().customize(t -> t.consensusTimestamp(timestamp)).get();
 
         // when
-        transactionHandler.updateTransaction(transaction, recordItem);
+        var actualEntity = transactionHandler.updateTransaction(transaction, recordItem);
 
         // then
-        verify(entityListener, times(1)).onEntity(assertArg(t -> assertThat(t)
-                .isNotNull()
+        verify(entityListener, never()).onEntity(any(Entity.class));
+        assertThat(actualEntity)
+                .get()
                 .returns(timestamp, Entity::getCreatedTimestamp)
                 .returns(false, Entity::getDeleted)
                 .satisfies(e -> assertThat(e.getMemo()).isNotEmpty())
                 .satisfies(e -> assertThat(e.getKey()).isNotEmpty())
-                .returns(timestamp, Entity::getTimestampLower)
-        ));
+                .returns(timestamp, Entity::getTimestampLower);
         verify(entityListener, never()).onSchedule(any());
     }
 
@@ -112,17 +112,17 @@ class ScheduleCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         var transaction = domainBuilder.transaction().customize(t -> t.consensusTimestamp(timestamp)).get();
 
         // when
-        transactionHandler.updateTransaction(transaction, recordItem);
+        var actualEntity = transactionHandler.updateTransaction(transaction, recordItem);
 
         // then
-        verify(entityListener, times(1)).onEntity(assertArg(t -> assertThat(t)
-                .isNotNull()
+        verify(entityListener, never()).onEntity(any(Entity.class));
+        assertThat(actualEntity)
+                .get()
                 .returns(timestamp, Entity::getCreatedTimestamp)
                 .returns(false, Entity::getDeleted)
                 .satisfies(e -> assertThat(e.getMemo()).isNotEmpty())
                 .satisfies(e -> assertThat(e.getKey()).isNotEmpty())
-                .returns(timestamp, Entity::getTimestampLower)
-        ));
+                .returns(timestamp, Entity::getTimestampLower);
         verify(entityListener, times(1)).onSchedule(assertArg(t -> assertThat(t)
                 .isNotNull()
                 .returns(timestamp, Schedule::getConsensusTimestamp)
@@ -146,17 +146,17 @@ class ScheduleCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         var transaction = domainBuilder.transaction().customize(t -> t.consensusTimestamp(timestamp)).get();
 
         // when
-        transactionHandler.updateTransaction(transaction, recordItem);
+        var actualEntity = transactionHandler.updateTransaction(transaction, recordItem);
 
         // then
-        verify(entityListener, times(1)).onEntity(assertArg(t -> assertThat(t)
-                .isNotNull()
+        verify(entityListener, never()).onEntity(any(Entity.class));
+        assertThat(actualEntity)
+                .get()
                 .returns(timestamp, Entity::getCreatedTimestamp)
                 .returns(false, Entity::getDeleted)
                 .satisfies(e -> assertThat(e.getMemo()).isNotEmpty())
                 .satisfies(e -> assertThat(e.getKey()).isNotEmpty())
-                .returns(timestamp, Entity::getTimestampLower)
-        ));
+                .returns(timestamp, Entity::getTimestampLower);
         verify(entityListener, times(1)).onSchedule(assertArg(t -> assertThat(t)
                 .isNotNull()
                 .returns(timestamp, Schedule::getConsensusTimestamp)

@@ -29,14 +29,12 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
-import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @Named
 class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
-    TokenCreateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
-                                  RecordParserProperties recordParserProperties) {
-        super(entityIdService, entityListener, recordParserProperties, TransactionType.TOKENCREATION);
+    TokenCreateTransactionHandler(EntityIdService entityIdService, RecordParserProperties recordParserProperties) {
+        super(entityIdService, recordParserProperties, TransactionType.TOKENCREATION);
     }
 
     @Override
@@ -66,6 +64,5 @@ class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler
         }
 
         entity.setMemo(transactionBody.getMemo());
-        entityListener.onEntity(entity);
     }
 }

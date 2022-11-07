@@ -31,7 +31,7 @@ class ScheduleDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTrans
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new ScheduleDeleteTransactionHandler(entityIdService, entityListener, new RecordParserProperties());
+        return new ScheduleDeleteTransactionHandler(entityIdService, new RecordParserProperties());
     }
 
     @Override

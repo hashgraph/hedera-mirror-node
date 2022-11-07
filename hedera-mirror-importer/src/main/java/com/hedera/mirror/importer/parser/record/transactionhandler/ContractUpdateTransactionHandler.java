@@ -33,15 +33,13 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
-import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.util.Utility;
 
 @Named
 class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
-    ContractUpdateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
-                                     RecordParserProperties recordParserProperties) {
-        super(entityIdService, entityListener, recordParserProperties, TransactionType.CONTRACTUPDATEINSTANCE);
+    ContractUpdateTransactionHandler(EntityIdService entityIdService, RecordParserProperties recordParserProperties) {
+        super(entityIdService, recordParserProperties, TransactionType.CONTRACTUPDATEINSTANCE);
     }
 
     /**
@@ -106,7 +104,6 @@ class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHand
         }
 
         updateStakingInfo(recordItem, entity);
-        entityListener.onEntity(entity);
     }
 
     private void updateStakingInfo(RecordItem recordItem, Entity entity) {

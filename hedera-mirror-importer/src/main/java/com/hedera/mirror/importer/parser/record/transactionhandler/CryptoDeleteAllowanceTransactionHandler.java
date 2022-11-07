@@ -20,9 +20,11 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import java.util.Optional;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
@@ -47,18 +49,18 @@ class CryptoDeleteAllowanceTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public void updateTransaction(Transaction transaction, RecordItem recordItem) {
-        if (!recordItem.isSuccessful()) {
-            return;
-        }
-
-        for (var nftAllowance : recordItem.getTransactionBody().getCryptoDeleteAllowance().getNftAllowancesList()) {
-            var tokenId = EntityId.of(nftAllowance.getTokenId());
-            for (var serialNumber : nftAllowance.getSerialNumbersList()) {
-                var nft = new Nft(serialNumber, tokenId);
-                nft.setModifiedTimestamp(recordItem.getConsensusTimestamp());
-                entityListener.onNft(nft);
+    public Optional<Entity> updateTransaction(Transaction transaction, RecordItem recordItem) {
+        if (recordItem.isSuccessful()) {
+            for (var nftAllowance : recordItem.getTransactionBody().getCryptoDeleteAllowance().getNftAllowancesList()) {
+                var tokenId = EntityId.of(nftAllowance.getTokenId());
+                for (var serialNumber : nftAllowance.getSerialNumbersList()) {
+                    var nft = new Nft(serialNumber, tokenId);
+                    nft.setModifiedTimestamp(recordItem.getConsensusTimestamp());
+                    entityListener.onNft(nft);
+                }
             }
         }
+
+        return Optional.empty();
     }
 }

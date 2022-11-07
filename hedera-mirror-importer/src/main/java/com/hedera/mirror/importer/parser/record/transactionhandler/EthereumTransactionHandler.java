@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import java.util.Optional;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -68,9 +69,9 @@ class EthereumTransactionHandler implements TransactionHandler {
     }
 
     @Override
-    public void updateTransaction(Transaction transaction, RecordItem recordItem) {
+    public Optional<Entity> updateTransaction(Transaction transaction, RecordItem recordItem) {
         if (!entityProperties.getPersist().isEthereumTransactions()) {
-            return;
+            return Optional.empty();
         }
 
         var body = recordItem.getTransactionBody().getEthereumTransaction();
@@ -94,16 +95,17 @@ class EthereumTransactionHandler implements TransactionHandler {
         ethereumTransaction.setPayerAccountId(recordItem.getPayerAccountId());
 
         entityListener.onEthereumTransaction(ethereumTransaction);
-        updateAccountNonce(recordItem, ethereumTransaction);
         recordItem.setEthereumTransaction(ethereumTransaction);
+
+        return updateAccountNonce(recordItem, ethereumTransaction);
     }
 
-    private void updateAccountNonce(RecordItem recordItem, EthereumTransaction ethereumTransaction) {
+    private Optional<Entity> updateAccountNonce(RecordItem recordItem, EthereumTransaction ethereumTransaction) {
         var record = recordItem.getRecord();
 
         // It should not update the nonce if it's unsuccessful and failed before EVM execution
         if (!recordItem.isSuccessful() && !record.hasContractCallResult() && !record.hasContractCreateResult()) {
-            return;
+            return Optional.empty();
         }
 
         var functionResult = record.hasContractCreateResult() ? record.getContractCreateResult() :
@@ -114,8 +116,10 @@ class EthereumTransactionHandler implements TransactionHandler {
             Entity entity = senderId.toEntity();
             entity.setEthereumNonce(ethereumTransaction.getNonce() + 1);
             entity.setTimestampRange(null); // Don't trigger a history row
-            entityListener.onEntity(entity);
+            return Optional.of(entity);
         }
+
+        return Optional.empty();
     }
 
     private void convertGasWeiToTinyBars(EthereumTransaction transaction) {
