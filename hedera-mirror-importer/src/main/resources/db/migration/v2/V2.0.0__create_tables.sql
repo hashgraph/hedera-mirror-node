@@ -30,7 +30,7 @@ create table if not exists account_balance_file
     name                varchar(250)  not null,
     node_id             bigint        not null,
     time_offset         int default 0 not null
-) partition by range (consensus_timestamp);
+);
 comment on table account_balance_file is 'Account balances stream files';
 
 -- address_book
@@ -325,7 +325,7 @@ create table if not exists file_data
     entity_id           bigint   not null,
     file_data           bytea    null,
     transaction_type    smallint not null
-) partition by range (consensus_end);
+) partition by range (consensus_timestamp);
 comment on table file_data is 'File data entity entries';
 
 -- live_hash

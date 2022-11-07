@@ -8,13 +8,9 @@ SELECT cron.schedule('create-partitions-account-balance',
                      '@monthly',
                      $$select partman.create_parent('public.account_balance', 'consensus_timestamp', 'native', 'yearly', p_epoch := 'nanoseconds' , p_premake := 2,
                       p_start_partition := to_char(CURRENT_TIMESTAMP-'3 years'::interval, 'YYYY-MM-DD HH24:MI:SS')) $$);
-SELECT cron.schedule('create-partitions-account-balance-file',
-                     '@monthly',
-                     $$select partman.create_parent('public.account_balance_file', 'consensus_timestamp', 'native', 'yearly', p_epoch := 'nanoseconds' , p_premake := 2,
-                      p_start_partition := to_char(CURRENT_TIMESTAMP-'3 years'::interval, 'YYYY-MM-DD HH24:MI:SS')) $$);
 SELECT cron.schedule('create-partitions-address_book',
                      '@monthly',
-                     $$select partman.create_parent('public.address_book_service_endpoint', 'consensus_timestamp', 'native', 'yearly', p_epoch := 'nanoseconds' , p_premake := 2,
+                     $$select partman.create_parent('public.address_book_service_endpoint', 'end_consensus_timestamp', 'native', 'yearly', p_epoch := 'nanoseconds' , p_premake := 2,
                       p_start_partition := to_char(CURRENT_TIMESTAMP-'3 years'::interval, 'YYYY-MM-DD HH24:MI:SS')) $$);
 SELECT cron.schedule('create-partitions-address_book_entry',
                      '@monthly',
@@ -61,7 +57,7 @@ SELECT cron.schedule('create-partitions-crypto-transfer',
                     p_premake := 2, p_start_partition := to_char(CURRENT_TIMESTAMP-'3 years'::interval, 'YYYY-MM-DD HH24:MI:SS')) $$);
 SELECT cron.schedule('create-partitions-custom_fee',
                      '@daily',
-                     $$select partman.create_parent('public.custom_fee', 'consensus_end', 'native', 'yearly', p_epoch := 'nanoseconds' , p_premake := 2,
+                     $$select partman.create_parent('public.custom_fee', 'created_timestamp', 'native', 'yearly', p_epoch := 'nanoseconds' , p_premake := 2,
                      p_start_partition := to_char(CURRENT_TIMESTAMP-'3 years'::interval, 'YYYY-MM-DD HH24:MI:SS')) $$);
 SELECT cron.schedule('create-partitions-entity',
                      '@daily',
@@ -74,7 +70,7 @@ SELECT cron.schedule('create-partitions-entity_stake',
                      $$select partman.create_parent('public.entity_stake', 'id', 'native', '100000') $$);
 SELECT cron.schedule('create-partitions-ethereum_transaction',
                      '@daily',
-                     $$select partman.create_parent('public.ethereum_transaction', 'consensus_end', 'native', 'yearly', p_epoch := 'nanoseconds' , p_premake := 2,
+                     $$select partman.create_parent('public.ethereum_transaction', 'created_timestamp', 'native', 'yearly', p_epoch := 'nanoseconds' , p_premake := 2,
                      p_start_partition := to_char(CURRENT_TIMESTAMP-'3 years'::interval, 'YYYY-MM-DD HH24:MI:SS')) $$);
 SELECT cron.schedule('create-partitions-event_file',
                      '@daily',
@@ -82,7 +78,7 @@ SELECT cron.schedule('create-partitions-event_file',
                      p_start_partition := to_char(CURRENT_TIMESTAMP-'3 years'::interval, 'YYYY-MM-DD HH24:MI:SS')) $$);
 SELECT cron.schedule('create-partitions-file_data',
                      '@daily',
-                     $$select partman.create_parent('public.file_data', 'consensus_end', 'native', 'yearly', p_epoch := 'nanoseconds' , p_premake := 2,
+                     $$select partman.create_parent('public.file_data', 'consensus_timestamp', 'native', 'yearly', p_epoch := 'nanoseconds' , p_premake := 2,
                      p_start_partition := to_char(CURRENT_TIMESTAMP-'3 years'::interval, 'YYYY-MM-DD HH24:MI:SS')) $$);
 SELECT cron.schedule('create-partitions-nft',
                      '@daily',
