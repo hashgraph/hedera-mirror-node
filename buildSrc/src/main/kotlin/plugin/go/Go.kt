@@ -17,15 +17,22 @@
  * limitations under the License.
  * ‍
  */
+package plugin.go
 
-description = "Hedera Mirror Node Rosetta API"
+import org.gradle.api.tasks.Exec
+import org.gradle.kotlin.dsl.getByName
 
-plugins {
-    id("docker-conventions")
-    id("go-conventions")
-}
+// Template task to execute the go CLI
+abstract class Go : Exec() {
 
-go {
-    pkg = "./app/..."
-    version = "1.19"
+    init {
+        dependsOn("setup")
+    }
+
+    override fun exec() {
+        logger.info("Executing go ${args}")
+        val go = project.extensions.getByName<GoExtension>("go")
+        executable(go.goBin.absolutePath)
+        super.exec()
+    }
 }

@@ -18,14 +18,17 @@
  * ‍
  */
 
-description = "Hedera Mirror Node Rosetta API"
+package plugin.go
 
-plugins {
-    id("docker-conventions")
-    id("go-conventions")
-}
+import java.io.File
 
-go {
-    pkg = "./app/..."
-    version = "1.19"
+// Extension object to contain the Go plugin properties
+open class GoExtension {
+    var arch: String = ""
+    lateinit var cacheDir: File
+    lateinit var goRoot: File
+    lateinit var goBin: File
+    var os: String = ""
+    var pkg: String = ""
+    var version: String = ""
 }

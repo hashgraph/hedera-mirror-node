@@ -1,6 +1,6 @@
 module github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta
 
-go 1.18
+go 1.19
 
 require (
 	github.com/Code-Hex/go-generics-cache v1.2.1

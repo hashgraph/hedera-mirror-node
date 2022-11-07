@@ -8,11 +8,7 @@
 -- Tables distributed on id
 select create_distributed_table('entity', 'id');
 
-select create_distributed_table('event_file', 'node_id');
-
 select create_distributed_table('transaction_hash', 'hash');
-
-select create_distributed_table('record_file', 'node_id');
 
 -- Tables that will be colocated with tables above
 select create_distributed_table('assessed_custom_fee', 'payer_account_id', colocate_with => 'entity');
@@ -41,6 +37,8 @@ select create_distributed_table('custom_fee', 'token_id', colocate_with => 'enti
 
 select create_distributed_table('entity_history', 'id', colocate_with => 'entity');
 
+select create_distributed_table('entity_stake', 'id', colocate_with => 'entity');
+
 select create_distributed_table('ethereum_transaction', 'payer_account_id', colocate_with => 'entity');
 
 select create_distributed_table('file_data', 'entity_id', colocate_with => 'entity');
@@ -59,7 +57,7 @@ select create_distributed_table('prng', 'payer_account_id', colocate_with => 'en
 
 select create_distributed_table('schedule', 'schedule_id', colocate_with => 'entity');
 
-select create_distributed_table('staking_reward_transfer', 'payer_account_id', colocate_with => 'entity');
+select create_distributed_table('staking_reward_transfer', 'account_id', colocate_with => 'entity');
 
 select create_distributed_table('token', 'token_id', colocate_with => 'entity');
 

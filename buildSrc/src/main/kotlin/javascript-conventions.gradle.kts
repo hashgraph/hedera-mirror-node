@@ -28,7 +28,7 @@ plugins {
 
 node {
     download.set(true)
-    version.set("16.17.1")
+    version.set("18.12.0")
 }
 
 val npmTest = tasks.register<NpmTask>("npmTest") {

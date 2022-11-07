@@ -17,3 +17,48 @@
  * limitations under the License.
  * ‍
  */
+
+import plugin.go.Go
+import plugin.go.GoExtension
+import plugin.go.GolangPlugin
+
+apply<GolangPlugin>()
+
+tasks.register<Go>("build") {
+    val binary = buildDir.resolve(project.projectDir.name)
+    val ldFlags = "-w -s -X main.Version=${project.version}"
+    environment["CGO_ENABLED"] = "true"
+    args("build", "-ldflags", ldFlags, "-o", binary)
+    dependsOn("test")
+}
+
+tasks.register<Go>("clean") {
+    args("clean")
+    buildDir.deleteRecursively()
+    projectDir.resolve("coverage.txt").delete()
+}
+
+tasks.register<Go>("fix") {
+    args("fix", "./...")
+}
+
+tasks.register<Go>("fmt") {
+    args("fmt", "./...")
+    dependsOn("generate")
+}
+
+tasks.register<Go>("generate") {
+    args("generate", "./...")
+    dependsOn("fix")
+}
+
+tasks.register<Exec>("run") {
+    commandLine(buildDir.resolve(project.projectDir.name))
+    dependsOn("build")
+}
+
+tasks.register<Go>("test") {
+    val go = project.extensions.getByName<GoExtension>("go")
+    args("test", "-coverpkg=${go.pkg}", "-coverprofile=coverage.txt", "-covermode=atomic", "-race", "-v", go.pkg)
+    dependsOn("fix")
+}

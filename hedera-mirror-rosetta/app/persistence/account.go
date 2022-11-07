@@ -94,17 +94,9 @@ const (
                               ) as token_associations`
 	latestBalanceBeforeConsensus = "with" + genesisTimestampCte + `, abm as (
                                       select
-                                        consensus_timestamp max,
-                                        (consensus_timestamp + time_offset + fixed_offset.value) adjusted_timestamp
-                                      from account_balance_file,
-                                        lateral (
-                                          select
-                                            case when consensus_timestamp <@ @fixed_offset_timestamp_range ::int8range
-                                                   then 53
-                                                 else 0
-                                            end value
-                                        ) fixed_offset
-                                      where consensus_timestamp + time_offset + fixed_offset.value <= @timestamp
+                                        consensus_timestamp max, (consensus_timestamp + time_offset) adjusted_timestamp
+                                      from account_balance_file
+                                      where consensus_timestamp + time_offset <= @timestamp
                                       order by consensus_timestamp desc
                                       limit 1
                                     )
@@ -171,16 +163,12 @@ type tokenAssociation struct {
 
 // accountRepository struct that has connection to the Database
 type accountRepository struct {
-	dbClient                        interfaces.DbClient
-	fixedOffsetTimestampRangeSqlArg sql.NamedArg
+	dbClient interfaces.DbClient
 }
 
 // NewAccountRepository creates an instance of a accountRepository struct
-func NewAccountRepository(dbClient interfaces.DbClient, network string) interfaces.AccountRepository {
-	return &accountRepository{
-		dbClient:                        dbClient,
-		fixedOffsetTimestampRangeSqlArg: getAccountBalanceFileFixedOffsetTimestampRangeSqlNamedArg(network),
-	}
+func NewAccountRepository(dbClient interfaces.DbClient) interfaces.AccountRepository {
+	return &accountRepository{dbClient}
 }
 
 func (ar *accountRepository) GetAccountAlias(ctx context.Context, accountId types.AccountId) (
@@ -370,7 +358,6 @@ func (ar *accountRepository) getLatestBalanceSnapshot(ctx context.Context, accou
 		latestBalanceBeforeConsensus,
 		sql.Named("account_id", accountId),
 		sql.Named("timestamp", timestamp),
-		ar.fixedOffsetTimestampRangeSqlArg,
 	).First(cb).Error; err != nil {
 		log.Errorf(
 			databaseErrorFormat,
@@ -419,7 +406,6 @@ func (ar *accountRepository) getBalanceChange(ctx context.Context, accountId, co
 		sql.Named("start", consensusStart),
 		sql.Named("end", consensusEnd),
 		sql.Named("end_range", getInclusiveInt8Range(consensusEnd, consensusEnd)),
-		ar.fixedOffsetTimestampRangeSqlArg,
 	).First(change).Error; err != nil {
 		log.Errorf(
 			databaseErrorFormat,
@@ -471,7 +457,6 @@ func (ar *accountRepository) getNftBalance(
 		sql.Named("account_id", accountId),
 		sql.Named("start", consensusStart),
 		sql.Named("end", consensusEnd),
-		ar.fixedOffsetTimestampRangeSqlArg,
 	).Scan(&nftTransfers).Error; err != nil {
 		log.Errorf(
 			databaseErrorFormat,
