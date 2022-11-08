@@ -114,7 +114,7 @@
       "responseJson": {
         "logs": [
           {
-            "address": "0x00000000000000000000000000000000000003e8",
+            "address": "0x62cf9068fed962cf9068fed962cf9068fed9dddd",
             "bloom": "0x0123",
             "contract_id": "0.0.1000",
             "data": "0x0123",
@@ -143,7 +143,7 @@
       "responseJson": {
         "logs": [
           {
-            "address": "0x00000000000000000000000000000000000003e8",
+            "address": "0x62cf9068fed962cf9068fed962cf9068fed9dddd",
             "bloom": "0x0123",
             "contract_id": "0.0.1000",
             "data": "0x0123",
@@ -172,7 +172,7 @@
       "responseJson": {
         "logs": [
           {
-            "address": "0x00000000000000000000000000000000000003e8",
+            "address": "0x62cf9068fed962cf9068fed962cf9068fed9dddd",
             "bloom": "0x0123",
             "contract_id": "0.0.1000",
             "data": "0x0123",
@@ -190,7 +190,7 @@
             "block_number": 2
           },
           {
-            "address": "0x00000000000000000000000000000000000003e8",
+            "address": "0x62cf9068fed962cf9068fed962cf9068fed9dddd",
             "bloom": "0x0123",
             "contract_id": "0.0.1000",
             "data": "0x0123",
@@ -209,7 +209,7 @@
             "block_number": 1
           },
           {
-            "address": "0x00000000000000000000000000000000000003e8",
+            "address": "0x62cf9068fed962cf9068fed962cf9068fed9dddd",
             "bloom": "0x0123",
             "contract_id": "0.0.1000",
             "data": "0x0123",
@@ -228,7 +228,7 @@
             "block_number": 1
           },
           {
-            "address": "0x00000000000000000000000000000000000003e8",
+            "address": "0x62cf9068fed962cf9068fed962cf9068fed9dddd",
             "bloom": "0x0123",
             "contract_id": "0.0.1000",
             "data": "0x0123",
@@ -257,7 +257,7 @@
       "responseJson": {
         "logs": [
           {
-            "address": "0x00000000000000000000000000000000000003e8",
+            "address": "0x62cf9068fed962cf9068fed962cf9068fed9dddd",
             "bloom": "0x0123",
             "contract_id": "0.0.1000",
             "data": "0x0123",
@@ -275,7 +275,7 @@
             "block_number": 2
           },
           {
-            "address": "0x00000000000000000000000000000000000003e8",
+            "address": "0x62cf9068fed962cf9068fed962cf9068fed9dddd",
             "bloom": "0x0123",
             "contract_id": "0.0.1000",
             "data": "0x0123",
@@ -294,7 +294,7 @@
             "block_number": 1
           },
           {
-            "address": "0x00000000000000000000000000000000000003e8",
+            "address": "0x62cf9068fed962cf9068fed962cf9068fed9dddd",
             "bloom": "0x0123",
             "contract_id": "0.0.1000",
             "data": "0x0123",
@@ -313,7 +313,7 @@
             "block_number": 1
           },
           {
-            "address": "0x00000000000000000000000000000000000003e8",
+            "address": "0x62cf9068fed962cf9068fed962cf9068fed9dddd",
             "bloom": "0x0123",
             "contract_id": "0.0.1000",
             "data": "0x0123",

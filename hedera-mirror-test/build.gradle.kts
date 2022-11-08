@@ -46,7 +46,7 @@ dependencies {
 
     // TODO: Figure out why these hedera-sdk-java transitive dependencies need to be explicitly defined to compile
     testImplementation("com.google.code.gson:gson")
-    testImplementation("com.github.spotbugs:spotbugs-annotations:4.7.1")
+    testImplementation("com.github.spotbugs:spotbugs-annotations:4.7.3")
 }
 
 // Disable the default test task and only run acceptance tests during the standalone "acceptance" task

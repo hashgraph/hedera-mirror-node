@@ -2,7 +2,7 @@
 # Importer, Rosetta and PostgreSQL into one image
 # and run the services using supervisord
 
-FROM ubuntu:20.04 as builder
+FROM ubuntu:22.04 as builder
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y gcc git openjdk-17-jdk-headless wget
 # GIT_REF can be a branch, a tag, or a 40-charater git commit hash
@@ -25,7 +25,7 @@ RUN mkdir importer rosetta scripts \
 # --------------------------- Runner Container --------------------------- #
 # ######################################################################## #
 
-FROM ubuntu:20.04 as runner
+FROM ubuntu:22.04 as runner
 
 # ---------------------- Install Deps & PostgreSQL ------------------------ #
 # Add the PostgreSQL PGP key to verify their Debian packages.

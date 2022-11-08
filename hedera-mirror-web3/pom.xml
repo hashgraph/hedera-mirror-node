@@ -34,6 +34,14 @@
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-prometheus</artifactId>
         </dependency>
+        <!-- Fixes error 'Unable to load io.netty.resolver.dns.macos.MacOSDnsServerAddressStreamProvider' -->
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-resolver-dns-native-macos</artifactId>
+            <classifier>osx-aarch_64</classifier>
+            <scope>runtime</scope>
+            <version>${netty.version}</version>
+        </dependency>
         <dependency>
             <groupId>javax.inject</groupId>
             <artifactId>javax.inject</artifactId>
@@ -105,12 +113,6 @@
             <groupId>com.hedera.evm</groupId>
             <artifactId>hedera-evm-api</artifactId>
             <version>${hedera-evm.version}</version>
-        </dependency>
-        <!-- workaround for hedera-mirror-web3 build failure -->
-        <dependency>
-            <groupId>com.swirlds</groupId>
-            <artifactId>swirlds-common</artifactId>
-            <version>0.31.0</version>
         </dependency>
 
         <!-- Test -->

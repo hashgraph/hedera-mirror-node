@@ -1,5 +1,5 @@
 {
-  "description": "Contract results actions api call with empty result with and without params",
+  "description": "Contract results actions api call with limit=1",
   "setup": {
     "contracts": [
       {
@@ -32,7 +32,7 @@
         "function_result": [4, 4],
         "gas_limit": 1234556,
         "gas_used": 987,
-        "payer_account_id": 6001,
+        "payer_account_id": 5001,
         "transaction_hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb98"
       },
       {
@@ -101,29 +101,111 @@
         "hash": "b0162e8a244dc05fbd6f321445b14dddf0e94b00eb169b58ff77b1b5206c12782457f7f1a2ae8cea890f378542ac7216"
       }
     ],
-    "contractactions": [],
-    "ethereumtransactions": [
+    "contractactions": [
       {
+        "call_depth": 1,
+        "call_type": 1,
+        "caller": 5001,
+        "caller_type": "CONTRACT",
+        "call_operation_type": 1,
         "consensus_timestamp": "1676540001234390005",
-        "hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb98"
+        "gas": 1000,
+        "gas_used": 900,
+        "index": 1,
+        "input": "0xabcd",
+        "payer_account_id": 5001,
+        "recipient_account": null,
+        "recipient_address": "0x70f2b2914a2a4b783faefb75f459a580616fcb5e",
+        "recipient_contract": 8001,
+        "result_data": "0x1234",
+        "result_data_type": 11,
+        "value": 100
       },
       {
-        "consensus_timestamp": "1676540001234500005",
-        "hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb99"
+        "call_depth": 2,
+        "call_type": 2,
+        "caller": 5001,
+        "caller_type": "CONTRACT",
+        "call_operation_type": 2,
+        "consensus_timestamp": "1676540001234390005",
+        "gas": 1000,
+        "gas_used": 900,
+        "index": 2,
+        "input": "0xabcd",
+        "payer_account_id": 5001,
+        "recipient_account": null,
+        "recipient_address": "0x70f2b2914a2a4b783faefb75f459a580616fcb5e",
+        "recipient_contract": 8002,
+        "result_data": "0x1234",
+        "result_data_type": 11,
+        "value": 200
+      },
+      {
+        "call_depth": 2,
+        "call_type": 2,
+        "caller": 5002,
+        "caller_type": "CONTRACT",
+        "call_operation_type": 3,
+        "consensus_timestamp": "1676540001234390010",
+        "gas": 1000,
+        "gas_used": 900,
+        "index": 3,
+        "input": "0xabcd",
+        "payer_account_id": 5001,
+        "recipient_account": null,
+        "recipient_address": "0x70f2b2914a2a4b783faefb75f459a580616fcb5e",
+        "recipient_contract": 8002,
+        "result_data": "0x1234",
+        "result_data_type": 11,
+        "value": 200
+      },
+      {
+        "call_depth": 2,
+        "call_type": 2,
+        "caller": 5001,
+        "caller_type": "CONTRACT",
+        "call_operation_type": 4,
+        "consensus_timestamp": "1676540001234390010",
+        "gas": 1000,
+        "gas_used": 900,
+        "index": 4,
+        "input": "0xabcd",
+        "payer_account_id": 5001,
+        "recipient_account": null,
+        "recipient_address": "0x70f2b2914a2a4b783faefb75f459a580616fcb5e",
+        "recipient_contract": 8002,
+        "result_data": "0x1234",
+        "result_data_type": 11,
+        "value": 200
       }
     ]
   },
-  "urls": [
-    "/api/v1/contracts/results/0.0.5001-1676540001-234390005/actions",
-    "/api/v1/contracts/results/0.0.5001-1676540001-234390005/actions?index=2&order=desc&limit=1",
-    "/api/v1/contracts/results/0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb98/actions",
-    "/api/v1/contracts/results/0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb98/actions?index=2&order=desc&limit=1"
-  ],
+  "urls": ["/api/v1/contracts/results/0.0.5001-1676540001-234390005/actions?limit=1"],
   "responseStatus": 200,
   "responseJson": {
-    "actions": [],
+    "actions": [
+      {
+        "call_depth": 1,
+        "call_type": "CALL",
+        "call_operation_type": "CALL",
+        "caller": "0.0.5001",
+        "caller_type": "CONTRACT",
+        "from": "0x0000000000000000000000000000000000001389",
+        "timestamp": "1676540001.234390005",
+        "gas": 1000,
+        "gas_used": 900,
+        "index": 1,
+        "input": "0xabcd",
+        "to": "0x70f2b2914a2a4b783faefb75f459a580616fcb5e",
+        "recipient": "0.0.8001",
+        "recipient_type": "CONTRACT",
+        "result_data": "0x1234",
+        "result_data_type": "OUTPUT",
+        "value": 100
+      }
+    ],
     "links": {
-      "next": null
+      "next": "/api/v1/contracts/results/0.0.5001-1676540001-234390005/actions?limit=1&index=gt:1"
     }
   }
 }

@@ -1,6 +1,6 @@
 module github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta
 
-go 1.18
+go 1.19
 
 require (
 	github.com/Code-Hex/go-generics-cache v1.2.1
@@ -21,13 +21,13 @@ require (
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.13.0
-	github.com/stretchr/testify v1.8.0
+	github.com/stretchr/testify v1.8.1
 	github.com/thanhpk/randstr v1.0.4
 	github.com/weaveworks/common v0.0.0-20210901124008-1fa3f9fa874c
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/yaml.v2 v2.4.0
-	gorm.io/driver/postgres v1.4.4
-	gorm.io/gorm v1.24.0
+	gorm.io/driver/postgres v1.4.5
+	gorm.io/gorm v1.24.1-0.20221019064659-5dd2bb482755
 )
 
 require (
@@ -95,7 +95,7 @@ require (
 	github.com/spf13/afero v1.8.2 // indirect
 	github.com/spf13/cast v1.5.0 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
-	github.com/stretchr/objx v0.4.0 // indirect
+	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/subosito/gotenv v1.4.1 // indirect
 	github.com/tyler-smith/go-bip39 v1.1.0 // indirect
 	github.com/uber/jaeger-client-go v2.28.0+incompatible // indirect

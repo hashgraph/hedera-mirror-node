@@ -30,8 +30,9 @@ import EntityId from '../entityId';
 const NETWORK_FEE = 1n;
 const NODE_FEE = 2n;
 const SERVICE_FEE = 4n;
-const DEFAULT_NODE_ID = '3';
-const DEFAULT_TREASURY_ID = '98';
+const DEFAULT_FEE_COLLECTOR_ID = 98;
+const DEFAULT_NODE_ID = 3;
+const DEFAULT_PAYER_ACCOUNT_ID = 101;
 
 const defaultFileData = '\\x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750';
 
@@ -549,35 +550,35 @@ const addEntityStake = async (entityStake) => {
   await insertDomainObject('entity_stake', entityStakeFields, entityStake);
 };
 
+const ethereumTransactionDefaults = {
+  access_list: null,
+  call_data_id: null,
+  call_data: null,
+  chain_id: null,
+  consensus_timestamp: '187654000123456',
+  data: '0x000000000',
+  gas_limit: 1000000,
+  gas_price: '0x4a817c80',
+  hash: '0x0000000000000000000000000000000000000000000000000000000000000123',
+  max_fee_per_gas: null,
+  max_gas_allowance: 10000,
+  max_priority_fee_per_gas: null,
+  nonce: 1,
+  payer_account_id: 5001,
+  recovery_id: 1,
+  signature_r: '0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042',
+  signature_s: '0x24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354',
+  signature_v: '0x1b',
+  to_address: null,
+  type: 2,
+  value: '0x0',
+};
+
 const addEthereumTransaction = async (ethereumTransaction) => {
   // any attribute starting with '_' is not a db column
   ethereumTransaction = _.omitBy(ethereumTransaction, (_v, k) => k.startsWith('_'));
-  const localDefaults = {
-    access_list: null,
-    call_data_id: null,
-    call_data: null,
-    chain_id: null,
-    consensus_timestamp: '187654000123456',
-    data: '0x000000000',
-    gas_limit: 1000000,
-    gas_price: '0x4a817c80',
-    hash: '0x0000000000000000000000000000000000000000000000000000000000000123',
-    max_fee_per_gas: null,
-    max_gas_allowance: 10000,
-    max_priority_fee_per_gas: null,
-    nonce: 1,
-    payer_account_id: 5001,
-    recovery_id: 1,
-    signature_r: '0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042',
-    signature_s: '0x24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354',
-    signature_v: '0x1b',
-    to_address: null,
-    type: 2,
-    value: '0x0',
-  };
-
   const ethTx = {
-    ...localDefaults,
+    ...ethereumTransactionDefaults,
     ...ethereumTransaction,
   };
 
@@ -850,7 +851,7 @@ const insertTransfers = async (
     await pool.query(
       `insert into ${tableName} (consensus_timestamp, amount, entity_id, payer_account_id, is_approval)
       values ($1, $2, $3, $4, $5);`,
-      [consensusTimestamp.toString(), NETWORK_FEE, DEFAULT_TREASURY_ID, payerAccountId, false]
+      [consensusTimestamp.toString(), NETWORK_FEE, DEFAULT_FEE_COLLECTOR_ID, payerAccountId, false]
     );
     await pool.query(
       `insert into ${tableName} (consensus_timestamp, amount, entity_id, payer_account_id, is_approval)
@@ -966,6 +967,7 @@ const contractActionDefaults = {
   gas_used: 5000,
   index: 1,
   input: null,
+  payer_account_id: DEFAULT_PAYER_ACCOUNT_ID,
   recipient_account: null,
   recipient_address: null,
   recipient_contract: null,
@@ -1017,7 +1019,7 @@ const contractResultDefaults = {
   function_result: null,
   gas_limit: 1000,
   gas_used: null,
-  payer_account_id: 101,
+  payer_account_id: DEFAULT_PAYER_ACCOUNT_ID,
   transaction_hash: Buffer.from([...Array(32).keys()]),
   transaction_index: 1,
   transaction_result: 22,
@@ -1039,19 +1041,23 @@ const addContractResult = async (contractResultInput) => {
   await insertDomainObject('contract_result', contractResultInsertFields, contractResult);
 };
 
+const contractLogDefaults = {
+  bloom: '0x0123',
+  consensus_timestamp: 1234510001,
+  contract_id: 1,
+  data: '0x0123',
+  index: 0,
+  payer_account_id: DEFAULT_PAYER_ACCOUNT_ID,
+  root_contract_id: null,
+  topic0: '0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750',
+  topic1: '0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925',
+  topic2: '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+  topic3: '0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67',
+};
+
 const addContractLog = async (contractLogInput) => {
   const contractLog = {
-    bloom: '0x0123',
-    consensus_timestamp: 1234510001,
-    contract_id: 1,
-    data: '0x0123',
-    index: 0,
-    payer_account_id: 2,
-    root_contract_id: null,
-    topic0: '0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750',
-    topic1: '0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925',
-    topic2: '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
-    topic3: '0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67',
+    ...contractLogDefaults,
     ...contractLogInput,
   };
 

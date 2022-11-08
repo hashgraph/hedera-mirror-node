@@ -92,7 +92,7 @@
   "responseJson": {
     "logs": [
       {
-        "address": "0x00000000000000000000000000000000000003e8",
+        "address": "0x70f2b2914a2a4b783faefb75f459a580616fcb5e",
         "bloom": "0x0123",
         "contract_id": "0.0.1000",
         "data": "0x0123",

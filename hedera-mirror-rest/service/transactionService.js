@@ -33,11 +33,10 @@ class TransactionService extends BaseService {
     super();
   }
 
-  static transactionDetailsFromTransactionIdQuery = `select
-      ${Transaction.CONSENSUS_TIMESTAMP}
-    from ${Transaction.tableName} ${Transaction.tableAlias}
-    where ${Transaction.PAYER_ACCOUNT_ID} = $1
-      and ${Transaction.VALID_START_NS} = $2`;
+  static transactionDetailsFromTransactionIdQuery = `
+    select ${Transaction.CONSENSUS_TIMESTAMP}
+    from ${Transaction.tableName}
+    where ${Transaction.PAYER_ACCOUNT_ID} = $1 and ${Transaction.VALID_START_NS} = $2`;
 
   static ethereumTransactionDetailsQuery = `
   select
@@ -61,9 +60,10 @@ class TransactionService extends BaseService {
     ${Transaction.getFullName(Transaction.RESULT)}
   from ${EthereumTransaction.tableName} ${EthereumTransaction.tableAlias}
   join ${Transaction.tableName} ${Transaction.tableAlias}
-  on ${EthereumTransaction.getFullName(EthereumTransaction.CONSENSUS_TIMESTAMP)} = ${Transaction.getFullName(
-    Transaction.CONSENSUS_TIMESTAMP
-  )}`;
+  on ${EthereumTransaction.getFullName(EthereumTransaction.CONSENSUS_TIMESTAMP)} =
+     ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} and
+     ${EthereumTransaction.getFullName(EthereumTransaction.PAYER_ACCOUNT_ID)} =
+     ${Transaction.getFullName(Transaction.PAYER_ACCOUNT_ID)}`;
 
   /**
    * Retrieves the transaction based on the transaction id and its nonce
@@ -158,7 +158,7 @@ class TransactionService extends BaseService {
       previous.push(`$${length}`);
       return previous;
     }, []);
-    return ` and ${Transaction.getFullName(Transaction.RESULT)} not in (${positions})`;
+    return ` and ${Transaction.RESULT} not in (${positions})`;
   };
 }
 

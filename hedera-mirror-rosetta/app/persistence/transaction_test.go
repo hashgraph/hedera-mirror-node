@@ -262,14 +262,14 @@ type transactionRepositorySuite struct {
 }
 
 func (suite *transactionRepositorySuite) TestNewTransactionRepository() {
-	t := NewTransactionRepository(dbClient, "")
+	t := NewTransactionRepository(dbClient)
 	assert.NotNil(suite.T(), t)
 }
 
 func (suite *transactionRepositorySuite) TestFindBetween() {
 	// given
 	expected := suite.setupDb(true)
-	t := NewTransactionRepository(dbClient, "")
+	t := NewTransactionRepository(dbClient)
 
 	// when
 	actual, err := t.FindBetween(defaultContext, consensusStart, consensusEnd)
@@ -339,7 +339,7 @@ func (suite *transactionRepositorySuite) TestFindBetweenTokenCreatedAtOrBeforeGe
 			},
 		},
 	}
-	t := NewTransactionRepository(dbClient, "")
+	t := NewTransactionRepository(dbClient)
 
 	// when
 	actual, err := t.FindBetween(defaultContext, transaction.ConsensusTimestamp, transaction.ConsensusTimestamp)
@@ -350,25 +350,9 @@ func (suite *transactionRepositorySuite) TestFindBetweenTokenCreatedAtOrBeforeGe
 }
 
 func (suite *transactionRepositorySuite) TestFindBetweenHavingDisappearingTokenTransfer() {
-	suite.testFindBetweenHavingDisappearingTokenTransfer(100, "", false)
-}
-
-func (suite *transactionRepositorySuite) TestFindBetweenHavingDisappearingTokenTransferForMainnetWithFixedOffset() {
-	timestamp := firstAccountBalanceFileFixedOffsetTimestamps[mainnet]
-	suite.testFindBetweenHavingDisappearingTokenTransfer(timestamp, mainnet, true)
-}
-
-func (suite *transactionRepositorySuite) TestFindBetweenHavingDisappearingTokenTransferForMainnetWithoutFixedOffset() {
-	suite.testFindBetweenHavingDisappearingTokenTransfer(100, "mainnet", false)
-}
-
-func (suite *transactionRepositorySuite) testFindBetweenHavingDisappearingTokenTransfer(
-	genesisTimestamp int64,
-	network string,
-	expectEmptyOperations bool,
-) {
 	// given
 	// the disappearing token/nft transfers are in the corresponding db table
+	genesisTimestamp := int64(100)
 	tdomain.NewAccountBalanceFileBuilder(dbClient, genesisTimestamp).Persist()
 
 	token1 := tdomain.NewTokenBuilder(dbClient, encodedTokenId1, genesisTimestamp+1, treasury).Persist()
@@ -466,10 +450,7 @@ func (suite *transactionRepositorySuite) testFindBetweenHavingDisappearingTokenT
 			},
 		},
 	}
-	if expectEmptyOperations {
-		expected[0].Operations = types.OperationSlice{}
-	}
-	t := NewTransactionRepository(dbClient, network)
+	t := NewTransactionRepository(dbClient)
 
 	// when
 	actual, err := t.FindBetween(defaultContext, dissociateTimestamp, dissociateTimestamp)
@@ -557,7 +538,7 @@ func (suite *transactionRepositorySuite) TestFindBetweenMissingDisappearingToken
 			},
 		},
 	}
-	t := NewTransactionRepository(dbClient, "")
+	t := NewTransactionRepository(dbClient)
 
 	// when
 	actual, err := t.FindBetween(defaultContext, dissociateTimestamp, dissociateTimestamp)
@@ -570,7 +551,7 @@ func (suite *transactionRepositorySuite) TestFindBetweenMissingDisappearingToken
 func (suite *transactionRepositorySuite) TestFindBetweenNoTokenEntity() {
 	// given
 	expected := suite.setupDb(false)
-	t := NewTransactionRepository(dbClient, "")
+	t := NewTransactionRepository(dbClient)
 
 	// when
 	actual, err := t.FindBetween(defaultContext, consensusStart, consensusEnd)
@@ -582,7 +563,7 @@ func (suite *transactionRepositorySuite) TestFindBetweenNoTokenEntity() {
 
 func (suite *transactionRepositorySuite) TestFindBetweenThrowsWhenStartAfterEnd() {
 	// given
-	t := NewTransactionRepository(dbClient, "")
+	t := NewTransactionRepository(dbClient)
 
 	// when
 	actual, err := t.FindBetween(defaultContext, consensusStart, consensusStart-1)
@@ -594,7 +575,7 @@ func (suite *transactionRepositorySuite) TestFindBetweenThrowsWhenStartAfterEnd(
 
 func (suite *transactionRepositorySuite) TestFindBetweenDbConnectionError() {
 	// given
-	t := NewTransactionRepository(invalidDbClient, "")
+	t := NewTransactionRepository(invalidDbClient)
 
 	// when
 	actual, err := t.FindBetween(defaultContext, consensusStart, consensusEnd)
@@ -607,7 +588,7 @@ func (suite *transactionRepositorySuite) TestFindBetweenDbConnectionError() {
 func (suite *transactionRepositorySuite) TestFindByHashInBlock() {
 	// given
 	expected := suite.setupDb(true)
-	t := NewTransactionRepository(dbClient, "")
+	t := NewTransactionRepository(dbClient)
 
 	// when
 	actual, err := t.FindByHashInBlock(defaultContext, expected[0].Hash, consensusStart, consensusEnd)
@@ -620,7 +601,7 @@ func (suite *transactionRepositorySuite) TestFindByHashInBlock() {
 func (suite *transactionRepositorySuite) TestFindByHashInBlockNoTokenEntity() {
 	// given
 	expected := suite.setupDb(false)
-	t := NewTransactionRepository(dbClient, "")
+	t := NewTransactionRepository(dbClient)
 
 	// when
 	actual, err := t.FindByHashInBlock(defaultContext, expected[1].Hash, consensusStart, consensusEnd)
@@ -632,7 +613,7 @@ func (suite *transactionRepositorySuite) TestFindByHashInBlockNoTokenEntity() {
 
 func (suite *transactionRepositorySuite) TestFindByHashInBlockThrowsInvalidHash() {
 	// given
-	t := NewTransactionRepository(dbClient, "")
+	t := NewTransactionRepository(dbClient)
 
 	// when
 	actual, err := t.FindByHashInBlock(defaultContext, "invalid hash", consensusStart, consensusEnd)
@@ -644,7 +625,7 @@ func (suite *transactionRepositorySuite) TestFindByHashInBlockThrowsInvalidHash(
 
 func (suite *transactionRepositorySuite) TestFindByHashInBlockThrowsNotFound() {
 	// given
-	t := NewTransactionRepository(dbClient, "")
+	t := NewTransactionRepository(dbClient)
 
 	// when
 	actual, err := t.FindByHashInBlock(defaultContext, "0x123456", consensusStart, consensusEnd)
@@ -656,7 +637,7 @@ func (suite *transactionRepositorySuite) TestFindByHashInBlockThrowsNotFound() {
 
 func (suite *transactionRepositorySuite) TestFindByHashInBlockDbConnectionError() {
 	// given
-	t := NewTransactionRepository(invalidDbClient, "")
+	t := NewTransactionRepository(invalidDbClient)
 
 	// when
 	actual, err := t.FindByHashInBlock(defaultContext, "0x123456", consensusStart, consensusEnd)
@@ -693,9 +674,9 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 			PayerAccountId: firstEntityId},
 	}
 	nonFeeTransfers := []domain.NonFeeTransfer{
-		{Amount: -135, ConsensusTimestamp: consensusTimestamp, EntityId: firstEntityId,
+		{Amount: -135, ConsensusTimestamp: consensusTimestamp, EntityId: &firstEntityId,
 			PayerAccountId: firstEntityId},
-		{Amount: 135, ConsensusTimestamp: consensusTimestamp, EntityId: secondEntityId,
+		{Amount: 135, ConsensusTimestamp: consensusTimestamp, EntityId: &secondEntityId,
 			PayerAccountId: firstEntityId},
 	}
 	addTransaction(dbClient, consensusTimestamp, nil, &nodeEntityId, firstEntityId, 22,
@@ -758,9 +739,9 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 			PayerAccountId: firstEntityId},
 	}
 	nonFeeTransfers = []domain.NonFeeTransfer{
-		{Amount: -215, ConsensusTimestamp: consensusTimestamp, EntityId: firstEntityId,
+		{Amount: -215, ConsensusTimestamp: consensusTimestamp, EntityId: &firstEntityId,
 			PayerAccountId: firstEntityId},
-		{Amount: 215, ConsensusTimestamp: consensusTimestamp, EntityId: secondEntityId,
+		{Amount: 215, ConsensusTimestamp: consensusTimestamp, EntityId: &secondEntityId,
 			PayerAccountId: firstEntityId},
 	}
 	tokenTransfers := []domain.TokenTransfer{
@@ -997,6 +978,8 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 				Status: resultSuccess},
 			{AccountId: nodeAccountId, Amount: &types.HbarAmount{Value: 20}, Type: types.OperationTypeFee,
 				Status: resultSuccess},
+			{AccountId: firstAccountId, Amount: &types.HbarAmount{}, Type: types.OperationTypeCryptoTransfer,
+				Status: types.TransactionResults[28]},
 		},
 	}
 
@@ -1010,8 +993,9 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 		{Amount: 20, ConsensusTimestamp: consensusTimestamp, EntityId: nodeEntityId, PayerAccountId: firstEntityId},
 	}
 	nonFeeTransfers = []domain.NonFeeTransfer{
-		{Amount: -500, ConsensusTimestamp: consensusTimestamp, EntityId: firstEntityId, PayerAccountId: firstEntityId},
-		{Amount: 500, ConsensusTimestamp: consensusTimestamp, EntityId: newEntityId, PayerAccountId: firstEntityId},
+		{Amount: -500, ConsensusTimestamp: consensusTimestamp, EntityId: &firstEntityId, PayerAccountId: firstEntityId},
+		{Amount: -500, ConsensusTimestamp: consensusTimestamp, PayerAccountId: firstEntityId}, // with nil entity id
+		{Amount: 500, ConsensusTimestamp: consensusTimestamp, EntityId: &newEntityId, PayerAccountId: firstEntityId},
 	}
 	transactionHash = randstr.Bytes(6)
 	addTransaction(dbClient, consensusTimestamp, &newEntityId, &nodeEntityId, firstEntityId, 22, transactionHash,

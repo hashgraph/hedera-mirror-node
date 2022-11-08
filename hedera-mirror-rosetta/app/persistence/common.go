@@ -20,36 +20,22 @@
 
 package persistence
 
-import "database/sql"
+import "github.com/jackc/pgtype"
 
 const (
-	firstFixedOffsetTimestampSqlArgName = "first_fixed_offset_timestamp"
-	genesisTimestampQuery               = `select consensus_timestamp + time_offset + fixed_offset.value as timestamp
-                             from account_balance_file,
-                               lateral (
-                                 select
-                                   case when consensus_timestamp >= @first_fixed_offset_timestamp then 53
-                                        else 0
-                                   end value
-                               ) fixed_offset
+	genesisTimestampQuery = `select consensus_timestamp + time_offset as timestamp
+                             from account_balance_file
                              order by consensus_timestamp
                              limit 1`
 	genesisTimestampCte = " genesis as (" + genesisTimestampQuery + ") "
-	mainnet             = "mainnet"
-	testnet             = "testnet"
 )
 
-var firstAccountBalanceFileFixedOffsetTimestamps = map[string]int64{
-	mainnet: 1658420100626004000,
-	testnet: 1656693000269913000,
-}
-
-func getFirstAccountBalanceFileFixedOffsetTimestampSqlNamedArg(network string) sql.NamedArg {
-	nullInt64 := sql.NullInt64{}
-	if timestamp, ok := firstAccountBalanceFileFixedOffsetTimestamps[network]; ok {
-		nullInt64.Int64 = timestamp
-		nullInt64.Valid = true
+func getInclusiveInt8Range(lower, upper int64) pgtype.Int8range {
+	return pgtype.Int8range{
+		Lower:     pgtype.Int8{Int: lower, Status: pgtype.Present},
+		Upper:     pgtype.Int8{Int: upper, Status: pgtype.Present},
+		LowerType: pgtype.Inclusive,
+		UpperType: pgtype.Inclusive,
+		Status:    pgtype.Present,
 	}
-
-	return sql.Named(firstFixedOffsetTimestampSqlArgName, nullInt64)
 }

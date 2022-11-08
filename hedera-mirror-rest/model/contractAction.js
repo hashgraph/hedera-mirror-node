@@ -34,6 +34,7 @@ class ContractAction {
   static GAS_USED = 'gas_used';
   static INDEX = 'index';
   static INPUT = 'input';
+  static PAYER_ACCOUNT_ID = 'payer_account_id';
   static RECIPIENT_ACCOUNT = 'recipient_account';
   static RECIPIENT_ADDRESS = 'recipient_address';
   static RECIPIENT_CONTRACT = 'recipient_contract';

@@ -16,8 +16,6 @@ alter table account_balance
 -- account_balance_file
 alter table account_balance_file
     add constraint account_balance_file__pk primary key (consensus_timestamp, node_id);
-create unique index if not exists account_balance_file__name
-    on account_balance_file (name, node_id);
 
 -- address_book
 alter table address_book
@@ -37,7 +35,7 @@ alter table if exists contract
 
 -- contract_action
 alter table if exists contract_action
-    add constraint contract_action__pk primary key (consensus_timestamp, index, caller);
+    add constraint contract_action__pk primary key (consensus_timestamp, index, payer_account_id);
 
 -- contract_log
 alter table if exists contract_log
@@ -106,18 +104,13 @@ create index if not exists entity_history__alias on entity_history (alias) where
 create index if not exists entity_history__evm_address on entity_history (evm_address) where evm_address is not null;
 create index if not exists entity_history__timestamp_range on entity_history using gist (timestamp_range);
 
--- entity_state_start
-create unique index if not exists entity_state_start__id on entity_state_start (id);
-create index if not exists entity_state_start__staked_account_id
-    on entity_state_start (staked_account_id) where staked_account_id <> 0;
-
 -- entity_stake
 alter table if exists entity_stake
     add constraint entity_stake__pk primary key (id);
 
 -- ethereum_transaction
 alter table ethereum_transaction
-    add constraint ethereum_transaction__pk primary key (consensus_timestamp);
+    add constraint ethereum_transaction__pk primary key (consensus_timestamp, payer_account_id);
 create index if not exists ethereum_transaction__hash on ethereum_transaction (hash);
 
 -- event_file
@@ -157,7 +150,7 @@ create index if not exists nft_allowance_history__timestamp_range on nft_allowan
 -- nft_transfer
 create index if not exists nft_transfer__timestamp on nft_transfer (consensus_timestamp desc);
 create unique index if not exists nft_transfer__token_id_serial_num_timestamp
-    on nft_transfer (token_id desc, serial_number desc, consensus_timestamp desc);
+    on nft_transfer (token_id desc, serial_number desc, consensus_timestamp desc, payer_account_id);
 
 alter table if exists node_stake
     add constraint node_stake__pk primary key (consensus_timestamp, node_id);
@@ -168,7 +161,7 @@ create index if not exists non_fee_transfer__consensus_timestamp
 
 -- prng
 alter table prng
-    add constraint prng__pk primary key (consensus_timestamp);
+    add constraint prng__pk primary key (consensus_timestamp, payer_account_id);
 
 -- reconciliation_job
 alter table reconciliation_job
@@ -194,7 +187,7 @@ alter table sidecar_file
 
 -- staking_reward_transfer
 alter table staking_reward_transfer
-    add constraint staking_reward_transfer__pk primary key (consensus_timestamp, account_id);
+    add constraint staking_reward_transfer__pk primary key (consensus_timestamp, account_id, payer_account_id);
 
 -- token
 alter table token

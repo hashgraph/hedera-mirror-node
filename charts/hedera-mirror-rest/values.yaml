@@ -232,7 +232,7 @@ test:
   image:
     pullPolicy: IfNotPresent
     repository: bats/bats
-    tag: 1.7.0
+    tag: 1.8.2
 
 tolerations: []
 
