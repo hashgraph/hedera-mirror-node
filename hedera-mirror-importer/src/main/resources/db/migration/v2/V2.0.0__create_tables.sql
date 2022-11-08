@@ -41,7 +41,7 @@ create table if not exists address_book
     file_id                   bigint not null,
     node_count                int    null,
     start_consensus_timestamp bigint not null
-) partition by range (end_consensus_timestamp);
+) partition by range (start_consensus_timestamp);
 comment on table address_book is 'Network address book files entries';
 
 -- address_book_entry

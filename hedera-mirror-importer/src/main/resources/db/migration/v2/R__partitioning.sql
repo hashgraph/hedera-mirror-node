@@ -10,7 +10,7 @@ SELECT cron.schedule('create-partitions-account-balance',
                       p_start_partition := to_char(CURRENT_TIMESTAMP-'3 years'::interval, 'YYYY-MM-DD HH24:MI:SS')) $$);
 SELECT cron.schedule('create-partitions-address_book',
                      '@monthly',
-                     $$select partman.create_parent('public.address_book_service_endpoint', 'end_consensus_timestamp', 'native', 'yearly', p_epoch := 'nanoseconds' , p_premake := 2,
+                     $$select partman.create_parent('public.address_book_service_endpoint', 'start_consensus_timestamp', 'native', 'yearly', p_epoch := 'nanoseconds' , p_premake := 2,
                       p_start_partition := to_char(CURRENT_TIMESTAMP-'3 years'::interval, 'YYYY-MM-DD HH24:MI:SS')) $$);
 SELECT cron.schedule('create-partitions-address_book_entry',
                      '@monthly',
