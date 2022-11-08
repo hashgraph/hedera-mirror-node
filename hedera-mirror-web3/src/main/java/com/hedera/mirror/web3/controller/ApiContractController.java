@@ -41,7 +41,7 @@ public class ApiContractController {
     private final MeterRegistry meterRegistry;
     private final ApiContractServiceFactory apiContractServiceFactory;
 
-    @PostMapping(value = "/contracts")
+    @PostMapping(value = "/contracts/call")
     public Mono<JsonRpcResponse> api(@RequestBody @Valid JsonRpcRequest<?> request,
                                      @RequestParam(required = false, name = "estimate") boolean estimate) {
         try {
@@ -65,9 +65,11 @@ public class ApiContractController {
             //depending on the estimate flag we populate different field from the jsonRpcSuccessResponse
             if (estimate) {
                 jsonRpcSuccessResponse.setGas("0x1");
+                jsonRpcSuccessResponse.setResult("0x");
 //                jsonRpcSuccessResponse.setGas(ethCallService.get(ethBody));
             } else {
                 jsonRpcSuccessResponse.setResult("0x1");
+                jsonRpcSuccessResponse.setGas("0x");
 //                jsonRpcSuccessResponse.setResult(ethCallService.get(ethBody));
             }
 
