@@ -23,4 +23,8 @@ public interface EntityAccessRepository extends CrudRepository<Entity, Long> {
     @Query(value = "select value_written from contract_state_change where contract_id = ?1 and slot =?2",
             nativeQuery = true)
     byte[] getStorage(final Long accountNum, final byte[] key);
+
+    @Query(value = "select alias from entity where num = ?1 and deleted <> true",
+            nativeQuery = true)
+    byte[] getAlias(final Long accountNum);
 }

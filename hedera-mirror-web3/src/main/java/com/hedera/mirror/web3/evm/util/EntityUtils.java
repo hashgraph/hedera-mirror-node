@@ -3,10 +3,9 @@ package com.hedera.mirror.web3.evm.util;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.hederahashgraph.api.proto.java.AccountID;
-import lombok.experimental.UtilityClass;
-import org.apache.tuweni.units.bigints.UInt256;
-import org.hyperledger.besu.datatypes.Address;
 import java.util.Arrays;
+import lombok.experimental.UtilityClass;
+import org.hyperledger.besu.datatypes.Address;
 
 @UtilityClass
 public class EntityUtils {

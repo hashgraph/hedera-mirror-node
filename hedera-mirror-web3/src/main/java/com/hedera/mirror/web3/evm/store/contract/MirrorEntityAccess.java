@@ -1,5 +1,7 @@
 package com.hedera.mirror.web3.evm.store.contract;
 
+import static com.google.protobuf.ByteString.EMPTY;
+import static com.google.protobuf.ByteString.copyFrom;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.web3.evm.util.EntityUtils.numFromEvmAddress;
 
@@ -40,9 +42,11 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
 
     @Override
     public ByteString alias(Address address) {
-        //TODO implement repo logic here
         final var entityNum = numFromEvmAddress(address.toArrayUnsafe());
-        return null;
+        final var accountAlias = entityRepository.getAlias
+                (entityNum);
+
+        return accountAlias != null ? copyFrom(accountAlias) : EMPTY;
     }
 
     @Override
