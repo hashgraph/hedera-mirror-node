@@ -13,6 +13,7 @@ defaults:
 
 env:
   MODULE: hedera-mirror-web3
+  SPRING_CLOUD_KUBERNETES_ENABLED: "false" # https://github.com/spring-cloud/spring-cloud-kubernetes/issues/1089
 
 jobs:
   test:
@@ -37,5 +38,5 @@ jobs:
         working-directory: .
 
       - name: Upload coverage report
+        uses: codecov/codecov-action@v3
         if: always()
-        run: bash <(curl -s https://codecov.io/bash)

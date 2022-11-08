@@ -20,10 +20,8 @@ package com.hedera.mirror.importer.parser.record.entity;
  * ‍
  */
 
-import static com.hedera.mirror.common.util.DomainUtils.TINYBARS_IN_ONE_HBAR;
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.BoolValue;
@@ -64,7 +62,6 @@ import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.api.Condition;
 import org.assertj.core.api.IterableAssert;
-import org.awaitility.Durations;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -73,11 +70,9 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import com.hedera.mirror.common.domain.DomainWrapper;
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityStake;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
@@ -94,7 +89,6 @@ import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.CryptoAllowanceRepository;
-import com.hedera.mirror.importer.repository.EntityStakeRepository;
 import com.hedera.mirror.importer.repository.NftAllowanceRepository;
 import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
@@ -111,7 +105,6 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
 
     private final ContractRepository contractRepository;
     private final CryptoAllowanceRepository cryptoAllowanceRepository;
-    private final EntityStakeRepository entityStakeRepository;
     private final NftAllowanceRepository nftAllowanceRepository;
     private final NftRepository nftRepository;
     private final RecordParserProperties parserProperties;
@@ -681,6 +674,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                         .returns(DomainUtils.timestampInNanosMax(record.getConsensusTimestamp()),
                                 Entity::getTimestampLower)
                         .usingRecursiveComparison()
+                        .usingOverriddenEquals()
                         .ignoringFields("deleted", "timestampRange")
                         .isEqualTo(dbAccountEntityBefore)
         );
@@ -1103,81 +1097,6 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         testRawBytes(transaction, null);
     }
 
-    @Test
-    void entityStakeCalculation() {
-        // given
-        long epochDay = Utility.getEpochDay(domainBuilder.timestamp());
-        // account1 was created before the previous staking period, there should be a row in entity_stake
-        var account1 = domainBuilder.entity()
-                .customize(e -> e.balance(100 * TINYBARS_IN_ONE_HBAR).stakedNodeId(1L).stakePeriodStart(epochDay - 1))
-                .persist();
-        fromEntity(account1).customize(es -> es.pendingReward(100000L)).persist();
-        // account2 and account3 were both created in the previous staking period, account3 stakes to account2
-        var account2 = domainBuilder.entity()
-                .customize(e -> e.balance(200 * TINYBARS_IN_ONE_HBAR).stakedNodeId(2L).stakePeriodStart(epochDay))
-                .persist();
-        var account3 = domainBuilder.entity()
-                .customize(e -> e.balance(300 * TINYBARS_IN_ONE_HBAR).stakedAccountId(account2.getId()))
-                .persist();
-
-        long accountId4 = domainBuilder.id();
-        var protoAccountId4 = AccountID.newBuilder().setAccountNum(accountId4).build();
-        var timestamp = TestUtils.asStartOfEpochDay(epochDay + 1);
-        long creditAmount = 50 * TINYBARS_IN_ONE_HBAR;
-        var transferList = TransferList.newBuilder()
-                .addAccountAmounts(accountAmount(accountId4, -2 * creditAmount))
-                .addAccountAmounts(accountAmount(account2.getId(), creditAmount))
-                .addAccountAmounts(accountAmount(account3.getId(), creditAmount))
-                .build();
-        // balance changes from cryptoTransfer1 should be accounted for entity's stakeTotalStart for the new period
-        var cryptoTransfer1 = recordItemBuilder.cryptoTransfer()
-                .transactionBody(b -> b.setTransfers(transferList))
-                .transactionBodyWrapper(w -> w.getTransactionIDBuilder().setAccountID(protoAccountId4))
-                .record(r -> r.setTransferList(transferList)
-                        .setConsensusTimestamp(Utility.instantToTimestamp(timestamp.minusNanos(1))))
-                .build();
-        var nodeStakeUpdate = recordItemBuilder.nodeStakeUpdate()
-                .transactionBody(b -> b.clearNodeStake()
-                        .setEndOfStakingPeriod(Utility.instantToTimestamp(timestamp.minusNanos(1)))
-                        .addAllNodeStake(List.of(
-                                recordItemBuilder.nodeStake().setNodeId(1L).setRewardRate(100).build(),
-                                recordItemBuilder.nodeStake().setNodeId(2L).setRewardRate(200).build()
-                        )))
-                .record(r -> r.clearTransferList()
-                        .setConsensusTimestamp(Utility.instantToTimestamp(timestamp.plusNanos(1))))
-                .build();
-        // cryptoTransfer2 happens after the nodestake update, it shouldn't affect entity's stakeTotalStart for the
-        // new period
-        var cryptoTransfer2 = recordItemBuilder.cryptoTransfer()
-                .transactionBody(b -> b.setTransfers(transferList))
-                .transactionBodyWrapper(w -> w.getTransactionIDBuilder().setAccountID(protoAccountId4))
-                .record(r -> r.setTransferList(transferList)
-                        .setConsensusTimestamp(Utility.instantToTimestamp(timestamp.plusNanos(2))))
-                .build();
-
-        var expectedEntityStake1 = fromEntity(account1)
-                .customize(es -> es.endStakePeriod(epochDay).pendingReward(100000L + 10000L))
-                .get();
-        var expectedEntityStake2 = fromEntity(account2)
-                .customize(es -> es.endStakePeriod(epochDay).stakedToMe(account3.getBalance() + creditAmount)
-                        .stakeTotalStart(account2.getBalance() + account3.getBalance() + 2 * creditAmount))
-                .get();
-        var expectedEntityStake3 = fromEntity(account3)
-                .customize(es -> es.endStakePeriod(epochDay).stakeTotalStart(0L))
-                .get();
-
-        // when
-        parseRecordItemsAndCommit(List.of(cryptoTransfer1, nodeStakeUpdate, cryptoTransfer2));
-
-        // then
-        await().atMost(Durations.FIVE_SECONDS)
-                .with()
-                .pollInterval(Durations.ONE_HUNDRED_MILLISECONDS)
-                .untilAsserted(() -> assertThat(entityStakeRepository.findAll())
-                        .containsExactlyInAnyOrder(expectedEntityStake1, expectedEntityStake2, expectedEntityStake3));
-
-    }
-
     private void assertAllowances(RecordItem recordItem, Collection<Nft> expectedNfts) {
         assertAll(
                 () -> assertEquals(1, cryptoAllowanceRepository.count()),
@@ -1404,12 +1323,6 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                         .addAccountAmounts(accountAmount(additionalTransfers[i], additionalTransferAmounts[i]));
             }
         });
-    }
-
-    private DomainWrapper<EntityStake, EntityStake.EntityStakeBuilder> fromEntity(Entity entity) {
-        return domainBuilder.entityStake()
-                .customize(es -> es.declineRewardStart(entity.getDeclineReward()).id(entity.getId())
-                        .stakedNodeIdStart(entity.getStakedNodeId()).stakeTotalStart(entity.getBalance()));
     }
 
     private void groupCryptoTransfersByAccountId(TransactionRecord.Builder recordBuilder,

@@ -35,7 +35,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import lombok.AccessLevel;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.Value;
 
 import com.hedera.mirror.common.converter.EntityTypeSerializer;
@@ -67,6 +69,9 @@ public class EntityId implements Serializable, Comparable<EntityId> {
     private final Long entityNum;
     @JsonSerialize(using = EntityTypeSerializer.class)
     private final EntityType type;
+
+    @Getter(lazy = true, value = AccessLevel.PRIVATE)
+    private final String cachedString = String.format("%d.%d.%d", shardNum, realmNum, entityNum);
 
     public EntityId(Long shardNum, Long realmNum, Long entityNum, EntityType type) {
         id = EntityIdEndec.encode(shardNum, realmNum, entityNum);
@@ -148,6 +153,6 @@ public class EntityId implements Serializable, Comparable<EntityId> {
 
     @Override
     public String toString() {
-        return String.format("%d.%d.%d", getShardNum(), getRealmNum(), getEntityNum());
+        return getCachedString();
     }
 }

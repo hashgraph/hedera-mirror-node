@@ -31,6 +31,8 @@ import java.sql.Types;
 import java.util.Collection;
 import java.util.List;
 import javax.annotation.Resource;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.SneakyThrows;
@@ -48,7 +50,6 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.NftTransfer;
 import com.hedera.mirror.common.domain.token.NftTransferId;
 import com.hedera.mirror.common.domain.token.Token;
-import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
@@ -56,10 +57,12 @@ import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.domain.transaction.Transaction;
+import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.repository.TokenAccountRepository;
+import com.hedera.mirror.importer.config.Owner;
 
+@DisableRepeatableSqlMigration
 @EnabledIfV1
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.44.1")
@@ -71,13 +74,11 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
     private static final EntityId NODE_ACCOUNT_ID = EntityId.of(0, 0, 3, EntityType.ACCOUNT);
 
     @Resource
+    @Owner
     private JdbcOperations jdbcOperations;
 
     @Value("classpath:db/migration/v1/V1.45.0__support_deleted_token_dissociate.sql")
     private File migrationSql;
-
-    @Resource
-    private TokenAccountRepository tokenAccountRepository;
 
     @Test
     void verify() {
@@ -118,7 +119,7 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
         long account2Nft1DissociateTimestamp = 80;
         long account1Nft2DissociateTimestamp = 85;
         long account2Nft2DissociateTimestamp = 55; // happened before token deletion
-        List<TokenAccount> tokenAccounts = List.of(
+        List<MigrationTokenAccount> tokenAccounts = List.of(
                 tokenAccount(account1, true, 12L, 12L, ftId1),
                 tokenAccount(account1, false, 12L, account1Ft1DissociateTimestamp, ftId1),
                 tokenAccount(account2, true, 15L, 15L, ftId1),
@@ -132,7 +133,7 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
                 tokenAccount(account2, true, 29L, 29L, nftId2),
                 tokenAccount(account2, false, 29L, account2Nft2DissociateTimestamp, nftId2)
         );
-        tokenAccountRepository.saveAll(tokenAccounts);
+        persistTokenAccounts(tokenAccounts);
 
         // token dissociate transactions
         List<Transaction> transactions = List.of(
@@ -207,7 +208,7 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
                         nftTransfer(account1Nft2DissociateTimestamp, null, account1, 2L, nftId2),
                         nftTransfer(account2Nft1DissociateTimestamp, null, account2, 4L, nftId1)
                 );
-        assertThat(tokenAccountRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokenAccounts);
+        assertThat(findAllTokenAccounts()).containsExactlyInAnyOrderElementsOf(tokenAccounts);
         assertThat(findAllTokens()).usingElementComparatorIgnoringFields("pauseKey", "pauseStatus")
                 .containsExactlyInAnyOrder(ftClass1, ftClass2, nftClass1, nftClass2,
                         nftClass3);
@@ -254,6 +255,21 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
         });
     }
 
+    public Collection<MigrationTokenAccount> findAllTokenAccounts() {
+        return jdbcOperations.query("select * from token_account", (rs, rowNum) -> {
+            var tokenAccount = new MigrationTokenAccount();
+            tokenAccount.setAccountId(EntityId.of(rs.getLong("account_id"), ACCOUNT));
+            tokenAccount.setAssociated(rs.getBoolean("associated"));
+            tokenAccount.setAutomaticAssociation(rs.getBoolean("automatic_association"));
+            tokenAccount.setCreatedTimestamp(rs.getLong("created_timestamp"));
+            tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE);
+            tokenAccount.setKycStatus(TokenKycStatusEnum.NOT_APPLICABLE);
+            tokenAccount.setModifiedTimestamp(rs.getLong("modified_timestamp"));
+            tokenAccount.setTokenId(EntityId.of(rs.getLong("token_id"), TOKEN));
+            return tokenAccount;
+        });
+    }
+
     private List<Token> findAllTokens() {
         return jdbcOperations.query("select * from token", (rs, rowNum) -> {
             Token token = new Token();
@@ -276,7 +292,7 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
 
 
     private MigrationNft nft(EntityId accountId, long createdTimestamp, boolean deleted, long modifiedTimestamp,
-                    long serialNumber, EntityId tokenId) {
+                             long serialNumber, EntityId tokenId) {
         var nft = new MigrationNft();
         nft.setAccountId(accountId != null ? accountId.getId() : null);
         nft.setCreatedTimestamp(createdTimestamp);
@@ -331,20 +347,22 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
         int[] argumentTypes = new int[] {Types.BIGINT, Types.BIGINT, Types.BOOLEAN, Types.BIGINT, Types.BIGINT,
                 Types.VARCHAR, Types.OTHER, Types.VARCHAR, Types.BIGINT, Types.BIGINT, Types.BIGINT, Types.OTHER};
 
-        jdbcOperations
-                .update(sql, arguments, argumentTypes);
+        jdbcOperations.update(sql, arguments, argumentTypes);
 
         return token;
     }
 
-    private TokenAccount tokenAccount(EntityId accountId, boolean associated, long createdTimestamp,
-                                      long modifiedTimestamp, EntityId tokenId) {
-        TokenAccount tokenAccount = new TokenAccount(tokenId, accountId, modifiedTimestamp);
+    private MigrationTokenAccount tokenAccount(EntityId accountId, boolean associated, long createdTimestamp,
+                                               long modifiedTimestamp, EntityId tokenId) {
+        var tokenAccount = new MigrationTokenAccount();
+        tokenAccount.setAccountId(accountId);
         tokenAccount.setAssociated(associated);
         tokenAccount.setAutomaticAssociation(false);
         tokenAccount.setCreatedTimestamp(createdTimestamp);
         tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE);
         tokenAccount.setKycStatus(TokenKycStatusEnum.NOT_APPLICABLE);
+        tokenAccount.setModifiedTimestamp(modifiedTimestamp);
+        tokenAccount.setTokenId(tokenId);
         return tokenAccount;
     }
 
@@ -418,6 +436,25 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
                             transaction.getType(),
                             transaction.getValidDurationSeconds(),
                             transaction.getValidStartNs());
+        }
+    }
+
+    private void persistTokenAccounts(List<MigrationTokenAccount> tokenAccounts) {
+        for (var tokenAccount : tokenAccounts) {
+            jdbcOperations
+                    .update("insert into token_account (account_id, associated, automatic_association, " +
+                                    "created_timestamp, freeze_status, kyc_status, modified_timestamp, token_id)" +
+                                    " values" +
+                                    " (?, ?, ?, ?, ?, ?, ?, ?)",
+                            tokenAccount.getAccountId().getId(),
+                            tokenAccount.getAssociated(),
+                            tokenAccount.getAutomaticAssociation(),
+                            tokenAccount.getCreatedTimestamp(),
+                            0,
+                            0,
+                            tokenAccount.getModifiedTimestamp(),
+                            tokenAccount.getTokenId().getId()
+                    );
         }
     }
 
@@ -521,5 +558,21 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
         private long modifiedTimestamp;
         private long serialNumber;
         private long tokenId;
+    }
+
+    // Use a custom class for the token account table since its columns have changed from the current domain object
+    @Data
+    @NoArgsConstructor
+    private static class MigrationTokenAccount {
+        private EntityId accountId;
+        private Boolean associated;
+        private Boolean automaticAssociation;
+        private long createdTimestamp;
+        @Enumerated(EnumType.ORDINAL)
+        private TokenFreezeStatusEnum freezeStatus;
+        @Enumerated(EnumType.ORDINAL)
+        private TokenKycStatusEnum kycStatus;
+        private long modifiedTimestamp;
+        private EntityId tokenId;
     }
 }

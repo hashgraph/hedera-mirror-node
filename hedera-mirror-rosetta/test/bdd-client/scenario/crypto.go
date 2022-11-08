@@ -56,7 +56,7 @@ func (c *cryptoFeature) createCryptoAccount(ctx context.Context) error {
 		},
 	}
 
-	return c.submit(ctx, operations, nil)
+	return c.submit(ctx, "", operations, nil)
 }
 
 func (c *cryptoFeature) verifyCryptoCreateTransaction(ctx context.Context) error {
@@ -68,6 +68,7 @@ func (c *cryptoFeature) verifyCryptoCreateTransaction(ctx context.Context) error
 	if err = assertTransactionAll(
 		transaction,
 		assertTransactionOpSuccess,
+		assertTransactionMemo(""),
 		assertTransactionOpCount(1, gte),
 		assertTransactionOpTypesContains(operationTypeCryptoCreateAccount, operationTypeFee),
 		assertTransactionMetadataAndType("entity_id", ""),
@@ -114,7 +115,7 @@ func (c *cryptoFeature) createCryptoAccountByAlias(ctx context.Context) error {
 			Type: operationTypeCryptoTransfer,
 		},
 	}
-	return c.submit(ctx, operations, nil)
+	return c.submit(ctx, "", operations, nil)
 }
 
 func (c *cryptoFeature) verifyCryptoTransferToAliasTransaction(ctx context.Context) error {
@@ -164,7 +165,7 @@ func (c *cryptoFeature) transferFromAlias(ctx context.Context) error {
 		},
 	}
 
-	return c.submit(ctx, operations, map[string]hedera.PrivateKey{
+	return c.submit(ctx, "", operations, map[string]hedera.PrivateKey{
 		c.aliasAccountId.String(): *c.newAccountKey,
 	})
 }
@@ -210,7 +211,7 @@ func (c *cryptoFeature) transferHbarToTreasury(ctx context.Context) error {
 		},
 	}
 
-	return c.submit(ctx, operations, nil)
+	return c.submit(ctx, "hbar transfer", operations, nil)
 }
 
 func (c *cryptoFeature) verifyCryptoTransferTransaction(ctx context.Context) error {
@@ -233,6 +234,7 @@ func (c *cryptoFeature) verifyCryptoTransferTransaction(ctx context.Context) err
 	return assertTransactionAll(
 		transaction,
 		assertTransactionOpSuccess,
+		assertTransactionMemo("hbar transfer"),
 		assertTransactionOpCount(2, gte),
 		assertTransactionOpTypesContains(operationTypeCryptoTransfer, operationTypeFee),
 		assertTransactionIncludesTransfers(expectedAccountAmounts),

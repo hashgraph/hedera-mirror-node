@@ -33,7 +33,7 @@ import static com.hedera.mirror.importer.reconciliation.ReconciliationProperties
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.Uninterruptibles;
-import io.micrometer.core.instrument.Metrics;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Collections;
@@ -45,11 +45,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import javax.inject.Named;
 import lombok.Builder;
-import lombok.RequiredArgsConstructor;
+import lombok.CustomLog;
 import lombok.Value;
-import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.data.util.Version;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.scheduling.annotation.Scheduled;
 
@@ -62,15 +60,12 @@ import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.ReconciliationJobRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 
-@Log4j2
+@CustomLog
 @Named
-@RequiredArgsConstructor
 class BalanceReconciliationService {
 
     static final long FIFTY_BILLION_HBARS = 50_000_000_000L * 100_000_000L;
     static final String METRIC = "hedera.mirror.reconciliation";
-    static final long OFFSET_NANOS = 53;
-    static final Version VERSION_27 = new Version(0, 27, 0); // First version with 53 ns offset issue
 
     // Due to the number of rows returned, it's considerably more performant to not use JPA
     private static final String BALANCE_QUERY = "select account_id, balance from account_balance " +
@@ -89,14 +84,27 @@ class BalanceReconciliationService {
             from token_transfer where consensus_timestamp > ? and consensus_timestamp <= ?
             group by token_id, account_id""";
 
-    final AtomicReference<ReconciliationStatus> status = Metrics.gauge(METRIC, new AtomicReference<>(UNKNOWN),
-            s -> s.get().ordinal());
+    final AtomicReference<ReconciliationStatus> status;
 
     private final AccountBalanceFileRepository accountBalanceFileRepository;
     private final JdbcOperations jdbcOperations;
     private final RecordFileRepository recordFileRepository;
     private final ReconciliationProperties reconciliationProperties;
     private final ReconciliationJobRepository reconciliationJobRepository;
+
+    BalanceReconciliationService(AccountBalanceFileRepository accountBalanceFileRepository,
+                                 JdbcOperations jdbcOperations,
+                                 MeterRegistry meterRegistry,
+                                 RecordFileRepository recordFileRepository,
+                                 ReconciliationProperties reconciliationProperties,
+                                 ReconciliationJobRepository reconciliationJobRepository) {
+        this.accountBalanceFileRepository = accountBalanceFileRepository;
+        this.jdbcOperations = jdbcOperations;
+        this.recordFileRepository = recordFileRepository;
+        this.reconciliationProperties = reconciliationProperties;
+        this.reconciliationJobRepository = reconciliationJobRepository;
+        this.status = meterRegistry.gauge(METRIC, new AtomicReference<>(UNKNOWN), s -> s.get().ordinal());
+    }
 
     @Scheduled(cron = "${hedera.mirror.importer.reconciliation.cron:0 0 0 * * *}")
     public synchronized void reconcile() {
@@ -170,7 +178,7 @@ class BalanceReconciliationService {
 
     private ReconciliationJob getLatestJob() {
         long startDate = DomainUtils.convertToNanosMax(reconciliationProperties.getStartDate());
-        var consensusTimestamp = reconciliationJobRepository.findLatest()
+        long consensusTimestamp = reconciliationJobRepository.findLatest()
                 .map(ReconciliationJob::getConsensusTimestamp)
                 .orElse(startDate);
         consensusTimestamp = Math.max(startDate, consensusTimestamp);
@@ -350,13 +358,7 @@ class BalanceReconciliationService {
         private final Map<TokenAccountId, Long> tokenBalances;
 
         private long getTimestamp() {
-            long offset = accountBalanceFile.getTimeOffset();
-
-            if (recordFile.isPresent() && VERSION_27.isLessThanOrEqualTo(recordFile.get().getHapiVersion())) {
-                offset += OFFSET_NANOS;
-            }
-
-            return accountBalanceFile.getConsensusTimestamp() + offset;
+            return accountBalanceFile.getConsensusTimestamp() + accountBalanceFile.getTimeOffset();
         }
     }
 }

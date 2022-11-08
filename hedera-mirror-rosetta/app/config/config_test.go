@@ -54,7 +54,8 @@ hedera:
     rosetta:
       db:
         host: 192.168.120.51
-        port: 12000`
+        port: 12000
+      network: TESTNET`
 	serviceEndpoint = "192.168.0.1:50211"
 )
 
@@ -130,6 +131,7 @@ func TestLoadCustomConfigFromCwdAndEnvVar(t *testing.T) {
 	expected.Db.Host = "192.168.120.51"
 	expected.Db.Port = 12000
 	expected.Db.Username = "foobar"
+	expected.Network = "testnet"
 	assert.NoError(t, err)
 	assert.Equal(t, expected, config)
 }

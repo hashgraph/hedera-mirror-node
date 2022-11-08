@@ -2272,9 +2272,9 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(hedera_mirror_download_request_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signature\", status=~\"^2.*\"}[$__rate_interval])) by (shard, realm, nodeAccount)",
+              "expr": "sum(rate(hedera_mirror_download_request_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signature\", status=~\"^2.*\"}[$__rate_interval])) by (node)",
               "interval": "4m",
-              "legendFormat": "{{shard}}.{{realm}}.{{nodeAccount}}",
+              "legendFormat": "{{node}}",
               "refId": "A"
             }
           ],
@@ -2374,9 +2374,9 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(hedera_mirror_download_request_seconds_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signature\", status=~\"^2.*\"}[$__rate_interval])) by (shard, realm, nodeAccount) / sum(rate(hedera_mirror_download_request_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signature\", status=~\"^2.*\"}[$__rate_interval])) by (shard, realm, nodeAccount)",
+              "expr": "sum(rate(hedera_mirror_download_request_seconds_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signature\", status=~\"^2.*\"}[$__rate_interval])) by (node) / sum(rate(hedera_mirror_download_request_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signature\", status=~\"^2.*\"}[$__rate_interval])) by (node)",
               "interval": "4m",
-              "legendFormat": "{{shard}}.{{realm}}.{{nodeAccount}}",
+              "legendFormat": "{{node}}",
               "refId": "A"
             }
           ],
@@ -2477,9 +2477,9 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(hedera_mirror_download_request_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signed\", status=~\"^2.*\"}[$__rate_interval])) by (shard, realm, nodeAccount)",
+              "expr": "sum(rate(hedera_mirror_download_request_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signed\", status=~\"^2.*\"}[$__rate_interval])) by (node)",
               "interval": "4m",
-              "legendFormat": "{{shard}}.{{realm}}.{{nodeAccount}}",
+              "legendFormat": "{{node}}",
               "refId": "A"
             }
           ],
@@ -2579,9 +2579,9 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(hedera_mirror_download_request_seconds_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signed\", status=~\"^2.*\"}[$__rate_interval])) by (shard, realm, nodeAccount) / sum(rate(hedera_mirror_download_request_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signed\", status=~\"^2.*\"}[$__rate_interval])) by (shard, realm, nodeAccount)",
+              "expr": "sum(rate(hedera_mirror_download_request_seconds_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signed\", status=~\"^2.*\"}[$__rate_interval])) by (node) / sum(rate(hedera_mirror_download_request_seconds_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signed\", status=~\"^2.*\"}[$__rate_interval])) by (node)",
               "interval": "4m",
-              "legendFormat": "{{shard}}.{{realm}}.{{nodeAccount}}",
+              "legendFormat": "{{node}}",
               "refId": "A"
             }
           ],
@@ -2681,9 +2681,9 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(hedera_mirror_download_response_bytes_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signed\", status=~\"^2.*\"}[$__rate_interval])) by (shard, realm, nodeAccount) / sum(rate(hedera_mirror_download_response_bytes_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signed\", status=~\"^2.*\"}[$__rate_interval])) by (shard, realm, nodeAccount)",
+              "expr": "sum(rate(hedera_mirror_download_response_bytes_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signed\", status=~\"^2.*\"}[$__rate_interval])) by (node) / sum(rate(hedera_mirror_download_response_bytes_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signed\", status=~\"^2.*\"}[$__rate_interval])) by (node)",
               "interval": "4m",
-              "legendFormat": "{{shard}}.{{realm}}.{{nodeAccount}}",
+              "legendFormat": "{{node}}",
               "refId": "A"
             }
           ],
@@ -2783,9 +2783,9 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(hedera_mirror_download_response_bytes_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signature\", status=~\"^2.*\"}[$__rate_interval])) by (shard, realm, nodeAccount) / sum(rate(hedera_mirror_download_response_bytes_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signature\", status=~\"^2.*\"}[$__rate_interval])) by (shard, realm, nodeAccount)",
+              "expr": "sum(rate(hedera_mirror_download_response_bytes_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signature\", status=~\"^2.*\"}[$__rate_interval])) by (node) / sum(rate(hedera_mirror_download_response_bytes_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"signature\", status=~\"^2.*\"}[$__rate_interval])) by (node)",
               "interval": "4m",
-              "legendFormat": "{{shard}}.{{realm}}.{{nodeAccount}}",
+              "legendFormat": "{{node}}",
               "refId": "A"
             }
           ],
@@ -2885,9 +2885,9 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(hedera_mirror_download_response_bytes_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"list\", status=~\"^2.*\"}[$__rate_interval])) by (shard, realm, nodeAccount) / sum(rate(hedera_mirror_download_response_bytes_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"list\", status=~\"^2.*\"}[$__rate_interval])) by (shard, realm, nodeAccount)",
+              "expr": "sum(rate(hedera_mirror_download_response_bytes_sum{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"list\", status=~\"^2.*\"}[$__rate_interval])) by (node) / sum(rate(hedera_mirror_download_response_bytes_count{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", action=\"list\", status=~\"^2.*\"}[$__rate_interval])) by (node)",
               "interval": "4m",
-              "legendFormat": "{{shard}}.{{realm}}.{{nodeAccount}}",
+              "legendFormat": "{{node}}",
               "refId": "A"
             }
           ],
@@ -2988,9 +2988,9 @@
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum(rate(hedera_mirror_download_signature_verification_total{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", status=\"CONSENSUS_REACHED\"}[$__rate_interval])) by (shard, realm, nodeAccount)",
+              "expr": "sum(rate(hedera_mirror_download_signature_verification_total{application=\"$application\",cluster=~\"$cluster\",namespace=~\"$namespace\", pod=~\"$pod\", type=~\"$stream\", status=\"CONSENSUS_REACHED\"}[$__rate_interval])) by (node)",
               "interval": "4m",
-              "legendFormat": "{{shard}}.{{realm}}.{{nodeAccount}}",
+              "legendFormat": "{{node}}",
               "refId": "A"
             }
           ],

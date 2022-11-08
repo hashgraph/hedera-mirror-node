@@ -22,7 +22,6 @@ package com.hedera.mirror.test.e2e.acceptance.client;
 
 import java.util.List;
 import javax.inject.Named;
-import lombok.SneakyThrows;
 import org.springframework.retry.support.RetryTemplate;
 
 import com.hedera.hashgraph.sdk.KeyList;
@@ -110,12 +109,7 @@ public class ScheduleClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
-    @SneakyThrows
     public ScheduleInfo getScheduleInfo(ScheduleId scheduleId) {
-        return retryTemplate.execute(x ->
-                new ScheduleInfoQuery()
-                        .setScheduleId(scheduleId)
-                        .setNodeAccountIds(List.of(sdkClient.getRandomNodeAccountId()))
-                        .execute(client));
+        return executeQuery(() -> new ScheduleInfoQuery().setScheduleId(scheduleId));
     }
 }

@@ -34,21 +34,19 @@ class TokenAccountTest {
 
     @Test
     void createValidTokenAccount() {
-        TokenAccount tokenAccount = tokenAccount(FOO_COIN_ID, ACCOUNT_ID);
+        var tokenAccount = TokenAccount.builder()
+                .accountId(ACCOUNT_ID.getId())
+                .associated(false)
+                .createdTimestamp(1L)
+                .freezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE)
+                .kycStatus(TokenKycStatusEnum.NOT_APPLICABLE)
+                .tokenId(FOO_COIN_ID.getId())
+                .build();
+
         assertAll(
                 () -> assertNotEquals(0, tokenAccount.getCreatedTimestamp()),
                 () -> assertEquals(TokenFreezeStatusEnum.NOT_APPLICABLE, tokenAccount.getFreezeStatus()),
-                () -> assertEquals(TokenKycStatusEnum.NOT_APPLICABLE, tokenAccount.getKycStatus()),
-                () -> assertNotEquals(0, tokenAccount.getId().getModifiedTimestamp())
+                () -> assertEquals(TokenKycStatusEnum.NOT_APPLICABLE, tokenAccount.getKycStatus())
         );
-    }
-
-    private TokenAccount tokenAccount(EntityId tokenId, EntityId accountId) {
-        TokenAccount tokenAccount = new TokenAccount(tokenId, accountId, 2L);
-        tokenAccount.setAssociated(false);
-        tokenAccount.setKycStatus(TokenKycStatusEnum.NOT_APPLICABLE);
-        tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE);
-        tokenAccount.setCreatedTimestamp(1L);
-        return tokenAccount;
     }
 }

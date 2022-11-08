@@ -24,8 +24,10 @@ import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 import static com.hedera.services.stream.proto.ContractAction.CallerCase.CALLING_CONTRACT;
+import static com.hedera.services.stream.proto.ContractAction.RecipientCase.RECIPIENT_NOT_SET;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
@@ -38,7 +40,9 @@ import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
@@ -55,6 +59,7 @@ import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
+import com.hedera.mirror.common.domain.contract.ContractState;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -71,6 +76,7 @@ import com.hedera.mirror.importer.repository.ContractLogRepository;
 import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.ContractStateChangeRepository;
+import com.hedera.mirror.importer.repository.ContractStateRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.services.stream.proto.CallOperationType;
 import com.hedera.services.stream.proto.ContractActionType;
@@ -89,6 +95,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     private final ContractResultRepository contractResultRepository;
     private final ContractResultService contractResultService;
     private final ContractStateChangeRepository contractStateChangeRepository;
+    private final ContractStateRepository contractStateRepository;
     private final EntityRepository entityRepository;
     private final RecordItemBuilder recordItemBuilder;
     private final RecordStreamFileListener recordStreamFileListener;
@@ -188,16 +195,6 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    void processContractActionInvalidRecipient() {
-        var recordItem = recordItemBuilder.contractCall()
-                .sidecarRecords(s -> s.get(1).getActionsBuilder().getContractActionsBuilder(0).clearRecipient())
-                .build();
-
-        assertThatThrownBy(() -> process(recordItem)).isInstanceOf(InvalidDatasetException.class)
-                .hasMessageContaining("Invalid recipient");
-    }
-
-    @Test
     void processContractActionInvalidResultData() {
         var recordItem = recordItemBuilder.contractCall()
                 .sidecarRecords(s -> s.get(1).getActionsBuilder().getContractActionsBuilder(0).clearResultData())
@@ -219,6 +216,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
         assertContractLogs(recordItem);
         assertThat(contractActionRepository.count()).isZero();
         assertThat(contractStateChangeRepository.count()).isZero();
+        assertThat(contractStateRepository.count()).isZero();
         assertThat(contractRepository.count()).isZero();
     }
 
@@ -275,6 +273,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
         assertContractStateChanges(recordItem);
         assertThat(contractActionRepository.count()).isZero();
         assertThat(contractStateChangeRepository.count()).isZero();
+        assertThat(contractStateRepository.count()).isZero();
     }
 
     @Test
@@ -461,31 +460,45 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     }
 
     private void assertContractActions(RecordItem recordItem) {
-        var contractActions = contractActionRepository.findAll().iterator();
-        recordItem.getSidecarRecords()
+        var expected = recordItem.getSidecarRecords()
                 .stream()
                 .map(TransactionSidecarRecord::getActions)
-                .flatMap(c -> c.getContractActionsList().stream())
-                .forEach(contractAction -> {
-                    assertThat(contractActions).hasNext();
-                    assertThat(contractActions.next())
-                            .returns(contractAction.getCallDepth(), ContractAction::getCallDepth)
-                            .returns(contractAction.getCallOperationTypeValue(), ContractAction::getCallOperationType)
-                            .returns(contractAction.getCallTypeValue(), ContractAction::getCallType)
-                            .returns(recordItem.getConsensusTimestamp(), ContractAction::getConsensusTimestamp)
-                            .returns(contractAction.getGas(), ContractAction::getGas)
-                            .returns(contractAction.getGasUsed(), ContractAction::getGasUsed)
-                            .returns(contractAction.getCallerCase() == CALLING_CONTRACT ? CONTRACT : ACCOUNT,
-                                    ContractAction::getCallerType)
-                            .returns(contractAction.getResultDataCase().getNumber(), ContractAction::getResultDataType)
-                            .returns(contractAction.getValue(), ContractAction::getValue)
-                            .satisfies(c -> assertThat(c.getCaller()).isNotNull())
-                            .satisfies(c -> assertThat(c.getResultData()).isNotEmpty())
-                            .satisfiesAnyOf(c -> assertThat(c.getRecipientContract()).isNotNull(),
-                                    c -> assertThat(c.getRecipientAccount()).isNotNull(),
-                                    c -> assertThat(c.getRecipientAddress()).isNotEmpty());
-                });
-        assertThat(contractActions).isExhausted();
+                .map(actions -> {
+                    var actionsMap = new HashMap<ContractAction.Id, com.hedera.services.stream.proto.ContractAction>();
+                    for (int i = 0; i < actions.getContractActionsCount(); i++) {
+                        var action = actions.getContractActions(i);
+                        actionsMap.put(new ContractAction.Id(recordItem.getConsensusTimestamp(), i), action);
+                    }
+                    return actionsMap;
+                })
+                .flatMap(actionsMap -> actionsMap.entrySet().stream())
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        assertThat(contractActionRepository.findAll())
+                .hasSize(expected.size())
+                .allSatisfy(a -> assertAll(
+                                () -> assertThat(a)
+                                        .satisfies(actual -> assertThat(actual.getCaller()).isNotNull())
+                                        .satisfies(actual -> assertThat(actual.getResultData()).isNotEmpty()),
+                                () -> assertThat(expected.get(a.getId()))
+                                        .isNotNull()
+                                        .returns(a.getCallDepth(), e -> e.getCallDepth())
+                                        .returns(a.getCallOperationType(), e -> e.getCallOperationTypeValue())
+                                        .returns(a.getCallType(), e -> e.getCallTypeValue())
+                                        .returns(a.getConsensusTimestamp(), e -> recordItem.getConsensusTimestamp())
+                                        .returns(a.getGas(), e -> e.getGas())
+                                        .returns(a.getGasUsed(), e -> e.getGasUsed())
+                                        .returns(a.getCallerType(),
+                                                e -> e.getCallerCase() == CALLING_CONTRACT ? CONTRACT : ACCOUNT)
+                                        .returns(a.getPayerAccountId(), e -> recordItem.getPayerAccountId())
+                                        .returns(a.getResultDataType(), e -> e.getResultDataCase().getNumber())
+                                        .returns(a.getValue(), e -> e.getValue())
+                                        .satisfiesAnyOf(e -> assertThat(a.getRecipientContract()).isNotNull(),
+                                                e -> assertThat(a.getRecipientAccount()).isNotNull(),
+                                                e -> assertThat(a.getRecipientAddress()).isNotEmpty(),
+                                                e -> assertThat(e.getRecipientCase()).isEqualTo(RECIPIENT_NOT_SET))
+                        )
+                );
     }
 
     private void assertContractRuntimeBytecode(RecordItem recordItem) {
@@ -531,7 +544,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     }
 
     private void assertContractStateChanges(RecordItem recordItem) {
-        var expected = recordItem.getSidecarRecords()
+        var contractStateChanges = recordItem.getSidecarRecords()
                 .stream()
                 .filter(TransactionSidecarRecord::hasStateChanges)
                 .flatMap(r -> r.getStateChanges().getContractStateChangesList().stream()
@@ -553,7 +566,20 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                         })
                 )
                 .toList();
-        assertThat(contractStateChangeRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
+
+        var contractStates = contractStateChanges.stream()
+                .filter(c -> c.getValueWritten() != null)
+                .map(c -> ContractState.builder()
+                        .contractId(c.getContractId())
+                        .createdTimestamp(c.getConsensusTimestamp())
+                        .modifiedTimestamp(c.getConsensusTimestamp())
+                        .slot(DomainUtils.leftPadBytes(c.getSlot(), 32))
+                        .value(c.getValueWritten())
+                        .build())
+                .toList();
+
+        assertThat(contractStateChangeRepository.findAll()).containsExactlyInAnyOrderElementsOf(contractStateChanges);
+        assertThat(contractStateRepository.findAll()).containsExactlyInAnyOrderElementsOf(contractStates);
     }
 
     protected void process(RecordItem recordItem) {

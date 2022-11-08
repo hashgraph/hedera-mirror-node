@@ -1,11 +1,6 @@
 {
   "description": "Balance api invalid query",
-  "setup": {
-    "accounts": [],
-    "balances": [],
-    "transactions": [],
-    "cryptotransfers": []
-  },
+  "setup": {},
   "url": "/api/v1/balances?consensus=hashgraph",
   "responseStatus": 400,
   "responseJson": {

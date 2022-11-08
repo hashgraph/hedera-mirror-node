@@ -28,12 +28,13 @@ import java.io.File;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Optional;
-import javax.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
@@ -44,31 +45,27 @@ import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
+@DisableRepeatableSqlMigration
 @EnabledIfV1
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.35.5")
 class CleanupEntityMigrationTest extends IntegrationTest {
 
-    @Resource
-    private JdbcOperations jdbcOperations;
-
+    private final @Owner JdbcOperations jdbcOperations;
     @Value("classpath:db/migration/v1/V1.36.2__entities_update.sql")
-    private File migrationSql;
-
-    @Resource
-    private EntityRepository entityRepository;
-
-    @Resource
-    private MirrorProperties mirrorProperties;
-
-    @Resource
-    private TransactionRepository transactionRepository;
+    private final File migrationSql;
+    private final EntityRepository entityRepository;
+    private final MirrorProperties mirrorProperties;
+    private final TransactionRepository transactionRepository;
 
     @BeforeEach
     void before() {

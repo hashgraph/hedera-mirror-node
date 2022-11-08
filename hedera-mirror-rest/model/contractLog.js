@@ -39,6 +39,7 @@ class ContractLog {
   static CONTRACT_ID = 'contract_id';
   static DATA = 'data';
   static INDEX = 'index';
+  static PAYER_ACCOUNT_ID = 'payer_account_id';
   static ROOT_CONTRACT_ID = 'root_contract_id';
   static TOPIC0 = 'topic0';
   static TOPIC1 = 'topic1';

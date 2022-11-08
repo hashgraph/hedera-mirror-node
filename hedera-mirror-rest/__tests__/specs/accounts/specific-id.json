@@ -86,6 +86,7 @@
         "key": null,
         "max_automatic_token_associations": 0,
         "memo": "entity memo",
+        "pending_reward": 0,
         "receiver_sig_required": false,
         "staked_account_id": "0.0.200",
         "staked_node_id": null,

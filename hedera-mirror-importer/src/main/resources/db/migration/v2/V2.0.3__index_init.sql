@@ -15,9 +15,7 @@ alter table account_balance
 
 -- account_balance_file
 alter table account_balance_file
-    add constraint account_balance_file__pk primary key (consensus_timestamp);
-create unique index if not exists account_balance_file__name
-    on account_balance_file (name);
+    add constraint account_balance_file__pk primary key (consensus_timestamp, node_id);
 
 -- address_book
 alter table address_book
@@ -37,7 +35,7 @@ alter table if exists contract
 
 -- contract_action
 alter table if exists contract_action
-    add constraint contract_action__pk primary key (consensus_timestamp, index, caller);
+    add constraint contract_action__pk primary key (consensus_timestamp, index, payer_account_id);
 
 -- contract_log
 alter table if exists contract_log
@@ -60,6 +58,10 @@ create index if not exists contract_result__id_timestamp
 
 create index if not exists contract_result__payer_timestamp
     on contract_result (payer_account_id, consensus_timestamp);
+
+-- contract_state
+alter table if exists contract_state
+    add constraint contract_state__pk primary key (contract_id, slot);
 
 -- contract_state_change
 alter table if exists contract_state_change
@@ -102,23 +104,18 @@ create index if not exists entity_history__alias on entity_history (alias) where
 create index if not exists entity_history__evm_address on entity_history (evm_address) where evm_address is not null;
 create index if not exists entity_history__timestamp_range on entity_history using gist (timestamp_range);
 
--- entity_state_start
-create unique index if not exists entity_state_start__id on entity_state_start (id);
-create index if not exists entity_state_start__staked_account_id
-    on entity_state_start (staked_account_id) where staked_account_id <> 0;
-
 -- entity_stake
 alter table if exists entity_stake
     add constraint entity_stake__pk primary key (id);
 
 -- ethereum_transaction
 alter table ethereum_transaction
-    add constraint ethereum_transaction__pk primary key (consensus_timestamp);
+    add constraint ethereum_transaction__pk primary key (consensus_timestamp, payer_account_id);
 create index if not exists ethereum_transaction__hash on ethereum_transaction (hash);
 
 -- event_file
 alter table event_file
-    add constraint event_file__pk primary key (consensus_end, node_account_id);
+    add constraint event_file__pk primary key (consensus_end, node_id);
 create index if not exists event_file__hash
     on event_file (hash);
 
@@ -153,7 +150,7 @@ create index if not exists nft_allowance_history__timestamp_range on nft_allowan
 -- nft_transfer
 create index if not exists nft_transfer__timestamp on nft_transfer (consensus_timestamp desc);
 create unique index if not exists nft_transfer__token_id_serial_num_timestamp
-    on nft_transfer (token_id desc, serial_number desc, consensus_timestamp desc);
+    on nft_transfer (token_id desc, serial_number desc, consensus_timestamp desc, payer_account_id);
 
 alter table if exists node_stake
     add constraint node_stake__pk primary key (consensus_timestamp, node_id);
@@ -164,7 +161,7 @@ create index if not exists non_fee_transfer__consensus_timestamp
 
 -- prng
 alter table prng
-    add constraint prng__pk primary key (consensus_timestamp);
+    add constraint prng__pk primary key (consensus_timestamp, payer_account_id);
 
 -- reconciliation_job
 alter table reconciliation_job
@@ -172,7 +169,7 @@ alter table reconciliation_job
 
 -- record_file
 alter table record_file
-    add constraint record_file__pk primary key (consensus_end, node_account_id);
+    add constraint record_file__pk primary key (consensus_end, node_id);
 create index if not exists record_file__index_node
     on record_file (index);
 create index if not exists record_file__hash
@@ -190,7 +187,7 @@ alter table sidecar_file
 
 -- staking_reward_transfer
 alter table staking_reward_transfer
-    add constraint staking_reward_transfer__pk primary key (consensus_timestamp, account_id);
+    add constraint staking_reward_transfer__pk primary key (consensus_timestamp, account_id, payer_account_id);
 
 -- token
 alter table token
@@ -198,7 +195,9 @@ alter table token
 
 -- token_account
 alter table token_account
-    add constraint token_account__pk primary key (account_id, token_id, modified_timestamp);
+    add constraint token_account__pk primary key (account_id, token_id);
+alter table if exists token_account_history
+    add constraint token_account_history__pk primary key (account_id, token_id, timestamp_range);
 
 -- token_allowance
 alter table if exists token_allowance

@@ -46,18 +46,23 @@ public class InitializeEntityBalanceMigration extends RepeatableMigration {
               select account_id, balance
               from account_balance
               join timestamp_range on snapshot_timestamp = consensus_timestamp
-            ), balance_change as (
+            ), change as (
               select entity_id, sum(amount) as amount
               from crypto_transfer
               join timestamp_range on consensus_timestamp > from_timestamp and consensus_timestamp <= to_timestamp
               where errata is null or errata <> 'DELETE'
               group by entity_id
+            ), state as (
+              select
+                coalesce(account_id, entity_id) as account_id,
+                coalesce(balance, 0) + coalesce(amount, 0) as balance
+              from snapshot
+              full outer join change on account_id = entity_id
             )
             update entity
-            set balance = coalesce(snapshot.balance, 0) + coalesce(amount, 0)
-            from snapshot
-            full outer join balance_change on account_id = entity_id
-            where coalesce(account_id, entity_id) = id and deleted is not true and type in ('ACCOUNT', 'CONTRACT');
+            set balance = s.balance
+            from state s
+            where account_id = id and deleted is not true and type in ('ACCOUNT', 'CONTRACT');
             """;
 
     private final JdbcOperations jdbcOperations;

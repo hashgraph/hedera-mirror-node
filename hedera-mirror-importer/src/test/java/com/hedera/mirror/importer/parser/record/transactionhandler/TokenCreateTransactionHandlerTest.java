@@ -20,11 +20,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
@@ -41,24 +37,9 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     @Override
     protected TransactionBody.Builder getDefaultTransactionBody() {
+        var recordItem = recordItemBuilder.tokenCreate().build();
         return TransactionBody.newBuilder()
-                .setTokenCreation(TokenCreateTransactionBody.newBuilder()
-                        .setAdminKey(DEFAULT_KEY)
-                        .setAutoRenewAccount(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(2)
-                                .build())
-                        .setAutoRenewPeriod(Duration.newBuilder().setSeconds(100))
-                        .setDecimals(1000)
-                        .setExpiry(Timestamp.newBuilder().setSeconds(360))
-                        .setFreezeDefault(false)
-                        .setFreezeKey(DEFAULT_KEY)
-                        .setInitialSupply(1_000_000L)
-                        .setKycKey(DEFAULT_KEY)
-                        .setMemo(DEFAULT_MEMO)
-                        .setName("token_name")
-                        .setSymbol("SYMBOL")
-                        .setTreasury(AccountID.newBuilder().setShardNum(0).setRealmNum(0).setAccountNum(1).build())
-                        .setWipeKey(DEFAULT_KEY)
-                        .build());
+                .setTokenCreation(recordItem.getTransactionBody().getTokenCreation());
     }
 
     @Override

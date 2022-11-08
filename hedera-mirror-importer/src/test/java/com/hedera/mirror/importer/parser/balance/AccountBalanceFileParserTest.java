@@ -20,54 +20,39 @@ package com.hedera.mirror.importer.parser.balance;
  * ‍
  */
 
-import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 import static com.hedera.mirror.importer.migration.ErrataMigrationTest.BAD_TIMESTAMP1;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.google.common.primitives.Longs;
-import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import javax.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import reactor.core.publisher.Flux;
+import org.springframework.beans.factory.annotation.Autowired;
 
-import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.domain.balance.AccountBalance;
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
 import com.hedera.mirror.common.domain.balance.TokenBalance;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.parser.StreamFileParser;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.AccountBalanceRepository;
 import com.hedera.mirror.importer.repository.TokenBalanceRepository;
 
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class AccountBalanceFileParserTest extends IntegrationTest {
 
-    @Resource
-    private StreamFileParser<AccountBalanceFile> accountBalanceFileParser;
-
-    @Resource
-    private AccountBalanceFileRepository accountBalanceFileRepository;
-
-    @Resource
-    private AccountBalanceRepository accountBalanceRepository;
-
-    @Resource
-    private TokenBalanceRepository tokenBalanceRepository;
-
-    @Resource
-    private BalanceParserProperties parserProperties;
-
-    @Resource
-    private MirrorProperties mirrorProperties;
+    private final AccountBalanceBuilder accountBalanceBuilder;
+    private final AccountBalanceFileBuilder accountBalanceFileBuilder;
+    private final StreamFileParser<AccountBalanceFile> accountBalanceFileParser;
+    private final AccountBalanceFileRepository accountBalanceFileRepository;
+    private final AccountBalanceRepository accountBalanceRepository;
+    private final TokenBalanceRepository tokenBalanceRepository;
+    private final BalanceParserProperties parserProperties;
+    private final MirrorProperties mirrorProperties;
 
     @BeforeEach
     void setup() {
@@ -181,6 +166,7 @@ class AccountBalanceFileParserTest extends IntegrationTest {
                     .first()
                     .matches(a -> a.getLoadEnd() != null)
                     .usingRecursiveComparison()
+                    .usingOverriddenEquals()
                     .ignoringFields("bytes", "items", "loadEnd")
                     .isEqualTo(accountBalanceFile);
         }
@@ -199,40 +185,32 @@ class AccountBalanceFileParserTest extends IntegrationTest {
                     .first()
                     .matches(a -> a.getLoadEnd() != null)
                     .usingRecursiveComparison()
+                    .usingOverriddenEquals()
                     .ignoringFields("bytes", "items", "loadEnd")
                     .isEqualTo(accountBalanceFile);
         }
     }
 
     private AccountBalanceFile accountBalanceFile(long timestamp) {
-        Instant instant = Instant.ofEpochSecond(0, timestamp);
-        String filename = StreamFilename.getFilename(StreamType.BALANCE, DATA, instant);
-        return AccountBalanceFile.builder()
-                .bytes(Longs.toByteArray(timestamp))
-                .consensusTimestamp(timestamp)
-                .fileHash("fileHash" + timestamp)
-                .items(Flux.just(accountBalance(timestamp, 1),
-                        accountBalance(timestamp, 2),
-                        accountBalance(timestamp, 3)))
-                .loadEnd(null)
-                .loadStart(timestamp)
-                .name(filename)
-                .nodeAccountId(EntityId.of("0.0.3", EntityType.ACCOUNT))
+        return accountBalanceFileBuilder.accountBalanceFile(timestamp)
+                .accountBalance(accountBalanceBuilder.accountBalance(timestamp)
+                        .accountId(1000L)
+                        .balance(1000L)
+                        .tokenBalance(1, 10000L)
+                        .tokenBalance(1, 10000L) // duplicate token balance rows should be filtered by parser
+                        .build())
+                .accountBalance(accountBalanceBuilder.accountBalance(timestamp)
+                        .accountId(2000L)
+                        .balance(2000L)
+                        .tokenBalance(2, 20000L)
+                        .tokenBalance(2, 20000L)
+                        .build())
+                .accountBalance(accountBalanceBuilder.accountBalance(timestamp)
+                        .accountId(3000L)
+                        .balance(3000L)
+                        .tokenBalance(3, 30000L)
+                        .tokenBalance(3, 30000L)
+                        .build())
                 .build();
-    }
-
-    private AccountBalance accountBalance(long timestamp, int offset) {
-        EntityId accountId = EntityId.of(0, 0, offset + 1000, EntityType.ACCOUNT);
-        EntityId tokenId = EntityId.of(0, 0, offset + 2000, EntityType.ACCOUNT);
-
-        TokenBalance tokenBalance = new TokenBalance();
-        tokenBalance.setBalance(offset);
-        tokenBalance.setId(new TokenBalance.Id(timestamp, accountId, tokenId));
-
-        AccountBalance accountBalance = new AccountBalance();
-        accountBalance.setBalance(offset);
-        accountBalance.setId(new AccountBalance.Id(timestamp, accountId));
-        accountBalance.setTokenBalances(List.of(tokenBalance, tokenBalance));
-        return accountBalance;
     }
 }

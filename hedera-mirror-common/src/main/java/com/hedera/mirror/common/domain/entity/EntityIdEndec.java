@@ -20,8 +20,6 @@ package com.hedera.mirror.common.domain.entity;
  * ‍
  */
 
-import lombok.extern.log4j.Log4j2;
-
 import com.hedera.mirror.common.exception.InvalidEntityException;
 
 /**
@@ -36,7 +34,6 @@ import com.hedera.mirror.common.exception.InvalidEntityException;
  * - 65535 <br/> num: 0 - 4294967295 <br/> Placing entity num in the end has the advantage that encoded ids <=
  * 4294967295 will also be human readable.
  */
-@Log4j2
 public class EntityIdEndec {
     static final int SHARD_BITS = 15;
     static final int REALM_BITS = 16;

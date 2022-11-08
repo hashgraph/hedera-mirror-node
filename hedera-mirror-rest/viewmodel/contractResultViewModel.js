@@ -30,9 +30,8 @@ class ContractResultViewModel {
    * Constructs contractResult view model
    *
    * @param {ContractResult} contractResult
-   * @param hash
    */
-  constructor(contractResult, hash = null) {
+  constructor(contractResult) {
     const contractId = EntityId.parse(contractResult.contractId, {isNullable: true});
     this.amount = contractResult.amount;
     this.bloom = toHexString(contractResult.bloom, true);
@@ -46,7 +45,7 @@ class ContractResultViewModel {
     this.gas_used = contractResult.gasUsed;
     this.timestamp = nsToSecNs(contractResult.consensusTimestamp);
     this.to = contractId.toEvmAddress();
-    this.hash = hash ? toHexString(hash, true) : null;
+    this.hash = toHexString(contractResult.transactionHash, true);
   }
 }
 

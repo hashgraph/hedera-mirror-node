@@ -90,7 +90,7 @@ class RestApiClientTest {
                 .expectNext(networkNode2)
                 .expectNext(networkNode3)
                 .expectComplete()
-                .verify(Duration.ofMillis(500L));
+                .verify(Duration.ofSeconds(2L));
 
         verify(exchangeFunction, times(2)).exchange(isA(ClientRequest.class));
     }
@@ -104,7 +104,7 @@ class RestApiClientTest {
         restApiClient.getNodes()
                 .as(StepVerifier::create)
                 .expectComplete()
-                .verify(Duration.ofMillis(500L));
+                .verify(Duration.ofSeconds(2L));
 
         verify(exchangeFunction).exchange(isA(ClientRequest.class));
     }
@@ -119,7 +119,7 @@ class RestApiClientTest {
                 .as(StepVerifier::create)
                 .expectNext(response)
                 .expectComplete()
-                .verify(Duration.ofMillis(500L));
+                .verify(Duration.ofSeconds(2L));
 
         verify(exchangeFunction).exchange(isA(ClientRequest.class));
     }
@@ -130,7 +130,7 @@ class RestApiClientTest {
         restApiClient.retrieve(TransactionByIdResponse.class, "transactions/{transactionId}", "1.1")
                 .as(StepVerifier::create)
                 .expectErrorMatches(t -> t.getCause() instanceof ConnectException)
-                .verify(Duration.ofMillis(500L));
+                .verify(Duration.ofSeconds(2L));
     }
 
     private Mono<ClientResponse> response(Object response) {

@@ -29,6 +29,7 @@ import (
 	"strings"
 
 	"github.com/hashgraph/hedera-sdk-go/v2"
+	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
@@ -90,11 +91,16 @@ func LoadConfig() (*Config, error) {
 	v.SetEnvKeyReplacer(strings.NewReplacer(keyDelimiter, envKeyDelimiter))
 
 	var config fullConfig
-	if err := v.Unmarshal(&config, viper.DecodeHook(nodeMapDecodeHookFunc)); err != nil {
+	compositeDecodeHookFunc := mapstructure.ComposeDecodeHookFunc(
+		mapstructure.StringToTimeDurationHookFunc(),
+		nodeMapDecodeHookFunc,
+	)
+	if err := v.Unmarshal(&config, viper.DecodeHook(compositeDecodeHookFunc)); err != nil {
 		return nil, err
 	}
 
 	rosettaConfig := &config.Hedera.Mirror.Rosetta
+	rosettaConfig.Network = strings.ToLower(rosettaConfig.Network)
 	if len(nodeMap) != 0 {
 		rosettaConfig.Nodes = nodeMap
 	}

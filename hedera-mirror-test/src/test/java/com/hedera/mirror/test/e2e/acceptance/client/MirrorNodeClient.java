@@ -21,7 +21,6 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  */
 
 import com.google.common.base.Stopwatch;
-import com.google.common.base.Throwables;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -48,6 +47,7 @@ import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorScheduleResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenRelationshipResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 
 @Log4j2
@@ -65,7 +65,7 @@ public class MirrorNodeClient {
         var properties = acceptanceTestProperties.getRestPollingProperties();
         retrySpec = Retry.backoff(properties.getMaxAttempts(), properties.getMinBackoff())
                 .maxBackoff(properties.getMaxBackoff())
-                .filter(this::shouldRetryRestCall);
+                .filter(properties::shouldRetry);
     }
 
     public SubscriptionResponse subscribeToTopic(SDKClient sdkClient, TopicMessageQuery topicMessageQuery) throws Throwable {
@@ -204,15 +204,16 @@ public class MirrorNodeClient {
                 MirrorTransactionsResponse.class, transactionId);
     }
 
+    public MirrorTokenRelationshipResponse getTokenRelationships(String accountId, String tokenId) {
+        log.debug("Verify tokenRelationship  for account '{}' and token '{}' is returned by Mirror Node", accountId, tokenId);
+        return callRestEndpoint("/accounts/{accountId}/tokens?token.id={tokenId}",
+                MirrorTokenRelationshipResponse.class, accountId, tokenId);
+    }
+
+
     public void unSubscribeFromTopic(SubscriptionHandle subscription) {
         subscription.unsubscribe();
         log.info("Unsubscribed from {}", subscription);
-    }
-
-    protected boolean shouldRetryRestCall(Throwable t) {
-        return acceptanceTestProperties.getRestPollingProperties().getRetryableExceptions()
-                .stream()
-                .anyMatch(ex -> ex.isInstance(t) || ex.isInstance(Throwables.getRootCause(t)));
     }
 
     private <T> T callRestEndpoint(String uri, Class<T> classType, Object... uriVariables) {

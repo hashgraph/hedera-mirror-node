@@ -31,62 +31,60 @@ import {
   ContractAction,
   ContractLog,
   ContractResult,
+  ContractState,
   ContractStateChange,
   Entity,
-  EthereumTransaction,
+  RecordFile,
   Transaction,
 } from '../model';
 
 const {default: defaultLimit} = getResponseLimit();
+const contractLogsFields = `${ContractLog.getFullName(ContractLog.BLOOM)},
+${ContractLog.getFullName(ContractLog.CONTRACT_ID)},
+${ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP)},
+${ContractLog.getFullName(ContractLog.DATA)},
+${ContractLog.getFullName(ContractLog.INDEX)},
+${ContractLog.getFullName(ContractLog.ROOT_CONTRACT_ID)},
+${ContractLog.getFullName(ContractLog.TOPIC0)},
+${ContractLog.getFullName(ContractLog.TOPIC1)},
+${ContractLog.getFullName(ContractLog.TOPIC2)},
+${ContractLog.getFullName(ContractLog.TOPIC3)}
+`;
 
 /**
  * Contract retrieval business logic
  */
 class ContractService extends BaseService {
-  static detailedContractResultsWithEthereumTransactionHashQuery = `select ${ContractResult.tableAlias}.*,
-                                                                           ${EthereumTransaction.tableAlias}.${EthereumTransaction.HASH}
-  from ${ContractResult.tableName} ${ContractResult.tableAlias}
-  `;
+  static contractResultsQuery = `
+    select ${ContractResult.getFullName(ContractResult.AMOUNT)},
+           ${ContractResult.getFullName(ContractResult.BLOOM)},
+           ${ContractResult.getFullName(ContractResult.CALL_RESULT)},
+           ${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)},
+           ${ContractResult.getFullName(ContractResult.CONTRACT_ID)},
+           ${ContractResult.getFullName(ContractResult.CREATED_CONTRACT_IDS)},
+           ${ContractResult.getFullName(ContractResult.ERROR_MESSAGE)},
+           ${ContractResult.getFullName(ContractResult.FAILED_INITCODE)},
+           ${ContractResult.getFullName(ContractResult.FUNCTION_PARAMETERS)},
+           ${ContractResult.getFullName(ContractResult.GAS_LIMIT)},
+           ${ContractResult.getFullName(ContractResult.GAS_USED)},
+           ${ContractResult.getFullName(ContractResult.PAYER_ACCOUNT_ID)},
+           ${ContractResult.getFullName(ContractResult.SENDER_ID)},
+           ${ContractResult.getFullName(ContractResult.TRANSACTION_HASH)},
+           ${ContractResult.getFullName(ContractResult.TRANSACTION_INDEX)},
+           ${ContractResult.getFullName(ContractResult.TRANSACTION_RESULT)}
+    from ${ContractResult.tableName} ${ContractResult.tableAlias}`;
 
-  static transactionTableCTE = `, ${Transaction.tableAlias} as (
+  static transactionTableCTE = `${Transaction.tableAlias} as (
       select
-      ${Transaction.CONSENSUS_TIMESTAMP}, ${Transaction.INDEX}, ${Transaction.NONCE}
+        ${Transaction.CONSENSUS_TIMESTAMP}, ${Transaction.INDEX}, ${Transaction.NONCE}
       from ${Transaction.tableName}
       where $where
     )`;
 
-  static ethereumTransactionTableCTE = `with ${EthereumTransaction.tableAlias} as (
-      select ${EthereumTransaction.HASH}, ${EthereumTransaction.CONSENSUS_TIMESTAMP}
-      from ${EthereumTransaction.tableName}
-    )`;
-
-  static joinTransactionTable = `left join ${Transaction.tableAlias}
+  static joinTransactionTable = `join ${Transaction.tableAlias}
   on ${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)} = ${Transaction.getFullName(
     Transaction.CONSENSUS_TIMESTAMP
-  )}
-  `;
-
-  static joinEthereumTransactionTable = `left join ${EthereumTransaction.tableAlias}
-  on ${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)} = ${EthereumTransaction.getFullName(
-    EthereumTransaction.CONSENSUS_TIMESTAMP
-  )}
-  `;
-
-  static contractResultsQuery = `
-    select ${ContractResult.AMOUNT},
-           ${ContractResult.BLOOM},
-           ${ContractResult.CALL_RESULT},
-           ${ContractResult.CONSENSUS_TIMESTAMP},
-           ${ContractResult.CONTRACT_ID},
-           ${ContractResult.CREATED_CONTRACT_IDS},
-           ${ContractResult.ERROR_MESSAGE},
-           ${ContractResult.FAILED_INITCODE},
-           ${ContractResult.FUNCTION_PARAMETERS},
-           ${ContractResult.GAS_LIMIT},
-           ${ContractResult.GAS_USED},
-           ${ContractResult.PAYER_ACCOUNT_ID},
-           ${ContractResult.SENDER_ID}
-    from ${ContractResult.tableName}`;
+  )}`;
 
   static contractStateChangesQuery = `
     select ${ContractStateChange.CONSENSUS_TIMESTAMP},
@@ -97,23 +95,50 @@ class ContractService extends BaseService {
            ${ContractStateChange.VALUE_WRITTEN}
     from ${ContractStateChange.tableName}`;
 
-  static contractLogsQuery = `select ${ContractLog.BLOOM},
-                                     ${ContractLog.CONTRACT_ID},
-                                     ${ContractLog.CONSENSUS_TIMESTAMP},
-                                     ${ContractLog.DATA},
-                                     ${ContractLog.INDEX},
-                                     ${ContractLog.ROOT_CONTRACT_ID},
-                                     ${ContractLog.TOPIC0},
-                                     ${ContractLog.TOPIC1},
-                                     ${ContractLog.TOPIC2},
-                                     ${ContractLog.TOPIC3}
-  from ${ContractLog.tableName} ${ContractLog.tableAlias}`;
+  static contractStateQuery = `
+    select ${ContractState.MODIFIED_TIMESTAMP},
+           ${ContractState.CONTRACT_ID},
+           ${ContractState.SLOT},
+           ${ContractState.VALUE}
+    from ${ContractState.tableName}`;
+
+  static contractLogsQuery = `select ${contractLogsFields} from ${ContractLog.tableName} ${ContractLog.tableAlias}`;
+
+  static contractLogsExtendedQuery = `
+    with ${RecordFile.tableName} as (
+      select ${RecordFile.CONSENSUS_END}, ${RecordFile.HASH}, ${RecordFile.INDEX}
+      from ${RecordFile.tableName}
+    ), ${Entity.tableName} as (
+      select ${Entity.EVM_ADDRESS}, ${Entity.ID}
+      from ${Entity.tableName}
+    )
+    select ${contractLogsFields},
+      ${ContractResult.getFullName(ContractResult.TRANSACTION_HASH)},
+      ${ContractResult.getFullName(ContractResult.TRANSACTION_INDEX)},
+      block_number,
+      block_hash,
+      ${Entity.EVM_ADDRESS}
+    from ${ContractLog.tableName} ${ContractLog.tableAlias}
+    left join ${Entity.tableName} ${Entity.tableAlias}
+      on ${Entity.ID} = ${ContractLog.CONTRACT_ID}
+    left join ${ContractResult.tableName} ${ContractResult.tableAlias}
+      on ${ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP)} =
+        ${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)} and
+        ${ContractLog.getFullName(ContractLog.PAYER_ACCOUNT_ID)} =
+        ${ContractResult.getFullName(ContractResult.PAYER_ACCOUNT_ID)}
+    left join lateral (
+      select ${RecordFile.INDEX} as block_number, ${RecordFile.HASH} as block_hash
+      from ${RecordFile.tableName}
+      where ${RecordFile.CONSENSUS_END} >= ${ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP)}
+      order by ${RecordFile.CONSENSUS_END} asc
+      limit 1
+    ) as block on true
+  `;
 
   static contractIdByEvmAddressQuery = `
     select ${Entity.ID}
     from ${Entity.tableName} ${Entity.tableAlias}
-    where ${Entity.DELETED} <> true
-      and ${Entity.TYPE} = 'CONTRACT'`;
+    where ${Entity.DELETED} <> true and ${Entity.TYPE} = 'CONTRACT'`;
 
   static contractActionsByConsensusTimestampQuery = `
     select ${ContractAction.CALLER},
@@ -133,8 +158,8 @@ class ContractService extends BaseService {
            ${ContractAction.RESULT_DATA},
            ${ContractAction.RESULT_DATA_TYPE},
            ${ContractAction.VALUE}
-    from ${ContractAction.tableName} ${ContractAction.tableAlias}
-    where ${ContractAction.getFullName(ContractAction.CONSENSUS_TIMESTAMP)} = $1`;
+    from ${ContractAction.tableName}
+    where ${ContractAction.CONSENSUS_TIMESTAMP} = $1 and ${ContractAction.PAYER_ACCOUNT_ID} = $2`;
 
   static contractByEvmAddressQueryFilters = [
     {
@@ -177,12 +202,10 @@ class ContractService extends BaseService {
     }
 
     const query = [
-      ContractService.ethereumTransactionTableCTE,
       joinTransactionTable
-        ? ContractService.transactionTableCTE.replace('$where', transactionWhereClauses.join(' and '))
+        ? 'with ' + ContractService.transactionTableCTE.replace('$where', transactionWhereClauses.join(' and '))
         : '',
-      ContractService.detailedContractResultsWithEthereumTransactionHashQuery,
-      ContractService.joinEthereumTransactionTable,
+      ContractService.contractResultsQuery,
       joinTransactionTable ? ContractService.joinTransactionTable : '',
       whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',
       super.getOrderByQuery(OrderSpec.from(ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP), order)),
@@ -209,6 +232,17 @@ class ContractService extends BaseService {
     });
   }
 
+  async getContractStateByIdAndFilters(whereConditions = [], order = orderFilterValues.ASC, limit = defaultLimit) {
+    const orderClause = this.getOrderByQuery(OrderSpec.from(ContractStateChange.SLOT, order));
+    const {where, params} = this.buildWhereSqlStatement(whereConditions);
+    const limitClause = this.getLimitQuery(params.push(limit));
+
+    const query = [ContractService.contractStateQuery, where, orderClause, limitClause].join(' ');
+    const rows = await super.getRows(query, params, 'getContractStateByIdAndFilters');
+
+    return rows.map((row) => new ContractState(row));
+  }
+
   /**
    * Retrieves contract results based on the timestamps
    *
@@ -226,7 +260,43 @@ class ContractService extends BaseService {
 
     const whereClause = `where ${ContractResult.CONSENSUS_TIMESTAMP} ${timestampsOpAndValue}`;
     const query = [ContractService.contractResultsQuery, whereClause].join('\n');
+
     const rows = await super.getRows(query, params, 'getContractResultsByTimestamps');
+
+    return rows.map((row) => new ContractResult(row));
+  }
+
+  /**
+   * Retrieves contract results based on the eth hash
+   *
+   * @param {string} hash eth transaction hash or 32-byte hedera transaction hash prefix
+   * @return {Promise<{ContractResult}[]>}
+   */
+  async getContractResultsByHash(hash, excludeTransactionResults = [], limit = undefined) {
+    const params = [hash];
+    let transactionsFilter = '';
+
+    if (excludeTransactionResults != null) {
+      if (Array.isArray(excludeTransactionResults)) {
+        transactionsFilter =
+          excludeTransactionResults.length > 0
+            ? ` and ${ContractResult.TRANSACTION_RESULT} not in (${excludeTransactionResults.join(', ')})`
+            : '';
+      } else {
+        transactionsFilter = ` and ${ContractResult.TRANSACTION_RESULT} <> ${excludeTransactionResults}`;
+      }
+    }
+
+    const whereClause = `where ${ContractResult.TRANSACTION_HASH} = $1`;
+    const query = [
+      ContractService.contractResultsQuery,
+      whereClause,
+      transactionsFilter,
+      this.getOrderByQuery(OrderSpec.from(ContractResult.CONSENSUS_TIMESTAMP, 'asc')),
+      limit ? `limit ${limit}` : '',
+    ].join('\n');
+    const rows = await super.getRows(query, params, 'getContractResultsByHash');
+
     return rows.map((row) => new ContractResult(row));
   }
 
@@ -251,7 +321,7 @@ class ContractService extends BaseService {
       .filter((filters) => filters.length !== 0)
       .map((filters) =>
         super.buildSelectQuery(
-          ContractService.contractLogsQuery,
+          ContractService.contractLogsExtendedQuery,
           params,
           conditions,
           orderClause,
@@ -267,7 +337,7 @@ class ContractService extends BaseService {
     if (subQueries.length === 0) {
       // if all three filters are empty, the subqueries will be empty too, just create the query with empty filters
       sqlQuery = super.buildSelectQuery(
-        ContractService.contractLogsQuery,
+        ContractService.contractLogsExtendedQuery,
         params,
         conditions,
         orderClause,
@@ -305,6 +375,7 @@ class ContractService extends BaseService {
 
     const whereClause = `where ${ContractLog.CONSENSUS_TIMESTAMP} ${timestampsOpAndValue}`;
     const orderClause = `order by ${ContractLog.CONSENSUS_TIMESTAMP}, ${ContractLog.INDEX}`;
+
     const query = [ContractService.contractLogsQuery, whereClause, orderClause].join('\n');
     const rows = await super.getRows(query, params, 'getContractLogsByTimestamps');
     return rows.map((row) => new ContractLog(row));
@@ -382,8 +453,8 @@ class ContractService extends BaseService {
     return EntityId.parse(contractIdValue, {paramName: filterKeys.CONTRACTID}).getEncodedId();
   }
 
-  async getContractActionsByConsensusTimestamp(consensusTimestamp, filters, order, limit) {
-    const params = [consensusTimestamp];
+  async getContractActionsByConsensusTimestamp(consensusTimestamp, payerAccountId, filters, order, limit) {
+    const params = [consensusTimestamp, payerAccountId];
     return this.getContractActions(
       ContractService.contractActionsByConsensusTimestampQuery,
       params,
@@ -398,22 +469,20 @@ class ContractService extends BaseService {
     if (filters && filters.length) {
       for (const filter of filters) {
         if (filter.key === 'index') {
-          whereClause += `\nand ${ContractAction.getFullName(ContractAction.INDEX)}${filter.operator}$${
-            params.length + 1
-          }`;
           params.push(filter.value);
+          whereClause += `\nand ${ContractAction.INDEX}${filter.operator}$${params.length}`;
         }
       }
     }
 
-    const orderClause = super.getOrderByQuery(OrderSpec.from(ContractAction.getFullName(ContractAction.INDEX), order));
+    const orderClause = super.getOrderByQuery(OrderSpec.from(ContractAction.INDEX, order));
 
     params.push(limit);
     const limitClause = super.getLimitQuery(params.length);
 
     const query = [baseQuery, whereClause, orderClause, limitClause].join('\n');
 
-    const rows = await super.getRows(query, params, 'getActionsByHash');
+    const rows = await super.getRows(query, params, 'getContractActions');
     return rows.map((row) => new ContractAction(row));
   }
 }

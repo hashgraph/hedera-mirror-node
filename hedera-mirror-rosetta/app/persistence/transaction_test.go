@@ -247,6 +247,7 @@ func assertTransactions(t *testing.T, expected, actual []*types.Transaction) {
 		assert.Contains(t, expectedTransactionMap, txHash)
 		expectedTx := expectedTransactionMap[txHash]
 		assert.Equal(t, expectedTx.EntityId, actualTx.EntityId)
+		assert.Equal(t, expectedTx.Memo, actualTx.Memo)
 		assert.ElementsMatch(t, expectedTx.Operations, actualTx.Operations)
 	}
 }
@@ -320,6 +321,7 @@ func (suite *transactionRepositorySuite) TestFindBetweenTokenCreatedAtOrBeforeGe
 	expected := []*types.Transaction{
 		{
 			Hash: tools.SafeAddHexPrefix(hex.EncodeToString(transaction.TransactionHash)),
+			Memo: []byte{},
 			Operations: types.OperationSlice{
 				{
 					AccountId: types.NewAccountIdFromEntityId(domain.MustDecodeEntityId(3)),
@@ -354,15 +356,15 @@ func (suite *transactionRepositorySuite) TestFindBetweenHavingDisappearingTokenT
 	tdomain.NewAccountBalanceFileBuilder(dbClient, genesisTimestamp).Persist()
 
 	token1 := tdomain.NewTokenBuilder(dbClient, encodedTokenId1, genesisTimestamp+1, treasury).Persist()
-	tdomain.NewEntityBuilderFromToken(dbClient, token1).Deleted(true).ModifiedAfter(100).Persist()
+	tdomain.NewEntityBuilderFromToken(dbClient, token1).Deleted(true).ModifiedAfter(10).Persist()
 
 	token2 := tdomain.NewTokenBuilder(dbClient, encodedTokenId2, genesisTimestamp+2, treasury).
 		Type(domain.TokenTypeNonFungibleUnique).
 		Persist()
-	entity2 := tdomain.NewEntityBuilderFromToken(dbClient, token2).Deleted(true).ModifiedAfter(100).Persist()
+	tdomain.NewEntityBuilderFromToken(dbClient, token2).Deleted(true).ModifiedAfter(10).Persist()
 
 	// token accounts
-	dissociateTimestamp := entity2.GetModifiedTimestamp() + 100
+	dissociateTimestamp := genesisTimestamp + 53
 	tdomain.NewTokenAccountBuilder(dbClient, account1, encodedTokenId1, token1.CreatedTimestamp+1).
 		Associated(false, dissociateTimestamp).
 		Persist()
@@ -423,6 +425,7 @@ func (suite *transactionRepositorySuite) TestFindBetweenHavingDisappearingTokenT
 		{
 			EntityId: &account1EntityId,
 			Hash:     tools.SafeAddHexPrefix(hex.EncodeToString(transaction.TransactionHash)),
+			Memo:     []byte{},
 			Operations: types.OperationSlice{
 				{
 					AccountId: account1Id,
@@ -510,6 +513,7 @@ func (suite *transactionRepositorySuite) TestFindBetweenMissingDisappearingToken
 		{
 			EntityId: &account1EntityId,
 			Hash:     tools.SafeAddHexPrefix(hex.EncodeToString(transaction.TransactionHash)),
+			Memo:     []byte{},
 			Operations: types.OperationSlice{
 				{
 					AccountId: account1Id,
@@ -670,14 +674,14 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 			PayerAccountId: firstEntityId},
 	}
 	nonFeeTransfers := []domain.NonFeeTransfer{
-		{Amount: -135, ConsensusTimestamp: consensusTimestamp, EntityId: firstEntityId,
+		{Amount: -135, ConsensusTimestamp: consensusTimestamp, EntityId: &firstEntityId,
 			PayerAccountId: firstEntityId},
-		{Amount: 135, ConsensusTimestamp: consensusTimestamp, EntityId: secondEntityId,
+		{Amount: 135, ConsensusTimestamp: consensusTimestamp, EntityId: &secondEntityId,
 			PayerAccountId: firstEntityId},
 	}
 	addTransaction(dbClient, consensusTimestamp, nil, &nodeEntityId, firstEntityId, 22,
 		[]byte{0x1, 0x2, 0x3}, domain.TransactionTypeCryptoTransfer, validStartNs, cryptoTransfers, nonFeeTransfers,
-		nil, nil)
+		nil, nil, []byte("simple transfer"))
 
 	// duplicate transaction
 	consensusTimestamp += 1
@@ -690,7 +694,8 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 			PayerAccountId: firstEntityId},
 	}
 	addTransaction(dbClient, consensusTimestamp, nil, &nodeEntityId, firstEntityId, 11,
-		[]byte{0x1, 0x2, 0x3}, domain.TransactionTypeCryptoTransfer, validStartNs, cryptoTransfers, nil, nil, nil)
+		[]byte{0x1, 0x2, 0x3}, domain.TransactionTypeCryptoTransfer, validStartNs, cryptoTransfers, nil, nil, nil,
+		[]byte("simple transfer"))
 	operationType := types.OperationTypeCryptoTransfer
 	operations1 := types.OperationSlice{
 		{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -135}, Type: operationType, Status: resultSuccess},
@@ -708,7 +713,11 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 		{AccountId: feeCollectorAccountId, Amount: &types.HbarAmount{Value: 10}, Type: types.OperationTypeFee,
 			Status: resultSuccess},
 	}
-	expectedTransaction1 := &types.Transaction{Hash: "0x010203", Operations: operations1}
+	expectedTransaction1 := &types.Transaction{
+		Hash:       "0x010203",
+		Memo:       []byte("simple transfer"),
+		Operations: operations1,
+	}
 
 	// a successful crypto transfer + token transfer transaction
 	tick(1)
@@ -730,9 +739,9 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 			PayerAccountId: firstEntityId},
 	}
 	nonFeeTransfers = []domain.NonFeeTransfer{
-		{Amount: -215, ConsensusTimestamp: consensusTimestamp, EntityId: firstEntityId,
+		{Amount: -215, ConsensusTimestamp: consensusTimestamp, EntityId: &firstEntityId,
 			PayerAccountId: firstEntityId},
-		{Amount: 215, ConsensusTimestamp: consensusTimestamp, EntityId: secondEntityId,
+		{Amount: 215, ConsensusTimestamp: consensusTimestamp, EntityId: &secondEntityId,
 			PayerAccountId: firstEntityId},
 	}
 	tokenTransfers := []domain.TokenTransfer{
@@ -743,7 +752,7 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 	}
 	addTransaction(dbClient, consensusTimestamp, nil, &nodeEntityId, firstEntityId, 22,
 		[]byte{0xa, 0xb, 0xc}, domain.TransactionTypeCryptoTransfer, validStartNs, cryptoTransfers, nonFeeTransfers,
-		tokenTransfers, nil)
+		tokenTransfers, nil, []byte{})
 	operations2 := types.OperationSlice{
 		{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -215}, Type: operationType, Status: resultSuccess},
 		{AccountId: secondAccountId, Amount: &types.HbarAmount{Value: 215}, Type: operationType, Status: resultSuccess},
@@ -771,7 +780,7 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 			},
 		)
 	}
-	expectedTransaction2 := &types.Transaction{Hash: "0x0a0b0c", Operations: operations2}
+	expectedTransaction2 := &types.Transaction{Hash: "0x0a0b0c", Memo: []byte{}, Operations: operations2}
 
 	tdomain.NewTokenBuilder(dbClient, tokenId2.EncodedId, genesisTimestamp+3, firstEntityId.EncodedId).
 		Decimals(tokenDecimals).
@@ -794,7 +803,7 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 	}
 	addTransaction(dbClient, consensusTimestamp, &tokenId2, &nodeEntityId, firstEntityId, 22,
 		[]byte{0xaa, 0xcc, 0xdd}, domain.TransactionTypeTokenCreation, validStartNs, cryptoTransfers, nil,
-		tokenTransfers, nil)
+		tokenTransfers, nil, nil)
 	metadata := map[string]interface{}{
 		"currency": &rTypes.Currency{
 			Symbol:   tokenId2.String(),
@@ -808,6 +817,7 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 	expectedTransaction3 := &types.Transaction{
 		EntityId: &tokenId2,
 		Hash:     "0xaaccdd",
+		Memo:     []byte{},
 		Operations: types.OperationSlice{
 			{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -15}, Type: types.OperationTypeFee,
 				Status: resultSuccess},
@@ -839,7 +849,8 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 			PayerAccountId: firstEntityId},
 	}
 	addTransaction(dbClient, consensusTimestamp, &tokenId3, &nodeEntityId, firstEntityId, 22,
-		[]byte{0xaa, 0x11, 0x22}, domain.TransactionTypeTokenCreation, validStartNs, cryptoTransfers, nil, nil, nil)
+		[]byte{0xaa, 0x11, 0x22}, domain.TransactionTypeTokenCreation, validStartNs, cryptoTransfers, nil, nil, nil,
+		nil)
 	metadata = map[string]interface{}{
 		"currency": &rTypes.Currency{
 			Symbol:   tokenId3.String(),
@@ -851,6 +862,7 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 	expectedTransaction4 := &types.Transaction{
 		EntityId: &tokenId3,
 		Hash:     "0xaa1122",
+		Memo:     []byte{},
 		Operations: types.OperationSlice{
 			{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -15}, Type: types.OperationTypeFee,
 				Status: resultSuccess},
@@ -880,11 +892,12 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 	}
 	addTransaction(dbClient, consensusTimestamp, &tokenId3, &nodeEntityId, firstEntityId, 22,
 		[]byte{0xaa, 0x11, 0x33}, domain.TransactionTypeTokenMint, validStartNs, cryptoTransfers, nil, nil,
-		nftTransfers)
+		nftTransfers, nil)
 	operationType = types.OperationTypeTokenMint
 	expectedTransaction5 := &types.Transaction{
 		EntityId: &tokenId3,
 		Hash:     "0xaa1133",
+		Memo:     []byte{},
 		Operations: types.OperationSlice{
 			{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -15}, Type: types.OperationTypeFee,
 				Status: resultSuccess},
@@ -918,10 +931,11 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 	}
 	addTransaction(dbClient, consensusTimestamp, nil, &nodeEntityId, firstEntityId,
 		22, []byte{0xaa, 0x11, 0x66}, domain.TransactionTypeCryptoTransfer, validStartNs, cryptoTransfers, nil,
-		nil, nftTransfers)
+		nil, nftTransfers, nil)
 	operationType = types.OperationTypeCryptoTransfer
 	expectedTransaction6 := &types.Transaction{
 		Hash: "0xaa1166",
+		Memo: []byte{},
 		Operations: types.OperationSlice{
 			{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -15}, Type: types.OperationTypeFee,
 				Status: resultSuccess},
@@ -952,10 +966,11 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 	}
 	transactionHash := randstr.Bytes(6)
 	addTransaction(dbClient, consensusTimestamp, nil, &nodeEntityId, firstEntityId, 28,
-		transactionHash, domain.TransactionTypeCryptoTransfer, validStartNs, cryptoTransfers, nil, nil, nil)
+		transactionHash, domain.TransactionTypeCryptoTransfer, validStartNs, cryptoTransfers, nil, nil, nil, nil)
 	operationType = types.OperationTypeCryptoTransfer
 	expectedTransaction7 := &types.Transaction{
 		Hash: tools.SafeAddHexPrefix(hex.EncodeToString(transactionHash)),
+		Memo: []byte{},
 		Operations: types.OperationSlice{
 			{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -120}, Type: types.OperationTypeFee,
 				Status: resultSuccess},
@@ -963,6 +978,8 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 				Status: resultSuccess},
 			{AccountId: nodeAccountId, Amount: &types.HbarAmount{Value: 20}, Type: types.OperationTypeFee,
 				Status: resultSuccess},
+			{AccountId: firstAccountId, Amount: &types.HbarAmount{}, Type: types.OperationTypeCryptoTransfer,
+				Status: types.TransactionResults[28]},
 		},
 	}
 
@@ -976,17 +993,19 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 		{Amount: 20, ConsensusTimestamp: consensusTimestamp, EntityId: nodeEntityId, PayerAccountId: firstEntityId},
 	}
 	nonFeeTransfers = []domain.NonFeeTransfer{
-		{Amount: -500, ConsensusTimestamp: consensusTimestamp, EntityId: firstEntityId, PayerAccountId: firstEntityId},
-		{Amount: 500, ConsensusTimestamp: consensusTimestamp, EntityId: newEntityId, PayerAccountId: firstEntityId},
+		{Amount: -500, ConsensusTimestamp: consensusTimestamp, EntityId: &firstEntityId, PayerAccountId: firstEntityId},
+		{Amount: -500, ConsensusTimestamp: consensusTimestamp, PayerAccountId: firstEntityId}, // with nil entity id
+		{Amount: 500, ConsensusTimestamp: consensusTimestamp, EntityId: &newEntityId, PayerAccountId: firstEntityId},
 	}
 	transactionHash = randstr.Bytes(6)
 	addTransaction(dbClient, consensusTimestamp, &newEntityId, &nodeEntityId, firstEntityId, 22, transactionHash,
-		domain.TransactionTypeCryptoCreateAccount, validStartNs, cryptoTransfers, nonFeeTransfers, nil, nil)
+		domain.TransactionTypeCryptoCreateAccount, validStartNs, cryptoTransfers, nonFeeTransfers, nil, nil, nil)
 
 	operationType = types.OperationTypeCryptoCreateAccount
 	expectedTransaction8 := &types.Transaction{
 		EntityId: &newEntityId,
 		Hash:     tools.SafeAddHexPrefix(hex.EncodeToString(transactionHash)),
+		Memo:     []byte{},
 		Operations: types.OperationSlice{
 			{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -500},
 				Type: types.OperationTypeCryptoCreateAccount, Status: resultSuccess},

@@ -18,7 +18,9 @@
         "num": 8,
         "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
         "evm_address": "ac384c53f03855fa1b3616052f8ba32c6c2a2fec",
-        "public_key": "519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9"
+        "public_key": "519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9",
+        "staked_node_id": 8,
+        "stake_period_start": 800
       },
       {
         "num": 9,
@@ -67,6 +69,16 @@
         "balance": 999
       }
     ],
+    "entityStakes": [
+      {
+        "decline_reward_start": false,
+        "end_stake_period": 810,
+        "id": 8,
+        "pending_reward": 123,
+        "staked_node_id_start": 8,
+        "stake_total_start": 80
+      }
+    ],
     "recordFiles": [
       {
         "consensus_start": 2000,
@@ -75,6 +87,7 @@
     ],
     "transactions": [
       {
+        "charged_tx_fee": 0,
         "payerAccountId": "0.0.8",
         "nodeAccountId": "0.0.3",
         "consensus_timestamp": "1234567890000000006",
@@ -82,7 +95,19 @@
         "nonce": 1,
         "parent_consensus_timestamp": "1234567890000000005",
         "type": "15",
+        "valid_start_timestamp": "1234567890000000004",
         "entity_id": "0.0.9"
+      },
+      {
+        "charged_tx_fee": 0,
+        "payerAccountId": "0.0.8",
+        "nodeAccountId": "0.0.3",
+        "consensus_timestamp": "1234567890000000010",
+        "name": "CONTRACTDELETEINSTANCE",
+        "nonce": 2,
+        "type": 22,
+        "valid_start_timestamp": "1234567890000000004",
+        "entity_id": "0.0.200"
       }
     ],
     "cryptotransfers": [
@@ -120,7 +145,7 @@
     "transactions": [
       {
         "bytes": "Ynl0ZXM=",
-        "charged_tx_fee": 7,
+        "charged_tx_fee": 0,
         "consensus_timestamp": "1234567890.000000006",
         "entity_id": "0.0.9",
         "max_fee": "33",
@@ -132,26 +157,10 @@
         "result": "SUCCESS",
         "scheduled": false,
         "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
-        "transaction_id": "0.0.8-1234567890-000000005",
-        "transfers": [
-          {
-            "account": "0.0.3",
-            "amount": 2,
-            "is_approval": false
-          },
-          {
-            "account": "0.0.8",
-            "amount": -3,
-            "is_approval": false
-          },
-          {
-            "account": "0.0.98",
-            "amount": 1,
-            "is_approval": false
-          }
-        ],
+        "transaction_id": "0.0.8-1234567890-000000004",
+        "transfers": [],
         "valid_duration_seconds": "11",
-        "valid_start_timestamp": "1234567890.000000005"
+        "valid_start_timestamp": "1234567890.000000004"
       },
       {
         "bytes": "Ynl0ZXM=",
@@ -250,10 +259,11 @@
     "key": null,
     "max_automatic_token_associations": 0,
     "memo": "entity memo",
+    "pending_reward": 123,
     "receiver_sig_required": false,
     "staked_account_id": null,
-    "staked_node_id": null,
-    "stake_period_start": null,
+    "staked_node_id": 8,
+    "stake_period_start": "69120000.000000000",
     "links": {
       "next": null
     }

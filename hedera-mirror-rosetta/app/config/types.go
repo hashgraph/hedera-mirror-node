@@ -30,18 +30,20 @@ import (
 const EntityCacheKey = "entity"
 
 type Config struct {
-	Cache       map[string]Cache
-	Db          Db
-	Feature     Feature
-	Http        Http
-	Log         Log
-	Network     string
-	Nodes       NodeMap
-	NodeVersion string `yaml:"nodeVersion"`
-	Online      bool
-	Port        uint16
-	Realm       int64
-	Shard       int64
+	Cache           map[string]Cache
+	Db              Db
+	Feature         Feature
+	Http            Http
+	Log             Log
+	Network         string
+	Nodes           NodeMap
+	NodeVersion     string `yaml:"nodeVersion"`
+	Online          bool
+	Port            uint16
+	Realm           int64
+	Response        Response
+	Shard           int64
+	ShutdownTimeout time.Duration `yaml:"shutdownTimeout"`
 }
 
 type Cache struct {
@@ -90,4 +92,8 @@ type Pool struct {
 	MaxIdleConnections int `yaml:"maxIdleConnections"`
 	MaxLifetime        int `yaml:"maxLifetime"`
 	MaxOpenConnections int `yaml:"maxOpenConnections"`
+}
+
+type Response struct {
+	MaxTransactionsInBlock int `yaml:"maxTransactionsInBlock"`
 }

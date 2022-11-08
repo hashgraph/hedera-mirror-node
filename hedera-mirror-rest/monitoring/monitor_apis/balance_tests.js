@@ -19,7 +19,6 @@
  */
 
 import _ from 'lodash';
-import * as math from 'mathjs';
 import config from './config';
 
 import {
@@ -70,48 +69,6 @@ const getBalancesCheck = async (server) => {
     url,
     passed: true,
     message: 'Successfully called balances and performed account check',
-  };
-};
-
-/**
- * Verify balances call with time and limit query params provided
- * @param {String} server API host endpoint
- */
-const getBalancesWithTimeAndLimitParams = async (server) => {
-  let url = getUrl(server, balancesPath, {limit: 1});
-  const resp = await getAPIResponse(url);
-  let balances = resp instanceof Error ? resp : resp.balances;
-
-  const checkRunner = new CheckRunner()
-    .withCheckSpec(checkAPIResponseError)
-    .withCheckSpec(checkRespObjDefined, {message: 'balances is undefined'})
-    .withCheckSpec(checkRespArrayLength, {
-      limit: 1,
-      message: (elements) => `balances.length of ${elements.length} was expected to be 1`,
-    });
-  let result = checkRunner.run(balances);
-  if (!result.passed) {
-    return {url, ...result};
-  }
-
-  const {timestamp} = resp;
-  const plusOne = math.add(math.bignumber(timestamp), math.bignumber(1));
-  const minusOne = math.subtract(math.bignumber(timestamp), math.bignumber(1));
-  url = getUrl(server, balancesPath, {
-    timestamp: [`gt:${minusOne.toString()}`, `lt:${plusOne.toString()}`],
-    limit: 1,
-  });
-  balances = await getAPIResponse(url, jsonRespKey);
-
-  result = checkRunner.run(balances);
-  if (!result.passed) {
-    return {url, ...result};
-  }
-
-  return {
-    url,
-    passed: true,
-    message: 'Successfully called balances with time and limit params',
   };
 };
 
@@ -168,7 +125,12 @@ const getSingleBalanceById = async (server) => {
  * @param {String} server API host endpoint
  */
 const checkBalanceFreshness = async (server) => {
-  return checkResourceFreshness(server, balancesPath, resource, (data) => data.timestamp);
+  const now = new Date().getTime() / 1000;
+  return checkResourceFreshness(server, balancesPath, resource, (data) => data.timestamp, undefined, {
+    timestamp: now,
+    limit: 1,
+    order: 'desc',
+  });
 };
 
 /**
@@ -179,12 +141,7 @@ const checkBalanceFreshness = async (server) => {
  */
 const runTests = async (server, testResult) => {
   const runTest = testRunner(server, testResult, resource);
-  return Promise.all([
-    runTest(getBalancesCheck),
-    runTest(getBalancesWithTimeAndLimitParams),
-    runTest(getSingleBalanceById),
-    runTest(checkBalanceFreshness),
-  ]);
+  return Promise.all([runTest(getBalancesCheck), runTest(getSingleBalanceById), runTest(checkBalanceFreshness)]);
 };
 
 export default {

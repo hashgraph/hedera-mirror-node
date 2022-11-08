@@ -1,0 +1,47 @@
+{
+  "description": "Contract results api call when filtered by exclude transaction results",
+  "setup": {
+    "ethereumtransactions": [
+      {
+        "consensus_timestamp": 167655000123456,
+        "hash": "6c515f5eae90c7a7ed8312b60a6990f19d809f9a5ad06ea90c172d0a1f7789da",
+        "payer_account_id": 8001
+      }
+    ],
+    "transactions": [
+      {
+        "consensus_timestamp": 167654000123456,
+        "payerAccountId": 8001,
+        "transaction_hash": "4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392274edebfe76f65fbd51ad2f14898b95b",
+        "type": 11,
+        "valid_start_timestamp": 167654000123400
+      },
+      {
+        "consensus_timestamp": 167655000123456,
+        "payerAccountId": 8001,
+        "result": 312,
+        "transaction_hash": "6c515f5eae90c7a7ed8312b60a6990f19d809f9a5ad06ea90c172d0a1f7789dad29241ec7ccbdf2e61c8f07b23862b29",
+        "type": 50,
+        "valid_start_timestamp": 167655000123400
+      }
+    ]
+  },
+  "urls": [
+    "/api/v1/contracts/results/4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
+    "/api/v1/contracts/results/0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
+    "/api/v1/contracts/results/0.0.8001-167654-000123400",
+    "/api/v1/contracts/results/6c515f5eae90c7a7ed8312b60a6990f19d809f9a5ad06ea90c172d0a1f7789da",
+    "/api/v1/contracts/results/0x6c515f5eae90c7a7ed8312b60a6990f19d809f9a5ad06ea90c172d0a1f7789da",
+    "/api/v1/contracts/results/0.0.8001-167655-000123400"
+  ],
+  "responseStatus": 404,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Not found"
+        }
+      ]
+    }
+  }
+}

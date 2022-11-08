@@ -26,7 +26,6 @@ import com.google.common.base.Stopwatch;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import javax.inject.Named;
@@ -42,6 +41,7 @@ import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
+import com.hedera.mirror.common.domain.contract.ContractState;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.entity.AbstractCryptoAllowance;
 import com.hedera.mirror.common.domain.entity.AbstractNftAllowance;
@@ -53,14 +53,13 @@ import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.schedule.Schedule;
+import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.token.NftTransfer;
 import com.hedera.mirror.common.domain.token.NftTransferId;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
-import com.hedera.mirror.common.domain.token.TokenAccountId;
-import com.hedera.mirror.common.domain.token.TokenAccountKey;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
@@ -85,6 +84,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
+import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.SidecarFileRepository;
 
@@ -98,6 +98,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final EntityIdService entityIdService;
     private final EntityProperties entityProperties;
     private final ApplicationEventPublisher eventPublisher;
+    private final NftRepository nftRepository;
     private final RecordFileRepository recordFileRepository;
     private final SidecarFileRepository sidecarFileRepository;
     private final SqlProperties sqlProperties;
@@ -123,7 +124,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<NonFeeTransfer> nonFeeTransfers;
     private final Collection<Prng> prngs;
     private final Collection<StakingRewardTransfer> stakingRewardTransfers;
-    private final Map<TokenAccountId, TokenAccount> tokenAccounts;
+    private final Collection<TokenAccount> tokenAccounts;
     private final Collection<TokenAllowance> tokenAllowances;
     private final Collection<TokenTransfer> tokenDissociateTransfers;
     private final Collection<TokenTransfer> tokenTransfers;
@@ -133,6 +134,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<TransactionSignature> transactionSignatures;
 
     // maps of upgradable domains
+    private final Map<ContractState.Id, ContractState> contractStates;
     private final Map<AbstractCryptoAllowance.Id, CryptoAllowance> cryptoAllowanceState;
     private final Map<Long, Entity> entityState;
     private final Map<NftId, Nft> nfts;
@@ -146,12 +148,13 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     // for each <token, account> update, merge the state and the update, save the merged state to the batch.
     // during batch upsert, the merged state at time T is again merged with the initial state before the batch to
     // get the full state at time T
-    private final Map<TokenAccountKey, TokenAccount> tokenAccountState;
+    private final Map<AbstractTokenAccount.Id, TokenAccount> tokenAccountState;
 
     public SqlEntityListener(BatchPersister batchPersister,
                              EntityIdService entityIdService,
                              EntityProperties entityProperties,
                              ApplicationEventPublisher eventPublisher,
+                             NftRepository nftRepository,
                              RecordFileRepository recordFileRepository,
                              SidecarFileRepository sidecarFileRepository,
                              SqlProperties sqlProperties,
@@ -160,6 +163,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         this.entityIdService = entityIdService;
         this.entityProperties = entityProperties;
         this.eventPublisher = eventPublisher;
+        this.nftRepository = nftRepository;
         this.recordFileRepository = recordFileRepository;
         this.sidecarFileRepository = sidecarFileRepository;
         this.sqlProperties = sqlProperties;
@@ -184,7 +188,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         nonFeeTransfers = new ArrayList<>();
         prngs = new ArrayList<>();
         stakingRewardTransfers = new ArrayList<>();
-        tokenAccounts = new LinkedHashMap<>();
+        tokenAccounts = new ArrayList<>();
         tokenAllowances = new ArrayList<>();
         tokenDissociateTransfers = new ArrayList<>();
         tokenTransfers = new ArrayList<>();
@@ -193,6 +197,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         transactionHashes = new ArrayList<>();
         transactionSignatures = new ArrayList<>();
 
+        contractStates = new HashMap<>();
         cryptoAllowanceState = new HashMap<>();
         entityState = new HashMap<>();
         nfts = new HashMap<>();
@@ -202,64 +207,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         tokens = new HashMap<>();
         tokenAccountState = new HashMap<>();
         tokenAllowanceState = new HashMap<>();
-    }
-
-    @Override
-    public void flush() {
-        try {
-            // batch save action may run asynchronously, triggering it before other operations can reduce latency
-            eventPublisher.publishEvent(new EntityBatchSaveEvent(this));
-
-            Stopwatch stopwatch = Stopwatch.createStarted();
-
-            // insert only operations
-            batchPersister.persist(assessedCustomFees);
-            batchPersister.persist(contractActions);
-            batchPersister.persist(contractLogs);
-            batchPersister.persist(contractResults);
-            batchPersister.persist(contractStateChanges);
-            batchPersister.persist(cryptoTransfers);
-            batchPersister.persist(customFees);
-            batchPersister.persist(ethereumTransactions);
-            batchPersister.persist(fileData);
-            batchPersister.persist(liveHashes);
-            batchPersister.persist(networkStakes);
-            batchPersister.persist(nodeStakes);
-            batchPersister.persist(prngs);
-            batchPersister.persist(topicMessages);
-            batchPersister.persist(transactions);
-            batchPersister.persist(transactionHashes);
-            batchPersister.persist(transactionSignatures);
-
-            // insert operations with conflict management
-            batchPersister.persist(contracts);
-            batchPersister.persist(cryptoAllowances);
-            batchPersister.persist(entities);
-            batchPersister.persist(nftAllowances);
-            batchPersister.persist(tokens.values());
-            // ingest tokenAccounts after tokens since some fields of token accounts depends on the associated token
-            batchPersister.persist(tokenAccounts.values());
-            batchPersister.persist(tokenAllowances);
-            batchPersister.persist(nfts.values()); // persist nft after token entity
-            batchPersister.persist(schedules.values());
-
-            // transfers operations should be last to ensure insert logic completeness, entities should already exist
-            batchPersister.persist(nonFeeTransfers);
-            batchPersister.persist(nftTransferState.values());
-            batchPersister.persist(stakingRewardTransfers);
-            batchPersister.persist(tokenTransfers);
-
-            // handle the transfers from token dissociate transactions after nft is processed
-            tokenDissociateTransferBatchPersister.persist(tokenDissociateTransfers);
-
-            log.info("Completed batch inserts in {}", stopwatch);
-        } catch (ParserException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new ParserException(e);
-        } finally {
-            cleanup();
-        }
     }
 
     @Override
@@ -284,50 +231,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onError() {
         cleanup();
-    }
-
-    private void cleanup() {
-        try {
-            assessedCustomFees.clear();
-            contracts.clear();
-            contractActions.clear();
-            contractLogs.clear();
-            contractResults.clear();
-            contractStateChanges.clear();
-            cryptoAllowances.clear();
-            cryptoAllowanceState.clear();
-            cryptoTransfers.clear();
-            customFees.clear();
-            entities.clear();
-            entityState.clear();
-            ethereumTransactions.clear();
-            fileData.clear();
-            liveHashes.clear();
-            networkStakes.clear();
-            nfts.clear();
-            nftAllowances.clear();
-            nftAllowanceState.clear();
-            nftTransferState.clear();
-            nodeStakes.clear();
-            nonFeeTransfers.clear();
-            prngs.clear();
-            schedules.clear();
-            stakingRewardTransfers.clear();
-            topicMessages.clear();
-            tokenAccounts.clear();
-            tokenAccountState.clear();
-            tokenAllowances.clear();
-            tokenAllowanceState.clear();
-            tokens.clear();
-            tokenDissociateTransfers.clear();
-            tokenTransfers.clear();
-            transactions.clear();
-            transactionHashes.clear();
-            transactionSignatures.clear();
-            eventPublisher.publishEvent(new EntityBatchCleanupEvent(this));
-        } catch (BeanCreationNotAllowedException e) {
-            // This error can occur during shutdown
-        }
     }
 
     @Override
@@ -358,6 +261,19 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onContractStateChange(ContractStateChange contractStateChange) {
         contractStateChanges.add(contractStateChange);
+
+        var valueRead = contractStateChange.getValueRead();
+        var valueWritten = contractStateChange.getValueWritten();
+        if (valueWritten != null || contractStateChange.isMigration()) {
+            var value = valueWritten == null ? valueRead : valueWritten;
+            var state = new ContractState();
+            state.setContractId(contractStateChange.getContractId());
+            state.setCreatedTimestamp(contractStateChange.getConsensusTimestamp());
+            state.setModifiedTimestamp(contractStateChange.getConsensusTimestamp());
+            state.setSlot(contractStateChange.getSlot());
+            state.setValue(value);
+            contractStates.merge(state.getId(), state, this::mergeContractState);
+        }
     }
 
     @Override
@@ -431,8 +347,23 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     @Override
+    @SuppressWarnings({"java:S2259"}) // If nftTransferId is null, this will throw an NPE.  That behavior is correct, for that case.
     public void onNftTransfer(NftTransfer nftTransfer) throws ImporterException {
-        nftTransferState.merge(nftTransfer.getId(), nftTransfer, this::mergeNftTransfer);
+        var nftTransferId = nftTransfer.getId();
+        if (nftTransferId.getSerialNumber() == NftTransferId.WILDCARD_SERIAL_NUMBER) { 
+            flushNftState();
+
+            long payerAccountId = nftTransfer.getPayerAccountId().getId();
+            EntityId newTreasury = nftTransfer.getReceiverAccountId();
+            EntityId previousTreasury = nftTransfer.getSenderAccountId();
+            EntityId tokenId = nftTransferId.getTokenId();
+
+            nftRepository.updateTreasury(tokenId.getId(), previousTreasury.getId(), newTreasury.getId(),
+                    nftTransferId.getConsensusTimestamp(), payerAccountId, nftTransfer.getIsApproval());
+            return;
+        }
+
+        nftTransferState.merge(nftTransferId, nftTransfer, this::mergeNftTransfer);
     }
 
     @Override
@@ -469,14 +400,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
     @Override
     public void onTokenAccount(TokenAccount tokenAccount) throws ImporterException {
-        if (tokenAccounts.containsKey(tokenAccount.getId())) {
-            log.warn("Skipping duplicate token account association: {}", tokenAccount);
-            return;
+        var merged = tokenAccountState.merge(tokenAccount.getId(), tokenAccount, this::mergeTokenAccount);
+        if (merged == tokenAccount) {
+            tokenAccounts.add(merged);
         }
-
-        var key = new TokenAccountKey(tokenAccount.getId().getTokenId(), tokenAccount.getId().getAccountId());
-        TokenAccount merged = tokenAccountState.merge(key, tokenAccount, this::mergeTokenAccount);
-        tokenAccounts.put(merged.getId(), merged);
     }
 
     @Override
@@ -494,6 +421,14 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         }
 
         tokenTransfers.add(tokenTransfer);
+
+        if (entityProperties.getPersist().isTrackBalance()) {
+            var tokenAccount = new TokenAccount();
+            tokenAccount.setAccountId(tokenTransfer.getId().getAccountId().getId());
+            tokenAccount.setTokenId(tokenTransfer.getId().getTokenId().getId());
+            tokenAccount.setBalance(tokenTransfer.getAmount());
+            onTokenAccount(tokenAccount);
+        }
     }
 
     @Override
@@ -520,6 +455,128 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onTransactionSignature(TransactionSignature transactionSignature) throws ImporterException {
         transactionSignatures.add(transactionSignature);
+    }
+
+    private void cleanup() {
+        try {
+            assessedCustomFees.clear();
+            contracts.clear();
+            contractActions.clear();
+            contractLogs.clear();
+            contractResults.clear();
+            contractStateChanges.clear();
+            contractStates.clear();
+            cryptoAllowances.clear();
+            cryptoAllowanceState.clear();
+            cryptoTransfers.clear();
+            customFees.clear();
+            entities.clear();
+            entityState.clear();
+            ethereumTransactions.clear();
+            fileData.clear();
+            liveHashes.clear();
+            networkStakes.clear();
+            nfts.clear();
+            nftAllowances.clear();
+            nftAllowanceState.clear();
+            nftTransferState.clear();
+            nodeStakes.clear();
+            nonFeeTransfers.clear();
+            prngs.clear();
+            schedules.clear();
+            stakingRewardTransfers.clear();
+            topicMessages.clear();
+            tokenAccounts.clear();
+            tokenAccountState.clear();
+            tokenAllowances.clear();
+            tokenAllowanceState.clear();
+            tokens.clear();
+            tokenDissociateTransfers.clear();
+            tokenTransfers.clear();
+            transactions.clear();
+            transactionHashes.clear();
+            transactionSignatures.clear();
+            eventPublisher.publishEvent(new EntityBatchCleanupEvent(this));
+        } catch (BeanCreationNotAllowedException e) {
+            // This error can occur during shutdown
+        }
+    }
+
+    private void flush() {
+        try {
+            // batch save action may run asynchronously, triggering it before other operations can reduce latency
+            eventPublisher.publishEvent(new EntityBatchSaveEvent(this));
+
+            Stopwatch stopwatch = Stopwatch.createStarted();
+
+            // insert only operations
+            batchPersister.persist(assessedCustomFees);
+            batchPersister.persist(contractActions);
+            batchPersister.persist(contractLogs);
+            batchPersister.persist(contractResults);
+            batchPersister.persist(contractStateChanges);
+            batchPersister.persist(cryptoTransfers);
+            batchPersister.persist(customFees);
+            batchPersister.persist(ethereumTransactions);
+            batchPersister.persist(fileData);
+            batchPersister.persist(liveHashes);
+            batchPersister.persist(networkStakes);
+            batchPersister.persist(nodeStakes);
+            batchPersister.persist(prngs);
+            batchPersister.persist(topicMessages);
+            batchPersister.persist(transactions);
+            batchPersister.persist(transactionHashes);
+            batchPersister.persist(transactionSignatures);
+
+            // insert operations with conflict management
+            batchPersister.persist(contracts);
+            batchPersister.persist(contractStates.values());
+            batchPersister.persist(cryptoAllowances);
+            batchPersister.persist(entities);
+            batchPersister.persist(nftAllowances);
+            batchPersister.persist(tokens.values());
+            // ingest tokenAccounts after tokens since some fields of token accounts depends on the associated token
+            batchPersister.persist(tokenAccounts);
+            batchPersister.persist(tokenAllowances);
+            batchPersister.persist(nfts.values()); // persist nft after token entity
+            batchPersister.persist(schedules.values());
+
+            // transfers operations should be last to ensure insert logic completeness, entities should already exist
+            batchPersister.persist(nonFeeTransfers);
+            batchPersister.persist(nftTransferState.values());
+            batchPersister.persist(stakingRewardTransfers);
+            batchPersister.persist(tokenTransfers);
+
+            // handle the transfers from token dissociate transactions after nft is processed
+            tokenDissociateTransferBatchPersister.persist(tokenDissociateTransfers);
+
+            log.info("Completed batch inserts in {}", stopwatch);
+        } catch (ParserException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ParserException(e);
+        } finally {
+            cleanup();
+        }
+    }
+
+    private void flushNftState() {
+        // like flush(), but only for the Nft table
+        try {
+            batchPersister.persist(nfts.values());
+        } catch (ParserException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ParserException(e);
+        } finally {
+            nfts.clear();
+        }
+    }
+
+    private ContractState mergeContractState(ContractState previous, ContractState current) {
+        previous.setValue(current.getValue());
+        previous.setModifiedTimestamp(current.getModifiedTimestamp());
+        return previous;
     }
 
     private CryptoAllowance mergeCryptoAllowance(CryptoAllowance previous, CryptoAllowance current) {
@@ -740,14 +797,44 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     private TokenAccount mergeTokenAccount(TokenAccount lastTokenAccount, TokenAccount newTokenAccount) {
+        if (!lastTokenAccount.isHistory()) {
+            if (!newTokenAccount.isHistory()) {
+                lastTokenAccount.setBalance(newTokenAccount.getBalance() + lastTokenAccount.getBalance());
+            } else {
+                lastTokenAccount.setAutomaticAssociation(newTokenAccount.getAutomaticAssociation());
+                lastTokenAccount.setAssociated(newTokenAccount.getAssociated());
+                lastTokenAccount.setCreatedTimestamp(newTokenAccount.getCreatedTimestamp());
+                lastTokenAccount.setFreezeStatus(newTokenAccount.getFreezeStatus());
+                lastTokenAccount.setKycStatus(newTokenAccount.getKycStatus());
+                lastTokenAccount.setTimestampRange(newTokenAccount.getTimestampRange());
+            }
+
+            return lastTokenAccount;
+        }
+
+        if (lastTokenAccount.isHistory() && !newTokenAccount.isHistory()) {
+            lastTokenAccount.setBalance(newTokenAccount.getBalance() + lastTokenAccount.getBalance());
+            return lastTokenAccount;
+        }
+
+        if (lastTokenAccount.getTimestampRange().equals(newTokenAccount.getTimestampRange())) {
+            // The token accounts are for the same range, accept the previous one
+            // This is a workaround for https://github.com/hashgraph/hedera-services/issues/3240
+            log.warn("Skipping duplicate token account association: {}", newTokenAccount);
+            return lastTokenAccount;
+        }
+
+        lastTokenAccount.setTimestampUpper(newTokenAccount.getTimestampLower());
+
         if (newTokenAccount.getCreatedTimestamp() != null) {
             return newTokenAccount;
         }
 
-        // newTokenAccount is a partial update. It must have its id (tokenId, accountId, modifiedTimestamp) set.
+        // newTokenAccount is a partial update. It must have its id (tokenId, accountId) set.
         // copy the lifespan immutable fields createdTimestamp and automaticAssociation from the previous snapshot.
         // copy other fields from the previous snapshot if not set in newTokenAccount
         newTokenAccount.setCreatedTimestamp(lastTokenAccount.getCreatedTimestamp());
+        newTokenAccount.setBalance(lastTokenAccount.getBalance());
         newTokenAccount.setAutomaticAssociation(lastTokenAccount.getAutomaticAssociation());
 
         if (newTokenAccount.getAssociated() == null) {

@@ -58,7 +58,7 @@ const (
         select ta.account_id, ta.token_id, t.type, t.decimals, sd.consensus_timestamp
         from token_account ta
         join success_dissociate sd
-          on ta.account_id = sd.account_id and ta.modified_timestamp = sd.consensus_timestamp
+          on ta.account_id = sd.account_id and lower(ta.timestamp_range) = sd.consensus_timestamp
         join token t
           on t.token_id = ta.token_id
         join entity e
@@ -73,7 +73,7 @@ const (
             with snapshot as (
               select abf.consensus_timestamp + abf.time_offset as timestamp
               from account_balance_file as abf
-              where abf.consensus_timestamp < d.consensus_timestamp
+              where abf.consensus_timestamp + abf.time_offset < d.consensus_timestamp
               order by abf.consensus_timestamp desc
               limit 1
             )
@@ -135,6 +135,7 @@ const (
 	selectTransactionsInTimestampRange = "with" + genesisTimestampCte + `select
                                             t.consensus_timestamp,
                                             t.entity_id,
+                                            t.memo,
                                             t.payer_account_id,
                                             t.result,
                                             t.transaction_hash as hash,
@@ -154,6 +155,7 @@ const (
                                                     ) order by entity_id)
                                                   from non_fee_transfer
                                                   where consensus_timestamp = t.consensus_timestamp
+                                                    and entity_id is not null
                                             ), '[]') as non_fee_transfers,
                                             coalesce((
                                               select json_agg(json_build_object(
@@ -207,6 +209,7 @@ type transaction struct {
 	ConsensusTimestamp int64
 	EntityId           *domain.EntityId
 	Hash               []byte
+	Memo               []byte
 	PayerAccountId     domain.EntityId
 	Result             int16
 	Type               int16
@@ -312,7 +315,11 @@ func (tr *transactionRepository) FindBetween(ctx context.Context, start, end int
 	for start <= end {
 		transactionsBatch := make([]*transaction, 0)
 		err := db.
-			Raw(selectTransactionsInTimestampRangeOrdered, sql.Named("start", start), sql.Named("end", end)).
+			Raw(
+				selectTransactionsInTimestampRangeOrdered,
+				sql.Named("start", start),
+				sql.Named("end", end),
+			).
 			Limit(batchSize).
 			Find(&transactionsBatch).
 			Error
@@ -399,9 +406,12 @@ func (tr *transactionRepository) constructTransaction(sameHashTransactions []*tr
 	*types.Transaction,
 	*rTypes.Error,
 ) {
-	tResult := &types.Transaction{Hash: sameHashTransactions[0].getHashString()}
+	allFailed := true
+	firstTransaction := sameHashTransactions[0]
 	operations := make(types.OperationSlice, 0)
+	result := &types.Transaction{Hash: firstTransaction.getHashString(), Memo: firstTransaction.Memo}
 	success := types.TransactionResults[transactionResultSuccess]
+	transactionType := types.TransactionTypes[int32(firstTransaction.Type)]
 
 	for _, transaction := range sameHashTransactions {
 		cryptoTransfers := make([]hbarTransfer, 0)
@@ -429,12 +439,10 @@ func (tr *transactionRepository) constructTransaction(sameHashTransactions []*tr
 			return nil, hErrors.ErrInternalServerError
 		}
 
-		transactionResult := types.TransactionResults[int32(transaction.Result)]
-		transactionType := types.TransactionTypes[int32(transaction.Type)]
-
 		var feeHbarTransfers []hbarTransfer
 		feeHbarTransfers, nonFeeTransfers = categorizeHbarTransfers(cryptoTransfers, nonFeeTransfers)
 
+		transactionResult := types.TransactionResults[int32(transaction.Result)]
 		operations = tr.appendHbarTransferOperations(transactionResult, transactionType, nonFeeTransfers, operations)
 		// crypto transfers are always successful regardless of the transaction result
 		operations = tr.appendHbarTransferOperations(success, types.OperationTypeFee, feeHbarTransfers, operations)
@@ -448,12 +456,23 @@ func (tr *transactionRepository) constructTransaction(sameHashTransactions []*tr
 		}
 
 		if IsTransactionResultSuccessful(int32(transaction.Result)) {
-			tResult.EntityId = transaction.EntityId
+			allFailed = false
+			result.EntityId = transaction.EntityId
 		}
 	}
 
-	tResult.Operations = operations
-	return tResult, nil
+	if allFailed {
+		// add an 0-amount hbar transfer with the failed status to indicate the transaction has failed
+		operations = tr.appendHbarTransferOperations(
+			types.TransactionResults[int32(firstTransaction.Result)],
+			transactionType,
+			[]hbarTransfer{{AccountId: firstTransaction.PayerAccountId}},
+			operations,
+		)
+	}
+
+	result.Operations = operations
+	return result, nil
 }
 
 func (tr *transactionRepository) appendHbarTransferOperations(

@@ -37,7 +37,7 @@
                             <goal>install-node-and-npm</goal>
                         </goals>
                         <configuration>
-                            <nodeVersion>v16.13.0</nodeVersion>
+                            <nodeVersion>v18.12.0</nodeVersion>
                         </configuration>
                         <phase>compile</phase>
                     </execution>
@@ -80,7 +80,7 @@
                             <goal>npm</goal>
                         </goals>
                         <configuration>
-                            <arguments>test -- --maxWorkers 2</arguments>
+                            <arguments>test</arguments>
                             <skip>${skipTests}</skip>
                             <workingDirectory>${project.basedir}/check-state-proof</workingDirectory>
                         </configuration>
@@ -92,7 +92,7 @@
                             <goal>npm</goal>
                         </goals>
                         <configuration>
-                            <arguments>test -- --maxWorkers 2</arguments>
+                            <arguments>test</arguments>
                             <skip>${skipTests}</skip>
                         </configuration>
                         <phase>test</phase>

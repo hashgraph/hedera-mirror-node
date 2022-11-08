@@ -20,14 +20,12 @@ package com.hedera.mirror.web3.repository;
  * ‍
  */
 
-import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.common.domain.DigestAlgorithm;
-import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 
@@ -61,7 +59,7 @@ class RecordFileRepositoryTest extends Web3IntegrationTest {
         recordFile.setLoadEnd(timestamp + 1);
         recordFile.setLoadStart(timestamp);
         recordFile.setName(timestamp + ".rcd");
-        recordFile.setNodeAccountId(EntityId.of(0, 0, 3, ACCOUNT));
+        recordFile.setNodeId(0L);
         recordFile.setPreviousHash(String.valueOf(timestamp - 1));
         ++timestamp;
         return recordFile;

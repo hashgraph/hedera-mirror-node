@@ -44,6 +44,7 @@ const (
 	account3
 	account4
 	account5
+	account6
 )
 
 const (
@@ -56,21 +57,22 @@ const (
 )
 
 const (
-	accountDeleteTimestamp   int64 = 280
-	consensusTimestamp       int64 = 200
-	dissociateTimestamp            = consensusTimestamp + 1
-	account1CreatedTimestamp int64 = 50
+	accountDeleteTimestamp         = secondSnapshotTimestamp + 180
+	account1CreatedTimestamp       = firstSnapshotTimestamp - 100
 	account2DeletedTimestamp       = account1CreatedTimestamp - 1
 	account2CreatedTimestamp       = account2DeletedTimestamp - 9
-	firstSnapshotTimestamp   int64 = 100
+	consensusTimestamp             = firstSnapshotTimestamp + 200
+	dissociateTimestamp            = consensusTimestamp + 1
+	firstSnapshotTimestamp   int64 = 1656693000269913000
 	initialAccountBalance    int64 = 12345
 	secondSnapshotTimestamp        = consensusTimestamp - 20
-	thirdSnapshotTimestamp   int64 = 400
+	thirdSnapshotTimestamp         = secondSnapshotTimestamp + 200
 
 	// account3, account4, and account5 are for GetAccountAlias tests
 	account3CreatedTimestamp = consensusTimestamp + 100
 	account4CreatedTimestamp = consensusTimestamp + 110
 	account5CreatedTimestamp = consensusTimestamp + 120
+	account6CreatedTimestamp = consensusTimestamp + 130
 )
 
 var (
@@ -90,6 +92,8 @@ var (
 	account3Alias = hexutil.MustDecode("0x3a2103d9a822b91df7850274273a338c152e7bcfa2036b24cd9e3b29d07efd949b387a")
 	account4Alias = hexutil.MustDecode("0x12205a081255a92b7c262bc2ea3ab7114b8a815345b3cc40f800b2b40914afecc44e")
 	account5Alias = randstr.Bytes(48)
+	// alias with invalid public key, the Key message is valid, but it's formed from an invalid 16-byte ED25519 pub key
+	account6Alias = hexutil.MustDecode("0x1210815345b3cc40f800b2b40914afecc44e")
 )
 
 // run the suite
@@ -106,6 +110,7 @@ type accountRepositorySuite struct {
 	account3Alias   []byte
 	account4Alias   []byte
 	account5Alias   []byte
+	account6Alias   []byte
 }
 
 func (suite *accountRepositorySuite) SetupSuite() {
@@ -127,17 +132,25 @@ func (suite *accountRepositorySuite) SetupTest() {
 	associatedTokenAccounts = append(associatedTokenAccounts, ta)
 
 	token2 = tdomain.NewTokenBuilder(dbClient, encodedTokenId2, firstSnapshotTimestamp+2, treasury).Persist()
-	ta2 := tdomain.NewTokenAccountBuilder(dbClient, account1, encodedTokenId2, token2.CreatedTimestamp+2).Persist()
+	ta2 := tdomain.NewTokenAccountBuilder(dbClient, account1, encodedTokenId2, token2.CreatedTimestamp+2).
+		Historical(true).
+		TimestampRange(token2.CreatedTimestamp+2, dissociateTimestamp).
+		Persist()
 	tdomain.NewTokenAccountBuilderFromExisting(dbClient, ta2).
 		Associated(false, dissociateTimestamp).
+		Historical(false).
 		Persist()
 
 	token3 = tdomain.NewTokenBuilder(dbClient, encodedTokenId3, firstSnapshotTimestamp+3, treasury).
 		Type(domain.TokenTypeNonFungibleUnique).
 		Persist()
-	ta3 := tdomain.NewTokenAccountBuilder(dbClient, account1, encodedTokenId3, token3.CreatedTimestamp+2).Persist()
+	ta3 := tdomain.NewTokenAccountBuilder(dbClient, account1, encodedTokenId3, token3.CreatedTimestamp+2).
+		Historical(true).
+		TimestampRange(token3.CreatedTimestamp+2, dissociateTimestamp).
+		Persist()
 	tdomain.NewTokenAccountBuilderFromExisting(dbClient, ta3).
 		Associated(false, dissociateTimestamp).
+		Historical(false).
 		Persist()
 
 	// account1's token4 balance is always 0
@@ -311,6 +324,10 @@ func (suite *accountRepositorySuite) SetupTest() {
 	// dissociate other tokens before account delete timestamp
 	for _, ta := range associatedTokenAccounts {
 		tdomain.NewTokenAccountBuilderFromExisting(dbClient, ta).
+			Historical(true).
+			TimestampRange(ta.TimestampRange.Lower.Int, accountDeleteTimestamp-1).
+			Persist()
+		tdomain.NewTokenAccountBuilderFromExisting(dbClient, ta).
 			Associated(false, accountDeleteTimestamp-1).
 			Persist()
 	}
@@ -324,6 +341,9 @@ func (suite *accountRepositorySuite) SetupTest() {
 		Persist()
 	tdomain.NewEntityBuilder(dbClient, account5, account5CreatedTimestamp, domain.EntityTypeAccount).
 		Alias(suite.account5Alias).
+		Persist()
+	tdomain.NewEntityBuilder(dbClient, account6, account6CreatedTimestamp, domain.EntityTypeAccount).
+		Alias(suite.account6Alias).
 		Persist()
 }
 
@@ -714,6 +734,7 @@ func (suite *accountRepositoryWithAliasSuite) SetupSuite() {
 	suite.account3Alias = account3Alias
 	suite.account4Alias = account4Alias
 	suite.account5Alias = account5Alias
+	suite.account6Alias = account6Alias
 }
 
 func (suite *accountRepositoryWithAliasSuite) SetupTest() {
@@ -756,12 +777,26 @@ func (suite *accountRepositoryWithAliasSuite) TestGetAccountAlias() {
 	}
 }
 
-func (suite *accountRepositoryWithAliasSuite) TestGetAccountAliasThrowWhenInvalidAlias() {
-	accountId := types.NewAccountIdFromEntityId(domain.MustDecodeEntityId(account5))
+func (suite *accountRepositoryWithAliasSuite) TestGetAccountAliasWithInvalidAlias() {
+	tests := []struct {
+		encodedId int64
+		expected  string
+	}{
+		{encodedId: account5, expected: fmt.Sprintf("0.0.%d", account5)},
+		{encodedId: account6, expected: fmt.Sprintf("0.0.%d", account6)},
+	}
+
 	repo := NewAccountRepository(dbClient)
-	actual, err := repo.GetAccountAlias(defaultContext, accountId)
-	assert.NotNil(suite.T(), err)
-	assert.Equal(suite.T(), types.AccountId{}, actual)
+
+	for _, tt := range tests {
+		name := fmt.Sprintf("%d", tt.encodedId)
+		suite.T().Run(name, func(t *testing.T) {
+			accountId := types.NewAccountIdFromEntityId(domain.MustDecodeEntityId(tt.encodedId))
+			actual, err := repo.GetAccountAlias(defaultContext, accountId)
+			assert.Nil(t, err)
+			assert.Equal(t, tt.expected, actual.String())
+		})
+	}
 }
 
 func (suite *accountRepositoryWithAliasSuite) TestGetAccountId() {
@@ -797,9 +832,7 @@ func (suite *accountRepositoryWithAliasSuite) TestGetAccountIdDeleted() {
 }
 
 func (suite *accountRepositoryWithAliasSuite) TestRetrieveBalanceAtBlockNoAccountEntity() {
-	// whey querying by alias and the account is not found, error is returned since without the alias to shard.realm.num
-	// mapping, no balance info for the account can be retrieved
-	// given
+	// whey querying by alias and the account is not found, expect 0 hbar balance returned
 	db.ExecSql(dbClient, truncateEntitySql)
 	repo := NewAccountRepository(dbClient)
 
@@ -811,7 +844,7 @@ func (suite *accountRepositoryWithAliasSuite) TestRetrieveBalanceAtBlockNoAccoun
 	)
 
 	// then
-	assert.NotNil(suite.T(), err)
+	assert.Nil(suite.T(), err)
+	assert.Equal(suite.T(), types.AmountSlice{&types.HbarAmount{}}, actualAmounts)
 	assert.Empty(suite.T(), accountIdString)
-	assert.Nil(suite.T(), actualAmounts)
 }

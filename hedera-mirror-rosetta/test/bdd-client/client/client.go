@@ -169,6 +169,23 @@ func (c Client) FindTransaction(ctx context.Context, hash string) (*types.Transa
 			}
 		}
 
+		for _, txId := range blockResponse.OtherTransactions {
+			if txId.Hash == hash {
+				log.Infof("Found transaction %s in block %d other transactions list", hash, blockIndex)
+				blockTransactionRequest := &types.BlockTransactionRequest{
+					NetworkIdentifier:     c.network,
+					BlockIdentifier:       blockResponse.Block.BlockIdentifier,
+					TransactionIdentifier: txId,
+				}
+				blockTransactionResponse, rosettaErr, err := blockApi.BlockTransaction(ctx, blockTransactionRequest)
+				if rosettaErr != nil || err != nil {
+					return false, rosettaErr, err
+				}
+				transaction = blockTransactionResponse.Transaction
+				return true, nil, nil
+			}
+		}
+
 		// only increase blockIndex when the block is successfully retrieved
 		log.Infof("Transaction %s not found in block %d", hash, blockIndex)
 		blockIndex += 1
@@ -190,10 +207,12 @@ func (c Client) GetOperator(index int) Operator {
 
 // Submit submits the operations to the network, goes through the construction preprocess, metadata, payloads, combine,
 // and submit workflow. Note payloads signing happens between payloads and combine.
-func (c Client) Submit(ctx context.Context, operations []*types.Operation, signers map[string]hedera.PrivateKey) (
-	string,
-	error,
-) {
+func (c Client) Submit(
+	ctx context.Context,
+	memo string,
+	operations []*types.Operation,
+	signers map[string]hedera.PrivateKey,
+) (string, error) {
 	var txHash string
 
 	offlineConstructor := c.offlineClient.ConstructionAPI
@@ -222,8 +241,13 @@ func (c Client) Submit(ctx context.Context, operations []*types.Operation, signe
 
 	trySubmit := func() (bool, *types.Error, error) {
 		// preprocess
+		metadata := make(map[string]interface{})
+		if len(memo) != 0 {
+			metadata["memo"] = memo
+		}
 		preprocessRequest := &types.ConstructionPreprocessRequest{
 			NetworkIdentifier: c.network,
+			Metadata:          metadata,
 			Operations:        operations,
 		}
 		preprocessResponse, rosettaErr, err := offlineConstructor.ConstructionPreprocess(ctx, preprocessRequest)

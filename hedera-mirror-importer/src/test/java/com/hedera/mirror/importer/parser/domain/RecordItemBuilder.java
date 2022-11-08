@@ -50,9 +50,11 @@ import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.Fraction;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.NftAllowance;
@@ -70,6 +72,8 @@ import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
+import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenType;
@@ -212,7 +216,13 @@ public class RecordItemBuilder {
                 .record(r -> r.setContractCreateResult(contractFunctionResult(contractId)
                         .addCreatedContractIDs(contractId)))
                 .sidecarRecords(r -> r.add(contractStateChanges(contractId)))
-                .sidecarRecords(r -> r.add(contractActions()))
+                .sidecarRecords(r -> {
+                    var contractActions = contractActions();
+                    contractActions.getActionsBuilder()
+                            .getContractActionsBuilderList()
+                            .forEach(ContractAction.Builder::clearRecipient);
+                    r.add(contractActions);
+                })
                 .sidecarRecords(r -> r.add(contractBytecode(contractId)));
     }
 
@@ -379,6 +389,19 @@ public class RecordItemBuilder {
                 .receipt(r -> r.setAccountID(accountId));
     }
 
+    private CustomFee.Builder customFee() {
+        var accountId = accountId();
+        return CustomFee.newBuilder()
+                .setFeeCollectorAccountId(accountId)
+                .setFixedFee(fixedFee())
+                .setAllCollectorsAreExempt(false);
+    }
+
+    private FixedFee.Builder fixedFee() {
+        return FixedFee.newBuilder().setAmount(100L)
+                .setDenominatingTokenId(TokenID.getDefaultInstance());
+    }
+
     public Builder<EthereumTransactionBody.Builder> ethereumTransaction() {
         return ethereumTransaction(false);
     }
@@ -487,6 +510,34 @@ public class RecordItemBuilder {
                 .setTreasury(accountId())
                 .setWipeKey(key());
         return new Builder<>(TransactionType.TOKENUPDATE, transactionBody);
+    }
+
+    public Builder<TokenCreateTransactionBody.Builder> tokenCreate() {
+        var transactionBody = TokenCreateTransactionBody.newBuilder()
+                .setAdminKey(key())
+                .setAutoRenewAccount(accountId())
+                .setAutoRenewPeriod(duration(3600))
+                .setExpiry(timestamp())
+                .setFeeScheduleKey(key())
+                .setFreezeKey(key())
+                .setKycKey(key())
+                .setMemo(String.valueOf(text(16)))
+                .setName(text(4))
+                .setPauseKey(key())
+                .setSupplyKey(key())
+                .setSymbol(text(4))
+                .setTreasury(accountId())
+                .addCustomFees(customFee())
+                .setWipeKey(key());
+        return new Builder<>(TransactionType.TOKENCREATION, transactionBody)
+                .receipt(r -> r.setTokenID(tokenId()));
+    }
+
+    public Builder<TokenFeeScheduleUpdateTransactionBody.Builder> tokenFeeScheduleUpdate() {
+        var transactionBody = TokenFeeScheduleUpdateTransactionBody.newBuilder()
+                .setTokenId(tokenId())
+                .addCustomFees(customFee());
+        return new Builder<>(TransactionType.TOKENFEESCHEDULEUPDATE, transactionBody);
     }
 
     // Helper methods

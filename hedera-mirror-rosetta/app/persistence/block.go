@@ -134,7 +134,10 @@ type blockRepository struct {
 
 // NewBlockRepository creates an instance of a blockRepository struct
 func NewBlockRepository(dbClient interfaces.DbClient) interfaces.BlockRepository {
-	return &blockRepository{dbClient: dbClient, genesisBlock: recordBlock{ConsensusStart: genesisConsensusStartUnset}}
+	return &blockRepository{
+		dbClient:     dbClient,
+		genesisBlock: recordBlock{ConsensusStart: genesisConsensusStartUnset},
+	}
 }
 
 func (br *blockRepository) FindByHash(ctx context.Context, hash string) (*types.Block, *rTypes.Error) {

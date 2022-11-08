@@ -29,6 +29,17 @@ import com.hedera.mirror.common.domain.entity.EntityStake;
 
 public interface EntityStakeRepository extends CrudRepository<EntityStake, Long> {
 
+    @Query(value = """
+            with last_epoch_day as (
+              select coalesce((select epoch_day from node_stake order by consensus_timestamp desc limit 1), -1) as epoch_day
+            ), entity_stake_info as (
+              select coalesce((select end_stake_period from entity_stake limit 1), -1) as end_stake_period
+            )
+            select epoch_day = -1 or epoch_day = end_stake_period
+            from last_epoch_day, entity_stake_info
+            """, nativeQuery = true)
+    boolean updated();
+
     /**
      * Updates entity stake state based on the current entity stake state, the ending period node reward rate and the
      * entity state snapshot at the beginning of the new staking period.
@@ -37,7 +48,7 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
      * <p>
      * 1. IF there is no such row in entity_stake (new entity created in the ending stake period), OR its
      * decline_reward_start is true (decline reward for the ending staking period), OR it didn't stake to a node for the
-     * ending staking period, OR there is no node stake for the node the entity staked to, the new pending reward is 0
+     * ending staking period, the new pending reward is 0
      * <p>
      * 2.IF there is no node stake info for the node the entity staked to, the pending reward keeps the same
      * <p>
@@ -52,10 +63,25 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
      */
     @Modifying
     @Query(value = """
-            with ending_period_node_stake as (
-              select node_id, epoch_day, reward_rate
+            with ending_period as (
+              select epoch_day, consensus_timestamp
               from node_stake
               where consensus_timestamp = (select max(consensus_timestamp) from node_stake)
+              limit 1
+            ), ending_period_stake_state as (
+              select
+                decline_reward_start,
+                id as entity_id,
+                pending_reward,
+                staked_node_id_start,
+                stake_total_start,
+                reward_rate
+              from entity_stake es
+              left join (
+                select node_id, reward_rate
+                from node_stake ns, ending_period
+                where ns.consensus_timestamp = ending_period.consensus_timestamp
+              ) node_stake on es.staked_node_id_start = node_id
             ), proxy_staking as (
               select staked_account_id, sum(balance) as staked_to_me
               from entity_state_start
@@ -64,16 +90,16 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
             ), updated as (
               select
                 ess.decline_reward as decline_reward_start,
-                (select epoch_day from ending_period_node_stake limit 1) as end_stake_period,
+                epoch_day as end_stake_period,
                 ess.id,
                 (case
-                   when coalesce(es.decline_reward_start, true) is true
-                        or coalesce(es.staked_node_id_start, -1) = -1
+                   when coalesce(decline_reward_start, true) is true
+                        or coalesce(staked_node_id_start, -1) = -1
                         then 0
-                   when node_id is null then es.pending_reward
+                   when reward_rate is null then pending_reward
                    when ess.stake_period_start >= epoch_day
-                        then reward_rate * (es.stake_total_start / 100000000)
-                   else es.pending_reward + reward_rate * (es.stake_total_start / 100000000)
+                        then reward_rate * (stake_total_start / 100000000)
+                   else pending_reward + reward_rate * (stake_total_start / 100000000)
                   end) as pending_reward,
                 ess.staked_node_id as staked_node_id_start,
                 coalesce(ps.staked_to_me, 0) as staked_to_me,
@@ -81,9 +107,8 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
                       else ess.balance + coalesce(ps.staked_to_me, 0)
                   end) as stake_total_start
               from entity_state_start ess
-              left join entity_stake es on es.id = ess.id
-              left join ending_period_node_stake on node_id = es.staked_node_id_start
-              left join proxy_staking ps on ps.staked_account_id = ess.id
+              left join ending_period_stake_state on entity_id = ess.id
+              left join proxy_staking ps on ps.staked_account_id = ess.id, ending_period
             )
             insert into entity_stake
             table updated

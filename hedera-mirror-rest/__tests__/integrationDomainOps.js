@@ -30,13 +30,15 @@ import EntityId from '../entityId';
 const NETWORK_FEE = 1n;
 const NODE_FEE = 2n;
 const SERVICE_FEE = 4n;
-const DEFAULT_NODE_ID = '3';
-const DEFAULT_TREASURY_ID = '98';
+const DEFAULT_FEE_COLLECTOR_ID = 98;
+const DEFAULT_NODE_ID = 3;
+const DEFAULT_PAYER_ACCOUNT_ID = 101;
 
 const defaultFileData = '\\x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750';
 
 const setup = async (testDataJson) => {
   await loadAccounts(testDataJson.accounts);
+  await loadAccountBalanceFiles(testDataJson.accountBalanceFile);
   await loadAddressBooks(testDataJson.addressbooks);
   await loadAddressBookEntries(testDataJson.addressbookentries);
   await loadAddressBookServiceEndpoints(testDataJson.addressbookserviceendpoints);
@@ -51,6 +53,7 @@ const setup = async (testDataJson) => {
   await loadCryptoAllowances(testDataJson.cryptoAllowances);
   await loadCustomFees(testDataJson.customfees);
   await loadEntities(testDataJson.entities);
+  await loadEntityStakes(testDataJson.entityStakes);
   await loadEthereumTransactions(testDataJson.ethereumtransactions);
   await loadFileData(testDataJson.filedata);
   await loadNetworkStakes(testDataJson.networkstakes);
@@ -62,8 +65,10 @@ const setup = async (testDataJson) => {
   await loadTokens(testDataJson.tokens);
   await loadTokenAccounts(testDataJson.tokenaccounts);
   await loadTokenAllowances(testDataJson.tokenAllowances);
+  await loadTokenBalances(testDataJson.tokenBalance);
   await loadTransactions(testDataJson.transactions);
   await loadTransactionSignatures(testDataJson.transactionsignatures);
+  await loadContractStates(testDataJson.contractStates);
 };
 
 const loadAccounts = async (accounts) => {
@@ -73,6 +78,15 @@ const loadAccounts = async (accounts) => {
 
   for (const account of accounts) {
     await addAccount(account);
+  }
+};
+const loadAccountBalanceFiles = async (accountBalanceFiles) => {
+  if (accountBalanceFiles == null) {
+    return;
+  }
+
+  for (const accountBalanceFile of accountBalanceFiles) {
+    await addAccountBalanceFile(accountBalanceFile);
   }
 };
 
@@ -146,6 +160,16 @@ const loadContractActions = async (contractActions) => {
   }
 };
 
+const loadContractStates = async (contractStates) => {
+  if (contractStates == null) {
+    return;
+  }
+
+  for (const contractState of contractStates) {
+    await addContractState(contractState);
+  }
+};
+
 const loadContractResults = async (contractResults) => {
   if (contractResults == null) {
     return;
@@ -213,6 +237,16 @@ const loadEntities = async (entities) => {
 
   for (const entity of entities) {
     await addEntity({}, entity);
+  }
+};
+
+const loadEntityStakes = async (entityStakes) => {
+  if (entityStakes == null) {
+    return;
+  }
+
+  for (const entityStake of entityStakes) {
+    await addEntityStake(entityStake);
   }
 };
 
@@ -312,6 +346,16 @@ const loadTokenAllowances = async (tokenAllowances) => {
 
   for (const tokenAllowance of tokenAllowances) {
     await addTokenAllowance(tokenAllowance);
+  }
+};
+
+const loadTokenBalances = async (tokenBalances) => {
+  if (tokenBalances == null) {
+    return;
+  }
+
+  for (const tokenBalance of tokenBalances) {
+    await addTokenBalance(tokenBalance);
   }
 };
 
@@ -486,35 +530,55 @@ const addEntity = async (defaults, custom) => {
   return entity;
 };
 
+const defaultEntityStake = {
+  decline_reward_start: true,
+  end_stake_period: 1,
+  id: null,
+  pending_reward: 0,
+  staked_node_id_start: 1,
+  staked_to_me: 0,
+  stake_total_start: 0,
+};
+const entityStakeFields = Object.keys(defaultEntityStake);
+
+const addEntityStake = async (entityStake) => {
+  entityStake = {
+    ...defaultEntityStake,
+    ...entityStake,
+  };
+
+  await insertDomainObject('entity_stake', entityStakeFields, entityStake);
+};
+
+const ethereumTransactionDefaults = {
+  access_list: null,
+  call_data_id: null,
+  call_data: null,
+  chain_id: null,
+  consensus_timestamp: '187654000123456',
+  data: '0x000000000',
+  gas_limit: 1000000,
+  gas_price: '0x4a817c80',
+  hash: '0x0000000000000000000000000000000000000000000000000000000000000123',
+  max_fee_per_gas: null,
+  max_gas_allowance: 10000,
+  max_priority_fee_per_gas: null,
+  nonce: 1,
+  payer_account_id: 5001,
+  recovery_id: 1,
+  signature_r: '0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042',
+  signature_s: '0x24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354',
+  signature_v: '0x1b',
+  to_address: null,
+  type: 2,
+  value: '0x0',
+};
+
 const addEthereumTransaction = async (ethereumTransaction) => {
   // any attribute starting with '_' is not a db column
   ethereumTransaction = _.omitBy(ethereumTransaction, (_v, k) => k.startsWith('_'));
-  const localDefaults = {
-    access_list: null,
-    call_data_id: null,
-    call_data: null,
-    chain_id: null,
-    consensus_timestamp: '187654000123456',
-    data: '0x000000000',
-    gas_limit: 1000000,
-    gas_price: '0x4a817c80',
-    hash: '0x0000000000000000000000000000000000000000000000000000000000000123',
-    max_fee_per_gas: null,
-    max_gas_allowance: 10000,
-    max_priority_fee_per_gas: null,
-    nonce: 1,
-    payer_account_id: 5001,
-    recovery_id: 1,
-    signature_r: '0xd693b532a80fed6392b428604171fb32fdbf953728a3a7ecc7d4062b1652c042',
-    signature_s: '0x24e9c602ac800b983b035700a14b23f78a253ab762deab5dc27e3555a750b354',
-    signature_v: '0x1b',
-    to_address: null,
-    type: 2,
-    value: '0x0',
-  };
-
   const ethTx = {
-    ...localDefaults,
+    ...ethereumTransactionDefaults,
     ...ethereumTransaction,
   };
 
@@ -574,6 +638,29 @@ const addAccount = async (account) => {
   );
 };
 
+const defaultAccountBalanceFile = {
+  bytes: '0x010102020303',
+  consensus_timestamp: 0,
+  count: 0,
+  name: 'Balance File name',
+  node_id: 0,
+  file_hash: 'dee34bdd8bbe32fdb53ce7e3cf764a0495fa5e93b15ca567208cfb384231301bedf821de07b0d8dc3fb55c5b3c90ac61',
+  load_end: 1629298236,
+  load_start: 1629298233,
+  time_offset: 0,
+};
+
+const accountBalanceFileFields = Object.keys(defaultAccountBalanceFile);
+
+const addAccountBalanceFile = async (accountBalanceFile) => {
+  accountBalanceFile = {
+    ...defaultAccountBalanceFile,
+    ...accountBalanceFile,
+  };
+
+  await insertDomainObject('account_balance_file', accountBalanceFileFields, accountBalanceFile);
+};
+
 const addAssessedCustomFee = async (assessedCustomFee) => {
   assessedCustomFee = {
     effective_payer_account_ids: [],
@@ -611,7 +698,8 @@ const addCustomFee = async (customFee) => {
   }
 
   await pool.query(
-    `insert into custom_fee (amount,
+    `insert into custom_fee (all_collectors_are_exempt,
+                             amount,
                              amount_denominator,
                              collector_account_id,
                              created_timestamp,
@@ -622,8 +710,9 @@ const addCustomFee = async (customFee) => {
                              royalty_denominator,
                              royalty_numerator,
                              token_id)
-    values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11);`,
+     values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);`,
     [
+      customFee.all_collectors_are_exempt || false,
       customFee.amount || null,
       customFee.amount_denominator || null,
       EntityId.parse(customFee.collector_account_id, {isNullable: true}).getEncodedId(),
@@ -650,9 +739,9 @@ const setAccountBalance = async (balance) => {
 
   await pool.query(
     `insert into account_balance_file
-    (consensus_timestamp, count, load_start, load_end, name, node_account_id)
+    (consensus_timestamp, count, load_start, load_end, name, node_id)
     values ($1, $2, $3, $4, $5, $6) on CONFLICT DO NOTHING;`,
-    [balance.timestamp, 1, balance.timestamp, balance.timestamp, `${balance.timestamp}_Balances.pb.gz`, 3]
+    [balance.timestamp, 1, balance.timestamp, balance.timestamp, `${balance.timestamp}_Balances.pb.gz`, 0]
   );
 
   if (balance.tokens) {
@@ -762,7 +851,7 @@ const insertTransfers = async (
     await pool.query(
       `insert into ${tableName} (consensus_timestamp, amount, entity_id, payer_account_id, is_approval)
       values ($1, $2, $3, $4, $5);`,
-      [consensusTimestamp.toString(), NETWORK_FEE, DEFAULT_TREASURY_ID, payerAccountId, false]
+      [consensusTimestamp.toString(), NETWORK_FEE, DEFAULT_FEE_COLLECTOR_ID, payerAccountId, false]
     );
     await pool.query(
       `insert into ${tableName} (consensus_timestamp, amount, entity_id, payer_account_id, is_approval)
@@ -878,12 +967,21 @@ const contractActionDefaults = {
   gas_used: 5000,
   index: 1,
   input: null,
+  payer_account_id: DEFAULT_PAYER_ACCOUNT_ID,
   recipient_account: null,
   recipient_address: null,
   recipient_contract: null,
   result_data: null,
   result_data_type: 11,
   value: 100,
+};
+
+const contractStateDefaults = {
+  contract_id: null,
+  created_timestamp: 1664365660048674966,
+  modified_timestamp: 1664365660048674966,
+  slot: '0000000000000000000000000000000000000000000000000000000000000001',
+  value: 1,
 };
 
 const addContractAction = async (contractActionInput) => {
@@ -897,44 +995,41 @@ const addContractAction = async (contractActionInput) => {
   await insertDomainObject('contract_action', Object.keys(contractActionDefaults), action);
 };
 
-const insertFields = [
-  'amount',
-  'bloom',
-  'call_result',
-  'consensus_timestamp',
-  'contract_id',
-  'created_contract_ids',
-  'error_message',
-  'failed_initcode',
-  'function_parameters',
-  'function_result',
-  'gas_limit',
-  'gas_used',
-  'payer_account_id',
-  'sender_id',
-  'transaction_hash',
-  'transaction_index',
-  'transaction_result',
-];
+const addContractState = async (contractStateInput) => {
+  const state = {
+    ...contractStateDefaults,
+    ...contractStateInput,
+  };
+
+  convertByteaFields(['slot', 'value'], state);
+
+  await insertDomainObject('contract_state', Object.keys(contractStateDefaults), state);
+};
+
+const contractResultDefaults = {
+  amount: 0,
+  bloom: null,
+  call_result: null,
+  consensus_timestamp: 1234510001,
+  contract_id: 0,
+  created_contract_ids: [],
+  error_message: '',
+  failed_initcode: null,
+  function_parameters: '0x010102020303',
+  function_result: null,
+  gas_limit: 1000,
+  gas_used: null,
+  payer_account_id: DEFAULT_PAYER_ACCOUNT_ID,
+  transaction_hash: Buffer.from([...Array(32).keys()]),
+  transaction_index: 1,
+  transaction_result: 22,
+};
+
+const contractResultInsertFields = Object.keys(contractResultDefaults);
 
 const addContractResult = async (contractResultInput) => {
   const contractResult = {
-    amount: 0,
-    bloom: null,
-    call_result: null,
-    consensus_timestamp: 1234510001,
-    contract_id: 0,
-    created_contract_ids: [],
-    error_message: '',
-    failed_initcode: null,
-    function_parameters: '0x010102020303',
-    function_result: null,
-    gas_limit: 1000,
-    gas_used: null,
-    payer_account_id: 101,
-    transaction_hash: '0x010203',
-    transaction_index: 1,
-    transaction_result: 22,
+    ...contractResultDefaults,
     ...contractResultInput,
   };
 
@@ -943,22 +1038,26 @@ const addContractResult = async (contractResultInput) => {
     contractResult
   );
 
-  await insertDomainObject('contract_result', insertFields, contractResult);
+  await insertDomainObject('contract_result', contractResultInsertFields, contractResult);
+};
+
+const contractLogDefaults = {
+  bloom: '0x0123',
+  consensus_timestamp: 1234510001,
+  contract_id: 1,
+  data: '0x0123',
+  index: 0,
+  payer_account_id: DEFAULT_PAYER_ACCOUNT_ID,
+  root_contract_id: null,
+  topic0: '0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750',
+  topic1: '0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925',
+  topic2: '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
+  topic3: '0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67',
 };
 
 const addContractLog = async (contractLogInput) => {
   const contractLog = {
-    bloom: '0x0123',
-    consensus_timestamp: 1234510001,
-    contract_id: 1,
-    data: '0x0123',
-    index: 0,
-    payer_account_id: 2,
-    root_contract_id: null,
-    topic0: '0x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750',
-    topic1: '0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925',
-    topic2: '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
-    topic3: '0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67',
+    ...contractLogDefaults,
     ...contractLogInput,
   };
 
@@ -1208,18 +1307,18 @@ const addTokenAccount = async (tokenAccount) => {
     created_timestamp: 0,
     freeze_status: 0,
     kyc_status: 0,
-    modified_timestamp: 0,
+    timestamp_range: null,
     token_id: '0.0.0',
     ...tokenAccount,
   };
 
-  if (!tokenAccount.modified_timestamp) {
-    tokenAccount.modified_timestamp = tokenAccount.created_timestamp;
+  if (tokenAccount.timestamp_range === null) {
+    tokenAccount.timestamp_range = `[${tokenAccount.created_timestamp},)`;
   }
 
   await pool.query(
     `insert into token_account (account_id, associated, automatic_association, created_timestamp, freeze_status,
-                                kyc_status, modified_timestamp, token_id)
+                                kyc_status, timestamp_range, token_id)
     values ($1, $2, $3, $4, $5, $6, $7, $8);`,
     [
       EntityId.parse(tokenAccount.account_id).getEncodedId(),
@@ -1228,7 +1327,7 @@ const addTokenAccount = async (tokenAccount) => {
       tokenAccount.created_timestamp,
       tokenAccount.freeze_status,
       tokenAccount.kyc_status,
-      tokenAccount.modified_timestamp,
+      tokenAccount.timestamp_range,
       EntityId.parse(tokenAccount.token_id).getEncodedId(),
     ]
   );
@@ -1249,6 +1348,28 @@ const addTokenAllowance = async (tokenAllowance) => {
 
   const table = getTableName('token_allowance', tokenAllowance);
   await insertDomainObject(table, insertFields, tokenAllowance);
+};
+
+const addTokenBalance = async (tokenBalance) => {
+  // create token account object
+  tokenBalance = {
+    consensus_timestamp: 0,
+    account_id: '0.0.0',
+    balance: 0,
+    token_id: '0.0.0',
+    ...tokenBalance,
+  };
+
+  await pool.query(
+    `insert into token_balance (consensus_timestamp,account_id, balance, token_id)
+    values ($1, $2, $3, $4);`,
+    [
+      tokenBalance.consensus_timestamp,
+      EntityId.parse(tokenBalance.account_id).getEncodedId(),
+      tokenBalance.balance,
+      EntityId.parse(tokenBalance.token_id).getEncodedId(),
+    ]
+  );
 };
 
 const addNetworkStake = async (networkStakeInput) => {
@@ -1353,7 +1474,7 @@ const addRecordFile = async (recordFileInput) => {
     'load_start',
     'logs_bloom',
     'name',
-    'node_account_id',
+    'node_id',
     'prev_hash',
     'size',
     'version',
@@ -1376,7 +1497,7 @@ const addRecordFile = async (recordFileInput) => {
     load_start: 1629298233,
     logs_bloom: Buffer.alloc(0),
     name: '2021-08-12T06_59_32.000852000Z.rcd',
-    node_account_id: 3,
+    node_id: 0,
     prev_hash: '000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000',
     size: 6,
     version: 5,
@@ -1427,4 +1548,5 @@ export default {
   setAccountBalance,
   setup,
   loadContractActions,
+  loadContractStates,
 };

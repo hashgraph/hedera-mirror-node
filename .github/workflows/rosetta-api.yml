@@ -43,8 +43,8 @@ jobs:
           GOPATH: ~/go
 
       - name: Upload coverage report
+        uses: codecov/codecov-action@v3
         if: always()
-        run: bash <(curl -s https://codecov.io/bash)
 
   image:
     if: github.event_name == 'push' || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
@@ -74,7 +74,7 @@ jobs:
           build-args: GIT_REF=${{ env.GIT_REF }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          context: ./hedera-mirror-rosetta/build
+          context: ./hedera-mirror-rosetta/container
           outputs: type=docker,dest=/tmp/${{ env.MODULE }}.tar
           tags: ${{ env.MODULE }}:latest
 
@@ -142,6 +142,7 @@ jobs:
         run: |
           ONLINE_CONTAINER_ID=$(docker run -d -e HEDERA_MIRROR_IMPORTER_STARTDATE=$STARTDATE \
             -e NETWORK=testnet \
+            -e HEDERA_MIRROR_ROSETTA_RESPONSE_MAXTRANSACTIONSINBLOCK=4 \
             -v /tmp/application_importer.yml:/app/importer/application.yml \
             -v /tmp/application_rosetta.yml:/app/rosetta/application.yml \
             -p 5700:5700 "${MODULE}:latest")

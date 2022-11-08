@@ -33,16 +33,17 @@ import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.util.Arrays;
 import java.util.List;
-import javax.annotation.Resource;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
@@ -58,8 +59,10 @@ import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.NftTransferRepository;
@@ -67,38 +70,25 @@ import com.hedera.mirror.importer.repository.NonFeeTransferRepository;
 import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
+@DisableRepeatableSqlMigration
 @EnabledIfV1
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.46.6")
 class TransferTransactionPayerMigrationTest extends IntegrationTest {
 
+    private static final EntityId NODE_ACCOUNT_ID = EntityId.of(0, 0, 3, EntityType.ACCOUNT);
     private static final EntityId PAYER_ID = EntityId.of(0, 0, 10001, EntityType.ACCOUNT);
 
-    private static final EntityId NODE_ACCOUNT_ID = EntityId.of(0, 0, 3, EntityType.ACCOUNT);
-
-    @Resource
-    private JdbcOperations jdbcOperations;
-
+    private final @Owner JdbcOperations jdbcOperations;
     @Value("classpath:db/migration/v1/V1.47.0__add_transfer_payer.sql")
-    private File migrationSql;
-
-    @Resource
-    private EntityRepository entityRepository;
-
-    @Resource
-    private TransactionRepository transactionRepository;
-
-    @Resource
-    private CryptoTransferRepository cryptoTransferRepository;
-
-    @Resource
-    private NftTransferRepository nftTransferRepository;
-
-    @Resource
-    private NonFeeTransferRepository nonFeeTransferRepository;
-
-    @Resource
-    private TokenTransferRepository tokenTransferRepository;
+    private final File migrationSql;
+    private final EntityRepository entityRepository;
+    private final TransactionRepository transactionRepository;
+    private final CryptoTransferRepository cryptoTransferRepository;
+    private final NftTransferRepository nftTransferRepository;
+    private final NonFeeTransferRepository nonFeeTransferRepository;
+    private final TokenTransferRepository tokenTransferRepository;
 
     @BeforeEach
     void before() {

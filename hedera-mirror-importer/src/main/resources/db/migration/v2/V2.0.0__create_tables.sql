@@ -28,7 +28,7 @@ create table if not exists account_balance_file
     load_end            bigint        not null,
     load_start          bigint        not null,
     name                varchar(250)  not null,
-    node_account_id     bigint        not null,
+    node_id             bigint        not null,
     time_offset         int default 0 not null
 );
 comment on table account_balance_file is 'Account balances stream files';
@@ -83,32 +83,10 @@ comment on table assessed_custom_fee is 'Assessed custom fees for HTS transactio
 -- contract
 create table if not exists contract
 (
-    auto_renew_account_id            bigint                         null,
-    auto_renew_period                bigint                         null,
-    created_timestamp                bigint                         null,
-    decline_reward                   boolean     default false      not null,
-    deleted                          boolean                        null,
-    evm_address                      bytea                          null,
-    expiration_timestamp             bigint                         null,
-    file_id                          bigint                         null,
-    id                               bigint                         not null,
-    initcode                         bytea                          null,
-    key                              bytea                          null,
-    max_automatic_token_associations integer                        null,
-    memo                             text        default ''         not null,
-    num                              bigint                         not null,
-    obtainer_id                      bigint                         null,
-    permanent_removal                boolean                        null,
-    proxy_account_id                 bigint                         null,
-    public_key                       character varying              null,
-    realm                            bigint                         not null,
-    runtime_bytecode                 bytea                          null,
-    shard                            bigint                         not null,
-    staked_account_id                bigint                         null,
-    staked_node_id                   bigint      default -1         null,
-    stake_period_start               bigint      default -1         null,
-    timestamp_range                  int8range                      not null,
-    type                             entity_type default 'CONTRACT' not null
+    file_id          bigint null,
+    id               bigint not null,
+    initcode         bytea  null,
+    runtime_bytecode bytea  null
 );
 comment on table contract is 'Contract entity';
 
@@ -125,6 +103,7 @@ create table if not exists contract_action
     gas_used            bigint                         not null,
     index               integer                        not null,
     input               bytea                          null,
+    payer_account_id    bigint                         not null,
     recipient_account   bigint                         null,
     recipient_address   bytea                          null,
     recipient_contract  bigint                         null,
@@ -133,13 +112,6 @@ create table if not exists contract_action
     value               bigint                         not null
 );
 comment on table contract_action is 'Contract action';
-
--- contract_history
-create table if not exists contract_history
-(
-    like contract including defaults
-);
-comment on table contract_history is 'Contract entity historical state';
 
 -- contract_log
 create table if not exists contract_log
@@ -175,11 +147,22 @@ create table if not exists contract_result
     gas_used             bigint       null,
     payer_account_id     bigint       not null,
     sender_id            bigint       null,
-    transaction_hash     bytea        not null,
+    transaction_hash     bytea        null,
     transaction_index    integer      null,
     transaction_result   smallint     not null
 );
 comment on table contract_result is 'Crypto contract execution results';
+
+-- contract_state
+create table if not exists contract_state
+(
+    contract_id        bigint not null,
+    created_timestamp  bigint not null,
+    modified_timestamp bigint not null,
+    slot               bytea  not null,
+    value              bytea  null
+);
+comment on table contract_state is 'Current contract state';
 
 create table if not exists contract_state_change
 (
@@ -224,17 +207,18 @@ comment on table crypto_transfer is 'Crypto account Hbar transfers';
 -- custom_fee
 create table if not exists custom_fee
 (
-    amount                bigint,
-    amount_denominator    bigint,
-    collector_account_id  bigint,
-    created_timestamp     bigint not null,
-    denominating_token_id bigint,
-    maximum_amount        bigint,
-    minimum_amount        bigint not null default 0,
-    net_of_transfers      boolean,
-    royalty_denominator   bigint,
-    royalty_numerator     bigint,
-    token_id              bigint not null
+    all_collectors_are_exempt   boolean not null default false,
+    amount                      bigint,
+    amount_denominator          bigint,
+    collector_account_id        bigint,
+    created_timestamp           bigint not null,
+    denominating_token_id       bigint,
+    maximum_amount              bigint,
+    minimum_amount              bigint not null default 0,
+    net_of_transfers            boolean,
+    royalty_denominator         bigint,
+    royalty_numerator           bigint,
+    token_id                    bigint not null
 );
 comment on table custom_fee is 'HTS Custom fees';
 
@@ -290,18 +274,6 @@ create table if not exists entity_stake
 );
 comment on table entity_stake is 'Network entity stake state';
 
-create materialized view if not exists entity_state_start as
-select balance,
-       decline_reward,
-       id,
-       coalesce(staked_account_id, 0)   as staked_account_id,
-       coalesce(staked_node_id, -1)     as staked_node_id,
-       coalesce(stake_period_start, -1) as stake_period_start
-from entity
-where deleted is not true
-  and type in ('ACCOUNT', 'CONTRACT');
-comment on materialized view entity_state_start is 'Network entity state at start of staking period';
-
 create table if not exists ethereum_transaction
 (
     access_list              bytea    null,
@@ -341,7 +313,7 @@ create table if not exists event_file
     load_end         bigint                 not null,
     load_start       bigint                 not null,
     name             character varying(250) not null,
-    node_account_id  bigint                 not null,
+    node_id          bigint                 not null,
     previous_hash    character varying(96)  not null,
     version          integer                not null
 );
@@ -456,9 +428,10 @@ comment on table non_fee_transfer is 'Crypto account non fee Hbar transfers';
 create table if not exists prng
 (
     consensus_timestamp bigint  not null,
-    range               integer not null,
-    pseudorandom_bytes  bytea   null,
-    pseudorandom_number integer null
+    payer_account_id    bigint  not null,
+    prng_bytes          bytea   null,
+    prng_number         integer null,
+    range               integer not null
 );
 comment on table prng is 'Pseudorandom number generator';
 
@@ -492,7 +465,7 @@ create table if not exists record_file
     load_end           bigint                 not null,
     logs_bloom         bytea                  null,
     name               character varying(250) not null,
-    node_account_id    bigint                 not null,
+    node_id            bigint                 not null,
     prev_hash          character varying(96)  not null,
     sidecar_count      int                    not null default 0,
     size               int                    null,
@@ -568,16 +541,24 @@ comment on table token is 'Token entity';
 --- token_account
 create table if not exists token_account
 (
-    account_id            bigint   not null,
-    associated            boolean  not null default false,
-    automatic_association boolean  not null default false,
-    created_timestamp     bigint   not null,
-    freeze_status         smallint not null default 0,
-    kyc_status            smallint not null default 0,
-    modified_timestamp    bigint   not null,
-    token_id              bigint   not null
+    account_id            bigint    not null,
+    associated            boolean   not null default false,
+    automatic_association boolean   not null default false,
+    balance               bigint    not null default 0,
+    created_timestamp     bigint    not null,
+    freeze_status         smallint  not null default 0,
+    kyc_status            smallint  not null default 0,
+    timestamp_range       int8range not null,
+    token_id              bigint    not null
 );
-comment on table token is 'Token account entity';
+comment on table token_account is 'Token account entity';
+
+--- token_account_history
+create table if not exists token_account_history
+(
+    like token_account including defaults
+);
+comment on table token_account_history is 'History of token_account';
 
 create table if not exists token_allowance
 (
@@ -678,3 +659,4 @@ create table if not exists transaction_signature
     type                smallint
 );
 comment on table transaction_signature is 'Transaction signatories';
+

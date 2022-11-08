@@ -25,24 +25,20 @@ import com.google.common.collect.Multimap;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Collection;
-import java.util.HashMap;
 import javax.inject.Named;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.importer.addressbook.AddressBookService;
-import com.hedera.mirror.importer.domain.FileStreamSignature;
+import com.hedera.mirror.importer.domain.StreamFileSignature;
+import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.exception.SignatureVerificationException;
-import com.hedera.mirror.importer.repository.NodeStakeRepository;
 
 @CustomLog
 @Named
 @RequiredArgsConstructor
 public class ConsensusValidatorImpl implements ConsensusValidator {
-    private final AddressBookService addressBookService;
+
     private final CommonDownloaderProperties commonDownloaderProperties;
-    private final NodeStakeRepository nodeStakeRepository;
 
     /**
      * Validates that the signature files satisfy the consensus requirement:
@@ -56,63 +52,43 @@ public class ConsensusValidatorImpl implements ConsensusValidator {
      * @throws SignatureVerificationException
      */
     @Override
-    public void validate(Collection<FileStreamSignature> signatures) throws SignatureVerificationException {
-        Multimap<String, FileStreamSignature> signatureHashMap = HashMultimap.create();
+    public void validate(Collection<StreamFileSignature> signatures) throws SignatureVerificationException {
+        Multimap<String, StreamFileSignature> signatureHashMap = HashMultimap.create();
+        StreamFilename filename = null;
+        BigDecimal stakeRequiredForConsensus = null;
+        long totalStake = 0L;
+
         for (var signature : signatures) {
-            if (signature.getStatus() == FileStreamSignature.SignatureStatus.VERIFIED) {
+            if (filename == null) {
+                filename = signature.getFilename();
+                totalStake = signature.getNode().getTotalStake();
+                stakeRequiredForConsensus = getStakeRequiredForConsensus(totalStake);
+            }
+
+            if (signature.getStatus() == StreamFileSignature.SignatureStatus.VERIFIED) {
                 signatureHashMap.put(signature.getFileHashAsHex(), signature);
             }
         }
 
-        var filename = signatures.stream().map(FileStreamSignature::getFilename).findFirst().orElse("unknown");
         if (BigDecimal.ZERO.equals(commonDownloaderProperties.getConsensusRatio()) && signatureHashMap.size() > 0) {
             log.debug("Signature file {} does not require consensus, skipping consensus check", filename);
             return;
         }
 
-        long totalStake = 0;
-        var nodeAccountIdToStakeMap = new HashMap<EntityId, Long>();
-        var addressBook = addressBookService.getCurrent();
-        var nodeStakes = nodeStakeRepository.findLatest();
-        var nodeIdToNodeAccountIdMap = addressBook.getNodeIdNodeAccountIdMap();
-        for (var nodeStake : nodeStakes) {
-            var nodeAccountId = nodeIdToNodeAccountIdMap.get(nodeStake.getNodeId());
-            if (nodeAccountId == null) {
-                throw new SignatureVerificationException(String.format("Invalid Node Id %s. Consensus not " +
-                        "reached for file %s", nodeStake.getNodeId(), filename));
-            }
-
-            long stake = nodeStake.getStake();
-            totalStake += stake;
-            nodeAccountIdToStakeMap.put(nodeAccountId, stake);
-        }
-
-        if (totalStake == 0) {
-            // Count the node stakes as signatures
-            nodeAccountIdToStakeMap.clear();
-            // Use the number of nodes as the total stake.
-            totalStake = nodeIdToNodeAccountIdMap.size();
-
-            if (totalStake == 0) {
-                throw new SignatureVerificationException(String.format("Invalid total staking weight. Consensus not " +
-                        "reached for file %s", filename));
-            }
-        }
-
-        var stakeRequiredForConsensus = getStakeRequiredForConsensus(totalStake);
         long debugStake = 0;
         long consensusCount = 0;
+
         for (String key : signatureHashMap.keySet()) {
             var validatedSignatures = signatureHashMap.get(key);
             long stake = 0L;
+
             for (var signature : validatedSignatures) {
-                // If the stake cannot be found in the map, count it as a signature giving it a value of 1.
-                stake += nodeAccountIdToStakeMap.getOrDefault(signature.getNodeAccountId(), 1L);
+                stake += signature.getNode().getStake();
             }
 
             if (canReachConsensus(stake, stakeRequiredForConsensus)) {
                 consensusCount += validatedSignatures.size();
-                validatedSignatures.forEach(s -> s.setStatus(FileStreamSignature.SignatureStatus.CONSENSUS_REACHED));
+                validatedSignatures.forEach(s -> s.setStatus(StreamFileSignature.SignatureStatus.CONSENSUS_REACHED));
             }
 
             if (debugStake < stake) {
@@ -133,6 +109,11 @@ public class ConsensusValidatorImpl implements ConsensusValidator {
     }
 
     private BigDecimal getStakeRequiredForConsensus(long totalStake) {
+        if (totalStake == 0) {
+            throw new SignatureVerificationException("Invalid total staking weight. Consensus not " +
+                    "reached");
+        }
+
         return BigDecimal.valueOf(totalStake)
                 .multiply(commonDownloaderProperties.getConsensusRatio())
                 .setScale(0, RoundingMode.CEILING);

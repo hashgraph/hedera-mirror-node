@@ -102,7 +102,7 @@ livenessProbe:
   httpGet:
     path: /actuator/health/liveness
     port: http
-  initialDelaySeconds: 60
+  initialDelaySeconds: 90
   periodSeconds: 10
   timeoutSeconds: 2
 
@@ -266,7 +266,7 @@ replicas: 1
 
 resources:
   limits:
-    cpu: 300m
+    cpu: 500m
     memory: 768Mi
   requests:
     cpu: 100m

@@ -20,12 +20,11 @@ package com.hedera.mirror.importer.downloader.record;
  * ‍
  */
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.Map;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.TestRecordFiles;
@@ -35,10 +34,9 @@ class RecordFileV5V6DownloaderTest extends AbstractRecordFileDownloaderTest {
     private static final RecordFile recordFileV5 = TestRecordFiles.getV5V6Files().get(0);
     private static final RecordFile recordFileV6 = TestRecordFiles.getV5V6Files().get(1);
 
-    @BeforeAll
-    static void beforeAll() throws IOException {
-        addressBook = loadAddressBook("test-v6-4n.bin");
-        allNodeAccountIds = addressBook.getNodeSet();
+    @BeforeEach
+    void setup() {
+        loadAddressBook("test-v6-4n.bin");
     }
 
     @Override

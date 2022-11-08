@@ -20,7 +20,12 @@
 
 package domain
 
-const tableNameTokenAccount = "token_account"
+import "github.com/jackc/pgtype"
+
+const (
+	tokenAccountTableName        = "token_account"
+	tokenAccountHistoryTableName = "token_account_history"
+)
 
 type TokenAccount struct {
 	AccountId            EntityId `gorm:"primaryKey"`
@@ -29,10 +34,14 @@ type TokenAccount struct {
 	CreatedTimestamp     int64
 	FreezeStatus         int16
 	KycStatus            int16
-	ModifiedTimestamp    int64    `gorm:"primaryKey"`
+	TimestampRange       pgtype.Int8range
 	TokenId              EntityId `gorm:"primaryKey"`
 }
 
 func (TokenAccount) TableName() string {
-	return tableNameTokenAccount
+	return tokenAccountTableName
+}
+
+func (TokenAccount) HistoryTableName() string {
+	return tokenAccountHistoryTableName
 }

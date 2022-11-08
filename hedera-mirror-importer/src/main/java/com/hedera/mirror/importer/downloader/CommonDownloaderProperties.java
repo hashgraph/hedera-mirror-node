@@ -23,6 +23,11 @@ package com.hedera.mirror.importer.downloader;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
+import java.net.URI;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import javax.annotation.PostConstruct;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
@@ -30,6 +35,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
@@ -40,46 +46,67 @@ import com.hedera.mirror.importer.MirrorProperties;
 @ConfigurationProperties("hedera.mirror.importer.downloader")
 public class CommonDownloaderProperties {
 
+    private static final MathContext MATH_CONTEXT = new MathContext(19, RoundingMode.DOWN);
+
     private final MirrorProperties mirrorProperties;
 
     private String accessKey;
 
     private Boolean allowAnonymousAccess;
 
+    private int batchSize = 100;
+
     private String bucketName;
 
-    @NotNull
-    private CloudProvider cloudProvider = CloudProvider.S3;
-
-    private MathContext consensusRatioMathContext = new MathContext(19, RoundingMode.DOWN);
+    private SourceType cloudProvider = SourceType.S3;
 
     @NotNull
     @Max(1)
     @Min(0)
-    private BigDecimal consensusRatio = BigDecimal.ONE.divide(BigDecimal.valueOf(3), consensusRatioMathContext);
+    private BigDecimal consensusRatio = BigDecimal.ONE.divide(BigDecimal.valueOf(3), MATH_CONTEXT);
 
     private String endpointOverride;
 
     private String gcpProjectId;
 
-    @Min(0)
-    private int maxConcurrency = 1000; // aws sdk default = 50
-
     private String region = "us-east-1";
 
     private String secretKey;
 
-    public String getBucketName() {
-        return StringUtils.isNotBlank(bucketName) ? bucketName : mirrorProperties.getNetwork().getBucketName();
+    @NotNull
+    private List<StreamSourceProperties> sources = new ArrayList<>();
+
+    @Min(1)
+    private int threads = 30;
+
+    @DurationMin(seconds = 1)
+    @NotNull
+    private Duration timeout = Duration.ofSeconds(30L);
+
+    @PostConstruct
+    public void init() {
+        StreamSourceProperties.SourceCredentials credentials = null;
+        if (StringUtils.isNotBlank(accessKey) && StringUtils.isNotBlank(secretKey)) {
+            credentials = new StreamSourceProperties.SourceCredentials();
+            credentials.setAccessKey(accessKey);
+            credentials.setSecretKey(secretKey);
+        }
+
+        if (credentials != null || sources.isEmpty()) {
+            var source = new StreamSourceProperties();
+            source.setCredentials(credentials);
+            source.setProjectId(gcpProjectId);
+            source.setRegion(region);
+            source.setType(cloudProvider);
+            if (StringUtils.isNotBlank(endpointOverride)) {
+                source.setUri(URI.create(endpointOverride));
+            }
+            sources.add(0, source);
+        }
     }
 
-    /*
-     * If the cloud provider is GCP, it must use the static provider.  If the static credentials are both present,
-     * force the mirror node to use the static provider.
-     */
-    public boolean isStaticCredentials() {
-        return cloudProvider == CommonDownloaderProperties.CloudProvider.GCP ||
-                (StringUtils.isNotBlank(accessKey) && StringUtils.isNotBlank(secretKey));
+    public String getBucketName() {
+        return StringUtils.isNotBlank(bucketName) ? bucketName : mirrorProperties.getNetwork().getBucketName();
     }
 
     public boolean isAnonymousCredentials() {
@@ -89,7 +116,7 @@ public class CommonDownloaderProperties {
 
     @Getter
     @RequiredArgsConstructor
-    public enum CloudProvider {
+    public enum SourceType {
         S3("https://s3.amazonaws.com"),
         GCP("https://storage.googleapis.com");
 

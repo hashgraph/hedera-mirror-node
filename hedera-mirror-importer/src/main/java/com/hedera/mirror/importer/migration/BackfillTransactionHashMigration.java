@@ -27,6 +27,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 
 @Named
@@ -49,7 +50,8 @@ public class BackfillTransactionHashMigration extends RepeatableMigration {
     private final JdbcTemplate jdbcTemplate;
 
     @Lazy
-    public BackfillTransactionHashMigration(EntityProperties entityProperties, JdbcTemplate jdbcTemplate,
+    public BackfillTransactionHashMigration(EntityProperties entityProperties,
+                                            @Owner JdbcTemplate jdbcTemplate,
                                             MirrorProperties mirrorProperties) {
         super(mirrorProperties.getMigration());
         this.entityProperties = entityProperties;

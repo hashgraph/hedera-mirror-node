@@ -21,10 +21,9 @@
 import _ from 'lodash';
 
 import BaseService from './baseService';
-import {EthereumTransaction, Transaction, TransactionWithEthData} from '../model';
+import {orderFilterValues} from '../constants';
+import {EthereumTransaction, Transaction} from '../model';
 import {OrderSpec} from '../sql';
-
-const ethTransactionReplaceString = `$ethTransactionWhere`;
 
 /**
  * Transaction retrieval business logic
@@ -34,85 +33,37 @@ class TransactionService extends BaseService {
     super();
   }
 
-  static ethTransactionTableCTE = `with ${EthereumTransaction.tableAlias} as (
-      select
-        ${EthereumTransaction.ACCESS_LIST},
-        ${EthereumTransaction.CALL_DATA},
-        ${EthereumTransaction.CALL_DATA_ID},
-        ${EthereumTransaction.CHAIN_ID},
-        ${EthereumTransaction.CONSENSUS_TIMESTAMP} as ethConsensus,
-        ${EthereumTransaction.GAS_LIMIT},
-        ${EthereumTransaction.GAS_PRICE},
-        ${EthereumTransaction.HASH},
-        ${EthereumTransaction.MAX_FEE_PER_GAS},
-        ${EthereumTransaction.MAX_PRIORITY_FEE_PER_GAS},
-        ${EthereumTransaction.NONCE},
-        ${EthereumTransaction.SIGNATURE_R},
-        ${EthereumTransaction.SIGNATURE_S},
-        ${EthereumTransaction.TYPE},
-        ${EthereumTransaction.RECOVERY_ID},
-        ${EthereumTransaction.VALUE}
-      from ${EthereumTransaction.tableName}
-      where ${ethTransactionReplaceString}
-  )`;
+  static transactionDetailsFromTransactionIdQuery = `
+    select ${Transaction.CONSENSUS_TIMESTAMP}
+    from ${Transaction.tableName}
+    where ${Transaction.PAYER_ACCOUNT_ID} = $1 and ${Transaction.VALID_START_NS} = $2`;
 
-  static transactionDetailsFromTimestampQuery = `${this.ethTransactionTableCTE}
-    select
-      ${Transaction.getFullName(Transaction.PAYER_ACCOUNT_ID)},
-      ${Transaction.getFullName(Transaction.RESULT)},
-      coalesce(
-        ${EthereumTransaction.getFullName(EthereumTransaction.HASH)},
-        ${Transaction.getFullName(Transaction.TRANSACTION_HASH)}
-      ) as ${Transaction.TRANSACTION_HASH},
-      ${Transaction.getFullName(Transaction.INDEX)},
-      ${EthereumTransaction.tableAlias}.*
-    from ${Transaction.tableName} ${Transaction.tableAlias}
-    left join ${EthereumTransaction.tableAlias}
-    on ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} = ethConsensus
-    where ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} = $1`;
-
-  static selectTransactionDetailsBaseQuery = `${this.ethTransactionTableCTE}
-    select
-    ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)},
-    ${Transaction.getFullName(Transaction.PAYER_ACCOUNT_ID)},
-    ${Transaction.getFullName(Transaction.RESULT)},
-    ${Transaction.getFullName(Transaction.TYPE)} as transaction_type,
-    coalesce(
-        ${EthereumTransaction.getFullName(EthereumTransaction.HASH)},
-      ${Transaction.getFullName(Transaction.TRANSACTION_HASH)}
-    ) as ${Transaction.TRANSACTION_HASH},
-    ${Transaction.getFullName(Transaction.INDEX)},
-    ${EthereumTransaction.tableAlias}.*
-    from ${Transaction.tableName} ${Transaction.tableAlias}
-    left join ${EthereumTransaction.tableAlias}
-    on ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} = ethConsensus
-    `;
-
-  static transactionDetailsFromTransactionIdQuery = `${this.selectTransactionDetailsBaseQuery}
-    where ${Transaction.PAYER_ACCOUNT_ID} = $1
-      and ${Transaction.VALID_START_NS} = $2`;
-
-  static transactionDetailsFromEthHashQuery = `${this.selectTransactionDetailsBaseQuery}
-    where ${EthereumTransaction.getFullName(EthereumTransaction.HASH)} = $1`;
-
-  /**
-   * Retrieves the transaction for the given timestamp
-   *
-   * @param {string} timestamp consensus timestamp
-   * @return {Promise<Transaction>} transaction subset
-   */
-  async getTransactionDetailsFromTimestamp(timestamp) {
-    const row = await super.getSingleRow(
-      TransactionService.transactionDetailsFromTimestampQuery.replace(
-        ethTransactionReplaceString,
-        `${EthereumTransaction.CONSENSUS_TIMESTAMP} = $1`
-      ),
-      [timestamp],
-      'getTransactionDetailsFromTimestamp'
-    );
-
-    return _.isNull(row) ? null : new TransactionWithEthData(row);
-  }
+  static ethereumTransactionDetailsQuery = `
+  select
+    ${EthereumTransaction.getFullName(EthereumTransaction.ACCESS_LIST)},
+    ${EthereumTransaction.getFullName(EthereumTransaction.CALL_DATA)},
+    ${EthereumTransaction.getFullName(EthereumTransaction.CALL_DATA_ID)},
+    ${EthereumTransaction.getFullName(EthereumTransaction.CHAIN_ID)},
+    ${EthereumTransaction.getFullName(EthereumTransaction.CONSENSUS_TIMESTAMP)},
+    ${EthereumTransaction.getFullName(EthereumTransaction.GAS_LIMIT)},
+    ${EthereumTransaction.getFullName(EthereumTransaction.GAS_PRICE)},
+    ${EthereumTransaction.getFullName(EthereumTransaction.HASH)},
+    ${EthereumTransaction.getFullName(EthereumTransaction.MAX_FEE_PER_GAS)},
+    ${EthereumTransaction.getFullName(EthereumTransaction.MAX_PRIORITY_FEE_PER_GAS)},
+    ${EthereumTransaction.getFullName(EthereumTransaction.NONCE)},
+    ${EthereumTransaction.getFullName(EthereumTransaction.PAYER_ACCOUNT_ID)},
+    ${EthereumTransaction.getFullName(EthereumTransaction.SIGNATURE_R)},
+    ${EthereumTransaction.getFullName(EthereumTransaction.SIGNATURE_S)},
+    ${EthereumTransaction.getFullName(EthereumTransaction.TYPE)},
+    ${EthereumTransaction.getFullName(EthereumTransaction.RECOVERY_ID)},
+    ${EthereumTransaction.getFullName(EthereumTransaction.VALUE)},
+    ${Transaction.getFullName(Transaction.RESULT)}
+  from ${EthereumTransaction.tableName} ${EthereumTransaction.tableAlias}
+  join ${Transaction.tableName} ${Transaction.tableAlias}
+  on ${EthereumTransaction.getFullName(EthereumTransaction.CONSENSUS_TIMESTAMP)} =
+     ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} and
+     ${EthereumTransaction.getFullName(EthereumTransaction.PAYER_ACCOUNT_ID)} =
+     ${Transaction.getFullName(Transaction.PAYER_ACCOUNT_ID)}`;
 
   /**
    * Retrieves the transaction based on the transaction id and its nonce
@@ -124,30 +75,39 @@ class TransactionService extends BaseService {
    */
   async getTransactionDetailsFromTransactionId(transactionId, nonce = undefined, excludeTransactionResults = []) {
     return this.getTransactionDetails(
-      TransactionService.transactionDetailsFromTransactionIdQuery.replace(
-        ethTransactionReplaceString,
-        `${EthereumTransaction.PAYER_ACCOUNT_ID} = $1`
-      ),
+      TransactionService.transactionDetailsFromTransactionIdQuery,
       [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()],
-      'getTransactionDetailsFromEthHash',
+      'getTransactionDetailsFromTransactionId',
       excludeTransactionResults,
       nonce
     );
   }
 
-  async getTransactionDetailsFromEthHash(ethHash, excludeTransactionResults = [], limit = undefined) {
-    return this.getTransactionDetails(
-      TransactionService.transactionDetailsFromEthHashQuery.replace(
-        ethTransactionReplaceString,
-        `${EthereumTransaction.HASH} = $1`
+  async getEthTransactionByHash(hash, excludeTransactionResults = [], limit = undefined) {
+    const params = [hash];
+    const transactionsFilter = this.getExcludeTransactionResultsCondition(excludeTransactionResults, params);
+    const query = [
+      TransactionService.ethereumTransactionDetailsQuery,
+      `where ${EthereumTransaction.getFullName(EthereumTransaction.HASH)} = $1`,
+      transactionsFilter,
+      this.getOrderByQuery(
+        OrderSpec.from(EthereumTransaction.getFullName(EthereumTransaction.CONSENSUS_TIMESTAMP), orderFilterValues.ASC)
       ),
-      [ethHash],
-      'getTransactionDetailsFromEthHash',
-      excludeTransactionResults,
-      undefined,
-      limit,
-      this.getOrderByQuery(OrderSpec.from(Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP), 'asc'))
-    );
+      limit ? `limit ${limit}` : '',
+    ].join('\n');
+
+    const rows = await super.getRows(query, params, 'getEthereumTransactionByHash');
+    return rows.map((row) => new EthereumTransaction(row));
+  }
+
+  async getEthTransactionByTimestamp(timestamp) {
+    const query = [
+      TransactionService.ethereumTransactionDetailsQuery,
+      `where ${EthereumTransaction.getFullName(EthereumTransaction.CONSENSUS_TIMESTAMP)} = $1`,
+    ].join('\n');
+
+    const rows = await super.getRows(query, [timestamp], 'getEthereumTransactionByTimestamp');
+    return rows.map((row) => new EthereumTransaction(row));
   }
 
   async getTransactionDetails(
@@ -162,22 +122,10 @@ class TransactionService extends BaseService {
     if (nonce !== undefined) {
       params.push(nonce);
       query = `${query}
-      and ${Transaction.getFullName(Transaction.NONCE)} = $${params.length}`;
+      and ${Transaction.NONCE} = $${params.length}`;
     }
 
-    if (excludeTransactionResults !== undefined) {
-      if (Array.isArray(excludeTransactionResults)) {
-        if (excludeTransactionResults.length > 0) {
-          const start = params.length + 1;
-          params.push(...excludeTransactionResults);
-          const positions = _.range(start, params.length + 1).map((p) => `$${p}`);
-          query += ` and ${Transaction.getFullName(Transaction.RESULT)} not in (${positions})`;
-        }
-      } else {
-        params.push(excludeTransactionResults);
-        query += ` and ${Transaction.getFullName(Transaction.RESULT)} <> $${params.length}`;
-      }
-    }
+    query += this.getExcludeTransactionResultsCondition(excludeTransactionResults, params);
 
     if (orderQuery !== undefined) {
       query += ` ${orderQuery}`;
@@ -189,8 +137,29 @@ class TransactionService extends BaseService {
     }
 
     const rows = await super.getRows(query, params, parentFunctionName);
-    return rows.map((row) => new TransactionWithEthData(row));
+    return rows.map((row) => new Transaction(row));
   }
+
+  getExcludeTransactionResultsCondition = (excludeTransactionResults, params) => {
+    if (_.isNil(excludeTransactionResults)) {
+      return '';
+    }
+
+    if (!Array.isArray(excludeTransactionResults)) {
+      excludeTransactionResults = [excludeTransactionResults];
+    }
+
+    if (excludeTransactionResults.length === 0) {
+      return '';
+    }
+
+    const positions = excludeTransactionResults.reduce((previous, current) => {
+      const length = params.push(current);
+      previous.push(`$${length}`);
+      return previous;
+    }, []);
+    return ` and ${Transaction.RESULT} not in (${positions})`;
+  };
 }
 
 export default new TransactionService();

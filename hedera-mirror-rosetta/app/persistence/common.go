@@ -20,6 +20,8 @@
 
 package persistence
 
+import "github.com/jackc/pgtype"
+
 const (
 	genesisTimestampQuery = `select consensus_timestamp + time_offset as timestamp
                              from account_balance_file
@@ -27,3 +29,13 @@ const (
                              limit 1`
 	genesisTimestampCte = " genesis as (" + genesisTimestampQuery + ") "
 )
+
+func getInclusiveInt8Range(lower, upper int64) pgtype.Int8range {
+	return pgtype.Int8range{
+		Lower:     pgtype.Int8{Int: lower, Status: pgtype.Present},
+		Upper:     pgtype.Int8{Int: upper, Status: pgtype.Present},
+		LowerType: pgtype.Inclusive,
+		UpperType: pgtype.Inclusive,
+		Status:    pgtype.Present,
+	}
+}

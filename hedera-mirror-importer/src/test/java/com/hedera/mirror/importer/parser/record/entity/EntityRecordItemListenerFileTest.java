@@ -68,7 +68,7 @@ import com.hedera.mirror.importer.util.Utility;
 class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerTest {
 
     private static final FileID ADDRESS_BOOK_FILEID = FileID.newBuilder().setShardNum(0).setRealmNum(0)
-            .setFileNum(AddressBookServiceImpl.ADDRESS_BOOK_102_ENTITY_ID.getEntityNum()).build();
+            .setFileNum(AddressBookServiceImpl.FILE_102.getEntityNum()).build();
     private static final FileID FILE_ID = FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(1001).build();
     private static final byte[] FILE_CONTENTS = {'a', 'b', 'c'};
     private static final int TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT = 4;

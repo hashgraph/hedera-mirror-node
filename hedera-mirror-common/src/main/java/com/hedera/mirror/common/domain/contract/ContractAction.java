@@ -76,6 +76,9 @@ public class ContractAction implements Persistable<ContractAction.Id> {
     private byte[] input;
 
     @Convert(converter = AccountIdConverter.class)
+    private EntityId payerAccountId;
+
+    @Convert(converter = AccountIdConverter.class)
     private EntityId recipientAccount;
 
     @ToString.Exclude
