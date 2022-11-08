@@ -29,7 +29,7 @@ import com.hedera.mirror.web3.service.eth.ApiContractEthService;
 @ExtendWith(SpringExtension.class)
 @WebFluxTest(controllers = ApiContractController.class)
 class ApiContractControllerTest {
-    private static final String METHOD = "eth_call";
+    private static final String METHOD = "call";
     private static final String RESULT = "0x1";
 
     @Resource
@@ -61,7 +61,7 @@ class ApiContractControllerTest {
 
         when(serviceFactory.lookup(METHOD)).thenReturn(new DummyEthCallService());
         webClient.post()
-                .uri("/api/v1/contracts?estimate=true")
+                .uri("/api/v1/contracts/call?estimate=true")
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromValue(jsonRpcRequest))
                 .exchange()
