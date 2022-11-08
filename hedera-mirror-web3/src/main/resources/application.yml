@@ -9,10 +9,10 @@ hedera:
         sslMode: DISABLE
         username: mirror_web3
       evm:
-        chain-id: 298
+        evm-version: 298
+        fundingAccount: unrecognized
+        dynamic-evm-version: false
         max-gas-refund-percentage: 20
-        are-nfts-enabled: false
-        enabled-sidecars: unrecognized
 logging:
   level:
     root: warn

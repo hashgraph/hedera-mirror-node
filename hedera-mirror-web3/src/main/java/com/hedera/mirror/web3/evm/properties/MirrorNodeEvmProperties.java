@@ -20,17 +20,35 @@ package com.hedera.mirror.web3.evm.properties;
  * ‍
  */
 
-import com.hedera.services.stream.proto.SidecarType;
-
-import lombok.Data;
+import org.hyperledger.besu.datatypes.Address;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import java.util.Set;
+
+import com.hedera.services.evm.contracts.execution.EvmProperties;
 
 @ConfigurationProperties(prefix = "hedera.mirror.web3.evm")
-@Data
 public class MirrorNodeEvmProperties implements EvmProperties {
-    private int chainId;
+    private String evmVersion;
+    private Address fundingAccount;
+    private boolean dynamicEvmVersion;
     private int maxGasRefundPercentage;
-    private boolean areNftsEnabled;
-    private Set<SidecarType> enabledSidecars;
+
+    @Override
+    public String evmVersion() {
+        return evmVersion;
+    }
+
+    @Override
+    public Address fundingAccountAddress() {
+        return fundingAccount;
+    }
+
+    @Override
+    public boolean dynamicEvmVersion() {
+        return dynamicEvmVersion;
+    }
+
+    @Override
+    public int maxGasRefundPercentage() {
+        return maxGasRefundPercentage;
+    }
 }
