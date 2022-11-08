@@ -1,0 +1,106 @@
+{
+  "description": "Token relationship api call for tokens created after the last balance was created for an account",
+  "setup": {
+    "accounts": [
+      {
+        "num": 1001,
+        "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
+        "evm_address": "ebb9a1be370150759408cd7af48e9eda2b8ead57",
+        "public_key": "519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9"
+      }
+    ],
+    "entities": [
+      {
+        "num": 1500,
+        "type": "TOKEN"
+      },
+      {
+        "num": 2500,
+        "type": "TOKEN"
+      }
+    ],
+    "tokens": [
+      {
+        "token_id": "0.0.1135",
+        "symbol": "ORIGINALRDKSE",
+        "created_timestamp": "1234567890000000002",
+        "type": "FUNGIBLE_COMMON"
+      },
+      {
+        "token_id": "0.0.45678",
+        "symbol": "HEDERACOIN",
+        "created_timestamp": "1234567890009000002",
+        "type": "FUNGIBLE_COMMON"
+      }
+    ],
+    "tokenaccounts": [
+      {
+        "token_id": "0.0.1135",
+        "account_id": "1001",
+        "automatic_association": true,
+        "created_timestamp": "1234567890000000002",
+        "freeze_status": 2,
+        "kyc_status": 1
+      },
+      {
+        "token_id": "0.0.45678",
+        "account_id": "1001",
+        "created_timestamp": "1234567890009000002",
+        "freeze_status": 2,
+        "kyc_status": 1,
+        "automatic_association": true
+      }
+    ],
+    "accountBalanceFile": [
+      {
+        "consensus_timestamp": "1234567890000000002",
+        "count": 2,
+        "name": "2022-09-12T06_59_32.000852000Z.rcd"
+      },
+      {
+        "consensus_timestamp": "1234567890000008002",
+        "count": 2,
+        "name": "2022-09-12T08_59_32.000852000Z.rcd"
+      }
+    ],
+    "tokenBalance": [
+      {
+        "consensus_timestamp": "1234567890000000002",
+        "account_id": 1001,
+        "balance": 5,
+        "token_id": "0.0.1135"
+      },
+      {
+        "consensus_timestamp": "1234567890000008002",
+        "account_id": 1001,
+        "balance": 15,
+        "token_id": "0.0.1135"
+      }
+    ]
+  },
+  "urls": ["/api/v1/accounts/1001/tokens?order=asc"],
+  "responseStatus": 200,
+  "responseJson": {
+    "tokens": [
+      {
+        "automatic_association": true,
+        "balance": 15,
+        "created_timestamp": "1234567890.000000002",
+        "freeze_status": "UNFROZEN",
+        "kyc_status": "GRANTED",
+        "token_id": "0.0.1135"
+      },
+      {
+        "automatic_association": true,
+        "balance": 0,
+        "created_timestamp": "1234567890.009000002",
+        "freeze_status": "UNFROZEN",
+        "kyc_status": "GRANTED",
+        "token_id": "0.0.45678"
+      }
+    ],
+    "links": {
+      "next": null
+    }
+  }
+}

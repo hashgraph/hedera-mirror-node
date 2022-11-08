@@ -1,10 +1,15 @@
 ## @formatter:off
-with existing as (
+## The inner join then left join is a workaround for citus
+with current as (
+  select e.*
+  from $finalTable e
+  join $tempTable t on $idJoin
+  where upper(t.timestamp_range) is null
+), existing as (
   select $existingColumnsAs, t.*
   from $tempTable t
-  left join $finalTable e on $idJoin
-),
-existing_history as (
+  left join current e on $idJoin
+), existing_history as (
   insert into $historyTable ($insertColumns)
   select distinct on ($conflictColumns) $existingColumns
   from existing

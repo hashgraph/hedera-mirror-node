@@ -22,6 +22,7 @@ import AccountController from './accountController';
 import ContractController from './contractController';
 import CryptoAllowanceController from './cryptoAllowanceController';
 import NetworkController from './networkController';
+import TokenController from './tokenController';
 import TokenAllowanceController from './tokenAllowanceController';
 import BlockController from './blockController';
 
@@ -30,6 +31,7 @@ export {
   ContractController,
   CryptoAllowanceController,
   NetworkController,
+  TokenController,
   TokenAllowanceController,
   BlockController,
 };

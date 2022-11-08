@@ -60,7 +60,7 @@ public class BlockNumberMigration extends RepeatableMigration {
 
     @Override
     protected MigrationVersion getMinimumVersion() {
-        return MigrationVersion.fromVersion("1.61.1");
+        return MigrationVersion.fromVersion("1.67.0");
     }
 
     @Override

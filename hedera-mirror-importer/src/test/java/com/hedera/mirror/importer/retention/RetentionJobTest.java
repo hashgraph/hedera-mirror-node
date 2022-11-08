@@ -152,7 +152,7 @@ class RetentionJobTest extends IntegrationTest {
         retentionJob.prune();
 
         // then
-        assertThat(recordFileRepository.findAll()).containsExactly(recordFile1, recordFile2, recordFile3);
+        assertThat(recordFileRepository.findAll()).containsExactlyInAnyOrder(recordFile1, recordFile2, recordFile3);
         assertThat(transactionRepository.count()).isEqualTo(3);
     }
 

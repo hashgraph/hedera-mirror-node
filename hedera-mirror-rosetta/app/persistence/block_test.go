@@ -42,21 +42,18 @@ var (
 			Count:              10,
 			FileHash:           "genesis_account_balance_file_hash",
 			Name:               "genesis_account_balance_file",
-			NodeAccountId:      nodeEntityId,
 		},
 		{
 			ConsensusTimestamp: 10000,
 			Count:              10,
 			FileHash:           "second_account_balance_file_hash",
 			Name:               "second_account_balance_file",
-			NodeAccountId:      nodeEntityId,
 		},
 		{
 			ConsensusTimestamp: 20000,
 			Count:              10,
 			FileHash:           "third_account_balance_file_hash",
 			Name:               "third_account_balance_file",
-			NodeAccountId:      nodeEntityId,
 		},
 	}
 	expectedGenesisBlock = &types.Block{
@@ -91,7 +88,6 @@ var (
 			Hash:           "genesis_record_file_hash",
 			Index:          genesisBlockIndex,
 			Name:           "genesis_record_file",
-			NodeAccountID:  nodeEntityId,
 			PrevHash:       "previous_record_file_hash",
 		},
 		{
@@ -100,7 +96,6 @@ var (
 			Hash:           "second_record_file_hash",
 			Index:          genesisBlockIndex + 1,
 			Name:           "second_record_file",
-			NodeAccountID:  nodeEntityId,
 			PrevHash:       "genesis_record_file_hash",
 		},
 		{
@@ -109,7 +104,6 @@ var (
 			Hash:           "third_record_file_hash",
 			Index:          genesisBlockIndex + 2,
 			Name:           "third_record_file",
-			NodeAccountID:  nodeEntityId,
 			PrevHash:       "second_record_file_hash",
 		},
 	}
@@ -120,7 +114,6 @@ var (
 		Hash:           "previous_record_file_hash",
 		Index:          genesisBlockIndex - 1,
 		Name:           "previous_record_file",
-		NodeAccountID:  nodeEntityId,
 		PrevHash:       "some_hash",
 	}
 )
@@ -142,7 +135,7 @@ func (suite *blockRepositorySuite) SetupTest() {
 
 func (suite *blockRepositorySuite) TestFindByHashGenesisBlock() {
 	// given
-	repo := NewBlockRepository(dbClient, "")
+	repo := NewBlockRepository(dbClient)
 
 	// when
 	actual, err := repo.FindByHash(defaultContext, genesisRecordFile.Hash)
@@ -154,7 +147,7 @@ func (suite *blockRepositorySuite) TestFindByHashGenesisBlock() {
 
 func (suite *blockRepositorySuite) TestFindByHashNonGenesisBlock() {
 	// given
-	repo := NewBlockRepository(dbClient, "")
+	repo := NewBlockRepository(dbClient)
 
 	// when
 	actual, err := repo.FindByHash(defaultContext, expectedSecondBlock.Hash)
@@ -166,7 +159,7 @@ func (suite *blockRepositorySuite) TestFindByHashNonGenesisBlock() {
 
 func (suite *blockRepositorySuite) TestFindByHashBlockBeforeGenesis() {
 	// given
-	repo := NewBlockRepository(dbClient, "")
+	repo := NewBlockRepository(dbClient)
 
 	// when
 	actual, err := repo.FindByHash(defaultContext, recordFileBeforeGenesis.Hash)
@@ -179,7 +172,7 @@ func (suite *blockRepositorySuite) TestFindByHashBlockBeforeGenesis() {
 func (suite *blockRepositorySuite) TestFindByHashNoAccountBalanceFile() {
 	// given
 	db.ExecSql(dbClient, truncateAccountBalanceFileSql)
-	repo := NewBlockRepository(dbClient, "")
+	repo := NewBlockRepository(dbClient)
 
 	// when
 	actual, err := repo.FindByHash(defaultContext, genesisRecordFile.Hash)
@@ -192,7 +185,7 @@ func (suite *blockRepositorySuite) TestFindByHashNoAccountBalanceFile() {
 func (suite *blockRepositorySuite) TestFindByHashNoRecordFile() {
 	// given
 	db.ExecSql(dbClient, truncateRecordFileSql)
-	repo := NewBlockRepository(dbClient, "")
+	repo := NewBlockRepository(dbClient)
 
 	// when
 	actual, err := repo.FindByHash(defaultContext, genesisRecordFile.Hash)
@@ -204,7 +197,7 @@ func (suite *blockRepositorySuite) TestFindByHashNoRecordFile() {
 
 func (suite *blockRepositorySuite) TestFindByHashEmptyHash() {
 	// given
-	repo := NewBlockRepository(dbClient, "")
+	repo := NewBlockRepository(dbClient)
 
 	// when
 	actual, err := repo.FindByHash(defaultContext, "")
@@ -216,7 +209,7 @@ func (suite *blockRepositorySuite) TestFindByHashEmptyHash() {
 
 func (suite *blockRepositorySuite) TestFindByHashDbConnectionError() {
 	// given
-	repo := NewBlockRepository(invalidDbClient, "")
+	repo := NewBlockRepository(invalidDbClient)
 
 	// when
 	actual, err := repo.FindByHash(defaultContext, genesisRecordFile.Hash)
@@ -228,7 +221,7 @@ func (suite *blockRepositorySuite) TestFindByHashDbConnectionError() {
 
 func (suite *blockRepositorySuite) TestFindByIdentifierGenesisBlock() {
 	// given
-	repo := NewBlockRepository(dbClient, "")
+	repo := NewBlockRepository(dbClient)
 
 	// when
 	actual, err := repo.FindByIdentifier(defaultContext, genesisBlockIndex, expectedGenesisBlock.Hash)
@@ -240,7 +233,7 @@ func (suite *blockRepositorySuite) TestFindByIdentifierGenesisBlock() {
 
 func (suite *blockRepositorySuite) TestFindByIdentifierNonGenesisBlock() {
 	// given
-	repo := NewBlockRepository(dbClient, "")
+	repo := NewBlockRepository(dbClient)
 
 	// when
 	actual, err := repo.FindByIdentifier(defaultContext, expectedSecondBlock.Index, expectedSecondBlock.Hash)
@@ -252,7 +245,7 @@ func (suite *blockRepositorySuite) TestFindByIdentifierNonGenesisBlock() {
 
 func (suite *blockRepositorySuite) TestFindByIdentifierBlockBeforeGenesis() {
 	// given
-	repo := NewBlockRepository(dbClient, "")
+	repo := NewBlockRepository(dbClient)
 
 	// when
 	actual, err := repo.FindByIdentifier(defaultContext, recordFileBeforeGenesis.Index, recordFileBeforeGenesis.Hash)
@@ -280,7 +273,7 @@ func (suite *blockRepositorySuite) TestFindByIdentifierInvalidArgument() {
 			"",
 		},
 	}
-	repo := NewBlockRepository(dbClient, "")
+	repo := NewBlockRepository(dbClient)
 
 	for _, tt := range tests {
 		suite.T().Run(tt.name, func(t *testing.T) {
@@ -296,7 +289,7 @@ func (suite *blockRepositorySuite) TestFindByIdentifierInvalidArgument() {
 
 func (suite *blockRepositorySuite) TestFindByIdentifierIndexHashMismatch() {
 	// given
-	repo := NewBlockRepository(dbClient, "")
+	repo := NewBlockRepository(dbClient)
 
 	// when
 	actual, err := repo.FindByIdentifier(defaultContext, expectedGenesisBlock.Index, expectedSecondBlock.Hash)
@@ -309,7 +302,7 @@ func (suite *blockRepositorySuite) TestFindByIdentifierIndexHashMismatch() {
 func (suite *blockRepositorySuite) TestFindByIdentifierNoAccountBalanceFile() {
 	// given
 	db.ExecSql(dbClient, truncateAccountBalanceFileSql)
-	repo := NewBlockRepository(dbClient, "")
+	repo := NewBlockRepository(dbClient)
 
 	// when
 	actual, err := repo.FindByIdentifier(defaultContext, 0, expectedGenesisBlock.Hash)
@@ -322,7 +315,7 @@ func (suite *blockRepositorySuite) TestFindByIdentifierNoAccountBalanceFile() {
 func (suite *blockRepositorySuite) TestFindByIdentifierNoRecordFile() {
 	// given
 	db.ExecSql(dbClient, truncateRecordFileSql)
-	repo := NewBlockRepository(dbClient, "")
+	repo := NewBlockRepository(dbClient)
 
 	// when
 	actual, err := repo.FindByIdentifier(defaultContext, 0, expectedGenesisBlock.Hash)
@@ -334,7 +327,7 @@ func (suite *blockRepositorySuite) TestFindByIdentifierNoRecordFile() {
 
 func (suite *blockRepositorySuite) TestFindByIdentifierNotFound() {
 	// given
-	repo := NewBlockRepository(dbClient, "")
+	repo := NewBlockRepository(dbClient)
 
 	// when
 	actual, err := repo.FindByIdentifier(defaultContext, 1000, "foobar")
@@ -346,7 +339,7 @@ func (suite *blockRepositorySuite) TestFindByIdentifierNotFound() {
 
 func (suite *blockRepositorySuite) TestFindByIdentifierDbConnectionError() {
 	// given
-	repo := NewBlockRepository(invalidDbClient, "")
+	repo := NewBlockRepository(invalidDbClient)
 
 	// when
 	actual, err := repo.FindByIdentifier(defaultContext, 0, expectedGenesisBlock.Hash)
@@ -358,7 +351,7 @@ func (suite *blockRepositorySuite) TestFindByIdentifierDbConnectionError() {
 
 func (suite *blockRepositorySuite) TestFindByIndexGenesisBlock() {
 	// given
-	repo := NewBlockRepository(dbClient, "")
+	repo := NewBlockRepository(dbClient)
 
 	// when
 	actual, err := repo.FindByIndex(defaultContext, genesisBlockIndex)
@@ -370,7 +363,7 @@ func (suite *blockRepositorySuite) TestFindByIndexGenesisBlock() {
 
 func (suite *blockRepositorySuite) TestFindByIndexNonGenesisBlock() {
 	// given
-	repo := NewBlockRepository(dbClient, "")
+	repo := NewBlockRepository(dbClient)
 
 	// when
 	actual, err := repo.FindByIndex(defaultContext, expectedSecondBlock.Index)
@@ -382,7 +375,7 @@ func (suite *blockRepositorySuite) TestFindByIndexNonGenesisBlock() {
 
 func (suite *blockRepositorySuite) TestFindByIndexBlockBeforeGenesis() {
 	// given
-	repo := NewBlockRepository(dbClient, "")
+	repo := NewBlockRepository(dbClient)
 
 	// when
 	actual, err := repo.FindByIndex(defaultContext, recordFileBeforeGenesis.Index)
@@ -394,7 +387,7 @@ func (suite *blockRepositorySuite) TestFindByIndexBlockBeforeGenesis() {
 
 func (suite *blockRepositorySuite) TestFindByIndexInvalidIndex() {
 	// given
-	repo := NewBlockRepository(dbClient, "")
+	repo := NewBlockRepository(dbClient)
 
 	// when
 	actual, err := repo.FindByIndex(defaultContext, -1)
@@ -407,7 +400,7 @@ func (suite *blockRepositorySuite) TestFindByIndexInvalidIndex() {
 func (suite *blockRepositorySuite) TestFineByIndexNoAccountBalanceFile() {
 	// given
 	db.ExecSql(dbClient, truncateAccountBalanceFileSql)
-	repo := NewBlockRepository(dbClient, "")
+	repo := NewBlockRepository(dbClient)
 
 	// when
 	actual, err := repo.FindByIndex(defaultContext, 0)
@@ -420,7 +413,7 @@ func (suite *blockRepositorySuite) TestFineByIndexNoAccountBalanceFile() {
 func (suite *blockRepositorySuite) TestFindByIndexNoRecordFile() {
 	// given
 	db.ExecSql(dbClient, truncateRecordFileSql)
-	repo := NewBlockRepository(dbClient, "")
+	repo := NewBlockRepository(dbClient)
 
 	// when
 	actual, err := repo.FindByIndex(defaultContext, 0)
@@ -432,7 +425,7 @@ func (suite *blockRepositorySuite) TestFindByIndexNoRecordFile() {
 
 func (suite *blockRepositorySuite) TestFindByIndexNotFound() {
 	// given
-	repo := NewBlockRepository(dbClient, "")
+	repo := NewBlockRepository(dbClient)
 
 	// when
 	actual, err := repo.FindByIndex(defaultContext, 1000)
@@ -444,7 +437,7 @@ func (suite *blockRepositorySuite) TestFindByIndexNotFound() {
 
 func (suite *blockRepositorySuite) TestFindByIndexDbConnectionError() {
 	// given
-	repo := NewBlockRepository(invalidDbClient, "")
+	repo := NewBlockRepository(invalidDbClient)
 
 	// when
 	actual, err := repo.FindByIndex(defaultContext, 0)
@@ -456,7 +449,7 @@ func (suite *blockRepositorySuite) TestFindByIndexDbConnectionError() {
 
 func (suite *blockRepositorySuite) TestRetrieveGenesis() {
 	// given
-	repo := NewBlockRepository(dbClient, "")
+	repo := NewBlockRepository(dbClient)
 
 	// when
 	actual, err := repo.RetrieveGenesis(defaultContext)
@@ -490,7 +483,7 @@ func (suite *blockRepositorySuite) TestRetrieveGenesisIndexOverflowInt4() {
 			expected := *expectedGenesisBlock
 			expected.Index = genesisIndex
 			expected.ParentIndex = genesisIndex
-			repo := NewBlockRepository(dbClient, "")
+			repo := NewBlockRepository(dbClient)
 
 			// when
 			actual, err := repo.RetrieveGenesis(defaultContext)
@@ -505,7 +498,7 @@ func (suite *blockRepositorySuite) TestRetrieveGenesisIndexOverflowInt4() {
 func (suite *blockRepositorySuite) TestRetrieveGenesisNoAccountBalanceFile() {
 	// given
 	db.ExecSql(dbClient, truncateAccountBalanceFileSql)
-	repo := NewBlockRepository(dbClient, "")
+	repo := NewBlockRepository(dbClient)
 
 	// when
 	actual, err := repo.RetrieveGenesis(defaultContext)
@@ -518,7 +511,7 @@ func (suite *blockRepositorySuite) TestRetrieveGenesisNoAccountBalanceFile() {
 func (suite *blockRepositorySuite) TestRetrieveGenesisNoRecordFile() {
 	// given
 	db.ExecSql(dbClient, truncateRecordFileSql)
-	repo := NewBlockRepository(dbClient, "")
+	repo := NewBlockRepository(dbClient)
 
 	// when
 	actual, err := repo.RetrieveGenesis(defaultContext)
@@ -530,7 +523,7 @@ func (suite *blockRepositorySuite) TestRetrieveGenesisNoRecordFile() {
 
 func (suite *blockRepositorySuite) TestRetrieveGenesisDbConnectionError() {
 	// given
-	repo := NewBlockRepository(invalidDbClient, "")
+	repo := NewBlockRepository(invalidDbClient)
 
 	// when
 	actual, err := repo.RetrieveGenesis(defaultContext)
@@ -543,7 +536,7 @@ func (suite *blockRepositorySuite) TestRetrieveGenesisDbConnectionError() {
 func (suite *blockRepositorySuite) TestRetrieveLatestNonGenesisBlock() {
 	// given
 	expected := expectedThirdBlock
-	repo := NewBlockRepository(dbClient, "")
+	repo := NewBlockRepository(dbClient)
 
 	// when
 	actual, err := repo.RetrieveLatest(defaultContext)
@@ -557,7 +550,7 @@ func (suite *blockRepositorySuite) TestRetrieveLatestWithOnlyGenesisBlock() {
 	// given
 	db.ExecSql(dbClient, truncateRecordFileSql)
 	db.CreateDbRecords(dbClient, genesisRecordFile)
-	repo := NewBlockRepository(dbClient, "")
+	repo := NewBlockRepository(dbClient)
 	expected := *expectedGenesisBlock
 	expected.ConsensusEndNanos = recordFiles[0].ConsensusEnd
 
@@ -573,7 +566,7 @@ func (suite *blockRepositorySuite) TestRetrieveLatestWithBlockBeforeGenesis() {
 	// given
 	db.ExecSql(dbClient, truncateRecordFileSql)
 	db.CreateDbRecords(dbClient, recordFileBeforeGenesis)
-	repo := NewBlockRepository(dbClient, "")
+	repo := NewBlockRepository(dbClient)
 
 	// when
 	actual, err := repo.RetrieveLatest(defaultContext)
@@ -586,7 +579,7 @@ func (suite *blockRepositorySuite) TestRetrieveLatestWithBlockBeforeGenesis() {
 func (suite *blockRepositorySuite) TestRetrieveLatestNoAccountBalanceFile() {
 	// given
 	db.ExecSql(dbClient, truncateAccountBalanceFileSql)
-	repo := NewBlockRepository(dbClient, "")
+	repo := NewBlockRepository(dbClient)
 
 	// when
 	actual, err := repo.RetrieveLatest(defaultContext)
@@ -599,7 +592,7 @@ func (suite *blockRepositorySuite) TestRetrieveLatestNoAccountBalanceFile() {
 func (suite *blockRepositorySuite) TestRetrieveLatestNoRecordFile() {
 	// given
 	db.ExecSql(dbClient, truncateRecordFileSql)
-	repo := NewBlockRepository(dbClient, "")
+	repo := NewBlockRepository(dbClient)
 
 	// when
 	actual, err := repo.RetrieveLatest(defaultContext)
@@ -611,7 +604,7 @@ func (suite *blockRepositorySuite) TestRetrieveLatestNoRecordFile() {
 
 func (suite *blockRepositorySuite) TestRetrieveLatestRecordFileTableInconsistent() {
 	// given
-	repo := NewBlockRepository(dbClient, "")
+	repo := NewBlockRepository(dbClient)
 
 	// when
 	actual, err := repo.RetrieveLatest(defaultContext)
@@ -639,7 +632,7 @@ func (suite *blockRepositorySuite) TestRetrieveLatestRecordFileTableInconsistent
 
 func (suite *blockRepositorySuite) TestRetrieveLatestDbConnectionError() {
 	// given
-	repo := NewBlockRepository(invalidDbClient, "")
+	repo := NewBlockRepository(invalidDbClient)
 
 	// when
 	actual, err := repo.RetrieveLatest(defaultContext)

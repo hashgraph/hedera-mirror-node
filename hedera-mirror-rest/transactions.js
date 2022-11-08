@@ -81,9 +81,8 @@ const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'des
     // populate pre-clause queries where a timestamp filter is applied
     if (!_.isUndefined(modifyingQuery)) {
       timestampFilter = `timestampFilter as (${modifyingQuery}),`;
-      timestampFilterJoin = `join timestampFilter tf on ${Transaction.getFullName(
-        Transaction.CONSENSUS_TIMESTAMP
-      )} = tf.consensus_timestamp`;
+      timestampFilterJoin = `join timestampFilter tf on ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} =
+        tf.consensus_timestamp`;
       limitQuery = '';
     }
 
@@ -397,9 +396,10 @@ const getTransferDistinctTimestampsQuery = function (
   const namedTransferTsQuery = namedTsQuery.replace(/t\.consensus_timestamp/g, `${tableAlias}.${timestampColumn}`);
   const joinClause =
     (resultTypeQuery || transactionTypeQuery) &&
-    `JOIN ${Transaction.tableName} AS ${
+    `join ${Transaction.tableName} as ${
       Transaction.tableAlias
-    } ON ${tableAlias}.${timestampColumn} = ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)}`;
+    } on ${tableAlias}.${timestampColumn} = ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} and
+      ${tableAlias}.${Transaction.PAYER_ACCOUNT_ID} = ${Transaction.getFullName(Transaction.PAYER_ACCOUNT_ID)}`;
   const whereClause = buildWhereClause(
     namedAccountQuery,
     namedTransferTsQuery,
@@ -416,6 +416,10 @@ const getTransferDistinctTimestampsQuery = function (
     ORDER BY ${tableAlias}.consensus_timestamp ${order}
     ${namedLimitQuery}`;
 };
+
+// the condition to exclude synthetic transactions attached to a user submitted transaction
+const transactionByPayerExcludeSyntheticCondition = `${Transaction.getFullName(Transaction.NONCE)} = 0 or
+  ${Transaction.getFullName(Transaction.PARENT_CONSENSUS_TIMESTAMP)} is not null`;
 
 /**
  * Transactions queries are organized as follows: First there's an inner query that selects the
@@ -450,7 +454,10 @@ const getTransactionsInnerQuery = function (
   const namedLimitQuery = convertToNamedQuery(limitQuery, 'limit');
   const namedCreditDebitQuery = convertToNamedQuery(creditDebitQuery, 'cd');
 
-  const transactionAccountQuery = namedAccountQuery.replace(/ctl\.entity_id/g, 't.payer_account_id');
+  const transactionAccountQuery = namedAccountQuery
+    ? `${namedAccountQuery.replace(/ctl\.entity_id/g, 't.payer_account_id')}
+      and (${transactionByPayerExcludeSyntheticCondition})`
+    : '';
   const transactionWhereClause = buildWhereClause(
     transactionAccountQuery,
     namedTsQuery,

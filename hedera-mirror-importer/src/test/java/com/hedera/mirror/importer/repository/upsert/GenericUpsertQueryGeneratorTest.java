@@ -78,7 +78,13 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
         UpsertQueryGenerator generator = factory.get(Entity.class);
         assertThat(generator).isInstanceOf(GenericUpsertQueryGenerator.class);
         assertThat(format(generator.getUpsertQuery())).isEqualTo(format("""
-                with existing as (
+                with current as (
+                  select e.*
+                  from entity e
+                  join entity_temp t on e.id = t.id
+                  where upper(t.timestamp_range) is null
+                ),
+                existing as (
                   select
                     e.alias as e_alias,
                     e.auto_renew_account_id as e_auto_renew_account_id,
@@ -111,7 +117,7 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                     t.*
                   from
                     entity_temp t
-                    left join entity e on e.id = t.id
+                    left join current e on e.id = t.id
                 ),
                 existing_history as (
                   insert into
@@ -223,8 +229,9 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                       null
                     ),
                     coalesce(auto_renew_period, e_auto_renew_period, null),
-                    case when coalesce(e_type, type) in ('ACCOUNT', 'CONTRACT') then coalesce(e_balance, 0) + coalesce(balance, 0)
-                         else null
+                    case
+                      when coalesce(e_type, type) in ('ACCOUNT', 'CONTRACT') then coalesce(e_balance, 0) + coalesce(balance, 0)
+                      else null
                     end,
                     coalesce(created_timestamp, e_created_timestamp, null),
                     coalesce(decline_reward, e_decline_reward, false),
@@ -303,8 +310,9 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                     null
                   ),
                   coalesce(auto_renew_period, e_auto_renew_period, null),
-                  case when coalesce(e_type, type) in ('ACCOUNT', 'CONTRACT') then coalesce(e_balance, 0) + coalesce(balance, 0)
-                       else null
+                  case
+                    when coalesce(e_type, type) in ('ACCOUNT', 'CONTRACT') then coalesce(e_balance, 0) + coalesce(balance, 0)
+                    else null
                   end,
                   coalesce(created_timestamp, e_created_timestamp, null),
                   coalesce(decline_reward, e_decline_reward, false),
@@ -379,7 +387,14 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
         UpsertQueryGenerator generator = factory.get(Schedule.class);
         assertThat(generator).isInstanceOf(GenericUpsertQueryGenerator.class);
         assertThat(format(generator.getUpsertQuery())).isEqualTo(format("""
-                with existing as (
+                with current as (
+                  select
+                    e.*
+                  from
+                    schedule_temp t
+                    join schedule e on e.schedule_id = t.schedule_id
+                ),
+                existing as (
                   select
                     e.consensus_timestamp as e_consensus_timestamp,
                     e.creator_account_id as e_creator_account_id,
@@ -390,8 +405,9 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                     e.transaction_body as e_transaction_body,
                     e.wait_for_expiry as e_wait_for_expiry,
                     t.*
-                  from schedule_temp t
-                  left join schedule e on e.schedule_id = t.schedule_id
+                  from
+                    schedule_temp t
+                    left join current e on e.schedule_id = t.schedule_id
                 )
                 insert into
                   schedule (
@@ -413,10 +429,13 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                   coalesce(schedule_id, e_schedule_id, null),
                   coalesce(transaction_body, e_transaction_body, null),
                   coalesce(wait_for_expiry, e_wait_for_expiry, false)
-                from existing
-                where coalesce(consensus_timestamp, e_consensus_timestamp) is not null
-                on conflict (schedule_id) do update
-                  set executed_timestamp = excluded.executed_timestamp
+                from
+                  existing
+                where
+                  coalesce(consensus_timestamp, e_consensus_timestamp) is not null on conflict (schedule_id) do
+                update
+                set
+                  executed_timestamp = excluded.executed_timestamp
                 """));
     }
 

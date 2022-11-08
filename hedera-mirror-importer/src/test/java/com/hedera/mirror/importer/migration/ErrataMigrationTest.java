@@ -23,6 +23,8 @@ package com.hedera.mirror.importer.migration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Instant;
+import java.util.Collections;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.api.IterableAssert;
 import org.junit.jupiter.api.AfterEach;
@@ -51,7 +53,26 @@ public class ErrataMigrationTest extends IntegrationTest {
 
     public static final long BAD_TIMESTAMP1 = 1568415600193620000L;
     private static final long BAD_TIMESTAMP2 = 1568528100472477002L;
+    private static final long BAD_TIMESTAMP_FIXED_OFFSET = 1658421000626004000L;
     private static final long RECEIVER_PAYER_TIMESTAMP = 1570118944399195000L;
+
+    private static final AccountBalanceFile EXPECTED_ACCOUNT_BALANCE_FILE1 = AccountBalanceFile.builder()
+            .consensusTimestamp(BAD_TIMESTAMP1)
+            .timeOffset(-1)
+            .build();
+    private static final AccountBalanceFile EXPECTED_ACCOUNT_BALANCE_FILE2 = AccountBalanceFile.builder()
+            .consensusTimestamp(BAD_TIMESTAMP2)
+            .timeOffset(-1)
+            .build();
+    private static final AccountBalanceFile EXPECTED_ACCOUNT_BALANCE_FILE_FIXED_OFFSET = AccountBalanceFile.builder()
+            .consensusTimestamp(BAD_TIMESTAMP_FIXED_OFFSET)
+            .timeOffset(53)
+            .build();
+    private static final List<AccountBalanceFile> EXPECTED_ACCOUNT_BALANCE_FILES = List.of(
+            EXPECTED_ACCOUNT_BALANCE_FILE1,
+            EXPECTED_ACCOUNT_BALANCE_FILE2,
+            EXPECTED_ACCOUNT_BALANCE_FILE_FIXED_OFFSET
+    );
 
     private final AccountBalanceFileRepository accountBalanceFileRepository;
     private final ContractResultRepository contractResultRepository;
@@ -74,7 +95,7 @@ public class ErrataMigrationTest extends IntegrationTest {
 
     @Test
     void checksum() {
-        assertThat(errataMigration.getChecksum()).isEqualTo(3);
+        assertThat(errataMigration.getChecksum()).isEqualTo(4);
     }
 
     @Test
@@ -86,7 +107,7 @@ public class ErrataMigrationTest extends IntegrationTest {
 
         errataMigration.doMigrate();
 
-        assertBalanceOffsets(0);
+        assertBalanceOffsets(Collections.emptyList());
         assertErrataTransfers(ErrataType.INSERT, 0);
         assertErrataTransfers(ErrataType.DELETE, 0);
         assertErrataTransactions(ErrataType.INSERT, 0);
@@ -112,6 +133,7 @@ public class ErrataMigrationTest extends IntegrationTest {
         domainBuilder.accountBalanceFile().persist();
         domainBuilder.accountBalanceFile().customize(a -> a.consensusTimestamp(BAD_TIMESTAMP1)).persist();
         domainBuilder.accountBalanceFile().customize(a -> a.consensusTimestamp(BAD_TIMESTAMP2)).persist();
+        domainBuilder.accountBalanceFile().customize(a -> a.consensusTimestamp(BAD_TIMESTAMP_FIXED_OFFSET)).persist();
         spuriousTransfer(RECEIVER_PAYER_TIMESTAMP, 10, TransactionType.CRYPTOTRANSFER, true, false); // Expected
         spuriousTransfer(1L, 15, TransactionType.CRYPTOTRANSFER, false, false); // Expected
         spuriousTransfer(2L, 15, TransactionType.CRYPTOTRANSFER, false, true); // Expected
@@ -121,7 +143,7 @@ public class ErrataMigrationTest extends IntegrationTest {
 
         errataMigration.doMigrate();
 
-        assertBalanceOffsets(2);
+        assertBalanceOffsets(EXPECTED_ACCOUNT_BALANCE_FILES);
         assertThat(contractResultRepository.count()).isEqualTo(1L);
         assertErrataTransactions(ErrataType.INSERT, 101);
         assertErrataTransactions(ErrataType.DELETE, 0);
@@ -142,7 +164,7 @@ public class ErrataMigrationTest extends IntegrationTest {
     void migrateIdempotency() throws Exception {
         migrateMainnet();
         errataMigration.doMigrate();
-        assertBalanceOffsets(2);
+        assertBalanceOffsets(EXPECTED_ACCOUNT_BALANCE_FILES);
         assertErrataTransactions(ErrataType.INSERT, 101);
         assertErrataTransactions(ErrataType.DELETE, 0);
         assertErrataTransfers(ErrataType.INSERT, 515);
@@ -160,12 +182,19 @@ public class ErrataMigrationTest extends IntegrationTest {
 
     @Test
     void onEndWithOffset() {
-        AccountBalanceFile accountBalanceFile = new AccountBalanceFile();
+        var accountBalanceFile = new AccountBalanceFile();
         accountBalanceFile.setConsensusTimestamp(BAD_TIMESTAMP1);
         errataMigration.onStart(); // Call to increase test coverage of no-op methods
         errataMigration.onError();
         errataMigration.onEnd(accountBalanceFile);
         assertThat(accountBalanceFile.getTimeOffset()).isEqualTo(-1);
+
+        accountBalanceFile = new AccountBalanceFile();
+        accountBalanceFile.setConsensusTimestamp(BAD_TIMESTAMP_FIXED_OFFSET);
+        errataMigration.onStart(); // Call to increase test coverage of no-op methods
+        errataMigration.onError();
+        errataMigration.onEnd(accountBalanceFile);
+        assertThat(accountBalanceFile.getTimeOffset()).isEqualTo(53);
     }
 
     @Test
@@ -179,10 +208,11 @@ public class ErrataMigrationTest extends IntegrationTest {
         assertThat(accountBalanceFile.getTimeOffset()).isZero();
     }
 
-    private void assertBalanceOffsets(int expected) {
+    private void assertBalanceOffsets(List<AccountBalanceFile> expected) {
         assertThat(accountBalanceFileRepository.findAll())
                 .filteredOn(a -> a.getTimeOffset() != 0)
-                .hasSize(expected);
+                .usingRecursiveFieldByFieldElementComparatorOnFields("consensusTimestamp", "timeOffset")
+                .containsExactlyInAnyOrderElementsOf(expected);
     }
 
     private IterableAssert<CryptoTransfer> assertErrataTransfers(ErrataType errata, int expected) {

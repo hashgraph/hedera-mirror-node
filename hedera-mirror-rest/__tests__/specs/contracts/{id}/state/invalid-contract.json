@@ -1,0 +1,36 @@
+{
+  "description": "Contract state api call for a contract with invalid contract",
+  "setup": {
+    "contractStates": [
+      {
+        "created_timestamp": "1676540001234390005",
+        "modified_timestamp": "1676540001234390005",
+        "contract_id": 5001,
+        "slot": "0000000000000000000000000000000000000000000000000000000000000001",
+        "value": "10"
+      }
+    ],
+    "contracts": [
+      {
+        "created_timestamp": "987654111123456",
+        "evm_address": "70f2b2914a2a4b783faefb75f459a580616fcb5e",
+        "file_id": "5001",
+        "key": [2, 2, 2],
+        "num": "8002",
+        "timestamp_range": "[987654111123456,)"
+      }
+    ]
+  },
+  "urls": [
+    "/api/v1/contracts/5005/state",
+    "/api/v1/contracts/70f2b2914a2a4b783faefb75f459a580616fcb5e/state",
+    "/api/v1/contracts/0x70f2b2914a2a4b783faefb75f459a580616fcb5e/state"
+  ],
+  "responseStatus": 200,
+  "responseJson": {
+    "state": [],
+    "links": {
+      "next": null
+    }
+  }
+}

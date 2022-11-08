@@ -18,7 +18,7 @@
     <properties>
         <cucumber.version>7.8.1</cucumber.version>
         <cucumber-reporting.version>7.3.0</cucumber-reporting.version>
-        <hedera-sdk.version>2.17.3</hedera-sdk.version>
+        <hedera-sdk.version>2.18.0</hedera-sdk.version>
         <junit-platform.version>1.9.1</junit-platform.version>
         <skipTests>true</skipTests>
     </properties>
@@ -100,10 +100,6 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>org.hibernate.validator</groupId>
-            <artifactId>hibernate-validator</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.springframework.retry</groupId>
             <artifactId>spring-retry</artifactId>
             <scope>test</scope>
@@ -111,6 +107,17 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-aop</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-logging</artifactId>
+                </exclusion>
+            </exclusions>
             <scope>test</scope>
         </dependency>
         <dependency>

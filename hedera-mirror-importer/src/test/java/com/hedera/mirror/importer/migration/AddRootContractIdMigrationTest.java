@@ -37,10 +37,12 @@ import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.test.context.TestPropertySource;
 
+import com.hedera.mirror.importer.DisableRepeatableSqlMigration;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.config.Owner;
 
+@DisableRepeatableSqlMigration
 @EnabledIfV1
 @Tag("migration")
 @TestPropertySource(properties = "spring.flyway.target=1.51.0")

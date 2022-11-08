@@ -3,7 +3,7 @@
 *.log
 *.tgz
 .*
-Dockerfile
+!Dockerfile
 __tests__/
 application.yml
 check-state-proof/

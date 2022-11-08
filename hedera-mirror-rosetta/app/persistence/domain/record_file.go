@@ -36,7 +36,7 @@ type RecordFile struct {
 	LoadEnd          int64
 	LoadStart        int64
 	Name             string
-	NodeAccountID    EntityId
+	NodeId           int64
 	PrevHash         string
 	Version          int
 }

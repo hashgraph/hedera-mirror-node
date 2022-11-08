@@ -193,18 +193,22 @@ describe('TransactionService.getEthTransactionByHash tests', () => {
     {
       consensus_timestamp: 1,
       hash: ethereumTxHash,
+      payer_account_id: 10,
     },
     {
       consensus_timestamp: 2,
       hash: ethereumTxHash,
+      payer_account_id: 10,
     },
     {
       consensus_timestamp: 3,
       hash: ethereumTxHash,
+      payer_account_id: 10,
     },
     {
       consensus_timestamp: 4,
       hash: ethereumTxHash,
+      payer_account_id: 10,
     },
   ];
 
@@ -288,10 +292,12 @@ describe('TransactionService.getEthTransactionByTimestamp tests', () => {
     {
       consensus_timestamp: 1,
       hash: ethereumTxHash,
+      payer_account_id: 10,
     },
     {
       consensus_timestamp: 2,
       hash: ethereumTxHash,
+      payer_account_id: 10,
     },
   ];
 

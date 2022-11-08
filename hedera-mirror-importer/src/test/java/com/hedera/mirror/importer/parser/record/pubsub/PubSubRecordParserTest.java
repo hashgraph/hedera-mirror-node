@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
@@ -39,36 +40,30 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.PubSubIntegrationTest;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.parser.record.RecordFileParser;
 import com.hedera.mirror.importer.reader.record.RecordFileReader;
 
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class PubSubRecordParserTest extends PubSubIntegrationTest {
 
     private static final int NUM_TXNS = 34; // number of transactions in test record files
 
     @Value("classpath:data/pubsub-messages.txt")
-    Path pubSubMessages;
-
+    private final Path pubSubMessages;
+    private final RecordFileParser recordFileParser;
+    private final RecordFileReader recordFileReader;
     @Value("classpath:data/recordstreams/v2/record0.0.3/*.rcd")
-    Resource[] testFiles;
-
-    @Autowired
-    private RecordFileReader recordFileReader;
-
-    @Autowired
-    private RecordFileParser recordFileParser;
+    private final Resource[] testFiles;
 
     @Test
     public void testPubSubExporter() throws Exception {
         for (int index = 0; index < testFiles.length; index++) {
             RecordFile recordFile = recordFileReader.read(StreamFileData.from(testFiles[index].getFile()));
             recordFile.setIndex((long) index);
-            recordFile.setNodeAccountId(EntityId.of(0, 0, 3, EntityType.ACCOUNT));
+            recordFile.setNodeId(0L);
             recordFileParser.parse(recordFile);
         }
 

@@ -38,7 +38,7 @@
                 <version>2.3.10</version>
                 <configuration>
                     <goPath>${go.dir}/path</goPath>
-                    <goVersion>1.18</goVersion>
+                    <goVersion>1.19</goVersion>
                     <hideBanner>true</hideBanner>
                     <storeFolder>${go.dir}/store</storeFolder>
                     <useEnvVars>true</useEnvVars>

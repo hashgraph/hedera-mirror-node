@@ -20,6 +20,7 @@ package com.hedera.mirror.test.e2e.acceptance.config;
  * ‍
  */
 
+import com.google.common.base.Throwables;
 import java.time.Duration;
 import java.util.Set;
 import javax.validation.constraints.Max;
@@ -43,16 +44,21 @@ public class RestPollingProperties {
 
     @Min(1)
     @Max(60)
-    private int maxAttempts = 60;
+    private int maxAttempts = 10;
 
     @NotNull
     @DurationMin(millis = 500L)
-    private Duration maxBackoff = Duration.ofSeconds(8L);
+    private Duration maxBackoff = Duration.ofSeconds(4L);
 
     @NotNull
     @DurationMin(millis = 100L)
-    private Duration minBackoff = Duration.ofMillis(250L);
+    private Duration minBackoff = Duration.ofMillis(500L);
 
     @NotNull
     private Set<Class> retryableExceptions = Set.of(Exception.class);
+
+    public boolean shouldRetry(Throwable t) {
+        return retryableExceptions.stream()
+                .anyMatch(ex -> ex.isInstance(t) || ex.isInstance(Throwables.getRootCause(t)));
+    }
 }

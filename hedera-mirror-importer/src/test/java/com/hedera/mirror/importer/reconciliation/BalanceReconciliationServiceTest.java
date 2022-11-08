@@ -166,24 +166,6 @@ class BalanceReconciliationServiceTest extends IntegrationTest {
     }
 
     @Test
-    void v27Offset() {
-        // given
-        balance(Map.of(2L, FIFTY_BILLION_HBARS));
-        transfer(2, 3, 1000);
-        transfer(3, 4, 100);
-        var last = balance(Map.of(2L, FIFTY_BILLION_HBARS - 1500L, 3L, 900L, 4L, 600L));
-        transfer(2, 4, 500);
-        recordFileRepository.delete(recordFileRepository.findLatest().get());
-        domainBuilder.recordFile().customize(r -> r.hapiVersionMinor(27)).persist();
-
-        // when
-        reconcile();
-
-        // then
-        assertReconciliationJob(SUCCESS, last).returns(1L, ReconciliationJob::getCount);
-    }
-
-    @Test
     void delay() {
         // given
         long delay = 1000L;

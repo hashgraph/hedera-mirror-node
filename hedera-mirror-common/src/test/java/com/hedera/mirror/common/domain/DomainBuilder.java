@@ -74,6 +74,7 @@ import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
+import com.hedera.mirror.common.domain.contract.ContractState;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.CryptoAllowanceHistory;
@@ -102,6 +103,7 @@ import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
+import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
@@ -162,7 +164,7 @@ public class DomainBuilder {
                 .loadEnd(timestamp + 1)
                 .loadStart(timestamp)
                 .name(name)
-                .nodeAccountId(entityId(ACCOUNT))
+                .nodeId(id())
                 .timeOffset(0);
         return new DomainWrapperImpl<>(builder, builder::build);
     }
@@ -257,6 +259,7 @@ public class DomainBuilder {
                 .gasUsed(50L)
                 .index((int) id())
                 .input(bytes(256))
+                .payerAccountId(entityId(ACCOUNT))
                 .recipientAccount(entityId(ACCOUNT))
                 .resultData(bytes(256))
                 .resultDataType(ResultDataCase.OUTPUT.getNumber())
@@ -297,6 +300,17 @@ public class DomainBuilder {
                 .transactionHash(bytes(32))
                 .transactionIndex(1)
                 .transactionResult(ResponseCodeEnum.SUCCESS_VALUE);
+        return new DomainWrapperImpl<>(builder, builder::build);
+    }
+
+    public DomainWrapper<ContractState, ContractState.ContractStateBuilder> contractState() {
+        var createdTimestamp = timestamp();
+        var builder = ContractState.builder()
+                .contractId(id())
+                .createdTimestamp(createdTimestamp)
+                .modifiedTimestamp(createdTimestamp)
+                .slot(bytes(32))
+                .value(bytes(32));
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
@@ -487,7 +501,7 @@ public class DomainBuilder {
                 .loadEnd(now.plusSeconds(1).getEpochSecond())
                 .loadStart(now.getEpochSecond())
                 .name(now.toString().replace(':', '_') + ".rcd")
-                .nodeAccountId(entityId(ACCOUNT))
+                .nodeId(id())
                 .previousHash(text(96))
                 .version(3);
         return new DomainWrapperImpl<>(builder, builder::build);
@@ -604,6 +618,7 @@ public class DomainBuilder {
     public DomainWrapper<Prng, Prng.PrngBuilder> prng() {
         var builder = Prng.builder()
                 .consensusTimestamp(timestamp())
+                .payerAccountId(id())
                 .range(Integer.MAX_VALUE)
                 .prngNumber(random.nextInt(Integer.MAX_VALUE));
         return new DomainWrapperImpl<>(builder, builder::build);
@@ -643,7 +658,7 @@ public class DomainBuilder {
                 .loadEnd(now.plusSeconds(1).getEpochSecond())
                 .loadStart(now.getEpochSecond())
                 .name(instantString + ".rcd.gz")
-                .nodeAccountId(entityId(ACCOUNT))
+                .nodeId(id())
                 .previousHash(text(96))
                 .sidecarCount(1)
                 .sidecars(List.of(sidecarFile()
@@ -705,8 +720,10 @@ public class DomainBuilder {
                 .pauseKey(key())
                 .pauseStatus(TokenPauseStatusEnum.UNPAUSED)
                 .supplyKey(key())
+                .supplyType(TokenSupplyTypeEnum.INFINITE)
                 .symbol("HBAR")
                 .tokenId(new TokenId(entityId(TOKEN)))
+                .totalSupply(1_000_000_000L)
                 .treasuryAccountId(entityId(ACCOUNT))
                 .wipeKey(key());
         return new DomainWrapperImpl<>(builder, builder::build);

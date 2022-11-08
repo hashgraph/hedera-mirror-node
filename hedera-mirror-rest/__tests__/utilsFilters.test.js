@@ -521,8 +521,8 @@ describe('utils validateAndParseFilters entity key tests', () => {
 });
 
 describe('utils validateAndParseFilters integer key tests', () => {
-  const booleanFilterKeys = [constants.filterKeys.SEQUENCE_NUMBER];
-  booleanFilterKeys.forEach((key) => {
+  const integerFilterKeys = [constants.filterKeys.SEQUENCE_NUMBER, constants.filterKeys.NODE_ID];
+  integerFilterKeys.forEach((key) => {
     const invalidFilters = [
       // erroneous data
       utils.buildComparatorFilter(key, 'test'),
@@ -701,6 +701,31 @@ describe('utils validateAndParseFilters address book file id tests', () => {
     utils.buildComparatorFilter(key, '0.0.102'),
     utils.buildComparatorFilter(key, 'eq:101'),
     utils.buildComparatorFilter(key, 'eq:102'),
+  ];
+
+  verifyValidAndInvalidFilters(invalidFilters, filters);
+});
+
+describe('validateAndParseFilters slot', () => {
+  const key = constants.filterKeys.SLOT;
+  const invalidFilters = [
+    utils.buildComparatorFilter(key, 'g'),
+    utils.buildComparatorFilter(key, '00000000000000000000000000000000000000000000000000000000000000011'),
+    utils.buildComparatorFilter(key, '0x00000000000000000000000000000000000000000000000000000000000000011'),
+    utils.buildComparatorFilter(key, 'ne:1'),
+  ];
+
+  const filters = [
+    utils.buildComparatorFilter(key, '1'),
+    utils.buildComparatorFilter(key, 'a'),
+    utils.buildComparatorFilter(key, 'A'),
+    utils.buildComparatorFilter(key, '0000000000000000000000000000000000000000000000000000000000000001'),
+    utils.buildComparatorFilter(key, '0x0000000000000000000000000000000000000000000000000000000000000001'),
+    utils.buildComparatorFilter(key, 'eq:1'),
+    utils.buildComparatorFilter(key, 'gt:1'),
+    utils.buildComparatorFilter(key, 'gte:1'),
+    utils.buildComparatorFilter(key, 'lt:1'),
+    utils.buildComparatorFilter(key, 'lte:1'),
   ];
 
   verifyValidAndInvalidFilters(invalidFilters, filters);

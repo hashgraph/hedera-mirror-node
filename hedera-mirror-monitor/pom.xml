@@ -16,7 +16,7 @@
 
     <properties>
         <commons-math3.version>3.6.1</commons-math3.version>
-        <hedera-sdk.version>2.17.3</hedera-sdk.version>
+        <hedera-sdk.version>2.18.0</hedera-sdk.version>
         <meanbean.version>3.0.0-M9</meanbean.version>
         <openapi-package>com.hedera.mirror.rest</openapi-package>
         <openapi-generator.version>6.2.0</openapi-generator.version>
@@ -85,10 +85,6 @@
             <version>${commons-math3.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.hibernate.validator</groupId>
-            <artifactId>hibernate-validator</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <scope>compile</scope>
@@ -116,6 +112,16 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-log4j2</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-logging</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

@@ -41,6 +41,7 @@ import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractAction;
 import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
+import com.hedera.mirror.common.domain.contract.ContractState;
 import com.hedera.mirror.common.domain.contract.ContractStateChange;
 import com.hedera.mirror.common.domain.entity.AbstractCryptoAllowance;
 import com.hedera.mirror.common.domain.entity.AbstractNftAllowance;
@@ -83,6 +84,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
+import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.SidecarFileRepository;
 
@@ -96,6 +98,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final EntityIdService entityIdService;
     private final EntityProperties entityProperties;
     private final ApplicationEventPublisher eventPublisher;
+    private final NftRepository nftRepository;
     private final RecordFileRepository recordFileRepository;
     private final SidecarFileRepository sidecarFileRepository;
     private final SqlProperties sqlProperties;
@@ -131,6 +134,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<TransactionSignature> transactionSignatures;
 
     // maps of upgradable domains
+    private final Map<ContractState.Id, ContractState> contractStates;
     private final Map<AbstractCryptoAllowance.Id, CryptoAllowance> cryptoAllowanceState;
     private final Map<Long, Entity> entityState;
     private final Map<NftId, Nft> nfts;
@@ -150,6 +154,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
                              EntityIdService entityIdService,
                              EntityProperties entityProperties,
                              ApplicationEventPublisher eventPublisher,
+                             NftRepository nftRepository,
                              RecordFileRepository recordFileRepository,
                              SidecarFileRepository sidecarFileRepository,
                              SqlProperties sqlProperties,
@@ -158,6 +163,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         this.entityIdService = entityIdService;
         this.entityProperties = entityProperties;
         this.eventPublisher = eventPublisher;
+        this.nftRepository = nftRepository;
         this.recordFileRepository = recordFileRepository;
         this.sidecarFileRepository = sidecarFileRepository;
         this.sqlProperties = sqlProperties;
@@ -191,6 +197,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         transactionHashes = new ArrayList<>();
         transactionSignatures = new ArrayList<>();
 
+        contractStates = new HashMap<>();
         cryptoAllowanceState = new HashMap<>();
         entityState = new HashMap<>();
         nfts = new HashMap<>();
@@ -254,6 +261,19 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onContractStateChange(ContractStateChange contractStateChange) {
         contractStateChanges.add(contractStateChange);
+
+        var valueRead = contractStateChange.getValueRead();
+        var valueWritten = contractStateChange.getValueWritten();
+        if (valueWritten != null || contractStateChange.isMigration()) {
+            var value = valueWritten == null ? valueRead : valueWritten;
+            var state = new ContractState();
+            state.setContractId(contractStateChange.getContractId());
+            state.setCreatedTimestamp(contractStateChange.getConsensusTimestamp());
+            state.setModifiedTimestamp(contractStateChange.getConsensusTimestamp());
+            state.setSlot(contractStateChange.getSlot());
+            state.setValue(value);
+            contractStates.merge(state.getId(), state, this::mergeContractState);
+        }
     }
 
     @Override
@@ -327,8 +347,23 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     @Override
+    @SuppressWarnings({"java:S2259"}) // If nftTransferId is null, this will throw an NPE.  That behavior is correct, for that case.
     public void onNftTransfer(NftTransfer nftTransfer) throws ImporterException {
-        nftTransferState.merge(nftTransfer.getId(), nftTransfer, this::mergeNftTransfer);
+        var nftTransferId = nftTransfer.getId();
+        if (nftTransferId.getSerialNumber() == NftTransferId.WILDCARD_SERIAL_NUMBER) { 
+            flushNftState();
+
+            long payerAccountId = nftTransfer.getPayerAccountId().getId();
+            EntityId newTreasury = nftTransfer.getReceiverAccountId();
+            EntityId previousTreasury = nftTransfer.getSenderAccountId();
+            EntityId tokenId = nftTransferId.getTokenId();
+
+            nftRepository.updateTreasury(tokenId.getId(), previousTreasury.getId(), newTreasury.getId(),
+                    nftTransferId.getConsensusTimestamp(), payerAccountId, nftTransfer.getIsApproval());
+            return;
+        }
+
+        nftTransferState.merge(nftTransferId, nftTransfer, this::mergeNftTransfer);
     }
 
     @Override
@@ -386,6 +421,14 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         }
 
         tokenTransfers.add(tokenTransfer);
+
+        if (entityProperties.getPersist().isTrackBalance()) {
+            var tokenAccount = new TokenAccount();
+            tokenAccount.setAccountId(tokenTransfer.getId().getAccountId().getId());
+            tokenAccount.setTokenId(tokenTransfer.getId().getTokenId().getId());
+            tokenAccount.setBalance(tokenTransfer.getAmount());
+            onTokenAccount(tokenAccount);
+        }
     }
 
     @Override
@@ -422,6 +465,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             contractLogs.clear();
             contractResults.clear();
             contractStateChanges.clear();
+            contractStates.clear();
             cryptoAllowances.clear();
             cryptoAllowanceState.clear();
             cryptoTransfers.clear();
@@ -486,6 +530,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
 
             // insert operations with conflict management
             batchPersister.persist(contracts);
+            batchPersister.persist(contractStates.values());
             batchPersister.persist(cryptoAllowances);
             batchPersister.persist(entities);
             batchPersister.persist(nftAllowances);
@@ -513,6 +558,25 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         } finally {
             cleanup();
         }
+    }
+
+    private void flushNftState() {
+        // like flush(), but only for the Nft table
+        try {
+            batchPersister.persist(nfts.values());
+        } catch (ParserException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new ParserException(e);
+        } finally {
+            nfts.clear();
+        }
+    }
+
+    private ContractState mergeContractState(ContractState previous, ContractState current) {
+        previous.setValue(current.getValue());
+        previous.setModifiedTimestamp(current.getModifiedTimestamp());
+        return previous;
     }
 
     private CryptoAllowance mergeCryptoAllowance(CryptoAllowance previous, CryptoAllowance current) {
@@ -733,6 +797,26 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     private TokenAccount mergeTokenAccount(TokenAccount lastTokenAccount, TokenAccount newTokenAccount) {
+        if (!lastTokenAccount.isHistory()) {
+            if (!newTokenAccount.isHistory()) {
+                lastTokenAccount.setBalance(newTokenAccount.getBalance() + lastTokenAccount.getBalance());
+            } else {
+                lastTokenAccount.setAutomaticAssociation(newTokenAccount.getAutomaticAssociation());
+                lastTokenAccount.setAssociated(newTokenAccount.getAssociated());
+                lastTokenAccount.setCreatedTimestamp(newTokenAccount.getCreatedTimestamp());
+                lastTokenAccount.setFreezeStatus(newTokenAccount.getFreezeStatus());
+                lastTokenAccount.setKycStatus(newTokenAccount.getKycStatus());
+                lastTokenAccount.setTimestampRange(newTokenAccount.getTimestampRange());
+            }
+
+            return lastTokenAccount;
+        }
+
+        if (lastTokenAccount.isHistory() && !newTokenAccount.isHistory()) {
+            lastTokenAccount.setBalance(newTokenAccount.getBalance() + lastTokenAccount.getBalance());
+            return lastTokenAccount;
+        }
+
         if (lastTokenAccount.getTimestampRange().equals(newTokenAccount.getTimestampRange())) {
             // The token accounts are for the same range, accept the previous one
             // This is a workaround for https://github.com/hashgraph/hedera-services/issues/3240
@@ -750,7 +834,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         // copy the lifespan immutable fields createdTimestamp and automaticAssociation from the previous snapshot.
         // copy other fields from the previous snapshot if not set in newTokenAccount
         newTokenAccount.setCreatedTimestamp(lastTokenAccount.getCreatedTimestamp());
-
+        newTokenAccount.setBalance(lastTokenAccount.getBalance());
         newTokenAccount.setAutomaticAssociation(lastTokenAccount.getAutomaticAssociation());
 
         if (newTokenAccount.getAssociated() == null) {

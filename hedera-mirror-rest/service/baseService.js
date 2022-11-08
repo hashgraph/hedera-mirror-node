@@ -29,13 +29,23 @@ class BaseService {
       return {where: '', params};
     }
 
-    let where = params.length === 0 ? 'where' : 'and';
-    for (let i = 1; i <= whereQuery.length; i++) {
-      where += `${i === 1 ? '' : 'and'} ${whereQuery[i - 1].query} $${i + params.length} `;
-      params.push(whereQuery[i - 1].param);
-    }
+    const prefix = params.length === 0 ? 'where' : 'and';
+    const condition = whereQuery
+      .map((current) => {
+        let position;
+        if (Array.isArray(current.param)) {
+          const first = params.length + 1;
+          const last = params.push(...current.param);
+          position = `(${_.range(first, last + 1).map((pos) => '$' + pos)})`;
+        } else {
+          params.push(current.param);
+          position = `$${params.length}`;
+        }
+        return `${current.query} ${position}`;
+      })
+      .join(' and ');
 
-    return {where, params};
+    return {where: `${prefix} ${condition}`, params};
   }
 
   getLimitQuery(position) {
