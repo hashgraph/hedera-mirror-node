@@ -1,15 +1,15 @@
 package com.hedera.mirror.web3.evm.properties;
 
-import com.hedera.mirror.web3.repository.RecordFileRepository;
-
+import java.time.Instant;
+import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
-import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.datatypes.Hash;
+import org.hyperledger.besu.evm.frame.BlockValues;
 
 import com.hedera.mirror.web3.evm.exception.MissingResultException;
-
-import javax.inject.Named;
-import java.time.Instant;
+import com.hedera.mirror.web3.repository.RecordFileRepository;
+import com.hedera.services.evm.contracts.execution.BlockMetaSource;
+import com.hedera.services.evm.contracts.execution.HederaBlockValues;
 
 @Named
 @RequiredArgsConstructor
