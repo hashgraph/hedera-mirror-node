@@ -128,14 +128,14 @@ const flywayMigrate = async () => {
 };
 
 function V2CreateTempFolder(locations) {
-  const destination = path.join(process.cwd(), 'temp');
+  const destination = path.join(os.tmpdir(), 'temp');
   // Creating a temp folder without the repeatable partitioning file.
   if (!fs.existsSync(destination)) {
     fs.mkdirSync(destination);
     fs.readdirSync(locations).forEach((file) => {
-      const destFile = destination + '/' + file;
-      const srcFile = locations + '/' + file;
-      if (destFile !== destination + '/R__partitioning.sql') {
+      const destFile = path.join(destination, file);
+      const srcFile = path.join(locations, file);
+      if (destFile !== path.join(destination, 'R__partitioning.sql')) {
         fs.copyFileSync(srcFile, destFile);
       }
     });

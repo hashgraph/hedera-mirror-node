@@ -41,7 +41,7 @@ create table if not exists address_book
     file_id                   bigint not null,
     node_count                int    null,
     start_consensus_timestamp bigint not null
-) partition by range (start_consensus_timestamp);
+);
 comment on table address_book is 'Network address book files entries';
 
 -- address_book_entry
@@ -55,7 +55,7 @@ create table if not exists address_book_entry
     node_id             bigint        not null,
     public_key          varchar(1024) null,
     stake               bigint        null
-) partition by range (consensus_timestamp);
+);
 comment on table address_book_entry is 'Network address book node entries';
 
 -- address_book_service_endpoint
@@ -65,7 +65,7 @@ create table if not exists address_book_service_endpoint
     ip_address_v4       varchar(15)        not null,
     node_id             bigint             not null,
     port                integer default -1 not null
-) partition by range (consensus_timestamp);
+);
 comment on table address_book_service_endpoint is 'Network address book node service endpoints';
 
 -- assessed_custom_fee
@@ -173,7 +173,7 @@ create table if not exists contract_state_change
     slot                bytea   not null,
     value_read          bytea   not null,
     value_written       bytea   null
-) partition by range (contract_id);
+) partition by range (consensus_timestamp);
 comment on table contract_state_change is 'Contract execution state changes';
 
 create table if not exists crypto_allowance
@@ -297,7 +297,7 @@ create table if not exists ethereum_transaction
     to_address               bytea    null,
     type                     smallint not null,
     value                    bytea    null
-) partition by range (consensus_timestamp);;
+) partition by range (consensus_timestamp);
 comment on table ethereum_transaction is 'Ethereum transaction details';
 
 -- event_file
