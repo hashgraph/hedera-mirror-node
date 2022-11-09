@@ -25,12 +25,4 @@ public abstract class EvmException extends RuntimeException {
     protected EvmException(String message) {
         super(message);
     }
-
-    protected EvmException(Throwable throwable) {
-        super(throwable);
-    }
-
-    protected EvmException(String message, Throwable throwable) {
-        super(message, throwable);
-    }
 }

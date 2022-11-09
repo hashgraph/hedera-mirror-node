@@ -9,7 +9,7 @@ hedera:
         sslMode: DISABLE
         username: mirror_web3
       evm:
-        evm-version: 298
+        evm-version: v0.30
         fundingAccount: unrecognized
         dynamic-evm-version: false
         max-gas-refund-percentage: 20
