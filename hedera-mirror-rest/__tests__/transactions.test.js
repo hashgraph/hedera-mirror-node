@@ -1173,16 +1173,6 @@ describe('getStakingRewardTransfersList', () => {
           consensus_timestamp: '1565779604.000000002',
           transfers: [
             {
-              account: '0.0.98',
-              amount: 1,
-              is_approval: false,
-            },
-            {
-              account: '0.0.1820',
-              amount: 40,
-              is_approval: false,
-            },
-            {
               account: '0.0.800',
               amount: 5000,
               is_approval: false,

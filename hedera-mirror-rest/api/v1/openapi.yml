@@ -3083,8 +3083,6 @@ components:
               amount:
                 format: int64
                 type: integer
-              is_approval:
-                type: boolean
             required:
               - account
               - amount
