@@ -1,7 +1,6 @@
 package com.hedera.mirror.web3.evm.store.contract;
 
 import static com.google.protobuf.ByteString.EMPTY;
-import static com.google.protobuf.ByteString.copyFrom;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.web3.evm.util.EntityUtils.numFromEvmAddress;
 
@@ -45,15 +44,15 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
         final var entityNum = numFromEvmAddress(address.toArrayUnsafe());
         final var accountAlias = entityRepository.getAlias
                 (entityNum);
-
-        return accountAlias != null ? copyFrom(accountAlias) : EMPTY;
+        return accountAlias.map(ByteString::copyFrom).orElse(EMPTY);
     }
 
     @Override
     public UInt256 getStorage(Address address, Bytes key) {
         final var entityNum = numFromEvmAddress(address.toArrayUnsafe());
         final var storage = entityRepository.getStorage(entityNum, key.toArrayUnsafe());
-        return UInt256.fromBytes(Bytes.wrap(storage));
+        final var storageBytes = storage.map(Bytes::wrap).orElse(Bytes.EMPTY);
+        return UInt256.fromBytes(storageBytes);
     }
 
     @Override
