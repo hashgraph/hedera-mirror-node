@@ -17,7 +17,7 @@ hedera:
         blockNumberMigration:
           checksum: 4
         errataMigration:
-          checksum: 3
+          checksum: 4
         historicalAccountInfoMigration:
           checksum: 3
 

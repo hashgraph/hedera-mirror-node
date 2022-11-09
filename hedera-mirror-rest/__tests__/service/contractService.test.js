@@ -188,11 +188,12 @@ describe('ContractService.getContractLogsQuery tests', () => {
     });
     assertSqlQueryEqual(
       query,
-      `with record_file as (select consensus_end,hash,index from record_file)
+      `with record_file as (select consensus_end,hash,index from record_file), entity as (select evm_address, id from entity)
       select cl.bloom, cl.contract_id, cl.consensus_timestamp, cl.data, cl.index, cl.root_contract_id,
              cl.topic0, cl.topic1, cl.topic2, cl.topic3, cr.transaction_hash, cr.transaction_index,
-             block_number,block_hash
+             block_number,block_hash,evm_address
       from contract_log cl
+      left join entity e on id = contract_id
       left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
         and cl.payer_account_id = cr.payer_account_id
       left join lateral (
@@ -234,11 +235,12 @@ describe('ContractService.getContractLogsQuery tests', () => {
     });
     assertSqlQueryEqual(
       query,
-      `with record_file as (select consensus_end,hash,index from record_file)
+      `with record_file as (select consensus_end,hash,index from record_file), entity as (select evm_address, id from entity)
       select cl.bloom, cl.contract_id, cl.consensus_timestamp, cl.data, cl.index, cl.root_contract_id,
              cl.topic0, cl.topic1, cl.topic2, cl.topic3, cr.transaction_hash, cr.transaction_index,
-             block_number, block_hash
+             block_number, block_hash, evm_address
       from contract_log cl
+      left join entity e on id = contract_id
       left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
         and cl.payer_account_id = cr.payer_account_id
       left join lateral (
@@ -278,10 +280,11 @@ describe('ContractService.getContractLogsQuery tests', () => {
     assertSqlQueryEqual(
       query,
       `(
-        with record_file as (select consensus_end,hash,index from record_file)
+        with record_file as (select consensus_end,hash,index from record_file), entity as (select evm_address, id from entity)
         select cl.bloom,cl.contract_id,cl.consensus_timestamp,cl.data,cl.index,cl.root_contract_id,cl.topic0,
-          cl.topic1,cl.topic2,cl.topic3,cr.transaction_hash,cr.transaction_index,block_number,block_hash
+          cl.topic1,cl.topic2,cl.topic3,cr.transaction_hash,cr.transaction_index,block_number,block_hash,evm_address
         from contract_log cl
+        left join entity e on id = contract_id
         left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
           and cl.payer_account_id = cr.payer_account_id
         left join lateral (
@@ -295,10 +298,11 @@ describe('ContractService.getContractLogsQuery tests', () => {
         order by cl.consensus_timestamp desc, cl.index desc
         limit $3
       ) union (
-        with record_file as (select consensus_end,hash,index from record_file)
+        with record_file as (select consensus_end,hash,index from record_file), entity as (select evm_address, id from entity)
         select cl.bloom,cl.contract_id,cl.consensus_timestamp,cl.data,cl.index,cl.root_contract_id,cl.topic0,
-          cl.topic1,cl.topic2,cl.topic3,cr.transaction_hash,cr.transaction_index,block_number,block_hash
+          cl.topic1,cl.topic2,cl.topic3,cr.transaction_hash,cr.transaction_index,block_number,block_hash,evm_address
         from contract_log cl
+        left join entity e on id = contract_id
         left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
           and cl.payer_account_id = cr.payer_account_id
         left join lateral (
@@ -340,7 +344,7 @@ describe('ContractService.getContractLogsQuery tests', () => {
     assertSqlQueryEqual(
       query,
       `(
-        with record_file as (select  consensus_end, hash, index from record_file)
+        with record_file as (select  consensus_end, hash, index from record_file), entity as (select evm_address, id from entity)
         select
           cl.bloom,
           cl.contract_id,
@@ -355,9 +359,11 @@ describe('ContractService.getContractLogsQuery tests', () => {
           cr.transaction_hash,
           cr.transaction_index,
           block_number,
-          block_hash
+          block_hash,
+          evm_address
         from
           contract_log cl
+          left join entity e on id = contract_id
           left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
             and cl.payer_account_id = cr.payer_account_id
           left join lateral (
@@ -376,7 +382,7 @@ describe('ContractService.getContractLogsQuery tests', () => {
           cl.index desc
         limit $3
       ) union (
-        with record_file as (select consensus_end, hash, index from record_file)
+        with record_file as (select consensus_end, hash, index from record_file), entity as (select evm_address, id from entity)
         select
           cl.bloom,
           cl.contract_id,
@@ -391,9 +397,11 @@ describe('ContractService.getContractLogsQuery tests', () => {
           cr.transaction_hash,
           cr.transaction_index,
           block_number,
-          block_hash
+          block_hash,
+          evm_address
         from
           contract_log cl
+          left join entity e on id = contract_id
           left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
             and cl.payer_account_id = cr.payer_account_id
           left join lateral (
@@ -413,7 +421,7 @@ describe('ContractService.getContractLogsQuery tests', () => {
           cl.index desc
         limit $3
       ) union (
-        with record_file as (select consensus_end, hash, index from record_file)
+        with record_file as (select consensus_end, hash, index from record_file), entity as (select evm_address, id from entity)
         select
           cl.bloom,
           cl.contract_id,
@@ -428,9 +436,11 @@ describe('ContractService.getContractLogsQuery tests', () => {
           cr.transaction_hash,
           cr.transaction_index,
           block_number,
-          block_hash
+          block_hash,
+          evm_address
         from
           contract_log cl
+          left join entity e on id = contract_id
           left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
             and cl.payer_account_id = cr.payer_account_id
           left join lateral (
@@ -1306,6 +1316,7 @@ describe('ContractService.getContractActionsByConsensusTimestamp tests', () => {
   test('No match', async () => {
     const res = await ContractService.getContractActionsByConsensusTimestamp(
       '1676540001234390005',
+      2000,
       [],
       orderFilterValues.ASC,
       100
@@ -1315,11 +1326,12 @@ describe('ContractService.getContractActionsByConsensusTimestamp tests', () => {
 
   test('Multiple rows match', async () => {
     await integrationDomainOps.loadContractActions([
-      {consensus_timestamp: '1676540001234390005'},
-      {consensus_timestamp: '1676540001234390005', index: 2},
+      {consensus_timestamp: '1676540001234390005', payer_account_id: 2000},
+      {consensus_timestamp: '1676540001234390005', index: 2, payer_account_id: 2000},
     ]);
     const res = await ContractService.getContractActionsByConsensusTimestamp(
       '1676540001234390005',
+      2000,
       [],
       orderFilterValues.ASC,
       100
@@ -1329,11 +1341,12 @@ describe('ContractService.getContractActionsByConsensusTimestamp tests', () => {
 
   test('One row match', async () => {
     await integrationDomainOps.loadContractActions([
-      {consensus_timestamp: '1676540001234390005'},
-      {consensus_timestamp: '1676540001234390006'},
+      {consensus_timestamp: '1676540001234390005', payer_account_id: 2000},
+      {consensus_timestamp: '1676540001234390006', payer_account_id: 2000},
     ]);
     const res = await ContractService.getContractActionsByConsensusTimestamp(
       '1676540001234390005',
+      2000,
       [],
       orderFilterValues.ASC,
       100

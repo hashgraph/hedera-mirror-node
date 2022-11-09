@@ -1,5 +1,3 @@
-package com.hedera.mirror.test.e2e.acceptance.props;
-
 /*-
  * ‌
  * Hedera Mirror Node
@@ -20,20 +18,17 @@ package com.hedera.mirror.test.e2e.acceptance.props;
  * ‍
  */
 
-import lombok.Data;
+package plugin.go
 
-@Data
-public class MirrorTokenAccount {
+import java.io.File
 
-    private Boolean automaticAssociation;
-
-    private Long balance;
-
-    private String createdTimestamp;
-
-    private MirrorFreezeStatus freezeStatus;
-
-    private MirrorKycStatus kycStatus;
-
-    private String tokenId;
+// Extension object to contain the Go plugin properties
+open class GoExtension {
+    var arch: String = ""
+    lateinit var cacheDir: File
+    lateinit var goRoot: File
+    lateinit var goBin: File
+    var os: String = ""
+    var pkg: String = ""
+    var version: String = ""
 }

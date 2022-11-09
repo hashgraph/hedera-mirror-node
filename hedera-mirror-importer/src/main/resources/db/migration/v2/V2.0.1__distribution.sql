@@ -8,24 +8,22 @@
 -- Tables distributed on id
 select create_distributed_table('entity', 'id');
 
-select create_distributed_table('event_file', 'node_id');
-
 select create_distributed_table('transaction_hash', 'hash');
 
-select create_distributed_table('record_file', 'node_id');
-
 -- Tables that will be colocated with tables above
+select create_distributed_table('assessed_custom_fee', 'payer_account_id', colocate_with => 'entity');
+
 select create_distributed_table('account_balance', 'account_id', colocate_with => 'entity');
 
 select create_distributed_table('contract', 'id', colocate_with => 'entity');
 
-select create_distributed_table('contract_action', 'caller', colocate_with => 'entity');
-
-select create_distributed_table('contract_history', 'id', colocate_with => 'contract');
+select create_distributed_table('contract_action', 'payer_account_id', colocate_with => 'entity');
 
 select create_distributed_table('contract_log', 'payer_account_id', colocate_with => 'entity');
 
 select create_distributed_table('contract_result', 'payer_account_id', colocate_with => 'entity');
+
+select create_distributed_table('contract_state', 'contract_id', colocate_with => 'entity');
 
 select create_distributed_table('contract_state_change', 'payer_account_id', colocate_with => 'entity');
 
@@ -33,9 +31,15 @@ select create_distributed_table('crypto_allowance', 'owner', colocate_with => 'e
 
 select create_distributed_table('crypto_allowance_history', 'owner', colocate_with => 'crypto_allowance');
 
+select create_distributed_table('crypto_transfer', 'payer_account_id', colocate_with => 'entity');
+
 select create_distributed_table('custom_fee', 'token_id', colocate_with => 'entity');
 
 select create_distributed_table('entity_history', 'id', colocate_with => 'entity');
+
+select create_distributed_table('entity_stake', 'id', colocate_with => 'entity');
+
+select create_distributed_table('ethereum_transaction', 'payer_account_id', colocate_with => 'entity');
 
 select create_distributed_table('file_data', 'entity_id', colocate_with => 'entity');
 
@@ -45,7 +49,15 @@ select create_distributed_table('nft_allowance', 'owner', colocate_with => 'enti
 
 select create_distributed_table('nft_allowance_history', 'owner', colocate_with => 'nft_allowance');
 
+select create_distributed_table('nft_transfer', 'payer_account_id', colocate_with => 'entity');
+
+select create_distributed_table('non_fee_transfer', 'payer_account_id', colocate_with => 'entity');
+
+select create_distributed_table('prng', 'payer_account_id', colocate_with => 'entity');
+
 select create_distributed_table('schedule', 'schedule_id', colocate_with => 'entity');
+
+select create_distributed_table('staking_reward_transfer', 'account_id', colocate_with => 'entity');
 
 select create_distributed_table('token', 'token_id', colocate_with => 'entity');
 
@@ -58,6 +70,8 @@ select create_distributed_table('token_allowance', 'owner', colocate_with => 'en
 select create_distributed_table('token_allowance_history', 'owner', colocate_with => 'token_allowance');
 
 select create_distributed_table('token_balance', 'account_id', colocate_with => 'entity');
+
+select create_distributed_table('token_transfer', 'payer_account_id', colocate_with => 'entity');
 
 select create_distributed_table('topic_message', 'topic_id', colocate_with => 'entity');
 

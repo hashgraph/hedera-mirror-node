@@ -1,5 +1,5 @@
 {
-  "description": "Contract results actions api call with order=ASC",
+  "description": "Contract results actions api call with no params specified",
   "setup": {
     "contracts": [
       {
@@ -32,7 +32,7 @@
         "function_result": [4, 4],
         "gas_limit": 1234556,
         "gas_used": 987,
-        "payer_account_id": 6001,
+        "payer_account_id": 5001,
         "transaction_hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb98"
       },
       {
@@ -78,11 +78,13 @@
     "ethereumtransactions": [
       {
         "consensus_timestamp": "1676540001234390005",
-        "hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb98"
+        "hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb98",
+        "payer_account_id": 5001
       },
       {
         "consensus_timestamp": "1676540001234500005",
-        "hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb99"
+        "hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb99",
+        "payer_account_id": 8001
       }
     ],
     "recordFiles": [
@@ -123,6 +125,7 @@
         "gas_used": 900,
         "index": 1,
         "input": "0xabcd",
+        "payer_account_id": 5001,
         "recipient_account": null,
         "recipient_address": "0x70f2b2914a2a4b783faefb75f459a580616fcb5e",
         "recipient_contract": 8001,
@@ -141,9 +144,10 @@
         "gas_used": 900,
         "index": 2,
         "input": "0xabcd",
+        "payer_account_id": 5001,
         "recipient_account": null,
-        "recipient_address": "0x70f2b2914a2a4b783faefb75f459a580616fcb5e",
-        "recipient_contract": 8002,
+        "recipient_address": null,
+        "recipient_contract": null,
         "result_data": "0x1234",
         "result_data_type": 11,
         "value": 200
@@ -159,6 +163,7 @@
         "gas_used": 900,
         "index": 3,
         "input": "0xabcd",
+        "payer_account_id": 5001,
         "recipient_account": null,
         "recipient_address": "0x70f2b2914a2a4b783faefb75f459a580616fcb5e",
         "recipient_contract": 8002,
@@ -177,6 +182,7 @@
         "gas_used": 900,
         "index": 4,
         "input": "0xabcd",
+        "payer_account_id": 5001,
         "recipient_account": null,
         "recipient_address": "0x70f2b2914a2a4b783faefb75f459a580616fcb5e",
         "recipient_contract": 8002,
@@ -187,8 +193,8 @@
     ]
   },
   "urls": [
-    "/api/v1/contracts/results/0.0.5001-1676540001-234390005/actions?order=asc",
-    "/api/v1/contracts/results/0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb98/actions?order=asc"
+    "/api/v1/contracts/results/0.0.5001-1676540001-234390005/actions",
+    "/api/v1/contracts/results/0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb98/actions"
   ],
   "responseStatus": 200,
   "responseJson": {
@@ -224,9 +230,9 @@
         "gas_used": 900,
         "index": 2,
         "input": "0xabcd",
-        "to": "0x70f2b2914a2a4b783faefb75f459a580616fcb5e",
-        "recipient": "0.0.8002",
-        "recipient_type": "CONTRACT",
+        "to": null,
+        "recipient": null,
+        "recipient_type": null,
         "result_data": "0x1234",
         "result_data_type": "OUTPUT",
         "value": 200

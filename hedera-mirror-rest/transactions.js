@@ -83,9 +83,8 @@ const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'des
     // populate pre-clause queries where a timestamp filter is applied
     if (!_.isUndefined(modifyingQuery)) {
       timestampFilter = `timestampFilter as (${modifyingQuery}),`;
-      timestampFilterJoin = `join timestampFilter tf on ${Transaction.getFullName(
-        Transaction.CONSENSUS_TIMESTAMP
-      )} = tf.consensus_timestamp`;
+      timestampFilterJoin = `join timestampFilter tf on ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} =
+        tf.consensus_timestamp`;
       limitQuery = '';
     }
 
@@ -472,9 +471,10 @@ const getTransferDistinctTimestampsQuery = function (
   const namedTransferTsQuery = namedTsQuery.replace(/t\.consensus_timestamp/g, `${tableAlias}.${timestampColumn}`);
   const joinClause =
     (resultTypeQuery || transactionTypeQuery) &&
-    `JOIN ${Transaction.tableName} AS ${
+    `join ${Transaction.tableName} as ${
       Transaction.tableAlias
-    } ON ${tableAlias}.${timestampColumn} = ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)}`;
+    } on ${tableAlias}.${timestampColumn} = ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} and
+      ${tableAlias}.${Transaction.PAYER_ACCOUNT_ID} = ${Transaction.getFullName(Transaction.PAYER_ACCOUNT_ID)}`;
   const whereClause = buildWhereClause(
     namedAccountQuery,
     namedTransferTsQuery,

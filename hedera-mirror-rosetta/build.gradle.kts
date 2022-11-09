@@ -24,3 +24,8 @@ plugins {
     id("docker-conventions")
     id("go-conventions")
 }
+
+go {
+    pkg = "./app/..."
+    version = "1.19"
+}

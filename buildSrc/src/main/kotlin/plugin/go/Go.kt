@@ -1,5 +1,3 @@
-package com.hedera.mirror.test.e2e.acceptance.props;
-
 /*-
  * ‌
  * Hedera Mirror Node
@@ -19,21 +17,22 @@ package com.hedera.mirror.test.e2e.acceptance.props;
  * limitations under the License.
  * ‍
  */
+package plugin.go
 
-import lombok.Data;
+import org.gradle.api.tasks.Exec
+import org.gradle.kotlin.dsl.getByName
 
-@Data
-public class MirrorTokenAccount {
+// Template task to execute the go CLI
+abstract class Go : Exec() {
 
-    private Boolean automaticAssociation;
+    init {
+        dependsOn("setup")
+    }
 
-    private Long balance;
-
-    private String createdTimestamp;
-
-    private MirrorFreezeStatus freezeStatus;
-
-    private MirrorKycStatus kycStatus;
-
-    private String tokenId;
+    override fun exec() {
+        logger.info("Executing go ${args}")
+        val go = project.extensions.getByName<GoExtension>("go")
+        executable(go.goBin.absolutePath)
+        super.exec()
+    }
 }

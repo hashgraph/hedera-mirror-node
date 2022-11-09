@@ -103,6 +103,7 @@ import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
+import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
@@ -258,6 +259,7 @@ public class DomainBuilder {
                 .gasUsed(50L)
                 .index((int) id())
                 .input(bytes(256))
+                .payerAccountId(entityId(ACCOUNT))
                 .recipientAccount(entityId(ACCOUNT))
                 .resultData(bytes(256))
                 .resultDataType(ResultDataCase.OUTPUT.getNumber())
@@ -616,6 +618,7 @@ public class DomainBuilder {
     public DomainWrapper<Prng, Prng.PrngBuilder> prng() {
         var builder = Prng.builder()
                 .consensusTimestamp(timestamp())
+                .payerAccountId(id())
                 .range(Integer.MAX_VALUE)
                 .prngNumber(random.nextInt(Integer.MAX_VALUE));
         return new DomainWrapperImpl<>(builder, builder::build);
@@ -717,8 +720,10 @@ public class DomainBuilder {
                 .pauseKey(key())
                 .pauseStatus(TokenPauseStatusEnum.UNPAUSED)
                 .supplyKey(key())
+                .supplyType(TokenSupplyTypeEnum.INFINITE)
                 .symbol("HBAR")
                 .tokenId(new TokenId(entityId(TOKEN)))
+                .totalSupply(1_000_000_000L)
                 .treasuryAccountId(entityId(ACCOUNT))
                 .wipeKey(key());
         return new DomainWrapperImpl<>(builder, builder::build);

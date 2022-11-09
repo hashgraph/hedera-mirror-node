@@ -490,6 +490,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                                         .returns(a.getGasUsed(), e -> e.getGasUsed())
                                         .returns(a.getCallerType(),
                                                 e -> e.getCallerCase() == CALLING_CONTRACT ? CONTRACT : ACCOUNT)
+                                        .returns(a.getPayerAccountId(), e -> recordItem.getPayerAccountId())
                                         .returns(a.getResultDataType(), e -> e.getResultDataCase().getNumber())
                                         .returns(a.getValue(), e -> e.getValue())
                                         .satisfiesAnyOf(e -> assertThat(a.getRecipientContract()).isNotNull(),
