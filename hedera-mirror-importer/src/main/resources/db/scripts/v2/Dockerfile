@@ -11,6 +11,7 @@ RUN apt-get update \
     && git clone https://github.com/pgpartman/pg_partman.git \
     && cd pg_partman \
     && make install
+    && rm -rf /var/lib/apt/lists/*
 
 # add citus to default PostgreSQL config
 RUN echo "shared_preload_libraries='citus,pg_cron,pg_partman_bgw'" >> /usr/share/postgresql/postgresql.conf.sample
