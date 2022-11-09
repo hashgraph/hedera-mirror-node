@@ -33,6 +33,7 @@ const SERVICE_FEE = 4n;
 const DEFAULT_FEE_COLLECTOR_ID = 98;
 const DEFAULT_NODE_ID = 3;
 const DEFAULT_PAYER_ACCOUNT_ID = 101;
+const STAKING_REWARD_ACCOUNT = 800;
 
 const defaultFileData = '\\x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750';
 
@@ -61,6 +62,7 @@ const setup = async (testDataJson) => {
   await loadNodeStakes(testDataJson.nodestakes);
   await loadRecordFiles(testDataJson.recordFiles);
   await loadSchedules(testDataJson.schedules);
+  await loadStakingRewardTransfers(testDataJson.stakingRewardTransfers);
   await loadTopicMessages(testDataJson.topicmessages);
   await loadTokens(testDataJson.tokens);
   await loadTokenAccounts(testDataJson.tokenaccounts);
@@ -316,6 +318,15 @@ const loadRecordFiles = async (recordFiles) => {
   }
   for (const recordFile of recordFiles) {
     await addRecordFile(recordFile);
+  }
+};
+
+const loadStakingRewardTransfers = async (transfers) => {
+  if (transfers == null) {
+    return;
+  }
+  for (const transfer of transfers) {
+    await addStakingRewardTransfer(transfer);
   }
 };
 
@@ -1509,6 +1520,28 @@ const addRecordFile = async (recordFileInput) => {
   await insertDomainObject('record_file', insertFields, recordFile);
 };
 
+const addStakingRewardTransfer = async (transferInput) => {
+  const insertFields = ['account_id', 'amount', 'consensus_timestamp', 'payer_account_id'];
+  const payerAccountId = EntityId.parse(transferInput.payerAccountId).getEncodedId();
+  const stakingRewardTransfer = {
+    account_id: EntityId.parse(transferInput.accountId).getEncodedId(),
+    amount: 0,
+    consensus_timestamp: 0,
+    payer_account_id: payerAccountId,
+    ...transferInput,
+  };
+
+  await insertDomainObject('staking_reward_transfer', insertFields, stakingRewardTransfer);
+  await insertTransfers(
+    'crypto_transfer',
+    transferInput.consensus_timestamp,
+    [{account: STAKING_REWARD_ACCOUNT, amount: transferInput.amount, is_approval: false}],
+    null,
+    payerAccountId,
+    null
+  );
+};
+
 const insertDomainObject = async (table, fields, obj) => {
   const positions = _.range(1, fields.length + 1).map((position) => `$${position}`);
   await pool.query(
@@ -1540,6 +1573,7 @@ export default {
   loadNetworkStakes,
   loadNodeStakes,
   loadRecordFiles,
+  loadStakingRewardTransfers,
   loadTransactions,
   loadEthereumTransactions,
   loadContractLogs,

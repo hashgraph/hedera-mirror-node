@@ -115,6 +115,20 @@
         "treasuryAccountId": "0.0.98",
         "scheduled": true
       }
+    ],
+    "stakingRewardTransfers": [
+      {
+        "accountId": "0.0.9",
+        "amount": 100,
+        "consensus_timestamp": "1234567890000000002",
+        "payerAccountId": "0.0.9"
+      },
+      {
+        "accountId": "0.0.9",
+        "amount": 500,
+        "consensus_timestamp": "1234567890000000003",
+        "payerAccountId": "0.0.10"
+      }
     ]
   },
   "tests": [
@@ -135,6 +149,12 @@
             "parent_consensus_timestamp": null,
             "result": "SUCCESS",
             "scheduled": false,
+            "staking_reward_transfers": [
+              {
+                "account": 9,
+                "amount": 100
+              }
+            ],
             "bytes": null,
             "transaction_hash": "rovr8cn6DzCTVuSAV/YEevfN5jA30FCdFt3Dsg4IUVi/3xTRU0XBsYsZm3L+1Kxv",
             "transaction_id": "0.0.10-1234567890-000000001",
@@ -147,6 +167,11 @@
               {
                 "account": "0.0.98",
                 "amount": 1,
+                "is_approval": false
+              },
+              {
+                "account": "0.0.800",
+                "amount": 100,
                 "is_approval": false
               }
             ],
@@ -165,6 +190,12 @@
             "parent_consensus_timestamp": null,
             "result": "SUCCESS",
             "scheduled": true,
+            "staking_reward_transfers": [
+              {
+                "account": 9,
+                "amount": 500
+              }
+            ],
             "bytes": "Ynl0ZXM=",
             "transaction_hash": "lCDEQjAnWTLkkpv1i/mipNt5niRIU7xzY3h0ZHSituUyLqFrI6UF2mOUvZmywjsG",
             "transaction_id": "0.0.10-1234567890-000000001",
@@ -182,6 +213,11 @@
               {
                 "account": "0.0.98",
                 "amount": 1,
+                "is_approval": false
+              },
+              {
+                "account": "0.0.800",
+                "amount": 500,
                 "is_approval": false
               }
             ],
@@ -242,6 +278,12 @@
             "parent_consensus_timestamp": null,
             "result": "SUCCESS",
             "scheduled": false,
+            "staking_reward_transfers": [
+              {
+                "account": 9,
+                "amount": 100
+              }
+            ],
             "bytes": null,
             "transaction_hash": "rovr8cn6DzCTVuSAV/YEevfN5jA30FCdFt3Dsg4IUVi/3xTRU0XBsYsZm3L+1Kxv",
             "transaction_id": "0.0.10-1234567890-000000001",
@@ -254,6 +296,11 @@
               {
                 "account": "0.0.98",
                 "amount": 1,
+                "is_approval": false
+              },
+              {
+                "account": "0.0.800",
+                "amount": 100,
                 "is_approval": false
               }
             ],

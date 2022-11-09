@@ -127,6 +127,20 @@
         "nodeAccountId": "0.0.3",
         "treasuryAccountId": "0.0.98"
       }
+    ],
+    "stakingRewardTransfers": [
+      {
+        "accountId": "0.0.8",
+        "amount": 900,
+        "consensus_timestamp": "1234567890000000005",
+        "payerAccountId": "0.0.8"
+      },
+      {
+        "accountId": "0.0.123",
+        "amount": 15000,
+        "consensus_timestamp": "1234567890000000005",
+        "payerAccountId": "0.0.123"
+      }
     ]
   },
   "urls": [
@@ -175,6 +189,16 @@
         "parent_consensus_timestamp": null,
         "result": "SUCCESS",
         "scheduled": false,
+        "staking_reward_transfers": [
+          {
+            "account": 8,
+            "amount": 900
+          },
+          {
+            "account": 123,
+            "amount": 15000
+          }
+        ],
         "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
         "transaction_id": "0.0.8-1234567890-000000004",
         "transfers": [
@@ -191,6 +215,16 @@
           {
             "account": "0.0.98",
             "amount": 1,
+            "is_approval": false
+          },
+          {
+            "account": "0.0.800",
+            "amount": 900,
+            "is_approval": false
+          },
+          {
+            "account": "0.0.800",
+            "amount": 15000,
             "is_approval": false
           }
         ],

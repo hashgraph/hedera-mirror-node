@@ -3073,6 +3073,21 @@ components:
           type: string
         scheduled:
           type: boolean
+        staking_reward_transfers:
+          type: array
+          items:
+            type: object
+            properties:
+              account:
+                $ref: '#/components/schemas/EntityId'
+              amount:
+                format: int64
+                type: integer
+              is_approval:
+                type: boolean
+            required:
+              - account
+              - amount
         token_transfers:
           type: array
           items:
@@ -3128,6 +3143,11 @@ components:
         parent_consensus_timestamp: "1234567890.000000007"
         result: SUCCESS
         scheduled: false
+        staking_reward_transfers:
+          - account: 0.0.3
+            amount: 150
+          - account: 0.0.4
+            amount: 200
         transaction_hash: "vigzKe2J7fv4ktHBbNTSzQmKq7Lzdq1/lJMmHT+a2KgvdhAuadlvS4eKeqKjIRmW"
         transaction_id: 0.0.8-1234567890-000000006
         token_transfers:
@@ -3148,6 +3168,12 @@ components:
             is_approval: false
           - account: 0.0.98
             amount: 1
+            is_approval: false
+          - account: 0.0.800
+            amount: 150
+            is_approval: false
+          - account: 0.0.800
+            amount: 200
             is_approval: false
         valid_duration_seconds: 11
         valid_start_timestamp: "1234567890.000000006"
@@ -3222,6 +3248,11 @@ components:
         parent_consensus_timestamp: "1234567890.000000007"
         result: SUCCESS
         scheduled: false
+        staking_reward_transfers:
+          - account: 0.0.3
+            amount: 200
+          - account: 0.0.9
+            amount: 300
         transaction_hash: "vigzKe2J7fv4ktHBbNTSzQmKq7Lzdq1/lJMmHT+a2KgvdhAuadlvS4eKeqKjIRmW"
         transaction_id: 0.0.8-1234567890-000000006
         token_transfers:
@@ -3243,6 +3274,12 @@ components:
           - account: 0.0.98
             amount: 1
             is_approval: true
+          - account: 0.0.800
+            amount: 200
+            is_approval: false
+          - account: 0.0.800
+            amount: 300
+            is_approval: false
         valid_duration_seconds: 11
         valid_start_timestamp: "1234567890.000000006"
     TransactionDetails:
