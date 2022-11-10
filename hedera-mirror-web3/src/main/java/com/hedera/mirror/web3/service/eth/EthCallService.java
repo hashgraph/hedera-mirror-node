@@ -15,17 +15,12 @@ public class EthCallService implements ApiContractEthService<EthRpcCallBody, Str
         return CALL_METHOD;
     }
 
+    /**
+     * (Future work): Full implementation for the eth service will be added with future PRs once the evm-module lib is
+     * completed with all required objects!
+     */
     @Override
     public String get(final EthRpcCallBody body) {
-        //get params from body as hex
-
-        //implement a repository object for Entity to map the account by it's shard,realm,num props
-        //and build dto object which will be passed to the custom evmTxProcessor.executeEtch(..);
-
-        //get the result from the txnProcessor.getOutput().toHexString();
-
-        //temporary output
-
         return "0x" + ResponseCodeEnum.SUCCESS_VALUE;
     }
 }

@@ -22,7 +22,7 @@ class EthCallServiceTest {
 
     @Test
     void get() {
-        final var success = "0x0000000000000000000000000000000000000000000000000000000000000016";
+        final var success = "0x22";
         final var result = ethCallService.get(body);
         Assertions.assertEquals(success, result);
     }

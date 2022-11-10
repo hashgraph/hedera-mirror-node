@@ -57,20 +57,17 @@ public class ApiContractController {
                 return response(request, new JsonRpcErrorResponse(
                         JsonRpcErrorCode.METHOD_NOT_FOUND));
             }
-            //get the params from the body and populate a EthParam value bean used
-            //to build EthRpcCallBody passed as an argument to the EthCallService
+            // (Future work): EthCallService.get() logic will be used in future implementation
 
-            JsonRpcSuccessResponse jsonRpcSuccessResponse = new JsonRpcSuccessResponse();
+            JsonRpcSuccessResponse<String> jsonRpcSuccessResponse = new JsonRpcSuccessResponse<>();
             jsonRpcSuccessResponse.setId(request.getId());
             //depending on the estimate flag we populate different field from the jsonRpcSuccessResponse
             if (estimate) {
                 jsonRpcSuccessResponse.setGas("0x1");
                 jsonRpcSuccessResponse.setResult("0x");
-//                jsonRpcSuccessResponse.setGas(ethCallService.get(ethBody));
             } else {
                 jsonRpcSuccessResponse.setResult("0x1");
                 jsonRpcSuccessResponse.setGas("0x");
-//                jsonRpcSuccessResponse.setResult(ethCallService.get(ethBody));
             }
 
             return response(request, jsonRpcSuccessResponse);
@@ -111,7 +108,7 @@ public class ApiContractController {
 
     private Mono<JsonRpcResponse> response(
             JsonRpcResponse response) {
-        Tags tags = new Tags(ApiContractController.Tags.UNKNOWN_METHOD, response.getStatus());
+        Tags tags = new Tags(Tags.UNKNOWN_METHOD, response.getStatus());
         Timer timer = timers.computeIfAbsent(tags, this::newTimer);
         timer.record(0, TimeUnit.NANOSECONDS); // We can't calculate an accurate start time
         return Mono.just(response);
@@ -120,8 +117,8 @@ public class ApiContractController {
     private Timer newTimer(Tags tags) {
         return Timer.builder(METRIC)
                 .description("The time it takes to process an api contract request")
-                .tag("method", tags.getMethod())
-                .tag("status", tags.getStatus())
+                .tag("method", tags.method())
+                .tag("status", tags.status())
                 .register(meterRegistry);
     }
 
@@ -158,10 +155,7 @@ public class ApiContractController {
     }
 
     @Value
-    private class Tags {
+    private record Tags(String method, String status) {
         private static final String UNKNOWN_METHOD = "unknown";
-
-        private final String method;
-        private final String status;
     }
 }
