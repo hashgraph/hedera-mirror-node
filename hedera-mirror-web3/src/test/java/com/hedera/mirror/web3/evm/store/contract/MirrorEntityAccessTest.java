@@ -52,6 +52,12 @@ class MirrorEntityAccessTest {
     }
 
     @Test
+    void isNotATokenAccount() {
+        when(entityAccessRepository.getType(ACCOUNT_NUM)).thenReturn(Optional.of(EntityType.ACCOUNT));
+        assertFalse(mirrorEntityAccess.isTokenAccount(ADDRESS));
+    }
+
+    @Test
     void getAlias() {
         when(entityAccessRepository.getAlias(ACCOUNT_NUM)).thenReturn(Optional.of(DATA));
         final var result = mirrorEntityAccess.alias(ADDRESS);
