@@ -96,6 +96,10 @@ const flywayMigrate = async () => {
       "placeholders.compressionAge": 9007199254740991,
       "placeholders.db-name": "${dbName}",
       "placeholders.db-user": "${dbConnectionParams.user}",
+      "placeholders.partitionIdInterval":"'5000'",
+      "placeholders.partitionStartDate": "'3 years'",
+      "placeholders.partitionTimeInterval":"'1 year'",
+      "placeholders.cronSchedule": "'@daily'",
       "placeholders.topicRunningHashV2AddedTimestamp": 0,
       "target": "latest",
       "url": "jdbc:postgresql://${dbConnectionParams.host}:${dbConnectionParams.port}/${dbName}",
@@ -135,7 +139,9 @@ function V2CreateTempFolder(locations) {
     fs.readdirSync(locations).forEach((file) => {
       const destFile = path.join(destination, file);
       const srcFile = path.join(locations, file);
-      if (destFile !== path.join(destination, 'R__partitioning.sql')) {
+      const excludeFile1 = path.join(destination, 'R__maintain_partitions.sql');
+      const excludeFile2 = path.join(destination, 'R__create_partitions.sql');
+      if (destFile !== excludeFile1 && destFile !== excludeFile2) {
         fs.copyFileSync(srcFile, destFile);
       }
     });

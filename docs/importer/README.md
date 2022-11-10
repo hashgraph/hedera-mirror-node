@@ -81,3 +81,12 @@ For local testing the importer can be run using the following command:
 ```console
 SPRING_PROFILES_ACTIVE=v2 ./mvnw spring-boot:run -pl  hedera-mirror-importer
 ```
+
+## Building the citus docker image
+DockerFile to build a custom image to be used in v2 is located in the following folder:
+```hedera-mirror-node/hedera-mirror-importer/src/main/resources/db/scripts/v2```
+
+The database name to be used by citus can be provided using an environment variable as follows:
+```console
+docker build --build-arg DB=mirror_node --platform linux/arm64 -t mgoelswirlds/citus:11.1.4-pg14 .
+```
