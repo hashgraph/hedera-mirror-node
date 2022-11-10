@@ -51,31 +51,30 @@ ${ContractLog.getFullName(ContractLog.TOPIC2)},
 ${ContractLog.getFullName(ContractLog.TOPIC3)}
 `;
 
+const contractResultsFields = `${ContractResult.getFullName(ContractResult.AMOUNT)},
+${ContractResult.getFullName(ContractResult.BLOOM)},
+${ContractResult.getFullName(ContractResult.CALL_RESULT)},
+${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)},
+${ContractResult.getFullName(ContractResult.CONTRACT_ID)},
+${ContractResult.getFullName(ContractResult.CREATED_CONTRACT_IDS)},
+${ContractResult.getFullName(ContractResult.ERROR_MESSAGE)},
+${ContractResult.getFullName(ContractResult.FAILED_INITCODE)},
+${ContractResult.getFullName(ContractResult.FUNCTION_PARAMETERS)},
+${ContractResult.getFullName(ContractResult.GAS_LIMIT)},
+${ContractResult.getFullName(ContractResult.GAS_USED)},
+${ContractResult.getFullName(ContractResult.PAYER_ACCOUNT_ID)},
+${ContractResult.getFullName(ContractResult.SENDER_ID)},
+${ContractResult.getFullName(ContractResult.TRANSACTION_HASH)},
+${ContractResult.getFullName(ContractResult.TRANSACTION_INDEX)},
+${ContractResult.getFullName(ContractResult.TRANSACTION_RESULT)}
+`;
+
 /**
  * Contract retrieval business logic
  */
 class ContractService extends BaseService {
-  static contractResultsFields = `
-      ${ContractResult.getFullName(ContractResult.AMOUNT)},
-      ${ContractResult.getFullName(ContractResult.BLOOM)},
-      ${ContractResult.getFullName(ContractResult.CALL_RESULT)},
-      ${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)},
-      ${ContractResult.getFullName(ContractResult.CONTRACT_ID)},
-      ${ContractResult.getFullName(ContractResult.CREATED_CONTRACT_IDS)},
-      ${ContractResult.getFullName(ContractResult.ERROR_MESSAGE)},
-      ${ContractResult.getFullName(ContractResult.FAILED_INITCODE)},
-      ${ContractResult.getFullName(ContractResult.FUNCTION_PARAMETERS)},
-      ${ContractResult.getFullName(ContractResult.GAS_LIMIT)},
-      ${ContractResult.getFullName(ContractResult.GAS_USED)},
-      ${ContractResult.getFullName(ContractResult.PAYER_ACCOUNT_ID)},
-      ${ContractResult.getFullName(ContractResult.SENDER_ID)},
-      ${ContractResult.getFullName(ContractResult.TRANSACTION_HASH)},
-      ${ContractResult.getFullName(ContractResult.TRANSACTION_INDEX)},
-      ${ContractResult.getFullName(ContractResult.TRANSACTION_RESULT)}
-  `;
-
   static contractResultsQuery = `
-    select ${this.contractResultsFields}
+    select ${contractResultsFields}
     from ${ContractResult.tableName} ${ContractResult.tableAlias}`;
 
   static contractResultsWithEvmAddressQuery = `
@@ -83,7 +82,7 @@ class ContractService extends BaseService {
       select ${Entity.EVM_ADDRESS}, ${Entity.ID} from ${Entity.tableName}
     )
     select
-      ${this.contractResultsFields},
+      ${contractResultsFields},
       ${Entity.getFullName(Entity.EVM_ADDRESS)}
     from ${ContractResult.tableName} ${ContractResult.tableAlias}
     left join ${Entity.tableName} ${Entity.tableAlias}
