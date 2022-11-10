@@ -15,7 +15,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.web3.repository.EntityAccessRepository;
 
@@ -28,8 +27,6 @@ class MirrorEntityAccessTest {
     private static final Long ACCOUNT_NUM = numFromEvmAddress(ADDRESS.toArrayUnsafe());
     @Mock
     private EntityAccessRepository entityAccessRepository;
-    @Mock
-    private Entity entity;
 
     @InjectMocks
     private MirrorEntityAccess mirrorEntityAccess;
