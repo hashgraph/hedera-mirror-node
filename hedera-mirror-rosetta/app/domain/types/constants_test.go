@@ -42,6 +42,10 @@ func TestTransactionTypesUpToDate(t *testing.T) {
 	}
 }
 
+func TestUnknownTransactionType(t *testing.T) {
+	assert.Equal(t, "UNKNOWN", TransactionTypes[0])
+}
+
 func getSdkTransactionTypes() map[int32]string {
 	body := services.TransactionBody{}
 	dataFields := body.ProtoReflect().Descriptor().Oneofs().ByName("data").Fields()

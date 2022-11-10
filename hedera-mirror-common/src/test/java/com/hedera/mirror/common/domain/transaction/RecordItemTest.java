@@ -430,7 +430,7 @@ class RecordItemTest {
     }
 
     /**
-     * This test writes a TransactionBody that contains a unknown field with a protobuf ID of 9999 to test that the
+     * This test writes a TransactionBody that contains an unknown field with a protobuf ID of 9999 to test that the
      * unknown transaction is still inserted into the database.
      */
     @Test
@@ -449,6 +449,29 @@ class RecordItemTest {
                 .build();
 
         assertThat(recordItem.getTransactionType()).isEqualTo(unknownType);
+    }
+
+    /**
+     * This test writes a TransactionBody that contains an invalid transaction body without unknown fields or a valid
+     * transaction body and verifies it is still inserted into the database.
+     * <p>
+     * See https://github.com/hashgraph/hedera-mirror-node/issues/4843
+     */
+    @Test
+    void invalidTransactionType() {
+        byte[] invalidBytes = new byte[] {10, 23, 10, 21, 10, 11, 8, -23, -105, -78, -101, 6, 16, -115, -95, -56, 47,
+                18, 4, 24, -108, -74, 85, 32, 1};
+        Transaction transaction = Transaction.newBuilder()
+                .setSignedTransactionBytes(ByteString.copyFrom(invalidBytes))
+                .build();
+
+        RecordItem recordItem = RecordItem.builder()
+                .hapiVersion(DEFAULT_HAPI_VERSION)
+                .record(TRANSACTION_RECORD)
+                .transaction(transaction)
+                .build();
+
+        assertThat(recordItem.getTransactionType()).isEqualTo(TransactionBody.DataCase.DATA_NOT_SET.getNumber());
     }
 
     private void testException(byte[] transactionBytes, byte[] recordBytes, String expectedMessage) {
