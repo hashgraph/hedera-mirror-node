@@ -117,8 +117,8 @@ public class ApiContractController {
     private Timer newTimer(Tags tags) {
         return Timer.builder(METRIC)
                 .description("The time it takes to process an api contract request")
-                .tag("method", tags.method())
-                .tag("status", tags.status())
+                .tag("method", tags.getMethod())
+                .tag("status", tags.getStatus())
                 .register(meterRegistry);
     }
 
@@ -155,7 +155,9 @@ public class ApiContractController {
     }
 
     @Value
-    private record Tags(String method, String status) {
+    private class Tags {
         private static final String UNKNOWN_METHOD = "unknown";
+        String method;
+        String status;
     }
 }
