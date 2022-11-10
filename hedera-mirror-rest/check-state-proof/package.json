@@ -36,7 +36,7 @@
     "lodash": "^4.17.21",
     "log4js": "^6.7.0",
     "node-fetch": "^3.2.10",
-    "yargs": "^17.6.0"
+    "yargs": "^17.6.2"
   },
   "overrides": {
     "protobufjs": "6.11.3"

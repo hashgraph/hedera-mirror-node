@@ -129,8 +129,11 @@ const getEntityBalanceQuery = (
     .join(' and ');
   const params = utils.mergeParams([], balanceQuery.params, entityAccountQuery.params, pubKeyQuery.params, limitParams);
   const query = `
-    with latest_account_balance as (select max(consensus_timestamp) as consensus_timestamp from account_balance_file),
-    latest_record_file as (select max(consensus_end) as consensus_timestamp from record_file)
+    with latest_token_balance as (
+      select account_id, balance, token_id
+      from token_balance
+      where consensus_timestamp = (select max(consensus_timestamp) as consensus_timestamp from account_balance_file)
+    ), latest_record_file as (select max(consensus_end) as consensus_timestamp from record_file)
     select
       ${entityFields},
       latest_record_file.consensus_timestamp,
@@ -139,13 +142,12 @@ const getEntityBalanceQuery = (
         select json_agg(json_build_object('token_id', token_id, 'balance', balance))
         from (
           select token_id, balance
-          from token_balance
-          where account_id = e.id and consensus_timestamp = latest_account_balance.consensus_timestamp
+          from latest_token_balance
+          where account_id = e.id
         order by token_id ${order}
         limit ${tokenBalanceLimit}) as account_token_balance
       ) as token_balances
     from entity e left join entity_stake es on es.id = e.id,
-      latest_account_balance,
       latest_record_file
     where ${whereCondition}
     order by e.id ${order}
