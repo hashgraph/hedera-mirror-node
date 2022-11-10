@@ -39,6 +39,7 @@ import lombok.Setter;
 import lombok.Value;
 import lombok.experimental.NonFinal;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.codec.binary.Hex;
 import org.springframework.data.util.Version;
 
 import com.hedera.mirror.common.domain.StreamItem;
@@ -138,7 +139,6 @@ public class RecordItem implements StreamItem {
         return record.hasParentConsensusTimestamp();
     }
 
-
     private boolean checkSuccess() {
         // A child is only successful if its parent is as well. Consensus nodes have had issues in the past where that
         // invariant did not hold true and children contract calls were not reverted on failure.
@@ -164,8 +164,9 @@ public class RecordItem implements StreamItem {
             Set<Integer> unknownFields = body.getUnknownFields().asMap().keySet();
 
             if (unknownFields.size() != 1) {
-                throw new IllegalStateException("Unable to guess correct transaction type since there's not " +
-                        "exactly one: " + unknownFields);
+                log.error("Unable to guess correct transaction type since there's not exactly one unknown field {}: {}",
+                        unknownFields, Hex.encodeHexString(body.toByteArray()));
+                return TransactionBody.DataCase.DATA_NOT_SET.getNumber();
             }
 
             int transactionType = unknownFields.iterator().next();
@@ -228,4 +229,6 @@ public class RecordItem implements StreamItem {
             return (B) this;
         }
     }
+
+
 }
