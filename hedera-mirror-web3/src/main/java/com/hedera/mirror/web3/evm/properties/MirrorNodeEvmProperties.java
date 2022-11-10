@@ -20,11 +20,13 @@ package com.hedera.mirror.web3.evm.properties;
  * ‍
  */
 
+import lombok.Setter;
 import org.hyperledger.besu.datatypes.Address;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import com.hedera.services.evm.contracts.execution.EvmProperties;
 
+@Setter
 @ConfigurationProperties(prefix = "hedera.mirror.web3.evm")
 public class MirrorNodeEvmProperties implements EvmProperties {
     private String evmVersion;
