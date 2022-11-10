@@ -36,6 +36,6 @@ dependencies {
     implementation("org.apache.commons:commons-compress:1.21")
     implementation("org.gradle:test-retry-gradle-plugin:1.4.1")
     implementation("org.openapitools:openapi-generator-gradle-plugin:6.2.0")
-    implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:3.4.0.2513")
+    implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:3.5.0.2730")
     implementation("org.springframework.boot:spring-boot-gradle-plugin:2.7.5")
 }
