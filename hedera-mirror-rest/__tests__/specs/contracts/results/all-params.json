@@ -115,6 +115,7 @@
         "contract_id": "0.0.5001",
         "created_contract_ids": [],
         "error_message": "Not enough gas",
+        "evm_address": "0x",
         "from": "0x0000000000000000000000000000000000001771",
         "function_parameters": "0x0303",
         "gas_limit": 1234556,

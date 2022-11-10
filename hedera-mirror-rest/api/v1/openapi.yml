@@ -1976,6 +1976,11 @@ components:
               nullable: true
               type: string
               example: '0x0127'
+            evm_address:
+              description: The hex encoded evm address
+              example: "0x25fe26adc577cc89172e6156c9e24f7b9751b762"
+              nullable: true
+              type: string
             failed_initcode:
               description: The hex encoded initcode of a failed contract create transaction
               example: "0x856739"

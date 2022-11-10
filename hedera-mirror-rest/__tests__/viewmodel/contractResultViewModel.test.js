@@ -42,6 +42,7 @@ describe('ContractResultViewModel', () => {
     contract_id: '0.0.1500',
     created_contract_ids: ['0.0.1501', '0.0.1502'],
     error_message: 'unknown error',
+    evm_address: '0x',
     from: '0x000000000000000000000000000000000000044c',
     function_parameters: '0x01020304',
     gas_limit: 6000,
