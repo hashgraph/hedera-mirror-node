@@ -1,0 +1,57 @@
+{
+  "description": "Account staking reward payouts api call with all applicable params",
+  "setup": {
+    "entities": [
+      {
+        "num": 1001
+      },
+      {
+        "num": 800
+      }
+    ],
+    "balances": [],
+    "tokens": [],
+    "transactions": [],
+    "cryptotransfers": [],
+    "nfts": [],
+    "stakingRewardTransfers": [
+      {
+        "accountId": "0.0.1001",
+        "amount": 10,
+        "consensus_timestamp": "1234567890000000001",
+        "payerAccountId": "0.0.800"
+      },
+      {
+        "accountId": "0.0.1001",
+        "amount": 12,
+        "consensus_timestamp": "1234567891000000001",
+        "payerAccountId": "0.0.800"
+      },
+      {
+        "accountId": "0.0.1001",
+        "amount": 13,
+        "consensus_timestamp": "1234567892000000001",
+        "payerAccountId": "0.0.800"
+      }
+    ]
+  },
+  "url": "/api/v1/accounts/0.0.1001/rewards?timestamp=gte:1234567890000000001&order=asc&limit=2",
+  "responseStatus": 200,
+  "responseJson": {
+    "rewards": [
+      {
+        "account_id": "0.0.1001",
+        "amount": 10,
+        "timestamp": "1234567890000000001"
+      },
+      {
+        "account_id": "0.0.1001",
+        "amount": 12,
+        "timestamp": "1234567891000000001"
+      }
+    ],
+    "links": {
+      "next": "/api/v1/accounts/0.0.1001/rewards?timestamp=gt:1234567891000000001&order=asc&limit=2"
+    }
+  }
+}

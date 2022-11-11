@@ -1,0 +1,76 @@
+{
+  "description": "Account staking reward payouts api call with no params",
+  "setup": {
+    "accounts": [
+      {
+        "num": 1003,
+        "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
+        "evm_address": "ebb9a1be370150759408cd7af48e9eda2b8ead57",
+        "public_key": "519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9"
+      },
+      {
+        "num": 800
+      }
+    ],
+    "entities": [],
+    "tokens": [],
+    "balances": [],
+    "transactions": [],
+    "cryptotransfers": [],
+    "nfts": [],
+    "stakingRewardTransfers": [
+      {
+        "accountId": "0.0.1003",
+        "amount": 10,
+        "consensus_timestamp": "1234567890000000001",
+        "payerAccountId": "0.0.800"
+      },
+      {
+        "accountId": "0.0.1003",
+        "amount": 12,
+        "consensus_timestamp": "1234567891000000001",
+        "payerAccountId": "0.0.800"
+      },
+      {
+        "accountId": "0.0.1003",
+        "amount": 13,
+        "consensus_timestamp": "1234567892000000001",
+        "payerAccountId": "0.0.800"
+      }
+    ]
+  },
+  "urls": [
+    "/api/v1/accounts/1003/rewards",
+    "/api/v1/accounts/0.1003/rewards",
+    "/api/v1/accounts/0.0.1003/rewards",
+    "/api/v1/accounts/KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/rewards",
+    "/api/v1/accounts/0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/rewards",
+    "/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/rewards",
+    "/api/v1/accounts/ebb9a1be370150759408cd7af48e9eda2b8ead57/rewards",
+    "/api/v1/accounts/0xebb9a1be370150759408cd7af48e9eda2b8ead57/rewards",
+    "/api/v1/accounts/0.0.ebb9a1be370150759408cd7af48e9eda2b8ead57/rewards"
+  ],
+  "responseStatus": 200,
+  "responseJson": {
+    "rewards": [
+      {
+        "account_id": "0.0.1003",
+        "amount": 13,
+        "timestamp": "1234567892000000001"
+      },
+      {
+        "account_id": "0.0.1003",
+        "amount": 12,
+        "timestamp": "1234567891000000001"
+      },
+      {
+        "account_id": "0.0.1003",
+        "amount": 10,
+        "timestamp": "1234567890000000001"
+      }
+    ],
+    "links": {
+      "next": null
+    }
+  }
+}

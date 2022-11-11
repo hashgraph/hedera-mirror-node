@@ -23,8 +23,9 @@ import BaseController from './baseController';
 import {getResponseLimit} from '../config';
 import {filterKeys, orderFilterValues, responseDataLabel} from '../constants';
 import {InvalidArgumentError} from '../errors';
-import {EntityService, NftService} from '../service';
-import {NftViewModel} from '../viewmodel';
+import {FileData} from '../model';
+import {EntityService, NftService, StakingRewardTransferService} from '../service';
+import {NftViewModel, StakingRewardTransferViewModel} from '../viewmodel';
 import * as utils from '../utils';
 
 const {default: defaultLimit} = getResponseLimit();
@@ -115,6 +116,69 @@ class AccountController extends BaseController {
         next: this.getPaginationLink(req, nfts, query.bounds, query.limit, query.order),
       },
     };
+  };
+
+  extractStakingRewardsQuery(filters, accountId) {
+    let limit = defaultLimit;
+    let order = orderFilterValues.DESC;
+    let whereQuery = [];
+    const params = [accountId];
+
+    for (const filter of filters) {
+      switch (filter.key) {
+        case filterKeys.LIMIT:
+          limit = filter.value;
+          break;
+        case filterKeys.ORDER:
+          order = filter.value;
+          break;
+        case filterKeys.TIMESTAMP:
+          if (utils.opsMap.ne === filter.operator) {
+            throw new InvalidArgumentError(`Not equals (ne) operator is not supported for ${filterKeys.TIMESTAMP}`);
+          }
+          whereQuery = this.getFilterWhereCondition(FileData.CONSENSUS_TIMESTAMP, filter);
+          break;
+        default:
+          break;
+      }
+    }
+
+    return {
+      order,
+      limit,
+      whereQuery,
+      params,
+    };
+  }
+
+  /**
+   * Handler function for /accounts/:idOrAliasOrEvmAddress/rewards API
+   * @param {Request} req HTTP request object
+   * @param {Response} res HTTP response object
+   * @returns {Promise<void>}
+   */
+  listStakingRewardsByAccountId = async (req, res) => {
+    const accountId = await EntityService.getEncodedId(req.params[filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS]);
+    const filters = utils.buildAndValidateFilters(req.query);
+    const query = this.extractStakingRewardsQuery(filters, accountId);
+    const stakingRewardsTransfers = await StakingRewardTransferService.getRewards(query);
+    const rewards = stakingRewardsTransfers.map((reward) => new StakingRewardTransferViewModel(reward));
+    const response = {
+      rewards,
+      links: {
+        next: null,
+      },
+    };
+
+    if (response.rewards.length === query.limit) {
+      const lastRow = _.last(response.rewards);
+      const last = {
+        [filterKeys.TIMESTAMP]: lastRow.consensus_timestamp,
+      };
+      response.links.next = utils.getPaginationLink(req, false, last, query.order);
+    }
+
+    res.locals[responseDataLabel] = response;
   };
 }
 

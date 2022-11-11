@@ -108,6 +108,30 @@ paths:
           $ref: '#/components/responses/NotFoundError'
       tags:
         - accounts
+  /api/v1/accounts/{idOrAliasOrEvmAddress}/rewards:
+    get:
+      summary: Get past staking reward payouts for an account
+      description: |
+        Returns information for all past staking reward payouts for an account.
+      operationId: listStakingRewardsByAccountId
+      parameters:
+        - $ref: '#/components/parameters/accountIdOrAliasOrEvmAddressPathParam'
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/orderQueryParam'
+        - $ref: '#/components/parameters/timestampQueryParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StakingRewardsResponse'
+        400:
+          $ref: '#/components/responses/InvalidParameterError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+      tags:
+        - accounts
   /api/v1/accounts/{idOrAliasOrEvmAddress}/tokens:
     get:
       summary: Get token relationships info for an account
@@ -1334,6 +1358,15 @@ components:
       properties:
         blocks:
           $ref: '#/components/schemas/Blocks'
+        links:
+          $ref: '#/components/schemas/Links'
+    StakingRewardsResponse:
+      type: object
+      properties:
+        rewards:
+          type: array
+          items:
+            $ref: '#/components/schemas/StakingReward'
         links:
           $ref: '#/components/schemas/Links'
     StateProofResponseFull:
@@ -2728,6 +2761,30 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/ServiceEndpoint'
+    StakingReward:
+      type: object
+      properties:
+        account_id:
+          $ref: '#/components/schemas/EntityId'
+          example: 0.0.1000
+        amount:
+          description: The number of tinybars awarded
+          example: 10
+          format: int64
+          type: integer
+        timestamp:
+          $ref: '#/components/schemas/Timestamp'
+          description: timestamp of the Staking Reward transaction
+          example: 123456789.000000001
+          nullable: false
+      required:
+        - account_id
+        - amount
+        - timestamp
+      example:
+        account_id: 0.0.1000
+        amount: 10
+        timestamp: 123456789.000000001
     Timestamp:
       type: string
       example: "1586567700.453054000"

@@ -1,0 +1,46 @@
+{
+  "description": "Account staking reward payouts api call for an account with no rewards",
+  "setup": {
+    "entities": [
+      {
+        "num": 1004
+      },
+      {
+        "num": 800
+      }
+    ],
+    "balances": [],
+    "tokens": [],
+    "transactions": [],
+    "cryptotransfers": [],
+    "nfts": [],
+    "stakingRewardTransfers": [
+      {
+        "accountId": "0.0.1004",
+        "amount": 10,
+        "consensus_timestamp": "1234567890000000001",
+        "payerAccountId": "0.0.800"
+      },
+      {
+        "accountId": "0.0.1004",
+        "amount": 12,
+        "consensus_timestamp": "1234567891000000001",
+        "payerAccountId": "0.0.800"
+      },
+      {
+        "accountId": "0.0.1004",
+        "amount": 13,
+        "consensus_timestamp": "1234567892000000001",
+        "payerAccountId": "0.0.800"
+      }
+    ]
+  },
+  "url": "/api/v1/accounts/0.0.800/rewards",
+  "responseStatus": 200,
+  "responseJson": {
+    "rewards": [],
+    "links": {
+      "next": null
+    }
+  }
+}

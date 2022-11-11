@@ -61,6 +61,7 @@ const setup = async (testDataJson) => {
   await loadNodeStakes(testDataJson.nodestakes);
   await loadRecordFiles(testDataJson.recordFiles);
   await loadSchedules(testDataJson.schedules);
+  await loadStakingRewardTransfers(testDataJson.stakingRewardTransfers);
   await loadTopicMessages(testDataJson.topicmessages);
   await loadTokens(testDataJson.tokens);
   await loadTokenAccounts(testDataJson.tokenaccounts);
@@ -307,6 +308,16 @@ const loadSchedules = async (schedules) => {
 
   for (const schedule of schedules) {
     await addSchedule(schedule);
+  }
+};
+
+const loadStakingRewardTransfers = async (stakingRewardTransfers) => {
+  if (stakingRewardTransfers == null) {
+    return;
+  }
+
+  for (const stakingRewardTransfer of stakingRewardTransfers) {
+    await addStakingRewardTransfer(stakingRewardTransfer);
   }
 };
 
@@ -1193,6 +1204,33 @@ const addSchedule = async (schedule) => {
   );
 };
 
+const addStakingRewardTransfer = async (transfer) => {
+  const insertFields = ['account_id', 'amount', 'consensus_timestamp', 'payer_account_id'];
+  const payerAccountId = EntityId.parse(transfer.payerAccountId).getEncodedId();
+  const stakingRewardTransfer = {
+    account_id: EntityId.parse(transfer.accountId).getEncodedId(),
+    amount: 100,
+    consensus_timestamp: null,
+    payer_account_id: payerAccountId,
+    ...transfer,
+  };
+
+  await insertDomainObject('staking_reward_transfer', insertFields, stakingRewardTransfer);
+  await pool.query(
+    `insert into staking_reward_transfer (account_id,
+                                          amount,
+                                          consensus_timestamp,
+                                          payer_account_id)
+    values ($1, $2, $3, $4)`,
+    [
+      EntityId.parse(stakingRewardTransfer.account_id).getEncodedId(),
+      stakingRewardTransfer.amount,
+      stakingRewardTransfer.consensus_timestamp,
+      EntityId.parse(stakingRewardTransfer.payer_account_id).getEncodedId(),
+    ]
+  );
+};
+
 const addTransactionSignature = async (transactionSignature) => {
   await pool.query(
     `insert into transaction_signature (consensus_timestamp,
@@ -1529,24 +1567,26 @@ export default {
   addAccount,
   addCryptoTransaction,
   addNft,
+  addStakingRewardTransfer,
   addToken,
-  loadAddressBooks,
   loadAddressBookEntries,
   loadAddressBookServiceEndpoints,
-  loadContracts,
+  loadAddressBooks,
+  loadContractActions,
+  loadContractLogs,
   loadContractResults,
+  loadContractStateChanges,
+  loadContractStates,
+  loadContracts,
   loadCryptoAllowances,
   loadEntities,
+  loadEthereumTransactions,
   loadFileData,
   loadNetworkStakes,
   loadNodeStakes,
   loadRecordFiles,
+  loadStakingRewardTransfers,
   loadTransactions,
-  loadEthereumTransactions,
-  loadContractLogs,
-  loadContractStateChanges,
   setAccountBalance,
   setup,
-  loadContractActions,
-  loadContractStates,
 };
