@@ -273,7 +273,7 @@ class ContractService extends BaseService {
     }
 
     const whereClause = `where ${ContractResult.CONSENSUS_TIMESTAMP} ${timestampsOpAndValue}`;
-    const query = [ContractService.contractResultsQuery, whereClause].join('\n');
+    const query = [ContractService.contractResultsWithEvmAddressQuery, whereClause].join('\n');
 
     const rows = await super.getRows(query, params, 'getContractResultsByTimestamps');
 
