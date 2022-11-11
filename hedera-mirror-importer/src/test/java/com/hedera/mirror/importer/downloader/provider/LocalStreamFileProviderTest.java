@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.downloader.provider;
  * ‍
  */
 
-import static com.hedera.mirror.importer.downloader.provider.LocalStreamFileProvider.SIDECAR;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.nio.file.Files;
@@ -58,7 +57,7 @@ class LocalStreamFileProviderTest extends AbstractStreamFileProviderTest {
                 .verify(Duration.ofMillis(250));
         assertThat(Files.walk(dataPath)
                 .filter(p -> p.toString().contains(accountId))
-                .filter(p -> !p.toString().contains(SIDECAR))
+                .filter(p -> !p.toString().contains("sidecar"))
                 .noneMatch(p -> p.toFile().isFile())).isTrue();
     }
 }

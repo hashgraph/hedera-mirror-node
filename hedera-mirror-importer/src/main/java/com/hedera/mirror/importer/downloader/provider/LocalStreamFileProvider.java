@@ -4,6 +4,7 @@ import static com.hedera.mirror.common.domain.StreamType.SIGNATURE_SUFFIX;
 import static com.hedera.mirror.importer.downloader.provider.S3StreamFileProvider.SIDECAR_FOLDER;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.util.Arrays;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +21,6 @@ import com.hedera.mirror.importer.exception.FileOperationException;
 @RequiredArgsConstructor
 public class LocalStreamFileProvider implements StreamFileProvider {
 
-    static final String SIDECAR = "sidecar";
     static final String STREAMS = "streams";
 
     private final CommonDownloaderProperties commonDownloaderProperties;
@@ -79,7 +79,12 @@ public class LocalStreamFileProvider implements StreamFileProvider {
 
         var name = file.getName();
         if (name.compareTo(lastFilename) < 0) {
-            file.delete(); // Files before last file have been processed and can be deleted to optimize find + sort
+            try {
+                // Files before last file have been processed and can be deleted to optimize list + sort
+                Files.delete(file.toPath());
+            } catch (Exception e) {
+                log.warn("Unable to delete file {}: {}", file, e.getMessage());
+            }
             return false;
         }
 
