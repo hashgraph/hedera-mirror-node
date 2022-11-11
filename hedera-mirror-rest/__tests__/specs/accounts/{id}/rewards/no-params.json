@@ -3,7 +3,7 @@
   "setup": {
     "accounts": [
       {
-        "num": 1003,
+        "num": 1001,
         "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
         "evm_address": "ebb9a1be370150759408cd7af48e9eda2b8ead57",
         "public_key": "519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9"
@@ -20,29 +20,29 @@
     "nfts": [],
     "stakingRewardTransfers": [
       {
-        "accountId": "0.0.1003",
+        "accountId": "0.0.1001",
         "amount": 10,
-        "consensus_timestamp": "1234567890000000001",
+        "consensus_timestamp": "11111",
         "payerAccountId": "0.0.800"
       },
       {
-        "accountId": "0.0.1003",
+        "accountId": "0.0.1001",
         "amount": 12,
-        "consensus_timestamp": "1234567891000000001",
+        "consensus_timestamp": "22222",
         "payerAccountId": "0.0.800"
       },
       {
-        "accountId": "0.0.1003",
+        "accountId": "0.0.1001",
         "amount": 13,
-        "consensus_timestamp": "1234567892000000001",
+        "consensus_timestamp": "33333",
         "payerAccountId": "0.0.800"
       }
     ]
   },
   "urls": [
-    "/api/v1/accounts/1003/rewards",
-    "/api/v1/accounts/0.1003/rewards",
-    "/api/v1/accounts/0.0.1003/rewards",
+    "/api/v1/accounts/1001/rewards",
+    "/api/v1/accounts/0.1001/rewards",
+    "/api/v1/accounts/0.0.1001/rewards",
     "/api/v1/accounts/KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/rewards",
     "/api/v1/accounts/0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/rewards",
     "/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/rewards",
@@ -54,19 +54,19 @@
   "responseJson": {
     "rewards": [
       {
-        "account_id": "0.0.1003",
+        "account_id": "0.0.1001",
         "amount": 13,
-        "timestamp": "1234567892000000001"
+        "consensus_timestamp": "0.000033333"
       },
       {
-        "account_id": "0.0.1003",
+        "account_id": "0.0.1001",
         "amount": 12,
-        "timestamp": "1234567891000000001"
+        "consensus_timestamp": "0.000022222"
       },
       {
-        "account_id": "0.0.1003",
+        "account_id": "0.0.1001",
         "amount": 10,
-        "timestamp": "1234567890000000001"
+        "consensus_timestamp": "0.000011111"
       }
     ],
     "links": {

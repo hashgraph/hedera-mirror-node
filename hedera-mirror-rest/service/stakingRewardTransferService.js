@@ -43,18 +43,24 @@ class StakingRewardTransferService extends BaseService {
   }
 
   getRewardsQuery(accountId, order, limit, whereConditions, whereParams) {
-    const params = whereParams;
-    params.push(accountId);
+    const params = Array.from(whereParams);
+    if (params.length == 0) {
+      params.push(accountId);
+    }
     params.push(limit);
-    const conditions = whereConditions.map(
-      (kov) =>
-        (kov.key === 'timestamp'
-          ? `${StakingRewardTransfer.getFullName(StakingRewardTransfer.CONSENSUS_TIMESTAMP)}`
-          : kov.key) +
-        ' ' +
-        kov.operator +
-        ' ' +
-        kov.value
+    const conditionsArray = Array.from(whereConditions);
+    // if there is a "key" element inside the where condition, parse it accordingly.
+    //  Otherwise, just take the where condition's string value as a pre-parsed "where"-like clause.
+    const conditions = conditionsArray.map((kov) =>
+      kov.key
+        ? (kov.key === 'timestamp'
+            ? `${StakingRewardTransfer.getFullName(StakingRewardTransfer.CONSENSUS_TIMESTAMP)}`
+            : kov.key) +
+          ' ' +
+          kov.operator +
+          ' ' +
+          kov.value
+        : kov
     );
     conditions.unshift(`${StakingRewardTransfer.getFullName(StakingRewardTransfer.ACCOUNT_ID)}` + ' = $1');
     const query = [

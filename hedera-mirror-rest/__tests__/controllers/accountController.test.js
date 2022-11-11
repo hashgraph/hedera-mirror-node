@@ -487,10 +487,7 @@ describe('extractStakingRewardsQuery', () => {
       filters: [timestampEqFilter],
       expected: {
         ...defaultExpected,
-        whereQuery: {
-          query: `${FileData.CONSENSUS_TIMESTAMP}  = `,
-          param: 1000,
-        },
+        whereQuery: ['srt.consensus_timestamp  =  1000'],
       },
     },
     {
@@ -498,10 +495,7 @@ describe('extractStakingRewardsQuery', () => {
       filters: [timestampGtFilter],
       expected: {
         ...defaultExpected,
-        whereQuery: {
-          query: `${FileData.CONSENSUS_TIMESTAMP}  > `,
-          param: 2000,
-        },
+        whereQuery: ['srt.consensus_timestamp  >  2000'],
       },
     },
     {
@@ -509,10 +503,7 @@ describe('extractStakingRewardsQuery', () => {
       filters: [timestampGteFilter],
       expected: {
         ...defaultExpected,
-        whereQuery: {
-          query: `${FileData.CONSENSUS_TIMESTAMP}  >= `,
-          param: 3000,
-        },
+        whereQuery: ['srt.consensus_timestamp  >=  3000'],
       },
     },
     {
@@ -520,10 +511,7 @@ describe('extractStakingRewardsQuery', () => {
       filters: [timestampLtFilter],
       expected: {
         ...defaultExpected,
-        whereQuery: {
-          query: `${FileData.CONSENSUS_TIMESTAMP}  < `,
-          param: 4000,
-        },
+        whereQuery: ['srt.consensus_timestamp  <  4000'],
       },
     },
     {
@@ -531,10 +519,7 @@ describe('extractStakingRewardsQuery', () => {
       filters: [timestampLteFilter],
       expected: {
         ...defaultExpected,
-        whereQuery: {
-          query: `${FileData.CONSENSUS_TIMESTAMP}  <= `,
-          param: 5000,
-        },
+        whereQuery: ['srt.consensus_timestamp  <=  5000'],
       },
     },
   ];

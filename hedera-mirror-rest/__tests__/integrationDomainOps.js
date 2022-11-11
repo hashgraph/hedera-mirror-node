@@ -1216,19 +1216,6 @@ const addStakingRewardTransfer = async (transfer) => {
   };
 
   await insertDomainObject('staking_reward_transfer', insertFields, stakingRewardTransfer);
-  await pool.query(
-    `insert into staking_reward_transfer (account_id,
-                                          amount,
-                                          consensus_timestamp,
-                                          payer_account_id)
-    values ($1, $2, $3, $4)`,
-    [
-      EntityId.parse(stakingRewardTransfer.account_id).getEncodedId(),
-      stakingRewardTransfer.amount,
-      stakingRewardTransfer.consensus_timestamp,
-      EntityId.parse(stakingRewardTransfer.payer_account_id).getEncodedId(),
-    ]
-  );
 };
 
 const addTransactionSignature = async (transactionSignature) => {

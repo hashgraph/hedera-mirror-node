@@ -3,7 +3,7 @@
   "setup": {
     "entities": [
       {
-        "num": 1002
+        "num": 1001
       },
       {
         "num": 800
@@ -16,33 +16,30 @@
     "nfts": [],
     "stakingRewardTransfers": [
       {
-        "accountId": "0.0.1002",
+        "accountId": "0.0.1001",
         "amount": 10,
-        "consensus_timestamp": "1234567890000000001",
+        "consensus_timestamp": "11111",
         "payerAccountId": "0.0.800"
       },
       {
-        "accountId": "0.0.1002",
+        "accountId": "0.0.1001",
         "amount": 12,
-        "consensus_timestamp": "1234567891000000001",
+        "consensus_timestamp": "22222",
         "payerAccountId": "0.0.800"
       },
       {
-        "accountId": "0.0.1002",
+        "accountId": "0.0.1001",
         "amount": 13,
-        "consensus_timestamp": "1234567892000000001",
+        "consensus_timestamp": "33333",
         "payerAccountId": "0.0.800"
       }
     ]
   },
-  "url": "/api/v1/accounts/0.0.1002/rewards?timestamp=ne:123456789100000001&order=12&limit=a",
+  "url": "/api/v1/accounts/0.0.1001/rewards?timestamp=ne:1234567890.000011111&order=12&limit=a",
   "responseStatus": 400,
   "responseJson": {
     "_status": {
       "messages": [
-        {
-          "message": "Not equals (ne) operator is not supported for timestamp"
-        },
         {
           "message": "Invalid parameter: order"
         },

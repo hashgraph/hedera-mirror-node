@@ -3,7 +3,7 @@
   "setup": {
     "entities": [
       {
-        "num": 1004
+        "num": 1001
       },
       {
         "num": 800
@@ -16,21 +16,21 @@
     "nfts": [],
     "stakingRewardTransfers": [
       {
-        "accountId": "0.0.1004",
+        "accountId": "0.0.1001",
         "amount": 10,
-        "consensus_timestamp": "1234567890000000001",
+        "consensus_timestamp": "11111",
         "payerAccountId": "0.0.800"
       },
       {
-        "accountId": "0.0.1004",
+        "accountId": "0.0.1001",
         "amount": 12,
-        "consensus_timestamp": "1234567891000000001",
+        "consensus_timestamp": "22222",
         "payerAccountId": "0.0.800"
       },
       {
-        "accountId": "0.0.1004",
+        "accountId": "0.0.1001",
         "amount": 13,
-        "consensus_timestamp": "1234567892000000001",
+        "consensus_timestamp": "33333",
         "payerAccountId": "0.0.800"
       }
     ]

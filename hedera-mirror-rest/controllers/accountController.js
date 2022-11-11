@@ -136,7 +136,7 @@ class AccountController extends BaseController {
           if (utils.opsMap.ne === filter.operator) {
             throw new InvalidArgumentError(`Not equals (ne) operator is not supported for ${filterKeys.TIMESTAMP}`);
           }
-          whereQuery = this.getFilterWhereCondition(FileData.CONSENSUS_TIMESTAMP, filter);
+          whereQuery.push('srt.' + FileData.CONSENSUS_TIMESTAMP + ' ' + `${filter.operator}` + ' ' + filter.value);
           break;
         default:
           break;
@@ -161,7 +161,13 @@ class AccountController extends BaseController {
     const accountId = await EntityService.getEncodedId(req.params[filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS]);
     const filters = utils.buildAndValidateFilters(req.query);
     const query = this.extractStakingRewardsQuery(filters, accountId);
-    const stakingRewardsTransfers = await StakingRewardTransferService.getRewards(query);
+    const stakingRewardsTransfers = await StakingRewardTransferService.getRewards(
+      accountId,
+      query.order,
+      query.limit,
+      query.whereQuery,
+      query.params
+    );
     const rewards = stakingRewardsTransfers.map((reward) => new StakingRewardTransferViewModel(reward));
     const response = {
       rewards,
