@@ -18,10 +18,7 @@
  * ‍
  */
 
-import _ from 'lodash';
-
 import BaseService from './baseService';
-import {orderFilterValues} from '../constants';
 import {StakingRewardTransfer} from '../model';
 import {OrderSpec} from '../sql';
 
