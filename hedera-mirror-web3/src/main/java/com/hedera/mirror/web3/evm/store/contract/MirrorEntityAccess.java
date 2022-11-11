@@ -1,64 +1,106 @@
 package com.hedera.mirror.web3.evm.store.contract;
 
-import static com.google.protobuf.ByteString.EMPTY;
+/*-
+ * ‌
+ * Hedera Mirror Node
+ * ​
+ * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
-import static com.hedera.mirror.web3.evm.util.EntityUtils.numFromEvmAddress;
+import static com.hedera.services.evm.accounts.HederaEvmContractAliases.isMirror;
 
 import com.google.protobuf.ByteString;
+import java.util.Optional;
+import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
-import org.springframework.stereotype.Component;
 
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityIdEndec;
+import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.web3.repository.ContractRepository;
+import com.hedera.mirror.web3.repository.ContractStateRepository;
 import com.hedera.mirror.web3.repository.EntityAccessRepository;
 import com.hedera.services.evm.store.contracts.HederaEvmEntityAccess;
 
-@Component
+@Named
 @RequiredArgsConstructor
 public class MirrorEntityAccess implements HederaEvmEntityAccess {
     private final EntityAccessRepository entityRepository;
+    private final ContractRepository contractRepository;
+    private final ContractStateRepository contractStateRepository;
+
+    @Override
+    public boolean isUsable(Address address) {
+        //TODO impl
+        return false;
+    }
 
     @Override
     public long getBalance(Address address) {
-        final var entityNum = numFromEvmAddress(address.toArrayUnsafe());
-        final var balance = entityRepository.getBalance(entityNum);
-        return balance.orElse(0L);
+        final var entity = findEntity(address);
+        return entity.isPresent() ? entity.get().getBalance() : 0L;
     }
 
     @Override
     public boolean isExtant(Address address) {
-        final var entityNum = numFromEvmAddress(address.toArrayUnsafe());
-        return entityRepository.existsById(entityNum);
+        return entityRepository.existsById(entityIdFromEvmAddress(address));
     }
 
     @Override
     public boolean isTokenAccount(Address address) {
-        final var entityNum = numFromEvmAddress(address.toArrayUnsafe());
-        final var type = entityRepository.getType(entityNum);
-        return type.isPresent() && type.get().equals(TOKEN);
+        final var entity = findEntity(address);
+        return entity.isPresent() && entity.get().getType().equals(TOKEN);
     }
 
     @Override
     public ByteString alias(Address address) {
-        final var entityNum = numFromEvmAddress(address.toArrayUnsafe());
-        final var accountAlias = entityRepository.getAlias
-                (entityNum);
-        return accountAlias.map(ByteString::copyFrom).orElse(EMPTY);
+        final var entity = findEntity(address);
+        return entity.map(value -> ByteString.copyFrom(value.getAlias())).orElse(ByteString.EMPTY);
     }
 
     @Override
     public UInt256 getStorage(Address address, Bytes key) {
-        final var entityNum = numFromEvmAddress(address.toArrayUnsafe());
-        final var storage = entityRepository.getStorage(entityNum, key.toArrayUnsafe());
+        final var storage = contractStateRepository.findStorage(entityIdFromEvmAddress(address),
+                key.toArrayUnsafe());
         final var storageBytes = storage.map(Bytes::wrap).orElse(Bytes.EMPTY);
         return UInt256.fromBytes(storageBytes);
     }
 
     @Override
     public Bytes fetchCodeIfPresent(Address address) {
-        final var entityNum = numFromEvmAddress(address.toArrayUnsafe());
-        final var runtimeCode = entityRepository.fetchContractCode(entityNum);
+        final var runtimeCode = contractRepository.findContractCode(entityIdFromEvmAddress(address));
         return runtimeCode.map(Bytes::wrap).orElse(Bytes.EMPTY);
+    }
+
+    private Optional<Entity> findEntity(Address address) {
+        if (isMirror(address.toArrayUnsafe())) {
+            final var entityId = entityIdFromEvmAddress(address);
+            return entityRepository.findByIdAndDeletedFalse(entityId);
+        } else {
+            //TODO queryBy alias field instead
+            return null;
+        }
+    }
+
+    private Long entityIdFromEvmAddress(Address address) {
+        final var id = DomainUtils.fromEvmAddress(address.toArrayUnsafe());
+        return EntityIdEndec.encode(id.getShardNum(), id.getRealmNum(), id.getEntityNum());
     }
 }

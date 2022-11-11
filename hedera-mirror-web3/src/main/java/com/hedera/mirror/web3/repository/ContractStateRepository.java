@@ -21,10 +21,14 @@ package com.hedera.mirror.web3.repository;
  */
 
 import java.util.Optional;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
-import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.contract.ContractState;
 
-public interface EntityAccessRepository extends CrudRepository<Entity, Long> {
-    Optional<Entity> findByIdAndDeletedFalse(Long entityId);
+public interface ContractStateRepository extends CrudRepository<ContractState, Long> {
+
+    @Query(value = "select value_written from contract_state where contract_id = ?1 and slot =?2",
+            nativeQuery = true)
+    Optional<byte[]> findStorage(final Long accountNum, final byte[] key);
 }
