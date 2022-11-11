@@ -38,10 +38,10 @@ SELECT cron.schedule('create-partitions-contract_state_change',
                      $$select partman.create_parent('${schema}.contract_state_change', 'consensus_timestamp', 'native', ${partitionIdInterval}) $$);
 SELECT cron.schedule('create-partitions-crypto_allowance',
                      ${cronSchedule},
-                     $$select partman.create_parent('${schema}.nft_allowance', 'owner', 'native', ${partitionIdInterval}) $$);
+                     $$select partman.create_parent('${schema}.crypto_allowance', 'owner', 'native', ${partitionIdInterval}) $$);
 SELECT cron.schedule('create-partitions-crypto_allowance_history',
                      ${cronSchedule},
-                     $$select partman.create_parent('${schema}.nft_allowance_history', 'owner', 'native', ${partitionIdInterval}) $$);
+                     $$select partman.create_parent('${schema}.crypto_allowance_history', 'owner', 'native', ${partitionIdInterval}) $$);
 SELECT cron.schedule('create-partitions-crypto-transfer',
                      ${cronSchedule},
                      $$select partman.create_parent('${schema}.crypto_transfer', 'consensus_timestamp', 'native', 'yearly', p_epoch := 'nanoseconds' ,
@@ -139,7 +139,7 @@ SELECT cron.schedule('create-partitions-topic-message',
                      p_start_partition := to_char(CURRENT_TIMESTAMP-${partitionStartDate}::interval, 'YYYY-MM-DD HH24:MI:SS')) $$);
 
 
-SELECT cron.schedule('create-partitions-transactions',
+SELECT cron.schedule('create-partitions-transaction',
                      ${cronSchedule},
                      $$select partman.create_parent('${schema}.transaction', 'consensus_timestamp', 'native', 'yearly', p_epoch := 'nanoseconds' , p_premake := 2,
                          p_start_partition := to_char(CURRENT_TIMESTAMP-${partitionStartDate}::interval, 'YYYY-MM-DD HH24:MI:SS')) $$);
