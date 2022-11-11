@@ -33,6 +33,7 @@ import software.amazon.awssdk.services.s3.S3AsyncClient;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.RequestPayer;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
@@ -65,6 +66,7 @@ public final class S3StreamFileProvider implements StreamFileProvider {
         return Mono.fromFuture(responseFuture)
                 .map(r -> new StreamFileData(streamFilename, r.asByteArrayUnsafe(), r.response().lastModified()))
                 .timeout(commonDownloaderProperties.getTimeout())
+                .onErrorMap(NoSuchKeyException.class, TransientProviderException::new)
                 .doOnSuccess(s -> log.debug("Finished downloading {}", s3Key));
     }
 
