@@ -339,6 +339,7 @@ var TransactionResults = map[int32]string{
 }
 
 var TransactionTypes = map[int32]string{
+	0:  "UNKNOWN",
 	7:  "CONTRACTCALL",
 	8:  "CONTRACTCREATEINSTANCE",
 	9:  "CONTRACTUPDATEINSTANCE",
