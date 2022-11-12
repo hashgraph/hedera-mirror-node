@@ -58,7 +58,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -66,7 +65,6 @@ import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
-import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.schedule.Schedule;
@@ -109,7 +107,6 @@ import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 import com.hedera.mirror.importer.repository.FileDataRepository;
-import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Named
@@ -157,14 +154,14 @@ public class EntityRecordItemListener implements RecordItemListener {
 
         Transaction transaction = buildTransaction(consensusTimestamp, recordItem);
         transaction.setEntityId(entityId);
-        var entity = transactionHandler.updateTransaction(transaction, recordItem);
+        transactionHandler.updateTransaction(transaction, recordItem);
 
         if (txRecord.hasTransferList() && entityProperties.getPersist().isCryptoTransferAmounts()) {
             insertTransferList(recordItem);
         }
 
         // insert staking reward transfers even on failure
-        insertStakingRewardTransfers(entity, recordItem);
+        insertStakingRewardTransfers(recordItem);
 
         // handle scheduled transaction, even on failure
         if (transaction.isScheduled()) {
@@ -231,7 +228,6 @@ public class EntityRecordItemListener implements RecordItemListener {
 
         contractResultService.process(recordItem, transaction);
 
-        entity.ifPresent(entityListener::onEntity);
         entityListener.onTransaction(transaction);
         log.debug("Storing transaction: {}", transaction);
     }
@@ -389,35 +385,34 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
     }
 
-    private void insertStakingRewardTransfers(Optional<Entity> transactionEntity, RecordItem recordItem) {
+    private void insertStakingRewardTransfers(RecordItem recordItem) {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         var payerAccountId = recordItem.getPayerAccountId();
 
         for (var aa : recordItem.getRecord().getPaidStakingRewardsList()) {
             var accountId = EntityId.of(aa.getAccountID());
-            long stakePeriodStart = Utility.getEpochDay(consensusTimestamp) - 1;
             var stakingRewardTransfer = new StakingRewardTransfer();
             stakingRewardTransfer.setAccountId(accountId.getId());
             stakingRewardTransfer.setAmount(aa.getAmount());
             stakingRewardTransfer.setConsensusTimestamp(consensusTimestamp);
             stakingRewardTransfer.setPayerAccountId(payerAccountId);
             entityListener.onStakingRewardTransfer(stakingRewardTransfer);
-
-            transactionEntity.filter(entity -> entity.toEntityId().equals(accountId))
-                    .ifPresentOrElse(entity -> {
-                        // only set stake period start if it's not set when parsing the transaction body
-                        if (entity.getStakePeriodStart() == null) {
-                            entity.setStakePeriodStart(stakePeriodStart);
-                        }
-                    }, () -> {
-                        // The staking reward may be paid to either an account or a contract. Create non-history
-                        // updates with the new stake period start and set the type to account, the upsert sql will
-                        // get the correct entity type from what's in db
-                        var account = accountId.toEntity();
-                        account.setStakePeriodStart(stakePeriodStart);
-                        account.setTimestampRange(null); // Don't trigger a history row
-                        entityListener.onEntity(account);
-                    });
+//
+//            transactionEntity.filter(entity -> entity.toEntityId().equals(accountId))
+//                    .ifPresentOrElse(entity -> {
+//                        // only set stake period start if it's not set when parsing the transaction body
+//                        if (entity.getStakePeriodStart() == null) {
+//                            entity.setStakePeriodStart(stakePeriodStart);
+//                        }
+//                    }, () -> {
+//                        // The staking reward may be paid to either an account or a contract. Create non-history
+//                        // updates with the new stake period start and set the type to account, the upsert sql will
+//                        // get the correct entity type from what's in db
+//                        var account = accountId.toEntity();
+//                        account.setStakePeriodStart(stakePeriodStart);
+//                        account.setTimestampRange(null); // Don't trigger a history row
+//                        entityListener.onEntity(account);
+//                    });
         }
     }
 

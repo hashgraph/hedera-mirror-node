@@ -697,16 +697,12 @@ public class DomainBuilder {
     }
 
     public DomainWrapper<StakingRewardTransfer, StakingRewardTransfer.StakingRewardTransferBuilder> stakingRewardTransfer() {
-        return stakingRewardTransfer(id());
-    }
-
-    public DomainWrapper<StakingRewardTransfer, StakingRewardTransfer.StakingRewardTransferBuilder> stakingRewardTransfer(
-            long accountId) {
+        var accountId = entityId(ACCOUNT);
         var builder = StakingRewardTransfer.builder()
-                .accountId(accountId)
+                .accountId(accountId.getId())
                 .amount(id())
                 .consensusTimestamp(timestamp())
-                .payerAccountId(EntityId.of(accountId, ACCOUNT));
+                .payerAccountId(accountId);
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 

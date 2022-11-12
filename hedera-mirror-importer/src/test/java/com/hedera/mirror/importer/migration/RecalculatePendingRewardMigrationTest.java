@@ -161,8 +161,9 @@ class RecalculatePendingRewardMigrationTest extends IntegrationTest {
         var payoutInstant = TestUtils.asStartOfEpochDay(rewardPayoutEpochDay).plusSeconds(300);
         var payoutTimestamp = DomainUtils.convertToNanosMax(payoutInstant);
         var rewardAmount = 2 * TINYBARS_IN_ONE_HBAR;
-        domainBuilder.stakingRewardTransfer(entity1.getId())
-                .customize(t -> t.amount(rewardAmount).consensusTimestamp(payoutTimestamp))
+        domainBuilder.stakingRewardTransfer()
+                .customize(t -> t.accountId(entity1.getId()).amount(rewardAmount).consensusTimestamp(
+                        payoutTimestamp).payerAccountId(entity1.toEntityId()))
                 .persist();
         domainBuilder.cryptoTransfer()
                 .customize(t -> t.entityId(entity1.getId()).amount(rewardAmount).consensusTimestamp(payoutTimestamp))

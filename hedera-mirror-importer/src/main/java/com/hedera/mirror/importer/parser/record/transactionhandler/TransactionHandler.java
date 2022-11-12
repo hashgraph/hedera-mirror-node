@@ -20,10 +20,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import java.util.Optional;
-
 import com.hedera.mirror.common.domain.contract.ContractResult;
-import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
@@ -55,16 +52,8 @@ public interface TransactionHandler {
     }
 
     /**
-     * Override to update fields of the Transaction's (domain) fields for transactions CRUD an entity
+     * Override to update fields of the Transaction's (domain) fields.
      */
-    default Optional<Entity> updateTransaction(Transaction transaction, RecordItem recordItem) {
-        updateTransactionNoEntity(transaction, recordItem);
-        return Optional.empty();
-    }
-
-    /**
-     * Override to update fields of the Transaction's (domain) fields for transaction without entity change
-     */
-    default void updateTransactionNoEntity(Transaction transaction, RecordItem recordItem) {
+    default void updateTransaction(Transaction transaction, RecordItem recordItem) {
     }
 }

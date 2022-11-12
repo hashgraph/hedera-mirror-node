@@ -32,13 +32,15 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
+import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.util.Utility;
 
 @Named
 class CryptoUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
-    CryptoUpdateTransactionHandler(EntityIdService entityIdService, RecordParserProperties recordParserProperties) {
-        super(entityIdService, recordParserProperties, TransactionType.CRYPTOUPDATEACCOUNT);
+    CryptoUpdateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
+                                   RecordParserProperties recordParserProperties) {
+        super(entityIdService, entityListener, recordParserProperties, TransactionType.CRYPTOUPDATEACCOUNT);
     }
 
     @Override
@@ -83,6 +85,7 @@ class CryptoUpdateTransactionHandler extends AbstractEntityCrudTransactionHandle
         }
 
         updateStakingInfo(recordItem, entity);
+        entityListener.onEntity(entity);
     }
 
     private void updateStakingInfo(RecordItem recordItem, Entity entity) {

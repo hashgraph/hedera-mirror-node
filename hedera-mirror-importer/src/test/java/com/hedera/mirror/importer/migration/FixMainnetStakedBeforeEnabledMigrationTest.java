@@ -23,21 +23,18 @@ package com.hedera.mirror.importer.migration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Range;
-import java.io.File;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
-import org.apache.commons.io.FileUtils;
 import org.assertj.core.api.IterableAssert;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.jdbc.core.JdbcOperations;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityStake;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.EntityStakeRepository;
 
@@ -51,15 +48,40 @@ class FixMainnetStakedBeforeEnabledMigrationTest extends IntegrationTest {
 
     private final EntityRepository entityRepository;
     private final EntityStakeRepository entityStakeRepository;
-    private final JdbcOperations jdbcOperations;
-    @Value("classpath:db/migration/v1/R__fix_mainnet_staked_before_enabled.sql")
-    private final File migrationSql;
+    private final MirrorProperties mirrorProperties;
+    private final FixMainnetStakedBeforeEnabledMigration migration;
+
+    @BeforeEach
+    void setup() {
+        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.MAINNET);
+    }
 
     @Test
     void empty() {
-        migrate();
+        migration.doMigrate();
         assertEntities().isEmpty();
         assertEntityStakes().isEmpty();
+    }
+
+    @Test
+    void notMainnet() {
+        // given
+        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.OTHER);
+        persistLastMainnet26RecordFile();
+        var entity = domainBuilder.entity()
+                .customize(e -> e.stakedNodeId(0L).stakePeriodStart(STAKE_PERIOD_22_07_21)
+                        .timestampRange(Range.atLeast(LAST_MAINNET_26_RECORD_FILE_CONSENSUS_END)))
+                .persist();
+        var entityStake = domainBuilder.entityStake()
+                .customize(es -> es.id(entity.getId()).pendingReward(1000L).stakedNodeIdStart(0L))
+                .persist();
+
+        // when
+        migration.doMigrate();
+
+        // then
+        assertEntities().containsExactly(entity);
+        assertEntityStakes().containsExactly(entityStake);
     }
 
     @Test
@@ -74,7 +96,7 @@ class FixMainnetStakedBeforeEnabledMigrationTest extends IntegrationTest {
                 .persist();
 
         // when
-        migrate();
+        migration.doMigrate();
 
         // then
         assertEntities().containsExactly(entity);
@@ -93,7 +115,7 @@ class FixMainnetStakedBeforeEnabledMigrationTest extends IntegrationTest {
                 .persist();
 
         // when
-        migrate();
+        migration.doMigrate();
 
         // then
         assertEntities().containsExactly(entity);
@@ -121,7 +143,7 @@ class FixMainnetStakedBeforeEnabledMigrationTest extends IntegrationTest {
                 .persist();
 
         // when
-        migrate();
+        migration.doMigrate();
 
         // then
         assertEntities().containsExactly(entity);
@@ -141,7 +163,7 @@ class FixMainnetStakedBeforeEnabledMigrationTest extends IntegrationTest {
                 .persist();
 
         // when
-        migrate();
+        migration.doMigrate();
 
         // then
         entity.setStakedNodeId(-1L);
@@ -172,7 +194,7 @@ class FixMainnetStakedBeforeEnabledMigrationTest extends IntegrationTest {
                 .persist();
 
         // when
-        migrate();
+        migration.doMigrate();
 
         // then
         entity.setStakedNodeId(-1L);
@@ -199,10 +221,5 @@ class FixMainnetStakedBeforeEnabledMigrationTest extends IntegrationTest {
         domainBuilder.recordFile()
                 .customize(r -> r.consensusEnd(LAST_MAINNET_26_RECORD_FILE_CONSENSUS_END).consensusStart(consensusStart))
                 .persist();
-    }
-
-    @SneakyThrows
-    private void migrate() {
-        jdbcOperations.update(FileUtils.readFileToString(migrationSql, "UTF-8"));
     }
 }

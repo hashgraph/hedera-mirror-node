@@ -21,9 +21,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -63,7 +61,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestFactory;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
@@ -116,6 +117,9 @@ abstract class AbstractTransactionHandlerTest {
 
     @Mock
     protected EntityRepository entityRepository;
+
+    @Captor
+    protected ArgumentCaptor<Entity> entityCaptor;
 
     protected static Key getKey(String keyString) {
         return Key.newBuilder().setEd25519(ByteString.copyFromUtf8(keyString)).build();
@@ -221,11 +225,12 @@ abstract class AbstractTransactionHandlerTest {
                     // when
                     var transaction = new com.hedera.mirror.common.domain.transaction.Transaction();
                     transaction.setEntityId(testSpec.getExpected().toEntityId());
-                    var entity = transactionHandler.updateTransaction(transaction, testSpec.getRecordItem());
+                    Mockito.reset(entityListener);
+                    transactionHandler.updateTransaction(transaction, testSpec.getRecordItem());
+                    verify(entityListener).onEntity(entityCaptor.capture());
 
                     // then
-                    assertThat(entity).get().isEqualTo(testSpec.getExpected());
-                    verify(entityListener, never()).onEntity(any(Entity.class));
+                    assertThat(entityCaptor.getValue()).isEqualTo(testSpec.getExpected());
                 }
         );
     }

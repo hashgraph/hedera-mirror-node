@@ -68,10 +68,9 @@ class UtilPrngTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .build();
 
         // when
-        var actualEntity = transactionHandler.updateTransaction(null, recordItem);
+        transactionHandler.updateTransaction(null, recordItem);
 
         // then
-        assertThat(actualEntity).isEmpty();
         verify(entityListener).onPrng(pseudoRandomGenerates.capture());
         assertThat(pseudoRandomGenerates.getAllValues()).containsOnly(expected);
     }
@@ -90,10 +89,9 @@ class UtilPrngTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .build();
 
         // when
-        var actualEntity = transactionHandler.updateTransaction(null, recordItem);
+        transactionHandler.updateTransaction(null, recordItem);
 
         // then
-        assertThat(actualEntity).isEmpty();
         verify(entityListener).onPrng(pseudoRandomGenerates.capture());
         assertThat(pseudoRandomGenerates.getAllValues()).containsOnly(expected);
     }
@@ -106,10 +104,9 @@ class UtilPrngTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .build();
 
         // when
-        var actualEntity = transactionHandler.updateTransaction(null, recordItem);
+        transactionHandler.updateTransaction(null, recordItem);
 
         // then
-        assertThat(actualEntity).isEmpty();
         verifyNoInteractions(entityListener);
     }
 
@@ -121,10 +118,9 @@ class UtilPrngTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .build();
 
         // when
-        var actualEntity = transactionHandler.updateTransaction(null, recordItem);
+        transactionHandler.updateTransaction(null, recordItem);
 
         // then
-        assertThat(actualEntity).isEmpty();
         verifyNoInteractions(entityListener);
     }
 }

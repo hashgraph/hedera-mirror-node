@@ -88,13 +88,13 @@ public class RecalculatePendingRewardMigration extends MirrorBaseJavaMigration {
     private final MirrorProperties mirrorProperties;
 
     @Override
-    public MigrationVersion getVersion() {
-        return VERSION;
+    public String getDescription() {
+        return "Recalculate mainnet pending reward";
     }
 
     @Override
-    public String getDescription() {
-        return "Recalculate mainnet pending reward";
+    public MigrationVersion getVersion() {
+        return VERSION;
     }
 
     @Override

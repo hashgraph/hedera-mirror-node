@@ -22,8 +22,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.google.common.collect.Range;
@@ -35,8 +33,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import java.util.List;
-import java.util.Optional;
-import org.assertj.core.api.AbstractObjectAssert;
+import org.assertj.core.api.ObjectAssert;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
@@ -54,7 +51,7 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new CryptoCreateTransactionHandler(entityIdService, new RecordParserProperties());
+        return new CryptoCreateTransactionHandler(entityIdService, entityListener, new RecordParserProperties());
     }
 
     @Override
@@ -117,10 +114,10 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
         var accountId = EntityId.of(recordItem.getRecord().getReceipt().getAccountID());
 
         // when
-        var actualEntity = transactionHandler.updateTransaction(transaction(recordItem), recordItem);
+        transactionHandler.updateTransaction(transaction(recordItem), recordItem);
 
         // then
-        assertEntity(actualEntity, accountId, recordItem.getConsensusTimestamp())
+        assertEntity(accountId, recordItem.getConsensusTimestamp())
                 .returns(false, Entity::getDeclineReward)
                 .returns(stakedAccountId.getAccountNum(), Entity::getStakedAccountId)
                 .returns(Utility.getEpochDay(recordItem.getConsensusTimestamp()), Entity::getStakePeriodStart);
@@ -136,10 +133,10 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
         var accountId = EntityId.of(recordItem.getRecord().getReceipt().getAccountID());
 
         // when
-        var actualEntity = transactionHandler.updateTransaction(transaction(recordItem), recordItem);
+        transactionHandler.updateTransaction(transaction(recordItem), recordItem);
 
         // then
-        assertEntity(actualEntity, accountId, recordItem.getConsensusTimestamp())
+        assertEntity(accountId, recordItem.getConsensusTimestamp())
                 .returns(true, Entity::getDeclineReward)
                 .returns(nodeId, Entity::getStakedNodeId)
                 .returns(null, Entity::getStakedAccountId)
@@ -152,18 +149,17 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
         var recordItem = recordItemBuilder.cryptoCreate().record(r -> r.setAlias(DomainUtils.fromBytes(alias))).build();
         var accountId = EntityId.of(recordItem.getRecord().getReceipt().getAccountID());
 
-        var actualEntity = transactionHandler.updateTransaction(transaction(recordItem), recordItem);
+        transactionHandler.updateTransaction(transaction(recordItem), recordItem);
 
-        assertEntity(actualEntity, accountId, recordItem.getConsensusTimestamp())
+        assertEntity(accountId, recordItem.getConsensusTimestamp())
                 .returns(alias, Entity::getAlias)
                 .returns(UtilityTest.EVM_ADDRESS, Entity::getEvmAddress);
     }
 
-    private AbstractObjectAssert<?, Entity> assertEntity(Optional<Entity> actualEntity, EntityId accountId,
-                                                         long timestamp) {
-        verify(entityListener, never()).onEntity(any(Entity.class));
-        return assertThat(actualEntity)
-                .get()
+    private ObjectAssert<Entity> assertEntity(EntityId accountId, long timestamp) {
+        verify(entityListener).onEntity(entityCaptor.capture());
+        return assertThat(entityCaptor.getValue())
+                .isNotNull()
                 .satisfies(c -> assertThat(c.getAutoRenewPeriod()).isPositive())
                 .returns(timestamp, Entity::getCreatedTimestamp)
                 .returns(0L, Entity::getBalance)

@@ -30,13 +30,14 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
+import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @Named
 class ConsensusUpdateTopicTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
-    ConsensusUpdateTopicTransactionHandler(EntityIdService entityIdService,
+    ConsensusUpdateTopicTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
                                            RecordParserProperties recordParserProperties) {
-        super(entityIdService, recordParserProperties, TransactionType.CONSENSUSUPDATETOPIC);
+        super(entityIdService, entityListener, recordParserProperties, TransactionType.CONSENSUSUPDATETOPIC);
     }
 
     @Override
@@ -73,5 +74,7 @@ class ConsensusUpdateTopicTransactionHandler extends AbstractEntityCrudTransacti
         if (transactionBody.hasSubmitKey()) {
             entity.setSubmitKey(transactionBody.getSubmitKey().toByteArray());
         }
+
+        entityListener.onEntity(entity);
     }
 }

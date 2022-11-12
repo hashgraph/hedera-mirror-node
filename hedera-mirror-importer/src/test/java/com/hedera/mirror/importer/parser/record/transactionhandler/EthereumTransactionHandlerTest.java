@@ -25,6 +25,7 @@ import static com.hedera.mirror.common.converter.WeiBarTinyBarConverter.WEIBARS_
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
@@ -44,7 +45,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 
-import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
@@ -120,7 +120,7 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .build();
 
         var transaction = new Transaction();
-        var actualEntity = transactionHandler.updateTransaction(transaction, recordItem);
+        transactionHandler.updateTransaction(transaction, recordItem);
 
         var body = recordItem.getTransactionBody().getEthereumTransaction();
         verify(entityListener).onEthereumTransaction(ethereumTransaction);
@@ -138,12 +138,8 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         var functionResult = getContractFunctionResult(recordItem.getRecord(), create);
         var senderId = functionResult.getSenderId().getAccountNum();
-        verify(entityListener, never()).onEntity(any(Entity.class));
-        assertThat(actualEntity)
-                .get()
-                .returns(senderId, Entity::getId)
-                .returns(null, Entity::getTimestampRange)
-                .returns(ethereumTransaction.getNonce() + 1, Entity::getEthereumNonce);
+        verify(entityListener).onEntity(argThat(e -> e.getId() == senderId && e.getTimestampRange() == null &&
+                e.getEthereumNonce() == ethereumTransaction.getNonce() + 1));
     }
 
     @Test
@@ -219,17 +215,13 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .build();
 
         var transaction = new Transaction();
-        var actualEntity = transactionHandler.updateTransaction(transaction, recordItem);
+        transactionHandler.updateTransaction(transaction, recordItem);
 
         var functionResult = getContractFunctionResult(recordItem.getRecord(), create);
         var senderId = functionResult.getSenderId().getAccountNum();
         verify(entityListener).onEthereumTransaction(ethereumTransaction);
-        verify(entityListener, never()).onEntity(any(Entity.class));
-        assertThat(actualEntity)
-                .get()
-                .returns(senderId, Entity::getId)
-                .returns(null, Entity::getTimestampRange)
-                .returns(ethereumTransaction.getNonce() + 1, Entity::getEthereumNonce);
+        verify(entityListener).onEntity(argThat(e -> e.getId() == senderId && e.getTimestampRange() == null &&
+                e.getEthereumNonce() == ethereumTransaction.getNonce() + 1));
     }
 
     @Test

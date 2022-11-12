@@ -63,16 +63,17 @@ class FixStakePeriodStartMigrationTest extends IntegrationTest {
         // given
         // two staking reward transfers for an account, the entity lower timestamp is the first reward payout's timestamp
         // the migration should fix the stake period start
-        long account = domainBuilder.id();
-        var transfer = domainBuilder.stakingRewardTransfer(account).persist();
-        domainBuilder.stakingRewardTransfer(account)
-                .customize(t -> t.consensusTimestamp(transfer.getConsensusTimestamp() + Duration.ofDays(1L).toNanos()))
-                .persist();
+        long transferTimestamp = domainBuilder.timestamp() + 100L;
         var entity = domainBuilder.entity()
-                .customize(e -> e.id(account).num(account)
-                        .stakedNodeId(1L)
-                        .stakePeriodStart(1000L)
-                        .timestampRange(Range.atLeast(transfer.getConsensusTimestamp())))
+                .customize(e -> e.stakedNodeId(1L).stakePeriodStart(1000L)
+                        .timestampRange(Range.atLeast(transferTimestamp)))
+                .persist();
+        var transfer = domainBuilder.stakingRewardTransfer()
+                .customize(t -> t.accountId(entity.getId()).consensusTimestamp(transferTimestamp))
+                .persist();
+        domainBuilder.stakingRewardTransfer()
+                .customize(t -> t.accountId(entity.getId())
+                        .consensusTimestamp(transferTimestamp + Duration.ofDays(1L).toNanos()))
                 .persist();
 
         // when
@@ -88,15 +89,14 @@ class FixStakePeriodStartMigrationTest extends IntegrationTest {
         // given
         // account has crypto update transaction after its staking reward, the migration should not change its stake
         // period start
-        long account = domainBuilder.id();
-        var transfer2 = domainBuilder.stakingRewardTransfer(account).persist();
+        long transferTimestamp = domainBuilder.timestamp() + 100L;
         var entity = domainBuilder.entity()
-                .customize(e -> e.id(account).num(account)
-                        .stakedNodeId(2L)
-                        .stakePeriodStart(2000L)
-                        .timestampRange(Range.atLeast(transfer2.getConsensusTimestamp() + 1L)))
+                .customize(e -> e.stakedNodeId(2L).stakePeriodStart(2000L)
+                        .timestampRange(Range.atLeast(transferTimestamp)))
                 .persist();
-
+        domainBuilder.stakingRewardTransfer()
+                .customize(t -> t.accountId(entity.getId()).consensusTimestamp(transferTimestamp))
+                .persist();
         // when
         migrate();
 
@@ -107,14 +107,14 @@ class FixStakePeriodStartMigrationTest extends IntegrationTest {
     @Test
     void noopForDeletedAccount() {
         // given
-        long account = domainBuilder.id();
-        var transfer = domainBuilder.stakingRewardTransfer(account).persist(); // deleted
+        long transferTimestamp = domainBuilder.timestamp() + 100L;
         var entity = domainBuilder.entity()
-                .customize(e -> e.deleted(true).id(account).num(account)
-                        .stakedNodeId(3L)
-                        .stakePeriodStart(3000L)
-                        .timestampRange(Range.atLeast(transfer.getConsensusTimestamp() - 1L)))
+                .customize(e -> e.deleted(true).stakedNodeId(3L).stakePeriodStart(3000L)
+                        .timestampRange(Range.atLeast(transferTimestamp + 1L)))
                 .persist();
+        var transfer = domainBuilder.stakingRewardTransfer()
+                .customize(t -> t.accountId(entity.getId()).consensusTimestamp(transferTimestamp))
+                .persist(); // deleted
 
         // when
         migrate();
@@ -126,13 +126,13 @@ class FixStakePeriodStartMigrationTest extends IntegrationTest {
     @Test
     void noopNoLongerStakedToNode() {
         // given
-        long account = domainBuilder.id();
-        var transfer = domainBuilder.stakingRewardTransfer(account).persist();
+        long transferTimestamp = domainBuilder.timestamp() + 100L;
         var entity = domainBuilder.entity()
-                .customize(e -> e.id(account).num(account)
-                        .stakedNodeId(-1L)
-                        .stakePeriodStart(-1L)
-                        .timestampRange(Range.atLeast(transfer.getConsensusTimestamp() + 1L)))
+                .customize(e -> e.stakedNodeId(-1L).stakePeriodStart(-1L)
+                        .timestampRange(Range.atLeast(transferTimestamp + 1L)))
+                .persist();
+        var transfer = domainBuilder.stakingRewardTransfer()
+                .customize(t -> t.accountId(entity.getId()).consensusTimestamp(transferTimestamp))
                 .persist();
 
         // when
@@ -145,15 +145,14 @@ class FixStakePeriodStartMigrationTest extends IntegrationTest {
     @Test
     void noopDeclinedReward() {
         // given
-        long account = domainBuilder.id();
-        var transfer = domainBuilder.stakingRewardTransfer(account).persist(); // decline reward
+        long transferTimestamp = domainBuilder.timestamp() + 100L;
         var entity = domainBuilder.entity()
-                .customize(e -> e.id(account).num(account)
-                        .declineReward(true)
-                        .stakedNodeId(5L)
-                        .stakePeriodStart(5000L)
-                        .timestampRange(Range.atLeast(transfer.getConsensusTimestamp() + 1L)))
+                .customize(e -> e.declineReward(true).stakedNodeId(5L).stakePeriodStart(5000L)
+                        .timestampRange(Range.atLeast(transferTimestamp + 1L)))
                 .persist();
+        var transfer = domainBuilder.stakingRewardTransfer()
+                .customize(t -> t.accountId(entity.getId()).consensusTimestamp(transferTimestamp))
+                .persist(); // decline reward
 
         // when
         migrate();

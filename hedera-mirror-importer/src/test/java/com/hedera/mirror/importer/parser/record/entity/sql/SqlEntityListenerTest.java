@@ -113,6 +113,7 @@ import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionHashRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.repository.TransactionSignatureRepository;
+import com.hedera.mirror.importer.util.Utility;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class SqlEntityListenerTest extends IntegrationTest {
@@ -1301,8 +1302,148 @@ class SqlEntityListenerTest extends IntegrationTest {
         completeFileAndCommit();
 
         // then
+        assertThat(entityRepository.findAll()).isEmpty();
         assertThat(stakingRewardTransferRepository.findAll()).containsExactlyInAnyOrder(transfer1, transfer2,
                 transfer3);
+    }
+
+    @Test
+    void onStakingRewardTransferWithExistingEntity() {
+        // given
+        var entity = domainBuilder.entity()
+                .customize(e -> e.stakedNodeId(0L).stakePeriodStart(1L))
+                .persist();
+        var transfer = domainBuilder.stakingRewardTransfer()
+                .customize(t -> t.accountId(entity.getId()).amount(10L))
+                .get();
+
+        // when
+        sqlEntityListener.onStakingRewardTransfer(transfer);
+        completeFileAndCommit();
+
+        // then
+        entity.setStakePeriodStart(Utility.getEpochDay(transfer.getConsensusTimestamp()) - 1);
+        assertThat(entityRepository.findAll()).containsExactly(entity);
+        assertThat(stakingRewardTransferRepository.findAll()).containsExactly(transfer);
+    }
+
+    @Test
+    void onStakingRewardTransferAfterMemoUpdate() {
+        // given
+        var entity = domainBuilder.entity()
+                .customize(e -> e.stakedNodeId(0L).stakePeriodStart(1L))
+                .persist();
+        long updateTimestamp = domainBuilder.timestamp();
+        long stakingRewardTransferTimestamp = updateTimestamp + 1;
+        var entityMemoUpdate = Entity.builder()
+                .id(entity.getId())
+                .memo(domainBuilder.text(6))
+                .timestampRange(Range.atLeast(updateTimestamp))
+                .type(entity.getType())
+                .build();
+        // staking reward transfer after entity memo update
+        var transfer = domainBuilder.stakingRewardTransfer()
+                .customize(t -> t.accountId(entity.getId()).consensusTimestamp(stakingRewardTransferTimestamp))
+                .get();
+
+        // when
+        sqlEntityListener.onEntity(entityMemoUpdate);
+        sqlEntityListener.onStakingRewardTransfer(transfer);
+        completeFileAndCommit();
+
+        // then
+        entity.setMemo(entityMemoUpdate.getMemo());
+        entity.setStakePeriodStart(Utility.getEpochDay(stakingRewardTransferTimestamp) - 1);
+        entity.setTimestampRange(Range.atLeast(updateTimestamp));
+        assertThat(entityRepository.findAll()).containsExactly(entity);
+        assertThat(stakingRewardTransferRepository.findAll()).containsExactly(transfer);
+    }
+
+    @Test
+    void onStakingRewardTransferFromStakingUpdate() {
+        // given
+        var entity = domainBuilder.entity()
+                .customize(e -> e.stakedNodeId(0L).stakePeriodStart(1L))
+                .persist();
+        long timestamp = domainBuilder.timestamp();
+        var entityStakingUpdate = Entity.builder()
+                .id(entity.getId())
+                .stakedNodeId(1L)
+                .stakePeriodStart(20L)
+                .timestampRange(Range.atLeast(timestamp))
+                .type(entity.getType())
+                .build();
+        var transfer = domainBuilder.stakingRewardTransfer()
+                .customize(t -> t.accountId(entity.getId()).consensusTimestamp(timestamp))
+                .get();
+
+        // when
+        sqlEntityListener.onEntity(entityStakingUpdate);
+        sqlEntityListener.onStakingRewardTransfer(transfer);
+        completeFileAndCommit();
+
+        // then
+        entity.setStakedNodeId(1L);
+        entity.setStakePeriodStart(20L);
+        entity.setTimestampRange(Range.atLeast(timestamp));
+        assertThat(entityRepository.findAll()).containsExactly(entity);
+        assertThat(stakingRewardTransferRepository.findAll()).containsExactly(transfer);
+    }
+
+    @Test
+    void onStakingRewardTransferFromMemoUpdate() {
+        // given
+        var entity = domainBuilder.entity()
+                .customize(e -> e.stakedNodeId(0L).stakePeriodStart(1L))
+                .persist();
+        long timestamp = domainBuilder.timestamp();
+        var entityMemoUpdate = Entity.builder()
+                .id(entity.getId())
+                .memo(domainBuilder.text(6))
+                .timestampRange(Range.atLeast(timestamp))
+                .type(entity.getType())
+                .build();
+        var transfer = domainBuilder.stakingRewardTransfer()
+                .customize(t -> t.accountId(entity.getId()).consensusTimestamp(timestamp))
+                .get();
+
+        // when
+        sqlEntityListener.onEntity(entityMemoUpdate);
+        sqlEntityListener.onStakingRewardTransfer(transfer);
+        completeFileAndCommit();
+
+        // then
+        entity.setMemo(entityMemoUpdate.getMemo());
+        entity.setStakePeriodStart(Utility.getEpochDay(timestamp) - 1);
+        entity.setTimestampRange(Range.atLeast(timestamp));
+        assertThat(entityRepository.findAll()).containsExactly(entity);
+        assertThat(stakingRewardTransferRepository.findAll()).containsExactly(transfer);
+    }
+
+    @Test
+    void onStakingRewardTransferAfterNonHistoryUpdate() {
+        // given
+        var entity = domainBuilder.entity()
+                .customize(e -> e.stakedNodeId(0L).stakePeriodStart(1L).type(CONTRACT))
+                .persist();
+        var entityBalanceUpdate = Entity.builder()
+                .id(entity.getId())
+                .balance(200L)
+                .build();
+        var transfer = domainBuilder.stakingRewardTransfer()
+                .customize(t -> t.accountId(entity.getId()))
+                .get();
+
+        // when
+        sqlEntityListener.onEntity(entityBalanceUpdate);
+        sqlEntityListener.onStakingRewardTransfer(transfer);
+        completeFileAndCommit();
+
+        // then
+        entity.setBalance(entity.getBalance() + entityBalanceUpdate.getBalance());
+        entity.setStakePeriodStart(Utility.getEpochDay(transfer.getConsensusTimestamp()) - 1);
+        assertThat(entityRepository.findAll()).containsExactly(entity);
+        assertThat(stakingRewardTransferRepository.findAll()).containsExactly(transfer);
     }
 
     @Test
