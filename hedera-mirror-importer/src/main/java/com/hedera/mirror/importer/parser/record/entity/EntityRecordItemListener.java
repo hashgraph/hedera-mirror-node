@@ -397,22 +397,6 @@ public class EntityRecordItemListener implements RecordItemListener {
             stakingRewardTransfer.setConsensusTimestamp(consensusTimestamp);
             stakingRewardTransfer.setPayerAccountId(payerAccountId);
             entityListener.onStakingRewardTransfer(stakingRewardTransfer);
-//
-//            transactionEntity.filter(entity -> entity.toEntityId().equals(accountId))
-//                    .ifPresentOrElse(entity -> {
-//                        // only set stake period start if it's not set when parsing the transaction body
-//                        if (entity.getStakePeriodStart() == null) {
-//                            entity.setStakePeriodStart(stakePeriodStart);
-//                        }
-//                    }, () -> {
-//                        // The staking reward may be paid to either an account or a contract. Create non-history
-//                        // updates with the new stake period start and set the type to account, the upsert sql will
-//                        // get the correct entity type from what's in db
-//                        var account = accountId.toEntity();
-//                        account.setStakePeriodStart(stakePeriodStart);
-//                        account.setTimestampRange(null); // Don't trigger a history row
-//                        entityListener.onEntity(account);
-//                    });
         }
     }
 
