@@ -1209,13 +1209,11 @@ const addStakingRewardTransfer = async (transfer) => {
     account_id: 1001,
     amount: 100,
     consensus_timestamp: null,
-    payer_account_id: 800,
+    payer_account_id: 950,
     ...transfer,
   };
 
   const insertFields = ['account_id', 'amount', 'consensus_timestamp', 'payer_account_id'];
-  // note, for some reason, writing the above line as the following fails, with an error that column "accountId" does not exist.
-  // const insertFields = Object.keys(stakingRewardTransfer).sort();
   const table = getTableName('staking_reward_transfer', stakingRewardTransfer);
   await insertDomainObject(table, insertFields, stakingRewardTransfer);
 };

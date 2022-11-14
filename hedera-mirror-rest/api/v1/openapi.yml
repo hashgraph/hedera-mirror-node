@@ -2766,17 +2766,14 @@ components:
       properties:
         account_id:
           $ref: '#/components/schemas/EntityId'
-          example: 0.0.1000
         amount:
           description: The number of tinybars awarded
           example: 10
           format: int64
           type: integer
+          nullable: false
         timestamp:
           $ref: '#/components/schemas/Timestamp'
-          description: timestamp of the Staking Reward transaction
-          example: 123456789.000000001
-          nullable: false
       required:
         - account_id
         - amount
