@@ -18,7 +18,7 @@
  * ‍
  */
 
-import {TokenAccount, TokenBalance, AccountBalanceFile, Nft} from '../model';
+import {TokenAccount} from '../model';
 import BaseService from './baseService';
 import {OrderSpec} from '../sql';
 import _ from 'lodash';
