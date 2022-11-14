@@ -20,7 +20,6 @@
 
 import {getResponseLimit} from '../../config';
 import * as constants from '../../constants';
-import {FileData} from '../../model';
 import * as utils from '../../utils';
 
 const {default: defaultLimit} = getResponseLimit();
