@@ -20,7 +20,7 @@
         <besu-secp256k1.version>0.6.1</besu-secp256k1.version>
         <bouncycastle.version>1.71</bouncycastle.version>
         <commons-beanutils.version>1.9.4</commons-beanutils.version>
-        <commons-compress.version>1.21</commons-compress.version>
+        <commons-compress.version>1.22</commons-compress.version>
         <commons-io.version>2.11.0</commons-io.version>
         <jna.version>5.12.1</jna.version>
         <s3proxy.version>2.0.0</s3proxy.version>
