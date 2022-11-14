@@ -1,5 +1,5 @@
 {
-  "description": "Account staking reward payouts api call for an account with no rewards",
+  "description": "Account staking reward payouts api call for a non-existing account",
   "setup": {
     "entities": [
       {
@@ -9,38 +9,34 @@
         "num": 800
       }
     ],
-    "balances": [],
-    "tokens": [],
-    "transactions": [],
-    "cryptotransfers": [],
-    "nfts": [],
     "stakingRewardTransfers": [
       {
         "accountId": "0.0.1001",
         "amount": 10,
-        "consensus_timestamp": "11111",
-        "payerAccountId": "0.0.800"
-      },
-      {
-        "accountId": "0.0.1001",
-        "amount": 12,
-        "consensus_timestamp": "22222",
-        "payerAccountId": "0.0.800"
-      },
-      {
-        "accountId": "0.0.1001",
-        "amount": 13,
-        "consensus_timestamp": "33333",
+        "consensus_timestamp": "123456789000011111",
         "payerAccountId": "0.0.800"
       }
     ]
   },
-  "url": "/api/v1/accounts/0.0.800/rewards",
-  "responseStatus": 200,
+  "urls": [
+    "/api/v1/accounts/404/rewards",
+    "/api/v1/accounts/0.404/rewards",
+    "/api/v1/accounts/0.0.404/rewards",
+    "/api/v1/accounts/KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/rewards",
+    "/api/v1/accounts/0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/rewards",
+    "/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/rewards",
+    "/api/v1/accounts/ebb9a1be370150759408cd7af48e9eda2b8ead57/rewards",
+    "/api/v1/accounts/0.ebb9a1be370150759408cd7af48e9eda2b8ead57/rewards",
+    "/api/v1/accounts/0.0.ebb9a1be370150759408cd7af48e9eda2b8ead57/rewards"
+  ],
+  "responseStatus": 404,
   "responseJson": {
-    "rewards": [],
-    "links": {
-      "next": null
+    "_status": {
+      "messages": [
+        {
+          "message": "No account with a matching alias found"
+        }
+      ]
     }
   }
 }

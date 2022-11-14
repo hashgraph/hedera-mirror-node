@@ -1,21 +1,16 @@
 {
   "description": "Account staking reward payouts api call for tokens with invalid path parameter",
-  "setup": {
-    "entities": [],
-    "tokens": [],
-    "balances": [],
-    "transactions": [],
-    "cryptotransfers": [],
-    "nfts": [],
-    "stakingRewardTransfers": []
-  },
+  "setup": {},
   "urls": [
     "/api/v1/accounts/x/rewards",
     "/api/v1/accounts/0.x/rewards",
     "/api/v1/accounts/0.0.x/rewards",
-    "/api/v1/accounts/KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL/rewards",
-    "/api/v1/accounts/0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL/rewards",
-    "/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL/rewards"
+    "/api/v1/accounts/-1/rewards",
+    "/api/v1/accounts/0.-1/rewards",
+    "/api/v1/accounts/0.0.-1/rewards",
+    "/api/v1/accounts/ABC/rewards",
+    "/api/v1/accounts/0.ABC/rewards",
+    "/api/v1/accounts/0.0.ABC/rewards"
   ],
   "responseStatus": 400,
   "responseJson": {

@@ -12,29 +12,23 @@
         "num": 800
       }
     ],
-    "entities": [],
-    "tokens": [],
-    "balances": [],
-    "transactions": [],
-    "cryptotransfers": [],
-    "nfts": [],
     "stakingRewardTransfers": [
       {
         "accountId": "0.0.1001",
         "amount": 10,
-        "consensus_timestamp": "11111",
+        "consensus_timestamp": "123456789000011111",
         "payerAccountId": "0.0.800"
       },
       {
         "accountId": "0.0.1001",
         "amount": 12,
-        "consensus_timestamp": "22222",
+        "consensus_timestamp": "123456789000022222",
         "payerAccountId": "0.0.800"
       },
       {
         "accountId": "0.0.1001",
         "amount": 13,
-        "consensus_timestamp": "33333",
+        "consensus_timestamp": "123456789000033333",
         "payerAccountId": "0.0.800"
       }
     ]
@@ -56,17 +50,17 @@
       {
         "account_id": "0.0.1001",
         "amount": 13,
-        "consensus_timestamp": "0.000033333"
+        "consensus_timestamp": "123456789.000033333"
       },
       {
         "account_id": "0.0.1001",
         "amount": 12,
-        "consensus_timestamp": "0.000022222"
+        "consensus_timestamp": "123456789.000022222"
       },
       {
         "account_id": "0.0.1001",
         "amount": 10,
-        "consensus_timestamp": "0.000011111"
+        "consensus_timestamp": "123456789.000011111"
       }
     ],
     "links": {

@@ -522,6 +522,21 @@ describe('extractStakingRewardsQuery', () => {
         whereQuery: ['srt.consensus_timestamp  <=  5000'],
       },
     },
+    {
+      name: 'all params',
+      filters: [
+        timestampGteFilter,
+        timestampLteFilter,
+        {key: LIMIT, operator: eq, value: 60},
+        {key: ORDER, operator: eq, value: 'asc'},
+      ],
+      expected: {
+        ...defaultExpected,
+        whereQuery: ['srt.consensus_timestamp  >=  3000', 'srt.consensus_timestamp  <=  5000'],
+        order: 'asc',
+        limit: 60,
+      },
+    },
   ];
 
   specs.forEach((spec) => {

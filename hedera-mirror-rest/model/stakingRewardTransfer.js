@@ -35,6 +35,7 @@ class StakingRewardTransfer {
   static ACCOUNT_ID = 'account_id';
   static AMOUNT = 'amount';
   static CONSENSUS_TIMESTAMP = 'consensus_timestamp';
+  static PAYER_ACCOUNT_ID = 'payer_account_id';
 
   /**
    * Gets full column name with table alias prepended.

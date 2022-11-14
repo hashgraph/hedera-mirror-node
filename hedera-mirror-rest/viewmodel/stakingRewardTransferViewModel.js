@@ -26,7 +26,7 @@ import {nsToSecNs} from '../utils.js';
  */
 class StakingRewardTransferViewModel {
   constructor(stakingRewardTransferModel) {
-    this.account_id = EntityId.parse(stakingRewardTransferModel.accountId, {isNullable: true}).toString();
+    this.account_id = EntityId.parse(stakingRewardTransferModel.accountId).toString();
     this.amount = stakingRewardTransferModel.amount;
     this.consensus_timestamp = nsToSecNs(stakingRewardTransferModel.consensusTimestamp);
   }

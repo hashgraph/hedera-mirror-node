@@ -1,5 +1,5 @@
 {
-  "description": "Account staking reward payouts api call with all applicable params",
+  "description": "Account staking reward payouts api call with all applicable params *should* work, but throws an internal error",
   "setup": {
     "entities": [
       {
@@ -31,22 +31,17 @@
     ]
   },
   "url": "/api/v1/accounts/0.0.1001/rewards?timestamp=gte:0&order=asc&limit=2",
-  "responseStatus": 200,
+  "url": "/api/v1/accounts/0.0.1001/rewards?timestamp=gte:0&limit=2",
+  "url": "/api/v1/accounts/0.0.1001/rewards?timestamp=gte:0&order=asc",
+  "url": "/api/v1/accounts/0.0.1001/rewards?order=asc&limit=2",
+  "responseStatus": 500,
   "responseJson": {
-    "rewards": [
-      {
-        "account_id": "0.0.1001",
-        "amount": 10,
-        "timestamp": "1234567890000011111"
-      },
-      {
-        "account_id": "0.0.1001",
-        "amount": 12,
-        "timestamp": "1234567890000022222"
-      }
-    ],
-    "links": {
-      "next": "/api/v1/accounts/0.0.1001/rewards?timestamp=gt:1234567890000022222&order=asc&limit=2"
+    "_status": {
+      "messages": [
+        {
+          "message": "Internal error"
+        }
+      ]
     }
   }
 }

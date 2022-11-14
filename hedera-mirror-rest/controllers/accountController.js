@@ -22,8 +22,7 @@ import Bound from './bound';
 import BaseController from './baseController';
 import {getResponseLimit} from '../config';
 import {filterKeys, orderFilterValues, responseDataLabel} from '../constants';
-import {InvalidArgumentError} from '../errors';
-import {FileData} from '../model';
+import {InvalidArgumentError, NotFoundError} from '../errors';
 import {EntityService, NftService, StakingRewardTransferService} from '../service';
 import {NftViewModel, StakingRewardTransferViewModel} from '../viewmodel';
 import * as utils from '../utils';
@@ -136,7 +135,11 @@ class AccountController extends BaseController {
           if (utils.opsMap.ne === filter.operator) {
             throw new InvalidArgumentError(`Not equals (ne) operator is not supported for ${filterKeys.TIMESTAMP}`);
           }
-          whereQuery.push('srt.' + FileData.CONSENSUS_TIMESTAMP + ' ' + `${filter.operator}` + ' ' + filter.value);
+          whereQuery.push(
+            `${StakingRewardsTransfer.getFullName(StakingRewardsTransfer.CONSENSUS_TIMESTAMP)} ${filter.operator} ${
+              filter.value
+            }`
+          );
           break;
         default:
           break;
@@ -159,6 +162,10 @@ class AccountController extends BaseController {
    */
   listStakingRewardsByAccountId = async (req, res) => {
     const accountId = await EntityService.getEncodedId(req.params[filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS]);
+    const isValidAccount = await EntityService.isValidAccount(accountId);
+    if (!isValidAccount) {
+      throw new NotFoundError();
+    }
     const filters = utils.buildAndValidateFilters(req.query);
     const query = this.extractStakingRewardsQuery(filters, accountId);
     const stakingRewardsTransfers = await StakingRewardTransferService.getRewards(

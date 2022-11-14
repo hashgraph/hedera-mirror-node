@@ -51,17 +51,7 @@ class StakingRewardTransferService extends BaseService {
     const conditionsArray = Array.from(whereConditions);
     // if there is a "key" element inside the where condition, parse it accordingly.
     //  Otherwise, just take the where condition's string value as a pre-parsed "where"-like clause.
-    const conditions = conditionsArray.map((kov) =>
-      kov.key
-        ? (kov.key === 'timestamp'
-            ? `${StakingRewardTransfer.getFullName(StakingRewardTransfer.CONSENSUS_TIMESTAMP)}`
-            : kov.key) +
-          ' ' +
-          kov.operator +
-          ' ' +
-          kov.value
-        : kov
-    );
+    const conditions = conditionsArray.map((condition) => conditionToWhereClause(condition));
     conditions.unshift(`${StakingRewardTransfer.getFullName(StakingRewardTransfer.ACCOUNT_ID)}` + ' = $1');
     const query = [
       StakingRewardTransferService.listStakingRewardsByAccountIdQuery,
@@ -69,10 +59,22 @@ class StakingRewardTransferService extends BaseService {
       super.getOrderByQuery(
         OrderSpec.from(`${StakingRewardTransfer.getFullName(StakingRewardTransfer.CONSENSUS_TIMESTAMP)}`, order)
       ),
-      super.getLimitQuery(2),
+      super.getLimitQuery(params.length),
     ].join('\n');
 
     return {query, params};
+  }
+
+  conditionToWhereClause(condition) {
+    if (condition.key) {
+      if (condition.key === 'timestamp') {
+        return `${StakingRewardTransfer.getFullName(StakingRewardTransfer.CONSENSUS_TIMESTAMP)} ${condition.operator} ${
+          condition.value
+        }`;
+      }
+      return `${condition.key} ${condition.operator} ${condition.value}`;
+    }
+    return condition;
   }
 }
 

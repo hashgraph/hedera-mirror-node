@@ -152,6 +152,25 @@ describe('getRewardsQuery', () => {
         params: [7777, 25],
       },
     },
+    {
+      name: 'multiple conditions',
+      accountId: 8888,
+      order: 'desc',
+      limit: 5,
+      whereConditions: [
+        {key: 'timestamp', operator: '>=', value: 3000},
+        {key: 'timestamp', operator: '<=', value: 5000},
+      ],
+      whereParams: [],
+      expected: {
+        sqlQuery:
+          `select ` +
+          queryFields +
+          'from staking_reward_transfer srt ' +
+          'where srt.account_id = $1 and srt.consensus_timestamp >= 3000 and srt.consensus_timestamp <= 5000 order by srt.consensus_timestamp desc limit $2',
+        params: [8888, 5],
+      },
+    },
   ];
 
   specs.forEach((spec) => {
