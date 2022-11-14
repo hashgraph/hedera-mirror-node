@@ -9,9 +9,9 @@ package com.hedera.mirror.web3.controller;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -36,7 +36,7 @@ import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.support.WebExchangeBindException;
 import reactor.core.publisher.Mono;
@@ -46,7 +46,6 @@ import com.hedera.mirror.web3.service.Web3Service;
 import com.hedera.mirror.web3.service.Web3ServiceFactory;
 
 @CustomLog
-@RequestMapping("/web3/v1")
 @RequiredArgsConstructor
 @RestController
 class Web3Controller {
@@ -59,7 +58,7 @@ class Web3Controller {
     private final MeterRegistry meterRegistry;
     private final Web3ServiceFactory web3ServiceFactory;
 
-    @PostMapping
+    @PostMapping(value = "/web3/v1")
     public Mono<JsonRpcResponse> web3(@Valid @RequestBody JsonRpcRequest<?> request) {
         try {
             if (!request.getJsonrpc().equals(JsonRpcResponse.VERSION)) {
@@ -83,6 +82,29 @@ class Web3Controller {
             return response(request, new JsonRpcErrorResponse(JsonRpcErrorCode.INVALID_PARAMS, e.getMessage()));
         } catch (Exception e) {
             return response(request, new JsonRpcErrorResponse(JsonRpcErrorCode.INTERNAL_ERROR));
+        }
+    }
+
+    /**
+     * At the moment The eth call service is not implemented yet, so the endpoint returns unsupported operation when
+     * called
+     */
+    @PostMapping(value = "/api/v1/contracts/call")
+    public Mono<JsonRpcResponse> apiCall(@RequestBody @Valid JsonRpcRequest<?> request,
+                                         @RequestParam(required = false, name = "estimate") boolean estimate) {
+        try {
+            if (!request.getJsonrpc().equals(JsonRpcResponse.VERSION)) {
+                return response(request, new JsonRpcErrorResponse(
+                        JsonRpcErrorCode.INVALID_REQUEST, INVALID_VERSION));
+            }
+            return response(request, new JsonRpcErrorResponse(
+                    JsonRpcErrorCode.METHOD_NOT_FOUND, "Unsupported operation."));
+        } catch (InvalidParametersException e) {
+            return response(request, new JsonRpcErrorResponse(
+                    JsonRpcErrorCode.INVALID_PARAMS, e.getMessage()));
+        } catch (Exception e) {
+            return response(request, new JsonRpcErrorResponse(
+                    JsonRpcErrorCode.INTERNAL_ERROR));
         }
     }
 
@@ -144,18 +166,17 @@ class Web3Controller {
     }
 
     private String formatError(ObjectError error) {
-        if (error instanceof FieldError) {
-            FieldError fieldError = (FieldError) error;
+        if (error instanceof FieldError fieldError) {
             return fieldError.getField() + " field " + fieldError.getDefaultMessage();
         }
         return error.getDefaultMessage();
     }
 
     @Value
-    private class Tags {
+    private static class Tags {
         private static final String UNKNOWN_METHOD = "unknown";
 
-        private final String method;
-        private final String status;
+        String method;
+        String status;
     }
 }
