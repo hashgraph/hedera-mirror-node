@@ -162,7 +162,7 @@
     "contract_id": "0.0.5001",
     "created_contract_ids": ["0.0.7001"],
     "error_message": null,
-    "evm_address": "0x70f2b2914a2a4b783faefb75f459a580616fcb5e",
+    "address": "0x70f2b2914a2a4b783faefb75f459a580616fcb5e",
     "failed_initcode": null,
     "from": "0x0000000000000000000000000000000000001f41",
     "function_parameters": "0x0606",

@@ -66,7 +66,7 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
 
     // only /contracts/results/:transactionIdOrHash route returns an evm address
     if (contractResult.evmAddress) {
-      this.evm_address = utils.toHexString(contractResult.evmAddress, true);
+      this.address = utils.toHexString(contractResult.evmAddress, true);
     }
 
     if (!_.isEmpty(contractResult.failedInitcode)) {
