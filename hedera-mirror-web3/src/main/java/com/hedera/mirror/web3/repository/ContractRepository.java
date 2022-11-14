@@ -30,5 +30,5 @@ public interface ContractRepository extends CrudRepository<Contract, Long> {
 
     @Query(value = "select runtime_bytecode from contract where id = ?1",
             nativeQuery = true)
-    Optional<byte[]> findContractCode(final Long accountNum);
+    Optional<byte[]> findRuntimeBytecode(final Long contractId);
 }

@@ -28,7 +28,7 @@ import com.hedera.mirror.common.domain.contract.ContractState;
 
 public interface ContractStateRepository extends CrudRepository<ContractState, Long> {
 
-    @Query(value = "select value_written from contract_state where contract_id = ?1 and slot =?2",
+    @Query(value = "select value from contract_state where contract_id = ?1 and slot =?2",
             nativeQuery = true)
-    Optional<byte[]> findStorage(final Long accountNum, final byte[] key);
+    Optional<byte[]> findStorage(final Long contractId, final byte[] key);
 }
