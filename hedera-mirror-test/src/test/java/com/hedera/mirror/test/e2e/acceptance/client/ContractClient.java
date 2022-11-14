@@ -153,4 +153,8 @@ public class ContractClient extends AbstractNetworkClient {
                 contractFunctionResult.gasUsed,
                 contractFunctionResult.logs.size());
     }
+
+    public String getClientAddress() {
+        return sdkClient.getClient().getOperatorAccountId().toSolidityAddress();
+    }
 }

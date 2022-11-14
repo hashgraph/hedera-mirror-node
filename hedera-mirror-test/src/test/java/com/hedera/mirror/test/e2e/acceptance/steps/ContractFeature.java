@@ -26,6 +26,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+
+import com.hedera.mirror.test.e2e.acceptance.response.JsonRpcSuccessResponse;
+
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import java.io.IOException;
@@ -131,6 +134,11 @@ public class ContractFeature extends AbstractFeature {
         verifyContractExecutionResultsByTransactionId();
     }
 
+    @Then("the mirror node REST API should execute simulations")
+    public void verifyContractSimulations() {
+        verifyContractCallSimulations();
+    }
+
     @Then("the mirror node REST API should verify the deleted contract entity")
     public void verifyDeletedContractMirror() {
         verifyContractFromMirror(true);
@@ -220,6 +228,16 @@ public class ContractFeature extends AbstractFeature {
         assertThat(contractResult.getBlockHash()).isNotBlank();
         assertThat(contractResult.getBlockNumber()).isPositive();
         assertThat(contractResult.getHash()).isNotBlank();
+    }
+
+    private void verifyContractCallSimulations() {
+        // getAccountBalance
+        JsonRpcSuccessResponse jsonRpcSuccessResponse = mirrorClient.contractsCallSimulations("6896fabf", contractId.toSolidityAddress(), contractClient.getClientAddress());
+        assertThat(jsonRpcSuccessResponse.getResult()).isNotNull();
+
+        // getSender
+        JsonRpcSuccessResponse jsonRpcSuccessResponse2 = mirrorClient.contractsCallSimulations("5e01eb5a", contractId.toSolidityAddress(), contractClient.getClientAddress());
+        assertThat(jsonRpcSuccessResponse2.getResult()).isNotNull();
     }
 
     private boolean isEmptyHex(String hexString) {

@@ -42,6 +42,14 @@ contract Parent {
         return childAddresses[1];
     }
 
+    function getAccountBalance() external view returns (uint) {
+        return childAddresses[1].balance;
+    }
+
+    function getSender() external view returns (address) {
+        return msg.sender;
+    }
+
     receive() external payable {}
 
     event ParentActivityLog(string message);

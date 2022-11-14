@@ -21,6 +21,9 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  */
 
 import com.google.common.base.Stopwatch;
+
+import com.hedera.mirror.test.e2e.acceptance.response.JsonRpcSuccessResponse;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -28,6 +31,9 @@ import java.util.concurrent.TimeUnit;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.MediaType;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.util.retry.Retry;
 import reactor.util.retry.RetryBackoffSpec;
@@ -151,6 +157,19 @@ public class MirrorNodeClient {
                 transactionId);
     }
 
+    public JsonRpcSuccessResponse contractsCallSimulations(String data, String contractSolidityAddress, String clientSolidityAddress) {
+        MultiValueMap<String, String> bodyValues = new LinkedMultiValueMap<>();
+        bodyValues.add("block", "latest");
+        bodyValues.add("data", data);
+        bodyValues.add("from", clientSolidityAddress);
+        bodyValues.add("gas", "0x76c0");
+        bodyValues.add("gas_price", "0x76c0");
+        bodyValues.add("to", contractSolidityAddress);
+        bodyValues.add("value", "0x76c0");
+
+        return callRestEndpointPost("/contracts/call", JsonRpcSuccessResponse.class, bodyValues);
+    }
+
     public List<MirrorNetworkNode> getNetworkNodes() {
         List<MirrorNetworkNode> nodes = new ArrayList<>();
         String next = "/network/nodes?limit=25";
@@ -224,6 +243,16 @@ public class MirrorNodeClient {
                 .bodyToMono(classType)
                 .retryWhen(retrySpec)
                 .doOnError(x -> log.error("Endpoint failed, returning: {}", x.getMessage()))
+                .block();
+    }
+
+    private <T> T callRestEndpointPost(String uri, Class<T> classType, MultiValueMap<String, String> bodyValues) {
+        return webClient.post()
+                .uri(uri)
+                .body(BodyInserters.fromFormData(bodyValues))
+                .accept(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .bodyToMono(classType)
                 .block();
     }
 }
