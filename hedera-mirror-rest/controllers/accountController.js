@@ -23,9 +23,11 @@ import BaseController from './baseController';
 import {getResponseLimit} from '../config';
 import {filterKeys, orderFilterValues, responseDataLabel} from '../constants';
 import {InvalidArgumentError, NotFoundError} from '../errors';
+import {StakingRewardTransfer} from '../model';
 import {EntityService, NftService, StakingRewardTransferService} from '../service';
 import {NftViewModel, StakingRewardTransferViewModel} from '../viewmodel';
 import * as utils from '../utils';
+import _ from 'lodash';
 
 const {default: defaultLimit} = getResponseLimit();
 
@@ -117,13 +119,25 @@ class AccountController extends BaseController {
     };
   };
 
+  /**
+   * Extracts SQL where conditions, params, order, and limit
+   *
+   * @param {[]} filters parsed and validated filters
+   * @param {accountId} - the unaliased account id to match staking rewards to.
+   */
   extractStakingRewardsQuery(filters, accountId) {
     let limit = defaultLimit;
     let order = orderFilterValues.DESC;
-    let whereQuery = [];
-    const params = [accountId];
+    const timestampInValues = [];
+    const conditions = [];
+    const params = [];
+    const startPosition = 3; // 1st index is reserved for account id; 2nd index is reservered for index.
 
     for (const filter of filters) {
+      if (_.isNil(filter)) {
+        continue;
+      }
+
       switch (filter.key) {
         case filterKeys.LIMIT:
           limit = filter.value;
@@ -135,10 +149,13 @@ class AccountController extends BaseController {
           if (utils.opsMap.ne === filter.operator) {
             throw new InvalidArgumentError(`Not equals (ne) operator is not supported for ${filterKeys.TIMESTAMP}`);
           }
-          whereQuery.push(
-            `${StakingRewardsTransfer.getFullName(StakingRewardsTransfer.CONSENSUS_TIMESTAMP)} ${filter.operator} ${
-              filter.value
-            }`
+          this.updateConditionsAndParamsWithInValues(
+            filter,
+            timestampInValues,
+            params,
+            conditions,
+            StakingRewardTransfer.getFullName(StakingRewardTransfer.CONSENSUS_TIMESTAMP),
+            startPosition + params.length
           );
           break;
         default:
@@ -146,10 +163,21 @@ class AccountController extends BaseController {
       }
     }
 
+    this.updateQueryFiltersWithInValues(
+      params,
+      conditions,
+      timestampInValues,
+      StakingRewardTransfer.getFullName(StakingRewardTransfer.CONSENSUS_TIMESTAMP),
+      3 // $1: accountId, $2: limit. $3 onwards: "in" values.
+    );
+
+    // insert account id at $1, and limit (at $2)
+    params.unshift(accountId, limit);
+
     return {
       order,
       limit,
-      whereQuery,
+      conditions,
       params,
     };
   }
@@ -172,7 +200,7 @@ class AccountController extends BaseController {
       accountId,
       query.order,
       query.limit,
-      query.whereQuery,
+      query.conditions,
       query.params
     );
     const rewards = stakingRewardsTransfers.map((reward) => new StakingRewardTransferViewModel(reward));

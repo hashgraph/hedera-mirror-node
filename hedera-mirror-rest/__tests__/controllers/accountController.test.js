@@ -64,6 +64,8 @@ const timestampGteFilter = {key: TIMESTAMP, operator: gte, value: 3000};
 const timestampLtFilter = {key: TIMESTAMP, operator: lt, value: 4000};
 const timestampLteFilter = {key: TIMESTAMP, operator: lte, value: 5000};
 const timestampNeFilter = {key: TIMESTAMP, operator: ne, value: 6000};
+const timestampEqFilter2 = {key: TIMESTAMP, operator: eq, value: 2000};
+const timestampEqFilter3 = {key: TIMESTAMP, operator: eq, value: 3000};
 
 describe('extractNftMultiUnionQuery', () => {
   const defaultExpected = {
@@ -462,8 +464,8 @@ describe('extractStakingRewardsQuery', () => {
   const defaultExpected = {
     order: constants.orderFilterValues.DESC,
     limit: defaultLimit,
-    whereQuery: [],
-    params: [ownerAccountId],
+    conditions: [],
+    params: [ownerAccountId, defaultLimit],
   };
 
   const specs = [
@@ -480,14 +482,15 @@ describe('extractStakingRewardsQuery', () => {
     {
       name: 'limit',
       filters: [{key: LIMIT, operator: eq, value: 60}],
-      expected: {...defaultExpected, limit: 60},
+      expected: {...defaultExpected, limit: 60, params: [ownerAccountId, 60]},
     },
     {
       name: 'timestamp eq',
       filters: [timestampEqFilter],
       expected: {
         ...defaultExpected,
-        whereQuery: ['srt.consensus_timestamp  =  1000'],
+        conditions: ['srt.consensus_timestamp in ($3)'],
+        params: [1n, defaultLimit, 1000],
       },
     },
     {
@@ -495,7 +498,8 @@ describe('extractStakingRewardsQuery', () => {
       filters: [timestampGtFilter],
       expected: {
         ...defaultExpected,
-        whereQuery: ['srt.consensus_timestamp  >  2000'],
+        conditions: ['srt.consensus_timestamp > $3'],
+        params: [1n, defaultLimit, 2000],
       },
     },
     {
@@ -503,7 +507,8 @@ describe('extractStakingRewardsQuery', () => {
       filters: [timestampGteFilter],
       expected: {
         ...defaultExpected,
-        whereQuery: ['srt.consensus_timestamp  >=  3000'],
+        conditions: ['srt.consensus_timestamp >= $3'],
+        params: [1n, defaultLimit, 3000],
       },
     },
     {
@@ -511,7 +516,8 @@ describe('extractStakingRewardsQuery', () => {
       filters: [timestampLtFilter],
       expected: {
         ...defaultExpected,
-        whereQuery: ['srt.consensus_timestamp  <  4000'],
+        conditions: ['srt.consensus_timestamp < $3'],
+        params: [1n, defaultLimit, 4000],
       },
     },
     {
@@ -519,7 +525,26 @@ describe('extractStakingRewardsQuery', () => {
       filters: [timestampLteFilter],
       expected: {
         ...defaultExpected,
-        whereQuery: ['srt.consensus_timestamp  <=  5000'],
+        conditions: ['srt.consensus_timestamp <= $3'],
+        params: [1n, defaultLimit, 5000],
+      },
+    },
+    {
+      name: 'timestamp eq 1 and 2',
+      filters: [timestampEqFilter, timestampEqFilter2],
+      expected: {
+        ...defaultExpected,
+        conditions: ['srt.consensus_timestamp in ($3,$4)'],
+        params: [1n, defaultLimit, 1000, 2000],
+      },
+    },
+    {
+      name: 'timestamp eq 1 and 2 and 3',
+      filters: [timestampEqFilter, timestampEqFilter2, timestampEqFilter3],
+      expected: {
+        ...defaultExpected,
+        conditions: ['srt.consensus_timestamp in ($3,$4,$5)'],
+        params: [1n, defaultLimit, 1000, 2000, 3000],
       },
     },
     {
@@ -532,7 +557,8 @@ describe('extractStakingRewardsQuery', () => {
       ],
       expected: {
         ...defaultExpected,
-        whereQuery: ['srt.consensus_timestamp  >=  3000', 'srt.consensus_timestamp  <=  5000'],
+        conditions: ['srt.consensus_timestamp >= $3', 'srt.consensus_timestamp <= $4'],
+        params: [1n, 60, 3000, 5000],
         order: 'asc',
         limit: 60,
       },

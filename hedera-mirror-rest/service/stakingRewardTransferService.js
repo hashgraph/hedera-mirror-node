@@ -42,29 +42,6 @@ class StakingRewardTransferService extends BaseService {
     return rows.map((srt) => new StakingRewardTransfer(srt));
   }
 
-  getRewardsQuery(accountId, order, limit, whereConditions, whereParams) {
-    const params = Array.from(whereParams);
-    if (params.length == 0) {
-      params.push(accountId);
-    }
-    params.push(limit);
-    const conditionsArray = Array.from(whereConditions);
-    // if there is a "key" element inside the where condition, parse it accordingly.
-    //  Otherwise, just take the where condition's string value as a pre-parsed "where"-like clause.
-    const conditions = conditionsArray.map((condition) => conditionToWhereClause(condition));
-    conditions.unshift(`${StakingRewardTransfer.getFullName(StakingRewardTransfer.ACCOUNT_ID)}` + ' = $1');
-    const query = [
-      StakingRewardTransferService.listStakingRewardsByAccountIdQuery,
-      conditions.length > 0 ? `where ${conditions.join(' and ')}` : '',
-      super.getOrderByQuery(
-        OrderSpec.from(`${StakingRewardTransfer.getFullName(StakingRewardTransfer.CONSENSUS_TIMESTAMP)}`, order)
-      ),
-      super.getLimitQuery(params.length),
-    ].join('\n');
-
-    return {query, params};
-  }
-
   conditionToWhereClause(condition) {
     if (condition.key) {
       if (condition.key === 'timestamp') {
@@ -75,6 +52,29 @@ class StakingRewardTransferService extends BaseService {
       return `${condition.key} ${condition.operator} ${condition.value}`;
     }
     return condition;
+  }
+
+  getRewardsQuery(accountId, order, limit, whereConditions, whereParams) {
+    const params = Array.from(whereParams);
+    if (params.length == 0) {
+      params.push(accountId);
+    }
+    params.push(limit);
+    const conditionsArray = Array.from(whereConditions);
+    // if there is a "key" element inside the where condition, parse it accordingly.
+    //  Otherwise, just take the where condition's string value as a pre-parsed "where"-like clause.
+    const conditions = conditionsArray.map((condition) => this.conditionToWhereClause(condition));
+    conditions.unshift(`${StakingRewardTransfer.getFullName(StakingRewardTransfer.ACCOUNT_ID)}` + ' = $1');
+    const query = [
+      StakingRewardTransferService.listStakingRewardsByAccountIdQuery,
+      conditions.length > 0 ? `where ${conditions.join(' and ')}` : '',
+      super.getOrderByQuery(
+        OrderSpec.from(`${StakingRewardTransfer.getFullName(StakingRewardTransfer.CONSENSUS_TIMESTAMP)}`, order)
+      ),
+      super.getLimitQuery(2), // limit is specified in $2 (not necessarily a limit *of* 2)
+    ].join('\n');
+
+    return {query, params};
   }
 }
 

@@ -89,6 +89,22 @@ describe('getRewardsQuery', () => {
       },
     },
     {
+      name: 'timestamp in',
+      accountId: 3333,
+      order: 'desc',
+      limit: 25,
+      whereConditions: [{key: 'timestamp', operator: 'in', value: '(1000, 2000)'}],
+      whereParams: [],
+      expected: {
+        sqlQuery:
+          `select ` +
+          queryFields +
+          'from staking_reward_transfer srt ' +
+          'where srt.account_id = $1 and srt.consensus_timestamp in (1000, 2000) order by srt.consensus_timestamp desc limit $2',
+        params: [3333, 25],
+      },
+    },
+    {
       name: 'timestamp lt',
       accountId: 4444,
       order: 'desc',
