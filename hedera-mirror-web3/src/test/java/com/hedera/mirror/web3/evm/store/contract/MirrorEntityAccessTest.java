@@ -83,6 +83,13 @@ class MirrorEntityAccessTest {
     }
 
     @Test
+    void isUsableWithAliasNegative() {
+        final var address = Address.fromHexString("0x3232134567785444e");
+        final var result = mirrorEntityAccess.isUsable(address);
+        assertThat(result).isFalse();
+    }
+
+    @Test
     void getBalance() {
         final long balance = 23L;
         when(entityRepository.findByIdAndDeletedFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
@@ -118,6 +125,13 @@ class MirrorEntityAccessTest {
         when(entityRepository.findByIdAndDeletedFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
         when(entity.getType()).thenReturn(EntityType.ACCOUNT);
         final var result = mirrorEntityAccess.isTokenAccount(ADDRESS);
+        assertThat(result).isFalse();
+    }
+
+    @Test
+    void isATokenAccountForMissingEntity() {
+        final var address = Address.fromHexString("0x3232134567785444e");
+        final var result = mirrorEntityAccess.isTokenAccount(address);
         assertThat(result).isFalse();
     }
 
