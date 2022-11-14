@@ -83,7 +83,7 @@ class ContractService extends BaseService {
     )
     select
       ${contractResultsFields},
-      ${Entity.getFullName(Entity.EVM_ADDRESS)}
+      coalesce(${Entity.getFullName(Entity.EVM_ADDRESS)},'') as ${Entity.EVM_ADDRESS}
     from ${ContractResult.tableName} ${ContractResult.tableAlias}
     left join ${Entity.tableName} ${Entity.tableAlias}
       on ${Entity.getFullName(Entity.ID)} = ${ContractResult.getFullName(ContractResult.CONTRACT_ID)}`;
@@ -277,7 +277,12 @@ class ContractService extends BaseService {
 
     const rows = await super.getRows(query, params, 'getContractResultsByTimestamps');
 
-    return rows.map((row) => new ContractResult(row));
+    return rows.map((row) => {
+      return {
+        ...new ContractResult(row),
+        evmAddress: row.evm_address,
+      };
+    });
   }
 
   /**
@@ -311,7 +316,12 @@ class ContractService extends BaseService {
     ].join('\n');
     const rows = await super.getRows(query, params, 'getContractResultsByHash');
 
-    return rows.map((row) => new ContractResult(row));
+    return rows.map((row) => {
+      return {
+        ...new ContractResult(row),
+        evmAddress: row.evm_address,
+      };
+    });
   }
 
   /**
