@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.google.common.collect.Range;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.api.IterableAssert;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -54,6 +55,11 @@ class FixMainnetStakedBeforeEnabledMigrationTest extends IntegrationTest {
     @BeforeEach
     void setup() {
         mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.MAINNET);
+    }
+
+    @AfterEach
+    void teardown() {
+        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET);
     }
 
     @Test

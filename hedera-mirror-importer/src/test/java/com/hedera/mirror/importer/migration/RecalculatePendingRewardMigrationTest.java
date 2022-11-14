@@ -24,6 +24,7 @@ import static com.hedera.mirror.common.util.DomainUtils.TINYBARS_IN_ONE_HBAR;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import lombok.RequiredArgsConstructor;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -53,6 +54,11 @@ class RecalculatePendingRewardMigrationTest extends IntegrationTest {
     @BeforeEach
     void setup() {
         mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.MAINNET);
+    }
+
+    @AfterEach
+    void teardown() {
+        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET);
     }
 
     @Test
