@@ -1,0 +1,6 @@
+citus:
+  enabled: true
+monitor:
+  enabled: false
+postgresql:
+  enabled: false
