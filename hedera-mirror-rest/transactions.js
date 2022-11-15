@@ -30,6 +30,7 @@ import {
   AssessedCustomFee,
   CryptoTransfer,
   NftTransfer,
+  StakingRewardTransfer,
   TokenTransfer,
   Transaction,
   TransactionHash,
@@ -38,7 +39,6 @@ import {
 } from './model';
 
 import {AssessedCustomFeeViewModel, NftTransferViewModel} from './viewmodel';
-import StakingRewardTransfer from './model/stakingRewardTransfer.js';
 
 const transactionFields = [
   Transaction.CHARGED_TX_FEE,
