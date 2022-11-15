@@ -28,7 +28,6 @@ final class JsonRpcSuccessResponse<T> extends JsonRpcResponse {
     static final String SUCCESS = "SUCCESS";
 
     private T result;
-    private T gas;
 
     String getStatus() {
         return SUCCESS;
