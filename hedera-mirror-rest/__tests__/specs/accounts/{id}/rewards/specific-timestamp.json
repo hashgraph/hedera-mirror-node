@@ -43,7 +43,7 @@
       {
         "account_id": "0.0.1001",
         "amount": 12,
-        "consensus_timestamp": "1234567890.000022222"
+        "timestamp": "1234567890.000022222"
       }
     ],
     "links": {
