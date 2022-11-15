@@ -29,11 +29,8 @@ describe('getQuery', () => {
     ownerAccountId: 98,
     limit: 25,
   };
-  const tokenBalanceJoin =
-    'left join (select token_id,balance from token_balance where account_id = $1 and consensus_timestamp = (select max(consensus_timestamp) from account_balance_file)) tb on ta.token_id = tb.token_id';
-
   const tokenFields =
-    'ta.automatic_association,ta.created_timestamp,ta.freeze_status,ta.kyc_status,ta.token_id,coalesce(tb.balance,0) balance ';
+    'ta.automatic_association,ta.balance,ta.created_timestamp,ta.freeze_status,ta.kyc_status,ta.token_id ';
   const specs = [
     {
       name: 'default',
@@ -43,7 +40,6 @@ describe('getQuery', () => {
           'select ' +
           tokenFields +
           'from token_account ta ' +
-          tokenBalanceJoin +
           ' where ta.account_id = $1 and ta.associated = true order by ta.token_id asc limit $2',
         params: [98, 25],
       },
@@ -56,7 +52,6 @@ describe('getQuery', () => {
           'select ' +
           tokenFields +
           'from token_account ta ' +
-          tokenBalanceJoin +
           ' where ta.account_id = $1 and ta.associated = true order by ta.token_id desc limit $2',
         params: [98, 25],
       },
@@ -69,7 +64,6 @@ describe('getQuery', () => {
           `select ` +
           tokenFields +
           `from token_account ta ` +
-          tokenBalanceJoin +
           ` where ta.account_id = $1 and ta.associated = true and ta.token_id in (2)
           order by ta.token_id asc
           limit $2`,
@@ -84,7 +78,6 @@ describe('getQuery', () => {
           `select ` +
           tokenFields +
           `from token_account ta ` +
-          tokenBalanceJoin +
           ` where ta.account_id = $1 and ta.associated = true and ta.token_id > $3
           order by ta.token_id asc
           limit $2`,
@@ -99,7 +92,6 @@ describe('getQuery', () => {
           `select ` +
           tokenFields +
           `from token_account ta ` +
-          tokenBalanceJoin +
           ` where ta.account_id = $1 and ta.associated = true and ta.token_id < $3
           order by ta.token_id asc
           limit $2`,

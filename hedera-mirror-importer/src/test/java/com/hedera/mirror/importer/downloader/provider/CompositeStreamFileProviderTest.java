@@ -92,7 +92,7 @@ class CompositeStreamFileProviderTest {
 
     @Test
     void getNoSuchKeyException() {
-        var error = NoSuchKeyException.builder().message("No key").build();
+        var error = new TransientProviderException(NoSuchKeyException.builder().message("No key").build());
         when(streamFileProvider1.get(NODE, FILENAME)).thenReturn(Mono.error(error));
         compositeStreamFileProvider.get(NODE, FILENAME)
                 .as(StepVerifier::create)

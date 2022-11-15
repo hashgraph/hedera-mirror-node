@@ -20,6 +20,8 @@ hedera:
           checksum: 4
         historicalAccountInfoMigration:
           checksum: 3
+        initializeEntityBalanceMigration:
+          checksum: 2
 
 logging:
   level:
