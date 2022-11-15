@@ -4,15 +4,7 @@ hedera:
       acceptance:
         messageTimeout: 20s
         # grpc endpoint
-        # mirrorNodeAddress: hcs.testnet.mirrornode.hedera.com:5600
-        mirrorNodeAddress: hcs.previewnet.mirrornode.hedera.com:5600
-        network: previewnet
+        mirrorNodeAddress: hcs.testnet.mirrornode.hedera.com:5600
+        network: testnet
         rest:
-          # baseUrl: http://testnet.mirrornode.hedera.com/api/v1
-          baseUrl: http://previewnet.mirrornode.hedera.com/api/v1
-        # myk-added properties follow
-        maxTinyBarTransactionFee: 8000000000
-        # testnet: operatorId: 0.0.48515464
-        # testnet: operatorKey: f217ed729228451bd6186b4ee947ca1514a994a0dbcaa3cc1675d3aa8ecdac6c
-        operatorId: 0.0.84617
-        operatorKey: 2944d0a88cea436787f2f905b8e53ee0dee0100bfa308671d832d93dd1e998fb
+          baseUrl: http://testnet.mirrornode.hedera.com/api/v1
