@@ -46,9 +46,7 @@ class StakingRewardTransferService extends BaseService {
   conditionToWhereClause(condition) {
     if (condition.key) {
       if (condition.key === 'timestamp') {
-        return `${StakingRewardTransfer.getFullName(StakingRewardTransfer.CONSENSUS_TIMESTAMP)} ${condition.operator} ${
-          condition.value
-        }`;
+        return `${StakingRewardTransfer.CONSENSUS_TIMESTAMP} ${condition.operator} ${condition.value}`;
       }
       return `${condition.key} ${condition.operator} ${condition.value}`;
     }
@@ -57,16 +55,14 @@ class StakingRewardTransferService extends BaseService {
 
   getRewardsQuery(accountId, order, limit, whereConditions, whereParams) {
     const params = Array.from(whereParams);
-    params.push(accountId); // always $1
-    params.push(limit); // always $2
     const conditionsArray = Array.from(whereConditions);
     // if there is a "key" element inside the where condition, parse it accordingly.
     //  Otherwise, just take the where condition's string value as a pre-parsed "where"-like clause.
     const conditions = conditionsArray.map((condition) => this.conditionToWhereClause(condition));
     const query = [
       StakingRewardTransferService.listStakingRewardsByAccountIdQuery,
-      conditions.length > 0 ? `where ${conditions.join(' and ')}` : '',
-      super.getOrderByQuery(OrderSpec.from(`${StakingRewardTransfer.CONSENSUS_TIMESTAMP}`, order)),
+      conditions.length > 0 ? `and ${conditions.join(' and ')}` : '', // "and" since we already have "where account_id = $1" at the end of the above line
+      super.getOrderByQuery(OrderSpec.from(StakingRewardTransfer.CONSENSUS_TIMESTAMP, order)),
       super.getLimitQuery(2), // limit is specified in $2 (not necessarily a limit *of* 2)
     ].join('\n');
 

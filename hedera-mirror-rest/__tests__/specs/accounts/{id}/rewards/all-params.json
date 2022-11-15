@@ -13,17 +13,17 @@
       {
         "account_id": "0.0.1001",
         "amount": 10,
-        "consensus_timestamp": "123456789000011111"
+        "consensus_timestamp": "1234567890.000011111"
       },
       {
         "account_id": "0.0.1001",
         "amount": 12,
-        "consensus_timestamp": "123456789000022222"
+        "consensus_timestamp": "1234567890.000022222"
       },
       {
         "account_id": "0.0.1001",
         "amount": 13,
-        "consensus_timestamp": "123456789000033333"
+        "consensus_timestamp": "1234567890.000033333"
       }
     ]
   },
@@ -38,16 +38,16 @@
       {
         "account_id": "0.0.1001",
         "amount": 10,
-        "timestamp": "1234567890000011111"
+        "timestamp": "1234567890.000011111"
       },
       {
         "account_id": "0.0.1001",
         "amount": 12,
-        "timestamp": "1234567890000022222"
+        "timestamp": "1234567890.000022222"
       }
     ],
     "links": {
-      "next": "/api/v1/accounts/0.0.1001/rewards?timestamp=gt:1234567890000022222&order=asc&limit=2"
+      "next": "/api/v1/accounts/0.0.1001/rewards?timestamp=gt:1234567890.000022222&order=asc&limit=2"
     }
   }
 }

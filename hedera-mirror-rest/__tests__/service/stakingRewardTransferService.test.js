@@ -22,7 +22,7 @@ import {assertSqlQueryEqual} from '../testutils';
 import {StakingRewardTransferService} from '../../service';
 
 describe('getRewardsQuery', () => {
-  const queryFields = 'srt.account_id,srt.amount,srt.consensus_timestamp ';
+  const queryFields = 'account_id,amount,consensus_timestamp ';
   const specs = [
     {
       name: 'default',
@@ -35,9 +35,9 @@ describe('getRewardsQuery', () => {
         sqlQuery:
           'select ' +
           queryFields +
-          'from staking_reward_transfer srt ' +
-          'where srt.account_id = $1 order by srt.consensus_timestamp desc limit $2',
-        params: [1111, 25],
+          'from staking_reward_transfer ' +
+          'where account_id = $1 order by consensus_timestamp desc limit $2',
+        params: [],
       },
     },
     {
@@ -51,9 +51,9 @@ describe('getRewardsQuery', () => {
         sqlQuery:
           'select ' +
           queryFields +
-          'from staking_reward_transfer srt ' +
-          'where srt.account_id = $1 order by srt.consensus_timestamp desc limit $2',
-        params: [1122, 100],
+          'from staking_reward_transfer ' +
+          'where account_id = $1 order by consensus_timestamp desc limit $2',
+        params: [],
       },
     },
     {
@@ -67,9 +67,9 @@ describe('getRewardsQuery', () => {
         sqlQuery:
           'select ' +
           queryFields +
-          'from staking_reward_transfer srt ' +
-          'where srt.account_id = $1 order by srt.consensus_timestamp asc limit $2',
-        params: [2222, 25],
+          'from staking_reward_transfer ' +
+          'where account_id = $1 order by consensus_timestamp asc limit $2',
+        params: [],
       },
     },
     {
@@ -81,11 +81,11 @@ describe('getRewardsQuery', () => {
       whereParams: [],
       expected: {
         sqlQuery:
-          `select ` +
+          'select ' +
           queryFields +
-          'from staking_reward_transfer srt ' +
-          'where srt.account_id = $1 and srt.consensus_timestamp = 1000 order by srt.consensus_timestamp desc limit $2',
-        params: [3333, 25],
+          'from staking_reward_transfer ' +
+          'where account_id = $1 and consensus_timestamp = 1000 order by consensus_timestamp desc limit $2',
+        params: [],
       },
     },
     {
@@ -97,11 +97,11 @@ describe('getRewardsQuery', () => {
       whereParams: [],
       expected: {
         sqlQuery:
-          `select ` +
+          'select ' +
           queryFields +
-          'from staking_reward_transfer srt ' +
-          'where srt.account_id = $1 and srt.consensus_timestamp in (1000, 2000) order by srt.consensus_timestamp desc limit $2',
-        params: [3333, 25],
+          'from staking_reward_transfer ' +
+          'where account_id = $1 and consensus_timestamp in (1000, 2000) order by consensus_timestamp desc limit $2',
+        params: [],
       },
     },
     {
@@ -113,11 +113,11 @@ describe('getRewardsQuery', () => {
       whereParams: [],
       expected: {
         sqlQuery:
-          `select ` +
+          'select ' +
           queryFields +
-          'from staking_reward_transfer srt ' +
-          'where srt.account_id = $1 and srt.consensus_timestamp < 2000 order by srt.consensus_timestamp desc limit $2',
-        params: [4444, 25],
+          'from staking_reward_transfer ' +
+          'where account_id = $1 and consensus_timestamp < 2000 order by consensus_timestamp desc limit $2',
+        params: [],
       },
     },
     {
@@ -129,11 +129,11 @@ describe('getRewardsQuery', () => {
       whereParams: [],
       expected: {
         sqlQuery:
-          `select ` +
+          'select ' +
           queryFields +
-          'from staking_reward_transfer srt ' +
-          'where srt.account_id = $1 and srt.consensus_timestamp <= 3000 order by srt.consensus_timestamp desc limit $2',
-        params: [5555, 25],
+          'from staking_reward_transfer ' +
+          'where account_id = $1 and consensus_timestamp <= 3000 order by consensus_timestamp desc limit $2',
+        params: [],
       },
     },
     {
@@ -145,11 +145,11 @@ describe('getRewardsQuery', () => {
       whereParams: [],
       expected: {
         sqlQuery:
-          `select ` +
+          'select ' +
           queryFields +
-          'from staking_reward_transfer srt ' +
-          'where srt.account_id = $1 and srt.consensus_timestamp > 4000 order by srt.consensus_timestamp desc limit $2',
-        params: [6666, 25],
+          'from staking_reward_transfer ' +
+          'where account_id = $1 and consensus_timestamp > 4000 order by consensus_timestamp desc limit $2',
+        params: [],
       },
     },
     {
@@ -161,11 +161,11 @@ describe('getRewardsQuery', () => {
       whereParams: [],
       expected: {
         sqlQuery:
-          `select ` +
+          'select ' +
           queryFields +
-          'from staking_reward_transfer srt ' +
-          'where srt.account_id = $1 and srt.consensus_timestamp >= 5000 order by srt.consensus_timestamp desc limit $2',
-        params: [7777, 25],
+          'from staking_reward_transfer ' +
+          'where account_id = $1 and consensus_timestamp >= 5000 order by consensus_timestamp desc limit $2',
+        params: [],
       },
     },
     {
@@ -180,11 +180,11 @@ describe('getRewardsQuery', () => {
       whereParams: [],
       expected: {
         sqlQuery:
-          `select ` +
+          'select ' +
           queryFields +
-          'from staking_reward_transfer srt ' +
-          'where srt.account_id = $1 and srt.consensus_timestamp >= 3000 and srt.consensus_timestamp <= 5000 order by srt.consensus_timestamp desc limit $2',
-        params: [8888, 5],
+          'from staking_reward_transfer ' +
+          'where account_id = $1 and consensus_timestamp >= 3000 and consensus_timestamp <= 5000 order by consensus_timestamp desc limit $2',
+        params: [],
       },
     },
   ];

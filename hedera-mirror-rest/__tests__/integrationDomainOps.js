@@ -1204,18 +1204,21 @@ const addSchedule = async (schedule) => {
   );
 };
 
+const defaultStakingRewardTransfer = {
+  account_id: 1001,
+  amount: 100,
+  consensus_timestamp: null,
+  payer_account_id: 950,
+};
+
 const addStakingRewardTransfer = async (transfer) => {
-  const stakingRewardTransfer = {
-    account_id: 1001,
-    amount: 100,
-    consensus_timestamp: null,
-    payer_account_id: 950,
+  stakingRewardTransfer = {
+    ...defaultStakingRewardTransfer,
     ...transfer,
   };
 
   const insertFields = ['account_id', 'amount', 'consensus_timestamp', 'payer_account_id'];
-  const table = getTableName('staking_reward_transfer', stakingRewardTransfer);
-  await insertDomainObject(table, insertFields, stakingRewardTransfer);
+  await insertDomainObject('staking_reward_transfer', insertFields, stakingRewardTransfer);
 };
 
 const addTransactionSignature = async (transactionSignature) => {

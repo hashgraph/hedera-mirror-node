@@ -13,7 +13,7 @@
       {
         "accountId": "0.0.1001",
         "amount": 10,
-        "consensus_timestamp": "123456789000011111",
+        "consensus_timestamp": "1234567890.000011111",
         "payerAccountId": "0.0.800"
       }
     ]

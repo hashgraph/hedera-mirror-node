@@ -28,7 +28,7 @@ class StakingRewardTransferViewModel {
   constructor(stakingRewardTransferModel) {
     this.account_id = EntityId.parse(stakingRewardTransferModel.accountId).toString();
     this.amount = stakingRewardTransferModel.amount;
-    this.consensus_timestamp = nsToSecNs(stakingRewardTransferModel.consensusTimestamp);
+    this.timestamp = nsToSecNs(stakingRewardTransferModel.consensusTimestamp);
   }
 }
 

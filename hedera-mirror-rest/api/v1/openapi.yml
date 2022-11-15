@@ -2781,7 +2781,7 @@ components:
       example:
         account_id: 0.0.1000
         amount: 10
-        timestamp: 123456789.000000001
+        timestamp: 1234567890.000000001
     Timestamp:
       type: string
       example: "1586567700.453054000"
