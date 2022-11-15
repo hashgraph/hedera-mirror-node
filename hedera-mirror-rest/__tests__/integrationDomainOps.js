@@ -1212,7 +1212,7 @@ const defaultStakingRewardTransfer = {
 };
 
 const addStakingRewardTransfer = async (transfer) => {
-  stakingRewardTransfer = {
+  const stakingRewardTransfer = {
     ...defaultStakingRewardTransfer,
     ...transfer,
   };

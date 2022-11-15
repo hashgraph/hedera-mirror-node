@@ -31,11 +31,11 @@ class StakingRewardTransferService extends BaseService {
   }
 
   static listStakingRewardsByAccountIdQuery = `
-    select ${StakingRewardTransfer.ACCOUNT_ID},
-    ${StakingRewardTransfer.AMOUNT},
-    ${StakingRewardTransfer.CONSENSUS_TIMESTAMP}
-    from ${StakingRewardTransfer.tableName}
-    where ${StakingRewardTransfer.ACCOUNT_ID} = $1`;
+    select ${StakingRewardTransfer.getFullName(StakingRewardTransfer.ACCOUNT_ID)},
+    ${StakingRewardTransfer.getFullName(StakingRewardTransfer.AMOUNT)},
+    ${StakingRewardTransfer.getFullName(StakingRewardTransfer.CONSENSUS_TIMESTAMP)}
+    from ${StakingRewardTransfer.tableName} ${StakingRewardTransfer.tableAlias}
+    where ${StakingRewardTransfer.getFullName(StakingRewardTransfer.ACCOUNT_ID)} = $1`;
 
   async getRewards(accountId, order, limit, conditions, initParams) {
     const {query, params} = this.getRewardsQuery(accountId, order, limit, conditions, initParams);
@@ -46,9 +46,11 @@ class StakingRewardTransferService extends BaseService {
   conditionToWhereClause(condition) {
     if (condition.key) {
       if (condition.key === 'timestamp') {
-        return `${StakingRewardTransfer.CONSENSUS_TIMESTAMP} ${condition.operator} ${condition.value}`;
+        return `${StakingRewardTransfer.getFullName(StakingRewardTransfer.CONSENSUS_TIMESTAMP)} ${condition.operator} ${
+          condition.value
+        }`;
       }
-      return `${condition.key} ${condition.operator} ${condition.value}`;
+      return `${StakingRewardTransfer.getFullName(condition.key)} ${condition.operator} ${condition.value}`;
     }
     return condition;
   }
@@ -62,7 +64,9 @@ class StakingRewardTransferService extends BaseService {
     const query = [
       StakingRewardTransferService.listStakingRewardsByAccountIdQuery,
       conditions.length > 0 ? `and ${conditions.join(' and ')}` : '', // "and" since we already have "where account_id = $1" at the end of the above line
-      super.getOrderByQuery(OrderSpec.from(StakingRewardTransfer.CONSENSUS_TIMESTAMP, order)),
+      super.getOrderByQuery(
+        OrderSpec.from(StakingRewardTransfer.getFullName(StakingRewardTransfer.CONSENSUS_TIMESTAMP), order)
+      ),
       super.getLimitQuery(2), // limit is specified in $2 (not necessarily a limit *of* 2)
     ].join('\n');
 
