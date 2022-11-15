@@ -25,6 +25,7 @@ plugins {
     id("io.spring.dependency-management")
     id("jacoco")
     id("org.gradle.test-retry")
+    id("spotless-conventions")
     `java-library`
 }
 

@@ -1,0 +1,14 @@
+#!/bin/sh
+set -e
+
+# Stash any unstaged changes
+git stash -q --keep-index --include-untracked
+
+echo "Running spotlessApply to format code..."
+./gradlew spotlessApply
+
+# Add all files modified by Spotless
+git add .
+
+# Unstash the unstaged changes
+git stash pop -q

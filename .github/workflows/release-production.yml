@@ -39,7 +39,7 @@ jobs:
         run: gcloud auth configure-docker gcr.io,marketplace.gcr.io
 
       - name: Build
-        run: ./mvnw dependency:copy-dependencies license:download-licenses package -DskipTests -pl ${MODULE} -Dmvn.golang.skip=true -Dskip.npm
+        run: ./mvnw package -DskipTests -pl ${MODULE} -Dmvn.golang.skip=true -Dskip.npm
 
       - name: Setup QEMU
         uses: docker/setup-qemu-action@v2

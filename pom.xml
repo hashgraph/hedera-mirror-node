@@ -179,36 +179,6 @@
     <build>
         <pluginManagement>
             <plugins>
-                <!-- Download library source jars and package in container image for GCP Marketplace compliance -->
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-dependency-plugin</artifactId>
-                    <configuration>
-                        <classifier>sources</classifier>
-                        <includeScope>runtime</includeScope>
-                        <outputDirectory>${docker.resources}/third_party/sources</outputDirectory>
-                        <prependGroupId>true</prependGroupId>
-                    </configuration>
-                </plugin>
-                <!-- antlr 2.x (Hibernate dependency) is so old it doesn't have sources in Maven Central -->
-                <plugin>
-                    <groupId>com.googlecode.maven-download-plugin</groupId>
-                    <artifactId>download-maven-plugin</artifactId>
-                    <version>1.6.8</version>
-                    <executions>
-                        <execution>
-                            <id>download-antlr-source</id>
-                            <phase>verify</phase>
-                            <goals>
-                                <goal>wget</goal>
-                            </goals>
-                            <configuration>
-                                <outputDirectory>${docker.resources}/third_party/sources</outputDirectory>
-                                <url>https://www.antlr2.org/download/antlr-2.7.7.tar.gz</url>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
                 <plugin>
                     <groupId>org.owasp</groupId>
                     <artifactId>dependency-check-maven</artifactId>
@@ -546,12 +516,17 @@
                                 <phase>prepare-package</phase>
                                 <configuration>
                                     <includes>
+                                        <include>gradle.properties</include>
                                         <include>docker-compose.yml</include>
                                         <include>hedera-mirror-rest/**/openapi.yml</include>
                                         <include>hedera-mirror-rest/package*.json</include>
                                         <include>hedera-mirror-rest/monitoring/monitor_apis/package*.json</include>
                                     </includes>
                                     <replacements>
+                                        <replacement>
+                                            <token><![CDATA[version=.+]]></token>
+                                            <value>version=${release.version}</value>
+                                        </replacement>
                                         <replacement>
                                             <token>
                                                 <![CDATA[(?<="@hashgraph/mirror-(rest|monitor)",\s{3,7}"version": ")[^"]+]]></token>

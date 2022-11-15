@@ -29,8 +29,10 @@ repositories {
 
 dependencies {
     implementation("com.bmuschko:gradle-docker-plugin:9.0.1")
+    implementation("com.diffplug.spotless:spotless-plugin-gradle:6.11.0")
     implementation("com.github.node-gradle:gradle-node-plugin:3.5.0")
     implementation("com.google.protobuf:protobuf-gradle-plugin:0.9.1")
+    implementation("com.gorylenko.gradle-git-properties:gradle-git-properties:2.4.1")
     implementation("io.freefair.gradle:lombok-plugin:6.5.1")
     implementation("io.spring.gradle:dependency-management-plugin:1.1.0")
     implementation("org.apache.commons:commons-compress:1.22")
