@@ -21,25 +21,32 @@ package com.hedera.mirror.importer.migration;
  */
 
 import com.google.common.base.Stopwatch;
+import java.util.Map;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.MirrorProperties.HederaNetwork;
 
 @Named
 @RequiredArgsConstructor(onConstructor_ = {@Lazy})
 public class RecalculatePendingRewardMigration extends MirrorBaseJavaMigration {
 
+    static final Map<HederaNetwork, Long> FIRST_NONZERO_REWARD_RATE_TIMESTAMP = Map.of(
+            HederaNetwork.MAINNET, 1666310400447390002L,
+            HederaNetwork.TESTNET, 1659139200596847383L
+    );
+
     // Recalculate pending reward since for some staking periods it's accumulated more than one time.
-    // Note 1666310400447390002 is the consensus timestamp of the first node stake update tx after reward is activated
     private static final String MIGRATION_SQL = """
             with crypto_transfer as (
               select *
               from crypto_transfer
-              where consensus_timestamp > 1666310400447390002
+              where consensus_timestamp > :firstRewardTimestamp
             ), reward_rate as (
               select consensus_timestamp, epoch_day, node_id, reward_rate
               from node_stake
@@ -82,14 +89,14 @@ public class RecalculatePendingRewardMigration extends MirrorBaseJavaMigration {
             from pending_reward
             where entity_id = id;
             """;
-    private static final MigrationVersion VERSION = MigrationVersion.fromVersion("1.68.3");
+    private static final MigrationVersion VERSION = MigrationVersion.fromVersion("1.68.4");
 
-    private final JdbcTemplate jdbcTemplate;
+    private final NamedParameterJdbcOperations jdbcOperations;
     private final MirrorProperties mirrorProperties;
 
     @Override
     public String getDescription() {
-        return "Recalculate mainnet pending reward";
+        return "Recalculate pending reward";
     }
 
     @Override
@@ -99,12 +106,15 @@ public class RecalculatePendingRewardMigration extends MirrorBaseJavaMigration {
 
     @Override
     protected void doMigrate() {
-        if (mirrorProperties.getNetwork() != MirrorProperties.HederaNetwork.MAINNET) {
+        var network = mirrorProperties.getNetwork();
+        Long consensusTimestamp = FIRST_NONZERO_REWARD_RATE_TIMESTAMP.get(network);
+        if (consensusTimestamp == null) {
             return;
         }
 
         var stopwatch = Stopwatch.createStarted();
-        int count = jdbcTemplate.update(MIGRATION_SQL);
-        log.info("Recalculated pending reward for {} entities in {}", count, stopwatch);
+        var params = new MapSqlParameterSource("firstRewardTimestamp", consensusTimestamp);
+        int count = jdbcOperations.update(MIGRATION_SQL, params);
+        log.info("Recalculated pending reward for {} {} entities in {}", count, network, stopwatch);
     }
 }
