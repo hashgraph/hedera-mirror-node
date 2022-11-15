@@ -1954,6 +1954,10 @@ components:
               nullable: true
               type: string
               example: '0xabcd'
+            address:
+              description: The hex encoded evm address
+              example: "0x25fe26adc577cc89172e6156c9e24f7b9751b762"
+              type: string
             block_gas_used:
               description: The total amount of gas used in the block
               example: 2000
@@ -1976,10 +1980,6 @@ components:
               nullable: true
               type: string
               example: '0x0127'
-            address:
-              description: The hex encoded evm address
-              example: "0x25fe26adc577cc89172e6156c9e24f7b9751b762"
-              type: string
             failed_initcode:
               description: The hex encoded initcode of a failed contract create transaction
               example: "0x856739"
