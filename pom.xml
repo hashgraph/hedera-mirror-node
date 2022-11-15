@@ -84,8 +84,8 @@
         <msgpack.version>0.9.3</msgpack.version>
         <postgresql.version>42.4.1</postgresql.version>
         <protobuf.version>3.21.9</protobuf.version>
-        <release.version>0.69.0-SNAPSHOT</release.version> <!-- Used to replace release versions in all files -->
-        <release.chartVersion>0.69.0-SNAPSHOT</release.chartVersion>
+        <release.version>0.69.0-beta1</release.version> <!-- Used to replace release versions in all files -->
+        <release.chartVersion>0.69.0-beta1</release.chartVersion>
         <replacer.version>1.5.3</replacer.version>
         <snakeyaml.version>1.33</snakeyaml.version> <!-- Temporary fix for transient dependency security issue -->
         <!--suppress UnresolvedMavenProperty -->
