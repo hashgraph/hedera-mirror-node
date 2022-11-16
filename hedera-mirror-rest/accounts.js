@@ -355,8 +355,8 @@ const getOneAccount = async (req, res) => {
   }
 
   // Process the results of transaction query
-  const transferList = transactions.createTransferLists(transactionsResults.rows);
-  await transactions.addStakingRewardTransfers(transferList);
+  const stakingRewardTransfers = await transactions.getStakingRewardTransfers(transactionsResults.rows);
+  const transferList = transactions.createTransferLists(transactionsResults.rows, stakingRewardTransfers);
   ret.transactions = transferList.transactions;
   const {anchorSecNs} = transferList;
 

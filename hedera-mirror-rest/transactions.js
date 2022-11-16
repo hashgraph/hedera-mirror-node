@@ -284,9 +284,10 @@ const createNftTransferList = (nftTransferList) => {
  * Create transferlists from the output of SQL queries.
  *
  * @param {Array of objects} rows Array of rows returned as a result of an SQL query
+ * @param {Map} Staking reward transfers map
  * @return {{anchorSecNs: (String|number), transactions: {}}}
  */
-const createTransferLists = (rows) => {
+const createTransferLists = (rows, stakingRewardMap) => {
   const transactions = rows.map((row) => {
     const validStartTimestamp = row.valid_start_ns;
     const payerAccountId = EntityId.parse(row.payer_account_id).toString();
@@ -305,6 +306,7 @@ const createTransferLists = (rows) => {
       parent_consensus_timestamp: utils.nsToSecNs(row.parent_consensus_timestamp),
       result: TransactionResult.getName(row.result),
       scheduled: row.scheduled,
+      staking_reward_transfers: stakingRewardMap.get(row.consensus_timestamp),
       token_transfers: createTokenTransferList(row.token_transfer_list),
       transaction_hash: utils.encodeBase64(row.transaction_hash),
       transaction_id: utils.createTransactionId(payerAccountId, validStartTimestamp),
@@ -326,73 +328,49 @@ const createTransferLists = (rows) => {
  * Gets consensus_timestamps of the transactions that include a transfer from the staking reward account 800
  * transfers are found, the staking_reward_transfers property will be added to the associated transaction object.
  *
- * @param transferList transfer list
- * @return {[]|{string}[]}
+ * @param transactions transactions list
+ * @return {[]|{number}[]}
  */
-const getStakingRewardTimestamps = (transferList) => {
-  if (!transferList) {
-    return [];
-  }
-
-  return transferList.transactions
-    .map((t) => ({consensus_timestamp: t.consensus_timestamp, transfers: t.transfers}))
-    .filter(
-      (t) =>
-        !_.isEmpty(t.consensus_timestamp) && t.transfers.some((transfer) => transfer.account === STAKING_REWARD_ACCOUNT)
-    )
-    .map((t) => utils.parseTimestampParam(t.consensus_timestamp));
+const getStakingRewardTimestamps = (transactions) => {
+  return _.isNil(transactions)
+    ? []
+    : transactions
+        .filter(
+          (transaction) =>
+            !_.isNil(transaction.crypto_transfer_list) &&
+            transaction.crypto_transfer_list.some(
+              (cryptoTransfer) => cryptoTransfer.entity_id === StakingRewardTransfer.STAKING_REWARD_ACCOUNT
+            )
+        )
+        .map((transaction) => transaction.consensus_timestamp);
 };
 
 /**
  * Queries for the staking reward transfer list from the transfer list. If staking reward
  * transfers are found, the staking_reward_transfers property will be added to the associated transaction object.
  *
- * @param transferList transfer list
+ * @param transactions transactions list
+ * @return {Promise<Map>} Map<ConsensusTimestamp, StakingRewardTransfer>
  */
-const addStakingRewardTransfers = async (transferList) => {
-  const stakingRewardTimestamps = getStakingRewardTimestamps(transferList);
-  if (stakingRewardTimestamps.length === 0) {
-    return;
+const getStakingRewardTransfers = async (transactions) => {
+  const rewardsMap = new Map();
+  const stakingRewardTimestamps = getStakingRewardTimestamps(transactions);
+  if (_.isNil(stakingRewardTimestamps) || stakingRewardTimestamps.length === 0) {
+    return rewardsMap;
   }
 
   const positions = _.range(1, stakingRewardTimestamps.length + 1).map((position) => `$${position}`);
-  const whereClause = `where ${StakingRewardTransfer.CONSENSUS_TIMESTAMP} in (${positions.join(',')})`;
-  const query = `select ${StakingRewardTransfer.ACCOUNT_ID},
-                        ${StakingRewardTransfer.AMOUNT},
-                        ${StakingRewardTransfer.CONSENSUS_TIMESTAMP}
-                    from ${StakingRewardTransfer.tableName}
-                    ${whereClause}`;
-
+  const query = `
+    select ${StakingRewardTransfer.CONSENSUS_TIMESTAMP},
+           json_agg(json_build_object(
+             'account', ${StakingRewardTransfer.ACCOUNT_ID},
+             '${StakingRewardTransfer.AMOUNT}', ${StakingRewardTransfer.AMOUNT}))
+    from ${StakingRewardTransfer.tableName}
+    where ${StakingRewardTransfer.CONSENSUS_TIMESTAMP} in (${positions})
+    group by ${StakingRewardTransfer.CONSENSUS_TIMESTAMP}`;
   const {rows} = await pool.queryQuietly(query, stakingRewardTimestamps);
-  addStakingRewardsToTransfers(transferList, rows);
-};
-
-/**
- * Adds the staking_reward_transfers property to the associated transaction object.
- *
- * @param transferList transfer list
- * @param stakingRewardTransfers staking reward transfer objects
- */
-const addStakingRewardsToTransfers = (transferList, stakingRewardTransfers) => {
-  for (const stakingRewardTransfer of stakingRewardTransfers) {
-    const consensusTimestamp = utils.nsToSecNs(stakingRewardTransfer.consensus_timestamp);
-    const stakingTransactions = transferList.transactions.filter((t) => t.consensus_timestamp === consensusTimestamp);
-    if (stakingTransactions.length === 0) {
-      return;
-    }
-
-    for (const stakingTransaction of stakingTransactions) {
-      const stakingObject = {
-        account: stakingRewardTransfer.account_id,
-        amount: stakingRewardTransfer.amount,
-      };
-      if (stakingTransaction['staking_reward_transfers']) {
-        stakingTransaction.staking_reward_transfers.push(stakingObject);
-      } else {
-        stakingTransaction['staking_reward_transfers'] = [stakingObject];
-      }
-    }
-  }
+  rows.map((t) => rewardsMap.set(t.consensus_timestamp, t.json_agg));
+  return rewardsMap;
 };
 
 /**
@@ -663,8 +641,8 @@ const getTransactions = async (req, res) => {
 
   // Execute query
   const {rows, sqlQuery} = await pool.queryQuietly(query.query, query.params);
-  const transferList = createTransferLists(rows);
-  await addStakingRewardTransfers(transferList);
+  const stakingRewardMap = await getStakingRewardTransfers(rows);
+  const transferList = createTransferLists(rows, stakingRewardMap);
   const ret = {
     transactions: transferList.transactions,
   };
@@ -783,8 +761,9 @@ const getTransactionsByIdOrHash = async (req, res) => {
     throw new NotFoundError('Not found');
   }
 
-  const transferList = createTransferLists(rows);
-  await addStakingRewardTransfers(transferList);
+  const stakingRewardMap = await getStakingRewardTransfers(rows);
+  const transferList = createTransferLists(rows, stakingRewardMap);
+
   logger.debug(`getTransactionsByIdOrHash returning ${transferList.transactions.length} entries`);
   res.locals[constants.responseDataLabel] = {
     transactions: transferList.transactions,
@@ -793,6 +772,7 @@ const getTransactionsByIdOrHash = async (req, res) => {
 
 const transactions = {
   createTransferLists,
+  getStakingRewardTransfers,
   getTransactions,
   getTransactionsByIdOrHash,
   getTransactionsInnerQuery,
@@ -801,8 +781,6 @@ const transactions = {
 
 if (utils.isTestEnv()) {
   Object.assign(transactions, {
-    addStakingRewardsToTransfers,
-    addStakingRewardTransfers,
     buildWhereClause,
     createAssessedCustomFeeList,
     createCryptoTransferList,

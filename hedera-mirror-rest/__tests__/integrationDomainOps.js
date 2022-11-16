@@ -1118,6 +1118,9 @@ const addCryptoTransaction = async (cryptoTransfer) => {
   if (!('senderAccountId' in cryptoTransfer)) {
     cryptoTransfer.senderAccountId = cryptoTransfer.payerAccountId;
   }
+  if (!('payerAccountId' in cryptoTransfer)) {
+    cryptoTransfer.payerAccountId = cryptoTransfer.senderAccountId;
+  }
   if (!('amount' in cryptoTransfer)) {
     cryptoTransfer.amount = NODE_FEE;
   }
@@ -1526,21 +1529,13 @@ const addStakingRewardTransfer = async (transferInput) => {
   const payerAccountId = EntityId.parse(transferInput.payerAccountId).getEncodedId();
   const stakingRewardTransfer = {
     account_id: EntityId.parse(transferInput.accountId).getEncodedId(),
-    amount: 0,
-    consensus_timestamp: 0,
+    amount: 100,
+    consensus_timestamp: null,
     payer_account_id: payerAccountId,
     ...transferInput,
   };
 
   await insertDomainObject('staking_reward_transfer', insertFields, stakingRewardTransfer);
-  await insertTransfers(
-    'crypto_transfer',
-    transferInput.consensus_timestamp,
-    [{account: STAKING_REWARD_ACCOUNT, amount: transferInput.amount, is_approval: false}],
-    null,
-    payerAccountId,
-    null
-  );
 };
 
 const insertDomainObject = async (table, fields, obj) => {

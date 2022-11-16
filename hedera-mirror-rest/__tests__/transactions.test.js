@@ -27,7 +27,6 @@ import subject from '../transactions';
 import * as utils from '../utils';
 
 const {
-  addStakingRewardsToTransfers,
   buildWhereClause,
   createAssessedCustomFeeList,
   createCryptoTransferList,
@@ -649,6 +648,14 @@ describe('create transferLists', () => {
       },
     ];
 
+    const stakingTransfersMap = new Map()
+      .set(2, [
+        {account: 98, amount: 500},
+        {account: 99, amount: 200},
+      ])
+      .set(3, [{account: 99, amount: 100}])
+      .set(4, [{account: 97, amount: 10}]);
+
     const expectedNftTransfersList = [
       {
         receiver_account_id: '0.0.1000',
@@ -716,6 +723,16 @@ describe('create transferLists', () => {
         parent_consensus_timestamp: '0.000000001',
         result: 'SUCCESS',
         scheduled: false,
+        staking_reward_transfers: [
+          {
+            account: 98,
+            amount: 500,
+          },
+          {
+            account: 99,
+            amount: 200,
+          },
+        ],
         token_transfers: undefined,
         transaction_hash: 'hash',
         transaction_id: '0.0.3-1623787159-737799966',
@@ -730,7 +747,7 @@ describe('create transferLists', () => {
         valid_start_timestamp: '1623787159.737799966',
       },
     ];
-    expect(createTransferLists(transactionsFromDb).transactions).toEqual(expectedFormat);
+    expect(createTransferLists(transactionsFromDb, stakingTransfersMap).transactions).toEqual(expectedFormat);
   });
 });
 
@@ -1129,7 +1146,7 @@ describe('isValidTransactionHash', () => {
     });
   });
 });
-describe('getStakingRewardTransfersList', () => {
+describe('getStakingRewardTimestamps', () => {
   [
     {
       transactions: [
@@ -1167,281 +1184,34 @@ describe('getStakingRewardTransfersList', () => {
   });
 
   test('get staking timestamps', async () => {
-    const transferList = {
-      transactions: [
-        {
-          consensus_timestamp: '1565779604.000000002',
-          transfers: [
-            {
-              account: '0.0.800',
-              amount: 5000,
-              is_approval: false,
-            },
-          ],
-        },
-        {
-          consensus_timestamp: '1565779602.000000002',
-          transfers: [
-            {
-              account: '0.0.98',
-              amount: 1,
-              is_approval: false,
-            },
-          ],
-        },
-        {
-          consensus_timestamp: '1565779600.000000002',
-          transfers: [
-            {
-              account: '0.0.800',
-              amount: 5000,
-              is_approval: false,
-            },
-          ],
-        },
-      ],
-    };
-
-    const expected = ['1565779604000000002', '1565779600000000002'];
-    expect(getStakingRewardTimestamps(transferList)).toEqual(expected);
-  });
-
-  test('no staking rewards in db', async () => {
-    const transferList = {
-      transactions: [
-        {
-          consensus_timestamp: '1565779604.000000002',
-          transfers: [
-            {
-              account: '0.0.1820',
-              amount: 40,
-              is_approval: false,
-            },
-            {
-              account: '0.0.800',
-              amount: 5000,
-              is_approval: false,
-            },
-          ],
-        },
-      ],
-    };
-
-    const expected = {
-      transactions: [
-        {
-          consensus_timestamp: '1565779604.000000002',
-          transfers: [
-            {
-              account: '0.0.1820',
-              amount: 40,
-              is_approval: false,
-            },
-            {
-              account: '0.0.800',
-              amount: 5000,
-              is_approval: false,
-            },
-          ],
-        },
-      ],
-    };
-
-    addStakingRewardsToTransfers(transferList, []);
-    expect(transferList).toEqual(expected);
-  });
-
-  test('no matching staking rewards at consensus timestamp', async () => {
-    const transferList = {
-      transactions: [
-        {
-          consensus_timestamp: '1565779604.000000002',
-          transfers: [
-            {
-              account: '0.0.1820',
-              amount: 40,
-              is_approval: false,
-            },
-            {
-              account: '0.0.800',
-              amount: 5000,
-              is_approval: false,
-            },
-          ],
-        },
-      ],
-    };
-
-    const stakingRewardsRows = [
+    const transactions = [
       {
-        account_id: '0.0.8',
-        amount: 900,
-        consensus_timestamp: '1565779605000000002',
-        payerAccountId: '0.0.8',
+        consensus_timestamp: 1565779604000000002,
+        crypto_transfer_list: [
+          {
+            entity_id: 800,
+          },
+        ],
+      },
+      {
+        consensus_timestamp: 1565779602000000002,
+        crypto_transfer_list: [
+          {
+            entity_id: 98,
+          },
+        ],
+      },
+      {
+        consensus_timestamp: 1565779600000000002,
+        crypto_transfer_list: [
+          {
+            entity_id: 800,
+          },
+        ],
       },
     ];
 
-    const expected = {
-      transactions: [
-        {
-          consensus_timestamp: '1565779604.000000002',
-          transfers: [
-            {
-              account: '0.0.1820',
-              amount: 40,
-              is_approval: false,
-            },
-            {
-              account: '0.0.800',
-              amount: 5000,
-              is_approval: false,
-            },
-          ],
-        },
-      ],
-    };
-
-    addStakingRewardsToTransfers(transferList, stakingRewardsRows);
-    expect(transferList).toEqual(expected);
-  });
-
-  test('add staking rewards to transfers', async () => {
-    const transferList = {
-      transactions: [
-        {
-          consensus_timestamp: '1565779604.000000002',
-          transfers: [
-            {
-              account: '0.0.98',
-              amount: 1,
-              is_approval: false,
-            },
-            {
-              account: '0.0.1820',
-              amount: 40,
-              is_approval: false,
-            },
-            {
-              account: '0.0.800',
-              amount: 5000,
-              is_approval: false,
-            },
-          ],
-        },
-        {
-          consensus_timestamp: '1565779602.000000002',
-          transfers: [
-            {
-              account: '0.0.98',
-              amount: 1,
-              is_approval: false,
-            },
-          ],
-        },
-        {
-          consensus_timestamp: '1565779600.000000002',
-          transfers: [],
-        },
-      ],
-    };
-
-    const stakingRewardsRows = [
-      {
-        account_id: '0.0.8',
-        amount: 100,
-        consensus_timestamp: '1565779604000000002',
-        payerAccountId: '0.0.8',
-      },
-      {
-        account_id: '0.0.9',
-        amount: 200,
-        consensus_timestamp: '1565779604000000002',
-        payerAccountId: '0.0.9',
-      },
-      {
-        account_id: '0.0.10',
-        amount: 6000,
-        consensus_timestamp: '1565779600000000002',
-        payerAccountId: '0.0.9',
-      },
-      {
-        account_id: '0.0.11',
-        amount: 7000,
-        consensus_timestamp: '1565779600000000002',
-        payerAccountId: '0.0.9',
-      },
-      {
-        account_id: '0.0.12',
-        amount: 8000,
-        consensus_timestamp: '1565779600000000002',
-        payerAccountId: '0.0.9',
-      },
-    ];
-
-    const expected = {
-      transactions: [
-        {
-          consensus_timestamp: '1565779604.000000002',
-          staking_reward_transfers: [
-            {
-              account: '0.0.8',
-              amount: 100,
-            },
-            {
-              account: '0.0.9',
-              amount: 200,
-            },
-          ],
-          transfers: [
-            {
-              account: '0.0.98',
-              amount: 1,
-              is_approval: false,
-            },
-            {
-              account: '0.0.1820',
-              amount: 40,
-              is_approval: false,
-            },
-            {
-              account: '0.0.800',
-              amount: 5000,
-              is_approval: false,
-            },
-          ],
-        },
-        {
-          consensus_timestamp: '1565779602.000000002',
-          transfers: [
-            {
-              account: '0.0.98',
-              amount: 1,
-              is_approval: false,
-            },
-          ],
-        },
-        {
-          consensus_timestamp: '1565779600.000000002',
-          staking_reward_transfers: [
-            {
-              account: '0.0.10',
-              amount: 6000,
-            },
-            {
-              account: '0.0.11',
-              amount: 7000,
-            },
-            {
-              account: '0.0.12',
-              amount: 8000,
-            },
-          ],
-          transfers: [],
-        },
-      ],
-    };
-
-    addStakingRewardsToTransfers(transferList, stakingRewardsRows);
-    expect(transferList).toEqual(expected);
+    const expected = [1565779604000000002, 1565779600000000002];
+    expect(getStakingRewardTimestamps(transactions)).toEqual(expected);
   });
 });
