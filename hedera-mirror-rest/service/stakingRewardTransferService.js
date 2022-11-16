@@ -43,24 +43,7 @@ class StakingRewardTransferService extends BaseService {
     return rows.map((srt) => new StakingRewardTransfer(srt));
   }
 
-  conditionToWhereClause(condition) {
-    if (condition.key) {
-      if (condition.key === 'timestamp') {
-        return `${StakingRewardTransfer.getFullName(StakingRewardTransfer.CONSENSUS_TIMESTAMP)} ${condition.operator} ${
-          condition.value
-        }`;
-      }
-      return `${StakingRewardTransfer.getFullName(condition.key)} ${condition.operator} ${condition.value}`;
-    }
-    return condition;
-  }
-
-  getRewardsQuery(accountId, order, limit, whereConditions, whereParams) {
-    const params = Array.from(whereParams);
-    const conditionsArray = Array.from(whereConditions);
-    // if there is a "key" element inside the where condition, parse it accordingly.
-    //  Otherwise, just take the where condition's string value as a pre-parsed "where"-like clause.
-    const conditions = conditionsArray.map((condition) => this.conditionToWhereClause(condition));
+  getRewardsQuery(accountId, order, limit, conditions, params) {
     const query = [
       StakingRewardTransferService.listStakingRewardsByAccountIdQuery,
       conditions.length > 0 ? `and ${conditions.join(' and ')}` : '', // "and" since we already have "where account_id = $1" at the end of the above line

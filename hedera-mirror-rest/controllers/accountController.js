@@ -123,15 +123,14 @@ class AccountController extends BaseController {
    * Extracts SQL where conditions, params, order, and limit
    *
    * @param {[]} filters parsed and validated filters
-   * @param {accountId} - the unaliased account id to match staking rewards to.
    */
-  extractStakingRewardsQuery(filters, accountId) {
+  extractStakingRewardsQuery(filters) {
     let limit = defaultLimit;
     let order = orderFilterValues.DESC;
     const timestampInValues = [];
     const conditions = [];
     const params = [];
-    const startPosition = 3; // 1st index is reserved for account id; 2nd index is reservered for index.
+    const startPosition = 3; // caller will later insert accountId at $1 and limit at $2
 
     for (const filter of filters) {
       if (_.isNil(filter)) {
@@ -168,11 +167,8 @@ class AccountController extends BaseController {
       conditions,
       timestampInValues,
       StakingRewardTransfer.getFullName(StakingRewardTransfer.CONSENSUS_TIMESTAMP),
-      3 // $1: accountId, $2: limit. $3 onwards: "in" values.
+      startPosition + params.length
     );
-
-    // insert account id at $1, and limit (at $2)
-    params.unshift(accountId, limit);
 
     return {
       order,
@@ -195,7 +191,9 @@ class AccountController extends BaseController {
       throw new NotFoundError();
     }
     const filters = utils.buildAndValidateFilters(req.query);
-    const query = this.extractStakingRewardsQuery(filters, accountId);
+    const query = this.extractStakingRewardsQuery(filters);
+    // insert account id at $1, and limit (at $2)
+    query.params.unshift(accountId, query.limit);
     const stakingRewardsTransfers = await StakingRewardTransferService.getRewards(
       accountId,
       query.order,

@@ -77,7 +77,7 @@ describe('getRewardsQuery', () => {
       accountId: 3333,
       order: 'desc',
       limit: 25,
-      whereConditions: [{key: 'timestamp', operator: '=', value: 1000}],
+      whereConditions: ['srt.consensus_timestamp = 1000'],
       whereParams: [],
       expected: {
         sqlQuery:
@@ -93,7 +93,7 @@ describe('getRewardsQuery', () => {
       accountId: 3333,
       order: 'desc',
       limit: 25,
-      whereConditions: [{key: 'timestamp', operator: 'in', value: '(1000, 2000)'}],
+      whereConditions: ['srt.consensus_timestamp in (1000, 2000)'],
       whereParams: [],
       expected: {
         sqlQuery:
@@ -109,7 +109,7 @@ describe('getRewardsQuery', () => {
       accountId: 4444,
       order: 'desc',
       limit: 25,
-      whereConditions: [{key: 'timestamp', operator: '<', value: 2000}],
+      whereConditions: ['srt.consensus_timestamp < 2000'],
       whereParams: [],
       expected: {
         sqlQuery:
@@ -125,7 +125,7 @@ describe('getRewardsQuery', () => {
       accountId: 5555,
       order: 'desc',
       limit: 25,
-      whereConditions: [{key: 'timestamp', operator: '<=', value: 3000}],
+      whereConditions: ['srt.consensus_timestamp <= 3000'],
       whereParams: [],
       expected: {
         sqlQuery:
@@ -141,7 +141,7 @@ describe('getRewardsQuery', () => {
       accountId: 6666,
       order: 'desc',
       limit: 25,
-      whereConditions: [{key: 'timestamp', operator: '>', value: 4000}],
+      whereConditions: ['srt.consensus_timestamp > 4000'],
       whereParams: [],
       expected: {
         sqlQuery:
@@ -157,7 +157,7 @@ describe('getRewardsQuery', () => {
       accountId: 7777,
       order: 'desc',
       limit: 25,
-      whereConditions: [{key: 'timestamp', operator: '>=', value: 5000}],
+      whereConditions: ['srt.consensus_timestamp >= 5000'],
       whereParams: [],
       expected: {
         sqlQuery:
@@ -173,10 +173,7 @@ describe('getRewardsQuery', () => {
       accountId: 8888,
       order: 'desc',
       limit: 5,
-      whereConditions: [
-        {key: 'timestamp', operator: '>=', value: 3000},
-        {key: 'timestamp', operator: '<=', value: 5000},
-      ],
+      whereConditions: ['srt.consensus_timestamp >= 3000', 'srt.consensus_timestamp <= 5000'],
       whereParams: [],
       expected: {
         sqlQuery:

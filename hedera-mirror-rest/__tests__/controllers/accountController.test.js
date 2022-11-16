@@ -464,9 +464,12 @@ describe('extractStakingRewardsQuery', () => {
     order: constants.orderFilterValues.DESC,
     limit: defaultLimit,
     conditions: [],
-    params: [ownerAccountId, defaultLimit],
+    params: [],
   };
 
+  // the params in the following specs are just the "dynamic" parts of the query; the function
+  // "listStakingReardsByAccountId" in AccountController inserts the accountId at $1 and the limit at $2,
+  // at which point the conditions reflect the proper parameters.
   const specs = [
     {
       name: 'empty',
@@ -481,7 +484,7 @@ describe('extractStakingRewardsQuery', () => {
     {
       name: 'limit',
       filters: [{key: LIMIT, operator: eq, value: 60}],
-      expected: {...defaultExpected, limit: 60, params: [ownerAccountId, 60]},
+      expected: {...defaultExpected, limit: 60},
     },
     {
       name: 'timestamp eq',
@@ -489,7 +492,7 @@ describe('extractStakingRewardsQuery', () => {
       expected: {
         ...defaultExpected,
         conditions: ['srt.consensus_timestamp in ($3)'],
-        params: [1n, defaultLimit, 1000],
+        params: [1000],
       },
     },
     {
@@ -498,7 +501,7 @@ describe('extractStakingRewardsQuery', () => {
       expected: {
         ...defaultExpected,
         conditions: ['srt.consensus_timestamp > $3'],
-        params: [1n, defaultLimit, 2000],
+        params: [2000],
       },
     },
     {
@@ -507,7 +510,7 @@ describe('extractStakingRewardsQuery', () => {
       expected: {
         ...defaultExpected,
         conditions: ['srt.consensus_timestamp >= $3'],
-        params: [1n, defaultLimit, 3000],
+        params: [3000],
       },
     },
     {
@@ -516,7 +519,7 @@ describe('extractStakingRewardsQuery', () => {
       expected: {
         ...defaultExpected,
         conditions: ['srt.consensus_timestamp < $3'],
-        params: [1n, defaultLimit, 4000],
+        params: [4000],
       },
     },
     {
@@ -525,7 +528,7 @@ describe('extractStakingRewardsQuery', () => {
       expected: {
         ...defaultExpected,
         conditions: ['srt.consensus_timestamp <= $3'],
-        params: [1n, defaultLimit, 5000],
+        params: [5000],
       },
     },
     {
@@ -534,7 +537,7 @@ describe('extractStakingRewardsQuery', () => {
       expected: {
         ...defaultExpected,
         conditions: ['srt.consensus_timestamp in ($3,$4)'],
-        params: [1n, defaultLimit, 1000, 2000],
+        params: [1000, 2000],
       },
     },
     {
@@ -543,7 +546,7 @@ describe('extractStakingRewardsQuery', () => {
       expected: {
         ...defaultExpected,
         conditions: ['srt.consensus_timestamp in ($3,$4,$5)'],
-        params: [1n, defaultLimit, 1000, 2000, 3000],
+        params: [1000, 2000, 3000],
       },
     },
     {
@@ -557,7 +560,7 @@ describe('extractStakingRewardsQuery', () => {
       expected: {
         ...defaultExpected,
         conditions: ['srt.consensus_timestamp >= $3', 'srt.consensus_timestamp <= $4'],
-        params: [1n, 60, 3000, 5000],
+        params: [3000, 5000],
         order: 'asc',
         limit: 60,
       },
