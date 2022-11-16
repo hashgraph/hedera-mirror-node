@@ -47,7 +47,7 @@ import com.hedera.mirror.importer.util.Utility;
 @EnabledIfV1
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
-@TestPropertySource(properties = "spring.flyway.target=1.68.2")
+@TestPropertySource(properties = "spring.flyway.target=1.68.2.1")
 class FixStakedBeforeEnabledMigrationTest extends IntegrationTest {
 
     private static final String[] ENTITY_FIELDS = new String[] {"id", "declineReward", "stakedNodeId",
