@@ -29,6 +29,9 @@ spec:
     - kind: HelmRelease
       name: '*'
       namespace: staging-sm
+    - kind: HelmRelease
+      name: '*'
+      namespace: staging-lg
     - kind: Kustomization
       name: '*'
       namespace: flux-system
