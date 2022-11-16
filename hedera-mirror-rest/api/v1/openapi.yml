@@ -2728,6 +2728,27 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/ServiceEndpoint'
+    StakingRewardTransfer:
+      type: object
+      description: A staking reward transfer
+      required:
+        - account
+        - amount
+      properties:
+        - account:
+            type: string
+            nullable: false
+        - amount:
+            format: int64
+            type: integer
+            nullable: false
+      example:
+        account: 1234
+        amount: 1000
+    StakingRewardTransfers:
+        type: array
+        items:
+            $ref: '#/components/schemas/StakingRewardTransfer'
     Timestamp:
       type: string
       example: "1586567700.453054000"
@@ -3074,18 +3095,7 @@ components:
         scheduled:
           type: boolean
         staking_reward_transfers:
-          type: array
-          items:
-            type: object
-            properties:
-              account:
-                $ref: '#/components/schemas/EntityId'
-              amount:
-                format: int64
-                type: integer
-            required:
-              - account
-              - amount
+          $ref: '#/components/schemas/StakingRewardTransfers'
         token_transfers:
           type: array
           items:
@@ -3142,9 +3152,9 @@ components:
         result: SUCCESS
         scheduled: false
         staking_reward_transfers:
-          - account: 0.0.3
+          - account: 3
             amount: 150
-          - account: 0.0.4
+          - account: 9
             amount: 200
         transaction_hash: "vigzKe2J7fv4ktHBbNTSzQmKq7Lzdq1/lJMmHT+a2KgvdhAuadlvS4eKeqKjIRmW"
         transaction_id: 0.0.8-1234567890-000000006
@@ -3247,9 +3257,9 @@ components:
         result: SUCCESS
         scheduled: false
         staking_reward_transfers:
-          - account: 0.0.3
+          - account: 3
             amount: 200
-          - account: 0.0.9
+          - account: 9
             amount: 300
         transaction_hash: "vigzKe2J7fv4ktHBbNTSzQmKq7Lzdq1/lJMmHT+a2KgvdhAuadlvS4eKeqKjIRmW"
         transaction_id: 0.0.8-1234567890-000000006
