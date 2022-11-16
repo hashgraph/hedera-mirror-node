@@ -7,5 +7,8 @@ then
   export PATH="${PATH}:node/"
 fi
 
+npm run pretest && git diff --quiet __tests__/integration/*.js \
+  || { echo "Please stage the changes in hedera-mirror-rest/__tests__/integration/*.js"; exit 1; }
+
 npx --no-install pretty-quick --staged
 
