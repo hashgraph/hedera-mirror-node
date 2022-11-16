@@ -67,7 +67,7 @@ class MirrorEntityAccessTest {
     @Test
     void isUsableWithPositiveBalance() {
         final long balance = 23L;
-        when(entityRepository.findByIdAndDeletedFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
+        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
         when(entity.getBalance()).thenReturn(balance);
         final var result = mirrorEntityAccess.isUsable(ADDRESS);
         assertThat(result).isTrue();
@@ -76,7 +76,7 @@ class MirrorEntityAccessTest {
     @Test
     void isUsableWithNegativeBalance() {
         final long balance = -1L;
-        when(entityRepository.findByIdAndDeletedFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
+        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
         when(entity.getBalance()).thenReturn(balance);
         final var result = mirrorEntityAccess.isUsable(ADDRESS);
         assertThat(result).isFalse();
@@ -92,7 +92,7 @@ class MirrorEntityAccessTest {
     @Test
     void getBalance() {
         final long balance = 23L;
-        when(entityRepository.findByIdAndDeletedFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
+        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
         when(entity.getBalance()).thenReturn(balance);
         final var result = mirrorEntityAccess.getBalance(ADDRESS);
         assertThat(result).isEqualTo(balance);
@@ -100,7 +100,7 @@ class MirrorEntityAccessTest {
 
     @Test
     void getBalanceForAccountWithEmptyOne() {
-        when(entityRepository.findByIdAndDeletedFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
+        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
         final var result = mirrorEntityAccess.getBalance(ADDRESS);
         assertThat(result).isZero();
     }
@@ -114,7 +114,7 @@ class MirrorEntityAccessTest {
 
     @Test
     void isTokenAccount() {
-        when(entityRepository.findByIdAndDeletedFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
+        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
         when(entity.getType()).thenReturn(EntityType.TOKEN);
         final var result = mirrorEntityAccess.isTokenAccount(ADDRESS);
         assertThat(result).isTrue();
@@ -122,7 +122,7 @@ class MirrorEntityAccessTest {
 
     @Test
     void isNotATokenAccount() {
-        when(entityRepository.findByIdAndDeletedFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
+        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
         when(entity.getType()).thenReturn(EntityType.ACCOUNT);
         final var result = mirrorEntityAccess.isTokenAccount(ADDRESS);
         assertThat(result).isFalse();
@@ -137,7 +137,7 @@ class MirrorEntityAccessTest {
 
     @Test
     void getAlias() {
-        when(entityRepository.findByIdAndDeletedFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
+        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
         when(entity.getAlias()).thenReturn(DATA);
         final var result = mirrorEntityAccess.alias(ADDRESS);
         assertThat(result).isNotEqualTo(EMPTY);
@@ -145,7 +145,7 @@ class MirrorEntityAccessTest {
 
     @Test
     void getAliasForAccountWithEmptyOne() {
-        when(entityRepository.findByIdAndDeletedFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
+        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
         when(entity.getAlias()).thenReturn(new byte[] {});
         final var result = mirrorEntityAccess.alias(ADDRESS);
         assertThat(result).isEqualTo(EMPTY);

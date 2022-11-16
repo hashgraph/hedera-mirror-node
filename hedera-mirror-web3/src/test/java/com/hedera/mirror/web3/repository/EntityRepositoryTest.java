@@ -21,7 +21,7 @@ public class EntityRepositoryTest extends Web3IntegrationTest {
     void findByIdAndDeletedFalseSuccessfulCall() {
         Entity entity = entity();
         entityRepository.save(entity);
-        final var result = entityRepository.findByIdAndDeletedFalse(entityId);
+        final var result = entityRepository.findByIdAndDeletedIsFalse(entityId);
         assertThat(result).get().isEqualTo(entity);
     }
 
@@ -29,7 +29,7 @@ public class EntityRepositoryTest extends Web3IntegrationTest {
     void findByAliasAndDeletedFalseSuccessfulCall() {
         Entity entity = entity();
         entityRepository.save(entity);
-        final var result = entityRepository.findByAliasAndDeletedFalse(KEY);
+        final var result = entityRepository.findByAliasAndDeletedIsFalse(KEY);
         assertThat(result).get().isEqualTo(entity);
     }
 

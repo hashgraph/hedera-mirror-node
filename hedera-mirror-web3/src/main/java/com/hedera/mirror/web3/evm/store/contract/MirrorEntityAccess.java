@@ -93,9 +93,9 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
         final var addressBytes = address.toArrayUnsafe();
         if (isMirror(addressBytes)) {
             final var entityId = entityIdFromEvmAddress(address);
-            return entityRepository.findByIdAndDeletedFalse(entityId);
+            return entityRepository.findByIdAndDeletedIsFalse(entityId);
         } else {
-            return entityRepository.findByAliasAndDeletedFalse(addressBytes);
+            return entityRepository.findByAliasAndDeletedIsFalse(addressBytes);
         }
     }
 

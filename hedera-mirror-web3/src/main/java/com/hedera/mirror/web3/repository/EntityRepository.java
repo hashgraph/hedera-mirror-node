@@ -26,7 +26,7 @@ import org.springframework.data.repository.CrudRepository;
 import com.hedera.mirror.common.domain.entity.Entity;
 
 public interface EntityRepository extends CrudRepository<Entity, Long> {
-    Optional<Entity> findByIdAndDeletedFalse(Long entityId);
+    Optional<Entity> findByIdAndDeletedIsFalse(Long entityId);
 
-    Optional<Entity> findByAliasAndDeletedFalse(byte[] alias);
+    Optional<Entity> findByAliasAndDeletedIsFalse(byte[] alias);
 }
