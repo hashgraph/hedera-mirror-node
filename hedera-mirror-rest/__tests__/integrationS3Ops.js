@@ -36,8 +36,10 @@ class IntegrationS3Ops {
     const image = `${localstackImageName}:${localstackImageTag}`;
     logger.info(`Starting localstack docker container with image ${image}`);
     const container = await new GenericContainer(image)
-      .withEnv('SERVICES', 's3')
-      .withEnv('EAGER_SERVICE_LOADING', 1)
+      .withEnvironment({
+        SERVICES: 's3',
+        EAGER_SERVICE_LOADING: 1,
+      })
       .withExposedPorts(defaultS3Port)
       .start();
     logger.info('Started dockerized localstack');
