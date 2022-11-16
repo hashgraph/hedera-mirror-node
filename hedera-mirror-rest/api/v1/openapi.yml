@@ -2735,13 +2735,13 @@ components:
         - account
         - amount
       properties:
-        - account:
-            type: string
-            nullable: false
-        - amount:
-            format: int64
-            type: integer
-            nullable: false
+        account:
+          type: string
+          nullable: false
+        amount:
+          format: int64
+          type: integer
+          nullable: false
       example:
         account: 1234
         amount: 1000
