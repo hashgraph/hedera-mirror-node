@@ -214,7 +214,7 @@ class AccountController extends BaseController {
     if (response.rewards.length === query.limit) {
       const lastRow = _.last(response.rewards);
       const last = {
-        [filterKeys.TIMESTAMP]: lastRow.consensus_timestamp,
+        [filterKeys.TIMESTAMP]: lastRow.timestamp,
       };
       response.links.next = utils.getPaginationLink(req, false, last, query.order);
     }
