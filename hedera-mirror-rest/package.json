@@ -13,6 +13,7 @@
     "lint": "eslint --ignore-pattern node_modules/ --fix .",
     "postinstall": "node ./npm_scripts/postinstall.js",
     "start": "node --experimental-specifier-resolution=node server.js",
+    "pretest": "node --experimental-specifier-resolution=node __tests__/integration/generator.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --maxWorkers 2 --testPathPattern='__tests__/.*\\.test\\.js'"
   },
   "author": "Hedera Mirror Node Team",
@@ -116,6 +117,7 @@
       "<rootDir>/__tests__/"
     ],
     "globalSetup": "./__tests__/globalSetup.js",
+    "globalTeardown": "./__tests__/globalTeardown.js",
     "maxWorkers": "50%",
     "reporters": [
       "jest-standard-reporter",

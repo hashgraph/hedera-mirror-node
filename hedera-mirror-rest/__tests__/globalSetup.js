@@ -19,6 +19,9 @@
  */
 
 import crypto from 'crypto';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
 import pg from 'pg';
 import {GenericContainer} from 'testcontainers';
 
@@ -26,7 +29,7 @@ const DEFAULT_DB_NAME = 'mirror_node_integration';
 const POSTGRES_PORT = 5432;
 
 const v1DatabaseImage = 'postgres:14-alpine';
-const v2DatabaseImage = 'citusdata/citus:11.1.4-pg14';
+const v2DatabaseImage = 'citus:11.1.4-alpine-xin';
 
 const isV2Schema = () => process.env.MIRROR_NODE_SCHEMA === 'v2';
 
@@ -72,6 +75,10 @@ const createDbContainer = async (maxWorkers) => {
 
   await pool.end();
   console.info(`Created separate databases for each of ${maxWorkers} jest workers`);
+
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'migration-'));
+  process.env.MIGRATION_TMP_DIR = tmpDir;
+  console.info(`Created temp directory ${tmpDir} for migration status`);
 };
 
 const getDatabaseName = () => getDatabaseNameForWorker(process.env.JEST_WORKER_ID);
