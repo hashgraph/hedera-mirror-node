@@ -40,6 +40,7 @@ class EntityRepositoryTest extends Web3IntegrationTest {
         entity.setAlias(KEY);
         entity.setMemo("entity");
         entity.setNum(entityId);
+        entity.setDeclineReward(false);
         return entity;
     }
 }
