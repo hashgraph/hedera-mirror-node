@@ -20,7 +20,7 @@
 
 import {filterKeys} from '../constants';
 import EntityId from '../entityId';
-import {nsToSecNs, toHexString} from '../utils';
+import {nsToSecNs, toUint256} from '../utils';
 
 /**
  * Contract result state view model
@@ -36,8 +36,8 @@ class ContractStateViewModel {
     this.address = contractId.toEvmAddress();
     this.contract_id = contractId.toString();
     this.timestamp = nsToSecNs(contractState.modifiedTimestamp);
-    this.slot = toHexString(contractState.slot, true, 64);
-    this.value = toHexString(contractState.value, true, 64);
+    this.slot = toUint256(contractState.slot);
+    this.value = toUint256(contractState.value);
   }
 }
 
