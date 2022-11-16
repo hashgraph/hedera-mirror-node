@@ -29,19 +29,19 @@ import lombok.Data;
 @JsonTypeInfo(include = JsonTypeInfo.As.WRAPPER_OBJECT, use = JsonTypeInfo.Id.NAME)
 @JsonTypeName("_status")
 @Data
-public class ContractCallErrorResponse extends ContractCallResponse {
-    private List<Message> messages = new ArrayList<>();
+public class ContractCallErrorResponse implements ContractCallResponse {
+    private List<ErrorMessage> messages = new ArrayList<>();
 
     public ContractCallErrorResponse(String message) {
-        messages.add(new Message(message));
+        messages.add(new ErrorMessage(message));
     }
 
     public ContractCallErrorResponse(List<String> errorMessages) {
-        errorMessages.forEach(s -> this.messages.add(new Message(s)));
+        errorMessages.forEach(s -> this.messages.add(new ErrorMessage(s)));
     }
 
     @Data
-    public static class Message {
+    public static class ErrorMessage {
         private final String message;
     }
 }

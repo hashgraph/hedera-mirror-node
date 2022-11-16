@@ -24,7 +24,7 @@ import lombok.Data;
 import javax.validation.constraints.NotNull;
 
 @Data
-abstract class ContractCallSuccessfulResponse extends ContractCallResponse {
+abstract class ContractCallSuccessfulResponse implements ContractCallResponse {
     @NotNull
     private String gas;
     @NotNull
