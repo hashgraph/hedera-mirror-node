@@ -20,12 +20,18 @@ package com.hedera.mirror.web3.controller;
  * ‍
  */
 
+import javax.validation.constraints.NotEmpty;
 import lombok.Data;
 
 @Data
-public class JsonContractResponse {
-    private String result;
+public class ContractCallRequest {
+    private String block;
+    private String data;
+    private String from;
     private String gas;
-    //Adding a simple error field for the moment since the endpoints is not actively functioning
-    private String error;
+    private String gasPrice;
+    @NotEmpty
+    private String to;
+    private String value;
+    private boolean estimate;
 }

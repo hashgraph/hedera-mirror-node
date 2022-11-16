@@ -21,13 +21,12 @@ package com.hedera.mirror.web3.controller;
  */
 
 import lombok.Data;
+import javax.validation.constraints.NotNull;
 
 @Data
-public class JsonContractRequest {
-    private String data;
-    private String from;
+abstract class ContractCallSuccessfulResponse extends ContractCallResponse {
+    @NotNull
     private String gas;
-    private String gasPrice;
-    private String value;
+    @NotNull
+    private String result;
 }
-

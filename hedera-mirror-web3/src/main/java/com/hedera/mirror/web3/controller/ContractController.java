@@ -20,29 +20,43 @@ package com.hedera.mirror.web3.controller;
  * ‍
  */
 
+import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
+
 import javax.validation.Valid;
+import lombok.CustomLog;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.support.WebExchangeBindException;
 import reactor.core.publisher.Mono;
 
-@RequestMapping("/api/v1")
+@CustomLog
+@RequestMapping("/api/v1/contracts")
 @RestController
 public class ContractController {
 
-    @PostMapping(value = "/contracts/call")
-    public Mono<JsonContractResponse> api(@RequestBody @Valid JsonContractRequest request,
-                                          @RequestParam(required = false, name = "estimate") boolean estimate) {
-        return unsupportedOpResponse();
+    @PostMapping(value = "/call")
+    public Mono<ContractCallResponse> api(@RequestBody @Valid ContractCallRequest request) {
+        throw new UnsupportedOperationException("Operations eth_call and gas_estimate are not supported yet!");
     }
 
     //This is temporary method till eth_call and gas_estimate business logic got impl.
-    private Mono<JsonContractResponse> unsupportedOpResponse() {
-        final var errorMessage = "Operations eth_call and gas_estimate are not supported yet!";
-        final var jsonErrorResponse = new JsonContractResponse();
-        jsonErrorResponse.setError(errorMessage);
-        return Mono.just(jsonErrorResponse);
+    @ExceptionHandler
+    @ResponseStatus(NOT_IMPLEMENTED)
+    private Mono<ContractCallResponse> unsupportedOpResponse(UnsupportedOperationException e) {
+        return errorResponse(e);
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(NOT_IMPLEMENTED)
+    private Mono<ContractCallResponse> validationError(WebExchangeBindException e) {
+        return errorResponse(e);
+    }
+
+    private Mono<ContractCallResponse> errorResponse(Exception e) {
+        return Mono.just(new ContractCallErrorResponse(e.getMessage()));
     }
 }
