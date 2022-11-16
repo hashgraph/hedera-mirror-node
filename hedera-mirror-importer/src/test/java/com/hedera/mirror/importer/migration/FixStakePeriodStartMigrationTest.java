@@ -91,21 +91,22 @@ class FixStakePeriodStartMigrationTest extends IntegrationTest {
         // given
         long createdTimestamp = domainBuilder.timestamp();
         long updateTimestamp1 = createdTimestamp + Duration.ofDays(5).toNanos();
-        var entityHistory1 = domainBuilder.entityHistory()
+        var entityHistoryWrapper = domainBuilder.entityHistory()
                 .customize(e -> e.createdTimestamp(createdTimestamp)
                         .stakedNodeId(-1L)
                         .stakePeriodStart(-1L)
                         .timestampRange(Range.closedOpen(createdTimestamp, updateTimestamp1))
-                )
-                .persist();
+                );
+        var entityHistory1 = entityHistoryWrapper.persist();
         long rewardTimestamp1 = updateTimestamp1 + Duration.ofDays(2).toNanos();
         long rewardTimestamp2 = rewardTimestamp1 + Duration.ofDays(2).toNanos();
         long updateTimestamp2 = rewardTimestamp2 + Duration.ofDays(3).toNanos();
-        var builder = entityHistory1.toBuilder()
-                .stakedNodeId(0L)
-                .stakePeriodStart(Utility.getEpochDay(rewardTimestamp2))
-                .timestampRange(Range.closedOpen(updateTimestamp1, updateTimestamp2));
-        var entityHistory2 = domainBuilder.from(builder, builder::build).persist();
+        var entityHistory2 = entityHistoryWrapper
+                .customize(e -> e.stakedNodeId(0L)
+                        .stakePeriodStart(Utility.getEpochDay(rewardTimestamp2))
+                        .timestampRange(Range.closedOpen(updateTimestamp1, updateTimestamp2))
+                )
+                .persist();
         domainBuilder.stakingRewardTransfer()
                 .customize(t -> t.accountId(entityHistory1.getId()).consensusTimestamp(rewardTimestamp1))
                 .persist();

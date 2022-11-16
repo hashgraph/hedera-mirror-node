@@ -866,10 +866,6 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public <T, B> DomainWrapper<T, B> from(B builder, Supplier<T> supplier) {
-        return new DomainWrapperImpl<>(builder, supplier);
-    }
-
     public byte[] bloomFilter() {
         return bytes(LogsBloomAggregator.BYTE_SIZE);
     }
