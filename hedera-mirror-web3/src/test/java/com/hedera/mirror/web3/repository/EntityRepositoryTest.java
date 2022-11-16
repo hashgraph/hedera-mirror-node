@@ -23,7 +23,6 @@ public class EntityRepositoryTest extends Web3IntegrationTest {
         entityRepository.save(entity);
         final var result = entityRepository.findByIdAndDeletedFalse(entityId);
         assertThat(result).get().isEqualTo(entity);
-
     }
 
     @Test
