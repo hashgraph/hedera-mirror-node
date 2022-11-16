@@ -33,7 +33,7 @@ import (
 )
 
 func TestLiveness(t *testing.T) {
-	healthController, err := NewHealthController(config.Db{})
+	healthController, err := NewHealthController(&config.Config{})
 	require.NoError(t, err)
 
 	req := httptest.NewRequest("GET", "http://localhost"+livenessPath, nil)
@@ -56,7 +56,7 @@ func TestReadiness(t *testing.T) {
 	}{{
 		status: health.StatusUnavailable,
 	}} {
-		healthController, err := NewHealthController(config.Db{})
+		healthController, err := NewHealthController(&config.Config{Port: 80})
 		require.NoError(t, err)
 
 		req := httptest.NewRequest("GET", "http://localhost"+readinessPath, nil)
