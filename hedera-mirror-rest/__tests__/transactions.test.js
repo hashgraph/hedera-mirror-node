@@ -1148,42 +1148,35 @@ describe('isValidTransactionHash', () => {
 });
 describe('getStakingRewardTimestamps', () => {
   [
-    {
-      transactions: [
-        {
-          transfers: [
-            {
-              account: '0.0.800',
-              amount: 1,
-              is_approval: false,
-            },
-          ],
-        },
-      ],
-    },
+    [
+      {
+        consensus_timestamp: 1565779604000000002,
+        crypto_transfer_list: [
+          {
+            entity_id: 801,
+          },
+        ],
+      },
+    ],
+    [
+      {
+        crypto_transfer_list: [
+          {
+            entity_id: 800,
+          },
+        ],
+      },
+    ],
     null,
     undefined,
-    {transactions: []},
-    {
-      transactions: [
-        {
-          transfers: [
-            {
-              account: '0.0.98',
-              amount: 1,
-              is_approval: false,
-            },
-          ],
-        },
-      ],
-    },
-  ].forEach((transferList) => {
-    test(`'${transferList}'`, () => {
-      expect(getStakingRewardTimestamps(transferList)).toEqual([]);
+    [],
+  ].forEach((transactions) => {
+    test(`'${transactions}'`, () => {
+      expect(getStakingRewardTimestamps(transactions)).toEqual([]);
     });
   });
 
-  test('get staking timestamps', async () => {
+  test('get staking timestamps', () => {
     const transactions = [
       {
         consensus_timestamp: 1565779604000000002,
