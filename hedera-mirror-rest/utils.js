@@ -891,11 +891,13 @@ const addHexPrefix = (hexData) => {
  * @returns {String|null}
  */
 const toUint256 = (val) => {
-  if (val == null) {
+  if (_.isNil(val)) {
     return null;
   }
 
-  val = val.length ? val : Buffer.alloc(1);
+  if (!val.length) {
+    return constants.ZERO_UINT256;
+  }
 
   return toHexString(val, true, 64);
 };
