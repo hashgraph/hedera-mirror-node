@@ -8,7 +8,7 @@ import com.hedera.mirror.web3.Web3IntegrationTest;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
-public class EntityRepositoryTest extends Web3IntegrationTest {
+class EntityRepositoryTest extends Web3IntegrationTest {
 
     private Long entityId = 78L;
 
@@ -39,6 +39,7 @@ public class EntityRepositoryTest extends Web3IntegrationTest {
         entity.setDeleted(false);
         entity.setAlias(KEY);
         entity.setMemo("entity");
+        entity.setNum(entityId);
         return entity;
     }
 }

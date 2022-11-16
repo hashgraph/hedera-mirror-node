@@ -28,7 +28,7 @@ import com.hedera.mirror.web3.Web3IntegrationTest;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
-public class ContractStateRepositoryTest extends Web3IntegrationTest {
+class ContractStateRepositoryTest extends Web3IntegrationTest {
 
     private Long contractId = 78L;
     private static final byte[] KEY_VALUE = new byte[32];
