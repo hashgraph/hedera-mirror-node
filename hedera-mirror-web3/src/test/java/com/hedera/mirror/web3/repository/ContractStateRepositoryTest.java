@@ -35,7 +35,7 @@ class ContractStateRepositoryTest extends Web3IntegrationTest {
     private Long contractId = 78L;
     private static final byte[] KEY_VALUE = new byte[32];
 
-    private ContractStateRepository contractStateRepository;
+    private final ContractStateRepository contractStateRepository;
 
     @Test
     void findStorageSuccessfulCall() {

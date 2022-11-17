@@ -35,7 +35,7 @@ class ContractRepositoryTest extends Web3IntegrationTest {
     private Long contractId = 78L;
     private static final byte[] RUNTIME_CODE = new byte[20];
 
-    private ContractRepository contractRepository;
+    private final ContractRepository contractRepository;
 
     @Test
     void findRuntimeBytecodeSuccessfulCall() {

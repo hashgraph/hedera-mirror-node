@@ -43,7 +43,7 @@ class EntityRepositoryTest extends Web3IntegrationTest {
 
     private static final byte[] KEY = new byte[33];
 
-    private EntityRepository entityRepository;
+    private final EntityRepository entityRepository;
 
     @Test
     void findByIdAndDeletedIsFalseSuccessfulCall() {
