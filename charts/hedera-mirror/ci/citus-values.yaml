@@ -7,3 +7,6 @@ monitor:
   enabled: false
 postgresql:
   enabled: false
+rosetta:
+  test:
+    enabled: false
