@@ -26,7 +26,6 @@ describe('getRewardsQuery', () => {
   const specs = [
     {
       name: 'default',
-      accountId: 1111,
       order: 'desc',
       limit: 25,
       whereConditions: [],
@@ -42,7 +41,6 @@ describe('getRewardsQuery', () => {
     },
     {
       name: 'limit 100',
-      accountId: 1122,
       order: 'desc',
       limit: 100,
       whereConditions: [],
@@ -58,7 +56,6 @@ describe('getRewardsQuery', () => {
     },
     {
       name: 'order asc',
-      accountId: 2222,
       order: 'asc',
       limit: 25,
       whereConditions: [],
@@ -74,7 +71,6 @@ describe('getRewardsQuery', () => {
     },
     {
       name: 'timestamp eq',
-      accountId: 3333,
       order: 'desc',
       limit: 25,
       whereConditions: ['srt.consensus_timestamp = 1000'],
@@ -90,7 +86,6 @@ describe('getRewardsQuery', () => {
     },
     {
       name: 'timestamp in',
-      accountId: 3333,
       order: 'desc',
       limit: 25,
       whereConditions: ['srt.consensus_timestamp in (1000, 2000)'],
@@ -106,7 +101,6 @@ describe('getRewardsQuery', () => {
     },
     {
       name: 'timestamp lt',
-      accountId: 4444,
       order: 'desc',
       limit: 25,
       whereConditions: ['srt.consensus_timestamp < 2000'],
@@ -122,7 +116,6 @@ describe('getRewardsQuery', () => {
     },
     {
       name: 'timestamp lte',
-      accountId: 5555,
       order: 'desc',
       limit: 25,
       whereConditions: ['srt.consensus_timestamp <= 3000'],
@@ -138,7 +131,6 @@ describe('getRewardsQuery', () => {
     },
     {
       name: 'timestamp gt',
-      accountId: 6666,
       order: 'desc',
       limit: 25,
       whereConditions: ['srt.consensus_timestamp > 4000'],
@@ -154,7 +146,6 @@ describe('getRewardsQuery', () => {
     },
     {
       name: 'timestamp gte',
-      accountId: 7777,
       order: 'desc',
       limit: 25,
       whereConditions: ['srt.consensus_timestamp >= 5000'],
@@ -170,7 +161,6 @@ describe('getRewardsQuery', () => {
     },
     {
       name: 'multiple conditions',
-      accountId: 8888,
       order: 'desc',
       limit: 5,
       whereConditions: ['srt.consensus_timestamp >= 3000', 'srt.consensus_timestamp <= 5000'],
@@ -189,7 +179,6 @@ describe('getRewardsQuery', () => {
   specs.forEach((spec) => {
     test(spec.name, () => {
       const actual = StakingRewardTransferService.getRewardsQuery(
-        spec.accountId,
         spec.order,
         spec.limit,
         spec.whereConditions,

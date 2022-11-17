@@ -37,13 +37,13 @@ class StakingRewardTransferService extends BaseService {
     from ${StakingRewardTransfer.tableName} ${StakingRewardTransfer.tableAlias}
     where ${StakingRewardTransfer.getFullName(StakingRewardTransfer.ACCOUNT_ID)} = $1`;
 
-  async getRewards(accountId, order, limit, conditions, initParams) {
-    const {query, params} = this.getRewardsQuery(accountId, order, limit, conditions, initParams);
+  async getRewards(order, limit, conditions, initParams) {
+    const {query, params} = this.getRewardsQuery(order, limit, conditions, initParams);
     const rows = await super.getRows(query, params, 'getRewards');
     return rows.map((srt) => new StakingRewardTransfer(srt));
   }
 
-  getRewardsQuery(accountId, order, limit, conditions, params) {
+  getRewardsQuery(order, limit, conditions, params) {
     const query = [
       StakingRewardTransferService.listStakingRewardsByAccountIdQuery,
       conditions.length > 0 ? `and ${conditions.join(' and ')}` : '', // "and" since we already have "where account_id = $1" at the end of the above line

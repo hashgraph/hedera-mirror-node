@@ -195,7 +195,6 @@ class AccountController extends BaseController {
     // insert account id at $1, and limit (at $2)
     query.params.unshift(accountId, query.limit);
     const stakingRewardsTransfers = await StakingRewardTransferService.getRewards(
-      accountId,
       query.order,
       query.limit,
       query.conditions,
