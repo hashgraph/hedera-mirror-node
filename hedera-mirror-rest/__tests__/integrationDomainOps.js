@@ -61,6 +61,7 @@ const setup = async (testDataJson) => {
   await loadNodeStakes(testDataJson.nodestakes);
   await loadRecordFiles(testDataJson.recordFiles);
   await loadSchedules(testDataJson.schedules);
+  await loadStakingRewardTransfers(testDataJson.stakingRewardTransfers);
   await loadTopicMessages(testDataJson.topicmessages);
   await loadTokens(testDataJson.tokens);
   await loadTokenAccounts(testDataJson.tokenaccounts);
@@ -307,6 +308,16 @@ const loadSchedules = async (schedules) => {
 
   for (const schedule of schedules) {
     await addSchedule(schedule);
+  }
+};
+
+const loadStakingRewardTransfers = async (stakingRewardTransfers) => {
+  if (stakingRewardTransfers == null) {
+    return;
+  }
+
+  for (const stakingRewardTransfer of stakingRewardTransfers) {
+    await addStakingRewardTransfer(stakingRewardTransfer);
   }
 };
 
@@ -1193,6 +1204,23 @@ const addSchedule = async (schedule) => {
   );
 };
 
+const defaultStakingRewardTransfer = {
+  account_id: 1001,
+  amount: 100,
+  consensus_timestamp: null,
+  payer_account_id: 950,
+};
+
+const addStakingRewardTransfer = async (transfer) => {
+  const stakingRewardTransfer = {
+    ...defaultStakingRewardTransfer,
+    ...transfer,
+  };
+
+  const insertFields = ['account_id', 'amount', 'consensus_timestamp', 'payer_account_id'];
+  await insertDomainObject('staking_reward_transfer', insertFields, stakingRewardTransfer);
+};
+
 const addTransactionSignature = async (transactionSignature) => {
   await pool.query(
     `insert into transaction_signature (consensus_timestamp,
@@ -1531,24 +1559,26 @@ export default {
   addAccount,
   addCryptoTransaction,
   addNft,
+  addStakingRewardTransfer,
   addToken,
-  loadAddressBooks,
   loadAddressBookEntries,
   loadAddressBookServiceEndpoints,
-  loadContracts,
+  loadAddressBooks,
+  loadContractActions,
+  loadContractLogs,
   loadContractResults,
+  loadContractStateChanges,
+  loadContractStates,
+  loadContracts,
   loadCryptoAllowances,
   loadEntities,
+  loadEthereumTransactions,
   loadFileData,
   loadNetworkStakes,
   loadNodeStakes,
   loadRecordFiles,
+  loadStakingRewardTransfers,
   loadTransactions,
-  loadEthereumTransactions,
-  loadContractLogs,
-  loadContractStateChanges,
   setAccountBalance,
   setup,
-  loadContractActions,
-  loadContractStates,
 };

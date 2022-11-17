@@ -25,7 +25,7 @@ import * as utils from '../../utils';
 const {default: defaultLimit} = getResponseLimit();
 
 const {
-  filterKeys: {SERIAL_NUMBER, SPENDER_ID, TOKEN_ID, ORDER, LIMIT},
+  filterKeys: {SERIAL_NUMBER, SPENDER_ID, TOKEN_ID, ORDER, LIMIT, TIMESTAMP},
 } = constants;
 const {
   opsMap: {eq, gt, gte, lt, lte, ne},
@@ -55,6 +55,16 @@ const tokenIdGtFilter = {key: TOKEN_ID, operator: gt, value: 101};
 const tokenIdGteFilter = {key: TOKEN_ID, operator: gte, value: 102};
 const tokenIdLtFilter = {key: TOKEN_ID, operator: lt, value: 150};
 const tokenIdLteFilter = {key: TOKEN_ID, operator: lte, value: 151};
+
+// only used by staking rewards tests
+const timestampEqFilter = {key: TIMESTAMP, operator: eq, value: 1000};
+const timestampGtFilter = {key: TIMESTAMP, operator: gt, value: 2000};
+const timestampGteFilter = {key: TIMESTAMP, operator: gte, value: 3000};
+const timestampLtFilter = {key: TIMESTAMP, operator: lt, value: 4000};
+const timestampLteFilter = {key: TIMESTAMP, operator: lte, value: 5000};
+const timestampNeFilter = {key: TIMESTAMP, operator: ne, value: 6000};
+const timestampEqFilter2 = {key: TIMESTAMP, operator: eq, value: 2000};
+const timestampEqFilter3 = {key: TIMESTAMP, operator: eq, value: 3000};
 
 describe('extractNftMultiUnionQuery', () => {
   const defaultExpected = {
@@ -444,6 +454,138 @@ describe('extractTokenMultiUnionQuery throw', () => {
     test(spec.name, () => {
       expect(() =>
         AccountController.extractNftMultiUnionQuery(spec.filters, ownerAccountId)
+      ).toThrowErrorMatchingSnapshot();
+    });
+  });
+});
+
+describe('extractStakingRewardsQuery', () => {
+  const defaultExpected = {
+    order: constants.orderFilterValues.DESC,
+    limit: defaultLimit,
+    conditions: [],
+    params: [],
+  };
+
+  // the params in the following specs are just the "dynamic" parts of the query; the function
+  // "listStakingReardsByAccountId" in AccountController inserts the accountId at $1 and the limit at $2,
+  // at which point the conditions reflect the proper parameters.
+  const specs = [
+    {
+      name: 'empty',
+      filters: [],
+      expected: defaultExpected,
+    },
+    {
+      name: 'order asc',
+      filters: [{key: ORDER, operator: eq, value: 'asc'}],
+      expected: {...defaultExpected, order: 'asc'},
+    },
+    {
+      name: 'limit',
+      filters: [{key: LIMIT, operator: eq, value: 60}],
+      expected: {...defaultExpected, limit: 60},
+    },
+    {
+      name: 'timestamp eq',
+      filters: [timestampEqFilter],
+      expected: {
+        ...defaultExpected,
+        conditions: ['srt.consensus_timestamp in ($3)'],
+        params: [1000],
+      },
+    },
+    {
+      name: 'timestamp gt',
+      filters: [timestampGtFilter],
+      expected: {
+        ...defaultExpected,
+        conditions: ['srt.consensus_timestamp > $3'],
+        params: [2000],
+      },
+    },
+    {
+      name: 'timestamp gte',
+      filters: [timestampGteFilter],
+      expected: {
+        ...defaultExpected,
+        conditions: ['srt.consensus_timestamp >= $3'],
+        params: [3000],
+      },
+    },
+    {
+      name: 'timestamp lt',
+      filters: [timestampLtFilter],
+      expected: {
+        ...defaultExpected,
+        conditions: ['srt.consensus_timestamp < $3'],
+        params: [4000],
+      },
+    },
+    {
+      name: 'timestamp lte',
+      filters: [timestampLteFilter],
+      expected: {
+        ...defaultExpected,
+        conditions: ['srt.consensus_timestamp <= $3'],
+        params: [5000],
+      },
+    },
+    {
+      name: 'timestamp eq 1 and 2',
+      filters: [timestampEqFilter, timestampEqFilter2],
+      expected: {
+        ...defaultExpected,
+        conditions: ['srt.consensus_timestamp in ($3,$4)'],
+        params: [1000, 2000],
+      },
+    },
+    {
+      name: 'timestamp eq 1 and 2 and 3',
+      filters: [timestampEqFilter, timestampEqFilter2, timestampEqFilter3],
+      expected: {
+        ...defaultExpected,
+        conditions: ['srt.consensus_timestamp in ($3,$4,$5)'],
+        params: [1000, 2000, 3000],
+      },
+    },
+    {
+      name: 'all params',
+      filters: [
+        timestampGteFilter,
+        timestampLteFilter,
+        {key: LIMIT, operator: eq, value: 60},
+        {key: ORDER, operator: eq, value: 'asc'},
+      ],
+      expected: {
+        ...defaultExpected,
+        conditions: ['srt.consensus_timestamp >= $3', 'srt.consensus_timestamp <= $4'],
+        params: [3000, 5000],
+        order: 'asc',
+        limit: 60,
+      },
+    },
+  ];
+
+  specs.forEach((spec) => {
+    test(spec.name, () => {
+      expect(AccountController.extractStakingRewardsQuery(spec.filters, ownerAccountId)).toEqual(spec.expected);
+    });
+  });
+});
+
+describe('extractStakingRewardsQuery throw', () => {
+  const specs = [
+    {
+      name: 'timestamp ne',
+      filters: [timestampNeFilter],
+    },
+  ];
+
+  specs.forEach((spec) => {
+    test(spec.name, () => {
+      expect(() =>
+        AccountController.extractStakingRewardsQuery(spec.filters, ownerAccountId)
       ).toThrowErrorMatchingSnapshot();
     });
   });

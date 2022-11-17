@@ -30,6 +30,7 @@ const getPath = (path) => `/:${filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS}/${path}`;
 
 const resource = 'accounts';
 router.getAsync(getPath('nfts'), AccountController.getNftsByAccountId);
+router.getAsync(getPath('rewards'), AccountController.listStakingRewardsByAccountId);
 router.getAsync(getPath('allowances/crypto'), CryptoAllowanceController.getAccountCryptoAllowances);
 router.getAsync(getPath('allowances/tokens'), TokenAllowanceController.getAccountTokenAllowances);
 router.getAsync(getPath('tokens'), TokenController.getTokenRelationships);

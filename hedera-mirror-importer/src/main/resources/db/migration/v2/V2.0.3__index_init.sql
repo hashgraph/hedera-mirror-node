@@ -188,6 +188,8 @@ alter table sidecar_file
 -- staking_reward_transfer
 alter table staking_reward_transfer
     add constraint staking_reward_transfer__pk primary key (consensus_timestamp, account_id, payer_account_id);
+create index if not exists staking_reward_transfer__account_timestamp
+    on staking_reward_transfer (account_id, consensus_timestamp);
 
 -- token
 alter table token
