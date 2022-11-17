@@ -36,15 +36,38 @@ class EntityRepositoryTest extends Web3IntegrationTest {
 
     @Test
     void findByIdAndDeletedIsFalseSuccessfulCall() {
-        Entity entity = domainBuilder.entity().get();
-        entityRepository.save(entity);
+        Entity entity = domainBuilder.entity().persist();
         assertThat(entityRepository.findByIdAndDeletedIsFalse(entity.getId())).get().isEqualTo(entity);
     }
 
     @Test
-    void findByAliasAndDeletedIsFalseSuccessfulCall() {
-        Entity entity = domainBuilder.entity().get();
-        entityRepository.save(entity);
+    void findByIdAndDeletedIsFalseFailCall() {
+        Entity entity = domainBuilder.entity().persist();
+        long id = entity.getId();
+        assertThat(entityRepository.findByIdAndDeletedIsFalse(++id)).isEmpty();
+    }
+
+    @Test
+    void findByIdAndDeletedTrueCall() {
+        Entity entity = domainBuilder.entity().customize(e -> e.deleted(true)).persist();
+        assertThat(entityRepository.findByIdAndDeletedIsFalse(entity.getId())).isEmpty();
+    }
+
+    @Test
+    void findByEvmAddressAndDeletedIsFalseSuccessfulCall() {
+        Entity entity = domainBuilder.entity().persist();
         assertThat(entityRepository.findByEvmAddressAndDeletedIsFalse(entity.getEvmAddress())).get().isEqualTo(entity);
+    }
+
+    @Test
+    void findByEvmAddressAndDeletedIsFalseFailCall() {
+        domainBuilder.entity().persist();
+        assertThat(entityRepository.findByEvmAddressAndDeletedIsFalse(new byte[32])).isEmpty();
+    }
+
+    @Test
+    void findByEvmAddressAndDeletedTrueCall() {
+        Entity entity = domainBuilder.entity().customize(e -> e.deleted(true)).persist();
+        assertThat(entityRepository.findByEvmAddressAndDeletedIsFalse(entity.getEvmAddress())).isEmpty();
     }
 }

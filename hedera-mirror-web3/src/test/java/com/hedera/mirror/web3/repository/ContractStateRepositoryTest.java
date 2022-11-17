@@ -36,9 +36,21 @@ class ContractStateRepositoryTest extends Web3IntegrationTest {
 
     @Test
     void findStorageSuccessfulCall() {
-        ContractState contractState = domainBuilder.contractState().get();
-        contractStateRepository.save(contractState);
+        ContractState contractState = domainBuilder.contractState().persist();
         assertThat(contractStateRepository.findStorage(contractState.getContractId(), contractState.getSlot())).get()
                 .isEqualTo(contractState.getValue());
+    }
+
+    @Test
+    void findStorageFailCall() {
+        ContractState contractState = domainBuilder.contractState().persist();
+        long id = contractState.getContractId();
+        assertThat(contractStateRepository.findStorage(++id, contractState.getSlot())).isEmpty();
+    }
+
+    @Test
+    void findStorageDifferentSlotCall() {
+        ContractState contractState = domainBuilder.contractState().persist();
+        assertThat(contractStateRepository.findStorage(contractState.getContractId(), new byte[20])).isEmpty();
     }
 }
