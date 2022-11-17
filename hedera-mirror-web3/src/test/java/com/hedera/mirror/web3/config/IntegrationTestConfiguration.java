@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.repository;
+package com.hedera.mirror.web3.config;
 
 /*-
  * ‌
@@ -20,13 +20,18 @@ package com.hedera.mirror.web3.repository;
  * ‍
  */
 
-import java.util.Optional;
-import org.springframework.data.repository.CrudRepository;
+import javax.persistence.EntityManager;
+import org.springframework.context.annotation.Bean;
+import org.springframework.transaction.support.TransactionOperations;
+import org.springframework.boot.test.context.TestConfiguration;
 
-import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.DomainBuilder;
 
-public interface EntityRepository extends CrudRepository<Entity, Long> {
-    Optional<Entity> findByIdAndDeletedIsFalse(Long entityId);
+@TestConfiguration
+public class IntegrationTestConfiguration {
 
-    Optional<Entity> findByEvmAddressAndDeletedIsFalse(byte[] alias);
+    @Bean
+    DomainBuilder domainBuilder(EntityManager entityManager, TransactionOperations transactionOperations) {
+        return new DomainBuilder(entityManager, transactionOperations);
+    }
 }

@@ -93,7 +93,7 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
             final var entityId = entityIdFromEvmAddress(address);
             return entityRepository.findByIdAndDeletedIsFalse(entityId);
         } else {
-            return entityRepository.findByAliasAndDeletedIsFalse(addressBytes);
+            return entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes);
         }
     }
 

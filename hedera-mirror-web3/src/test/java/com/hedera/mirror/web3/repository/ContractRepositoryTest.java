@@ -32,22 +32,23 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class ContractRepositoryTest extends Web3IntegrationTest {
-    private Long contractId = 78L;
-    private static final byte[] RUNTIME_CODE = new byte[20];
 
     private final ContractRepository contractRepository;
 
     @Test
     void findRuntimeBytecodeSuccessfulCall() {
-        contractRepository.save(contract());
-        final var result = contractRepository.findRuntimeBytecode(contractId);
-        assertThat(result).get().isEqualTo(RUNTIME_CODE);
+        Contract contract = domainBuilder.contract().get();
+        contractRepository.save(contract);
+        assertThat(contractRepository.findRuntimeBytecode(contract.getId())).get()
+                .isEqualTo(contract.getRuntimeBytecode());
     }
 
-    private Contract contract() {
-        Contract contract = new Contract();
-        contract.setId(++contractId);
-        contract.setRuntimeBytecode(RUNTIME_CODE);
-        return contract;
+    @Test
+    void findRuntimeBytecodeFailCall() {
+        Contract contract = domainBuilder.contract().get();
+        contractRepository.save(contract);
+        Long id = contract.getId();
+        assertThat(contractRepository.findRuntimeBytecode(++id)).isEmpty();
     }
+
 }

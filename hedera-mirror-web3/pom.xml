@@ -123,6 +123,11 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>com.hedera</groupId>
+            <artifactId>hedera-mirror-common</artifactId>
+            <version>${release.version}</version>
+        </dependency>
+        <dependency>
             <groupId>io.projectreactor</groupId>
             <artifactId>reactor-test</artifactId>
             <scope>test</scope>

@@ -32,23 +32,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class ContractStateRepositoryTest extends Web3IntegrationTest {
 
-    private Long contractId = 78L;
-    private static final byte[] KEY_VALUE = new byte[32];
-
     private final ContractStateRepository contractStateRepository;
 
     @Test
     void findStorageSuccessfulCall() {
-        contractStateRepository.save(contractState());
-        final var result = contractStateRepository.findStorage(contractId, KEY_VALUE);
-        assertThat(result).get().isEqualTo(KEY_VALUE);
-    }
-
-    private ContractState contractState() {
-        ContractState contractState = new ContractState();
-        contractState.setContractId(++contractId);
-        contractState.setSlot(KEY_VALUE);
-        contractState.setValue(KEY_VALUE);
-        return contractState;
+        ContractState contractState = domainBuilder.contractState().get();
+        contractStateRepository.save(contractState);
+        assertThat(contractStateRepository.findStorage(contractState.getContractId(), contractState.getSlot())).get()
+                .isEqualTo(contractState.getValue());
     }
 }
