@@ -48,8 +48,7 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
 
     @Override
     public boolean isUsable(Address address) {
-        final var entity = findEntity(address);
-        return entity.isPresent() && entity.get().getBalance() > 0;
+        return findEntity(address).filter(e -> e.getBalance() > 0).isPresent();
     }
 
     @Override
@@ -65,8 +64,7 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
 
     @Override
     public boolean isTokenAccount(Address address) {
-        final var entity = findEntity(address);
-        return entity.isPresent() && entity.get().getType().equals(TOKEN);
+        return findEntity(address).filter(e -> e.getType() == TOKEN).isPresent();
     }
 
     @Override
