@@ -76,7 +76,7 @@ describe(`API specification tests - ${groupSpecPath}`, () => {
   };
 
   const getSpecs = () => {
-    const specPath = path.join(getModuleDirname(import.meta), 'specs', groupSpecPath);
+    const specPath = path.join(getModuleDirname(import.meta), '..', 'specs', groupSpecPath);
     const specMap = {};
 
     walk(specPath)

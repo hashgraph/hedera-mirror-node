@@ -26,7 +26,7 @@ import {getModuleDirname} from '../testutils';
 const mark = '$$GROUP_SPEC_PATH$$';
 
 const dirname = getModuleDirname(import.meta);
-const specsPath = path.join(dirname, 'specs');
+const specsPath = path.join(dirname, '..', 'specs');
 const template = fs.readFileSync(path.join(dirname, 'template.js')).toString();
 
 fs.readdirSync(specsPath, {withFileTypes: true})
