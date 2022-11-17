@@ -49,6 +49,7 @@ import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.file.FileData;
@@ -87,6 +88,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.SidecarFileRepository;
+import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
 @Named
@@ -347,10 +349,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     @Override
-    @SuppressWarnings({"java:S2259"}) // If nftTransferId is null, this will throw an NPE.  That behavior is correct, for that case.
+    @SuppressWarnings({"java:S2259"})
+    // If nftTransferId is null, this will throw an NPE.  That behavior is correct, for that case.
     public void onNftTransfer(NftTransfer nftTransfer) throws ImporterException {
         var nftTransferId = nftTransfer.getId();
-        if (nftTransferId.getSerialNumber() == NftTransferId.WILDCARD_SERIAL_NUMBER) { 
+        if (nftTransferId.getSerialNumber() == NftTransferId.WILDCARD_SERIAL_NUMBER) {
             flushNftState();
 
             long payerAccountId = nftTransfer.getPayerAccountId().getId();
@@ -390,6 +393,31 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     public void onStakingRewardTransfer(StakingRewardTransfer stakingRewardTransfer) {
         stakingRewardTransfers.add(stakingRewardTransfer);
+
+        long consensusTimestamp = stakingRewardTransfer.getConsensusTimestamp();
+        var current = entityState.get(stakingRewardTransfer.getAccountId());
+        if (current == null
+                || (current.getTimestampLower() != null && current.getTimestampLower() != consensusTimestamp)
+                || current.getStakePeriodStart() == null) {
+            // Set the stake period start when the entity is not in the state, or the current lower timestamp is
+            // different from the staking reward transfer's consensus timestamp, or the current stake period start is
+            // not set. Note the stake period start in all the cases is set to today - 1, so that when today ends, the
+            // account / contract will earn staking reward for today
+            long stakePeriodStart = Utility.getEpochDay(consensusTimestamp) - 1;
+            if (current != null) {
+                current.setStakePeriodStart(stakePeriodStart);
+                return;
+            }
+
+            // Create a non-history entity update when there's no such entity in state. The entity type is set to
+            // ACCOUNT, the upsert sql will correct it
+            var entity = Entity.builder()
+                    .id(stakingRewardTransfer.getAccountId())
+                    .stakePeriodStart(stakePeriodStart)
+                    .type(EntityType.ACCOUNT)
+                    .build();
+            onEntity(entity);
+        }
     }
 
     @Override

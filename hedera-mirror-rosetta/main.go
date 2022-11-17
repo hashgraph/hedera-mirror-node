@@ -121,7 +121,7 @@ func newBlockchainOnlineRouter(
 
 	accountAPIService := services.NewAccountAPIService(baseService, accountRepo, rosettaConfig.Shard, rosettaConfig.Realm)
 	accountAPIController := server.NewAccountAPIController(accountAPIService, asserter)
-	healthController, err := middleware.NewHealthController(rosettaConfig.Db)
+	healthController, err := middleware.NewHealthController(rosettaConfig)
 	metricsController := middleware.NewMetricsController()
 	if err != nil {
 		return nil, err
@@ -162,7 +162,7 @@ func newBlockchainOfflineRouter(
 		return nil, err
 	}
 	constructionAPIController := server.NewConstructionAPIController(constructionAPIService, asserter)
-	healthController, err := middleware.NewHealthController(rosettaConfig.Db)
+	healthController, err := middleware.NewHealthController(rosettaConfig)
 	if err != nil {
 		return nil, err
 	}

@@ -21,12 +21,17 @@
 package middleware
 
 import (
+	"context"
+	"fmt"
 	"time"
 
+	"github.com/coinbase/rosetta-sdk-go/client"
 	"github.com/coinbase/rosetta-sdk-go/server"
+	"github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/hashgraph/hedera-mirror-node/hedera-mirror-rosetta/app/config"
 	"github.com/hellofresh/health-go/v4"
 	"github.com/hellofresh/health-go/v4/checks/postgres"
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -41,19 +46,27 @@ type healthController struct {
 }
 
 // NewHealthController creates a new HealthController object
-func NewHealthController(dbConfig config.Db) (server.Router, error) {
+func NewHealthController(rosettaConfig *config.Config) (server.Router, error) {
 	livenessHealth, err := health.New()
 	if err != nil {
 		return nil, err
 	}
 
-	readinessHealth, err := health.New(health.WithChecks(health.Config{
-		Name:      "postgresql",
-		Timeout:   time.Second * 10,
-		SkipOnErr: false,
-		Check:     postgres.New(postgres.Config{DSN: dbConfig.GetDsn()}),
-	}))
-
+	readinessChecks := []health.Config{
+		{
+			Name:      "postgresql",
+			Timeout:   time.Second * 10,
+			SkipOnErr: false,
+			Check:     postgres.New(postgres.Config{DSN: rosettaConfig.Db.GetDsn()}),
+		},
+		{
+			Name:      "network",
+			Timeout:   time.Second * 10,
+			SkipOnErr: false,
+			Check:     checkNetworkStatus(rosettaConfig.Port),
+		},
+	}
+	readinessHealth, err := health.New(health.WithChecks(readinessChecks...))
 	if err != nil {
 		return nil, err
 	}
@@ -79,5 +92,28 @@ func (c *healthController) Routes() server.Routes {
 			readinessPath,
 			c.readinessHealth.HandlerFunc,
 		},
+	}
+}
+
+func checkNetworkStatus(port uint16) func(ctx context.Context) error {
+	serverUrl := fmt.Sprintf("http://localhost:%d", port)
+	cfg := client.NewConfiguration(serverUrl, "readiness-check", nil)
+	rosettaClient := client.NewAPIClient(cfg)
+
+	return func(ctx context.Context) (checkErr error) {
+		networkList, _, err := rosettaClient.NetworkAPI.NetworkList(ctx, &types.MetadataRequest{})
+		if err != nil {
+			log.Errorf("Readiness check, /network/list failed: %v", err)
+			return err
+		}
+
+		network := networkList.NetworkIdentifiers[0]
+		_, _, err = rosettaClient.NetworkAPI.NetworkStatus(ctx, &types.NetworkRequest{NetworkIdentifier: network})
+		if err != nil {
+			log.Errorf("Readiness check, /network/status failed: %v", err)
+			return err
+		}
+
+		return
 	}
 }

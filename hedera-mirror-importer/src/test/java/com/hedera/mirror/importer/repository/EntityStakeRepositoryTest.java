@@ -44,13 +44,18 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
 
     @ParameterizedTest
     @CsvSource({
-            ",,true",    // empty node_stake, empty entity_stake
-            ",5,true",   // empty node_stake, non-empty entity_stake
-            "5,,false",  // non-empty node_stake, empty entity_stake
-            "5,4,false", // node_stake is ahead of entity_stake
-            "5,5,true"   // entity_stake is up-to-date
+            ",,true,true",     // empty node_stake, empty entity_stake, has staking reward account
+            ",,false,true",    // empty node_stake, empty entity_stake, no staking reward account
+            ",5,true,true",    // empty node_stake, non-empty entity_stake, has staking reward account
+            ",5,false,true",   // empty node_stake, non-empty entity_stake, no staking reward account
+            "5,5,true,true",   // entity_stake is up-to-date, has staking reward account
+            "5,5,false,true",  // entity_stake is up-to-date, no staking reward account
+            "5,,true,false",   // non-empty node_stake, empty entity_stake, has staking reward account
+            "5,,false,true",   // non-empty node_stake, empty entity_stake, no staking reward account
+            "5,4,true,false",  // node_stake is ahead of entity_stake, has staking reward account
+            "5,4,false,true",  // node_stake is ahead of entity_stake, no staking reward account
     })
-    void updated(Long epochDay, Long endStakePeriod, boolean expected) {
+    void updated(Long epochDay, Long endStakePeriod, boolean hasStakingRewardAccount, boolean expected) {
         // given
         if (epochDay != null) {
             domainBuilder.nodeStake().customize(n -> n.epochDay(epochDay - 1)).persist();
@@ -58,7 +63,12 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
         }
 
         if (endStakePeriod != null) {
-            domainBuilder.entityStake().customize(e -> e.endStakePeriod(endStakePeriod)).persist();
+            domainBuilder.entityStake().customize(e -> e.id(800L).endStakePeriod(endStakePeriod)).persist();
+            domainBuilder.entityStake().customize(e -> e.id(801L).endStakePeriod(endStakePeriod - 1)).persist();
+        }
+
+        if (hasStakingRewardAccount) {
+            domainBuilder.entity().customize(e -> e.id(800L).num(800L)).persist();
         }
 
         // when
@@ -199,24 +209,24 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
 
     @ParameterizedTest
     @CsvSource({
-            "0, false, 1, -1, 15090000000, true, 1500",
-            "20, false, 1, -1, 15090000000, true, 1520",
-            "20, false, 1, -2, 15090000000, false, 1520",
-            "20, false, 1, 0, 15090000000, false, 1500",
-            "0, false, 1, 0, 0, false, 0",
-            "0, false, 2, 0, 15090000000, true, 0",
-            "20, false, 3, 0, 15090000000, true, 20", // no node stake for node 3, the pending reward keeps the same
-            "20, false, -1, , 15090000000, true, 0",
-            "0, true, 1, , 15090000000, true, 0",
+            "0, false, 1, -1, 15090000000, true, 1500",   // The first period the account earns reward
+            "20, false, 1, -2, 15090000000, true, 1520",  // Accumulate the newly earned reward
+            "20, false, 1, -2, 15090000000, false, 1520", // Accumulate the newly earned reward, contract
+            "20, false, 1, 0, 15090000000, false, 0",     // The account just started a new staking period, reset to 0
+            "0, false, 1, -1, 0, false, 0",               // The account has 0 stake total start, reward should be 0
+            "0, false, 2, -1, 15090000000, true, 0",      // The node reward rate is 0, reward should be 0
+            "20, false, 3, 0, 15090000000, true, 20",     // No node stake for node 3, the pending reward keeps the same
+            "20, false, -1, , 15090000000, true, 0",      // Not staked to a node
+            "0, true, 1, , 15090000000, true, 0",         // Decline reward start is true
     })
     void updateEntityStakePendingReward(long currentPendingReward, boolean declineRewardStart, long stakedNodeIdStart,
-                                        Long stakePeriodStartOffset, long stakeTotalStart, boolean isAccount,
+                                        Long stakePeriodStartOffset, long stakeTotalStart, boolean isAccountOrContract,
                                         long expectedPendingReward) {
         // given
         long nodeStakeEpochDay = 200L;
         long stakePeriodStart = stakePeriodStartOffset != null ? nodeStakeEpochDay + stakePeriodStartOffset : -1;
         var entity = domainBuilder.entity()
-                .customize(e -> e.stakePeriodStart(stakePeriodStart).type(isAccount ? ACCOUNT : CONTRACT))
+                .customize(e -> e.stakePeriodStart(stakePeriodStart).type(isAccountOrContract ? ACCOUNT : CONTRACT))
                 .persist();
         domainBuilder.entityStake()
                 .customize(es -> es.declineRewardStart(declineRewardStart)
@@ -228,18 +238,12 @@ class EntityStakeRepositoryTest extends AbstractRepositoryTest {
         // the entity timestamp lower is before node stake timestamp
         long timestamp = domainBuilder.timestamp();
         domainBuilder.nodeStake()
-                .customize(
-                        ns -> ns.consensusTimestamp(timestamp).epochDay(nodeStakeEpochDay).nodeId(1L).rewardRate(10L))
+                .customize(ns -> ns.consensusTimestamp(timestamp).epochDay(nodeStakeEpochDay).nodeId(1L).rewardRate(10L))
                 .persist();
         domainBuilder.nodeStake()
                 .customize(ns -> ns.consensusTimestamp(timestamp).epochDay(nodeStakeEpochDay).nodeId(2L).rewardRate(0L))
                 .persist();
-        long balanceTimestamp = timestamp - 1000L;
-        domainBuilder.accountBalanceFile().customize(abf -> abf.consensusTimestamp(balanceTimestamp)).persist();
-        domainBuilder.recordFile()
-                .customize(rf -> rf.consensusStart(balanceTimestamp - 100L).consensusEnd(balanceTimestamp + 100L)
-                        .hapiVersionMinor(25))
-                .persist();
+        domainBuilder.accountBalanceFile().customize(a -> a.consensusTimestamp(timestamp - 1000L)).persist();
         // The following two are old NodeStake, which shouldn't be used in pending reward calculation
         domainBuilder.nodeStake().customize(ns -> ns.consensusTimestamp(timestamp - 100).nodeId(1L)).persist();
         domainBuilder.nodeStake().customize(ns -> ns.consensusTimestamp(timestamp - 100).nodeId(2L)).persist();

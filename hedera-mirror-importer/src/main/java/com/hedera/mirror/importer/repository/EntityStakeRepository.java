@@ -33,10 +33,12 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
             with last_epoch_day as (
               select coalesce((select epoch_day from node_stake order by consensus_timestamp desc limit 1), -1) as epoch_day
             ), entity_stake_info as (
-              select coalesce((select end_stake_period from entity_stake limit 1), -1) as end_stake_period
+              select coalesce((select end_stake_period from entity_stake where id = 800), -1) as end_stake_period
+            ), staking_reward_account as (
+              select (select id from entity where id = 800) as account_id
             )
-            select epoch_day = -1 or epoch_day = end_stake_period
-            from last_epoch_day, entity_stake_info
+            select account_id is null or epoch_day = -1 or epoch_day = end_stake_period
+            from last_epoch_day, entity_stake_info, staking_reward_account
             """, nativeQuery = true)
     boolean updated();
 
@@ -50,13 +52,15 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
      * decline_reward_start is true (decline reward for the ending staking period), OR it didn't stake to a node for the
      * ending staking period, the new pending reward is 0
      * <p>
-     * 2.IF there is no node stake info for the node the entity staked to, the pending reward keeps the same
+     * 2. IF there is no node stake info for the node the entity staked to, the pending reward keeps the same
      * <p>
-     * 3. IF the current stake_period_start >= the last epochDay from node stake update (either its staking metadata
-     * or balance changed in the ending staking period), calculate the reward it has earned in the ending staking period
-     * as its pending reward
+     * 3. IF the current stake_period_start > last epochDay - 1, no reward's should be earned, set pending reward to 0
      * <p>
-     * 4. Otherwise, there's no staking metadata or balance change for the entity since the start of the ending staking
+     * 4. IF the current stake_period_start equals to the last epochDay (either its staking metadata or balance changed
+     * in the previous staking period), calculate the reward it has earned in the ending staking period as its pending
+     * reward
+     * <p>
+     * 5. Otherwise, there's no staking metadata or balance change for the entity since the start of the ending staking
      * period, add the reward earned in the ending period to the current as the new pending reward
      *
      * @return Number of entity state inserted and updated
@@ -97,7 +101,8 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
                         or coalesce(staked_node_id_start, -1) = -1
                         then 0
                    when reward_rate is null then pending_reward
-                   when ess.stake_period_start >= epoch_day
+                   when ess.stake_period_start > epoch_day - 1 then 0
+                   when ess.stake_period_start = epoch_day - 1
                         then reward_rate * (stake_total_start / 100000000)
                    else pending_reward + reward_rate * (stake_total_start / 100000000)
                   end) as pending_reward,
@@ -107,8 +112,9 @@ public interface EntityStakeRepository extends CrudRepository<EntityStake, Long>
                       else ess.balance + coalesce(ps.staked_to_me, 0)
                   end) as stake_total_start
               from entity_state_start ess
-              left join ending_period_stake_state on entity_id = ess.id
-              left join proxy_staking ps on ps.staked_account_id = ess.id, ending_period
+                left join ending_period_stake_state on entity_id = ess.id
+                left join proxy_staking ps on ps.staked_account_id = ess.id,
+                ending_period
             )
             insert into entity_stake
             table updated

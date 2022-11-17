@@ -46,6 +46,7 @@ import software.amazon.awssdk.services.s3.S3AsyncClient;
 
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.downloader.StreamSourceProperties;
+import com.hedera.mirror.importer.downloader.provider.LocalStreamFileProvider;
 import com.hedera.mirror.importer.downloader.provider.S3StreamFileProvider;
 import com.hedera.mirror.importer.downloader.provider.StreamFileProvider;
 
@@ -63,11 +64,11 @@ class CloudStorageConfiguration {
         var providers = new ArrayList<StreamFileProvider>();
 
         for (var source : commonDownloaderProperties.getSources()) {
-            var s3Client = switch (source.getType()) {
-                case GCP, S3 -> s3Client(source);
+            var provider = switch (source.getType()) {
+                case LOCAL -> new LocalStreamFileProvider(commonDownloaderProperties);
+                case GCP, S3 -> new S3StreamFileProvider(commonDownloaderProperties, s3Client(source));
             };
 
-            var provider = new S3StreamFileProvider(commonDownloaderProperties, s3Client);
             providers.add(provider);
         }
 

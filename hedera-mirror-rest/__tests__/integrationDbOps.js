@@ -69,6 +69,11 @@ const createPool = () => {
  * Run the SQL (non-java) based migrations stored in the Importer project against the target database.
  */
 const flywayMigrate = async () => {
+  if (isDbMigrated()) {
+    logger.info('Skipping flyway migration since db is already migrated');
+    return;
+  }
+
   const workerId = process.env.JEST_WORKER_ID;
   logger.info(`Using flyway CLI to construct schema for jest worker ${workerId}`);
   const dbConnectionParams = extractDbConnectionParams(process.env.INTEGRATION_DATABASE_URL);
@@ -130,7 +135,9 @@ const flywayMigrate = async () => {
   }
 
   execSync(`node ${exePath} -c ${flywayConfigPath} migrate`, {stdio: 'inherit'});
+  markDbMigrated();
 };
+
 
 function V2CreateTempFolder(locations) {
   const destination = path.join(os.tmpdir(), 'temp');
@@ -149,6 +156,13 @@ function V2CreateTempFolder(locations) {
   }
   return destination;
 }
+
+const getMigratedFilename = () => path.join(process.env.MIGRATION_TMP_DIR, `.${process.env.JEST_WORKER_ID}.migrated`);
+
+const isDbMigrated = () => fs.existsSync(getMigratedFilename());
+
+const markDbMigrated = () => fs.closeSync(fs.openSync(getMigratedFilename(), 'w'));
+
 
 const cleanupSql = fs.readFileSync(
   path.join(

@@ -20,7 +20,7 @@
 
 import {filterKeys} from '../constants';
 import EntityId from '../entityId';
-import {toHexString} from '../utils';
+import {toUint256} from '../utils';
 
 /**
  * Contract result state change view model
@@ -35,9 +35,9 @@ class ContractResultStateChangeViewModel {
     const contractId = EntityId.parse(contractStateChange.contractId, {paramName: filterKeys.CONTRACTID});
     this.address = contractId.toEvmAddress();
     this.contract_id = contractId.toString();
-    this.slot = toHexString(contractStateChange.slot, true, 64);
-    this.value_read = toHexString(contractStateChange.valueRead, true, 64);
-    this.value_written = toHexString(contractStateChange.valueWritten, true, 64);
+    this.slot = toUint256(contractStateChange.slot);
+    this.value_read = toUint256(contractStateChange.valueRead);
+    this.value_written = toUint256(contractStateChange.valueWritten);
   }
 }
 
