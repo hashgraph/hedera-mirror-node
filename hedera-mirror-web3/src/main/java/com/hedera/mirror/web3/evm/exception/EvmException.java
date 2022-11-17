@@ -20,7 +20,9 @@ package com.hedera.mirror.web3.evm.exception;
  * ‍
  */
 
-public abstract class EvmException extends RuntimeException {
+import com.hedera.mirror.common.exception.MirrorNodeException;
+
+public abstract class EvmException extends MirrorNodeException {
 
     protected EvmException(String message) {
         super(message);

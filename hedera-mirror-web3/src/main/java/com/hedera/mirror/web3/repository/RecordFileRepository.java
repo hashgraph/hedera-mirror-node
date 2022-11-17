@@ -37,8 +37,8 @@ public interface RecordFileRepository extends PagingAndSortingRepository<RecordF
     Optional<Long> findLatestIndex();
 
     @Cacheable(cacheNames = "record_file.index", cacheManager = CACHE_MANAGER_10MIN, unless = "#result == null")
-    @Query("select r from RecordFile r where r.index = ?1")
-    Optional<RecordFile> findByIndex(long index);
+    @Query("select r.hash from RecordFile r where r.index = ?1")
+    Optional<String> findHashByIndex(long index);
 
     @Cacheable(cacheNames = "record_file.latest", cacheManager = CACHE_MANAGER_500MS, unless = "#result == null")
     @Query(value = "select * from record_file order by consensus_end desc limit 1", nativeQuery = true)

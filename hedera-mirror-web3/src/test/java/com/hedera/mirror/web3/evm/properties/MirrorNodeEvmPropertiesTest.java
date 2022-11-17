@@ -1,39 +1,31 @@
 package com.hedera.mirror.web3.evm.properties;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import org.hyperledger.besu.datatypes.Address;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.junit4.SpringRunner;
 
-@ExtendWith(MockitoExtension.class)
+@RunWith(SpringRunner.class)
+@SpringBootTest
 class MirrorNodeEvmPropertiesTest {
-    private static final String EVM_VERSION = "v0.30";
-    private static final int REFUND = 20;
-    private static final Address ADDRESS = Address.fromHexString("0x4e4");
+    private static final String EVM_VERSION = "v0.32";
+    private static final int MAX_REFUND_PERCENT = 20;
+    private static final Address FUNDING_ADDRESS =
+            Address.fromHexString("0x0000000000000000000000000000000000000062");
 
+    @Autowired
     private MirrorNodeEvmProperties properties;
-
-    @BeforeEach
-    void setUp() {
-        properties = new MirrorNodeEvmProperties();
-    }
 
     @Test
     void correctPropertiesEvaluation() {
-        givenValues();
-        assertEquals(EVM_VERSION, properties.evmVersion());
-        assertFalse(properties.dynamicEvmVersion());
-        assertEquals(REFUND, properties.maxGasRefundPercentage());
-        assertEquals(ADDRESS, properties.fundingAccountAddress());
-    }
-
-    private void givenValues() {
-        properties.setEvmVersion(EVM_VERSION);
-        properties.setDynamicEvmVersion(false);
-        properties.setFundingAccount(ADDRESS);
-        properties.setMaxGasRefundPercentage(REFUND);
+        assertThat(properties.evmVersion()).isEqualTo(EVM_VERSION);
+        assertThat(properties.dynamicEvmVersion()).isFalse();
+        assertThat(properties.maxGasRefundPercentage()).isEqualTo(MAX_REFUND_PERCENT);
+        assertThat(properties.fundingAccountAddress()).isEqualTo(FUNDING_ADDRESS);
+        assertThat(properties.isRedirectTokenCallsEnabled()).isTrue();
     }
 }

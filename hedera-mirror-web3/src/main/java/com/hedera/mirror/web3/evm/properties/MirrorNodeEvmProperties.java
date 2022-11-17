@@ -26,13 +26,25 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 import com.hedera.services.evm.contracts.execution.EvmProperties;
 
+import org.springframework.validation.annotation.Validated;
+
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
+
 @Setter
+@Validated
 @ConfigurationProperties(prefix = "hedera.mirror.web3.evm")
 public class MirrorNodeEvmProperties implements EvmProperties {
-    private String evmVersion;
-    private Address fundingAccount;
-    private boolean dynamicEvmVersion;
-    private int maxGasRefundPercentage;
+    @NotBlank
+    private String evmVersion = "v0.32";
+    @NotBlank
+    private String fundingAccount = "0x0000000000000000000000000000000000000062";
+    private boolean dynamicEvmVersion = false;
+    @Min(1)
+    @Max(100)
+    private int maxGasRefundPercentage = 20;
+    private boolean directTokenCall = false;
 
     @Override
     public String evmVersion() {
@@ -41,7 +53,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Override
     public Address fundingAccountAddress() {
-        return fundingAccount;
+        return Address.fromHexString(fundingAccount);
     }
 
     @Override
@@ -52,5 +64,10 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Override
     public int maxGasRefundPercentage() {
         return maxGasRefundPercentage;
+    }
+
+    @Override
+    public boolean isRedirectTokenCallsEnabled() {
+        return directTokenCall;
     }
 }

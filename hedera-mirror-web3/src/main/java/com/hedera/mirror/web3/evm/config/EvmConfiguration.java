@@ -31,15 +31,14 @@ import org.springframework.context.annotation.Primary;
 
 @Configuration
 @EnableCaching
-public
-class EvmConfiguration {
+public class EvmConfiguration {
 
     public static final String CACHE_MANAGER_10MIN = "cacheManager10Min";
     public static final String CACHE_MANAGER_500MS = "cacheManager500Ms";
 
     @Bean(CACHE_MANAGER_10MIN)
     @Primary
-    CacheManager cacheManager10MIN() {
+    CacheManager cacheManager10Min() {
         final var caffeine =
                 Caffeine.newBuilder().expireAfterWrite(10, TimeUnit.MINUTES).maximumSize(10000);
         final CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
