@@ -20,6 +20,7 @@ package com.hedera.mirror.web3.controller;
  * ‍
  */
 
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
 
 import javax.validation.Valid;
@@ -39,24 +40,24 @@ import reactor.core.publisher.Mono;
 public class ContractController {
 
     @PostMapping(value = "/call")
-    public Mono<ContractCallResponse> api(@RequestBody @Valid ContractCallRequest request) {
+    public Mono<ContractCallResponse> call(@RequestBody @Valid ContractCallRequest request) {
         throw new UnsupportedOperationException("Operations eth_call and gas_estimate are not supported yet!");
     }
 
     //This is temporary method till eth_call and gas_estimate business logic got impl.
     @ExceptionHandler
     @ResponseStatus(NOT_IMPLEMENTED)
-    private Mono<ContractCallResponse> unsupportedOpResponse(UnsupportedOperationException e) {
+    private Mono<GenericErrorResponse> unsupportedOpResponse(UnsupportedOperationException e) {
         return errorResponse(e);
     }
 
     @ExceptionHandler
-    @ResponseStatus(NOT_IMPLEMENTED)
-    private Mono<ContractCallResponse> validationError(WebExchangeBindException e) {
+    @ResponseStatus(BAD_REQUEST)
+    private Mono<GenericErrorResponse> validationError(WebExchangeBindException e) {
         return errorResponse(e);
     }
 
-    private Mono<ContractCallResponse> errorResponse(Exception e) {
-        return Mono.just(new ContractCallErrorResponse(e.getMessage()));
+    private Mono<GenericErrorResponse> errorResponse(Exception e) {
+        return Mono.just(new GenericErrorResponse(e.getMessage()));
     }
 }

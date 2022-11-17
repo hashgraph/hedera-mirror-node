@@ -25,18 +25,19 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Data;
+import lombok.Value;
 
 @JsonTypeInfo(include = JsonTypeInfo.As.WRAPPER_OBJECT, use = JsonTypeInfo.Id.NAME)
 @JsonTypeName("_status")
-@Data
-public class ContractCallErrorResponse implements ContractCallResponse {
-    private List<ErrorMessage> messages = new ArrayList<>();
+@Value
+public class GenericErrorResponse {
+     List<ErrorMessage> messages = new ArrayList<>();
 
-    public ContractCallErrorResponse(String message) {
+    public GenericErrorResponse(String message) {
         messages.add(new ErrorMessage(message));
     }
 
-    public ContractCallErrorResponse(List<String> errorMessages) {
+    public GenericErrorResponse(List<String> errorMessages) {
         errorMessages.forEach(s -> this.messages.add(new ErrorMessage(s)));
     }
 

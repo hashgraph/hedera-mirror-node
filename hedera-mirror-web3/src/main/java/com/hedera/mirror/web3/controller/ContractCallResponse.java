@@ -20,8 +20,10 @@ package com.hedera.mirror.web3.controller;
  * ‍
  */
 
-import com.fasterxml.jackson.annotation.JsonIgnoreType;
+import lombok.Value;
 
-@JsonIgnoreType
-interface ContractCallResponse {
+@Value
+public class ContractCallResponse {
+    String gas;
+    String result;
 }

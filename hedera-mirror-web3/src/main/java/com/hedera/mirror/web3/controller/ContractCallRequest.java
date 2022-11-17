@@ -21,17 +21,17 @@ package com.hedera.mirror.web3.controller;
  */
 
 import javax.validation.constraints.NotEmpty;
-import lombok.Data;
+import lombok.Value;
 
-@Data
+@Value
 public class ContractCallRequest {
-    private String block;
-    private String data;
-    private String from;
-    private String gas;
-    private String gasPrice;
+    String block;
+    String data;
+    String from;
+    String gas;
+    String gasPrice;
     @NotEmpty
-    private String to;
-    private String value;
-    private boolean estimate;
+    String to;
+    String value;
+    boolean estimate;
 }
