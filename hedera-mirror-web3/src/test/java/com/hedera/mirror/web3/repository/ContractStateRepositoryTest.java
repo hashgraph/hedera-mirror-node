@@ -25,15 +25,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.hedera.mirror.common.domain.contract.ContractState;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 
-import javax.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class ContractStateRepositoryTest extends Web3IntegrationTest {
 
     private Long contractId = 78L;
     private static final byte[] KEY_VALUE = new byte[32];
 
-    @Resource
     private ContractStateRepository contractStateRepository;
 
     @Test

@@ -22,17 +22,19 @@ package com.hedera.mirror.web3.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import javax.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 
+import org.springframework.beans.factory.annotation.Autowired;
+
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class ContractRepositoryTest extends Web3IntegrationTest {
     private Long contractId = 78L;
     private static final byte[] RUNTIME_CODE = new byte[20];
 
-    @Resource
     private ContractRepository contractRepository;
 
     @Test
