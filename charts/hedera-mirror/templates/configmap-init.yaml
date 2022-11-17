@@ -93,6 +93,8 @@ data:
       update pg_dist_node_metadata SET metadata=jsonb_insert(metadata, '{docker}', 'true');
       insert into pg_dist_authinfo(nodeid, rolename, authinfo) values(1, '${POSTGRES_USER}', 'password=${POSTGRES_PASSWORD}');
       select citus_set_coordinator_host('${coordinator}', ${POSTGRESQL_PORT_NUMBER});
+      \c ${HEDERA_MIRROR_IMPORTER_DB_NAME}
+      create extension if not exists citus;
     EOSQL
 
     # Setup workers
@@ -113,6 +115,8 @@ data:
       psql -v ON_ERROR_STOP=1 --username "${POSTGRES_USER}" --dbname "${POSTGRES_DB}" -p "${POSTGRESQL_PORT_NUMBER}" <<-EOSQL
         insert into pg_dist_authinfo(nodeid, rolename, authinfo) values(${nodeid}, '${POSTGRES_USER}', 'password=${POSTGRES_PASSWORD}');
         select citus_add_node('${host}', ${POSTGRESQL_PORT_NUMBER});
+        \c ${HEDERA_MIRROR_IMPORTER_DB_NAME}
+        create extension if not exists citus;
     EOSQL
 
       ((id = id + 1))
