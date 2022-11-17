@@ -37,6 +37,7 @@ import NetworkSupplyViewModel from './networkSupplyViewModel';
 import NftTransactionHistoryViewModel from './nftTransactionHistoryViewModel';
 import NftTransferViewModel from './nftTransferViewModel';
 import NftViewModel from './nftViewModel';
+import StakingRewardTransferViewModel from './stakingRewardTransferViewModel';
 import TokenAllowanceViewModel from './tokenAllowanceViewModel';
 import TokenRelationshipViewModel from './tokenRelationshipViewModel';
 import TopicMessageViewModel from './topicMessageViewModel';
@@ -65,6 +66,7 @@ export {
   NftTransactionHistoryViewModel,
   NftTransferViewModel,
   NftViewModel,
+  StakingRewardTransferViewModel,
   TokenAllowanceViewModel,
   TokenRelationshipViewModel,
   TopicMessageViewModel,
