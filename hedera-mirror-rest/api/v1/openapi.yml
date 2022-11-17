@@ -2904,9 +2904,6 @@ components:
           nullable: false
         created_timestamp:
           $ref: '#/components/schemas/Timestamp'
-          description: Creation timestamp of the token account relationship.
-          example: 123456789.000000001
-          nullable: false
         freeze_status:
           type: string
           description: The Freeze status of the account.
@@ -2921,9 +2918,6 @@ components:
           nullable: false
         token_id:
           $ref: '#/components/schemas/EntityId'
-          description: Id of the token associated with the given account.
-          example: 0.0.27335
-          nullable: false
       required:
         - automatic_association
         - balance
