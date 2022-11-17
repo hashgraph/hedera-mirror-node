@@ -103,6 +103,7 @@ class CloudStorageConfiguration {
         return S3AsyncClient.builder()
                 .credentialsProvider(awsCredentialsProvider(sourceProperties))
                 .endpointOverride(sourceProperties.getUri())
+                .forcePathStyle(true)
                 .httpClient(httpClient)
                 .overrideConfiguration(c -> c.addExecutionInterceptor(metricsExecutionInterceptor))
                 .overrideConfiguration(overrideProject(sourceProperties))
