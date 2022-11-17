@@ -33,7 +33,6 @@ import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
-import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import com.hedera.mirror.importer.domain.StreamFileData;
@@ -93,8 +92,8 @@ final class CompositeStreamFileProvider implements StreamFileProvider {
         var exception = r.failure();
         log.warn("Attempt #{} failed: {}", r.totalRetries() + 1, exception.getMessage());
 
-        if (exception instanceof NoSuchKeyException) {
-            throw new TransientProviderException(exception);
+        if (exception instanceof TransientProviderException t) {
+            throw t;
         }
 
         // Ensure we always keep at least one provider available

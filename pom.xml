@@ -55,7 +55,7 @@
     </parent>
 
     <properties>
-        <besu.version>22.7.7</besu.version>
+        <besu.version>22.10.0</besu.version>
         <dependency-check.version>7.2.1</dependency-check.version>
         <disruptor.version>3.4.4</disruptor.version> <!-- Used for asynchronous logging -->
         <docker-maven-plugin.version>0.40.2</docker-maven-plugin.version>
@@ -65,7 +65,7 @@
         <docker.push.repository>gcr.io/mirrornode</docker.push.repository>
         <docker.resources>${project.build.directory}/container</docker.resources>
         <docker.tag.version>${release.version}</docker.tag.version>
-        <embedded.testcontainers.version>2.2.10</embedded.testcontainers.version>
+        <embedded.testcontainers.version>2.2.11</embedded.testcontainers.version>
         <flyway.version>8.5.9</flyway.version>
         <git-commit-id-plugin.version>4.0.4</git-commit-id-plugin.version>
         <grpc-spring-boot.version>2.13.1.RELEASE</grpc-spring-boot.version>
@@ -84,8 +84,8 @@
         <msgpack.version>0.9.3</msgpack.version>
         <postgresql.version>42.4.1</postgresql.version>
         <protobuf.version>3.21.9</protobuf.version>
-        <release.version>0.69.0-SNAPSHOT</release.version> <!-- Used to replace release versions in all files -->
-        <release.chartVersion>0.69.0-SNAPSHOT</release.chartVersion>
+        <release.version>0.70.0-SNAPSHOT</release.version> <!-- Used to replace release versions in all files -->
+        <release.chartVersion>0.70.0-SNAPSHOT</release.chartVersion>
         <replacer.version>1.5.3</replacer.version>
         <snakeyaml.version>1.33</snakeyaml.version> <!-- Temporary fix for transient dependency security issue -->
         <!--suppress UnresolvedMavenProperty -->
@@ -128,7 +128,7 @@
             <dependency>
                 <groupId>org.springframework.cloud</groupId>
                 <artifactId>spring-cloud-dependencies</artifactId>
-                <version>2021.0.4</version>
+                <version>2021.0.5</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>

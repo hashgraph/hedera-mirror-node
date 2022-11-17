@@ -33,9 +33,9 @@ dependencies {
     implementation("com.google.protobuf:protobuf-gradle-plugin:0.9.1")
     implementation("io.freefair.gradle:lombok-plugin:6.5.1")
     implementation("io.spring.gradle:dependency-management-plugin:1.1.0")
-    implementation("org.apache.commons:commons-compress:1.21")
+    implementation("org.apache.commons:commons-compress:1.22")
     implementation("org.gradle:test-retry-gradle-plugin:1.4.1")
     implementation("org.openapitools:openapi-generator-gradle-plugin:6.2.0")
-    implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:3.4.0.2513")
+    implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:3.5.0.2730")
     implementation("org.springframework.boot:spring-boot-gradle-plugin:2.7.5")
 }

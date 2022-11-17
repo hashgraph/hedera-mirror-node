@@ -37,8 +37,10 @@ const createDbContainer = async (maxWorkers) => {
   console.info(`Starting PostgreSQL docker container with image ${image}`);
 
   const dockerDb = await new GenericContainer(image)
-    .withEnv('POSTGRES_USER', dbAdminUser)
-    .withEnv('POSTGRES_PASSWORD', dbAdminPassword)
+    .withEnvironment({
+      POSTGRES_USER: dbAdminUser,
+      POSTGRES_PASSWORD: dbAdminPassword,
+    })
     .withExposedPorts(POSTGRES_PORT)
     .start();
   const host = dockerDb.getHost();
