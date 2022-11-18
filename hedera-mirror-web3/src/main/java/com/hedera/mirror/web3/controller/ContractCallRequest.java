@@ -20,18 +20,30 @@ package com.hedera.mirror.web3.controller;
  * ‍
  */
 
+import java.math.BigInteger;
+import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
 import lombok.Value;
 
 @Value
 public class ContractCallRequest {
     String block;
+
     String data;
+
     String from;
-    String gas;
-    String gasPrice;
+
+    @Min(0)
+    Long gas;
+
+    @Min(0)
+    Long gasPrice;
+
     @NotEmpty
     String to;
-    String value;
+
+    @Min(0)
+    BigInteger value;
+
     boolean estimate;
 }

@@ -20,6 +20,7 @@ package com.hedera.mirror.web3.controller;
  * ‍
  */
 
+import static com.hedera.mirror.web3.controller.ValidationErrorParser.parseValidationError;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
 
@@ -48,16 +49,16 @@ public class ContractController {
     @ExceptionHandler
     @ResponseStatus(NOT_IMPLEMENTED)
     private Mono<GenericErrorResponse> unsupportedOpResponse(UnsupportedOperationException e) {
-        return errorResponse(e);
+        return errorResponse(e.getMessage());
     }
 
     @ExceptionHandler
     @ResponseStatus(BAD_REQUEST)
     private Mono<GenericErrorResponse> validationError(WebExchangeBindException e) {
-        return errorResponse(e);
+        return errorResponse(parseValidationError(e));
     }
 
-    private Mono<GenericErrorResponse> errorResponse(Exception e) {
-        return Mono.just(new GenericErrorResponse(e.getMessage()));
+    private Mono<GenericErrorResponse> errorResponse(String errorMessage) {
+        return Mono.just(new GenericErrorResponse(errorMessage));
     }
 }

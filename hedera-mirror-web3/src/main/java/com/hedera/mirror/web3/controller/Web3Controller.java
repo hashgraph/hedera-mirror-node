@@ -20,19 +20,18 @@ package com.hedera.mirror.web3.controller;
  * ‍
  */
 
+import static com.hedera.mirror.web3.controller.ValidationErrorParser.parseValidationError;
+
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import javax.validation.Valid;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import org.springframework.core.codec.DecodingException;
-import org.springframework.validation.FieldError;
-import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -129,10 +128,7 @@ class Web3Controller {
     @ExceptionHandler
     Mono<JsonRpcResponse> validationError(WebExchangeBindException e) {
         log.warn("Validation error: {}", e.getMessage());
-        String message = e.getAllErrors()
-                .stream()
-                .map(this::formatError)
-                .collect(Collectors.joining(", "));
+        String message = parseValidationError(e);
         var errorResponse = new JsonRpcErrorResponse(JsonRpcErrorCode.INVALID_REQUEST, message);
         var target = e.getTarget();
 
@@ -141,14 +137,6 @@ class Web3Controller {
         } else {
             return response(errorResponse);
         }
-    }
-
-    private String formatError(ObjectError error) {
-        if (error instanceof FieldError) {
-            FieldError fieldError = (FieldError) error;
-            return fieldError.getField() + " field " + fieldError.getDefaultMessage();
-        }
-        return error.getDefaultMessage();
     }
 
     @Value
