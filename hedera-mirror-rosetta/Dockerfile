@@ -6,7 +6,7 @@ RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 go build -ldflags="-w -s -X main.Version=${VERSION}" -o hedera-mirror-rosetta
 
-FROM alpine:3.16.2
+FROM alpine:3.16.3
 EXPOSE 5700
 HEALTHCHECK --interval=10s --retries=5 --start-period=30s --timeout=2s CMD wget -q -O- http://localhost:5700/health/liveness
 WORKDIR /app
