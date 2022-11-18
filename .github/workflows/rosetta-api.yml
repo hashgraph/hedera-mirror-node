@@ -103,7 +103,7 @@ jobs:
 
       - name: Get Changed Files
         id: changed-files-module
-        uses: tj-actions/changed-files@v27
+        uses: tj-actions/changed-files@v34
         with:
           files: |
             .github/workflows/rosetta-api.yml
