@@ -36,15 +36,29 @@ import javax.validation.constraints.NotBlank;
 @Validated
 @ConfigurationProperties(prefix = "hedera.mirror.web3.evm")
 public class MirrorNodeEvmProperties implements EvmProperties {
+    private boolean directTokenCall = false;
+
+    private boolean dynamicEvmVersion = false;
+
     @NotBlank
     private String evmVersion = "v0.32";
+
     @NotBlank
     private String fundingAccount = "0x0000000000000000000000000000000000000062";
-    private boolean dynamicEvmVersion = false;
+
     @Min(1)
     @Max(100)
     private int maxGasRefundPercentage = 20;
-    private boolean directTokenCall = false;
+
+    @Override
+    public boolean isRedirectTokenCallsEnabled() {
+        return directTokenCall;
+    }
+
+    @Override
+    public boolean dynamicEvmVersion() {
+        return dynamicEvmVersion;
+    }
 
     @Override
     public String evmVersion() {
@@ -57,17 +71,8 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     }
 
     @Override
-    public boolean dynamicEvmVersion() {
-        return dynamicEvmVersion;
-    }
-
-    @Override
     public int maxGasRefundPercentage() {
         return maxGasRefundPercentage;
     }
 
-    @Override
-    public boolean isRedirectTokenCallsEnabled() {
-        return directTokenCall;
-    }
 }
