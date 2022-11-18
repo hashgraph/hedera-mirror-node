@@ -18,6 +18,7 @@
  * ‍
  */
 
+import _ from 'lodash';
 import {proto} from '@hashgraph/proto';
 import * as utils from '../utils';
 import config from '../config';
@@ -1807,5 +1808,32 @@ describe('toUint256', () => {
     expect(utils.toUint256(Buffer.from('1a72', 'hex'))).toEqual(
       '0x0000000000000000000000000000000000000000000000000000000000001a72'
     );
+  });
+});
+
+describe('calculateExpiryTimestamp', () => {
+  const autoRenewPeriod = 8000001; // ~92 days as seconds
+  test.each([
+    ['', '', '', '0.000000000'],
+    [null, null, null, null],
+    [undefined, undefined, undefined, null],
+    [undefined, undefined, 123, '0.000000123'],
+    [undefined, 1, 10, '0.000000010'],
+    [1, undefined, 10, '0.000000010'],
+    [1, 1, 10000000001, '10.000000001'],
+    [undefined, '1', undefined, null],
+    [1, undefined, undefined, null],
+    [1, '1.1', undefined, '1001.1'],
+    [autoRenewPeriod, '1668785933012', undefined, '1676785934012'],
+  ])('%s expect %s', (autoRenewPeriod, createdTimestamp, expirationTimestamp, expected) => {
+    expect(utils.calculateExpiryTimestamp(autoRenewPeriod, createdTimestamp, expirationTimestamp)).toEqual(expected);
+    if (!_.isNil(autoRenewPeriod) && !_.isNil(createdTimestamp) && _.isNil(expirationTimestamp)) {
+      const createdDate = new Date(Number(createdTimestamp));
+      const expiryDate = new Date(Number(expected));
+      const difference = expiryDate.getTime() - createdDate.getTime();
+      const differenceDays = difference / (1000 * 3600 * 24);
+      const autoRenewPeriodDays = autoRenewPeriod / (3600 * 24);
+      expect(differenceDays).toEqual(autoRenewPeriodDays);
+    }
   });
 });

@@ -43,6 +43,7 @@ const processRow = (row) => {
           timestamp: utils.nsToSecNs(row.consensus_timestamp),
           tokens: utils.parseTokenBalances(row.token_balances),
         };
+  const createdTimestamp = utils.nsToSecNs(row.created_timestamp);
   const entityId = EntityId.parse(row.id);
   let evmAddress = row.evm_address && utils.toHexString(row.evm_address, true);
   if (evmAddress === null && row.type === constants.entityTypes.CONTRACT) {
@@ -55,12 +56,12 @@ const processRow = (row) => {
     alias: base32.encode(row.alias),
     auto_renew_period: row.auto_renew_period,
     balance,
-    created_timestamp: utils.nsToSecNs(row.created_timestamp),
+    created_timestamp: createdTimestamp,
     decline_reward: row.decline_reward,
     deleted: row.deleted,
     ethereum_nonce: row.ethereum_nonce,
     evm_address: evmAddress,
-    expiry_timestamp: utils.nsToSecNs(row.expiration_timestamp),
+    expiry_timestamp: utils.calculateExpiryTimestamp(row.auto_renew_period, createdTimestamp, row.expiration_timestamp),
     key: utils.encodeKey(row.key),
     max_automatic_token_associations: row.max_automatic_token_associations,
     memo: row.memo,

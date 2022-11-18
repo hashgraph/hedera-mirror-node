@@ -17,6 +17,7 @@
         "timestamp_range": "[997654000123457,)"
       },
       {
+        "auto_renew_period": 1500,
         "created_timestamp": "987654111123456",
         "evm_address": "70f2b2914a2a4b783faefb75f459a580616fcb5e",
         "file_id": "5001",
@@ -54,12 +55,12 @@
           "key": "020202"
         },
         "auto_renew_account": null,
-        "auto_renew_period": null,
+        "auto_renew_period": 1500,
         "contract_id": "0.0.8002",
         "created_timestamp": "987654.111123456",
         "deleted": false,
         "evm_address": "0x70f2b2914a2a4b783faefb75f459a580616fcb5e",
-        "expiration_timestamp": null,
+        "expiration_timestamp": "2487654.111123456",
         "file_id": "0.0.5001",
         "max_automatic_token_associations": 0,
         "memo": "contract memo",

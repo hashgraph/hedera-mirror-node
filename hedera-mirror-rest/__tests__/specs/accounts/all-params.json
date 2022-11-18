@@ -28,8 +28,8 @@
         "realm": 1,
         "shard": 0,
         "public_key": "3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be",
-        "expiration_timestamp": 123456783,
         "auto_renew_period": 33333,
+        "created_timestamp": "9999123456789",
         "key": [3, 3, 3]
       },
       {
@@ -136,12 +136,12 @@
             }
           ]
         },
-        "created_timestamp": null,
+        "created_timestamp": "9999.123456789",
         "decline_reward": false,
         "deleted": false,
         "ethereum_nonce": null,
         "evm_address": null,
-        "expiry_timestamp": "0.123456783",
+        "expiry_timestamp": "33342999.123456787",
         "key": {
           "_type": "ProtobufEncoded",
           "key": "030303"

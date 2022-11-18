@@ -1097,6 +1097,24 @@ const buildComparatorFilter = (name, filter) => {
 };
 
 /**
+ * Calculates the expiryTimestamp.
+ * @param {int} autoRenewPeriod: seconds format
+ * @param {string} createdTimestamp: seconds.nnnnnnnnn format
+ * @param {BigInt} expirationTimestamp: nnnnnnnnn format
+ * @returns {String} seconds.nnnnnnnnn format
+ */
+const calculateExpiryTimestamp = (autoRenewPeriod, createdTimestamp, expirationTimestamp) => {
+  if (autoRenewPeriod === 1500) {
+    let i = 0;
+    i++;
+  }
+
+  return _.isNil(expirationTimestamp) && !_.isNil(createdTimestamp) && !_.isNil(autoRenewPeriod)
+    ? math.add(createdTimestamp, math.multiply(autoRenewPeriod, 1000)).toString()
+    : nsToSecNs(expirationTimestamp);
+};
+
+/**
  * Verify param and filters meet expected format
  *
  * @param filters
@@ -1468,6 +1486,7 @@ export {
   buildComparatorFilter,
   buildFilters,
   buildPgSqlObject,
+  calculateExpiryTimestamp,
   checkTimestampRange,
   conflictingPathParam,
   convertGasPriceToTinyBars,

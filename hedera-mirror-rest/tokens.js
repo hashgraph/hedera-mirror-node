@@ -32,7 +32,7 @@ import {InvalidArgumentError, NotFoundError} from './errors';
 import {CustomFee, Entity, Nft, NftTransfer, Token, Transaction} from './model';
 import {NftService} from './service';
 import * as utils from './utils';
-import {CustomFeeViewModel, NftViewModel, NftTransactionHistoryViewModel} from './viewmodel';
+import {CustomFeeViewModel, NftTransactionHistoryViewModel, NftViewModel} from './viewmodel';
 
 const {default: defaultLimit} = getResponseLimit();
 
@@ -211,15 +211,16 @@ const createCustomFeesObject = (customFees, tokenType) => {
 };
 
 const formatTokenInfoRow = (row) => {
+  const createdTimestamp = utils.nsToSecNs(row.created_timestamp);
   return {
     admin_key: utils.encodeKey(row.key),
     auto_renew_account: EntityId.parse(row.auto_renew_account_id, {isNullable: true}).toString(),
     auto_renew_period: row.auto_renew_period,
-    created_timestamp: utils.nsToSecNs(row.created_timestamp),
+    created_timestamp: createdTimestamp,
     custom_fees: createCustomFeesObject(row.custom_fees, row.type),
     decimals: `${row.decimals}`,
     deleted: row.deleted,
-    expiry_timestamp: row.expiration_timestamp,
+    expiry_timestamp: utils.calculateExpiryTimestamp(row.auto_renew_period, createdTimestamp, row.expiration_timestamp),
     fee_schedule_key: utils.encodeKey(row.fee_schedule_key),
     freeze_default: row.freeze_default,
     freeze_key: utils.encodeKey(row.freeze_key),
