@@ -2,4 +2,3 @@ embedded:
   google:
     pubsub:
       enabled: true
-      docker-image: google/cloud-sdk:alpine
