@@ -8,6 +8,21 @@ Create chart name and version as used by the chart label.
 {{- end -}}
 
 {{/*
+Constructs the database host that should be used by all components.
+*/}}
+{{- define "hedera-mirror.db" -}}
+{{- if .Values.db.host -}}
+{{- tpl .Values.db.host . -}}
+{{- else if and .Values.postgresql.enabled (gt (.Values.postgresql.pgpool.replicaCount | int) 0) -}}
+{{- include "postgresql-ha.pgpool" .Subcharts.postgresql -}}
+{{- else if .Values.postgresql.enabled -}}
+{{- include "postgresql-ha.postgresql" .Subcharts.postgresql -}}
+{{- else if .Values.citus.enabled -}}
+{{- include "postgresql.primary.fullname" .Subcharts.citus -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
 Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
