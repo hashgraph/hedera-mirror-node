@@ -21,7 +21,7 @@ fi
 target_tag="${target_tag#v}" # Strip v prefix if present
 target_tag_minor="${target_tag%\.*}"
 bats_tag="1.8.2"
-postgresql_tag="14.5.0-debian-11-r34"
+postgresql_tag="14.6.0-debian-11-r2"
 registry="gcr.io/mirror-node-public/hedera-mirror-node"
 
 function retag() {

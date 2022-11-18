@@ -1,7 +1,7 @@
 version: "3.7"
 services:
   db:
-    image: postgres:14.2-alpine
+    image: postgres:14-alpine
     environment:
       PGDATA: /var/lib/postgresql/data
       POSTGRES_HOST_AUTH_METHOD: scram-sha-256
@@ -59,7 +59,7 @@ services:
       - ./application.yml:/usr/etc/hedera-mirror-monitor/application.yml
 
   redis:
-    image: redis:6.2.6-alpine
+    image: redis:6-alpine
     ports:
       - 6379:6379
     restart: unless-stopped

@@ -2,4 +2,3 @@ embedded:
   google:
     pubsub:
       enabled: true
-      docker-image: google/cloud-sdk:290.0.1
