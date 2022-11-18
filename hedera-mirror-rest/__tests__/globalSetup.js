@@ -19,6 +19,9 @@
  */
 
 import crypto from 'crypto';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
 import pg from 'pg';
 import {GenericContainer} from 'testcontainers';
 
@@ -74,6 +77,10 @@ const createDbContainer = async (maxWorkers) => {
 
   await pool.end();
   console.info(`Created separate databases for each of ${maxWorkers} jest workers`);
+
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'migration-'));
+  process.env.MIGRATION_TMP_DIR = tmpDir;
+  console.info(`Created temp directory ${tmpDir} for migration status`);
 };
 
 const getDatabaseName = () => getDatabaseNameForWorker(process.env.JEST_WORKER_ID);

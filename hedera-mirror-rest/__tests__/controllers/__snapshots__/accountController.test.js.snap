@@ -29,3 +29,5 @@ exports[`extractTokenMultiUnionQuery throw token.id multiple lower bounds 1`] = 
 exports[`extractTokenMultiUnionQuery throw token.id multiple upper bounds 1`] = `"Only one lt/lte operator is allowed for token.id"`;
 
 exports[`extractTokenMultiUnionQuery throw token.id ne 1`] = `"Not equal (ne) operator is not supported for token.id"`;
+
+exports[`extractStakingRewardsQuery throw timestamp ne 1`] = `"Not equals (ne) operator is not supported for timestamp"`;
