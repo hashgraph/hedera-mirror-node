@@ -16,7 +16,7 @@
 
     <properties>
         <commons-math3.version>3.6.1</commons-math3.version>
-        <hedera-sdk.version>2.18.0</hedera-sdk.version>
+        <hedera-sdk.version>2.18.2</hedera-sdk.version>
         <meanbean.version>3.0.0-M9</meanbean.version>
         <openapi-package>com.hedera.mirror.rest</openapi-package>
         <openapi-generator.version>6.2.0</openapi-generator.version>
