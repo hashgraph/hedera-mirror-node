@@ -24,7 +24,7 @@ services:
        - ./db:/var/lib/postgresql/data
        - ./hedera-mirror-importer/src/main/resources/db/scripts/init.sh:/docker-entrypoint-initdb.d/init.sh
   db:
-    image: postgres:14.2-alpine
+    image: postgres:14-alpine
     environment:
       PGDATA: /var/lib/postgresql/data
       POSTGRES_HOST_AUTH_METHOD: scram-sha-256
@@ -82,7 +82,7 @@ services:
       - ./application.yml:/usr/etc/hedera-mirror-monitor/application.yml
 
   redis:
-    image: redis:6.2.6-alpine
+    image: redis:6-alpine
     ports:
       - 6379:6379
     restart: unless-stopped

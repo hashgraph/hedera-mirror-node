@@ -94,7 +94,7 @@ jobs:
     timeout-minutes: 15
     env:
       OFFLINE_URL: http://localhost:5700
-      ROSETTA_CLI_VERSION: v0.8.0
+      ROSETTA_CLI_VERSION: v0.10.0
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -223,7 +223,7 @@ jobs:
     if: ${{ always() }}
     steps:
       - name: Delete Artifact
-        uses: geekyeggo/delete-artifact@v1
+        uses: geekyeggo/delete-artifact@v2
         with:
           name: ${{ env.IMAGE }}
           failOnError: false
@@ -244,7 +244,7 @@ jobs:
           rm -fr tmp
 
       - name: Run Gosec Security Scanner
-        uses: securego/gosec@v2.13.1
+        uses: securego/gosec@v2.14.0
         with:
           args: ./...
 
