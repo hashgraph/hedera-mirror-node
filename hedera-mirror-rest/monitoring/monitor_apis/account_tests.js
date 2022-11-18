@@ -39,6 +39,7 @@ const accountsPath = '/accounts';
 const resource = 'account';
 const resourceLimit = config[resource].limit || DEFAULT_LIMIT;
 const tokenRelationshipEnabled = config[resource].tokenRelationshipEnabled || false;
+const stakingTokenRewardAccountId = config[resource].stakingTokenRewardAccountId;
 const jsonRespKey = 'accounts';
 const mandatoryParams = [
   'balance',
@@ -265,6 +266,49 @@ const getSingleAccountTokenRelationships = async (server) => {
   };
 };
 
+const getAccountStakingRewards = async (server) => {
+  let url = getUrl(server, accountsPath, {limit: resourceLimit});
+  if (!stakingTokenRewardAccountId) {
+    return {
+      url,
+      passed: true,
+      message: 'Skipped check for account staking rewards since stakingTokenRewardAccountId undefined.',
+    };
+  }
+
+  const stakingRewardsPath = (tokenId) => `${accountsPath}/${stakingTokenRewardAccountId}/rewards`;
+  const rewardsJsonRespKey = 'rewards';
+  url = getUrl(server, stakingRewardsPath, {limit: resourceLimit});
+  const rewardMandatoryParams = ['account_id', 'amount', 'timestamp'];
+  const rewards = await getAPIResponse(url, rewardsJsonRespKey);
+
+  const checkRunner = new CheckRunner()
+    .withCheckSpec(checkAPIResponseError)
+    .withCheckSpec(checkRespObjDefined, {message: 'rewards is undefined'});
+  let result = checkRunner.run(rewards);
+  if (rewards.length === 0) {
+    result.passed = true;
+    result.message = 'No staking rewards were returned';
+    return {url, ...result};
+  }
+
+  let moreResults = new CheckRunner()
+    .withCheckSpec(checkMandatoryParams, {
+      params: rewardMandatoryParams,
+      message: 'reward object is missing some mandatory fields',
+    })
+    .run(rewards);
+  if (!moreResults.passed) {
+    return {url, ...result};
+  }
+
+  return {
+    url,
+    passed: true,
+    message: 'Successfully called account staking rewards for account ${stakingTokenRewardAccountId}.',
+  };
+};
+
 /**
  * Run all account tests in an asynchronous fashion waiting for all tests to complete
  * @param {Object} server object provided by the user
@@ -277,6 +321,7 @@ const runTests = async (server, testResult) => {
     runTest(getAccountsWithTimeAndLimitParams),
     runTest(getSingleAccount),
     tokenRelationshipEnabled ? runTest(getSingleAccountTokenRelationships) : '',
+    runTest(getAccountStakingRewards),
   ]);
 };
 
