@@ -25,13 +25,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 
-import com.hedera.mirror.common.domain.DigestAlgorithm;
+import com.hedera.mirror.common.domain.DomainBuilder;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 
 class RecordFileRepositoryTest extends Web3IntegrationTest {
-
-    private long timestamp = 0;
+    private final DomainBuilder domainBuilder = new DomainBuilder();
 
     @Resource
     private RecordFileRepository recordFileRepository;
@@ -47,21 +46,26 @@ class RecordFileRepositoryTest extends Web3IntegrationTest {
         assertThat(recordFileRepository.findLatestIndex()).get().isEqualTo(recordFile2.getIndex());
     }
 
+    @Test
+    void findFileHashByIndex() {
+        final var file = recordFile();
+        recordFileRepository.save(file);
+
+        assertThat(recordFileRepository.findHashByIndex(file.getIndex())).get().isEqualTo(file.getHash());
+    }
+
+    @Test
+    void findLatestFile() {
+        RecordFile recordFile1 = recordFile();
+        recordFileRepository.save(recordFile1);
+
+        RecordFile recordFile2 = recordFile();
+        recordFileRepository.save(recordFile2);
+
+        assertThat(recordFileRepository.findLatest()).get().isEqualTo(recordFile2);
+    }
+
     private RecordFile recordFile() {
-        RecordFile recordFile = new RecordFile();
-        recordFile.setConsensusStart(timestamp);
-        recordFile.setConsensusEnd(timestamp + 1);
-        recordFile.setCount(1L);
-        recordFile.setDigestAlgorithm(DigestAlgorithm.SHA_384);
-        recordFile.setFileHash(String.valueOf(timestamp));
-        recordFile.setHash(String.valueOf(timestamp));
-        recordFile.setIndex(timestamp);
-        recordFile.setLoadEnd(timestamp + 1);
-        recordFile.setLoadStart(timestamp);
-        recordFile.setName(timestamp + ".rcd");
-        recordFile.setNodeId(0L);
-        recordFile.setPreviousHash(String.valueOf(timestamp - 1));
-        ++timestamp;
-        return recordFile;
+        return domainBuilder.recordFile().get();
     }
 }
