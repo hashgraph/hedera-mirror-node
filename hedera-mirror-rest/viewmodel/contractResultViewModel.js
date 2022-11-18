@@ -21,6 +21,7 @@
 import _ from 'lodash';
 import EntityId from '../entityId';
 import {nsToSecNs, toHexString} from '../utils';
+import * as utils from '../utils';
 
 /**
  * Contract results view model
@@ -33,6 +34,9 @@ class ContractResultViewModel {
    */
   constructor(contractResult) {
     const contractId = EntityId.parse(contractResult.contractId, {isNullable: true});
+    this.address = contractResult?.evmAddress?.length
+      ? utils.toHexString(contractResult.evmAddress, true)
+      : contractId.toEvmAddress();
     this.amount = contractResult.amount;
     this.bloom = toHexString(contractResult.bloom, true);
     this.call_result = toHexString(contractResult.callResult, true);
