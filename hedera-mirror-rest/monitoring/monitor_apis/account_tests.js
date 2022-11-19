@@ -267,7 +267,7 @@ const getSingleAccountTokenRelationships = async (server) => {
 };
 
 const getAccountStakingRewards = async (server) => {
-  const stakingRewardsPath = (tokenId) => `${accountsPath}/${stakingRewardAccountId}/rewards`;
+  const stakingRewardsPath = `${accountsPath}/${stakingRewardAccountId}/rewards`;
   const rewardsJsonRespKey = 'rewards';
   let url = getUrl(server, stakingRewardsPath, {limit: resourceLimit});
   const rewardMandatoryParams = ['account_id', 'amount', 'timestamp'];
