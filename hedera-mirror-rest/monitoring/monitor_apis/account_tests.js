@@ -39,7 +39,7 @@ const accountsPath = '/accounts';
 const resource = 'account';
 const resourceLimit = config[resource].limit || DEFAULT_LIMIT;
 const tokenRelationshipEnabled = config[resource].tokenRelationshipEnabled || false;
-const stakingTokenRewardAccountId = config[resource].stakingTokenRewardAccountId;
+const stakingRewardAccountId = config[resource].stakingRewardAccountId;
 const jsonRespKey = 'accounts';
 const mandatoryParams = [
   'balance',
@@ -267,45 +267,28 @@ const getSingleAccountTokenRelationships = async (server) => {
 };
 
 const getAccountStakingRewards = async (server) => {
-  let url = getUrl(server, accountsPath, {limit: resourceLimit});
-  if (!stakingTokenRewardAccountId) {
-    return {
-      url,
-      passed: true,
-      message: 'Skipped check for account staking rewards since stakingTokenRewardAccountId undefined.',
-    };
-  }
-
-  const stakingRewardsPath = (tokenId) => `${accountsPath}/${stakingTokenRewardAccountId}/rewards`;
+  const stakingRewardsPath = (tokenId) => `${accountsPath}/${stakingRewardAccountId}/rewards`;
   const rewardsJsonRespKey = 'rewards';
-  url = getUrl(server, stakingRewardsPath, {limit: resourceLimit});
+  let url = getUrl(server, stakingRewardsPath, {limit: resourceLimit});
   const rewardMandatoryParams = ['account_id', 'amount', 'timestamp'];
   const rewards = await getAPIResponse(url, rewardsJsonRespKey);
 
-  const checkRunner = new CheckRunner()
+  let result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
-    .withCheckSpec(checkRespObjDefined, {message: 'rewards is undefined'});
-  let result = checkRunner.run(rewards);
-  if (rewards.length === 0) {
-    result.passed = true;
-    result.message = 'No staking rewards were returned';
-    return {url, ...result};
-  }
-
-  let moreResults = new CheckRunner()
+    .withCheckSpec(checkRespObjDefined, {message: 'rewards is undefined'})
     .withCheckSpec(checkMandatoryParams, {
       params: rewardMandatoryParams,
       message: 'reward object is missing some mandatory fields',
     })
     .run(rewards);
-  if (!moreResults.passed) {
+  if (!result.passed) {
     return {url, ...result};
   }
 
   return {
     url,
     passed: true,
-    message: 'Successfully called account staking rewards for account ${stakingTokenRewardAccountId}.',
+    message: 'Successfully called account staking rewards for account ${stakingRewardAccountId}.',
   };
 };
 
@@ -321,7 +304,7 @@ const runTests = async (server, testResult) => {
     runTest(getAccountsWithTimeAndLimitParams),
     runTest(getSingleAccount),
     tokenRelationshipEnabled ? runTest(getSingleAccountTokenRelationships) : '',
-    runTest(getAccountStakingRewards),
+    stakingRewardAccountId !== null ? runTest(getAccountStakingRewards) : '',
   ]);
 };
 
