@@ -60,8 +60,52 @@ applicationResource:
   partnerName: ""
   solutionId: ""
 
+citus:
+  architecture: replication
+  enabled: false
+  image:
+    repository: citusdata/citus
+    tag: 11.1.4-pg14
+  nameOverride: citus
+  primary:
+    args: ["-c", "config_file=/bitnami/postgresql/conf/postgresql.conf"]
+    configuration: |
+      citus.node_conninfo = 'sslmode=prefer'
+      listen_addresses = '*'
+      log_timezone = 'Etc/UTC'
+      max_connections = 600
+      max_replication_slots = 5
+      max_wal_senders = 5
+      max_wal_size = 24GB
+      shared_preload_libraries = 'citus'
+      wal_level = logical
+    extraEnvVarsSecret: mirror-passwords
+    initdb:
+      scriptsConfigMap: "{{ .Release.Name }}-init"
+    name: coordinator
+  readReplicas:
+    args: ["-c", "config_file=/usr/local/etc/postgresql/override.conf"]
+    extendedConfiguration: |
+      citus.node_conninfo = 'sslmode=prefer'
+      listen_addresses = '*'
+      log_timezone = 'Etc/UTC'
+      max_connections = 600
+      max_replication_slots = 5
+      max_wal_senders = 5
+      max_wal_size = 24GB
+      shared_preload_libraries = 'citus'
+      wal_level = logical
+    extraVolumeMounts:
+      - name: config
+        mountPath: /usr/local/etc/postgresql
+    extraVolumes:
+      - name: config
+        configMap:
+          name: '{{ printf "%s-extended-configuration" (include "postgresql.readReplica.fullname" .) }}'
+    name: worker
+
 db:
-  host: "{{ .Release.Name }}"
+  host: ""  # Auto-generated from the database sub-charts
   name: mirror_node
   schema: public
   owner:
@@ -182,7 +226,7 @@ postgresql:
     extraEnvVarsSecret: mirror-passwords
     image:
       debug: true
-    initdbScriptsSecret: "{{ .Release.Name }}-init"
+    initdbScriptsCM: "{{ .Release.Name }}-init"
     password: ""  # Randomly generated if left blank
     podAntiAffinityPreset: soft
     replicaCount: 1

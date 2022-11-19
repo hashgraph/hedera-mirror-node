@@ -46,4 +46,5 @@ dependencies {
     testImplementation("com.playtika.testcontainers:embedded-postgresql")
     testImplementation("io.projectreactor:reactor-test")
     testImplementation("org.flywaydb:flyway-core")
+    testImplementation(project(path = ":common", configuration = "testClasses"))
 }

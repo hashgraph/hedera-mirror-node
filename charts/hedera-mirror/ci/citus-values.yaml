@@ -1,0 +1,12 @@
+citus:
+  enabled: true
+importer:
+  env:
+    SPRING_PROFILES_ACTIVE: v2
+monitor:
+  enabled: false
+postgresql:
+  enabled: false
+rosetta:
+  test:
+    enabled: false
