@@ -23,49 +23,38 @@ package com.hedera.mirror.web3.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import javax.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
-import com.hedera.mirror.common.domain.DomainBuilder;
-import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class RecordFileRepositoryTest extends Web3IntegrationTest {
-    private final DomainBuilder domainBuilder = new DomainBuilder();
 
     @Resource
     private RecordFileRepository recordFileRepository;
 
     @Test
     void findLatestIndex() {
-        RecordFile recordFile1 = recordFile();
-        recordFileRepository.save(recordFile1);
+        domainBuilder.recordFile().persist();
+        var latest = domainBuilder.recordFile().persist();
 
-        RecordFile recordFile2 = recordFile();
-        recordFileRepository.save(recordFile2);
-
-        assertThat(recordFileRepository.findLatestIndex()).get().isEqualTo(recordFile2.getIndex());
+        assertThat(recordFileRepository.findLatestIndex()).get().isEqualTo(latest.getIndex());
     }
 
     @Test
     void findFileHashByIndex() {
-        final var file = recordFile();
-        recordFileRepository.save(file);
+        final var file = domainBuilder.recordFile().persist();
 
         assertThat(recordFileRepository.findHashByIndex(file.getIndex())).get().isEqualTo(file.getHash());
     }
 
     @Test
     void findLatestFile() {
-        RecordFile recordFile1 = recordFile();
-        recordFileRepository.save(recordFile1);
+        domainBuilder.recordFile().persist();
+        var latest = domainBuilder.recordFile().persist();
 
-        RecordFile recordFile2 = recordFile();
-        recordFileRepository.save(recordFile2);
-
-        assertThat(recordFileRepository.findLatest()).get().isEqualTo(recordFile2);
-    }
-
-    private RecordFile recordFile() {
-        return domainBuilder.recordFile().get();
+        assertThat(recordFileRepository.findLatest()).get().isEqualTo(latest);
     }
 }
