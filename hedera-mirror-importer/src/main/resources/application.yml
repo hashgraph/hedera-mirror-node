@@ -13,11 +13,6 @@ hedera:
         restUsername: mirror_api
         schema: public
         username: mirror_node
-        partition:
-          timeInterval: "'3 months'"
-          idInterval: "'5000'"
-          cronSchedule: "'@daily'"
-          startDate: "'3 years'"
       migration:
         blockNumberMigration:
           checksum: 4
@@ -109,13 +104,14 @@ spring:
       chunkIdInterval: 100000
       chunkTimeInterval: 86400000000000
       compressionAge: 604800000000000
-      cronSchedule: ${hedera.mirror.importer.db.partition.cronSchedule}
+      cronSchedule: "'@daily'"
       db-name: ${hedera.mirror.importer.db.name}
       db-user: ${hedera.mirror.importer.db.username}
-      partitionTimeInterval: ${hedera.mirror.importer.db.partition.timeInterval}
-      partitionIdInterval: ${hedera.mirror.importer.db.partition.idInterval}
-      partitionStartDate: ${hedera.mirror.importer.db.partition.startDate}
+      partitionTimeInterval: "'3 months'"
+      partitionIdInterval: "'1000000'"
+      partitionStartDate: "'3 years'"
       schema: ${hedera.mirror.importer.db.schema}
+      shardCount: 32
     user: ${hedera.mirror.importer.db.owner}
   jpa:
     properties:

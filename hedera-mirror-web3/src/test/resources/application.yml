@@ -30,10 +30,11 @@ spring:
       cronSchedule: "'@daily'"
       db-name: ${hedera.mirror.web3.db.name}
       db-user: ${hedera.mirror.web3.db.username}
-      partitionIdInterval: "'10000'"
-      partitionStartDate: "'2 months'"
+      partitionIdInterval: "'1000000'"
+      partitionStartDate: "'0 days'"
       partitionTimeInterval: "'1 year'"
       schema: public
+      shardCount: 2
       topicRunningHashV2AddedTimestamp: 0
   test:
     database:

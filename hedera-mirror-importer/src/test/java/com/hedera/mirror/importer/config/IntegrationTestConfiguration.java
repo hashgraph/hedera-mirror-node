@@ -22,10 +22,17 @@ package com.hedera.mirror.importer.config;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.io.IOException;
+import java.util.stream.Collectors;
 import javax.persistence.EntityManager;
+import kotlin.text.Charsets;
+import org.apache.commons.io.FileUtils;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Profile;
+import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.transaction.support.TransactionOperations;
+import org.springframework.util.ResourceUtils;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
 
@@ -40,5 +47,26 @@ public class IntegrationTestConfiguration {
     @Bean
     DomainBuilder domainBuilder(EntityManager entityManager, TransactionOperations transactionOperations) {
         return new DomainBuilder(entityManager, transactionOperations);
+    }
+
+    @Bean("cleanupSql")
+    @Profile("!v2")
+    String getV1CleanupSql() throws IOException {
+        var file = ResourceUtils.getFile("classpath:db/scripts/cleanup.sql");
+        return FileUtils.readFileToString(file, Charsets.UTF_8);
+    }
+
+    @Bean("cleanupSql")
+    @Profile("v2")
+    String getV2CleanupSql(JdbcOperations jdbcOperations) {
+        var tables = jdbcOperations.query("""
+                select table_name
+                from information_schema.tables
+                left join time_partitions on partition::text = table_name::text
+                where table_schema = 'public' and table_type <> 'VIEW'
+                  and table_name !~ '.*(flyway|transaction_type|citus_|_\\d+).*' and partition is null
+                order by table_name
+                """, (rs, rowNum) -> rs.getString(1));
+        return tables.stream().map((t) -> String.format("delete from %s;", t)).collect(Collectors.joining("\n"));
     }
 }
