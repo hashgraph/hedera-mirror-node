@@ -11,16 +11,12 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.reactive.function.BodyInserters;
-import java.math.BigInteger;
 
 @ExtendWith(SpringExtension.class)
 @WebFluxTest(controllers = ContractController.class)
 class ContractControllerTest {
     private static final String CALL_URI = "/api/v1/contracts/call";
-    private static final String ERROR_JSON_UNSUPPORTED_OP = "{\"_status\":{\"messages\":[{\"message\":\"Operations " +
-            "eth_call and gas_estimate are not supported yet!\"}]}}";
-    private static final String VALIDATION_JSON_ERROR = "{\"_status\":{\"messages\":[{\"message\":\"to field must not" +
-            " be empty\"}]}}";
+
     @Resource
     private WebTestClient webClient;
 
@@ -30,41 +26,103 @@ class ContractControllerTest {
         webClient.post()
                 .uri(CALL_URI)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(request(true)))
+                .body(BodyInserters.fromValue(request()))
                 .exchange()
                 .expectStatus()
                 .isEqualTo(NOT_IMPLEMENTED)
-                .expectBody()
-                .json(ERROR_JSON_UNSUPPORTED_OP);
+                .expectBody(GenericErrorResponse.class)
+                .isEqualTo(new GenericErrorResponse("Operations eth_call and gas_estimate are not supported yet!"));
     }
 
     @Test
-    void throwsValidationExceptionWhenCalledWithWrongRequestData() {
+    void throwsValidationExceptionWhenCalledWithMissingToField() {
+            final var request = request();
+            request.setTo("");
 
         webClient.post()
                 .uri(CALL_URI)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(request(false)))
+                .body(BodyInserters.fromValue(request))
                 .exchange()
                 .expectStatus()
                 .isEqualTo(BAD_REQUEST)
-                .expectBody()
-                .json(VALIDATION_JSON_ERROR);
+                .expectBody(GenericErrorResponse.class)
+                .isEqualTo(new GenericErrorResponse("to field must not be empty, to field must be 20 bytes hex " +
+                        "format"));
     }
 
-    private ContractCallRequest request(boolean isValidRequest) {
-        final var to =
-                isValidRequest ? "0x00000000000000000000000000000000000004e4"
-                        : "";
-        return
-                new ContractCallRequest(
-                        "0x76c0",
-                        "0x6f0fccab00000000000000000000000000000000000000000000000000000000000004e5",
-                        "0x00000000000000000000000000000000000004e2",
-                        1232321L,
-                        1232322133134214211L,
-                        to,
-                        BigInteger.valueOf(100000000000000000L),
-                        false);
+    @Test
+    void throwsValidationExceptionWhenCalledWithWrongFromField() {
+        final var request = request();
+        request.setFrom("");
+
+        webClient.post()
+                .uri(CALL_URI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(request))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(BAD_REQUEST)
+                .expectBody(GenericErrorResponse.class)
+                .isEqualTo(new GenericErrorResponse("from field must be 20 bytes hex format"));
+    }
+
+    @Test
+    void throwsValidationExceptionWhenCalledWithWrongValueField() {
+        final var request = request();
+        request.setValue(-1L);
+
+        webClient.post()
+                .uri(CALL_URI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(request))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(BAD_REQUEST)
+                .expectBody(GenericErrorResponse.class)
+                .isEqualTo(new GenericErrorResponse("value field must be greater than or equal to 0"));
+    }
+
+    @Test
+    void throwsValidationExceptionWhenCalledWithWrongGasField() {
+        final var request = request();
+        request.setGas(-1L);
+
+        webClient.post()
+                .uri(CALL_URI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(request))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(BAD_REQUEST)
+                .expectBody(GenericErrorResponse.class)
+                .isEqualTo(new GenericErrorResponse("gas field must be greater than or equal to 0"));
+    }
+
+    @Test
+    void throwsValidationExceptionWhenCalledWithWrongGasPriceField() {
+        final var request = request();
+        request.setGasPrice(-1L);
+
+        webClient.post()
+                .uri(CALL_URI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(request))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(BAD_REQUEST)
+                .expectBody(GenericErrorResponse.class)
+                .isEqualTo(new GenericErrorResponse("gasPrice field must be greater than or equal to 0"));
+    }
+
+    private ContractCallRequest request() {
+        final var request = new ContractCallRequest();
+        request.setTo("0x00000000000000000000000000000000000004e4");
+        request.setFrom("0x00000000000000000000000000000000000004e2");
+        request.setGas(200000L);
+        request.setGasPrice(78282329L);
+        request.setValue(23);
+
+        return request;
     }
 }

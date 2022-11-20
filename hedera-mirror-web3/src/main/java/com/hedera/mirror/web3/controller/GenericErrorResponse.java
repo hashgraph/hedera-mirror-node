@@ -25,11 +25,13 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.Value;
 
 @JsonTypeInfo(include = JsonTypeInfo.As.WRAPPER_OBJECT, use = JsonTypeInfo.Id.NAME)
 @JsonTypeName("_status")
 @Value
+@NoArgsConstructor
 public class GenericErrorResponse {
      List<ErrorMessage> messages = new ArrayList<>();
 
