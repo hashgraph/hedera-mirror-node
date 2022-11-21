@@ -92,4 +92,12 @@ class AccountAccessorImplTest {
         final var result = accountAccessor.canonicalAddress(ADDRESS);
         assertThat(result).isEqualTo(ADDRESS);
     }
+
+    @Test
+    void aliasDifferentFromEvmAddressSize() {
+        when(mirrorEntityAccess.isExtant(ADDRESS)).thenReturn(true);
+        when(mirrorEntityAccess.alias(ADDRESS)).thenReturn(ByteString.copyFrom(new byte[32]));
+        final var result = accountAccessor.canonicalAddress(ADDRESS);
+        assertThat(result).isEqualTo(ADDRESS);
+    }
 }
