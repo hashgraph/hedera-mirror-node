@@ -2,7 +2,6 @@ name: "GCP Marketplace"
 
 on:
   push:
-    branches: [ main, release/** ]
     tags: [ v* ]
 
 env:
