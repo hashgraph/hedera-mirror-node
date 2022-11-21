@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.config.validation;
+package com.hedera.mirror.web3.controller.validation;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

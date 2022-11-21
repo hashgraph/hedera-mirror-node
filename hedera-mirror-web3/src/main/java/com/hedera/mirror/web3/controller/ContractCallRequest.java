@@ -22,36 +22,32 @@ package com.hedera.mirror.web3.controller;
 
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
-
-import lombok.Builder;
 import lombok.Data;
 
-import com.hedera.mirror.web3.config.validation.Address;
-
-import lombok.Value;
+import com.hedera.mirror.web3.controller.validation.Address;
 
 @Data
 public class ContractCallRequest {
 
     BlockType block = BlockType.LATEST;
 
-    String data;
+    private String data;
+
+    private boolean estimate;
 
     @Address
-    String from;
+    private String from;
 
     @Min(0)
-    long gas;
+    private long gas = 0;
 
     @Min(0)
-    long gasPrice;
+    private long gasPrice = 0;
 
     @Address
     @NotEmpty
-    String to;
+    private String to;
 
     @Min(0)
-    long value;
-
-    boolean estimate;
+    private long value = 0;
 }

@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.config.validation;
+package com.hedera.mirror.web3.controller.validation;
 
 import java.util.regex.Pattern;
 import javax.validation.ConstraintValidator;

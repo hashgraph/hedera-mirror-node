@@ -22,6 +22,7 @@ class ContractControllerTest {
 
     @Test
     void throwsUnsupportedOperationExceptionWhenCalled() {
+        final var errorString = "Operations eth_call and gas_estimate are not supported yet!";
 
         webClient.post()
                 .uri(CALL_URI)
@@ -31,13 +32,13 @@ class ContractControllerTest {
                 .expectStatus()
                 .isEqualTo(NOT_IMPLEMENTED)
                 .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse("Operations eth_call and gas_estimate are not supported yet!"));
+                .isEqualTo(new GenericErrorResponse(errorString));
     }
 
     @Test
     void throwsValidationExceptionWhenCalledWithMissingToField() {
-            final var request = request();
-            request.setTo("");
+        final var request = request();
+        request.setTo("");
 
         webClient.post()
                 .uri(CALL_URI)
@@ -46,13 +47,12 @@ class ContractControllerTest {
                 .exchange()
                 .expectStatus()
                 .isEqualTo(BAD_REQUEST)
-                .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse("to field must not be empty, to field must be 20 bytes hex " +
-                        "format"));
+                .expectBody(GenericErrorResponse.class);
     }
 
     @Test
     void throwsValidationExceptionWhenCalledWithWrongFromField() {
+        final var errorString = "from field must be 20 bytes hex format";
         final var request = request();
         request.setFrom("");
 
@@ -64,11 +64,12 @@ class ContractControllerTest {
                 .expectStatus()
                 .isEqualTo(BAD_REQUEST)
                 .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse("from field must be 20 bytes hex format"));
+                .isEqualTo(new GenericErrorResponse(errorString));
     }
 
     @Test
     void throwsValidationExceptionWhenCalledWithWrongValueField() {
+        final var errorString = "value field must be greater than or equal to 0";
         final var request = request();
         request.setValue(-1L);
 
@@ -80,11 +81,12 @@ class ContractControllerTest {
                 .expectStatus()
                 .isEqualTo(BAD_REQUEST)
                 .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse("value field must be greater than or equal to 0"));
+                .isEqualTo(new GenericErrorResponse(errorString));
     }
 
     @Test
     void throwsValidationExceptionWhenCalledWithWrongGasField() {
+        final var errorString = "gas field must be greater than or equal to 0";
         final var request = request();
         request.setGas(-1L);
 
@@ -96,11 +98,12 @@ class ContractControllerTest {
                 .expectStatus()
                 .isEqualTo(BAD_REQUEST)
                 .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse("gas field must be greater than or equal to 0"));
+                .isEqualTo(new GenericErrorResponse(errorString));
     }
 
     @Test
     void throwsValidationExceptionWhenCalledWithWrongGasPriceField() {
+        final var errorString = "gasPrice field must be greater than or equal to 0";
         final var request = request();
         request.setGasPrice(-1L);
 
@@ -112,7 +115,7 @@ class ContractControllerTest {
                 .expectStatus()
                 .isEqualTo(BAD_REQUEST)
                 .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse("gasPrice field must be greater than or equal to 0"));
+                .isEqualTo(new GenericErrorResponse(errorString));
     }
 
     private ContractCallRequest request() {
