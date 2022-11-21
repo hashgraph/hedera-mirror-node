@@ -302,6 +302,15 @@ const loadNodeStakes = async (nodeStakes) => {
   }
 };
 
+const loadRecordFiles = async (recordFiles) => {
+  if (recordFiles == null) {
+    return;
+  }
+  for (const recordFile of recordFiles) {
+    await addRecordFile(recordFile);
+  }
+};
+
 const loadSchedules = async (schedules) => {
   if (schedules == null) {
     return;
@@ -309,25 +318,6 @@ const loadSchedules = async (schedules) => {
 
   for (const schedule of schedules) {
     await addSchedule(schedule);
-  }
-};
-
-const loadStakingRewardTransfers = async (stakingRewardTransfers) => {
-  if (stakingRewardTransfers == null) {
-    return;
-  }
-
-  for (const stakingRewardTransfer of stakingRewardTransfers) {
-    await addStakingRewardTransfer(stakingRewardTransfer);
-  }
-};
-
-const loadRecordFiles = async (recordFiles) => {
-  if (recordFiles == null) {
-    return;
-  }
-  for (const recordFile of recordFiles) {
-    await addRecordFile(recordFile);
   }
 };
 
@@ -1217,20 +1207,17 @@ const addSchedule = async (schedule) => {
   );
 };
 
-const defaultStakingRewardTransfer = {
-  account_id: 1001,
-  amount: 100,
-  consensus_timestamp: null,
-  payer_account_id: 950,
-};
-
-const addStakingRewardTransfer = async (transfer) => {
+const addStakingRewardTransfer = async (transferInput) => {
+  const insertFields = ['account_id', 'amount', 'consensus_timestamp', 'payer_account_id'];
+  const payerAccountId = EntityId.parse(transferInput.payerAccountId).getEncodedId();
   const stakingRewardTransfer = {
-    ...defaultStakingRewardTransfer,
-    ...transfer,
+    account_id: EntityId.parse(transferInput.accountId).getEncodedId(),
+    amount: 100,
+    consensus_timestamp: null,
+    payer_account_id: payerAccountId,
+    ...transferInput,
   };
 
-  const insertFields = ['account_id', 'amount', 'consensus_timestamp', 'payer_account_id'];
   await insertDomainObject('staking_reward_transfer', insertFields, stakingRewardTransfer);
 };
 
@@ -1241,7 +1228,7 @@ const addTransactionSignature = async (transactionSignature) => {
                                         entity_id,
                                         signature,
                                         type)
-    values ($1, $2, $3, $4, $5)`,
+     values ($1, $2, $3, $4, $5)`,
     [
       transactionSignature.consensus_timestamp,
       Buffer.from(transactionSignature.public_key_prefix),
@@ -1551,20 +1538,6 @@ const addRecordFile = async (recordFileInput) => {
   recordFile.size = recordFile.bytes !== null ? recordFile.bytes.length : recordFile.size;
 
   await insertDomainObject('record_file', insertFields, recordFile);
-};
-
-const addStakingRewardTransfer = async (transferInput) => {
-  const insertFields = ['account_id', 'amount', 'consensus_timestamp', 'payer_account_id'];
-  const payerAccountId = EntityId.parse(transferInput.payerAccountId).getEncodedId();
-  const stakingRewardTransfer = {
-    account_id: EntityId.parse(transferInput.accountId).getEncodedId(),
-    amount: 100,
-    consensus_timestamp: null,
-    payer_account_id: payerAccountId,
-    ...transferInput,
-  };
-
-  await insertDomainObject('staking_reward_transfer', insertFields, stakingRewardTransfer);
 };
 
 const insertDomainObject = async (table, fields, obj) => {

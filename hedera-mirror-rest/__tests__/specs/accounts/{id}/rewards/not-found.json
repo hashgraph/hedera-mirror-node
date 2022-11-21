@@ -11,10 +11,10 @@
     ],
     "stakingRewardTransfers": [
       {
-        "account_id": 1001,
+        "accountId": "0.0.1001",
         "amount": 10,
         "consensus_timestamp": "1234567890000011111",
-        "payer_account_id": 800
+        "payerAccountId": "0.0.1001"
       }
     ]
   },
