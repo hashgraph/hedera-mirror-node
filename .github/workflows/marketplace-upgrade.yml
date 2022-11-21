@@ -22,7 +22,6 @@ jobs:
 
       - name: Install k3d
         run: curl --retry 3 -fsL https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh
-             echo "k3d is installed" >> $GITHUB_ENV
 
       - name: Create k3d cluster
         run: k3d cluster create mirror --agents 1 --k3s-arg="--disable=traefik@all --disable=servicelb@all" --timeout 5m --wait --image rancher/k3s:v1.23.8-k3s2
