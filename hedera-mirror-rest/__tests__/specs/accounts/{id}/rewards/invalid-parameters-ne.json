@@ -1,0 +1,21 @@
+{
+  "description": "Account staking reward payouts api call with invalid not-equals timestamp parameter",
+  "setup": {
+    "entities": [
+      {
+        "num": 1001
+      }
+    ]
+  },
+  "url": "/api/v1/accounts/0.0.1001/rewards?timestamp=ne:1234567890.000011111",
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Not equals (ne) operator is not supported for timestamp"
+        }
+      ]
+    }
+  }
+}

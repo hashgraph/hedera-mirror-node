@@ -31,25 +31,19 @@ import static org.mockito.Mockito.when;
 import com.google.common.collect.Range;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityIdEndec;
@@ -60,15 +54,11 @@ import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.exception.AliasNotFoundException;
 import com.hedera.mirror.importer.parser.PartialDataAction;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
-import com.hedera.mirror.importer.repository.NftRepository;
 
 @ExtendWith(MockitoExtension.class)
 class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     private final static long DEFAULT_AUTO_RENEW_ACCOUNT_NUM = 2;
-
-    @Mock
-    private NftRepository nftRepository;
 
     private RecordParserProperties recordParserProperties;
 
@@ -98,29 +88,6 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
     protected EntityType getExpectedEntityIdType() {
         return EntityType.TOKEN;
-    }
-
-    @Test
-    void noTreasuryUpdate() {
-        AbstractEntity entity = getExpectedUpdatedEntity();
-        TokenTransferList tokenTransferList = TokenTransferList.newBuilder()
-                .setToken(TokenID.newBuilder().setTokenNum(3L).build())
-                .addNftTransfers(NftTransfer.newBuilder()
-                        .setReceiverAccountID(AccountID.newBuilder().setAccountNum(2L).build())
-                        .setSenderAccountID(AccountID.newBuilder().setAccountNum(1L).build())
-                        .setSerialNumber(1L) // Not wildcard
-                        .build())
-                .build();
-        TransactionRecord record = getDefaultTransactionRecord().addTokenTransferLists(tokenTransferList).build();
-        RecordItem recordItem = getRecordItem(getDefaultTransactionBody().build(), record);
-        when(entityIdService.lookup(AccountID.newBuilder().setAccountNum(DEFAULT_AUTO_RENEW_ACCOUNT_NUM).build()))
-                .thenReturn(EntityIdEndec.decode(DEFAULT_AUTO_RENEW_ACCOUNT_NUM, EntityType.ACCOUNT));
-
-        Transaction transaction = new Transaction();
-        transaction.setEntityId(entity.toEntityId());
-        transactionHandler.updateTransaction(transaction, recordItem);
-
-        Mockito.verifyNoInteractions(nftRepository);
     }
 
     @Test

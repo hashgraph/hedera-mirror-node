@@ -22,10 +22,12 @@ import Bound from './bound';
 import BaseController from './baseController';
 import {getResponseLimit} from '../config';
 import {filterKeys, orderFilterValues, responseDataLabel} from '../constants';
-import {InvalidArgumentError} from '../errors';
-import {EntityService, NftService} from '../service';
-import {NftViewModel} from '../viewmodel';
+import {InvalidArgumentError, NotFoundError} from '../errors';
+import {StakingRewardTransfer} from '../model';
+import {EntityService, NftService, StakingRewardTransferService} from '../service';
+import {NftViewModel, StakingRewardTransferViewModel} from '../viewmodel';
 import * as utils from '../utils';
+import _ from 'lodash';
 
 const {default: defaultLimit} = getResponseLimit();
 
@@ -115,6 +117,106 @@ class AccountController extends BaseController {
         next: this.getPaginationLink(req, nfts, query.bounds, query.limit, query.order),
       },
     };
+  };
+
+  /**
+   * Extracts SQL where conditions, params, order, and limit
+   *
+   * @param {[]} filters parsed and validated filters
+   */
+  extractStakingRewardsQuery(filters) {
+    let limit = defaultLimit;
+    let order = orderFilterValues.DESC;
+    const timestampInValues = [];
+    const conditions = [];
+    const params = [];
+    const startPosition = 3; // caller will later insert accountId at $1 and limit at $2
+
+    for (const filter of filters) {
+      if (_.isNil(filter)) {
+        continue;
+      }
+
+      switch (filter.key) {
+        case filterKeys.LIMIT:
+          limit = filter.value;
+          break;
+        case filterKeys.ORDER:
+          order = filter.value;
+          break;
+        case filterKeys.TIMESTAMP:
+          if (utils.opsMap.ne === filter.operator) {
+            throw new InvalidArgumentError(`Not equals (ne) operator is not supported for ${filterKeys.TIMESTAMP}`);
+          }
+          this.updateConditionsAndParamsWithInValues(
+            filter,
+            timestampInValues,
+            params,
+            conditions,
+            StakingRewardTransfer.getFullName(StakingRewardTransfer.CONSENSUS_TIMESTAMP),
+            startPosition + params.length
+          );
+          break;
+        default:
+          break;
+      }
+    }
+
+    this.updateQueryFiltersWithInValues(
+      params,
+      conditions,
+      timestampInValues,
+      StakingRewardTransfer.getFullName(StakingRewardTransfer.CONSENSUS_TIMESTAMP),
+      startPosition + params.length
+    );
+
+    return {
+      order,
+      limit,
+      conditions,
+      params,
+    };
+  }
+
+  /**
+   * Handler function for /accounts/:idOrAliasOrEvmAddress/rewards API
+   * @param {Request} req HTTP request object
+   * @param {Response} res HTTP response object
+   * @returns {Promise<void>}
+   */
+  listStakingRewardsByAccountId = async (req, res) => {
+    const accountId = await EntityService.getEncodedId(req.params[filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS]);
+    const isValidAccount = await EntityService.isValidAccount(accountId);
+    if (!isValidAccount) {
+      throw new NotFoundError();
+    }
+    const filters = utils.buildAndValidateFilters(req.query);
+    const query = this.extractStakingRewardsQuery(filters);
+    // insert account id at $1, and limit (at $2)
+    query.params.unshift(accountId, query.limit);
+    const stakingRewardsTransfers = await StakingRewardTransferService.getRewards(
+      query.order,
+      query.limit,
+      query.conditions,
+      query.params
+    );
+    const rewards = stakingRewardsTransfers.map((reward) => new StakingRewardTransferViewModel(reward));
+    const response = {
+      rewards,
+      links: {
+        next: null,
+      },
+    };
+
+    if (response.rewards.length === query.limit) {
+      const lastRow = _.last(response.rewards);
+      const last = {
+        [filterKeys.TIMESTAMP]: lastRow.timestamp,
+      };
+      response.links.next = utils.getPaginationLink(req, false, last, query.order);
+    }
+
+    res.locals[responseDataLabel] = response;
   };
 }
 

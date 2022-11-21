@@ -117,8 +117,9 @@ public class CommonDownloaderProperties {
     @Getter
     @RequiredArgsConstructor
     public enum SourceType {
-        S3("https://s3.amazonaws.com"),
-        GCP("https://storage.googleapis.com");
+        GCP("https://storage.googleapis.com"),
+        LOCAL(""),
+        S3("https://s3.amazonaws.com");
 
         private final String endpoint;
     }

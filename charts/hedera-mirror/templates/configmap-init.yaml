@@ -1,18 +1,20 @@
 apiVersion: v1
-kind: Secret
+kind: ConfigMap
 metadata:
   labels: {{- include "hedera-mirror.labels" . | nindent 4 }}
   name: {{ .Release.Name }}-init
   namespace: {{ include "hedera-mirror.namespace" . }}
-stringData:
-  init.sh: |-
+data:
+  001-init.sh: |-
     #!/bin/bash
     set -e
 
     PGHBACONF="/opt/bitnami/postgresql/conf/pg_hba.conf"
-    cp "${PGHBACONF}" "${PGHBACONF}.bak"
-    echo "local all all trust" > "${PGHBACONF}"
-    pg_ctl reload
+    if [[ -f "${PGHBACONF}" ]]; then
+      cp "${PGHBACONF}" "${PGHBACONF}.bak"
+      echo "local all all trust" > "${PGHBACONF}"
+      pg_ctl reload
+    fi
 
     psql -d "user=postgres connect_timeout=3" \
       --set ON_ERROR_STOP=1 \
@@ -74,5 +76,52 @@ stringData:
     alter database :dbName set search_path = :dbSchema, public;
     __SQL__
 
-    mv "${PGHBACONF}.bak" "${PGHBACONF}"
-    pg_ctl reload
+    if [[ -f "${PGHBACONF}.bak" ]]; then
+      mv "${PGHBACONF}.bak" "${PGHBACONF}"
+      pg_ctl reload
+    fi
+  {{- if .Values.citus.enabled }}
+  002-citus.sh: |
+    #!/bin/bash
+    set -e
+    name="{{ include "postgresql.primary.fullname" .Subcharts.citus }}"
+    coordinator="${name}-0.${name}-hl.{{ .Release.Namespace }}.svc.cluster.local"
+
+    # Setup coordinator
+    psql -v ON_ERROR_STOP=1 --username "${POSTGRES_USER}" --dbname "${POSTGRES_DB}" -p "${POSTGRESQL_PORT_NUMBER}" <<-EOSQL
+      create extension if not exists citus;
+      update pg_dist_node_metadata SET metadata=jsonb_insert(metadata, '{docker}', 'true');
+      insert into pg_dist_authinfo(nodeid, rolename, authinfo) values(1, '${POSTGRES_USER}', 'password=${POSTGRES_PASSWORD}');
+      select citus_set_coordinator_host('${coordinator}', ${POSTGRESQL_PORT_NUMBER});
+
+      \c ${HEDERA_MIRROR_IMPORTER_DB_NAME}
+      create extension if not exists citus;
+      create user ${HEDERA_MIRROR_IMPORTER_DB_RESTUSERNAME} with login password '${HEDERA_MIRROR_IMPORTER_DB_RESTPASSWORD}' in role readonly;
+    EOSQL
+
+    # Setup workers
+    id=0
+    replicas={{.Values.citus.readReplicas.replicaCount}}
+    name="{{ include "postgresql.readReplica.fullname" .Subcharts.citus }}"
+    echo "Adding ${replicas} workers"
+
+    while [[ ${id} -lt ${replicas} ]]; do
+      nodeid=$((id + 2))
+      host="${name}-${id}.${name}-hl.{{ .Release.Namespace }}.svc.cluster.local"
+
+      until ( exec pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB" -h "${host}" -p "${POSTGRESQL_PORT_NUMBER}" ); do
+        echo "Waiting for worker ${id} to become ready"
+        sleep 1
+      done
+
+      psql -v ON_ERROR_STOP=1 --username "${POSTGRES_USER}" --dbname "${POSTGRES_DB}" -p "${POSTGRESQL_PORT_NUMBER}" <<-EOSQL
+        insert into pg_dist_authinfo(nodeid, rolename, authinfo) values(${nodeid}, '${POSTGRES_USER}', 'password=${POSTGRES_PASSWORD}');
+        select citus_add_node('${host}', ${POSTGRESQL_PORT_NUMBER});
+
+        \c ${HEDERA_MIRROR_IMPORTER_DB_NAME}
+        create extension if not exists citus;
+    EOSQL
+
+      ((id = id + 1))
+    done
+  {{- end }}

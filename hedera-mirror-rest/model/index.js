@@ -42,7 +42,7 @@ import NftTransfer from './nftTransfer';
 import NodeStake from './nodeStake';
 import RecordFile from './recordFile';
 import SignatureType from './signatureType';
-import StakingRewardTransfer from './stakingRewardTransfer.js';
+import StakingRewardTransfer from './stakingRewardTransfer';
 import Token from './token';
 import TokenAllowance from './tokenAllowance';
 import TokenFreezeStatus from './tokenFreezeStatus';
