@@ -17,6 +17,7 @@
     "enabled": true,
     "intervalMultiplier": 1,
     "limit": 10,
+    "stakingRewardAccountId": null,
     "tokenRelationshipEnabled": true
   },
   "balance": {
