@@ -1792,3 +1792,20 @@ describe('stripHexPrefix', () => {
     expect(utils.stripHexPrefix(input)).toEqual(expected);
   });
 });
+
+describe('toUint256', () => {
+  test('Verify null value', () => {
+    expect(utils.toUint256(null)).toEqual(null);
+  });
+  test('Verify empty buffer', () => {
+    expect(utils.toUint256(Buffer.from(''))).toEqual(constants.ZERO_UINT256);
+  });
+  test('Verify non-empty zero buffer', () => {
+    expect(utils.toUint256(Buffer.from('0', 'hex'))).toEqual(constants.ZERO_UINT256);
+  });
+  test('Verify non-empty buffer', () => {
+    expect(utils.toUint256(Buffer.from('1a72', 'hex'))).toEqual(
+      '0x0000000000000000000000000000000000000000000000000000000000001a72'
+    );
+  });
+});

@@ -60,11 +60,9 @@ class EntityStakeCalculatorIntegrationTest extends IntegrationTest {
         long balanceTimestamp = DomainUtils.convertToNanosMax(newPeriodInstant.plusNanos(1000L));
         var accountBalanceFile = accountBalanceFileBuilder.accountBalanceFile(balanceTimestamp);
 
-        // add a record file with HAPI version 0.25.0, so there's no 53ns fixed account balance offset
-        domainBuilder.recordFile()
-                .customize(rf -> rf.consensusStart(balanceTimestamp - 100L).consensusEnd(balanceTimestamp + 100L)
-                        .hapiVersionMinor(25))
-                .persist();
+        domainBuilder.entity().customize(e -> e.id(800L).num(800L).stakedNodeId(-1L)).persist();
+        var entityStake800 = domainBuilder.entityStake().customize(es -> es.id(800L).endStakePeriod(epochDay - 1)
+                .stakeTotalStart(0L).stakedNodeIdStart(-1L)).persist();
 
         // account1 was created two staking periods ago, there should be a row in entity_stake
         var account1 = domainBuilder.entity()
@@ -88,7 +86,8 @@ class EntityStakeCalculatorIntegrationTest extends IntegrationTest {
         // account2 and account3 were both created in the previous staking period, account3 stakes to account2
         var account2 = domainBuilder.entity()
                 .customize(e -> {
-                    long createdTimestamp = DomainUtils.convertToNanosMax(TestUtils.asStartOfEpochDay(epochDay)) + 2000L;
+                    long createdTimestamp =
+                            DomainUtils.convertToNanosMax(TestUtils.asStartOfEpochDay(epochDay - 1)) + 2000L;
                     e.createdTimestamp(createdTimestamp).stakedNodeId(2L).stakePeriodStart(epochDay)
                             .timestampRange(Range.atLeast(createdTimestamp));
                 })
@@ -100,7 +99,8 @@ class EntityStakeCalculatorIntegrationTest extends IntegrationTest {
                 .build());
         var account3 = domainBuilder.entity()
                 .customize(e -> {
-                    long createdTimestamp = DomainUtils.convertToNanosMax(TestUtils.asStartOfEpochDay(epochDay)) + 3000L;
+                    long createdTimestamp =
+                            DomainUtils.convertToNanosMax(TestUtils.asStartOfEpochDay(epochDay)) + 3000L;
                     e.createdTimestamp(createdTimestamp).stakedAccountId(account2.getId())
                             .timestampRange(Range.atLeast(createdTimestamp));
                 })
@@ -146,6 +146,7 @@ class EntityStakeCalculatorIntegrationTest extends IntegrationTest {
         var expectedEntityStake3 = fromEntity(account3)
                 .customize(es -> es.endStakePeriod(epochDay).stakeTotalStart(0L))
                 .get();
+        entityStake800.setEndStakePeriod(epochDay);
 
         // when
         accountBalanceFileParser.parse(accountBalanceFile.build());
@@ -154,7 +155,8 @@ class EntityStakeCalculatorIntegrationTest extends IntegrationTest {
         await().atMost(Durations.FIVE_SECONDS)
                 .pollInterval(Durations.ONE_HUNDRED_MILLISECONDS)
                 .untilAsserted(() -> assertThat(entityStakeRepository.findAll())
-                        .containsExactlyInAnyOrder(expectedEntityStake1, expectedEntityStake2, expectedEntityStake3));
+                        .containsExactlyInAnyOrder(expectedEntityStake1, expectedEntityStake2, expectedEntityStake3,
+                                entityStake800));
 
     }
 

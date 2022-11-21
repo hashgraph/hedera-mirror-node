@@ -108,6 +108,30 @@ paths:
           $ref: '#/components/responses/NotFoundError'
       tags:
         - accounts
+  /api/v1/accounts/{idOrAliasOrEvmAddress}/rewards:
+    get:
+      summary: Get past staking reward payouts for an account
+      description: |
+        Returns information for all past staking reward payouts for an account.
+      operationId: listStakingRewardsByAccountId
+      parameters:
+        - $ref: '#/components/parameters/accountIdOrAliasOrEvmAddressPathParam'
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/orderQueryParamDesc'
+        - $ref: '#/components/parameters/timestampQueryParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StakingRewardsResponse'
+        400:
+          $ref: '#/components/responses/InvalidParameterError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+      tags:
+        - accounts
   /api/v1/accounts/{idOrAliasOrEvmAddress}/tokens:
     get:
       summary: Get token relationships info for an account
@@ -289,7 +313,7 @@ paths:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
         - contracts
-  /api/v1/contracts/{contractIdOrAddressPathParam}:
+  /api/v1/contracts/{contractIdOrAddress}:
     get:
       summary: Get contract by id
       description: Return the contract information given an id
@@ -310,7 +334,7 @@ paths:
           $ref: '#/components/responses/NotFoundError'
       tags:
         - contracts
-  /api/v1/contracts/{contractIdOrAddressPathParam}/results:
+  /api/v1/contracts/{contractIdOrAddress}/results:
     get:
       summary: List contract results from a contract on the network
       description: Returns a list of all ContractResults for a contract's function executions.
@@ -336,7 +360,7 @@ paths:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
         - contracts
-  /api/v1/contracts/{contractIdOrAddressPathParam}/state:
+  /api/v1/contracts/{contractIdOrAddress}/state:
     get:
       summary: The contract current state from a contract on the network
       description: Returns a list of all contract's slots.
@@ -359,7 +383,7 @@ paths:
           $ref: '#/components/responses/NotFoundError'
       tags:
         - contracts
-  /api/v1/contracts/{contractIdOrAddressPathParam}/results/{timestamp}:
+  /api/v1/contracts/{contractIdOrAddress}/results/{timestamp}:
     get:
       summary: Get the contract result from a contract on the network executed at a given timestamp
       description: Returns a single ContractResult for a contract's function executions at a specific timestamp.
@@ -461,7 +485,7 @@ paths:
           $ref: '#/components/responses/NotFoundError'
       tags:
         - contracts
-  /api/v1/contracts/{contractIdOrAddressPathParam}/results/logs:
+  /api/v1/contracts/{contractIdOrAddress}/results/logs:
     get:
       summary: List contract logs from a contract on the network
       description: |
@@ -1148,7 +1172,7 @@ tags:
     description: The tokens object represents the information associated with a token entity and returns a list of token information.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.69.0-SNAPSHOT
+  version: 0.70.0-SNAPSHOT
   license:
     name: Apache-2.0
     url: 'https://www.apache.org/licenses/LICENSE-2.0.html'
@@ -1334,6 +1358,15 @@ components:
       properties:
         blocks:
           $ref: '#/components/schemas/Blocks'
+        links:
+          $ref: '#/components/schemas/Links'
+    StakingRewardsResponse:
+      type: object
+      properties:
+        rewards:
+          type: array
+          items:
+            $ref: '#/components/schemas/StakingReward'
         links:
           $ref: '#/components/schemas/Links'
     StateProofResponseFull:
@@ -2732,6 +2765,27 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/ServiceEndpoint'
+    StakingReward:
+      type: object
+      properties:
+        account_id:
+          $ref: '#/components/schemas/EntityId'
+        amount:
+          description: The number of tinybars awarded
+          example: 10
+          format: int64
+          type: integer
+          nullable: false
+        timestamp:
+          $ref: '#/components/schemas/Timestamp'
+      required:
+        - account_id
+        - amount
+        - timestamp
+      example:
+        account_id: 0.0.1000
+        amount: 10
+        timestamp: 1234567890.000000001
     Timestamp:
       type: string
       example: "1586567700.453054000"
@@ -2904,9 +2958,6 @@ components:
           nullable: false
         created_timestamp:
           $ref: '#/components/schemas/Timestamp'
-          description: Creation timestamp of the token account relationship.
-          example: 123456789.000000001
-          nullable: false
         freeze_status:
           type: string
           description: The Freeze status of the account.
@@ -2921,9 +2972,6 @@ components:
           nullable: false
         token_id:
           $ref: '#/components/schemas/EntityId'
-          description: Id of the token associated with the given account.
-          example: 0.0.27335
-          nullable: false
       required:
         - automatic_association
         - balance

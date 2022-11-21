@@ -42,6 +42,7 @@ import NftTransfer from './nftTransfer';
 import NodeStake from './nodeStake';
 import RecordFile from './recordFile';
 import SignatureType from './signatureType';
+import StakingRewardTransfer from './stakingRewardTransfer';
 import Token from './token';
 import TokenAllowance from './tokenAllowance';
 import TokenFreezeStatus from './tokenFreezeStatus';
@@ -84,6 +85,7 @@ export {
   NodeStake,
   RecordFile,
   SignatureType,
+  StakingRewardTransfer,
   Token,
   TokenAllowance,
   TokenFreezeStatus,

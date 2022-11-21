@@ -1,6 +1,11 @@
 apiVersion: v2
 appVersion: "main"
 dependencies:
+  - alias: citus
+    condition: citus.enabled
+    name: postgresql
+    repository: https://charts.bitnami.com/bitnami
+    version: 12.1.2
   - alias: grpc
     condition: grpc.enabled
     name: hedera-mirror-grpc
@@ -63,4 +68,4 @@ maintainers:
 name: hedera-mirror
 sources:
   - https://github.com/hashgraph/hedera-mirror-node
-version: 0.69.0-SNAPSHOT
+version: 0.70.0-SNAPSHOT
