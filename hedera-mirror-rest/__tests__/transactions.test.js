@@ -28,6 +28,7 @@ import * as utils from '../utils';
 
 const {
   buildWhereClause,
+  convertStakingRewardTransfers,
   createAssessedCustomFeeList,
   createCryptoTransferList,
   createNftTransferList,
@@ -575,7 +576,7 @@ describe('createNftTransferList', () => {
 });
 
 describe('create transferLists', () => {
-  test('Simple nftTransferList', () => {
+  test('Simple nftTransferList', async () => {
     const nftTransfersFromDb = [
       {
         consensus_timestamp: 1,
@@ -648,14 +649,6 @@ describe('create transferLists', () => {
       },
     ];
 
-    const stakingTransfersMap = new Map()
-      .set(2, [
-        {account: 98, amount: 500},
-        {account: 99, amount: 200},
-      ])
-      .set(3, [{account: 99, amount: 100}])
-      .set(4, [{account: 97, amount: 10}]);
-
     const expectedNftTransfersList = [
       {
         receiver_account_id: '0.0.1000',
@@ -695,6 +688,7 @@ describe('create transferLists', () => {
         parent_consensus_timestamp: null,
         result: 'SUCCESS',
         scheduled: false,
+        staking_reward_transfers: [],
         token_transfers: undefined,
         transaction_hash: 'hash',
         transaction_id: '0.0.3-1623787159-737799966',
@@ -723,16 +717,7 @@ describe('create transferLists', () => {
         parent_consensus_timestamp: '0.000000001',
         result: 'SUCCESS',
         scheduled: false,
-        staking_reward_transfers: [
-          {
-            account: 98,
-            amount: 500,
-          },
-          {
-            account: 99,
-            amount: 200,
-          },
-        ],
+        staking_reward_transfers: [],
         token_transfers: undefined,
         transaction_hash: 'hash',
         transaction_id: '0.0.3-1623787159-737799966',
@@ -747,7 +732,7 @@ describe('create transferLists', () => {
         valid_start_timestamp: '1623787159.737799966',
       },
     ];
-    expect(createTransferLists(transactionsFromDb, stakingTransfersMap).transactions).toEqual(expectedFormat);
+    expect((await createTransferLists(transactionsFromDb)).transactions).toEqual(expectedFormat);
   });
 });
 
@@ -1146,6 +1131,58 @@ describe('isValidTransactionHash', () => {
     });
   });
 });
+
+describe('convert staking reward transfers', () => {
+  test('empty staking reward transfer', () => {
+    const rows = [];
+    const stakingRewardMap = convertStakingRewardTransfers(rows);
+    expect(stakingRewardMap.get(1)).toEqual(undefined);
+  });
+
+  test('staking reward transfer', () => {
+    const rows = [
+      {
+        consensus_timestamp: 1,
+        staking_reward_transfers: [
+          {account: 98, amount: 500},
+          {account: 99, amount: 600},
+        ],
+      },
+      {
+        consensus_timestamp: 2,
+        staking_reward_transfers: [{account: 100, amount: 0}],
+      },
+      {
+        consensus_timestamp: 3,
+        staking_reward_transfers: [],
+      },
+    ];
+
+    const expected1 = [
+      {
+        account: '0.0.98',
+        amount: 500,
+      },
+      {
+        account: '0.0.99',
+        amount: 600,
+      },
+    ];
+    const expected2 = [
+      {
+        account: '0.0.100',
+        amount: 0,
+      },
+    ];
+    const expected3 = [];
+
+    const stakingRewardMap = convertStakingRewardTransfers(rows);
+    expect(stakingRewardMap.get(1)).toEqual(expected1);
+    expect(stakingRewardMap.get(2)).toEqual(expected2);
+    expect(stakingRewardMap.get(3)).toEqual(expected3);
+  });
+});
+
 describe('getStakingRewardTimestamps', () => {
   [
     [
@@ -1167,8 +1204,6 @@ describe('getStakingRewardTimestamps', () => {
         ],
       },
     ],
-    null,
-    undefined,
     [],
   ].forEach((transactions) => {
     test(`'${transactions}'`, () => {

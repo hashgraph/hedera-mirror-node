@@ -2736,8 +2736,7 @@ components:
         - amount
       properties:
         account:
-          type: string
-          nullable: false
+          $ref: '#/components/schemas/EntityId'
         amount:
           format: int64
           type: integer
