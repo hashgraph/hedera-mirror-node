@@ -11,4 +11,4 @@ embedded:
     password: mirror_node_pass
     user: mirror_node
   redis:
-    docker-image: redis:6.2.3-alpine
+    docker-image: redis:6-alpine

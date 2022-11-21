@@ -3,6 +3,10 @@ alertmanager:
   inhibitRules:
     enabled: true
 
+citus:
+  readReplicas:
+    replicaCount: 3
+
 global:
   middleware: true
 
