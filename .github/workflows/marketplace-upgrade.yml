@@ -21,7 +21,7 @@ jobs:
         run: echo "TAG=0.68.1" >> $GITHUB_ENV
 
       - name: Install k3d
-        run: curl --retry 3 -fsL https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh
+        run: curl --retry 5 -fsL https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
 
       - name: check PATH
         run: echo "PATH is {$PATH}"
