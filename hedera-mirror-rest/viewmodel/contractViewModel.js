@@ -32,19 +32,18 @@ class ContractViewModel {
    * @param {Entity} entity
    */
   constructor(contract, entity) {
-    const createdTimestamp = utils.nsToSecNs(entity.createdTimestamp);
     const contractId = EntityId.parse(entity.id);
     this.admin_key = utils.encodeKey(entity.key);
     this.auto_renew_account = EntityId.parse(entity.autoRenewAccountId, {isNullable: true}).toString();
     this.auto_renew_period = entity.autoRenewPeriod;
     this.contract_id = contractId.toString();
-    this.created_timestamp = createdTimestamp;
+    this.created_timestamp = utils.nsToSecNs(entity.createdTimestamp);
     this.deleted = entity.deleted;
     this.evm_address =
       entity.evmAddress !== null ? utils.toHexString(entity.evmAddress, true) : contractId.toEvmAddress();
     this.expiration_timestamp = utils.calculateExpiryTimestamp(
       entity.autoRenewPeriod,
-      createdTimestamp,
+      entity.createdTimestamp,
       entity.expirationTimestamp
     );
     this.file_id = EntityId.parse(contract.fileId, {isNullable: true}).toString();

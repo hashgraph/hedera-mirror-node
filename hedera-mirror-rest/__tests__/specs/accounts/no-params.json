@@ -225,7 +225,7 @@
         "deleted": false,
         "ethereum_nonce": null,
         "evm_address": null,
-        "expiry_timestamp": "8000010999.123457",
+        "expiry_timestamp": "8010000.123456789",
         "key": {
           "_type": "ED25519",
           "key": "bfc9d4a344389324119eed485eb3a875b1e5a54bd189d2fd5ad88ce1d3473dee"

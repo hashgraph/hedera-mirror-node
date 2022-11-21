@@ -141,7 +141,7 @@
         "deleted": false,
         "ethereum_nonce": null,
         "evm_address": null,
-        "expiry_timestamp": "33342999.123456787",
+        "expiry_timestamp": "43332.123456789",
         "key": {
           "_type": "ProtobufEncoded",
           "key": "030303"

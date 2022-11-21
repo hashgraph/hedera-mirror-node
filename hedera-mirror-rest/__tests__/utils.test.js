@@ -1812,7 +1812,8 @@ describe('toUint256', () => {
 });
 
 describe('calculateExpiryTimestamp', () => {
-  const autoRenewPeriod = 8000001; // ~92 days as seconds
+  const autoRenewPeriodMax = 8_000_001; // ~92.5626 days as seconds
+  const autoRenewPeriodMin = 6_999_999; // ~81.01 days as seconds
   test.each([
     ['', '', '', '0.000000000'],
     [null, null, null, null],
@@ -1821,19 +1822,20 @@ describe('calculateExpiryTimestamp', () => {
     [undefined, 1, 10, '0.000000010'],
     [1, undefined, 10, '0.000000010'],
     [1, 1, 10000000001, '10.000000001'],
-    [undefined, '1', undefined, null],
+    [undefined, 1, undefined, null],
     [1, undefined, undefined, null],
-    [1, '1.1', undefined, '1001.1'],
-    [autoRenewPeriod, '1668785933012', undefined, '1676785934012'],
+    // Friday, February 13, 2009 11:31:30 PM GMT + 92.5626 days (8000001 seconds) -> Sunday, May 17, 2009 1:44:51 PM
+    [autoRenewPeriodMax, 1234567890000000003n, undefined, '1242567891.000000003'],
+    // Monday, November 21, 2022 8:58:21 PM GMT + 81.01 days (6999999 seconds) -> Friday, February 10, 2023 9:25:00 PM
+    [autoRenewPeriodMin, 1669064301000000001n, undefined, '1676064300.000000001'],
   ])('%s expect %s', (autoRenewPeriod, createdTimestamp, expirationTimestamp, expected) => {
     expect(utils.calculateExpiryTimestamp(autoRenewPeriod, createdTimestamp, expirationTimestamp)).toEqual(expected);
     if (!_.isNil(autoRenewPeriod) && !_.isNil(createdTimestamp) && _.isNil(expirationTimestamp)) {
-      const createdDate = new Date(Number(createdTimestamp));
+      const createdTimestampDate = utils.nsToSecNs(Number(createdTimestamp));
+      const createdDate = new Date(Number(createdTimestampDate));
       const expiryDate = new Date(Number(expected));
       const difference = expiryDate.getTime() - createdDate.getTime();
-      const differenceDays = difference / (1000 * 3600 * 24);
-      const autoRenewPeriodDays = autoRenewPeriod / (3600 * 24);
-      expect(differenceDays).toEqual(autoRenewPeriodDays);
+      expect(difference).toEqual(autoRenewPeriod);
     }
   });
 });
