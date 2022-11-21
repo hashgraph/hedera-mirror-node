@@ -20,10 +20,6 @@ jobs:
       - name: Get tag
         run: echo "TAG=0.68.1" >> $GITHUB_ENV
 
-      - name: Install mpdev
-        run: docker run gcr.io/cloud-marketplace-tools/k8s/dev && cat /scripts/dev > "${MPDEV}" && chmod x "${MPDEV}"
-             echo "MPDEV is installed" >> $GITHUB_ENV
-
       - name: Install k3d
         run: curl --retry 3 -fsL https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
              echo "k3d is installed" >> $GITHUB_ENV
@@ -31,6 +27,10 @@ jobs:
       - name: Create k3d cluster
         run: k3d cluster create mirror --agents 1 --k3s-arg="--disable=traefik@all --disable=servicelb@all" --timeout 5m --wait --image rancher/k3s:v1.23.8-k3s2
         timeout-minutes: 3
+
+      - name: Install mpdev
+        run: docker run gcr.io/cloud-marketplace-tools/k8s/dev && cat /scripts/dev > "${MPDEV}" && chmod +x "${MPDEV}"
+          echo "MPDEV is installed" >> $GITHUB_ENV
 
       - name: Install marketplace app
         run: mpdev verify --deployer=gcr.io/mirror-node-public/hedera-mirror-node/deployer:${TAG}
