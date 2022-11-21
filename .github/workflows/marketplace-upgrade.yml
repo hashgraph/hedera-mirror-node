@@ -21,7 +21,7 @@ jobs:
         run: echo "TAG=0.68.1" >> $GITHUB_ENV
 
       - name: Install k3d
-        run: curl --retry 3 -fsL https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh |
+        run: curl --retry 3 -fsL https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh
              echo "k3d is installed" >> $GITHUB_ENV
 
       - name: Create k3d cluster
