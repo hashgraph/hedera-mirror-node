@@ -56,10 +56,8 @@ public class AccountAccessorImpl implements AccountAccessor {
         }
         alias = mirrorEntityAccess.alias(address);
 
-        if (!alias.isEmpty()) {
-            if (alias.size() == EVM_ADDRESS_SIZE) {
-                return Address.wrap(Bytes.wrap(alias.toByteArray()));
-            }
+        if (!alias.isEmpty() && alias.size() == EVM_ADDRESS_SIZE) {
+            return Address.wrap(Bytes.wrap(alias.toByteArray()));
         }
         return address;
     }
