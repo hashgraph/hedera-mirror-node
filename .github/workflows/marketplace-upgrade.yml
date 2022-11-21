@@ -1,0 +1,41 @@
+name: "GCP Marketplace"
+
+on:
+  push:
+    branches: [ main, release/** ]
+    tags: [ v* ]
+
+env:
+  MPDEV: "/usr/local/bin/mpdev"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    needs: chart
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Get tag
+        run: echo "TAG=${GITHUB_REF#refs/*/v}" >> $GITHUB_ENV
+
+      - name: Build images
+        run: ./release.sh ${{env.TAG}}
+        working-directory: ./charts/marketplace/gcp
+
+      - name: Install mpdev
+        run: docker run gcr.io/cloud-marketplace-tools/k8s/dev && cat /scripts/dev > "${MPDEV}" && chmod x "${MPDEV}"
+             echo "MPDEV is installed" >> $GITHUB_ENV
+
+      - name: Install k3d
+        run: curl --retry 3 -fsL https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+             echo "k3d is installed" >> $GITHUB_ENV
+
+      - name: Create k3d cluster
+        run: k3d cluster create mirror --agents 1 --k3s-arg="--disable=traefik@all --disable=servicelb@all" --timeout 5m --wait --image rancher/k3s:v1.23.8-k3s2
+        timeout-minutes: 3
+
+      - name: Install marketplace app
+        run: mpdev verify --deployer=gcr.io/mirror-node-public/hedera-mirror-node/deployer:${TAG}

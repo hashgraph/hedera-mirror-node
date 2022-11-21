@@ -40,7 +40,7 @@ for more information on how to invoke the API.
 ### REST API
 
 Serves account, balance, topic message and transaction APIs. A Kubernetes
-[Deployment](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/) is used to manage the gRPC
+[Deployment](https://kubernetes.io/docs/concepts/workloads/controllers/deployment/) is used to manage the rest
 component. This API is exposed via a LoadBalancer Service on port 80. It can be horizontally scaled by adjusting its
 replica count. See the REST API [documentation](https://docs.hedera.com/guides/docs/mirror-node-api/cryptocurrency-api)
 for more information on how to invoke the API.
