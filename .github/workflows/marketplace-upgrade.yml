@@ -18,11 +18,8 @@ jobs:
       - name: Install k3d
         run: curl --retry 3 -fsL https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash -ex
 
-      - name: Delete existing cluster
-        run: k3d cluster delete mirror
-
       - name: Create k3d cluster
-        run: k3d cluster create mirror --agents 1 --k3s-arg="--disable=traefik\@all --disable=servicelb@all" --timeout 5m --wait --image rancher/k3s:v1.23.8-k3s2
+        run: k3d cluster create mirror --agents 1 --timeout 5m --wait --image rancher/k3s:v1.24.3-k3s1 --trace
         timeout-minutes: 3
 
       - name: Get tag
