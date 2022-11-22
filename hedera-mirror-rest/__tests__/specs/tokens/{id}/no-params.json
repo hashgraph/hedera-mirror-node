@@ -9,6 +9,7 @@
         "deleted": true
       },
       {
+        "auto_renew_period": 6999999,
         "num": 1135,
         "type": "TOKEN",
         "memo": "token.0.0.1135",
@@ -66,11 +67,11 @@
     "symbol": "ORIGINALRDKSE",
     "admin_key": null,
     "auto_renew_account": null,
-    "auto_renew_period": null,
+    "auto_renew_period": 6999999,
     "created_timestamp": "1234567890.000000002",
     "decimals": "1000",
     "deleted": null,
-    "expiry_timestamp": null,
+    "expiry_timestamp": "1241567889.000000002",
     "fee_schedule_key": null,
     "freeze_default": false,
     "freeze_key": null,

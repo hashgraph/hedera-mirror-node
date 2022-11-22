@@ -60,7 +60,11 @@ const processRow = (row) => {
     deleted: row.deleted,
     ethereum_nonce: row.ethereum_nonce,
     evm_address: evmAddress,
-    expiry_timestamp: utils.nsToSecNs(row.expiration_timestamp),
+    expiry_timestamp: utils.calculateExpiryTimestamp(
+      row.auto_renew_period,
+      row.created_timestamp,
+      row.expiration_timestamp
+    ),
     key: utils.encodeKey(row.key),
     max_automatic_token_associations: row.max_automatic_token_associations,
     memo: row.memo,

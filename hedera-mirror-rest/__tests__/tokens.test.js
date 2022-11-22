@@ -20,8 +20,8 @@
 
 import {getResponseLimit} from '../config';
 import * as constants from '../constants';
-import {opsMap} from '../utils';
 import * as utils from '../utils';
+import {opsMap} from '../utils';
 import {assertSqlQueryEqual} from './testutils';
 import tokens from '../tokens';
 
@@ -792,7 +792,7 @@ describe('token formatTokenInfoRow tests', () => {
     created_timestamp: '0.000000010',
     decimals: '10',
     deleted: true,
-    expiry_timestamp: 1594431063696143000,
+    expiry_timestamp: '1594431063.696143000',
     fee_schedule_key: {
       _type: 'ProtobufEncoded',
       key: '060606',
