@@ -24,6 +24,5 @@ import lombok.Value;
 
 @Value
 public class ContractCallResponse {
-    String gas;
     String result;
 }

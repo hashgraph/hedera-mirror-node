@@ -42,7 +42,7 @@ public class ContractController {
 
     @PostMapping(value = "/call")
     public Mono<ContractCallResponse> call(@RequestBody @Valid ContractCallRequest request) {
-        throw new UnsupportedOperationException("Operations eth_call and gas_estimate are not supported yet!");
+        throw new UnsupportedOperationException("Operation not supported yet!");
     }
 
     //This is temporary method till eth_call and gas_estimate business logic got impl.

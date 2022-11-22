@@ -27,11 +27,13 @@ import java.lang.annotation.Target;
 import javax.validation.Constraint;
 import javax.validation.Payload;
 
+import static com.hedera.mirror.web3.controller.validation.AddressValidator.MESSAGE;
+
 @Constraint(validatedBy = AddressValidator.class)
 @Target({ElementType.FIELD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Address {
-    String message() default "must be 20 bytes hex format";
+public @interface  Address {
+    String message() default MESSAGE;
 
     Class<?>[] groups() default {};
 

@@ -20,12 +20,15 @@ package com.hedera.mirror.web3.controller;
  * ‍
  */
 
+import static com.hedera.mirror.web3.controller.validation.AddressValidator.MESSAGE;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
 
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -36,7 +39,8 @@ import org.springframework.web.reactive.function.BodyInserters;
 @WebFluxTest(controllers = ContractController.class)
 class ContractControllerTest {
     private static final String CALL_URI = "/api/v1/contracts/call";
-    private static final String NOT_IMPLEMENTET_ERROR = "Operations eth_call and gas_estimate are not supported yet!";
+    private static final String NOT_IMPLEMENTET_ERROR = "Operation not supported yet!";
+    private static final String NEGATIVE_NUMBER_ERROR = "{} field must be greater than or equal to 0";
 
     @Resource
     private WebTestClient webClient;
@@ -55,10 +59,12 @@ class ContractControllerTest {
                 .isEqualTo(new GenericErrorResponse(NOT_IMPLEMENTET_ERROR));
     }
 
-    @Test
-    void throwsValidationExceptionWhenCalledWithMissingToField() {
+    @ValueSource(strings = {"null", "", " ", "0x", "0xghijklmno", "0x000000000000000000000000000000Z0000007e7",
+            "00000000001239847e"})
+    @ParameterizedTest
+    void throwsValidationExceptionWhenCalledWithMissingToField(String to) {
         final var request = request();
-        request.setTo("");
+        request.setTo(to);
 
         webClient.post()
                 .uri(CALL_URI)
@@ -70,11 +76,13 @@ class ContractControllerTest {
                 .expectBody(GenericErrorResponse.class);
     }
 
-    @Test
-    void throwsValidationExceptionWhenCalledWithWrongFromField() {
-        final var errorString = "from field must be 20 bytes hex format";
+    @ValueSource(strings = {"", " ", "0x", "0xghijklmno", "0x000000000000000000000000000000Z0000007e7",
+            "00000000001239847e"})
+    @ParameterizedTest
+    void throwsValidationExceptionWhenCalledWithWrongFromField(String from) {
+        final var errorString = "from field ".concat(MESSAGE);
         final var request = request();
-        request.setFrom("");
+        request.setFrom(from);
 
         webClient.post()
                 .uri(CALL_URI)
@@ -88,24 +96,8 @@ class ContractControllerTest {
     }
 
     @Test
-    void throwsUnsupportedOperationExceptionWhenOmmitingOptionalFromField() {
-        final var request = request();
-        request.setFrom(null);
-
-        webClient.post()
-                .uri(CALL_URI)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(request))
-                .exchange()
-                .expectStatus()
-                .isEqualTo(NOT_IMPLEMENTED)
-                .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse(NOT_IMPLEMENTET_ERROR));
-    }
-
-    @Test
     void throwsValidationExceptionWhenCalledWithWrongValueField() {
-        final var errorString = "value field must be greater than or equal to 0";
+        final var errorString = negativeNumberErrorFrom("value");
         final var request = request();
         request.setValue(-1L);
 
@@ -122,7 +114,7 @@ class ContractControllerTest {
 
     @Test
     void throwsValidationExceptionWhenCalledWithWrongGasField() {
-        final var errorString = "gas field must be greater than or equal to 0";
+        final var errorString = negativeNumberErrorFrom("gas");
         final var request = request();
         request.setGas(-1L);
 
@@ -139,7 +131,7 @@ class ContractControllerTest {
 
     @Test
     void throwsValidationExceptionWhenCalledWithWrongGasPriceField() {
-        final var errorString = "gasPrice field must be greater than or equal to 0";
+        final var errorString = negativeNumberErrorFrom("gasPrice");
         final var request = request();
         request.setGasPrice(-1L);
 
@@ -154,6 +146,23 @@ class ContractControllerTest {
                 .isEqualTo(new GenericErrorResponse(errorString));
     }
 
+    @Test
+    void throwsValidationExceptionWhenCalledWithWronBlockTypeField() {
+        final var request = request();
+        final var errorResponse = "block field must not be null";
+        request.setBlock(null);
+
+        webClient.post()
+                .uri(CALL_URI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(request))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(BAD_REQUEST)
+                .expectBody(GenericErrorResponse.class)
+                .isEqualTo(new GenericErrorResponse(errorResponse));
+    }
+
     private ContractCallRequest request() {
         final var request = new ContractCallRequest();
         request.setTo("0x00000000000000000000000000000000000004e4");
@@ -164,4 +173,9 @@ class ContractControllerTest {
 
         return request;
     }
+
+    private String negativeNumberErrorFrom(String field){
+        return NEGATIVE_NUMBER_ERROR.replace("{}",field);
+    }
+
 }
