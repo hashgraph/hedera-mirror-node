@@ -25,9 +25,8 @@ jobs:
         run: k3d cluster create mirror --agents 1 --timeout 5m --wait --image rancher/k3s:v1.24.3-k3s1
         timeout-minutes: 3
 
-      - name: Install Application
+      - name: Install kubectl
         run:  curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/darwin/amd64/kubectl"
-              kubectl apply -f "https://raw.githubusercontent.com/GoogleCloudPlatform/marketplace-k8s-app-tools/master/crd/app-crd.yaml"
 
       - name: Get tag
         run: echo "TAG=0.68.1" >> $GITHUB_ENV
@@ -38,6 +37,9 @@ jobs:
       - name: Install mpdev
         run:  docker run gcr.io/cloud-marketplace-tools/k8s/dev cat /scripts/dev > ${MPDEV}
                && chmod +x ${MPDEV}
+
+      - name: Install application
+        run: kubectl apply -f "https://raw.githubusercontent.com/GoogleCloudPlatform/marketplace-k8s-app-tools/master/crd/app-crd.yaml"
 
       - name: Install marketplace app
         run: ${MPDEV} verify --deployer=gcr.io/mirror-node-public/hedera-mirror-node/deployer:${TAG}
