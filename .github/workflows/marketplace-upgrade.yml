@@ -31,7 +31,7 @@ jobs:
 
 
       - name: Create bin
-        run:  echo "Home is ${HOME}" && cd ${HOME} && mkdir "bin" && export PATH=${HOME}/bin:$PATH
+        run:  cd ${HOME} && mkdir "bin" && export PATH=${HOME}/bin:$PATH && echo "Path is ${PATH}"
 
       - name: Install mpdev
         run:  docker run -d  gcr.io/cloud-marketplace-tools/k8s/dev cat /scripts/dev > ${MPDEV}
