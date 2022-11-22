@@ -11,7 +11,7 @@ jobs:
       MPDEV: "/usr/local/bin/mpdev"
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
@@ -22,12 +22,16 @@ jobs:
         run: k3d cluster create mirror --agents 1 --timeout 5m --wait --image rancher/k3s:v1.24.3-k3s1 --trace
         timeout-minutes: 3
 
+      - name: Install Application
+        run:  curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/darwin/amd64/kubectl"
+              kubectl apply -f "https://raw.githubusercontent.com/GoogleCloudPlatform/marketplace-k8s-app-tools/master/crd/app-crd.yaml"
+
       - name: Get tag
         run: echo "TAG=0.68.1" >> $GITHUB_ENV
 
       - name: Install mpdev
-        run: docker run gcr.io/cloud-marketplace-tools/k8s/dev && cat /scripts/dev > "${MPDEV}" && chmod +x "${MPDEV}"
-          echo "MPDEV is installed" >> $GITHUB_ENV
+        run:  docker run gcr.io/cloud-marketplace-tools/k8s/dev && cat /scripts/dev > "${MPDEV}" && chmod +x "${MPDEV}"
+             echo "MPDEV is installed" >> $GITHUB_ENV
 
       - name: Install marketplace app
         run: mpdev verify --deployer=gcr.io/mirror-node-public/hedera-mirror-node/deployer:${TAG}
