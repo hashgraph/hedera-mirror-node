@@ -33,7 +33,7 @@ jobs:
         run:  cd ${HOME} && mkdir "bin" && export PATH=${HOME}/bin:$PATH && echo "Path is ${PATH}"
 
       - name: Install mpdev
-        run:  docker run -d  gcr.io/cloud-marketplace-tools/k8s/dev cat /scripts/dev > ${MPDEV}
+        run:  docker run gcr.io/cloud-marketplace-tools/k8s/dev cat /scripts/dev > ${MPDEV}
                && chmod +x ${MPDEV} && ls -ll "/home/runner/bin" && ${MPDEV}
 
       - name: Install marketplace app
