@@ -1824,6 +1824,7 @@ describe('calculateExpiryTimestamp', () => {
     [1, 1, 10000000001, '10.000000001'],
     [undefined, 1, undefined, null],
     [1, undefined, undefined, null],
+    [1500, 987654111123456, undefined, '989154.111123456'],
     // Friday, February 13, 2009 11:31:30 PM GMT + 92.5626 days (8000001 seconds) -> Sunday, May 17, 2009 1:44:51 PM
     [autoRenewPeriodMax, 1234567890000000003n, undefined, '1242567891.000000003'],
     // Monday, November 21, 2022 8:58:21 PM GMT + 81.01 days (6999999 seconds) -> Friday, February 10, 2023 9:25:00 PM
