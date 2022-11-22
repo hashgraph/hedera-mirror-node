@@ -8,7 +8,7 @@ jobs:
   install:
     runs-on: ubuntu-latest
     env:
-      MPDEV: "/usr/local/bin/mpdev"
+      MPDEV: "$HOME/bin/mpdev"
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -28,6 +28,9 @@ jobs:
 
       - name: Get tag
         run: echo "TAG=0.68.1" >> $GITHUB_ENV
+
+      - name: Create bin
+        run: cd ${HOME} && mkdir "bin" && export PATH=$HOME/bin:$PATH
 
       - name: Install mpdev
         run:  docker run -d  gcr.io/cloud-marketplace-tools/k8s/dev cat /scripts/dev > ${MPDEV}
