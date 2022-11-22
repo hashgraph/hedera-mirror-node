@@ -22,22 +22,11 @@ jobs:
           distribution: 'temurin'
           java-version: 17
 
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v0
-        with:
-          credentials_json: '${{ secrets.GCR_KEY }}'
-
-      - name: Setup gcloud
-        uses: google-github-actions/setup-gcloud@v0
-
-      - name: Configure Docker
-        run: gcloud auth configure-docker gcr.io,marketplace.gcr.io
-
       - name: Install k3d
-        run: curl --retry 3 -fsL https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash -ex
+        run: curl --retry 3 -fsL https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
 
       - name: Create k3d cluster
-        run: k3d cluster create mirror --agents 1 --timeout 5m --wait --image rancher/k3s:v1.24.3-k3s1 --trace
+        run: k3d cluster create mirror --agents 1 --timeout 5m --wait --image rancher/k3s:v1.24.3-k3s1
         timeout-minutes: 3
 
       - name: Install Application
@@ -48,8 +37,9 @@ jobs:
         run: echo "TAG=0.68.1" >> $GITHUB_ENV
 
       - name: Install mpdev
-        run:  docker run gcr.io/cloud-marketplace-tools/k8s/dev && cat /scripts/dev > "${MPDEV}" && chmod +x "${MPDEV}"
-             echo "MPDEV is installed" >> $GITHUB_ENV
+        run:  docker run gcr.io/cloud-marketplace-tools/k8s/dev && readlink -f /scripts/dev && cat /scripts/dev > "${MPDEV}"
+              chmod +x "${MPDEV}"
+              echo "MPDEV is installed" >> $GITHUB_ENV
 
       - name: Install marketplace app
         run: mpdev verify --deployer=gcr.io/mirror-node-public/hedera-mirror-node/deployer:${TAG}
