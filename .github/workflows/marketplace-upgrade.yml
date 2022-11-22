@@ -29,6 +29,9 @@ jobs:
       - name: Get tag
         run: echo "TAG=0.68.1" >> $GITHUB_ENV
 
+      - name: Get Path
+        run: echo "Path is {$PATH}" >> $GITHUB_ENV
+
       - name: Install mpdev
         run:  docker run -d  gcr.io/cloud-marketplace-tools/k8s/dev cat /scripts/dev > ${MPDEV}
               chmod +x ${MPDEV}
