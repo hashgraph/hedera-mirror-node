@@ -15,6 +15,9 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: cleanup
+        run: docker system prune -a
+
       - name: Install k3d
         run: curl --retry 3 -fsL https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
 
@@ -23,7 +26,7 @@ jobs:
         timeout-minutes: 3
 
       - name: Install Application
-        run:  curl -LO "https://dl.k8s.io/release/v1.22.0/bin/darwin/amd64/kubectl"
+        run:  curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/darwin/amd64/kubectl"
               kubectl apply -f "https://raw.githubusercontent.com/GoogleCloudPlatform/marketplace-k8s-app-tools/master/crd/app-crd.yaml"
 
       - name: Get tag
