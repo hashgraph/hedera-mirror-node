@@ -15,9 +15,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: cleanup
-        run: docker system prune -a
-
       - name: Install k3d
         run: curl --retry 3 -fsL https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
 
@@ -42,4 +39,4 @@ jobs:
         run: kubectl apply -f "https://raw.githubusercontent.com/GoogleCloudPlatform/marketplace-k8s-app-tools/master/crd/app-crd.yaml"
 
       - name: Install marketplace app
-        run: ${MPDEV} verify --deployer=gcr.io/mirror-node-public/hedera-mirror-node/deployer:${TAG}
+        run: ${MPDEV} verify --deployer=gcr.io/mirror-node-public/hedera-mirror-node/deployer:${TAG} --wait_timeout=600
