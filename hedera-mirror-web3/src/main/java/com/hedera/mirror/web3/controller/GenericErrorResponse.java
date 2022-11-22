@@ -33,14 +33,10 @@ import lombok.Value;
 @Value
 @NoArgsConstructor
 public class GenericErrorResponse {
-     List<ErrorMessage> messages = new ArrayList<>();
+    List<ErrorMessage> messages = new ArrayList<>();
 
     public GenericErrorResponse(String message) {
         messages.add(new ErrorMessage(message));
-    }
-
-    public GenericErrorResponse(List<String> errorMessages) {
-        errorMessages.forEach(s -> this.messages.add(new ErrorMessage(s)));
     }
 
     @Data

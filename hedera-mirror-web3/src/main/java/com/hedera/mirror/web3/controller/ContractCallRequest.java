@@ -44,18 +44,15 @@ public class ContractCallRequest {
     private String from;
 
     @Min(0)
-    @Max(MAX_VALUE)
-    private long gas = 0;
+    private long gas;
 
     @Min(0)
-    @Max(MAX_VALUE)
-    private long gasPrice = 0;
+    private long gasPrice;
 
     @Address
     @NotEmpty
     private String to;
 
     @Min(0)
-    @Max(MAX_VALUE)
-    private long value = 0;
+    private long value;
 }
