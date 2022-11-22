@@ -34,7 +34,7 @@ jobs:
 
       - name: Install mpdev
         run:  docker run -d  gcr.io/cloud-marketplace-tools/k8s/dev cat /scripts/dev > ${MPDEV}
-               && chmod +x ${MPDEV} && ls ${MPDEV}
+               && chmod +x ${MPDEV} && ls -ll "/home/runner/bin"
 
       - name: Install marketplace app
         run: ${MPDEV} verify --deployer=gcr.io/mirror-node-public/hedera-mirror-node/deployer:${TAG}
