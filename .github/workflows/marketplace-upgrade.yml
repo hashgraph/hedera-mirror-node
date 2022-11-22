@@ -15,13 +15,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install JDK
-        uses: actions/setup-java@v3
-        with:
-          cache: 'maven'
-          distribution: 'temurin'
-          java-version: 17
-
       - name: Install k3d
         run: curl --retry 3 -fsL https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
 
@@ -37,7 +30,8 @@ jobs:
         run: echo "TAG=0.68.1" >> $GITHUB_ENV
 
       - name: Install mpdev
-        run:  docker run gcr.io/cloud-marketplace-tools/k8s/dev && cat ./scripts/dev > "${MPDEV}"
+        run:  docker run gcr.io/cloud-marketplace-tools/k8s/dev
+              cat $(pwd)/scripts/dev > "${MPDEV}"
               chmod +x "${MPDEV}"
               echo "MPDEV is installed" >> $GITHUB_ENV
 
