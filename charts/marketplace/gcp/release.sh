@@ -46,6 +46,7 @@ function retag() {
 }
 
 # Ensure chart app version matches schema.yaml version
+cp values.yaml values.yaml.bak
 sed "s/version: .*/version: ${target_tag}/" values.yaml
 
 # Build Marketplace deployer image
