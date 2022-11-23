@@ -32,7 +32,7 @@ import {InvalidArgumentError, NotFoundError} from './errors';
 import {CustomFee, Entity, Nft, NftTransfer, Token, Transaction} from './model';
 import {NftService} from './service';
 import * as utils from './utils';
-import {CustomFeeViewModel, NftViewModel, NftTransactionHistoryViewModel} from './viewmodel';
+import {CustomFeeViewModel, NftTransactionHistoryViewModel, NftViewModel} from './viewmodel';
 
 const {default: defaultLimit} = getResponseLimit();
 
@@ -219,7 +219,11 @@ const formatTokenInfoRow = (row) => {
     custom_fees: createCustomFeesObject(row.custom_fees, row.type),
     decimals: `${row.decimals}`,
     deleted: row.deleted,
-    expiry_timestamp: row.expiration_timestamp,
+    expiry_timestamp: utils.calculateExpiryTimestamp(
+      row.auto_renew_period,
+      row.created_timestamp,
+      row.expiration_timestamp
+    ),
     fee_schedule_key: utils.encodeKey(row.fee_schedule_key),
     freeze_default: row.freeze_default,
     freeze_key: utils.encodeKey(row.freeze_key),
