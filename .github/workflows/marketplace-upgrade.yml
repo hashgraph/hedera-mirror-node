@@ -66,4 +66,4 @@ jobs:
         working-directory: charts/marketplace/gcp
 
       - name: Install marketplace app
-        run: ${MPDEV} verify --deployer=gcr.io/mirror-node-public/hedera-mirror-node/deployer:${TAG} --parameters='{"rest.service.type":"ClusterIp", "grpc.service.type":"ClusterIp"}'
+        run: ${MPDEV} verify --deployer=gcr.io/mirror-node-public/hedera-mirror-node/deployer:${TAG} --parameters='{"rest.service.type":"ClusterIP", "grpc.service.type":"ClusterIP"}'

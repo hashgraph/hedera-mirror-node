@@ -117,9 +117,8 @@ properties:
               - apiGroups: [ '' ]
                 resources: [ 'pods' ]
                 verbs: [ 'get' ]
-  grpc.service.type:
-    type: string
-    default: LoadBalancer
+  grpc.service:
+    type: LoadBalancer
     description: The gRPC service type
     title: gRPC Service type
   importer.config.hedera.mirror.importer.downloader.accessKey:
@@ -225,9 +224,8 @@ properties:
     title: REST API replicas
     minimum: 0
     maximum: 10
-  rest.service.type:
-    type: string
-    default: LoadBalancer
+  rest.service:
+    type: LoadBalancer
     description: The gRPC service type
     title: gRPC Service type
 
