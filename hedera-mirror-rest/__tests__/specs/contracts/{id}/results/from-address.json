@@ -79,6 +79,7 @@
   "responseJson": {
     "results": [
       {
+        "address": "0x70f2b2914a2a4b783faefb75f459a580616fcb5e",
         "amount": 30,
         "bloom": "0x0303",
         "call_result": "0x0404",
