@@ -26,7 +26,7 @@ import javax.validation.ConstraintValidatorContext;
 
 public class AddressValidator implements ConstraintValidator<Address, String> {
     public static final String MESSAGE = "must be 20 bytes hex format";
-    private static final Pattern HEX_PATTERN = Pattern.compile("^[\\da-fA-F]{40}$|^0[xX][\\da-fA-F]{40}$");
+    private static final Pattern HEX_PATTERN = Pattern.compile("^(0x)?[0-9a-fA-F]{40}$");
 
     @Override
     public void initialize(Address constraintAnnotation) {

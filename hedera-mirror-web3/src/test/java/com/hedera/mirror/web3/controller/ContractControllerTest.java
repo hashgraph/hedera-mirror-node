@@ -39,7 +39,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 @WebFluxTest(controllers = ContractController.class)
 class ContractControllerTest {
     private static final String CALL_URI = "/api/v1/contracts/call";
-    private static final String NOT_IMPLEMENTET_ERROR = "Operation not supported yet!";
+    private static final String NOT_IMPLEMENTED_ERROR = "Operation not supported yet!";
     private static final String NEGATIVE_NUMBER_ERROR = "{} field must be greater than or equal to 0";
 
     @Resource
@@ -56,7 +56,7 @@ class ContractControllerTest {
                 .expectStatus()
                 .isEqualTo(NOT_IMPLEMENTED)
                 .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse(NOT_IMPLEMENTET_ERROR));
+                .isEqualTo(new GenericErrorResponse(NOT_IMPLEMENTED_ERROR));
     }
 
     @ValueSource(strings = {"null", "", " ", "0x", "0xghijklmno", "0x000000000000000000000000000000Z0000007e7",
@@ -147,7 +147,7 @@ class ContractControllerTest {
     }
 
     @Test
-    void throwsValidationExceptionWhenCalledWithWronBlockTypeField() {
+    void throwsValidationExceptionWhenCalledWithWrongBlockTypeField() {
         final var request = request();
         final var errorResponse = "block field must not be null";
         request.setBlock(null);

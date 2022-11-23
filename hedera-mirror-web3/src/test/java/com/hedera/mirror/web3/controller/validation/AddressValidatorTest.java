@@ -22,25 +22,29 @@ package com.hedera.mirror.web3.controller.validation;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import javax.validation.ConstraintValidatorContext;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvFileSource;
-import org.mockito.Mock;
+import org.junit.jupiter.params.provider.EmptySource;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class AddressValidatorTest {
-    @Mock
-    private ConstraintValidatorContext context;
     private final AddressValidator addressValidator = new AddressValidator();
 
     @ParameterizedTest
-    @CsvFileSource(resources = "/validation/addressValidData.csv", nullValues = {"null"})
+    @NullSource
+    @ValueSource(strings = {"0x00000000000000000000000000000000000007e7", "0x00000000000000000000000000000000000005E4"
+            , "00000000000000000000000000000000000001e8", "00000000000000000000000000000000000001E9"})
     void isValidHappyPath(String value) {
-        assertThat(addressValidator.isValid(value, context)).isTrue();
+        assertThat(addressValidator.isValid(value, null)).isTrue();
     }
 
     @ParameterizedTest
-    @CsvFileSource(resources = "/validation/addressInvalidData.csv", emptyValue = "empty")
+    @EmptySource
+    @ValueSource(strings = {"0x00000000000000000000000000000000000004e47",
+            "0x000000000000000000000000000000Z0000007e7", "0x0000000000000000000000000000000000007e7",
+            "000000000000000000000000000000000Z0001e8", "00000000000000000000000000000000000001e",
+            "Kp000000000000000000000000000000000001e", "0xzxcvbdfeqrfdseg", "0x000abc", "123589320198", "?$5%.xpo"})
     void isValidNegativeCases(String value) {
-        assertThat(addressValidator.isValid(value, context)).isFalse();
+        assertThat(addressValidator.isValid(value, null)).isFalse();
     }
 }
