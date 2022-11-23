@@ -85,16 +85,16 @@
     ],
     "stakingRewardTransfers": [
       {
-        "accountId": "0.0.8",
+        "account_id": "0.0.8",
         "amount": 500,
         "consensus_timestamp": "1565779400711927001",
-        "payerAccountId": "0.0.8"
+        "payer_account_id": "0.0.8"
       },
       {
-        "accountId": "0.0.9",
+        "account_id": "0.0.9",
         "amount": 100,
         "consensus_timestamp": "1565779500711927001",
-        "payerAccountId": "0.0.9"
+        "payer_account_id": "0.0.9"
       }
     ]
   },

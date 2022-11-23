@@ -1214,18 +1214,18 @@ const defaultStakingRewardTransfer = {
 };
 
 const addStakingRewardTransfer = async (transfer) => {
-  const accountId = transfer.accountId
-    ? EntityId.parse(transfer.accountId).getEncodedId()
+  const account_id = transfer.account_id
+    ? EntityId.parse(transfer.account_id).getEncodedId()
     : defaultStakingRewardTransfer.account_id;
-  const payerAccountId = transfer.payerAccountId
-    ? EntityId.parse(transfer.payerAccountId).getEncodedId()
+  const payer_account_id = transfer.payer_account_id
+    ? EntityId.parse(transfer.payer_account_id).getEncodedId()
     : defaultStakingRewardTransfer.payer_account_id;
 
   const stakingRewardTransfer = {
     ...defaultStakingRewardTransfer,
     ...transfer,
-    account_id: accountId,
-    payer_account_id: payerAccountId,
+    account_id: account_id,
+    payer_account_id: payer_account_id,
   };
 
   const insertFields = ['account_id', 'amount', 'consensus_timestamp', 'payer_account_id'];
