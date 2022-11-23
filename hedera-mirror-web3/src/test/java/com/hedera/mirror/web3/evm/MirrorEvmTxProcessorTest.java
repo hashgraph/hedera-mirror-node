@@ -20,14 +20,16 @@ package com.hedera.mirror.web3.evm;
  * ‍
  */
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+
+import com.hedera.services.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.math.BigInteger;
@@ -151,8 +153,11 @@ class MirrorEvmTxProcessorTest {
         var result =
                 mirrorEvmTxProcessor.execute(
                         sender, receiverAddress, 33_333L, 1234L, Bytes.EMPTY, consensusTime, true);
-        assertTrue(result.isSuccessful());
-        assertEquals(receiver.getAddress(), result.getRecipient().get());
+
+        assertThat(result)
+                .isNotNull()
+                .returns(true, HederaEvmTransactionProcessingResult::isSuccessful)
+                .returns(receiver.getAddress(), r -> r.getRecipient().get());
     }
 
     @Test
@@ -178,12 +183,12 @@ class MirrorEvmTxProcessorTest {
         var messageFrame =
                 mirrorEvmTxProcessor.buildInitialFrame(protoFrame, receiverAddress, Bytes.EMPTY, 33L);
 
-        assertEquals(Code.EMPTY, messageFrame.getCode());
+        assertThat(messageFrame.getCode()).isEqualTo(Code.EMPTY);
     }
 
     @Test
     void assertIsContractCallFunctionality() {
-        assertEquals(HederaFunctionality.ContractCall, mirrorEvmTxProcessor.getFunctionType());
+        assertThat(mirrorEvmTxProcessor.getFunctionType()).isEqualTo(HederaFunctionality.ContractCall);
     }
 
     @Test
@@ -217,8 +222,10 @@ class MirrorEvmTxProcessorTest {
                         commonInitialFrame, (Address) transaction.getTo().get(), Bytes.EMPTY, 0L);
 
         // expect:
-        assertEquals(transaction.getSender(), buildMessageFrame.getSenderAddress());
-        assertEquals(transaction.getValue(), buildMessageFrame.getApparentValue());
+        assertThat(transaction)
+                .isNotNull()
+                .returns(buildMessageFrame.getSenderAddress(), Transaction::getSender)
+                .returns(buildMessageFrame.getApparentValue(), Transaction::getValue);
     }
 
     private void givenValidMockWithoutGetOrCreate() {
