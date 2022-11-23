@@ -114,6 +114,7 @@
             "parent_consensus_timestamp": null,
             "result": "SUCCESS",
             "scheduled": false,
+            "staking_reward_transfers": [],
             "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
             "transaction_id": "0.0.8-1565779666-711927000",
             "transfers": [
@@ -149,6 +150,7 @@
             "parent_consensus_timestamp": null,
             "result": "SUCCESS",
             "scheduled": false,
+            "staking_reward_transfers": [],
             "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
             "transaction_id": "0.0.8-1565779600-711927000",
             "transfers": [
@@ -195,6 +197,7 @@
             "parent_consensus_timestamp": null,
             "result": "SUCCESS",
             "scheduled": false,
+            "staking_reward_transfers": [],
             "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
             "transaction_id": "0.0.8-1565779666-711927000",
             "transfers": [
@@ -230,6 +233,7 @@
             "parent_consensus_timestamp": null,
             "result": "SUCCESS",
             "scheduled": false,
+            "staking_reward_transfers": [],
             "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
             "transaction_id": "0.0.8-1565779600-711927000",
             "transfers": [
@@ -265,6 +269,7 @@
             "parent_consensus_timestamp": null,
             "result": "SUCCESS",
             "scheduled": false,
+            "staking_reward_transfers": [],
             "token_transfers": [
               {
                 "account": "0.0.200",
@@ -320,6 +325,7 @@
             "parent_consensus_timestamp": null,
             "result": "SUCCESS",
             "scheduled": false,
+            "staking_reward_transfers": [],
             "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
             "transaction_id": "0.0.8-1565779333-711927000",
             "transfers": [

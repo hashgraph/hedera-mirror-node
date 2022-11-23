@@ -80,6 +80,7 @@
         "memo_base64": null,
         "result": "SUCCESS",
         "scheduled": false,
+        "staking_reward_transfers": [],
         "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
         "name": "CRYPTOTRANSFER",
         "node": "0.0.3",

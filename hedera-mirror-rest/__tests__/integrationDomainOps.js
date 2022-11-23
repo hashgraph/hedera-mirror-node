@@ -301,6 +301,15 @@ const loadNodeStakes = async (nodeStakes) => {
   }
 };
 
+const loadRecordFiles = async (recordFiles) => {
+  if (recordFiles == null) {
+    return;
+  }
+  for (const recordFile of recordFiles) {
+    await addRecordFile(recordFile);
+  }
+};
+
 const loadSchedules = async (schedules) => {
   if (schedules == null) {
     return;
@@ -311,22 +320,12 @@ const loadSchedules = async (schedules) => {
   }
 };
 
-const loadStakingRewardTransfers = async (stakingRewardTransfers) => {
-  if (stakingRewardTransfers == null) {
+const loadStakingRewardTransfers = async (transfers) => {
+  if (transfers == null) {
     return;
   }
-
-  for (const stakingRewardTransfer of stakingRewardTransfers) {
-    await addStakingRewardTransfer(stakingRewardTransfer);
-  }
-};
-
-const loadRecordFiles = async (recordFiles) => {
-  if (recordFiles == null) {
-    return;
-  }
-  for (const recordFile of recordFiles) {
-    await addRecordFile(recordFile);
+  for (const transfer of transfers) {
+    await addStakingRewardTransfer(transfer);
   }
 };
 
@@ -1118,6 +1117,9 @@ const addCryptoTransaction = async (cryptoTransfer) => {
   if (!('senderAccountId' in cryptoTransfer)) {
     cryptoTransfer.senderAccountId = cryptoTransfer.payerAccountId;
   }
+  if (!('payerAccountId' in cryptoTransfer)) {
+    cryptoTransfer.payerAccountId = cryptoTransfer.senderAccountId;
+  }
   if (!('amount' in cryptoTransfer)) {
     cryptoTransfer.amount = NODE_FEE;
   }
@@ -1212,9 +1214,18 @@ const defaultStakingRewardTransfer = {
 };
 
 const addStakingRewardTransfer = async (transfer) => {
+  const account_id = transfer.account_id
+    ? EntityId.parse(transfer.account_id).getEncodedId()
+    : defaultStakingRewardTransfer.account_id;
+  const payer_account_id = transfer.payer_account_id
+    ? EntityId.parse(transfer.payer_account_id).getEncodedId()
+    : defaultStakingRewardTransfer.payer_account_id;
+
   const stakingRewardTransfer = {
     ...defaultStakingRewardTransfer,
     ...transfer,
+    account_id: account_id,
+    payer_account_id: payer_account_id,
   };
 
   const insertFields = ['account_id', 'amount', 'consensus_timestamp', 'payer_account_id'];
@@ -1228,7 +1239,7 @@ const addTransactionSignature = async (transactionSignature) => {
                                         entity_id,
                                         signature,
                                         type)
-    values ($1, $2, $3, $4, $5)`,
+     values ($1, $2, $3, $4, $5)`,
     [
       transactionSignature.consensus_timestamp,
       Buffer.from(transactionSignature.public_key_prefix),
