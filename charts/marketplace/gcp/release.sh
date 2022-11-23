@@ -60,6 +60,6 @@ retag "gcr.io/mirrornode/hedera-mirror-grpc:${source_tag}" "grpc"
 retag "gcr.io/mirrornode/hedera-mirror-importer:${source_tag}" ""
 retag "gcr.io/mirrornode/hedera-mirror-rest:${source_tag}" "rest"
 
-mv values.yaml.bak values.yaml
+#mv values.yaml.bak values.yaml
 echo "Successfully pushed all images"
 exit 0
