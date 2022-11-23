@@ -45,6 +45,9 @@ jobs:
         run: k3d cluster create mirror --agents 1 --timeout 5m --wait --image rancher/k3s:v1.24.3-k3s1
         timeout-minutes: 3
 
+      - name: Get tag
+        run: echo "TAG=0.69.0" >> $GITHUB_ENV
+
       - name: Install kubectl
         run:  curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/darwin/amd64/kubectl"
 
@@ -57,9 +60,6 @@ jobs:
 
       - name: Install application
         run: kubectl apply -f "https://raw.githubusercontent.com/GoogleCloudPlatform/marketplace-k8s-app-tools/master/crd/app-crd.yaml"
-
-      - name: Get tag
-        run: echo "TAG=0.69.0" >> $GITHUB_ENV
 
       - name: Build images
         run: ./release.sh "${TAG}"
