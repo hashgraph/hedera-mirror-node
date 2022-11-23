@@ -24,7 +24,7 @@ import com.hedera.mirror.common.exception.MirrorNodeException;
 
 public abstract class EvmException extends MirrorNodeException {
 
-    public EvmException(String message) {
+    protected EvmException(String message) {
         super(message);
     }
 }
