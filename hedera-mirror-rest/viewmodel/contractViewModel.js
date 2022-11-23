@@ -41,7 +41,11 @@ class ContractViewModel {
     this.deleted = entity.deleted;
     this.evm_address =
       entity.evmAddress !== null ? utils.toHexString(entity.evmAddress, true) : contractId.toEvmAddress();
-    this.expiration_timestamp = utils.nsToSecNs(entity.expirationTimestamp);
+    this.expiration_timestamp = utils.calculateExpiryTimestamp(
+      entity.autoRenewPeriod,
+      entity.createdTimestamp,
+      entity.expirationTimestamp
+    );
     this.file_id = EntityId.parse(contract.fileId, {isNullable: true}).toString();
     this.max_automatic_token_associations = entity.maxAutomaticTokenAssociations;
     this.memo = entity.memo;
