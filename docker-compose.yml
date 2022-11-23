@@ -1,7 +1,7 @@
 version: "3.7"
 services:
   citus:
-     image: mgoelswirlds/citus:11.1.4-pg14
+     image: xinatswirlds/citus:11.1.4-alpine
      deploy:
       replicas: 0
      environment:

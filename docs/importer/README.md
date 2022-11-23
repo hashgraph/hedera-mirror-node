@@ -88,5 +88,5 @@ DockerFile to build a custom image to be used in v2 is located in the following 
 
 The database name to be used by citus can be provided using an environment variable as follows:
 ```console
-docker build --build-arg DB=mirror_node --platform linux/arm64 -t mgoelswirlds/citus:11.1.4-pg14 .
+docker build --build-arg DB=mirror_node --platform linux/arm64 -t xinatswirlds/citus:11.1.4-alpine .
 ```
