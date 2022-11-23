@@ -114,6 +114,36 @@
         "transaction_hash": "lCDEQjAnWTLkkpv1i/mipNt5niRIU7xzY3h0ZHSituUyLqFrI6UF2mOUvZmywjsG",
         "treasuryAccountId": "0.0.98",
         "scheduled": true
+      },
+      {
+        "consensus_timestamp": "1234567890000000012",
+        "senderAccountId": "0.0.800",
+        "recipientAccountId": "0.0.9",
+        "amount": 100,
+        "nodeAccountId": "0.0.3",
+        "treasuryAccountId": "0.0.98"
+      },
+      {
+        "consensus_timestamp": "1234567890000000014",
+        "senderAccountId": "0.0.800",
+        "recipientAccountId": "0.0.9",
+        "amount": 500,
+        "nodeAccountId": "0.0.3",
+        "treasuryAccountId": "0.0.98"
+      }
+    ],
+    "stakingRewardTransfers": [
+      {
+        "account_id": "0.0.9",
+        "amount": 100,
+        "consensus_timestamp": "1234567890000000012",
+        "payer_account_id": "0.0.9"
+      },
+      {
+        "account_id": "0.0.9",
+        "amount": 500,
+        "consensus_timestamp": "1234567890000000014",
+        "payer_account_id": "0.0.9"
       }
     ]
   },
@@ -124,6 +154,7 @@
       "responseJson": {
         "transactions": [
           {
+            "bytes": null,
             "consensus_timestamp": "1234567890.000000002",
             "charged_tx_fee": 7,
             "entity_id": "0.0.100",
@@ -135,7 +166,7 @@
             "parent_consensus_timestamp": null,
             "result": "SUCCESS",
             "scheduled": false,
-            "bytes": null,
+            "staking_reward_transfers": [],
             "transaction_hash": "rovr8cn6DzCTVuSAV/YEevfN5jA30FCdFt3Dsg4IUVi/3xTRU0XBsYsZm3L+1Kxv",
             "transaction_id": "0.0.10-1234567890-000000001",
             "transfers": [
@@ -154,6 +185,7 @@
             "valid_start_timestamp": "1234567890.000000001"
           },
           {
+            "bytes": "Ynl0ZXM=",
             "charged_tx_fee": 7,
             "consensus_timestamp": "1234567890.000000003",
             "entity_id": null,
@@ -165,7 +197,7 @@
             "parent_consensus_timestamp": null,
             "result": "SUCCESS",
             "scheduled": true,
-            "bytes": "Ynl0ZXM=",
+            "staking_reward_transfers": [],
             "transaction_hash": "lCDEQjAnWTLkkpv1i/mipNt5niRIU7xzY3h0ZHSituUyLqFrI6UF2mOUvZmywjsG",
             "transaction_id": "0.0.10-1234567890-000000001",
             "transfers": [
@@ -189,6 +221,7 @@
             "valid_start_timestamp": "1234567890.000000001"
           },
           {
+            "bytes": "Ynl0ZXM=",
             "charged_tx_fee": 7,
             "consensus_timestamp": "1234567890.000000040",
             "entity_id": null,
@@ -200,7 +233,7 @@
             "parent_consensus_timestamp": null,
             "result": "DUPLICATE_TRANSACTION",
             "scheduled": false,
-            "bytes": "Ynl0ZXM=",
+            "staking_reward_transfers": [],
             "transaction_hash": "OxfaENC/745n9QsBD59QDfpPjkVVRPEoWwQZHy7KSrG3ScJJNovCMCP7g/hh7R+0",
             "transaction_id": "0.0.10-1234567890-000000001",
             "transfers": [
@@ -231,6 +264,7 @@
       "responseJson": {
         "transactions": [
           {
+            "bytes": null,
             "consensus_timestamp": "1234567890.000000002",
             "charged_tx_fee": 7,
             "entity_id": "0.0.100",
@@ -242,7 +276,7 @@
             "parent_consensus_timestamp": null,
             "result": "SUCCESS",
             "scheduled": false,
-            "bytes": null,
+            "staking_reward_transfers": [],
             "transaction_hash": "rovr8cn6DzCTVuSAV/YEevfN5jA30FCdFt3Dsg4IUVi/3xTRU0XBsYsZm3L+1Kxv",
             "transaction_id": "0.0.10-1234567890-000000001",
             "transfers": [
