@@ -46,7 +46,6 @@ function retag() {
 }
 
 # Ensure chart app version matches schema.yaml version
-cp values.yaml values.yaml.bak
 sed "s/version: .*/version: ${target_tag}/" values.yaml
 
 # Build Marketplace deployer image
@@ -61,6 +60,5 @@ retag "gcr.io/mirrornode/hedera-mirror-grpc:${source_tag}" "grpc"
 retag "gcr.io/mirrornode/hedera-mirror-importer:${source_tag}" ""
 retag "gcr.io/mirrornode/hedera-mirror-rest:${source_tag}" "rest"
 
-mv values.yaml.bak values.yaml
 echo "Successfully pushed all images"
 exit 0
