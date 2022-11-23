@@ -22,6 +22,7 @@ package com.hedera.mirror.web3.evm.exception;
 
 import com.hedera.mirror.common.exception.MirrorNodeException;
 
+@SuppressWarnings("java:S110")
 public abstract class EvmException extends MirrorNodeException {
 
     protected EvmException(String message) {

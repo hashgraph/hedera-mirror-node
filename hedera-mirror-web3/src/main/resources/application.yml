@@ -8,12 +8,6 @@ hedera:
         port: 5432
         sslMode: DISABLE
         username: mirror_web3
-      evm:
-        evmVersion: 'v0.32'
-        fundingAccount: '0x0000000000000000000000000000000000000062'
-        dynamicEvmVersion: false
-        maxGasRefundPercentage: 20
-        directTokenCall: true
 logging:
   level:
     root: warn
