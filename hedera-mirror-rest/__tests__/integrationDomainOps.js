@@ -33,7 +33,6 @@ const SERVICE_FEE = 4n;
 const DEFAULT_FEE_COLLECTOR_ID = 98;
 const DEFAULT_NODE_ID = 3;
 const DEFAULT_PAYER_ACCOUNT_ID = 101;
-const STAKING_REWARD_ACCOUNT = 800;
 
 const defaultFileData = '\\x97c1fc0a6ed5551bc831571325e9bdb365d06803100dc20648640ba24ce69750';
 
@@ -1207,17 +1206,29 @@ const addSchedule = async (schedule) => {
   );
 };
 
-const addStakingRewardTransfer = async (transferInput) => {
-  const insertFields = ['account_id', 'amount', 'consensus_timestamp', 'payer_account_id'];
-  const payerAccountId = EntityId.parse(transferInput.payerAccountId).getEncodedId();
+const defaultStakingRewardTransfer = {
+  account_id: 1001,
+  amount: 100,
+  consensus_timestamp: null,
+  payer_account_id: 950,
+};
+
+const addStakingRewardTransfer = async (transfer) => {
+  const accountId = transfer.accountId
+    ? EntityId.parse(transfer.accountId).getEncodedId()
+    : defaultStakingRewardTransfer.account_id;
+  const payerAccountId = transfer.payerAccountId
+    ? EntityId.parse(transfer.payerAccountId).getEncodedId()
+    : defaultStakingRewardTransfer.payer_account_id;
+
   const stakingRewardTransfer = {
-    account_id: EntityId.parse(transferInput.accountId).getEncodedId(),
-    amount: 100,
-    consensus_timestamp: null,
+    ...defaultStakingRewardTransfer,
+    ...transfer,
+    account_id: accountId,
     payer_account_id: payerAccountId,
-    ...transferInput,
   };
 
+  const insertFields = ['account_id', 'amount', 'consensus_timestamp', 'payer_account_id'];
   await insertDomainObject('staking_reward_transfer', insertFields, stakingRewardTransfer);
 };
 

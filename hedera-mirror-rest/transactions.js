@@ -387,8 +387,8 @@ const getStakingRewardTransferList = async (stakingRewardTimestamps) => {
  */
 const convertStakingRewardTransfers = (rows) => {
   const rewardsMap = new Map();
-  rows.map((t) => {
-    t.staking_reward_transfers.map((transfer) => {
+  rows.forEach((t) => {
+    t.staking_reward_transfers.forEach((transfer) => {
       transfer.account = EntityId.parse(transfer.account).toString();
     });
     rewardsMap.set(t.consensus_timestamp, t.staking_reward_transfers || []);

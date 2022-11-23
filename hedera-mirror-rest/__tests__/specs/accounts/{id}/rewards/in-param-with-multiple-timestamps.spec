@@ -10,32 +10,27 @@
       {
         "accountId": "0.0.1001",
         "amount": 10,
-        "consensus_timestamp": "1234567890000011111",
-        "payerAccountId": "0.0.1001"
+        "consensus_timestamp": "1234567890000011111"
       },
       {
         "accountId": "0.0.1001",
         "amount": 12,
-        "consensus_timestamp": "1234567890000022222",
-        "payerAccountId": "0.0.1001"
+        "consensus_timestamp": "1234567890000022222"
       },
       {
         "accountId": "0.0.1001",
         "amount": 13,
-        "consensus_timestamp": "1234567890000033333",
-        "payerAccountId": "0.0.1001"
+        "consensus_timestamp": "1234567890000033333"
       },
       {
         "accountId": "0.0.1001",
         "amount": 14,
-        "consensus_timestamp": "1234567890000044444",
-        "payerAccountId": "0.0.1001"
+        "consensus_timestamp": "1234567890000044444"
       },
       {
         "accountId": "0.0.1001",
         "amount": 15,
-        "consensus_timestamp": "1234567890000055555",
-        "payerAccountId": "0.0.1001"
+        "consensus_timestamp": "1234567890000055555"
       }
     ]
   },
