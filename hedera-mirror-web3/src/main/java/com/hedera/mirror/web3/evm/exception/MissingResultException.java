@@ -19,7 +19,7 @@ package com.hedera.mirror.web3.evm.exception;
  * limitations under the License.
  * ‍
  */
-
+@SuppressWarnings("java:S110")
 public class MissingResultException extends EvmException {
 
     public MissingResultException(String message) {
