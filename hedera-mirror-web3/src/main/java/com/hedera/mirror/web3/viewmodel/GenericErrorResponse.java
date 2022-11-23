@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.controller;
+package com.hedera.mirror.web3.viewmodel;
 
 /*-
  * ‌
@@ -20,14 +20,27 @@ package com.hedera.mirror.web3.controller;
  * ‍
  */
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.Value;
 
-@Data
-public class BlockType {
-    public static final BlockType EARLIEST = new BlockType(0L, "earliest");
-    public static final BlockType LATEST = new BlockType(Long.MAX_VALUE, "latest");
-    public static final BlockType PENDING = new BlockType(Long.MAX_VALUE, "pending");
+@JsonTypeInfo(include = JsonTypeInfo.As.WRAPPER_OBJECT, use = JsonTypeInfo.Id.NAME)
+@JsonTypeName("_status")
+@Value
+@NoArgsConstructor
+public class GenericErrorResponse {
+    List<ErrorMessage> messages = new ArrayList<>();
 
-    private final long value;
-    private final String name;
+    public GenericErrorResponse(String message) {
+        messages.add(new ErrorMessage(message));
+    }
+
+    @Data
+    public static class ErrorMessage {
+        private final String message;
+    }
 }

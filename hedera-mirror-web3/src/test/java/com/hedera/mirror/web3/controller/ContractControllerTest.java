@@ -20,10 +20,8 @@ package com.hedera.mirror.web3.controller;
  * ‍
  */
 
-import static com.hedera.mirror.web3.controller.BlockType.EARLIEST;
-import static com.hedera.mirror.web3.controller.BlockType.LATEST;
-import static com.hedera.mirror.web3.controller.BlockType.PENDING;
-import static com.hedera.mirror.web3.controller.validation.AddressValidator.MESSAGE;
+import static com.hedera.mirror.web3.controller.ContractController.NOT_IMPLEMENTED_ERROR;
+import static com.hedera.mirror.web3.validation.HexValidator.MESSAGE;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
 
@@ -39,21 +37,23 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.reactive.function.BodyInserters;
-import java.time.Duration;
+
+import com.hedera.mirror.web3.viewmodel.BlockType;
+import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
+import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
 
 @ExtendWith(SpringExtension.class)
 @WebFluxTest(controllers = ContractController.class)
 class ContractControllerTest {
+
     private static final String CALL_URI = "/api/v1/contracts/call";
-    private static final String NOT_IMPLEMENTED_ERROR = "Operation not supported yet!";
     private static final String NEGATIVE_NUMBER_ERROR = "{} field must be greater than or equal to 0";
 
     @Resource
     private WebTestClient webClient;
 
     @Test
-    void throwsUnsupportedOperationExceptionWhenCalled() {
-
+    void call() {
         webClient.post()
                 .uri(CALL_URI)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -66,10 +66,17 @@ class ContractControllerTest {
     }
 
     @NullAndEmptySource
-    @ValueSource(strings = {" ", "0x", "0xghijklmno", "0x000000000000000000000000000000Z0000007e7",
-            "00000000001239847e"})
+    @ValueSource(strings = {
+            " ",
+            "0x",
+            "0xghijklmno",
+            "0x00000000000000000000000000000000000004e",
+            "0x00000000000000000000000000000000000004e2a",
+            "0x000000000000000000000000000000Z0000007e7",
+            "00000000001239847e"
+    })
     @ParameterizedTest
-    void throwsValidationExceptionWhenCalledWithMissingToField(String to) {
+    void callInvalidTo(String to) {
         final var request = request();
         request.setTo(to);
 
@@ -84,10 +91,17 @@ class ContractControllerTest {
     }
 
     @EmptySource
-    @ValueSource(strings = {"", " ", "0x", "0xghijklmno", "0x000000000000000000000000000000Z0000007e7",
-            "00000000001239847e"})
+    @ValueSource(strings = {
+            " ",
+            "0x",
+            "0xghijklmno",
+            "0x00000000000000000000000000000000000004e",
+            "0x00000000000000000000000000000000000004e2a",
+            "0x000000000000000000000000000000Z0000007e7",
+            "00000000001239847e"
+    })
     @ParameterizedTest
-    void throwsValidationExceptionWhenCalledWithWrongFromField(String from) {
+    void callInvalidFrom(String from) {
         final var errorString = "from field ".concat(MESSAGE);
         final var request = request();
         request.setFrom(from);
@@ -104,7 +118,7 @@ class ContractControllerTest {
     }
 
     @Test
-    void throwsValidationExceptionWhenCalledWithWrongValueField() {
+    void callInvalidValue() {
         final var errorString = negativeNumberErrorFrom("value");
         final var request = request();
         request.setValue(-1L);
@@ -121,7 +135,7 @@ class ContractControllerTest {
     }
 
     @Test
-    void throwsValidationExceptionWhenCalledWithWrongGasField() {
+    void callInvalidGas() {
         final var errorString = negativeNumberErrorFrom("gas");
         final var request = request();
         request.setGas(-1L);
@@ -138,7 +152,7 @@ class ContractControllerTest {
     }
 
     @Test
-    void throwsValidationExceptionWhenCalledWithWrongGasPriceField() {
+    void callInvalidGasPrice() {
         final var errorString = negativeNumberErrorFrom("gasPrice");
         final var request = request();
         request.setGasPrice(-1L);
@@ -154,35 +168,12 @@ class ContractControllerTest {
                 .isEqualTo(new GenericErrorResponse(errorString));
     }
 
-    @Test
-    void throwsValidationExceptionWhenCalledWithWrongBlockTypeField() {
-        final var request = request();
-        final var errorResponse = "block field must not be null";
-        request.setBlock(null);
-
-        webClient.post()
-                .uri(CALL_URI)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(request))
-                .exchange()
-                .expectStatus()
-                .isEqualTo(BAD_REQUEST)
-                .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse(errorResponse));
-    }
-
+    @NullAndEmptySource
     @ParameterizedTest
-    @ValueSource(strings = {"earliest", "pending", "latest"})
-    void throwsUnsupportedOperationExceptionWhenCalledWithCorrectBlockTypes(String value) {
-        //throwing NOT_IMPLEMENTED_ERROR is desired behavior atm
+    @ValueSource(strings = {"earliest", "pending", "latest", "0", "0x1a"})
+    void callValidBlockType(String value) {
         final var request = request();
-        if (value.equals("earliest")) {
-            request.setBlock(EARLIEST);
-        } else if (value.equals("pending")) {
-            request.setBlock(PENDING);
-        } else {
-            request.setBlock(LATEST);
-        }
+        request.setBlock(BlockType.of(value));
 
         webClient.post()
                 .uri(CALL_URI)
@@ -197,12 +188,11 @@ class ContractControllerTest {
 
     private ContractCallRequest request() {
         final var request = new ContractCallRequest();
-        request.setTo("0x00000000000000000000000000000000000004e4");
         request.setFrom("0x00000000000000000000000000000000000004e2");
         request.setGas(200000L);
         request.setGasPrice(78282329L);
+        request.setTo("0x00000000000000000000000000000000000004e4");
         request.setValue(23);
-
         return request;
     }
 

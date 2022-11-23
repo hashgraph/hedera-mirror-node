@@ -35,14 +35,20 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.support.WebExchangeBindException;
 import reactor.core.publisher.Mono;
 
+import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
+import com.hedera.mirror.web3.viewmodel.ContractCallResponse;
+import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
+
 @CustomLog
 @RequestMapping("/api/v1/contracts")
 @RestController
-public class ContractController {
+class ContractController {
+
+    static final String NOT_IMPLEMENTED_ERROR = "Operation not supported yet!";
 
     @PostMapping(value = "/call")
-    public Mono<ContractCallResponse> call(@RequestBody @Valid ContractCallRequest request) {
-        throw new UnsupportedOperationException("Operation not supported yet!");
+    Mono<ContractCallResponse> call(@RequestBody @Valid ContractCallRequest request) {
+        throw new UnsupportedOperationException(NOT_IMPLEMENTED_ERROR);
     }
 
     //This is temporary method till eth_call and gas_estimate business logic got impl.

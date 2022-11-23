@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.controller.validation;
+package com.hedera.mirror.web3.validation;
 
 /*-
  * ‌
@@ -24,21 +24,33 @@ import java.util.regex.Pattern;
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
 
-public class AddressValidator implements ConstraintValidator<Address, String> {
-    public static final String MESSAGE = "must be 20 bytes hex format";
-    private static final Pattern HEX_PATTERN = Pattern.compile("^(0x)?[0-9a-fA-F]{40}$");
+public class HexValidator implements ConstraintValidator<Hex, String> {
+
+    public static final String MESSAGE = "invalid hexadecimal string";
+    private static final Pattern HEX_PATTERN = Pattern.compile("^(0x)?[0-9a-fA-F]+$");
+    private static final String HEX_PREFIX = "0x";
+
+    private long maxLength;
+    private long minLength;
 
     @Override
-    public void initialize(Address constraintAnnotation) {
-        // Nothing needs to be done with Address upon initialize
+    public void initialize(Hex hex) {
+        maxLength = hex.maxLength();
+        minLength = hex.minLength();
     }
 
     @Override
     public boolean isValid(String value, ConstraintValidatorContext context) {
-        if (value == null) {
+        if (value == null || (minLength == 0 && value.length() == 0)) {
             return true;
         }
 
-        return HEX_PATTERN.matcher(value).matches();
+        if (!HEX_PATTERN.matcher(value).matches()) {
+            return false;
+        }
+
+        int prefixLength = value.startsWith(HEX_PREFIX) ? HEX_PREFIX.length() : 0;
+        int length = value.length() - prefixLength;
+        return length >= minLength && length <= maxLength;
     }
 }

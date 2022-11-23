@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.controller;
+package com.hedera.mirror.web3.viewmodel;
 
 /*-
  * ‌
@@ -20,32 +20,31 @@ package com.hedera.mirror.web3.controller;
  * ‍
  */
 
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
-import com.hedera.mirror.web3.controller.convert.BlockTypeDeserializer;
-import com.hedera.mirror.web3.controller.convert.BlockTypeSerializer;
-
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotEmpty;
 import lombok.Data;
 
-import com.hedera.mirror.web3.controller.validation.Address;
+import com.hedera.mirror.web3.convert.BlockTypeDeserializer;
+import com.hedera.mirror.web3.convert.BlockTypeSerializer;
+import com.hedera.mirror.web3.validation.Hex;
 
 @Data
 public class ContractCallRequest {
 
-    @NotNull
+    private static final int ADDRESS_LENGTH = 40;
+
     @JsonSerialize(using = BlockTypeSerializer.class)
     @JsonDeserialize(using = BlockTypeDeserializer.class)
     private BlockType block = BlockType.LATEST;
 
+    @Hex(maxLength = 6144 * 2) // HAPI caps request at 6KiB
     private String data;
 
     private boolean estimate;
 
-    @Address
+    @Hex(minLength = ADDRESS_LENGTH, maxLength = ADDRESS_LENGTH)
     private String from;
 
     @Min(0)
@@ -54,7 +53,7 @@ public class ContractCallRequest {
     @Min(0)
     private long gasPrice;
 
-    @Address
+    @Hex(minLength = ADDRESS_LENGTH, maxLength = ADDRESS_LENGTH)
     @NotEmpty
     private String to;
 
