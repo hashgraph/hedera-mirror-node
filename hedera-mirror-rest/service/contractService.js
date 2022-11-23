@@ -84,7 +84,7 @@ class ContractService extends BaseService {
     from ${ContractResult.tableName} ${ContractResult.tableAlias}
     `;
 
-  static joinContractResultWIthEvmAddress = `
+  static joinContractResultWithEvmAddress = `
       left join ${Entity.tableName} ${Entity.tableAlias}
       on ${Entity.getFullName(Entity.ID)} = ${ContractResult.getFullName(ContractResult.CONTRACT_ID)}
    `;
@@ -227,7 +227,7 @@ class ContractService extends BaseService {
         ? `, ${ContractService.transactionTableCTE.replace('$where', transactionWhereClauses.join(' and '))} `
         : '',
       ContractService.contractResultsWithEvmAddressQuery,
-      ContractService.joinContractResultWIthEvmAddress,
+      ContractService.joinContractResultWithEvmAddress,
       joinTransactionTable ? ContractService.joinTransactionTable : '',
       whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',
       super.getOrderByQuery(OrderSpec.from(ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP), order)),
@@ -284,7 +284,7 @@ class ContractService extends BaseService {
     const query = [
       `with ${ContractService.entityCTE} `,
       ContractService.contractResultsWithEvmAddressQuery,
-      ContractService.joinContractResultWIthEvmAddress,
+      ContractService.joinContractResultWithEvmAddress,
       whereClause,
     ].join('\n');
 
@@ -323,7 +323,7 @@ class ContractService extends BaseService {
     const query = [
       `with ${ContractService.entityCTE} `,
       ContractService.contractResultsWithEvmAddressQuery,
-      ContractService.joinContractResultWIthEvmAddress,
+      ContractService.joinContractResultWithEvmAddress,
       whereClause,
       transactionsFilter,
       this.getOrderByQuery(OrderSpec.from(ContractResult.CONSENSUS_TIMESTAMP, 'asc')),
