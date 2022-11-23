@@ -104,7 +104,7 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
          * If there is no bytecode, it means we have a non-token and non-contract account,
          * hence the code should be null and there must be a value transfer.
          */
-        validateTrue(code != null || value > 0, ResponseCodeEnum.INVALID_ETHEREUM_TRANSACTION);
+        validateTrue(code != null || value > 0, ResponseCodeEnum.INVALID_TRANSACTION);
 
         return baseInitialFrame
                 .type(MessageFrame.Type.MESSAGE_CALL)
