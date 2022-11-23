@@ -1,6 +1,12 @@
 {
   "description": "Contract results api call using transactionId or an ethereum transaction hash",
   "setup": {
+    "entities": [
+      {
+        "num": 5001,
+        "evm_address": "0x25fe26adc577cc89172e6156c9e24f7b9751b762"
+      }
+    ],
     "contractresults": [
       {
         "amount": 30,
@@ -109,6 +115,7 @@
     "contract_id": "0.0.5001",
     "created_contract_ids": ["0.0.7001"],
     "error_message": null,
+    "address": "0x25fe26adc577cc89172e6156c9e24f7b9751b762",
     "failed_initcode": null,
     "from": "0x0000000000000000000000000000000000001f41",
     "function_parameters": "0x0707",

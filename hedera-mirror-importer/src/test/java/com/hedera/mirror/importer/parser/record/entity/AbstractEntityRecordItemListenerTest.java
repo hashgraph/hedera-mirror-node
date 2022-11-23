@@ -41,6 +41,7 @@ import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody.Builder;
+import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.time.Instant;
@@ -64,6 +65,7 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.IntegrationTest;
+import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
@@ -77,9 +79,6 @@ import com.hedera.mirror.importer.repository.StakingRewardTransferRepository;
 import com.hedera.mirror.importer.repository.TopicMessageRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.util.Utility;
-import com.hedera.services.stream.proto.ContractStateChange;
-import com.hedera.services.stream.proto.ContractStateChanges;
-import com.hedera.services.stream.proto.StorageChange;
 
 public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTest {
 
@@ -240,6 +239,10 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
         } else {
             assertThat(cryptoTransferRepository.count()).isEqualTo(0L);
         }
+    }
+
+    protected void assertRecordItem(RecordItem recordItem) {
+        assertTransactionAndRecord(recordItem.getTransactionBody(), recordItem.getRecord());
     }
 
     protected void assertTransactionAndRecord(TransactionBody transactionBody, TransactionRecord record) {
@@ -485,36 +488,19 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
                 .addTopic(ByteString.copyFromUtf8("Topic3")).build());
     }
 
-    protected void buildContractStateChanges(ContractStateChanges.Builder builder) {
-        // 3 state changes, no value written, valid value written and zero value written
-        builder.addContractStateChanges(
-                ContractStateChange.newBuilder()
-                        .setContractId(CONTRACT_ID)
-                        .addStorageChanges(StorageChange.newBuilder()
-                                .setSlot(ByteString
-                                        .copyFromUtf8("0x000000000000000000"))
-                                .setValueRead(ByteString
-                                        .copyFromUtf8(
-                                                "0xaf846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0"))
-                                .build())
-                        .addStorageChanges(StorageChange.newBuilder()
-                                .setSlot(ByteString
-                                        .copyFromUtf8("0x000000000000000001"))
-                                .setValueRead(ByteString
-                                        .copyFromUtf8(
-                                                "0xaf846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0"))
-                                .setValueWritten(BytesValue.of(ByteString
-                                        .copyFromUtf8(
-                                                "0x000000000000000000000000000000000000000000c2a8c408d0e29d623347c5")))
-                                .build())
-                        .addStorageChanges(StorageChange.newBuilder()
-                                .setSlot(ByteString
-                                        .copyFromUtf8("0x00000000000000002"))
-                                .setValueRead(ByteString
-                                        .copyFromUtf8(
-                                                "0xaf846d22986843e3d25981b94ce181adc556b334ccfdd8225762d7f709841df0"))
-                                .setValueWritten(BytesValue.of(ByteString.copyFromUtf8("0")))
-                                .build())
-                        .build());
+    protected TransactionID transactionId(Entity payer, long validStartTimestamp) {
+        return transactionId(payer.toEntityId(), validStartTimestamp);
+    }
+
+    protected TransactionID transactionId(EntityId payerAccountId, long validStartTimestamp) {
+        var payer = AccountID.newBuilder()
+                .setShardNum(payerAccountId.getShardNum())
+                .setRealmNum(payerAccountId.getRealmNum())
+                .setAccountNum(payerAccountId.getEntityNum())
+                .build();
+        return TransactionID.newBuilder()
+                .setAccountID(payer)
+                .setTransactionValidStart(TestUtils.toTimestamp(validStartTimestamp))
+                .build();
     }
 }
