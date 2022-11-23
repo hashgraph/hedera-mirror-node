@@ -1,4 +1,7 @@
 properties:
+  grpc.service.type:
+    default: "ClusterIp"
+    type: string
   importer.config.hedera.mirror.importer.downloader.accessKey:
     default: ""
     type: string
@@ -10,4 +13,7 @@ properties:
     type: string
   importer.config.hedera.mirror.importer.network:
     default: "DEMO"
+    type: string
+  rest.service.type:
+    default: "ClusterIp"
     type: string

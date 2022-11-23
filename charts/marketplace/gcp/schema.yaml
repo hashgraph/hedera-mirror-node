@@ -117,6 +117,11 @@ properties:
               - apiGroups: [ '' ]
                 resources: [ 'pods' ]
                 verbs: [ 'get' ]
+  grpc.service.type:
+    type: string
+    default: LoadBalancer
+    description: The gRPC service type
+    title: gRPC Service type
   importer.config.hedera.mirror.importer.downloader.accessKey:
     type: string
     description: The Google Cloud access key used to pay for downloaded streamed files
@@ -220,6 +225,11 @@ properties:
     title: REST API replicas
     minimum: 0
     maximum: 10
+  rest.service.type:
+    type: string
+    default: LoadBalancer
+    description: The gRPC service type
+    title: gRPC Service type
 
 required:
   - name
