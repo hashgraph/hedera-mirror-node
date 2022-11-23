@@ -23,6 +23,7 @@ package com.hedera.mirror.web3.controller;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import lombok.Data;
 
 import com.hedera.mirror.web3.controller.validation.Address;
@@ -31,6 +32,7 @@ import com.hedera.mirror.web3.controller.validation.Address;
 public class ContractCallRequest {
 
     @NotNull
+    @JsonDeserialize(converter = BlockTypeConverter.class)
     private BlockType block = BlockType.LATEST;
 
     private String data;

@@ -28,6 +28,8 @@ import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EmptySource;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
 import org.springframework.http.MediaType;
@@ -59,7 +61,8 @@ class ContractControllerTest {
                 .isEqualTo(new GenericErrorResponse(NOT_IMPLEMENTED_ERROR));
     }
 
-    @ValueSource(strings = {"null", "", " ", "0x", "0xghijklmno", "0x000000000000000000000000000000Z0000007e7",
+    @NullAndEmptySource
+    @ValueSource(strings = {" ", "0x", "0xghijklmno", "0x000000000000000000000000000000Z0000007e7",
             "00000000001239847e"})
     @ParameterizedTest
     void throwsValidationExceptionWhenCalledWithMissingToField(String to) {
@@ -76,6 +79,7 @@ class ContractControllerTest {
                 .expectBody(GenericErrorResponse.class);
     }
 
+    @EmptySource
     @ValueSource(strings = {"", " ", "0x", "0xghijklmno", "0x000000000000000000000000000000Z0000007e7",
             "00000000001239847e"})
     @ParameterizedTest
@@ -163,8 +167,8 @@ class ContractControllerTest {
                 .isEqualTo(new GenericErrorResponse(errorResponse));
     }
 
-    private ContractCallRequest request() {
-        final var request = new ContractCallRequest();
+    private ContractCallMockedRequest request() {
+        final var request = new ContractCallMockedRequest();
         request.setTo("0x00000000000000000000000000000000000004e4");
         request.setFrom("0x00000000000000000000000000000000000004e2");
         request.setGas(200000L);
@@ -174,8 +178,7 @@ class ContractControllerTest {
         return request;
     }
 
-    private String negativeNumberErrorFrom(String field){
-        return NEGATIVE_NUMBER_ERROR.replace("{}",field);
+    private String negativeNumberErrorFrom(String field) {
+        return NEGATIVE_NUMBER_ERROR.replace("{}", field);
     }
-
 }
