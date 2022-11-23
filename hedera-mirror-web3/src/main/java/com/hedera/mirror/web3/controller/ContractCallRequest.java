@@ -24,6 +24,11 @@ import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
+import com.hedera.mirror.web3.controller.convert.BlockTypeDeserializer;
+import com.hedera.mirror.web3.controller.convert.BlockTypeSerializer;
+
 import lombok.Data;
 
 import com.hedera.mirror.web3.controller.validation.Address;
@@ -32,7 +37,8 @@ import com.hedera.mirror.web3.controller.validation.Address;
 public class ContractCallRequest {
 
     @NotNull
-    @JsonDeserialize(converter = BlockTypeConverter.class)
+    @JsonSerialize(using = BlockTypeSerializer.class)
+    @JsonDeserialize(using = BlockTypeDeserializer.class)
     private BlockType block = BlockType.LATEST;
 
     private String data;

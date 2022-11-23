@@ -24,9 +24,10 @@ import lombok.Data;
 
 @Data
 public class BlockType {
-    static final BlockType EARLIEST = new BlockType(0L);
-    static final BlockType LATEST = new BlockType(Long.MAX_VALUE);
-    static final BlockType PENDING = new BlockType(Long.MAX_VALUE);
+    public static final BlockType EARLIEST = new BlockType(0L, "earliest");
+    public static final BlockType LATEST = new BlockType(Long.MAX_VALUE, "latest");
+    public static final BlockType PENDING = new BlockType(Long.MAX_VALUE, "pending");
 
     private final long value;
+    private final String name;
 }

@@ -20,6 +20,9 @@ package com.hedera.mirror.web3.controller;
  * ‍
  */
 
+import static com.hedera.mirror.web3.controller.BlockType.EARLIEST;
+import static com.hedera.mirror.web3.controller.BlockType.LATEST;
+import static com.hedera.mirror.web3.controller.BlockType.PENDING;
 import static com.hedera.mirror.web3.controller.validation.AddressValidator.MESSAGE;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
@@ -36,6 +39,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.reactive.function.BodyInserters;
+import java.time.Duration;
 
 @ExtendWith(SpringExtension.class)
 @WebFluxTest(controllers = ContractController.class)
@@ -167,8 +171,32 @@ class ContractControllerTest {
                 .isEqualTo(new GenericErrorResponse(errorResponse));
     }
 
-    private ContractCallMockedRequest request() {
-        final var request = new ContractCallMockedRequest();
+    @ParameterizedTest
+    @ValueSource(strings = {"earliest", "pending", "latest"})
+    void throwsUnsupportedOperationExceptionWhenCalledWithCorrectBlockTypes(String value) {
+        //throwing NOT_IMPLEMENTED_ERROR is desired behavior atm
+        final var request = request();
+        if (value.equals("earliest")) {
+            request.setBlock(EARLIEST);
+        } else if (value.equals("pending")) {
+            request.setBlock(PENDING);
+        } else {
+            request.setBlock(LATEST);
+        }
+
+        webClient.post()
+                .uri(CALL_URI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(request))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(NOT_IMPLEMENTED)
+                .expectBody(GenericErrorResponse.class)
+                .isEqualTo(new GenericErrorResponse(NOT_IMPLEMENTED_ERROR));
+    }
+
+    private ContractCallRequest request() {
+        final var request = new ContractCallRequest();
         request.setTo("0x00000000000000000000000000000000000004e4");
         request.setFrom("0x00000000000000000000000000000000000004e2");
         request.setGas(200000L);
