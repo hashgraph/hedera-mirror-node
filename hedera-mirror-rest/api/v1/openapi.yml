@@ -1915,6 +1915,10 @@ components:
     ContractResult:
       type: object
       properties:
+        address:
+          description: The hex encoded evm address of contract
+          example: "0x25fe26adc577cc89172e6156c9e24f7b9751b762"
+          type: string
         amount:
           description: The number of tinybars sent to the function
           example: 10

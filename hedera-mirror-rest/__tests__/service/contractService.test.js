@@ -38,27 +38,31 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       'asc',
       5
     );
-    const expected = `select
-                        cr.amount,
-                        cr.bloom,
-                        cr.call_result,
-                        cr.consensus_timestamp,
-                        cr.contract_id,
-                        cr.created_contract_ids,
-                        cr.error_message,
-                        cr.failed_initcode,
-                        cr.function_parameters,
-                        cr.gas_limit,
-                        cr.gas_used,
-                        cr.payer_account_id,
-                        cr.sender_id,
-                        cr.transaction_hash,
-                        cr.transaction_index,
-                        cr.transaction_result
-                      from contract_result cr
-                      where cr.contract_id = $1
-                      order by cr.consensus_timestamp asc
-                      limit $2`;
+    const expected = `
+        with entity as (select evm_address,id from entity)
+        select
+            cr.amount,
+            cr.bloom,
+            cr.call_result,
+            cr.consensus_timestamp,
+            cr.contract_id,
+            cr.created_contract_ids,
+            cr.error_message,
+            cr.failed_initcode,
+            cr.function_parameters,
+            cr.gas_limit,
+            cr.gas_used,
+            cr.payer_account_id,
+            cr.sender_id,
+            cr.transaction_hash,
+            cr.transaction_index,
+            cr.transaction_result,
+            coalesce(e.evm_address,'') as evm_address
+        from contract_result cr
+        left join entity e on e.id = cr.contract_id
+        where cr.contract_id = $1
+        order by cr.consensus_timestamp asc
+        limit $2`;
     assertSqlQueryEqual(query, expected);
     expect(params).toEqual([2, 5]);
   });
@@ -71,29 +75,31 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       'asc',
       5
     );
-    const expected = `select
-						            cr.amount,
-						            cr.bloom,
-						            cr.call_result,
-						            cr.consensus_timestamp,
-						            cr.contract_id,
-						            cr.created_contract_ids,
-						            cr.error_message,
-						            cr.failed_initcode,
-						            cr.function_parameters,
-						            cr.gas_limit,
-						            cr.gas_used,
-						            cr.payer_account_id,
-						            cr.sender_id,
-						            cr.transaction_hash,
-						            cr.transaction_index,
-						            cr.transaction_result
-					            from contract_result cr
-                      where cr.contract_id = $1
-                        and cr.consensus_timestamp > $2
-                        and cr.payer_account_id = $3
-                      order by cr.consensus_timestamp asc
-                      limit $4`;
+    const expected = `
+    with entity as (select evm_address,id from entity)
+    select
+        cr.amount,
+        cr.bloom,
+        cr.call_result,
+        cr.consensus_timestamp,
+        cr.contract_id,
+        cr.created_contract_ids,
+        cr.error_message,
+        cr.failed_initcode,
+        cr.function_parameters,
+        cr.gas_limit,
+        cr.gas_used,
+        cr.payer_account_id,
+        cr.sender_id,
+        cr.transaction_hash,
+        cr.transaction_index,
+        cr.transaction_result,
+        coalesce(e.evm_address,'') as evm_address
+    from contract_result cr
+    left join entity e on e.id = cr.contract_id
+    where cr.contract_id = $1 and cr.consensus_timestamp > $2 and cr.payer_account_id = $3
+    order by cr.consensus_timestamp asc
+    limit $4`;
     assertSqlQueryEqual(query, expected);
     expect(params).toEqual([2, 10, 20, 5]);
   });
@@ -106,30 +112,33 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       'asc',
       5
     );
-    const expected = `with t as (select consensus_timestamp, index, nonce from transaction where transaction.nonce = $2)
-					            select
-						            cr.amount,
-						            cr.bloom,
-						            cr.call_result,
-						            cr.consensus_timestamp,
-						            cr.contract_id,
-						            cr.created_contract_ids,
-						            cr.error_message,
-						            cr.failed_initcode,
-						            cr.function_parameters,
-						            cr.gas_limit,
-						            cr.gas_used,
-						            cr.payer_account_id,
-						            cr.sender_id,
-						            cr.transaction_hash,
-						            cr.transaction_index,
-						            cr.transaction_result
-					            from contract_result cr
-                        join t on cr.consensus_timestamp = t.consensus_timestamp
-                      where cr.contract_id = $1
-                        and t.nonce = $2
-                      order by cr.consensus_timestamp asc
-                      limit $3
+    const expected = `
+    with entity as (select evm_address,id from entity),
+        t as (select consensus_timestamp, index, nonce from transaction where transaction.nonce = $2)
+    select
+        cr.amount,
+        cr.bloom,
+        cr.call_result,
+        cr.consensus_timestamp,
+        cr.contract_id,
+        cr.created_contract_ids,
+        cr.error_message,
+        cr.failed_initcode,
+        cr.function_parameters,
+        cr.gas_limit,
+        cr.gas_used,
+        cr.payer_account_id,
+        cr.sender_id,
+        cr.transaction_hash,
+        cr.transaction_index,
+        cr.transaction_result,
+        coalesce(e.evm_address,'') as evm_address
+    from contract_result cr
+    left join entity e on e.id = cr.contract_id
+    join t on cr.consensus_timestamp = t.consensus_timestamp
+    where cr.contract_id = $1 and t.nonce = $2
+    order by cr.consensus_timestamp asc
+    limit $3
     `;
     assertSqlQueryEqual(query, expected);
     expect(params).toEqual([2, 10, 5]);
@@ -143,30 +152,33 @@ describe('ContractService.getContractResultsByIdAndFiltersQuery tests', () => {
       'asc',
       5
     );
-    const expected = `with t as (select consensus_timestamp, index, nonce from transaction where transaction.index = $2)
-					            select
-						            cr.amount,
-						            cr.bloom,
-						            cr.call_result,
-						            cr.consensus_timestamp,
-						            cr.contract_id,
-						            cr.created_contract_ids,
-						            cr.error_message,
-						            cr.failed_initcode,
-						            cr.function_parameters,
-						            cr.gas_limit,
-						            cr.gas_used,
-						            cr.payer_account_id,
-						            cr.sender_id,
-						            cr.transaction_hash,
-						            cr.transaction_index,
-						            cr.transaction_result
-					            from contract_result cr
-                        join t on cr.consensus_timestamp = t.consensus_timestamp
-                      where cr.contract_id = $1
-                        and t.index = $2
-                      order by cr.consensus_timestamp asc
-                      limit $3
+    const expected = `
+    with  entity as (select evm_address,id from entity),
+        t as (select consensus_timestamp, index, nonce from transaction where transaction.index = $2)
+    select
+        cr.amount,
+        cr.bloom,
+        cr.call_result,
+        cr.consensus_timestamp,
+        cr.contract_id,
+        cr.created_contract_ids,
+        cr.error_message,
+        cr.failed_initcode,
+        cr.function_parameters,
+        cr.gas_limit,
+        cr.gas_used,
+        cr.payer_account_id,
+        cr.sender_id,
+        cr.transaction_hash,
+        cr.transaction_index,
+        cr.transaction_result,
+        coalesce(e.evm_address,'') as evm_address
+    from contract_result cr
+    left join entity e on e.id = cr.contract_id
+    join t on cr.consensus_timestamp = t.consensus_timestamp
+    where cr.contract_id = $1 and t.index = $2
+    order by cr.consensus_timestamp asc
+    limit $3
     `;
     assertSqlQueryEqual(query, expected);
     expect(params).toEqual([2, 10, 5]);

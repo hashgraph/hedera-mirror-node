@@ -72,7 +72,7 @@
     "contract_id": null,
     "created_contract_ids": [],
     "error_message": "fatal",
-    "address": "0x",
+    "address": null,
     "failed_initcode": "0x0606",
     "from": "0x0000000000000000000000000000000000001f41",
     "function_parameters": "0x0707",
