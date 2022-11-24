@@ -38,6 +38,6 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
     @Override
     public Address resolveForEvm(Address addressOrAlias) {
         final var entity = mirrorEntityAccess.findEntity(addressOrAlias);
-        return Address.wrap(Bytes.wrap(entity.map(Entity::getEvmAddress).orElse(new byte[0])));
+        return Address.wrap(Bytes.wrap(entity.map(Entity::getEvmAddress).orElse(addressOrAlias.toArray())));
     }
 }
