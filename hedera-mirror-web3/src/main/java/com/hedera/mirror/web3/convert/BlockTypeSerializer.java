@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.controller;
+package com.hedera.mirror.web3.convert;
 
 /*-
  * ‌
@@ -20,16 +20,21 @@ package com.hedera.mirror.web3.controller;
  * ‍
  */
 
-import lombok.Data;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import java.io.IOException;
 
-@Data
-final class JsonRpcSuccessResponse<T> extends JsonRpcResponse {
+import com.hedera.mirror.web3.viewmodel.BlockType;
 
-    static final String SUCCESS = "SUCCESS";
+public class BlockTypeSerializer extends JsonSerializer<BlockType> {
 
-    private T result;
-
-    String getStatus() {
-        return SUCCESS;
+    @Override
+    public void serialize(BlockType value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
+        if (value != null) {
+            gen.writeString(value.name());
+        } else {
+            gen.writeNull();
+        }
     }
 }
