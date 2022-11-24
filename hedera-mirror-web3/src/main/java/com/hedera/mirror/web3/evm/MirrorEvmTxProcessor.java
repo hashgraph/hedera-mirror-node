@@ -98,19 +98,15 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
     protected MessageFrame buildInitialFrame(final MessageFrame.Builder baseInitialFrame, final Address to,
             final Bytes payload, long value) {
         final var code = codeCache.getIfPresent(aliasManager.resolveForEvm(to));
-        /* The ContractCallTransitionLogic would have rejected a missing or deleted
-         * contract, so at this point we should have non-null bytecode available.
-         * If there is no bytecode, it means we have a non-token and non-contract account,
-         * hence the code should be null and there must be a value transfer.
-         */
-        validateTrue(code != null || value > 0, ResponseCodeEnum.INVALID_TRANSACTION);
+
+        validateTrue(code != null, ResponseCodeEnum.INVALID_TRANSACTION);
 
         return baseInitialFrame
                 .type(MessageFrame.Type.MESSAGE_CALL)
                 .address(to)
                 .contract(to)
                 .inputData(payload)
-                .code(code == null ? Code.EMPTY : code)
+                .code(code)
                 .build();
     }
 
