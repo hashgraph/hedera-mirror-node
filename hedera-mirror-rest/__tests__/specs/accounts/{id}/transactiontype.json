@@ -130,6 +130,36 @@
             "is_approval": true
           }
         ]
+      },
+      {
+        "consensus_timestamp": "1234567891000000017",
+        "senderAccountId": "0.0.800",
+        "recipientAccountId": "0.0.8",
+        "amount": 300,
+        "nodeAccountId": "0.0.3",
+        "treasuryAccountId": "0.0.98"
+      },
+      {
+        "consensus_timestamp": "1234567890000000018",
+        "senderAccountId": "0.0.800",
+        "recipientAccountId": "0.0.8",
+        "amount": 50,
+        "nodeAccountId": "0.0.3",
+        "treasuryAccountId": "0.0.98"
+      }
+    ],
+    "stakingRewardTransfers": [
+      {
+        "account_id": "0.0.8",
+        "amount": 300,
+        "consensus_timestamp": "1234567891000000017",
+        "payer_account_id": "0.0.8"
+      },
+      {
+        "account_id": "0.0.8",
+        "amount": 50,
+        "consensus_timestamp": "1234567890000000018",
+        "payer_account_id": "0.0.8"
       }
     ]
   },
@@ -140,6 +170,47 @@
   "responseStatus": 200,
   "responseJson": {
     "transactions": [
+      {
+        "bytes": "Ynl0ZXM=",
+        "charged_tx_fee": 7,
+        "consensus_timestamp": "1234567891.000000017",
+        "entity_id": null,
+        "max_fee": "33",
+        "memo_base64": null,
+        "name": "CRYPTOTRANSFER",
+        "node": "0.0.3",
+        "nonce": 0,
+        "parent_consensus_timestamp": null,
+        "result": "SUCCESS",
+        "scheduled": false,
+        "staking_reward_transfers": [
+          {
+            "account": "0.0.8",
+            "amount": 300
+          }
+        ],
+        "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
+        "transaction_id": "0.0.800-1234567891-000000016",
+        "transfers": [
+          {
+            "account": "0.0.8",
+            "amount": 300,
+            "is_approval": false
+          },
+          {
+            "account": "0.0.98",
+            "amount": 1,
+            "is_approval": false
+          },
+          {
+            "account": "0.0.800",
+            "amount": -301,
+            "is_approval": false
+          }
+        ],
+        "valid_duration_seconds": "11",
+        "valid_start_timestamp": "1234567891.000000016"
+      },
       {
         "bytes": "Ynl0ZXM=",
         "charged_tx_fee": 0,
@@ -153,6 +224,7 @@
         "parent_consensus_timestamp": null,
         "result": "SUCCESS",
         "scheduled": false,
+        "staking_reward_transfers": [],
         "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
         "transaction_id": "0.0.8-1234567891-000000006",
         "transfers": [
@@ -173,6 +245,47 @@
       {
         "bytes": "Ynl0ZXM=",
         "charged_tx_fee": 7,
+        "consensus_timestamp": "1234567890.000000018",
+        "entity_id": null,
+        "max_fee": "33",
+        "memo_base64": null,
+        "name": "CRYPTOTRANSFER",
+        "node": "0.0.3",
+        "nonce": 0,
+        "parent_consensus_timestamp": null,
+        "result": "SUCCESS",
+        "scheduled": false,
+        "staking_reward_transfers": [
+          {
+            "account": "0.0.8",
+            "amount": 50
+          }
+        ],
+        "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
+        "transaction_id": "0.0.800-1234567890-000000017",
+        "transfers": [
+          {
+            "account": "0.0.8",
+            "amount": 50,
+            "is_approval": false
+          },
+          {
+            "account": "0.0.98",
+            "amount": 1,
+            "is_approval": false
+          },
+          {
+            "account": "0.0.800",
+            "amount": -51,
+            "is_approval": false
+          }
+        ],
+        "valid_duration_seconds": "11",
+        "valid_start_timestamp": "1234567890.000000017"
+      },
+      {
+        "bytes": "Ynl0ZXM=",
+        "charged_tx_fee": 7,
         "consensus_timestamp": "1234567890.000000007",
         "entity_id": null,
         "max_fee": "33",
@@ -183,6 +296,7 @@
         "parent_consensus_timestamp": null,
         "result": "SUCCESS",
         "scheduled": false,
+        "staking_reward_transfers": [],
         "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
         "transaction_id": "0.0.8-1234567890-000000006",
         "transfers": [

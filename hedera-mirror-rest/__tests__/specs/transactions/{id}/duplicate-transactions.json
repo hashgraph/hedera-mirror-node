@@ -82,6 +82,7 @@
   "responseJson": {
     "transactions": [
       {
+        "bytes": "Ynl0ZXM=",
         "consensus_timestamp": "1234567890.000000040",
         "charged_tx_fee": 20,
         "entity_id": null,
@@ -93,7 +94,7 @@
         "parent_consensus_timestamp": null,
         "result": "SUCCESS",
         "scheduled": false,
-        "bytes": "Ynl0ZXM=",
+        "staking_reward_transfers": [],
         "transaction_hash": "OxfaENC/745n9QsBD59QDfpPjkVVRPEoWwQZHy7KSrG3ScJJNovCMCP7g/hh7R+0",
         "transaction_id": "0.0.10-1234567890-000000001",
         "transfers": [
@@ -122,6 +123,7 @@
         "valid_start_timestamp": "1234567890.000000001"
       },
       {
+        "bytes": "Ynl0ZXM=",
         "consensus_timestamp": "1234567891.000000123",
         "charged_tx_fee": 15,
         "entity_id": null,
@@ -133,7 +135,7 @@
         "parent_consensus_timestamp": null,
         "result": "DUPLICATE_TRANSACTION",
         "scheduled": false,
-        "bytes": "Ynl0ZXM=",
+        "staking_reward_transfers": [],
         "transaction_hash": "OxfaENC/745n9QsBD59QDfpPjkVVRPEoWwQZHy7KSrG3ScJJNovCMCP7g/hh7R+0",
         "transaction_id": "0.0.10-1234567890-000000001",
         "transfers": [
