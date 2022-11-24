@@ -35,7 +35,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class MirrorEvmContractAliasesTest {
+class MirrorEvmContractAliasesTest {
 
     private static final String HEX = "0x00000000000000000000000000000000000004e4";
     private static final Address ADDRESS = Address.fromHexString(HEX);
