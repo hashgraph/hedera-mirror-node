@@ -49,11 +49,5 @@ spec:
     postgresql:
       enabled: false
     test:
-      config:
-        hedera:
-          mirror:
-            test:
-              acceptance:
-                network: OTHER
       enabled: true
 
