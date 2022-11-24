@@ -27,14 +27,12 @@ import java.util.Map;
 import javax.inject.Provider;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
-import com.hedera.services.evm.accounts.HederaEvmContractAliases;
 import com.hedera.services.evm.contracts.execution.BlockMetaSource;
 import com.hedera.services.evm.contracts.execution.EvmProperties;
 import com.hedera.services.evm.contracts.execution.HederaEvmTransactionProcessingResult;
@@ -48,7 +46,7 @@ import com.hedera.services.evm.store.models.HederaEvmAccount;
 public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
 
     private final AbstractCodeCache codeCache;
-    private final HederaEvmContractAliases aliasManager;
+    private final MirrorEvmContractAliases aliasManager;
 
     public MirrorEvmTxProcessor(
             final HederaEvmMutableWorldState worldState,
@@ -58,7 +56,7 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
             final Map<String, Provider<MessageCallProcessor>> mcps,
             final Map<String, Provider<ContractCreationProcessor>> ccps,
             final BlockMetaSource blockMetaSource,
-            final HederaEvmContractAliases aliasManager,
+            final MirrorEvmContractAliases aliasManager,
             final HederaEvmEntityAccess evmEntityAccess
     ) {
         super(worldState, pricesAndFeesProvider, dynamicProperties, gasCalculator, mcps, ccps,
@@ -99,19 +97,15 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
     protected MessageFrame buildInitialFrame(final MessageFrame.Builder baseInitialFrame, final Address to,
             final Bytes payload, long value) {
         final var code = codeCache.getIfPresent(aliasManager.resolveForEvm(to));
-        /* The ContractCallTransitionLogic would have rejected a missing or deleted
-         * contract, so at this point we should have non-null bytecode available.
-         * If there is no bytecode, it means we have a non-token and non-contract account,
-         * hence the code should be null and there must be a value transfer.
-         */
-        validateTrue(code != null || value > 0, ResponseCodeEnum.INVALID_TRANSACTION);
+
+        validateTrue(code != null, ResponseCodeEnum.INVALID_TRANSACTION);
 
         return baseInitialFrame
                 .type(MessageFrame.Type.MESSAGE_CALL)
                 .address(to)
                 .contract(to)
                 .inputData(payload)
-                .code(code == null ? Code.EMPTY : code)
+                .code(code)
                 .build();
     }
 

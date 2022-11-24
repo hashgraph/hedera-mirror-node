@@ -21,6 +21,7 @@ package com.hedera.mirror.web3.evm;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
@@ -28,7 +29,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-
+import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.services.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -90,7 +91,7 @@ class MirrorEvmTxProcessorTest {
     @Mock private Transaction transaction;
     @Mock private HederaEvmWorldState.Updater updater;
     @Mock private HederaEvmWorldUpdater stackedUpdater;
-    @Mock private HederaEvmContractAliases hederaEvmContractAliases;
+    @Mock private MirrorEvmContractAliases hederaEvmContractAliases;
     @Mock private HederaBlockValues hederaBlockValues;
     @Mock private BlockMetaSource blockMetaSource;
 
@@ -146,6 +147,7 @@ class MirrorEvmTxProcessorTest {
     @Test
     void assertSuccessExecution() {
         givenValidMockWithoutGetOrCreate();
+        given(hederaEvmEntityAccess.fetchCodeIfPresent(any())).willReturn(Bytes.EMPTY);
         given(evmProperties.fundingAccountAddress())
                 .willReturn(Address.ALTBN128_PAIRING);
         given(hederaEvmContractAliases.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
@@ -161,7 +163,7 @@ class MirrorEvmTxProcessorTest {
     }
 
     @Test
-    void missingCodeBecomesEmptyInInitialFrame() {
+    void missingCodeThrowsException() {
         given(hederaEvmContractAliases.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
 
         MessageFrame.Builder protoFrame =
@@ -180,10 +182,8 @@ class MirrorEvmTxProcessorTest {
                         .miningBeneficiary(Address.ZERO)
                         .blockHashLookup(hash -> null);
 
-        var messageFrame =
-                mirrorEvmTxProcessor.buildInitialFrame(protoFrame, receiverAddress, Bytes.EMPTY, 33L);
-
-        assertThat(messageFrame.getCode()).isEqualTo(Code.EMPTY);
+        assertThatExceptionOfType(InvalidTransactionException.class).isThrownBy(
+                () -> mirrorEvmTxProcessor.buildInitialFrame(protoFrame, receiverAddress, Bytes.EMPTY, 33L));
     }
 
     @Test
