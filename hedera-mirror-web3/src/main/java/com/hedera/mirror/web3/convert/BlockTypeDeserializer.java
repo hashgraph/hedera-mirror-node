@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.controller;
+package com.hedera.mirror.web3.convert;
 
 /*-
  * ‌
@@ -20,16 +20,18 @@ package com.hedera.mirror.web3.controller;
  * ‍
  */
 
-import lombok.Data;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import java.io.IOException;
 
-@Data
-final class JsonRpcSuccessResponse<T> extends JsonRpcResponse {
+import com.hedera.mirror.web3.viewmodel.BlockType;
 
-    static final String SUCCESS = "SUCCESS";
+public class BlockTypeDeserializer extends JsonDeserializer<BlockType> {
 
-    private T result;
-
-    String getStatus() {
-        return SUCCESS;
+    @Override
+    public BlockType deserialize(JsonParser jsonParser, DeserializationContext context) throws IOException {
+        var value = jsonParser.readValueAs(String.class);
+        return BlockType.of(value);
     }
 }

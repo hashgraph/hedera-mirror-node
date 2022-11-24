@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.controller;
+package com.hedera.mirror.web3.viewmodel;
 
 /*-
  * ‌
@@ -20,16 +20,9 @@ package com.hedera.mirror.web3.controller;
  * ‍
  */
 
-import lombok.Data;
+import lombok.Value;
 
-@Data
-final class JsonRpcSuccessResponse<T> extends JsonRpcResponse {
-
-    static final String SUCCESS = "SUCCESS";
-
-    private T result;
-
-    String getStatus() {
-        return SUCCESS;
-    }
+@Value
+public class ContractCallResponse {
+    String result;
 }

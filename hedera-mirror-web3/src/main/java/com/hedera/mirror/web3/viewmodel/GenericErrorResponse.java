@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.controller;
+package com.hedera.mirror.web3.viewmodel;
 
 /*-
  * ‌
@@ -20,16 +20,27 @@ package com.hedera.mirror.web3.controller;
  * ‍
  */
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeName;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.Value;
 
-@Data
-final class JsonRpcSuccessResponse<T> extends JsonRpcResponse {
+@JsonTypeInfo(include = JsonTypeInfo.As.WRAPPER_OBJECT, use = JsonTypeInfo.Id.NAME)
+@JsonTypeName("_status")
+@Value
+@NoArgsConstructor
+public class GenericErrorResponse {
+    List<ErrorMessage> messages = new ArrayList<>();
 
-    static final String SUCCESS = "SUCCESS";
+    public GenericErrorResponse(String message) {
+        messages.add(new ErrorMessage(message));
+    }
 
-    private T result;
-
-    String getStatus() {
-        return SUCCESS;
+    @Data
+    public static class ErrorMessage {
+        private final String message;
     }
 }
