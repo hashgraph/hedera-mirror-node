@@ -102,13 +102,18 @@ class ContractService extends BaseService {
   )}`;
 
   static contractStateChangesQuery = `
+    with ${ContractService.entityCTE}
     select ${ContractStateChange.CONSENSUS_TIMESTAMP},
            ${ContractStateChange.CONTRACT_ID},
            ${ContractStateChange.PAYER_ACCOUNT_ID},
            ${ContractStateChange.SLOT},
            ${ContractStateChange.VALUE_READ},
-           ${ContractStateChange.VALUE_WRITTEN}
-    from ${ContractStateChange.tableName}`;
+           ${ContractStateChange.VALUE_WRITTEN},
+           coalesce(${Entity.getFullName(Entity.EVM_ADDRESS)},'') as ${Entity.EVM_ADDRESS}
+    from ${ContractStateChange.tableName} ${ContractStateChange.tableAlias}
+    left join ${Entity.tableName} ${Entity.tableAlias}
+      on ${Entity.getFullName(Entity.ID)} = ${ContractStateChange.getFullName(ContractStateChange.CONTRACT_ID)}
+    `;
 
   static contractStateQuery = `
     with ${ContractService.entityCTE}
@@ -443,7 +448,13 @@ class ContractService extends BaseService {
     const orderClause = `order by ${ContractStateChange.CONSENSUS_TIMESTAMP}, ${ContractStateChange.CONTRACT_ID}, ${ContractStateChange.SLOT}`;
     const query = [ContractService.contractStateChangesQuery, whereClause, orderClause].join('\n');
     const rows = await super.getRows(query, params, 'getContractStateChangesByTimestamps');
-    return rows.map((row) => new ContractStateChange(row));
+
+    return rows.map((row) => {
+      return {
+        ...new ContractStateChange(row),
+        evmAddress: row.evm_address,
+      };
+    });
   }
 
   computeConditionsAndParamsFromEvmAddressFilter({evmAddressFilter, paramOffset = 0}) {
