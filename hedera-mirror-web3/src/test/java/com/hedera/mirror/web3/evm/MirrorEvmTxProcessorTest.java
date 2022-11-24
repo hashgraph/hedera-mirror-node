@@ -90,7 +90,7 @@ class MirrorEvmTxProcessorTest {
     @Mock private Transaction transaction;
     @Mock private HederaEvmWorldState.Updater updater;
     @Mock private HederaEvmWorldUpdater stackedUpdater;
-    @Mock private HederaEvmContractAliases hederaEvmContractAliases;
+    @Mock private MirrorEvmContractAliases hederaEvmContractAliases;
     @Mock private HederaBlockValues hederaBlockValues;
     @Mock private BlockMetaSource blockMetaSource;
 

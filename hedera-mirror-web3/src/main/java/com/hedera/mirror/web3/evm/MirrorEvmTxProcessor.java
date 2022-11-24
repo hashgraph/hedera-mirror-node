@@ -34,7 +34,6 @@ import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
-import com.hedera.services.evm.accounts.HederaEvmContractAliases;
 import com.hedera.services.evm.contracts.execution.BlockMetaSource;
 import com.hedera.services.evm.contracts.execution.EvmProperties;
 import com.hedera.services.evm.contracts.execution.HederaEvmTransactionProcessingResult;
@@ -48,7 +47,7 @@ import com.hedera.services.evm.store.models.HederaEvmAccount;
 public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
 
     private final AbstractCodeCache codeCache;
-    private final HederaEvmContractAliases aliasManager;
+    private final MirrorEvmContractAliases aliasManager;
 
     public MirrorEvmTxProcessor(
             final HederaEvmMutableWorldState worldState,
@@ -58,7 +57,7 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
             final Map<String, Provider<MessageCallProcessor>> mcps,
             final Map<String, Provider<ContractCreationProcessor>> ccps,
             final BlockMetaSource blockMetaSource,
-            final HederaEvmContractAliases aliasManager,
+            final MirrorEvmContractAliases aliasManager,
             final HederaEvmEntityAccess evmEntityAccess
     ) {
         super(worldState, pricesAndFeesProvider, dynamicProperties, gasCalculator, mcps, ccps,
