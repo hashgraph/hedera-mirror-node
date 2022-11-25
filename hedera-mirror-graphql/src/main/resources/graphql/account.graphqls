@@ -1,0 +1,45 @@
+"""
+Represents a Hedera account holder on the network.
+"""
+type Account implements Accountable & Entity & Node {
+    alias: String
+    autoRenewAccount: Account
+    autoRenewPeriod: Duration
+    balance(format: CurrencyFormat = TINYBAR): Long
+    createdTimestamp: Timestamp
+    declineReward: Boolean!
+    deleted: Boolean
+    entityId: EntityId!
+    expirationTimestamp: Timestamp
+    id: ID!
+    key: Object
+    maxAutomaticTokenAssociations: Int
+    memo: String!
+    nonce: Long
+    obtainer: Accountable
+    pendingReward(format: CurrencyFormat = TINYBAR): Long
+    receiverSigRequired: Boolean
+    stakedAccount: Account
+    stakePeriodStart: Timestamp
+    timestamp: TimestampRange!
+    type: EntityType!
+}
+
+"""
+The unique identifier to find a specific account. Only one of the given fields can be present at a
+time otherwise an error will occur.
+"""
+input AccountInput {
+
+    "A RFC 4648 Base32, with the trailing '=' characters removed, string that represents an account alias."
+    alias: String @Pattern(regexp: "^[A-Z2-7]+$")
+
+    "The unique shard, realm, and number associated with a Hedera account."
+    entityId: EntityIdInput
+
+    "A hex-encoded string that represents a 20-byte EVM address."
+    evmAddress: String @Pattern(regexp: "^(0x)?[a-fA-F0-9]{40}$")
+
+    "An opaque, globally unique identifier specific to GraphQL."
+    id: ID @Pattern(regexp: "^[a-zA-Z0-9+/=]+$")
+}

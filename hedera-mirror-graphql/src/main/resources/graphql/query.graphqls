@@ -1,0 +1,6 @@
+"""
+The query root of the Hedera GraphQL API
+"""
+type Query {
+    account(input: AccountInput!): Account
+}

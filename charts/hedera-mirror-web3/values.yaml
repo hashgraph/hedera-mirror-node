@@ -197,7 +197,7 @@ prometheusRules:
       description: "Logs for {{ $labels.namespace }}/{{ $labels.pod }} have reached {{ $value }} error messages/s in a 3m period"
       summary: "High rate of log errors"
     enabled: true
-    expr: sum(increase(logback_events_total{application="hedera-mirror-web3", level="error"}[1m])) by (namespace, pod) >= 2
+    expr: sum(increase(log4j2_events_total{application="hedera-mirror-web3", level="error"}[1m])) by (namespace, pod) >= 2
     for: 3m
     labels:
       application: hedera-mirror-web3

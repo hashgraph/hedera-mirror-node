@@ -59,6 +59,7 @@ dependencyManagement {
 }
 
 dependencies {
+    annotationProcessor(platform(project(":")))
     implementation(platform(project(":")))
     testImplementation("org.springframework.boot:spring-boot-starter-test")
 }
