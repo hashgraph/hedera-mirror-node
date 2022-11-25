@@ -1,0 +1,63 @@
+hedera:
+  mirror:
+    graphql:
+      db:
+        host: 127.0.0.1
+        name: mirror_node
+        password: mirror_graphql_pass
+        port: 5432
+        sslMode: DISABLE
+        username: mirror_graphql
+logging:
+  level:
+    root: warn
+    com.hedera.mirror.graphql: info
+    org.springframework.cloud.kubernetes.fabric8.config: error
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus
+  metrics:
+    export:
+      prometheus:
+        step: 30s
+    tags:
+      application: ${spring.application.name}
+  endpoint:
+    health:
+      group:
+        liveness:
+          include: ping
+        readiness:
+          include: db, ping
+server:
+  compression:
+    enabled: true
+  http2:
+    enabled: true
+  max-http-header-size: 1KB
+  netty:
+    connection-timeout: 3s
+  port: 8083
+  shutdown: graceful
+spring:
+  application:
+    name: hedera-mirror-graphql
+  cloud:
+    kubernetes:
+      reload:
+        enabled: true
+      secrets:
+        paths: /usr/etc/${spring.application.name}
+  graphql:
+    graphiql:
+      enabled: true
+    path: /graphql/alpha
+  r2dbc:
+    name: ${hedera.mirror.graphql.db.name}
+    password: ${hedera.mirror.graphql.db.password}
+    url: r2dbc:postgresql://${hedera.mirror.graphql.db.host}:${hedera.mirror.graphql.db.port}/${hedera.mirror.graphql.db.name}
+    username: ${hedera.mirror.graphql.db.username}
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
