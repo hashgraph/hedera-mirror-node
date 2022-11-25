@@ -20,6 +20,7 @@ package com.hedera.mirror.web3.exception;
  * ‍
  */
 
+import com.hedera.mirror.web3.evm.exception.EvmException;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 
 public class InvalidTransactionException extends EvmException {

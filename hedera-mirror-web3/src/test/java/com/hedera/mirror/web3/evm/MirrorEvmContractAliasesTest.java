@@ -45,9 +45,9 @@ class MirrorEvmContractAliasesTest {
     @Mock
     private MirrorEntityAccess mirrorEntityAccess;
     @Mock
-    Entity entity;
+    private Entity entity;
 
-    MirrorEvmContractAliases mirrorEvmContractAliases;
+    private MirrorEvmContractAliases mirrorEvmContractAliases;
 
     @BeforeEach
     void setup() {
