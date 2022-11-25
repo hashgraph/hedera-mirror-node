@@ -25,7 +25,13 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
 
 import javax.validation.Valid;
+
+import com.hedera.services.evm.store.models.HederaEvmAccount;
+
 import lombok.CustomLog;
+import lombok.RequiredArgsConstructor;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -35,20 +41,50 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.support.WebExchangeBindException;
 import reactor.core.publisher.Mono;
 
+import com.hedera.mirror.web3.service.eth.ContractCallService;
+import com.hedera.mirror.web3.service.models.CallBody;
 import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
 import com.hedera.mirror.web3.viewmodel.ContractCallResponse;
 import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
 
 @CustomLog
 @RequestMapping("/api/v1/contracts")
+@RequiredArgsConstructor
 @RestController
 class ContractController {
 
     static final String NOT_IMPLEMENTED_ERROR = "Operation not supported yet!";
+    private final ContractCallService contractCallService;
 
     @PostMapping(value = "/call")
     Mono<ContractCallResponse> call(@RequestBody @Valid ContractCallRequest request) {
-        throw new UnsupportedOperationException(NOT_IMPLEMENTED_ERROR);
+        if (request.isEstimate()) {
+            throw new UnsupportedOperationException(NOT_IMPLEMENTED_ERROR);
+        }
+        final var processParams = constructCallBody(request);
+        return response(contractCallService.processCall(processParams));
+    }
+
+    private CallBody constructCallBody(ContractCallRequest request) {
+        final var fromAddress = Address.fromHexString(request.getFrom());
+        final var sender = new HederaEvmAccount(fromAddress);
+        final var receiver = Address.fromHexString(request.getTo());
+        final var gasLimit = request.getGas();
+//        final var gasPrice = request.getGasPrice();
+        final var value = request.getValue();
+        final var data = Bytes.fromHexString(request.getData());
+
+        return CallBody.builder()
+                .sender(sender)
+                .receiver(receiver)
+                .providedGasLimit(gasLimit)
+                .value(value)
+                .callData(data)
+                .build();
+    }
+
+    private Mono<ContractCallResponse> response(String hexResponse) {
+        return Mono.just(new ContractCallResponse(hexResponse));
     }
 
     //This is temporary method till eth_call and gas_estimate business logic got impl.
