@@ -21,13 +21,12 @@ package com.hedera.mirror.web3.controller;
  */
 
 import static com.hedera.mirror.web3.controller.ValidationErrorParser.parseValidationError;
+import static org.apache.tuweni.bytes.Bytes.EMPTY;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
 
 import javax.validation.Valid;
-
-import com.hedera.services.evm.store.models.HederaEvmAccount;
-
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
@@ -41,11 +40,13 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.support.WebExchangeBindException;
 import reactor.core.publisher.Mono;
 
+import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.mirror.web3.service.eth.ContractCallService;
-import com.hedera.mirror.web3.service.models.CallBody;
+import com.hedera.mirror.web3.service.model.CallBody;
 import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
 import com.hedera.mirror.web3.viewmodel.ContractCallResponse;
 import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
+import com.hedera.services.evm.store.models.HederaEvmAccount;
 
 @CustomLog
 @RequestMapping("/api/v1/contracts")
@@ -66,13 +67,19 @@ class ContractController {
     }
 
     private CallBody constructCallBody(ContractCallRequest request) {
-        final var fromAddress = Address.fromHexString(request.getFrom());
+        final var fromAddress =
+                request.getFrom() != null
+                        ? Address.fromHexString(request.getFrom())
+                        : Address.wrap(EMPTY);
+
         final var sender = new HederaEvmAccount(fromAddress);
         final var receiver = Address.fromHexString(request.getTo());
         final var gasLimit = request.getGas();
-//        final var gasPrice = request.getGasPrice();
         final var value = request.getValue();
-        final var data = Bytes.fromHexString(request.getData());
+        final var data =
+                request.getData() != null
+                        ? Bytes.fromHexString(request.getData())
+                        : EMPTY;
 
         return CallBody.builder()
                 .sender(sender)
@@ -87,7 +94,7 @@ class ContractController {
         return Mono.just(new ContractCallResponse(hexResponse));
     }
 
-    //This is temporary method till eth_call and gas_estimate business logic got impl.
+    //This is temporary method till gas_estimate business logic got impl.
     @ExceptionHandler
     @ResponseStatus(NOT_IMPLEMENTED)
     private Mono<GenericErrorResponse> unsupportedOpResponse(UnsupportedOperationException e) {
@@ -98,6 +105,18 @@ class ContractController {
     @ResponseStatus(BAD_REQUEST)
     private Mono<GenericErrorResponse> validationError(WebExchangeBindException e) {
         return errorResponse(parseValidationError(e));
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(BAD_REQUEST)
+    private Mono<GenericErrorResponse> invalidTxnError(InvalidTransactionException e) {
+        return errorResponse(e.getMessage());
+    }
+
+    @ExceptionHandler(value = Exception.class)
+    @ResponseStatus(INTERNAL_SERVER_ERROR)
+    private Mono<GenericErrorResponse> genericError() {
+        return errorResponse(INTERNAL_SERVER_ERROR.getReasonPhrase());
     }
 
     private Mono<GenericErrorResponse> errorResponse(String errorMessage) {

@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.service.models;
+package com.hedera.mirror.web3.service.model;
 
 import lombok.Builder;
 import lombok.Value;

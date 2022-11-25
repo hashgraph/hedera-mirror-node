@@ -20,8 +20,6 @@ package com.hedera.mirror.web3.evm.contracts.execution;
  * ‍
  */
 
-import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
-
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.time.Instant;
@@ -34,6 +32,7 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.services.evm.contracts.execution.BlockMetaSource;
 import com.hedera.services.evm.contracts.execution.EvmProperties;

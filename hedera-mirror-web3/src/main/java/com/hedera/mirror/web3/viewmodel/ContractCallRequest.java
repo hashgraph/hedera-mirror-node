@@ -48,7 +48,7 @@ public class ContractCallRequest {
     private String from;
 
     @Min(0)
-    private long gas;
+    private long gas = 120_000_000L;
 
     @Min(0)
     private long gasPrice;
