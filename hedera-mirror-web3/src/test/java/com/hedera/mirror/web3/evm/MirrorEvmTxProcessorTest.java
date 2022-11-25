@@ -29,9 +29,6 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.hedera.mirror.web3.exception.InvalidTransactionException;
-import com.hedera.services.evm.contracts.execution.HederaEvmTransactionProcessingResult;
-
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -45,7 +42,6 @@ import javax.inject.Provider;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.Code;
 import org.hyperledger.besu.evm.EVM;
 import org.hyperledger.besu.evm.MainnetEVMs;
 import org.hyperledger.besu.evm.account.EvmAccount;
@@ -67,15 +63,18 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import com.hedera.mirror.web3.evm.store.models.MirrorEvmAccount;
-import com.hedera.services.evm.accounts.HederaEvmContractAliases;
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
+import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
+import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.services.evm.contracts.execution.BlockMetaSource;
 import com.hedera.services.evm.contracts.execution.EvmProperties;
 import com.hedera.services.evm.contracts.execution.HederaBlockValues;
+import com.hedera.services.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import com.hedera.services.evm.contracts.execution.PricesAndFeesProvider;
 import com.hedera.services.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.services.evm.store.contracts.HederaEvmWorldState;
 import com.hedera.services.evm.store.contracts.HederaEvmWorldUpdater;
+import com.hedera.services.evm.store.models.HederaEvmAccount;
 
 @ExtendWith(MockitoExtension.class)
 class MirrorEvmTxProcessorTest {
@@ -95,9 +94,9 @@ class MirrorEvmTxProcessorTest {
     @Mock private HederaBlockValues hederaBlockValues;
     @Mock private BlockMetaSource blockMetaSource;
 
-    private final MirrorEvmAccount sender = new MirrorEvmAccount(Address.ALTBN128_ADD);
-    private final MirrorEvmAccount receiver = new MirrorEvmAccount(Address.ALTBN128_MUL);
-    private final Address receiverAddress = receiver.getAddress();
+    private final HederaEvmAccount sender = new HederaEvmAccount(Address.ALTBN128_ADD);
+    private final HederaEvmAccount receiver = new HederaEvmAccount(Address.ALTBN128_MUL);
+    private final Address receiverAddress = receiver.canonicalAddress();
     private final Instant consensusTime = Instant.now();
     private MirrorEvmTxProcessor mirrorEvmTxProcessor;
 
@@ -159,7 +158,7 @@ class MirrorEvmTxProcessorTest {
         assertThat(result)
                 .isNotNull()
                 .returns(true, HederaEvmTransactionProcessingResult::isSuccessful)
-                .returns(receiver.getAddress(), r -> r.getRecipient().get());
+                .returns(receiver.canonicalAddress(), r -> r.getRecipient().get());
     }
 
     @Test
@@ -194,10 +193,10 @@ class MirrorEvmTxProcessorTest {
     @Test
     void assertTransactionSenderAndValue() {
         // setup:
-        doReturn(Optional.of(receiver.getAddress())).when(transaction).getTo();
+        doReturn(Optional.of(receiver.canonicalAddress())).when(transaction).getTo();
         given(hederaEvmContractAliases.resolveForEvm(receiverAddress)).willReturn(receiverAddress);
         given(hederaEvmEntityAccess.fetchCodeIfPresent(any())).willReturn(Bytes.EMPTY);
-        given(transaction.getSender()).willReturn(sender.getAddress());
+        given(transaction.getSender()).willReturn(sender.canonicalAddress());
         given(transaction.getValue()).willReturn(Wei.of(1L));
         long GAS_LIMIT = 300_000L;
         final MessageFrame.Builder commonInitialFrame =
@@ -206,9 +205,9 @@ class MirrorEvmTxProcessorTest {
                         .maxStackSize(MAX_STACK_SIZE)
                         .worldUpdater(mock(WorldUpdater.class))
                         .initialGas(GAS_LIMIT)
-                        .originator(sender.getAddress())
+                        .originator(sender.canonicalAddress())
                         .gasPrice(Wei.ZERO)
-                        .sender(sender.getAddress())
+                        .sender(sender.canonicalAddress())
                         .value(Wei.of(transaction.getValue().getAsBigInteger()))
                         .apparentValue(Wei.of(transaction.getValue().getAsBigInteger()))
                         .blockValues(mock(BlockValues.class))

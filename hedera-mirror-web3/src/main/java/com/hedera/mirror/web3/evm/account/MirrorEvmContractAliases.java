@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.evm.store.models;
+package com.hedera.mirror.web3.evm.account;
 
 /*-
  * ‌
@@ -20,18 +20,25 @@ package com.hedera.mirror.web3.evm.store.models;
  * ‍
  */
 
-import lombok.Value;
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
+import com.hedera.services.evm.accounts.HederaEvmContractAliases;
+
+import lombok.RequiredArgsConstructor;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import javax.inject.Named;
 
-import com.hedera.services.evm.store.models.HederaEvmAccount;
+@Named
+@RequiredArgsConstructor
+public class MirrorEvmContractAliases extends HederaEvmContractAliases {
 
-@Value
-public class MirrorEvmAccount implements HederaEvmAccount {
+    private final MirrorEntityAccess mirrorEntityAccess;
 
-    Address address;
 
     @Override
-    public Address canonicalAddress() {
-        return address;
+    public Address resolveForEvm(Address addressOrAlias) {
+        final var entity = mirrorEntityAccess.findEntity(addressOrAlias);
+        return Address.wrap(Bytes.wrap(entity.map(Entity::getEvmAddress).orElse(new byte[0])));
     }
 }

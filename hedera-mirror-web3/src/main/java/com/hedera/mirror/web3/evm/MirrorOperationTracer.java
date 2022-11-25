@@ -20,9 +20,12 @@ package com.hedera.mirror.web3.evm;
  * ‍
  */
 
+import javax.inject.Named;
+import lombok.NoArgsConstructor;
+
 import com.hedera.services.evm.contracts.execution.traceability.HederaEvmOperationTracer;
 
+@Named
+@NoArgsConstructor
 public class MirrorOperationTracer implements HederaEvmOperationTracer {
-
-
 }

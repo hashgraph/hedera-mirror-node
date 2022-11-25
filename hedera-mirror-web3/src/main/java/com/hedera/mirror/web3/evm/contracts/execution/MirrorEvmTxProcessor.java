@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.evm;
+package com.hedera.mirror.web3.evm.contracts.execution;
 
 /*-
  * ‌
@@ -19,6 +19,8 @@ package com.hedera.mirror.web3.evm;
  * limitations under the License.
  * ‍
  */
+
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
