@@ -62,8 +62,10 @@ class ContractController {
         if (request.isEstimate()) {
             throw new UnsupportedOperationException(NOT_IMPLEMENTED_ERROR);
         }
-        final var processParams = constructCallBody(request);
-        return response(contractCallService.processCall(processParams));
+        final var processParameters = constructCallBody(request);
+        final var response = contractCallService.processCall(processParameters);
+
+        return Mono.just(ContractCallResponse.of(response));
     }
 
     private CallBody constructCallBody(ContractCallRequest request) {
@@ -71,27 +73,21 @@ class ContractController {
                 request.getFrom() != null
                         ? Address.fromHexString(request.getFrom())
                         : Address.wrap(EMPTY);
-
-        final var sender = new HederaEvmAccount(fromAddress);
-        final var receiver = Address.fromHexString(request.getTo());
-        final var gasLimit = request.getGas();
-        final var value = request.getValue();
         final var data =
                 request.getData() != null
                         ? Bytes.fromHexString(request.getData())
                         : EMPTY;
 
+        final var sender = new HederaEvmAccount(fromAddress);
+        final var receiver = Address.fromHexString(request.getTo());
+
         return CallBody.builder()
                 .sender(sender)
                 .receiver(receiver)
-                .providedGasLimit(gasLimit)
-                .value(value)
+                .providedGasLimit(request.getGas())
+                .value(request.getValue())
                 .callData(data)
                 .build();
-    }
-
-    private Mono<ContractCallResponse> response(String hexResponse) {
-        return Mono.just(new ContractCallResponse(hexResponse));
     }
 
     //This is temporary method till gas_estimate business logic got impl.
@@ -104,18 +100,21 @@ class ContractController {
     @ExceptionHandler
     @ResponseStatus(BAD_REQUEST)
     private Mono<GenericErrorResponse> validationError(WebExchangeBindException e) {
+        log.warn("Validation error: {}", e.getMessage());
         return errorResponse(parseValidationError(e));
     }
 
     @ExceptionHandler
     @ResponseStatus(BAD_REQUEST)
     private Mono<GenericErrorResponse> invalidTxnError(InvalidTransactionException e) {
+        log.warn("Transaction error: {}", e.getMessage());
         return errorResponse(e.getMessage());
     }
 
-    @ExceptionHandler(value = Exception.class)
+    @ExceptionHandler()
     @ResponseStatus(INTERNAL_SERVER_ERROR)
-    private Mono<GenericErrorResponse> genericError() {
+    private Mono<GenericErrorResponse> genericError(Exception e) {
+        log.warn("Generic error: {}", e.getMessage());
         return errorResponse(INTERNAL_SERVER_ERROR.getReasonPhrase());
     }
 

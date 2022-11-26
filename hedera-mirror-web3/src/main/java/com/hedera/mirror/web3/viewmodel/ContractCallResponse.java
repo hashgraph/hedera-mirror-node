@@ -20,9 +20,8 @@ package com.hedera.mirror.web3.viewmodel;
  * ‍
  */
 
-import lombok.Value;
-
-@Value
-public class ContractCallResponse {
-    String result;
+public record ContractCallResponse(String result) {
+    public static ContractCallResponse of(String response) {
+        return new ContractCallResponse(response);
+    }
 }

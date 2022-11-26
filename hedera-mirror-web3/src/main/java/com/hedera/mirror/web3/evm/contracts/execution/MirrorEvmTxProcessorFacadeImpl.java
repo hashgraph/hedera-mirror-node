@@ -1,15 +1,30 @@
 package com.hedera.mirror.web3.evm.contracts.execution;
 
+/*-
+ * ‌
+ * Hedera Mirror Node
+ * ​
+ * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import javax.inject.Named;
 import javax.inject.Provider;
-
-import com.hedera.mirror.web3.evm.MirrorOperationTracer;
-
-import com.hedera.services.evm.contracts.execution.traceability.DefaultHederaTracer;
-
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
@@ -26,6 +41,7 @@ import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.properties.StaticBlockMetaSource;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
 import com.hedera.services.evm.contracts.execution.HederaEvmTransactionProcessingResult;
+import com.hedera.services.evm.contracts.execution.traceability.DefaultHederaTracer;
 import com.hedera.services.evm.store.contracts.AbstractCodeCache;
 import com.hedera.services.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.services.evm.store.contracts.HederaEvmWorldState;
@@ -47,13 +63,11 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
     private Map<String, Provider<MessageCallProcessor>> mcps;
     private Map<String, Provider<ContractCreationProcessor>> ccps;
 
-    //desired class
     private MirrorEvmTxProcessor processor;
 
     public MirrorEvmTxProcessorFacadeImpl(MirrorEntityAccess entityAccess, MirrorNodeEvmProperties evmProperties,
-                                          StaticBlockMetaSource blockMetaSource,
-                                          MirrorEvmContractAliases aliasManager, PricesAndFeesImpl pricesAndFees,
-                                          MirrorOperationTracer tracer) {
+                                          StaticBlockMetaSource blockMetaSource, MirrorEvmContractAliases aliasManager,
+                                          PricesAndFeesImpl pricesAndFees) {
         this.aliasManager = aliasManager;
         //needed for HederaEvmWorldState
         this.entityAccess = entityAccess;
@@ -106,14 +120,4 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                         () -> new ContractCreationProcessor(
                                 gasCalculator, evm, true, List.of(), 1));
     }
-
-//    final HederaEvmMutableWorldState worldState, [x]
-//    final PricesAndFeesProvider pricesAndFeesProvider,[N]
-//    final EvmProperties dynamicProperties,[x]
-//    final GasCalculator gasCalculator, BerlinGasCalculator using for now [x]
-//    final Map<String, Provider<MessageCallProcessor>> mcps,[N]
-//    final Map<String, Provider<ContractCreationProcessor>> ccps, [N]
-//    final BlockMetaSource blockMetaSource,[x]
-//    final HederaEvmContractAliases aliasManager,[x]
-//    final HederaEvmEntityAccess evmEntityAccess [x]
 }
