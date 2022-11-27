@@ -18,7 +18,7 @@
  * ‍
  */
 
-import {TokenAccount, TokenBalance, AccountBalanceFile, Nft} from '../model';
+import {TokenAccount} from '../model';
 import BaseService from './baseService';
 import {OrderSpec} from '../sql';
 import _ from 'lodash';
@@ -29,21 +29,12 @@ import _ from 'lodash';
 class TokenService extends BaseService {
   static tokenRelationshipsQuery = `
         select ${TokenAccount.getFullName(TokenAccount.AUTOMATIC_ASSOCIATION)},
+               ${TokenAccount.getFullName(TokenAccount.BALANCE)},
                ${TokenAccount.getFullName(TokenAccount.CREATED_TIMESTAMP)},
                ${TokenAccount.getFullName(TokenAccount.FREEZE_STATUS)},
                ${TokenAccount.getFullName(TokenAccount.KYC_STATUS)},
-               ${TokenAccount.getFullName(TokenAccount.TOKEN_ID)},
-               coalesce(${TokenBalance.getFullName(TokenBalance.BALANCE)}, 0) balance
+               ${TokenAccount.getFullName(TokenAccount.TOKEN_ID)}
         from ${TokenAccount.tableName} ${TokenAccount.tableAlias}
-        left join (
-                select ${TokenBalance.TOKEN_ID},
-                       ${TokenBalance.BALANCE}
-                from ${TokenBalance.tableName}
-                where ${TokenBalance.ACCOUNT_ID} = $1
-                and ${TokenBalance.CONSENSUS_TIMESTAMP} = (select max(${AccountBalanceFile.CONSENSUS_TIMESTAMP})
-                from ${AccountBalanceFile.tableName})
-        ) ${TokenBalance.tableAlias}
-        on ${TokenAccount.getFullName(TokenAccount.TOKEN_ID)} = ${TokenBalance.getFullName(TokenBalance.TOKEN_ID)}
         where ${TokenAccount.tableAlias}.${TokenAccount.ACCOUNT_ID} = $1
         and ${TokenAccount.tableAlias}.${TokenAccount.ASSOCIATED} = true `;
 

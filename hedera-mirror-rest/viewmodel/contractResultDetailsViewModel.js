@@ -63,7 +63,6 @@ class ContractResultDetailsViewModel extends ContractResultViewModel {
       contractResult.transactionResult === ContractResultDetailsViewModel._SUCCESS_PROTO_ID
         ? ContractResultDetailsViewModel._SUCCESS_RESULT
         : ContractResultDetailsViewModel._FAIL_RESULT;
-
     if (!_.isEmpty(contractResult.failedInitcode)) {
       this.failed_initcode = utils.toHexStringNonQuantity(contractResult.failedInitcode);
     } else if (

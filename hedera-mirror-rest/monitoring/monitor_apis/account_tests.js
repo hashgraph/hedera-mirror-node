@@ -39,6 +39,7 @@ const accountsPath = '/accounts';
 const resource = 'account';
 const resourceLimit = config[resource].limit || DEFAULT_LIMIT;
 const tokenRelationshipEnabled = config[resource].tokenRelationshipEnabled || false;
+const stakingRewardAccountId = config[resource].stakingRewardAccountId;
 const jsonRespKey = 'accounts';
 const mandatoryParams = [
   'balance',
@@ -265,6 +266,32 @@ const getSingleAccountTokenRelationships = async (server) => {
   };
 };
 
+const getAccountStakingRewards = async (server) => {
+  const stakingRewardsPath = `${accountsPath}/${stakingRewardAccountId}/rewards`;
+  const rewardsJsonRespKey = 'rewards';
+  let url = getUrl(server, stakingRewardsPath, {limit: resourceLimit});
+  const rewardMandatoryParams = ['account_id', 'amount', 'timestamp'];
+  const rewards = await getAPIResponse(url, rewardsJsonRespKey);
+
+  let result = new CheckRunner()
+    .withCheckSpec(checkAPIResponseError)
+    .withCheckSpec(checkRespObjDefined, {message: 'rewards is undefined'})
+    .withCheckSpec(checkMandatoryParams, {
+      params: rewardMandatoryParams,
+      message: 'reward object is missing some mandatory fields',
+    })
+    .run(rewards);
+  if (!result.passed) {
+    return {url, ...result};
+  }
+
+  return {
+    url,
+    passed: true,
+    message: 'Successfully called account staking rewards for account ${stakingRewardAccountId}.',
+  };
+};
+
 /**
  * Run all account tests in an asynchronous fashion waiting for all tests to complete
  * @param {Object} server object provided by the user
@@ -277,6 +304,7 @@ const runTests = async (server, testResult) => {
     runTest(getAccountsWithTimeAndLimitParams),
     runTest(getSingleAccount),
     tokenRelationshipEnabled ? runTest(getSingleAccountTokenRelationships) : '',
+    stakingRewardAccountId !== null ? runTest(getAccountStakingRewards) : '',
   ]);
 };
 

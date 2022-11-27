@@ -886,6 +886,23 @@ const addHexPrefix = (hexData) => {
 };
 
 /**
+ * Pads all non-null arrays to 0x-prefixed 64 characters hex string and pass the null values as null
+ * @param val
+ * @returns {String|null}
+ */
+const toUint256 = (val) => {
+  if (_.isNil(val)) {
+    return null;
+  }
+
+  if (!val.length) {
+    return constants.ZERO_UINT256;
+  }
+
+  return toHexString(val, true, 64);
+};
+
+/**
  * Converts the byte array returned by SQL queries into hex string
  * Logic conforms with ETH hex value encoding, therefore nill and empty return '0x'
  * @param {Array} byteArray Array of bytes to be converted to hex string
@@ -1077,6 +1094,19 @@ const buildComparatorFilter = (name, filter) => {
     operator: opVal[0],
     value: opVal[1],
   };
+};
+
+/**
+ * Calculates the expiryTimestamp.
+ * @param {int} autoRenewPeriod: seconds format
+ * @param {BigInt} createdTimestamp: nnnnnnnnnnnnnnnnnnn format
+ * @param {BigInt} expirationTimestamp: nnnnnnnnnnnnnnnnnnn format
+ * @returns {String} seconds.nnnnnnnnn format
+ */
+const calculateExpiryTimestamp = (autoRenewPeriod, createdTimestamp, expirationTimestamp) => {
+  return _.isNil(expirationTimestamp) && !_.isNil(createdTimestamp) && !_.isNil(autoRenewPeriod)
+    ? nsToSecNs(BigInt(createdTimestamp) + BigInt(autoRenewPeriod) * constants.AUTO_RENEW_PERIOD_MULTIPLE)
+    : nsToSecNs(expirationTimestamp);
 };
 
 /**
@@ -1451,6 +1481,7 @@ export {
   buildComparatorFilter,
   buildFilters,
   buildPgSqlObject,
+  calculateExpiryTimestamp,
   checkTimestampRange,
   conflictingPathParam,
   convertGasPriceToTinyBars,
@@ -1515,4 +1546,5 @@ export {
   validateFilters,
   validateReq,
   stripHexPrefix,
+  toUint256,
 };

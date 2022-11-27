@@ -51,28 +51,43 @@ ${ContractLog.getFullName(ContractLog.TOPIC2)},
 ${ContractLog.getFullName(ContractLog.TOPIC3)}
 `;
 
+const contractResultsFields = `${ContractResult.getFullName(ContractResult.AMOUNT)},
+${ContractResult.getFullName(ContractResult.BLOOM)},
+${ContractResult.getFullName(ContractResult.CALL_RESULT)},
+${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)},
+${ContractResult.getFullName(ContractResult.CONTRACT_ID)},
+${ContractResult.getFullName(ContractResult.CREATED_CONTRACT_IDS)},
+${ContractResult.getFullName(ContractResult.ERROR_MESSAGE)},
+${ContractResult.getFullName(ContractResult.FAILED_INITCODE)},
+${ContractResult.getFullName(ContractResult.FUNCTION_PARAMETERS)},
+${ContractResult.getFullName(ContractResult.GAS_LIMIT)},
+${ContractResult.getFullName(ContractResult.GAS_USED)},
+${ContractResult.getFullName(ContractResult.PAYER_ACCOUNT_ID)},
+${ContractResult.getFullName(ContractResult.SENDER_ID)},
+${ContractResult.getFullName(ContractResult.TRANSACTION_HASH)},
+${ContractResult.getFullName(ContractResult.TRANSACTION_INDEX)},
+${ContractResult.getFullName(ContractResult.TRANSACTION_RESULT)}
+`;
+
 /**
  * Contract retrieval business logic
  */
 class ContractService extends BaseService {
-  static contractResultsQuery = `
-    select ${ContractResult.getFullName(ContractResult.AMOUNT)},
-           ${ContractResult.getFullName(ContractResult.BLOOM)},
-           ${ContractResult.getFullName(ContractResult.CALL_RESULT)},
-           ${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)},
-           ${ContractResult.getFullName(ContractResult.CONTRACT_ID)},
-           ${ContractResult.getFullName(ContractResult.CREATED_CONTRACT_IDS)},
-           ${ContractResult.getFullName(ContractResult.ERROR_MESSAGE)},
-           ${ContractResult.getFullName(ContractResult.FAILED_INITCODE)},
-           ${ContractResult.getFullName(ContractResult.FUNCTION_PARAMETERS)},
-           ${ContractResult.getFullName(ContractResult.GAS_LIMIT)},
-           ${ContractResult.getFullName(ContractResult.GAS_USED)},
-           ${ContractResult.getFullName(ContractResult.PAYER_ACCOUNT_ID)},
-           ${ContractResult.getFullName(ContractResult.SENDER_ID)},
-           ${ContractResult.getFullName(ContractResult.TRANSACTION_HASH)},
-           ${ContractResult.getFullName(ContractResult.TRANSACTION_INDEX)},
-           ${ContractResult.getFullName(ContractResult.TRANSACTION_RESULT)}
-    from ${ContractResult.tableName} ${ContractResult.tableAlias}`;
+  static entityCTE = ` ${Entity.tableName} as (
+    select ${Entity.EVM_ADDRESS}, ${Entity.ID} from ${Entity.tableName}
+  ) `;
+
+  static contractResultsWithEvmAddressQuery = `
+    select
+      ${contractResultsFields},
+      coalesce(${Entity.getFullName(Entity.EVM_ADDRESS)},'') as ${Entity.EVM_ADDRESS}
+    from ${ContractResult.tableName} ${ContractResult.tableAlias}
+    `;
+
+  static joinContractResultWithEvmAddress = `
+      left join ${Entity.tableName} ${Entity.tableAlias}
+      on ${Entity.getFullName(Entity.ID)} = ${ContractResult.getFullName(ContractResult.CONTRACT_ID)}
+   `;
 
   static transactionTableCTE = `${Transaction.tableAlias} as (
       select
@@ -87,20 +102,30 @@ class ContractService extends BaseService {
   )}`;
 
   static contractStateChangesQuery = `
+    with ${ContractService.entityCTE}
     select ${ContractStateChange.CONSENSUS_TIMESTAMP},
            ${ContractStateChange.CONTRACT_ID},
            ${ContractStateChange.PAYER_ACCOUNT_ID},
            ${ContractStateChange.SLOT},
            ${ContractStateChange.VALUE_READ},
-           ${ContractStateChange.VALUE_WRITTEN}
-    from ${ContractStateChange.tableName}`;
+           ${ContractStateChange.VALUE_WRITTEN},
+           coalesce(${Entity.getFullName(Entity.EVM_ADDRESS)},'') as ${Entity.EVM_ADDRESS}
+    from ${ContractStateChange.tableName} ${ContractStateChange.tableAlias}
+    left join ${Entity.tableName} ${Entity.tableAlias}
+      on ${Entity.getFullName(Entity.ID)} = ${ContractStateChange.getFullName(ContractStateChange.CONTRACT_ID)}
+    `;
 
   static contractStateQuery = `
+    with ${ContractService.entityCTE}
     select ${ContractState.MODIFIED_TIMESTAMP},
            ${ContractState.CONTRACT_ID},
            ${ContractState.SLOT},
-           ${ContractState.VALUE}
-    from ${ContractState.tableName}`;
+           ${ContractState.VALUE},
+           coalesce(${Entity.getFullName(Entity.EVM_ADDRESS)},'') as ${Entity.EVM_ADDRESS}
+    from ${ContractState.tableName} ${ContractState.tableAlias}
+    left join ${Entity.tableName} ${Entity.tableAlias}
+      on ${Entity.getFullName(Entity.ID)} = ${ContractState.getFullName(ContractState.CONTRACT_ID)}
+    `;
 
   static contractLogsQuery = `select ${contractLogsFields} from ${ContractLog.tableName} ${ContractLog.tableAlias}`;
 
@@ -202,10 +227,12 @@ class ContractService extends BaseService {
     }
 
     const query = [
+      `with ${ContractService.entityCTE}`,
       joinTransactionTable
-        ? 'with ' + ContractService.transactionTableCTE.replace('$where', transactionWhereClauses.join(' and '))
+        ? `, ${ContractService.transactionTableCTE.replace('$where', transactionWhereClauses.join(' and '))} `
         : '',
-      ContractService.contractResultsQuery,
+      ContractService.contractResultsWithEvmAddressQuery,
+      ContractService.joinContractResultWithEvmAddress,
       joinTransactionTable ? ContractService.joinTransactionTable : '',
       whereConditions.length > 0 ? `where ${whereConditions.join(' and ')}` : '',
       super.getOrderByQuery(OrderSpec.from(ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP), order)),
@@ -259,11 +286,21 @@ class ContractService extends BaseService {
     }
 
     const whereClause = `where ${ContractResult.CONSENSUS_TIMESTAMP} ${timestampsOpAndValue}`;
-    const query = [ContractService.contractResultsQuery, whereClause].join('\n');
+    const query = [
+      `with ${ContractService.entityCTE} `,
+      ContractService.contractResultsWithEvmAddressQuery,
+      ContractService.joinContractResultWithEvmAddress,
+      whereClause,
+    ].join('\n');
 
     const rows = await super.getRows(query, params, 'getContractResultsByTimestamps');
 
-    return rows.map((row) => new ContractResult(row));
+    return rows.map((row) => {
+      return {
+        ...new ContractResult(row),
+        evmAddress: row.evm_address,
+      };
+    });
   }
 
   /**
@@ -289,7 +326,9 @@ class ContractService extends BaseService {
 
     const whereClause = `where ${ContractResult.TRANSACTION_HASH} = $1`;
     const query = [
-      ContractService.contractResultsQuery,
+      `with ${ContractService.entityCTE} `,
+      ContractService.contractResultsWithEvmAddressQuery,
+      ContractService.joinContractResultWithEvmAddress,
       whereClause,
       transactionsFilter,
       this.getOrderByQuery(OrderSpec.from(ContractResult.CONSENSUS_TIMESTAMP, 'asc')),
@@ -297,7 +336,12 @@ class ContractService extends BaseService {
     ].join('\n');
     const rows = await super.getRows(query, params, 'getContractResultsByHash');
 
-    return rows.map((row) => new ContractResult(row));
+    return rows.map((row) => {
+      return {
+        ...new ContractResult(row),
+        evmAddress: row.evm_address,
+      };
+    });
   }
 
   /**
@@ -404,7 +448,13 @@ class ContractService extends BaseService {
     const orderClause = `order by ${ContractStateChange.CONSENSUS_TIMESTAMP}, ${ContractStateChange.CONTRACT_ID}, ${ContractStateChange.SLOT}`;
     const query = [ContractService.contractStateChangesQuery, whereClause, orderClause].join('\n');
     const rows = await super.getRows(query, params, 'getContractStateChangesByTimestamps');
-    return rows.map((row) => new ContractStateChange(row));
+
+    return rows.map((row) => {
+      return {
+        ...new ContractStateChange(row),
+        evmAddress: row.evm_address,
+      };
+    });
   }
 
   computeConditionsAndParamsFromEvmAddressFilter({evmAddressFilter, paramOffset = 0}) {

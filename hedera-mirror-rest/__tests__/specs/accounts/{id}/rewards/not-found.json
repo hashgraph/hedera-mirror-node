@@ -1,0 +1,60 @@
+{
+  "description": "Account staking reward payouts api call for a non-existing account",
+  "setup": {
+    "entities": [
+      {
+        "num": 1001
+      },
+      {
+        "num": 800
+      }
+    ],
+    "stakingRewardTransfers": [
+      {
+        "account_id": "0.0.1001",
+        "amount": 10,
+        "consensus_timestamp": "1234567890000011111",
+        "payer_account_id": "0.0.1001"
+      }
+    ]
+  },
+  "tests": [
+    {
+      "urls": [
+        "/api/v1/accounts/404/rewards",
+        "/api/v1/accounts/0.404/rewards",
+        "/api/v1/accounts/0.0.404/rewards",
+        "/api/v1/accounts/ebb9a1be370150759408cd7af48e9eda2b8ead57/rewards",
+        "/api/v1/accounts/0.ebb9a1be370150759408cd7af48e9eda2b8ead57/rewards",
+        "/api/v1/accounts/0.0.ebb9a1be370150759408cd7af48e9eda2b8ead57/rewards"
+      ],
+      "responseStatus": 404,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Not found"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "urls": [
+        "/api/v1/accounts/KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/rewards",
+        "/api/v1/accounts/0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/rewards",
+        "/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/rewards"
+      ],
+      "responseStatus": 404,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "No account with a matching alias found"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -61,6 +61,7 @@ const setup = async (testDataJson) => {
   await loadNodeStakes(testDataJson.nodestakes);
   await loadRecordFiles(testDataJson.recordFiles);
   await loadSchedules(testDataJson.schedules);
+  await loadStakingRewardTransfers(testDataJson.stakingRewardTransfers);
   await loadTopicMessages(testDataJson.topicmessages);
   await loadTokens(testDataJson.tokens);
   await loadTokenAccounts(testDataJson.tokenaccounts);
@@ -300,6 +301,15 @@ const loadNodeStakes = async (nodeStakes) => {
   }
 };
 
+const loadRecordFiles = async (recordFiles) => {
+  if (recordFiles == null) {
+    return;
+  }
+  for (const recordFile of recordFiles) {
+    await addRecordFile(recordFile);
+  }
+};
+
 const loadSchedules = async (schedules) => {
   if (schedules == null) {
     return;
@@ -310,12 +320,12 @@ const loadSchedules = async (schedules) => {
   }
 };
 
-const loadRecordFiles = async (recordFiles) => {
-  if (recordFiles == null) {
+const loadStakingRewardTransfers = async (transfers) => {
+  if (transfers == null) {
     return;
   }
-  for (const recordFile of recordFiles) {
-    await addRecordFile(recordFile);
+  for (const transfer of transfers) {
+    await addStakingRewardTransfer(transfer);
   }
 };
 
@@ -1107,6 +1117,9 @@ const addCryptoTransaction = async (cryptoTransfer) => {
   if (!('senderAccountId' in cryptoTransfer)) {
     cryptoTransfer.senderAccountId = cryptoTransfer.payerAccountId;
   }
+  if (!('payerAccountId' in cryptoTransfer)) {
+    cryptoTransfer.payerAccountId = cryptoTransfer.senderAccountId;
+  }
   if (!('amount' in cryptoTransfer)) {
     cryptoTransfer.amount = NODE_FEE;
   }
@@ -1193,6 +1206,32 @@ const addSchedule = async (schedule) => {
   );
 };
 
+const defaultStakingRewardTransfer = {
+  account_id: 1001,
+  amount: 100,
+  consensus_timestamp: null,
+  payer_account_id: 950,
+};
+
+const addStakingRewardTransfer = async (transfer) => {
+  const account_id = transfer.account_id
+    ? EntityId.parse(transfer.account_id).getEncodedId()
+    : defaultStakingRewardTransfer.account_id;
+  const payer_account_id = transfer.payer_account_id
+    ? EntityId.parse(transfer.payer_account_id).getEncodedId()
+    : defaultStakingRewardTransfer.payer_account_id;
+
+  const stakingRewardTransfer = {
+    ...defaultStakingRewardTransfer,
+    ...transfer,
+    account_id: account_id,
+    payer_account_id: payer_account_id,
+  };
+
+  const insertFields = ['account_id', 'amount', 'consensus_timestamp', 'payer_account_id'];
+  await insertDomainObject('staking_reward_transfer', insertFields, stakingRewardTransfer);
+};
+
 const addTransactionSignature = async (transactionSignature) => {
   await pool.query(
     `insert into transaction_signature (consensus_timestamp,
@@ -1200,7 +1239,7 @@ const addTransactionSignature = async (transactionSignature) => {
                                         entity_id,
                                         signature,
                                         type)
-    values ($1, $2, $3, $4, $5)`,
+     values ($1, $2, $3, $4, $5)`,
     [
       transactionSignature.consensus_timestamp,
       Buffer.from(transactionSignature.public_key_prefix),
@@ -1304,6 +1343,7 @@ const addTokenAccount = async (tokenAccount) => {
     account_id: '0.0.0',
     associated: true,
     automatic_association: false,
+    balance: 0,
     created_timestamp: 0,
     freeze_status: 0,
     kyc_status: 0,
@@ -1317,13 +1357,14 @@ const addTokenAccount = async (tokenAccount) => {
   }
 
   await pool.query(
-    `insert into token_account (account_id, associated, automatic_association, created_timestamp, freeze_status,
+    `insert into token_account (account_id, associated, automatic_association, balance, created_timestamp, freeze_status,
                                 kyc_status, timestamp_range, token_id)
-    values ($1, $2, $3, $4, $5, $6, $7, $8);`,
+    values ($1, $2, $3, $4, $5, $6, $7, $8, $9);`,
     [
       EntityId.parse(tokenAccount.account_id).getEncodedId(),
       tokenAccount.associated,
       tokenAccount.automatic_association,
+      tokenAccount.balance,
       tokenAccount.created_timestamp,
       tokenAccount.freeze_status,
       tokenAccount.kyc_status,
@@ -1529,24 +1570,26 @@ export default {
   addAccount,
   addCryptoTransaction,
   addNft,
+  addStakingRewardTransfer,
   addToken,
-  loadAddressBooks,
   loadAddressBookEntries,
   loadAddressBookServiceEndpoints,
-  loadContracts,
+  loadAddressBooks,
+  loadContractActions,
+  loadContractLogs,
   loadContractResults,
+  loadContractStateChanges,
+  loadContractStates,
+  loadContracts,
   loadCryptoAllowances,
   loadEntities,
+  loadEthereumTransactions,
   loadFileData,
   loadNetworkStakes,
   loadNodeStakes,
   loadRecordFiles,
+  loadStakingRewardTransfers,
   loadTransactions,
-  loadEthereumTransactions,
-  loadContractLogs,
-  loadContractStateChanges,
   setAccountBalance,
   setup,
-  loadContractActions,
-  loadContractStates,
 };

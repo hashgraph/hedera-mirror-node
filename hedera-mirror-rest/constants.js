@@ -19,8 +19,9 @@
  */
 
 const MAX_INT32 = 2147483647;
-
 const ONE_DAY_IN_NS = 86_400_000_000_000n;
+const ZERO_UINT256 = '0x0000000000000000000000000000000000000000000000000000000000000000';
+const AUTO_RENEW_PERIOD_MULTIPLE = BigInt(1e9);
 
 // url query filer keys
 const filterKeys = {
@@ -209,8 +210,10 @@ const queryParamOperatorPatterns = {
 };
 
 export {
+  AUTO_RENEW_PERIOD_MULTIPLE,
   MAX_INT32,
   ONE_DAY_IN_NS,
+  ZERO_UINT256,
   characterEncoding,
   cloudProviders,
   cryptoTransferType,

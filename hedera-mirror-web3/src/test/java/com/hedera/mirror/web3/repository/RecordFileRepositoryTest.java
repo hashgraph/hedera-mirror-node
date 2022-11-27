@@ -23,45 +23,38 @@ package com.hedera.mirror.web3.repository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import javax.annotation.Resource;
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
-import com.hedera.mirror.common.domain.DigestAlgorithm;
-import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class RecordFileRepositoryTest extends Web3IntegrationTest {
-
-    private long timestamp = 0;
 
     @Resource
     private RecordFileRepository recordFileRepository;
 
     @Test
     void findLatestIndex() {
-        RecordFile recordFile1 = recordFile();
-        recordFileRepository.save(recordFile1);
+        domainBuilder.recordFile().persist();
+        var latest = domainBuilder.recordFile().persist();
 
-        RecordFile recordFile2 = recordFile();
-        recordFileRepository.save(recordFile2);
-
-        assertThat(recordFileRepository.findLatestIndex()).get().isEqualTo(recordFile2.getIndex());
+        assertThat(recordFileRepository.findLatestIndex()).get().isEqualTo(latest.getIndex());
     }
 
-    private RecordFile recordFile() {
-        RecordFile recordFile = new RecordFile();
-        recordFile.setConsensusStart(timestamp);
-        recordFile.setConsensusEnd(timestamp + 1);
-        recordFile.setCount(1L);
-        recordFile.setDigestAlgorithm(DigestAlgorithm.SHA_384);
-        recordFile.setFileHash(String.valueOf(timestamp));
-        recordFile.setHash(String.valueOf(timestamp));
-        recordFile.setIndex(timestamp);
-        recordFile.setLoadEnd(timestamp + 1);
-        recordFile.setLoadStart(timestamp);
-        recordFile.setName(timestamp + ".rcd");
-        recordFile.setNodeId(0L);
-        recordFile.setPreviousHash(String.valueOf(timestamp - 1));
-        ++timestamp;
-        return recordFile;
+    @Test
+    void findFileHashByIndex() {
+        final var file = domainBuilder.recordFile().persist();
+
+        assertThat(recordFileRepository.findHashByIndex(file.getIndex())).get().isEqualTo(file.getHash());
+    }
+
+    @Test
+    void findLatestFile() {
+        domainBuilder.recordFile().persist();
+        var latest = domainBuilder.recordFile().persist();
+
+        assertThat(recordFileRepository.findLatest()).get().isEqualTo(latest);
     }
 }

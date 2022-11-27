@@ -108,6 +108,30 @@ paths:
           $ref: '#/components/responses/NotFoundError'
       tags:
         - accounts
+  /api/v1/accounts/{idOrAliasOrEvmAddress}/rewards:
+    get:
+      summary: Get past staking reward payouts for an account
+      description: |
+        Returns information for all past staking reward payouts for an account.
+      operationId: listStakingRewardsByAccountId
+      parameters:
+        - $ref: '#/components/parameters/accountIdOrAliasOrEvmAddressPathParam'
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/orderQueryParamDesc'
+        - $ref: '#/components/parameters/timestampQueryParam'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StakingRewardsResponse'
+        400:
+          $ref: '#/components/responses/InvalidParameterError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+      tags:
+        - accounts
   /api/v1/accounts/{idOrAliasOrEvmAddress}/tokens:
     get:
       summary: Get token relationships info for an account
@@ -289,7 +313,7 @@ paths:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
         - contracts
-  /api/v1/contracts/{contractIdOrAddressPathParam}:
+  /api/v1/contracts/{contractIdOrAddress}:
     get:
       summary: Get contract by id
       description: Return the contract information given an id
@@ -310,7 +334,7 @@ paths:
           $ref: '#/components/responses/NotFoundError'
       tags:
         - contracts
-  /api/v1/contracts/{contractIdOrAddressPathParam}/results:
+  /api/v1/contracts/{contractIdOrAddress}/results:
     get:
       summary: List contract results from a contract on the network
       description: Returns a list of all ContractResults for a contract's function executions.
@@ -336,7 +360,7 @@ paths:
           $ref: '#/components/responses/InvalidParameterError'
       tags:
         - contracts
-  /api/v1/contracts/{contractIdOrAddressPathParam}/state:
+  /api/v1/contracts/{contractIdOrAddress}/state:
     get:
       summary: The contract current state from a contract on the network
       description: Returns a list of all contract's slots.
@@ -359,7 +383,7 @@ paths:
           $ref: '#/components/responses/NotFoundError'
       tags:
         - contracts
-  /api/v1/contracts/{contractIdOrAddressPathParam}/results/{timestamp}:
+  /api/v1/contracts/{contractIdOrAddress}/results/{timestamp}:
     get:
       summary: Get the contract result from a contract on the network executed at a given timestamp
       description: Returns a single ContractResult for a contract's function executions at a specific timestamp.
@@ -461,7 +485,7 @@ paths:
           $ref: '#/components/responses/NotFoundError'
       tags:
         - contracts
-  /api/v1/contracts/{contractIdOrAddressPathParam}/results/logs:
+  /api/v1/contracts/{contractIdOrAddress}/results/logs:
     get:
       summary: List contract logs from a contract on the network
       description: |
@@ -1148,7 +1172,7 @@ tags:
     description: The tokens object represents the information associated with a token entity and returns a list of token information.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.69.0-SNAPSHOT
+  version: 0.70.0-SNAPSHOT
   license:
     name: Apache-2.0
     url: 'https://www.apache.org/licenses/LICENSE-2.0.html'
@@ -1334,6 +1358,15 @@ components:
       properties:
         blocks:
           $ref: '#/components/schemas/Blocks'
+        links:
+          $ref: '#/components/schemas/Links'
+    StakingRewardsResponse:
+      type: object
+      properties:
+        rewards:
+          type: array
+          items:
+            $ref: '#/components/schemas/StakingReward'
         links:
           $ref: '#/components/schemas/Links'
     StateProofResponseFull:
@@ -1882,6 +1915,10 @@ components:
     ContractResult:
       type: object
       properties:
+        address:
+          description: The hex encoded evm address of contract
+          example: "0x25fe26adc577cc89172e6156c9e24f7b9751b762"
+          type: string
         amount:
           description: The number of tinybars sent to the function
           example: 10
@@ -1954,6 +1991,10 @@ components:
               nullable: true
               type: string
               example: '0xabcd'
+            address:
+              description: The hex encoded evm address of contract
+              example: "0x25fe26adc577cc89172e6156c9e24f7b9751b762"
+              type: string
             block_gas_used:
               description: The total amount of gas used in the block
               example: 2000
@@ -2728,6 +2769,49 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/ServiceEndpoint'
+    StakingReward:
+      type: object
+      properties:
+        account_id:
+          $ref: '#/components/schemas/EntityId'
+        amount:
+          description: The number of tinybars awarded
+          example: 10
+          format: int64
+          type: integer
+          nullable: false
+        timestamp:
+          $ref: '#/components/schemas/Timestamp'
+      required:
+        - account_id
+        - amount
+        - timestamp
+      example:
+        account_id: 0.0.1000
+        amount: 10
+        timestamp: 1234567890.000000001
+    StakingRewardTransfer:
+      type: object
+      description: A staking reward transfer
+      required:
+        - account
+        - amount
+      properties:
+        account:
+          $ref: '#/components/schemas/EntityId'
+        amount:
+          description: The number of tinybars awarded
+          example: 10
+          format: int64
+          type: integer
+          nullable: false
+      example:
+        account_id: 0.0.1000
+        amount: 10
+    StakingRewardTransfers:
+      type: array
+      items:
+        $ref: '#/components/schemas/StakingRewardTransfer'
     Timestamp:
       type: string
       example: "1586567700.453054000"
@@ -2900,9 +2984,6 @@ components:
           nullable: false
         created_timestamp:
           $ref: '#/components/schemas/Timestamp'
-          description: Creation timestamp of the token account relationship.
-          example: 123456789.000000001
-          nullable: false
         freeze_status:
           type: string
           description: The Freeze status of the account.
@@ -2917,9 +2998,6 @@ components:
           nullable: false
         token_id:
           $ref: '#/components/schemas/EntityId'
-          description: Id of the token associated with the given account.
-          example: 0.0.27335
-          nullable: false
       required:
         - automatic_association
         - balance
@@ -3073,6 +3151,8 @@ components:
           type: string
         scheduled:
           type: boolean
+        staking_reward_transfers:
+          $ref: '#/components/schemas/StakingRewardTransfers'
         token_transfers:
           type: array
           items:
@@ -3128,6 +3208,11 @@ components:
         parent_consensus_timestamp: "1234567890.000000007"
         result: SUCCESS
         scheduled: false
+        staking_reward_transfers:
+          - account: 3
+            amount: 150
+          - account: 9
+            amount: 200
         transaction_hash: "vigzKe2J7fv4ktHBbNTSzQmKq7Lzdq1/lJMmHT+a2KgvdhAuadlvS4eKeqKjIRmW"
         transaction_id: 0.0.8-1234567890-000000006
         token_transfers:
@@ -3148,6 +3233,12 @@ components:
             is_approval: false
           - account: 0.0.98
             amount: 1
+            is_approval: false
+          - account: 0.0.800
+            amount: 150
+            is_approval: false
+          - account: 0.0.800
+            amount: 200
             is_approval: false
         valid_duration_seconds: 11
         valid_start_timestamp: "1234567890.000000006"
@@ -3222,6 +3313,11 @@ components:
         parent_consensus_timestamp: "1234567890.000000007"
         result: SUCCESS
         scheduled: false
+        staking_reward_transfers:
+          - account: 3
+            amount: 200
+          - account: 9
+            amount: 300
         transaction_hash: "vigzKe2J7fv4ktHBbNTSzQmKq7Lzdq1/lJMmHT+a2KgvdhAuadlvS4eKeqKjIRmW"
         transaction_id: 0.0.8-1234567890-000000006
         token_transfers:
@@ -3243,6 +3339,12 @@ components:
           - account: 0.0.98
             amount: 1
             is_approval: true
+          - account: 0.0.800
+            amount: 200
+            is_approval: false
+          - account: 0.0.800
+            amount: 300
+            is_approval: false
         valid_duration_seconds: 11
         valid_start_timestamp: "1234567890.000000006"
     TransactionDetails:

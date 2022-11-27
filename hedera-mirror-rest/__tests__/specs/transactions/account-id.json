@@ -65,6 +65,36 @@
         "amount": 30,
         "nodeAccountId": "0.0.3",
         "treasuryAccountId": "0.0.98"
+      },
+      {
+        "consensus_timestamp": "1565779400711927001",
+        "senderAccountId": "0.0.800",
+        "recipientAccountId": "0.0.8",
+        "amount": 500,
+        "nodeAccountId": "0.0.3",
+        "treasuryAccountId": "0.0.98"
+      },
+      {
+        "consensus_timestamp": "1565779500711927001",
+        "senderAccountId": "0.0.800",
+        "recipientAccountId": "0.0.9",
+        "amount": 100,
+        "nodeAccountId": "0.0.3",
+        "treasuryAccountId": "0.0.98"
+      }
+    ],
+    "stakingRewardTransfers": [
+      {
+        "account_id": "0.0.8",
+        "amount": 500,
+        "consensus_timestamp": "1565779400711927001",
+        "payer_account_id": "0.0.8"
+      },
+      {
+        "account_id": "0.0.9",
+        "amount": 100,
+        "consensus_timestamp": "1565779500711927001",
+        "payer_account_id": "0.0.9"
       }
     ]
   },
@@ -89,6 +119,7 @@
         "parent_consensus_timestamp": null,
         "result": "SUCCESS",
         "scheduled": false,
+        "staking_reward_transfers": [],
         "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
         "transaction_id": "0.0.8-1565779444-711927000",
         "transfers": [
@@ -114,6 +145,47 @@
       {
         "bytes": "Ynl0ZXM=",
         "charged_tx_fee": 7,
+        "consensus_timestamp": "1565779400.711927001",
+        "entity_id": null,
+        "max_fee": "33",
+        "memo_base64": null,
+        "name": "CRYPTOTRANSFER",
+        "node": "0.0.3",
+        "nonce": 0,
+        "parent_consensus_timestamp": null,
+        "result": "SUCCESS",
+        "scheduled": false,
+        "staking_reward_transfers": [
+          {
+            "account": "0.0.8",
+            "amount": 500
+          }
+        ],
+        "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
+        "transaction_id": "0.0.800-1565779400-711927000",
+        "transfers": [
+          {
+            "account": "0.0.8",
+            "amount": 500,
+            "is_approval": false
+          },
+          {
+            "account": "0.0.98",
+            "amount": 1,
+            "is_approval": false
+          },
+          {
+            "account": "0.0.800",
+            "amount": -501,
+            "is_approval": false
+          }
+        ],
+        "valid_duration_seconds": "11",
+        "valid_start_timestamp": "1565779400.711927000"
+      },
+      {
+        "bytes": "Ynl0ZXM=",
+        "charged_tx_fee": 7,
         "consensus_timestamp": "1565779333.711927001",
         "entity_id": null,
         "max_fee": "33",
@@ -124,6 +196,7 @@
         "parent_consensus_timestamp": null,
         "result": "SUCCESS",
         "scheduled": false,
+        "staking_reward_transfers": [],
         "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
         "transaction_id": "0.0.8-1565779333-711927000",
         "transfers": [
@@ -159,6 +232,7 @@
         "parent_consensus_timestamp": null,
         "result": "SUCCESS",
         "scheduled": false,
+        "staking_reward_transfers": [],
         "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
         "transaction_id": "0.0.10-1565779209-711927000",
         "transfers": [

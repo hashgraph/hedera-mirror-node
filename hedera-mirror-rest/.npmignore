@@ -4,6 +4,7 @@
 .*
 __tests__/
 /application.yml
+/jest.config.js
 check-state-proof/
 coverage/
 Dockerfile

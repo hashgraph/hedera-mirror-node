@@ -33,29 +33,29 @@
  */
 
 // external libraries
-import S3 from 'aws-sdk/clients/s3';
 import crypto from 'crypto';
 import fs from 'fs';
 import {jest} from '@jest/globals';
 import _ from 'lodash';
 import path from 'path';
 import request from 'supertest';
+import integrationDomainOps from '../integrationDomainOps';
+import IntegrationS3Ops from '../integrationS3Ops';
+import config from '../../config';
+import {cloudProviders} from '../../constants';
+import server from '../../server';
+import {getModuleDirname} from '../testutils';
+import {JSONParse} from '../../utils';
+import {defaultBeforeAllTimeoutMillis, setupIntegrationTest} from '../integrationUtils';
+import S3 from 'aws-sdk/clients/s3';
 
-import integrationDbOps from './integrationDbOps';
-import integrationDomainOps from './integrationDomainOps';
-import IntegrationS3Ops from './integrationS3Ops';
-import config from '../config';
-import {cloudProviders} from '../constants';
-import server from '../server';
-import {getModuleDirname} from './testutils';
-import {JSONParse} from '../utils';
-import {defaultBeforeAllTimeoutMillis, setupIntegrationTest} from './integrationUtils';
+const groupSpecPath = $$GROUP_SPEC_PATH$$;
 
 setupIntegrationTest();
 
-describe('API specification tests', () => {
+describe(`API specification tests - ${groupSpecPath}`, () => {
   const bucketName = 'hedera-demo-streams';
-  const s3TestDataRoot = path.join(getModuleDirname(import.meta), 'data', 's3');
+  const s3TestDataRoot = path.join(getModuleDirname(import.meta), '..', 'data', 's3');
 
   let configOverridden = false;
   let configClone;
@@ -75,19 +75,121 @@ describe('API specification tests', () => {
     };
   };
 
-  const walk = function (dir, files = []) {
-    for (const f of fs.readdirSync(dir)) {
-      const p = path.join(dir, f);
-      const stat = fs.statSync(p);
+  const getSpecs = () => {
+    const specPath = path.join(getModuleDirname(import.meta), '..', 'specs', groupSpecPath);
+    const specMap = {};
 
-      if (stat.isDirectory()) {
-        walk(p, files);
-      } else {
-        files.push(p);
-      }
+    walk(specPath)
+      .filter((f) => f.endsWith('.json'))
+      .forEach((f) => {
+        const specText = fs.readFileSync(f, 'utf8');
+        const spec = JSONParse(specText);
+        spec.file = path.basename(f);
+        const key = path.dirname(f).replace(specPath, '');
+        const specs = specMap[key] || [];
+        specs.push(spec);
+        specMap[key] = specs;
+      });
+
+    return specMap;
+  };
+
+  const getTests = (spec) => {
+    const tests = spec.tests || [
+      {
+        url: spec.url,
+        urls: spec.urls,
+        responseContentType: spec.responseContentType,
+        responseJson: spec.responseJson,
+        responseStatus: spec.responseStatus,
+      },
+    ];
+    return _.flatten(
+      tests.map((test) => {
+        const urls = test.urls || [test.url];
+        const {responseContentType, responseJson, responseStatus} = test;
+        return urls.map((url) => ({url, responseContentType, responseJson, responseStatus}));
+      })
+    );
+  };
+
+  const hasher = (data) => crypto.createHash('sha256').update(data).digest('hex');
+
+  const loadSqlScripts = async (pathPrefix, sqlScripts) => {
+    if (!sqlScripts) {
+      return;
     }
 
-    return files;
+    for (const sqlScript of sqlScripts) {
+      const sqlScriptPath = path.join(getModuleDirname(import.meta), '..', pathPrefix || '', sqlScript);
+      const script = fs.readFileSync(sqlScriptPath, 'utf8');
+      logger.debug(`loading sql script ${sqlScript}`);
+      await pool.query(script);
+    }
+  };
+
+  const needsS3 = (specs) => Object.keys(specs).some((dir) => dir.includes('stateproof'));
+
+  const overrideConfig = (override) => {
+    if (!override) {
+      return;
+    }
+
+    _.merge(config, override);
+    configOverridden = true;
+  };
+
+  const restoreConfig = () => {
+    if (configOverridden) {
+      _.merge(config, configClone);
+      configOverridden = false;
+    }
+  };
+
+  const runSqlFuncs = async (pathPrefix, sqlFuncs) => {
+    if (!sqlFuncs) {
+      return;
+    }
+
+    for (const sqlFunc of sqlFuncs) {
+      // path.join returns normalized path, the sqlFunc is a local js file so add './'
+      const func = (await import(`./${path.join('..', pathPrefix || '', sqlFunc)}`)).default;
+      logger.debug(`running sql func in ${sqlFunc}`);
+      await func.apply(null);
+    }
+  };
+
+  const specSetupSteps = async (spec) => {
+    await integrationDomainOps.setup(spec);
+    if (spec.sql) {
+      await loadSqlScripts(spec.sql.pathprefix, spec.sql.scripts);
+      await runSqlFuncs(spec.sql.pathprefix, spec.sql.funcs);
+    }
+    overrideConfig(spec.config);
+  };
+
+  const transformStateProofResponse = (jsonObj) => {
+    const deepBase64Encode = (obj) => {
+      if (typeof obj === 'string') {
+        return hasher(obj);
+      }
+
+      const result = {};
+      for (const [k, v] of Object.entries(obj)) {
+        if (typeof v === 'string') {
+          result[k] = hasher(v);
+        } else if (Array.isArray(v)) {
+          result[k] = v.map((val) => deepBase64Encode(val));
+        } else if (_.isPlainObject(v)) {
+          result[k] = deepBase64Encode(v);
+        } else {
+          result[k] = v;
+        }
+      }
+      return result;
+    };
+
+    return deepBase64Encode(jsonObj);
   };
 
   const uploadFilesToS3 = async (endpoint) => {
@@ -126,143 +228,46 @@ describe('API specification tests', () => {
     logger.debug(`uploaded ${s3ObjectKeys.length} file objects: ${s3ObjectKeys}`);
   };
 
+  const walk = function (dir, files = []) {
+    for (const f of fs.readdirSync(dir)) {
+      const p = path.join(dir, f);
+      const stat = fs.statSync(p);
+
+      if (stat.isDirectory()) {
+        walk(p, files);
+      } else {
+        files.push(p);
+      }
+    }
+
+    return files;
+  };
+
   jest.setTimeout(60000);
+  const specs = getSpecs();
 
   beforeAll(async () => {
-    s3Ops = new IntegrationS3Ops();
-    await s3Ops.start();
-    configS3ForStateProof(s3Ops.getEndpointUrl());
-    await uploadFilesToS3(s3Ops.getEndpointUrl());
+    if (needsS3(specs)) {
+      s3Ops = new IntegrationS3Ops();
+      await s3Ops.start();
+      configS3ForStateProof(s3Ops.getEndpointUrl());
+      await uploadFilesToS3(s3Ops.getEndpointUrl());
+    }
+
     configClone = _.cloneDeep(config);
   }, defaultBeforeAllTimeoutMillis);
 
   afterAll(async () => {
-    await s3Ops.stop();
+    if (s3Ops) {
+      await s3Ops.stop();
+    }
   });
-
-  const loadSqlScripts = async (pathPrefix, sqlScripts) => {
-    if (!sqlScripts) {
-      return;
-    }
-
-    for (const sqlScript of sqlScripts) {
-      const sqlScriptPath = path.join(getModuleDirname(import.meta), pathPrefix || '', sqlScript);
-      const script = fs.readFileSync(sqlScriptPath, 'utf8');
-      logger.debug(`loading sql script ${sqlScript}`);
-      await pool.query(script);
-    }
-  };
-
-  const runSqlFuncs = async (pathPrefix, sqlFuncs) => {
-    if (!sqlFuncs) {
-      return;
-    }
-
-    for (const sqlFunc of sqlFuncs) {
-      // path.join returns normalized path, the sqlFunc is a local js file so add './'
-      const func = (await import(`./${path.join(pathPrefix || '', sqlFunc)}`)).default;
-      logger.debug(`running sql func in ${sqlFunc}`);
-      await func.apply(null);
-    }
-  };
-
-  const overrideConfig = (override) => {
-    if (!override) {
-      return;
-    }
-
-    _.merge(config, override);
-    configOverridden = true;
-  };
-
-  const restoreConfig = () => {
-    if (configOverridden) {
-      _.merge(config, configClone);
-      configOverridden = false;
-    }
-  };
-
-  const specSetupSteps = async (spec) => {
-    await integrationDbOps.cleanUp();
-    await integrationDomainOps.setup(spec);
-    if (spec.sql) {
-      await loadSqlScripts(spec.sql.pathprefix, spec.sql.scripts);
-      await runSqlFuncs(spec.sql.pathprefix, spec.sql.funcs);
-    }
-    overrideConfig(spec.config);
-  };
-
-  const hasher = (data) => crypto.createHash('sha256').update(data).digest('hex');
-
-  const transformStateProofResponse = (jsonObj) => {
-    const deepBase64Encode = (obj) => {
-      if (typeof obj === 'string') {
-        return hasher(obj);
-      }
-
-      const result = {};
-      for (const [k, v] of Object.entries(obj)) {
-        if (typeof v === 'string') {
-          result[k] = hasher(v);
-        } else if (Array.isArray(v)) {
-          result[k] = v.map((val) => deepBase64Encode(val));
-        } else if (_.isPlainObject(v)) {
-          result[k] = deepBase64Encode(v);
-        } else {
-          result[k] = v;
-        }
-      }
-      return result;
-    };
-
-    return deepBase64Encode(jsonObj);
-  };
 
   afterEach(() => {
     restoreConfig();
   });
 
-  const getSpecs = () => {
-    const subSpecPath =
-      !process.env.CI && process.env.INTEGRATION_TEST_SUB_SPEC_PATH ? process.env.INTEGRATION_TEST_SUB_SPEC_PATH : '';
-    const specPath = path.join(getModuleDirname(import.meta), 'specs', subSpecPath);
-    const specMap = new Map();
-
-    walk(specPath)
-      .filter((f) => f.endsWith('.json'))
-      .forEach((f) => {
-        const specText = fs.readFileSync(f, 'utf8');
-        const spec = JSONParse(specText);
-        spec.file = path.basename(f);
-        const key = path.dirname(f).replace(specPath, '');
-        const specs = specMap.get(key) || [];
-        specs.push(spec);
-        specMap.set(key, specs);
-      });
-
-    return specMap;
-  };
-
-  const getTests = (spec) => {
-    const tests = spec.tests || [
-      {
-        url: spec.url,
-        urls: spec.urls,
-        responseContentType: spec.responseContentType,
-        responseJson: spec.responseJson,
-        responseStatus: spec.responseStatus,
-      },
-    ];
-    return _.flatten(
-      tests.map((test) => {
-        const urls = test.urls || [test.url];
-        const {responseContentType, responseJson, responseStatus} = test;
-        return urls.map((url) => ({url, responseContentType, responseJson, responseStatus}));
-      })
-    );
-  };
-
-  getSpecs().forEach((specs, dir) => {
+  Object.entries(specs).forEach(([dir, specs]) => {
     describe(`${dir}`, () => {
       specs.forEach((spec) => {
         describe(`${spec.file}`, () => {

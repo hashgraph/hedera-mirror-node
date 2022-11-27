@@ -1,0 +1,53 @@
+{
+  "description": "Account staking reward payouts api call for a specific timestamp",
+  "setup": {
+    "accounts": [
+      {
+        "num": 1001,
+        "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
+        "evm_address": "ebb9a1be370150759408cd7af48e9eda2b8ead57",
+        "public_key": "519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9"
+      },
+      {
+        "num": 800
+      }
+    ],
+    "stakingRewardTransfers": [
+      {
+        "account_id": "0.0.1001",
+        "amount": 10,
+        "consensus_timestamp": "1234567890000011111",
+        "payer_account_id": "0.0.1001"
+      },
+      {
+        "account_id": "0.0.1001",
+        "amount": 12,
+        "consensus_timestamp": "1234567890000022222",
+        "payer_account_id": "0.0.1001"
+      },
+      {
+        "account_id": "0.0.1001",
+        "amount": 13,
+        "consensus_timestamp": "1234567890000033333",
+        "payer_account_id": "0.0.1001"
+      }
+    ]
+  },
+  "urls": [
+    "/api/v1/accounts/1001/rewards?timestamp=1234567890.000022222",
+    "/api/v1/accounts/KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/rewards?timestamp=eq:1234567890.000022222"
+  ],
+  "responseStatus": 200,
+  "responseJson": {
+    "rewards": [
+      {
+        "account_id": "0.0.1001",
+        "amount": 12,
+        "timestamp": "1234567890.000022222"
+      }
+    ],
+    "links": {
+      "next": null
+    }
+  }
+}

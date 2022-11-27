@@ -36,6 +36,7 @@
   "responseStatus": 200,
   "responseJson": {
     "access_list": "0x",
+    "address": null,
     "amount": 0,
     "block_gas_used": 50000000,
     "block_hash": "0x6ceecd8bb224da491",
