@@ -2,7 +2,7 @@ name: "GCP Marketplace"
 
 on:
   push:
-    branches: [ 04801-Updating-gcp-marketplace-version ]
+    branches: [ v* ]
 
 permissions:
   id-token: write
@@ -46,7 +46,7 @@ jobs:
         timeout-minutes: 3
 
       - name: Get tag
-        run: echo "TAG=0.69.0" >> $GITHUB_ENV
+        run: echo "TAG=${GITHUB_REF#refs/*/v}" >> $GITHUB_ENV
 
       - name: Install kubectl
         run:  curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/darwin/amd64/kubectl"
