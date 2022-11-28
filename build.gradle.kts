@@ -51,7 +51,7 @@ dependencies {
         api("com.google.protobuf:protobuf-java:$protobufVersion")
         api("com.hedera.evm:hedera-evm-api:0.32.0-SNAPSHOT")
         api("com.hedera.hashgraph:hedera-protobuf-java-api:0.31.0")
-        api("com.hedera.hashgraph:sdk:2.18.0")
+        api("com.hedera.hashgraph:sdk:2.19.0")
         api("com.ongres.scram:client:2.1")
         api("com.playtika.testcontainers:embedded-google-pubsub:$testcontainersSpringBootVersion")
         api("com.playtika.testcontainers:embedded-postgresql:$testcontainersSpringBootVersion")
