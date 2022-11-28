@@ -228,8 +228,8 @@ properties:
   rest.service.type:
     type: string
     default: LoadBalancer
-    description: The gRPC service type
-    title: gRPC Service type
+    description: The REST API service type
+    title: REST API Service type
 
 required:
   - name
