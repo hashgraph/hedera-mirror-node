@@ -96,12 +96,6 @@ jobs:
       - name: Set GCloud CLI
         uses: google-github-actions/setup-gcloud@v1
 
-      - name: Setup Docker Buildx QEMU
-        uses: docker/setup-qemu-action@v2
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
       - name: Authorize Docker
         run: gcloud auth configure-docker
 
@@ -109,7 +103,7 @@ jobs:
         run: curl --retry 3 -fsL https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
 
       - name: Create k3d cluster
-        run: k3d cluster create mirror --agents 1 --timeout 5m --wait --image rancher/k3s:v1.24.3-k3s1
+        run: k3d cluster create mirror --agents 1 --timeout 3m --wait --image rancher/k3s:v1.24.3-k3s1
         timeout-minutes: 3
 
       - name: Get tag
