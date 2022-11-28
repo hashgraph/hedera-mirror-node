@@ -64,8 +64,8 @@ citus:
   architecture: replication
   enabled: false
   image:
-    repository: citusdata/citus
-    tag: 11.1.4-pg14
+    repository: xinatswirlds/citus
+    tag: 11.1.4-alpine
   nameOverride: citus
   primary:
     args: ["-c", "config_file=/bitnami/postgresql/conf/postgresql.conf"]
