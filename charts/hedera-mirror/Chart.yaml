@@ -22,7 +22,7 @@ dependencies:
     condition: postgresql.enabled
     name: postgresql-ha
     repository: https://charts.bitnami.com/bitnami
-    version: 10.0.3
+    version: 9.4.11
   - condition: redis.enabled
     name: redis
     repository: https://charts.bitnami.com/bitnami

@@ -119,8 +119,8 @@ jobs:
       - name: Install kubectl
         run:  curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/darwin/amd64/kubectl"
 
-      - name: Create bin
-        run:  cd ${HOME} && mkdir "bin" && export PATH=${HOME}/bin:$PATH && echo "Path is ${PATH}"
+      - name: Set mpdev path
+        run:  MPDEV="${HOME}/mpdev"
 
       - name: Install mpdev
         run:  docker run gcr.io/cloud-marketplace-tools/k8s/dev cat /scripts/dev > ${MPDEV}
@@ -134,4 +134,4 @@ jobs:
         working-directory: charts/marketplace/gcp
 
       - name: Install marketplace app
-        run: ${MPDEV} verify --deployer=gcr.io/mirror-node-public/hedera-mirror-node/deployer:${TAG} --parameters='{"rest.service.type":"ClusterIP", "grpc.service.type":"ClusterIP"}'
+        run: ${MPDEV} verify --deployer=gcr.io/mirror-node-public/hedera-mirror-node/deployer:${TAG}
