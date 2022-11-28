@@ -72,7 +72,7 @@ class ContractController {
         final var fromAddress =
                 request.getFrom() != null
                         ? Address.fromHexString(request.getFrom())
-                        : Address.wrap(EMPTY);
+                        : Address.ZERO;
         final var data =
                 request.getData() != null
                         ? Bytes.fromHexString(request.getData())
@@ -90,7 +90,7 @@ class ContractController {
                 .build();
     }
 
-    //This is temporary method till gas_estimate business logic got impl.
+    //This is temporary method till estimate_gas business logic got impl.
     @ExceptionHandler
     @ResponseStatus(NOT_IMPLEMENTED)
     private Mono<GenericErrorResponse> unsupportedOpResponse(UnsupportedOperationException e) {

@@ -28,8 +28,8 @@ import javax.inject.Provider;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.gascalculator.BerlinGasCalculator;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
+import org.hyperledger.besu.evm.gascalculator.LondonGasCalculator;
 import org.hyperledger.besu.evm.internal.EvmConfiguration;
 import org.hyperledger.besu.evm.operation.OperationRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
@@ -49,36 +49,20 @@ import com.hedera.services.evm.store.models.HederaEvmAccount;
 
 @Named
 public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacade {
-    // Beans
-    private final MirrorEntityAccess entityAccess;
-    private final MirrorNodeEvmProperties evmProperties;
-    private final StaticBlockMetaSource blockMetaSource;
-    private final MirrorEvmContractAliases aliasManager;
-    private final PricesAndFeesImpl pricesAndFees;
-    // POJO
-    private AbstractCodeCache codeCache;
-    private HederaEvmMutableWorldState worldState;
     //HARD CODED
-    private GasCalculator gasCalculator;
+    private final GasCalculator gasCalculator;
     private Map<String, Provider<MessageCallProcessor>> mcps;
     private Map<String, Provider<ContractCreationProcessor>> ccps;
 
-    private MirrorEvmTxProcessor processor;
+    private final MirrorEvmTxProcessor processor;
 
     public MirrorEvmTxProcessorFacadeImpl(MirrorEntityAccess entityAccess, MirrorNodeEvmProperties evmProperties,
                                           StaticBlockMetaSource blockMetaSource, MirrorEvmContractAliases aliasManager,
                                           PricesAndFeesImpl pricesAndFees) {
-        this.aliasManager = aliasManager;
-        //needed for HederaEvmWorldState
-        this.entityAccess = entityAccess;
-        this.evmProperties = evmProperties;
-        this.codeCache = new AbstractCodeCache(1, entityAccess);
-        this.blockMetaSource = blockMetaSource;
-        this.pricesAndFees = pricesAndFees;
-        this.worldState = new HederaEvmWorldState(entityAccess, evmProperties, codeCache);
-        //
-        this.gasCalculator = new BerlinGasCalculator();
-        constructDummyPrecompileMaps();
+        this.gasCalculator = new LondonGasCalculator();
+        final AbstractCodeCache codeCache = new AbstractCodeCache(1, entityAccess);
+        final HederaEvmMutableWorldState worldState = new HederaEvmWorldState(entityAccess, evmProperties, codeCache);
+        constructPrecompileMaps();
 
         processor = new MirrorEvmTxProcessor(worldState, pricesAndFees,
                 evmProperties, gasCalculator, mcps, ccps,
@@ -99,7 +83,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                 Instant.now(), true);
     }
 
-    private void constructDummyPrecompileMaps() {
+    private void constructPrecompileMaps() {
         String EVM_VERSION_0_30 = "v0.30";
         String EVM_VERSION_0_32 = "v0.32";
         var evm = new EVM(new OperationRegistry(), gasCalculator, EvmConfiguration.DEFAULT);

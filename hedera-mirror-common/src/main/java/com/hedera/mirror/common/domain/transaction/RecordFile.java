@@ -112,7 +112,7 @@ public class RecordFile implements StreamFile<RecordItem> {
 
     private String name;
 
-    private Long nodeId ;
+    private Long nodeId;
 
     @Column(name = "prev_hash")
     @ToString.Exclude
