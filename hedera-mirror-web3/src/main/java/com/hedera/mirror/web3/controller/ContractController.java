@@ -21,6 +21,7 @@ package com.hedera.mirror.web3.controller;
  */
 
 import static com.hedera.mirror.web3.controller.ValidationErrorParser.parseValidationError;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static org.apache.tuweni.bytes.Bytes.EMPTY;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
@@ -62,31 +63,38 @@ class ContractController {
         if (request.isEstimate()) {
             throw new UnsupportedOperationException(NOT_IMPLEMENTED_ERROR);
         }
-        final var processParameters = constructCallBody(request);
-        final var response = contractCallService.processCall(processParameters);
+        //make sure there is a valid sender for value transfers
+        if (request.getValue() > 0 && request.getFrom() == null) {
+            throw new InvalidTransactionException(INVALID_TRANSFER_ACCOUNT_ID);
+        }
 
-        return Mono.just(ContractCallResponse.of(response));
+        final var params = constructServiceParameters(request);
+        final var callResponse =
+                ContractCallResponse.of(
+                        contractCallService.processCall(params));
+
+        return Mono.just(callResponse);
     }
 
-    private CallBody constructCallBody(ContractCallRequest request) {
+    private CallBody constructServiceParameters(ContractCallRequest request) {
         final var fromAddress =
                 request.getFrom() != null
                         ? Address.fromHexString(request.getFrom())
                         : Address.ZERO;
+        final var sender = new HederaEvmAccount(fromAddress);
+
+        final var receiver = Address.fromHexString(request.getTo());
         final var data =
                 request.getData() != null
                         ? Bytes.fromHexString(request.getData())
                         : EMPTY;
 
-        final var sender = new HederaEvmAccount(fromAddress);
-        final var receiver = Address.fromHexString(request.getTo());
-
         return CallBody.builder()
                 .sender(sender)
                 .receiver(receiver)
+                .callData(data)
                 .providedGasLimit(request.getGas())
                 .value(request.getValue())
-                .callData(data)
                 .build();
     }
 

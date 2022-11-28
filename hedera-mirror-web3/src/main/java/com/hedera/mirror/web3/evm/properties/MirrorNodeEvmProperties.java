@@ -50,6 +50,8 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Max(100)
     private int maxGasRefundPercentage = 20;
 
+    private int expirationCacheTime = 600;
+
     @Override
     public boolean isRedirectTokenCallsEnabled() {
         return directTokenCall;
@@ -75,4 +77,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
         return maxGasRefundPercentage;
     }
 
+    public int getExpirationCacheTime() {
+        return expirationCacheTime;
+    }
 }

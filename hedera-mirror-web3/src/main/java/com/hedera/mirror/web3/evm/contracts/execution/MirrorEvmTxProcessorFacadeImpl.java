@@ -49,24 +49,45 @@ import com.hedera.services.evm.store.models.HederaEvmAccount;
 
 @Named
 public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacade {
-    //HARD CODED
-    private final GasCalculator gasCalculator;
-    private Map<String, Provider<MessageCallProcessor>> mcps;
-    private Map<String, Provider<ContractCreationProcessor>> ccps;
+    private static final String EVM_VERSION_0_30 = "v0.30";
+    private static final String EVM_VERSION_0_32 = "v0.32";
+    private static final GasCalculator gasCalculator = new LondonGasCalculator();
+    private static final EVM evm = new EVM(new OperationRegistry(), gasCalculator, EvmConfiguration.DEFAULT);
+    private static final Map<String, Provider<MessageCallProcessor>> mcps = Map.of(
+            EVM_VERSION_0_30,
+            () -> new MessageCallProcessor(
+                    evm, new PrecompileContractRegistry()),
+            EVM_VERSION_0_32,
+            () -> new MessageCallProcessor(
+                    evm, new PrecompileContractRegistry()));
+    private static final Map<String, Provider<ContractCreationProcessor>> ccps = Map.of(
+            EVM_VERSION_0_30,
+            () -> new ContractCreationProcessor(
+                    gasCalculator, evm, true, List.of(), 1),
+            EVM_VERSION_0_32,
+            () -> new ContractCreationProcessor(
+                    gasCalculator, evm, true, List.of(), 1));
 
     private final MirrorEvmTxProcessor processor;
 
-    public MirrorEvmTxProcessorFacadeImpl(MirrorEntityAccess entityAccess, MirrorNodeEvmProperties evmProperties,
-                                          StaticBlockMetaSource blockMetaSource, MirrorEvmContractAliases aliasManager,
-                                          PricesAndFeesImpl pricesAndFees) {
-        this.gasCalculator = new LondonGasCalculator();
-        final AbstractCodeCache codeCache = new AbstractCodeCache(1, entityAccess);
+    public MirrorEvmTxProcessorFacadeImpl(
+            MirrorEntityAccess entityAccess,
+            MirrorNodeEvmProperties evmProperties,
+            StaticBlockMetaSource blockMetaSource,
+            MirrorEvmContractAliases aliasManager,
+            PricesAndFeesImpl pricesAndFees) {
+        final AbstractCodeCache codeCache = new AbstractCodeCache(evmProperties.getExpirationCacheTime(), entityAccess);
         final HederaEvmMutableWorldState worldState = new HederaEvmWorldState(entityAccess, evmProperties, codeCache);
-        constructPrecompileMaps();
 
-        processor = new MirrorEvmTxProcessor(worldState, pricesAndFees,
-                evmProperties, gasCalculator, mcps, ccps,
-                blockMetaSource, aliasManager, entityAccess);
+        processor = new MirrorEvmTxProcessor(
+                worldState,
+                pricesAndFees,
+                evmProperties,
+                gasCalculator,
+                mcps, ccps,
+                blockMetaSource,
+                aliasManager,
+                entityAccess);
         processor.setOperationTracer(new DefaultHederaTracer());
     }
 
@@ -78,30 +99,13 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final long value,
             final Bytes callData) {
 
-        return processor.execute(sender, receiver,
-                providedGasLimit, value, callData,
-                Instant.now(), true);
-    }
-
-    private void constructPrecompileMaps() {
-        String EVM_VERSION_0_30 = "v0.30";
-        String EVM_VERSION_0_32 = "v0.32";
-        var evm = new EVM(new OperationRegistry(), gasCalculator, EvmConfiguration.DEFAULT);
-        this.mcps =
-                Map.of(
-                        EVM_VERSION_0_30,
-                        () -> new MessageCallProcessor(
-                                evm, new PrecompileContractRegistry()),
-                        EVM_VERSION_0_32,
-                        () -> new MessageCallProcessor(
-                                evm, new PrecompileContractRegistry()));
-        this.ccps =
-                Map.of(
-                        EVM_VERSION_0_30,
-                        () -> new ContractCreationProcessor(
-                                gasCalculator, evm, true, List.of(), 1),
-                        EVM_VERSION_0_32,
-                        () -> new ContractCreationProcessor(
-                                gasCalculator, evm, true, List.of(), 1));
+        return processor.execute(
+                sender,
+                receiver,
+                providedGasLimit,
+                value,
+                callData,
+                Instant.now(),
+                true);
     }
 }

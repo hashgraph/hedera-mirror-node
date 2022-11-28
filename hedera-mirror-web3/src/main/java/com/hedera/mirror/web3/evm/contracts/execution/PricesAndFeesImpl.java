@@ -33,7 +33,7 @@ public class PricesAndFeesImpl implements PricesAndFeesProvider {
 
     @Override
     public long currentGasPrice(Instant now, HederaFunctionality function) {
-        return 120000000L;
+        return 1000L;
     }
 }
 
