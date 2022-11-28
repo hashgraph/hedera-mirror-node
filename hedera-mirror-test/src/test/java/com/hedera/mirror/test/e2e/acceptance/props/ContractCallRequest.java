@@ -1,4 +1,4 @@
-package com.hedera.mirror.test.e2e.acceptance.response;
+package com.hedera.mirror.test.e2e.acceptance.props;
 
 /*-
  * ‌
@@ -20,9 +20,5 @@ package com.hedera.mirror.test.e2e.acceptance.response;
  * ‍
  */
 
-import lombok.Data;
-
-@Data
-public class JsonRpcSuccessResponse<T> {
-    private T result;
-}
+public record ContractCallRequest(String block, String data, boolean estimate, String from, long gas, long gasPrice,
+                                  String to, long value) {}

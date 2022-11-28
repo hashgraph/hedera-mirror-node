@@ -22,6 +22,7 @@ package com.hedera.mirror.test.e2e.acceptance.client;
 
 import com.google.common.base.Stopwatch;
 
+import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.response.JsonRpcSuccessResponse;
 
 import java.util.ArrayList;
@@ -31,10 +32,8 @@ import java.util.concurrent.TimeUnit;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.MediaType;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 import reactor.util.retry.RetryBackoffSpec;
 
@@ -158,16 +157,10 @@ public class MirrorNodeClient {
     }
 
     public JsonRpcSuccessResponse contractsCallSimulations(String data, String contractSolidityAddress, String clientSolidityAddress) {
-        MultiValueMap<String, String> bodyValues = new LinkedMultiValueMap<>();
-        bodyValues.add("block", "latest");
-        bodyValues.add("data", data);
-        bodyValues.add("from", clientSolidityAddress);
-        bodyValues.add("gas", "0x76c0");
-        bodyValues.add("gas_price", "0x76c0");
-        bodyValues.add("to", contractSolidityAddress);
-        bodyValues.add("value", "0x76c0");
+        ContractCallRequest contractCallRequest = new ContractCallRequest("latest", data, false, clientSolidityAddress,
+                100000000, 100000000, contractSolidityAddress, 0);
 
-        return callRestEndpointPost("/contracts/call", JsonRpcSuccessResponse.class, bodyValues);
+        return callRestEndpointPost("/contracts/call", JsonRpcSuccessResponse.class, contractCallRequest);
     }
 
     public List<MirrorNetworkNode> getNetworkNodes() {
@@ -246,13 +239,15 @@ public class MirrorNodeClient {
                 .block();
     }
 
-    private <T> T callRestEndpointPost(String uri, Class<T> classType, MultiValueMap<String, String> bodyValues) {
+    private <T> T callRestEndpointPost(String uri, Class<T> classType, ContractCallRequest contractCallRequest) {
         return webClient.post()
                 .uri(uri)
-                .body(BodyInserters.fromFormData(bodyValues))
+                .body(Mono.just(contractCallRequest), ContractCallRequest.class)
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
                 .bodyToMono(classType)
+                .retryWhen(retrySpec)
+                .doOnError(x -> log.error("Endpoint failed, returning: {}", x.getMessage()))
                 .block();
     }
 }

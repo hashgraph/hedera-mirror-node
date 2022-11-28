@@ -50,6 +50,14 @@ contract Parent {
         return msg.sender;
     }
 
+    function multiplySimpleNumbers() public pure returns (uint) {
+        return 2 * 2;
+    }
+
+    function identifier() public pure returns (bytes4) {
+        return msg.sig;
+    }
+
     receive() external payable {}
 
     event ParentActivityLog(string message);

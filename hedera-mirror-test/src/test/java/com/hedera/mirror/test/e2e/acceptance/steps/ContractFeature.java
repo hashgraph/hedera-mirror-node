@@ -231,13 +231,17 @@ public class ContractFeature extends AbstractFeature {
     }
 
     private void verifyContractCallSimulations() {
-        // getAccountBalance
-        JsonRpcSuccessResponse jsonRpcSuccessResponse = mirrorClient.contractsCallSimulations("6896fabf", contractId.toSolidityAddress(), contractClient.getClientAddress());
-        assertThat(jsonRpcSuccessResponse.getResult()).isNotNull();
+        JsonRpcSuccessResponse getAccountBalanceResponse = mirrorClient.contractsCallSimulations("6896fabf", contractId.toSolidityAddress(), contractClient.getClientAddress());
+        assertThat(getAccountBalanceResponse.getResult()).isNotNull();
 
-        // getSender
-        JsonRpcSuccessResponse jsonRpcSuccessResponse2 = mirrorClient.contractsCallSimulations("5e01eb5a", contractId.toSolidityAddress(), contractClient.getClientAddress());
-        assertThat(jsonRpcSuccessResponse2.getResult()).isNotNull();
+        JsonRpcSuccessResponse getSenderResponse = mirrorClient.contractsCallSimulations("5e01eb5a", contractId.toSolidityAddress(), contractClient.getClientAddress());
+        assertThat(getSenderResponse.getResult()).isNotNull();
+
+        JsonRpcSuccessResponse multiplySimpleNumbersResponse = mirrorClient.contractsCallSimulations("8070450f", contractId.toSolidityAddress(), contractClient.getClientAddress());
+        assertThat(multiplySimpleNumbersResponse.getResult()).isNotNull();
+
+        JsonRpcSuccessResponse identifierResponse = mirrorClient.contractsCallSimulations("7998a1c4", contractId.toSolidityAddress(), contractClient.getClientAddress());
+        assertThat(identifierResponse.getResult()).isNotNull();
     }
 
     private boolean isEmptyHex(String hexString) {
