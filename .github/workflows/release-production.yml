@@ -75,7 +75,8 @@ jobs:
           target_dir: charts
           token: ${{ secrets.GITHUB_TOKEN }}
 
-  install:
+  marketplace:
+    name: GCP Marketplace release
     needs: chart
     if: !contains(github.ref, '-')
     runs-on: ubuntu-latest
