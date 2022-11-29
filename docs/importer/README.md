@@ -84,7 +84,8 @@ SPRING_PROFILES_ACTIVE=v2 ./mvnw spring-boot:run -pl  hedera-mirror-importer
 
 ## Building the citus docker image
 DockerFile to build a custom image to be used in v2 is located in the following folder:
-```hedera-mirror-node/hedera-mirror-importer/src/main/resources/db/scripts/v2```
+```hedera-mirror-node/hedera-mirror-importer/src/main/resources/db/scripts/v2/docker```
+Depending on whether you need an alpine or debian image , the Docker files are located in the named folders respectively.
 
 The database name to be used by citus can be provided using an environment variable as follows:
 ```console
