@@ -77,7 +77,8 @@ citus:
       max_replication_slots = 5
       max_wal_senders = 5
       max_wal_size = 24GB
-      shared_preload_libraries = 'citus'
+      shared_preload_libraries = 'citus,pg_cron,pg_partman_bgw'
+      cron.database_name = 'mirror_node'
       wal_level = logical
     extraEnvVarsSecret: mirror-passwords
     initdb:
