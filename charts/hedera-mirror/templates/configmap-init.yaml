@@ -97,6 +97,19 @@ data:
       \c ${HEDERA_MIRROR_IMPORTER_DB_NAME}
       create extension if not exists citus;
       create user ${HEDERA_MIRROR_IMPORTER_DB_RESTUSERNAME} with login password '${HEDERA_MIRROR_IMPORTER_DB_RESTPASSWORD}' in role readonly;
+
+      -- Partition privileges
+      create extension if not exists pg_cron;
+      create schema if not exists partman authorization ${HEDERA_MIRROR_IMPORTER_DB_OWNER};
+      create extension if not exists pg_partman schema partman;
+      alter schema partman owner to ${HEDERA_MIRROR_IMPORTER_DB_OWNER};
+      grant all on schema partman to ${HEDERA_MIRROR_IMPORTER_DB_OWNER};
+      grant usage on schema cron to ${HEDERA_MIRROR_IMPORTER_DB_OWNER};
+      grant all on all tables in schema partman to ${HEDERA_MIRROR_IMPORTER_DB_OWNER};
+      grant execute on all functions in schema partman to ${HEDERA_MIRROR_IMPORTER_DB_OWNER};
+      grant execute on all procedures in schema partman to ${HEDERA_MIRROR_IMPORTER_DB_OWNER};
+      grant all on schema ${HEDERA_MIRROR_IMPORTER_DB_SCHEMA} to ${HEDERA_MIRROR_IMPORTER_DB_OWNER};
+      grant temporary on database ${HEDERA_MIRROR_IMPORTER_DB_NAME} to ${HEDERA_MIRROR_IMPORTER_DB_OWNER};
     EOSQL
 
     # Setup workers
@@ -117,9 +130,6 @@ data:
       psql -v ON_ERROR_STOP=1 --username "${POSTGRES_USER}" --dbname "${POSTGRES_DB}" -p "${POSTGRESQL_PORT_NUMBER}" <<-EOSQL
         insert into pg_dist_authinfo(nodeid, rolename, authinfo) values(${nodeid}, '${POSTGRES_USER}', 'password=${POSTGRES_PASSWORD}');
         select citus_add_node('${host}', ${POSTGRESQL_PORT_NUMBER});
-
-        \c ${HEDERA_MIRROR_IMPORTER_DB_NAME}
-        create extension if not exists citus;
     EOSQL
 
       ((id = id + 1))

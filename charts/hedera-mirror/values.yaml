@@ -65,7 +65,7 @@ citus:
   enabled: false
   image:
     repository: xinatswirlds/citus
-    tag: 11.1.4-alpine
+    tag: 11.1.4-pg14
   nameOverride: citus
   primary:
     args: ["-c", "config_file=/bitnami/postgresql/conf/postgresql.conf"]
@@ -94,8 +94,7 @@ citus:
       max_replication_slots = 5
       max_wal_senders = 5
       max_wal_size = 24GB
-      shared_preload_libraries = 'citus,pg_cron,pg_partman_bgw'
-      cron.database_name = 'mirror_node'
+      shared_preload_libraries = 'citus'
       wal_level = logical
     extraVolumeMounts:
       - name: config
