@@ -29,6 +29,8 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.hedera.services.evm.contracts.execution.traceability.DefaultHederaTracer;
+
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -139,7 +141,7 @@ class MirrorEvmTxProcessorTest {
                         hederaEvmContractAliases,
                         hederaEvmEntityAccess);
 
-        MirrorOperationTracer hederaEvmOperationTracer = new MirrorOperationTracer();
+        DefaultHederaTracer hederaEvmOperationTracer = new DefaultHederaTracer();
         mirrorEvmTxProcessor.setOperationTracer(hederaEvmOperationTracer);
     }
 

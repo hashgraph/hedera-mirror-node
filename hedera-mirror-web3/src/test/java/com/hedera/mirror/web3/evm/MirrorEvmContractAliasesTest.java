@@ -24,6 +24,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
 
 import java.util.Optional;

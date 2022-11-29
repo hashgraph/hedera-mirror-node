@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.evm;
+package com.hedera.mirror.web3.service.model;
 
 /*-
  * ‌
@@ -20,12 +20,19 @@ package com.hedera.mirror.web3.evm;
  * ‍
  */
 
-import javax.inject.Named;
-import lombok.NoArgsConstructor;
+import lombok.Builder;
+import lombok.Value;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 
-import com.hedera.services.evm.contracts.execution.traceability.HederaEvmOperationTracer;
+import com.hedera.services.evm.store.models.HederaEvmAccount;
 
-@Named
-@NoArgsConstructor
-public class MirrorOperationTracer implements HederaEvmOperationTracer {
+@Value
+@Builder
+public class CallServiceParams {
+    HederaEvmAccount sender;
+    Address receiver;
+    long providedGasLimit;
+    long value;
+    Bytes callData;
 }
