@@ -80,6 +80,7 @@ jobs:
     needs: chart
     if: "!contains(github.ref, '-')"
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     env:
       MPDEV: "/home/runner/mpdev"
     steps:
@@ -103,8 +104,7 @@ jobs:
         run: curl --retry 3 -fsL https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
 
       - name: Create k3d cluster
-        run: k3d cluster create mirror --agents 1 --timeout 3m --wait --image rancher/k3s:v1.24.3-k3s1
-        timeout-minutes: 3
+        run: k3d cluster create mirror --agents 1 --wait --image rancher/k3s:v1.24.3-k3s1
 
       - name: Get tag
         run: echo "TAG=${GITHUB_REF#refs/*/v}" >> $GITHUB_ENV
