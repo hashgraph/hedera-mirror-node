@@ -110,6 +110,7 @@ data:
       grant execute on all procedures in schema partman to ${HEDERA_MIRROR_IMPORTER_DB_OWNER};
       grant all on schema ${HEDERA_MIRROR_IMPORTER_DB_SCHEMA} to ${HEDERA_MIRROR_IMPORTER_DB_OWNER};
       grant temporary on database ${HEDERA_MIRROR_IMPORTER_DB_NAME} to ${HEDERA_MIRROR_IMPORTER_DB_OWNER};
+      
     EOSQL
 
     # Setup workers
