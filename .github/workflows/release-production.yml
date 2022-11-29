@@ -78,7 +78,7 @@ jobs:
   marketplace:
     name: GCP Marketplace release
     needs: chart
-    if: !contains(github.ref, '-')
+    if: "!contains(github.ref, '-')"
     runs-on: ubuntu-latest
     env:
       MPDEV: "/home/runner/bin/mpdev"
@@ -112,8 +112,8 @@ jobs:
       - name: Install kubectl
         run:  curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 
-      - name: Set mpdev path
-        run:  MPDEV="${HOME}/mpdev"
+      - name: Create bin
+        run:  cd ${HOME} && mkdir "bin" && export PATH=${HOME}/bin:$PATH
 
       - name: Install mpdev
         run:  docker run gcr.io/cloud-marketplace-tools/k8s/dev cat /scripts/dev > ${MPDEV}
