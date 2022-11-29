@@ -23,6 +23,7 @@ package com.hedera.mirror.web3.service.eth;
 import static com.hedera.mirror.web3.util.ResponseCodeUtil.getStatusOrDefault;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 
@@ -53,9 +54,13 @@ public class ContractCallService {
 
         final var status = getStatusOrDefault(processingResult);
         if (status != SUCCESS) {
-            throw new InvalidTransactionException(status);
+            revertWith(status);
         }
 
         return processingResult;
+    }
+
+    public void revertWith(ResponseCodeEnum errorStatus) {
+        throw new InvalidTransactionException(errorStatus);
     }
 }

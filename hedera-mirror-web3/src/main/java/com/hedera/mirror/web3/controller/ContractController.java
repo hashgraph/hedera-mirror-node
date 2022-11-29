@@ -65,7 +65,7 @@ class ContractController {
         }
         //make sure there is a valid sender for value transfers
         if (request.getValue() > 0 && request.getFrom() == null) {
-            throw new InvalidTransactionException(INVALID_TRANSFER_ACCOUNT_ID);
+            contractCallService.revertWith(INVALID_TRANSFER_ACCOUNT_ID);
         }
 
         final var params = constructServiceParameters(request);
