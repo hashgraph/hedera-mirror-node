@@ -41,3 +41,11 @@ dependencies {
     implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:3.5.0.2730")
     implementation("org.springframework.boot:spring-boot-gradle-plugin:2.7.5")
 }
+
+val gitHook = tasks.register<Exec>("gitHook") {
+    commandLine("git", "config", "core.hookspath", "buildSrc/src/main/resources/hooks")
+}
+
+project.tasks.build {
+    dependsOn(gitHook)
+}

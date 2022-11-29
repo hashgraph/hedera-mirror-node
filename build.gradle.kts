@@ -134,7 +134,7 @@ project.tasks.register("release") {
         replaceVersion("charts/**/Chart.yaml", "(?<=^(appVersion|version): ).+")
         replaceVersion("docker-compose.yml", "(?<=:)main")
         replaceVersion("gradle.properties", "(?<=^version=).+")
-        replaceVersion("hedera-mirror-rest/**/package.json", "(?<=\"version\": \")[^\"]+")
+        replaceVersion("hedera-mirror-rest/**/package*.json", "(?<=\"@hashgraph/(check-state-proof|mirror-rest|mirror-monitor)\",\\s{3,7}\"version\": \")[^\"]+")
         replaceVersion("hedera-mirror-rest/**/openapi.yml", "(?<=^  version: ).+")
     }
 }

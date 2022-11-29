@@ -117,19 +117,3 @@ tasks.spotlessCheck {
     dependsOn(tasks.nodeSetup)
 }
 
-val gitHooks = project.tasks.register<Copy>("gitHooks") {
-    val hooksDir = rootDir.resolve(".git").resolve("hooks")
-    doLast {
-        exec({
-            // Clear old Husky git hook config
-            commandLine("git", "config", "--unset", "core.hookspath")
-            isIgnoreExitValue = true
-        })
-    }
-    from(file("${rootDir}/buildSrc/src/main/resources/pre-commit"))
-    into(hooksDir)
-}
-
-project.tasks.compileJava {
-    dependsOn(gitHooks)
-}
