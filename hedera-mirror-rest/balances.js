@@ -94,8 +94,9 @@ const getBalances = async (req, res) => {
   } = utils.parseLimitAndOrderParams(req, constants.orderFilterValues.DESC);
 
   let sqlQuery;
-  // Use account balance table's timestamp for token balance if there is timestamp filter; otherwise, get the latest
-  // token balance token account balance
+  // Use account balance table's timestamp for token balance if there is timestamp filter and obtain the balance from
+  // the token balance table; otherwise if there is no timestamp get the latest token balance from the token account
+  // table.
   const tokenBalanceSubQuery = tsQuery
     ? getTokenBalanceSubQuery(order, 'ab.consensus_timestamp')
     : getTokenAccountBalanceSubQuery(order);
