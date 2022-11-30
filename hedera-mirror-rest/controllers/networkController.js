@@ -46,9 +46,7 @@ import {
 
 const networkNodesDefaultSize = 10;
 const networkNodesMaxSize = 25;
-// the following two constants are different representations to indicate 1 hbar = 10^8 tinybars
-const networkNodesTinybarDecimals = 8;
-const hbarsToTinybars = 100_000_000;
+const hbarsToTinybars = math.bignumber(100_000_000);
 
 class NetworkController extends BaseController {
   static contentTypeTextPlain = 'text/plain';
@@ -268,6 +266,29 @@ class NetworkController extends BaseController {
   };
 
   /**
+   * Helper function for getSupply method.
+   * @param {String} valueInTinyCoins a number of tinycoin
+   * @param {networkSupplyCurrencyFormatType} currencyFormat desired output format
+   * @return {String}
+   * @throws {InvalidArgumentError}
+   */
+  convertToCurrencyFormat = (valueInTinyCoins, currencyFormat) => {
+    switch (currencyFormat) {
+      case networkSupplyCurrencyFormatType.TINYBARS:
+        return valueInTinyCoins;
+        break;
+      case networkSupplyCurrencyFormatType.HBARS:
+        return math.round(math.divide(math.bignumber(valueInTinyCoins), hbarsToTinybars)).toString();
+        break;
+      case networkSupplyCurrencyFormatType.BOTH:
+      default: // always want 8 digits after the decimal point
+        const desiredDecimals = 8;
+        return math.divide(math.bignumber(valueInTinyCoins), hbarsToTinybars).toFixed(desiredDecimals).toString();
+        break;
+    }
+  };
+
+  /**
    * Handler function for /network/supply API.
    * @param {Request} req HTTP request object
    * @param {Response} res HTTP response object
@@ -286,24 +307,7 @@ class NetworkController extends BaseController {
 
     if (q) {
       const valueInTinyCoins = q === networkSupplyQuery.TOTALCOINS ? viewModel.total_supply : viewModel.released_supply;
-      let valueInCurrencyFormat;
-
-      switch (config.network.currencyFormat) {
-        case networkSupplyCurrencyFormatType.TINYBARS:
-          valueInCurrencyFormat = valueInTinyCoins;
-          break;
-        case networkSupplyCurrencyFormatType.HBARS:
-          valueInCurrencyFormat = math
-            .round(math.divide(math.bignumber(valueInTinyCoins), math.bignumber(hbarsToTinybars)))
-            .toString();
-          break;
-        case networkSupplyCurrencyFormatType.BOTH:
-        default:
-          const position = valueInTinyCoins.length - networkNodesTinybarDecimals;
-          valueInCurrencyFormat = valueInTinyCoins.slice(0, position) + '.' + valueInTinyCoins.slice(position);
-          break;
-      }
-
+      let valueInCurrencyFormat = this.convertToCurrencyFormat(valueInTinyCoins, config.network.currencyFormat);
       res.locals[responseDataLabel] = valueInCurrencyFormat;
       res.locals[responseContentType] = NetworkController.contentTypeTextPlain;
     } else {

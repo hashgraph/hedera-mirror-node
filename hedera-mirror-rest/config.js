@@ -173,6 +173,19 @@ const parseMaxTimestampRange = () => {
   conf.maxTimestampRangeNs = BigInt(ms) * 1000000n;
 };
 
+const parseNetworkConfig = () => {
+  const networkConf = getConfig().network;
+  if (networkConf.currencyFormat) {
+    const currencyFormat = networkConf.currencyFormat;
+    const validValues = ['BOTH', 'HBARS', 'TINYBARS'];
+    if (!validValues.includes(currencyFormat)) {
+      throw new InvalidConfigError(`invalid currencyFormat ${currencyFormat}`);
+    }
+  } else {
+    networkConf.currencyFormat = 'BOTH';
+  }
+};
+
 if (!loaded) {
   const configName = process.env.CONFIG_NAME || defaultConfigName;
   // always load the default configuration
@@ -184,6 +197,7 @@ if (!loaded) {
   parseDbPoolConfig();
   parseStateProofStreamsConfig();
   parseMaxTimestampRange();
+  parseNetworkConfig();
   loaded = true;
   configureLogger(getConfig().log.level);
 }

@@ -300,3 +300,160 @@ describe('extractFileDataQuery', () => {
     });
   });
 });
+
+describe('convertToCurrencyFormat', () => {
+  const specs = [
+    {
+      name: 'BOTH with decimal',
+      input: {
+        tinycoins: '1234567890000',
+        currencyFormat: 'BOTH',
+      },
+      expected: '12345.67890000',
+    },
+    {
+      name: 'BOTH (by default, with no explicit currencyFormat) with decimal',
+      input: {
+        tinycoins: '1234567890000',
+        currencyFormat: null,
+      },
+      expected: '12345.67890000',
+    },
+    {
+      name: 'BOTH with zero',
+      input: {
+        tinycoins: '0',
+        currencyFormat: 'BOTH',
+      },
+      expected: '0.00000000',
+    },
+    {
+      name: 'BOTH with small positive number',
+      input: {
+        tinycoins: '42',
+        currencyFormat: 'BOTH',
+      },
+      expected: '0.00000042',
+    },
+    {
+      name: 'BOTH with maximum number of tinycoins',
+      input: {
+        tinycoins: '5000000000000000000',
+        currencyFormat: null,
+      },
+      expected: '50000000000.00000000',
+    },
+    {
+      name: 'BOTH with negative (not expexted to actually happen)',
+      input: {
+        tinycoins: '-1',
+        currencyFormat: 'BOTH',
+      },
+      expected: '-0.00000001',
+    },
+    {
+      name: 'HBARS with decimal',
+      input: {
+        tinycoins: '1234567890000',
+        currencyFormat: 'HBARS',
+      },
+      expected: '12346',
+    },
+    {
+      name: 'HBARS with decimal rounding down',
+      input: {
+        tinycoins: '1234547890000',
+        currencyFormat: 'HBARS',
+      },
+      expected: '12345',
+    },
+    {
+      name: 'HBARS with zero',
+      input: {
+        tinycoins: '0',
+        currencyFormat: 'HBARS',
+      },
+      expected: '0',
+    },
+    {
+      name: 'HBARS with small positive number',
+      input: {
+        tinycoins: '42',
+        currencyFormat: 'HBARS',
+      },
+      expected: '0',
+    },
+    {
+      name: 'HBARS with maximum number of tinycoins',
+      input: {
+        tinycoins: '5000000000000000000',
+        currencyFormat: 'HBARS',
+      },
+      expected: '50000000000',
+    },
+    {
+      name: 'HBARS with negative (not expexted to actually happen)',
+      input: {
+        tinycoins: '-1',
+        currencyFormat: 'HBARS',
+      },
+      expected: '0',
+    },
+    {
+      name: 'HBARS with larger negative (not expexted to actually happen)',
+      input: {
+        tinycoins: '-12300000000',
+        currencyFormat: 'HBARS',
+      },
+      expected: '-123',
+    },
+    {
+      name: 'TINYBARS with largish number',
+      input: {
+        tinycoins: '1234567890123',
+        currencyFormat: 'TINYBARS',
+      },
+      expected: '1234567890123',
+    },
+    {
+      name: 'TINYBARS with zero',
+      input: {
+        tinycoins: '0',
+        currencyFormat: 'TINYBARS',
+      },
+      expected: '0',
+    },
+    {
+      name: 'TINYBARS with small positive number',
+      input: {
+        tinycoins: '42',
+        currencyFormat: 'TINYBARS',
+      },
+      expected: '42',
+    },
+    {
+      name: 'TINYBARS with maximum number of tinycoins',
+      input: {
+        tinycoins: '5000000000000000000',
+        currencyFormat: 'TINYBARS',
+      },
+      expected: '5000000000000000000',
+    },
+    {
+      name: 'TINYBARS with negative (not expexted to actually happen)',
+      input: {
+        tinycoins: '-1',
+        currencyFormat: 'TINYBARS',
+      },
+      expected: '-1',
+    },
+  ];
+
+  specs.forEach((spec) => {
+    test(`${spec.name}`, () => {
+      expect(networkCtrl.convertToCurrencyFormat(spec.input.tinycoins, spec.input.currencyFormat)).toEqual(
+        spec.expected
+      );
+    });
+  });
+});
