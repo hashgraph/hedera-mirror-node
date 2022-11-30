@@ -95,18 +95,16 @@ const getBalances = async (req, res) => {
 
   let sqlQuery;
   // Use account balance table's timestamp for token balance if there is timestamp filter; otherwise, get the latest
-  // token balance
-  const tokenBalanceSubQuery = getTokenBalanceSubQuery(
-    order,
-    tsQuery ? 'ab.consensus_timestamp' : 'latest_account_balance.consensus_timestamp'
-  );
+  // token balance token account balance
+  const tokenBalanceSubQuery = tsQuery
+    ? getTokenBalanceSubQuery(order, 'ab.consensus_timestamp')
+    : getTokenAccountBalanceSubQuery(order);
+
   // subquery to find the latest snapshot timestamp from the balance history table
   const tsSubQuery = `
     select consensus_timestamp
-    from account_balance_file
-    ${tsQuery && 'where ' + tsQuery}
-    order by consensus_timestamp desc
-    limit 1`;
+    from account_balance_file ${tsQuery && 'where ' + tsQuery}
+    order by consensus_timestamp desc limit 1`;
 
   if (tsQuery) {
     // Only need to join entity if we're selecting on publickey
@@ -156,14 +154,22 @@ const getBalances = async (req, res) => {
 const getTokenBalanceSubQuery = (order, timestampColumn) => {
   return `
     select json_agg(json_build_object('token_id', token_id, 'balance', balance))
-    from (
-      select token_id, balance
-      from token_balance tb
-      where tb.account_id = ab.account_id
-        and tb.consensus_timestamp = ${timestampColumn}
-      order by token_id ${order}
-      limit ${tokenBalanceLimit.multipleAccounts}
-    ) as account_token_balance`;
+    from (select token_id, balance
+          from token_balance tb
+          where tb.account_id = ab.account_id
+            and tb.consensus_timestamp = ${timestampColumn}
+          order by token_id ${order}
+      limit ${tokenBalanceLimit.multipleAccounts}) as account_token_balance`;
+};
+
+const getTokenAccountBalanceSubQuery = (order) => {
+  return `
+    select json_agg(json_build_object('token_id', token_id, 'balance', balance))
+    from (select token_id, balance
+          from token_account ta
+          where ta.account_id = ab.account_id
+          order by token_id ${order}
+      limit ${tokenBalanceLimit.multipleAccounts}) as account_token_balance`;
 };
 
 export default {

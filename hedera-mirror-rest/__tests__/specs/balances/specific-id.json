@@ -55,6 +55,20 @@
         "hash": "c73067d7e07eaab5a6156237f928acab0a9a2783083651996237a885230a2e0f147b322fb5d0e19a0c44cf3840bd3ba9",
         "name": "1970-01-01T00_00_10.000000001Z.rcd"
       }
+    ],
+    "tokenaccounts": [
+      {
+        "token_id": "0.0.80000",
+        "account_id": "0.0.8",
+        "balance": 501,
+        "created_timestamp": "2340"
+      },
+      {
+        "token_id": "0.0.90000",
+        "account_id": "0.0.8",
+        "balance": 1001,
+        "created_timestamp": "2340"
+      }
     ]
   },
   "tests": [
@@ -100,11 +114,11 @@
             "tokens": [
               {
                 "token_id": "0.0.90000",
-                "balance": 1000
+                "balance": 1001
               },
               {
                 "token_id": "0.0.80000",
-                "balance": 500
+                "balance": 501
               }
             ]
           }
