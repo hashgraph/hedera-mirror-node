@@ -95,13 +95,19 @@ citus:
       max_wal_size = 24GB
       shared_preload_libraries = 'citus'
       wal_level = logical
+    extraEnvVarsSecret: mirror-passwords
     extraVolumeMounts:
       - name: config
         mountPath: /usr/local/etc/postgresql
+      - name: custom-init-scripts
+        mountPath: /docker-entrypoint-initdb.d/
     extraVolumes:
       - name: config
         configMap:
           name: '{{ printf "%s-extended-configuration" (include "postgresql.readReplica.fullname" .) }}'
+      - name: custom-init-scripts
+        configMap:
+          name: "{{ .Release.Name }}-init"
     name: worker
 
 db:
