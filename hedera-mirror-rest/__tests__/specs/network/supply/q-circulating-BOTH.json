@@ -1,6 +1,11 @@
 {
-  "description": "Network supply API with q=circulating with currencyFormat defaulting to BOTH",
+  "description": "Network supply API with q=circulating with currencyFormat explicitly set to BOTH",
   "setup": {
+    "config": {
+      "network": {
+        "currencyFormat": "BOTH"
+      }
+    },
     "accounts": [
       {
         "balance": 10,

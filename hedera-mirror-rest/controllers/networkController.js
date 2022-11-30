@@ -22,7 +22,14 @@ import _ from 'lodash';
 
 import BaseController from './baseController';
 import config from '../config';
-import {filterKeys, networkSupplyQuery, orderFilterValues, responseContentType, responseDataLabel} from '../constants';
+import {
+  filterKeys,
+  networkSupplyCurrencyFormatType,
+  networkSupplyQuery,
+  orderFilterValues,
+  responseContentType,
+  responseDataLabel,
+} from '../constants';
 import entityId from '../entityId';
 import {InvalidArgumentError, NotFoundError} from '../errors';
 import {AddressBookEntry, FileData} from '../model';
@@ -38,6 +45,9 @@ import {
 
 const networkNodesDefaultSize = 10;
 const networkNodesMaxSize = 25;
+// the following two constants are different representations to indicate 1 hbar = 10^8 tinybars
+const desiredDecimals = 8;
+const hbarsToTinybars = 100_000_000;
 
 class NetworkController extends BaseController {
   static contentTypeTextPlain = 'text/plain';
@@ -257,6 +267,29 @@ class NetworkController extends BaseController {
   };
 
   /**
+   * Helper function for getSupply method.
+   * @param {string} valueInTinyCoins a number of tinycoin
+   * @param {networkSupplyCurrencyFormatType} currencyFormat desired output format
+   * @return {string}
+   * @throws {InvalidArgumentError}
+   */
+  convertToCurrencyFormat = (valueInTinyCoins, currencyFormat) => {
+    switch (currencyFormat) {
+      case networkSupplyCurrencyFormatType.TINYBARS:
+        return valueInTinyCoins;
+        break;
+      case networkSupplyCurrencyFormatType.HBARS:
+        return (BigInt(valueInTinyCoins) / BigInt(hbarsToTinybars)).toString();
+        break;
+      case networkSupplyCurrencyFormatType.BOTH:
+      default:
+        return (Number(valueInTinyCoins) / hbarsToTinybars).toFixed(desiredDecimals);
+        // return math.divide(math.bignumber(valueInTinyCoins), hbarsToTinybars).toFixed(desiredDecimals).toString();
+        break;
+    }
+  };
+
+  /**
    * Handler function for /network/supply API.
    * @param {Request} req HTTP request object
    * @param {Response} res HTTP response object
@@ -274,8 +307,9 @@ class NetworkController extends BaseController {
     const viewModel = new NetworkSupplyViewModel(networkSupply);
 
     if (q) {
-      res.locals[responseDataLabel] =
-        q === networkSupplyQuery.TOTALCOINS ? viewModel.total_supply : viewModel.released_supply;
+      const valueInTinyCoins = q === networkSupplyQuery.TOTALCOINS ? viewModel.total_supply : viewModel.released_supply;
+      const valueInCurrencyFormat = this.convertToCurrencyFormat(valueInTinyCoins, config.network.currencyFormat);
+      res.locals[responseDataLabel] = valueInCurrencyFormat;
       res.locals[responseContentType] = NetworkController.contentTypeTextPlain;
     } else {
       res.locals[responseDataLabel] = viewModel;
