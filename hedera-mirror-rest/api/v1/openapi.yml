@@ -2450,9 +2450,8 @@ components:
           type: integer
         staking_period:
           allOf:
-            - $ref: '#/components/schemas/TimestampRange'
+            - $ref: '#/components/schemas/TimestampRangeNullable'
             - description: The timestamp range of the staking period
-              nullable: true
         timestamp:
           $ref: '#/components/schemas/TimestampRange'
       example:
@@ -2807,6 +2806,19 @@ components:
           allOf:
             - $ref: '#/components/schemas/TimestampNullable'
             - description: The exclusive to timestamp in seconds
+    TimestampRangeNullable:
+      type: object
+      description: A timestamp range an entity is valid for
+      nullable: true
+      properties:
+        from:
+          allOf:
+            - $ref: '#/components/schemas/Timestamp'
+            - description: The inclusive from timestamp in seconds
+        to:
+          allOf:
+            - $ref: '#/components/schemas/TimestampNullable'
+            - description: The exclusive to timestamp in seconds
     Token:
       type: object
       properties:
@@ -2877,7 +2889,9 @@ components:
           $ref: '#/components/schemas/EntityId'
         auto_renew_period:
           example: null
+          format: int64
           nullable: true
+          type: integer
         created_timestamp:
           $ref: '#/components/schemas/Timestamp'
         decimals:
