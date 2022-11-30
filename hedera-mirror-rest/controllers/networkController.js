@@ -22,9 +22,17 @@ import _ from 'lodash';
 
 import BaseController from './baseController';
 import config from '../config';
-import {filterKeys, networkSupplyQuery, orderFilterValues, responseContentType, responseDataLabel} from '../constants';
+import {
+  filterKeys,
+  networkSupplyCurrencyFormatType,
+  networkSupplyQuery,
+  orderFilterValues,
+  responseContentType,
+  responseDataLabel,
+} from '../constants';
 import entityId from '../entityId';
 import {InvalidArgumentError, NotFoundError} from '../errors';
+import * as math from 'mathjs';
 import {AddressBookEntry, FileData} from '../model';
 import {FileDataService, NetworkNodeService} from '../service';
 import * as utils from '../utils';
@@ -38,6 +46,9 @@ import {
 
 const networkNodesDefaultSize = 10;
 const networkNodesMaxSize = 25;
+// the following two constants are different representations to indicate 1 hbar = 10^8 tinybars
+const networkNodesTinybarDecimals = 8;
+const hbarsToTinybars = 100_000_000;
 
 class NetworkController extends BaseController {
   static contentTypeTextPlain = 'text/plain';
@@ -274,8 +285,26 @@ class NetworkController extends BaseController {
     const viewModel = new NetworkSupplyViewModel(networkSupply);
 
     if (q) {
-      res.locals[responseDataLabel] =
-        q === networkSupplyQuery.TOTALCOINS ? viewModel.total_supply : viewModel.released_supply;
+      const valueInTinyCoins = q === networkSupplyQuery.TOTALCOINS ? viewModel.total_supply : viewModel.released_supply;
+      let valueInCurrencyFormat;
+
+      switch (config.network.currencyFormat) {
+        case networkSupplyCurrencyFormatType.TINYBARS:
+          valueInCurrencyFormat = valueInTinyCoins;
+          break;
+        case networkSupplyCurrencyFormatType.HBARS:
+          valueInCurrencyFormat = math
+            .round(math.divide(math.bignumber(valueInTinyCoins), math.bignumber(hbarsToTinybars)))
+            .toString();
+          break;
+        case networkSupplyCurrencyFormatType.BOTH:
+        default:
+          const position = valueInTinyCoins.length - networkNodesTinybarDecimals;
+          valueInCurrencyFormat = valueInTinyCoins.slice(0, position) + '.' + valueInTinyCoins.slice(position);
+          break;
+      }
+
+      res.locals[responseDataLabel] = valueInCurrencyFormat;
       res.locals[responseContentType] = NetworkController.contentTypeTextPlain;
     } else {
       res.locals[responseDataLabel] = viewModel;

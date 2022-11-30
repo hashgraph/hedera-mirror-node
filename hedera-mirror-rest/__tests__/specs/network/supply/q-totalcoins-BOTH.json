@@ -1,6 +1,11 @@
 {
-  "description": "Network supply API with q=circulating with currencyFormat defaulting to BOTH",
+  "description": "Network supply API with q=totalcoins with currencyFormat explicitly set to BOTH",
   "setup": {
+    "config": {
+      "network": {
+        "currencyFormat": "BOTH"
+      }
+    },
     "accounts": [
       {
         "balance": 10,
@@ -34,8 +39,8 @@
       }
     ]
   },
-  "url": "/api/v1/network/supply?q=circulating",
+  "url": "/api/v1/network/supply?q=totalcoins",
   "responseContentType": "text/plain; charset=utf-8",
   "responseStatus": 200,
-  "responseJson": "9999999999.99999949"
+  "responseJson": "50000000000.00000000"
 }
