@@ -1,3 +1,5 @@
+package com.hedera.mirror.web3.evm.exception;
+
 /*-
  * ‌
  * Hedera Mirror Node
@@ -17,18 +19,10 @@
  * limitations under the License.
  * ‍
  */
+@SuppressWarnings("java:S110")
+public class MissingResultException extends EvmException {
 
-import {execSync} from 'child_process';
-import path from 'path';
-
-if (
-  process.env.NODE_ENV === 'production' ||
-  process.env.npm_config_only === 'prod' ||
-  process.env.npm_config_only === 'production'
-) {
-  process.exit(0);
+    public MissingResultException(String message) {
+        super(message);
+    }
 }
-
-// run "husky install" only when dev dependencies are installed
-const huskyPath = ['hedera-mirror-rest', '.husky'].join(path.sep);
-console.log(execSync(`cd .. && husky install ${huskyPath}`, {encoding: 'utf8'}));

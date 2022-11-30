@@ -359,7 +359,7 @@ const getOneAccount = async (req, res) => {
   }
 
   // Process the results of transaction query
-  const transferList = transactions.createTransferLists(transactionsResults.rows);
+  const transferList = await transactions.createTransferLists(transactionsResults.rows);
   ret.transactions = transferList.transactions;
   const {anchorSecNs} = transferList;
 

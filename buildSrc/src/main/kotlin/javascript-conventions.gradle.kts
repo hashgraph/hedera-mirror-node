@@ -26,11 +26,6 @@ plugins {
     id("java-conventions")
 }
 
-node {
-    download.set(true)
-    version.set("18.12.1")
-}
-
 val npmTest = tasks.register<NpmTask>("npmTest") {
     dependsOn(tasks.npmInstall)
     args.set(listOf("test"))

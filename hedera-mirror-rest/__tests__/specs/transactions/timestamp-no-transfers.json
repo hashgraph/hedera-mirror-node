@@ -66,6 +66,7 @@
         "parent_consensus_timestamp": null,
         "result": "SUCCESS",
         "scheduled": false,
+        "staking_reward_transfers": [],
         "transaction_hash": "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8w",
         "transaction_id": "0.0.10-1565779209-711927000",
         "transfers": [],

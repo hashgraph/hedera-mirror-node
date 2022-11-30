@@ -36,6 +36,7 @@ describe('ContractResultViewModel', () => {
     transactionHash: Buffer.from([...Array(32).keys()]),
   };
   const defaultExpected = {
+    address: '0x00000000000000000000000000000000000005dc',
     amount: 10,
     bloom: '0x01020304',
     call_result: '0x0a0b0c0d',
@@ -71,6 +72,7 @@ describe('ContractResultViewModel', () => {
       })
     ).toEqual({
       ...defaultExpected,
+      address: null,
       amount: null,
       bloom: '0x',
       call_result: '0x',

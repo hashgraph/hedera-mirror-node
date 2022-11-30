@@ -65,7 +65,7 @@
         <docker.push.repository>gcr.io/mirrornode</docker.push.repository>
         <docker.resources>${project.build.directory}/container</docker.resources>
         <docker.tag.version>${release.version}</docker.tag.version>
-        <embedded.testcontainers.version>2.2.11</embedded.testcontainers.version>
+        <embedded.testcontainers.version>2.2.12</embedded.testcontainers.version>
         <flyway.version>8.5.9</flyway.version>
         <git-commit-id-plugin.version>4.0.4</git-commit-id-plugin.version>
         <grpc-spring-boot.version>2.13.1.RELEASE</grpc-spring-boot.version>
@@ -84,8 +84,8 @@
         <msgpack.version>0.9.3</msgpack.version>
         <postgresql.version>42.4.1</postgresql.version>
         <protobuf.version>3.21.9</protobuf.version>
-        <release.version>0.70.0-SNAPSHOT</release.version> <!-- Used to replace release versions in all files -->
-        <release.chartVersion>0.70.0-SNAPSHOT</release.chartVersion>
+        <release.version>0.71.0-SNAPSHOT</release.version> <!-- Used to replace release versions in all files -->
+        <release.chartVersion>0.71.0-SNAPSHOT</release.chartVersion>
         <replacer.version>1.5.3</replacer.version>
         <snakeyaml.version>1.33</snakeyaml.version> <!-- Temporary fix for transient dependency security issue -->
         <!--suppress UnresolvedMavenProperty -->
@@ -179,36 +179,6 @@
     <build>
         <pluginManagement>
             <plugins>
-                <!-- Download library source jars and package in container image for GCP Marketplace compliance -->
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-dependency-plugin</artifactId>
-                    <configuration>
-                        <classifier>sources</classifier>
-                        <includeScope>runtime</includeScope>
-                        <outputDirectory>${docker.resources}/third_party/sources</outputDirectory>
-                        <prependGroupId>true</prependGroupId>
-                    </configuration>
-                </plugin>
-                <!-- antlr 2.x (Hibernate dependency) is so old it doesn't have sources in Maven Central -->
-                <plugin>
-                    <groupId>com.googlecode.maven-download-plugin</groupId>
-                    <artifactId>download-maven-plugin</artifactId>
-                    <version>1.6.8</version>
-                    <executions>
-                        <execution>
-                            <id>download-antlr-source</id>
-                            <phase>verify</phase>
-                            <goals>
-                                <goal>wget</goal>
-                            </goals>
-                            <configuration>
-                                <outputDirectory>${docker.resources}/third_party/sources</outputDirectory>
-                                <url>https://www.antlr2.org/download/antlr-2.7.7.tar.gz</url>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
                 <plugin>
                     <groupId>org.owasp</groupId>
                     <artifactId>dependency-check-maven</artifactId>
@@ -546,12 +516,17 @@
                                 <phase>prepare-package</phase>
                                 <configuration>
                                     <includes>
+                                        <include>gradle.properties</include>
                                         <include>docker-compose.yml</include>
                                         <include>hedera-mirror-rest/**/openapi.yml</include>
                                         <include>hedera-mirror-rest/package*.json</include>
                                         <include>hedera-mirror-rest/monitoring/monitor_apis/package*.json</include>
                                     </includes>
                                     <replacements>
+                                        <replacement>
+                                            <token><![CDATA[version=.+]]></token>
+                                            <value>version=${release.version}</value>
+                                        </replacement>
                                         <replacement>
                                             <token>
                                                 <![CDATA[(?<="@hashgraph/mirror-(rest|monitor)",\s{3,7}"version": ")[^"]+]]></token>
