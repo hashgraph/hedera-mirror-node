@@ -121,10 +121,6 @@ local.properties
 .idea/
 *.iml
 
-# husky 5
-hedera-mirror-rest/.husky/.gitignore
-hedera-mirror-rest/.husky/_
-
 # check-state-proof output dir
 hedera-mirror-rest/check-state-proof/output
 

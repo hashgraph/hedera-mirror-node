@@ -111,3 +111,30 @@ sonarqube {
         property("sonar.issue.ignore.multicriteria.e5.ruleKey", "plsql:S1192")
     }
 }
+
+fun replaceVersion(files: String, match: String) {
+    ant.withGroovyBuilder {
+        "replaceregexp"(
+            "match" to match,
+            "replace" to project.version,
+            "flags" to "gm"
+        ) {
+            "fileset"(
+                "dir" to rootProject.projectDir,
+                "includes" to files,
+                "excludes" to "**/node_modules/"
+            )
+        }
+    }
+}
+
+// Replace release version in files
+project.tasks.register("release") {
+    doLast {
+        replaceVersion("charts/**/Chart.yaml", "(?<=^(appVersion|version): ).+")
+        replaceVersion("docker-compose.yml", "(?<=:)main")
+        replaceVersion("gradle.properties", "(?<=^version=).+")
+        replaceVersion("hedera-mirror-rest/**/package*.json", "(?<=\"@hashgraph/(check-state-proof|mirror-rest|mirror-monitor)\",\\s{3,7}\"version\": \")[^\"]+")
+        replaceVersion("hedera-mirror-rest/**/openapi.yml", "(?<=^  version: ).+")
+    }
+}
