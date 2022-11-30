@@ -46,6 +46,8 @@ import {
 
 const networkNodesDefaultSize = 10;
 const networkNodesMaxSize = 25;
+// the following two constants are different representations to indicate 1 hbar = 10^8 tinybars
+const desiredDecimals = 8;
 const hbarsToTinybars = math.bignumber(100_000_000);
 
 class NetworkController extends BaseController {
@@ -267,9 +269,9 @@ class NetworkController extends BaseController {
 
   /**
    * Helper function for getSupply method.
-   * @param {String} valueInTinyCoins a number of tinycoin
+   * @param {string} valueInTinyCoins a number of tinycoin
    * @param {networkSupplyCurrencyFormatType} currencyFormat desired output format
-   * @return {String}
+   * @return {string}
    * @throws {InvalidArgumentError}
    */
   convertToCurrencyFormat = (valueInTinyCoins, currencyFormat) => {
@@ -281,8 +283,7 @@ class NetworkController extends BaseController {
         return math.round(math.divide(math.bignumber(valueInTinyCoins), hbarsToTinybars)).toString();
         break;
       case networkSupplyCurrencyFormatType.BOTH:
-      default: // always want 8 digits after the decimal point
-        const desiredDecimals = 8;
+      default:
         return math.divide(math.bignumber(valueInTinyCoins), hbarsToTinybars).toFixed(desiredDecimals).toString();
         break;
     }
@@ -307,7 +308,7 @@ class NetworkController extends BaseController {
 
     if (q) {
       const valueInTinyCoins = q === networkSupplyQuery.TOTALCOINS ? viewModel.total_supply : viewModel.released_supply;
-      let valueInCurrencyFormat = this.convertToCurrencyFormat(valueInTinyCoins, config.network.currencyFormat);
+      const valueInCurrencyFormat = this.convertToCurrencyFormat(valueInTinyCoins, config.network.currencyFormat);
       res.locals[responseDataLabel] = valueInCurrencyFormat;
       res.locals[responseContentType] = NetworkController.contentTypeTextPlain;
     } else {
