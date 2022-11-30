@@ -92,9 +92,6 @@ data:
       # Setup coordinator
       psql -v ON_ERROR_STOP=1 --username "${POSTGRES_USER}" --dbname "${POSTGRES_DB}" -p "${POSTGRESQL_PORT_NUMBER}" <<-EOSQL
         select citus_set_coordinator_host('${coordinator}', ${POSTGRESQL_PORT_NUMBER});
-
-        \c ${HEDERA_MIRROR_IMPORTER_DB_NAME}
-        select citus_set_coordinator_host('${coordinator}', ${POSTGRESQL_PORT_NUMBER});
     EOSQL
 
       # Add workers
