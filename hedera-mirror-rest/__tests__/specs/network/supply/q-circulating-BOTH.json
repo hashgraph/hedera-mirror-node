@@ -42,5 +42,5 @@
   "url": "/api/v1/network/supply?q=circulating",
   "responseContentType": "text/plain; charset=utf-8",
   "responseStatus": 200,
-  "responseJson": "9999999999.99999949"
+  "responseJson": "10000000000.00000000"
 }

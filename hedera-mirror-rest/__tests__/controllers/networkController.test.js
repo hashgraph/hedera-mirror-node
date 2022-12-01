@@ -344,7 +344,7 @@ describe('convertToCurrencyFormat', () => {
       expected: '50000000000.00000000',
     },
     {
-      name: 'BOTH with negative (not expexted to actually happen)',
+      name: 'BOTH with negative (not expected to actually happen)',
       input: {
         tinycoins: '-1',
         currencyFormat: 'BOTH',
@@ -352,17 +352,9 @@ describe('convertToCurrencyFormat', () => {
       expected: '-0.00000001',
     },
     {
-      name: 'HBARS with decimal',
+      name: 'HBARS with decimal (testing truncation instead of rounding)',
       input: {
         tinycoins: '1234567890000',
-        currencyFormat: 'HBARS',
-      },
-      expected: '12346',
-    },
-    {
-      name: 'HBARS with decimal rounding down',
-      input: {
-        tinycoins: '1234547890000',
         currencyFormat: 'HBARS',
       },
       expected: '12345',
@@ -392,7 +384,7 @@ describe('convertToCurrencyFormat', () => {
       expected: '50000000000',
     },
     {
-      name: 'HBARS with negative (not expexted to actually happen)',
+      name: 'HBARS with negative (not expected to actually happen)',
       input: {
         tinycoins: '-1',
         currencyFormat: 'HBARS',
@@ -400,7 +392,7 @@ describe('convertToCurrencyFormat', () => {
       expected: '0',
     },
     {
-      name: 'HBARS with larger negative (not expexted to actually happen)',
+      name: 'HBARS with larger negative (not expected to actually happen)',
       input: {
         tinycoins: '-12300000000',
         currencyFormat: 'HBARS',
@@ -440,7 +432,7 @@ describe('convertToCurrencyFormat', () => {
       expected: '5000000000000000000',
     },
     {
-      name: 'TINYBARS with negative (not expexted to actually happen)',
+      name: 'TINYBARS with negative (not expected to actually happen)',
       input: {
         tinycoins: '-1',
         currencyFormat: 'TINYBARS',

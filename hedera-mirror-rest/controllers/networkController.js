@@ -32,7 +32,6 @@ import {
 } from '../constants';
 import entityId from '../entityId';
 import {InvalidArgumentError, NotFoundError} from '../errors';
-import * as math from 'mathjs';
 import {AddressBookEntry, FileData} from '../model';
 import {FileDataService, NetworkNodeService} from '../service';
 import * as utils from '../utils';
@@ -48,7 +47,7 @@ const networkNodesDefaultSize = 10;
 const networkNodesMaxSize = 25;
 // the following two constants are different representations to indicate 1 hbar = 10^8 tinybars
 const desiredDecimals = 8;
-const hbarsToTinybars = math.bignumber(100_000_000);
+const hbarsToTinybars = 100_000_000;
 
 class NetworkController extends BaseController {
   static contentTypeTextPlain = 'text/plain';
@@ -280,11 +279,12 @@ class NetworkController extends BaseController {
         return valueInTinyCoins;
         break;
       case networkSupplyCurrencyFormatType.HBARS:
-        return math.round(math.divide(math.bignumber(valueInTinyCoins), hbarsToTinybars)).toString();
+        return (BigInt(valueInTinyCoins) / BigInt(hbarsToTinybars)).toString();
         break;
       case networkSupplyCurrencyFormatType.BOTH:
       default:
-        return math.divide(math.bignumber(valueInTinyCoins), hbarsToTinybars).toFixed(desiredDecimals).toString();
+        return (Number(valueInTinyCoins) / hbarsToTinybars).toFixed(desiredDecimals);
+        // return math.divide(math.bignumber(valueInTinyCoins), hbarsToTinybars).toFixed(desiredDecimals).toString();
         break;
     }
   };
