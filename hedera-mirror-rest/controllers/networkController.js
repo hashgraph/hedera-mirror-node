@@ -277,15 +277,23 @@ class NetworkController extends BaseController {
     switch (currencyFormat) {
       case networkSupplyCurrencyFormatType.TINYBARS:
         return valueInTinyCoins;
-        break;
       case networkSupplyCurrencyFormatType.HBARS:
-        return (BigInt(valueInTinyCoins) / BigInt(hbarsToTinybars)).toString();
-        break;
+        // emulate integer division via substr
+        if (valueInTinyCoins.length <= desiredDecimals) {
+          return '0';
+        }
+        return valueInTinyCoins.substring(0, valueInTinyCoins.length - desiredDecimals);
       case networkSupplyCurrencyFormatType.BOTH:
       default:
-        return (Number(valueInTinyCoins) / hbarsToTinybars).toFixed(desiredDecimals);
-        // return math.divide(math.bignumber(valueInTinyCoins), hbarsToTinybars).toFixed(desiredDecimals).toString();
-        break;
+        // emulate floating point division via adding leading zeroes or substr
+        if (valueInTinyCoins.length <= desiredDecimals) {
+          return '0.' + _.repeat('0', desiredDecimals - valueInTinyCoins.length) + valueInTinyCoins;
+        }
+        return (
+          valueInTinyCoins.substr(0, valueInTinyCoins.length - desiredDecimals) +
+          '.' +
+          valueInTinyCoins.substr(-desiredDecimals)
+        );
     }
   };
 

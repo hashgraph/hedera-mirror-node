@@ -174,15 +174,12 @@ const parseMaxTimestampRange = () => {
 };
 
 const parseNetworkConfig = () => {
-  const networkConf = getConfig().network;
-  if (networkConf.currencyFormat) {
-    const currencyFormat = networkConf.currencyFormat;
+  const currencyFormat = getConfig()?.network?.currencyFormat;
+  if (currencyFormat) {
     const validValues = ['BOTH', 'HBARS', 'TINYBARS'];
     if (!validValues.includes(currencyFormat)) {
       throw new InvalidConfigError(`invalid currencyFormat ${currencyFormat}`);
     }
-  } else {
-    networkConf.currencyFormat = 'BOTH';
   }
 };
 
