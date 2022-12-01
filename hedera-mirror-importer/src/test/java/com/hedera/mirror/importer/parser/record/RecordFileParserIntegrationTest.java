@@ -65,9 +65,6 @@ class RecordFileParserIntegrationTest extends IntegrationTest {
     private final Path recordFilePath2;
     private final RecordItemBuilder recordItemBuilder;
 
-    @TempDir
-    private File tempDir;
-
     private RecordFileDescriptor recordFileDescriptor1;
     private RecordFileDescriptor recordFileDescriptor2;
 
@@ -111,24 +108,6 @@ class RecordFileParserIntegrationTest extends IntegrationTest {
         // then
         verifyFinalDatabaseState(recordFileDescriptor1);
         assertThat(retryRecorder.getRetries(ParserException.class)).isEqualTo(2);
-    }
-
-    @Test
-    void retryErrors() {
-        // when
-        // Mark the JNA temp dir as read only to trigger a java.lang.Error when extracting the native binary from jar
-        System.setProperty("jna.tmpdir", tempDir.getAbsolutePath());
-        tempDir.setReadOnly();
-
-        var alias = ByteString.copyFrom(Base64.getDecoder().decode("OiEDHLsCqqW3ztVNnDETNQDusK5GVQGwK8mD+KusAtjhL/A="));
-        var recordItem = recordItemBuilder.cryptoCreate().record(b -> b.setAlias(alias)).build();
-        var recordFile = recordFileDescriptor1.getRecordFile();
-        recordFile.setItems(Flux.just(recordItem));
-        Assertions.assertThrows(NoClassDefFoundError.class, () -> recordFileParser.parse(recordFile));
-
-        // then
-        assertThat(recordFileRepository.count()).isZero();
-        assertThat(retryRecorder.getRetries(NoClassDefFoundError.class)).isEqualTo(1);
     }
 
     void verifyFinalDatabaseState(RecordFileDescriptor... recordFileDescriptors) {
