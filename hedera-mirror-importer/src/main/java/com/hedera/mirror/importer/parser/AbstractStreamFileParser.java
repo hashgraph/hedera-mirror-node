@@ -29,6 +29,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.hedera.mirror.common.domain.StreamFile;
+import com.hedera.mirror.importer.exception.HashMismatchException;
 import com.hedera.mirror.importer.repository.StreamFileRepository;
 
 public abstract class AbstractStreamFileParser<T extends StreamFile> implements StreamFileParser<T> {
@@ -83,7 +84,7 @@ public abstract class AbstractStreamFileParser<T extends StreamFile> implements 
                 success = true;
                 Instant consensusInstant = Instant.ofEpochSecond(0L, streamFile.getConsensusEnd());
                 parseLatencyMetric.record(Duration.between(consensusInstant, Instant.now()));
-            } catch (Exception e) {
+            } catch (Throwable e) {
                 log.error("Error parsing file {} after {}", streamFile.getName(), stopwatch, e);
                 throw e;
             } finally {
@@ -100,12 +101,24 @@ public abstract class AbstractStreamFileParser<T extends StreamFile> implements 
             return false;
         }
 
-        boolean exists = streamFileRepository.existsById(streamFile.getConsensusEnd());
+        var last = streamFileRepository.findLatest();
 
-        if (exists) {
-            log.warn("Skipping existing stream file {}", streamFile.getName());
+        if (last.isEmpty()) {
+            return true;
         }
 
-        return !exists;
+        var lastStreamFile = last.get();
+        if (lastStreamFile.getConsensusEnd() >= streamFile.getConsensusStart()) {
+            log.warn("Skipping existing stream file {}", streamFile.getName());
+            return false;
+        }
+
+        // Verify hash chain
+        if (streamFile.getType().isChained() && !lastStreamFile.getHash().contentEquals(streamFile.getPreviousHash())) {
+            throw new HashMismatchException(streamFile.getName(), lastStreamFile.getHash(),
+                    streamFile.getPreviousHash(), getClass().getSimpleName());
+        }
+
+        return true;
     }
 }

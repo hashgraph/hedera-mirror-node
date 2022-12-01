@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.parser;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+import java.util.Optional;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -84,7 +85,7 @@ public abstract class AbstractStreamFileParserTest<T extends StreamFileParser> {
     void alreadyExists() {
         // given
         StreamFile streamFile = getStreamFile();
-        when(getStreamFileRepository().existsById(streamFile.getConsensusEnd())).thenReturn(true);
+        when(getStreamFileRepository().findLatest()).thenReturn(Optional.of(streamFile));
 
         // when
         parser.parse(streamFile);

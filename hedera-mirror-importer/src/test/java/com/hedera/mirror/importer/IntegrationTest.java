@@ -80,13 +80,16 @@ public abstract class IntegrationTest {
     @Resource
     private MirrorProperties mirrorProperties;
 
+    @Resource
+    protected IntegrationTestConfiguration.RetryRecorder retryRecorder;
+
     @BeforeEach
     void logTest(TestInfo testInfo) {
         reset();
         log.info("Executing: {}", testInfo.getDisplayName());
     }
 
-    protected<T> Collection<T> findEntity(Class<T> entityClass, String ids, String table) {
+    protected <T> Collection<T> findEntity(Class<T> entityClass, String ids, String table) {
         String sql = String.format("select * from %s order by %s, timestamp_range asc", table, ids);
         return jdbcOperations.query(sql, rowMapper(entityClass));
     }
@@ -95,7 +98,7 @@ public abstract class IntegrationTest {
         return findHistory(historyClass, "id");
     }
 
-    protected  <T> Collection<T> findHistory(Class<T> historyClass, String ids) {
+    protected <T> Collection<T> findHistory(Class<T> historyClass, String ids) {
         return findHistory(historyClass, ids, null);
     }
 
@@ -114,6 +117,7 @@ public abstract class IntegrationTest {
         cacheManagers.forEach(c -> c.getCacheNames().forEach(name -> c.getCache(name).clear()));
         mirrorDateRangePropertiesProcessor.clear();
         mirrorProperties.setStartDate(Instant.EPOCH);
+        retryRecorder.reset();
     }
 
     protected static <T> RowMapper<T> rowMapper(Class<T> entityClass) {
