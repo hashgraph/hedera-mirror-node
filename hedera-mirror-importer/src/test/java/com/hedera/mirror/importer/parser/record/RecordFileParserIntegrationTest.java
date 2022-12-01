@@ -113,7 +113,6 @@ class RecordFileParserIntegrationTest extends IntegrationTest {
         assertThat(retryRecorder.getRetries(ParserException.class)).isEqualTo(2);
     }
 
-    @Disabled("Works in IDE but not on CLI")
     @Test
     void retryErrors() {
         // when

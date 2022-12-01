@@ -28,6 +28,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.common.domain.StreamFile;
@@ -56,10 +58,14 @@ public abstract class AbstractStreamFileParserTest<T extends StreamFileParser> {
         parserProperties.setEnabled(true);
     }
 
-    @Test
-    void parse() {
+    @ValueSource(booleans = {true, false})
+    @ParameterizedTest
+    void parse(boolean startAndEndSame) {
         // given
         StreamFile streamFile = getStreamFile();
+        if (startAndEndSame) {
+            streamFile.setConsensusStart(streamFile.getConsensusStart());
+        }
 
         // when
         parser.parse(streamFile);
@@ -81,10 +87,14 @@ public abstract class AbstractStreamFileParserTest<T extends StreamFileParser> {
         assertParsed(streamFile, false, false);
     }
 
-    @Test
-    void alreadyExists() {
+    @ValueSource(booleans = {true, false})
+    @ParameterizedTest
+    void alreadyExists(boolean startAndEndSame) {
         // given
         StreamFile streamFile = getStreamFile();
+        if (startAndEndSame) {
+            streamFile.setConsensusStart(streamFile.getConsensusStart());
+        }
         when(getStreamFileRepository().findLatest()).thenReturn(Optional.of(streamFile));
 
         // when

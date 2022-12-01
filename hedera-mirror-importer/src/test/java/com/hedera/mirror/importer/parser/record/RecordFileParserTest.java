@@ -115,7 +115,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
 
     @Override
     protected StreamFile getStreamFile() {
-        long id = ++count;
+        long id = ++count * 100;
         recordItem = cryptoTransferRecordItem(id);
         return getStreamFile(Flux.just(recordItem), id);
     }
@@ -398,7 +398,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
         return domainBuilder
                 .recordFile()
                 .customize(recordFileBuilder -> recordFileBuilder.bytes(new byte[] {0, 1, 2})
-                        .consensusEnd(timestamp)
+                        .consensusEnd(timestamp+1)
                         .consensusStart(timestamp)
                         .gasUsed(0L)
                         .items(items)
