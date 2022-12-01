@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.service.eth;
+package com.hedera.mirror.web3.service;
 
 /*-
  * ‌
@@ -29,7 +29,7 @@ import lombok.RequiredArgsConstructor;
 
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorFacade;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
-import com.hedera.mirror.web3.service.model.CallServiceParams;
+import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.services.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 
 @Named
@@ -37,20 +37,21 @@ import com.hedera.services.evm.contracts.execution.HederaEvmTransactionProcessin
 public class ContractCallService {
     private final MirrorEvmTxProcessorFacade mirrorEvmTxProcessor;
 
-    public String processCall(CallServiceParams body) {
+    public String processCall(CallServiceParameters body) {
         final var processResult = doProcessCall(body);
 
         return processResult.getOutput().toHexString();
     }
 
-    private HederaEvmTransactionProcessingResult doProcessCall(CallServiceParams body) {
+    private HederaEvmTransactionProcessingResult doProcessCall(CallServiceParameters body) {
         final var processingResult =
                 mirrorEvmTxProcessor.execute(
                         body.getSender(),
                         body.getReceiver(),
                         body.getProvidedGasLimit(),
                         body.getValue(),
-                        body.getCallData());
+                        body.getCallData(),
+                        body.isStatic());
 
         final var status = getStatusOrDefault(processingResult);
         if (status != SUCCESS) {

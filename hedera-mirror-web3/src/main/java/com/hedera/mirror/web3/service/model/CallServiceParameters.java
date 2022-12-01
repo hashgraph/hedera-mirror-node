@@ -29,10 +29,11 @@ import com.hedera.services.evm.store.models.HederaEvmAccount;
 
 @Value
 @Builder
-public class CallServiceParams {
+public class CallServiceParameters {
     HederaEvmAccount sender;
     Address receiver;
     long providedGasLimit;
     long value;
     Bytes callData;
+    boolean isStatic;
 }

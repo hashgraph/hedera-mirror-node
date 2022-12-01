@@ -42,8 +42,8 @@ import org.springframework.web.bind.support.WebExchangeBindException;
 import reactor.core.publisher.Mono;
 
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
-import com.hedera.mirror.web3.service.eth.ContractCallService;
-import com.hedera.mirror.web3.service.model.CallServiceParams;
+import com.hedera.mirror.web3.service.ContractCallService;
+import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
 import com.hedera.mirror.web3.viewmodel.ContractCallResponse;
 import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
@@ -76,7 +76,7 @@ class ContractController {
         return Mono.just(callResponse);
     }
 
-    private CallServiceParams constructServiceParameters(ContractCallRequest request) {
+    private CallServiceParameters constructServiceParameters(ContractCallRequest request) {
         final var fromAddress =
                 request.getFrom() != null
                         ? Address.fromHexString(request.getFrom())
@@ -88,13 +88,15 @@ class ContractController {
                 request.getData() != null
                         ? Bytes.fromHexString(request.getData())
                         : EMPTY;
+        final var isStaticCall = !request.isEstimate();
 
-        return CallServiceParams.builder()
+        return CallServiceParameters.builder()
                 .sender(sender)
                 .receiver(receiver)
                 .callData(data)
                 .providedGasLimit(request.getGas())
                 .value(request.getValue())
+                .isStatic(isStaticCall)
                 .build();
     }
 

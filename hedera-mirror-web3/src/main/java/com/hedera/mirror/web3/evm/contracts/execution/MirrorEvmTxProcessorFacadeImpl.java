@@ -21,21 +21,11 @@ package com.hedera.mirror.web3.evm.contracts.execution;
  */
 
 import java.time.Instant;
-import java.util.List;
-import java.util.Map;
 import javax.inject.Named;
-import javax.inject.Provider;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.gascalculator.LondonGasCalculator;
-import org.hyperledger.besu.evm.internal.EvmConfiguration;
-import org.hyperledger.besu.evm.operation.OperationRegistry;
-import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
-import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
-import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
+import com.hedera.mirror.web3.evm.account.AccountAccessorImpl;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.properties.StaticBlockMetaSource;
@@ -47,27 +37,12 @@ import com.hedera.services.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.services.evm.store.contracts.HederaEvmWorldState;
 import com.hedera.services.evm.store.models.HederaEvmAccount;
 
+import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.ccps;
+import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.gasCalculator;
+import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.mcps;
+
 @Named
 public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacade {
-    private static final String EVM_VERSION_0_30 = "v0.30";
-    private static final String EVM_VERSION_0_32 = "v0.32";
-    private static final GasCalculator gasCalculator = new LondonGasCalculator();
-    private static final EVM evm = new EVM(new OperationRegistry(), gasCalculator, EvmConfiguration.DEFAULT);
-    private static final Map<String, Provider<MessageCallProcessor>> mcps = Map.of(
-            EVM_VERSION_0_30,
-            () -> new MessageCallProcessor(
-                    evm, new PrecompileContractRegistry()),
-            EVM_VERSION_0_32,
-            () -> new MessageCallProcessor(
-                    evm, new PrecompileContractRegistry()));
-    private static final Map<String, Provider<ContractCreationProcessor>> ccps = Map.of(
-            EVM_VERSION_0_30,
-            () -> new ContractCreationProcessor(
-                    gasCalculator, evm, true, List.of(), 1),
-            EVM_VERSION_0_32,
-            () -> new ContractCreationProcessor(
-                    gasCalculator, evm, true, List.of(), 1));
-
     private final MirrorEvmTxProcessor processor;
 
     public MirrorEvmTxProcessorFacadeImpl(
@@ -75,19 +50,24 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             MirrorNodeEvmProperties evmProperties,
             StaticBlockMetaSource blockMetaSource,
             MirrorEvmContractAliases aliasManager,
-            PricesAndFeesImpl pricesAndFees) {
+            PricesAndFeesImpl pricesAndFees,
+            AccountAccessorImpl accountAccessor) {
         final AbstractCodeCache codeCache = new AbstractCodeCache(evmProperties.getExpirationCacheTime(), entityAccess);
-        final HederaEvmMutableWorldState worldState = new HederaEvmWorldState(entityAccess, evmProperties, codeCache);
+        final HederaEvmMutableWorldState worldState = new HederaEvmWorldState(entityAccess, evmProperties, codeCache,
+                accountAccessor);
 
-        processor = new MirrorEvmTxProcessor(
-                worldState,
-                pricesAndFees,
-                evmProperties,
-                gasCalculator,
-                mcps, ccps,
-                blockMetaSource,
-                aliasManager,
-                entityAccess);
+        processor =
+                new MirrorEvmTxProcessor(
+                        worldState,
+                        pricesAndFees,
+                        evmProperties,
+                        gasCalculator,
+                        mcps(),
+                        ccps(),
+                        blockMetaSource,
+                        aliasManager,
+                        entityAccess);
+
         processor.setOperationTracer(new DefaultHederaTracer());
     }
 
@@ -97,7 +77,8 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final Address receiver,
             final long providedGasLimit,
             final long value,
-            final Bytes callData) {
+            final Bytes callData,
+            final boolean isStatic) {
 
         return processor.execute(
                 sender,
@@ -106,6 +87,6 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                 value,
                 callData,
                 Instant.now(),
-                true);
+                isStatic);
     }
 }

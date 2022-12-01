@@ -32,5 +32,6 @@ public interface MirrorEvmTxProcessorFacade {
             final Address receiver,
             final long providedGasLimit,
             final long value,
-            final Bytes callData);
+            final Bytes callData,
+            final boolean isStatic);
 }
