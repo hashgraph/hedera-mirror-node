@@ -278,21 +278,21 @@ class NetworkController extends BaseController {
       case networkSupplyCurrencyFormatType.TINYBARS:
         return valueInTinyCoins;
       case networkSupplyCurrencyFormatType.HBARS:
-        // emulate integer division via substr
+        // emulate integer division via substring
         if (valueInTinyCoins.length <= desiredDecimals) {
           return '0';
         }
         return valueInTinyCoins.substring(0, valueInTinyCoins.length - desiredDecimals);
       case networkSupplyCurrencyFormatType.BOTH:
       default:
-        // emulate floating point division via adding leading zeroes or substr
+        // emulate floating point division via adding leading zeroes or substring/slice
         if (valueInTinyCoins.length <= desiredDecimals) {
           return '0.' + _.repeat('0', desiredDecimals - valueInTinyCoins.length) + valueInTinyCoins;
         }
         return (
-          valueInTinyCoins.substr(0, valueInTinyCoins.length - desiredDecimals) +
+          valueInTinyCoins.substring(0, valueInTinyCoins.length - desiredDecimals) +
           '.' +
-          valueInTinyCoins.substr(-desiredDecimals)
+          valueInTinyCoins.slice(-desiredDecimals)
         );
     }
   };

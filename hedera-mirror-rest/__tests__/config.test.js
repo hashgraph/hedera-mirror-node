@@ -444,7 +444,7 @@ describe('Override network currencyFormat config', () => {
     const {name, override, expectThrow} = testSpec;
     test(name, async () => {
       if (!expectThrow) {
-        const config = await loadConfigWithCustomNetworkCurrencyFormatConfig(override);
+        await loadConfigWithCustomNetworkCurrencyFormatConfig(override);
       } else {
         await expect(loadConfigWithCustomNetworkCurrencyFormatConfig(override)).rejects.toThrow();
       }
