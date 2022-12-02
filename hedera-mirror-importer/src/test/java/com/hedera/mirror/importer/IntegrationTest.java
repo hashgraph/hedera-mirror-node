@@ -79,6 +79,9 @@ public abstract class IntegrationTest {
     @Resource
     private MirrorProperties mirrorProperties;
 
+    @Resource
+    protected IntegrationTestConfiguration.RetryRecorder retryRecorder;
+
     @BeforeEach
     void logTest(TestInfo testInfo) {
         reset();
@@ -114,6 +117,7 @@ public abstract class IntegrationTest {
         mirrorDateRangePropertiesProcessor.clear();
         mirrorProperties.setStartDate(Instant.EPOCH);
         jdbcOperations.execute(cleanupSql);
+        retryRecorder.reset();
     }
 
     protected static <T> RowMapper<T> rowMapper(Class<T> entityClass) {

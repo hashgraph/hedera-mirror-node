@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.config;
  * ‍
  */
 
+import com.google.common.collect.ConcurrentHashMultiset;
+import com.google.common.collect.Multiset;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
@@ -31,6 +33,9 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcOperations;
+import org.springframework.retry.RetryCallback;
+import org.springframework.retry.RetryContext;
+import org.springframework.retry.listener.RetryListenerSupport;
 import org.springframework.transaction.support.TransactionOperations;
 import org.springframework.util.ResourceUtils;
 
@@ -68,5 +73,29 @@ public class IntegrationTestConfiguration {
                 order by table_name
                 """, (rs, rowNum) -> rs.getString(1));
         return tables.stream().map((t) -> String.format("delete from %s;", t)).collect(Collectors.joining("\n"));
+
+    @Bean
+    RetryRecorder retryRecorder() {
+        return new RetryRecorder();
+    }
+
+    // Records retry attempts made via Spring @Retryable or RetryTemplate for verification in tests
+    public class RetryRecorder extends RetryListenerSupport {
+
+        private final Multiset<Class<? extends Throwable>> retries = ConcurrentHashMultiset.create();
+
+        @Override
+        public <T, E extends Throwable> void onError(RetryContext context, RetryCallback<T, E> callback, Throwable t) {
+            retries.add(t.getClass());
+        }
+
+        public int getRetries(Class<? extends Throwable> throwableClass) {
+            return retries.count(throwableClass);
+        }
+
+        public void reset() {
+            retries.clear();
+        }
+
     }
 }
