@@ -43,7 +43,6 @@ import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.core.RowMapper;
-import org.springframework.test.context.jdbc.Sql;
 
 import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.domain.DomainBuilder;
@@ -52,9 +51,6 @@ import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.importer.config.IntegrationTestConfiguration;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 
-// Same database is used for all tests, so clean it up before each test.
-@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
-@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
 @SpringBootTest
 @Import(IntegrationTestConfiguration.class)
 public abstract class IntegrationTest {
@@ -67,6 +63,9 @@ public abstract class IntegrationTest {
 
     @Resource
     private Collection<CacheManager> cacheManagers;
+
+    @Resource
+    private String cleanupSql;
 
     @Resource
     protected DomainBuilder domainBuilder;
@@ -117,6 +116,7 @@ public abstract class IntegrationTest {
         cacheManagers.forEach(c -> c.getCacheNames().forEach(name -> c.getCache(name).clear()));
         mirrorDateRangePropertiesProcessor.clear();
         mirrorProperties.setStartDate(Instant.EPOCH);
+        jdbcOperations.execute(cleanupSql);
         retryRecorder.reset();
     }
 
@@ -135,7 +135,7 @@ public abstract class IntegrationTest {
                     }
                 });
 
-        DataClassRowMapper dataClassRowMapper = new DataClassRowMapper<>(entityClass);
+        DataClassRowMapper<T> dataClassRowMapper = new DataClassRowMapper<>(entityClass);
         dataClassRowMapper.setConversionService(defaultConversionService);
         return dataClassRowMapper;
     }
