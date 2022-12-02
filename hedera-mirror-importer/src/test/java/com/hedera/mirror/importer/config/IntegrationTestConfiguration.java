@@ -73,6 +73,7 @@ public class IntegrationTestConfiguration {
                 order by table_name
                 """, (rs, rowNum) -> rs.getString(1));
         return tables.stream().map((t) -> String.format("delete from %s;", t)).collect(Collectors.joining("\n"));
+    }
 
     @Bean
     RetryRecorder retryRecorder() {
