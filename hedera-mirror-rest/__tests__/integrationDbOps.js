@@ -178,7 +178,7 @@ const getCleanupSql = async () => {
   }
 
   // The query returns the tables without partitions or the parent tables of the partitions. This is to reduce the
-  // extract amount of time caused by trying to delete from partitions. The cleanup sql for v2 is generated once for
+  // exact amount of time caused by trying to delete from partitions. The cleanup sql for v2 is generated once for
   // each jest worker, it's done this way because the query to find the correct table names is also slow.
   const {rows} = await pool.queryQuietly(`
 	  select table_name
