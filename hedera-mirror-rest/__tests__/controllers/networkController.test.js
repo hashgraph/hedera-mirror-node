@@ -302,112 +302,29 @@ describe('extractFileDataQuery', () => {
 });
 
 describe('convertToCurrencyFormat', () => {
-  const specs = [
-    {
-      tinycoins: '1234567890000',
-      currencyFormat: 'BOTH',
-      expected: '12345.67890000',
-    },
-    {
-      tinycoins: '1234567890000',
-      currencyFormat: null,
-      expected: '12345.67890000',
-    },
-    {
-      tinycoins: '0',
-      currencyFormat: 'BOTH',
-      expected: '0.00000000',
-    },
-    {
-      tinycoins: '42',
-      currencyFormat: 'BOTH',
-      expected: '0.00000042',
-    },
-    {
-      tinycoins: '987654321098765432',
-      currencyFormat: 'BOTH',
-      expected: '9876543210.98765432',
-    },
-    {
-      tinycoins: '5000000000000000000',
-      currencyFormat: null,
-      expected: '50000000000.00000000',
-    },
-    {
-      tinycoins: '1234567890000',
-      currencyFormat: 'HBARS',
-      expected: '12345',
-    },
-    {
-      tinycoins: '0',
-      currencyFormat: 'HBARS',
-      expected: '0',
-    },
-    {
-      tinycoins: '42',
-      currencyFormat: 'HBARS',
-      expected: '0',
-    },
-    {
-      tinycoins: '987654321098765432',
-      currencyFormat: 'HBARS',
-      expected: '9876543210',
-    },
-    {
-      tinycoins: '5000000000000000000',
-      currencyFormat: 'HBARS',
-      expected: '50000000000',
-    },
-    {
-      tinycoins: '1234567890123',
-      currencyFormat: 'TINYBARS',
-      expected: '1234567890123',
-    },
-    {
-      tinycoins: '0',
-      currencyFormat: 'TINYBARS',
-      expected: '0',
-    },
-    {
-      tinycoins: '42',
-      currencyFormat: 'TINYBARS',
-      expected: '42',
-    },
-    {
-      tinycoins: '987654321098765432',
-      currencyFormat: 'TINYBARS',
-      expected: '987654321098765432',
-    },
-    {
-      tinycoins: '5000000000000000000',
-      currencyFormat: 'TINYBARS',
-      expected: '5000000000000000000',
-    },
-    {
-      tinycoins: '',
-      currencyFormat: undefined,
-      expected: '0.00000000',
-    },
-    {
-      tinycoins: undefined,
-      currencyFormat: undefined,
-      expected: '0.00000000',
-    },
-    {
-      tinycoins: undefined,
-      currencyFormat: 'HBARS',
-      expected: '0',
-    },
-    {
-      tinycoins: undefined,
-      currencyFormat: 'TINYBARS',
-      expected: '0',
-    },
-  ];
-
-  specs.forEach((spec) => {
-    test(`${spec.currencyFormat}-${spec.tinycoins}`, () => {
-      expect(networkCtrl.convertToCurrencyFormat(spec.tinycoins, spec.currencyFormat)).toEqual(spec.expected);
-    });
+  it.each`
+    tinycoins                | currencyFormat | expected
+    ${'1234567890000'}       | ${'BOTH'}      | ${'12345.67890000'}
+    ${'1234567890000'}       | ${null}        | ${'12345.67890000'}
+    ${'0'}                   | ${'BOTH'}      | ${'0.00000000'}
+    ${'42'}                  | ${'BOTH'}      | ${'0.00000042'}
+    ${'987654321098765432'}  | ${'BOTH'}      | ${'9876543210.98765432'}
+    ${'5000000000000000000'} | ${null}        | ${'50000000000.00000000'}
+    ${'1234567890000'}       | ${'HBARS'}     | ${'12345'}
+    ${'0'}                   | ${'HBARS'}     | ${'0'}
+    ${'42'}                  | ${'HBARS'}     | ${'0'}
+    ${'987654321098765432'}  | ${'HBARS'}     | ${'9876543210'}
+    ${'5000000000000000000'} | ${'HBARS'}     | ${'50000000000'}
+    ${'1234567890123'}       | ${'TINYBARS'}  | ${'1234567890123'}
+    ${'0'}                   | ${'TINYBARS'}  | ${'0'}
+    ${'42'}                  | ${'TINYBARS'}  | ${'42'}
+    ${'987654321098765432'}  | ${'TINYBARS'}  | ${'987654321098765432'}
+    ${'5000000000000000000'} | ${'TINYBARS'}  | ${'5000000000000000000'}
+    ${''}                    | ${undefined}   | ${'0.00000000'}
+    ${undefined}             | ${undefined}   | ${'0.00000000'}
+    ${undefined}             | ${'HBARS'}     | ${'0'}
+    ${undefined}             | ${'TINYBARS'}  | ${'0'}
+  `('verifies "$currencyFormat" on $tinycoins expecting $expected', ({tinycoins, currencyFormat, expected}) => {
+    expect(networkCtrl.convertToCurrencyFormat(tinycoins, currencyFormat)).toEqual(expected);
   });
 });

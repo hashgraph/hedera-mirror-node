@@ -271,7 +271,7 @@ class NetworkController extends BaseController {
    * @return {string}
    * @throws {InvalidArgumentError}
    */
-  convertToCurrencyFormat = (valueInTinyCoins = '0', currencyFormat) => {
+  convertToCurrencyFormat = (valueInTinyCoins = '0', currencyFormat = config.network.currencyFormat) => {
     switch (currencyFormat) {
       case networkSupplyCurrencyFormatType.TINYBARS:
         return valueInTinyCoins;
