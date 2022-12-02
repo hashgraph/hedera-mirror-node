@@ -383,6 +383,26 @@ describe('convertToCurrencyFormat', () => {
       currencyFormat: 'TINYBARS',
       expected: '5000000000000000000',
     },
+    {
+      tinycoins: '',
+      currencyFormat: undefined,
+      expected: '0.00000000',
+    },
+    {
+      tinycoins: undefined,
+      currencyFormat: undefined,
+      expected: '0.00000000',
+    },
+    {
+      tinycoins: undefined,
+      currencyFormat: 'HBARS',
+      expected: '0',
+    },
+    {
+      tinycoins: undefined,
+      currencyFormat: 'TINYBARS',
+      expected: '0',
+    },
   ];
 
   specs.forEach((spec) => {

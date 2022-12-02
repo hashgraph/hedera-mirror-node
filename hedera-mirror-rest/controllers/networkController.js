@@ -23,6 +23,7 @@ import _ from 'lodash';
 import BaseController from './baseController';
 import config from '../config';
 import {
+  DECIMALS_IN_HBARS,
   filterKeys,
   networkSupplyCurrencyFormatType,
   networkSupplyQuery,
@@ -45,9 +46,6 @@ import {
 
 const networkNodesDefaultSize = 10;
 const networkNodesMaxSize = 25;
-// the following two constants are different representations to indicate 1 hbar = 10^8 tinybars
-const desiredDecimals = 8;
-const hbarsToTinybars = 100_000_000;
 
 class NetworkController extends BaseController {
   static contentTypeTextPlain = 'text/plain';
@@ -273,26 +271,26 @@ class NetworkController extends BaseController {
    * @return {string}
    * @throws {InvalidArgumentError}
    */
-  convertToCurrencyFormat = (valueInTinyCoins, currencyFormat) => {
+  convertToCurrencyFormat = (valueInTinyCoins = '0', currencyFormat) => {
     switch (currencyFormat) {
       case networkSupplyCurrencyFormatType.TINYBARS:
         return valueInTinyCoins;
       case networkSupplyCurrencyFormatType.HBARS:
         // emulate integer division via substring
-        if (valueInTinyCoins.length <= desiredDecimals) {
+        if (valueInTinyCoins.length <= DECIMALS_IN_HBARS) {
           return '0';
         }
-        return valueInTinyCoins.substring(0, valueInTinyCoins.length - desiredDecimals);
+        return valueInTinyCoins.substring(0, valueInTinyCoins.length - DECIMALS_IN_HBARS);
       case networkSupplyCurrencyFormatType.BOTH:
       default:
         // emulate floating point division via adding leading zeroes or substring/slice
-        if (valueInTinyCoins.length <= desiredDecimals) {
-          return '0.' + _.repeat('0', desiredDecimals - valueInTinyCoins.length) + valueInTinyCoins;
+        if (valueInTinyCoins.length <= DECIMALS_IN_HBARS) {
+          return '0.' + valueInTinyCoins.padStart(DECIMALS_IN_HBARS, '0');
         }
         return (
-          valueInTinyCoins.substring(0, valueInTinyCoins.length - desiredDecimals) +
+          valueInTinyCoins.substring(0, valueInTinyCoins.length - DECIMALS_IN_HBARS) +
           '.' +
-          valueInTinyCoins.slice(-desiredDecimals)
+          valueInTinyCoins.slice(-DECIMALS_IN_HBARS)
         );
     }
   };

@@ -174,7 +174,7 @@ const parseMaxTimestampRange = () => {
 };
 
 const parseNetworkConfig = () => {
-  const currencyFormat = getConfig()?.network?.currencyFormat;
+  const currencyFormat = getConfig().network.currencyFormat;
   if (currencyFormat) {
     const validValues = ['BOTH', 'HBARS', 'TINYBARS'];
     if (!validValues.includes(currencyFormat)) {
