@@ -101,11 +101,14 @@ spring:
       autovacuumVacuumInsertThresholdCryptoTransfer: 300000
       autovacuumVacuumInsertThresholdTokenTransfer: 2000
       autovacuumVacuumInsertThresholdTransaction: 100000
-      chunkIdInterval: 100000
-      chunkTimeInterval: 86400000000000
-      compressionAge: 604800000000000
+      cronSchedule: "'@daily'"
       db-name: ${hedera.mirror.importer.db.name}
       db-user: ${hedera.mirror.importer.db.username}
+      partitionTimeInterval: "'3 months'"
+      partitionIdInterval: "'1000000'"
+      partitionStartDate: "'3 years'"
+      schema: ${hedera.mirror.importer.db.schema}
+      shardCount: 32
     user: ${hedera.mirror.importer.db.owner}
   jpa:
     properties:

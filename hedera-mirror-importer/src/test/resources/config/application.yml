@@ -30,7 +30,8 @@ hedera:
 spring:
   flyway:
     placeholders:
-      compressionAge: 9223372036854775807 # use long max to avoid compression during test
+      partitionStartDate: "'0 days'"
+      shardCount: 2
   redis:
     host: ${embedded.redis.host}
     password: ${embedded.redis.password}
