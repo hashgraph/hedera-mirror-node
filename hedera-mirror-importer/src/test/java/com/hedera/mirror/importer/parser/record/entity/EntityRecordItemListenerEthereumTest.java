@@ -35,7 +35,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.web3j.crypto.Hash;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -139,7 +138,7 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
         var transactionBytes = Hex.decodeHex(transactionBytesString);
         return recordItemBuilder.ethereumTransaction(create)
                 .transactionBody(x -> x.setEthereumData(ByteString.copyFrom(transactionBytes)))
-                .record(x -> x.setEthereumHash(ByteString.copyFrom(Hash.sha3(transactionBytes))))
+                .record(x -> x.setEthereumHash(ByteString.copyFrom(domainBuilder.bytes(32))))
                 .build();
     }
 

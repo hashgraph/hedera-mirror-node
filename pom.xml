@@ -50,13 +50,12 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.7.5</version>
+        <version>2.7.6</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
     <properties>
         <besu.version>22.10.0</besu.version>
-        <dependency-check.version>7.2.1</dependency-check.version>
         <disruptor.version>3.4.4</disruptor.version> <!-- Used for asynchronous logging -->
         <docker-maven-plugin.version>0.40.2</docker-maven-plugin.version>
         <docker.architecture>amd64</docker.architecture>
@@ -104,9 +103,6 @@
         <sonar.issue.ignore.multicriteria.e5.resourceKey>**/stateproof/*.sql
         </sonar.issue.ignore.multicriteria.e5.resourceKey>
         <sonar.issue.ignore.multicriteria.e5.ruleKey>plsql:S1192</sonar.issue.ignore.multicriteria.e5.ruleKey>
-        <!-- Temporary fix for transient dependency security issue -->
-        <spring-security.version>5.7.5</spring-security.version>
-        <web3j.version>4.9.2</web3j.version>
     </properties>
 
     <scm>
@@ -179,29 +175,6 @@
     <build>
         <pluginManagement>
             <plugins>
-                <plugin>
-                    <groupId>org.owasp</groupId>
-                    <artifactId>dependency-check-maven</artifactId>
-                    <version>${dependency-check.version}</version>
-                    <configuration>
-                        <enableExperimental>true</enableExperimental>
-                        <failBuildOnCVSS>8</failBuildOnCVSS>
-                        <scanSet>
-                            <fileSet>
-                                <directory>${maven.multiModuleProjectDirectory}/hedera-mirror-rest/check-state-proof
-                                </directory>
-                            </fileSet>
-                            <fileSet>
-                                <directory>${maven.multiModuleProjectDirectory}/hedera-mirror-rest/monitor_apis
-                                </directory>
-                            </fileSet>
-                        </scanSet>
-                        <suppressionFiles>
-                            <suppressionFile>${maven.multiModuleProjectDirectory}/suppressions.xml</suppressionFile>
-                        </suppressionFiles>
-                        <versionCheckEnabled>false</versionCheckEnabled>
-                    </configuration>
-                </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>

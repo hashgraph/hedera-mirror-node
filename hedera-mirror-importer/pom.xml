@@ -210,11 +210,6 @@
             <artifactId>headlong</artifactId>
             <version>${headlong.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.web3j</groupId>
-            <artifactId>core</artifactId>
-            <version>${web3j.version}</version>
-        </dependency>
         <!-- Test -->
         <dependency>
             <groupId>com.github.vertical-blank</groupId>

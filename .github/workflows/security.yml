@@ -8,42 +8,6 @@ on:
     tags: [ v* ]
 
 jobs:
-  dependencies:
-    name: Dependency check
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Install JDK
-        uses: actions/setup-java@v3
-        with:
-          cache: 'maven'
-          distribution: 'temurin'
-          java-version: 17
-
-      - name: NPM cache
-        uses: actions/cache@v3
-        with:
-          key: ${{ runner.os }}-node-${{ hashFiles('./package-lock.json', './check-state-proof/package-lock.json', 'monitoring/monitor_apis/package-lock.json') }}
-          path: |
-            ~/.npm
-            .node-flywaydb
-          restore-keys: ${{ runner.os }}-node-
-
-      - name: Install REST dependencies
-        run: ./mvnw compile -pl hedera-mirror-rest
-
-      - name: Vulnerability check
-        run: ./mvnw dependency-check:aggregate
-
-      - name: Upload report
-        if: failure()
-        uses: actions/upload-artifact@v3
-        with:
-          name: dependency-check-report
-          path: target/dependency-check-report.html
-
   sonar:
     if: github.event_name == 'push' || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
     name: SonarCloud
