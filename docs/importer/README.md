@@ -74,3 +74,20 @@ node database. This process runs once a day at midnight and produces logs, metri
 For each balance file, the job verifies it sums to 50 billion hbars. For every pair of balance files, it verifies the
 aggregated hbar transfers in that period match what's expected in the next balance file. It also verifies the aggregated
 token transfers match the token balance and that the NFT transfers match the expected NFT count in the balance file.
+
+
+## Running importer for v2
+For local testing the importer can be run using the following command:
+```console
+SPRING_PROFILES_ACTIVE=v2 ./mvnw spring-boot:run -pl  hedera-mirror-importer
+```
+
+## Building the citus docker image
+DockerFile to build a custom image to be used in v2 is located in the following folder:
+```hedera-mirror-node/hedera-mirror-importer/src/main/resources/db/scripts/v2/docker```
+Depending on whether you need an alpine or debian image , the Docker files are located in the named folders respectively.
+
+The database name to be used by citus can be provided using an environment variable as follows:
+```console
+docker build --build-arg DB=mirror_node --platform linux/arm64 -t xinatswirlds/citus:11.1.4-alpine .
+```
