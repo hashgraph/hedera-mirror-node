@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/Code-Hex/go-generics-cache v1.2.1
-	github.com/coinbase/rosetta-sdk-go v0.8.1
+	github.com/coinbase/rosetta-sdk-go v0.8.2
 	github.com/cucumber/godog v0.12.5
 	github.com/ethereum/go-ethereum v1.10.26
 	github.com/go-playground/validator/v10 v10.11.1
