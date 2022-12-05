@@ -102,7 +102,6 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.data.util.Version;
-import org.web3j.crypto.Hash;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
@@ -414,7 +413,7 @@ public class RecordItemBuilder {
                 .setMaxGasAllowance(10_000L);
 
         var contractId = contractId();
-        var digestedHash = ByteString.copyFrom(Hash.sha3(transactionBytes));
+        var digestedHash = bytes(32);
         var functionResult = contractFunctionResult(contractId);
         var builder = new Builder<>(TransactionType.ETHEREUMTRANSACTION, transactionBody)
                 .record(r -> r.setContractCallResult(functionResult).setEthereumHash(digestedHash))
