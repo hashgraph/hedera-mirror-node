@@ -17,11 +17,13 @@
     <properties>
         <commons-math3.version>3.6.1</commons-math3.version>
         <hedera-sdk.version>2.19.0</hedera-sdk.version>
+        <kubernetes-server-mock.version>5.10.2</kubernetes-server-mock.version>
         <meanbean.version>3.0.0-M9</meanbean.version>
         <openapi-package>com.hedera.mirror.rest</openapi-package>
         <openapi-generator.version>6.2.0</openapi-generator.version>
         <springdoc.version>1.6.11</springdoc.version>
         <swagger-annotations.version>1.6.7</swagger-annotations.version>
+        <system-stubs-jupiter.version>2.0.1</system-stubs-jupiter.version>
     </properties>
 
     <dependencies>
@@ -139,7 +141,7 @@
         </dependency>
         <dependency>
             <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-kubernetes-fabric8-config</artifactId>
+            <artifactId>spring-cloud-starter-kubernetes-fabric8</artifactId>
             <exclusions>
                 <exclusion>
                     <groupId>org.springframework.boot</groupId>
@@ -147,7 +149,33 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-kubernetes-fabric8-config</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-starter-logging</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.fabric8</groupId>
+                    <artifactId>kubernetes-client</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
         <!-- Test -->
+        <dependency>
+            <groupId>com.github.meanbeanlib</groupId>
+            <artifactId>meanbean</artifactId>
+            <version>${meanbean.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.fabric8</groupId>
+            <artifactId>kubernetes-server-mock</artifactId>
+            <version>${kubernetes-server-mock.version}</version>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-netty-shaded</artifactId>
@@ -157,6 +185,11 @@
         <dependency>
             <groupId>io.projectreactor</groupId>
             <artifactId>reactor-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -171,9 +204,9 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>com.github.meanbeanlib</groupId>
-            <artifactId>meanbean</artifactId>
-            <version>${meanbean.version}</version>
+            <groupId>uk.org.webcompere</groupId>
+            <artifactId>system-stubs-jupiter</artifactId>
+            <version>${system-stubs-jupiter.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
