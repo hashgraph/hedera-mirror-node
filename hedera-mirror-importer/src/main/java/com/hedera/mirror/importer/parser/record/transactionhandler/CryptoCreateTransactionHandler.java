@@ -57,12 +57,12 @@ class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandle
     @Override
     @SuppressWarnings("java:S1874")
     protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
-        var record = recordItem.getRecord();
+        var transactionRecord = recordItem.getRecord();
         var transactionBody = recordItem.getTransactionBody().getCryptoCreateAccount();
         var alias =
                 transactionBody.getAlias() != ByteString.EMPTY
                         ? transactionBody.getAlias()
-                        : record.getAlias();
+                        : transactionRecord.getAlias();
         var key = transactionBody.hasKey() ? transactionBody.getKey().toByteArray() : null;
         if (alias != ByteString.EMPTY) {
             var aliasBytes = DomainUtils.toBytes(alias);
@@ -81,7 +81,7 @@ class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandle
         var evmAddress =
                 transactionBody.getEvmAddress() != ByteString.EMPTY
                         ? transactionBody.getEvmAddress()
-                        : record.getEvmAddress();
+                        : transactionRecord.getEvmAddress();
         if (evmAddress != ByteString.EMPTY) {
             entity.setEvmAddress(DomainUtils.toBytes(evmAddress));
         }
