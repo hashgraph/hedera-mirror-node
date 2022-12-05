@@ -127,7 +127,15 @@ class ContractService extends BaseService {
       on ${Entity.getFullName(Entity.ID)} = ${ContractState.getFullName(ContractState.CONTRACT_ID)}
     `;
 
-  static contractLogsQuery = `select ${contractLogsFields} from ${ContractLog.tableName} ${ContractLog.tableAlias}`;
+  static contractLogsWithEvmAddressQuery = `
+    with ${ContractService.entityCTE}
+    select
+      ${contractLogsFields},
+      coalesce(${Entity.getFullName(Entity.EVM_ADDRESS)},'') as ${Entity.EVM_ADDRESS}
+    from ${ContractLog.tableName} ${ContractLog.tableAlias}
+      left join ${Entity.tableName} ${Entity.tableAlias}
+      on ${Entity.getFullName(Entity.ID)} = ${ContractLog.getFullName(ContractLog.CONTRACT_ID)}
+    `;
 
   static contractLogsExtendedQuery = `
     with ${RecordFile.tableName} as (
@@ -420,7 +428,7 @@ class ContractService extends BaseService {
     const whereClause = `where ${ContractLog.CONSENSUS_TIMESTAMP} ${timestampsOpAndValue}`;
     const orderClause = `order by ${ContractLog.CONSENSUS_TIMESTAMP}, ${ContractLog.INDEX}`;
 
-    const query = [ContractService.contractLogsQuery, whereClause, orderClause].join('\n');
+    const query = [ContractService.contractLogsWithEvmAddressQuery, whereClause, orderClause].join('\n');
     const rows = await super.getRows(query, params, 'getContractLogsByTimestamps');
     return rows.map((row) => new ContractLog(row));
   }
