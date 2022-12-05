@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.record.transactionhandler;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,12 +12,11 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import com.google.protobuf.ByteString;
-import javax.inject.Named;
+package com.hedera.mirror.importer.parser.record.transactionhandler;
 
+import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
@@ -33,13 +27,20 @@ import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.util.Utility;
+import javax.inject.Named;
 
 @Named
 class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
-    CryptoCreateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
-                                   RecordParserProperties recordParserProperties) {
-        super(entityIdService, entityListener, recordParserProperties, TransactionType.CRYPTOCREATEACCOUNT);
+    CryptoCreateTransactionHandler(
+            EntityIdService entityIdService,
+            EntityListener entityListener,
+            RecordParserProperties recordParserProperties) {
+        super(
+                entityIdService,
+                entityListener,
+                recordParserProperties,
+                TransactionType.CRYPTOCREATEACCOUNT);
     }
 
     @Override
@@ -49,27 +50,44 @@ class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandle
 
     @Override
     protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
-        transaction.setInitialBalance(recordItem.getTransactionBody().getCryptoCreateAccount().getInitialBalance());
+        transaction.setInitialBalance(
+                recordItem.getTransactionBody().getCryptoCreateAccount().getInitialBalance());
     }
 
     @Override
     @SuppressWarnings("java:S1874")
     protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
+        var transactionRecord = recordItem.getRecord();
         var transactionBody = recordItem.getTransactionBody().getCryptoCreateAccount();
-
-        if (recordItem.getRecord().getAlias() != ByteString.EMPTY) {
-            var alias = DomainUtils.toBytes(recordItem.getRecord().getAlias());
-            entity.setAlias(alias);
-            entity.setEvmAddress(Utility.aliasToEvmAddress(alias));
+        var alias =
+                transactionBody.getAlias() != ByteString.EMPTY
+                        ? transactionBody.getAlias()
+                        : transactionRecord.getAlias();
+        var key = transactionBody.hasKey() ? transactionBody.getKey().toByteArray() : null;
+        if (alias != ByteString.EMPTY) {
+            var aliasBytes = DomainUtils.toBytes(alias);
+            entity.setAlias(aliasBytes);
             entityIdService.notify(entity);
+
+            if (key == null || key.length == 0) {
+                entity.setKey(aliasBytes);
+            }
+        }
+
+        if (key != null && key.length > 0) {
+            entity.setKey(key);
+        }
+
+        var evmAddress =
+                transactionBody.getEvmAddress() != ByteString.EMPTY
+                        ? transactionBody.getEvmAddress()
+                        : transactionRecord.getEvmAddress();
+        if (evmAddress != ByteString.EMPTY) {
+            entity.setEvmAddress(DomainUtils.toBytes(evmAddress));
         }
 
         if (transactionBody.hasAutoRenewPeriod()) {
             entity.setAutoRenewPeriod(transactionBody.getAutoRenewPeriod().getSeconds());
-        }
-
-        if (transactionBody.hasKey()) {
-            entity.setKey(transactionBody.getKey().toByteArray());
         }
 
         if (transactionBody.hasProxyAccountID()) {

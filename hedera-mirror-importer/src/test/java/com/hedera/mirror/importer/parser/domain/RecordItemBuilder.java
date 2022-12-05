@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.parser.domain;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2021-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.importer.parser.domain;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.parser.domain;
 
 import static com.hedera.mirror.common.domain.DomainBuilder.KEY_LENGTH_ECDSA;
 import static com.hedera.mirror.common.domain.DomainBuilder.KEY_LENGTH_ED25519;
@@ -32,6 +28,20 @@ import com.google.protobuf.BytesValue;
 import com.google.protobuf.GeneratedMessageV3;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
+import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.util.Utility;
+import com.hedera.services.stream.proto.CallOperationType;
+import com.hedera.services.stream.proto.ContractAction;
+import com.hedera.services.stream.proto.ContractActionType;
+import com.hedera.services.stream.proto.ContractActions;
+import com.hedera.services.stream.proto.ContractBytecode;
+import com.hedera.services.stream.proto.ContractStateChange;
+import com.hedera.services.stream.proto.ContractStateChanges;
+import com.hedera.services.stream.proto.StorageChange;
+import com.hedera.services.stream.proto.TransactionSidecarRecord;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
@@ -104,24 +114,7 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.data.util.Version;
 import org.web3j.crypto.Hash;
 
-import com.hedera.mirror.common.domain.transaction.RecordFile;
-import com.hedera.mirror.common.domain.transaction.RecordItem;
-import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.util.Utility;
-import com.hedera.services.stream.proto.CallOperationType;
-import com.hedera.services.stream.proto.ContractAction;
-import com.hedera.services.stream.proto.ContractActionType;
-import com.hedera.services.stream.proto.ContractActions;
-import com.hedera.services.stream.proto.ContractBytecode;
-import com.hedera.services.stream.proto.ContractStateChange;
-import com.hedera.services.stream.proto.ContractStateChanges;
-import com.hedera.services.stream.proto.StorageChange;
-import com.hedera.services.stream.proto.TransactionSidecarRecord;
-
-/**
- * Generates typical protobuf request and response objects with all fields populated.
- */
+/** Generates typical protobuf request and response objects with all fields populated. */
 @Named
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class RecordItemBuilder {
@@ -142,9 +135,11 @@ public class RecordItemBuilder {
 
     {
         // Dynamically lookup method references for every transaction body builder in this class
-        TestUtils.gettersByType(this, Builder.class).forEach(s -> {
-            builders.put(s.get().type, s);
-        });
+        TestUtils.gettersByType(this, Builder.class)
+                .forEach(
+                        s -> {
+                            builders.put(s.get().type, s);
+                        });
     }
 
     public Supplier<Builder> lookup(TransactionType type) {
@@ -152,22 +147,24 @@ public class RecordItemBuilder {
     }
 
     public Builder<ConsensusSubmitMessageTransactionBody.Builder> consensusSubmitMessage() {
-        var transactionBody = ConsensusSubmitMessageTransactionBody.newBuilder()
-                .setMessage(bytes(128))
-                .setTopicID(topicId());
+        var transactionBody =
+                ConsensusSubmitMessageTransactionBody.newBuilder()
+                        .setMessage(bytes(128))
+                        .setTopicID(topicId());
         return new Builder<>(TransactionType.CONSENSUSSUBMITMESSAGE, transactionBody)
                 .receipt(r -> r.setTopicSequenceNumber(id()));
     }
 
     public Builder<ConsensusUpdateTopicTransactionBody.Builder> consensusUpdateTopic() {
-        var transactionBody = ConsensusUpdateTopicTransactionBody.newBuilder()
-                .setAdminKey(key())
-                .setAutoRenewAccount(accountId())
-                .setAutoRenewPeriod(duration(3600))
-                .setExpirationTime(timestamp())
-                .setMemo(StringValue.of(text(16)))
-                .setSubmitKey(key())
-                .setTopicID(topicId());
+        var transactionBody =
+                ConsensusUpdateTopicTransactionBody.newBuilder()
+                        .setAdminKey(key())
+                        .setAutoRenewAccount(accountId())
+                        .setAutoRenewPeriod(duration(3600))
+                        .setExpirationTime(timestamp())
+                        .setMemo(StringValue.of(text(16)))
+                        .setSubmitKey(key())
+                        .setTopicID(topicId());
         return new Builder<>(TransactionType.CONSENSUSUPDATETOPIC, transactionBody);
     }
 
@@ -176,15 +173,20 @@ public class RecordItemBuilder {
     }
 
     public Builder<ContractCallTransactionBody.Builder> contractCall(ContractID contractId) {
-        ContractCallTransactionBody.Builder transactionBody = ContractCallTransactionBody.newBuilder()
-                .setAmount(5_000L)
-                .setContractID(contractId)
-                .setFunctionParameters(bytes(64))
-                .setGas(10_000L);
+        ContractCallTransactionBody.Builder transactionBody =
+                ContractCallTransactionBody.newBuilder()
+                        .setAmount(5_000L)
+                        .setContractID(contractId)
+                        .setFunctionParameters(bytes(64))
+                        .setGas(10_000L);
 
         return new Builder<>(TransactionType.CONTRACTCALL, transactionBody)
                 .receipt(r -> r.setContractID(contractId))
-                .record(r -> r.setContractCallResult(contractFunctionResult(contractId).clearCreatedContractIDs()))
+                .record(
+                        r ->
+                                r.setContractCallResult(
+                                        contractFunctionResult(contractId)
+                                                .clearCreatedContractIDs()))
                 .sidecarRecords(r -> r.add(contractStateChanges(contractId)))
                 .sidecarRecords(r -> r.add(contractActions()));
     }
@@ -194,43 +196,50 @@ public class RecordItemBuilder {
     }
 
     public Builder<ContractCreateTransactionBody.Builder> contractCreate(ContractID contractId) {
-        ContractCreateTransactionBody.Builder transactionBody = ContractCreateTransactionBody.newBuilder()
-                .setAdminKey(key())
-                .setAutoRenewAccountId(accountId())
-                .setAutoRenewPeriod(duration(30))
-                .setConstructorParameters(bytes(64))
-                .setDeclineReward(true)
-                .setFileID(fileId())
-                .setGas(10_000L)
-                .setInitialBalance(20_000L)
-                .setMaxAutomaticTokenAssociations(5)
-                .setMemo(text(16))
-                .setNewRealmAdminKey(key())
-                .setProxyAccountID(accountId())
-                .setRealmID(REALM_ID)
-                .setShardID(SHARD_ID)
-                .setStakedNodeId(1L);
+        ContractCreateTransactionBody.Builder transactionBody =
+                ContractCreateTransactionBody.newBuilder()
+                        .setAdminKey(key())
+                        .setAutoRenewAccountId(accountId())
+                        .setAutoRenewPeriod(duration(30))
+                        .setConstructorParameters(bytes(64))
+                        .setDeclineReward(true)
+                        .setFileID(fileId())
+                        .setGas(10_000L)
+                        .setInitialBalance(20_000L)
+                        .setMaxAutomaticTokenAssociations(5)
+                        .setMemo(text(16))
+                        .setNewRealmAdminKey(key())
+                        .setProxyAccountID(accountId())
+                        .setRealmID(REALM_ID)
+                        .setShardID(SHARD_ID)
+                        .setStakedNodeId(1L);
 
         return new Builder<>(TransactionType.CONTRACTCREATEINSTANCE, transactionBody)
                 .receipt(r -> r.setContractID(contractId))
-                .record(r -> r.setContractCreateResult(contractFunctionResult(contractId)
-                        .addCreatedContractIDs(contractId)))
+                .record(
+                        r ->
+                                r.setContractCreateResult(
+                                        contractFunctionResult(contractId)
+                                                .addCreatedContractIDs(contractId)))
                 .sidecarRecords(r -> r.add(contractStateChanges(contractId)))
-                .sidecarRecords(r -> {
-                    var contractActions = contractActions();
-                    contractActions.getActionsBuilder()
-                            .getContractActionsBuilderList()
-                            .forEach(ContractAction.Builder::clearRecipient);
-                    r.add(contractActions);
-                })
+                .sidecarRecords(
+                        r -> {
+                            var contractActions = contractActions();
+                            contractActions
+                                    .getActionsBuilder()
+                                    .getContractActionsBuilderList()
+                                    .forEach(ContractAction.Builder::clearRecipient);
+                            r.add(contractActions);
+                        })
                 .sidecarRecords(r -> r.add(contractBytecode(contractId)));
     }
 
     public Builder<ContractDeleteTransactionBody.Builder> contractDelete() {
         var contractId = contractId();
-        ContractDeleteTransactionBody.Builder transactionBody = ContractDeleteTransactionBody.newBuilder()
-                .setContractID(contractId)
-                .setTransferAccountID(accountId());
+        ContractDeleteTransactionBody.Builder transactionBody =
+                ContractDeleteTransactionBody.newBuilder()
+                        .setContractID(contractId)
+                        .setTransferAccountID(accountId());
 
         return new Builder<>(TransactionType.CONTRACTDELETEINSTANCE, transactionBody)
                 .receipt(r -> r.setContractID(contractId));
@@ -251,123 +260,140 @@ public class RecordItemBuilder {
                 .setFunctionParameters(bytes(64))
                 .setGas(10_000L)
                 .setGasUsed(1000L)
-                .addLogInfo(ContractLoginfo.newBuilder()
-                        .setBloom(bytes(256))
-                        .setContractID(contractId)
-                        .setData(bytes(128))
-                        .addTopic(bytes(32))
-                        .addTopic(bytes(32))
-                        .addTopic(bytes(32))
-                        .addTopic(bytes(32))
-                        .build())
-                .addLogInfo(ContractLoginfo.newBuilder()
-                        .setBloom(bytes(256))
-                        .setContractID(contractId())
-                        .setData(bytes(128))
-                        .addTopic(bytes(32))
-                        .addTopic(bytes(32))
-                        .addTopic(bytes(32))
-                        .addTopic(bytes(32))
-                        .build())
+                .addLogInfo(
+                        ContractLoginfo.newBuilder()
+                                .setBloom(bytes(256))
+                                .setContractID(contractId)
+                                .setData(bytes(128))
+                                .addTopic(bytes(32))
+                                .addTopic(bytes(32))
+                                .addTopic(bytes(32))
+                                .addTopic(bytes(32))
+                                .build())
+                .addLogInfo(
+                        ContractLoginfo.newBuilder()
+                                .setBloom(bytes(256))
+                                .setContractID(contractId())
+                                .setData(bytes(128))
+                                .addTopic(bytes(32))
+                                .addTopic(bytes(32))
+                                .addTopic(bytes(32))
+                                .addTopic(bytes(32))
+                                .build())
                 .setSenderId(accountId());
     }
 
     public Builder<ContractUpdateTransactionBody.Builder> contractUpdate() {
         var contractId = contractId();
-        ContractUpdateTransactionBody.Builder transactionBody = ContractUpdateTransactionBody.newBuilder()
-                .setAdminKey(key())
-                .setAutoRenewAccountId(accountId())
-                .setAutoRenewPeriod(duration(30))
-                .setContractID(contractId)
-                .setDeclineReward(BoolValue.of(true))
-                .setExpirationTime(timestamp())
-                .setMaxAutomaticTokenAssociations(Int32Value.of(10))
-                .setMemoWrapper(StringValue.of(text(16)))
-                .setProxyAccountID(accountId())
-                .setStakedAccountId(accountId());
+        ContractUpdateTransactionBody.Builder transactionBody =
+                ContractUpdateTransactionBody.newBuilder()
+                        .setAdminKey(key())
+                        .setAutoRenewAccountId(accountId())
+                        .setAutoRenewPeriod(duration(30))
+                        .setContractID(contractId)
+                        .setDeclineReward(BoolValue.of(true))
+                        .setExpirationTime(timestamp())
+                        .setMaxAutomaticTokenAssociations(Int32Value.of(10))
+                        .setMemoWrapper(StringValue.of(text(16)))
+                        .setProxyAccountID(accountId())
+                        .setStakedAccountId(accountId());
 
         return new Builder<>(TransactionType.CONTRACTUPDATEINSTANCE, transactionBody)
                 .receipt(r -> r.setContractID(contractId));
     }
 
     public Builder<CryptoApproveAllowanceTransactionBody.Builder> cryptoApproveAllowance() {
-        var builder = CryptoApproveAllowanceTransactionBody.newBuilder()
-                .addCryptoAllowances(CryptoAllowance.newBuilder()
-                        .setAmount(10L)
-                        .setOwner(accountId())
-                        .setSpender(accountId()))
-                .addNftAllowances(NftAllowance.newBuilder()
-                        .setOwner(accountId())
-                        .addSerialNumbers(1L)
-                        .addSerialNumbers(2L)
-                        .setSpender(accountId())
-                        .setTokenId(tokenId()))
-                .addNftAllowances(NftAllowance.newBuilder()
-                        .setApprovedForAll(BoolValue.of(false))
-                        .setOwner(accountId())
-                        .setSpender(accountId())
-                        .setTokenId(tokenId()))
-                .addNftAllowances(NftAllowance.newBuilder()
-                        .setApprovedForAll(BoolValue.of(true))
-                        .setOwner(accountId())
-                        .setSpender(accountId())
-                        .setTokenId(tokenId()))
-                .addNftAllowances(NftAllowance.newBuilder()
-                        .setApprovedForAll(BoolValue.of(true))
-                        .setOwner(accountId())
-                        .addSerialNumbers(2L)
-                        .addSerialNumbers(3L)
-                        .setSpender(accountId())
-                        .setTokenId(tokenId()))
-                .addTokenAllowances(TokenAllowance.newBuilder()
-                        .setAmount(10L)
-                        .setOwner(accountId())
-                        .setSpender(accountId())
-                        .setTokenId(tokenId()));
+        var builder =
+                CryptoApproveAllowanceTransactionBody.newBuilder()
+                        .addCryptoAllowances(
+                                CryptoAllowance.newBuilder()
+                                        .setAmount(10L)
+                                        .setOwner(accountId())
+                                        .setSpender(accountId()))
+                        .addNftAllowances(
+                                NftAllowance.newBuilder()
+                                        .setOwner(accountId())
+                                        .addSerialNumbers(1L)
+                                        .addSerialNumbers(2L)
+                                        .setSpender(accountId())
+                                        .setTokenId(tokenId()))
+                        .addNftAllowances(
+                                NftAllowance.newBuilder()
+                                        .setApprovedForAll(BoolValue.of(false))
+                                        .setOwner(accountId())
+                                        .setSpender(accountId())
+                                        .setTokenId(tokenId()))
+                        .addNftAllowances(
+                                NftAllowance.newBuilder()
+                                        .setApprovedForAll(BoolValue.of(true))
+                                        .setOwner(accountId())
+                                        .setSpender(accountId())
+                                        .setTokenId(tokenId()))
+                        .addNftAllowances(
+                                NftAllowance.newBuilder()
+                                        .setApprovedForAll(BoolValue.of(true))
+                                        .setOwner(accountId())
+                                        .addSerialNumbers(2L)
+                                        .addSerialNumbers(3L)
+                                        .setSpender(accountId())
+                                        .setTokenId(tokenId()))
+                        .addTokenAllowances(
+                                TokenAllowance.newBuilder()
+                                        .setAmount(10L)
+                                        .setOwner(accountId())
+                                        .setSpender(accountId())
+                                        .setTokenId(tokenId()));
         // duplicate allowances
         builder.addCryptoAllowances(builder.getCryptoAllowances(0))
                 .addTokenAllowances(builder.getTokenAllowances(0))
                 .addNftAllowances(builder.getNftAllowances(0))
-                .addNftAllowances(builder.getNftAllowances(2).toBuilder().setApprovedForAll(BoolValue.of(false)));
+                .addNftAllowances(
+                        builder.getNftAllowances(2).toBuilder()
+                                .setApprovedForAll(BoolValue.of(false)));
         return new Builder<>(TransactionType.CRYPTOAPPROVEALLOWANCE, builder);
     }
 
     public Builder<CryptoCreateTransactionBody.Builder> cryptoCreate() {
-        var builder = CryptoCreateTransactionBody.newBuilder()
-                .setAutoRenewPeriod(duration(30))
-                .setDeclineReward(true)
-                .setInitialBalance(1000L)
-                .setKey(key())
-                .setMaxAutomaticTokenAssociations(2)
-                .setMemo(text(16))
-                .setProxyAccountID(accountId())
-                .setRealmID(REALM_ID)
-                .setReceiverSigRequired(false)
-                .setShardID(SHARD_ID)
-                .setStakedNodeId(1L);
+        var builder =
+                CryptoCreateTransactionBody.newBuilder()
+                        .setAutoRenewPeriod(duration(30))
+                        .setDeclineReward(true)
+                        .setInitialBalance(1000L)
+                        .setKey(key())
+                        .setMaxAutomaticTokenAssociations(2)
+                        .setMemo(text(16))
+                        .setProxyAccountID(accountId())
+                        .setRealmID(REALM_ID)
+                        .setReceiverSigRequired(false)
+                        .setShardID(SHARD_ID)
+                        .setStakedNodeId(1L);
         return new Builder<>(TransactionType.CRYPTOCREATEACCOUNT, builder)
                 .receipt(r -> r.setAccountID(accountId()));
     }
 
     public Builder<CryptoDeleteTransactionBody.Builder> cryptoDelete() {
-        var builder = CryptoDeleteTransactionBody.newBuilder()
-                .setDeleteAccountID(accountId())
-                .setTransferAccountID(accountId());
+        var builder =
+                CryptoDeleteTransactionBody.newBuilder()
+                        .setDeleteAccountID(accountId())
+                        .setTransferAccountID(accountId());
         return new Builder<>(TransactionType.CRYPTODELETE, builder);
     }
 
     public Builder<CryptoDeleteAllowanceTransactionBody.Builder> cryptoDeleteAllowance() {
-        var builder = CryptoDeleteAllowanceTransactionBody.newBuilder()
-                .addNftAllowances(NftRemoveAllowance.newBuilder()
-                        .setOwner(accountId())
-                        .addSerialNumbers(1L)
-                        .addSerialNumbers(2L)
-                        .setTokenId(tokenId()))
-                .addNftAllowances(NftRemoveAllowance.newBuilder()
-                        .setOwner(accountId())
-                        .addSerialNumbers(2L)
-                        .addSerialNumbers(3L)
-                        .setTokenId(tokenId()));
+        var builder =
+                CryptoDeleteAllowanceTransactionBody.newBuilder()
+                        .addNftAllowances(
+                                NftRemoveAllowance.newBuilder()
+                                        .setOwner(accountId())
+                                        .addSerialNumbers(1L)
+                                        .addSerialNumbers(2L)
+                                        .setTokenId(tokenId()))
+                        .addNftAllowances(
+                                NftRemoveAllowance.newBuilder()
+                                        .setOwner(accountId())
+                                        .addSerialNumbers(2L)
+                                        .addSerialNumbers(3L)
+                                        .setTokenId(tokenId()));
         return new Builder<>(TransactionType.CRYPTODELETEALLOWANCE, builder);
     }
 
@@ -377,14 +403,15 @@ public class RecordItemBuilder {
 
     public Builder<CryptoUpdateTransactionBody.Builder> cryptoUpdate() {
         var accountId = accountId();
-        var builder = CryptoUpdateTransactionBody.newBuilder()
-                .setAutoRenewPeriod(duration(30))
-                .setAccountIDToUpdate(accountId)
-                .setDeclineReward(BoolValue.of(true))
-                .setKey(key())
-                .setProxyAccountID(accountId())
-                .setReceiverSigRequired(false)
-                .setStakedNodeId(1L);
+        var builder =
+                CryptoUpdateTransactionBody.newBuilder()
+                        .setAutoRenewPeriod(duration(30))
+                        .setAccountIDToUpdate(accountId)
+                        .setDeclineReward(BoolValue.of(true))
+                        .setKey(key())
+                        .setProxyAccountID(accountId())
+                        .setReceiverSigRequired(false)
+                        .setStakedNodeId(1L);
         return new Builder<>(TransactionType.CRYPTOUPDATEACCOUNT, builder)
                 .receipt(r -> r.setAccountID(accountId));
     }
@@ -398,7 +425,8 @@ public class RecordItemBuilder {
     }
 
     private FixedFee.Builder fixedFee() {
-        return FixedFee.newBuilder().setAmount(100L)
+        return FixedFee.newBuilder()
+                .setAmount(100L)
                 .setDenominatingTokenId(TokenID.getDefaultInstance());
     }
 
@@ -409,18 +437,23 @@ public class RecordItemBuilder {
     @SneakyThrows
     public Builder<EthereumTransactionBody.Builder> ethereumTransaction(boolean create) {
         var transactionBytes = Hex.decodeHex(LONDON_RAW_TX);
-        EthereumTransactionBody.Builder transactionBody = EthereumTransactionBody.newBuilder()
-                .setEthereumData(ByteString.copyFrom(transactionBytes))
-                .setMaxGasAllowance(10_000L);
+        EthereumTransactionBody.Builder transactionBody =
+                EthereumTransactionBody.newBuilder()
+                        .setEthereumData(ByteString.copyFrom(transactionBytes))
+                        .setMaxGasAllowance(10_000L);
 
         var contractId = contractId();
         var digestedHash = ByteString.copyFrom(Hash.sha3(transactionBytes));
         var functionResult = contractFunctionResult(contractId);
-        var builder = new Builder<>(TransactionType.ETHEREUMTRANSACTION, transactionBody)
-                .record(r -> r.setContractCallResult(functionResult).setEthereumHash(digestedHash))
-                .recordItem(r -> r.hapiVersion(new Version(0, 26, 0)))
-                .sidecarRecords(r -> r.add(contractStateChanges(contractId)))
-                .sidecarRecords(r -> r.add(contractActions()));
+        var builder =
+                new Builder<>(TransactionType.ETHEREUMTRANSACTION, transactionBody)
+                        .record(
+                                r ->
+                                        r.setContractCallResult(functionResult)
+                                                .setEthereumHash(digestedHash))
+                        .recordItem(r -> r.hapiVersion(new Version(0, 26, 0)))
+                        .sidecarRecords(r -> r.add(contractStateChanges(contractId)))
+                        .sidecarRecords(r -> r.add(contractActions()));
 
         if (create) {
             transactionBody.setCallData(fileId());
@@ -431,16 +464,19 @@ public class RecordItemBuilder {
     }
 
     public Builder<NodeStakeUpdateTransactionBody.Builder> nodeStakeUpdate() {
-        var builder = NodeStakeUpdateTransactionBody.newBuilder()
-                .setEndOfStakingPeriod(timestamp())
-                .setMaxStakingRewardRatePerHbar(17_808L)
-                .setNodeRewardFeeFraction(Fraction.newBuilder().setNumerator(0L).setDenominator(100L))
-                .setStakingPeriod(1440)
-                .setStakingPeriodsStored(365)
-                .setStakingRewardFeeFraction(Fraction.newBuilder().setNumerator(100L).setDenominator(100L))
-                .setStakingRewardRate(100_000_000_000L)
-                .setStakingStartThreshold(25_000_000_000_000_000L)
-                .addNodeStake(nodeStake());
+        var builder =
+                NodeStakeUpdateTransactionBody.newBuilder()
+                        .setEndOfStakingPeriod(timestamp())
+                        .setMaxStakingRewardRatePerHbar(17_808L)
+                        .setNodeRewardFeeFraction(
+                                Fraction.newBuilder().setNumerator(0L).setDenominator(100L))
+                        .setStakingPeriod(1440)
+                        .setStakingPeriodsStored(365)
+                        .setStakingRewardFeeFraction(
+                                Fraction.newBuilder().setNumerator(100L).setDenominator(100L))
+                        .setStakingRewardRate(100_000_000_000L)
+                        .setStakingStartThreshold(25_000_000_000_000_000L)
+                        .addNodeStake(nodeStake());
         return new Builder<>(TransactionType.NODESTAKEUPDATE, builder);
     }
 
@@ -452,27 +488,30 @@ public class RecordItemBuilder {
         var builder = UtilPrngTransactionBody.newBuilder().setRange(range);
         var transactionBodyBuilder = new Builder<>(TransactionType.UTILPRNG, builder);
 
-        return transactionBodyBuilder.record(r -> {
-            if (range == 0) {
-                r.setPrngBytes(ByteString.copyFrom(randomBytes(382)));
-            } else if (range > 0) {
-                r.setPrngNumber(random.nextInt());
-            }
-        });
+        return transactionBodyBuilder.record(
+                r -> {
+                    if (range == 0) {
+                        r.setPrngBytes(ByteString.copyFrom(randomBytes(382)));
+                    } else if (range > 0) {
+                        r.setPrngNumber(random.nextInt());
+                    }
+                });
     }
 
     public Builder<ScheduleCreateTransactionBody.Builder> scheduleCreate() {
-        var scheduledTransaction = SchedulableTransactionBody.newBuilder()
-                .setTransactionFee(1_00_000_000)
-                .setMemo(text(16))
-                .setCryptoTransfer(cryptoTransferTransactionBody());
-        var builder = ScheduleCreateTransactionBody.newBuilder()
-                .setScheduledTransactionBody(scheduledTransaction)
-                .setMemo(text(16))
-                .setAdminKey(key())
-                .setPayerAccountID(accountId())
-                .setExpirationTime(timestamp())
-                .setWaitForExpiry(true);
+        var scheduledTransaction =
+                SchedulableTransactionBody.newBuilder()
+                        .setTransactionFee(1_00_000_000)
+                        .setMemo(text(16))
+                        .setCryptoTransfer(cryptoTransferTransactionBody());
+        var builder =
+                ScheduleCreateTransactionBody.newBuilder()
+                        .setScheduledTransactionBody(scheduledTransaction)
+                        .setMemo(text(16))
+                        .setAdminKey(key())
+                        .setPayerAccountID(accountId())
+                        .setExpirationTime(timestamp())
+                        .setWaitForExpiry(true);
         return new Builder<>(TransactionType.SCHEDULECREATE, builder);
     }
 
@@ -493,50 +532,53 @@ public class RecordItemBuilder {
     }
 
     public Builder<TokenUpdateTransactionBody.Builder> tokenUpdate() {
-        var transactionBody = TokenUpdateTransactionBody.newBuilder()
-                .setAdminKey(key())
-                .setAutoRenewAccount(accountId())
-                .setAutoRenewPeriod(duration(3600))
-                .setExpiry(timestamp())
-                .setFeeScheduleKey(key())
-                .setFreezeKey(key())
-                .setKycKey(key())
-                .setMemo(StringValue.of(text(16)))
-                .setName(text(4))
-                .setPauseKey(key())
-                .setSupplyKey(key())
-                .setSymbol(text(4))
-                .setToken(tokenId())
-                .setTreasury(accountId())
-                .setWipeKey(key());
+        var transactionBody =
+                TokenUpdateTransactionBody.newBuilder()
+                        .setAdminKey(key())
+                        .setAutoRenewAccount(accountId())
+                        .setAutoRenewPeriod(duration(3600))
+                        .setExpiry(timestamp())
+                        .setFeeScheduleKey(key())
+                        .setFreezeKey(key())
+                        .setKycKey(key())
+                        .setMemo(StringValue.of(text(16)))
+                        .setName(text(4))
+                        .setPauseKey(key())
+                        .setSupplyKey(key())
+                        .setSymbol(text(4))
+                        .setToken(tokenId())
+                        .setTreasury(accountId())
+                        .setWipeKey(key());
         return new Builder<>(TransactionType.TOKENUPDATE, transactionBody);
     }
 
     public Builder<TokenCreateTransactionBody.Builder> tokenCreate() {
-        var transactionBody = TokenCreateTransactionBody.newBuilder()
-                .setAdminKey(key())
-                .setAutoRenewAccount(accountId())
-                .setAutoRenewPeriod(duration(3600))
-                .setExpiry(timestamp())
-                .setFeeScheduleKey(key())
-                .setFreezeKey(key())
-                .setKycKey(key())
-                .setMemo(String.valueOf(text(16)))
-                .setName(text(4))
-                .setPauseKey(key())
-                .setSupplyKey(key())
-                .setSymbol(text(4))
-                .setTreasury(accountId())
-                .addCustomFees(customFee())
-                .setWipeKey(key());
+        var transactionBody =
+                TokenCreateTransactionBody.newBuilder()
+                        .setAdminKey(key())
+                        .setAutoRenewAccount(accountId())
+                        .setAutoRenewPeriod(duration(3600))
+                        .setExpiry(timestamp())
+                        .setFeeScheduleKey(key())
+                        .setFreezeKey(key())
+                        .setKycKey(key())
+                        .setMemo(String.valueOf(text(16)))
+                        .setName(text(4))
+                        .setPauseKey(key())
+                        .setSupplyKey(key())
+                        .setSymbol(text(4))
+                        .setTreasury(accountId())
+                        .addCustomFees(customFee())
+                        .setWipeKey(key());
         return new Builder<>(TransactionType.TOKENCREATION, transactionBody)
                 .receipt(r -> r.setTokenID(tokenId()));
     }
 
     public Builder<TokenFeeScheduleUpdateTransactionBody.Builder> tokenFeeScheduleUpdate() {
-        var transactionBody = TokenFeeScheduleUpdateTransactionBody.newBuilder()
-                .setTokenId(tokenId())
-                .addCustomFees(customFee());
+        var transactionBody =
+                TokenFeeScheduleUpdateTransactionBody.newBuilder()
+                        .setTokenId(tokenId())
+                        .addCustomFees(customFee());
         return new Builder<>(TransactionType.TOKENFEESCHEDULEUPDATE, transactionBody);
     }
 
@@ -562,21 +604,32 @@ public class RecordItemBuilder {
 
     private CryptoTransferTransactionBody.Builder cryptoTransferTransactionBody() {
         return CryptoTransferTransactionBody.newBuilder()
-                .setTransfers(TransferList.newBuilder()
-                        .addAccountAmounts(AccountAmount.newBuilder().setAccountID(accountId()).setAmount(-100))
-                        .addAccountAmounts(AccountAmount.newBuilder().setAccountID(accountId()).setAmount(100)));
+                .setTransfers(
+                        TransferList.newBuilder()
+                                .addAccountAmounts(
+                                        AccountAmount.newBuilder()
+                                                .setAccountID(accountId())
+                                                .setAmount(-100))
+                                .addAccountAmounts(
+                                        AccountAmount.newBuilder()
+                                                .setAccountID(accountId())
+                                                .setAmount(100)));
     }
 
     private TransactionSidecarRecord.Builder contractActions() {
-        return TransactionSidecarRecord.newBuilder().setActions(ContractActions.newBuilder()
-                .addContractActions(contractAction())
-                .addContractActions(contractAction()
-                        .setCallingAccount(accountId())
-                        .setError(bytes(10))
-                        .setRecipientAccount(accountId()))
-                .addContractActions(contractAction()
-                        .setInvalidSolidityAddress(bytes(20))
-                        .setRevertReason(bytes(10))));
+        return TransactionSidecarRecord.newBuilder()
+                .setActions(
+                        ContractActions.newBuilder()
+                                .addContractActions(contractAction())
+                                .addContractActions(
+                                        contractAction()
+                                                .setCallingAccount(accountId())
+                                                .setError(bytes(10))
+                                                .setRecipientAccount(accountId()))
+                                .addContractActions(
+                                        contractAction()
+                                                .setTargetedAddress(bytes(20))
+                                                .setRevertReason(bytes(10))));
     }
 
     private ContractAction.Builder contractAction() {
@@ -594,12 +647,12 @@ public class RecordItemBuilder {
     }
 
     private TransactionSidecarRecord.Builder contractBytecode(ContractID contractId) {
-        var contractBytecode = ContractBytecode.newBuilder()
-                .setContractId(contractId)
-                .setInitcode(bytes(2048))
-                .setRuntimeBytecode(bytes(3048));
-        return TransactionSidecarRecord.newBuilder()
-                .setBytecode(contractBytecode);
+        var contractBytecode =
+                ContractBytecode.newBuilder()
+                        .setContractId(contractId)
+                        .setInitcode(bytes(2048))
+                        .setRuntimeBytecode(bytes(3048));
+        return TransactionSidecarRecord.newBuilder().setBytecode(contractBytecode);
     }
 
     private ContractID contractId() {
@@ -607,12 +660,16 @@ public class RecordItemBuilder {
     }
 
     private TransactionSidecarRecord.Builder contractStateChanges(ContractID contractId) {
-        var contractStateChange = ContractStateChange.newBuilder()
-                .setContractId(contractId)
-                .addStorageChanges(storageChange())
-                .addStorageChanges(storageChange().setValueWritten(BytesValue.of(ByteString.EMPTY)));
+        var contractStateChange =
+                ContractStateChange.newBuilder()
+                        .setContractId(contractId)
+                        .addStorageChanges(storageChange())
+                        .addStorageChanges(
+                                storageChange().setValueWritten(BytesValue.of(ByteString.EMPTY)));
         return TransactionSidecarRecord.newBuilder()
-                .setStateChanges(ContractStateChanges.newBuilder().addContractStateChanges(contractStateChange));
+                .setStateChanges(
+                        ContractStateChanges.newBuilder()
+                                .addContractStateChanges(contractStateChange));
     }
 
     private Duration duration(int seconds) {
@@ -693,7 +750,8 @@ public class RecordItemBuilder {
 
         private Builder(TransactionType type, T transactionBody) {
             this.payerAccountId = accountId();
-            this.recordItemBuilder = RecordItem.builder().hapiVersion(RecordFile.HAPI_VERSION_NOT_SET);
+            this.recordItemBuilder =
+                    RecordItem.builder().hapiVersion(RecordFile.HAPI_VERSION_NOT_SET);
             this.sidecarRecords = new ArrayList<>();
             this.signatureMap = defaultSignatureMap();
             this.type = type;
@@ -703,12 +761,16 @@ public class RecordItemBuilder {
         }
 
         public RecordItem build() {
-            var field = transactionBodyWrapper.getDescriptorForType().findFieldByNumber(type.getProtoId());
+            var field =
+                    transactionBodyWrapper
+                            .getDescriptorForType()
+                            .findFieldByNumber(type.getProtoId());
             transactionBodyWrapper.setField(field, transactionBody.build());
 
             Transaction transaction = transaction().build();
             TransactionRecord record = transactionRecord.build();
-            var sidecarRecords = this.sidecarRecords.stream().map(r -> r.build()).collect(Collectors.toList());
+            var sidecarRecords =
+                    this.sidecarRecords.stream().map(r -> r.build()).collect(Collectors.toList());
 
             return recordItemBuilder
                     .recordBytes(record.toByteArray())
@@ -732,7 +794,8 @@ public class RecordItemBuilder {
             return this;
         }
 
-        public Builder<T> sidecarRecords(Consumer<List<TransactionSidecarRecord.Builder>> consumer) {
+        public Builder<T> sidecarRecords(
+                Consumer<List<TransactionSidecarRecord.Builder>> consumer) {
             consumer.accept(sidecarRecords);
             return this;
         }
@@ -759,9 +822,10 @@ public class RecordItemBuilder {
 
         private SignatureMap.Builder defaultSignatureMap() {
             return SignatureMap.newBuilder()
-                    .addSigPair(SignaturePair.newBuilder()
-                            .setEd25519(bytes(32))
-                            .setPubKeyPrefix(bytes(16)));
+                    .addSigPair(
+                            SignaturePair.newBuilder()
+                                    .setEd25519(bytes(32))
+                                    .setPubKeyPrefix(bytes(16)));
         }
 
         private TransactionBody.Builder defaultTransactionBody() {
@@ -774,29 +838,32 @@ public class RecordItemBuilder {
         }
 
         private TransactionRecord.Builder defaultTransactionRecord() {
-            TransactionRecord.Builder transactionRecord = TransactionRecord.newBuilder()
-                    .setConsensusTimestamp(timestamp())
-                    .setMemoBytes(ByteString.copyFromUtf8(transactionBodyWrapper.getMemo()))
-                    .setTransactionFee(transactionBodyWrapper.getTransactionFee())
-                    .setTransactionHash(bytes(48))
-                    .setTransactionID(transactionBodyWrapper.getTransactionID())
-                    .setTransferList(TransferList.newBuilder()
-                            .addAccountAmounts(accountAmount(payerAccountId, -3000L))
-                            .addAccountAmounts(accountAmount(NODE, 1000L))
-                            .addAccountAmounts(accountAmount(TREASURY, 2000L))
-                            .build());
+            TransactionRecord.Builder transactionRecord =
+                    TransactionRecord.newBuilder()
+                            .setConsensusTimestamp(timestamp())
+                            .setMemoBytes(ByteString.copyFromUtf8(transactionBodyWrapper.getMemo()))
+                            .setTransactionFee(transactionBodyWrapper.getTransactionFee())
+                            .setTransactionHash(bytes(48))
+                            .setTransactionID(transactionBodyWrapper.getTransactionID())
+                            .setTransferList(
+                                    TransferList.newBuilder()
+                                            .addAccountAmounts(
+                                                    accountAmount(payerAccountId, -3000L))
+                                            .addAccountAmounts(accountAmount(NODE, 1000L))
+                                            .addAccountAmounts(accountAmount(TREASURY, 2000L))
+                                            .build());
             transactionRecord.getReceiptBuilder().setStatus(ResponseCodeEnum.SUCCESS);
             return transactionRecord;
         }
 
         private Transaction.Builder transaction() {
             return Transaction.newBuilder()
-                    .setSignedTransactionBytes(SignedTransaction.newBuilder()
-                            .setBodyBytes(transactionBodyWrapper.build().toByteString())
-                            .setSigMap(signatureMap)
-                            .build()
-                            .toByteString()
-                    );
+                    .setSignedTransactionBytes(
+                            SignedTransaction.newBuilder()
+                                    .setBodyBytes(transactionBodyWrapper.build().toByteString())
+                                    .setSigMap(signatureMap)
+                                    .build()
+                                    .toByteString());
         }
     }
 }

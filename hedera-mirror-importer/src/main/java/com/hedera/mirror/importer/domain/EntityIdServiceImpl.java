@@ -1,11 +1,6 @@
-package com.hedera.mirror.importer.domain;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,8 +12,9 @@ package com.hedera.mirror.importer.domain;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.importer.domain;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
@@ -26,6 +22,14 @@ import static com.hedera.mirror.importer.config.CacheConfiguration.CACHE_MANAGER
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.GeneratedMessageV3;
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.exception.InvalidEntityException;
+import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.exception.AliasNotFoundException;
+import com.hedera.mirror.importer.exception.InvalidDatasetException;
+import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import java.util.Optional;
@@ -38,15 +42,6 @@ import org.apache.commons.codec.binary.Hex;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 
-import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.exception.InvalidEntityException;
-import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.exception.AliasNotFoundException;
-import com.hedera.mirror.importer.exception.InvalidDatasetException;
-import com.hedera.mirror.importer.repository.EntityRepository;
-
 @Log4j2
 @Named
 public class EntityIdServiceImpl implements EntityIdService {
@@ -54,8 +49,9 @@ public class EntityIdServiceImpl implements EntityIdService {
     private final Cache cache;
     private final EntityRepository entityRepository;
 
-    public EntityIdServiceImpl(@Named(CACHE_MANAGER_ALIAS) CacheManager cacheManager,
-                               EntityRepository entityRepository) {
+    public EntityIdServiceImpl(
+            @Named(CACHE_MANAGER_ALIAS) CacheManager cacheManager,
+            EntityRepository entityRepository) {
         this.cache = cacheManager.getCache("entityId");
         this.entityRepository = entityRepository;
     }
@@ -82,7 +78,8 @@ public class EntityIdServiceImpl implements EntityIdService {
 
     @SneakyThrows
     private EntityId doLookup(GeneratedMessageV3 entityIdProto, Callable<EntityId> loader) {
-        if (entityIdProto == null || entityIdProto.equals(entityIdProto.getDefaultInstanceForType())) {
+        if (entityIdProto == null
+                || entityIdProto.equals(entityIdProto.getDefaultInstanceForType())) {
             return EntityId.EMPTY;
         }
 
@@ -93,8 +90,8 @@ public class EntityIdServiceImpl implements EntityIdService {
         }
     }
 
-    private <T extends GeneratedMessageV3> EntityId doLookups(AliasNotFoundAction action, T[] entityIdProtos,
-                                                              Function<T, EntityId> loader) {
+    private <T extends GeneratedMessageV3> EntityId doLookups(
+            AliasNotFoundAction action, T[] entityIdProtos, Function<T, EntityId> loader) {
         for (T entityIdProto : entityIdProtos) {
             try {
                 var entityId = doLookup(entityIdProto, () -> loader.apply(entityIdProto));
@@ -129,16 +126,18 @@ public class EntityIdServiceImpl implements EntityIdService {
 
         switch (type) {
             case ACCOUNT:
-                builder = AccountID.newBuilder()
-                        .setShardNum(entityId.getShardNum())
-                        .setRealmNum(entityId.getRealmNum())
-                        .setAlias(alias);
+                builder =
+                        AccountID.newBuilder()
+                                .setShardNum(entityId.getShardNum())
+                                .setRealmNum(entityId.getRealmNum())
+                                .setAlias(alias);
                 break;
             case CONTRACT:
-                builder = ContractID.newBuilder()
-                        .setShardNum(entityId.getShardNum())
-                        .setRealmNum(entityId.getRealmNum())
-                        .setEvmAddress(alias);
+                builder =
+                        ContractID.newBuilder()
+                                .setShardNum(entityId.getShardNum())
+                                .setRealmNum(entityId.getRealmNum())
+                                .setEvmAddress(alias);
                 break;
             default:
                 throw new InvalidEntityException(String.format("%s entity can't have alias", type));
@@ -153,11 +152,20 @@ public class EntityIdServiceImpl implements EntityIdService {
                 return EntityId.of(accountId);
             case ALIAS:
                 byte[] alias = DomainUtils.toBytes(accountId.getAlias());
-                return alias.length == DomainUtils.EVM_ADDRESS_LENGTH ?
-                        findByEvmAddress(alias, accountId.getShardNum(), accountId.getRealmNum(), ACCOUNT) :
-                        entityRepository.findByAlias(alias)
+                return alias.length == DomainUtils.EVM_ADDRESS_LENGTH
+                        ? findByEvmAddress(
+                                alias, accountId.getShardNum(), accountId.getRealmNum(), ACCOUNT)
+                        : entityRepository
+                                .findByAlias(alias)
                                 .map(id -> EntityId.of(id, ACCOUNT))
-                                .orElseThrow(() -> new AliasNotFoundException(Hex.encodeHexString(alias), ACCOUNT));
+                                .orElseThrow(
+                                        () ->
+                                                new AliasNotFoundException(
+                                                        Hex.encodeHexString(alias), ACCOUNT));
+            case EVM_ADDRESS:
+                byte[] evmAddress = DomainUtils.toBytes(accountId.getEvmAddress());
+                return findByEvmAddress(
+                        evmAddress, accountId.getShardNum(), accountId.getRealmNum(), ACCOUNT);
             default:
                 throw new InvalidDatasetException("Invalid AccountID: " + accountId);
         }
@@ -170,17 +178,25 @@ public class EntityIdServiceImpl implements EntityIdService {
                 return EntityId.of(contractId);
             case EVM_ADDRESS:
                 byte[] evmAddress = DomainUtils.toBytes(contractId.getEvmAddress());
-                return findByEvmAddress(evmAddress, contractId.getShardNum(), contractId.getRealmNum(), CONTRACT);
+                return findByEvmAddress(
+                        evmAddress, contractId.getShardNum(), contractId.getRealmNum(), CONTRACT);
             default:
                 throw new InvalidDatasetException("Invalid ContractID: " + contractId);
         }
     }
 
-    private EntityId findByEvmAddress(byte[] evmAddress, long shardNum, long realmNum, EntityType type) {
+    private EntityId findByEvmAddress(
+            byte[] evmAddress, long shardNum, long realmNum, EntityType type) {
         return Optional.ofNullable(DomainUtils.fromEvmAddress(evmAddress))
-                // Verify shard and realm match when assuming evmAddress is in the 'shard.realm.num' form
+                // Verify shard and realm match when assuming evmAddress is in the 'shard.realm.num'
+                // form
                 .filter(e -> e.getShardNum() == shardNum && e.getRealmNum() == realmNum)
-                .or(() -> entityRepository.findByEvmAddress(evmAddress).map(id -> EntityId.of(id, type)))
-                .orElseThrow(() -> new AliasNotFoundException(Hex.encodeHexString(evmAddress), type));
+                .or(
+                        () ->
+                                entityRepository
+                                        .findByEvmAddress(evmAddress)
+                                        .map(id -> EntityId.of(id, type)))
+                .orElseThrow(
+                        () -> new AliasNotFoundException(Hex.encodeHexString(evmAddress), type));
     }
 }
