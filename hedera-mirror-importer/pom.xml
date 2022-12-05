@@ -17,7 +17,7 @@
     </parent>
 
     <properties>
-        <besu-secp256k1.version>0.6.1</besu-secp256k1.version>
+        <besu-secp256k1.version>0.6.2</besu-secp256k1.version>
         <bouncycastle.version>1.71</bouncycastle.version>
         <commons-beanutils.version>1.9.4</commons-beanutils.version>
         <commons-compress.version>1.22</commons-compress.version>
