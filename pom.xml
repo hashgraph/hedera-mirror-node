@@ -55,7 +55,7 @@
     </parent>
 
     <properties>
-        <besu.version>22.10.0</besu.version>
+        <besu.version>22.10.2</besu.version>
         <disruptor.version>3.4.4</disruptor.version> <!-- Used for asynchronous logging -->
         <docker-maven-plugin.version>0.40.2</docker-maven-plugin.version>
         <docker.architecture>amd64</docker.architecture>
