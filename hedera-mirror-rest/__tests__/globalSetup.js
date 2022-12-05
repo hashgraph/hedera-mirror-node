@@ -29,7 +29,7 @@ const DEFAULT_DB_NAME = 'mirror_node_integration';
 const POSTGRES_PORT = 5432;
 
 const v1DatabaseImage = 'postgres:14-alpine';
-const v2DatabaseImage = 'citusdata/citus:11.1.4-pg14';
+const v2DatabaseImage = 'xinatswirlds/citus:11.1.4-alpine';
 
 const isV2Schema = () => process.env.MIRROR_NODE_SCHEMA === 'v2';
 
@@ -69,8 +69,20 @@ const createDbContainer = async (maxWorkers) => {
 
     if (isV2Schema()) {
       // create citus extension
+      const query = `create extension if not exists citus;
+         create schema if not exists partman authorization ${dbAdminUser};
+         create extension if not exists pg_partman schema partman;
+         alter schema partman owner to ${dbAdminUser};
+         grant create on database ${dbName} to ${dbAdminUser};
+         grant all on schema partman to ${dbAdminUser};
+         grant all on all tables in schema partman to ${dbAdminUser};
+         grant execute on all functions in schema partman to ${dbAdminUser};
+         grant execute on all procedures in schema partman to ${dbAdminUser};
+         grant all on schema public to ${dbAdminUser};
+         grant temporary on database ${dbName} to ${dbAdminUser};`;
+
       const workerPool = new pg.Pool({...poolConfig, database: dbName});
-      await workerPool.query('create extension if not exists citus');
+      await workerPool.query(query);
       await workerPool.end();
     }
   }

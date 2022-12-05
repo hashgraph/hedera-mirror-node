@@ -22,20 +22,21 @@ hedera:
           entity:
             redis:
               enabled: false
+          retry:
+            maxAttempts: 2
       network: TESTNET
       startDate: 1970-01-01T00:00:00Z
 
 spring:
   flyway:
     placeholders:
-      compressionAge: 9223372036854775807 # use long max to avoid compression during test
+      partitionStartDate: "'0 days'"
+      shardCount: 2
   redis:
     host: ${embedded.redis.host}
     password: ${embedded.redis.password}
     port: ${embedded.redis.port}
     username: "" # Redis 5 does not support authentication with a username and will fail if provided
-  retry:
-    enabled: false
   task:
     scheduling:
       enabled: false

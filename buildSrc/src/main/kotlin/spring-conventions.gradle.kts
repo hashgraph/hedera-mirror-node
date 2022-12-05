@@ -19,6 +19,7 @@
  */
 
 plugins {
+    id("com.gorylenko.gradle-git-properties")
     id("docker-conventions")
     id("java-conventions")
     id("org.springframework.boot")
@@ -36,6 +37,7 @@ val copyJar = tasks.register<Copy>("copyJar") {
         exclude("*-plain.jar")
     }
     into(layout.projectDirectory.dir("target"))
+    projectDir.resolve("target").deleteRecursively()
 }
 
 tasks.named("dockerBuild") {

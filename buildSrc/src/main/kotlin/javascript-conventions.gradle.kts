@@ -23,15 +23,11 @@ import org.gradle.internal.io.NullOutputStream
 
 plugins {
     id("com.github.node-gradle.node")
-    id("java-conventions")
+    id("common-conventions")
+    id("jacoco")
 }
 
-node {
-    download.set(true)
-    version.set("18.12.1")
-}
-
-val npmTest = tasks.register<NpmTask>("npmTest") {
+val test = tasks.register<NpmTask>("test") {
     dependsOn(tasks.npmInstall)
     args.set(listOf("test"))
     execOverrides {
@@ -42,10 +38,10 @@ val npmTest = tasks.register<NpmTask>("npmTest") {
     }
 }
 
-tasks.named("assemble") {
+tasks.assemble {
     dependsOn(tasks.npmInstall)
 }
 
-tasks.named("build") {
-    dependsOn(npmTest)
+tasks.build {
+    dependsOn(test)
 }

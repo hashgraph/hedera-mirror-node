@@ -43,7 +43,6 @@ import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.core.RowMapper;
-import org.springframework.test.context.jdbc.Sql;
 
 import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.domain.DomainBuilder;
@@ -52,9 +51,6 @@ import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.importer.config.IntegrationTestConfiguration;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 
-// Same database is used for all tests, so clean it up before each test.
-@Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
-@Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:db/scripts/cleanup.sql")
 @SpringBootTest
 @Import(IntegrationTestConfiguration.class)
 public abstract class IntegrationTest {
@@ -69,6 +65,9 @@ public abstract class IntegrationTest {
     private Collection<CacheManager> cacheManagers;
 
     @Resource
+    private String cleanupSql;
+
+    @Resource
     protected DomainBuilder domainBuilder;
 
     @Resource
@@ -80,13 +79,16 @@ public abstract class IntegrationTest {
     @Resource
     private MirrorProperties mirrorProperties;
 
+    @Resource
+    protected IntegrationTestConfiguration.RetryRecorder retryRecorder;
+
     @BeforeEach
     void logTest(TestInfo testInfo) {
         reset();
         log.info("Executing: {}", testInfo.getDisplayName());
     }
 
-    protected<T> Collection<T> findEntity(Class<T> entityClass, String ids, String table) {
+    protected <T> Collection<T> findEntity(Class<T> entityClass, String ids, String table) {
         String sql = String.format("select * from %s order by %s, timestamp_range asc", table, ids);
         return jdbcOperations.query(sql, rowMapper(entityClass));
     }
@@ -95,7 +97,7 @@ public abstract class IntegrationTest {
         return findHistory(historyClass, "id");
     }
 
-    protected  <T> Collection<T> findHistory(Class<T> historyClass, String ids) {
+    protected <T> Collection<T> findHistory(Class<T> historyClass, String ids) {
         return findHistory(historyClass, ids, null);
     }
 
@@ -114,6 +116,8 @@ public abstract class IntegrationTest {
         cacheManagers.forEach(c -> c.getCacheNames().forEach(name -> c.getCache(name).clear()));
         mirrorDateRangePropertiesProcessor.clear();
         mirrorProperties.setStartDate(Instant.EPOCH);
+        jdbcOperations.execute(cleanupSql);
+        retryRecorder.reset();
     }
 
     protected static <T> RowMapper<T> rowMapper(Class<T> entityClass) {
@@ -131,7 +135,7 @@ public abstract class IntegrationTest {
                     }
                 });
 
-        DataClassRowMapper dataClassRowMapper = new DataClassRowMapper<>(entityClass);
+        DataClassRowMapper<T> dataClassRowMapper = new DataClassRowMapper<>(entityClass);
         dataClassRowMapper.setConversionService(defaultConversionService);
         return dataClassRowMapper;
     }

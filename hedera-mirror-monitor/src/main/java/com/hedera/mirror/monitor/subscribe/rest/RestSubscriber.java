@@ -33,6 +33,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.retry.Retry;
 import reactor.util.retry.RetryBackoffSpec;
@@ -120,7 +121,8 @@ class RestSubscriber implements MirrorSubscriber {
                                 "/transactions/{transactionId}", toString(publishResponse.getTransactionId()))
                         .timeout(properties.getTimeout())
                         .retryWhen(retrySpec)
-                        .onErrorContinue((t, o) -> subscription.onError(t))
+                        .doOnError(t -> subscription.onError(t))
+                        .onErrorResume(e -> Mono.empty())
                         .doOnNext(subscription::onNext)
                         .map(transaction -> toResponse(subscription, publishResponse, transaction)))
                 .take(properties.getLimit(), true)
