@@ -370,6 +370,13 @@ test:
     pullPolicy: IfNotPresent
     repository: alpine
     tag: latest
+  resources:
+    limits:
+      cpu: 1
+      memory: 4096Mi
+    requests:
+      cpu: 500m
+      memory: 2048Mi
 
 web3:
   db:
