@@ -575,7 +575,7 @@ public class RecordItemBuilder {
                         .setError(bytes(10))
                         .setRecipientAccount(accountId()))
                 .addContractActions(contractAction()
-                        .setInvalidSolidityAddress(bytes(20))
+                        .setTargetedAddress(bytes(20))
                         .setRevertReason(bytes(10))));
     }
 
