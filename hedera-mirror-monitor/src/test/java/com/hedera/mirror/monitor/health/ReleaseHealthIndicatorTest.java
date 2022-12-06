@@ -1,4 +1,4 @@
-package com.hedera.mirror.monitor;
+package com.hedera.mirror.monitor.health;
 
 /*-
  * ‌
@@ -21,8 +21,6 @@ package com.hedera.mirror.monitor;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
-import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.fabric8.kubernetes.api.model.Condition;
@@ -43,13 +41,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.Status;
+import reactor.core.publisher.Flux;
+import reactor.test.StepVerifier;
 import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
 import uk.org.webcompere.systemstubs.jupiter.SystemStub;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
 @EnableKubernetesMockClient
 @ExtendWith(SystemStubsExtension.class)
-class HelmReleaseHealthIndicatorTest {
+class ReleaseHealthIndicatorTest {
 
     private static final String HELM_RELEASE_PATH = "/apis/helm.toolkit.fluxcd.io/v2beta1/namespaces/test/helmreleases" +
             "/mirror";
@@ -59,17 +59,29 @@ class HelmReleaseHealthIndicatorTest {
 
     @SystemStub
     private final EnvironmentVariables environmentVariables = new EnvironmentVariables("HOSTNAME", HOSTNAME);
-    private final HelmReleaseHealthProperties properties = new HelmReleaseHealthProperties();
+    private final ReleaseHealthProperties properties = new ReleaseHealthProperties();
 
     private KubernetesMockServer server;
-    private HelmReleaseHealthIndicator healthIndicator;
+    private ReleaseHealthIndicator healthIndicator;
 
     @BeforeEach
     void setUp() {
         var client = server.createClient().inNamespace("test");
-        healthIndicator = new HelmReleaseHealthIndicator(client, properties);
-        properties.setCacheExpiry(Duration.ofSeconds(30));
+        healthIndicator = new ReleaseHealthIndicator(client, properties);
+        properties.setEnabled(true);
         server.clearExpectations();
+    }
+
+    @Test
+    void disabled() {
+        // given
+        properties.setEnabled(false);
+
+        // then
+        var health = healthIndicator.health().block();
+
+        // then
+        assertThat(health).returns(Status.UP, Health::getStatus);
     }
 
     @Test
@@ -85,8 +97,9 @@ class HelmReleaseHealthIndicatorTest {
                 .always();
 
         // when
-        var health = healthIndicator.getHealth(true).block();
+        var health = healthIndicator.health().block();
 
+        // then
         assertThat(health).returns(Status.DOWN, Health::getStatus);
     }
 
@@ -103,7 +116,7 @@ class HelmReleaseHealthIndicatorTest {
                 .always();
 
         // when
-        var health = healthIndicator.getHealth(true).block();
+        var health = healthIndicator.health().block();
 
         // then
         assertThat(health).returns(Status.UP, Health::getStatus);
@@ -122,7 +135,7 @@ class HelmReleaseHealthIndicatorTest {
                 .always();
 
         // when
-        var health = healthIndicator.getHealth(true).block();
+        var health = healthIndicator.health().block();
 
         // then
         assertThat(health).returns(Status.UNKNOWN, Health::getStatus);
@@ -141,7 +154,7 @@ class HelmReleaseHealthIndicatorTest {
                 .always();
 
         // when
-        var health = healthIndicator.getHealth(true).block();
+        var health = healthIndicator.health().block();
 
         // then
         assertThat(health).returns(Status.DOWN, Health::getStatus);
@@ -156,7 +169,7 @@ class HelmReleaseHealthIndicatorTest {
                 .always();
 
         // when
-        var health = healthIndicator.getHealth(true).block();
+        var health = healthIndicator.health().block();
 
         // then
         assertThat(health).returns(Status.UNKNOWN, Health::getStatus);
@@ -171,7 +184,7 @@ class HelmReleaseHealthIndicatorTest {
                 .always();
 
         // when
-        var health = healthIndicator.getHealth(true).block();
+        var health = healthIndicator.health().block();
 
         // then
         assertThat(health).returns(Status.UNKNOWN, Health::getStatus);
@@ -180,7 +193,6 @@ class HelmReleaseHealthIndicatorTest {
     @Test
     void cacheHit() {
         // given
-        properties.setCacheExpiry(Duration.ofMillis(500));
         server.expect()
                 .withPath(POD_REQUEST_PATH)
                 .andReturn(200, pod(POD_LABELS))
@@ -194,18 +206,20 @@ class HelmReleaseHealthIndicatorTest {
                 .andReturn(200, helmRelease(List.of(readyCondition("False"))))
                 .once();
 
-        // when
-        var first = healthIndicator.getHealth(true).block().getStatus();
-        var second = healthIndicator.getHealth(true).block().getStatus();
-
-        // then
-        assertThat(List.of(first, second)).containsOnly(Status.UP);
+        // when, then
+        // the flux concats the same hot mono (cached with expiry), when the first mono completes, the concat will
+        // immediately subscribe to the second mono, so we need to 1) set the initial number of items to fetch to 0;
+        // 2) await a little less than the expiry time before requesting 2 items
+        StepVerifier.withVirtualTime(() -> Flux.concat(healthIndicator.health(), healthIndicator.health()), 0)
+                .thenAwait(properties.getCacheExpiry().minus(Duration.ofMillis(10)))
+                .thenRequest(2)
+                .expectNext(Health.up().build(), Health.up().build())
+                .verifyComplete();
     }
 
     @Test
     void cacheExpired() {
         // given
-        properties.setCacheExpiry(Duration.ofMillis(500));
         server.expect()
                 .withPath(POD_REQUEST_PATH)
                 .andReturn(200, pod(POD_LABELS))
@@ -214,31 +228,26 @@ class HelmReleaseHealthIndicatorTest {
                 .withPath(HELM_RELEASE_PATH)
                 .andReturn(200, helmRelease(List.of(readyCondition("True"))))
                 .once();
-
-        // when
-        var health = healthIndicator.getHealth(true).block();
-
-        // then
-        assertThat(health).returns(Status.UP, Health::getStatus);
-
-        // given
         server.expect()
                 .withPath(HELM_RELEASE_PATH)
                 .andReturn(200, helmRelease(List.of(readyCondition("False"))))
                 .once();
 
-        // then
-        await()
-                .atLeast(Duration.ofMillis(100))
-                .atMost(Duration.ofMillis(600))
-                .pollInterval(Duration.ofMillis(50))
-                .until(() -> healthIndicator.getHealth(true).block().getStatus(), equalTo(Status.DOWN));
+        // when, then
+        // the flux concats the same hot mono (cached with expiry), when the first mono completes, the concat will
+        // immediately subscribe to the second mono, so we need to 1) set the initial number of items to fetch to 0;
+        // 2) await exactly expiry time before requesting items
+        StepVerifier.withVirtualTime(() -> Flux.concat(healthIndicator.health(), healthIndicator.health()), 0)
+                .thenAwait(properties.getCacheExpiry())
+                .thenRequest(2)
+                .expectNext(Health.up().build(), Health.down().build())
+                .verifyComplete();
     }
 
     @Test
     void sameMono() {
-        var first = healthIndicator.getHealth(true);
-        var second = healthIndicator.getHealth(true);
+        var first = healthIndicator.health();
+        var second = healthIndicator.health();
         assertEquals(first, second);
     }
 

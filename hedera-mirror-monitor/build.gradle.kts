@@ -52,7 +52,6 @@ dependencies {
     testImplementation("com.github.meanbeanlib:meanbean")
     testImplementation("io.fabric8:kubernetes-server-mock")
     testImplementation("io.projectreactor:reactor-test")
-    testImplementation("org.awaitility:awaitility")
     testImplementation("uk.org.webcompere:system-stubs-jupiter")
 }
 

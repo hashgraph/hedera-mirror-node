@@ -82,7 +82,7 @@ management:
     health:
       group:
         cluster:
-          include: cluster, helmRelease
+          include: cluster, release
 
 spring:
   cloud:

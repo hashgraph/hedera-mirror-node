@@ -1,4 +1,4 @@
-package com.hedera.mirror.monitor;
+package com.hedera.mirror.monitor.health;
 
 /*-
  * ‌
@@ -42,7 +42,7 @@ import reactor.core.scheduler.Schedulers;
 @CustomLog
 @Named
 @RequiredArgsConstructor
-public class HelmReleaseHealthIndicator implements ReactiveHealthIndicator {
+public class ReleaseHealthIndicator implements ReactiveHealthIndicator {
 
     private static final Mono<Health> DOWN = Mono.just(Health.down().build());
     private static final Mono<Health> UNKNOWN = Mono.just(Health.unknown().build());
@@ -58,14 +58,14 @@ public class HelmReleaseHealthIndicator implements ReactiveHealthIndicator {
             .build();
 
     private final KubernetesClient client;
-    private final HelmReleaseHealthProperties properties;
+    private final ReleaseHealthProperties properties;
 
     @Getter(lazy = true, value = AccessLevel.PRIVATE)
     private final Mono<Health> health = createHelmReleaseHealth();
 
     @Override
     public Mono<Health> health() {
-        return getHealth();
+        return properties.isEnabled() ? getHealth() : UP;
     }
 
     private Mono<Health> createHelmReleaseHealth() {

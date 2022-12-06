@@ -1,4 +1,4 @@
-package com.hedera.mirror.monitor;
+package com.hedera.mirror.monitor.health;
 
 /*-
  * ‌
@@ -29,10 +29,12 @@ import org.springframework.validation.annotation.Validated;
 
 @Data
 @Validated
-@ConfigurationProperties("hedera.mirror.monitor.helm-release-health")
-public class HelmReleaseHealthProperties {
+@ConfigurationProperties("hedera.mirror.monitor.health.release")
+public class ReleaseHealthProperties {
 
     @DurationMin(seconds = 30)
     @NotNull
     private Duration cacheExpiry = Duration.ofSeconds(30);
+
+    private boolean enabled = true;
 }

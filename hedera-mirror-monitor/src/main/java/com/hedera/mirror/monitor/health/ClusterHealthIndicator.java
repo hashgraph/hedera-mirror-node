@@ -1,4 +1,4 @@
-package com.hedera.mirror.monitor;
+package com.hedera.mirror.monitor.health;
 
 /*-
  * ‌
