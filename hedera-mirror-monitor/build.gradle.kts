@@ -46,10 +46,13 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.springframework.cloud:spring-cloud-starter-bootstrap")
+    implementation("org.springframework.cloud:spring-cloud-starter-kubernetes-fabric8")
     implementation("org.springframework.cloud:spring-cloud-starter-kubernetes-fabric8-config")
     runtimeOnly(group = "io.netty", name = "netty-resolver-dns-native-macos", classifier = "osx-aarch_64")
     testImplementation("com.github.meanbeanlib:meanbean")
+    testImplementation("io.fabric8:kubernetes-server-mock")
     testImplementation("io.projectreactor:reactor-test")
+    testImplementation("uk.org.webcompere:system-stubs-jupiter")
 }
 
 openApiGenerate {
