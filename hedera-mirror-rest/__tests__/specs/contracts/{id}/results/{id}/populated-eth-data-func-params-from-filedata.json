@@ -188,7 +188,7 @@
     "hash": "0x4a563af33c4871b51a8b108aa2fe1dd5280a30dfb7236170ae5e5e7957eb6392",
     "logs": [
       {
-        "address": "0x0000000000000000000000000000000000001389",
+        "address": "0x70f2b2914a2a4b783faefb75f459a580616fcb5e",
         "bloom": "0x0123",
         "contract_id": "0.0.5001",
         "data": "0x0123",
