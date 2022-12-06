@@ -131,7 +131,7 @@ class ContractService extends BaseService {
     with ${ContractService.entityCTE}
     select
       ${contractLogsFields},
-      coalesce(${Entity.getFullName(Entity.EVM_ADDRESS)},'') as ${Entity.EVM_ADDRESS}
+      ${Entity.getFullName(Entity.EVM_ADDRESS)} as ${Entity.EVM_ADDRESS}
     from ${ContractLog.tableName} ${ContractLog.tableAlias}
       left join ${Entity.tableName} ${Entity.tableAlias}
       on ${Entity.getFullName(Entity.ID)} = ${ContractLog.getFullName(ContractLog.CONTRACT_ID)}

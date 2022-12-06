@@ -34,7 +34,7 @@ class ContractResultLogViewModel {
   constructor(contractLog, extended = true) {
     const contractId = EntityId.parse(contractLog.contractId, {paramName: filterKeys.CONTRACTID});
     Object.assign(this, {
-      address: contractLog?.evmAddress?.length ? toHexString(contractLog.evmAddress, true) : contractId.toEvmAddress(),
+      address: contractLog.evmAddress ? toHexString(contractLog.evmAddress, true) : contractId.toEvmAddress(),
       bloom: toHexString(contractLog.bloom, true),
       contract_id: contractId.toString(),
       data: toHexString(contractLog.data, true),
