@@ -121,8 +121,7 @@ public class ContractResultServiceImpl implements ContractResultService {
         switch (action.getRecipientCase()) {
             case RECIPIENT_ACCOUNT -> contractAction.setRecipientAccount(EntityId.of(action.getRecipientAccount()));
             case RECIPIENT_CONTRACT -> contractAction.setRecipientContract(EntityId.of(action.getRecipientContract()));
-            case INVALID_SOLIDITY_ADDRESS ->
-                    contractAction.setRecipientAddress(action.getInvalidSolidityAddress().toByteArray());
+            case TARGETED_ADDRESS -> contractAction.setRecipientAddress(action.getTargetedAddress().toByteArray());
         }
 
         switch (action.getResultDataCase()) {
