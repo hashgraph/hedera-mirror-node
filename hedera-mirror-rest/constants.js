@@ -21,6 +21,7 @@
 const MAX_INT32 = 2147483647;
 
 const ONE_DAY_IN_NS = 86_400_000_000_000n;
+const DECIMALS_IN_HBARS = 8;
 
 // url query filer keys
 const filterKeys = {
@@ -116,6 +117,12 @@ const networkSupplyQuery = {
   TOTALCOINS: 'totalcoins',
 };
 
+const networkSupplyCurrencyFormatType = {
+  TINYBARS: 'TINYBARS', // output circulating or total coins in tinybars
+  HBARS: 'HBARS', // output circulating or total coins in hbars (rounded to nearest integer)
+  BOTH: 'BOTH', // default; output circulating or total coins in fractional hbars (with a decimal point between hbars and remaining tinybars)
+};
+
 const transactionResultFilter = {
   SUCCESS: 'success',
   FAIL: 'fail',
@@ -209,6 +216,7 @@ const queryParamOperatorPatterns = {
 };
 
 export {
+  DECIMALS_IN_HBARS,
   MAX_INT32,
   ONE_DAY_IN_NS,
   characterEncoding,
@@ -221,6 +229,7 @@ export {
   httpStatusCodes,
   keyTypes,
   networks,
+  networkSupplyCurrencyFormatType,
   networkSupplyQuery,
   orderFilterValues,
   queryParamOperators,
