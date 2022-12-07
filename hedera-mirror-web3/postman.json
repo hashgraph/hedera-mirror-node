@@ -238,15 +238,10 @@
                                 "exec": [
                                     "pm.test(\"Invalid request\", () => {",
                                     "    var response = pm.response.json();",
-                                    "    pm.expect(pm.response.code).to.equal(200);",
+                                    "    pm.expect(pm.response.code).to.equal(400);",
                                     "    pm.expect(response).to.not.have.key('result');",
-                                    "});",
-                                    ""
-                                ],
-                                "append_to_exec_above": [
-                                    "    pm.expect(response.message)",
-                                    "      .to.contain(\"Invalid request\")",
-                                    "      .and.contain(\"to field invalid hexadecimal string\")",
+                                    "    pm.expect(response._status.messages[0].message)",
+                                    "      .to.contain(\"to field invalid hexadecimal string\")",
                                     "      .and.contain(\"from field invalid hexadecimal string\")",
                                     "      .and.contain(\"value field must be greater than or equal to 0\")",
                                     "      .and.contain(\"gas field must be greater than or equal to 0\")",
@@ -273,8 +268,7 @@
                         "url": {
                             "raw": "{{baseUrl}}/api/v1/contracts/call",
                             "host": ["{{baseUrl}}"],
-                            "path": ["web3", "v1"],
-                            "proper_path": ["api", "v1", "contracts", "call"]
+                            "path": ["api", "v1", "contracts", "call"]
                         }
                     },
                     "response": []
