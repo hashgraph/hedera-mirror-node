@@ -34,15 +34,15 @@ import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
-import com.hedera.services.evm.contracts.execution.BlockMetaSource;
-import com.hedera.services.evm.contracts.execution.EvmProperties;
-import com.hedera.services.evm.contracts.execution.HederaEvmTransactionProcessingResult;
-import com.hedera.services.evm.contracts.execution.HederaEvmTxProcessor;
-import com.hedera.services.evm.contracts.execution.PricesAndFeesProvider;
-import com.hedera.services.evm.store.contracts.AbstractCodeCache;
-import com.hedera.services.evm.store.contracts.HederaEvmEntityAccess;
-import com.hedera.services.evm.store.contracts.HederaEvmMutableWorldState;
-import com.hedera.services.evm.store.models.HederaEvmAccount;
+import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
+import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
+import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTxProcessor;
+import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider;
+import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
+import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 
 public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
 

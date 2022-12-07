@@ -25,7 +25,7 @@ import lombok.Value;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
-import com.hedera.services.evm.store.models.HederaEvmAccount;
+import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 
 @Value
 @Builder

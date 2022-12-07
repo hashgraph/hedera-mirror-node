@@ -20,17 +20,6 @@ package com.hedera.mirror.web3.util;
  * ‍
  */
 
-import com.hedera.mirror.web3.exception.InvalidTransactionException;
-import com.hedera.services.evm.contracts.execution.HederaEvmTransactionProcessingResult;
-import com.hedera.services.evm.contracts.operations.HederaExceptionalHaltReason;
-import com.hedera.services.evm.store.contracts.utils.BytesKey;
-
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import lombok.experimental.UtilityClass;
-import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
-import java.util.Map;
-import java.util.stream.Stream;
-
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INSUFFICIENT_BALANCES_FOR_STORAGE_RENT;
@@ -40,6 +29,17 @@ import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_ENTITIES_I
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.MAX_STORAGE_IN_PRICE_REGIME_HAS_BEEN_USED;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static java.util.stream.Collectors.toMap;
+
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.util.Map;
+import java.util.stream.Stream;
+import lombok.experimental.UtilityClass;
+import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
+
+import com.hedera.mirror.web3.exception.InvalidTransactionException;
+import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
+import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
+import com.hedera.node.app.service.evm.store.contracts.utils.BytesKey;
 
 @UtilityClass
 public class ResponseCodeUtil {

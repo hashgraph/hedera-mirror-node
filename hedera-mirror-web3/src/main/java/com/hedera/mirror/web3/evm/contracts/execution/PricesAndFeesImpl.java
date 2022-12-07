@@ -25,7 +25,7 @@ import java.time.Instant;
 import javax.inject.Named;
 import lombok.NoArgsConstructor;
 
-import com.hedera.services.evm.contracts.execution.PricesAndFeesProvider;
+import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider;
 
 @Named
 @NoArgsConstructor

@@ -31,6 +31,7 @@ import javax.inject.Provider;
 import lombok.experimental.UtilityClass;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
+import org.hyperledger.besu.evm.EvmSpecVersion;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.gascalculator.LondonGasCalculator;
@@ -40,12 +41,12 @@ import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
-import com.hedera.services.evm.contracts.operations.HederaBalanceOperation;
-import com.hedera.services.evm.contracts.operations.HederaDelegateCallOperation;
-import com.hedera.services.evm.contracts.operations.HederaEvmSLoadOperation;
-import com.hedera.services.evm.contracts.operations.HederaExtCodeCopyOperation;
-import com.hedera.services.evm.contracts.operations.HederaExtCodeHashOperation;
-import com.hedera.services.evm.contracts.operations.HederaExtCodeSizeOperation;
+import com.hedera.node.app.service.evm.contracts.operations.HederaBalanceOperation;
+import com.hedera.node.app.service.evm.contracts.operations.HederaDelegateCallOperation;
+import com.hedera.node.app.service.evm.contracts.operations.HederaEvmSLoadOperation;
+import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeCopyOperation;
+import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeHashOperation;
+import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeSizeOperation;
 
 /**
  * This is a temporary utility class for creating all besu evm related fields needed by the
@@ -91,6 +92,6 @@ public class EvmOperationConstructionUtil {
                 new HederaEvmSLoadOperation(gasCalculator)).forEach(operationRegistry::put);
         registerParisOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
 
-        return new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);
+        return new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT, EvmSpecVersion.LONDON);
     }
 }

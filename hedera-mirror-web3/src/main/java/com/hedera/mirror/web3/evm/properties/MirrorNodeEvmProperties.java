@@ -20,17 +20,15 @@ package com.hedera.mirror.web3.evm.properties;
  * ‍
  */
 
-import lombok.Setter;
-import org.hyperledger.besu.datatypes.Address;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-
-import com.hedera.services.evm.contracts.execution.EvmProperties;
-
-import org.springframework.validation.annotation.Validated;
-
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
+import lombok.Setter;
+import org.hyperledger.besu.datatypes.Address;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
+
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 
 @Setter
 @Validated

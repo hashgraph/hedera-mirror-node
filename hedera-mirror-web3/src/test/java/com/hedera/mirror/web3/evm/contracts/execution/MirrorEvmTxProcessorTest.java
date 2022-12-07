@@ -29,8 +29,6 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.hedera.services.evm.contracts.execution.traceability.DefaultHederaTracer;
-
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -45,6 +43,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.EVM;
+import org.hyperledger.besu.evm.EvmSpecVersion;
 import org.hyperledger.besu.evm.MainnetEVMs;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
@@ -66,17 +65,17 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
-import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessor;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
-import com.hedera.services.evm.contracts.execution.BlockMetaSource;
-import com.hedera.services.evm.contracts.execution.EvmProperties;
-import com.hedera.services.evm.contracts.execution.HederaBlockValues;
-import com.hedera.services.evm.contracts.execution.HederaEvmTransactionProcessingResult;
-import com.hedera.services.evm.contracts.execution.PricesAndFeesProvider;
-import com.hedera.services.evm.store.contracts.HederaEvmEntityAccess;
-import com.hedera.services.evm.store.contracts.HederaEvmWorldState;
-import com.hedera.services.evm.store.contracts.HederaEvmWorldUpdater;
-import com.hedera.services.evm.store.models.HederaEvmAccount;
+import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
+import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
+import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
+import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider;
+import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultHederaTracer;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldState;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
+import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 
 @ExtendWith(MockitoExtension.class)
 class MirrorEvmTxProcessorTest {
@@ -110,7 +109,7 @@ class MirrorEvmTxProcessorTest {
         operations.forEach(operationRegistry::put);
         String EVM_VERSION_0_30 = "v0.30";
         when(evmProperties.evmVersion()).thenReturn(EVM_VERSION_0_30);
-        var evm30 = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);
+        var evm30 = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT, EvmSpecVersion.LONDON);
         String EVM_VERSION_0_32 = "v0.32";
         Map<String, Provider<MessageCallProcessor>> mcps =
                 Map.of(

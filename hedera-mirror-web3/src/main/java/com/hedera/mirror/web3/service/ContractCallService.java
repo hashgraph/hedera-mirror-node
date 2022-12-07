@@ -30,7 +30,7 @@ import lombok.RequiredArgsConstructor;
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorFacade;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
-import com.hedera.services.evm.contracts.execution.HederaEvmTransactionProcessingResult;
+import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 
 @Named
 @RequiredArgsConstructor

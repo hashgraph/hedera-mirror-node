@@ -20,11 +20,11 @@ package com.hedera.mirror.web3.evm.contracts.execution;
  * ‍
  */
 
-import com.hedera.services.evm.contracts.execution.HederaEvmTransactionProcessingResult;
-import com.hedera.services.evm.store.models.HederaEvmAccount;
-
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+
+import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
+import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 
 public interface MirrorEvmTxProcessorFacade {
     HederaEvmTransactionProcessingResult execute(
