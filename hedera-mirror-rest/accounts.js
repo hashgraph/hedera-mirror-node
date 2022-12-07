@@ -383,31 +383,6 @@ const getOneAccount = async (req, res) => {
   res.locals[constants.responseDataLabel] = ret;
 };
 
-const getTokenBalanceSubQuery = (order, timestampColumn) => {
-  return `
-    select json_agg(json_build_object('token_id', token_id, 'balance', balance))
-    from (
-      select token_id, balance
-      from token_balance tb
-      where tb.account_id = ab.account_id
-        and tb.consensus_timestamp = ${timestampColumn}
-      order by token_id ${order}
-      limit ${tokenBalanceLimit.multipleAccounts}
-    ) as account_token_balance`;
-};
-
-const getTokenAccountBalanceSubQuery = (order) => {
-  return `
-    select json_agg(json_build_object('token_id', token_id, 'balance', balance))
-    from (
-      select token_id, balance
-      from token_account ta
-      where ta.account_id = ab.account_id and ta.associated is true
-      order by token_id ${order}
-      limit ${tokenBalanceLimit.multipleAccounts}
-    ) as account_token_balance`;
-};
-
 const accounts = {
   getAccounts,
   getOneAccount,
