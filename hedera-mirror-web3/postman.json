@@ -228,6 +228,56 @@
                         }
                     },
                     "response": []
+                },
+                {
+                    "name": "Invalid request for contracts/call",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Invalid request\", () => {",
+                                    "    var response = pm.response.json();",
+                                    "    pm.expect(pm.response.code).to.equal(200);",
+                                    "    pm.expect(response).to.not.have.key('result');",
+                                    "});",
+                                    ""
+                                ],
+                                "append_to_exec_above": [
+                                    "    pm.expect(response.message)",
+                                    "      .to.contain(\"Invalid request\")",
+                                    "      .and.contain(\"to field invalid hexadecimal string\")",
+                                    "      .and.contain(\"from field invalid hexadecimal string\")",
+                                    "      .and.contain(\"value field must be greater than or equal to 0\")",
+                                    "      .and.contain(\"gas field must be greater than or equal to 0\")",
+                                    "      .and.contain(\"gasPrice field must be greater than or equal to 0\");",
+                                    "});",
+                                    ""
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\"to\": \"0x\", \"from\": \"0x\", \"value\": -1, \"gas\": -1, \"gasPrice\": -1}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/v1/contracts/call",
+                            "host": ["{{baseUrl}}"],
+                            "path": ["web3", "v1"],
+                            "proper_path": ["api", "v1", "contracts", "call"]
+                        }
+                    },
+                    "response": []
                 }
             ]
         },
