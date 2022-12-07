@@ -21,6 +21,7 @@
 import org.springframework.boot.gradle.plugin.SpringBootPlugin
 
 plugins {
+    id("common-conventions")
     id("io.freefair.lombok")
     id("io.spring.dependency-management")
     id("jacoco")
@@ -33,7 +34,6 @@ configurations.all {
 }
 
 repositories {
-    mavenCentral()
     maven {
         url = uri("https://oss.sonatype.org/content/repositories/snapshots")
     }
@@ -64,6 +64,10 @@ tasks.compileJava {
     options.encoding = "UTF-8"
     sourceCompatibility = "17"
     targetCompatibility = "17"
+}
+
+tasks.dependencyCheckAnalyze {
+    dependsOn(tasks.npmInstall)
 }
 
 tasks.javadoc {

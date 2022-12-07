@@ -50,13 +50,12 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.7.5</version>
+        <version>2.7.6</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
     <properties>
-        <besu.version>22.10.0</besu.version>
-        <dependency-check.version>7.2.1</dependency-check.version>
+        <besu.version>22.10.2</besu.version>
         <disruptor.version>3.4.4</disruptor.version> <!-- Used for asynchronous logging -->
         <docker-maven-plugin.version>0.40.2</docker-maven-plugin.version>
         <docker.architecture>amd64</docker.architecture>
@@ -74,7 +73,7 @@
         <guava.version>31.1-jre</guava.version>
         <headlong.version>7.0.0</headlong.version>
         <hedera-evm.version>0.33.0-SNAPSHOT</hedera-evm.version>
-        <hedera-protobuf.version>0.31.0-SNAPSHOT</hedera-protobuf.version>
+        <hedera-protobuf.version>0.32.0</hedera-protobuf.version>
         <hibernate-types.version>2.20.0</hibernate-types.version>
         <jacoco.version>0.8.8</jacoco.version>
         <java.version>17</java.version>
@@ -82,8 +81,8 @@
         <log4j2.version>2.17.2</log4j2.version>
         <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
         <msgpack.version>0.9.3</msgpack.version>
-        <postgresql.version>42.4.1</postgresql.version>
-        <protobuf.version>3.21.9</protobuf.version>
+        <postgresql.version>42.5.1</postgresql.version>  <!-- Temporary fix for transient dependency security issue -->
+        <protobuf.version>3.21.10</protobuf.version>
         <release.version>0.71.0-SNAPSHOT</release.version> <!-- Used to replace release versions in all files -->
         <release.chartVersion>0.71.0-SNAPSHOT</release.chartVersion>
         <replacer.version>1.5.3</replacer.version>
@@ -104,9 +103,6 @@
         <sonar.issue.ignore.multicriteria.e5.resourceKey>**/stateproof/*.sql
         </sonar.issue.ignore.multicriteria.e5.resourceKey>
         <sonar.issue.ignore.multicriteria.e5.ruleKey>plsql:S1192</sonar.issue.ignore.multicriteria.e5.ruleKey>
-        <!-- Temporary fix for transient dependency security issue -->
-        <spring-security.version>5.7.5</spring-security.version>
-        <web3j.version>4.9.2</web3j.version>
     </properties>
 
     <scm>
@@ -179,59 +175,6 @@
     <build>
         <pluginManagement>
             <plugins>
-                <!-- Download library source jars and package in container image for GCP Marketplace compliance -->
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-dependency-plugin</artifactId>
-                    <configuration>
-                        <classifier>sources</classifier>
-                        <includeScope>runtime</includeScope>
-                        <outputDirectory>${docker.resources}/third_party/sources</outputDirectory>
-                        <prependGroupId>true</prependGroupId>
-                    </configuration>
-                </plugin>
-                <!-- antlr 2.x (Hibernate dependency) is so old it doesn't have sources in Maven Central -->
-                <plugin>
-                    <groupId>com.googlecode.maven-download-plugin</groupId>
-                    <artifactId>download-maven-plugin</artifactId>
-                    <version>1.6.8</version>
-                    <executions>
-                        <execution>
-                            <id>download-antlr-source</id>
-                            <phase>verify</phase>
-                            <goals>
-                                <goal>wget</goal>
-                            </goals>
-                            <configuration>
-                                <outputDirectory>${docker.resources}/third_party/sources</outputDirectory>
-                                <url>https://www.antlr2.org/download/antlr-2.7.7.tar.gz</url>
-                            </configuration>
-                        </execution>
-                    </executions>
-                </plugin>
-                <plugin>
-                    <groupId>org.owasp</groupId>
-                    <artifactId>dependency-check-maven</artifactId>
-                    <version>${dependency-check.version}</version>
-                    <configuration>
-                        <enableExperimental>true</enableExperimental>
-                        <failBuildOnCVSS>8</failBuildOnCVSS>
-                        <scanSet>
-                            <fileSet>
-                                <directory>${maven.multiModuleProjectDirectory}/hedera-mirror-rest/check-state-proof
-                                </directory>
-                            </fileSet>
-                            <fileSet>
-                                <directory>${maven.multiModuleProjectDirectory}/hedera-mirror-rest/monitor_apis
-                                </directory>
-                            </fileSet>
-                        </scanSet>
-                        <suppressionFiles>
-                            <suppressionFile>${maven.multiModuleProjectDirectory}/suppressions.xml</suppressionFile>
-                        </suppressionFiles>
-                        <versionCheckEnabled>false</versionCheckEnabled>
-                    </configuration>
-                </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-surefire-plugin</artifactId>
@@ -546,12 +489,17 @@
                                 <phase>prepare-package</phase>
                                 <configuration>
                                     <includes>
+                                        <include>gradle.properties</include>
                                         <include>docker-compose.yml</include>
                                         <include>hedera-mirror-rest/**/openapi.yml</include>
                                         <include>hedera-mirror-rest/package*.json</include>
                                         <include>hedera-mirror-rest/monitoring/monitor_apis/package*.json</include>
                                     </includes>
                                     <replacements>
+                                        <replacement>
+                                            <token><![CDATA[version=.+]]></token>
+                                            <value>version=${release.version}</value>
+                                        </replacement>
                                         <replacement>
                                             <token>
                                                 <![CDATA[(?<="@hashgraph/mirror-(rest|monitor)",\s{3,7}"version": ")[^"]+]]></token>

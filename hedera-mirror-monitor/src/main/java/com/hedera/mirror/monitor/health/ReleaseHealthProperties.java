@@ -1,3 +1,5 @@
+package com.hedera.mirror.monitor.health;
+
 /*-
  * ‌
  * Hedera Mirror Node
@@ -18,17 +20,21 @@
  * ‍
  */
 
-import {execSync} from 'child_process';
-import path from 'path';
+import java.time.Duration;
+import javax.validation.constraints.NotNull;
+import lombok.Data;
+import org.hibernate.validator.constraints.time.DurationMin;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
 
-if (
-  process.env.NODE_ENV === 'production' ||
-  process.env.npm_config_only === 'prod' ||
-  process.env.npm_config_only === 'production'
-) {
-  process.exit(0);
+@Data
+@Validated
+@ConfigurationProperties("hedera.mirror.monitor.health.release")
+public class ReleaseHealthProperties {
+
+    @DurationMin(seconds = 30)
+    @NotNull
+    private Duration cacheExpiry = Duration.ofSeconds(30);
+
+    private boolean enabled = true;
 }
-
-// run "husky install" only when dev dependencies are installed
-const huskyPath = ['hedera-mirror-rest', '.husky'].join(path.sep);
-console.log(execSync(`cd .. && husky install ${huskyPath}`, {encoding: 'utf8'}));

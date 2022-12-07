@@ -12,6 +12,8 @@ This checklist verifies a release is rolled out successfully.
 - [ ] Automated Kubernetes deployment successful
 - [ ] Tag release
 - [ ] Upload release artifacts
+- [ ] Manual Submission for GCP Marketplace verification by google
+- [ ] Publish marketplace release
 - [ ] Publish release
 
 ## Performance

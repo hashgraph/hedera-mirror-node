@@ -64,7 +64,7 @@ citus:
   architecture: replication
   enabled: false
   image:
-    repository: citusdata/citus
+    repository: xinatswirlds/citus
     tag: 11.1.4-pg14
   nameOverride: citus
   primary:
@@ -77,7 +77,8 @@ citus:
       max_replication_slots = 5
       max_wal_senders = 5
       max_wal_size = 24GB
-      shared_preload_libraries = 'citus'
+      shared_preload_libraries = 'citus,pg_cron,pg_partman_bgw'
+      cron.database_name = 'mirror_node'
       wal_level = logical
     extraEnvVarsSecret: mirror-passwords
     initdb:
@@ -95,13 +96,19 @@ citus:
       max_wal_size = 24GB
       shared_preload_libraries = 'citus'
       wal_level = logical
+    extraEnvVarsSecret: mirror-passwords
     extraVolumeMounts:
       - name: config
         mountPath: /usr/local/etc/postgresql
+      - name: custom-init-scripts
+        mountPath: /docker-entrypoint-initdb.d/
     extraVolumes:
       - name: config
         configMap:
           name: '{{ printf "%s-extended-configuration" (include "postgresql.readReplica.fullname" .) }}'
+      - name: custom-init-scripts
+        configMap:
+          name: "{{ .Release.Name }}-init"
     name: worker
 
 db:
@@ -363,6 +370,13 @@ test:
     pullPolicy: IfNotPresent
     repository: alpine
     tag: latest
+  resources:
+    limits:
+      cpu: 1
+      memory: 4096Mi
+    requests:
+      cpu: 500m
+      memory: 2048Mi
 
 web3:
   db:

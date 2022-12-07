@@ -9,8 +9,7 @@
     "airbnb-base",
     "plugin:jest/recommended",
     "plugin:node/recommended",
-    "plugin:security/recommended",
-    "plugin:prettier/recommended"
+    "plugin:security/recommended"
   ],
   "globals": {
     "Atomics": "readonly",
@@ -31,7 +30,14 @@
     "node/prefer-global/url": ["error", "always"],
     "node/prefer-promises/dns": "error",
     "node/prefer-promises/fs": "error",
-    "max-len": ["error", {"code": 120, "tabWidth": 2, "ignoreUrls": true}],
+    "max-len": [
+      "error",
+      {
+        "code": 120,
+        "tabWidth": 2,
+        "ignoreUrls": true
+      }
+    ],
     "strict": ["error", "global"],
     "global-require": "warn"
   }
