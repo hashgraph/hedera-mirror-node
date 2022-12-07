@@ -134,9 +134,9 @@ const getEntityBalanceQuery = (
   const params = utils.mergeParams([], balanceQuery.params, entityAccountQuery.params, pubKeyQuery.params, limitParams);
   const query = `
     with latest_token_balance as (
-       select account_id, balance, token_id
-       from token_account ta
-       where ta.associated is true
+      select account_id, balance, token_id
+      from token_account
+      where associated is true
     ), latest_record_file as (select max(consensus_end) as consensus_timestamp from record_file)
     select
       ${entityFields},
