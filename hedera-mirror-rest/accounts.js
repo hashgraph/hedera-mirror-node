@@ -134,9 +134,9 @@ const getEntityBalanceQuery = (
   const params = utils.mergeParams([], balanceQuery.params, entityAccountQuery.params, pubKeyQuery.params, limitParams);
   const query = `
     with latest_token_balance as (
-      select account_id, balance, token_id
-      from token_balance
-      where consensus_timestamp = (select max(consensus_timestamp) as consensus_timestamp from account_balance_file)
+       select account_id, balance, token_id
+       from token_account ta
+       where ta.associated is true
     ), latest_record_file as (select max(consensus_end) as consensus_timestamp from record_file)
     select
       ${entityFields},
@@ -381,6 +381,31 @@ const getOneAccount = async (req, res) => {
 
   logger.debug(`getOneAccount returning ${ret.transactions.length} transactions entries`);
   res.locals[constants.responseDataLabel] = ret;
+};
+
+const getTokenBalanceSubQuery = (order, timestampColumn) => {
+  return `
+    select json_agg(json_build_object('token_id', token_id, 'balance', balance))
+    from (
+      select token_id, balance
+      from token_balance tb
+      where tb.account_id = ab.account_id
+        and tb.consensus_timestamp = ${timestampColumn}
+      order by token_id ${order}
+      limit ${tokenBalanceLimit.multipleAccounts}
+    ) as account_token_balance`;
+};
+
+const getTokenAccountBalanceSubQuery = (order) => {
+  return `
+    select json_agg(json_build_object('token_id', token_id, 'balance', balance))
+    from (
+      select token_id, balance
+      from token_account ta
+      where ta.account_id = ab.account_id and ta.associated is true
+      order by token_id ${order}
+      limit ${tokenBalanceLimit.multipleAccounts}
+    ) as account_token_balance`;
 };
 
 const accounts = {
