@@ -54,6 +54,8 @@ hedera:
             to: 0.0.349
           - from: 0.0.400
             to: 0.0.750
+        # valid values for currencyFormat are 'BOTH', 'HBARS', and 'TINYBARS'
+        currencyFormat: 'BOTH'
       openapi:
         specFileName: 'openapi'
         swaggerUIPath: 'docs'
