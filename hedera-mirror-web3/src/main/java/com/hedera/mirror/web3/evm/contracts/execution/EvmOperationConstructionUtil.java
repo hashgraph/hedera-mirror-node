@@ -31,6 +31,7 @@ import javax.inject.Provider;
 import lombok.experimental.UtilityClass;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
+import org.hyperledger.besu.evm.EvmSpecVersion;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.gascalculator.LondonGasCalculator;
@@ -91,6 +92,6 @@ public class EvmOperationConstructionUtil {
                 new HederaEvmSLoadOperation(gasCalculator)).forEach(operationRegistry::put);
         registerParisOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
 
-        return new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);
+        return new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT, EvmSpecVersion.LONDON);
     }
 }

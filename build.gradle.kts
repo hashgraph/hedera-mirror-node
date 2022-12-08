@@ -73,8 +73,6 @@ dependencies {
         api("org.apache.tuweni:tuweni-bytes:2.3.0")
         api("org.apache.velocity:velocity-engine-core:2.3")
         api("org.gaul:s3proxy:2.0.0")
-        api("org.hyperledger.besu:secp256k1:0.6.1")
-        api("org.hyperledger.besu:evm:22.10.0")
         api("org.msgpack:jackson-dataformat-msgpack:0.9.3")
         api("org.springdoc:springdoc-openapi-webflux-ui:1.6.13")
         api("org.springframework.cloud:spring-cloud-dependencies:2021.0.5")
