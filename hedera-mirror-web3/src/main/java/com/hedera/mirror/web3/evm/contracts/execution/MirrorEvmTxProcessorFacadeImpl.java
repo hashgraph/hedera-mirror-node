@@ -26,12 +26,6 @@ import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstru
 
 import java.time.Instant;
 import javax.inject.Named;
-
-import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
-
-import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultHederaTracer;
-import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
-
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -40,25 +34,29 @@ import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.properties.StaticBlockMetaSource;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
+import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
+import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultHederaTracer;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldState;
-
+import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 
 @Named
 public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacade {
     private final MirrorEvmTxProcessor processor;
 
     public MirrorEvmTxProcessorFacadeImpl(
-            MirrorEntityAccess entityAccess,
-            MirrorNodeEvmProperties evmProperties,
-            StaticBlockMetaSource blockMetaSource,
-            MirrorEvmContractAliases aliasManager,
-            PricesAndFeesImpl pricesAndFees,
-            AccountAccessorImpl accountAccessor) {
+            final MirrorEntityAccess entityAccess,
+            final MirrorNodeEvmProperties evmProperties,
+            final StaticBlockMetaSource blockMetaSource,
+            final MirrorEvmContractAliases aliasManager,
+            final PricesAndFeesImpl pricesAndFees,
+            final AccountAccessorImpl accountAccessor) {
         final AbstractCodeCache codeCache = new AbstractCodeCache(evmProperties.getExpirationCacheTime(), entityAccess);
-        final HederaEvmMutableWorldState worldState = new HederaEvmWorldState(entityAccess, evmProperties, codeCache,
-                accountAccessor);
+        final HederaEvmMutableWorldState worldState =
+                new HederaEvmWorldState(
+                        entityAccess, evmProperties,
+                        codeCache, accountAccessor);
 
         processor =
                 new MirrorEvmTxProcessor(

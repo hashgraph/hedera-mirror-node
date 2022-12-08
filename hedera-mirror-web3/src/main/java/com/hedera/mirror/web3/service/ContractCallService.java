@@ -20,12 +20,11 @@ package com.hedera.mirror.web3.service;
  * ‍
  */
 
-import static com.hedera.mirror.web3.util.ResponseCodeUtil.getStatusOrDefault;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
 
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
+import org.apache.tuweni.bytes.Bytes;
 
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorFacade;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
@@ -37,13 +36,15 @@ import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionP
 public class ContractCallService {
     private final MirrorEvmTxProcessorFacade mirrorEvmTxProcessor;
 
-    public String processCall(CallServiceParameters body) {
-        final var processResult = doProcessCall(body);
+    public String processCall(final CallServiceParameters body) {
+        final var txnResult = doProcessCall(body);
+        final var callResult = txnResult.getOutput() != null
+                ? txnResult.getOutput() : Bytes.EMPTY;
 
-        return processResult.getOutput().toHexString();
+        return callResult.toHexString();
     }
 
-    private HederaEvmTransactionProcessingResult doProcessCall(CallServiceParameters body) {
+    private HederaEvmTransactionProcessingResult doProcessCall(final CallServiceParameters body) {
         final var processingResult =
                 mirrorEvmTxProcessor.execute(
                         body.getSender(),
@@ -53,15 +54,10 @@ public class ContractCallService {
                         body.getCallData(),
                         body.isStatic());
 
-        final var status = getStatusOrDefault(processingResult);
-        if (status != SUCCESS) {
-            revertWith(status);
+        if (!processingResult.isSuccessful()) {
+            throw new InvalidTransactionException(INVALID_TRANSACTION);
         }
 
         return processingResult;
-    }
-
-    public void revertWith(ResponseCodeEnum errorStatus) {
-        throw new InvalidTransactionException(errorStatus);
     }
 }

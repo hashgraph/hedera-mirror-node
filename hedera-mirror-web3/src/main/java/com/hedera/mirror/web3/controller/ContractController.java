@@ -47,7 +47,7 @@ import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
 import com.hedera.mirror.web3.viewmodel.ContractCallResponse;
 import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
-import com.hedera.services.evm.store.models.HederaEvmAccount;
+import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 
 @CustomLog
 @RequestMapping("/api/v1/contracts")
@@ -64,8 +64,8 @@ class ContractController {
             throw new UnsupportedOperationException(NOT_IMPLEMENTED_ERROR);
         }
         //make sure there is a valid sender for value transfers
-        if (request.getValue() > 0 && request.getFrom() == null) {
-            contractCallService.revertWith(INVALID_TRANSFER_ACCOUNT_ID);
+        if (request.isInvalidValueTransfer()) {
+            throw new InvalidTransactionException(INVALID_TRANSFER_ACCOUNT_ID);
         }
 
         final var params = constructServiceParameters(request);

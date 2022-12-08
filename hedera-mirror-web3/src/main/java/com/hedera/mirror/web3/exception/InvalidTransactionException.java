@@ -21,7 +21,6 @@ package com.hedera.mirror.web3.exception;
  */
 
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import org.apache.tuweni.bytes.Bytes;
 
 import com.hedera.mirror.web3.evm.exception.EvmException;
 
@@ -29,11 +28,5 @@ public class InvalidTransactionException extends EvmException {
 
     public InvalidTransactionException(final ResponseCodeEnum responseCode) {
         super(responseCode.name());
-    }
-
-
-    public Bytes messageBytes() {
-        final var detail = getMessage();
-        return Bytes.of(detail.getBytes());
     }
 }

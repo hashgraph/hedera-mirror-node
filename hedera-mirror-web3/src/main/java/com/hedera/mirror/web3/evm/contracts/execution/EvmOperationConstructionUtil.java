@@ -31,7 +31,6 @@ import javax.inject.Provider;
 import lombok.experimental.UtilityClass;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.EvmSpecVersion;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.gascalculator.LondonGasCalculator;
@@ -60,7 +59,7 @@ public class EvmOperationConstructionUtil {
     static final GasCalculator gasCalculator = new LondonGasCalculator();
     private static final EVM evm = constructEvm();
 
-    static Map<String, Provider<ContractCreationProcessor>> ccps() {
+   public static Map<String, Provider<ContractCreationProcessor>> ccps() {
         return Map.of(
                 EVM_VERSION_0_30,
                 () -> new ContractCreationProcessor(
@@ -70,7 +69,7 @@ public class EvmOperationConstructionUtil {
                         gasCalculator, evm, true, List.of(), 1));
     }
 
-    static Map<String, Provider<MessageCallProcessor>> mcps() {
+   public static Map<String, Provider<MessageCallProcessor>> mcps() {
         return Map.of(
                 EVM_VERSION_0_30,
                 () -> new MessageCallProcessor(
@@ -92,6 +91,6 @@ public class EvmOperationConstructionUtil {
                 new HederaEvmSLoadOperation(gasCalculator)).forEach(operationRegistry::put);
         registerParisOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
 
-        return new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT, EvmSpecVersion.LONDON);
+        return new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT);
     }
 }

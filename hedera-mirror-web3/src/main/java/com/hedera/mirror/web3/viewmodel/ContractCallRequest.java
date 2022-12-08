@@ -59,4 +59,8 @@ public class ContractCallRequest {
 
     @Min(0)
     private long value;
+
+    public boolean isInvalidValueTransfer(){
+        return (value > 0 && from == null);
+    }
 }

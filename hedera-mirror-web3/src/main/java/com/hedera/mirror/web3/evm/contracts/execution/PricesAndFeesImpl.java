@@ -30,10 +30,12 @@ import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider
 @Named
 @NoArgsConstructor
 public class PricesAndFeesImpl implements PricesAndFeesProvider {
+    //FEATURE WORK - precise gas price calculation to be provided with eth_estimateGas implementation
+    private static final long GAS_PRICE = 1000L;
 
     @Override
-    public long currentGasPrice(Instant now, HederaFunctionality function) {
-        return 1000L;
+    public long currentGasPrice(final Instant now, final HederaFunctionality function) {
+        return GAS_PRICE;
     }
 }
 

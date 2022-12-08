@@ -20,6 +20,8 @@ package com.hedera.mirror.web3.evm.contracts.execution;
  * ‍
  */
 
+import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.ccps;
+import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.mcps;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
@@ -34,28 +36,19 @@ import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayDeque;
 import java.util.Deque;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import javax.inject.Provider;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.datatypes.Wei;
-import org.hyperledger.besu.evm.EVM;
-import org.hyperledger.besu.evm.EvmSpecVersion;
 import org.hyperledger.besu.evm.MainnetEVMs;
 import org.hyperledger.besu.evm.account.EvmAccount;
 import org.hyperledger.besu.evm.account.MutableAccount;
 import org.hyperledger.besu.evm.frame.BlockValues;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.gascalculator.GasCalculator;
-import org.hyperledger.besu.evm.internal.EvmConfiguration;
 import org.hyperledger.besu.evm.operation.Operation;
 import org.hyperledger.besu.evm.operation.OperationRegistry;
-import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
-import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
-import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 import org.hyperledger.besu.evm.worldstate.WorldUpdater;
 import org.hyperledger.besu.plugin.data.Transaction;
 import org.junit.jupiter.api.BeforeEach;
@@ -109,24 +102,7 @@ class MirrorEvmTxProcessorTest {
         operations.forEach(operationRegistry::put);
         String EVM_VERSION_0_30 = "v0.30";
         when(evmProperties.evmVersion()).thenReturn(EVM_VERSION_0_30);
-        var evm30 = new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT, EvmSpecVersion.LONDON);
-        String EVM_VERSION_0_32 = "v0.32";
-        Map<String, Provider<MessageCallProcessor>> mcps =
-                Map.of(
-                        EVM_VERSION_0_30,
-                        () -> new MessageCallProcessor(
-                                evm30, new PrecompileContractRegistry()),
-                        EVM_VERSION_0_32,
-                        () -> new MessageCallProcessor(
-                                evm30, new PrecompileContractRegistry()));
-        Map<String, Provider<ContractCreationProcessor>> ccps =
-                Map.of(
-                        EVM_VERSION_0_30,
-                        () -> new ContractCreationProcessor(
-                                gasCalculator, evm30, true, List.of(), 1),
-                        EVM_VERSION_0_32,
-                        () -> new ContractCreationProcessor(
-                                gasCalculator, evm30, true, List.of(), 1));
+
 
         mirrorEvmTxProcessor =
                 new MirrorEvmTxProcessor(
@@ -134,8 +110,8 @@ class MirrorEvmTxProcessorTest {
                         pricesAndFeesProvider,
                         evmProperties,
                         gasCalculator,
-                        mcps,
-                        ccps,
+                        mcps(),
+                        ccps(),
                         blockMetaSource,
                         hederaEvmContractAliases,
                         hederaEvmEntityAccess);

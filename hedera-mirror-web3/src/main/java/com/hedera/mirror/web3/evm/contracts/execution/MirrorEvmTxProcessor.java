@@ -60,8 +60,14 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
             final MirrorEvmContractAliases aliasManager,
             final HederaEvmEntityAccess evmEntityAccess
     ) {
-        super(worldState, pricesAndFeesProvider, dynamicProperties, gasCalculator, mcps, ccps,
+        super(
+                worldState,
+                pricesAndFeesProvider,
+                dynamicProperties,
+                gasCalculator,
+                mcps, ccps,
                 blockMetaSource);
+
         this.aliasManager = aliasManager;
         this.codeCache = new AbstractCodeCache(10, evmEntityAccess);
     }
@@ -96,10 +102,12 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
 
     @Override
     protected MessageFrame buildInitialFrame(final MessageFrame.Builder baseInitialFrame, final Address to,
-            final Bytes payload, long value) {
+                                             final Bytes payload, long value) {
         final var code = codeCache.getIfPresent(aliasManager.resolveForEvm(to));
 
-        validateTrue(code != null, ResponseCodeEnum.INVALID_TRANSACTION);
+        if (code == null) {
+            throw new InvalidTransactionException(ResponseCodeEnum.INVALID_TRANSACTION);
+        }
 
         return baseInitialFrame
                 .type(MessageFrame.Type.MESSAGE_CALL)
@@ -108,11 +116,5 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
                 .inputData(payload)
                 .code(code)
                 .build();
-    }
-
-    public static void validateTrue(final boolean flag, final ResponseCodeEnum code) {
-        if (!flag) {
-            throw new InvalidTransactionException(code);
-        }
     }
 }
