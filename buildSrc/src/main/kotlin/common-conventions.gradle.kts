@@ -1,3 +1,8 @@
+import org.gradle.kotlin.dsl.repositories
+import org.owasp.dependencycheck.gradle.extension.AnalyzerExtension
+import plugin.go.GoExtension
+import plugin.go.GolangPlugin
+
 /*-
  * ‌
  * Hedera Mirror Node
@@ -21,8 +26,11 @@
 plugins {
     id("com.diffplug.spotless")
     id("com.github.node-gradle.node")
-    id("java-conventions")
-    `java-library`
+    id("org.owasp.dependencycheck")
+}
+
+repositories {
+    mavenCentral()
 }
 
 val licenseHeader = """
@@ -44,6 +52,16 @@ val licenseHeader = """
 
 
 """.trimIndent()
+val resources = rootDir.resolve("buildSrc").resolve("src").resolve("main").resolve("resources")
+
+dependencyCheck {
+    failBuildOnCVSS = 8f
+    suppressionFile = resources.resolve("suppressions.xml").toString()
+    analyzers(closureOf<AnalyzerExtension> {
+        experimentalEnabled = true
+        golangModEnabled = false // Too many vulnerabilities in transitive dependencies currently
+    })
+}
 
 // Spotless uses Prettier and it requires Node.js
 node {
@@ -72,6 +90,7 @@ spotless {
         addStep(StripOldLicenseFormatterStep.create())
         googleJavaFormat().aosp().reflowLongStrings()
         licenseHeader(licenseHeader, "package")
+        target("*.java")
         targetExclude("build/**")
         toggleOffOn()
     }
@@ -100,6 +119,23 @@ spotless {
     })
 }
 
+tasks.build {
+    dependsOn(tasks.dependencyCheckAnalyze)
+}
+
+// Ensure go binary is installed before running dependency check
+tasks.dependencyCheckAnalyze {
+    doFirst {
+        apply<GolangPlugin>()
+        dependencyCheck {
+            analyzers(closureOf<AnalyzerExtension> {
+                val go = project.extensions.getByName<GoExtension>("go")
+                pathToGo = go.goBin.toString()
+            })
+        }
+    }
+}
+
 tasks.nodeSetup {
     doLast {
         val npmExecutable = node.workDir.asFile.get().walk().first({ it -> it.name == "npm" })
@@ -116,4 +152,3 @@ tasks.spotlessApply {
 tasks.spotlessCheck {
     dependsOn(tasks.nodeSetup)
 }
-

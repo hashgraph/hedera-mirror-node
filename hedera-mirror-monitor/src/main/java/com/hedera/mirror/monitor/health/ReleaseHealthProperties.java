@@ -1,3 +1,5 @@
+package com.hedera.mirror.monitor.health;
+
 /*-
  * ‌
  * Hedera Mirror Node
@@ -18,13 +20,21 @@
  * ‍
  */
 
-description = "Hedera Mirror Node Check State Proof"
+import java.time.Duration;
+import javax.validation.constraints.NotNull;
+import lombok.Data;
+import org.hibernate.validator.constraints.time.DurationMin;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
 
-plugins {
-    id("javascript-conventions")
-}
+@Data
+@Validated
+@ConfigurationProperties("hedera.mirror.monitor.health.release")
+public class ReleaseHealthProperties {
 
-// This project imports code from the parent project
-tasks.npmInstall {
-    dependsOn(":rest:npmInstall")
+    @DurationMin(seconds = 30)
+    @NotNull
+    private Duration cacheExpiry = Duration.ofSeconds(30);
+
+    private boolean enabled = true;
 }

@@ -29,10 +29,10 @@ plugins {
 // Can't use typed variable syntax due to Dependabot limitations
 extra.apply {
     set("gson.version", "2.8.9") // Temporary until Apache jclouds supports gson 2.9
-    set("protobufVersion", "3.21.9")
+    set("postgresql.version", "42.5.1") // Temporary fix for transient dependency security issue
+    set("protobufVersion", "3.21.10")
     set("reactorGrpcVersion", "1.2.3")
     set("snakeyaml.version", "1.33") // Temporary fix for transient dependency security issue
-    set("spring-security.version", "5.7.5") // Temporary fix for transient dependency security issue
     set("testcontainersSpringBootVersion", "2.2.11")
 }
 
@@ -79,8 +79,8 @@ dependencies {
         api("org.springdoc:springdoc-openapi-webflux-ui:1.6.13")
         api("org.springframework.cloud:spring-cloud-dependencies:2021.0.5")
         api("org.testcontainers:junit-jupiter:1.17.6")
-        api("org.web3j:core:5.0.0")
         api("software.amazon.awssdk:bom:2.18.3")
+        api("uk.org.webcompere:system-stubs-jupiter:2.0.1")
     }
 }
 

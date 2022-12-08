@@ -35,7 +35,7 @@ public class AddressBookProperties {
 
     @DurationMin(millis = 500L)
     @NotNull
-    private Duration cacheExpiry = Duration.ofSeconds(5);
+    private Duration cacheExpiry = Duration.ofSeconds(60);
 
     @Min(0)
     private long cacheSize = 50L;

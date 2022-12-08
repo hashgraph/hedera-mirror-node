@@ -22,6 +22,7 @@ const MAX_INT32 = 2147483647;
 const ONE_DAY_IN_NS = 86_400_000_000_000n;
 const ZERO_UINT256 = '0x0000000000000000000000000000000000000000000000000000000000000000';
 const AUTO_RENEW_PERIOD_MULTIPLE = BigInt(1e9);
+const DECIMALS_IN_HBARS = 8;
 
 // url query filer keys
 const filterKeys = {
@@ -115,6 +116,12 @@ const characterEncoding = {
 const networkSupplyQuery = {
   CIRCULATING: 'circulating',
   TOTALCOINS: 'totalcoins',
+};
+
+const networkSupplyCurrencyFormatType = {
+  TINYBARS: 'TINYBARS', // output circulating or total coins in tinybars
+  HBARS: 'HBARS', // output circulating or total coins in hbars (rounded to nearest integer)
+  BOTH: 'BOTH', // default; output circulating or total coins in fractional hbars (with a decimal point between hbars and remaining tinybars)
 };
 
 const transactionResultFilter = {
@@ -211,6 +218,7 @@ const queryParamOperatorPatterns = {
 
 export {
   AUTO_RENEW_PERIOD_MULTIPLE,
+  DECIMALS_IN_HBARS,
   MAX_INT32,
   ONE_DAY_IN_NS,
   ZERO_UINT256,
@@ -224,6 +232,7 @@ export {
   httpStatusCodes,
   keyTypes,
   networks,
+  networkSupplyCurrencyFormatType,
   networkSupplyQuery,
   orderFilterValues,
   queryParamOperators,

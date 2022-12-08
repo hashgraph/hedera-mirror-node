@@ -22,7 +22,15 @@ import _ from 'lodash';
 
 import BaseController from './baseController';
 import config from '../config';
-import {filterKeys, networkSupplyQuery, orderFilterValues, responseContentType, responseDataLabel} from '../constants';
+import {
+  DECIMALS_IN_HBARS,
+  filterKeys,
+  networkSupplyCurrencyFormatType,
+  networkSupplyQuery,
+  orderFilterValues,
+  responseContentType,
+  responseDataLabel,
+} from '../constants';
 import entityId from '../entityId';
 import {InvalidArgumentError, NotFoundError} from '../errors';
 import {AddressBookEntry, FileData} from '../model';
@@ -257,6 +265,37 @@ class NetworkController extends BaseController {
   };
 
   /**
+   * Helper function for getSupply method.
+   * @param {string} valueInTinyCoins a number of tinycoin
+   * @param {networkSupplyCurrencyFormatType} currencyFormat desired output format
+   * @return {string}
+   * @throws {InvalidArgumentError}
+   */
+  convertToCurrencyFormat = (valueInTinyCoins = '0', currencyFormat = config.network.currencyFormat) => {
+    switch (currencyFormat) {
+      case networkSupplyCurrencyFormatType.TINYBARS:
+        return valueInTinyCoins;
+      case networkSupplyCurrencyFormatType.HBARS:
+        // emulate integer division via substring
+        if (valueInTinyCoins.length <= DECIMALS_IN_HBARS) {
+          return '0';
+        }
+        return valueInTinyCoins.substring(0, valueInTinyCoins.length - DECIMALS_IN_HBARS);
+      case networkSupplyCurrencyFormatType.BOTH:
+      default:
+        // emulate floating point division via adding leading zeroes or substring/slice
+        if (valueInTinyCoins.length <= DECIMALS_IN_HBARS) {
+          return '0.' + valueInTinyCoins.padStart(DECIMALS_IN_HBARS, '0');
+        }
+        return (
+          valueInTinyCoins.substring(0, valueInTinyCoins.length - DECIMALS_IN_HBARS) +
+          '.' +
+          valueInTinyCoins.slice(-DECIMALS_IN_HBARS)
+        );
+    }
+  };
+
+  /**
    * Handler function for /network/supply API.
    * @param {Request} req HTTP request object
    * @param {Response} res HTTP response object
@@ -274,8 +313,9 @@ class NetworkController extends BaseController {
     const viewModel = new NetworkSupplyViewModel(networkSupply);
 
     if (q) {
-      res.locals[responseDataLabel] =
-        q === networkSupplyQuery.TOTALCOINS ? viewModel.total_supply : viewModel.released_supply;
+      const valueInTinyCoins = q === networkSupplyQuery.TOTALCOINS ? viewModel.total_supply : viewModel.released_supply;
+      const valueInCurrencyFormat = this.convertToCurrencyFormat(valueInTinyCoins, config.network.currencyFormat);
+      res.locals[responseDataLabel] = valueInCurrencyFormat;
       res.locals[responseContentType] = NetworkController.contentTypeTextPlain;
     } else {
       res.locals[responseDataLabel] = viewModel;
