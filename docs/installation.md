@@ -8,7 +8,7 @@ To run locally, first build the project using Java. Ensure you have OpenJDK 17 i
 from the top level directory. This will compile a runnable mirror node JAR file in the `target` directory.
 
 ```console
-./mvnw clean package -DskipTests
+./gradlew clean build -x test
 ```
 
 ## Running Locally

@@ -2419,7 +2419,7 @@ components:
           format: int64
           type: integer
         node_cert_hash:
-          description: hex encoded hash of the node’s TLS certificate
+          description: hex encoded hash of the node's TLS certificate
           nullable: true
           type: string
         public_key:
@@ -3002,7 +3002,7 @@ components:
           type: string
           description: The Freeze status of the account.
           example: UNFROZEN
-          enum: [NOT_APPLICABLE, FROZEN, UNFROZEN]
+          enum: [ NOT_APPLICABLE, FROZEN, UNFROZEN ]
           nullable: false
         kyc_status:
           type: string

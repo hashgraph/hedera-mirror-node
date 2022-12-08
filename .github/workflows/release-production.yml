@@ -27,7 +27,6 @@ jobs:
       - name: Install JDK
         uses: actions/setup-java@v3
         with:
-          cache: 'maven'
           distribution: 'temurin'
           java-version: 17
 
@@ -43,7 +42,9 @@ jobs:
         run: gcloud auth configure-docker gcr.io,marketplace.gcr.io
 
       - name: Build
-        run: ./mvnw package -DskipTests -pl ${MODULE} -Dmvn.golang.skip=true -Dskip.npm
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: build -x test
 
       - name: Setup QEMU
         uses: docker/setup-qemu-action@v2
@@ -110,10 +111,10 @@ jobs:
         run: echo "TAG=${GITHUB_REF#refs/*/v}" >> $GITHUB_ENV
 
       - name: Install kubectl
-        run:  curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+        run: curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 
       - name: Install mpdev
-        run:  docker run gcr.io/cloud-marketplace-tools/k8s/dev cat /scripts/dev > ${MPDEV}
+        run: docker run gcr.io/cloud-marketplace-tools/k8s/dev cat /scripts/dev > ${MPDEV}
           && chmod +x ${MPDEV}
 
       - name: Install application

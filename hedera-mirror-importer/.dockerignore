@@ -3,3 +3,4 @@
 !build/libs/*.jar
 !target/container
 !target/*.jar
+build/libs/*-plain.jar

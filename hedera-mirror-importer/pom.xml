@@ -304,7 +304,7 @@
                             <execution>
                                 <id>default-test</id>
                                 <configuration>
-                                    <excludedGroups>largedbperf</excludedGroups>
+                                    <excludedGroups>largedbperf,performance</excludedGroups>
                                 </configuration>
                             </execution>
                         </executions>

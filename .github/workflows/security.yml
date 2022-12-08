@@ -21,7 +21,6 @@ jobs:
       - name: Install JDK
         uses: actions/setup-java@v3
         with:
-          cache: 'maven'
           distribution: 'temurin'
           java-version: 17
 
@@ -32,8 +31,10 @@ jobs:
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
 
-      - name: Maven Sonar
-        run: ./mvnw compile sonar:sonar -Dsonar.login=$SONAR_TOKEN
+      - name: Execute Gradle
+        uses: gradle/gradle-build-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          arguments: sonar -x test -Dsonar.projectKey=hedera-mirror-node

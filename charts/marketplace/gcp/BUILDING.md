@@ -3,7 +3,7 @@
 This folder contains logic to support the development and deployment of the Hedera Mirror Node in a Kubernetes cluster
 in [Google Cloud Platform Marketplace](https://console.cloud.google.com/marketplace). It takes in the wrapper
 `hedera-mirror` Helm chart and bundles it into the required deployer image which is built and pushed to Google Container
-Registry on maven deploy.
+Registry on deploy.
 
 # Setup
 
@@ -22,7 +22,6 @@ kubectl apply -f "https://raw.githubusercontent.com/GoogleCloudPlatform/marketpl
 - [gcloud](https://cloud.google.com/sdk/gcloud/)
 - [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
 - [mpdev](https://github.com/GoogleCloudPlatform/marketplace-k8s-app-tools/blob/master/docs/mpdev-references.md)
-
 
 ## Set environment variables
 
