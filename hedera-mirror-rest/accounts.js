@@ -135,8 +135,8 @@ const getEntityBalanceQuery = (
   const query = `
     with latest_token_balance as (
       select account_id, balance, token_id
-      from token_balance
-      where consensus_timestamp = (select max(consensus_timestamp) as consensus_timestamp from account_balance_file)
+      from token_account
+      where associated is true
     ), latest_record_file as (select max(consensus_end) as consensus_timestamp from record_file)
     select
       ${entityFields},

@@ -53,62 +53,43 @@
         "key": [5, 5, 5]
       }
     ],
-    "balances": [
-      {
-        "timestamp": 2300,
-        "id": 17,
-        "realm_num": 1,
-        "balance": 999,
-        "tokens": [
-          {
-            "token_num": 99998,
-            "balance": 17
-          },
-          {
-            "token_num": 99999,
-            "balance": 1717
-          }
-        ]
-      },
-      {
-        "timestamp": 2300,
-        "id": 18,
-        "realm_num": 1,
-        "balance": 999
-      },
-      {
-        "timestamp": 2300,
-        "id": 19,
-        "realm_num": 1,
-        "balance": 999,
-        "tokens": [
-          {
-            "token_num": 99998,
-            "balance": 19
-          },
-          {
-            "token_num": 99999,
-            "balance": 1919
-          }
-        ]
-      },
-      {
-        "timestamp": 2300,
-        "id": 20,
-        "realm_num": 1,
-        "balance": 999
-      },
-      {
-        "timestamp": 2300,
-        "id": 21,
-        "realm_num": 1,
-        "balance": 999
-      }
-    ],
     "recordFiles": [
       {
         "consensus_start": 2000,
         "consensus_end": 2345
+      }
+    ],
+    "tokenaccounts": [
+      {
+        "token_id": "0.0.99998",
+        "account_id": "0.1.17",
+        "balance": 17,
+        "created_timestamp": "2300"
+      },
+      {
+        "token_id": "0.0.99999",
+        "account_id": "0.1.17",
+        "balance": 1717,
+        "created_timestamp": "2300"
+      },
+      {
+        "token_id": "0.0.99999",
+        "account_id": "0.1.18",
+        "balance": 18,
+        "created_timestamp": "2300",
+        "associated": false
+      },
+      {
+        "token_id": "0.0.99998",
+        "account_id": "0.1.19",
+        "balance": 19,
+        "created_timestamp": "2300"
+      },
+      {
+        "token_id": "0.0.99999",
+        "account_id": "0.1.19",
+        "balance": 1919,
+        "created_timestamp": "2300"
       }
     ],
     "transactions": [],
