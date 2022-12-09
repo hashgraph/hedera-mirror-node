@@ -61,6 +61,7 @@ hpa:
   enabled: true
   maxReplicas: 15
   metrics: # Using a custom metric exposed via the prometheus adapter.
+    - type: Pods
       pods:
         metric:
           name: requests_per_second
