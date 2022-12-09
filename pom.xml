@@ -73,7 +73,7 @@
         <guava.version>31.1-jre</guava.version>
         <headlong.version>7.0.0</headlong.version>
         <hedera-evm.version>0.32.0-SNAPSHOT</hedera-evm.version>
-        <hedera-protobuf.version>0.32.0</hedera-protobuf.version>
+        <hedera-protobuf.version>0.33.0-virtual-addresses-SNAPSHOT</hedera-protobuf.version>
         <hibernate-types.version>2.20.0</hibernate-types.version>
         <jacoco.version>0.8.8</jacoco.version>
         <java.version>17</java.version>
