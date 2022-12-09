@@ -1,4 +1,4 @@
 *
 !Dockerfile
 !build/libs/*.jar
-!target/*.jar
+build/libs/*-plain.jar

@@ -26,7 +26,7 @@ complex code underneath.
 
 - OpenJDK 17+
 
-### Maven Execution
+### Test Execution
 
 Tests can be compiled and run by running the following command from the root folder:
 
@@ -161,7 +161,8 @@ The project layout encompasses the Cucumber Feature files, the Runner file(s) an
   `Given`, `When`, `And`, and `Then` keyword line in the `.feature` file has a matching step method that implements its
   logic. Feature files scenarios and step file method descriptions must be kept in sync to avoid mismatch errors.
 - Runner Files : Currently a single runner file is used at
-  `src/test/java/com/hedera/mirror/test/e2e/acceptance/AcceptanceTest.java`. This file also specifies the `CucumberOptions`
+  `src/test/java/com/hedera/mirror/test/e2e/acceptance/AcceptanceTest.java`. This file also specifies
+  the `CucumberOptions`
   such as `features`, `glue` and `plugin` that are used to connect all the files together.
 
 ### Test Creation
@@ -172,5 +173,6 @@ To create a new test/scenario follow these steps
    scenario. Describe your scenario with a `Given` setup, a `When` execution and a `Then` validation step. The `When`
    and `Then` steps would be the expected minimum for a meaningful scenario.
 2. Update an existing step file or create a new step file with the corresponding java method under
-   `src/test/java/com/hedera/mirror/test/e2e/acceptance/steps` that will be run. Note method Cucumber attribute text must
+   `src/test/java/com/hedera/mirror/test/e2e/acceptance/steps` that will be run. Note method Cucumber attribute text
+   must
    match the feature file.

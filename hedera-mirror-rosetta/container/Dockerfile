@@ -3,6 +3,7 @@
 # and run the services using supervisord
 
 FROM ubuntu:22.04 as builder
+ENV LANG=C.UTF-8
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y gcc git openjdk-17-jdk-headless wget
 # GIT_REF can be a branch, a tag, or a 40-charater git commit hash
@@ -13,12 +14,12 @@ RUN git clone --depth 1 -n "${REPO_URL}" hedera-mirror-node \
     && git fetch --depth 1 origin "${GIT_REF}" \
     && git reset --hard FETCH_HEAD
 WORKDIR /hedera-mirror-node
-RUN ./mvnw clean package -DskipTests -pl hedera-mirror-importer,hedera-mirror-rosetta
+RUN ./gradlew :importer:build :rosetta:build -x test -x dependencyCheckAnalyze
 WORKDIR /app
 RUN mkdir importer rosetta scripts \
     && cp /hedera-mirror-node/hedera-mirror-rosetta/container/* . \
-    && cp /hedera-mirror-node/hedera-mirror-importer/target/hedera-mirror-importer*.jar ./importer/hedera-mirror-importer.jar \
-    && cp /hedera-mirror-node/hedera-mirror-rosetta/bin/hedera-mirror-rosetta ./rosetta \
+    && cp /hedera-mirror-node/hedera-mirror-importer/build/libs/hedera-mirror-importer-*.jar ./importer/hedera-mirror-importer.jar \
+    && cp /hedera-mirror-node/hedera-mirror-rosetta/build/hedera-mirror-rosetta ./rosetta \
     && cp /hedera-mirror-node/hedera-mirror-importer/src/main/resources/db/scripts/init.sh ./scripts
 
 # ######################################################################## #

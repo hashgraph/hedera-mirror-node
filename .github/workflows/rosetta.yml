@@ -1,8 +1,11 @@
 name: Rosetta API
 
 on:
+  schedule:
+    - cron: "0 1 * * *" # Daily at 1:00 AM
   pull_request:
     branches: [ main, release/** ]
+    paths: [ hedera-mirror-rosetta/** ]
   push:
     branches: [ main, release/** ]
     tags: [ v* ]
@@ -16,40 +19,10 @@ env:
   MODULE: hedera-mirror-rosetta
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Install JDK
-        uses: actions/setup-java@v3
-        with:
-          cache: 'maven'
-          distribution: 'temurin'
-          java-version: 17
-
-      - name: Cache dependencies
-        uses: actions/cache@v3
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: ${{ runner.os }}-go-
-
-      - name: Maven verify
-        run: ./mvnw verify -pl "${MODULE}"
-        working-directory: .
-        env:
-          GOPATH: ~/go
-
-      - name: Upload coverage report
-        uses: codecov/codecov-action@v3
-        if: always()
-
   image:
     if: github.event_name == 'push' || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v3

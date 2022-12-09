@@ -86,30 +86,31 @@ dependencies {
 
 allprojects {
     apply(plugin = "jacoco")
+    apply(plugin = "org.sonarqube")
+
+    sonarqube {
+        properties {
+            property("sonar.host.url", "https://sonarcloud.io")
+            property("sonar.organization", "hashgraph")
+            property("sonar.projectKey", rootProject.name)
+            property("sonar.issue.ignore.multicriteria", "e1,e2,e3,e4,e5")
+            property("sonar.issue.ignore.multicriteria.e1.resourceKey", "**/*.java")
+            property("sonar.issue.ignore.multicriteria.e1.ruleKey", "java:S6212")
+            property("sonar.issue.ignore.multicriteria.e2.resourceKey", "**/*.java")
+            property("sonar.issue.ignore.multicriteria.e2.ruleKey", "java:S125")
+            property("sonar.issue.ignore.multicriteria.e3.resourceKey", "**/*.java")
+            property("sonar.issue.ignore.multicriteria.e3.ruleKey", "java:S2187")
+            property("sonar.issue.ignore.multicriteria.e4.resourceKey", "**/*.js")
+            property("sonar.issue.ignore.multicriteria.e4.ruleKey", "javascript:S3758")
+            property("sonar.issue.ignore.multicriteria.e5.resourceKey", "**/stateproof/*.sql")
+            property("sonar.issue.ignore.multicriteria.e5.ruleKey", "plsql:S1192")
+        }
+    }
 }
 
 idea {
     module.isDownloadJavadoc = true
     module.isDownloadSources = true
-}
-
-sonarqube {
-    properties {
-        property("sonar.host.url", "https://sonarcloud.io")
-        property("sonar.organization", "hashgraph")
-        property("sonar.projectKey", project.name)
-        property("sonar.issue.ignore.multicriteria", "e1,e2,e3,e4,e5")
-        property("sonar.issue.ignore.multicriteria.e1.resourceKey", "**/*.java")
-        property("sonar.issue.ignore.multicriteria.e1.ruleKey", "java:S6212")
-        property("sonar.issue.ignore.multicriteria.e2.resourceKey", "**/*.java")
-        property("sonar.issue.ignore.multicriteria.e2.ruleKey", "java:S125")
-        property("sonar.issue.ignore.multicriteria.e3.resourceKey", "**/*.java")
-        property("sonar.issue.ignore.multicriteria.e3.ruleKey", "java:S2187")
-        property("sonar.issue.ignore.multicriteria.e4.resourceKey", "**/*.js")
-        property("sonar.issue.ignore.multicriteria.e4.ruleKey", "javascript:S3758")
-        property("sonar.issue.ignore.multicriteria.e5.resourceKey", "**/stateproof/*.sql")
-        property("sonar.issue.ignore.multicriteria.e5.ruleKey", "plsql:S1192")
-    }
 }
 
 fun replaceVersion(files: String, match: String) {
@@ -134,7 +135,14 @@ project.tasks.register("release") {
         replaceVersion("charts/**/Chart.yaml", "(?<=^(appVersion|version): ).+")
         replaceVersion("docker-compose.yml", "(?<=:)main")
         replaceVersion("gradle.properties", "(?<=^version=).+")
-        replaceVersion("hedera-mirror-rest/**/package*.json", "(?<=\"@hashgraph/(check-state-proof|mirror-rest|mirror-monitor)\",\\s{3,7}\"version\": \")[^\"]+")
+        replaceVersion(
+            "hedera-mirror-rest/**/package*.json",
+            "(?<=\"@hashgraph/(check-state-proof|mirror-rest|mirror-monitor)\",\\s{3,7}\"version\": \")[^\"]+"
+        )
         replaceVersion("hedera-mirror-rest/**/openapi.yml", "(?<=^  version: ).+")
     }
+}
+
+tasks.sonar {
+    dependsOn(tasks.build)
 }

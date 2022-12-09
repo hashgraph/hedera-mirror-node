@@ -71,7 +71,8 @@ public abstract class BatchEntityListenerTest extends IntegrationTest {
         entityListener.onCleanup(new EntityBatchCleanupEvent(this));
 
         // then
-        topicMessages.as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> topicMessages)
+                .thenAwait(Duration.ofSeconds(10L))
                 .expectNext(topicMessage1, topicMessage2)
                 .thenCancel()
                 .verify(Duration.ofMillis(2000));
@@ -87,7 +88,8 @@ public abstract class BatchEntityListenerTest extends IntegrationTest {
         entityListener.onCleanup(new EntityBatchCleanupEvent(this));
 
         // then
-        topicMessages.as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> topicMessages)
+                .thenAwait(Duration.ofSeconds(10L))
                 .expectNextCount(0L)
                 .thenCancel()
                 .verify(Duration.ofMillis(500));
@@ -106,7 +108,8 @@ public abstract class BatchEntityListenerTest extends IntegrationTest {
         entityListener.onCleanup(new EntityBatchCleanupEvent(this));
 
         // then
-        topicMessages.as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> topicMessages)
+                .thenAwait(Duration.ofSeconds(10L))
                 .expectNextCount(0L)
                 .thenCancel()
                 .verify(Duration.ofMillis(500));
@@ -124,7 +127,8 @@ public abstract class BatchEntityListenerTest extends IntegrationTest {
         entityListener.onSave(new EntityBatchSaveEvent(this));
 
         // then
-        topicMessages.as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> topicMessages)
+                .thenAwait(Duration.ofSeconds(10L))
                 .expectNextCount(0L)
                 .thenCancel()
                 .verify(Duration.ofMillis(500));

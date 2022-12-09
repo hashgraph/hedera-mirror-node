@@ -106,7 +106,7 @@
     "testcontainers": "^9.0.1"
   },
   "jest-junit": {
-    "outputDirectory": "target/jest-junit"
+    "outputDirectory": "build/jest-junit"
   },
   "overrides": {
     "json-schema": "0.4.0",
