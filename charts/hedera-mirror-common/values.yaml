@@ -146,7 +146,16 @@ prometheus-adapter:
       cpu: 25m
       memory: 50Mi
   rules:
-    default: false
+    custom:
+      - seriesQuery: 'api_all_request_total{namespace!="",pod!=""}'
+        resources:
+          overrides:
+            namespace: { resource: "namespace" }
+            pod: {resource: "pod"}
+        name:
+          matches: "^(.*)_all_request_total$"
+          as: "api_request_count"
+        metricsQuery: "sum(rate(<<.Series>>{<<.LabelMatchers>>}[1m])) by (<<.GroupBy>>)"
 
 prometheus:
   alertmanager:

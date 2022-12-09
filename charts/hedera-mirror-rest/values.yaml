@@ -61,12 +61,17 @@ hpa:
   enabled: true
   maxReplicas: 15
   metrics:
-    - type: Resource
-      resource:
-        name: cpu
+    - type: Object
+      object:
+        metric:
+          name: api_request_count
+        describedObject:
+          apiVersion: /apis/custom.metrics.k8s.io/v1beta1/
+          kind: Namespace
+          name: mainnet
         target:
-          type: Utilization
-          averageUtilization: 80
+          type: Value
+          value: 400m
   minReplicas: 1
 
 image:
