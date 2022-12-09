@@ -19,53 +19,6 @@
         "num": 21
       }
     ],
-    "balances": [
-      {
-        "timestamp": 2300,
-        "id": 17,
-        "balance": 70
-      },
-      {
-        "timestamp": 2300,
-        "id": 18,
-        "balance": 80,
-        "tokens": [
-          {
-            "token_num": 99998,
-            "balance": 18
-          },
-          {
-            "token_num": 99999,
-            "balance": 1818
-          }
-        ]
-      },
-      {
-        "timestamp": 2300,
-        "id": 19,
-        "balance": 90
-      },
-      {
-        "timestamp": 2300,
-        "id": 20,
-        "balance": 100,
-        "tokens": [
-          {
-            "token_num": 99999,
-            "balance": 20
-          },
-          {
-            "token_num": 99998,
-            "balance": 2020
-          }
-        ]
-      },
-      {
-        "timestamp": 2300,
-        "id": 21,
-        "balance": 110
-      }
-    ],
     "contracts": [
       {
         "balance": 90,
@@ -76,6 +29,32 @@
       {
         "consensus_start": 2000,
         "consensus_end": 2345
+      }
+    ],
+    "tokenaccounts": [
+      {
+        "token_id": "0.0.99998",
+        "account_id": "0.0.18",
+        "balance": 18,
+        "created_timestamp": "2300"
+      },
+      {
+        "token_id": "0.0.99999",
+        "account_id": "0.0.18",
+        "balance": 1818,
+        "created_timestamp": "2300"
+      },
+      {
+        "token_id": "0.0.99999",
+        "account_id": "0.0.20",
+        "balance": 20,
+        "created_timestamp": "2300"
+      },
+      {
+        "token_id": "0.0.99998",
+        "account_id": "0.0.20",
+        "balance": 2020,
+        "created_timestamp": "2300"
       }
     ],
     "transactions": [],

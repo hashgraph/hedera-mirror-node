@@ -55,7 +55,7 @@
     </parent>
 
     <properties>
-        <besu.version>22.10.0</besu.version>
+        <besu.version>22.10.2</besu.version>
         <disruptor.version>3.4.4</disruptor.version> <!-- Used for asynchronous logging -->
         <docker-maven-plugin.version>0.40.2</docker-maven-plugin.version>
         <docker.architecture>amd64</docker.architecture>
@@ -73,7 +73,7 @@
         <guava.version>31.1-jre</guava.version>
         <headlong.version>7.0.0</headlong.version>
         <hedera-evm.version>0.32.0-SNAPSHOT</hedera-evm.version>
-        <hedera-protobuf.version>0.31.0-SNAPSHOT</hedera-protobuf.version>
+        <hedera-protobuf.version>0.33.0-virtual-addresses-SNAPSHOT</hedera-protobuf.version>
         <hibernate-types.version>2.20.0</hibernate-types.version>
         <jacoco.version>0.8.8</jacoco.version>
         <java.version>17</java.version>
@@ -81,7 +81,7 @@
         <log4j2.version>2.17.2</log4j2.version>
         <micrometer-jvm-extras.version>0.2.2</micrometer-jvm-extras.version>
         <msgpack.version>0.9.3</msgpack.version>
-        <postgresql.version>42.4.1</postgresql.version>
+        <postgresql.version>42.5.1</postgresql.version>  <!-- Temporary fix for transient dependency security issue -->
         <protobuf.version>3.21.10</protobuf.version>
         <release.version>0.71.0-SNAPSHOT</release.version> <!-- Used to replace release versions in all files -->
         <release.chartVersion>0.71.0-SNAPSHOT</release.chartVersion>

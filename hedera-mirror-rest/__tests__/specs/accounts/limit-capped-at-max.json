@@ -64,96 +64,54 @@
         "receiver_sig_required": true
       }
     ],
-    "balances": [
-      {
-        "timestamp": 1900,
-        "id": 1,
-        "balance": 999,
-        "tokens": [
-          {
-            "token_num": 90000,
-            "balance": 1
-          },
-          {
-            "token_num": 90001,
-            "balance": 11
-          }
-        ]
-      },
-      {
-        "timestamp": 1900,
-        "id": 2,
-        "balance": 999,
-        "tokens": [
-          {
-            "token_num": 90001,
-            "balance": 2
-          },
-          {
-            "token_num": 90010,
-            "balance": 22
-          }
-        ]
-      },
-      {
-        "timestamp": 1900,
-        "id": 3,
-        "balance": 999
-      },
-      {
-        "timestamp": 1900,
-        "id": 4,
-        "balance": 999
-      },
-      {
-        "timestamp": 1900,
-        "id": 5,
-        "balance": 999,
-        "tokens": [
-          {
-            "token_num": 100001,
-            "balance": 5
-          },
-          {
-            "token_num": 100002,
-            "balance": 55
-          },
-          {
-            "token_num": 100003,
-            "balance": 55
-          }
-        ]
-      },
-      {
-        "timestamp": 1900,
-        "id": 6,
-        "balance": 999
-      },
-      {
-        "timestamp": 1900,
-        "id": 7,
-        "balance": 999
-      },
-      {
-        "timestamp": 1900,
-        "id": 8,
-        "balance": 999
-      },
-      {
-        "timestamp": 1900,
-        "id": 9,
-        "balance": 999
-      },
-      {
-        "timestamp": 1900,
-        "id": 10,
-        "balance": 999
-      }
-    ],
     "recordFiles": [
       {
         "consensus_start": 1800,
         "consensus_end": 2000
+      }
+    ],
+    "tokenaccounts": [
+      {
+        "token_id": "0.0.90000",
+        "account_id": "0.0.1",
+        "balance": 1,
+        "created_timestamp": "2300"
+      },
+      {
+        "token_id": "0.0.90001",
+        "account_id": "0.0.1",
+        "balance": 11,
+        "created_timestamp": "2300"
+      },
+      {
+        "token_id": "0.0.90001",
+        "account_id": "0.0.2",
+        "balance": 2,
+        "created_timestamp": "2300"
+      },
+      {
+        "token_id": "0.0.90010",
+        "account_id": "0.0.2",
+        "balance": 22,
+        "created_timestamp": "2300"
+      },
+      {
+        "token_id": "0.0.100001",
+        "account_id": "0.0.5",
+        "balance": 5,
+        "created_timestamp": "2300"
+      },
+      {
+        "token_id": "0.0.100002",
+        "account_id": "0.0.5",
+        "balance": 55,
+        "created_timestamp": "2300"
+      },
+      {
+        "token_id": "0.0.100003",
+        "account_id": "0.0.5",
+        "balance": 55,
+        "created_timestamp": "2300"
       }
     ],
     "transactions": [],

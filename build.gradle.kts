@@ -30,7 +30,7 @@ plugins {
 extra.apply {
     set("gson.version", "2.8.9") // Temporary until Apache jclouds supports gson 2.9
     set("postgresql.version", "42.5.1") // Temporary fix for transient dependency security issue
-    set("protobufVersion", "3.21.9")
+    set("protobufVersion", "3.21.10")
     set("reactorGrpcVersion", "1.2.3")
     set("snakeyaml.version", "1.33") // Temporary fix for transient dependency security issue
     set("testcontainersSpringBootVersion", "2.2.11")
@@ -50,7 +50,7 @@ dependencies {
         api("com.google.guava:guava:31.1-jre")
         api("com.google.protobuf:protobuf-java:$protobufVersion")
         api("com.hedera.evm:hedera-evm-api:0.32.0-SNAPSHOT")
-        api("com.hedera.hashgraph:hedera-protobuf-java-api:0.31.0")
+        api("com.hedera.hashgraph:hedera-protobuf-java-api:0.33.0-virtual-addresses-SNAPSHOT")
         api("com.hedera.hashgraph:sdk:2.19.0")
         api("com.ongres.scram:client:2.1")
         api("com.playtika.testcontainers:embedded-google-pubsub:$testcontainersSpringBootVersion")
@@ -80,6 +80,7 @@ dependencies {
         api("org.springframework.cloud:spring-cloud-dependencies:2021.0.5")
         api("org.testcontainers:junit-jupiter:1.17.6")
         api("software.amazon.awssdk:bom:2.18.3")
+        api("uk.org.webcompere:system-stubs-jupiter:2.0.1")
     }
 }
 
