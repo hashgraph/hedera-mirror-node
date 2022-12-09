@@ -1,8 +1,8 @@
 FROM node:18.12.1-bullseye-slim
 LABEL maintainer="mirrornode@hedera.com"
-ARG DEBIAN_FRONTEND=noninteractive
 
 # Setup
+ENV DEBIAN_FRONTEND=noninteractive
 ENV NODE_ENV production
 EXPOSE 5551
 HEALTHCHECK --interval=10s --retries=3 --start-period=25s --timeout=2s CMD wget -q -O- http://localhost:5551/health/liveness
