@@ -18,6 +18,7 @@
  * ‍
  */
 
+import org.owasp.dependencycheck.gradle.extension.AnalyzerExtension
 import plugin.go.Go
 import plugin.go.GoExtension
 import plugin.go.GolangPlugin
@@ -74,4 +75,19 @@ tasks.build {
 
 tasks.clean {
     dependsOn(goClean)
+}
+
+// Ensure go binary is installed before running dependency check
+listOf(tasks.dependencyCheckAggregate, tasks.dependencyCheckAnalyze).forEach {
+    it.configure {
+        dependsOn("setup")
+        doFirst {
+            dependencyCheck {
+                analyzers(closureOf<AnalyzerExtension> {
+                    val go = project.extensions.getByName<GoExtension>("go")
+                    pathToGo = go.goBin.toString()
+                })
+            }
+        }
+    }
 }

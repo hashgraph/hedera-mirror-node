@@ -1,7 +1,4 @@
-import org.gradle.kotlin.dsl.repositories
 import org.owasp.dependencycheck.gradle.extension.AnalyzerExtension
-import plugin.go.GoExtension
-import plugin.go.GolangPlugin
 
 /*-
  * ‌
@@ -117,23 +114,6 @@ spotless {
         target("*.xml")
         trimTrailingWhitespace()
     })
-}
-
-tasks.build {
-    dependsOn(tasks.dependencyCheckAnalyze)
-}
-
-// Ensure go binary is installed before running dependency check
-tasks.dependencyCheckAnalyze {
-    doFirst {
-        apply<GolangPlugin>()
-        dependencyCheck {
-            analyzers(closureOf<AnalyzerExtension> {
-                val go = project.extensions.getByName<GoExtension>("go")
-                pathToGo = go.goBin.toString()
-            })
-        }
-    }
 }
 
 tasks.nodeSetup {

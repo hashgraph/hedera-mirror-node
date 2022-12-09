@@ -70,7 +70,7 @@ dependencies {
         api("net.java.dev.jna:jna:5.12.1")
         api("org.apache.commons:commons-compress:1.22")
         api("org.apache.commons:commons-math3:3.6.1")
-        api("org.apache.tuweni:tuweni-bytes:2.3.0")
+        api("org.apache.tuweni:tuweni-bytes:2.3.1")
         api("org.apache.velocity:velocity-engine-core:2.3")
         api("org.gaul:s3proxy:2.0.0")
         api("org.hyperledger.besu:secp256k1:0.6.1")
