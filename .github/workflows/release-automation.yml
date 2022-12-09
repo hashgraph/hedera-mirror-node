@@ -6,9 +6,6 @@ on:
       version:
         description: 'Version (semver)'
         required: true
-      chartVersion:
-        description: 'Chart Version (semver)'
-        required: true
 
 jobs:
   release:
@@ -18,7 +15,6 @@ jobs:
       RELEASE_NOTES_FILENAME: release_notes
     outputs:
       create_pr: ${{ env.CREATE_PR }}
-      next_chart_version_snapshot: ${{ env.NEXT_CHART_VERSION_SNAPSHOT }}
       next_version_snapshot: ${{ env.NEXT_VERSION_SNAPSHOT }}
       pr_title: ${{ env.PR_TITLE }}
       release_branch: ${{ env.RELEASE_BRANCH }}
@@ -31,13 +27,6 @@ jobs:
           bump: preminor
           version: ${{ github.event.inputs.version }}
 
-      - name: Parse Chart Version
-        id: chart_version_parser
-        uses: terradatum/semver-action@v1
-        with:
-          bump: preminor
-          version: ${{ github.event.inputs.chartVersion }}
-
       - name: Retrieve the Milestone
         id: milestone
         if: ${{ steps.version_parser.outputs.pre-release == '' }}
@@ -49,13 +38,11 @@ jobs:
 
       - name: Set Release Environment Variables
         run: |
-          NEXT_CHART_VERSION_SNAPSHOT=${{ format('{0}.{1}.0-SNAPSHOT', steps.chart_version_parser.outputs.major, steps.chart_version_parser.outputs.next-minor) }}
           NEXT_VERSION_SNAPSHOT=${{ format('{0}.{1}.0-SNAPSHOT', steps.version_parser.outputs.major, steps.version_parser.outputs.next-minor) }}
           RELEASE_BRANCH="release/${{ steps.version_parser.outputs.major }}.${{ steps.version_parser.outputs.minor }}"
           RELEASE_TAG=v${{ steps.version_parser.outputs.version }}
 
           cat >> $GITHUB_ENV <<EOF
-          NEXT_CHART_VERSION_SNAPSHOT=$NEXT_CHART_VERSION_SNAPSHOT
           NEXT_VERSION_SNAPSHOT=$NEXT_VERSION_SNAPSHOT
           RELEASE_BRANCH=$RELEASE_BRANCH
           RELEASE_TAG=$RELEASE_TAG
@@ -81,7 +68,6 @@ jobs:
       - name: Install JDK
         uses: actions/setup-java@v3
         with:
-          cache: 'maven'
           distribution: 'temurin'
           java-version: 17
 
@@ -98,11 +84,12 @@ jobs:
             git checkout ${RELEASE_BRANCH}
           fi
 
-      - name: Maven Release
-        run: ./mvnw package -Drelease.version=$VERSION -Drelease.chartVersion=$CHART_VERSION -Ddocker.tag.version=$VERSION -N -P=release
+      - name: Gradle Release
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: release -Pversion=$VERSION
         env:
           VERSION: ${{ steps.version_parser.outputs.version }}
-          CHART_VERSION: ${{ steps.chart_version_parser.outputs.version }}
 
       - name: Create Release Notes
         if: ${{ steps.milestone.outputs.number != '' }}
@@ -149,7 +136,6 @@ jobs:
     needs: release
     if: ${{ needs.release.outputs.create_pr == 'true' }}
     env:
-      NEXT_CHART_VERSION_SNAPSHOT: ${{ needs.release.outputs.next_chart_version_snapshot }}
       NEXT_VERSION_SNAPSHOT: ${{ needs.release.outputs.next_version_snapshot }}
       RELEASE_BRANCH: ${{ needs.release.outputs.release_branch }}
 
@@ -172,7 +158,6 @@ jobs:
       - name: Install JDK
         uses: actions/setup-java@v3
         with:
-          cache: 'maven'
           distribution: 'temurin'
           java-version: 17
 
@@ -181,8 +166,10 @@ jobs:
           git fetch origin $RELEASE_BRANCH:$RELEASE_BRANCH
           git reset --hard $RELEASE_BRANCH
 
-      - name: Maven Release for Next Minor Snapshot
-        run: ./mvnw package -Drelease.version=$NEXT_VERSION_SNAPSHOT -Drelease.chartVersion=$NEXT_CHART_VERSION_SNAPSHOT -Ddocker.tag.version=main -N -P=release
+      - name: Gradle Release for Next Minor Snapshot
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: release -Pversion=$NEXT_VERSION_SNAPSHOT
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v4

@@ -9,5 +9,4 @@ bin/
 build/
 container/
 scripts/
-target/
 test/

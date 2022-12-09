@@ -6,6 +6,7 @@
 !Dockerfile
 __tests__/
 application.yml
+build/
 check-state-proof/
 coverage/
 monitoring/
@@ -13,4 +14,3 @@ node/
 node_modules/
 pm2.json
 pom.xml
-target/

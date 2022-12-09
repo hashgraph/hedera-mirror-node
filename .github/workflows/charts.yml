@@ -24,7 +24,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GIT_REPO: ${{ github.repository }}
-      IMAGE_TAG: ci-${{ github.sha }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -34,7 +33,6 @@ jobs:
       - name: Install JDK
         uses: actions/setup-java@v3
         with:
-          cache: 'maven'
           distribution: 'temurin'
           java-version: 17
 
@@ -46,7 +44,9 @@ jobs:
         timeout-minutes: 3
 
       - name: Build images
-        run: ./mvnw deploy -pl hedera-mirror-grpc,hedera-mirror-importer,hedera-mirror-rest,hedera-mirror-rosetta,hedera-mirror-web3 -Dmvn.golang.skip=true -Dskip.npm -DskipTests -Ddocker.push.repository=localhost:5001/mirrornode -Ddocker.tag.version=${IMAGE_TAG}
+        uses: gradle/gradle-build-action@v2
+        with:
+          arguments: dockerPush -PdockerRegistry=localhost:5001/mirrornode -PdockerTag=test -Dorg.gradle.parallel=false
 
       - name: Install ct
         uses: helm/chart-testing-action@v2.3.1
@@ -60,4 +60,4 @@ jobs:
           echo "GIT_REPO=${{ github.event.pull_request.head.repo.full_name }}" >> $GITHUB_ENV
 
       - name: Install chart
-        run: ct install --config .github/ct.yaml --charts=charts/hedera-mirror --helm-extra-set-args="--set=global.image.registry=registry:5000 --set=global.image.tag=${IMAGE_TAG} --set=rosetta.test.git.branch=${GIT_BRANCH} --set=rosetta.test.git.repository=${GIT_REPO}"
+        run: ct install --config .github/ct.yaml --charts=charts/hedera-mirror --helm-extra-set-args="--set=global.image.registry=registry:5000 --set=global.image.tag=test --set=rosetta.test.git.branch=${GIT_BRANCH} --set=rosetta.test.git.repository=${GIT_REPO}"

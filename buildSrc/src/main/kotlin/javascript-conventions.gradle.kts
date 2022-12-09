@@ -27,6 +27,19 @@ plugins {
     id("jacoco")
 }
 
+// Temporary until we move completely off VMs
+tasks.register<NpmTask>("package") {
+    dependsOn(tasks.npmInstall)
+    args.set(listOf("pack"))
+    doLast {
+        buildDir.mkdirs()
+        fileTree(projectDir).matching { include("*.tgz") }.forEach {
+            val newName = it.name.replace("hashgraph-mirror-rest-", "hedera-mirror-rest-v")
+            it.renameTo(buildDir.resolve(newName))
+        }
+    }
+}
+
 val test = tasks.register<NpmTask>("test") {
     dependsOn(tasks.npmInstall)
     args.set(listOf("test"))
@@ -36,10 +49,6 @@ val test = tasks.register<NpmTask>("test") {
             standardOutput = NullOutputStream.INSTANCE
         }
     }
-}
-
-tasks.assemble {
-    dependsOn(tasks.npmInstall)
 }
 
 tasks.build {
