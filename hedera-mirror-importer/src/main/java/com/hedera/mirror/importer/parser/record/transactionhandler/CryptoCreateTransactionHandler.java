@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import static com.hedera.mirror.common.util.DomainUtils.EVM_ADDRESS_LENGTH;
+
 import com.google.protobuf.ByteString;
 import javax.inject.Named;
 import org.apache.commons.lang3.ArrayUtils;
@@ -69,7 +71,7 @@ class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandle
         if (!emptyAlias) {
             entity.setAlias(alias);
             entityIdService.notify(entity);
-            if (emptyKey) {
+            if (emptyKey && alias.length > EVM_ADDRESS_LENGTH) {
                 entity.setKey(alias);
             }
         }

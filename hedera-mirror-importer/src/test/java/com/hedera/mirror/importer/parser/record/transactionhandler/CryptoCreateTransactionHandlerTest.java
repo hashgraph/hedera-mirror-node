@@ -183,21 +183,33 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
                 .returns(evmAddress, Entity::getEvmAddress);
     }
 
-    @Test
-    void updateKeyFromTransactionBody() {
-        var alias = UtilityTest.ALIAS_ECDSA_SECP256K1;
-        var key = Key.newBuilder()
+    private static Stream<Arguments> provideAlias() {
+        var validKey = Key.newBuilder()
                 .setECDSASecp256K1(ByteString.copyFrom(TestUtils.generateRandomByteArray(20))).build();
+        var emptyKey = Key.getDefaultInstance();
+        var validAliasForKey = ByteString.copyFrom(UtilityTest.ALIAS_ECDSA_SECP256K1);
+        var invalidAliasForKey = ByteString.fromHex("1234");
+        return Stream.of(
+                Arguments.of(validAliasForKey, validKey, validKey.toByteArray()),
+                Arguments.of(validAliasForKey, emptyKey, validAliasForKey.toByteArray()),
+                Arguments.of(invalidAliasForKey, validKey, validKey.toByteArray()),
+                Arguments.of(invalidAliasForKey, emptyKey, null)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideAlias")
+    void updateKeyFromTransactionBody(ByteString alias, Key key, byte[] expectedKey) {
         var recordItem = recordItemBuilder.cryptoCreate()
-                .record(r -> r.setAlias(DomainUtils.fromBytes(alias)))
-                .transactionBody(t -> t.setAlias(DomainUtils.fromBytes(alias)).setKey(key))
+                .record(r -> r.setAlias(alias))
+                .transactionBody(t -> t.setKey(key))
                 .build();
         var accountId = EntityId.of(recordItem.getRecord().getReceipt().getAccountID());
 
         transactionHandler.updateTransaction(transaction(recordItem), recordItem);
 
         assertEntity(accountId, recordItem.getConsensusTimestamp())
-                .returns(key.toByteArray(), Entity::getKey);
+                .returns(expectedKey, Entity::getKey);
     }
 
     private static Stream<Arguments> provideEvmAddresses() {
@@ -238,12 +250,10 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
                 .returns(false, Entity::getDeleted)
                 .returns(null, Entity::getExpirationTimestamp)
                 .returns(accountId.getId(), Entity::getId)
-                .satisfies(c -> assertThat(c.getKey()).isNotEmpty())
                 .satisfies(c -> assertThat(c.getMaxAutomaticTokenAssociations()).isPositive())
                 .satisfies(c -> assertThat(c.getMemo()).isNotEmpty())
                 .returns(accountId.getEntityNum(), Entity::getNum)
                 .satisfies(c -> assertThat(c.getProxyAccountId().getId()).isPositive())
-                .satisfies(c -> assertThat(c.getPublicKey()).isNotEmpty())
                 .returns(accountId.getRealmNum(), Entity::getRealm)
                 .returns(accountId.getShardNum(), Entity::getShard)
                 .returns(ACCOUNT, Entity::getType)
