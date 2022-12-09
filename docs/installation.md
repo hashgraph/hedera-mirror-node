@@ -34,7 +34,7 @@ To run the Importer, first populate the configuration at one of the supported
 [configuration](configuration.md#importer) paths, then run:
 
 ```console
-java -jar hedera-mirror-importer/target/hedera-mirror-importer-*.jar
+java -jar hedera-mirror-importer/build/libs/hedera-mirror-importer-*.jar
 ```
 
 Additionally, there is a Systemd unit file located in the `hedera-mirror-importer/scripts/` directory that can be used
@@ -46,7 +46,7 @@ To run the gRPC API, first populate the configuration at one of the supported
 [configuration](configuration.md#grpc-api) paths, then run:
 
 ```console
-java -jar hedera-mirror-grpc/target/hedera-mirror-grpc-*.jar
+java -jar hedera-mirror-grpc/build/libs/hedera-mirror-grpc-*.jar
 ```
 
 ### Monitor
@@ -55,7 +55,7 @@ To run the monitor, first populate the configuration at one of the supported
 [configuration](configuration.md#monitor) paths, then run:
 
 ```console
-java -jar hedera-mirror-monitor/target/hedera-mirror-monitor-*.jar
+java -jar hedera-mirror-monitor/build/libs/hedera-mirror-monitor-*.jar
 ```
 
 The monitor is mainly intended to be run as a Docker container. See our [Docker Compose](/docker-compose.yml) and
