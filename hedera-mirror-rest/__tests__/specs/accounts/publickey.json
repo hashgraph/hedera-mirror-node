@@ -22,48 +22,6 @@
         "public_key": "3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be"
       }
     ],
-    "balances": [
-      {
-        "timestamp": 2200,
-        "id": 7,
-        "balance": 999
-      },
-      {
-        "timestamp": 2200,
-        "id": 8,
-        "balance": 999,
-        "tokens": [
-          {
-            "token_num": 99998,
-            "balance": 8
-          },
-          {
-            "token_num": 99999,
-            "balance": 88
-          }
-        ]
-      },
-      {
-        "timestamp": 2200,
-        "id": 9,
-        "balance": 999,
-        "tokens": [
-          {
-            "token_num": 99998,
-            "balance": 9
-          },
-          {
-            "token_num": 99999,
-            "balance": 99
-          }
-        ]
-      },
-      {
-        "timestamp": 2200,
-        "id": 10,
-        "balance": 999
-      }
-    ],
     "contracts": [
       {
         "balance": 115,
@@ -75,6 +33,32 @@
       {
         "consensus_start": 2000,
         "consensus_end": 2345
+      }
+    ],
+    "tokenaccounts": [
+      {
+        "token_id": "0.0.99998",
+        "account_id": "0.0.8",
+        "balance": 8,
+        "created_timestamp": "2200"
+      },
+      {
+        "token_id": "0.0.99999",
+        "account_id": "0.0.8",
+        "balance": 88,
+        "created_timestamp": "2200"
+      },
+      {
+        "token_id": "0.0.99998",
+        "account_id": "0.0.9",
+        "balance": 9,
+        "created_timestamp": "2200"
+      },
+      {
+        "token_id": "0.0.99999",
+        "account_id": "0.0.9",
+        "balance": 99,
+        "created_timestamp": "2200"
       }
     ]
   },
