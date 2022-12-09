@@ -60,18 +60,13 @@ hpa:
   behavior: {}
   enabled: true
   maxReplicas: 15
-  metrics:
-    - type: Object
-      object:
+  metrics: # Using a custom metric exposed via the prometheus adapter. TODO: Monitor and change the averageValue as per use.
+      pods:
         metric:
-          name: api_request_count
-        describedObject:
-          apiVersion: /apis/custom.metrics.k8s.io/v1beta1/
-          kind: Namespace
-          name: mainnet
+          name: requests_per_second
         target:
-          type: Value
-          value: 400m
+          type: AverageValue
+          averageValue: 300000m
   minReplicas: 1
 
 image:

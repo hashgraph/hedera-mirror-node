@@ -145,7 +145,7 @@ prometheus-adapter:
     requests:
       cpu: 25m
       memory: 50Mi
-  rules:
+  rules:  # This is a custom rule which exposes (requests_per_second) from the prometheus adapter to be used by any Horizontal Pod Autoscaler.
     custom:
       - seriesQuery: 'api_all_request_total{namespace!="",pod!=""}'
         resources:
@@ -154,7 +154,7 @@ prometheus-adapter:
             pod: {resource: "pod"}
         name:
           matches: "^(.*)_all_request_total$"
-          as: "api_request_count"
+          as: "requests_per_second"
         metricsQuery: "sum(rate(<<.Series>>{<<.LabelMatchers>>}[1m])) by (<<.GroupBy>>)"
 
 prometheus:
