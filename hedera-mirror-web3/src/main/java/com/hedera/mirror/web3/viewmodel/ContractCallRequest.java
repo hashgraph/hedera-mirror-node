@@ -24,6 +24,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 import lombok.Data;
 
 import com.hedera.mirror.web3.convert.BlockTypeDeserializer;
@@ -45,6 +46,7 @@ public class ContractCallRequest {
     private boolean estimate;
 
     @Hex(minLength = ADDRESS_LENGTH, maxLength = ADDRESS_LENGTH)
+    @NotNull(groups = TransferCheck.class)
     private String from;
 
     @Min(0)
@@ -58,6 +60,7 @@ public class ContractCallRequest {
     private String to;
 
     @Min(0)
+    @Min(value = 1, groups = TransferCheck.class)
     private long value;
 
     public boolean isInvalidValueTransfer(){

@@ -27,11 +27,12 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
 
-import javax.validation.Valid;
+import javax.validation.groups.Default;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -47,6 +48,7 @@ import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
 import com.hedera.mirror.web3.viewmodel.ContractCallResponse;
 import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
+import com.hedera.mirror.web3.viewmodel.TransferCheck;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 
 @CustomLog
@@ -59,7 +61,7 @@ class ContractController {
     private final ContractCallService contractCallService;
 
     @PostMapping(value = "/call")
-    Mono<ContractCallResponse> call(@RequestBody @Valid ContractCallRequest request) {
+    Mono<ContractCallResponse> call(@RequestBody @Validated({Default.class, TransferCheck.class}) ContractCallRequest request) {
         if (request.isEstimate()) {
             throw new UnsupportedOperationException(NOT_IMPLEMENTED_ERROR);
         }
@@ -70,7 +72,7 @@ class ContractController {
 
         final var params = constructServiceParameters(request);
         final var callResponse =
-                ContractCallResponse.of(
+                new ContractCallResponse(
                         contractCallService.processCall(params));
 
         return Mono.just(callResponse);
@@ -110,8 +112,9 @@ class ContractController {
     @ExceptionHandler
     @ResponseStatus(BAD_REQUEST)
     private Mono<GenericErrorResponse> validationError(WebExchangeBindException e) {
-        log.warn("Validation error: {}", e.getMessage());
-        return errorResponse(parseValidationError(e));
+        final var errorMessage = parseValidationError(e);
+        log.warn("Validation error: {}", errorMessage);
+        return errorResponse(errorMessage);
     }
 
     @ExceptionHandler

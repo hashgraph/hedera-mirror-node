@@ -20,7 +20,8 @@ package com.hedera.mirror.web3.service;
  * ‍
  */
 
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSACTION;
+import static com.hedera.mirror.web3.evm.exception.ResponseCodeUtil.emptyFailProcessingResponse;
+import static com.hedera.mirror.web3.evm.exception.ResponseCodeUtil.getStatusOrDefault;
 
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +39,11 @@ public class ContractCallService {
 
     public String processCall(final CallServiceParameters body) {
         final var txnResult = doProcessCall(body);
+
+        if (!txnResult.isSuccessful()) {
+            throw new InvalidTransactionException(getStatusOrDefault(txnResult));
+        }
+
         final var callResult = txnResult.getOutput() != null
                 ? txnResult.getOutput() : Bytes.EMPTY;
 
@@ -45,19 +51,18 @@ public class ContractCallService {
     }
 
     private HederaEvmTransactionProcessingResult doProcessCall(final CallServiceParameters body) {
-        final var processingResult =
-                mirrorEvmTxProcessor.execute(
-                        body.getSender(),
-                        body.getReceiver(),
-                        body.getProvidedGasLimit(),
-                        body.getValue(),
-                        body.getCallData(),
-                        body.isStatic());
+        try {
+            return
+                    mirrorEvmTxProcessor.execute(
+                            body.getSender(),
+                            body.getReceiver(),
+                            body.getProvidedGasLimit(),
+                            body.getValue(),
+                            body.getCallData(),
+                            body.isStatic());
 
-        if (!processingResult.isSuccessful()) {
-            throw new InvalidTransactionException(INVALID_TRANSACTION);
+        } catch (Exception e) {
+            return emptyFailProcessingResponse();
         }
-
-        return processingResult;
     }
 }

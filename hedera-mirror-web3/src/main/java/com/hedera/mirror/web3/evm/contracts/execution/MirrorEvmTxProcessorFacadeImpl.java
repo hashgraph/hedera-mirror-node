@@ -52,7 +52,10 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final MirrorEvmContractAliases aliasManager,
             final PricesAndFeesImpl pricesAndFees,
             final AccountAccessorImpl accountAccessor) {
-        final AbstractCodeCache codeCache = new AbstractCodeCache(evmProperties.getExpirationCacheTime(), entityAccess);
+
+        final int expirationCacheTime = (int) evmProperties.getExpirationCacheTime().toSeconds();
+        final AbstractCodeCache codeCache = new AbstractCodeCache(expirationCacheTime,
+                entityAccess);
         final HederaEvmMutableWorldState worldState =
                 new HederaEvmWorldState(
                         entityAccess, evmProperties,

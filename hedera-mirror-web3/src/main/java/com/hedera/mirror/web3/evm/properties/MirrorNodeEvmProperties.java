@@ -30,6 +30,8 @@ import org.springframework.validation.annotation.Validated;
 
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 
+import java.time.Duration;
+
 @Setter
 @Validated
 @ConfigurationProperties(prefix = "hedera.mirror.web3.evm")
@@ -48,7 +50,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Max(100)
     private int maxGasRefundPercentage = 20;
 
-    private int expirationCacheTime = 600;
+    private Duration expirationCacheTime = Duration.ofSeconds(600L);
 
     @Override
     public boolean isRedirectTokenCallsEnabled() {
@@ -75,7 +77,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
         return maxGasRefundPercentage;
     }
 
-    public int getExpirationCacheTime() {
+    public Duration getExpirationCacheTime() {
         return expirationCacheTime;
     }
 }
