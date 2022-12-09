@@ -21,18 +21,16 @@ package com.hedera.mirror.web3.controller;
  */
 
 import static com.hedera.mirror.web3.controller.ValidationErrorParser.parseValidationError;
-import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TRANSFER_ACCOUNT_ID;
 import static org.apache.tuweni.bytes.Bytes.EMPTY;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
 
-import javax.validation.groups.Default;
+import javax.validation.Valid;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -48,7 +46,6 @@ import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
 import com.hedera.mirror.web3.viewmodel.ContractCallResponse;
 import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
-import com.hedera.mirror.web3.viewmodel.TransferCheck;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 
 @CustomLog
@@ -61,13 +58,9 @@ class ContractController {
     private final ContractCallService contractCallService;
 
     @PostMapping(value = "/call")
-    Mono<ContractCallResponse> call(@RequestBody @Validated({Default.class, TransferCheck.class}) ContractCallRequest request) {
+    Mono<ContractCallResponse> call(@RequestBody @Valid ContractCallRequest request) {
         if (request.isEstimate()) {
             throw new UnsupportedOperationException(NOT_IMPLEMENTED_ERROR);
-        }
-        //make sure there is a valid sender for value transfers
-        if (request.isInvalidValueTransfer()) {
-            throw new InvalidTransactionException(INVALID_TRANSFER_ACCOUNT_ID);
         }
 
         final var params = constructServiceParameters(request);

@@ -25,13 +25,17 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.PositiveOrZero;
 import lombok.Data;
 
 import com.hedera.mirror.web3.convert.BlockTypeDeserializer;
 import com.hedera.mirror.web3.convert.BlockTypeSerializer;
 import com.hedera.mirror.web3.validation.Hex;
 
+import org.hibernate.validator.group.GroupSequenceProvider;
+
 @Data
+@GroupSequenceProvider(TransferValidation.class)
 public class ContractCallRequest {
 
     private static final int ADDRESS_LENGTH = 40;
@@ -59,11 +63,7 @@ public class ContractCallRequest {
     @NotEmpty
     private String to;
 
-    @Min(0)
+    @PositiveOrZero
     @Min(value = 1, groups = TransferCheck.class)
     private long value;
-
-    public boolean isInvalidValueTransfer(){
-        return (value > 0 && from == null);
-    }
 }
