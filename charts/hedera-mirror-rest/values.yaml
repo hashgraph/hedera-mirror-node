@@ -60,7 +60,7 @@ hpa:
   behavior: {}
   enabled: true
   maxReplicas: 15
-  metrics: # Using a custom metric exposed via the prometheus adapter.
+  metrics:  # Using a custom metric exposed via the prometheus adapter.
     - type: Pods
       pods:
         metric:

@@ -151,8 +151,10 @@ prometheus-adapter:
       - seriesQuery: 'api_all_request_total{namespace!="",pod!=""}'
         resources:
           overrides:
-            namespace: { resource: "namespace" }
-            pod: {resource: "pod"}
+            namespace:
+              resource: "namespace"
+            pod:
+              resource: "pod"
         name:
           as: "requests_per_second"
         metricsQuery: "sum(rate(<<.Series>>{<<.LabelMatchers>>}[3m])) by (<<.GroupBy>>)"
