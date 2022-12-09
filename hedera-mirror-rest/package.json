@@ -102,7 +102,7 @@
     "pg-format": "^1.0.4",
     "rewire": "^6.0.0",
     "sinon": "^15.0.0",
-    "supertest": "^6.3.1",
+    "supertest": "^6.3.3",
     "testcontainers": "^9.0.1"
   },
   "jest-junit": {
