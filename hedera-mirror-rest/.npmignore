@@ -5,9 +5,9 @@
 __tests__/
 /application.yml
 /jest.config.js
+build/
 check-state-proof/
 coverage/
 Dockerfile
 node/
 pom.xml
-target/

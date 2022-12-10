@@ -91,6 +91,14 @@ tasks.test {
     }
 }
 
+tasks.register<Test>("performanceTest") {
+    maxHeapSize = "4096m"
+    minHeapSize = "1024m"
+    useJUnitPlatform {
+        includeTags("performance")
+    }
+}
+
 tasks.jacocoTestReport {
     dependsOn(tasks.test)
     reports {

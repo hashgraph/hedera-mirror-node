@@ -50,7 +50,7 @@ dependencies {
         api("com.google.guava:guava:31.1-jre")
         api("com.google.protobuf:protobuf-java:$protobufVersion")
         api("com.hedera.evm:hedera-evm:0.33.0-SNAPSHOT")
-        api("com.hedera.hashgraph:hedera-protobuf-java-api:0.32.0")
+        api("com.hedera.hashgraph:hedera-protobuf-java-api:0.33.0-virtual-addresses-SNAPSHOT")
         api("com.hedera.hashgraph:sdk:2.19.0")
         api("com.ongres.scram:client:2.1")
         api("com.playtika.testcontainers:embedded-google-pubsub:$testcontainersSpringBootVersion")
@@ -74,7 +74,7 @@ dependencies {
         api("org.apache.velocity:velocity-engine-core:2.3")
         api("org.gaul:s3proxy:2.0.0")
         api("org.hyperledger.besu:secp256k1:0.6.1")
-        api("org.hyperledger.besu:evm:22.10.1")
+        api("org.hyperledger.besu:evm:22.7.6")
         api("org.msgpack:jackson-dataformat-msgpack:0.9.3")
         api("org.springdoc:springdoc-openapi-webflux-ui:1.6.13")
         api("org.springframework.cloud:spring-cloud-dependencies:2021.0.5")
@@ -86,30 +86,31 @@ dependencies {
 
 allprojects {
     apply(plugin = "jacoco")
+    apply(plugin = "org.sonarqube")
+
+    sonarqube {
+        properties {
+            property("sonar.host.url", "https://sonarcloud.io")
+            property("sonar.organization", "hashgraph")
+            property("sonar.projectKey", rootProject.name)
+            property("sonar.issue.ignore.multicriteria", "e1,e2,e3,e4,e5")
+            property("sonar.issue.ignore.multicriteria.e1.resourceKey", "**/*.java")
+            property("sonar.issue.ignore.multicriteria.e1.ruleKey", "java:S6212")
+            property("sonar.issue.ignore.multicriteria.e2.resourceKey", "**/*.java")
+            property("sonar.issue.ignore.multicriteria.e2.ruleKey", "java:S125")
+            property("sonar.issue.ignore.multicriteria.e3.resourceKey", "**/*.java")
+            property("sonar.issue.ignore.multicriteria.e3.ruleKey", "java:S2187")
+            property("sonar.issue.ignore.multicriteria.e4.resourceKey", "**/*.js")
+            property("sonar.issue.ignore.multicriteria.e4.ruleKey", "javascript:S3758")
+            property("sonar.issue.ignore.multicriteria.e5.resourceKey", "**/stateproof/*.sql")
+            property("sonar.issue.ignore.multicriteria.e5.ruleKey", "plsql:S1192")
+        }
+    }
 }
 
 idea {
     module.isDownloadJavadoc = true
     module.isDownloadSources = true
-}
-
-sonarqube {
-    properties {
-        property("sonar.host.url", "https://sonarcloud.io")
-        property("sonar.organization", "hashgraph")
-        property("sonar.projectKey", project.name)
-        property("sonar.issue.ignore.multicriteria", "e1,e2,e3,e4,e5")
-        property("sonar.issue.ignore.multicriteria.e1.resourceKey", "**/*.java")
-        property("sonar.issue.ignore.multicriteria.e1.ruleKey", "java:S6212")
-        property("sonar.issue.ignore.multicriteria.e2.resourceKey", "**/*.java")
-        property("sonar.issue.ignore.multicriteria.e2.ruleKey", "java:S125")
-        property("sonar.issue.ignore.multicriteria.e3.resourceKey", "**/*.java")
-        property("sonar.issue.ignore.multicriteria.e3.ruleKey", "java:S2187")
-        property("sonar.issue.ignore.multicriteria.e4.resourceKey", "**/*.js")
-        property("sonar.issue.ignore.multicriteria.e4.ruleKey", "javascript:S3758")
-        property("sonar.issue.ignore.multicriteria.e5.resourceKey", "**/stateproof/*.sql")
-        property("sonar.issue.ignore.multicriteria.e5.ruleKey", "plsql:S1192")
-    }
 }
 
 fun replaceVersion(files: String, match: String) {
@@ -134,7 +135,14 @@ project.tasks.register("release") {
         replaceVersion("charts/**/Chart.yaml", "(?<=^(appVersion|version): ).+")
         replaceVersion("docker-compose.yml", "(?<=:)main")
         replaceVersion("gradle.properties", "(?<=^version=).+")
-        replaceVersion("hedera-mirror-rest/**/package*.json", "(?<=\"@hashgraph/(check-state-proof|mirror-rest|mirror-monitor)\",\\s{3,7}\"version\": \")[^\"]+")
+        replaceVersion(
+            "hedera-mirror-rest/**/package*.json",
+            "(?<=\"@hashgraph/(check-state-proof|mirror-rest|mirror-monitor)\",\\s{3,7}\"version\": \")[^\"]+"
+        )
         replaceVersion("hedera-mirror-rest/**/openapi.yml", "(?<=^  version: ).+")
     }
+}
+
+tasks.sonar {
+    dependsOn(tasks.build)
 }

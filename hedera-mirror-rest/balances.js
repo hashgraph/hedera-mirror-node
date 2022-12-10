@@ -1,9 +1,6 @@
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2022 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,7 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
 import {getResponseLimit} from './config';
@@ -86,20 +82,19 @@ const getBalances = async (req, res) => {
   });
   const [balanceQuery, balanceParams] = utils.parseBalanceQueryParam(req.query, 'ab.balance');
   const [pubKeyQuery, pubKeyParams] = utils.parsePublicKeyQueryParam(req.query, 'public_key');
-  const {
-    query: limitQuery,
-    params,
-    order,
-    limit,
-  } = utils.parseLimitAndOrderParams(req, constants.orderFilterValues.DESC);
+  const {query: limitQuery, params, order, limit} = utils.parseLimitAndOrderParams(
+    req,
+    constants.orderFilterValues.DESC
+  );
 
   let sqlQuery;
-  // Use account balance table's timestamp for token balance if there is timestamp filter; otherwise, get the latest
-  // token balance
-  const tokenBalanceSubQuery = getTokenBalanceSubQuery(
-    order,
-    tsQuery ? 'ab.consensus_timestamp' : 'latest_account_balance.consensus_timestamp'
-  );
+  // Use account balance table's timestamp for token balance if there is timestamp filter and obtain the balance from
+  // the token balance table; otherwise if there is no timestamp get the latest token balance from the token account
+  // table.
+  const tokenBalanceSubQuery = tsQuery
+    ? getTokenBalanceSubQuery(order, 'ab.consensus_timestamp')
+    : getTokenAccountBalanceSubQuery(order);
+
   // subquery to find the latest snapshot timestamp from the balance history table
   const tsSubQuery = `
     select consensus_timestamp
@@ -161,6 +156,18 @@ const getTokenBalanceSubQuery = (order, timestampColumn) => {
       from token_balance tb
       where tb.account_id = ab.account_id
         and tb.consensus_timestamp = ${timestampColumn}
+      order by token_id ${order}
+      limit ${tokenBalanceLimit.multipleAccounts}
+    ) as account_token_balance`;
+};
+
+const getTokenAccountBalanceSubQuery = (order) => {
+  return `
+    select json_agg(json_build_object('token_id', token_id, 'balance', balance))
+    from (
+      select token_id, balance
+      from token_account ta
+      where ta.account_id = ab.account_id and ta.associated is true
       order by token_id ${order}
       limit ${tokenBalanceLimit.multipleAccounts}
     ) as account_token_balance`;

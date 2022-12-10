@@ -190,7 +190,8 @@ class PubSubMessageTest {
                   "automaticTokenAssociations":[],
                   "alias":"",
                   "ethereumHash":"YWJjZGVm",
-                  "paidStakingRewards":[]
+                  "paidStakingRewards":[],
+                  "evmAddress":""
                 }
                 """;
     }
