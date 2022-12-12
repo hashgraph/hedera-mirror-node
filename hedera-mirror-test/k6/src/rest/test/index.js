@@ -40,6 +40,7 @@ import * as contractsIdResultsLogs from './contractsIdResultsLogs.js';
 import * as contractsIdResultsTimestamp from './contractsIdResultsTimestamp.js';
 import * as networkStake from './networkStake.js';
 import * as networkSupply from './networkSupply.js';
+import * as rampUp from './rampUp.js';
 import * as schedules from './schedules.js';
 import * as schedulesAccount from './schedulesAccount.js';
 import * as schedulesId from './schedulesId.js';
@@ -83,6 +84,7 @@ const tests = {
   contractsIdResultsTimestamp,
   networkStake,
   networkSupply,
+  rampUp,
   schedules,
   schedulesAccount,
   schedulesId,
@@ -106,6 +108,6 @@ const tests = {
   transactionsTransactionTypeAscending
 };
 
-const {funcs, options, scenarioDurationGauge} = getSequentialTestScenarios(tests);
+const {funcs, options, scenarioDurationGauge, scenarios} = getSequentialTestScenarios(tests);
 
-export {funcs, options, scenarioDurationGauge};
+export {funcs, options, scenarioDurationGauge, scenarios};
