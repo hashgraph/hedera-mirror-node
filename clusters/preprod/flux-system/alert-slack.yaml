@@ -16,6 +16,9 @@ spec:
       namespace: integration
     - kind: HelmRelease
       name: '*'
+      namespace: integration-docker
+    - kind: HelmRelease
+      name: '*'
       namespace: previewnet
     - kind: HelmRelease
       name: '*'
