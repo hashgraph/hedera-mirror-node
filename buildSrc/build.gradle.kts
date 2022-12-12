@@ -40,7 +40,7 @@ dependencies {
     implementation("org.openapitools:openapi-generator-gradle-plugin:6.2.1")
     implementation("org.owasp:dependency-check-gradle:7.4.1")
     implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:3.5.0.2730")
-    implementation("org.springframework.boot:spring-boot-gradle-plugin:2.7.6")
+    implementation("org.springframework.boot:spring-boot-gradle-plugin:3.0.0")
 }
 
 val gitHook = tasks.register<Exec>("gitHook") {
