@@ -24,3 +24,7 @@ plugins {
     id("docker-conventions")
     id("javascript-conventions")
 }
+
+tasks.assemble {
+    dependsOn("package")
+}

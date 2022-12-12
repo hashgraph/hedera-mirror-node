@@ -1,0 +1,46 @@
+{
+  "description": "Network supply API with q=totalcoins with currencyFormat explicitly set to HBARS",
+  "setup": {
+    "config": {
+      "network": {
+        "currencyFormat": "HBARS"
+      }
+    },
+    "accounts": [
+      {
+        "balance": 10,
+        "num": 1
+      },
+      {
+        "balance": 4000000000000000000,
+        "num": 2
+      },
+      {
+        "balance": 50,
+        "num": 42
+      },
+      {
+        "balance": 1,
+        "num": 100
+      }
+    ],
+    "recordFiles": [
+      {
+        "consensus_start": "1000000000",
+        "consensus_end": "1000000001",
+        "count": 1,
+        "hapi_version_major": 0,
+        "hapi_version_minor": 22,
+        "hapi_version_patch": 3,
+        "hash": "123",
+        "index": 16,
+        "name": "2022-04-27T12_09_24.499938763Z.rcd",
+        "prev_hash": "abc"
+      }
+    ]
+  },
+  "url": "/api/v1/network/supply?q=totalcoins",
+  "responseContentType": "text/plain; charset=utf-8",
+  "responseStatus": 200,
+  "responseJson": "50000000000"
+}

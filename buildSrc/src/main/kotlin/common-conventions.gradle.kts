@@ -1,3 +1,5 @@
+import org.owasp.dependencycheck.gradle.extension.AnalyzerExtension
+
 /*-
  * ‌
  * Hedera Mirror Node
@@ -21,8 +23,11 @@
 plugins {
     id("com.diffplug.spotless")
     id("com.github.node-gradle.node")
-    id("java-conventions")
-    `java-library`
+    id("org.owasp.dependencycheck")
+}
+
+repositories {
+    mavenCentral()
 }
 
 val licenseHeader = """
@@ -44,6 +49,16 @@ val licenseHeader = """
 
 
 """.trimIndent()
+val resources = rootDir.resolve("buildSrc").resolve("src").resolve("main").resolve("resources")
+
+dependencyCheck {
+    failBuildOnCVSS = 8f
+    suppressionFile = resources.resolve("suppressions.xml").toString()
+    analyzers(closureOf<AnalyzerExtension> {
+        experimentalEnabled = true
+        golangModEnabled = false // Too many vulnerabilities in transitive dependencies currently
+    })
+}
 
 // Spotless uses Prettier and it requires Node.js
 node {
@@ -72,6 +87,7 @@ spotless {
         addStep(StripOldLicenseFormatterStep.create())
         googleJavaFormat().aosp().reflowLongStrings()
         licenseHeader(licenseHeader, "package")
+        target("*.java")
         targetExclude("build/**")
         toggleOffOn()
     }
@@ -116,4 +132,3 @@ tasks.spotlessApply {
 tasks.spotlessCheck {
     dependsOn(tasks.nodeSetup)
 }
-

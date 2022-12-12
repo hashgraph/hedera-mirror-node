@@ -338,6 +338,8 @@ monitor.
 
 Name                                                            | Default | Description
 ----------------------------------------------------------------|---------| ---------------------------------------
+`hedera.mirror.monitor.health.release.cacheExpiry`              | 30s     | The amount of time to cache cluster release health status
+`hedera.mirror.monitor.health.release.enabled`                  | true    | Whether to enable cluster release health check
 `hedera.mirror.monitor.mirrorNode.grpc.host`                    | ""      | The hostname of the mirror node's gRPC API
 `hedera.mirror.monitor.mirrorNode.grpc.port`                    | 5600    | The port of the mirror node's gRPC API
 `hedera.mirror.monitor.mirrorNode.rest.host`                    | ""      | The hostname of the mirror node's REST API

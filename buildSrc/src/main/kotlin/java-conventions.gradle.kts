@@ -21,11 +21,11 @@
 import org.springframework.boot.gradle.plugin.SpringBootPlugin
 
 plugins {
+    id("common-conventions")
     id("io.freefair.lombok")
     id("io.spring.dependency-management")
     id("jacoco")
     id("org.gradle.test-retry")
-    id("spotless-conventions")
     `java-library`
 }
 
@@ -34,7 +34,6 @@ configurations.all {
 }
 
 repositories {
-    mavenCentral()
     maven {
         url = uri("https://oss.sonatype.org/content/repositories/snapshots")
     }
@@ -82,6 +81,14 @@ tasks.test {
     }
     useJUnitPlatform {
         excludeTags("largedbperf", "performance")
+    }
+}
+
+tasks.register<Test>("performanceTest") {
+    maxHeapSize = "4096m"
+    minHeapSize = "1024m"
+    useJUnitPlatform {
+        includeTags("performance")
     }
 }
 

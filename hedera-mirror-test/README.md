@@ -24,13 +24,13 @@ complex code underneath.
 
 ### Requirements
 
-- OpenJDK 11+
+- OpenJDK 17+
 
-### Maven Execution
+### Test Execution
 
 Tests can be compiled and run by running the following command from the root folder:
 
-`./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags=@acceptance`
+`./gradlew :test:acceptance --info -Dcucumber.filter.tags=@acceptance`
 
 ### Test Configuration
 
@@ -77,13 +77,14 @@ under `hedera.mirror.test.acceptance` include:
   - `writeTimeout` - The timeout duration to wait for data to be written.
 
 (Recommended) Options can be set by creating your own configuration file with the above properties. This allows for
-multiple files per env. The following command will help to point out which file to use:
+multiple files per environment. The `spring.config.additional-location` property can be set to the folder containing
+the environment-specific `application.yml`:
 
-`./mvnw integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="@acceptance" -Dspring.config.name=application-testnet`
+`./gradlew :test:acceptance --info -Dcucumber.filter.tags="@acceptance" -Dspring.config.additional-location=/etc/hedera/`
 
 Options can also be set through the command line as follows
 
-`./mvnw integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dhedera.mirror.test.acceptance.nodeId=0.0.4 -Dhedera.mirror.test.acceptance.nodeAddress=1.testnet.hedera.com:50211`
+`./gradlew :test:acceptance --info -Dhedera.mirror.test.acceptance.nodeId=0.0.4 -Dhedera.mirror.test.acceptance.nodeAddress=1.testnet.hedera.com:50211`
 
 #### Custom nodes
 
@@ -117,8 +118,7 @@ hedera:
 #### Feature Tags
 
 Tags: Tags allow you to filter which Cucumber scenarios and files are run. By default, tests marked with
-the `@acceptance`
-tag are run. To run a different set of files different tags can be specified
+the `@acceptance` tag are run. To run a different set of files different tags can be specified.
 
 Test Suite Tags
 
@@ -144,7 +144,7 @@ Feature based Tags
 
 To execute run
 
-    ./mvnw clean integration-test --projects hedera-mirror-test/ -P=acceptance-tests -Dcucumber.filter.tags="<tag name>"
+    ./gradlew :test:acceptance --info -Dcucumber.filter.tags="<tag name>"
 
 > **_NOTE:_** Feature tags can be combined - See [Tag expressions](https://cucumber.io/docs/cucumber/api/). To run a
 > subset of tags
@@ -155,22 +155,24 @@ To execute run
 
 The project layout encompasses the Cucumber Feature files, the Runner file(s) and the Step files
 
-- Feature Files : These are located under 'src/test/resources/features/' folder and are files of the \*.feature format.
+- Feature Files : These are located under `src/test/resources/features` folder and are files of the `.feature` format.
   These files contain the Gherkin based language that describes the test scenarios.
-- Step Files : These are java classes located under 'src/test/java/com/hedera/mirror/test/e2e/acceptance/steps'. Every '
-  Given', 'When', 'And', and 'Then' keyword line in the .feature file has a matching step method that implements its
-  logic. Feature files scenarios and Step file method descriptions must be kept in sync to avoid mismatch errors.
-- Runner Files : Currently a single Runner file is used at '
-  src/test/java/com/hedera/mirror/test/e2e/acceptance/AcceptanceTest.java'. This file also specifies the CucumberOptions
-  such as 'features', 'glue' and 'plugin' that are used to connect all the files together.
+- Step Files : These are java classes located under `src/test/java/com/hedera/mirror/test/e2e/acceptance/steps`. Every
+  `Given`, `When`, `And`, and `Then` keyword line in the `.feature` file has a matching step method that implements its
+  logic. Feature files scenarios and step file method descriptions must be kept in sync to avoid mismatch errors.
+- Runner Files : Currently a single runner file is used at
+  `src/test/java/com/hedera/mirror/test/e2e/acceptance/AcceptanceTest.java`. This file also specifies
+  the `CucumberOptions`
+  such as `features`, `glue` and `plugin` that are used to connect all the files together.
 
 ### Test Creation
 
 To create a new test/scenario follow these steps
 
-1. Update an existing .feature file or create a new .feature file under 'src/test/resources/features/' with your desired
-   scenario. Describe your scenario with a 'Given' setup, a 'When' execution and a 'Then' validation step. The 'When'
-   and 'Then' steps would be the expected minimum for a meaningful scenario.
-2. Update an existing step file or create a new step file with the corresponding java method under '
-   src/test/java/com/hedera/mirror/test/e2e/acceptance/steps' that will be run. Note method Cucumber attribute text must
+1. Update an existing .feature file or create a new .feature file under `src/test/resources/features` with your desired
+   scenario. Describe your scenario with a `Given` setup, a `When` execution and a `Then` validation step. The `When`
+   and `Then` steps would be the expected minimum for a meaningful scenario.
+2. Update an existing step file or create a new step file with the corresponding java method under
+   `src/test/java/com/hedera/mirror/test/e2e/acceptance/steps` that will be run. Note method Cucumber attribute text
+   must
    match the feature file.

@@ -18,13 +18,19 @@
  * ‍
  */
 
+import org.owasp.dependencycheck.gradle.extension.AnalyzerExtension
 import plugin.go.Go
 import plugin.go.GoExtension
 import plugin.go.GolangPlugin
 
+plugins {
+    id("common-conventions")
+    id("jacoco")
+}
+
 apply<GolangPlugin>()
 
-tasks.register<Go>("build") {
+val goBuild = tasks.register<Go>("goBuild") {
     val binary = buildDir.resolve(project.projectDir.name)
     val ldFlags = "-w -s -X main.Version=${project.version}"
     environment["CGO_ENABLED"] = "true"
@@ -32,7 +38,7 @@ tasks.register<Go>("build") {
     dependsOn("test")
 }
 
-tasks.register<Go>("clean") {
+val goClean = tasks.register<Go>("goClean") {
     args("clean")
     buildDir.deleteRecursively()
     projectDir.resolve("coverage.txt").delete()
@@ -54,11 +60,34 @@ tasks.register<Go>("generate") {
 
 tasks.register<Exec>("run") {
     commandLine(buildDir.resolve(project.projectDir.name))
-    dependsOn("build")
+    dependsOn(goBuild)
 }
 
 tasks.register<Go>("test") {
     val go = project.extensions.getByName<GoExtension>("go")
     args("test", "-coverpkg=${go.pkg}", "-coverprofile=coverage.txt", "-covermode=atomic", "-race", "-v", go.pkg)
     dependsOn("fix")
+}
+
+tasks.build {
+    dependsOn(goBuild)
+}
+
+tasks.clean {
+    dependsOn(goClean)
+}
+
+// Ensure go binary is installed before running dependency check
+listOf(tasks.dependencyCheckAggregate, tasks.dependencyCheckAnalyze).forEach {
+    it.configure {
+        dependsOn("setup")
+        doFirst {
+            dependencyCheck {
+                analyzers(closureOf<AnalyzerExtension> {
+                    val go = project.extensions.getByName<GoExtension>("go")
+                    pathToGo = go.goBin.toString()
+                })
+            }
+        }
+    }
 }

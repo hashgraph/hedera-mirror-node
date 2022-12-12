@@ -3,7 +3,7 @@ After=syslog.target
 Description=Hedera Mirror Importer
 
 [Service]
-ExecStart=/usr/bin/java -Xms2g -Xmx10g -XX:+CrashOnOutOfMemoryError -DLog4jContextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector -jar hedera-mirror-importer.jar --spring.config.additional-location=file:/usr/etc/hedera-mirror-importer/
+ExecStart=/usr/bin/java -Xms2g -Xmx10g -XX:+CrashOnOutOfMemoryError -jar hedera-mirror-importer.jar --spring.config.additional-location=file:/usr/etc/hedera-mirror-importer/
 LimitNOFILE=65536
 Restart=on-failure
 RestartSec=1

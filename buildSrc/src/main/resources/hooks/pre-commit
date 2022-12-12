@@ -1,14 +1,13 @@
 #!/bin/sh
 set -e
 
-# Stash any unstaged changes
-git stash -q --keep-index --include-untracked
+rootDir=$(pwd)
+filesStr="$(git diff --name-only --cached --diff-filter=ACMRTUB HEAD)"
+files=($filesStr)
 
-echo "Running spotlessApply to format code..."
-./gradlew spotlessApply
+echo "Running Spotless to format ${#files[@]} changed files"
+#./gradlew spotlessApply
 
-# Add all files modified by Spotless
-git add .
-
-# Unstash the unstaged changes
-git stash pop -q
+#for file in ${files[@]}; do
+  #git add "${rootDir}/${file}"
+#done

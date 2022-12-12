@@ -122,13 +122,13 @@ class RestSubscriberTest {
     void onPublishWhenComplete() {
         restSubscriber.getSubscriptions().subscribe(s -> s.onComplete());
 
-        restSubscriber.subscribe()
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> restSubscriber.subscribe())
                 .then(() -> restSubscriber.onPublish(publishResponse()))
                 .then(() -> restSubscriber.onPublish(publishResponse()))
+                .thenAwait(Duration.ofSeconds(10L))
                 .expectNextCount(0L)
                 .thenCancel()
-                .verify(Duration.ofMillis(500L));
+                .verify(Duration.ofSeconds(1L));
 
         verifyNoInteractions(exchangeFunction);
         RestSubscription subscription = restSubscriber.getSubscriptions().blockFirst();
@@ -139,10 +139,10 @@ class RestSubscriberTest {
     void onPublishWhenNoPublisherMatches() {
         restSubscriberProperties.setPublishers(Set.of("invalid"));
 
-        restSubscriber.subscribe()
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> restSubscriber.subscribe())
                 .then(() -> restSubscriber.onPublish(publishResponse()))
                 .then(() -> restSubscriber.onPublish(publishResponse()))
+                .thenAwait(Duration.ofSeconds(10L))
                 .expectNextCount(0L)
                 .thenCancel()
                 .verify(Duration.ofMillis(500L));
@@ -157,12 +157,12 @@ class RestSubscriberTest {
         restSubscriberProperties.setPublishers(Set.of(SCENARIO));
         Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class))).thenReturn(response(HttpStatus.OK));
 
-        restSubscriber.subscribe()
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> restSubscriber.subscribe())
                 .then(() -> restSubscriber.onPublish(publishResponse()))
+                .thenAwait(Duration.ofSeconds(10L))
                 .expectNextCount(1L)
                 .thenCancel()
-                .verify(Duration.ofMillis(500L));
+                .verify(Duration.ofSeconds(1L));
 
         verify(exchangeFunction, times(1)).exchange(Mockito.isA(ClientRequest.class));
         RestSubscription subscription = restSubscriber.getSubscriptions().blockFirst();
@@ -174,14 +174,13 @@ class RestSubscriberTest {
         Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class))).thenReturn(response(HttpStatus.OK));
 
         Collection<SubscribeResponse> responses = new ArrayList<>();
-        restSubscriber.subscribe()
-                .doOnNext(responses::add)
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> restSubscriber.subscribe().doOnNext(responses::add))
                 .then(() -> restSubscriber.onPublish(publishResponse()))
                 .then(() -> restSubscriber.onPublish(publishResponse()))
+                .thenAwait(Duration.ofSeconds(10L))
                 .expectNextCount(2L)
                 .thenCancel()
-                .verify(Duration.ofMillis(500L));
+                .verify(Duration.ofSeconds(1L));
 
         verify(exchangeFunction, times(2)).exchange(Mockito.isA(ClientRequest.class));
         RestSubscription subscription = restSubscriber.getSubscriptions().blockFirst();
@@ -203,13 +202,13 @@ class RestSubscriberTest {
         restSubscriberProperties.setSubscribers(2);
         Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class))).thenReturn(response(HttpStatus.OK));
 
-        restSubscriber.subscribe()
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> restSubscriber.subscribe())
                 .then(() -> restSubscriber.onPublish(publishResponse()))
                 .then(() -> restSubscriber.onPublish(publishResponse()))
+                .thenAwait(Duration.ofSeconds(10L))
                 .expectNextCount(4L)
                 .thenCancel()
-                .verify(Duration.ofMillis(500L));
+                .verify(Duration.ofSeconds(1L));
 
         verify(exchangeFunction, times(4)).exchange(Mockito.isA(ClientRequest.class));
         assertThat(restSubscriber.getSubscriptions().collectList().block())
@@ -230,10 +229,10 @@ class RestSubscriberTest {
         subscribeProperties.getRest().put(restSubscriberProperties2.getName(), restSubscriberProperties2);
         Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class))).thenReturn(response(HttpStatus.OK));
 
-        restSubscriber.subscribe()
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> restSubscriber.subscribe())
                 .then(() -> restSubscriber.onPublish(publishResponse()))
                 .then(() -> restSubscriber.onPublish(publishResponse()))
+                .thenAwait(Duration.ofSeconds(10L))
                 .expectNextCount(4L)
                 .thenCancel()
                 .verify(Duration.ofSeconds(1L));
@@ -252,12 +251,12 @@ class RestSubscriberTest {
     @Test
     void disabled() {
         subscribeProperties.setEnabled(false);
-        restSubscriber.subscribe()
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> restSubscriber.subscribe())
                 .then(() -> restSubscriber.onPublish(publishResponse()))
+                .thenAwait(Duration.ofSeconds(10L))
                 .expectNextCount(0L)
                 .thenCancel()
-                .verify(Duration.ofMillis(500L));
+                .verify(Duration.ofSeconds(1L));
 
         verifyNoInteractions(exchangeFunction);
         assertThat(restSubscriber.getSubscriptions().count().block()).isZero();
@@ -266,12 +265,12 @@ class RestSubscriberTest {
     @Test
     void disabledScenario() {
         restSubscriberProperties.setEnabled(false);
-        restSubscriber.subscribe()
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> restSubscriber.subscribe())
                 .then(() -> restSubscriber.onPublish(publishResponse()))
+                .thenAwait(Duration.ofSeconds(10L))
                 .expectNextCount(0L)
                 .thenCancel()
-                .verify(Duration.ofMillis(500L));
+                .verify(Duration.ofSeconds(1L));
 
         verifyNoInteractions(exchangeFunction);
         assertThat(restSubscriber.getSubscriptions().count().block()).isZero();
@@ -279,11 +278,10 @@ class RestSubscriberTest {
 
     @Test
     void subscribeEmpty() {
-        restSubscriber.subscribe()
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> restSubscriber.subscribe())
                 .expectNextCount(0L)
                 .thenCancel()
-                .verify(Duration.ofMillis(500L));
+                .verify(Duration.ofSeconds(1L));
 
         verifyNoInteractions(exchangeFunction);
         assertThat(restSubscriber.getSubscriptions().blockFirst())
@@ -301,14 +299,13 @@ class RestSubscriberTest {
                 .thenReturn(response(HttpStatus.OK))
                 .thenReturn(response(HttpStatus.OK).delayElement(Duration.ofSeconds(5L)));
 
-        restSubscriber.subscribe()
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> restSubscriber.subscribe())
                 .then(() -> restSubscriber.onPublish(publishResponse()))
                 .then(() -> restSubscriber.onPublish(publishResponse()))
                 .expectNextCount(1L)
-                .thenAwait(Duration.ofMillis(500L))
+                .thenAwait(Duration.ofSeconds(10L))
                 .expectComplete()
-                .verify(Duration.ofMillis(1500L));
+                .verify(Duration.ofSeconds(2L));
 
         verify(exchangeFunction, times(2)).exchange(Mockito.isA(ClientRequest.class));
         assertThat(restSubscriber.getSubscriptions().blockFirst())
@@ -323,14 +320,14 @@ class RestSubscriberTest {
     void limitReached() {
         Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class))).thenReturn(response(HttpStatus.OK));
 
-        restSubscriber.subscribe()
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> restSubscriber.subscribe())
                 .then(() -> restSubscriber.onPublish(publishResponse()))
                 .then(() -> restSubscriber.onPublish(publishResponse()))
                 .then(() -> restSubscriber.onPublish(publishResponse()))
+                .thenAwait(Duration.ofSeconds(10L))
                 .expectNextCount(3L)
                 .expectComplete()
-                .verify(Duration.ofMillis(500L));
+                .verify(Duration.ofSeconds(1L));
 
         verify(exchangeFunction, times(3)).exchange(Mockito.isA(ClientRequest.class));
         assertThat(restSubscriber.getSubscriptions().blockFirst())
@@ -343,15 +340,15 @@ class RestSubscriberTest {
     void limitExceeded() {
         Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class))).thenReturn(response(HttpStatus.OK));
 
-        restSubscriber.subscribe()
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> restSubscriber.subscribe())
                 .then(() -> restSubscriber.onPublish(publishResponse()))
                 .then(() -> restSubscriber.onPublish(publishResponse()))
                 .then(() -> restSubscriber.onPublish(publishResponse()))
                 .then(() -> restSubscriber.onPublish(publishResponse()))
+                .thenAwait(Duration.ofSeconds(10L))
                 .expectNextCount(3L)
                 .expectComplete()
-                .verify(Duration.ofMillis(500L));
+                .verify(Duration.ofSeconds(1L));
 
         verify(exchangeFunction, times(3)).exchange(Mockito.isA(ClientRequest.class));
         assertThat(restSubscriber.getSubscriptions().blockFirst())
@@ -364,13 +361,12 @@ class RestSubscriberTest {
         Mockito.when(exchangeFunction.exchange(Mockito.any(ClientRequest.class)))
                 .thenReturn(response(HttpStatus.INTERNAL_SERVER_ERROR));
 
-        restSubscriber.subscribe()
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> restSubscriber.subscribe())
                 .then(() -> restSubscriber.onPublish(publishResponse()))
-                .thenAwait(Duration.ofSeconds(1L))
+                .thenAwait(Duration.ofSeconds(10L))
                 .expectNextCount(0L)
                 .thenCancel()
-                .verify(Duration.ofMillis(500L));
+                .verify(Duration.ofSeconds(1L));
 
         verify(exchangeFunction).exchange(Mockito.isA(ClientRequest.class));
         assertThat(restSubscriber.getSubscriptions().blockFirst())
@@ -385,13 +381,12 @@ class RestSubscriberTest {
                 .thenReturn(response(HttpStatus.NOT_FOUND))
                 .thenReturn(response(HttpStatus.OK));
 
-        restSubscriber.subscribe()
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> restSubscriber.subscribe())
                 .then(() -> restSubscriber.onPublish(publishResponse()))
-                .thenAwait(Duration.ofMillis(500L))
+                .thenAwait(Duration.ofSeconds(10L))
                 .expectNextCount(1L)
                 .thenCancel()
-                .verify(Duration.ofMillis(500L));
+                .verify(Duration.ofSeconds(1L));
 
         verify(exchangeFunction, times(2)).exchange(Mockito.isA(ClientRequest.class));
         assertThat(restSubscriber.getSubscriptions().blockFirst())
@@ -407,12 +402,11 @@ class RestSubscriberTest {
                 .thenReturn(response(HttpStatus.NOT_FOUND))
                 .thenReturn(response(HttpStatus.NOT_FOUND));
 
-        restSubscriber.subscribe()
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> restSubscriber.subscribe())
                 .then(() -> restSubscriber.onPublish(publishResponse()))
-                .thenAwait(Duration.ofSeconds(1L))
+                .thenAwait(Duration.ofSeconds(10L))
                 .thenCancel()
-                .verify(Duration.ofMillis(500L));
+                .verify(Duration.ofSeconds(1L));
 
         verify(exchangeFunction, times(3)).exchange(Mockito.isA(ClientRequest.class));
         assertThat(restSubscriber.getSubscriptions().blockFirst())
@@ -426,8 +420,7 @@ class RestSubscriberTest {
         restSubscriberProperties.setLimit(1000L);
         restSubscriberProperties.setSamplePercent(0.0);
 
-        restSubscriber.subscribe()
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> restSubscriber.subscribe())
                 .then(() -> {
                     for (int i = 0; i < restSubscriberProperties.getLimit(); ++i) {
                         restSubscriber.onPublish(publishResponse());
@@ -435,7 +428,7 @@ class RestSubscriberTest {
                 })
                 .expectNextCount(0L)
                 .thenCancel()
-                .verify(Duration.ofMillis(500L));
+                .verify(Duration.ofSeconds(1L));
 
         verifyNoInteractions(exchangeFunction);
         assertThat(restSubscriber.getSubscriptions().blockFirst())
@@ -454,14 +447,13 @@ class RestSubscriberTest {
                 .thenReturn(response(HttpStatus.OK))
                 .thenReturn(response(HttpStatus.OK));
 
-        restSubscriber.subscribe()
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> restSubscriber.subscribe())
                 .then(() -> {
                     for (int i = 0; i < restSubscriberProperties.getLimit(); ++i) {
                         restSubscriber.onPublish(publishResponse());
                     }
                 })
-                .thenAwait(Duration.ofSeconds(1L))
+                .thenAwait(Duration.ofSeconds(10L))
                 .expectNextCount(min)
                 .thenCancel()
                 .verify(Duration.ofSeconds(1L));
@@ -484,14 +476,13 @@ class RestSubscriberTest {
                 .thenReturn(response(HttpStatus.OK))
                 .thenReturn(response(HttpStatus.OK));
 
-        restSubscriber.subscribe()
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> restSubscriber.subscribe())
                 .then(() -> {
                     for (int i = 0; i < restSubscriberProperties.getLimit(); ++i) {
                         restSubscriber.onPublish(publishResponse());
                     }
                 })
-                .thenAwait(Duration.ofSeconds(1L))
+                .thenAwait(Duration.ofSeconds(10L))
                 .expectNextCount(restSubscriberProperties.getLimit())
                 .thenCancel()
                 .verify(Duration.ofSeconds(2L));

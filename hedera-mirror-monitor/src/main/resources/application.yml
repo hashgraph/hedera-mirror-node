@@ -63,12 +63,6 @@ server:
 spring:
   application:
     name: hedera-mirror-monitor
-  cloud:
-    kubernetes:
-      reload:
-        enabled: true
-      secrets:
-        paths: /usr/etc/${spring.application.name}
   lifecycle:
     timeout-per-shutdown-phase: 20s
   task:
@@ -81,3 +75,22 @@ springdoc:
   swagger-ui:
     path: /api/v1/docs
     disable-swagger-default-url: true
+
+---
+management:
+  endpoint:
+    health:
+      group:
+        cluster:
+          include: cluster, release
+
+spring:
+  cloud:
+    kubernetes:
+      reload:
+        enabled: true
+      secrets:
+        paths: /usr/etc/${spring.application.name}
+  config:
+    active:
+      on-profile: kubernetes

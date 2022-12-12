@@ -3,7 +3,7 @@ After=syslog.target
 Description=Hedera Mirror Node GRPC API
 
 [Service]
-ExecStart=/usr/bin/java -Xms5g -Xmx12g -XX:+CrashOnOutOfMemoryError -DLog4jContextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector -jar hedera-mirror-grpc.jar --spring.config.additional-location=file:/usr/etc/hedera-mirror-grpc/
+ExecStart=/usr/bin/java -Xms5g -Xmx12g -XX:+CrashOnOutOfMemoryError -jar hedera-mirror-grpc.jar --spring.config.additional-location=file:/usr/etc/hedera-mirror-grpc/
 LimitNOFILE=65536
 Restart=on-failure
 RestartSec=1

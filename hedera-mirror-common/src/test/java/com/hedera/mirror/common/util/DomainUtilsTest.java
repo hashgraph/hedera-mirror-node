@@ -33,6 +33,7 @@ import com.hederahashgraph.api.proto.java.KeyList;
 import com.hederahashgraph.api.proto.java.ThresholdKey;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.stream.Stream;
 import org.apache.commons.codec.binary.Hex;
@@ -69,14 +70,14 @@ class DomainUtilsTest {
 
     private static Stream<Arguments> paddingByteProvider() {
         return Stream.of(
-                arguments(new byte[]{1, 3, 4}, 0, new byte[]{1, 3, 4}),
-                arguments(new byte[]{1, 3, 4}, 1, new byte[]{1, 3, 4}),
-                arguments(new byte[]{1, 3, 4}, 3, new byte[]{1, 3, 4}),
-                arguments(new byte[]{1, 3, 4}, 5, new byte[]{0, 0, 1, 3, 4}),
-                arguments(new byte[]{}, 3, new byte[]{0, 0, 0}),
-                arguments(new byte[]{1}, 5, new byte[]{0, 0, 0, 0, 1}),
-                arguments(new byte[]{1, 2}, -2, new byte[]{1, 2}),
-                arguments(null, 15, new byte[]{})
+                arguments(new byte[] {1, 3, 4}, 0, new byte[] {1, 3, 4}),
+                arguments(new byte[] {1, 3, 4}, 1, new byte[] {1, 3, 4}),
+                arguments(new byte[] {1, 3, 4}, 3, new byte[] {1, 3, 4}),
+                arguments(new byte[] {1, 3, 4}, 5, new byte[] {0, 0, 1, 3, 4}),
+                arguments(new byte[] {}, 3, new byte[] {0, 0, 0}),
+                arguments(new byte[] {1}, 5, new byte[] {0, 0, 0, 0, 1}),
+                arguments(new byte[] {1, 2}, -2, new byte[] {1, 2}),
+                arguments(null, 15, new byte[] {})
         );
     }
 
@@ -87,7 +88,7 @@ class DomainUtilsTest {
 
     @Test
     void getPublicKeyWhenError() {
-        assertThat(DomainUtils.getPublicKey(new byte[]{0, 1, 2})).isNull();
+        assertThat(DomainUtils.getPublicKey(new byte[] {0, 1, 2})).isNull();
     }
 
     @Test
@@ -239,7 +240,8 @@ class DomainUtilsTest {
         assertThat(DomainUtils.sanitize(null)).isNull();
         assertThat(DomainUtils.sanitize("")).isEmpty();
         assertThat(DomainUtils.sanitize("abc")).isEqualTo("abc");
-        assertThat(DomainUtils.sanitize("abc" + (char) 0 + "123" + (char) 0)).isEqualTo("abc�123�");
+        assertThat(DomainUtils.sanitize("abc" + (char) 0 + "123" + (char) 0).getBytes(StandardCharsets.UTF_8))
+                .isEqualTo("abc�123�".getBytes(StandardCharsets.UTF_8));
     }
 
     @ParameterizedTest(name = "with seconds {0} and nanos {1}")

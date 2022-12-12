@@ -24,4 +24,8 @@
         <packageUrl regex="true">^pkg:maven/org\.springframework/spring\-web@.*$</packageUrl>
         <cve>CVE-2016-1000027</cve>
     </suppress>
+    <suppress>
+        <notes>No snakeyaml release available with a fix yet</notes>
+        <cve>CVE-2022-1471</cve>
+    </suppress>
 </suppressions>
