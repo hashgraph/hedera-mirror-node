@@ -11,4 +11,4 @@ Feature: Account Crypto Allowance Coverage Feature
         Then the mirror node REST API should confirm the crypto allowance deletion
         Examples:
             | senderName | approvedAmount | recipientName | transferAmount | httpStatusCode |
-            | "BOB"      | 10000          | "ALICE"          | 2500           | 200            |
+            | "BOB"      | 10000          | "ALICE"       | 2500           | 200            |
