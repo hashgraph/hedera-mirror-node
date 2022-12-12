@@ -33,7 +33,7 @@ extra.apply {
     set("protobufVersion", "3.21.11")
     set("reactorGrpcVersion", "1.2.3")
     set("snakeyaml.version", "1.33") // Temporary fix for transient dependency security issue
-    set("testcontainersSpringBootVersion", "2.2.11")
+    set("testcontainersSpringBootVersion", "2.2.12")
 }
 
 // Creates a platform/BOM with specific versions so subprojects don't need to specify a version when using a dependency
