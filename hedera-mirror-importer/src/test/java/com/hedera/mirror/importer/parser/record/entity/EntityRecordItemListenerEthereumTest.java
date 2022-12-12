@@ -122,7 +122,7 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
 
     @Test
     void ethereumTransactionLegacyBadBytes() {
-        var transactionBytes = RLPEncoder.encodeAsList(
+        var transactionBytes = RLPEncoder.list(
                 Integers.toBytes(1),
                 Integers.toBytes(2),
                 Integers.toBytes(3));

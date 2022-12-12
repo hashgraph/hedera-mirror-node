@@ -74,7 +74,7 @@ public class LegacyEthereumTransactionParserTest extends AbstractEthereumTransac
 
     @Test
     void decodeIncorrectRlpItemListSize() {
-        var ethereumTransactionBytes = RLPEncoder.encodeAsList(Integers.toBytes(1));
+        var ethereumTransactionBytes = RLPEncoder.list(Integers.toBytes(1));
 
         assertThatThrownBy(() -> ethereumTransactionParser.decode(ethereumTransactionBytes))
                 .isInstanceOf(InvalidEthereumBytesException.class)
