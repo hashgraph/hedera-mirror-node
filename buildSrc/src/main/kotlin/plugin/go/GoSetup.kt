@@ -57,7 +57,7 @@ open class GoSetup : DefaultTask() {
     }
 
     fun decompressTgz(source: File, destDir: File) {
-        TarArchiveInputStream(GZIPInputStream(FileInputStream(source))).use {
+        TarArchiveInputStream(GZIPInputStream(FileInputStream(source)), "UTF-8").use {
             destDir.mkdirs()
             var entry = it.nextEntry
 

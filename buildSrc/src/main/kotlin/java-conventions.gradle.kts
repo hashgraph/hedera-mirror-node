@@ -66,10 +66,6 @@ tasks.compileJava {
     targetCompatibility = "17"
 }
 
-tasks.dependencyCheckAnalyze {
-    dependsOn(tasks.npmInstall)
-}
-
 tasks.javadoc {
     options.encoding = "UTF-8"
 }
