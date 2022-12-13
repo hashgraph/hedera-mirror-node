@@ -22,7 +22,14 @@ const maxWorkers = process.env.CI ? 2 : '50%'; // 2 workers in CI and 50% of cor
 const config = {
   collectCoverage: true,
   coverageDirectory: 'build/coverage/',
-  coveragePathIgnorePatterns: ['<rootDir>/__tests__/'],
+  coveragePathIgnorePatterns: [
+    '<rootDir>/.node-flywaydb/',
+    '<rootDir>/check-state-proof/',
+    '<rootDir>/monitoring/',
+    '<rootDir>/node/',
+    '<rootDir>/node_modules/',
+    '<rootDir>/__tests__/'
+  ],
   globalSetup: './__tests__/globalSetup.js',
   globalTeardown: './__tests__/globalTeardown.js',
   maxWorkers,
@@ -30,7 +37,6 @@ const config = {
   setupFilesAfterEnv: ['./__tests__/jestSetup.js'],
   testEnvironment: 'node',
   testRegex: '/__tests__/.*\\.test\\.js$',
-  testRunner: 'jest-circus/runner',
   verbose: true,
 };
 

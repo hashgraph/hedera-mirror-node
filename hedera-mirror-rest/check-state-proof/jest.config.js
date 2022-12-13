@@ -22,12 +22,16 @@ const maxWorkers = process.env.CI ? 2 : '50%'; // 2 workers in CI and 50% of cor
 const config = {
   collectCoverage: true,
   coverageDirectory: 'build/coverage/',
-  coveragePathIgnorePatterns: ['<rootDir>/tests/'],
+  coveragePathIgnorePatterns: [
+    '<rootDir>/node_modules/',
+    '<rootDir>/output/',
+    '<rootDir>/sample/',
+    '<rootDir>/tests/'
+  ],
   maxWorkers,
   reporters: ['jest-standard-reporter', 'jest-junit'],
   testEnvironment: 'node',
   testMatch: ['**/tests/**/*.test.js'],
-  testRunner: 'jest-circus/runner',
   verbose: true,
 };
 
