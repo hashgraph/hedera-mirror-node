@@ -58,7 +58,7 @@ spec:
           extraRelabelConfigs:
             - action: drop
               regex: (dev|integration|integration-docker|staging-lg|staging-sm)
-              sourceLabels: [namespace]
+              source_labels: [namespace]
     traefik:
       service:
         annotations:
