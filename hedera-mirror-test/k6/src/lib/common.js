@@ -41,7 +41,7 @@ const scenarioCommon = {
   gracefulStop: __ENV.DEFAULT_GRACEFUL_STOP || '5s',
 };
 
-const scenarioDefaults = Object.assign({}, scenarioCommon,{
+const scenarioDefaults = Object.assign({}, scenarioCommon, {
   duration: __ENV.DEFAULT_DURATION,
   executor: 'constant-vus',
   vus: __ENV.DEFAULT_VUS,
@@ -83,7 +83,7 @@ function getScenarioTimes(scenario) {
       duration: scenario.duration,
       gracefulStop: scenario.gracefulStop,
       startTime: scenario.startTime,
-    }
+    };
   } else if (executor === 'ramping-vus') {
     validateTime('gracefulRampDown', scenario.gracefulRampDown);
     let duration = parseInt(scenario.gracefulRampDown);
@@ -178,31 +178,33 @@ function getScenario(metricKey) {
 
 function defaultMetrics() {
   return {
-    "checks": {
-      "values": {
-        "rate": 0
+    checks: {
+      values: {
+        rate: 0,
       },
     },
-    "http_req_duration": {
-      "values": {
-        "avg": 0
-      }
-    },
-    "http_reqs": {
-      "values": {
-        "count": 0
+    http_req_duration: {
+      values: {
+        avg: 0,
       },
     },
-    "scenario_duration": {
-      "values": {
-        "value": 0
-      }
-    }
+    http_reqs: {
+      values: {
+        count: 0,
+      },
+    },
+    scenario_duration: {
+      values: {
+        value: 0,
+      },
+    },
   };
 }
 
 function markdownReport(data, includeUrlColumn, scenarios) {
-  const header = `| Scenario ${includeUrlColumn && '| URL'} | VUS | Pass% | RPS | Pass RPS | Avg. Req Duration | Comment |
+  const header = `| Scenario ${
+    includeUrlColumn && '| URL'
+  } | VUS | Pass% | RPS | Pass RPS | Avg. Req Duration | Comment |
 |----------${includeUrlColumn && '|----------'}|-----|-------|-----|----------|-------------------|---------|`;
 
   // collect the metrics
@@ -243,11 +245,13 @@ function markdownReport(data, includeUrlColumn, scenarios) {
       const passPercentage = (scenarioMetric['checks'].values.rate * 100.0).toFixed(2);
       const httpReqs = scenarioMetric['http_reqs'].values.count;
       const duration = scenarioMetric['scenario_duration'].values.value; // in ms
-      const rps = ((httpReqs * 1.0 / duration) * 1000).toFixed(2);
-      const passRps = (rps * passPercentage / 100.0).toFixed(2);
+      const rps = (((httpReqs * 1.0) / duration) * 1000).toFixed(2);
+      const passRps = ((rps * passPercentage) / 100.0).toFixed(2);
       const httpReqDuration = scenarioMetric['http_req_duration'].values.avg.toFixed(2);
 
-      markdown += `| ${scenario} ${includeUrlColumn && '| ' + scenarioUrls[scenario]} | ${__ENV.DEFAULT_VUS} | ${passPercentage} | ${rps}/s | ${passRps}/s | ${httpReqDuration}ms | |\n`;
+      markdown += `| ${scenario} ${includeUrlColumn && '| ' + scenarioUrls[scenario]} | ${
+        __ENV.DEFAULT_VUS
+      } | ${passPercentage} | ${rps}/s | ${passRps}/s | ${httpReqDuration}ms | |\n`;
     } catch (err) {
       console.error(`Unable to render report for scenario ${scenario}`);
     }
@@ -272,32 +276,32 @@ function TestScenarioBuilder() {
         check(response, that._checks);
       },
     };
-  }
+  };
 
   this.check = function (name, func) {
     this._checks[name] = func;
     return this;
-  }
+  };
 
   this.name = function (name) {
     this._name = name;
     return this;
-  }
+  };
 
   this.request = function (func) {
     this._request = func;
     return this;
-  }
+  };
 
   this.scenario = function (scenario) {
     this._scenario = scenario;
     return this;
-  }
+  };
 
   this.tags = function (tags) {
     this._tags = tags;
     return this;
-  }
+  };
 
   return this;
 }

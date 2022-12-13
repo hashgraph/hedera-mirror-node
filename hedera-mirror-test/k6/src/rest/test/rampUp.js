@@ -33,10 +33,12 @@ const {options, run} = new TestScenarioBuilder()
   .scenario({
     executor: 'ramping-vus',
     startVUs: 0,
-    stages: [{
-      duration: __ENV.DEFAULT_RAMPUP_DURATION || __ENV.DEFAULT_DURATION,
-      target: __ENV.DEFAULT_RAMPUP_VUS || __ENV.DEFAULT_VUS,
-    }],
+    stages: [
+      {
+        duration: __ENV.DEFAULT_RAMPUP_DURATION || __ENV.DEFAULT_DURATION,
+        target: __ENV.DEFAULT_RAMPUP_VUS || __ENV.DEFAULT_VUS,
+      },
+    ],
     gracefulRampDown: '0s',
   })
   .request((testParameters) => {

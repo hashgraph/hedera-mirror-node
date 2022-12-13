@@ -26,7 +26,7 @@ import {funcs, options, scenarioDurationGauge, scenarios} from './test/index.js'
 
 function handleSummary(data) {
   return {
-    'stdout': textSummary(data, {indent: ' ', enableColors: true}),
+    stdout: textSummary(data, {indent: ' ', enableColors: true}),
     'report.md': markdownReport(data, false, scenarios),
   };
 }
