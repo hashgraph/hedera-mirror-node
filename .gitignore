@@ -26,6 +26,7 @@
 .node-flywaydb/
 coverage/
 env.txt
+junit.xml
 node/
 node_modules/
 
