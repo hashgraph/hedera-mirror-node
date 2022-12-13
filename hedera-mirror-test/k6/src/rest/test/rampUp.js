@@ -21,20 +21,31 @@
 import http from 'k6/http';
 
 import {TestScenarioBuilder} from '../../lib/common.js';
-import {resultListName, urlPrefix} from '../../lib/constants.js';
+import {accountListName, urlPrefix} from '../../lib/constants.js';
 import {isValidListResponse} from './common.js';
 import {setupTestParameters} from './bootstrapEnvParameters.js';
 
-const urlTag = '/contracts/{id}/results';
+const urlTag = '/accounts';
 
 const {options, run} = new TestScenarioBuilder()
-  .name('contractsIdResults') // use unique scenario name among all tests
+  .name('rampUp') // use unique scenario name among all tests
   .tags({url: urlTag})
+  .scenario({
+    executor: 'ramping-vus',
+    startVUs: 0,
+    stages: [
+      {
+        duration: __ENV.DEFAULT_RAMPUP_DURATION || __ENV.DEFAULT_DURATION,
+        target: __ENV.DEFAULT_RAMPUP_VUS || __ENV.DEFAULT_VUS,
+      },
+    ],
+    gracefulRampDown: '0s',
+  })
   .request((testParameters) => {
-    const url = `${testParameters['BASE_URL']}${urlPrefix}/contracts/${testParameters['DEFAULT_CONTRACT_ID']}/results?internal=true`;
+    const url = `${testParameters['BASE_URL']}${urlPrefix}${urlTag}?limit=${testParameters['DEFAULT_LIMIT']}`;
     return http.get(url);
   })
-  .check('Contracts id results OK', (r) => isValidListResponse(r, resultListName))
+  .check('Accounts OK', (r) => isValidListResponse(r, accountListName))
   .build();
 
 export {options, run};

@@ -18,9 +18,9 @@
  * ‍
  */
 
-import {check} from "k6";
+import {check} from 'k6';
 import {Gauge} from 'k6/metrics';
-import {setDefaultValuesForEnvParameters} from "./parameters.js";
+import {setDefaultValuesForEnvParameters} from './parameters.js';
 
 setDefaultValuesForEnvParameters();
 
@@ -36,13 +36,16 @@ const options = {
   noVUConnectionReuse: true,
 };
 
-const scenario = {
-  duration: __ENV.DEFAULT_DURATION,
+const scenarioCommon = {
   exec: 'run',
-  executor: 'constant-vus',
-  gracefulStop: (__ENV.DEFAULT_GRACEFUL_STOP != null && __ENV.DEFAULT_GRACEFUL_STOP) || '5s',
-  vus: __ENV.DEFAULT_VUS,
+  gracefulStop: __ENV.DEFAULT_GRACEFUL_STOP || '5s',
 };
+
+const scenarioDefaults = Object.assign({}, scenarioCommon, {
+  duration: __ENV.DEFAULT_DURATION,
+  executor: 'constant-vus',
+  vus: __ENV.DEFAULT_VUS,
+});
 
 function getMetricNameWithTags(name, ...tags) {
   return tags.length === 0 ? name : `${name}{${tags}}`;
@@ -50,28 +53,54 @@ function getMetricNameWithTags(name, ...tags) {
 
 const timeRegex = /^[0-9]+s$/;
 
+function validateTime(name, value) {
+  if (!timeRegex.test(value)) {
+    throw new Error(`Invalid ${name} ${value}`);
+  }
+}
+
 function getNextStartTime(startTime, duration, gracefulStop) {
-  if (!timeRegex.test(startTime)) {
-    throw new Error(`Invalid startTime ${startTime}`);
-  }
-
-  if (!timeRegex.test(duration)) {
-    throw new Error(`Invalid duration ${duration}`);
-  }
-
-  if (!timeRegex.test(gracefulStop)) {
-    throw new Error(`Invalid gracefulStop ${gracefulStop}`);
-  }
+  validateTime('startTime', startTime);
+  validateTime('duration', duration);
+  validateTime('gracefulStop', gracefulStop);
 
   return `${parseInt(startTime) + parseInt(duration) + parseInt(gracefulStop)}s`;
 }
 
-function getOptionsWithScenario(name, tags = {}) {
+function getOptionsWithScenario(name, scenario, tags = {}) {
+  const sourceScenario = scenario ? Object.assign({}, scenario, scenarioCommon) : scenarioDefaults;
   return Object.assign({}, options, {
     scenarios: {
-      [name]: Object.assign({}, scenario, {tags}),
+      [name]: Object.assign({}, sourceScenario, {tags}),
     },
   });
+}
+
+function getScenarioTimes(scenario) {
+  const executor = scenario.executor;
+  if (executor === 'constant-vus') {
+    return {
+      duration: scenario.duration,
+      gracefulStop: scenario.gracefulStop,
+      startTime: scenario.startTime,
+    };
+  } else if (executor === 'ramping-vus') {
+    validateTime('gracefulRampDown', scenario.gracefulRampDown);
+    let duration = parseInt(scenario.gracefulRampDown);
+    for (const stage of scenario.stages) {
+      const stageDuration = stage.duration;
+      validateTime('stage duration', stageDuration);
+      duration += parseInt(stageDuration);
+    }
+
+    return {
+      duration: `${duration}s`,
+      gracefulStop: scenario.gracefulStop,
+      startTime: scenario.startTime,
+    };
+  } else {
+    throw new Error(`Unsupported k6 executor ${executor}`);
+  }
 }
 
 function getSequentialTestScenarios(tests) {
@@ -82,7 +111,25 @@ function getSequentialTestScenarios(tests) {
   const funcs = {};
   const scenarios = {};
   const thresholds = {};
-  for (const testName of Object.keys(tests).sort()) {
+
+  const constantVusTests = [];
+  const rampingVusTests = [];
+
+  for (const [name, test] of Object.entries(tests)) {
+    const executor = Object.values(test.options.scenarios)[0].executor;
+    if (executor === 'constant-vus') {
+      constantVusTests.push(name);
+      constantVusTests[name] = test;
+    } else if (executor === 'ramping-vus') {
+      rampingVusTests.push(name);
+    } else {
+      throw new Error(`Unsupported k6 executor ${executor} in test ${name}`);
+    }
+  }
+  constantVusTests.sort();
+  rampingVusTests.sort();
+
+  for (const testName of rampingVusTests.concat(constantVusTests)) {
     const testModule = tests[testName];
     const testScenarios = testModule.options.scenarios;
     const testThresholds = testModule.options.thresholds;
@@ -93,9 +140,11 @@ function getSequentialTestScenarios(tests) {
 
       // update the scenario's startTime, so scenarios run in sequence
       scenario.startTime = getNextStartTime(startTime, duration, gracefulStop);
-      startTime = scenario.startTime;
-      duration = scenario.duration;
-      gracefulStop = scenario.gracefulStop;
+
+      const times = getScenarioTimes(scenario);
+      duration = times.duration;
+      gracefulStop = times.gracefulStop;
+      startTime = times.startTime;
 
       // thresholds
       const tag = `scenario:${scenarioName}`;
@@ -113,7 +162,7 @@ function getSequentialTestScenarios(tests) {
 
   const testOptions = Object.assign({}, options, {scenarios, thresholds});
 
-  return {funcs, options: testOptions, scenarioDurationGauge: new Gauge(SCENARIO_DURATION_METRIC_NAME)};
+  return {funcs, options: testOptions, scenarioDurationGauge: new Gauge(SCENARIO_DURATION_METRIC_NAME), scenarios};
 }
 
 const checksRegex = /^checks{.*scenario:.*}$/;
@@ -129,33 +178,34 @@ function getScenario(metricKey) {
 
 function defaultMetrics() {
   return {
-    "checks": {
-      "values": {
-        "rate": 0
+    checks: {
+      values: {
+        rate: 0,
       },
     },
-    "http_req_duration": {
-      "values": {
-        "avg": 0
-      }
-    },
-    "http_reqs": {
-      "values": {
-        "count": 0
+    http_req_duration: {
+      values: {
+        avg: 0,
       },
     },
-    "scenario_duration": {
-      "values": {
-        "value": 0
-      }
-    }
+    http_reqs: {
+      values: {
+        count: 0,
+      },
+    },
+    scenario_duration: {
+      values: {
+        value: 0,
+      },
+    },
   };
 }
 
-function markdownReport(data, isFirstColumnUrl, scenarios) {
-  const firstColumnName = isFirstColumnUrl ? 'URL' : 'Scenario';
-  const header = `| ${firstColumnName} | VUS | Pass% | RPS | Pass RPS | Avg. Req Duration | Comment |
-|----------|-----|-------|-----|----------|-------------------|---------|`;
+function markdownReport(data, includeUrlColumn, scenarios) {
+  const header = `| Scenario ${
+    includeUrlColumn && '| URL'
+  } | VUS | Pass% | RPS | Pass RPS | Avg. Req Duration | Comment |
+|----------${includeUrlColumn && '|----------'}|-----|-------|-----|----------|-------------------|---------|`;
 
   // collect the metrics
   const {metrics} = data;
@@ -181,7 +231,7 @@ function markdownReport(data, isFirstColumnUrl, scenarios) {
   }
 
   const scenarioUrls = {};
-  if (isFirstColumnUrl) {
+  if (includeUrlColumn) {
     for (const [name, scenario] of Object.entries(scenarios)) {
       scenarioUrls[name] = scenario.tags.url;
     }
@@ -195,12 +245,13 @@ function markdownReport(data, isFirstColumnUrl, scenarios) {
       const passPercentage = (scenarioMetric['checks'].values.rate * 100.0).toFixed(2);
       const httpReqs = scenarioMetric['http_reqs'].values.count;
       const duration = scenarioMetric['scenario_duration'].values.value; // in ms
-      const rps = ((httpReqs * 1.0 / duration) * 1000).toFixed(2);
-      const passRps = (rps * passPercentage / 100.0).toFixed(2);
+      const rps = (((httpReqs * 1.0) / duration) * 1000).toFixed(2);
+      const passRps = ((rps * passPercentage) / 100.0).toFixed(2);
       const httpReqDuration = scenarioMetric['http_req_duration'].values.avg.toFixed(2);
 
-      const firstColumn = isFirstColumnUrl ? scenarioUrls[scenario] : scenario;
-      markdown += `| ${firstColumn} | ${__ENV.DEFAULT_VUS} | ${passPercentage} | ${rps}/s | ${passRps}/s | ${httpReqDuration}ms | |\n`;
+      markdown += `| ${scenario} ${includeUrlColumn && '| ' + scenarioUrls[scenario]} | ${
+        __ENV.DEFAULT_VUS
+      } | ${passPercentage} | ${rps}/s | ${passRps}/s | ${httpReqDuration}ms | |\n`;
     } catch (err) {
       console.error(`Unable to render report for scenario ${scenario}`);
     }
@@ -213,38 +264,44 @@ function TestScenarioBuilder() {
   this._checks = {};
   this._name = null;
   this._request = null;
+  this._scenario = null;
   this._tags = {};
 
   this.build = function () {
     const that = this;
     return {
-      options: getOptionsWithScenario(that._name, that._tags),
+      options: getOptionsWithScenario(that._name, this._scenario, that._tags),
       run: function (testParameters) {
         const response = that._request(testParameters);
         check(response, that._checks);
       },
     };
-  }
+  };
 
   this.check = function (name, func) {
     this._checks[name] = func;
     return this;
-  }
+  };
 
   this.name = function (name) {
     this._name = name;
     return this;
-  }
+  };
 
   this.request = function (func) {
     this._request = func;
     return this;
-  }
+  };
+
+  this.scenario = function (scenario) {
+    this._scenario = scenario;
+    return this;
+  };
 
   this.tags = function (tags) {
     this._tags = tags;
     return this;
-  }
+  };
 
   return this;
 }
