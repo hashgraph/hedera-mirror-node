@@ -18,12 +18,12 @@
  * ‍
  */
 
-import http from "k6/http";
+import http from 'k6/http';
 
 import {TestScenarioBuilder} from '../../lib/common.js';
 import {resultListName, urlPrefix} from '../../lib/constants.js';
-import {isValidListResponse} from "./common.js";
-import {setupTestParameters} from "./bootstrapEnvParameters.js";
+import {isValidListResponse} from './common.js';
+import {setupTestParameters} from './bootstrapEnvParameters.js';
 
 const urlTag = '/contracts/{id}/results';
 
@@ -31,7 +31,7 @@ const {options, run} = new TestScenarioBuilder()
   .name('contractsIdResults') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request((testParameters) => {
-    const url = `${testParameters['BASE_URL']}${urlPrefix}/contracts/${testParameters['DEFAULT_CONTRACT_ID']}/results`;
+    const url = `${testParameters['BASE_URL']}${urlPrefix}/contracts/${testParameters['DEFAULT_CONTRACT_ID']}/results?internal=true`;
     return http.get(url);
   })
   .check('Contracts id results OK', (r) => isValidListResponse(r, resultListName))

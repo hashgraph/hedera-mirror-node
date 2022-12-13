@@ -59,7 +59,6 @@ import * as topicsIdMessagesSequenceQueryParam from './topicsIdMessagesSequenceQ
 import * as topicsMessagesTimestamp from './topicsMessagesTimestamp.js';
 import * as transactions from './transactions.js';
 import * as transactionsAccountId from './transactionsAccountId.js';
-import * as transactionsCryptoCreateAccountDebit from './transactionsCryptoCreateAccountDebit.js';
 import * as transactionsId from './transactionsId.js';
 import * as transactionsTransactionTypeAscending from './transactionsTransactionTypeAscending.js';
 
@@ -103,9 +102,8 @@ const tests = {
   topicsMessagesTimestamp,
   transactions,
   transactionsAccountId,
-  transactionsCryptoCreateAccountDebit,
   transactionsId,
-  transactionsTransactionTypeAscending
+  transactionsTransactionTypeAscending,
 };
 
 const {funcs, options, scenarioDurationGauge, scenarios} = getSequentialTestScenarios(tests);
