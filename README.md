@@ -1,4 +1,4 @@
-[![Build](https://github.com/hashgraph/hedera-mirror-node/actions/workflows/importer.yml/badge.svg)](https://github.com/hashgraph/hedera-mirror-node/actions)
+[![Build](https://github.com/hashgraph/hedera-mirror-node/actions/workflows/gradle.yml/badge.svg)](https://github.com/hashgraph/hedera-mirror-node/actions)
 [![codecov](https://img.shields.io/codecov/c/github/hashgraph/hedera-mirror-node/main)](https://codecov.io/gh/hashgraph/hedera-mirror-node)
 [![Discord](https://img.shields.io/badge/discord-join%20chat-blue.svg)](https://hedera.com/discord)
 
