@@ -5,7 +5,7 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js jest --maxWorkers 2 --testPathPattern='tests/.*\\.test\\.js'",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "start": "node --experimental-specifier-resolution=node index.js"
   },
   "repository": {
@@ -37,6 +37,10 @@
     "log4js": "^6.7.1",
     "node-fetch": "^3.3.0",
     "yargs": "^17.6.2"
+  },
+  "devDependencies": {
+    "jest-junit": "^15.0.0",
+    "jest-standard-reporter": "^2.0.0"
   },
   "overrides": {
     "protobufjs": "6.11.3"
