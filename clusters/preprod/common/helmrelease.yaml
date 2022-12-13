@@ -55,6 +55,10 @@ spec:
           extraClientConfigs: |
             external_labels:
               cluster: preprod
+          extraScrapeConfigs: |
+            - action: drop
+              regex: (dev|integration|integration-docker|staging-lg|staging-sm)
+              sourceLabels: [namespace]
     traefik:
       service:
         annotations:
