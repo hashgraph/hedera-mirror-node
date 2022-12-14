@@ -21,6 +21,7 @@ package com.hedera.mirror.grpc.config;
  */
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import io.grpc.ServerBuilder;
 import io.grpc.netty.shaded.io.grpc.netty.NettyServerBuilder;
 import java.util.concurrent.Executor;
 import java.util.concurrent.SynchronousQueue;
@@ -40,22 +41,28 @@ class GrpcConfiguration {
     @Bean
     GrpcServerConfigurer grpcServerConfigurer(GrpcProperties grpcProperties) {
         NettyProperties nettyProperties = grpcProperties.getNetty();
-        Executor executor = new ThreadPoolExecutor(
-                nettyProperties.getExecutorCoreThreadCount(),
-                nettyProperties.getExecutorMaxThreadCount(),
-                nettyProperties.getThreadKeepAliveTime().toSeconds(),
-                TimeUnit.SECONDS,
-                new SynchronousQueue<>(),
-                new ThreadFactoryBuilder()
-                        .setDaemon(true)
-                        .setNameFormat("grpc-executor-%d")
-                        .build());
+        return serverBuilder -> getServerBuilder(serverBuilder, nettyProperties);
+    }
 
-        return serverBuilder -> ((NettyServerBuilder) serverBuilder)
-                .executor(executor)
-                .maxConnectionIdle(nettyProperties.getMaxConnectionIdle().toSeconds(), TimeUnit.SECONDS)
-                .maxConcurrentCallsPerConnection(nettyProperties.getMaxConcurrentCallsPerConnection())
-                .maxInboundMessageSize(nettyProperties.getMaxInboundMessageSize())
-                .maxInboundMetadataSize(nettyProperties.getMaxInboundMetadataSize());
+    private ServerBuilder<?>  getServerBuilder(ServerBuilder<?> serverBuilder, NettyProperties nettyProperties) {
+        if(serverBuilder instanceof NettyServerBuilder) {
+            Executor executor = new ThreadPoolExecutor(
+                    nettyProperties.getExecutorCoreThreadCount(),
+                    nettyProperties.getExecutorMaxThreadCount(),
+                    nettyProperties.getThreadKeepAliveTime().toSeconds(),
+                    TimeUnit.SECONDS,
+                    new SynchronousQueue<>(),
+                    new ThreadFactoryBuilder()
+                            .setDaemon(true)
+                            .setNameFormat("grpc-executor-%d")
+                            .build());
+
+            serverBuilder.executor(executor)
+                    .maxConnectionIdle(nettyProperties.getMaxConnectionIdle().toSeconds(), TimeUnit.SECONDS)
+                    .maxInboundMessageSize(nettyProperties.getMaxInboundMessageSize())
+                    .maxInboundMetadataSize(nettyProperties.getMaxInboundMetadataSize());
+        }
+
+        return serverBuilder;
     }
 }
