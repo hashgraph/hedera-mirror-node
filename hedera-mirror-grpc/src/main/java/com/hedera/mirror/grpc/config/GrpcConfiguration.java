@@ -41,10 +41,10 @@ class GrpcConfiguration {
     @Bean
     GrpcServerConfigurer grpcServerConfigurer(GrpcProperties grpcProperties) {
         NettyProperties nettyProperties = grpcProperties.getNetty();
-        return serverBuilder -> getServerBuilder(serverBuilder, nettyProperties);
+        return serverBuilder -> customizeServerBuilder(serverBuilder, nettyProperties);
     }
 
-    private ServerBuilder<?>  getServerBuilder(ServerBuilder<?> serverBuilder, NettyProperties nettyProperties) {
+    private void customizeServerBuilder(ServerBuilder<?> serverBuilder, NettyProperties nettyProperties) {
         if(serverBuilder instanceof NettyServerBuilder) {
             Executor executor = new ThreadPoolExecutor(
                     nettyProperties.getExecutorCoreThreadCount(),
@@ -57,12 +57,11 @@ class GrpcConfiguration {
                             .setNameFormat("grpc-executor-%d")
                             .build());
 
-            serverBuilder.executor(executor)
+            ((NettyServerBuilder)serverBuilder).executor(executor)
                     .maxConnectionIdle(nettyProperties.getMaxConnectionIdle().toSeconds(), TimeUnit.SECONDS)
+                    .maxConcurrentCallsPerConnection(nettyProperties.getMaxConcurrentCallsPerConnection())
                     .maxInboundMessageSize(nettyProperties.getMaxInboundMessageSize())
                     .maxInboundMetadataSize(nettyProperties.getMaxInboundMetadataSize());
         }
-
-        return serverBuilder;
     }
 }
