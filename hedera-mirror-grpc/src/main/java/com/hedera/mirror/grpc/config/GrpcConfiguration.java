@@ -45,7 +45,7 @@ class GrpcConfiguration {
     }
 
     private void customizeServerBuilder(ServerBuilder<?> serverBuilder, NettyProperties nettyProperties) {
-        if(serverBuilder instanceof NettyServerBuilder) {
+        if(serverBuilder instanceof NettyServerBuilder nettyServerBuilder) {
             Executor executor = new ThreadPoolExecutor(
                     nettyProperties.getExecutorCoreThreadCount(),
                     nettyProperties.getExecutorMaxThreadCount(),
@@ -57,7 +57,7 @@ class GrpcConfiguration {
                             .setNameFormat("grpc-executor-%d")
                             .build());
 
-            ((NettyServerBuilder)serverBuilder).executor(executor)
+            nettyServerBuilder.executor(executor)
                     .maxConnectionIdle(nettyProperties.getMaxConnectionIdle().toSeconds(), TimeUnit.SECONDS)
                     .maxConcurrentCallsPerConnection(nettyProperties.getMaxConcurrentCallsPerConnection())
                     .maxInboundMessageSize(nettyProperties.getMaxInboundMessageSize())
