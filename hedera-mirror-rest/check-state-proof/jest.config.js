@@ -23,20 +23,15 @@ const config = {
   collectCoverage: true,
   coverageDirectory: 'build/coverage/',
   coveragePathIgnorePatterns: [
-    '<rootDir>/.node-flywaydb/',
-    '<rootDir>/check-state-proof/',
-    '<rootDir>/monitoring/',
-    '<rootDir>/node/',
     '<rootDir>/node_modules/',
-    '<rootDir>/__tests__/'
+    '<rootDir>/output/',
+    '<rootDir>/sample/',
+    '<rootDir>/tests/'
   ],
-  globalSetup: './__tests__/globalSetup.js',
-  globalTeardown: './__tests__/globalTeardown.js',
   maxWorkers,
   reporters: ['jest-standard-reporter', 'jest-junit'],
-  setupFilesAfterEnv: ['./__tests__/jestSetup.js'],
   testEnvironment: 'node',
-  testRegex: '/__tests__/.*\\.test\\.js$',
+  testMatch: ['**/tests/**/*.test.js'],
   verbose: true,
 };
 

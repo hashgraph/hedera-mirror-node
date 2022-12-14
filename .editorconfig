@@ -13,7 +13,7 @@ trim_trailing_whitespace = true
 
 # IntelliJ specific
 ij_continuation_indent_size = 8
-ij_visual_guides = 120, 120
+ij_visual_guides = 100, 120
 
 [*.{js, json, md, yaml, yml}]
 indent_size = 2
@@ -240,6 +240,7 @@ ij_java_while_brace_force = always
 ij_java_wrap_comments = true
 # ij_java_wrap_first_method_in_call_chain = false
 ij_java_wrap_long_lines = true
+max_line_length = 100
 
 [*.js]
 ij_continuation_indent_size = 2
