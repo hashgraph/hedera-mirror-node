@@ -1,0 +1,20 @@
+apiVersion: tests.testkube.io/v3
+kind: Test
+metadata:
+  name: rest-test
+  namespace: testkube
+spec:
+  content:
+    repository:
+      branch: main
+      path: hedera-mirror-test/k6
+      type: git
+      uri: https://github.com/hashgraph/hedera-mirror-node
+    type: git-dir
+  executionRequest:
+    args:
+      - /data/repo/hedera-mirror-test/k6/src/rest/apis.js
+    artifactRequest:
+      storageClassName: standard
+      volumeMountPath: /share
+  type: k6-custom/script

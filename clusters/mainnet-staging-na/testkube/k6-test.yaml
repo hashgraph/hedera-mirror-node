@@ -1,0 +1,9 @@
+apiVersion: tests.testkube.io/v3
+kind: Test
+metadata:
+  name: rest-test
+  namespace: testkube
+spec:
+  content:
+    repository:
+      branch: "v0.70.0-rc2"
