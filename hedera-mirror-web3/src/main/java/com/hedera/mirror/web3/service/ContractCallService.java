@@ -20,7 +20,6 @@ package com.hedera.mirror.web3.service;
  * ‍
  */
 
-import static com.hedera.mirror.web3.evm.exception.ResponseCodeUtil.emptyFailProcessingResponse;
 import static com.hedera.mirror.web3.evm.exception.ResponseCodeUtil.getStatusOrDefault;
 
 import javax.inject.Named;
@@ -40,10 +39,6 @@ public class ContractCallService {
     public String processCall(final CallServiceParameters body) {
         final var txnResult = doProcessCall(body);
 
-        if (!txnResult.isSuccessful()) {
-            throw new InvalidTransactionException(getStatusOrDefault(txnResult));
-        }
-
         final var callResult = txnResult.getOutput() != null
                 ? txnResult.getOutput() : Bytes.EMPTY;
 
@@ -51,8 +46,9 @@ public class ContractCallService {
     }
 
     private HederaEvmTransactionProcessingResult doProcessCall(final CallServiceParameters body) {
+        HederaEvmTransactionProcessingResult txnResult = null;
         try {
-            return
+            txnResult =
                     mirrorEvmTxProcessor.execute(
                             body.getSender(),
                             body.getReceiver(),
@@ -61,8 +57,17 @@ public class ContractCallService {
                             body.getCallData(),
                             body.isStatic());
 
+            if (!txnResult.isSuccessful()) {
+                final var status = getStatusOrDefault(txnResult);
+                invalidateTxnWith(status.name());
+            }
         } catch (Exception e) {
-            return emptyFailProcessingResponse();
+            invalidateTxnWith(e.getMessage());
         }
+        return txnResult;
+    }
+
+    private void invalidateTxnWith(final String status) {
+        throw new InvalidTransactionException(status);
     }
 }

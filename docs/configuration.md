@@ -544,11 +544,17 @@ to configure the application.
 The following table lists the available properties along with their default values. Unless you need to set a non-default
 value, it is recommended to only populate overridden properties in the custom `application.yml`.
 
-Name                                                        | Default          | Description
-------------------------------------------------------------| -----------------| ---------------------------------------
-`hedera.mirror.web3.db.host`                                | 127.0.0.1        | The IP or hostname used to connect to the database
-`hedera.mirror.web3.db.name`                                | mirror_node      | The name of the database
-`hedera.mirror.web3.db.password`                            | mirror_web3_pass | The database password used to connect to the database
-`hedera.mirror.web3.db.port`                                | 5432             | The port used to connect to the database
-`hedera.mirror.web3.db.sslMode`                             | DISABLE          | The ssl level of protection against eavesdropping, man-in-the-middle (MITM) and impersonation on the db connection. Accepts either DISABLE, ALLOW, PREFER, REQUIRE, VERIFY_CA or VERIFY_FULL.
-`hedera.mirror.web3.db.username`                            | mirror_web3      | The username used to connect to the database
+Name                                                        | Default                                    | Description
+------------------------------------------------------------|--------------------------------------------| ---------------------------------------
+`hedera.mirror.web3.db.host`                                | 127.0.0.1                                  | The IP or hostname used to connect to the database
+`hedera.mirror.web3.db.name`                                | mirror_node                                | The name of the database
+`hedera.mirror.web3.db.password`                            | mirror_web3_pass                           | The database password used to connect to the database
+`hedera.mirror.web3.db.port`                                | 5432                                       | The port used to connect to the database
+`hedera.mirror.web3.db.sslMode`                             | DISABLE                                    | The ssl level of protection against eavesdropping, man-in-the-middle (MITM) and impersonation on the db connection. Accepts either DISABLE, ALLOW, PREFER, REQUIRE, VERIFY_CA or VERIFY_FULL.
+`hedera.mirror.web3.db.username`                            | mirror_web3                                | The username used to connect to the database
+`hedera.mirror.web3.evm.directTokenCall`                    | true                                       | Flag enabling contract like calls to tokens
+`hedera.mirror.web3.evm.dynamicEvmVersion`                  | false                                      | Flag indicating whether a dynamic evm version to be used
+`hedera.mirror.web3.evm.evmVersion`                         | v0.32                                      | The besu EVM version to be used as dynamic one
+`hedera.mirror.web3.evm.fundingAccount`                     | 0x0000000000000000000000000000000000000062 | Default Hedera funding account
+`hedera.mirror.web3.evm.maxGasRefundPercentage`             | 20%                                        | Maximal procent of gas refunding
+`hedera.mirror.web3.evm.expirationCacheTime`                | 10m                                        | Maximum time for contract bytecode's caching

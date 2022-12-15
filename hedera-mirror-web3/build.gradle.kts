@@ -25,9 +25,7 @@ plugins {
 }
 
 dependencies {
-    api("com.hedera.evm:hedera-evm") {
-        exclude("com.hedera.hashgraph", "hedera-protobuf-java-api")
-    }
+    implementation("com.hedera.evm:hedera-evm")
     implementation(platform("org.springframework.cloud:spring-cloud-dependencies"))
     implementation(project(":common"))
     implementation("com.github.ben-manes.caffeine:caffeine")

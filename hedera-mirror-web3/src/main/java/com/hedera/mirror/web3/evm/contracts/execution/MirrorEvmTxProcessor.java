@@ -59,7 +59,7 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
             final Map<String, Provider<ContractCreationProcessor>> ccps,
             final BlockMetaSource blockMetaSource,
             final MirrorEvmContractAliases aliasManager,
-            final HederaEvmEntityAccess evmEntityAccess
+            final AbstractCodeCache codeCache
     ) {
         super(
                 worldState,
@@ -70,7 +70,7 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
                 blockMetaSource);
 
         this.aliasManager = aliasManager;
-        this.codeCache = new AbstractCodeCache(10, evmEntityAccess);
+        this.codeCache = codeCache;
     }
 
     public HederaEvmTransactionProcessingResult execute(
@@ -82,6 +82,7 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
             final Instant consensusTime,
             final boolean isStatic) {
         final long gasPrice = gasPriceTinyBarsGiven(consensusTime, false);
+        super.setupFields(false);
 
         return super.execute(
                 sender,
@@ -90,7 +91,6 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
                 providedGasLimit,
                 value,
                 callData,
-                false,
                 isStatic,
                 aliasManager.resolveForEvm(receiver)
         );

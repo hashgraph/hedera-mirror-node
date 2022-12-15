@@ -32,14 +32,12 @@ import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 @Named
 @RequiredArgsConstructor
 public class MirrorEvmContractAliases extends HederaEvmContractAliases {
-
+    private static final byte[] EMPTY_ADDRESS = new byte[0];
     private final MirrorEntityAccess mirrorEntityAccess;
-
 
     @Override
     public Address resolveForEvm(Address addressOrAlias) {
-        final var emptyAddressBytes = new byte[0];
         final var entity = mirrorEntityAccess.findEntity(addressOrAlias);
-        return Address.wrap(Bytes.wrap(entity.map(Entity::getEvmAddress).orElse(emptyAddressBytes)));
+        return Address.wrap(Bytes.wrap(entity.map(Entity::getEvmAddress).orElse(EMPTY_ADDRESS)));
     }
 }

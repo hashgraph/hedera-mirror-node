@@ -65,6 +65,7 @@ import com.hedera.node.app.service.evm.contracts.execution.HederaBlockValues;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider;
 import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultHederaTracer;
+import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldState;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
@@ -103,7 +104,6 @@ class MirrorEvmTxProcessorTest {
         String EVM_VERSION_0_30 = "v0.30";
         when(evmProperties.evmVersion()).thenReturn(EVM_VERSION_0_30);
 
-
         mirrorEvmTxProcessor =
                 new MirrorEvmTxProcessor(
                         worldState,
@@ -114,7 +114,7 @@ class MirrorEvmTxProcessorTest {
                         ccps(),
                         blockMetaSource,
                         hederaEvmContractAliases,
-                        hederaEvmEntityAccess);
+                        new AbstractCodeCache(10, hederaEvmEntityAccess));
 
         DefaultHederaTracer hederaEvmOperationTracer = new DefaultHederaTracer();
         mirrorEvmTxProcessor.setOperationTracer(hederaEvmOperationTracer);

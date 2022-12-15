@@ -26,7 +26,6 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
 import static org.springframework.http.HttpStatus.OK;
 
-import java.time.Duration;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -192,6 +191,23 @@ class ContractControllerTest {
                 .isEqualTo(new GenericErrorResponse(errorString));
     }
 
+    @Test
+    void transferWithoutSender(){
+        final var errorString = "from field must not be null";
+        final var request = request();
+        request.setFrom(null);
+
+        webClient.post()
+                .uri(CALL_URI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(request))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(BAD_REQUEST)
+                .expectBody(GenericErrorResponse.class)
+                .isEqualTo(new GenericErrorResponse(errorString));
+    }
+
     @NullAndEmptySource
     @ParameterizedTest
     @ValueSource(strings = {"earliest", "pending", "latest", "0", "0x1a"})
@@ -210,10 +226,21 @@ class ContractControllerTest {
 
     @Test
     void callSuccess(){
-        webClient = webClient.mutate()
-                .responseTimeout(Duration.ofMillis(30000000))
-                .build();
+        final var request = request();
+        request.setData("0x1079023a0000000000000000000000000000000000000000000000000000000000000156");
+        request.setValue(0);
 
+        webClient.post()
+                .uri(CALL_URI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(request))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(OK);
+    }
+
+    @Test
+    void transferSuccess(){
         webClient.post()
                 .uri(CALL_URI)
                 .contentType(MediaType.APPLICATION_JSON)

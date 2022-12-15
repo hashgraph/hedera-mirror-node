@@ -28,12 +28,4 @@
         <notes>No snakeyaml release available with a fix yet</notes>
         <cve>CVE-2022-1471</cve>
     </suppress>
-    <suppress>
-        <cve>CVE-2021-37533</cve>
-    </suppress>
-    <suppress>
-        <notes>hedera-evm-lib</notes>
-        <packageUrl regex="true">^pkg:maven/com\.hedera\.evm/hedera\-evm@.*$</packageUrl>
-        <cve>CVE-2022-39354</cve>
-    </suppress>
 </suppressions>

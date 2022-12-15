@@ -120,7 +120,7 @@ class ContractController {
     @ExceptionHandler()
     @ResponseStatus(INTERNAL_SERVER_ERROR)
     private Mono<GenericErrorResponse> genericError(Exception e) {
-        log.warn("Generic error: {}", e.getMessage());
+        log.error("Generic error: ", e);
         return errorResponse(INTERNAL_SERVER_ERROR.getReasonPhrase());
     }
 

@@ -21,10 +21,10 @@ package com.hedera.mirror.web3.exception;
  */
 
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.nio.charset.StandardCharsets;
+import org.apache.tuweni.bytes.Bytes;
 
 import com.hedera.mirror.web3.evm.exception.EvmException;
-
-import org.apache.tuweni.bytes.Bytes;
 
 public class InvalidTransactionException extends EvmException {
 
@@ -32,9 +32,12 @@ public class InvalidTransactionException extends EvmException {
         super(responseCode.name());
     }
 
-    public Bytes messageBytes() {
-        final var detail = getMessage();
-        return Bytes.of(detail.getBytes());
+    public InvalidTransactionException(String message) {
+        super(message);
     }
 
+    public Bytes messageBytes() {
+        final var detail = getMessage();
+        return Bytes.of(detail.getBytes(StandardCharsets.UTF_8));
+    }
 }

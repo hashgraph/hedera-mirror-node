@@ -71,7 +71,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                         ccps(),
                         blockMetaSource,
                         aliasManager,
-                        entityAccess);
+                        codeCache);
 
         processor.setOperationTracer(new DefaultHederaTracer());
     }
