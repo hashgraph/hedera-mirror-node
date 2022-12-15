@@ -7,7 +7,7 @@ spec:
   command: ["k6", "run"]
   executor_type: container
   features:
-    - artifacts
+  - artifacts
   image: loadimpact/k6:0.41.0
   types:
   - k6-custom/script
