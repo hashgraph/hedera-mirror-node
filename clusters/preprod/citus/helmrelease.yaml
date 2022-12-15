@@ -1,0 +1,66 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: mirror
+  namespace: citus
+spec:
+  chart:
+    spec:
+      chart: hedera-mirror
+      sourceRef:
+        kind: HelmRepository
+        name: hedera-mirror-node
+      valuesFiles:
+        - values.yaml
+        - values-prod.yaml
+      version: '>0.0.0' # Update to the latest release
+  dependsOn:
+    - name: mirror
+      namespace: common
+  install:
+    crds: CreateReplace
+  interval: 90s
+  test:
+    enable: true
+    timeout: 20m
+  timeout: 20m
+  upgrade:
+    cleanupOnFail: true
+    crds: CreateReplace
+  valuesFrom:
+    - kind: Secret
+      name: mirror
+  values:
+    citus:
+      enabled: true
+      primary:
+        tolerations:
+          - key: citus
+            operator: Equal
+            value: true
+            effect: NoSchedule
+      readReplicas:
+        tolerations:
+          - key: citus
+            operator: Equal
+            value: true
+            effect: NoSchedule
+    importer:
+      env:
+        HEDERA_MIRROR_IMPORTER_DOWNLOADER_BALANCE_ENABLED: false
+        HEDERA_MIRROR_IMPORTER_DOWNLOADER_RECORD_ENABLED: false
+        HEDERA_MIRROR_IMPORTER_NETWORK: "OTHER"
+        SPRING_FLYWAY_PLACEHOLDERS_PARTITIONSTARTDATE: "'0 days'"
+        SPRING_PROFILES_ACTIVE: v2
+    monitor:
+      enabled: false
+    postgresql:
+      enabled: false
+    redis:
+      enabled: false
+    rosetta:
+      enabled: false
+    test:
+      enabled: false
+
+
