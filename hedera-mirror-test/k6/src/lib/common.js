@@ -176,6 +176,10 @@ function getScenario(metricKey) {
   return match[1];
 }
 
+function getTestReportFilename() {
+  return `${__ENV.TEST_REPORTS_DIR || '.'}/report.md`;
+}
+
 function defaultMetrics() {
   return {
     checks: {
@@ -270,7 +274,7 @@ function TestScenarioBuilder() {
   this.build = function () {
     const that = this;
     return {
-      options: getOptionsWithScenario(that._name, this._scenario, that._tags),
+      options: getOptionsWithScenario(that._name, that._scenario, that._tags),
       run: function (testParameters) {
         const response = that._request(testParameters);
         check(response, that._checks);
@@ -306,4 +310,4 @@ function TestScenarioBuilder() {
   return this;
 }
 
-export {getSequentialTestScenarios, markdownReport, TestScenarioBuilder};
+export {getSequentialTestScenarios, getTestReportFilename, markdownReport, TestScenarioBuilder};
