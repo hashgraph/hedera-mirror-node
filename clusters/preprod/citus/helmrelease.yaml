@@ -27,9 +27,6 @@ spec:
   upgrade:
     cleanupOnFail: true
     crds: CreateReplace
-  valuesFrom:
-    - kind: Secret
-      name: mirror
   values:
     citus:
       enabled: true
