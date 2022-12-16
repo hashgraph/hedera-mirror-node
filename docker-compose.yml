@@ -1,28 +1,28 @@
 version: "3.7"
 services:
-  citus:
-     image: xinatswirlds/citus:11.1.4-alpine
-     deploy:
-      replicas: 0
-     environment:
-       PGDATA: /var/lib/postgresql/data
-       # These should all be changed from the default before running in production
-       GRPC_PASSWORD: mirror_grpc_pass
-       IMPORTER_PASSWORD: mirror_importer_pass
-       OWNER_PASSWORD: mirror_node_pass
-       POSTGRES_PASSWORD: postgres_password
-       REST_PASSWORD: mirror_api_pass
-       ROSETTA_PASSWORD: mirror_rosetta_pass
-       SCHEMA_V2: "true"
-     ports:
-      - 5432:5432
-     restart: unless-stopped
-     stop_grace_period: 2m
-     stop_signal: SIGTERM
-     tty: true
-     volumes:
-       - ./db:/var/lib/postgresql/data
-       - ./hedera-mirror-importer/src/main/resources/db/scripts/init.sh:/docker-entrypoint-initdb.d/init.sh
+#  citus:
+#     image: xinatswirlds/citus:11.1.4-alpine
+#     deploy:
+#      replicas: 0
+#     environment:
+#       PGDATA: /var/lib/postgresql/data
+#       # These should all be changed from the default before running in production
+#       GRPC_PASSWORD: mirror_grpc_pass
+#       IMPORTER_PASSWORD: mirror_importer_pass
+#       OWNER_PASSWORD: mirror_node_pass
+#       POSTGRES_PASSWORD: postgres_password
+#       REST_PASSWORD: mirror_api_pass
+#       ROSETTA_PASSWORD: mirror_rosetta_pass
+#       SCHEMA_V2: "true"
+#     ports:
+#      - 5432:5432
+#     restart: unless-stopped
+#     stop_grace_period: 2m
+#     stop_signal: SIGTERM
+#     tty: true
+#     volumes:
+#       - ./db:/var/lib/postgresql/data
+#       - ./hedera-mirror-importer/src/main/resources/db/scripts/init.sh:/docker-entrypoint-initdb.d/init.sh
   db:
     image: postgres:14-alpine
     environment:
@@ -37,7 +37,7 @@ services:
       REST_PASSWORD: mirror_api_pass
       ROSETTA_PASSWORD: mirror_rosetta_pass
     ports:
-      - 5432:5432
+      - 5433:5432
     restart: unless-stopped
     stop_grace_period: 2m
     stop_signal: SIGTERM
@@ -46,81 +46,114 @@ services:
       - ./db:/var/lib/postgresql/data
       - ./hedera-mirror-importer/src/main/resources/db/scripts/init.sh:/docker-entrypoint-initdb.d/init.sh
 
-  grpc:
-    image: gcr.io/mirrornode/hedera-mirror-grpc:main
-    pull_policy: always
-    restart: unless-stopped
-    environment:
-      HEDERA_MIRROR_GRPC_DB_HOST: db
-      SPRING_CONFIG_ADDITIONAL_LOCATION: file:/usr/etc/hedera-mirror-grpc/
-      SPRING_REDIS_HOST: redis
-    ports:
-      - 5600:5600
-    volumes:
-      - ./application.yml:/usr/etc/hedera-mirror-grpc/application.yml
+#  grpc:
+#    image: gcr.io/mirrornode/hedera-mirror-grpc:main
+#    pull_policy: always
+#    restart: unless-stopped
+#    environment:
+#      HEDERA_MIRROR_GRPC_DB_HOST: db
+#      SPRING_CONFIG_ADDITIONAL_LOCATION: file:/usr/etc/hedera-mirror-grpc/
+#      SPRING_REDIS_HOST: redis
+#    ports:
+#      - 5600:5600
+#    volumes:
+#      - ./application.yml:/usr/etc/hedera-mirror-grpc/application.yml
 
-  importer:
-    image: gcr.io/mirrornode/hedera-mirror-importer:main
-    pull_policy: always
-    restart: unless-stopped
-    environment:
-      HEDERA_MIRROR_IMPORTER_DB_HOST: db
-      SPRING_CONFIG_ADDITIONAL_LOCATION: file:/usr/etc/hedera-mirror-importer/
-      SPRING_REDIS_HOST: redis
-    volumes:
-      - ./application.yml:/usr/etc/hedera-mirror-importer/application.yml
+#  importer:
+#    image: gcr.io/mirrornode/hedera-mirror-importer:main
+#    pull_policy: always
+#    restart: unless-stopped
+#    environment:
+#      HEDERA_MIRROR_IMPORTER_DB_HOST: db
+#      SPRING_CONFIG_ADDITIONAL_LOCATION: file:/usr/etc/hedera-mirror-importer/
+#      SPRING_REDIS_HOST: redis
+#    volumes:
+#      - ./application.yml:/usr/etc/hedera-mirror-importer/application.yml
 
-  monitor:
-    deploy:
-      replicas: 0
-    image: gcr.io/mirrornode/hedera-mirror-monitor:main
-    pull_policy: always
-    restart: unless-stopped
-    environment:
-      SPRING_CONFIG_ADDITIONAL_LOCATION: file:/usr/etc/hedera-mirror-monitor/
-    volumes:
-      - ./application.yml:/usr/etc/hedera-mirror-monitor/application.yml
+#  monitor:
+#    deploy:
+#      replicas: 0
+#    image: gcr.io/mirrornode/hedera-mirror-monitor:main
+#    pull_policy: always
+#    restart: unless-stopped
+#    environment:
+#      SPRING_CONFIG_ADDITIONAL_LOCATION: file:/usr/etc/hedera-mirror-monitor/
+#    volumes:
+#      - ./application.yml:/usr/etc/hedera-mirror-monitor/application.yml
 
-  redis:
-    image: redis:6-alpine
-    ports:
-      - 6379:6379
-    restart: unless-stopped
-    stop_grace_period: 2m
-    stop_signal: SIGTERM
-    tty: true
+#  redis:
+#    image: redis:6-alpine
+#    ports:
+#      - 6379:6379
+#    restart: unless-stopped
+#    stop_grace_period: 2m
+#    stop_signal: SIGTERM
+#    tty: true
+#
+#  rest:
+#    image: gcr.io/mirrornode/hedera-mirror-rest:main
+#    pull_policy: always
+#    environment:
+#      HEDERA_MIRROR_REST_DB_HOST: db
+#    ports:
+#      - 5551:5551
+#    restart: unless-stopped
+#    tty: true
 
-  rest:
-    image: gcr.io/mirrornode/hedera-mirror-rest:main
-    pull_policy: always
-    environment:
-      HEDERA_MIRROR_REST_DB_HOST: db
-    ports:
-      - 5551:5551
-    restart: unless-stopped
-    tty: true
-
-  rosetta:
-    image: gcr.io/mirrornode/hedera-mirror-rosetta:main
-    pull_policy: always
-    environment:
-      HEDERA_MIRROR_ROSETTA_DB_HOST: db
-    ports:
-      - 5700:5700
-    restart: unless-stopped
-    tty: true
-    volumes:
-      - ./application.yml:/src/hedera-mirror-rosetta/application.yml
+#  rosetta:
+#    image: gcr.io/mirrornode/hedera-mirror-rosetta:main
+#    pull_policy: always
+#    environment:
+#      HEDERA_MIRROR_ROSETTA_DB_HOST: db
+#    ports:
+#      - 5700:5700
+#    restart: unless-stopped
+#    tty: true
+#    volumes:
+#      - ./application.yml:/src/hedera-mirror-rosetta/application.yml
 
   web3:
-    image: gcr.io/mirrornode/hedera-mirror-web3:main
+#    image: gcr.io/mirrornode/hedera-mirror-web3:main
+    build:
+      context: hedera-mirror-web3/
+    container_name: mirror-node-web3
     pull_policy: always
     environment:
       HEDERA_MIRROR_WEB3_DB_HOST: db
       SPRING_CONFIG_ADDITIONAL_LOCATION: file:/usr/etc/hedera-mirror-web3/
+      JAVA_TOOL_OPTIONS:
+        "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
     ports:
       - 8545:8545
+      - 5005:5005
     restart: unless-stopped
     tty: true
     volumes:
       - ./application.yml:/usr/etc/hedera-mirror-web3/application.yml
+
+  prometheus:
+    image: prom/prometheus:v2.35.0
+    container_name: prometheus
+    restart: unless-stopped
+    volumes:
+      - ./prometheus.yml:/usr/etc/hedera-mirror-web3/prometheus.yml
+    ports:
+      - 9090:9090
+
+  grafana:
+    image: grafana/grafana-oss:8.5.2
+    pull_policy: always
+    container_name: grafana
+    user: root
+    ports:
+      - 3000:3000
+    restart: unless-stopped
+    links:
+      - prometheus:prometheus
+    volumes:
+      - ./data/grafana:/var/lib/grafana
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_DOMAIN: host.docker.internal
+
