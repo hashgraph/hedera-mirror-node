@@ -1,7 +1,7 @@
 apiVersion: tests.testkube.io/v3
 kind: Test
 metadata:
-  name: rest-test
+  name: test-rest
   namespace: testkube
 spec:
   content:

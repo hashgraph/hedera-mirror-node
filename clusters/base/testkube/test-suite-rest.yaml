@@ -1,7 +1,7 @@
 apiVersion: tests.testkube.io/v2
 kind: TestSuite
 metadata:
-  name: rest-test-suite
+  name: test-suite-rest
   namespace: testkube
 spec:
   description: Mirrornode REST API performance test suite
@@ -18,7 +18,7 @@ spec:
       DEFAULT_VUS:
         name: DEFAULT_VUS
         type: basic
-        value: "1500"
+        value: "500"
       TEST_REPORTS_DIR:
         name: TEST_REPORTS_DIR
         type: basic
@@ -27,4 +27,4 @@ spec:
     - delay:
         duration: 600000
     - execute:
-        name: rest-test
+        name: test-rest

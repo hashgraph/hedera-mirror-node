@@ -11,9 +11,6 @@ spec:
         kind: HelmRepository
         name: testkube
       version: 1.8.0
-  dependsOn:
-    - name: mirror
-      namespace: previewnet
   install:
     crds: CreateReplace
   interval: 90s

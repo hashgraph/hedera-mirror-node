@@ -1,11 +1,10 @@
 apiVersion: tests.testkube.io/v2
 kind: TestSuite
 metadata:
-  name: rest-test-suite
+  name: test-suite-rest
   namespace: testkube
 spec:
   executionRequest:
     variables:
       BASE_URL:
-        value: http://mirror-rest.integration.svc.cluster.local
-  schedule: "0 6 * * *"
+        value: http://mirror-rest.mainnet.svc.cluster.local

@@ -6,5 +6,5 @@ resources:
   - helmrepository.yaml
   - helmrelease.yaml
   - k6-custom-executor.yaml
-  - k6-test.yaml
-  - k6-test-suite.yaml
+  - test-rest.yaml
+  - test-suite-rest.yaml
