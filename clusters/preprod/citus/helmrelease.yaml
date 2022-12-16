@@ -31,29 +31,41 @@ spec:
     citus:
       enabled: true
       primary:
+        resources:
+          limits:
+            cpu: 4
+            memory: 16Gi
+          requests:
+            cpu: 2
+            memory: 8Gi
         tolerations:
           - key: citus
             operator: Equal
-            value: true
+            value: "true"
             effect: NoSchedule
       readReplicas:
+        resources:
+          limits:
+            cpu: 8
+            memory: 32Gi
+          requests:
+            cpu: 4
+            memory: 16Gi
         tolerations:
           - key: citus
             operator: Equal
-            value: true
+            value: "true"
             effect: NoSchedule
     importer:
       env:
-        HEDERA_MIRROR_IMPORTER_DOWNLOADER_BALANCE_ENABLED: false
-        HEDERA_MIRROR_IMPORTER_DOWNLOADER_RECORD_ENABLED: false
-        HEDERA_MIRROR_IMPORTER_NETWORK: "OTHER"
+        HEDERA_MIRROR_IMPORTER_DOWNLOADER_BALANCE_ENABLED: "false"
+        HEDERA_MIRROR_IMPORTER_DOWNLOADER_RECORD_ENABLED: "false"
+        HEDERA_MIRROR_IMPORTER_NETWORK: "DEMO"
         SPRING_FLYWAY_PLACEHOLDERS_PARTITIONSTARTDATE: "'0 days'"
         SPRING_PROFILES_ACTIVE: v2
     monitor:
       enabled: false
     postgresql:
-      enabled: false
-    redis:
       enabled: false
     rosetta:
       enabled: false
