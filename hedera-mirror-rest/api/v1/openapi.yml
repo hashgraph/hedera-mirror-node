@@ -1251,8 +1251,14 @@ components:
               type: string
               nullable: true
               format: binary
-              description: The contract bytecode in hex
+              description: The contract bytecode in hex during deployment
               example: "0x01021a1fdc9b"
+            runtime_bytecode:
+              type: string
+              nullable: true
+              format: binary
+              description: The contract bytecode in hex after deployment
+              example: "0x0302fa1ad39c"
     ContractsResponse:
       type: object
       properties:
