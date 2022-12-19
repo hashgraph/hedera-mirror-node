@@ -20,6 +20,7 @@
 
 import {operation} from 'retry';
 
+import config from "./config.js";
 import {
   checkAPIResponseError,
   checkMandatoryParams,
@@ -30,7 +31,6 @@ import {
   getUrl,
   testRunner,
 } from './utils';
-import config from "./config.js";
 
 const resource = 'stateproof';
 const {retry} = config[resource];
