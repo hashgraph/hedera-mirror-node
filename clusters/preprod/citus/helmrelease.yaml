@@ -69,7 +69,7 @@ spec:
     rest:
       readinessProbe:
         httpGet:
-        path: /health/liveness
+          path: /health/liveness
     rosetta:
       enabled: false
     test:
