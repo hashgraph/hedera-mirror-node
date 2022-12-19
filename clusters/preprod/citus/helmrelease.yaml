@@ -66,6 +66,10 @@ spec:
       enabled: false
     postgresql:
       enabled: false
+    rest:
+      readinessProbe:
+        httpGet:
+        path: /health/liveness
     rosetta:
       enabled: false
     test:
