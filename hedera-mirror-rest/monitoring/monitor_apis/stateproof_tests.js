@@ -18,18 +18,22 @@
  * ‍
  */
 
+import {operation} from 'retry';
+
 import {
   checkAPIResponseError,
-  checkRespObjDefined,
-  checkRespArrayLength,
   checkMandatoryParams,
+  checkRespArrayLength,
+  checkRespObjDefined,
+  CheckRunner,
   getAPIResponse,
   getUrl,
   testRunner,
-  CheckRunner,
 } from './utils';
+import config from "./config.js";
 
 const resource = 'stateproof';
+const {retry} = config[resource];
 const transactionsPath = '/transactions';
 const transactionsJsonKey = 'transactions';
 const mandatoryParams = ['record_file', 'address_books', 'signature_files'];
@@ -60,24 +64,38 @@ const checkStateproofForValidTransaction = async (server) => {
 
   const {transaction_id: transactionId, nonce, scheduled} = transactions[0];
   url = getUrl(server, stateproofPath(transactionId), {nonce, scheduled});
-  const stateproof = await getAPIResponse(url);
 
-  result = new CheckRunner()
-    .withCheckSpec(checkAPIResponseError)
-    .withCheckSpec(checkRespObjDefined, {message: 'stateproof is undefined'})
-    .withCheckSpec(checkMandatoryParams, {
-      params: mandatoryParams,
-      message: 'stateproof object is missing some mandatory fields',
-    })
-    .run(stateproof);
-  if (!result.passed) {
-    return {url, ...result};
-  }
+  result = await new Promise((resolve) => {
+    const checkRunner = new CheckRunner()
+      .withCheckSpec(checkAPIResponseError)
+      .withCheckSpec(checkRespObjDefined, {message: 'stateproof is undefined'})
+      .withCheckSpec(checkMandatoryParams, {
+        params: mandatoryParams,
+        message: 'stateproof object is missing some mandatory fields',
+      });
+    const retryOperation = operation({
+      factor: 1,
+      minTimeout: retry.backoff,
+      retries: retry.maxAttempts - 1,
+    });
+
+    retryOperation.attempt(async (current) => {
+      const stateproof = await getAPIResponse(url);
+      const result = checkRunner.run(stateproof);
+      if (retryOperation.retry(!result.passed)) {
+        // retry when not passed and the max number of retries haven't been reached
+        logger.warn(`Retry stateproof "${url}" after attempt #${current}`);
+        return;
+      }
+
+      resolve(result);
+    });
+  })
 
   return {
     url,
-    passed: true,
-    message: `Successfully called stateproof for the latest successful transaction ${transactionId}`,
+    passed: result.passed,
+    message: result.message ?? `Successfully called stateproof for the latest successful transaction ${transactionId}`,
   };
 };
 
