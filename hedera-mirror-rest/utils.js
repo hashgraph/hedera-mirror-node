@@ -1101,12 +1101,12 @@ const buildComparatorFilter = (name, filter) => {
  * @param {int} autoRenewPeriod: seconds format
  * @param {BigInt} createdTimestamp: nnnnnnnnnnnnnnnnnnn format
  * @param {BigInt} expirationTimestamp: nnnnnnnnnnnnnnnnnnn format
- * @returns {String} seconds.nnnnnnnnn format
+ * @returns {BigInt} nnnnnnnnnnnnnnnnnnn format
  */
 const calculateExpiryTimestamp = (autoRenewPeriod, createdTimestamp, expirationTimestamp) => {
   return _.isNil(expirationTimestamp) && !_.isNil(createdTimestamp) && !_.isNil(autoRenewPeriod)
-    ? nsToSecNs(BigInt(createdTimestamp) + BigInt(autoRenewPeriod) * constants.AUTO_RENEW_PERIOD_MULTIPLE)
-    : nsToSecNs(expirationTimestamp);
+    ? (BigInt(createdTimestamp) + BigInt(autoRenewPeriod) * constants.AUTO_RENEW_PERIOD_MULTIPLE)
+    : (expirationTimestamp);
 };
 
 /**
