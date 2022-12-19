@@ -46,7 +46,7 @@ public class ContractCallService {
     }
 
     private HederaEvmTransactionProcessingResult doProcessCall(final CallServiceParameters body) {
-        HederaEvmTransactionProcessingResult txnResult = null;
+        HederaEvmTransactionProcessingResult txnResult;
         try {
             txnResult =
                     mirrorEvmTxProcessor.execute(
@@ -58,16 +58,11 @@ public class ContractCallService {
                             body.isStatic());
 
             if (!txnResult.isSuccessful()) {
-                final var status = getStatusOrDefault(txnResult);
-                invalidateTxnWith(status.name());
+                throw new InvalidTransactionException(getStatusOrDefault(txnResult));
             }
         } catch (Exception e) {
-            invalidateTxnWith(e.getMessage());
+            throw new InvalidTransactionException(e.getMessage());
         }
         return txnResult;
-    }
-
-    private void invalidateTxnWith(final String status) {
-        throw new InvalidTransactionException(status);
     }
 }

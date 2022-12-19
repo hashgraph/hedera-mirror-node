@@ -21,8 +21,10 @@ package com.hedera.mirror.web3.service;
  */
 
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
+import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
@@ -30,9 +32,12 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.hyperledger.besu.evm.operation.CallOperation;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.hedera.mirror.common.domain.token.TokenId;
+import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
@@ -40,23 +45,30 @@ import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class ContractCallServiceTest extends Web3IntegrationTest {
-    private static final Bytes RUNTIME_BYTES = Bytes.fromHexString(
-            "6080604052600436106100555760003560e01c80631079023a1461005a578063289ec69b146100975780632e64cec1146100b55780635a43c50c146100e0578063c32b6ba11461011d578063e84326d61461015a575b600080fd5b34801561006657600080fd5b50610081600480360381019061007c919061021c565b610164565b60405161008e9190610282565b60405180910390f35b61009f61017a565b6040516100ac9190610267565b60405180910390f35b3480156100c157600080fd5b506100ca610183565b6040516100d79190610282565b60405180910390f35b3480156100ec57600080fd5b506101076004803603810190610102919061021c565b61018c565b6040516101149190610282565b60405180910390f35b34801561012957600080fd5b50610144600480360381019061013f91906101ef565b6101a2565b6040516101519190610282565b60405180910390f35b6101626101c3565b005b6000600282610173919061029d565b9050919050565b60006001905090565b60006048905090565b600080548261019b919061029d565b9050919050565b60008173ffffffffffffffffffffffffffffffffffffffff16319050919050565b565b6000813590506101d48161036f565b92915050565b6000813590506101e981610386565b92915050565b6000602082840312156102055761020461036a565b5b6000610213848285016101c5565b91505092915050565b6000602082840312156102325761023161036a565b5b6000610240848285016101da565b91505092915050565b61025281610305565b82525050565b61026181610331565b82525050565b600060208201905061027c6000830184610249565b92915050565b60006020820190506102976000830184610258565b92915050565b60006102a882610331565b91506102b383610331565b9250827fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff038211156102e8576102e761033b565b5b828201905092915050565b60006102fe82610311565b9050919050565b60008115159050919050565b600073ffffffffffffffffffffffffffffffffffffffff82169050919050565b6000819050919050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052601160045260246000fd5b600080fd5b610378816102f3565b811461038357600080fd5b50565b61038f81610331565b811461039a57600080fd5b5056fea2646970667358221220208a29341d498e1ad7d868833f0f0d5a89b61329c8a7807770f175cb62767cdc64736f6c63430008070033");
+    private static final Bytes CONTRACT_BYTES = Bytes.fromHexString(
+            "6080604052600436106100705760003560e01c806380b9f03c1161004e57806380b9f03c1461011a57806381a73ad51461013657806393423e9c146101735780639ac27b62146101b057610070565b80636601c296146100755780636f0fccab146100b25780638070450f146100ef575b600080fd5b34801561008157600080fd5b5061009c60048036038101906100979190610636565b6101ed565b6040516100a99190610732565b60405180910390f35b3480156100be57600080fd5b506100d960048036038101906100d491906105dc565b6101f8565b6040516100e69190610710565b60405180910390f35b3480156100fb57600080fd5b50610104610284565b6040516101119190610732565b60405180910390f35b610134600480360381019061012f9190610609565b61028d565b005b34801561014257600080fd5b5061015d600480360381019061015891906105dc565b6102d7565b60405161016a9190610710565b60405180910390f35b34801561017f57600080fd5b5061019a600480360381019061019591906105dc565b610363565b6040516101a79190610732565b60405180910390f35b3480156101bc57600080fd5b506101d760048036038101906101d29190610636565b610384565b6040516101e49190610710565b60405180910390f35b600080549050919050565b60608173ffffffffffffffffffffffffffffffffffffffff166306fdde036040518163ffffffff1660e01b815260040160006040518083038186803b15801561024057600080fd5b505afa158015610254573d6000803e3d6000fd5b505050506040513d6000823e3d601f19601f8201168201806040525081019061027d919061067f565b9050919050565b60006004905090565b8073ffffffffffffffffffffffffffffffffffffffff166108fc349081150290604051600060405180830381858888f193505050501580156102d3573d6000803e3d6000fd5b5050565b60608173ffffffffffffffffffffffffffffffffffffffff166395d89b416040518163ffffffff1660e01b815260040160006040518083038186803b15801561031f57600080fd5b505afa158015610333573d6000803e3d6000fd5b505050506040513d6000823e3d601f19601f8201168201806040525081019061035c919061067f565b9050919050565b60008173ffffffffffffffffffffffffffffffffffffffff16319050919050565b6060816001908051906020019061039c92919061042f565b50600180546103aa9061084f565b80601f01602080910402602001604051908101604052809291908181526020018280546103d69061084f565b80156104235780601f106103f857610100808354040283529160200191610423565b820191906000526020600020905b81548152906001019060200180831161040657829003601f168201915b50505050509050919050565b82805461043b9061084f565b90600052602060002090601f01602090048101928261045d57600085556104a4565b82601f1061047657805160ff19168380011785556104a4565b828001600101855582156104a4579182015b828111156104a3578251825591602001919060010190610488565b5b5090506104b191906104b5565b5090565b5b808211156104ce5760008160009055506001016104b6565b5090565b60006104e56104e084610772565b61074d565b90508281526020810184848401111561050157610500610915565b5b61050c84828561080d565b509392505050565b600061052761052284610772565b61074d565b90508281526020810184848401111561054357610542610915565b5b61054e84828561081c565b509392505050565b60008135905061056581610935565b92915050565b60008135905061057a8161094c565b92915050565b600082601f83011261059557610594610910565b5b81356105a58482602086016104d2565b91505092915050565b600082601f8301126105c3576105c2610910565b5b81516105d3848260208601610514565b91505092915050565b6000602082840312156105f2576105f161091f565b5b600061060084828501610556565b91505092915050565b60006020828403121561061f5761061e61091f565b5b600061062d8482850161056b565b91505092915050565b60006020828403121561064c5761064b61091f565b5b600082013567ffffffffffffffff81111561066a5761066961091a565b5b61067684828501610580565b91505092915050565b6000602082840312156106955761069461091f565b5b600082015167ffffffffffffffff8111156106b3576106b261091a565b5b6106bf848285016105ae565b91505092915050565b60006106d3826107a3565b6106dd81856107ae565b93506106ed81856020860161081c565b6106f681610924565b840191505092915050565b61070a81610803565b82525050565b6000602082019050818103600083015261072a81846106c8565b905092915050565b60006020820190506107476000830184610701565b92915050565b6000610757610768565b90506107638282610881565b919050565b6000604051905090565b600067ffffffffffffffff82111561078d5761078c6108e1565b5b61079682610924565b9050602081019050919050565b600081519050919050565b600082825260208201905092915050565b60006107ca826107e3565b9050919050565b60006107dc826107e3565b9050919050565b600073ffffffffffffffffffffffffffffffffffffffff82169050919050565b6000819050919050565b82818337600083830152505050565b60005b8381101561083a57808201518184015260208101905061081f565b83811115610849576000848401525b50505050565b6000600282049050600182168061086757607f821691505b6020821081141561087b5761087a6108b2565b5b50919050565b61088a82610924565b810181811067ffffffffffffffff821117156108a9576108a86108e1565b5b80604052505050565b7f4e487b7100000000000000000000000000000000000000000000000000000000600052602260045260246000fd5b7f4e487b7100000000000000000000000000000000000000000000000000000000600052604160045260246000fd5b600080fd5b600080fd5b600080fd5b600080fd5b6000601f19601f8301169050919050565b61093e816107bf565b811461094957600080fd5b50565b610955816107d1565b811461096057600080fd5b5056fea2646970667358221220b7f5982b5294da8fd70c30853271e8b8101cd7e705958bc9ba7a34ae2db2f7ec64736f6c63430008070033");
 
-    private static final Address CONTRACT_ADDRESS = Address.fromHexString("0x00000000000000000000000000000000000004e2");
+    private static final Address CONTRACT_ADDRESS = Address.fromHexString(
+            "0x00000000000000000000000000000000000004e7");
 
-    private static final Address SENDER_ADDRESS = Address.fromHexString("0x00000000000000000000000000000000000004e6");
+    private static final Address SENDER_ADDRESS = Address.fromHexString(
+            "0x00000000000000000000000000000000000004e6");
 
-    private static final Address RECEIVER_ADDRESS = Address.fromHexString("0x00000000000000000000000000000000000004e5");
+    private static final Address RECEIVER_ADDRESS = Address.fromHexString(
+            "0x00000000000000000000000000000000000004e5");
+
+    private static final Address TOKEN_ADDRESS = Address.fromHexString(
+            "0x00000000000000000000000000000000000004e4");
 
     private final ContractCallService contractCallService;
 
     @Test
     void pureCall() {
-        //func x(uint n) public pure returns (uint)
-        final var pureFuncHash = "0x1079023a000000000000000000000000000000000000000000000000000000000000007b";
-        final var successfulReadResponse = "0x000000000000000000000000000000000000000000000000000000000000007d";
-        final var serviceParameters = callBody(pureFuncHash, 0);
+        //multiplySimpleNumbers()
+        final var pureFuncHash = "8070450f";
+        final var successfulReadResponse =
+                "0x0000000000000000000000000000000000000000000000000000000000000004";
+        final var serviceParameters = serviceParameters(pureFuncHash, 0);
 
         persistEntities(false);
 
@@ -65,30 +77,22 @@ class ContractCallServiceTest extends Web3IntegrationTest {
 
     @Test
     void viewCall() {
-        //func x(uint n) public view returns (uint)
-        final var viewFuncHash = "0x1079023a0000000000000000000000000000000000000000000000000000000000000156";
-        final var successfulReadResponse = "0x0000000000000000000000000000000000000000000000000000000000000158";
-        final var serviceParameters = callBody(viewFuncHash, 0);
+        //returnStorageData()
+        final var viewFuncHash =
+                "0x6601c296000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000036b75720000000000000000000000000000000000000000000000000000000000";
+        final var successfulReadResponse =
+                "0x4746573740000000000000000000000000000000000000000000000000000000";
+        final var serviceParameters = serviceParameters(viewFuncHash, 0);
 
         persistEntities(false);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulReadResponse);
     }
 
-    @Test
-    void callPayable() {
-        final var payableFunc = "0x289ec69b";
-        final var params = callBody(payableFunc, 9000L);
-
-        persistEntities(false);
-
-        final var isSuccessful = contractCallService.processCall(params);
-        assertThat(isSuccessful).isEqualTo("0x0000000000000000000000000000000000000000000000000000000000000001");
-    }
 
     @Test
     void transferFunds() {
-        final var serviceParameters = callBody("0x", 7L);
+        final var serviceParameters = serviceParameters("0x", 7L);
         persistEntities(true);
 
         assertThatCode(() -> contractCallService.processCall(serviceParameters)).doesNotThrowAnyException();
@@ -96,9 +100,12 @@ class ContractCallServiceTest extends Web3IntegrationTest {
 
     @Test
     void balanceCall() {
-        final var balanceCall = "0xc32b6ba100000000000000000000000000000000000000000000000000000000000004e2";
-        final var expectedBalance = "0x00000000000000000000000000000000000000000000000000000000000005dc";
-        final var params = callBody(balanceCall, 0);
+        //getAccountBalance(address)
+        final var balanceCall =
+                "0x93423e9c00000000000000000000000000000000000000000000000000000000000004e6";
+        final var expectedBalance =
+                "0x0000000000000000000000000000000000000000000000000000000000004e20";
+        final var params = serviceParameters(balanceCall, 0);
 
         persistEntities(false);
 
@@ -109,7 +116,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
     @Test
     void invalidFunctionSig() {
         final var wrongFunctionSignature = "0x542ec32e";
-        final var serviceParameters = callBody(wrongFunctionSignature, 0);
+        final var serviceParameters = serviceParameters(wrongFunctionSignature, 0);
 
         persistEntities(false);
 
@@ -119,7 +126,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
 
     @Test
     void transferNegative() {
-        final var serviceParameters = callBody("0x", -5L);
+        final var serviceParameters = serviceParameters("0x", -5L);
         persistEntities(true);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters)).isInstanceOf(InvalidTransactionException.class);
@@ -127,13 +134,44 @@ class ContractCallServiceTest extends Web3IntegrationTest {
 
     @Test
     void transferExceedsBalance() {
-        final var serviceParameters = callBody("0x", 210000L);
+        final var serviceParameters = serviceParameters("0x", 210000L);
         persistEntities(true);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters)).isInstanceOf(InvalidTransactionException.class);
     }
 
-    private CallServiceParameters callBody(String callData, long value) {
+    /**
+     * _to.transfer(msg.value) fails due to the static frame,{@link CallOperation} this will be
+     * supported with future release with gas_estimate support.
+     */
+    @Test
+    void transferThruContract() {
+        //transferHbarsToAddress(address)
+        final var stateChangePayable =
+                "0x80b9f03c00000000000000000000000000000000000000000000000000000000000004e6";
+        final var params = serviceParameters(stateChangePayable, 90L);
+
+        persistEntities(false);
+
+        assertThatThrownBy(() -> contractCallService.processCall(params)).
+                isInstanceOf(InvalidTransactionException.class)
+                .hasMessage(LOCAL_CALL_MODIFICATION_EXCEPTION.toString());
+    }
+
+    @Test
+    void stateChangeFails() {
+        //writeToStorageSlot(string)
+        final var stateChangeHash =
+                "0x9ac27b62000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000033233320000000000000000000000000000000000000000000000000000000000";
+        final var serviceParameters = serviceParameters(stateChangeHash, 0);
+
+        persistEntities(false);
+
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters)).
+                isInstanceOf(InvalidTransactionException.class);
+    }
+
+    private CallServiceParameters serviceParameters(String callData, long value) {
         final var sender = new HederaEvmAccount(SENDER_ADDRESS);
         final var data = Bytes.fromHexString(callData);
         final var receiver = callData.equals("0x") ? RECEIVER_ADDRESS : CONTRACT_ADDRESS;
@@ -160,31 +198,53 @@ class ContractCallServiceTest extends Web3IntegrationTest {
                                     .evmAddress(receiverEvmAddress))
                     .persist();
         }
-        final var ContractEntityId = fromEvmAddress(CONTRACT_ADDRESS.toArrayUnsafe());
-        final var ContractEvmAddress = toEvmAddress(ContractEntityId);
+        final var contractEntityId = fromEvmAddress(CONTRACT_ADDRESS.toArrayUnsafe());
+        final var contractEvmAddress = toEvmAddress(contractEntityId);
 
         domainBuilder.entity().customize(e ->
-                e.id(ContractEntityId.getId())
-                        .num(ContractEntityId.getEntityNum())
-                        .evmAddress(ContractEvmAddress)
+                e.id(contractEntityId.getId())
+                        .num(contractEntityId.getEntityNum())
+                        .evmAddress(contractEvmAddress)
                         .type(CONTRACT).balance(1500L)).persist();
 
         domainBuilder.contract().customize(c ->
-                        c.id(ContractEntityId.getId())
-                                .runtimeBytecode(RUNTIME_BYTES.toArrayUnsafe()))
+                        c.id(contractEntityId.getId())
+                                .runtimeBytecode(CONTRACT_BYTES.toArrayUnsafe()))
+                .persist();
+
+        domainBuilder.contractState().customize(c ->
+                        c.contractId(contractEntityId.getId())
+                                .slot(Bytes.fromHexString(
+                                        "0x0000000000000000000000000000000000000000000000000000000000000000").toArrayUnsafe())
+                                .value(Bytes.fromHexString(
+                                        "0x4746573740000000000000000000000000000000000000000000000000000000").toArrayUnsafe()))
                 .persist();
 
         domainBuilder.recordFile().customize(f ->
-                f.bytes(RUNTIME_BYTES.toArrayUnsafe())).persist();
+                f.bytes(CONTRACT_BYTES.toArrayUnsafe())).persist();
 
-        final var SenderEntityId = fromEvmAddress(SENDER_ADDRESS.toArrayUnsafe());
-        final var SenderEvmAddress = toEvmAddress(SenderEntityId);
+        final var senderEntityId = fromEvmAddress(SENDER_ADDRESS.toArrayUnsafe());
+        final var senderEvmAddress = toEvmAddress(senderEntityId);
 
         domainBuilder.entity().customize(e ->
-                        e.id(SenderEntityId.getId())
-                                .num(SenderEntityId.getEntityNum())
-                                .evmAddress(SenderEvmAddress)
+                        e.id(senderEntityId.getId())
+                                .num(senderEntityId.getEntityNum())
+                                .evmAddress(senderEvmAddress)
                                 .balance(20000L))
+                .persist();
+
+        final var tokenEntityId = fromEvmAddress(TOKEN_ADDRESS.toArrayUnsafe());
+        final var tokenEvmAddress = toEvmAddress(tokenEntityId);
+
+        domainBuilder.entity().customize(e ->
+                e.id(tokenEntityId.getId())
+                        .num(tokenEntityId.getEntityNum())
+                        .evmAddress(tokenEvmAddress)
+                        .type(TOKEN).balance(1500L)).persist();
+
+        domainBuilder.token().customize(t ->
+                        t.tokenId(new TokenId(tokenEntityId))
+                                .type(TokenTypeEnum.FUNGIBLE_COMMON))
                 .persist();
     }
 }

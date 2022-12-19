@@ -74,11 +74,10 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
     }
 
     @Override
-    public UInt256 getStorage(Address address, Bytes key) {
+    public Bytes getStorage(Address address, Bytes key) {
         final var storage = contractStateRepository.findStorage(entityIdFromEvmAddress(address),
                 key.toArrayUnsafe());
-        final var storageBytes = storage.map(Bytes::wrap).orElse(Bytes.EMPTY);
-        return UInt256.fromBytes(storageBytes);
+        return storage.map(Bytes::wrap).orElse(Bytes.EMPTY);
     }
 
     @Override
