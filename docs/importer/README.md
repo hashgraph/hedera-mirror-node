@@ -57,7 +57,7 @@ To run performance tests, use Gradle to run the `performanceTest` task. To run a
 parameter.
 
 ```console
-./gradlew :importer:performanceTest --tests 'RecordFileParserPerformanceTest'
+./gradlew :importer:performanceTest --tests 'RecordFileParserPerformanceTest' --info
 ```
 
 ## Reconciliation Job

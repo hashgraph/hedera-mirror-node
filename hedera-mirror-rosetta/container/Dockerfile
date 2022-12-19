@@ -14,7 +14,7 @@ RUN git clone --depth 1 -n "${REPO_URL}" hedera-mirror-node \
     && git fetch --depth 1 origin "${GIT_REF}" \
     && git reset --hard FETCH_HEAD
 WORKDIR /hedera-mirror-node
-RUN ./gradlew :importer:build :rosetta:build -x test -x dependencyCheckAnalyze
+RUN ./gradlew :importer:build :rosetta:build -x test
 WORKDIR /app
 RUN mkdir importer rosetta scripts \
     && cp /hedera-mirror-node/hedera-mirror-rosetta/container/* . \

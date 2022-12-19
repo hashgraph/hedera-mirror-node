@@ -1,4 +1,4 @@
-name: Automated Release
+name: Release Automation
 
 on:
   workflow_dispatch:

@@ -46,7 +46,7 @@ jobs:
 
       - name: Upload coverage report
         uses: codecov/codecov-action@v3
-        if: always()
+        if: always() && matrix.schema == 'v1'
 
       - name: Publish Test Report
         uses: mikepenz/action-junit-report@v3

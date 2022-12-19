@@ -1,7 +1,4 @@
-import org.gradle.kotlin.dsl.repositories
 import org.owasp.dependencycheck.gradle.extension.AnalyzerExtension
-import plugin.go.GoExtension
-import plugin.go.GolangPlugin
 
 /*-
  * ‌
@@ -83,14 +80,14 @@ spotless {
                 "singleQuote" to true,
             )
         )
-        target("*.js")
+        target("**/*.js")
         targetExclude("node_modules/**", ".node-flywaydb/**")
     })
     java {
         addStep(StripOldLicenseFormatterStep.create())
         googleJavaFormat().aosp().reflowLongStrings()
         licenseHeader(licenseHeader, "package")
-        target("*.java")
+        target("**/*.java")
         targetExclude("build/**")
         toggleOffOn()
     }
@@ -102,38 +99,21 @@ spotless {
         endWithNewline()
         indentWithSpaces(2)
         prettier()
-        target("*.json", "*.md", "*.sh", "*.yml", "*.yaml")
+        target("**/*.json", "**/*.md", "**/*.yml", "**/*.yaml")
         trimTrailingWhitespace()
     })
     sql {
         endWithNewline()
         indentWithSpaces()
-        target("*.sql")
+        target("**/*.sql")
         trimTrailingWhitespace()
     }
     format("xml", {
         endWithNewline()
         indentWithSpaces()
-        target("*.xml")
+        target("**/*.xml")
         trimTrailingWhitespace()
     })
-}
-
-tasks.build {
-    dependsOn(tasks.dependencyCheckAnalyze)
-}
-
-// Ensure go binary is installed before running dependency check
-tasks.dependencyCheckAnalyze {
-    doFirst {
-        apply<GolangPlugin>()
-        dependencyCheck {
-            analyzers(closureOf<AnalyzerExtension> {
-                val go = project.extensions.getByName<GoExtension>("go")
-                pathToGo = go.goBin.toString()
-            })
-        }
-    }
 }
 
 tasks.nodeSetup {

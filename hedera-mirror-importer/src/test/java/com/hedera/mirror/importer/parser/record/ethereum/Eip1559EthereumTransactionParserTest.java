@@ -50,7 +50,7 @@ class Eip1559EthereumTransactionParserTest extends AbstractEthereumTransactionPa
 
     @Test
     void decodeLegacyType() {
-        var ethereumTransactionBytes = RLPEncoder.encodeSequentially(
+        var ethereumTransactionBytes = RLPEncoder.sequence(
                 Integers.toBytes(1),
                 new Object[] {});
 
@@ -61,7 +61,7 @@ class Eip1559EthereumTransactionParserTest extends AbstractEthereumTransactionPa
 
     @Test
     void decodeNonListRlpItem() {
-        var ethereumTransactionBytes = RLPEncoder.encodeSequentially(
+        var ethereumTransactionBytes = RLPEncoder.sequence(
                 Integers.toBytes(2),
                 Integers.toBytes(1));
 
@@ -72,7 +72,7 @@ class Eip1559EthereumTransactionParserTest extends AbstractEthereumTransactionPa
 
     @Test
     void decodeIncorrectRlpItemListSize() {
-        var ethereumTransactionBytes = RLPEncoder.encodeSequentially(
+        var ethereumTransactionBytes = RLPEncoder.sequence(
                 Integers.toBytes(2),
                 new Object[] {});
 

@@ -18,14 +18,21 @@
  * ‍
  */
 
-import {getSequentialTestScenarios} from '../../lib/common.js';
+const maxWorkers = process.env.CI ? 2 : '50%'; // 2 workers in CI and 50% of cores number of works in local envs
+const config = {
+  collectCoverage: true,
+  coverageDirectory: 'build/coverage/',
+  coveragePathIgnorePatterns: [
+    '<rootDir>/node_modules/',
+    '<rootDir>/output/',
+    '<rootDir>/sample/',
+    '<rootDir>/tests/'
+  ],
+  maxWorkers,
+  reporters: ['jest-standard-reporter', 'jest-junit'],
+  testEnvironment: 'node',
+  testMatch: ['**/tests/**/*.test.js'],
+  verbose: true,
+};
 
-// import test modules
-import * as ethBlockNumber from './ethBlockNumber.js';
-
-// add test modules here
-const tests = {ethBlockNumber};
-
-const {funcs, options, scenarioDurationGauge, scenarios} = getSequentialTestScenarios(tests);
-
-export {funcs, options, scenarioDurationGauge, scenarios};
+export default config;
