@@ -2928,7 +2928,7 @@ components:
           example: true
           nullable: true
         expiry_timestamp:
-          example: null
+          example: 1234567890100000
           format: int64
           nullable: true
           type: integer
