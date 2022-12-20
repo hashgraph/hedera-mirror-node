@@ -84,7 +84,7 @@ const checkStateproofForValidTransaction = async (server) => {
       const result = checkRunner.run(stateproof);
       if (retryOperation.retry(!result.passed)) {
         // retry when not passed and the max number of retries haven't been reached
-        logger.warn(`Retry stateproof "${url}" after attempt #${current}`);
+        logger.warn(`Retry after attempt #${current} failed: ${result.message}`);
         return;
       }
 
