@@ -10,18 +10,18 @@ import org.springframework.web.bind.support.WebExchangeBindException;
 @UtilityClass
 public class ValidationErrorParser {
 
-    public static String parseValidationError(WebExchangeBindException e){
+    public static String parseValidationError(WebExchangeBindException e) {
         return e.getAllErrors()
                 .stream()
                 .map(ValidationErrorParser::formatError)
                 .collect(Collectors.joining(", "));
     }
 
-    public static List<String> extractValidationError(WebExchangeBindException e){
+    public static List<String> extractValidationError(WebExchangeBindException e) {
         return e.getAllErrors()
                 .stream()
                 .map(ValidationErrorParser::formatError)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private static String formatError(ObjectError error) {
