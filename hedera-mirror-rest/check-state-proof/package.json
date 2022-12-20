@@ -1,6 +1,6 @@
 {
   "name": "@hashgraph/check-state-proof",
-  "version": "$VERSION",
+  "version": "0.71.0-beta1",
   "description": "An example implementation of a state proof flow for a transaction utilizing the mirror node.",
   "type": "module",
   "main": "index.js",
