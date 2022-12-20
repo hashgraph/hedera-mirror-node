@@ -60,7 +60,7 @@ public class ContractCallService {
             if (!txnResult.isSuccessful()) {
                 throw new InvalidTransactionException(getStatusOrDefault(txnResult));
             }
-        } catch (Exception e) {
+        } catch (IllegalStateException | IllegalArgumentException e) {
             throw new InvalidTransactionException(e.getMessage());
         }
         return txnResult;

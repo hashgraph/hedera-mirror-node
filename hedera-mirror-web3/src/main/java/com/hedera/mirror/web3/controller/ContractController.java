@@ -20,7 +20,7 @@ package com.hedera.mirror.web3.controller;
  * ‍
  */
 
-import static com.hedera.mirror.web3.controller.ValidationErrorParser.parseValidationError;
+import static com.hedera.mirror.web3.controller.ValidationErrorParser.extractValidationError;
 import static org.apache.tuweni.bytes.Bytes.EMPTY;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
@@ -105,9 +105,9 @@ class ContractController {
     @ExceptionHandler
     @ResponseStatus(BAD_REQUEST)
     private Mono<GenericErrorResponse> validationError(WebExchangeBindException e) {
-        final var errorMessage = parseValidationError(e);
-        log.warn("Validation error: {}", errorMessage);
-        return errorResponse(errorMessage);
+        final var errors = extractValidationError(e);
+        log.warn("Validation error: {}", errors);
+        return Mono.just(new GenericErrorResponse(errors));
     }
 
     @ExceptionHandler

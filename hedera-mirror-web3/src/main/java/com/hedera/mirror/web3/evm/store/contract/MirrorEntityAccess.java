@@ -30,7 +30,6 @@ import java.util.Optional;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 
 import com.hedera.mirror.common.domain.entity.Entity;

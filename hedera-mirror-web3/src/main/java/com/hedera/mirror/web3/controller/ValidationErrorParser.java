@@ -1,5 +1,6 @@
 package com.hedera.mirror.web3.controller;
 
+import java.util.List;
 import java.util.stream.Collectors;
 import lombok.experimental.UtilityClass;
 import org.springframework.validation.FieldError;
@@ -14,6 +15,13 @@ public class ValidationErrorParser {
                 .stream()
                 .map(ValidationErrorParser::formatError)
                 .collect(Collectors.joining(", "));
+    }
+
+    public static List<String> extractValidationError(WebExchangeBindException e){
+        return e.getAllErrors()
+                .stream()
+                .map(ValidationErrorParser::formatError)
+                .collect(Collectors.toList());
     }
 
     private static String formatError(ObjectError error) {

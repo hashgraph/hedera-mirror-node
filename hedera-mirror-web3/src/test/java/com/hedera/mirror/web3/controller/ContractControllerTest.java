@@ -141,23 +141,6 @@ class ContractControllerTest {
     }
 
     @Test
-    void callInvalidTransfer() {
-        final var errorString = "from field must not be null";
-        final var request = request();
-        request.setFrom(null);
-
-        webClient.post()
-                .uri(CALL_URI)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(request))
-                .exchange()
-                .expectStatus()
-                .isEqualTo(BAD_REQUEST)
-                .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse(errorString));
-    }
-
-    @Test
     void callInvalidGas() {
         final var errorString = negativeNumberErrorFrom("gas");
         final var request = request();

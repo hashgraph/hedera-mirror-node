@@ -39,7 +39,6 @@ import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
-import com.hedera.node.app.service.evm.contracts.operations.HederaExceptionalHaltReason;
 import com.hedera.node.app.service.evm.store.contracts.utils.BytesKey;
 
 @UtilityClass
@@ -69,13 +68,7 @@ public class ResponseCodeUtil {
         var maybeHaltReason = result.getHaltReason();
         if (maybeHaltReason.isPresent()) {
             var haltReason = maybeHaltReason.get();
-            if (HederaExceptionalHaltReason.SELF_DESTRUCT_TO_SELF == haltReason) {
-                return ResponseCodeEnum.OBTAINER_SAME_CONTRACT_ID;
-            } else if (HederaExceptionalHaltReason.INVALID_SOLIDITY_ADDRESS == haltReason) {
-                return ResponseCodeEnum.INVALID_SOLIDITY_ADDRESS;
-            } else if (ExceptionalHaltReason.INSUFFICIENT_GAS == haltReason) {
-                return ResponseCodeEnum.INSUFFICIENT_GAS;
-            } else if (ExceptionalHaltReason.ILLEGAL_STATE_CHANGE == haltReason) {
+            if (ExceptionalHaltReason.ILLEGAL_STATE_CHANGE == haltReason) {
                 return ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
             }
         }
