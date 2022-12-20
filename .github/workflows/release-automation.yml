@@ -87,9 +87,7 @@ jobs:
       - name: Gradle Release
         uses: gradle/gradle-build-action@v2
         with:
-          arguments: release -Pversion=$VERSION
-        env:
-          VERSION: ${{ steps.version_parser.outputs.version }}
+          arguments: release -Pversion=${{ steps.version_parser.outputs.version }}
 
       - name: Create Release Notes
         if: ${{ steps.milestone.outputs.number != '' }}
@@ -169,7 +167,7 @@ jobs:
       - name: Gradle Release for Next Minor Snapshot
         uses: gradle/gradle-build-action@v2
         with:
-          arguments: release -Pversion=$NEXT_VERSION_SNAPSHOT
+          arguments: release -Pversion=${{ env.NEXT_VERSION_SNAPSHOT }}
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v4
