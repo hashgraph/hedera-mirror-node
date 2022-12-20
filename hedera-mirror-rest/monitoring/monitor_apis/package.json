@@ -1,6 +1,6 @@
 {
   "name": "@hashgraph/mirror-monitor",
-  "version": "$VERSION",
+  "version": "0.71.0-beta1",
   "description": "Hedera Mirror Node Monitor",
   "type": "module",
   "main": "server.js",
