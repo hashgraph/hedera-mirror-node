@@ -71,11 +71,11 @@ abstract class AbstractStreamFileProviderTest {
         fileCopier.copy();
         var node = node("0.0.3");
         var data = streamFileData(node, "2022-07-13T08_46_08.041986003Z.rcd_sig");
-        streamFileProvider.get(node, data.getStreamFilename())
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> streamFileProvider.get(node, data.getStreamFilename()))
+                .thenAwait(Duration.ofSeconds(10L))
                 .expectNext(data)
                 .expectComplete()
-                .verify(Duration.ofMillis(250));
+                .verify(Duration.ofSeconds(10L));
     }
 
     @Test
@@ -83,21 +83,21 @@ abstract class AbstractStreamFileProviderTest {
         fileCopier.copy();
         var node = node("0.0.3");
         var data = streamFileData(node, "2022-07-13T08_46_11.304284003Z_01.rcd.gz");
-        streamFileProvider.get(node, data.getStreamFilename())
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> streamFileProvider.get(node, data.getStreamFilename()))
+                .thenAwait(Duration.ofSeconds(10L))
                 .expectNext(data)
                 .expectComplete()
-                .verify(Duration.ofMillis(250));
+                .verify(Duration.ofSeconds(10L));
     }
 
     @Test
     void getNotFound() {
         fileCopier.copy();
         var node = node("0.0.3");
-        streamFileProvider.get(node, StreamFilename.EPOCH)
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> streamFileProvider.get(node, StreamFilename.EPOCH))
+                .thenAwait(Duration.ofSeconds(10L))
                 .expectError(TransientProviderException.class)
-                .verify(Duration.ofMillis(250));
+                .verify(Duration.ofSeconds(10L));
     }
 
     @Test
@@ -106,10 +106,10 @@ abstract class AbstractStreamFileProviderTest {
         dataPath.toFile().setExecutable(false);
         var node = node("0.0.3");
         var data = streamFileData(node, "2022-07-13T08_46_08.041986003Z.rcd_sig");
-        streamFileProvider.get(node, data.getStreamFilename())
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> streamFileProvider.get(node, data.getStreamFilename()))
+                .thenAwait(Duration.ofSeconds(10L))
                 .expectError(RuntimeException.class)
-                .verify(Duration.ofMillis(250));
+                .verify(Duration.ofSeconds(10L));
     }
 
     @Test
@@ -118,12 +118,12 @@ abstract class AbstractStreamFileProviderTest {
         var node = node("0.0.3");
         var data1 = streamFileData(node, "2022-07-13T08_46_08.041986003Z.rcd_sig");
         var data2 = streamFileData(node, "2022-07-13T08_46_11.304284003Z.rcd_sig");
-        streamFileProvider.list(node, StreamFilename.EPOCH)
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, StreamFilename.EPOCH))
+                .thenAwait(Duration.ofSeconds(10L))
                 .expectNext(data1)
                 .expectNext(data2)
                 .expectComplete()
-                .verify(Duration.ofMillis(250));
+                .verify(Duration.ofSeconds(10L));
     }
 
     @Test
@@ -132,11 +132,11 @@ abstract class AbstractStreamFileProviderTest {
         var node = node("0.0.3");
         var lastFilename = new StreamFilename("2022-07-13T08_46_08.041986003Z.rcd_sig");
         var data = streamFileData(node, "2022-07-13T08_46_11.304284003Z.rcd_sig");
-        streamFileProvider.list(node, lastFilename)
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, lastFilename))
+                .thenAwait(Duration.ofSeconds(10L))
                 .expectNext(data)
                 .expectComplete()
-                .verify(Duration.ofMillis(250));
+                .verify(Duration.ofSeconds(10L));
     }
 
     @Test
@@ -144,11 +144,11 @@ abstract class AbstractStreamFileProviderTest {
         fileCopier.copy();
         var node = node("0.0.3");
         var lastFilename = new StreamFilename("2100-01-01T01_01_01.000000001Z.rcd_sig");
-        streamFileProvider.list(node, lastFilename)
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, lastFilename))
+                .thenAwait(Duration.ofSeconds(10L))
                 .expectNextCount(0)
                 .expectComplete()
-                .verify(Duration.ofMillis(250));
+                .verify(Duration.ofSeconds(10L));
     }
 
     @Test
@@ -156,10 +156,10 @@ abstract class AbstractStreamFileProviderTest {
         fileCopier.copy();
         var node = node("0.0.3");
         dataPath.toFile().setExecutable(false);
-        streamFileProvider.list(node, StreamFilename.EPOCH)
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, StreamFilename.EPOCH))
+                .thenAwait(Duration.ofSeconds(10L))
                 .expectError(RuntimeException.class)
-                .verify(Duration.ofMillis(250));
+                .verify(Duration.ofSeconds(10L));
     }
 
     @Test
@@ -173,12 +173,12 @@ abstract class AbstractStreamFileProviderTest {
                 .createNewFile();
         var data1 = streamFileData(node, "2022-07-13T08_46_08.041986003Z.rcd_sig");
         var data2 = streamFileData(node, "2022-07-13T08_46_11.304284003Z.rcd_sig");
-        streamFileProvider.list(node, StreamFilename.EPOCH)
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, StreamFilename.EPOCH))
+                .thenAwait(Duration.ofSeconds(10L))
                 .expectNext(data1)
                 .expectNext(data2)
                 .expectComplete()
-                .verify(Duration.ofMillis(250));
+                .verify(Duration.ofSeconds(10L));
     }
 
     protected ConsensusNode node(String nodeAccountId) {
