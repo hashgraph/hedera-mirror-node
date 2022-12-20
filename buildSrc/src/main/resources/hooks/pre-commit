@@ -3,9 +3,9 @@ set -e
 
 rootDir=$(pwd)
 filesStr="$(git diff --name-only --cached --diff-filter=ACMRTUB HEAD)"
-files=($filesStr)
+#files=($filesStr)
 
-echo "Running Spotless to format ${#files[@]} changed files"
+#echo "Running Spotless to format ${#files[@]} changed files"
 #./gradlew spotlessApply
 
 #for file in ${files[@]}; do
