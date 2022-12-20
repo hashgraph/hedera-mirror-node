@@ -20,6 +20,7 @@
 
 import {
   computeAccountParameters,
+  computeBlockParameters,
   computeContractParameters,
   computeFungibleTokenParameters,
   computeNftParameters,
@@ -31,6 +32,7 @@ import {
 const computeTestParameters = (configuration) =>
   Object.assign({},
     computeAccountParameters(configuration),
+    computeBlockParameters(configuration),
     computeContractParameters(configuration),
     computeNftParameters(configuration),
     computeScheduleParameters(configuration),

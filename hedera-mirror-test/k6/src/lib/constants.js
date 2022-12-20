@@ -20,6 +20,7 @@
 
 export const accountListName = "accounts";
 export const balanceListName = "balances";
+export const blockListName = "blocks";
 export const contractListName = "contracts";
 export const logListName = "logs";
 export const messageListName = "messages";

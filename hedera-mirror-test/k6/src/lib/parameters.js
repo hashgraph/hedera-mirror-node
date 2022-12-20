@@ -22,6 +22,7 @@ import http from 'k6/http';
 
 import {
   accountListName,
+  blockListName,
   contractListName,
   messageListName,
   scheduleListName,
@@ -147,6 +148,20 @@ export const computeAccountParameters = (configuration) =>
       entityIdResponseKey: 'account',
     });
   });
+
+export const computeBlockParameters = (configuration) =>
+  computeProperties(['DEFAULT_BLOCK_NUMBER', 'DEFAULT_BLOCK_HASH'], () => {
+    const extractProperties = (block) => {
+      return {
+        DEFAULT_BLOCK_NUMBER: block.number,
+        DEFAULT_BLOCK_HASH: block.hash,
+      };
+    };
+    return getPropertiesForEntity(configuration, extractProperties, {
+      entitiesKey: blockListName,
+      entityIdResponseKey: 'blocks',
+    });
+});
 
 export const computeContractParameters = (configuration) => {
   const extractProperties = (contract, log) => ({
