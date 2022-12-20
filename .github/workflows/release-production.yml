@@ -4,10 +4,6 @@ on:
   push:
     tags: [ v* ]
 
-permissions:
-  id-token: write
-  contents: read
-
 jobs:
   image:
     strategy:
@@ -81,6 +77,9 @@ jobs:
     name: GCP Marketplace release
     needs: chart
     if: "!contains(github.ref, '-')"
+    permissions:
+      id-token: write
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
