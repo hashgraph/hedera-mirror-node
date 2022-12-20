@@ -55,8 +55,7 @@ jobs:
       - name: Build and push images
         uses: docker/build-push-action@v3
         with:
-          build-args:
-            - VERSION=${{env.TAG}}
+          build-args: VERSION=${{env.TAG}}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           context: ${{env.MODULE}}
