@@ -2934,7 +2934,10 @@ components:
           example: true
           nullable: true
         expiry_timestamp:
-          $ref: '#/components/schemas/TimestampNullable'
+          example: 1234567890100000
+          format: int64
+          nullable: true
+          type: integer
         fee_schedule_key:
           $ref: '#/components/schemas/Key'
         freeze_default:
