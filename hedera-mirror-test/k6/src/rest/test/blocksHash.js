@@ -25,16 +25,16 @@ import {blockListName, urlPrefix} from '../../lib/constants.js';
 import {isSuccess, isValidListResponse} from "./common.js";
 import {setupTestParameters} from "./bootstrapEnvParameters.js";
 
-const urlTag = '/blocks/{number}';
+const urlTag = '/blocks/{hash}';
 
 const {options, run} = new TestScenarioBuilder()
-  .name('blockNumber') // use unique scenario name among all tests
+  .name('blockHash') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request((testParameters) => {
-    const url = `${testParameters['BASE_URL']}${urlPrefix}/blocks/${testParameters['DEFAULT_BLOCK_NUMBER']}`;
+    const url = `${testParameters['BASE_URL']}${urlPrefix}/blocks/${testParameters['DEFAULT_BLOCK_HASH']}`;
     return http.get(url);
   })
-  .check('Blocks number OK', isSuccess)
+  .check('Blocks hash OK', isSuccess)
   .build();
 
 export {options, run};
