@@ -78,13 +78,6 @@ jobs:
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.GPG_PASSPHRASE }}
 
-      - name: Install JDK
-        uses: actions/setup-java@v3
-        with:
-          cache: 'maven'
-          distribution: 'temurin'
-          java-version: 17
-
       - name: Create and Switch to Release Branch
         run: |
           if ! git ls-remote --exit-code --heads --quiet origin refs/heads/${RELEASE_BRANCH}; then
@@ -97,6 +90,13 @@ jobs:
           else
             git checkout ${RELEASE_BRANCH}
           fi
+
+      - name: Install JDK
+        uses: actions/setup-java@v3
+        with:
+          cache: 'maven'
+          distribution: 'temurin'
+          java-version: 17
 
       - name: Maven Release
         run: ./mvnw package -Drelease.version=$VERSION -Drelease.chartVersion=$CHART_VERSION -Ddocker.tag.version=$VERSION -N -P=release
