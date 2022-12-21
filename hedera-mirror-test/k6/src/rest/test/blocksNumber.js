@@ -25,7 +25,7 @@ import {blockListName, urlPrefix} from '../../lib/constants.js';
 import {isSuccess, isValidListResponse} from "./common.js";
 import {setupTestParameters} from "./bootstrapEnvParameters.js";
 
-const urlTag = '/blocks/{hashOrNumber}';
+const urlTag = '/blocks/{hash}';
 
 const {options, run} = new TestScenarioBuilder()
   .name('blockNumber') // use unique scenario name among all tests
