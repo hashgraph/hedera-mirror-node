@@ -159,7 +159,7 @@ export const computeBlockParameters = (configuration) =>
     };
     return getPropertiesForEntity(configuration, extractProperties, {
       entitiesKey: blockListName,
-      entityIdResponseKey: 'blocks',
+      queryParamMap: {limit: 1},
     });
 });
 
