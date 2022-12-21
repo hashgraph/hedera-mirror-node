@@ -25,30 +25,15 @@ import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.google.common.collect.Range;
 import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
-import com.hederahashgraph.api.proto.java.AccountAmount;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoDeleteLiveHashTransactionBody;
-import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.KeyList;
-import com.hederahashgraph.api.proto.java.NftAllowance;
-import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
-import com.hederahashgraph.api.proto.java.RealmID;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
-import com.hederahashgraph.api.proto.java.ShardID;
-import com.hederahashgraph.api.proto.java.SignedTransaction;
-import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.Transaction;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
-import com.hederahashgraph.api.proto.java.TransferList;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.importer.repository.*;
+import com.hederahashgraph.api.proto.java.*;
+
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
@@ -86,11 +71,6 @@ import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.exception.AliasNotFoundException;
 import com.hedera.mirror.importer.parser.PartialDataAction;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
-import com.hedera.mirror.importer.repository.ContractRepository;
-import com.hedera.mirror.importer.repository.CryptoAllowanceRepository;
-import com.hedera.mirror.importer.repository.NftAllowanceRepository;
-import com.hedera.mirror.importer.repository.NftRepository;
-import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
 import com.hedera.mirror.importer.util.Utility;
 import com.hedera.mirror.importer.util.UtilityTest;
 
@@ -1198,6 +1178,97 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         entityProperties.getPersist().setTransactionBytes(false);
         Transaction transaction = cryptoTransferTransaction();
         testRawBytes(transaction, null);
+    }
+
+    @Test
+    void finalizeHollowAccountToContract() {
+        // given
+        var accountId = recordItemBuilder.accountId();
+        var contractId = ContractID.newBuilder().setContractNum(accountId.getAccountNum()).build();
+        var evmAddress = recordItemBuilder.evmAddress();
+        var cryptoCreate = recordItemBuilder.cryptoCreate()
+                .transactionBody(b -> b.clearAlias().clearKey().setEvmAddress(evmAddress.getValue()))
+                .receipt(r -> r.setAccountID(accountId))
+                .build();
+        var contractCreate = recordItemBuilder.contractCreate()
+                .receipt(r -> r.setContractID(contractId))
+                .record(r -> r.setContractCreateResult(ContractFunctionResult.newBuilder()
+                        .setContractID(contractId).setEvmAddress(evmAddress)))
+                .build();
+
+        // when
+        parseRecordItemsAndCommit(List.of(cryptoCreate, contractCreate));
+
+        // then
+        long createdTimestamp = cryptoCreate.getConsensusTimestamp();
+        var expectedAccount = Entity.builder()
+                .createdTimestamp(createdTimestamp)
+                .evmAddress(DomainUtils.toBytes(evmAddress.getValue()))
+                .id(accountId.getAccountNum())
+                .timestampRange(Range.closedOpen(createdTimestamp, contractCreate.getConsensusTimestamp()))
+                .type(EntityType.ACCOUNT)
+                .build();
+        var expectedContract = expectedAccount.toBuilder()
+                .timestampRange(Range.atLeast(contractCreate.getConsensusTimestamp()))
+                .type(EntityType.CONTRACT)
+                .build();
+        String[] fields = new String[]{"createdTimestamp", "evmAddress", "id", "timestampRange", "type"};
+        assertThat(entityRepository.findAll())
+                .usingRecursiveFieldByFieldElementComparatorOnFields(fields)
+                .containsExactly(expectedContract);
+        assertThat(findHistory(Entity.class))
+                .usingRecursiveFieldByFieldElementComparatorOnFields(fields)
+                .containsExactly(expectedAccount);
+    }
+
+    @Test
+    void finalizeHollowAccountToContractInTwoRecordFiles() {
+        // given
+        var accountId = recordItemBuilder.accountId();
+        var evmAddress = recordItemBuilder.evmAddress();
+        var cryptoCreate = recordItemBuilder.cryptoCreate()
+                .transactionBody(b -> b.clearAlias().clearKey().setEvmAddress(evmAddress.getValue()))
+                .receipt(r -> r.setAccountID(accountId))
+                .build();
+
+        // when
+        parseRecordItemAndCommit(cryptoCreate);
+
+        // then
+        var expectedAccount = Entity.builder()
+                .createdTimestamp(cryptoCreate.getConsensusTimestamp())
+                .evmAddress(DomainUtils.toBytes(evmAddress.getValue()))
+                .id(accountId.getAccountNum())
+                .timestampRange(Range.atLeast(cryptoCreate.getConsensusTimestamp()))
+                .type(EntityType.ACCOUNT)
+                .build();
+        String[] fields = new String[]{"createdTimestamp", "evmAddress", "id", "timestampRange", "type"};
+        assertThat(entityRepository.findAll())
+                .usingRecursiveFieldByFieldElementComparatorOnFields(fields)
+                .containsExactly(expectedAccount);
+        assertThat(findHistory(Entity.class)).isEmpty();
+
+        // when
+        var contractId = ContractID.newBuilder().setContractNum(accountId.getAccountNum()).build();
+        var contractCreate = recordItemBuilder.contractCreate()
+                .receipt(r -> r.setContractID(contractId))
+                .record(r -> r.setContractCreateResult(ContractFunctionResult.newBuilder()
+                        .setContractID(contractId).setEvmAddress(evmAddress)))
+                .build();
+        parseRecordItemAndCommit(contractCreate);
+
+        // then
+        expectedAccount.setTimestampUpper(contractCreate.getConsensusTimestamp());
+        var expectedContract = expectedAccount.toBuilder()
+                .timestampRange(Range.atLeast(contractCreate.getConsensusTimestamp()))
+                .type(EntityType.CONTRACT)
+                .build();
+        assertThat(entityRepository.findAll())
+                .usingRecursiveFieldByFieldElementComparatorOnFields(fields)
+                .containsExactly(expectedContract);
+        assertThat(findHistory(Entity.class))
+                .usingRecursiveFieldByFieldElementComparatorOnFields(fields)
+                .containsExactly(expectedAccount);
     }
 
     private void assertAllowances(RecordItem recordItem, Collection<Nft> expectedNfts) {
