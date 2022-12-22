@@ -177,7 +177,7 @@ curl -sL -d '{"metadata":{}}' "http://${SERVICE_IP}/network/list"
 To access the Web3 API:
 
 ```shell script
-curl -sL -H "Content-Type: application/json" -X POST -d '{"id": 1, "jsonrpc": "2.0", "method": "eth_blockNumber"}' "http://${SERVICE_IP}/web3/v1"
+curl -sL -H "Content-Type: application/json" -X POST -d '{"from": "0x0000000000000000000000000000000002edec80","to": "0x0000000000000000000000000000000002edec81","value": 500,"gas": 0,"gasPrice": 0}' "http://${SERVICE_IP}/api/v1/contracts/call"
 ```
 
 To view the Grafana dashboard:
