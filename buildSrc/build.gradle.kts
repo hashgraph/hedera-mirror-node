@@ -33,7 +33,7 @@ dependencies {
     implementation("com.github.node-gradle:gradle-node-plugin:3.5.0")
     implementation("com.google.protobuf:protobuf-gradle-plugin:0.9.1")
     implementation("com.gorylenko.gradle-git-properties:gradle-git-properties:2.4.1")
-    implementation("io.freefair.gradle:lombok-plugin:6.6")
+    implementation("io.freefair.gradle:lombok-plugin:6.6.1")
     implementation("io.spring.gradle:dependency-management-plugin:1.1.0")
     implementation("org.apache.commons:commons-compress:1.22")
     implementation("org.gradle:test-retry-gradle-plugin:1.5.0")

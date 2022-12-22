@@ -1,10 +1,13 @@
-name: Release Automation
+name: Automated Release
 
 on:
   workflow_dispatch:
     inputs:
       version:
         description: 'Version (semver)'
+        required: true
+      chartVersion:
+        description: 'Chart Version (semver)'
         required: true
 
 jobs:
@@ -15,6 +18,7 @@ jobs:
       RELEASE_NOTES_FILENAME: release_notes
     outputs:
       create_pr: ${{ env.CREATE_PR }}
+      next_chart_version_snapshot: ${{ env.NEXT_CHART_VERSION_SNAPSHOT }}
       next_version_snapshot: ${{ env.NEXT_VERSION_SNAPSHOT }}
       pr_title: ${{ env.PR_TITLE }}
       release_branch: ${{ env.RELEASE_BRANCH }}
@@ -27,6 +31,13 @@ jobs:
           bump: preminor
           version: ${{ github.event.inputs.version }}
 
+      - name: Parse Chart Version
+        id: chart_version_parser
+        uses: terradatum/semver-action@v1
+        with:
+          bump: preminor
+          version: ${{ github.event.inputs.chartVersion }}
+
       - name: Retrieve the Milestone
         id: milestone
         if: ${{ steps.version_parser.outputs.pre-release == '' }}
@@ -38,11 +49,13 @@ jobs:
 
       - name: Set Release Environment Variables
         run: |
+          NEXT_CHART_VERSION_SNAPSHOT=${{ format('{0}.{1}.0-SNAPSHOT', steps.chart_version_parser.outputs.major, steps.chart_version_parser.outputs.next-minor) }}
           NEXT_VERSION_SNAPSHOT=${{ format('{0}.{1}.0-SNAPSHOT', steps.version_parser.outputs.major, steps.version_parser.outputs.next-minor) }}
           RELEASE_BRANCH="release/${{ steps.version_parser.outputs.major }}.${{ steps.version_parser.outputs.minor }}"
           RELEASE_TAG=v${{ steps.version_parser.outputs.version }}
 
           cat >> $GITHUB_ENV <<EOF
+          NEXT_CHART_VERSION_SNAPSHOT=$NEXT_CHART_VERSION_SNAPSHOT
           NEXT_VERSION_SNAPSHOT=$NEXT_VERSION_SNAPSHOT
           RELEASE_BRANCH=$RELEASE_BRANCH
           RELEASE_TAG=$RELEASE_TAG
@@ -57,19 +70,13 @@ jobs:
 
       - name: Import GPG Key
         id: gpg_importer
-        uses: crazy-max/ghaction-import-gpg@v5.2.0
+        uses: crazy-max/ghaction-import-gpg@v5.1.0
         with:
           git_commit_gpgsign: true
           git_tag_gpgsign: true
           git_user_signingkey: true
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.GPG_PASSPHRASE }}
-
-      - name: Install JDK
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: 17
 
       - name: Create and Switch to Release Branch
         run: |
@@ -84,10 +91,18 @@ jobs:
             git checkout ${RELEASE_BRANCH}
           fi
 
-      - name: Gradle Release
-        uses: gradle/gradle-build-action@v2
+      - name: Install JDK
+        uses: actions/setup-java@v3
         with:
-          arguments: release -Pversion=${{ steps.version_parser.outputs.version }}
+          cache: 'maven'
+          distribution: 'temurin'
+          java-version: 17
+
+      - name: Maven Release
+        run: ./mvnw package -Drelease.version=$VERSION -Drelease.chartVersion=$CHART_VERSION -Ddocker.tag.version=$VERSION -N -P=release
+        env:
+          VERSION: ${{ steps.version_parser.outputs.version }}
+          CHART_VERSION: ${{ steps.chart_version_parser.outputs.version }}
 
       - name: Create Release Notes
         if: ${{ steps.milestone.outputs.number != '' }}
@@ -134,6 +149,7 @@ jobs:
     needs: release
     if: ${{ needs.release.outputs.create_pr == 'true' }}
     env:
+      NEXT_CHART_VERSION_SNAPSHOT: ${{ needs.release.outputs.next_chart_version_snapshot }}
       NEXT_VERSION_SNAPSHOT: ${{ needs.release.outputs.next_version_snapshot }}
       RELEASE_BRANCH: ${{ needs.release.outputs.release_branch }}
 
@@ -145,7 +161,7 @@ jobs:
 
       - name: Import GPG Key
         id: gpg_importer
-        uses: crazy-max/ghaction-import-gpg@v5.2.0
+        uses: crazy-max/ghaction-import-gpg@v5.1.0
         with:
           git_commit_gpgsign: true
           git_tag_gpgsign: true
@@ -156,6 +172,7 @@ jobs:
       - name: Install JDK
         uses: actions/setup-java@v3
         with:
+          cache: 'maven'
           distribution: 'temurin'
           java-version: 17
 
@@ -164,10 +181,8 @@ jobs:
           git fetch origin $RELEASE_BRANCH:$RELEASE_BRANCH
           git reset --hard $RELEASE_BRANCH
 
-      - name: Gradle Release for Next Minor Snapshot
-        uses: gradle/gradle-build-action@v2
-        with:
-          arguments: release -Pversion=${{ env.NEXT_VERSION_SNAPSHOT }}
+      - name: Maven Release for Next Minor Snapshot
+        run: ./mvnw package -Drelease.version=$NEXT_VERSION_SNAPSHOT -Drelease.chartVersion=$NEXT_CHART_VERSION_SNAPSHOT -Ddocker.tag.version=main -N -P=release
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v4

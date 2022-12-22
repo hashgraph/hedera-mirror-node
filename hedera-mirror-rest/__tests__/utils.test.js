@@ -1815,26 +1815,26 @@ describe('calculateExpiryTimestamp', () => {
   const autoRenewPeriodMax = 8_000_001; // ~92.5626 days as seconds
   const autoRenewPeriodMin = 6_999_999; // ~81.01 days as seconds
   test.each([
-    ['', '', '', '0.000000000'],
+    ['', '', '', ''],
     [null, null, null, null],
-    [undefined, undefined, undefined, null],
-    [undefined, undefined, 123, '0.000000123'],
-    [undefined, 1, 10, '0.000000010'],
-    [1, undefined, 10, '0.000000010'],
-    [1, 1, 10000000001, '10.000000001'],
-    [undefined, 1, undefined, null],
-    [1, undefined, undefined, null],
-    [1500, 987654111123456, undefined, '989154.111123456'],
+    [undefined, undefined, undefined, undefined],
+    [undefined, undefined, 123, 123],
+    [undefined, 1, 10, 10],
+    [1, undefined, 10, 10],
+    [1, 1, 10000000001, 10000000001],
+    [undefined, 1, undefined, undefined],
+    [1, undefined, undefined, undefined],
+    [1500, 987654111123456n, undefined, 989154111123456n],
     // Friday, February 13, 2009 11:31:30 PM GMT + 92.5626 days (8000001 seconds) -> Sunday, May 17, 2009 1:44:51 PM
-    [autoRenewPeriodMax, 1234567890000000003n, undefined, '1242567891.000000003'],
+    [autoRenewPeriodMax, 1234567890000000003n, undefined, 1242567891000000003n],
     // Monday, November 21, 2022 8:58:21 PM GMT + 81.01 days (6999999 seconds) -> Friday, February 10, 2023 9:25:00 PM
-    [autoRenewPeriodMin, 1669064301000000001n, undefined, '1676064300.000000001'],
+    [autoRenewPeriodMin, 1669064301000000001n, undefined, 1676064300000000001n],
   ])('%s expect %s', (autoRenewPeriod, createdTimestamp, expirationTimestamp, expected) => {
     expect(utils.calculateExpiryTimestamp(autoRenewPeriod, createdTimestamp, expirationTimestamp)).toEqual(expected);
     if (!_.isNil(autoRenewPeriod) && !_.isNil(createdTimestamp) && _.isNil(expirationTimestamp)) {
       const createdTimestampDate = utils.nsToSecNs(Number(createdTimestamp));
       const createdDate = new Date(Number(createdTimestampDate));
-      const expiryDate = new Date(Number(expected));
+      const expiryDate = new Date(Number(utils.nsToSecNs(expected)));
       const difference = expiryDate.getTime() - createdDate.getTime();
       expect(difference).toEqual(autoRenewPeriod);
     }
