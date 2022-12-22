@@ -133,7 +133,7 @@ fun replaceVersion(files: String, match: String) {
 project.tasks.register("release") {
     doLast {
         replaceVersion("charts/**/Chart.yaml", "(?<=^(appVersion|version): ).+")
-        replaceVersion("docker-compose.yml", "(?<=:)main")
+        replaceVersion("docker-compose.yml", "(?<=gcr.io/mirrornode/hedera-mirror-.+:).+")
         replaceVersion("gradle.properties", "(?<=^version=).+")
         replaceVersion(
             "hedera-mirror-rest/**/package*.json",
