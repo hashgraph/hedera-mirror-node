@@ -22,8 +22,6 @@ jobs:
 
   install:
     runs-on: ubuntu-latest
-    env:
-      GIT_REPO: ${{ github.repository }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -51,13 +49,5 @@ jobs:
       - name: Install ct
         uses: helm/chart-testing-action@v2.3.1
 
-      - name: Set GIT_BRANCH and GIT_REPO for pull request
-        if: ${{ github.event_name == 'pull_request' }}
-        run: |
-          # GITHUB_HEAD_REF is only set when the triggering event is either pull_request or pull_request_target. If so
-          # extract the PR branch from GITHUB_HEAD_REF and later pass it as git.branch to the test pod template
-          echo "GIT_BRANCH=${GITHUB_HEAD_REF#refs/*/}" >> $GITHUB_ENV
-          echo "GIT_REPO=${{ github.event.pull_request.head.repo.full_name }}" >> $GITHUB_ENV
-
       - name: Install chart
-        run: ct install --config .github/ct.yaml --charts=charts/hedera-mirror --helm-extra-set-args="--set=global.image.registry=registry:5000 --set=global.image.tag=test --set=rosetta.test.git.branch=${GIT_BRANCH} --set=rosetta.test.git.repository=${GIT_REPO}"
+        run: ct install --config .github/ct.yaml --charts=charts/hedera-mirror --helm-extra-set-args="--set=global.image.registry=registry:5000 --set=global.image.tag=test"
