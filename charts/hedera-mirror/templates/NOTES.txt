@@ -31,7 +31,7 @@ To access the Rosetta API:
 {{- end }}
 
 {{- if and .Values.web3.enabled .Values.web3.service }}
-To access the Web3 API(Currently unimplemented and will return 501 status):
+To access the Web3 API
 {{- if contains "LoadBalancer" .Values.web3.service.type }}
   WEB3_IP="$(kubectl get "service/{{ .Release.Name }}-web3" -n {{ include "hedera-mirror.namespace" . }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
 {{- else if contains "ClusterIP" .Values.web3.service.type }}
