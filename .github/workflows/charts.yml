@@ -60,4 +60,4 @@ jobs:
           echo "GIT_REPO=${{ github.event.pull_request.head.repo.full_name }}" >> $GITHUB_ENV
 
       - name: Install chart
-        run: ct install --config .github/ct.yaml --charts=charts/hedera-mirror --helm-extra-set-args="--set=global.image.registry=registry:5000 --set=global.image.tag=test --set=rosetta.test.git.branch=${GIT_BRANCH} --set=rosetta.test.git.repository=${GIT_REPO}"
+        run: ct install --config .github/ct.yaml --charts=charts/hedera-mirror --helm-extra-set-args="--set=global.image.registry=registry:5000 --set=global.image.tag=test --set=rosetta.test.git.branch=${GIT_BRANCH} --set=rosetta.test.git.repository=${GIT_REPO} --set=web3.test.git.branch=${GIT_BRANCH} --set=web3.test.git.repository=${GIT_REPO}"
