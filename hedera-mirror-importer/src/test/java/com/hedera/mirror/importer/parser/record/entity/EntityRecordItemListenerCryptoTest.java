@@ -30,10 +30,10 @@ import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
+import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
@@ -1216,8 +1216,8 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 .build();
         var contractCreate = recordItemBuilder.contractCreate()
                 .receipt(r -> r.setContractID(contractId))
-                .record(r -> r.setContractCreateResult(ContractFunctionResult.newBuilder()
-                        .setContractID(contractId).setEvmAddress(evmAddress)))
+                .record(r -> r.getContractCreateResultBuilder()
+                        .clearCreatedContractIDs().setContractID(contractId).setEvmAddress(evmAddress))
                 .build();
 
         // when
@@ -1236,6 +1236,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 .timestampRange(Range.atLeast(contractCreate.getConsensusTimestamp()))
                 .type(EntityType.CONTRACT)
                 .build();
+        var expectedFileId = EntityId.of(contractCreate.getTransactionBody().getContractCreateInstance().getFileID());
         String[] fields = new String[]{"createdTimestamp", "evmAddress", "id", "timestampRange", "type"};
         assertThat(entityRepository.findAll())
                 .usingRecursiveFieldByFieldElementComparatorOnFields(fields)
@@ -1243,6 +1244,9 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         assertThat(findHistory(Entity.class))
                 .usingRecursiveFieldByFieldElementComparatorOnFields(fields)
                 .containsExactly(expectedAccount);
+        assertThat(contractRepository.findById(expectedContract.getId()))
+                .get()
+                .returns(expectedFileId, Contract::getFileId);
     }
 
     @Test
@@ -1276,8 +1280,8 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         var contractId = ContractID.newBuilder().setContractNum(accountId.getAccountNum()).build();
         var contractCreate = recordItemBuilder.contractCreate()
                 .receipt(r -> r.setContractID(contractId))
-                .record(r -> r.setContractCreateResult(ContractFunctionResult.newBuilder()
-                        .setContractID(contractId).setEvmAddress(evmAddress)))
+                .record(r -> r.getContractCreateResultBuilder()
+                        .clearCreatedContractIDs().setContractID(contractId).setEvmAddress(evmAddress))
                 .build();
         parseRecordItemAndCommit(contractCreate);
 
@@ -1287,12 +1291,16 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 .timestampRange(Range.atLeast(contractCreate.getConsensusTimestamp()))
                 .type(EntityType.CONTRACT)
                 .build();
+        var expectedFileId = EntityId.of(contractCreate.getTransactionBody().getContractCreateInstance().getFileID());
         assertThat(entityRepository.findAll())
                 .usingRecursiveFieldByFieldElementComparatorOnFields(fields)
                 .containsExactly(expectedContract);
         assertThat(findHistory(Entity.class))
                 .usingRecursiveFieldByFieldElementComparatorOnFields(fields)
                 .containsExactly(expectedAccount);
+        assertThat(contractRepository.findById(expectedContract.getId()))
+                .get()
+                .returns(expectedFileId, Contract::getFileId);
     }
 
     private void assertAllowances(RecordItem recordItem, Collection<Nft> expectedNfts) {
