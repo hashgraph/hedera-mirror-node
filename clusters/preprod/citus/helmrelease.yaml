@@ -31,6 +31,8 @@ spec:
     citus:
       enabled: true
       primary:
+        persistence:
+          size: 512Gi
         resources:
           limits:
             cpu: 4
@@ -44,6 +46,8 @@ spec:
             value: "true"
             effect: NoSchedule
       readReplicas:
+        persistence:
+          size: 1024Gi
         resources:
           limits:
             cpu: 8
