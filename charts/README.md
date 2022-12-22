@@ -174,6 +174,12 @@ To access the Rosetta API:
 curl -sL -d '{"metadata":{}}' "http://${SERVICE_IP}/network/list"
 ```
 
+To access the Web3 API:
+
+```shell script
+curl -sL -H "Content-Type: application/json" -X POST -d '{"from": "0x0000000000000000000000000000000002edec80","to": "0x0000000000000000000000000000000002edec81","value": 500,"gas": 0,"gasPrice": 0}' "http://${SERVICE_IP}/api/v1/contracts/call"
+```
+
 To view the Grafana dashboard:
 
 ```shell
