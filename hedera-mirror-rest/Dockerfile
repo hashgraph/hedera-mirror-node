@@ -12,6 +12,7 @@ COPY . ./
 # Install OS updates, required packages, and dependencies
 RUN apt-get update && \
     apt-get upgrade -y && \
+    apt-get install -y wget && \
     apt-get install -y build-essential python3 && \
     npm ci --only=production && \
     npm cache clean --force --loglevel=error && \
