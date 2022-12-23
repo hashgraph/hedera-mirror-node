@@ -81,6 +81,7 @@ dependencies {
         api("org.testcontainers:junit-jupiter:1.17.6")
         api("software.amazon.awssdk:bom:2.18.41")
         api("uk.org.webcompere:system-stubs-jupiter:2.0.1")
+        api("com.github.vladimir-bukhtoyarov:bucket4j-core:7.6.0")
     }
 }
 

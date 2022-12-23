@@ -25,6 +25,7 @@ import static org.apache.tuweni.bytes.Bytes.EMPTY;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
+import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
 
 import javax.validation.Valid;
 import lombok.CustomLog;
@@ -41,6 +42,7 @@ import org.springframework.web.bind.support.WebExchangeBindException;
 import reactor.core.publisher.Mono;
 
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
+import com.hedera.mirror.web3.exception.RateLimitException;
 import com.hedera.mirror.web3.service.ContractCallService;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
@@ -56,6 +58,7 @@ class ContractController {
 
     static final String NOT_IMPLEMENTED_ERROR = "Operation not supported yet!";
     private final ContractCallService contractCallService;
+    private final BucketProvider bucketProvider;
 
     @PostMapping(value = "/call")
     Mono<ContractCallResponse> call(@RequestBody @Valid ContractCallRequest request) {
@@ -63,12 +66,16 @@ class ContractController {
             throw new UnsupportedOperationException(NOT_IMPLEMENTED_ERROR);
         }
 
-        final var params = constructServiceParameters(request);
-        final var callResponse =
+        if(bucketProvider.getBucket().tryConsume(1)) {
+            final var params = constructServiceParameters(request);
+            final var callResponse =
                 new ContractCallResponse(
                         contractCallService.processCall(params));
 
-        return Mono.just(callResponse);
+            return Mono.just(callResponse);
+        } else {
+            throw new RateLimitException("Rate limit exceeded.");
+        }
     }
 
     private CallServiceParameters constructServiceParameters(ContractCallRequest request) {
@@ -114,6 +121,12 @@ class ContractController {
     @ResponseStatus(BAD_REQUEST)
     private Mono<GenericErrorResponse> invalidTxnError(InvalidTransactionException e) {
         log.warn("Transaction error: {}", e.getMessage());
+        return errorResponse(e.getMessage());
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(TOO_MANY_REQUESTS)
+    private Mono<GenericErrorResponse> rateLimitError(RateLimitException e) {
         return errorResponse(e.getMessage());
     }
 

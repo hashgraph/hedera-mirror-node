@@ -20,6 +20,7 @@ package com.hedera.mirror.web3.evm.properties;
  * ‍
  */
 
+import java.time.Duration;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
@@ -32,8 +33,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
-
-import java.time.Duration;
 
 @Setter
 @Validated
@@ -57,6 +56,10 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @NotNull
     @DurationMin(seconds = 1)
     private Duration expirationCacheTime = Duration.ofMinutes(10L);
+
+    @Getter
+    @Min(100)
+    private int rateLimitPerSecond = 500;
 
     @Override
     public boolean isRedirectTokenCallsEnabled() {
