@@ -31,11 +31,11 @@ To access the Rosetta API:
 {{- end }}
 
 {{- if and .Values.web3.enabled .Values.web3.service }}
-To access the Web3 API:
+To access the Web3 API
 {{- if contains "LoadBalancer" .Values.web3.service.type }}
   WEB3_IP="$(kubectl get "service/{{ .Release.Name }}-web3" -n {{ include "hedera-mirror.namespace" . }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
 {{- else if contains "ClusterIP" .Values.web3.service.type }}
   kubectl port-forward "service/{{ .Release.Name }}-web3" -n {{ include "hedera-mirror.namespace" . }} {{ .Values.web3.service.port }}:80 &
 {{- end }}
-  curl -sL -H "Content-Type: application/json" -X POST -d '{"id": 1, "jsonrpc": "2.0", "method": "eth_blockNumber"}' "http://${WEB3_IP:-127.0.0.1}:{{.Values.web3.service.port}}/web3/v1"
+  curl -sL -H "Content-Type: application/json" -X POST -d '{"from": "0x0000000000000000000000000000000002edec80","to": "0x0000000000000000000000000000000002edec81","value": 500,"gas": 0,"gasPrice": 0}' "http://${WEB3_IP:-127.0.0.1}:{{.Values.web3.service.port}}/api/v1/contracts/call"
 {{- end }}

@@ -1172,7 +1172,7 @@ tags:
     description: The tokens object represents the information associated with a token entity and returns a list of token information.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.71.0-SNAPSHOT
+  version: 0.72.0-SNAPSHOT
   license:
     name: Apache-2.0
     url: 'https://www.apache.org/licenses/LICENSE-2.0.html'
@@ -1251,8 +1251,14 @@ components:
               type: string
               nullable: true
               format: binary
-              description: The contract bytecode in hex
+              description: The contract bytecode in hex during deployment
               example: "0x01021a1fdc9b"
+            runtime_bytecode:
+              type: string
+              nullable: true
+              format: binary
+              description: The contract bytecode in hex after deployment
+              example: "0x0302fa1ad39c"
     ContractsResponse:
       type: object
       properties:
@@ -2928,7 +2934,10 @@ components:
           example: true
           nullable: true
         expiry_timestamp:
-          $ref: '#/components/schemas/TimestampNullable'
+          example: 1234567890100000
+          format: int64
+          nullable: true
+          type: integer
         fee_schedule_key:
           $ref: '#/components/schemas/Key'
         freeze_default:

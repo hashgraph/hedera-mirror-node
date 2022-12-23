@@ -38,7 +38,11 @@
   },
   "stateproof": {
     "enabled": true,
-    "intervalMultiplier": 10
+    "intervalMultiplier": 10,
+    "retry": {
+      "backoff": 10000,
+      "maxAttempts": 5
+    }
   },
   "transaction": {
     "enabled": true,

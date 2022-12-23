@@ -18,8 +18,7 @@
  * ‍
  */
 
-import axios from 'axios';
-import {GenericContainer} from 'testcontainers';
+import {GenericContainer, Wait} from 'testcontainers';
 import {isDockerInstalled} from './integrationUtils';
 
 const imageName = 'adobe/s3mock';
@@ -35,35 +34,15 @@ class IntegrationS3Ops {
 
     const image = `${imageName}:${imageTag}`;
     logger.info(`Starting docker container with image ${image}`);
-    const container = await new GenericContainer(image).withExposedPorts(defaultS3Port).start();
+    const container = await new GenericContainer(image)
+      .withExposedPorts(defaultS3Port)
+      .withStartupTimeout(180000)
+      .withWaitStrategy(Wait.forHttp("/", defaultS3Port))
+      .start();
     logger.info('Started dockerized s3mock');
     this.container = container;
     this.hostname = 'localhost';
     this.port = container.getMappedPort(defaultS3Port);
-
-    logger.info(`S3Ops endpoint: ${this.getEndpointUrl()}`);
-    const {CancelToken} = axios;
-    const source = CancelToken.source();
-    const timeout = setTimeout(() => {
-      source.cancel('timed out, cancel the request');
-    }, 15 * 1000);
-
-    while (true) {
-      try {
-        const {status} = await axios.get(this.getEndpointUrl(), {cancelToken: source.token});
-        if (status === 200) {
-          clearTimeout(timeout);
-          return;
-        }
-      } catch (err) {
-        if (axios.isCancel(err)) {
-          break;
-        }
-      }
-      await new Promise((r) => setTimeout(r, 200));
-    }
-
-    throw new Error('s3 service health check failed in 15s');
   }
 
   async stop() {

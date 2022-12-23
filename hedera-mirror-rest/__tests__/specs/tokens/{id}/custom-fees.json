@@ -17,6 +17,7 @@
         "num": 1135,
         "type": "TOKEN",
         "memo": "token.0.0.1135",
+        "expiration_timestamp": "1234567890000010001",
         "deleted": false
       },
       {
@@ -128,7 +129,7 @@
     "created_timestamp": "1234567890.000000002",
     "decimals": "1000",
     "deleted": false,
-    "expiry_timestamp": null,
+    "expiry_timestamp": 1234567890000010001,
     "fee_schedule_key": {
       "_type": "ProtobufEncoded",
       "key": "7b2231222c2232222c2233227d"

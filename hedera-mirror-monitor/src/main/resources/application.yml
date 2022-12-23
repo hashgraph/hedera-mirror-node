@@ -75,7 +75,6 @@ springdoc:
   swagger-ui:
     path: /api/v1/docs
     disable-swagger-default-url: true
-
 ---
 management:
   endpoint:
@@ -83,10 +82,12 @@ management:
       group:
         cluster:
           include: cluster, release
-
 spring:
   cloud:
     kubernetes:
+      discovery:
+        catalog-services-watch:
+          enabled: false
       reload:
         enabled: true
       secrets:

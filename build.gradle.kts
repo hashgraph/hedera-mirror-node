@@ -30,7 +30,7 @@ plugins {
 extra.apply {
     set("gson.version", "2.8.9") // Temporary until Apache jclouds supports gson 2.9
     set("postgresql.version", "42.5.1") // Temporary fix for transient dependency security issue
-    set("protobufVersion", "3.21.11")
+    set("protobufVersion", "3.21.12")
     set("reactorGrpcVersion", "1.2.3")
     set("snakeyaml.version", "1.33") // Temporary fix for transient dependency security issue
     set("testcontainersSpringBootVersion", "2.2.12")
@@ -43,10 +43,10 @@ dependencies {
         val reactorGrpcVersion: String by rootProject.extra
         val testcontainersSpringBootVersion: String by rootProject.extra
 
-        api("com.esaulpaugh:headlong:9.1.0")
+        api("com.esaulpaugh:headlong:9.1.1")
         api("com.github.meanbeanlib:meanbean:3.0.0-M9")
         api("com.github.vertical-blank:sql-formatter:2.0.3")
-        api("com.google.cloud:spring-cloud-gcp-dependencies:3.4.0")
+        api("com.google.cloud:spring-cloud-gcp-dependencies:3.4.1")
         api("com.google.guava:guava:31.1-jre")
         api("com.google.protobuf:protobuf-java:$protobufVersion")
         api("com.hedera.evm:hedera-evm:0.33.0-SNAPSHOT")
@@ -57,14 +57,14 @@ dependencies {
         api("com.playtika.testcontainers:embedded-postgresql:$testcontainersSpringBootVersion")
         api("com.playtika.testcontainers:embedded-redis:$testcontainersSpringBootVersion")
         api("com.salesforce.servicelibs:reactor-grpc-stub:$reactorGrpcVersion")
-        api("com.vladmihalcea:hibernate-types-55:2.20.0")
+        api("com.vladmihalcea:hibernate-types-55:2.21.0")
         api("commons-beanutils:commons-beanutils:1.9.4")
         api("commons-io:commons-io:2.11.0")
-        api("io.cucumber:cucumber-bom:7.10.0")
+        api("io.cucumber:cucumber-bom:7.10.1")
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
         api("io.grpc:grpc-bom:1.51.0")
         api("io.swagger:swagger-annotations:1.6.9")
-        api("io.vertx:vertx-pg-client:4.3.5")
+        api("io.vertx:vertx-pg-client:4.3.6")
         api("javax.inject:javax.inject:1")
         api("net.devh:grpc-spring-boot-starter:2.14.0.RELEASE")
         api("net.java.dev.jna:jna:5.12.1")
@@ -76,10 +76,10 @@ dependencies {
         api("org.hyperledger.besu:secp256k1:0.6.1")
         api("org.hyperledger.besu:evm:22.7.6")
         api("org.msgpack:jackson-dataformat-msgpack:0.9.3")
-        api("org.springdoc:springdoc-openapi-webflux-ui:1.6.13")
+        api("org.springdoc:springdoc-openapi-webflux-ui:1.6.14")
         api("org.springframework.cloud:spring-cloud-dependencies:2021.0.5")
         api("org.testcontainers:junit-jupiter:1.17.6")
-        api("software.amazon.awssdk:bom:2.18.35")
+        api("software.amazon.awssdk:bom:2.18.41")
         api("uk.org.webcompere:system-stubs-jupiter:2.0.1")
     }
 }

@@ -304,7 +304,6 @@ The Web3 API container will display logs similar to the below at start:
 
 ```shell
 c.h.m.web3.Web3Application Started Web3Application in 27.808 seconds
-c.h.m.w.config.LoggingFilter /10.0.0.43 POST http://localhost:8545/web3/v1 in 8 ms: 200 OK
 ```
 
 To manually verify the Web3 API endpoints run the [acceptance tests](/docs/web3/README.md#acceptance-tests).

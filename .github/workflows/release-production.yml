@@ -4,10 +4,6 @@ on:
   push:
     tags: [ v* ]
 
-permissions:
-  id-token: write
-  contents: read
-
 jobs:
   image:
     strategy:
@@ -55,8 +51,7 @@ jobs:
       - name: Build and push images
         uses: docker/build-push-action@v3
         with:
-          build-args:
-            - VERSION=${{env.TAG}}
+          build-args: VERSION=${{env.TAG}}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           context: ${{env.MODULE}}
@@ -82,6 +77,9 @@ jobs:
     name: GCP Marketplace release
     needs: chart
     if: "!contains(github.ref, '-')"
+    permissions:
+      id-token: write
+      contents: read
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:

@@ -295,6 +295,9 @@ terminationGracePeriodSeconds: 60
 
 test:
   enabled: true
+  git:
+    branch: ""  # Default to Chart app version
+    repository: "hashgraph/hedera-mirror-node"
   image:
     pullPolicy: IfNotPresent
     repository: postman/newman
