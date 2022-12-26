@@ -177,10 +177,10 @@ jobs:
           go test -v
 
       - name: Run Rosetta Postman API Tests
-        working-directory: ./hedera-mirror-rosetta/scripts/validation/postman
+        working-directory: ./charts/hedera-mirror-rosetta
         run: |
           npm install -g newman
-          newman run rosetta-api-postman.json
+          newman run postman.json
 
       - name: Show Container Log
         if: ${{ failure() && (env.OFFLINE_CONTAINER_ID != '' || env.ONLINE_CONTAINER_ID != '') }}

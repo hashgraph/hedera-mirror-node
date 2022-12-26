@@ -15,7 +15,7 @@ spec:
       imagePullPolicy: {{ .Values.test.image.pullPolicy }}
       args:
         - run
-        - https://raw.githubusercontent.com/{{ .Values.test.git.repository }}/{{ .Values.test.git.branch | default (regexReplaceAll "(\\d+\\.\\d+\\.\\d+(-\\w+)?)" .Chart.AppVersion "v${1}") }}/hedera-mirror-rosetta/scripts/validation/postman/rosetta-api-postman.json
+        - /test/postman.json
         - --env-var
         - base_url=http://{{ include "hedera-mirror-rosetta.fullname" . }}:{{ .Values.service.port }}
       securityContext:
@@ -23,6 +23,10 @@ spec:
         capabilities:
           drop: [ALL]
         readOnlyRootFilesystem: true
+      volumeMounts:
+        - name: rosetta-test
+          mountPath: /test
+          readOnly: true
   restartPolicy: Never
   securityContext:
     fsGroup: 1000
@@ -32,4 +36,9 @@ spec:
     seccompProfile:
       type: RuntimeDefault
   terminationGracePeriodSeconds: 1
+  volumes:
+    - name: rosetta-test
+      configMap:
+        defaultMode: 420
+        name: {{ include "hedera-mirror-rosetta.fullname" .}}-test
 {{- end -}}
