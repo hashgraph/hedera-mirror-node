@@ -57,7 +57,7 @@ dependencies {
         api("com.playtika.testcontainers:embedded-postgresql:$testcontainersSpringBootVersion")
         api("com.playtika.testcontainers:embedded-redis:$testcontainersSpringBootVersion")
         api("com.salesforce.servicelibs:reactor-grpc-stub:$reactorGrpcVersion")
-        api("com.vladmihalcea:hibernate-types-55:2.21.0")
+        api("com.vladmihalcea:hibernate-types-55:2.21.1")
         api("commons-beanutils:commons-beanutils:1.9.4")
         api("commons-io:commons-io:2.11.0")
         api("io.cucumber:cucumber-bom:7.10.1")
