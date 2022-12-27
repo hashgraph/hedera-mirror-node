@@ -29,7 +29,7 @@
   "dependencies": {
     "@hashgraph/proto": "^2.11.0",
     "abort-controller": "^3.0.0",
-    "boxen": "^7.0.0",
+    "boxen": "^7.0.1",
     "chalk": "^5.2.0",
     "glob": "^8.0.3",
     "lodash": "^4.17.21",
