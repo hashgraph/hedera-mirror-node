@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '>0.0.0' # Update to the latest release
+      version: '0.71.0-rc1' # Must be at least 0.71.0-rc1 for correct multi-node config
   dependsOn:
     - name: mirror
       namespace: common
@@ -32,7 +32,7 @@ spec:
       enabled: true
       primary:
         persistence:
-          size: 512Gi
+          size: 256Gi
         resources:
           limits:
             cpu: 4
@@ -47,7 +47,7 @@ spec:
             effect: NoSchedule
       readReplicas:
         persistence:
-          size: 1024Gi
+          size: 512Gi
         resources:
           limits:
             cpu: 8
