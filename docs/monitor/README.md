@@ -148,7 +148,7 @@ hedera:
         scenarios:
           nftMint:
             properties:
-              tokenType: NON_FUNGIBLE_UNIQUE
+              type: NON_FUNGIBLE_UNIQUE
               tokenId: ${nft.1}
               amount: 1
             type: TOKEN_MINT

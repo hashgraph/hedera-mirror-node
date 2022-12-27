@@ -33,7 +33,7 @@ extra.apply {
     set("protobufVersion", "3.21.12")
     set("reactorGrpcVersion", "1.2.3")
     set("snakeyaml.version", "1.33") // Temporary fix for transient dependency security issue
-    set("testcontainersSpringBootVersion", "2.2.12")
+    set("testcontainersSpringBootVersion", "2.2.14")
 }
 
 // Creates a platform/BOM with specific versions so subprojects don't need to specify a version when using a dependency
@@ -57,14 +57,14 @@ dependencies {
         api("com.playtika.testcontainers:embedded-postgresql:$testcontainersSpringBootVersion")
         api("com.playtika.testcontainers:embedded-redis:$testcontainersSpringBootVersion")
         api("com.salesforce.servicelibs:reactor-grpc-stub:$reactorGrpcVersion")
-        api("com.vladmihalcea:hibernate-types-55:2.21.0")
+        api("com.vladmihalcea:hibernate-types-55:2.21.1")
         api("commons-beanutils:commons-beanutils:1.9.4")
         api("commons-io:commons-io:2.11.0")
         api("io.cucumber:cucumber-bom:7.10.1")
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
-        api("io.grpc:grpc-bom:1.51.0")
+        api("io.grpc:grpc-bom:1.51.1")
         api("io.swagger:swagger-annotations:1.6.9")
-        api("io.vertx:vertx-pg-client:4.3.6")
+        api("io.vertx:vertx-pg-client:4.3.7")
         api("javax.inject:javax.inject:1")
         api("net.devh:grpc-spring-boot-starter:2.14.0.RELEASE")
         api("net.java.dev.jna:jna:5.12.1")
@@ -79,7 +79,7 @@ dependencies {
         api("org.springdoc:springdoc-openapi-webflux-ui:1.6.14")
         api("org.springframework.cloud:spring-cloud-dependencies:2021.0.5")
         api("org.testcontainers:junit-jupiter:1.17.6")
-        api("software.amazon.awssdk:bom:2.18.41")
+        api("software.amazon.awssdk:bom:2.19.4")
         api("uk.org.webcompere:system-stubs-jupiter:2.0.1")
     }
 }
@@ -133,7 +133,7 @@ fun replaceVersion(files: String, match: String) {
 project.tasks.register("release") {
     doLast {
         replaceVersion("charts/**/Chart.yaml", "(?<=^(appVersion|version): ).+")
-        replaceVersion("docker-compose.yml", "(?<=:)main")
+        replaceVersion("docker-compose.yml", "(?<=gcr.io/mirrornode/hedera-mirror-.+:).+")
         replaceVersion("gradle.properties", "(?<=^version=).+")
         replaceVersion(
             "hedera-mirror-rest/**/package*.json",
