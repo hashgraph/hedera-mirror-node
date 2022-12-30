@@ -38,6 +38,13 @@ import * as contractsId from './contractsId.js';
 import * as contractsIdResults from './contractsIdResults.js';
 import * as contractsIdResultsLogs from './contractsIdResultsLogs.js';
 import * as contractsIdResultsTimestamp from './contractsIdResultsTimestamp.js';
+import * as contractsIdState from './contractsIdState.js';
+import * as contractsResultsId from './contractsResultsId.js';
+import * as contractsResultsIdActions from './contractsResultsIdActions.js';
+import * as contractsResultsLogs from './contractsResultsLogs.js';
+import * as networkExchangerate from './networkExchangerate.js';
+import * as networkFees from './networkFees.js';
+import * as networkNodes from './networkNodes.js';
 import * as networkStake from './networkStake.js';
 import * as networkSupply from './networkSupply.js';
 import * as rampUp from './rampUp.js';
@@ -60,6 +67,7 @@ import * as topicsMessagesTimestamp from './topicsMessagesTimestamp.js';
 import * as transactions from './transactions.js';
 import * as transactionsAccountId from './transactionsAccountId.js';
 import * as transactionsId from './transactionsId.js';
+import * as transactionsIdStateproof from './transactionsIdStateproof.js';
 import * as transactionsTransactionTypeAscending from './transactionsTransactionTypeAscending.js';
 
 // add test modules here
@@ -81,6 +89,13 @@ const tests = {
   contractsIdResults,
   contractsIdResultsLogs,
   contractsIdResultsTimestamp,
+  contractsIdState,
+  contractsResultsId,
+  contractsResultsIdActions,
+  contractsResultsLogs,
+  networkExchangerate,
+  networkFees,
+  networkNodes,
   networkStake,
   networkSupply,
   rampUp,
@@ -103,6 +118,7 @@ const tests = {
   transactions,
   transactionsAccountId,
   transactionsId,
+  transactionsIdStateproof,
   transactionsTransactionTypeAscending,
 };
 
