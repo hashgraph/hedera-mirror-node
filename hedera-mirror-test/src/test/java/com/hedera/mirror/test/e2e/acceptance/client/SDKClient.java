@@ -152,7 +152,7 @@ public class SDKClient implements AutoCloseable {
                 return new ExpandedAccountId(accountId, privateKey, publicKey);
             }
         } catch (Exception e) {
-            log.warn("Unable to create a regular operator account. Falling back to existing operator");
+            log.warn("Unable to create a regular operator account. Falling back to existing operator", e);
         }
 
         return defaultOperator;
