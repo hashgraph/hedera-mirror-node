@@ -222,7 +222,7 @@ class ConfigurableTransactionGeneratorTest {
                         .isNotNull()
                         .hasNoNullFieldsOrProperties()
                         .hasFieldOrPropertyWithValue("receipt", true)
-                        .hasFieldOrPropertyWithValue("record", true)
+                        .hasFieldOrPropertyWithValue("sendRecord", true)
                         .hasFieldOrPropertyWithValue("transaction.topicId", TopicId.fromString(TOPIC_ID))
                         .satisfies(r -> assertThat(r.getTransaction().getTransactionMemo())
                                 .containsPattern(Pattern.compile("\\d+ Monitor test on \\w+"))
