@@ -107,7 +107,9 @@
     "outputDirectory": "build/jest-junit"
   },
   "overrides": {
-    "json-schema": "0.4.0"
+    "json-schema": "0.4.0",
+    "json5": "2.2.3",
+    "protobufjs": "7.1.2"
   },
   "baseUrlPath": "/api/v1"
 }
