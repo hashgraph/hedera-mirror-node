@@ -43,6 +43,7 @@
     "jest-standard-reporter": "^2.0.0"
   },
   "overrides": {
+    "json5": "2.2.3",
     "protobufjs": "7.1.2"
   }
 }
