@@ -59,6 +59,7 @@ public class RecordFileDownloader extends Downloader<RecordFile> {
     private final SidecarFileReader sidecarFileReader;
     private final SidecarProperties sidecarProperties;
 
+    @SuppressWarnings("java:s107")
     public RecordFileDownloader(ConsensusNodeService consensusNodeService,
                                 RecordDownloaderProperties downloaderProperties,
                                 MeterRegistry meterRegistry,
@@ -117,7 +118,7 @@ public class RecordFileDownloader extends Downloader<RecordFile> {
 
         recordFile.getItems()
                 .doOnNext(recordItem -> {
-                    var timestamp = recordItem.getRecord().getConsensusTimestamp();
+                    var timestamp = recordItem.getTransactionRecord().getConsensusTimestamp();
                     if (records.containsKey(timestamp)) {
                         recordItem.setSidecarRecords(records.get(timestamp));
                     }
@@ -144,13 +145,13 @@ public class RecordFileDownloader extends Downloader<RecordFile> {
                 });
     }
 
-    private int getSidecarType(TransactionSidecarRecord record) {
-        return switch (record.getSidecarRecordsCase()) {
+    private int getSidecarType(TransactionSidecarRecord transactionSidecarRecord) {
+        return switch (transactionSidecarRecord.getSidecarRecordsCase()) {
             case ACTIONS -> SidecarType.CONTRACT_ACTION_VALUE;
             case BYTECODE -> SidecarType.CONTRACT_BYTECODE_VALUE;
             case STATE_CHANGES -> SidecarType.CONTRACT_STATE_CHANGE_VALUE;
             default -> throw new InvalidDatasetException(
-                    "Unknown sidecar transaction record type " + record.getSidecarRecordsCase());
+                    "Unknown sidecar transaction record type " + transactionSidecarRecord.getSidecarRecordsCase());
         };
     }
 }

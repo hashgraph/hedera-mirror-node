@@ -100,6 +100,7 @@ public class MessagingConfiguration {
         return MessageChannels.queue(properties.getQueueCapacity()).get();
     }
 
+    @SuppressWarnings({"rawtypes", "unchecked"})
     private IntegrationFlow integrationFlow(StreamFileParser parser) {
         ParserProperties properties = parser.getProperties();
         return IntegrationFlows.from(channelName(properties.getStreamType()))

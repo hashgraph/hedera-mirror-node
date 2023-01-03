@@ -112,6 +112,7 @@ public abstract class Downloader<T extends StreamFile> {
     private final Timer streamCloseMetric;
     private final Timer.Builder streamVerificationMetric;
 
+    @SuppressWarnings("java:S3740")
     protected Downloader(ConsensusNodeService consensusNodeService,
                          DownloaderProperties downloaderProperties,
                          MeterRegistry meterRegistry,
@@ -412,6 +413,7 @@ public abstract class Downloader<T extends StreamFile> {
         }
     }
 
+    @SuppressWarnings("java:S1172") // Unused Parameter (node) required by subclass implementations
     protected void onVerified(StreamFileData streamFileData, T streamFile, ConsensusNode node) {
         setStreamFileIndex(streamFile);
         streamFileNotifier.verified(streamFile);
@@ -441,7 +443,7 @@ public abstract class Downloader<T extends StreamFile> {
      * @param streamFile the stream file object
      * @param signature  the signature object corresponding to the stream file
      */
-    private void verify(StreamFile streamFile, StreamFileSignature signature) {
+    private void verify(T streamFile, StreamFileSignature signature) {
         String filename = streamFile.getName();
         String expectedPrevHash = lastStreamFile.get().map(StreamFile::getHash).orElse(null);
 
@@ -467,7 +469,7 @@ public abstract class Downloader<T extends StreamFile> {
         }
     }
 
-    boolean verifyHashChain(StreamFile streamFile, String expectedPreviousHash) {
+    boolean verifyHashChain(T streamFile, String expectedPreviousHash) {
         if (!streamFile.getType().isChained()) {
             return true;
         }

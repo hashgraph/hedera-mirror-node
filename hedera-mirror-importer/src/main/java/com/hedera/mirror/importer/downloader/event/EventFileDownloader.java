@@ -38,6 +38,7 @@ import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
 @Named
 public class EventFileDownloader extends Downloader<EventFile> {
 
+    @SuppressWarnings("java:S107")
     public EventFileDownloader(ConsensusNodeService consensusNodeService,
                                EventDownloaderProperties downloaderProperties,
                                MeterRegistry meterRegistry,

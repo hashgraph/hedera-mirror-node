@@ -442,6 +442,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     @Override
+    @SuppressWarnings("java:S2259")
     public void onTokenTransfer(TokenTransfer tokenTransfer) throws ImporterException {
         if (tokenTransfer.isTokenDissociate()) {
             tokenDissociateTransfers.add(tokenTransfer);

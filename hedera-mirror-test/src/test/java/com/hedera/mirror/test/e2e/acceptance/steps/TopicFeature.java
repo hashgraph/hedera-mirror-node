@@ -227,6 +227,7 @@ public class TopicFeature {
     @Retryable(value = {PrecheckStatusException.class, ReceiptStatusException.class},
             backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
             maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
+    //TODO:// dead code?
     public void publishTopicMessages(int numGroups, int messageCount, long milliSleep) throws InterruptedException {
         for (int i = 0; i < numGroups; i++) {
             Thread.sleep(milliSleep, 0);

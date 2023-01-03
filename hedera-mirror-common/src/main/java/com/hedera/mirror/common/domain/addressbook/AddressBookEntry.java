@@ -36,6 +36,9 @@ import javax.persistence.IdClass;
 import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.Transient;
+
+import com.hedera.mirror.common.exception.NonParsableKeyException;
+
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -99,7 +102,7 @@ public class AddressBookEntry implements Persistable<AddressBookEntry.Id> {
             var keyFactory = KeyFactory.getInstance("RSA");
             return keyFactory.generatePublic(publicKeySpec);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new NonParsableKeyException(e);
         }
     }
 

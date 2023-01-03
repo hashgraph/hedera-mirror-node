@@ -40,6 +40,7 @@ import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
 @Named
 public class AccountBalancesDownloader extends Downloader<AccountBalanceFile> {
 
+    @SuppressWarnings("java:S107")
     public AccountBalancesDownloader(ConsensusNodeService consensusNodeService,
                                      BalanceDownloaderProperties downloaderProperties,
                                      MeterRegistry meterRegistry,

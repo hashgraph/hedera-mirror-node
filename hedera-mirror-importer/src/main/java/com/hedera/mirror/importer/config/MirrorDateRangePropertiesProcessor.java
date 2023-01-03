@@ -155,7 +155,7 @@ public class MirrorDateRangePropertiesProcessor {
         if (!effectiveStartDate.equals(lastFileInstant)) {
             Instant verifyHashAfter = mirrorProperties.getVerifyHashAfter();
 
-            if (verifyHashAfter == null || verifyHashAfter.isBefore(effectiveStartDate)) {
+            if (verifyHashAfter.isBefore(effectiveStartDate)) {
                 mirrorProperties.setVerifyHashAfter(effectiveStartDate);
                 log.debug("Set verifyHashAfter to {}", effectiveStartDate);
             }

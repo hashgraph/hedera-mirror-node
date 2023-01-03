@@ -83,6 +83,7 @@ public class SubscribeMetrics {
     }
 
     @Scheduled(fixedDelayString = "${hedera.mirror.monitor.subscribe.statusFrequency:10000}")
+    @SuppressWarnings("java:S3864") //Call to peek here is fine
     public void status() {
         if (subscribeProperties.isEnabled()) {
             var running = new AtomicBoolean(false);

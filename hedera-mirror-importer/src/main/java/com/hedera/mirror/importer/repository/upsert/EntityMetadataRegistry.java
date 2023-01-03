@@ -43,6 +43,9 @@ import javax.persistence.metamodel.Attribute;
 import javax.persistence.metamodel.EmbeddableType;
 import javax.persistence.metamodel.EntityType;
 import javax.persistence.metamodel.SingularAttribute;
+
+import com.hedera.mirror.importer.exception.FieldInaccessibleException;
+
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -60,11 +63,11 @@ import com.hedera.mirror.common.domain.Upsertable;
 public class EntityMetadataRegistry {
 
     private final EntityManager entityManager;
-    private final Map<Class<?>, EntityMetadata> entityMetadata = new ConcurrentHashMap<>();
+    private final Map<Class<?>, EntityMetadata> domainEntityMetadata = new ConcurrentHashMap<>();
     private final JdbcOperations jdbcOperations;
 
     public EntityMetadata lookup(Class<?> domainClass) {
-        return entityMetadata.computeIfAbsent(domainClass, this::create);
+        return domainEntityMetadata.computeIfAbsent(domainClass, this::create);
     }
 
     private EntityMetadata create(Class<?> domainClass) {
@@ -178,7 +181,7 @@ public class EntityMetadataRegistry {
             return (Function<Object, Object>) LambdaMetafactory.metafactory(lookup, "apply",
                     methodType(Function.class), functionType.erase(), handle, functionType).getTarget().invokeExact();
         } catch (Throwable t) {
-            throw new RuntimeException(t);
+            throw new FieldInaccessibleException(t);
         }
     }
 
@@ -192,7 +195,7 @@ public class EntityMetadataRegistry {
             return (BiConsumer<Object, Object>) LambdaMetafactory.metafactory(lookup, "accept",
                     methodType(BiConsumer.class), functionType.erase(), handle, functionType).getTarget().invokeExact();
         } catch (Throwable t) {
-            throw new RuntimeException(t);
+            throw new FieldInaccessibleException(t);
         }
     }
 

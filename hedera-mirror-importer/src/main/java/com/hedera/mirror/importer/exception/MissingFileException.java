@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.exception;
  * ‍
  */
 
+@SuppressWarnings("java:S110")
 public class MissingFileException extends ImporterException {
 
     private static final long serialVersionUID = -3538381075104588657L;

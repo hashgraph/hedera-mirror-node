@@ -36,7 +36,6 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeoutException;
-import java.util.function.Function;
 import lombok.Data;
 import lombok.extern.log4j.Log4j2;
 import org.junit.jupiter.api.AfterEach;
@@ -50,7 +49,6 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 
 import com.hedera.hashgraph.sdk.PrivateKey;
@@ -166,7 +164,7 @@ class TransactionPublisherTest {
                 .as(StepVerifier::create)
                 .expectNextMatches(r -> {
                     assertThat(r).extracting(PublishResponse::getReceipt).isNotNull();
-                    assertThat(r).extracting(PublishResponse::getRecord).isNull();
+                    assertThat(r).extracting(PublishResponse::getTransactionRecord).isNull();
                     return true;
                 })
                 .expectComplete()
@@ -179,11 +177,11 @@ class TransactionPublisherTest {
         cryptoServiceStub.addQueries(Mono.just(record(SUCCESS)));
         cryptoServiceStub.addTransactions(Mono.just(response(OK)));
 
-        transactionPublisher.publish(request().record(true).build())
+        transactionPublisher.publish(request().sendRecord(true).build())
                 .as(StepVerifier::create)
                 .expectNextMatches(r -> {
                     assertThat(r).extracting(PublishResponse::getReceipt).isNotNull();
-                    assertThat(r).extracting(PublishResponse::getRecord).isNotNull();
+                    assertThat(r).extracting(PublishResponse::getTransactionRecord).isNotNull();
                     return true;
                 })
                 .expectComplete()

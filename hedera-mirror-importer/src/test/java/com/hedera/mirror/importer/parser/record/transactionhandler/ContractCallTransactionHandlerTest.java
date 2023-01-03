@@ -63,7 +63,7 @@ class ContractCallTransactionHandlerTest extends AbstractTransactionHandlerTest 
     void testGetEntityIdReceipt() {
         var recordItem = recordItemBuilder.contractCall().build();
         ContractID contractIdBody = recordItem.getTransactionBody().getContractCall().getContractID();
-        ContractID contractIdReceipt = recordItem.getRecord().getReceipt().getContractID();
+        ContractID contractIdReceipt = recordItem.getTransactionRecord().getReceipt().getContractID();
         EntityId expectedEntityId = EntityId.of(contractIdReceipt);
 
         when(entityIdService.lookup(contractIdReceipt, contractIdBody)).thenReturn(expectedEntityId);

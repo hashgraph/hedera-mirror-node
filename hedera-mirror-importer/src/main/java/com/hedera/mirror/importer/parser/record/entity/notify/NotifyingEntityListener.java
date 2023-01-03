@@ -99,6 +99,7 @@ public class NotifyingEntityListener implements BatchEntityListener {
         topicMessages.clear();
     }
 
+    @SuppressWarnings("rawtypes")
     private PreparedStatementCallback callback(Collection<TopicMessage> topicMessages) {
         return preparedStatement -> {
             for (TopicMessage topicMessage : topicMessages) {

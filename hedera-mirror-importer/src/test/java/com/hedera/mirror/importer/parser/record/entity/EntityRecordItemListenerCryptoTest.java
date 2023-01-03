@@ -351,7 +351,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         // then
         assertAll(
                 () -> assertEquals(0, entityRepository.count()),
-                () -> assertTransactionAndRecord(recordItem.getTransactionBody(), recordItem.getRecord()),
+                () -> assertTransactionAndRecord(recordItem.getTransactionBody(), recordItem.getTransactionRecord()),
                 () -> assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(nft1, nft2, nft3, nft4)
         );
     }
@@ -1151,10 +1151,14 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                         .addAccountAmounts(accountAmount(account2.getNum(), -100)),
                 transactionBody, ResponseCodeEnum.SUCCESS.getNumber());
 
+        RecordItem recordItem = RecordItem.builder()
+                .record(transactionRecord)
+                .transaction(transaction)
+                .build();
+
         // when, then
         assertThrows(AliasNotFoundException.class,
-                () -> parseRecordItemAndCommit(RecordItem.builder().record(transactionRecord).transaction(transaction)
-                        .build()));
+                () -> parseRecordItemAndCommit(recordItem));
         assertAll(
                 () -> assertEquals(0, transactionRepository.count()),
                 () -> assertEquals(0, cryptoTransferRepository.count()),
@@ -1208,7 +1212,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertEquals(3, nftAllowanceRepository.count()),
                 () -> assertEquals(1, tokenAllowanceRepository.count()),
                 () -> assertEquals(1, transactionRepository.count()),
-                () -> assertTransactionAndRecord(recordItem.getTransactionBody(), recordItem.getRecord()),
+                () -> assertTransactionAndRecord(recordItem.getTransactionBody(), recordItem.getTransactionRecord()),
                 () -> assertThat(cryptoAllowanceRepository.findAll())
                         .allSatisfy(a -> assertThat(a.getAmount()).isPositive())
                         .allSatisfy(a -> assertThat(a.getOwner()).isPositive())

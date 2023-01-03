@@ -178,7 +178,7 @@ class ConfigurableTransactionGeneratorTest {
         properties.setRecordPercent(0);
         for (int i = 0; i < SAMPLE_SIZE; ++i) {
             assertThat(generator.get().next())
-                    .extracting(PublishRequest::isRecord)
+                    .extracting(PublishRequest::isSendRecord)
                     .allMatch(v -> !v);
         }
     }
@@ -188,7 +188,7 @@ class ConfigurableTransactionGeneratorTest {
         properties.setRecordPercent(1);
         for (int i = 0; i < SAMPLE_SIZE; ++i) {
             assertThat(generator.get().next())
-                    .extracting(PublishRequest::isRecord)
+                    .extracting(PublishRequest::isSendRecord)
                     .allMatch(v -> v);
         }
     }
@@ -199,7 +199,7 @@ class ConfigurableTransactionGeneratorTest {
         Multiset<Boolean> records = HashMultiset.create();
 
         for (int i = 0; i < SAMPLE_SIZE; ++i) {
-            generator.get().next().forEach(publishRequest -> records.add(publishRequest.isRecord()));
+            generator.get().next().forEach(publishRequest -> records.add(publishRequest.isSendRecord()));
         }
 
         assertThat((double) records.count(true) / SAMPLE_SIZE)
