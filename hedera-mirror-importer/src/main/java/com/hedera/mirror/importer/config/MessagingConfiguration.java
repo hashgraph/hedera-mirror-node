@@ -20,6 +20,12 @@ package com.hedera.mirror.importer.config;
  * ‍
  */
 
+import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
+
+import com.hedera.mirror.common.domain.event.EventFile;
+
+import com.hedera.mirror.common.domain.transaction.RecordFile;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.integration.channel.NullChannel;
@@ -72,17 +78,17 @@ public class MessagingConfiguration {
 
     @Bean
     IntegrationFlow integrationFlowBalance(AccountBalanceFileParser parser) {
-        return integrationFlow(parser);
+        return integrationFlow(parser, AccountBalanceFile.class);
     }
 
     @Bean
     IntegrationFlow integrationFlowEvent(EventFileParser parser) {
-        return integrationFlow(parser);
+        return integrationFlow(parser, EventFile.class);
     }
 
     @Bean
     IntegrationFlow integrationFlowRecord(RecordFileParser parser) {
-        return integrationFlow(parser);
+        return integrationFlow(parser, RecordFile.class);
     }
 
     @Bean
@@ -100,11 +106,10 @@ public class MessagingConfiguration {
         return MessageChannels.queue(properties.getQueueCapacity()).get();
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
-    private IntegrationFlow integrationFlow(StreamFileParser parser) {
+    private <T extends StreamFile<?>> IntegrationFlow integrationFlow(StreamFileParser<T> parser, Class<T> streamFileType) {
         ParserProperties properties = parser.getProperties();
         return IntegrationFlows.from(channelName(properties.getStreamType()))
-                .handle(StreamFile.class, (s, h) -> {
+                .handle(streamFileType, (s, h) -> {
                     parser.parse(s);
                     return null;
                 }, e -> {

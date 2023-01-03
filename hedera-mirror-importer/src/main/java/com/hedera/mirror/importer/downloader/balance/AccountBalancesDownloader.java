@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.downloader.balance;
  * ‍
  */
 
+import com.hedera.mirror.common.domain.balance.AccountBalance;
+
 import io.micrometer.core.instrument.MeterRegistry;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
@@ -38,7 +40,7 @@ import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
 
 @Log4j2
 @Named
-public class AccountBalancesDownloader extends Downloader<AccountBalanceFile> {
+public class AccountBalancesDownloader extends Downloader<AccountBalanceFile, AccountBalance> {
 
     @SuppressWarnings("java:S107")
     public AccountBalancesDownloader(ConsensusNodeService consensusNodeService,

@@ -43,6 +43,5 @@ public class TokenId implements Serializable {
     private static final long serialVersionUID = -4595724698253758379L;
 
     @Convert(converter = TokenIdConverter.class)
-    //TODO:// review this one
     private EntityId tokenId;
 }

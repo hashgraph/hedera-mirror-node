@@ -29,6 +29,9 @@ import com.google.common.collect.Multimaps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.google.common.collect.TreeMultimap;
+
+import com.hedera.mirror.common.domain.StreamItem;
+
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
@@ -72,7 +75,7 @@ import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
 import com.hedera.mirror.importer.util.ShutdownHelper;
 import com.hedera.mirror.importer.util.Utility;
 
-public abstract class Downloader<T extends StreamFile> {
+public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> {
 
     public static final String STREAM_CLOSE_LATENCY_METRIC_NAME = "hedera.mirror.stream.close.latency";
 

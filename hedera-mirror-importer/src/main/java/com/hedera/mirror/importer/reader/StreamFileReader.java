@@ -24,8 +24,7 @@ import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.common.domain.StreamItem;
 import com.hedera.mirror.importer.domain.StreamFileData;
 
-//TODO:// review further
-public interface StreamFileReader<S extends StreamFile, I extends StreamItem> {
+public interface StreamFileReader<S extends StreamFile<I>, I extends StreamItem> {
 
     /**
      * Reads a stream file. This method takes ownership of the {@link java.io.InputStream} provided by {@code

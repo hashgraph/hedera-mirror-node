@@ -22,6 +22,9 @@ package com.hedera.mirror.importer.downloader.record;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimaps;
+
+import com.hedera.mirror.common.domain.transaction.RecordItem;
+
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Arrays;
 import java.util.function.Function;
@@ -54,7 +57,7 @@ import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 
 @Named
-public class RecordFileDownloader extends Downloader<RecordFile> {
+public class RecordFileDownloader extends Downloader<RecordFile, RecordItem> {
 
     private final SidecarFileReader sidecarFileReader;
     private final SidecarProperties sidecarProperties;
