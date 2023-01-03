@@ -41,5 +41,8 @@
     "jest": "^29.3.1",
     "jest-junit": "^15.0.0",
     "jest-standard-reporter": "^2.0.0"
+  },
+  "overrides": {
+    "protobufjs": "7.1.2"
   }
 }
