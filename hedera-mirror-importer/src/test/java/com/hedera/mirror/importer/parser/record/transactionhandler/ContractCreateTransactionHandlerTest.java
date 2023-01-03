@@ -207,7 +207,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
     @Test
     void updateTransactionSuccessful() {
         var recordItem = recordItemBuilder.contractCreate().build();
-        var contractId = EntityId.of(recordItem.getTransactionRecord().getReceipt().getContractID());
+        var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder.transaction()
                 .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
@@ -232,7 +232,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                         .setInitcode(recordItemBuilder.bytes(2048)))
                 .record(r -> r.getContractCreateResultBuilder().setEvmAddress(recordItemBuilder.evmAddress()))
                 .build();
-        var contractEntityId = EntityId.of(recordItem.getTransactionRecord().getReceipt().getContractID());
+        var contractEntityId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder.transaction()
                 .customize(t -> t.consensusTimestamp(timestamp).entityId(contractEntityId))
@@ -252,7 +252,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         var recordItem = recordItemBuilder.contractCreate()
                 .transactionBody(b -> b.getAutoRenewAccountIdBuilder().setAlias(alias))
                 .build();
-        var contractId = EntityId.of(recordItem.getTransactionRecord().getReceipt().getContractID());
+        var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder.transaction().
                 customize(t -> t.consensusTimestamp(timestamp).entityId(contractId)).get();
@@ -319,7 +319,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         var recordItem = recordItemBuilder.contractCreate()
                 .transactionBody(b -> b.getAutoRenewAccountIdBuilder().setAlias(alias))
                 .build();
-        var contractId = EntityId.of(recordItem.getTransactionRecord().getReceipt().getContractID());
+        var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder.transaction().
                 customize(t -> t.consensusTimestamp(timestamp).entityId(contractId)).get();
@@ -337,7 +337,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         var recordItem = recordItemBuilder.contractCreate()
                 .transactionBody(b -> b.getAutoRenewAccountIdBuilder().setAlias(alias))
                 .build();
-        var contractId = EntityId.of(recordItem.getTransactionRecord().getReceipt().getContractID());
+        var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder.transaction().
                 customize(t -> t.consensusTimestamp(timestamp).entityId(contractId)).get();
@@ -366,7 +366,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .recordItem(r -> r.parent(parentRecordItem))
                 .transactionBody(b -> b.clearAutoRenewAccountId().clearFileID().clearInitcode())
                 .build();
-        var contractId = EntityId.of(recordItem.getTransactionRecord().getReceipt().getContractID());
+        var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder.transaction()
                 .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
@@ -391,9 +391,9 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         // child item
         var recordItem = recordItemBuilder.contractCreate()
                 .transactionBody(b -> b.clearAutoRenewAccountId().clearFileID().clearInitcode())
-                .record(x -> x.setParentConsensusTimestamp(parentRecordItem.getTransactionRecord().getConsensusTimestamp()))
+                .record(x -> x.setParentConsensusTimestamp(parentRecordItem.getRecord().getConsensusTimestamp()))
                 .build();
-        var contractId = EntityId.of(recordItem.getTransactionRecord().getReceipt().getContractID());
+        var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder.transaction()
                 .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
@@ -418,10 +418,10 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         // child item
         var recordItem = recordItemBuilder.contractCreate()
                 .transactionBody(b -> b.clearAutoRenewAccountId().clearFileID().clearInitcode())
-                .record(x -> x.setParentConsensusTimestamp(parentRecordItem.getTransactionRecord().getConsensusTimestamp()))
+                .record(x -> x.setParentConsensusTimestamp(parentRecordItem.getRecord().getConsensusTimestamp()))
                 .recordItem(r -> r.parent(parentRecordItem))
                 .build();
-        var contractId = EntityId.of(recordItem.getTransactionRecord().getReceipt().getContractID());
+        var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder.transaction()
                 .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
@@ -445,10 +445,10 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         // child item
         var recordItem = recordItemBuilder.contractCreate()
                 .transactionBody(b -> b.clearAutoRenewAccountId().clearInitcode().clearFileID())
-                .record(x -> x.setParentConsensusTimestamp(parentRecordItem.getTransactionRecord().getConsensusTimestamp()))
+                .record(x -> x.setParentConsensusTimestamp(parentRecordItem.getRecord().getConsensusTimestamp()))
                 .recordItem(r -> r.parent(parentRecordItem))
                 .build();
-        var contractId = EntityId.of(recordItem.getTransactionRecord().getReceipt().getContractID());
+        var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder.transaction()
                 .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
@@ -476,10 +476,10 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         // child item
         var recordItem = recordItemBuilder.contractCreate()
                 .transactionBody(b -> b.clearAutoRenewAccountId().clearInitcode().clearFileID())
-                .record(x -> x.setParentConsensusTimestamp(parentRecordItem.getTransactionRecord().getConsensusTimestamp()))
+                .record(x -> x.setParentConsensusTimestamp(parentRecordItem.getRecord().getConsensusTimestamp()))
                 .recordItem(r -> r.ethereumTransaction(ethereumTransaction).parent(parentRecordItem))
                 .build();
-        var contractId = EntityId.of(recordItem.getTransactionRecord().getReceipt().getContractID());
+        var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder.transaction()
                 .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
@@ -505,10 +505,10 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         // child item
         var recordItem = recordItemBuilder.contractCreate()
                 .transactionBody(b -> b.clearAutoRenewAccountId().clearFileID().clearInitcode())
-                .record(x -> x.setParentConsensusTimestamp(parentRecordItem.getTransactionRecord().getConsensusTimestamp()))
+                .record(x -> x.setParentConsensusTimestamp(parentRecordItem.getRecord().getConsensusTimestamp()))
                 .recordItem(r -> r.ethereumTransaction(ethereumTransaction).parent(parentRecordItem))
                 .build();
-        var contractId = EntityId.of(recordItem.getTransactionRecord().getReceipt().getContractID());
+        var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder.transaction()
                 .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
@@ -535,10 +535,10 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         // child item
         var recordItem = recordItemBuilder.contractCreate()
                 .transactionBody(b -> b.clearAutoRenewAccountId().clearInitcode().clearFileID())
-                .record(x -> x.setParentConsensusTimestamp(parentRecordItem.getTransactionRecord().getConsensusTimestamp()))
+                .record(x -> x.setParentConsensusTimestamp(parentRecordItem.getRecord().getConsensusTimestamp()))
                 .recordItem(r -> r.ethereumTransaction(ethereumTransaction).parent(parentRecordItem))
                 .build();
-        var contractId = EntityId.of(recordItem.getTransactionRecord().getReceipt().getContractID());
+        var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder.transaction()
                 .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
@@ -556,7 +556,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         var recordItem = recordItemBuilder.contractCreate()
                 .sidecarRecords(r -> r.get(2).setMigration(true))
                 .build();
-        var contractId = EntityId.of(recordItem.getTransactionRecord().getReceipt().getContractID());
+        var contractId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder.transaction()
                 .customize(t -> t.consensusTimestamp(timestamp).entityId(contractId))
@@ -601,7 +601,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
     }
 
     private Transaction transaction(RecordItem recordItem) {
-        var entityId = EntityId.of(recordItem.getTransactionRecord().getReceipt().getContractID());
+        var entityId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
         var consensusTimestamp = recordItem.getConsensusTimestamp();
         return domainBuilder.transaction()
                 .customize(t -> t.consensusTimestamp(consensusTimestamp).entityId(entityId))

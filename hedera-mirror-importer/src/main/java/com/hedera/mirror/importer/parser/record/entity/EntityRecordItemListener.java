@@ -60,7 +60,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -127,7 +126,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
     @Override
     public void onItem(RecordItem recordItem) throws ImporterException {
-        TransactionRecord txRecord = recordItem.getTransactionRecord();
+        TransactionRecord txRecord = recordItem.getRecord();
         TransactionBody body = recordItem.getTransactionBody();
         int transactionTypeValue = recordItem.getTransactionType();
         TransactionType transactionType = TransactionType.of(transactionTypeValue);
@@ -234,7 +233,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
     private Transaction buildTransaction(long consensusTimestamp, RecordItem recordItem) {
         TransactionBody body = recordItem.getTransactionBody();
-        TransactionRecord txRecord = recordItem.getTransactionRecord();
+        TransactionRecord txRecord = recordItem.getRecord();
 
         Long validDurationSeconds = body.hasTransactionValidDuration() ?
                 body.getTransactionValidDuration().getSeconds() : null;
@@ -282,7 +281,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
         var body = recordItem.getTransactionBody();
         var partialDataAction = parserProperties.getPartialDataAction();
-        var transactionRecord = recordItem.getTransactionRecord();
+        var transactionRecord = recordItem.getRecord();
         for (var aa : nonFeeTransfersExtractor.extractNonFeeTransfers(body, transactionRecord)) {
             var entityId = EntityId.EMPTY;
             if (aa.getAmount() != 0) {
@@ -322,7 +321,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
         ConsensusSubmitMessageTransactionBody transactionBody = recordItem.getTransactionBody()
                 .getConsensusSubmitMessage();
-        TransactionRecord transactionRecord = recordItem.getTransactionRecord();
+        TransactionRecord transactionRecord = recordItem.getRecord();
         var receipt = transactionRecord.getReceipt();
         var topicId = transactionBody.getTopicID();
         int runningHashVersion = receipt.getTopicRunningHashVersion() == 0 ? 1 : (int) receipt
@@ -389,7 +388,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         var payerAccountId = recordItem.getPayerAccountId();
 
-        for (var aa : recordItem.getTransactionRecord().getPaidStakingRewardsList()) {
+        for (var aa : recordItem.getRecord().getPaidStakingRewardsList()) {
             var accountId = EntityId.of(aa.getAccountID());
             var stakingRewardTransfer = new StakingRewardTransfer();
             stakingRewardTransfer.setAccountId(accountId.getId());
@@ -408,7 +407,7 @@ public class EntityRecordItemListener implements RecordItemListener {
     private void insertTransferList(RecordItem recordItem) {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
 
-        var transferList = recordItem.getTransactionRecord().getTransferList();
+        var transferList = recordItem.getRecord().getTransferList();
         EntityId payerAccountId = recordItem.getPayerAccountId();
         var body = recordItem.getTransactionBody();
         boolean failedTransfer =
@@ -461,7 +460,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
             updateTokenSupply(
                     tokenId,
-                    recordItem.getTransactionRecord().getReceipt().getNewTotalSupply(),
+                    recordItem.getRecord().getReceipt().getNewTotalSupply(),
                     consensusTimestamp);
 
             tokenBurnTransactionBody.getSerialNumbersList().forEach(serialNumber ->
@@ -478,7 +477,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         // pull token details from TokenCreation body and TokenId from receipt
         TokenCreateTransactionBody tokenCreateTransactionBody = recordItem.getTransactionBody().getTokenCreation();
         long consensusTimestamp = recordItem.getConsensusTimestamp();
-        EntityId tokenId = EntityId.of(recordItem.getTransactionRecord().getReceipt().getTokenID());
+        EntityId tokenId = EntityId.of(recordItem.getRecord().getReceipt().getTokenID());
         EntityId treasury = EntityId.of(tokenCreateTransactionBody.getTreasury());
         Token token = new Token();
         token.setCreatedTimestamp(consensusTimestamp);
@@ -525,10 +524,10 @@ public class EntityRecordItemListener implements RecordItemListener {
         Set<EntityId> autoAssociatedAccounts = insertCustomFees(tokenCreateTransactionBody.getCustomFeesList(),
                 consensusTimestamp, true, tokenId);
         autoAssociatedAccounts.add(treasury);
-        if (recordItem.getTransactionRecord().getAutomaticTokenAssociationsCount() > 0) {
+        if (recordItem.getRecord().getAutomaticTokenAssociationsCount() > 0) {
             // automatic_token_associations does not exist prior to services 0.18.0
             autoAssociatedAccounts.clear();
-            recordItem.getTransactionRecord().getAutomaticTokenAssociationsList().stream()
+            recordItem.getRecord().getAutomaticTokenAssociationsList().stream()
                     .map(TokenAssociation::getAccountId)
                     .map(EntityId::of)
                     .forEach(autoAssociatedAccounts::add);
@@ -624,10 +623,10 @@ public class EntityRecordItemListener implements RecordItemListener {
 
             updateTokenSupply(
                     tokenId,
-                    recordItem.getTransactionRecord().getReceipt().getNewTotalSupply(),
+                    recordItem.getRecord().getReceipt().getNewTotalSupply(),
                     consensusTimestamp);
 
-            List<Long> serialNumbers = recordItem.getTransactionRecord().getReceipt().getSerialNumbersList();
+            List<Long> serialNumbers = recordItem.getRecord().getReceipt().getSerialNumbersList();
             for (int i = 0; i < serialNumbers.size(); i++) {
                 Nft nft = new Nft(serialNumbers.get(i), tokenId);
                 nft.setCreatedTimestamp(consensusTimestamp);
@@ -769,7 +768,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         TransactionBody body = recordItem.getTransactionBody();
         boolean isTokenDissociate = body.hasTokenDissociate();
 
-        recordItem.getTransactionRecord().getTokenTransferListsList().forEach(tokenTransferList -> {
+        recordItem.getRecord().getTokenTransferListsList().forEach(tokenTransferList -> {
             TokenID tokenId = tokenTransferList.getToken();
             EntityId entityTokenId = EntityId.of(tokenId);
             EntityId payerAccountId = recordItem.getPayerAccountId();
@@ -821,7 +820,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             }
 
             long consensusTimestamp = recordItem.getConsensusTimestamp();
-            recordItem.getTransactionRecord().getAutomaticTokenAssociationsList().forEach(tokenAssociation -> {
+            recordItem.getRecord().getAutomaticTokenAssociationsList().forEach(tokenAssociation -> {
                 // the only other transaction which creates auto associations is crypto transfer. The accounts and
                 // tokens in the associations should have been added to EntityListener when inserting the corresponding
                 // token transfers, so no need to duplicate the logic here
@@ -913,7 +912,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
             updateTokenSupply(
                     tokenId,
-                    recordItem.getTransactionRecord().getReceipt().getNewTotalSupply(),
+                    recordItem.getRecord().getReceipt().getNewTotalSupply(),
                     consensusTimestamp);
 
             tokenWipeAccountTransactionBody.getSerialNumbersList().forEach(serialNumber ->
@@ -1039,7 +1038,7 @@ public class EntityRecordItemListener implements RecordItemListener {
     private void onScheduledTransaction(RecordItem recordItem) {
         if (entityProperties.getPersist().isSchedules()) {
             long consensusTimestamp = recordItem.getConsensusTimestamp();
-            TransactionRecord transactionRecord = recordItem.getTransactionRecord();
+            TransactionRecord transactionRecord = recordItem.getRecord();
 
             // update schedule execute time
             Schedule schedule = new Schedule();
@@ -1052,7 +1051,7 @@ public class EntityRecordItemListener implements RecordItemListener {
     private void insertAssessedCustomFees(RecordItem recordItem) {
         if (entityProperties.getPersist().isTokens()) {
             long consensusTimestamp = recordItem.getConsensusTimestamp();
-            for (var protoAssessedCustomFee : recordItem.getTransactionRecord().getAssessedCustomFeesList()) {
+            for (var protoAssessedCustomFee : recordItem.getRecord().getAssessedCustomFeesList()) {
                 EntityId collectorAccountId = EntityId.of(protoAssessedCustomFee.getFeeCollectorAccountId());
                 // the effective payers must also appear in the *transfer lists of this transaction and the
                 // corresponding EntityIds should have been added to EntityListener, so skip it here.
@@ -1187,11 +1186,11 @@ public class EntityRecordItemListener implements RecordItemListener {
         entities.add(entityId);
         entities.add(recordItem.getPayerAccountId());
 
-        recordItem.getTransactionRecord().getTransferList().getAccountAmountsList().forEach(accountAmount ->
+        recordItem.getRecord().getTransferList().getAccountAmountsList().forEach(accountAmount ->
                 entities.add(EntityId.of(accountAmount.getAccountID()))
         );
 
-        recordItem.getTransactionRecord().getTokenTransferListsList().forEach(transfer -> {
+        recordItem.getRecord().getTokenTransferListsList().forEach(transfer -> {
             entities.add(EntityId.of(transfer.getToken()));
 
             transfer.getTransfersList().forEach(accountAmount ->

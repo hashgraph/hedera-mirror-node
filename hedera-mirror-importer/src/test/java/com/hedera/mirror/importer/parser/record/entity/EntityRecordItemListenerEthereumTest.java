@@ -59,7 +59,7 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
     @ParameterizedTest
     void ethereumTransactionEip1559(boolean create) {
         RecordItem recordItem = recordItemBuilder.ethereumTransaction(create).build();
-        var record = recordItem.getTransactionRecord();
+        var record = recordItem.getRecord();
         var functionResult = create ? record.getContractCreateResult() : record.getContractCallResult();
         var senderId = EntityId.of(functionResult.getSenderId());
         Entity sender = domainBuilder.entity()
@@ -154,7 +154,7 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
                 .returns(fileId, EthereumTransaction::getCallDataId)
                 .returns(DomainUtils.toBytes(transactionBody.getEthereumData()), EthereumTransaction::getData)
                 .returns(transactionBody.getMaxGasAllowance(), EthereumTransaction::getMaxGasAllowance)
-                .returns(DomainUtils.toBytes(recordItem.getTransactionRecord().getEthereumHash()), EthereumTransaction::getHash);
+                .returns(DomainUtils.toBytes(recordItem.getRecord().getEthereumHash()), EthereumTransaction::getHash);
 
         if (sender != null) {
             assertThat(entityRepository.findById(sender.getId()))

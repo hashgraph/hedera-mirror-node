@@ -52,7 +52,7 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        return entityIdService.lookup(recordItem.getTransactionRecord().getReceipt().getContractID());
+        return entityIdService.lookup(recordItem.getRecord().getReceipt().getContractID());
     }
 
     @Override
@@ -77,7 +77,7 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
             return;
         }
 
-        var contractCreateResult = recordItem.getTransactionRecord().getContractCreateResult();
+        var contractCreateResult = recordItem.getRecord().getContractCreateResult();
         var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
 
         if (transactionBody.hasAutoRenewAccountId()) {
@@ -126,7 +126,7 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
                 break;
         }
 
-        var contractId = recordItem.getTransactionRecord().getReceipt().getContractID();
+        var contractId = recordItem.getRecord().getReceipt().getContractID();
         var sidecarRecords = recordItem.getSidecarRecords();
 
         for (var sidecar : sidecarRecords) {

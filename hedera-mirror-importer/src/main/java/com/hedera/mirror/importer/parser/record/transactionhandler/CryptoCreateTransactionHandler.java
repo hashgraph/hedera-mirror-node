@@ -47,7 +47,7 @@ class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandle
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionRecord().getReceipt().getAccountID());
+        return EntityId.of(recordItem.getRecord().getReceipt().getAccountID());
     }
 
     @Override
@@ -58,7 +58,7 @@ class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandle
     @Override
     @SuppressWarnings("java:S1874")
     protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
-        var transactionRecord = recordItem.getTransactionRecord();
+        var transactionRecord = recordItem.getRecord();
         var transactionBody = recordItem.getTransactionBody().getCryptoCreateAccount();
         var alias = DomainUtils.toBytes(
                 transactionRecord.getAlias() != ByteString.EMPTY

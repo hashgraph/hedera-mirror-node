@@ -164,7 +164,7 @@ class TransactionPublisherTest {
                 .as(StepVerifier::create)
                 .expectNextMatches(r -> {
                     assertThat(r).extracting(PublishResponse::getReceipt).isNotNull();
-                    assertThat(r).extracting(PublishResponse::getTransactionRecord).isNull();
+                    assertThat(r).extracting(PublishResponse::getRecord).isNull();
                     return true;
                 })
                 .expectComplete()
@@ -177,11 +177,11 @@ class TransactionPublisherTest {
         cryptoServiceStub.addQueries(Mono.just(record(SUCCESS)));
         cryptoServiceStub.addTransactions(Mono.just(response(OK)));
 
-        transactionPublisher.publish(request().sendRecord(true).build())
+        transactionPublisher.publish(request().record(true).build())
                 .as(StepVerifier::create)
                 .expectNextMatches(r -> {
                     assertThat(r).extracting(PublishResponse::getReceipt).isNotNull();
-                    assertThat(r).extracting(PublishResponse::getTransactionRecord).isNotNull();
+                    assertThat(r).extracting(PublishResponse::getRecord).isNotNull();
                     return true;
                 })
                 .expectComplete()

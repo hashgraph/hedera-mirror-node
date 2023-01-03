@@ -110,7 +110,7 @@ class ContractDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTrans
     void testGetEntityIdReceipt() {
         var recordItem = recordItemBuilder.contractDelete().build();
         ContractID contractIdBody = recordItem.getTransactionBody().getContractDeleteInstance().getContractID();
-        ContractID contractIdReceipt = recordItem.getTransactionRecord().getReceipt().getContractID();
+        ContractID contractIdReceipt = recordItem.getRecord().getReceipt().getContractID();
         EntityId expectedEntityId = EntityId.of(contractIdReceipt);
 
         when(entityIdService.lookup(contractIdReceipt, contractIdBody)).thenReturn(expectedEntityId);

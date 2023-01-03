@@ -57,7 +57,7 @@ class NodeStakeUpdateTransactionHandler implements TransactionHandler {
     public void updateTransaction(Transaction transaction, RecordItem recordItem) {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         if (!recordItem.isSuccessful()) {
-            var record = recordItem.getTransactionRecord();
+            var record = recordItem.getRecord();
             var status = record.getReceipt().getStatus();
             log.warn("NodeStakeUpdateTransaction at {} failed with status {}", consensusTimestamp, status);
             return;

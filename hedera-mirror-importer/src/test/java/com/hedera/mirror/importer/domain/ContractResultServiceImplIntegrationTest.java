@@ -122,7 +122,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     @Test
     void processContractCreate() {
         RecordItem recordItem = recordItemBuilder.contractCreate().build();
-        ContractFunctionResult contractFunctionResult = recordItem.getTransactionRecord().getContractCreateResult();
+        ContractFunctionResult contractFunctionResult = recordItem.getRecord().getContractCreateResult();
         var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
         var entityId = EntityId.of(contractFunctionResult.getCreatedContractIDs(0)).getId();
 
@@ -583,7 +583,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     }
 
     protected void process(RecordItem recordItem) {
-        var entityId = EntityId.of(recordItem.getTransactionRecord().getReceipt().getContractID());
+        var entityId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
         transaction = domainBuilder.transaction()
                 .customize(t -> t.entityId(entityId).type(recordItem.getTransactionType()))
                 .get();
@@ -624,7 +624,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     }
 
     private ContractFunctionResult getFunctionResult(RecordItem recordItem) {
-        var record = recordItem.getTransactionRecord();
+        var record = recordItem.getRecord();
         return record.hasContractCreateResult() ? record.getContractCreateResult() : record.getContractCallResult();
     }
 

@@ -64,7 +64,7 @@ public class PubSubRecordItemListener implements RecordItemListener {
     @Override
     public void onItem(RecordItem recordItem) throws ImporterException {
         TransactionBody body = recordItem.getTransactionBody();
-        TransactionRecord txRecord = recordItem.getTransactionRecord();
+        TransactionRecord txRecord = recordItem.getRecord();
         TransactionType transactionType = TransactionType.of(recordItem.getTransactionType());
         TransactionHandler transactionHandler = transactionHandlerFactory.get(transactionType);
         log.trace("Storing transaction body: {}", () -> Utility.printProtoMessage(body));
@@ -128,10 +128,10 @@ public class PubSubRecordItemListener implements RecordItemListener {
     }
 
     private PubSubMessage buildPubSubMessage(long consensusTimestamp, EntityId entity, RecordItem recordItem) {
-        var nonFeeTransfers = addNonFeeTransfers(recordItem.getTransactionBody(), recordItem.getTransactionRecord());
+        var nonFeeTransfers = addNonFeeTransfers(recordItem.getTransactionBody(), recordItem.getRecord());
         return new PubSubMessage(consensusTimestamp, entity, recordItem.getTransactionType(),
                 new PubSubMessage.Transaction(recordItem.getTransactionBody(), recordItem.getSignatureMap()),
-                recordItem.getTransactionRecord(), nonFeeTransfers);
+                recordItem.getRecord(), nonFeeTransfers);
     }
 
     /**

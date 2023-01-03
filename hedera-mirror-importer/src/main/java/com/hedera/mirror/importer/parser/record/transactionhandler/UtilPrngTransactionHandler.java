@@ -57,7 +57,7 @@ class UtilPrngTransactionHandler implements TransactionHandler {
             return;
         }
 
-        var transactionRecord = recordItem.getTransactionRecord();
+        var transactionRecord = recordItem.getRecord();
         var prng = new Prng();
         prng.setConsensusTimestamp(consensusTimestamp);
         prng.setPayerAccountId(recordItem.getPayerAccountId().getId());

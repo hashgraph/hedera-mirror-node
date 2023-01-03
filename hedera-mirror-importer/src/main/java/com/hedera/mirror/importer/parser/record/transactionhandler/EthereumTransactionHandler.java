@@ -53,7 +53,7 @@ class EthereumTransactionHandler implements TransactionHandler {
     @SuppressWarnings("deprecation")
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        var transactionRecord = recordItem.getTransactionRecord();
+        var transactionRecord = recordItem.getRecord();
 
         // pull entity from ContractResult
         var contractFunctionResult = transactionRecord.hasContractCreateResult() ?
@@ -86,7 +86,7 @@ class EthereumTransactionHandler implements TransactionHandler {
         convertGasWeiToTinyBars(ethereumTransaction);
 
         // update ethereumTransaction with record values
-        var transactionRecord = recordItem.getTransactionRecord();
+        var transactionRecord = recordItem.getRecord();
         ethereumTransaction.setConsensusTimestamp(recordItem.getConsensusTimestamp());
         ethereumTransaction.setData(ethereumDataBytes);
         ethereumTransaction.setHash(DomainUtils.toBytes(transactionRecord.getEthereumHash()));
@@ -99,7 +99,7 @@ class EthereumTransactionHandler implements TransactionHandler {
     }
 
     private void updateAccountNonce(RecordItem recordItem, EthereumTransaction ethereumTransaction) {
-        var transactionRecord = recordItem.getTransactionRecord();
+        var transactionRecord = recordItem.getRecord();
 
         // It should not update the nonce if it's unsuccessful and failed before EVM execution
         if (!recordItem.isSuccessful() && !transactionRecord.hasContractCallResult() && !transactionRecord.hasContractCreateResult()) {

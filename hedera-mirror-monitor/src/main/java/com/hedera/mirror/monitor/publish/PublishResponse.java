@@ -35,7 +35,7 @@ public class PublishResponse {
 
     @ToString.Exclude
     private final PublishRequest request;
-    private final TransactionRecord transactionRecord;
+    private final TransactionRecord record;
     private final TransactionReceipt receipt;
     private final Instant timestamp;
     private final TransactionId transactionId;

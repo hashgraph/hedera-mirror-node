@@ -63,7 +63,7 @@ public class RecordItem implements StreamItem {
     private final Version hapiVersion = RecordFile.HAPI_VERSION_NOT_SET;
     private final RecordItem parent;
     private final RecordItem previous;
-    private final TransactionRecord transactionRecord;
+    private final TransactionRecord record;
     private final byte[] recordBytes;
     private final Transaction transaction;
     private final byte[] transactionBytes;
@@ -71,7 +71,7 @@ public class RecordItem implements StreamItem {
 
     // Lazily calculated fields
     @Getter(lazy = true)
-    private final long consensusTimestamp = DomainUtils.timestampInNanosMax(transactionRecord.getConsensusTimestamp());
+    private final long consensusTimestamp = DomainUtils.timestampInNanosMax(record.getConsensusTimestamp());
 
     @Getter(lazy = true)
     private final TransactionBodyAndSignatureMap transactionBodyAndSignatureMap = parseTransaction(transaction);
@@ -136,7 +136,7 @@ public class RecordItem implements StreamItem {
     }
 
     public boolean isChild() {
-        return transactionRecord.hasParentConsensusTimestamp();
+        return record.hasParentConsensusTimestamp();
     }
 
     private boolean checkSuccess() {
@@ -146,7 +146,7 @@ public class RecordItem implements StreamItem {
             return false;
         }
 
-        var status = transactionRecord.getReceipt().getStatus();
+        var status = record.getReceipt().getStatus();
         return status == ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED ||
                 status == ResponseCodeEnum.SUCCESS ||
                 status == ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
@@ -184,11 +184,11 @@ public class RecordItem implements StreamItem {
 
         public RecordItem build() {
             // set parent, parent-child items are assured to exist in sequential order of [Parent, Child1,..., ChildN]
-            if (transactionRecord.hasParentConsensusTimestamp() && previous != null) {
-                var parentTimestamp = transactionRecord.getParentConsensusTimestamp();
-                if (parentTimestamp.equals(previous.transactionRecord.getConsensusTimestamp())) { // check immediately preceding
+            if (record.hasParentConsensusTimestamp() && previous != null) {
+                var parentTimestamp = record.getParentConsensusTimestamp();
+                if (parentTimestamp.equals(previous.record.getConsensusTimestamp())) { // check immediately preceding
                     parent = previous;
-                } else if (previous.parent != null && parentTimestamp.equals(previous.parent.transactionRecord.getConsensusTimestamp())) {
+                } else if (previous.parent != null && parentTimestamp.equals(previous.parent.record.getConsensusTimestamp())) {
                     // check older siblings parent, if child count is > 1 this prevents having to search to parent
                     parent = previous.parent;
                 }
@@ -198,7 +198,7 @@ public class RecordItem implements StreamItem {
         }
 
         public B record(TransactionRecord transactionRecord) {
-            this.transactionRecord = transactionRecord;
+            this.record = transactionRecord;
             this.recordBytes = transactionRecord.toByteArray();
             return (B) this;
         }
@@ -206,7 +206,7 @@ public class RecordItem implements StreamItem {
         public B recordBytes(byte[] recordBytes) {
             try {
                 this.recordBytes = recordBytes;
-                this.transactionRecord = TransactionRecord.parseFrom(recordBytes);
+                this.record = TransactionRecord.parseFrom(recordBytes);
             } catch (InvalidProtocolBufferException e) {
                 throw new ProtobufException(BAD_RECORD_BYTES_MESSAGE, e);
             }

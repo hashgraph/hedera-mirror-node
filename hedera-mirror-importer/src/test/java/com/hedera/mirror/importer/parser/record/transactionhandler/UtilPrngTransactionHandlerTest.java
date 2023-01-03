@@ -59,7 +59,7 @@ class UtilPrngTransactionHandlerTest extends AbstractTransactionHandlerTest {
         // given
         int range = 8;
         var recordItem = recordItemBuilder.prng(range).build();
-        int randomNumber = recordItem.getTransactionRecord().getPrngNumber();
+        int randomNumber = recordItem.getRecord().getPrngNumber();
         var expected = Prng.builder()
                 .consensusTimestamp(recordItem.getConsensusTimestamp())
                 .payerAccountId(recordItem.getPayerAccountId().getId())
@@ -80,7 +80,7 @@ class UtilPrngTransactionHandlerTest extends AbstractTransactionHandlerTest {
         // given
         int range = 0;
         var recordItem = recordItemBuilder.prng(range).build();
-        byte[] randomBytes = recordItem.getTransactionRecord().getPrngBytes().toByteArray();
+        byte[] randomBytes = recordItem.getRecord().getPrngBytes().toByteArray();
         var expected = Prng.builder()
                 .consensusTimestamp(recordItem.getConsensusTimestamp())
                 .payerAccountId(recordItem.getPayerAccountId().getId())

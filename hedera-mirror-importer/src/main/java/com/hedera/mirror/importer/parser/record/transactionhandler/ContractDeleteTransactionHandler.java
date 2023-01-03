@@ -51,7 +51,7 @@ class ContractDeleteTransactionHandler extends AbstractEntityCrudTransactionHand
     @Override
     public EntityId getEntity(RecordItem recordItem) {
         ContractID contractIdBody = recordItem.getTransactionBody().getContractDeleteInstance().getContractID();
-        ContractID contractIdReceipt = recordItem.getTransactionRecord().getReceipt().getContractID();
+        ContractID contractIdReceipt = recordItem.getRecord().getReceipt().getContractID();
         return entityIdService.lookup(contractIdReceipt, contractIdBody);
     }
 

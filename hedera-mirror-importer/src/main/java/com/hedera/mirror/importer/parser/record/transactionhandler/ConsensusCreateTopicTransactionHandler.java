@@ -42,7 +42,7 @@ class ConsensusCreateTopicTransactionHandler extends AbstractEntityCrudTransacti
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionRecord().getReceipt().getTopicID());
+        return EntityId.of(recordItem.getRecord().getReceipt().getTopicID());
     }
 
     @Override

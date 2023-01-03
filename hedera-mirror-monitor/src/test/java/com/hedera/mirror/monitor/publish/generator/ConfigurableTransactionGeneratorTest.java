@@ -178,7 +178,7 @@ class ConfigurableTransactionGeneratorTest {
         properties.setRecordPercent(0);
         for (int i = 0; i < SAMPLE_SIZE; ++i) {
             assertThat(generator.get().next())
-                    .extracting(PublishRequest::isSendRecord)
+                    .extracting(PublishRequest::isRecord)
                     .allMatch(v -> !v);
         }
     }
@@ -188,7 +188,7 @@ class ConfigurableTransactionGeneratorTest {
         properties.setRecordPercent(1);
         for (int i = 0; i < SAMPLE_SIZE; ++i) {
             assertThat(generator.get().next())
-                    .extracting(PublishRequest::isSendRecord)
+                    .extracting(PublishRequest::isRecord)
                     .allMatch(v -> v);
         }
     }
@@ -199,7 +199,7 @@ class ConfigurableTransactionGeneratorTest {
         Multiset<Boolean> records = HashMultiset.create();
 
         for (int i = 0; i < SAMPLE_SIZE; ++i) {
-            generator.get().next().forEach(publishRequest -> records.add(publishRequest.isSendRecord()));
+            generator.get().next().forEach(publishRequest -> records.add(publishRequest.isRecord()));
         }
 
         assertThat((double) records.count(true) / SAMPLE_SIZE)
@@ -222,7 +222,7 @@ class ConfigurableTransactionGeneratorTest {
                         .isNotNull()
                         .hasNoNullFieldsOrProperties()
                         .hasFieldOrPropertyWithValue("receipt", true)
-                        .hasFieldOrPropertyWithValue("sendRecord", true)
+                        .hasFieldOrPropertyWithValue("record", true)
                         .hasFieldOrPropertyWithValue("transaction.topicId", TopicId.fromString(TOPIC_ID))
                         .satisfies(r -> assertThat(r.getTransaction().getTransactionMemo())
                                 .containsPattern(Pattern.compile("\\d+ Monitor test on \\w+"))

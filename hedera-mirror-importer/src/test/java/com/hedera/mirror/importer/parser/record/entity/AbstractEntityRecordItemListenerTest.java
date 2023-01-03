@@ -242,7 +242,7 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
     }
 
     protected void assertRecordItem(RecordItem recordItem) {
-        assertTransactionAndRecord(recordItem.getTransactionBody(), recordItem.getTransactionRecord());
+        assertTransactionAndRecord(recordItem.getTransactionBody(), recordItem.getRecord());
     }
 
     protected void assertTransactionAndRecord(TransactionBody transactionBody, TransactionRecord record) {

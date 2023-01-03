@@ -351,7 +351,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         // then
         assertAll(
                 () -> assertEquals(0, entityRepository.count()),
-                () -> assertTransactionAndRecord(recordItem.getTransactionBody(), recordItem.getTransactionRecord()),
+                () -> assertTransactionAndRecord(recordItem.getTransactionBody(), recordItem.getRecord()),
                 () -> assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(nft1, nft2, nft3, nft4)
         );
     }
@@ -1212,7 +1212,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertEquals(3, nftAllowanceRepository.count()),
                 () -> assertEquals(1, tokenAllowanceRepository.count()),
                 () -> assertEquals(1, transactionRepository.count()),
-                () -> assertTransactionAndRecord(recordItem.getTransactionBody(), recordItem.getTransactionRecord()),
+                () -> assertTransactionAndRecord(recordItem.getTransactionBody(), recordItem.getRecord()),
                 () -> assertThat(cryptoAllowanceRepository.findAll())
                         .allSatisfy(a -> assertThat(a.getAmount()).isPositive())
                         .allSatisfy(a -> assertThat(a.getOwner()).isPositive())

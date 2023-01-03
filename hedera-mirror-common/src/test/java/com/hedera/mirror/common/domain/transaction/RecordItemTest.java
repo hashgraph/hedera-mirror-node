@@ -489,7 +489,7 @@ class RecordItemTest {
     private void assertRecordItem(Transaction transaction, RecordItem recordItem) {
         assertThat(recordItem.getHapiVersion()).isEqualTo(DEFAULT_HAPI_VERSION);
         assertThat(recordItem.getTransaction()).isEqualTo(transaction);
-        assertThat(recordItem.getTransactionRecord()).isEqualTo(TRANSACTION_RECORD);
+        assertThat(recordItem.getRecord()).isEqualTo(TRANSACTION_RECORD);
         assertThat(recordItem.getTransactionBody()).isEqualTo(TRANSACTION_BODY);
         assertThat(recordItem.getTransactionBytes()).isEqualTo(transaction.toByteArray());
         assertThat(recordItem.getRecordBytes()).isEqualTo(TRANSACTION_RECORD.toByteArray());

@@ -77,7 +77,7 @@ public class ContractResultServiceImpl implements ContractResultService {
         }
 
         var transactionBody = recordItem.getTransactionBody();
-        var transactionRecord = recordItem.getTransactionRecord();
+        var transactionRecord = recordItem.getRecord();
         var functionResult = transactionRecord.hasContractCreateResult() ?
                 transactionRecord.getContractCreateResult() : transactionRecord.getContractCallResult();
 
