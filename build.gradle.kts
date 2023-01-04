@@ -21,7 +21,7 @@
 description = "Hedera Mirror Node imports data from consensus nodes and serves it via an API"
 
 plugins {
-    `idea`
+    id("idea")
     id("java-platform")
     id("org.sonarqube")
 }
@@ -109,8 +109,10 @@ allprojects {
 }
 
 idea {
-    module.isDownloadJavadoc = true
-    module.isDownloadSources = true
+    module {
+        isDownloadJavadoc = true
+        isDownloadSources = true
+    }
 }
 
 fun replaceVersion(files: String, match: String) {
