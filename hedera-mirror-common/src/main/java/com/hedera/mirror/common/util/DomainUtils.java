@@ -4,7 +4,7 @@ package com.hedera.mirror.common.util;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,9 +25,6 @@ import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import com.google.protobuf.ByteOutput;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnsafeByteOperations;
-
-import com.hedera.mirror.common.exception.ProtobufException;
-
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.KeyList;
@@ -45,6 +42,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.exception.InvalidEntityException;
+import com.hedera.mirror.common.exception.ProtobufException;
 import com.hedera.services.stream.proto.HashObject;
 
 @CustomLog
