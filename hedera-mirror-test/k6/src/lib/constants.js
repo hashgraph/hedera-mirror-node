@@ -19,6 +19,7 @@
  */
 
 export const accountListName = "accounts";
+export const allowanceListName = "allowances";
 export const balanceListName = "balances";
 export const blockListName = "blocks";
 export const contractListName = "contracts";

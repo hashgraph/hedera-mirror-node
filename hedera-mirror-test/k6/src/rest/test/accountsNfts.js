@@ -31,7 +31,7 @@ const {options, run} = new TestScenarioBuilder()
   .name('accountNftsResults') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request((testParameters) => {
-    const url = `${testParameters['BASE_URL']}${urlPrefix}/accounts/${testParameters['DEFAULT_ACCOUNT_ID']}/nfts`;
+    const url = `${testParameters['BASE_URL']}${urlPrefix}/accounts/${testParameters['DEFAULT_ACCOUNT_ID_NFTS']}/nfts`;
     return http.get(url);
   })
   .check('Account nfts results OK', (r) => isSuccess(r, resultListName))

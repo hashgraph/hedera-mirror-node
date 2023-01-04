@@ -31,7 +31,7 @@ const {options, run} = new TestScenarioBuilder()
   .name('accountTokenAllowancesResults') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request((testParameters) => {
-    const url = `${testParameters['BASE_URL']}${urlPrefix}/accounts/${testParameters['DEFAULT_ACCOUNT_ID']}/allowances/tokens`;
+    const url = `${testParameters['BASE_URL']}${urlPrefix}/accounts/${testParameters['DEFAULT_ACCOUNT_ID_TOKEN_ALLOWANCE']}/allowances/tokens`;
     return http.get(url);
   })
   .check('Account token allowances results OK', (r) => isSuccess(r, resultListName))
