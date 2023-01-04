@@ -31,8 +31,23 @@ spec:
     citus:
       enabled: true
       primary:
+        configuration: |-
+          checkpoint_timeout = 1800
+          citus.node_conninfo = 'sslmode=prefer'
+          cron.database_name = 'mirror_node'
+          listen_addresses = '*'
+          log_checkpoints = true
+          log_timezone = 'Etc/UTC'
+          max_connections = 300
+          max_replication_slots = 5
+          max_wal_senders = 5
+          max_wal_size = 24GB
+          random_page_cost = 1.1
+          shared_preload_libraries = 'citus,pg_cron,pg_partman_bgw'
+          wal_level = logical
+          work_mem = 16MB
         persistence:
-          size: 256Gi
+          size: 128Gi
         resources:
           limits:
             cpu: 4
@@ -46,6 +61,20 @@ spec:
             value: "true"
             effect: NoSchedule
       readReplicas:
+        configuration: |-
+          checkpoint_timeout = 1800
+          citus.node_conninfo = 'sslmode=prefer'
+          listen_addresses = '*'
+          log_checkpoints = true
+          log_timezone = 'Etc/UTC'
+          max_connections = 200
+          max_replication_slots = 5
+          max_wal_senders = 5
+          max_wal_size = 24GB
+          random_page_cost = 1.1
+          shared_preload_libraries = 'citus'
+          wal_level = logical
+          work_mem = 32MB
         persistence:
           size: 512Gi
         resources:
