@@ -1,0 +1,232 @@
+"""
+A hex-encoded string that represents an account alias
+"""
+scalar Alias @Pattern(regexp: "^(?:[A-Z2-7]{8})*(?:[A-Z2-7]{2}|[A-Z2-7]{4,5}|[A-Z2-7]{7,8})$")
+
+"""
+A hex-encoded string that represents a 20-byte EVM address
+"""
+scalar EvmAddress @Pattern(regexp: "^(0x)?[a-fA-F0-9]{40}$")
+
+"""
+A 64-bit numeric type.
+"""
+scalar Long
+
+"""
+A map-like object with dynamic key/value pairs.
+"""
+scalar Object
+
+"""
+Validation directive that ensures the argument or input is a certain minimum value.
+"""
+directive @Min(value : Int! = 0, message : String = "graphql.validation.Min.message")
+on ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION
+
+"""
+Validation directive that ensures the argument or input value matches the given regular expression.
+"""
+directive @Pattern(regexp : String! =".*", message : String = "graphql.validation.Pattern.message")
+on ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION | SCALAR
+
+"""
+The type of Hedera entity.
+"""
+enum EntityType {
+    ACCOUNT
+    CONTRACT
+    FILE
+    SCHEDULE
+    TOKEN
+    TOPIC
+}
+
+"""
+"""
+enum TransactionType {
+    CONSENSUSCREATETOPIC
+    CONSENSUSDELETETOPIC
+    CONSENSUSSUBMITMESSAGE
+    CONSENSUSUPDATETOPIC
+    CONTRACTCALL
+    CONTRACTCREATEINSTANCE
+    CONTRACTDELETEINSTANCE
+    CONTRACTUPDATEINSTANCE
+    CRYPTOADDLIVEHASH
+    CRYPTOAPPROVEALLOWANCE
+    CRYPTOCREATEACCOUNT
+    CRYPTODELETE
+    CRYPTODELETEALLOWANCE
+    CRYPTODELETELIVEHASH
+    CRYPTOTRANSFER
+    CRYPTOUPDATEACCOUNT
+    ETHEREUMTRANSACTION
+    FILEAPPEND
+    FILECREATE
+    FILEDELETE
+    FILEUPDATE
+    FREEZE
+    NODESTAKEUPDATE
+    PRNG
+    SCHEDULECREATE
+    SCHEDULEDELETE
+    SCHEDULESIGN
+    SYSTEMDELETE
+    SYSTEMUNDELETE
+    TOKENASSOCIATE
+    TOKENBURN
+    TOKENCREATION
+    TOKENDELETION
+    TOKENDISSOCIATE
+    TOKENFEESCHEDULEUPDATE
+    TOKENFREEZE
+    TOKENGRANTKYC
+    TOKENMINT
+    TOKENPAUSE
+    TOKENREVOKEKYC
+    TOKENUNFREEZE
+    TOKENUNPAUSE
+    TOKENUPDATE
+    TOKENWIPE
+    UNCHECKEDSUBMIT
+    UNKNOWN
+}
+
+"""
+The base type for an entity on the Hedera network. Each entity is assigned an incrementing
+identifier that is shared across all entity types and associated with a particular shard and realm.
+"""
+interface Entity implements Node {
+    autoRenewAccount: Account
+    autoRenewPeriod: Duration
+    createdTimestamp: Timestamp
+    deleted: Boolean
+    entityId: EntityId!
+    expirationTimestamp: Timestamp
+    id: ID!
+    key: Object
+    memo: String!
+    proxyAccount: Account
+    timestamp: TimestampRange!
+    type: EntityType!
+}
+
+"""
+A specialization of an Entity appropriate for entities that manage a Hbar balance.
+"""
+interface Accountable implements Entity & Node {
+    autoRenewAccount: Account
+    autoRenewPeriod: Duration
+    balance: Long
+    createdTimestamp: Timestamp
+    deleted: Boolean
+    entityId: EntityId!
+    expirationTimestamp: Timestamp
+    id: ID!
+    key: Object
+    memo: String!
+    obtainer: Accountable
+    proxyAccount: Account
+    timestamp: TimestampRange!
+    type: EntityType!
+}
+
+enum CurrencyFormat {
+    GIGABAR
+    MEGABAR
+    KILOBAR
+    HBAR
+    MILIBAR
+    MICROBAR
+    TINYBAR
+}
+
+"""
+"""
+type Duration {
+    seconds: Long!
+    nanoseconds: Int!
+}
+
+"""
+An incrementing identifier that is shared across all entity types and associated with a particular shard and realm.
+"""
+type EntityId {
+    shard: Long!
+    realm: Long!
+    num: Long!
+}
+
+"""
+"""
+input EntityIdInput {
+    shard: Long! = 0 @Min(value: 0)
+    realm: Long! = 0 @Min(value: 0)
+    num: Long! @Min(value: 0)
+}
+
+"""
+A GraphQL object with a globally unique ID. A GraphQL concept and standard that's not to be confused with a consensus
+node or mirror node.
+"""
+interface Node {
+    id: ID!
+}
+
+"""
+Contain the pagination metadata for a particular connection.
+"""
+type PageInfo {
+    """
+    When paginating forwards, the cursor to continue. Empty string indicates no more results.
+    """
+    endCursor: String!
+
+    """
+    When paginating forwards, are there more items?
+    """
+    hasNextPage: Boolean!
+
+    """
+    When paginating backwards, are there more items?
+    """
+    hasPreviousPage: Boolean!
+
+    """
+    When paginating backwards, the cursor to continue. Empty string indicates no more results.
+    """
+    startCursor: String!
+}
+
+"""
+A release identifier that follows semantic versioning (https://semver.org/).
+"""
+type SemanticVersion {
+    major: Int!
+    minor: Int!
+    patch: Int!
+}
+
+"""
+A timestamp assigned by consensus nodes.
+"""
+type Timestamp {
+    seconds: Long!
+    nanoseconds: Int!
+}
+
+"""
+"""
+input TimestampInput {
+    seconds: Long! @Min(value: 0)
+    nanoseconds: Int! @Min(value: 0)
+}
+
+"""
+A consensus timestamp range with an inclusive from timestamp and an exclusive to timestamp.
+"""
+type TimestampRange {
+    from: Timestamp!
+    to: Timestamp
+}

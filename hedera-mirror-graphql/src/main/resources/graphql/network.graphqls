@@ -1,0 +1,234 @@
+"""
+Contains information associated with the Hedera network as a whole.
+"""
+type Network {
+    """
+    Get a node running on the network by its unique identifier.
+    """
+    node(filter: NetworkNodeInput): NetworkNode
+
+    """
+    List the nodes running on the network.
+    """
+    nodes(after: String, before: String, first: Int, last: Int): NetworkNodeConnection!
+
+    """
+    Get the network's current stake information.
+    """
+    stake: NetworkStake!
+
+    """
+    Get the network's released supply.
+    """
+    supply(timestamp: TimestampInput): NetworkSupply!
+}
+
+"""
+A Hedera node running on the network that contributes to consensus.
+"""
+type NetworkNode implements Node {
+    """
+    A description of the node.
+    """
+    description: String
+
+    """
+    A list of endpoints clients can use to connect to this node.
+    """
+    endpoints: [NetworkNodeEndpoint!]!
+
+    """
+    An opaque, globally unique identifier specific to GraphQL.
+    """
+    id: ID!
+
+    """
+    The maximum stake (rewarded or not rewarded) this node can have as consensus weight. Defaults to tinybars.
+    """
+    maxStake(format: CurrencyFormat = TINYBAR): Long
+
+    """
+    The minimum stake (rewarded or not rewarded) this node must reach before having non-zero consensus weight. Defaults
+    to tinybars.
+    """
+    minStake(format: CurrencyFormat = TINYBAR): Long
+
+    """
+    The account to be paid for queries and transactions sent to this node.
+    """
+    nodeAccount: Account!
+
+    """
+    A hex encoded hash of the node's TLS certificate. Its value can be used to verify the node's certificate it presents
+    during TLS negotiations.
+    """
+    nodeCertHash: String
+
+    """
+    The numeric ID assigned by the network.
+    """
+    nodeId: Long!
+
+    """
+    A hex encoded X509 RSA public key used to verify stream file signature.
+    """
+    publicKey: String
+
+    """
+    The total tinybars earned by this node per whole hbar in the last staking period.
+    """
+    rewardRateStart: Long
+
+    """
+    The node consensus weight at the beginning of the staking period. Defaults to tinybars.
+    """
+    stake(format: CurrencyFormat = TINYBAR): Long
+
+    """
+    The sum (balance + stakedToMe) for all accounts staked to this node with declineReward=true at the beginning of the
+    staking period. Defaults to tinybars.
+    """
+    stakeNotRewarded(format: CurrencyFormat = TINYBAR): Long
+
+    """
+    The sum (balance + staked) for all accounts staked to the node that are not declining rewards at the beginning of
+    the staking period. Defaults to tinybars.
+    """
+    stakeRewarded(format: CurrencyFormat = TINYBAR): Long
+
+    """
+    The time range the staking period spans.
+    """
+    stakingPeriod: TimestampRange
+}
+
+"""
+The connection type for NetworkNode.
+"""
+type NetworkNodeConnection {
+    """
+    A list of edges.
+    """
+    edges: [NetworkNodeEdge!]!
+
+    """
+    Information to aid in pagination.
+    """
+    pageInfo: PageInfo!
+}
+
+"""
+An edge in a connection.
+"""
+type NetworkNodeEdge {
+    """
+    The cursor associated with this edge.
+    """
+    cursor: String!
+
+    """
+    The item associated with the edge.
+    """
+    node: NetworkNode!
+}
+
+"""
+Endpoint information for use by clients to connect to HAPI.
+"""
+type NetworkNodeEndpoint {
+    """
+    The IPv4 address this node is using to serve its API.
+    """
+    ipAddressV4: String!
+
+    """
+    The port this node is using to serve its API.
+    """
+    port: Int!
+}
+
+"""
+The unique identifier to find a specific account. Only one of the given fields can be present at a
+time otherwise an error will occur.
+"""
+input NetworkNodeInput {
+    """
+    An opaque, globally unique identifier specific to GraphQL.
+    """
+    id: ID
+
+    """
+    The consensus node's numeric ID assigned to it by the network.
+    """
+    nodeId: Long
+}
+
+"""
+The network's current staking information.
+"""
+type NetworkStake {
+    """
+    The maximum reward rate, in tinybars per whole hbar, that any account can receive in a day.
+    """
+    maxStakingRewardRatePerHbar: Long!
+
+    """
+    The fraction between zero and one of the network and service fees paid to the node reward account 0.0.801.
+    """
+    nodeRewardFeeFraction: Float!
+
+    """
+    The total amount staked to the network the start of the current staking period. Defaults to tinybars.
+    """
+    stakeTotal(format: CurrencyFormat = TINYBAR): Long!
+
+    """
+    The time range the staking period spans.
+    """
+    stakingPeriod: TimestampRange!
+
+    """
+    The amount of time in a staking period.
+    """
+    stakingPeriodDuration: Duration!
+
+    """
+    The number of staking periods for which the reward is stored for each node.
+    """
+    stakingPeriodsStored: Long!
+
+    """
+    The fraction between zero and one of the network and service fees paid to the staking reward account 0.0.800.
+    """
+    stakingRewardFeeFraction: Float!
+
+    """
+    The total number to be distributed as staking rewards each period. Defaults to tinybars.
+    """
+    stakingRewardRate(format: CurrencyFormat = TINYBAR): Long!
+
+    """
+    The minimum balance of staking reward account 0.0.800 required to active rewards. Defaults to tinybars.
+    """
+    stakingStartThreshold(format: CurrencyFormat = TINYBAR): Long!
+}
+
+"""
+The network's released supply of hbars.
+"""
+type NetworkSupply {
+    """
+    The network's released supply of hbars. Defaults to tinybars.
+    """
+    releasedSupply(format: CurrencyFormat = TINYBAR): Long!
+
+    """
+    The consensus timestamp at which the released supply was valid.
+    """
+    timestamp: Timestamp!
+
+    """
+    The network's total supply of hbars. Defaults to tinybars.
+    """
+    totalSupply(format: CurrencyFormat = TINYBAR): Long!
+}

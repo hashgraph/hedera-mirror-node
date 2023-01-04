@@ -1,0 +1,114 @@
+# Done!
+"""
+A block is a grouping of ordered transactions that are linked by a cryptographic hash. See
+HIP-415 for more details.
+"""
+type Block implements Node {
+    """
+    The number of transactions in the block.
+    """
+    count: Long!
+
+    """
+    The amount of gas used by all EVM invoking transactions within the block.
+    """
+    gasUsed: Long
+
+    """
+    Version of HAPI that was used to serialize the transactions within the block.
+    """
+    hapiVersion: SemanticVersion
+
+    """
+    The end running hash of all the transactions in the block.
+    """
+    hash: String!
+
+    """
+    An opaque, globally unique identifier specific to GraphQL.
+    """
+    id: ID!
+
+    """
+    A hex encoded 256-byte array with 0x prefix that contains a bloom filter for all the contract
+    logs associated with this block.
+    """
+    logsBloom: String
+
+    """
+    The file name of the record file used to serialize the block.
+    """
+    name: String!
+
+    """
+    The block number associated with this period. Starts at zero and increments sequentially.
+    """
+    number: Long!
+
+    """
+    The start running hash before any of the transactions in the block. Equal to the previous
+    block's end running hash.
+    """
+    previousHash: String!
+
+    """
+    The size of the record file used to serialize the block before any decompression, if applicable.
+    """
+    size: Int
+
+    """
+    The timestamp range associated with the first and last transactions in the block.
+    """
+    timestamp: TimestampRange!
+
+    """
+    A list of transactions within the block.
+    """
+    transactions(after: String, before: String, first: Int, last: Int): TransactionConnection!
+
+    """
+    The version of the record file that was used to serialize the block.
+    """
+    version: Int!
+}
+
+"""
+The unique identifier to get a specific block. Only one of the given fields can be present at a
+time otherwise an error will occur.
+"""
+input BlockInput {
+    """
+    A 32-byte Ethereum hash or 48-byte Hedera hash.
+    """
+    hash: String @Pattern(regexp: "^(0x)?([A-Fa-f0-9]{64}|[A-Fa-f0-9]{96})$")
+
+    """
+    An opaque, globally unique identifier specific to GraphQL.
+    """
+    id: ID
+
+    """
+    The positive number associated with this block.
+    """
+    number: Long @Min(value: 0)
+
+    """
+    Used to identify a variable block without knowing its unique identifier.
+    """
+    type: BlockType
+}
+
+"""
+An identifier that represents a well-known or always changing block in the network.
+"""
+enum BlockType {
+    """
+    The earliest block in the network. Usually equivalent to block number zero.
+    """
+    EARLIEST
+
+    """
+    The most recent block seen by this node.
+    """
+    LATEST
+}

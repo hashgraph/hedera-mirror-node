@@ -1,0 +1,68 @@
+"""
+"""
+type Topic implements Entity & Node {
+    autoRenewAccount: Account
+    autoRenewPeriod: Duration
+    createdTimestamp: Timestamp
+    deleted: Boolean
+    entityId: EntityId!
+    expirationTimestamp: Timestamp
+    id: ID!
+    key: Object
+    memo: String!
+    messages(after: String, before: String, first: Int, last: Int): TopicMessageConnection!
+    proxyAccount: Account
+    submitKey: Object
+    timestamp: TimestampRange!
+    type: EntityType!
+}
+
+"""
+"""
+input TopicInput {
+    entityId: EntityIdInput
+    id: ID
+}
+
+"""
+"""
+type TopicMessage {
+    chunkNum: Int
+    chunkTotal: Int
+    message: String!
+    runningHash: String!
+    runningHashVersion: Int!
+    sequenceNumber: Long!
+    timestamp: Timestamp!
+    transaction: Transaction!
+}
+
+"""
+The connection type for TopicMessage.
+"""
+type TopicMessageConnection {
+    """
+    A list of edges.
+    """
+    edges: [TopicMessageEdge!]!
+
+    """
+    Information to aid in pagination.
+    """
+    pageInfo: PageInfo!
+}
+
+"""
+An edge in a connection.
+"""
+type TopicMessageEdge {
+    """
+    The cursor associated with this edge.
+    """
+    cursor: String!
+
+    """
+    The item associated with the edge.
+    """
+    node: TopicMessage!
+}

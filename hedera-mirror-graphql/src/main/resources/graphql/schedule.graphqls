@@ -1,0 +1,38 @@
+"""
+"""
+type Schedule implements Entity & Node {
+    autoRenewAccount: Account
+    autoRenewPeriod: Duration
+    createdTimestamp: Timestamp
+    creator: Accountable!
+    deleted: Boolean
+    entityId: EntityId!
+    executedTimestamp: Timestamp
+    expirationTimestamp: Timestamp
+    id: ID!
+    key: Object
+    memo: String!
+    payer: Accountable!
+    proxyAccount: Account
+    signatures: [TransactionSignature!]!
+    timestamp: TimestampRange!
+    transactionBody: String!
+    type: EntityType!
+    waitForExpiry: Boolean!
+}
+
+"""
+"""
+input ScheduleInput {
+    entityId: EntityIdInput
+    id: ID
+}
+
+"""
+"""
+type TransactionSignature {
+    publicKeyPrefix: String!
+    signature: String!
+    timestamp: Timestamp!
+    type: TransactionSignatureType!
+}

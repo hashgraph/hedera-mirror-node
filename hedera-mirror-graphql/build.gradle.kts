@@ -17,6 +17,7 @@
  * limitations under the License.
  * ‍
  */
+
 import com.graphql_java_generator.plugin.conf.CustomScalarDefinition
 import com.graphql_java_generator.plugin.conf.PluginMode
 
@@ -24,30 +25,31 @@ description = "Hedera Mirror Node GraphQL"
 
 plugins {
     id("spring-conventions")
-    id("com.graphql_java_generator.graphql-gradle-plugin") version "1.18.6"
+    id("com.graphql_java_generator.graphql-gradle-plugin") version "1.18.9"
 }
 
 dependencies {
+    annotationProcessor("org.mapstruct:mapstruct-processor:1.5.3.Final")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
-    compileOnly("com.graphql-java-generator:graphql-java-client-dependencies:1.18.6")
-    implementation(project(":common")) {
-        exclude("org.springframework.boot:spring-boot-starter-data-jpa")
-    }
+    compileOnly("com.graphql-java-generator:graphql-java-client-dependencies:1.18.9")
+    implementation(project(":common"))
     implementation(platform("org.springframework.cloud:spring-cloud-dependencies"))
     implementation("com.github.ben-manes.caffeine:caffeine")
-    implementation("com.graphql-java:graphql-java-extended-scalars:19.0")
+    implementation("com.graphql-java:graphql-java-extended-scalars:20.0")
+    implementation("com.graphql-java:graphql-java-extended-validation:20.0-validator-6.2.0.Final")
     implementation("io.github.mweirauch:micrometer-jvm-extras")
     implementation("javax.inject:javax.inject")
+    implementation("org.mapstruct:mapstruct:1.5.3.Final")
+    implementation("org.modelmapper:modelmapper:3.1.1")
     implementation("org.springframework.boot:spring-boot-actuator-autoconfigure")
-    implementation("org.springframework.boot:spring-boot-starter-data-r2dbc")
     implementation("org.springframework.boot:spring-boot-starter-graphql")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.springframework.cloud:spring-cloud-starter-bootstrap")
     implementation("org.springframework.cloud:spring-cloud-starter-kubernetes-fabric8-config")
     runtimeOnly("io.micrometer:micrometer-registry-prometheus")
-    runtimeOnly("org.postgresql:r2dbc-postgresql")
     runtimeOnly(group = "io.netty", name = "netty-resolver-dns-native-macos", classifier = "osx-aarch_64")
+    runtimeOnly("org.postgresql:postgresql")
     testImplementation(project(path = ":common", configuration = "testClasses"))
     testImplementation("com.playtika.testcontainers:embedded-postgresql")
     testImplementation("io.projectreactor:reactor-test")
@@ -62,7 +64,14 @@ generatePojoConf {
     packageName = "com.hedera.mirror.graphql.viewmodel"
     schemaFilePattern = "**/*.graphqls"
     isSeparateUtilityClasses = true
-    setCustomScalars(arrayOf(CustomScalarDefinition("Long", "java.lang.Long", "", "graphql.scalars.GraphQLLong", "")))
+    setCustomScalars(
+        arrayOf(
+            CustomScalarDefinition("Alias", "java.lang.String", "", "graphql.scalars.GraphQLString", ""),
+            CustomScalarDefinition("EvmAddress", "java.lang.String", "", "graphql.scalars.GraphQLString", ""),
+            CustomScalarDefinition("Long", "java.lang.Long", "", "graphql.scalars.GraphQLLong", ""),
+            CustomScalarDefinition("Object", "java.lang.Object", "", "graphql.scalars.Object", "")
+        )
+    )
 }
 
 tasks.withType<JavaCompile> {

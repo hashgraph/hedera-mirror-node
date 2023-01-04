@@ -1,0 +1,171 @@
+"""
+"""
+type Contract implements Accountable & Entity & Node {
+    autoRenewAccount: Account
+    autoRenewPeriod: Duration
+    createdTimestamp: Timestamp
+    deleted: Boolean
+    entityId: EntityId!
+    expirationTimestamp: Timestamp
+    id: ID!
+    key: Object
+    memo: String!
+    proxyAccount: Account
+    timestamp: TimestampRange!
+    type: EntityType!
+
+    balance: Long
+    evmAddress: EvmAddress
+    file: File
+    initcode: String
+    nonce: Long
+    obtainer: Accountable
+    results(after: String, before: String, first: Int, last: Int): ContractResultConnection!
+    runtimeBytecode: String
+    state(after: String, before: String, first: Int, last: Int): ContractStateConnection!
+}
+
+"""
+"""
+type ContractAction {
+    callDepth: Int!
+    callOperationType: Int!
+    callType: Int!
+    caller: EntityId!
+    callerType: EntityType!
+    consensusTimestamp: Timestamp!
+    gas: Long!
+    gasUsed: Long!
+    index: Int!
+    input: String
+    recipientAccount: EntityId
+    recipientAddress: String
+    recipientContract: EntityId
+    resultData: String
+    resultDataType: Int!
+    value: Long!
+}
+
+"""
+"""
+input ContractInput {
+    entityId: EntityIdInput
+    evmAddress: EvmAddress
+    id: ID
+}
+
+"""
+"""
+type ContractLog {
+    address: String!
+    bloom: String!
+    contractId: EntityId!
+    data: String!
+    index: Int!
+    rootContractId: EntityId
+    timestamp: Timestamp!
+    topics: [String!]!
+}
+
+"""
+"""
+type ContractResult {
+    address: String!
+    amount: Long
+    bloom: String
+    callResult: String
+    contractId: EntityId
+    createdContracts: [Contract!]!
+    errorMessage: String
+    failedInitcode: String
+    functionParameters: String!
+    functionResult: String
+    gasLimit: Long!
+    gasUsed: Long
+    logs: [ContractLog!]!
+    stateChanges: [ContractStateChange!]!
+    timestamp: Timestamp!
+    to: EntityId
+    transaction: Transaction!
+}
+
+"""
+The connection type for ContractResult.
+"""
+type ContractResultConnection {
+    """
+    A list of edges.
+    """
+    edges: [ContractResultEdge!]!
+
+    """
+    Information to aid in pagination.
+    """
+    pageInfo: PageInfo!
+}
+
+"""
+An edge in a connection.
+"""
+type ContractResultEdge {
+    """
+    The cursor associated with this edge.
+    """
+    cursor: String!
+
+    """
+    The item associated with the edge.
+    """
+    node: ContractResult!
+}
+
+
+"""
+"""
+type ContractState {
+    address: String!
+    contractId: EntityId!
+    slot: String!
+    timestamp: Timestamp!
+    value: String
+}
+
+"""
+The connection type for ContractState.
+"""
+type ContractStateConnection {
+    """
+    A list of edges.
+    """
+    edges: [ContractStateEdge!]!
+
+    """
+    Information to aid in pagination.
+    """
+    pageInfo: PageInfo!
+}
+
+"""
+An edge in a connection.
+"""
+type ContractStateEdge {
+    """
+    The cursor associated with this edge.
+    """
+    cursor: String!
+
+    """
+    The item associated with the edge.
+    """
+    node: ContractState!
+}
+
+"""
+"""
+type ContractStateChange {
+    address: String!
+    contractId: EntityId!
+    slot: String!
+    valueRead: String!
+    valueWritten: String
+}

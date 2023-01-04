@@ -1,0 +1,112 @@
+"""
+"""
+type CustomFee {
+    allCollectorsAreExempt: Boolean!
+    amount: Long
+    amountDenominator: Long
+    collectorAccountId: EntityId
+    createdTimestamp: Timestamp!
+    denominatingTokenId: EntityId
+    maximumAmount: Long
+    minimumAmount: Long!
+    netOfTransfers: Boolean
+    royaltyDenominator: Long
+    royaltyNumerator: Long
+    tokenId: EntityId!
+}
+
+"""
+"""
+enum FreezeStatus {
+    FROZEN
+    NOT_APPLICABLE
+    UNFROZEN
+}
+
+"""
+"""
+enum KycStatus {
+    GRANTED
+    NOT_APPLICABLE
+    REVOKED
+}
+
+"""
+"""
+type Nft {
+    accountId: EntityId
+    createdTimestamp: Timestamp
+    delegatingSpender: EntityId
+    deleted: Boolean
+    metadata: String
+    modifiedTimestamp: Timestamp!
+    serialNumber: Long!
+    spender: EntityId
+    tokenId: EntityId!
+}
+
+"""
+"""
+type Token implements Entity & Node {
+    autoRenewAccount: Account
+    autoRenewPeriod: Duration
+    createdTimestamp: Timestamp
+    deleted: Boolean
+    entityId: EntityId!
+    expirationTimestamp: Timestamp
+    id: ID!
+    key: Object
+    memo: String!
+    proxyAccount: Account
+    timestamp: TimestampRange!
+    type: EntityType!
+
+    decimals: Long!
+    customFees: [CustomFee!]!
+    feeScheduleKey: Object
+    freezeDefault: Boolean!
+    freezeKey: Object
+    initialSupply: Long!
+    kycKey: Object
+    maxSupply: Long!
+    modifiedTimestamp: Timestamp!
+    name: String!
+    pauseKey: Object
+    pauseStatus: TokenPauseStatus!
+    supplyKey: Object
+    supplyType: TokenSupplyType!
+    symbol: String!
+    totalSupply: Long!
+    treasuryAccountId: EntityId!
+    tokenType: TokenType!
+    wipeKey: Object
+}
+
+"""
+"""
+input TokenInput {
+    entityId: EntityIdInput
+    id: ID
+}
+
+"""
+"""
+enum TokenPauseStatus {
+    UNPAUSED
+    PAUSED
+    NOT_APPLICABLE
+}
+
+"""
+"""
+enum TokenSupplyType {
+    FINITE
+    INFINITE
+}
+
+"""
+"""
+enum TokenType {
+    NON_FUNGIBLE_UNIQUE
+    FUNGIBLE_COMMON
+}

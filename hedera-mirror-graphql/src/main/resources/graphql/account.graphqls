@@ -1,0 +1,251 @@
+"""
+Represents a Hedera account holder on the network.
+"""
+type Account implements Accountable & Entity & Node {
+    alias: Alias
+    allowances: Allowances!
+    autoRenewAccount: Account
+    autoRenewPeriod: Duration
+    balance: Long
+    createdTimestamp: Timestamp
+    declineReward: Boolean!
+    deleted: Boolean
+    entityId: EntityId!
+    evmAddresses: [EvmAddress!]!
+    expirationTimestamp: Timestamp
+    id: ID!
+    key: Object
+    maxAutomaticTokenAssociations: Int
+    memo: String!
+    nfts(after: String, before: String, first: Int, last: Int): NftConnection!
+    nonce: Long
+    obtainer: Accountable
+    pendingReward: Long
+    proxyAccount: Account
+    receiverSigRequired: Boolean
+    stakedAccount: Account
+    stakedNode: NetworkNode
+    stakePeriodStart: Timestamp
+    timestamp: TimestampRange!
+    tokens(after: String, before: String, first: Int, last: Int): TokenAccountConnection!
+    transactions(after: String, before: String, first: Int, last: Int): TransactionConnection!
+    type: EntityType!
+}
+
+"""
+The unique identifier to find a specific account. Only one of the given fields can be present at a
+time otherwise an error will occur.
+"""
+input AccountInput {
+    alias: Alias
+    entityId: EntityIdInput
+    evmAddress: EvmAddress
+    id: ID
+}
+
+"""
+"""
+interface Allowance {
+    owner: Account!
+    spender: Account!
+    timestamp: TimestampRange!
+}
+
+"""
+"""
+type Allowances {
+    crypto(after: String, before: String, first: Int, last: Int): CryptoAllowanceConnection!
+    nft(after: String, before: String, first: Int, last: Int): NftAllowanceConnection!
+    token(after: String, before: String, first: Int, last: Int): TokenAllowanceConnection!
+}
+
+"""
+"""
+type CryptoAllowance implements Allowance {
+    amount: Long!
+    owner: Account!
+    spender: Account!
+    timestamp: TimestampRange!
+}
+
+"""
+The connection type for CryptoAllowance.
+"""
+type CryptoAllowanceConnection {
+    """
+    A list of edges.
+    """
+    edges: [CryptoAllowanceEdge!]!
+
+    """
+    Information to aid in pagination.
+    """
+    pageInfo: PageInfo!
+}
+
+"""
+An edge in a connection.
+"""
+type CryptoAllowanceEdge {
+    """
+    The cursor associated with this edge.
+    """
+    cursor: String!
+
+    """
+    The item associated with the edge.
+    """
+    node: CryptoAllowance!
+}
+
+"""
+"""
+type NftAllowance implements Allowance {
+    approvedForAll: Boolean!
+    owner: Account!
+    spender: Account!
+    timestamp: TimestampRange!
+    token: Token!
+}
+
+"""
+The connection type for NftAllowance.
+"""
+type NftAllowanceConnection {
+    """
+    A list of edges.
+    """
+    edges: [NftAllowanceEdge!]!
+
+    """
+    Information to aid in pagination.
+    """
+    pageInfo: PageInfo!
+}
+
+"""
+An edge in a connection.
+"""
+type NftAllowanceEdge {
+    """
+    The cursor associated with this edge.
+    """
+    cursor: String!
+
+    """
+    The item associated with the edge.
+    """
+    node: NftAllowance!
+}
+
+"""
+The connection type for Nft.
+"""
+type NftConnection {
+    """
+    A list of edges.
+    """
+    edges: [NftEdge!]!
+
+    """
+    Information to aid in pagination.
+    """
+    pageInfo: PageInfo!
+}
+
+"""
+An edge in a connection.
+"""
+type NftEdge {
+    """
+    The cursor associated with this edge.
+    """
+    cursor: String!
+
+    """
+    The item associated with the edge.
+    """
+    node: Nft!
+}
+
+"""
+"""
+type TokenAccount {
+    automaticAssociation: Boolean!
+    balance: Long!
+    createdTimestamp: Timestamp!
+    freezeStatus: FreezeStatus!
+    kycStatus: KycStatus!
+    timestamp: TimestampRange!
+    token: Token!
+}
+
+"""
+The connection type for TokenAccount.
+"""
+type TokenAccountConnection {
+    """
+    A list of edges.
+    """
+    edges: [TokenAccountEdge!]!
+
+    """
+    Information to aid in pagination.
+    """
+    pageInfo: PageInfo!
+}
+"""
+An edge in a connection.
+"""
+type TokenAccountEdge {
+    """
+    The cursor associated with this edge.
+    """
+    cursor: String!
+
+    """
+    The item associated with the edge.
+    """
+    node: TokenAccount!
+}
+
+"""
+"""
+type TokenAllowance implements Allowance {
+    amount: Long!
+    owner: Account!
+    spender: Account!
+    timestamp: TimestampRange!
+    token: Token!
+}
+
+"""
+The connection type for TokenAllowance.
+"""
+type TokenAllowanceConnection {
+    """
+    A list of edges.
+    """
+    edges: [TokenAllowanceEdge!]!
+
+    """
+    Information to aid in pagination.
+    """
+    pageInfo: PageInfo!
+}
+
+"""
+An edge in a connection.
+"""
+type TokenAllowanceEdge {
+    """
+    The cursor associated with this edge.
+    """
+    cursor: String!
+
+    """
+    The item associated with the edge.
+    """
+    node: TokenAllowance!
+}
+

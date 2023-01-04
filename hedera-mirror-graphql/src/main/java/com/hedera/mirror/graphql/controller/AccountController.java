@@ -20,63 +20,68 @@ package com.hedera.mirror.graphql.controller;
  * ‍
  */
 
+import static com.hedera.mirror.graphql.util.GraphqlUtils.toEntityId;
+import static com.hedera.mirror.graphql.util.GraphqlUtils.validateOneOf;
+
 import java.util.List;
+import java.util.stream.Collectors;
+import javax.validation.Valid;
 import lombok.CustomLog;
+import lombok.RequiredArgsConstructor;
+import org.modelmapper.ModelMapper;
+import org.springframework.graphql.data.method.annotation.Argument;
+import org.springframework.graphql.data.method.annotation.BatchMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
-import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.stereotype.Controller;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import com.hedera.mirror.graphql.service.EntityService;
 import com.hedera.mirror.graphql.viewmodel.Account;
+import com.hedera.mirror.graphql.viewmodel.AccountInput;
 
 @Controller
 @CustomLog
+@RequiredArgsConstructor
 class AccountController {
 
-//    AccountController(BatchLoaderRegistry registry) {
-//        registry.forTypePair(String.class, Account.class)
-//                .registerBatchLoader((ids, env) -> {
-//                            log.info("Accounts: {}", ids);
-//                            return Flux.fromIterable(ids).map(a -> {
-//                                var b = new Account();
-//                                b.setId(a + "1");
-//                                return b;
-//                            });
-//                        }
-//                );
-//    }
+    private final ModelMapper modelMapper;
+    private final EntityService entityService;
 
     @QueryMapping
-    Flux<Account> accounts() {
-        var account = new Account();
-        account.setId("0.0.2");
-        var account2 = new Account();
-        account2.setId("0.0.3");
-        var account3 = new Account();
-        account3.setId("0.0.2");
-        return Flux.just(account, account2, account3);
+    Mono<Account> account(@Argument @Valid AccountInput filter) {
+        final var alias = filter.getAlias();
+        final var evmAddress = filter.getEvmAddress();
+        final var entityId = filter.getEntityId();
+        final var id = filter.getId();
+
+        validateOneOf(alias, entityId, evmAddress, id);
+
+        if (entityId != null) {
+            return entityService.getAccountById(toEntityId(entityId))
+                    .map(e -> modelMapper.map(e, Account.class));
+        }
+
+        return Mono.error(new IllegalStateException("Not implemented"));
     }
 
-    @SchemaMapping
-    Mono<Account> autoRenewAccount(Account account) {
-        var account2 = new Account();
-        account2.setId("0.0.4");
-        return Mono.just(account2);
+    @BatchMapping
+    Flux<Account> autoRenewAccount(List<Account> accounts) {
+        log.info("Loading autoRenewAccount: {}", accounts.stream().map(Account::getId)
+                .collect(Collectors.toList()));
+        return Flux.fromIterable(accounts).map(a -> account(a.getId() + "1"));
     }
 
-//    @SchemaMapping
-//    public CompletableFuture<Account> author(Account account, DataLoader<String, Account> loader) {
-//        return loader.load(account.getId());
-//    }
-
-    //@BatchMapping
+    @BatchMapping
     Flux<Account> proxyAccount(List<Account> accounts) {
-        log.info("Accounts: {}", accounts);
-        return Flux.fromIterable(accounts).map(a -> {
-            var b = new Account();
-            b.setId(a.getId() + "1");
-            return b;
-        });
+        log.info("Loading proxyAccount: {}", accounts.stream().map(Account::getId)
+                .collect(Collectors.toList()));
+        return Flux.fromIterable(accounts).map(a -> account(a.getId() + "1"));
+    }
+
+    private Account account(String id) {
+        var account = new Account();
+        account.setId(id);
+        return account;
     }
 }

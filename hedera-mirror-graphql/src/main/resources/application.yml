@@ -50,14 +50,31 @@ spring:
         enabled: true
       secrets:
         paths: /usr/etc/${spring.application.name}
+  datasource:
+    name: ${hedera.mirror.graphql.db.name}
+    password: ${hedera.mirror.graphql.db.password}
+    url: jdbc:postgresql://${hedera.mirror.graphql.db.host}:${hedera.mirror.graphql.db.port}/${hedera.mirror.graphql.db.name}
+    username: ${hedera.mirror.graphql.db.username}
+    hikari:
+      connection-timeout: 3000
+      data-source-properties:
+        idle_in_transaction_session_timeout: "30000"
+        lock_timeout: "10000"
+        statement_timeout: "60000"
+        sslmode: ${hedera.mirror.graphql.db.sslMode}
+        tcpKeepAlive: true
+      maximum-pool-size: 50
+      minimum-idle: 4
+      validation-timeout: 3000
   graphql:
     graphiql:
       enabled: true
     path: /graphql/alpha
-  r2dbc:
-    name: ${hedera.mirror.graphql.db.name}
-    password: ${hedera.mirror.graphql.db.password}
-    url: r2dbc:postgresql://${hedera.mirror.graphql.db.host}:${hedera.mirror.graphql.db.port}/${hedera.mirror.graphql.db.name}
-    username: ${hedera.mirror.graphql.db.username}
+  jpa:
+    database: postgresql
+    properties:
+      hibernate.criteria.literal_handling_mode: BIND # Ensure Criteria API queries use bind parameters and not literals
+      hibernate.generate_statistics: true
+      hibernate.hbm2ddl.auto: none
   lifecycle:
     timeout-per-shutdown-phase: 20s

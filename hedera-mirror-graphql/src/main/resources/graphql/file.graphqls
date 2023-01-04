@@ -1,0 +1,64 @@
+"""
+"""
+type File implements Entity & Node {
+    autoRenewAccount: Account
+    autoRenewPeriod: Duration
+    createdTimestamp: Timestamp
+    data(after: String, before: String, first: Int, last: Int): FileDataConnection!
+    deleted: Boolean
+    entityId: EntityId!
+    expirationTimestamp: Timestamp
+    id: ID!
+    key: Object
+    memo: String!
+    proxyAccount: Account
+    size: Long!
+    timestamp: TimestampRange!
+    type: EntityType!
+}
+
+"""
+"""
+type FileData {
+    bytes: String
+    timestamp: Timestamp!
+    transactionType: TransactionType!
+}
+
+"""
+The connection for FileData.
+"""
+type FileDataConnection {
+    """
+    A list of edges.
+    """
+    edges: [FileDataEdge!]!
+
+    """
+    Information to aid in pagination.
+    """
+    pageInfo: PageInfo!
+}
+
+"""
+An edge in a connection.
+"""
+type FileDataEdge {
+    """
+    The cursor associated with this edge.
+    """
+    cursor: String!
+
+    """
+    The item associated with the edge.
+    """
+    node: FileData!
+}
+
+
+"""
+"""
+input FileInput {
+    entityId: EntityIdInput
+    id: ID
+}

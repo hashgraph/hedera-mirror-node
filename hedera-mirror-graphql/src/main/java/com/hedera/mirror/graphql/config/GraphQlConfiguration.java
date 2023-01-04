@@ -20,8 +20,15 @@ package com.hedera.mirror.graphql.config;
  * ‍
  */
 
+import graphql.Scalars;
 import graphql.execution.preparsed.PreparsedDocumentProvider;
 import graphql.scalars.ExtendedScalars;
+import graphql.schema.idl.SchemaDirectiveWiring;
+import graphql.validation.rules.OnValidationErrorStrategy;
+import graphql.validation.rules.ValidationRules;
+import graphql.validation.schemawiring.ValidationSchemaWiring;
+import org.modelmapper.ModelMapper;
+import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.boot.autoconfigure.graphql.GraphQlSourceBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -35,7 +42,30 @@ class GraphQlConfiguration {
     }
 
     @Bean
+    ModelMapper modelMapper() {
+        var modelMapper = new ModelMapper();
+        modelMapper.getConfiguration().setSkipNullEnabled(true);
+        modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
+        return modelMapper;
+    }
+
+    @Bean
     RuntimeWiringConfigurer runtimeWiringConfigurer() {
-        return wiringBuilder -> wiringBuilder.scalar(ExtendedScalars.GraphQLLong);
+        return wiringBuilder -> wiringBuilder
+                .directiveWiring(validationDirectives())
+                .scalar(ExtendedScalars.GraphQLLong)
+                .scalar(ExtendedScalars.Object)
+                .scalar(Scalars.GraphQLString.transform(b -> b.name("Alias")
+                        .description("A hex-encoded string that represents an account alias")))
+                .scalar(Scalars.GraphQLString.transform(b -> b.name("EvmAddress")
+                        .description("A hex-encoded string that represents a 20-byte EVM address")));
+    }
+
+    @Bean
+    SchemaDirectiveWiring validationDirectives() {
+        var validationRules = ValidationRules.newValidationRules()
+                .onValidationErrorStrategy(OnValidationErrorStrategy.RETURN_NULL)
+                .build();
+        return new ValidationSchemaWiring(validationRules);
     }
 }

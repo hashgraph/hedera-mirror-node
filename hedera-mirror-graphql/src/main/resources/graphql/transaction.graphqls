@@ -1,0 +1,174 @@
+"""
+"""
+type AssessedCustomFee {
+    amount: Long!
+    collectorAccountId: EntityId!
+    effectivePayerAccountIds: [EntityId!]!
+    tokenId: EntityId
+}
+
+"""
+"""
+type EthereumTransaction {
+    accessList: String
+    callData: String
+    callDataId: EntityId
+    chainId: String
+    consensusTimestamp: Timestamp!
+    data: String!
+    gasLimit: Long!
+    gasPrice: String
+    hash: String!
+    maxFeePerGas: String
+    maxGasAllowance: Long!
+    maxPriorityFeePerGas: String
+    nonce: Long!
+    payerAccountId: EntityId!
+    recoveryId: Int
+    signatureR: String!
+    signatureS: String!
+    signatureV: String
+    toAddress: String
+    type: Int!
+    value: String
+}
+
+"""
+"""
+type NftTransfer {
+    isApproval: Boolean
+    receiverAccountId: EntityId
+    senderAccountId: EntityId
+    serialNumber: Long!
+    tokenId: EntityId!
+}
+
+"""
+"""
+type Prng {
+    bytes: String
+    number: Int
+    range: Int
+}
+
+"""
+"""
+type StakingRewardTransfer {
+    accountId: EntityId!
+    amount: Long!
+}
+
+"""
+"""
+type TokenTransfer {
+    accountId: EntityId!
+    amount: Long!
+    isApproval: Boolean
+    tokenId: EntityId!
+}
+
+"""
+Transaction contains the results of HAPI transactions on the network
+"""
+type Transaction {
+    assessedCustomFees: [AssessedCustomFee!]!
+    chargedFee: Long
+    consensusTimestamp: Timestamp!
+    entityId: EntityId
+    hash: String
+    id: ID!
+    index: Int
+    initialBalance: Long
+    maxFee: Long
+    memo: String
+    nftTransfers: [NftTransfer!]!
+    nodeAccountId: EntityId
+    parentConsensusTimestamp: Timestamp
+    response: TransactionResponse
+    result: String!
+    stakingRewardTransfers: [StakingRewardTransfer!]!
+    tokenTransfers: [TokenTransfer!]!
+    transactionId: TransactionId!
+    transfers: [Transfer!]!
+    type: TransactionType!
+    validDuration: Duration
+}
+
+"""
+The connection type for Transaction.
+"""
+type TransactionConnection {
+    """
+    A list of edges.
+    """
+    edges: [TransactionEdge!]!
+
+    """
+    Information to aid in pagination.
+    """
+    pageInfo: PageInfo!
+}
+
+"""
+An edge in a connection.
+"""
+type TransactionEdge {
+    """
+    The cursor associated with this edge.
+    """
+    cursor: String!
+
+    """
+    The item associated with the edge.
+    """
+    node: Transaction!
+}
+
+"""
+"""
+type TransactionId {
+    nonce: Int
+    payerAccountId: EntityId!
+    scheduled: Boolean
+    validStart: Timestamp!
+}
+
+"""
+"""
+input TransactionIdInput {
+    nonce: Int! = 0 @Min(value: 0)
+    payerAccountId: EntityIdInput!
+    scheduled: Boolean! = false
+    validStart: TimestampInput!
+}
+
+"""
+"""
+input TransactionInput {
+    id: ID
+    timestamp: TimestampInput
+    transactionId: TransactionIdInput
+}
+
+"""
+"""
+union TransactionResponse = EthereumTransaction | Prng
+
+"""
+"""
+enum TransactionSignatureType {
+    CONTRACT
+    ECDSA_384
+    ECDSA_SECP256K1
+    ED25519
+    RSA_3072
+    UNKNOWN
+}
+
+"""
+"""
+type Transfer {
+    amount: Long!
+    entityId: EntityId!
+    isApproval: Boolean
+}
