@@ -61,6 +61,7 @@ spec:
             value: "true"
             effect: NoSchedule
     importer:
+      enabled: false
       env:
         HEDERA_MIRROR_IMPORTER_DOWNLOADER_BALANCE_ENABLED: "false"
         HEDERA_MIRROR_IMPORTER_DOWNLOADER_RECORD_ENABLED: "false"
