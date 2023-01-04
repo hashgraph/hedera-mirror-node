@@ -59,7 +59,7 @@ class EntityMetadataRegistryTest extends IntegrationTest {
         var updatable = "auto_renew_account_id,auto_renew_period,balance,decline_reward,deleted,ethereum_nonce," +
                 "expiration_timestamp,key,max_automatic_token_associations,memo,obtainer_id,permanent_removal," +
                 "proxy_account_id,public_key,receiver_sig_required,stake_period_start,staked_account_id," +
-                "staked_node_id,submit_key,timestamp_range";
+                "staked_node_id,submit_key,timestamp_range,type";
 
         var entity = domainBuilder.entity().get();
         var newValue = new byte[] {0, 1, 2};
