@@ -61,7 +61,7 @@ spec:
             value: "true"
             effect: NoSchedule
       readReplicas:
-        configuration: |-
+        extendedConfiguration: |-
           checkpoint_timeout = 1800
           citus.node_conninfo = 'sslmode=prefer'
           listen_addresses = '*'
