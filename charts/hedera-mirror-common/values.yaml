@@ -329,6 +329,17 @@ promtail:
   serviceMonitor:
     enabled: true
 
+testkube:
+  enabled: false
+  namespace: testkube
+  test:
+    duration: 600s
+    gitBranch: main
+    target:
+      namespace: ""
+      release: mirror
+    vus: 500
+
 traefik:
   affinity:
     podAntiAffinity:
