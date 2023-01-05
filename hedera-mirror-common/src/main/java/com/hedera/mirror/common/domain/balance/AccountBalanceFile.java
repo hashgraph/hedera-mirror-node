@@ -79,9 +79,8 @@ public class AccountBalanceFile implements StreamFile<AccountBalance> {
     }
 
     @Override
-    @SuppressWarnings("java:S4144")
     public Long getConsensusEnd() {
-        return consensusTimestamp;
+        return getConsensusStart();
     }
 
     @Override
