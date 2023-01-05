@@ -150,22 +150,22 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .expectError(EntityNotFoundException.class)
                 .verify(WAIT);
     }
-//
-//    @Test
-//    void topicNotFoundWithCheckTopicExistsFalse() {
-//        grpcProperties.setCheckTopicExists(false);
-//        TopicMessageFilter filter = TopicMessageFilter.builder()
-//                .topicId(EntityId.of(999L, EntityType.TOPIC))
-//                .build();
-//
-//        StepVerifier.withVirtualTime(() -> topicMessageService.subscribeTopic(filter))
-//                .expectSubscription()
-//                .expectNoEvent(WAIT)
-//                .thenCancel()
-//                .verify(WAIT);
-//
-//        grpcProperties.setCheckTopicExists(true);
-//    }
+
+    @Test
+    void topicNotFoundWithCheckTopicExistsFalse() {
+        grpcProperties.setCheckTopicExists(false);
+        TopicMessageFilter filter = TopicMessageFilter.builder()
+                .topicId(EntityId.of(999L, EntityType.TOPIC))
+                .build();
+
+        StepVerifier.withVirtualTime(() -> topicMessageService.subscribeTopic(filter))
+                .expectSubscription()
+                .expectNoEvent(WAIT)
+                .thenCancel()
+                .verify(WAIT);
+
+        grpcProperties.setCheckTopicExists(true);
+    }
 
     @Test
     void invalidTopic() {
