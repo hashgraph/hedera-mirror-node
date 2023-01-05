@@ -239,13 +239,11 @@ class GrpcClientSDKTest {
                         .setTopicID(TopicID.newBuilder().setTopicNum(1000).build());
 
         @Override
-        public void subscribeTopic(
-                ConsensusTopicQuery consensusTopicQuery,
-                StreamObserver<ConsensusTopicResponse> streamObserver) {
-            log.info("subscribeTopic: {}", consensusTopicQuery);
+        public void subscribeTopic(ConsensusTopicQuery consensusTopicQuery,
+                                   StreamObserver<ConsensusTopicResponse> streamObserver) {
+            log.debug("subscribeTopic: {}", consensusTopicQuery);
             assertThat(consensusTopicQuery).isEqualTo(request.build());
-            responses
-                    .delayElements(TOPIC_RESPONSE_DELAY)
+            responses.delayElements(TOPIC_RESPONSE_DELAY)
                     .doOnComplete(streamObserver::onCompleted)
                     .doOnError(streamObserver::onError)
                     .doOnNext(streamObserver::onNext)
