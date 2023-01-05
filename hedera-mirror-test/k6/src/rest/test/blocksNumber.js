@@ -22,7 +22,7 @@ import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
 import {blockListName, urlPrefix} from '../../lib/constants.js';
-import {isSuccess, isValidListResponse} from "./common.js";
+import {isSuccess} from "./common.js";
 import {setupTestParameters} from "./bootstrapEnvParameters.js";
 
 const urlTag = '/blocks/{number}';
