@@ -51,7 +51,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 @ExtendWith(MockitoExtension.class)
 class RedisEntityListenerTest {
 
-    private static final Duration TIMEOUT = Duration.ofSeconds(10L);
+    private static final Duration TIMEOUT = Duration.ofSeconds(2L);
 
     @Mock
     private RedisOperations<String, StreamMessage> redisOperations;
@@ -74,6 +74,10 @@ class RedisEntityListenerTest {
         // given
         int publishCount = redisProperties.getQueueCapacity() + 2;
         Sinks.Many<Object> sink = Sinks.many().multicast().directBestEffort();
+        Flux<Integer> publisher = Flux.range(1, publishCount).doOnNext(i -> {
+            submitAndSave(topicMessage());
+            entityListener.onCleanup(new EntityBatchCleanupEvent(this));
+        });
 
         // when
         when(redisOperations.executePipelined(any(SessionCallback.class))).then((callback) -> {
@@ -83,18 +87,15 @@ class RedisEntityListenerTest {
         });
 
         //then
-        StepVerifier redisVerifier = StepVerifier.withVirtualTime(() -> sink.asFlux()
-                        .subscribeOn(Schedulers.parallel()))
-                .thenAwait(TIMEOUT)
+        StepVerifier redisVerifier = sink.asFlux()
+                .subscribeOn(Schedulers.parallel())
+                .as(StepVerifier::create)
                 .expectNextCount(publishCount)
                 .thenCancel()
                 .verifyLater();
 
-        StepVerifier.withVirtualTime(() -> Flux.range(1, publishCount).doOnNext(i -> {
-                    submitAndSave(topicMessage());
-                    entityListener.onCleanup(new EntityBatchCleanupEvent(this));
-                }).publishOn(Schedulers.parallel()))
-                .thenAwait(TIMEOUT)
+        publisher.publishOn(Schedulers.parallel())
+                .as(StepVerifier::create)
                 .expectNextCount(publishCount)
                 .expectComplete()
                 .verify(TIMEOUT);
