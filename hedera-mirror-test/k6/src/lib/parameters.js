@@ -161,7 +161,7 @@ export const computeAccountWithNftsParameters = (configuration) =>
       for (const balanceEntity of tokensBalanceEntity) {
         if (balanceEntity.balance >= 20) {
           return {
-            DEFAULT_ACCOUNT_ID_NFTS: tokensBalanceEntity.account
+            DEFAULT_ACCOUNT_ID_NFTS: balanceEntity.account
           };
         }
       }

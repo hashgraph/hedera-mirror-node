@@ -21,8 +21,8 @@
 import http from "k6/http";
 
 import {TestScenarioBuilder} from '../../lib/common.js';
-import {resultListName, urlPrefix} from '../../lib/constants.js';
-import {isSuccess} from "./common.js";
+import {tokenListName, urlPrefix} from '../../lib/constants.js';
+import {isValidListResponse} from "./common.js";
 import {setupTestParameters} from "./bootstrapEnvParameters.js";
 
 const urlTag = '/accounts/{id}/tokens';
@@ -31,10 +31,10 @@ const {options, run} = new TestScenarioBuilder()
   .name('accountTokensResults') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request((testParameters) => {
-    const url = `${testParameters['BASE_URL']}${urlPrefix}/accounts/${testParameters['DEFAULT_ACCOUNT_ID_TOKEN']}/tokens`;
+    const url = `${testParameters['BASE_URL']}${urlPrefix}/accounts/${testParameters['DEFAULT_ACCOUNT_ID_TOKEN']}/tokens?limit=${testParameters['DEFAULT_LIMIT']}`;
     return http.get(url);
   })
-  .check('Account tokens results OK', (r) => isSuccess(r, resultListName))
+  .check('Account tokens results OK', (r) => isValidListResponse(r, tokenListName))
   .build();
 
 export {options, run};
