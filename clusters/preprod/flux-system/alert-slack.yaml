@@ -10,6 +10,9 @@ spec:
   eventSources:
     - kind: HelmRelease
       name: '*'
+      namespace: citus
+    - kind: HelmRelease
+      name: '*'
       namespace: common
     - kind: HelmRelease
       name: '*'

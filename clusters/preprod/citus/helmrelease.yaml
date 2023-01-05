@@ -1,0 +1,113 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: mirror
+  namespace: citus
+spec:
+  chart:
+    spec:
+      chart: hedera-mirror
+      sourceRef:
+        kind: HelmRepository
+        name: hedera-mirror-node
+      valuesFiles:
+        - values.yaml
+        - values-prod.yaml
+      version: '0.71.0-rc1' # Must be at least 0.71.0-rc1 for correct multi-node config
+  dependsOn:
+    - name: mirror
+      namespace: common
+  install:
+    crds: CreateReplace
+  interval: 90s
+  test:
+    enable: true
+    timeout: 20m
+  timeout: 20m
+  upgrade:
+    cleanupOnFail: true
+    crds: CreateReplace
+  values:
+    citus:
+      enabled: true
+      primary:
+        configuration: |-
+          checkpoint_timeout = 1800
+          citus.node_conninfo = 'sslmode=prefer'
+          cron.database_name = 'mirror_node'
+          listen_addresses = '*'
+          log_checkpoints = true
+          log_timezone = 'Etc/UTC'
+          max_connections = 300
+          max_replication_slots = 5
+          max_wal_senders = 5
+          max_wal_size = 24GB
+          random_page_cost = 1.1
+          shared_preload_libraries = 'citus,pg_cron,pg_partman_bgw'
+          wal_level = logical
+          work_mem = 16MB
+        persistence:
+          size: 128Gi
+        resources:
+          limits:
+            cpu: 4
+            memory: 16Gi
+          requests:
+            cpu: 2
+            memory: 8Gi
+        tolerations:
+          - key: citus
+            operator: Equal
+            value: "true"
+            effect: NoSchedule
+      readReplicas:
+        extendedConfiguration: |-
+          checkpoint_timeout = 1800
+          citus.node_conninfo = 'sslmode=prefer'
+          listen_addresses = '*'
+          log_checkpoints = true
+          log_timezone = 'Etc/UTC'
+          max_connections = 200
+          max_replication_slots = 5
+          max_wal_senders = 5
+          max_wal_size = 24GB
+          random_page_cost = 1.1
+          shared_preload_libraries = 'citus'
+          wal_level = logical
+          work_mem = 32MB
+        persistence:
+          size: 512Gi
+        resources:
+          limits:
+            cpu: 8
+            memory: 32Gi
+          requests:
+            cpu: 4
+            memory: 16Gi
+        tolerations:
+          - key: citus
+            operator: Equal
+            value: "true"
+            effect: NoSchedule
+    importer:
+      enabled: false
+      env:
+        HEDERA_MIRROR_IMPORTER_DOWNLOADER_BALANCE_ENABLED: "false"
+        HEDERA_MIRROR_IMPORTER_DOWNLOADER_RECORD_ENABLED: "false"
+        SPRING_FLYWAY_PLACEHOLDERS_PARTITIONSTARTDATE: "'0 days'"
+        SPRING_PROFILES_ACTIVE: v2
+    monitor:
+      enabled: false
+    postgresql:
+      enabled: false
+    rest:
+      readinessProbe:
+        httpGet:
+          path: /health/liveness
+    rosetta:
+      enabled: false
+    test:
+      enabled: false
+    web3:
+      enabled: false
+
