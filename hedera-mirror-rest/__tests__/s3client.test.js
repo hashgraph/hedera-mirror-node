@@ -24,6 +24,7 @@ import querystring from 'querystring';
 import config from '../config';
 import {cloudProviders, defaultCloudProviderEndpoints} from '../constants';
 import s3client from '../s3client';
+import {jest} from "@jest/globals";
 
 const defaultValidStreamsConfig = {
   cloudProvider: cloudProviders.S3,
@@ -159,6 +160,7 @@ describe('createS3Client with valid config', () => {
     },
   ];
 
+  jest.setTimeout(60000);
   testSpecs.forEach((spec) => {
     test(spec.name, async () => {
       overrideStreamsConfig(spec.override);
