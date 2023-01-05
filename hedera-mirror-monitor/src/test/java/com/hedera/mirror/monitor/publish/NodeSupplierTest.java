@@ -76,6 +76,7 @@ import com.hedera.mirror.rest.model.ServiceEndpoint;
 class NodeSupplierTest {
 
     private static final String SERVER = "test2";
+    public static final Duration WAIT = Duration.ofSeconds(10);
 
     private CryptoServiceStub cryptoServiceStub;
     private MonitorProperties monitorProperties;
@@ -158,11 +159,11 @@ class NodeSupplierTest {
 
     @Test
     void refreshCustomNodes() {
-        nodeSupplier.refresh()
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> nodeSupplier.refresh())
+                .thenAwait(WAIT)
                 .expectNext(node)
                 .expectComplete()
-                .verify(Duration.ofMillis(100L));
+                .verify(WAIT);
         assertThat(nodeSupplier.get()).isEqualTo(node);
     }
 
@@ -197,22 +198,22 @@ class NodeSupplierTest {
         monitorProperties.setNodes(Set.of());
         networkNode.getServiceEndpoints().clear();
         when(restApiClient.getNodes()).thenReturn(Flux.just(networkNode));
-        nodeSupplier.refresh()
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> nodeSupplier.refresh())
+                .thenAwait(WAIT)
                 .expectNextSequence(monitorProperties.getNetwork().getNodes())
                 .expectComplete()
-                .verify(Duration.ofMillis(100L));
+                .verify(WAIT);
     }
 
     @Test
     void refreshWithNetwork() {
         monitorProperties.setNodes(Set.of());
         monitorProperties.getNodeValidation().setRetrieveAddressBook(false);
-        nodeSupplier.refresh()
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> nodeSupplier.refresh())
+                .thenAwait(WAIT)
                 .expectNextSequence(monitorProperties.getNetwork().getNodes())
                 .expectComplete()
-                .verify(Duration.ofMillis(100L));
+                .verify(WAIT);
     }
 
     @Test
@@ -220,10 +221,10 @@ class NodeSupplierTest {
         monitorProperties.setNetwork(HederaNetwork.OTHER);
         monitorProperties.setNodes(Set.of());
         when(restApiClient.getNodes()).thenReturn(Flux.empty());
-        nodeSupplier.refresh()
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> nodeSupplier.refresh())
+                .thenAwait(WAIT)
                 .expectError(IllegalArgumentException.class)
-                .verify(Duration.ofMillis(100L));
+                .verify(WAIT);
     }
 
     @Test

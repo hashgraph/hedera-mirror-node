@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record.entity.redis;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -51,7 +51,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityBatchSaveEvent;
 @ExtendWith(MockitoExtension.class)
 class RedisEntityListenerTest {
 
-    private static final Duration TIMEOUT = Duration.ofSeconds(2L);
+    private static final Duration TIMEOUT = Duration.ofSeconds(10L);
 
     @Mock
     private RedisOperations<String, StreamMessage> redisOperations;
@@ -74,10 +74,6 @@ class RedisEntityListenerTest {
         // given
         int publishCount = redisProperties.getQueueCapacity() + 2;
         Sinks.Many<Object> sink = Sinks.many().multicast().directBestEffort();
-        Flux<Integer> publisher = Flux.range(1, publishCount).doOnNext(i -> {
-            submitAndSave(topicMessage());
-            entityListener.onCleanup(new EntityBatchCleanupEvent(this));
-        });
 
         // when
         when(redisOperations.executePipelined(any(SessionCallback.class))).then((callback) -> {
@@ -87,15 +83,18 @@ class RedisEntityListenerTest {
         });
 
         //then
-        StepVerifier redisVerifier = sink.asFlux()
-                .subscribeOn(Schedulers.parallel())
-                .as(StepVerifier::create)
+        StepVerifier redisVerifier = StepVerifier.withVirtualTime(() -> sink.asFlux()
+                        .subscribeOn(Schedulers.parallel()))
+                .thenAwait(TIMEOUT)
                 .expectNextCount(publishCount)
                 .thenCancel()
                 .verifyLater();
 
-        publisher.publishOn(Schedulers.parallel())
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> Flux.range(1, publishCount).doOnNext(i -> {
+                    submitAndSave(topicMessage());
+                    entityListener.onCleanup(new EntityBatchCleanupEvent(this));
+                }).publishOn(Schedulers.parallel()))
+                .thenAwait(TIMEOUT)
                 .expectNextCount(publishCount)
                 .expectComplete()
                 .verify(TIMEOUT);

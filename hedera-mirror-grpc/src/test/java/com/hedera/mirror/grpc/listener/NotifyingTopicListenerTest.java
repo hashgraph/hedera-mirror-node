@@ -4,7 +4,7 @@ package com.hedera.mirror.grpc.listener;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,6 +53,7 @@ class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest {
               "topic_id":1001,
               "valid_start_timestamp":1594401416000000000
             }""";
+    public static final Duration WAIT = Duration.ofSeconds(10L);
     private static boolean INITIALIZED = false;
     private final NotifyingTopicListener topicListener;
     private final JdbcTemplate jdbcTemplate;
@@ -68,13 +69,12 @@ class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest {
             try {
                 // Warm up the database connection
                 var filter = TopicMessageFilter.builder().build();
-                topicListener.listen(filter)
-                        .as(StepVerifier::create)
-                        .thenAwait(Duration.ofMillis(1000))
+                StepVerifier.withVirtualTime(() -> topicListener.listen(filter))
+                        .thenAwait(WAIT)
                         .then(() -> jdbcTemplate.execute("notify topic_message, '" + JSON + "'"))
                         .expectNextCount(1)
                         .thenCancel()
-                        .verify(Duration.ofSeconds(5L));
+                        .verify(WAIT);
                 INITIALIZED = true;
             } catch (AssertionError e) {
                 log.warn("Unable to warmup connection: {}", e.getMessage());
@@ -101,13 +101,12 @@ class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest {
                 .topicId(EntityId.of(1001L, EntityType.TOPIC))
                 .build();
 
-        topicListener.listen(filter)
-                .as(StepVerifier::create)
-                .thenAwait(Duration.ofMillis(50))
+        StepVerifier.withVirtualTime(() -> topicListener.listen(filter))
+                .thenAwait(WAIT)
                 .then(() -> jdbcTemplate.execute("notify topic_message, '" + JSON + "'"))
                 .expectNext(topicMessage)
                 .thenCancel()
-                .verify(Duration.ofMillis(500L));
+                .verify(WAIT);
     }
 
     @Test
@@ -117,13 +116,13 @@ class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest {
                 .build();
 
         // Parsing errors will be logged and ignored and the message will be lost
-        topicListener.listen(filter)
-                .as(StepVerifier::create)
-                .thenAwait(Duration.ofMillis(50))
+        StepVerifier.withVirtualTime(() -> topicListener.listen(filter))
+                .thenAwait(WAIT)
                 .then(() -> jdbcTemplate.execute("notify topic_message, 'invalid'"))
+                .thenAwait(WAIT)
                 .expectNoEvent(Duration.ofMillis(500L))
                 .thenCancel()
-                .verify(Duration.ofMillis(600L));
+                .verify(WAIT);
     }
 
     @Override

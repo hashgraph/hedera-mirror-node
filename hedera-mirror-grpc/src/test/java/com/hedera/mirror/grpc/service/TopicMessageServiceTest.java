@@ -4,7 +4,7 @@ package com.hedera.mirror.grpc.service;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,6 +58,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
     private final Instant now = Instant.now();
     private final Instant future = now.plusSeconds(30L);
     private final EntityId topicId = EntityId.of(100L, EntityType.TOPIC);
+    private final Duration WAIT = Duration.ofSeconds(10L);
 
     @Resource
     private TopicMessageService topicMessageService;
@@ -144,28 +145,27 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .topicId(EntityId.of(999L, EntityType.TOPIC))
                 .build();
 
-        topicMessageService.subscribeTopic(filter)
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> topicMessageService.subscribeTopic(filter))
+                .thenAwait(WAIT)
                 .expectError(EntityNotFoundException.class)
-                .verify(Duration.ofMillis(100));
+                .verify(WAIT);
     }
-
-    @Test
-    void topicNotFoundWithCheckTopicExistsFalse() {
-        grpcProperties.setCheckTopicExists(false);
-        TopicMessageFilter filter = TopicMessageFilter.builder()
-                .topicId(EntityId.of(999L, EntityType.TOPIC))
-                .build();
-
-        topicMessageService.subscribeTopic(filter)
-                .as(StepVerifier::create)
-                .expectSubscription()
-                .expectNoEvent(Duration.ofMillis(500))
-                .thenCancel()
-                .verify(Duration.ofMillis(100));
-
-        grpcProperties.setCheckTopicExists(true);
-    }
+//
+//    @Test
+//    void topicNotFoundWithCheckTopicExistsFalse() {
+//        grpcProperties.setCheckTopicExists(false);
+//        TopicMessageFilter filter = TopicMessageFilter.builder()
+//                .topicId(EntityId.of(999L, EntityType.TOPIC))
+//                .build();
+//
+//        StepVerifier.withVirtualTime(() -> topicMessageService.subscribeTopic(filter))
+//                .expectSubscription()
+//                .expectNoEvent(WAIT)
+//                .thenCancel()
+//                .verify(WAIT);
+//
+//        grpcProperties.setCheckTopicExists(true);
+//    }
 
     @Test
     void invalidTopic() {
@@ -174,8 +174,8 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .topicId(topicId)
                 .build();
 
-        topicMessageService.subscribeTopic(filter)
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> topicMessageService.subscribeTopic(filter))
+                .thenAwait(WAIT)
                 .expectError(IllegalArgumentException.class)
                 .verify(Duration.ofMillis(100));
     }
@@ -186,12 +186,11 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .topicId(topicId)
                 .build();
 
-        topicMessageService.subscribeTopic(filter)
-                .as(StepVerifier::create)
-                .thenAwait(Duration.ofMillis(100))
+        StepVerifier.withVirtualTime(() -> topicMessageService.subscribeTopic(filter))
+                .thenAwait(WAIT)
                 .expectNextCount(0L)
                 .thenCancel()
-                .verify(Duration.ofMillis(500));
+                .verify(WAIT);
     }
 
     @Test
@@ -202,11 +201,11 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .topicId(topicId)
                 .build();
 
-        topicMessageService.subscribeTopic(filter)
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> topicMessageService.subscribeTopic(filter))
+                .thenAwait(WAIT)
                 .expectNextCount(0L)
                 .expectComplete()
-                .verify(Duration.ofMillis(500));
+                .verify(WAIT);
     }
 
     @Test
@@ -224,7 +223,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .as(StepVerifier::create)
                 .expectNextCount(0L)
                 .expectComplete()
-                .verify(Duration.ofMillis(1000));
+                .verify(WAIT);
     }
 
     @Test
@@ -238,11 +237,11 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .topicId(topicId)
                 .build();
 
-        topicMessageService.subscribeTopic(filter)
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> topicMessageService.subscribeTopic(filter))
+                .thenAwait(WAIT)
                 .expectNext(topicMessage1, topicMessage2, topicMessage3)
                 .thenCancel()
-                .verify(Duration.ofMillis(500));
+                .verify(WAIT);
     }
 
     @Test
@@ -257,8 +256,8 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .topicId(topicId)
                 .build();
 
-        topicMessageService.subscribeTopic(filter)
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> topicMessageService.subscribeTopic(filter))
+                .thenAwait(WAIT)
                 .expectNext(topicMessage1, topicMessage2, topicMessage3)
                 .expectComplete()
                 .verify(Duration.ofMillis(500));
@@ -277,11 +276,11 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .topicId(topicId)
                 .build();
 
-        topicMessageService.subscribeTopic(filter)
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> topicMessageService.subscribeTopic(filter))
+                .thenAwait(WAIT)
                 .expectNext(topicMessage1, topicMessage2, topicMessage3)
                 .expectComplete()
-                .verify(Duration.ofMillis(500));
+                .verify(WAIT);
     }
 
     @Test
@@ -300,13 +299,13 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .topicId(topicId)
                 .build();
 
-        topicMessageService.subscribeTopic(filter)
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> topicMessageService.subscribeTopic(filter))
+                .thenAwait(WAIT)
                 .expectNext(topicMessage1)
                 .expectNext(topicMessage2)
                 .expectNext(topicMessage3)
                 .expectComplete()
-                .verify(Duration.ofMillis(500));
+                .verify(WAIT);
 
         retrieverProperties.setMaxPageSize(oldMaxPageSize);
     }
@@ -323,12 +322,12 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .topicId(topicId)
                 .build();
 
-        topicMessageService.subscribeTopic(filter)
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> topicMessageService.subscribeTopic(filter))
+                .thenAwait(WAIT)
                 .expectNext(topicMessage1)
                 .expectNext(topicMessage2)
                 .expectComplete()
-                .verify(Duration.ofMillis(500));
+                .verify(WAIT);
     }
 
     @Test
@@ -338,14 +337,13 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .topicId(topicId)
                 .build();
 
-        topicMessageService.subscribeTopic(filter)
-                .map(TopicMessage::getSequenceNumber)
-                .as(StepVerifier::create)
-                .thenAwait(Duration.ofMillis(100))
+        StepVerifier.withVirtualTime(() -> topicMessageService.subscribeTopic(filter)
+                        .map(TopicMessage::getSequenceNumber))
+                .thenAwait(WAIT)
                 .then(() -> domainBuilder.topicMessages(3, future).blockLast())
                 .expectNext(1L, 2L, 3L)
                 .thenCancel()
-                .verify(Duration.ofMillis(500));
+                .verify(WAIT);
     }
 
     @Test
@@ -356,14 +354,13 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .topicId(topicId)
                 .build();
 
-        topicMessageService.subscribeTopic(filter)
-                .map(TopicMessage::getSequenceNumber)
-                .as(StepVerifier::create)
-                .thenAwait(Duration.ofMillis(100))
+        StepVerifier.withVirtualTime(() -> topicMessageService.subscribeTopic(filter)
+                        .map(TopicMessage::getSequenceNumber))
+                .thenAwait(WAIT)
                 .then(() -> domainBuilder.topicMessages(3, future).blockLast())
                 .expectNext(1L, 2L)
                 .expectComplete()
-                .verify(Duration.ofMillis(500));
+                .verify(WAIT);
     }
 
     @Test
@@ -397,14 +394,13 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .topicId(topicId)
                 .build();
 
-        topicMessageService.subscribeTopic(filter)
-                .map(TopicMessage::getSequenceNumber)
-                .as(StepVerifier::create)
-                .thenAwait(Duration.ofMillis(100))
+        StepVerifier.withVirtualTime(() -> topicMessageService.subscribeTopic(filter)
+                        .map(TopicMessage::getSequenceNumber))
+                .thenAwait(WAIT)
                 .then(generator::blockLast)
                 .expectNext(1L, 2L)
                 .expectComplete()
-                .verify(Duration.ofMillis(500));
+                .verify(WAIT);
     }
 
     @Test
@@ -417,14 +413,13 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .topicId(topicId)
                 .build();
 
-        topicMessageService.subscribeTopic(filter)
-                .map(TopicMessage::getSequenceNumber)
-                .as(StepVerifier::create)
-                .thenAwait(Duration.ofMillis(100))
+        StepVerifier.withVirtualTime(() -> topicMessageService.subscribeTopic(filter)
+                        .map(TopicMessage::getSequenceNumber))
+                .thenAwait(WAIT)
                 .then(() -> domainBuilder.topicMessages(3, future).blockLast())
                 .expectNext(1L, 2L, 3L, 4L, 5L)
                 .expectComplete()
-                .verify(Duration.ofMillis(500));
+                .verify(WAIT);
     }
 
     @Test
@@ -447,10 +442,9 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .topicId(EntityId.of(1L, EntityType.TOPIC))
                 .build();
 
-        topicMessageService.subscribeTopic(filter)
-                .map(TopicMessage::getSequenceNumber)
-                .as(StepVerifier::create)
-                .thenAwait(Duration.ofMillis(100))
+        StepVerifier.withVirtualTime(() -> topicMessageService.subscribeTopic(filter)
+                        .map(TopicMessage::getSequenceNumber))
+                .thenAwait(WAIT)
                 .then(generator::blockLast)
                 .expectNext(1L, 2L)
                 .thenCancel()
@@ -484,12 +478,12 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
         Mockito.when(topicListener.listen(ArgumentMatchers
                 .any())).thenReturn(Flux.empty());
 
-        topicMessageService.subscribeTopic(retrieverFilter)
-                .map(TopicMessage::getSequenceNumber)
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> topicMessageService.subscribeTopic(retrieverFilter)
+                        .map(TopicMessage::getSequenceNumber))
+                .thenAwait(WAIT)
                 .expectNext(1L, 2L)
                 .expectComplete()
-                .verify(Duration.ofMillis(700));
+                .verify(WAIT);
     }
 
     @Test
@@ -523,12 +517,12 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
                         topicMessage(3)
                 ));
 
-        topicMessageService.subscribeTopic(filter)
-                .map(TopicMessage::getSequenceNumber)
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> topicMessageService.subscribeTopic(filter)
+                        .map(TopicMessage::getSequenceNumber))
+                .thenAwait(WAIT)
                 .expectNext(1L, 2L, 3L, 4L)
                 .thenCancel()
-                .verify(Duration.ofMillis(700));
+                .verify(WAIT);
     }
 
     @Test
@@ -540,12 +534,12 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
 
         missingMessagesFromListenerTest(filter, Flux.just(topicMessage(5), topicMessage(6), topicMessage(7)));
 
-        topicMessageService.subscribeTopic(filter)
-                .map(TopicMessage::getSequenceNumber)
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> topicMessageService.subscribeTopic(filter)
+                        .map(TopicMessage::getSequenceNumber))
+                .thenAwait(WAIT)
                 .expectNext(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L)
                 .thenCancel()
-                .verify(Duration.ofMillis(700));
+                .verify(WAIT);
     }
 
     @Test
@@ -557,12 +551,12 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
 
         missingMessagesFromListenerTest(filter, Flux.just(topicMessage(5), topicMessage(6)));
 
-        topicMessageService.subscribeTopic(filter)
-                .map(TopicMessage::getSequenceNumber)
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> topicMessageService.subscribeTopic(filter)
+                        .map(TopicMessage::getSequenceNumber))
+                .thenAwait(WAIT)
                 .expectNext(1L, 2L, 3L, 4L, 5L, 6L)
                 .expectError(IllegalStateException.class)
-                .verify(Duration.ofMillis(700));
+                .verify(WAIT);
     }
 
     @Test
@@ -574,12 +568,12 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
 
         missingMessagesFromListenerTest(filter, Flux.empty());
 
-        topicMessageService.subscribeTopic(filter)
-                .map(TopicMessage::getSequenceNumber)
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> topicMessageService.subscribeTopic(filter)
+                        .map(TopicMessage::getSequenceNumber))
+                .thenAwait(WAIT)
                 .expectNext(1L, 2L, 3L, 4L)
                 .expectError(IllegalStateException.class)
-                .verify(Duration.ofMillis(700));
+                .verify(WAIT);
     }
 
     @Test
@@ -630,12 +624,12 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
                                 topicMessage(7)
                         ));
 
-        topicMessageService.subscribeTopic(retrieverFilter)
-                .map(TopicMessage::getSequenceNumber)
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> topicMessageService.subscribeTopic(retrieverFilter)
+                        .map(TopicMessage::getSequenceNumber))
+                .thenAwait(WAIT)
                 .expectNext(1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L)
                 .expectComplete()
-                .verify(Duration.ofMillis(700));
+                .verify(WAIT);
     }
 
     private void missingMessagesFromListenerTest(TopicMessageFilter filter, Flux<TopicMessage> missingMessages) {

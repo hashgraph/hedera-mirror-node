@@ -4,14 +4,14 @@ package com.hedera.mirror.monitor.subscribe;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,6 +23,7 @@ package com.hedera.mirror.monitor.subscribe;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.time.Duration;
 import java.util.Arrays;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -65,10 +66,11 @@ class CompositeSubscriberTest {
         when(mirrorSubscriber1.subscribe()).thenReturn(Flux.just(subscribeResponse1));
         when(mirrorSubscriber2.subscribe()).thenReturn(Flux.just(subscribeResponse2));
 
-        compositeSubscriber.subscribe()
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> compositeSubscriber.subscribe())
+                .thenAwait(Duration.ofSeconds(10L))
                 .expectNext(subscribeResponse1, subscribeResponse2)
-                .verifyComplete();
+                .expectComplete()
+                .verify(Duration.ofSeconds(10L));
     }
 
     @Test
@@ -78,9 +80,10 @@ class CompositeSubscriberTest {
         when(mirrorSubscriber1.getSubscriptions()).thenReturn(Flux.just(subscription1));
         when(mirrorSubscriber2.getSubscriptions()).thenReturn(Flux.just(subscription2));
 
-        compositeSubscriber.getSubscriptions()
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> compositeSubscriber.getSubscriptions())
+                .thenAwait(Duration.ofSeconds(10L))
                 .expectNext(subscription1, subscription2)
-                .verifyComplete();
+                .expectComplete()
+                .verify(Duration.ofSeconds(10L));
     }
 }

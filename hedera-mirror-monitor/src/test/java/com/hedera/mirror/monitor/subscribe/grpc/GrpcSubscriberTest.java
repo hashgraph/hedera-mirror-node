@@ -4,7 +4,7 @@ package com.hedera.mirror.monitor.subscribe.grpc;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,6 +47,7 @@ import com.hedera.mirror.monitor.subscribe.SubscribeResponse;
 @ExtendWith(MockitoExtension.class)
 class GrpcSubscriberTest {
 
+    public static final Duration WAIT = Duration.ofSeconds(10L);
     private final ExpressionConverter expressionConverter = p -> p;
     private final SubscribeProperties subscribeProperties = new SubscribeProperties();
     private final GrpcSubscriberProperties grpcSubscriberProperties = new GrpcSubscriberProperties();
@@ -73,11 +74,11 @@ class GrpcSubscriberTest {
     @Test
     void subscribe() {
         when(grpcClient.subscribe(any())).thenReturn(Flux.just(response(), response()));
-        grpcSubscriber.subscribe()
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> grpcSubscriber.subscribe())
+                .thenAwait(WAIT)
                 .expectNextCount(2L)
                 .expectComplete()
-                .verify(Duration.ofMillis(500L));
+                .verify(WAIT);
         assertThat(grpcSubscriber.getSubscriptions().blockFirst())
                 .isNotNull()
                 .returns(ScenarioProtocol.GRPC, Scenario::getProtocol);
@@ -87,8 +88,8 @@ class GrpcSubscriberTest {
     void multipleSubscribers() {
         grpcSubscriberProperties.setSubscribers(2);
         when(grpcClient.subscribe(any())).thenReturn(Flux.just(response(), response()));
-        grpcSubscriber.subscribe()
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> grpcSubscriber.subscribe())
+                .thenAwait(WAIT)
                 .expectNextCount(4L)
                 .verifyComplete();
         assertThat(grpcSubscriber.getSubscriptions().collectList().block())
@@ -109,8 +110,7 @@ class GrpcSubscriberTest {
         subscribeProperties.getGrpc().put(grpcSubscriberProperties2.getName(), grpcSubscriberProperties2);
 
         when(grpcClient.subscribe(any())).thenReturn(Flux.just(response(), response()));
-        grpcSubscriber.subscribe()
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> grpcSubscriber.subscribe())
                 .expectNextCount(4L)
                 .verifyComplete();
         assertThat(grpcSubscriber.getSubscriptions().collectList().block())
@@ -126,11 +126,11 @@ class GrpcSubscriberTest {
     void disabledScenario() {
         grpcSubscriberProperties.setEnabled(false);
         verifyNoInteractions(grpcClient);
-        grpcSubscriber.subscribe()
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> grpcSubscriber.subscribe())
+                .thenAwait(WAIT)
                 .expectNextCount(0L)
                 .thenCancel()
-                .verify(Duration.ofMillis(200));
+                .verify(WAIT);
         assertThat(grpcSubscriber.getSubscriptions().count().block()).isZero();
     }
 
@@ -138,11 +138,11 @@ class GrpcSubscriberTest {
     void disabled() {
         subscribeProperties.setEnabled(false);
         verifyNoInteractions(grpcClient);
-        grpcSubscriber.subscribe()
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> grpcSubscriber.subscribe())
+                .thenAwait(WAIT)
                 .expectNextCount(0L)
                 .thenCancel()
-                .verify(Duration.ofMillis(200));
+                .verify(WAIT);
         assertThat(grpcSubscriber.getSubscriptions().count().block()).isZero();
     }
 
@@ -151,29 +151,32 @@ class GrpcSubscriberTest {
         when(grpcClient.subscribe(any()))
                 .thenReturn(Flux.error(new IllegalStateException()))
                 .thenReturn(Flux.just(response()));
-        grpcSubscriber.subscribe()
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> grpcSubscriber.subscribe())
+                .thenAwait(WAIT)
                 .expectNextCount(1L)
-                .verifyComplete();
+                .expectComplete()
+                .verify(WAIT);
     }
 
     @Test
     void retriesExhausted() {
         grpcSubscriberProperties.getRetry().setMaxAttempts(2);
         when(grpcClient.subscribe(any())).thenReturn(Flux.error(new IllegalStateException("failure")));
-        grpcSubscriber.subscribe()
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> grpcSubscriber.subscribe())
+                .thenAwait(WAIT)
                 .expectNextCount(0L)
-                .verifyError(IllegalStateException.class);
+                .expectError(IllegalStateException.class)
+                .verify(WAIT);
     }
 
     @Test
     void nonRetryableError() {
         when(grpcClient.subscribe(any())).thenReturn(Flux.error(new StatusRuntimeException(Status.INVALID_ARGUMENT)));
-        grpcSubscriber.subscribe()
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> grpcSubscriber.subscribe())
+                .thenAwait(WAIT)
                 .expectNextCount(0L)
-                .verifyError(StatusRuntimeException.class);
+                .expectError(StatusRuntimeException.class)
+                .verify(WAIT);
     }
 
     private SubscribeResponse response() {

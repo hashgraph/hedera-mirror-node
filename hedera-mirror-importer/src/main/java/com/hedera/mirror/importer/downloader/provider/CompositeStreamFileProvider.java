@@ -106,6 +106,10 @@ final class CompositeStreamFileProvider implements StreamFileProvider {
         return true;
     }
 
+    public boolean isHealthy() {
+        return providers.stream().filter(ProviderHealth::isHealthy).map(ProviderHealth::isHealthy).findFirst().orElse(false);
+    }
+
     @Value
     private class ProviderHealth {
 
