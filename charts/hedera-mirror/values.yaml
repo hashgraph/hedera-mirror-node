@@ -83,7 +83,7 @@ citus:
       random_page_cost = 1.1
       shared_preload_libraries = 'citus,pg_cron,pg_partman_bgw'
       wal_level = logical
-      worker_mem = 32MB
+      work_mem = 32MB
     extraEnvVarsSecret: mirror-passwords
     initdb:
       scriptsConfigMap: "{{ .Release.Name }}-init"
@@ -106,7 +106,7 @@ citus:
       random_page_cost = 1.1
       shared_preload_libraries = 'citus'
       wal_level = logical
-      worker_mem = 32MB
+      work_mem = 32MB
     extraEnvVarsSecret: mirror-passwords
     extraVolumeMounts:
       - name: config
