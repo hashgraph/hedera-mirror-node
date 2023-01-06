@@ -31,7 +31,7 @@ const {options, run} = new TestScenarioBuilder()
   .name('contractsIdState') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request((testParameters) => {
-    const url = `${testParameters['BASE_URL']}${urlPrefix}/contracts/${testParameters['DEFAULT_CONTRACT_EVM_ADDRESS']}/state`;
+    const url = `${testParameters['BASE_URL']}${urlPrefix}/contracts/${testParameters['DEFAULT_CONTRACT_ID']}/state?limit=${testParameters['DEFAULT_LIMIT']}`;
     return http.get(url);
   })
   .check('Contracts id state OK', (r) => isValidListResponse(r, stateListName))

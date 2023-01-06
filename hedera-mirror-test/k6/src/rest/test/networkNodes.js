@@ -31,7 +31,7 @@ const {options, run} = new TestScenarioBuilder()
   .name('networkNodes') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request((testParameters) => {
-    const url = `${testParameters['BASE_URL']}${urlPrefix}${urlTag}`;
+    const url = `${testParameters['BASE_URL']}${urlPrefix}${urlTag}?limit=25`;
     return http.get(url);
   })
   .check('Network Nodes OK', (r) => isValidListResponse(r, nodeListName))

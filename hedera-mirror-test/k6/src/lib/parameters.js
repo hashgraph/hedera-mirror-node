@@ -151,11 +151,10 @@ export const computeAccountParameters = (configuration) =>
   });
 
 export const computeContractParameters = (configuration) => {
-  const contractProperties = computeProperties(['DEFAULT_CONTRACT_ID', 'DEFAULT_CONTRACT_TIMESTAMP', 'DEFAULT_CONTRACT_EVM_ADDRESS'], () => {
+  const contractProperties = computeProperties(['DEFAULT_CONTRACT_ID', 'DEFAULT_CONTRACT_TIMESTAMP'], () => {
     const extractProperties = (contract, log) => ({
       DEFAULT_CONTRACT_ID: contract.contract_id,
       DEFAULT_CONTRACT_TIMESTAMP: log.timestamp,
-      DEFAULT_CONTRACT_EVM_ADDRESS: contract.evm_address,
     });
     return getPropertiesForEntity(configuration, extractProperties, {
       entitiesKey: contractListName,
