@@ -36,5 +36,5 @@ public class ReleaseHealthProperties {
     @NotNull
     private Duration cacheExpiry = Duration.ofSeconds(30);
 
-    private boolean enabled = true;
+    private boolean enabled = false;
 }
