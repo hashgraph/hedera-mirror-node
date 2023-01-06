@@ -22,11 +22,13 @@ import http from 'k6/http';
 
 import {
   accountListName,
+  actionListName,
   allowanceListName,
   balanceListName,
   blockListName,
   contractListName,
   messageListName,
+  resultListName,
   scheduleListName,
   tokenListName,
   transactionListName,
@@ -76,7 +78,7 @@ const getPropertiesForEntity = (configuration, extractProperties, properties) =>
 
   while (true) {
     const query = `${defaultEntitiesQuery}${lastEntityId && entityIdPaginationKey + '=lt:' + lastEntityId}`;
-    const entities = getEntities(query, entitiesKey);
+    const entities = getEntities(query, entitiesKey.includes('/') ? resultListName : entitiesKey);
     if (entities.length === 0) {
       throw new Error('No ${entitiesKey} matching criteria found');
     }
@@ -232,16 +234,26 @@ export const computeBlockParameters = (configuration) =>
 });
 
 export const computeContractParameters = (configuration) => {
-  const extractProperties = (contract, log) => ({
-    DEFAULT_CONTRACT_ID: contract.contract_id,
-    DEFAULT_CONTRACT_TIMESTAMP: log.timestamp,
-  });
-  return computeProperties(['DEFAULT_CONTRACT_ID', 'DEFAULT_CONTRACT_TIMESTAMP'], () =>
-    getPropertiesForEntity(configuration, extractProperties, {
+  const contractProperties = computeProperties(['DEFAULT_CONTRACT_ID', 'DEFAULT_CONTRACT_TIMESTAMP'], () => {
+    const extractProperties = (contract, log) => ({
+      DEFAULT_CONTRACT_ID: contract.contract_id,
+      DEFAULT_CONTRACT_TIMESTAMP: log.timestamp,
+    });
+    return getPropertiesForEntity(configuration, extractProperties, {
       entitiesKey: contractListName,
       subResourcePath: 'results/logs',
-    })
-  );
+    });
+  });
+
+  const contractResultHashProperty = computeProperties(['DEFAULT_CONTRACT_RESULT_HASH'], () => {
+    const contractResultsPath = `${configuration.baseApiUrl}/contracts/results`;
+    const firstContractResult = getFirstEntity(contractResultsPath, resultListName);
+    return {
+      DEFAULT_CONTRACT_RESULT_HASH: firstContractResult.hash,
+    };
+  });
+
+  return Object.assign(contractProperties, contractResultHashProperty);
 };
 
 export const computeNftParameters = (configuration) => {
