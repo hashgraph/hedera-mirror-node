@@ -152,8 +152,8 @@ class CompositeStreamFileProviderTest {
 
         await("stream-provider-health")
                 .atMost(Duration.ofSeconds(5))
-                .atLeast(Duration.ofSeconds(1))
-                .pollDelay(Duration.ofMillis(100))
+                .pollDelay(Duration.ofSeconds(1L))
+                .pollInterval(Duration.ofMillis(100L))
                 .until(() -> compositeStreamFileProvider.isHealthy());
 
         StepVerifier.withVirtualTime(() -> compositeStreamFileProvider.get(NODE, FILENAME))
