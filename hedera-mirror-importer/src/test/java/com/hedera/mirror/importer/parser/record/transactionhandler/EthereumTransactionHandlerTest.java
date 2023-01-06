@@ -98,7 +98,7 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @ParameterizedTest
     void getEntityId(boolean create) {
         var recordItem = recordItemBuilder.ethereumTransaction(create).build();
-        var functionResult = getContractFunctionResult(recordItem.getRecord(), create);
+        var functionResult = getContractFunctionResult(recordItem.getTransactionRecord(), create);
         var expectedId = EntityId.of(functionResult.getContractID());
 
         assertThat(transactionHandler.getEntity(recordItem)).isEqualTo(expectedId);
@@ -136,7 +136,7 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         assertThat(recordItem.getEthereumTransaction()).isSameAs(ethereumTransaction);
 
-        var functionResult = getContractFunctionResult(recordItem.getRecord(), create);
+        var functionResult = getContractFunctionResult(recordItem.getTransactionRecord(), create);
         var senderId = functionResult.getSenderId().getAccountNum();
         verify(entityListener).onEntity(argThat(e -> e.getId() == senderId && e.getTimestampRange() == null &&
                 e.getEthereumNonce() == ethereumTransaction.getNonce() + 1));
@@ -217,7 +217,7 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
         var transaction = new Transaction();
         transactionHandler.updateTransaction(transaction, recordItem);
 
-        var functionResult = getContractFunctionResult(recordItem.getRecord(), create);
+        var functionResult = getContractFunctionResult(recordItem.getTransactionRecord(), create);
         var senderId = functionResult.getSenderId().getAccountNum();
         verify(entityListener).onEthereumTransaction(ethereumTransaction);
         verify(entityListener).onEntity(argThat(e -> e.getId() == senderId && e.getTimestampRange() == null &&

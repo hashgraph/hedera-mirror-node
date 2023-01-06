@@ -30,7 +30,7 @@ import com.hedera.hashgraph.sdk.Transaction;
 @Value
 public class PublishRequest {
     private final boolean receipt;
-    private final boolean record;
+    private final boolean sendRecord;
     private final PublishScenario scenario;
     private final Instant timestamp;
     private final Transaction<?> transaction;

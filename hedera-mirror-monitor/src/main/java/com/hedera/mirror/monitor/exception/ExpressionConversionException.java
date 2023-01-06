@@ -1,10 +1,10 @@
-package com.hedera.mirror.importer.exception;
+package com.hedera.mirror.monitor.exception;
 
 /*-
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,19 +20,9 @@ package com.hedera.mirror.importer.exception;
  * ‍
  */
 
-public class ParserSQLException extends ParserException {
+public class ExpressionConversionException extends RuntimeException {
 
-    private static final long serialVersionUID = 5216154273755649844L;
-
-    public ParserSQLException(String message) {
-        super(message);
-    }
-
-    public ParserSQLException(Throwable throwable) {
-        super(throwable);
-    }
-
-    public ParserSQLException(String message, Throwable throwable) {
-        super(message, throwable);
+    public ExpressionConversionException(Throwable e) {
+        super(e);
     }
 }

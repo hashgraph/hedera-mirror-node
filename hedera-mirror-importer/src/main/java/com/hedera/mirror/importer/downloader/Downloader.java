@@ -29,6 +29,9 @@ import com.google.common.collect.Multimaps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.google.common.collect.TreeMultimap;
+
+import com.hedera.mirror.common.domain.StreamItem;
+
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
@@ -72,7 +75,7 @@ import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
 import com.hedera.mirror.importer.util.ShutdownHelper;
 import com.hedera.mirror.importer.util.Utility;
 
-public abstract class Downloader<T extends StreamFile> {
+public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> {
 
     public static final String STREAM_CLOSE_LATENCY_METRIC_NAME = "hedera.mirror.stream.close.latency";
 
@@ -112,6 +115,7 @@ public abstract class Downloader<T extends StreamFile> {
     private final Timer streamCloseMetric;
     private final Timer.Builder streamVerificationMetric;
 
+    @SuppressWarnings("java:S3740")
     protected Downloader(ConsensusNodeService consensusNodeService,
                          DownloaderProperties downloaderProperties,
                          MeterRegistry meterRegistry,
@@ -412,6 +416,7 @@ public abstract class Downloader<T extends StreamFile> {
         }
     }
 
+    @SuppressWarnings("java:S1172") // Unused Parameter (node) required by subclass implementations
     protected void onVerified(StreamFileData streamFileData, T streamFile, ConsensusNode node) {
         setStreamFileIndex(streamFile);
         streamFileNotifier.verified(streamFile);
@@ -441,7 +446,7 @@ public abstract class Downloader<T extends StreamFile> {
      * @param streamFile the stream file object
      * @param signature  the signature object corresponding to the stream file
      */
-    private void verify(StreamFile streamFile, StreamFileSignature signature) {
+    private void verify(T streamFile, StreamFileSignature signature) {
         String filename = streamFile.getName();
         String expectedPrevHash = lastStreamFile.get().map(StreamFile::getHash).orElse(null);
 
@@ -467,7 +472,7 @@ public abstract class Downloader<T extends StreamFile> {
         }
     }
 
-    boolean verifyHashChain(StreamFile streamFile, String expectedPreviousHash) {
+    boolean verifyHashChain(T streamFile, String expectedPreviousHash) {
         if (!streamFile.getType().isChained()) {
             return true;
         }

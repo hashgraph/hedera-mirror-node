@@ -1,10 +1,10 @@
-package com.hedera.mirror.importer.exception;
+package com.hedera.mirror.common.exception;
 
 /*-
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,9 @@ package com.hedera.mirror.importer.exception;
  * ‍
  */
 
-public class MissingFileException extends ImporterException {
+public class NonParsableKeyException extends MirrorNodeException {
 
-    private static final long serialVersionUID = -3538381075104588657L;
-
-    public MissingFileException(String message) {
-        super(message);
+    public NonParsableKeyException(Throwable throwable) {
+        super(throwable);
     }
 }

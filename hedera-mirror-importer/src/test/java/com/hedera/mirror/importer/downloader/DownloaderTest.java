@@ -38,7 +38,7 @@ import com.hedera.mirror.importer.domain.StreamFilename;
 class DownloaderTest {
 
     @Mock
-    private Downloader<RecordFile> downloader;
+    private Downloader<RecordFile, ?> downloader;
 
     @Test
     void streamFileSignatureMultiMapExpectNoDuplicate() {

@@ -33,6 +33,9 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.google.protobuf.ByteString;
+
+import com.hedera.mirror.importer.exception.ParserException;
+
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.SignatureMap;
@@ -58,7 +61,6 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
 import com.hedera.mirror.importer.exception.HashMismatchException;
-import com.hedera.mirror.importer.exception.ParserSQLException;
 import com.hedera.mirror.importer.parser.AbstractStreamFileParserTest;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
@@ -127,7 +129,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
 
     @Override
     protected void mockDbFailure() {
-        doThrow(ParserSQLException.class).when(recordItemListener).onItem(any());
+        doThrow(ParserException.class).when(recordItemListener).onItem(any());
     }
 
     @Test

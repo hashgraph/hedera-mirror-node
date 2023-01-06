@@ -33,6 +33,7 @@ import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -187,14 +188,12 @@ public class AddressBookServiceImpl implements AddressBookService {
         try {
             var nodeAddressBook = NodeAddressBook.parseFrom(fileData.getFileData());
 
-            if (nodeAddressBook != null) {
-                if (nodeAddressBook.getNodeAddressCount() > 0) {
-                    addressBookBuilder.nodeCount(nodeAddressBook.getNodeAddressCount());
-                    Collection<AddressBookEntry> addressBookEntryCollection =
-                            retrieveNodeAddressesFromAddressBook(nodeAddressBook, startConsensusTimestamp);
+            if (nodeAddressBook != null && nodeAddressBook.getNodeAddressCount() > 0) {
+                addressBookBuilder.nodeCount(nodeAddressBook.getNodeAddressCount());
+                Collection<AddressBookEntry> addressBookEntryCollection =
+                        retrieveNodeAddressesFromAddressBook(nodeAddressBook, startConsensusTimestamp);
 
-                    addressBookBuilder.entries(addressBookEntryCollection.stream().collect(Collectors.toList()));
-                }
+                addressBookBuilder.entries(new ArrayList<>(addressBookEntryCollection));
             }
         } catch (Exception e) {
             log.warn("Unable to parse address book: {}", e.getMessage());

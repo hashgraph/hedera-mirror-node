@@ -28,6 +28,9 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.inject.Named;
+
+import com.hedera.mirror.monitor.exception.ExpressionConversionException;
+
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
@@ -139,7 +142,7 @@ public class ExpressionConverterImpl implements ExpressionConverter {
                     .join();
         } catch (Exception e) {
             log.error("Error converting expression {}:", expression, e);
-            throw new RuntimeException(e);
+            throw new ExpressionConversionException(e);
         }
     }
 

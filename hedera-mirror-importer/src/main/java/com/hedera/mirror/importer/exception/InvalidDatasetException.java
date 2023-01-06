@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.exception;
 /**
  * Invalid dataset such as an account balances dataset.
  */
+@SuppressWarnings("java:S110")
 public class InvalidDatasetException extends ImporterException {
 
     private static final long serialVersionUID = 3679395824341309905L;

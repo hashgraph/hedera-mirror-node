@@ -55,7 +55,7 @@ class RedisConfiguration {
 
     @Bean
     RedisSerializer<StreamMessage> redisSerializer() {
-        Jackson2JsonRedisSerializer jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer(StreamMessage.class);
+        Jackson2JsonRedisSerializer<StreamMessage> jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer<>(StreamMessage.class);
         jackson2JsonRedisSerializer.setObjectMapper(new ObjectMapper(new MessagePackFactory()));
         return jackson2JsonRedisSerializer;
     }

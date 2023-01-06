@@ -130,6 +130,7 @@ abstract class AbstractRecordFileDownloaderTest extends AbstractLinkedStreamDown
         verifyUnsuccessful();
     }
 
+    @SuppressWarnings("java:S2925")
     private <T> CompletableFuture<T> future() {
         return CompletableFuture.supplyAsync(() -> {
             try {

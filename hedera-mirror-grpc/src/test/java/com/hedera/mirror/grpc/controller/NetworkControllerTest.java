@@ -4,7 +4,7 @@ package com.hedera.mirror.grpc.controller;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,6 +49,7 @@ import com.hedera.mirror.grpc.util.ProtoUtil;
 @Log4j2
 class NetworkControllerTest extends GrpcIntegrationTest {
 
+    private static final Duration WAIT = Duration.ofSeconds(10L);
     private static final long CONSENSUS_TIMESTAMP = 1L;
 
     @GrpcClient("local")
@@ -60,10 +61,10 @@ class NetworkControllerTest extends GrpcIntegrationTest {
     @Test
     void missingFileId() {
         AddressBookQuery query = AddressBookQuery.newBuilder().build();
-        reactiveService.getNodes(Mono.just(query))
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> reactiveService.getNodes(Mono.just(query)))
+                .thenAwait(WAIT)
                 .expectErrorSatisfies(t -> assertException(t, Status.Code.INVALID_ARGUMENT, "fileId: must not be null"))
-                .verify(Duration.ofSeconds(1L));
+                .verify(WAIT);
     }
 
     @Test
@@ -71,10 +72,10 @@ class NetworkControllerTest extends GrpcIntegrationTest {
         AddressBookQuery query = AddressBookQuery.newBuilder()
                 .setFileId(FileID.newBuilder().setFileNum(-1).build())
                 .build();
-        reactiveService.getNodes(Mono.just(query))
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> reactiveService.getNodes(Mono.just(query)))
+                .thenAwait(WAIT)
                 .expectErrorSatisfies(t -> assertException(t, Status.Code.INVALID_ARGUMENT, "Invalid entity ID"))
-                .verify(Duration.ofSeconds(1L));
+                .verify(WAIT);
     }
 
     @Test
@@ -84,11 +85,11 @@ class NetworkControllerTest extends GrpcIntegrationTest {
                 .setLimit(-1)
                 .build();
 
-        reactiveService.getNodes(Mono.just(query))
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> reactiveService.getNodes(Mono.just(query)))
+                .thenAwait(WAIT)
                 .expectErrorSatisfies(t -> assertException(t, Status.Code.INVALID_ARGUMENT, "limit: must be greater " +
                         "than or equal to 0"))
-                .verify(Duration.ofSeconds(1L));
+                .verify(WAIT);
     }
 
     @Test
@@ -97,10 +98,10 @@ class NetworkControllerTest extends GrpcIntegrationTest {
                 .setFileId(FileID.newBuilder().setFileNum(102L).build())
                 .build();
 
-        reactiveService.getNodes(Mono.just(query))
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> reactiveService.getNodes(Mono.just(query)))
+                .thenAwait(WAIT)
                 .expectErrorSatisfies(t -> assertException(t, Status.Code.NOT_FOUND, "does not exist"))
-                .verify(Duration.ofSeconds(1L));
+                .verify(WAIT);
     }
 
     @Test
@@ -112,13 +113,12 @@ class NetworkControllerTest extends GrpcIntegrationTest {
                 .setFileId(FileID.newBuilder().setFileNum(addressBook.getFileId().getEntityNum()).build())
                 .build();
 
-        reactiveService.getNodes(Mono.just(query))
-                .as(StepVerifier::create)
-                .thenAwait(Duration.ofMillis(50))
+        StepVerifier.withVirtualTime(() -> reactiveService.getNodes(Mono.just(query)))
+                .thenAwait(WAIT)
                 .consumeNextWith(n -> assertEntry(addressBookEntry1, n))
                 .consumeNextWith(n -> assertEntry(addressBookEntry2, n))
                 .expectComplete()
-                .verify(Duration.ofSeconds(1L));
+                .verify(WAIT);
     }
 
     @Test
@@ -131,12 +131,11 @@ class NetworkControllerTest extends GrpcIntegrationTest {
                 .setLimit(1)
                 .build();
 
-        reactiveService.getNodes(Mono.just(query))
-                .as(StepVerifier::create)
-                .thenAwait(Duration.ofMillis(50))
+        StepVerifier.withVirtualTime(() -> reactiveService.getNodes(Mono.just(query)))
+                .thenAwait(WAIT)
                 .consumeNextWith(n -> assertEntry(addressBookEntry1, n))
                 .expectComplete()
-                .verify(Duration.ofSeconds(1L));
+                .verify(WAIT);
     }
 
     @Test
@@ -154,9 +153,8 @@ class NetworkControllerTest extends GrpcIntegrationTest {
                 .setFileId(FileID.newBuilder().setFileNum(addressBook.getFileId().getEntityNum()).build())
                 .build();
 
-        reactiveService.getNodes(Mono.just(query))
-                .as(StepVerifier::create)
-                .thenAwait(Duration.ofMillis(50))
+        StepVerifier.withVirtualTime(() -> reactiveService.getNodes(Mono.just(query)))
+                .thenAwait(WAIT)
                 .consumeNextWith(n -> assertThat(n).isNotNull()
                         .returns("", NodeAddress::getDescription)
                         .returns(ByteString.EMPTY, NodeAddress::getMemo)
@@ -166,7 +164,7 @@ class NetworkControllerTest extends GrpcIntegrationTest {
                         .returns("", NodeAddress::getRSAPubKey)
                         .returns(0L, NodeAddress::getStake))
                 .expectComplete()
-                .verify(Duration.ofSeconds(1L));
+                .verify(WAIT);
     }
 
     private AddressBook addressBook() {

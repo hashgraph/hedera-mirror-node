@@ -4,7 +4,7 @@ package com.hedera.mirror.importer.repository.upsert;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,6 +53,7 @@ import org.springframework.jdbc.core.JdbcOperations;
 
 import com.hedera.mirror.common.domain.UpsertColumn;
 import com.hedera.mirror.common.domain.Upsertable;
+import com.hedera.mirror.importer.exception.FieldInaccessibleException;
 
 @Log4j2
 @Named
@@ -60,11 +61,11 @@ import com.hedera.mirror.common.domain.Upsertable;
 public class EntityMetadataRegistry {
 
     private final EntityManager entityManager;
-    private final Map<Class<?>, EntityMetadata> entityMetadata = new ConcurrentHashMap<>();
+    private final Map<Class<?>, EntityMetadata> domainEntityMetadata = new ConcurrentHashMap<>();
     private final JdbcOperations jdbcOperations;
 
     public EntityMetadata lookup(Class<?> domainClass) {
-        return entityMetadata.computeIfAbsent(domainClass, this::create);
+        return domainEntityMetadata.computeIfAbsent(domainClass, this::create);
     }
 
     private EntityMetadata create(Class<?> domainClass) {
@@ -178,7 +179,7 @@ public class EntityMetadataRegistry {
             return (Function<Object, Object>) LambdaMetafactory.metafactory(lookup, "apply",
                     methodType(Function.class), functionType.erase(), handle, functionType).getTarget().invokeExact();
         } catch (Throwable t) {
-            throw new RuntimeException(t);
+            throw new FieldInaccessibleException(t);
         }
     }
 
@@ -192,7 +193,7 @@ public class EntityMetadataRegistry {
             return (BiConsumer<Object, Object>) LambdaMetafactory.metafactory(lookup, "accept",
                     methodType(BiConsumer.class), functionType.erase(), handle, functionType).getTarget().invokeExact();
         } catch (Throwable t) {
-            throw new RuntimeException(t);
+            throw new FieldInaccessibleException(t);
         }
     }
 

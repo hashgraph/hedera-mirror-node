@@ -26,15 +26,15 @@ public abstract class ImporterException extends MirrorNodeException {
 
     private static final long serialVersionUID = -4366690969696518274L;
 
-    public ImporterException(String message) {
+    protected ImporterException(String message) {
         super(message);
     }
 
-    public ImporterException(Throwable throwable) {
+    protected ImporterException(Throwable throwable) {
         super(throwable);
     }
 
-    public ImporterException(String message, Throwable throwable) {
+    protected ImporterException(String message, Throwable throwable) {
         super(message, throwable);
     }
 }
