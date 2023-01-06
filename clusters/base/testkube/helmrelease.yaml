@@ -10,7 +10,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: testkube
-      version: 1.8.0
+      version: 1.8.55
   install:
     crds: CreateReplace
   interval: 90s
@@ -21,9 +21,6 @@ spec:
     testkube-api:
       cliIngress:
         enabled: false
-      minio:
-        image:
-          tag: RELEASE.2022-12-07T00-56-37Z
       uiIngress:
         enabled: false
     testkube-dashboard:
