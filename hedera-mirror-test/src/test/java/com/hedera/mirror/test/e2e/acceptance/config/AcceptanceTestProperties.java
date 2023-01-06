@@ -56,7 +56,7 @@ public class AcceptanceTestProperties {
     @Max(5)
     private int maxRetries = 2;
 
-    private long maxTinyBarTransactionFee = Hbar.from(40).toTinybars();
+    private long maxTinyBarTransactionFee = Hbar.from(50).toTinybars();
 
     @NotNull
     private Duration messageTimeout = Duration.ofSeconds(20);
@@ -69,7 +69,7 @@ public class AcceptanceTestProperties {
 
     private Set<NodeProperties> nodes = new LinkedHashSet<>();
 
-    private long operatorBalance = Hbar.from(200).toTinybars();
+    private long operatorBalance = Hbar.from(260).toTinybars();
 
     @NotBlank
     private String operatorId = "0.0.2";

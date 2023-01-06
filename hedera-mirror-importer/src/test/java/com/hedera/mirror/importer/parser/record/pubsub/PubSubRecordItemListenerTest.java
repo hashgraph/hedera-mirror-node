@@ -205,7 +205,7 @@ class PubSubRecordItemListenerTest {
         Transaction transaction = buildTransaction(builder -> builder.setCryptoTransfer(cryptoTransfer));
         var recordItem = RecordItem.builder().record(DEFAULT_RECORD).transaction(transaction).build();
         when(nonFeeTransferExtractionStrategy.extractNonFeeTransfers(recordItem.getTransactionBody(),
-                recordItem.getRecord())).thenReturn(cryptoTransfer.getTransfers().getAccountAmountsList());
+                recordItem.getTransactionRecord())).thenReturn(cryptoTransfer.getTransfers().getAccountAmountsList());
 
         // when
         pubSubRecordItemListener.onItem(recordItem);

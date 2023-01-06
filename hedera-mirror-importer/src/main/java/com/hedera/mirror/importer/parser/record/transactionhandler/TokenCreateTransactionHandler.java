@@ -41,7 +41,7 @@ class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        return EntityId.of(recordItem.getRecord().getReceipt().getTokenID());
+        return EntityId.of(recordItem.getTransactionRecord().getReceipt().getTokenID());
     }
 
     @Override
