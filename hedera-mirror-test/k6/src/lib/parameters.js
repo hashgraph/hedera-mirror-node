@@ -20,16 +20,7 @@
 
 import http from 'k6/http';
 
-import {
-  accountListName,
-  actionListName,
-  contractListName,
-  messageListName,
-  resultListName,
-  scheduleListName,
-  tokenListName,
-  transactionListName,
-} from './constants.js';
+import {accountListName, actionListName, contractListName, messageListName, resultListName, scheduleListName, tokenListName, transactionListName} from './constants.js';
 
 const last = (arr) => arr[arr.length - 1];
 
