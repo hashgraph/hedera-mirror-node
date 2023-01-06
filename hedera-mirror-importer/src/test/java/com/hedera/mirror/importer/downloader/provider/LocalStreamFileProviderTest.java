@@ -50,11 +50,11 @@ class LocalStreamFileProviderTest extends AbstractStreamFileProviderTest {
         var accountId = "0.0.3";
         var node = node(accountId);
         var lastFilename = new StreamFilename(Instant.now().toString().replace(':', '_') + ".rcd.gz");
-        streamFileProvider.list(node, lastFilename)
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> streamFileProvider.list(node, lastFilename))
+                .thenAwait(Duration.ofSeconds(10))
                 .expectNextCount(0)
                 .expectComplete()
-                .verify(Duration.ofMillis(250));
+                .verify(Duration.ofSeconds(10));
         assertThat(Files.walk(dataPath)
                 .filter(p -> p.toString().contains(accountId))
                 .filter(p -> !p.toString().contains("sidecar"))
