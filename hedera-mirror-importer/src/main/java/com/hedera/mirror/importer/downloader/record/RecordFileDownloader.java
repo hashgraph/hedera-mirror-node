@@ -121,7 +121,7 @@ public class RecordFileDownloader extends Downloader<RecordFile, RecordItem> {
 
         recordFile.getItems()
                 .doOnNext(recordItem -> {
-                    var timestamp = recordItem.getRecord().getConsensusTimestamp();
+                    var timestamp = recordItem.getTransactionRecord().getConsensusTimestamp();
                     if (records.containsKey(timestamp)) {
                         recordItem.setSidecarRecords(records.get(timestamp));
                     }

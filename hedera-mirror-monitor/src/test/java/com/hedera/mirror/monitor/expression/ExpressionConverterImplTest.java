@@ -232,7 +232,7 @@ class ExpressionConverterImplTest {
 
         return Mono.just(
                 PublishResponse.builder()
-                        .record(record)
+                        .transactionRecord(record)
                         .receipt(record.receipt)
                         .build()
         );
