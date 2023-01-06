@@ -1,0 +1,15 @@
+{{- if .Values.testkube.enabled -}}
+apiVersion: executor.testkube.io/v1
+kind: Executor
+metadata:
+  name: k6-custom-executor
+  namespace: {{ .Values.testkube.namespace }}
+spec:
+  command: ["k6", "run"]
+  executor_type: container
+  features:
+    - artifacts
+  image: loadimpact/k6:0.42.0
+  types:
+    - k6-custom/script
+{{- end }}

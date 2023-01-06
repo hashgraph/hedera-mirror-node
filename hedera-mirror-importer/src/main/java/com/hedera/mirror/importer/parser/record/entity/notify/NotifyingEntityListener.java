@@ -99,7 +99,7 @@ public class NotifyingEntityListener implements BatchEntityListener {
         topicMessages.clear();
     }
 
-    private PreparedStatementCallback callback(Collection<TopicMessage> topicMessages) {
+    private PreparedStatementCallback<int[]> callback(Collection<TopicMessage> topicMessages) {
         return preparedStatement -> {
             for (TopicMessage topicMessage : topicMessages) {
                 String json = toJson(topicMessage);

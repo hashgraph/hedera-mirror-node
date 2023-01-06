@@ -765,7 +765,7 @@ public class TokenFeature {
         assertNotNull(mirrorTokenRelationship);
         assertNotNull(mirrorTokenRelationship.getTokens());
         assertNotNull(mirrorTokenRelationship.getLinks());
-        assertNotEquals(mirrorTokenRelationship.getTokens().size(),0);
-        assertThat(mirrorTokenRelationship.getLinks().getNext()).isEqualTo(null);
+        assertNotEquals(0, mirrorTokenRelationship.getTokens().size());
+        assertThat(mirrorTokenRelationship.getLinks().getNext()).isNull();
     }
 }

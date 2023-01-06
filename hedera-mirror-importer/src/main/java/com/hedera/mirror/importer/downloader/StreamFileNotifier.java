@@ -31,5 +31,5 @@ import com.hedera.mirror.common.domain.StreamFile;
 @MessagingGateway(defaultRequestChannel = CHANNEL_STREAM)
 public interface StreamFileNotifier {
 
-    void verified(StreamFile streamFile);
+    void verified(StreamFile<?> streamFile);
 }

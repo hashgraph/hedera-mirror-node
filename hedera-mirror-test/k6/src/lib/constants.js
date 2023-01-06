@@ -21,7 +21,9 @@
 export const accountListName = "accounts";
 export const actionListName = "actions";
 export const addressBookListName = "address_books";
+export const allowanceListName = "allowances";
 export const balanceListName = "balances";
+export const blockListName = "blocks";
 export const contractListName = "contracts";
 export const feesListName = "fees";
 export const logListName = "logs";

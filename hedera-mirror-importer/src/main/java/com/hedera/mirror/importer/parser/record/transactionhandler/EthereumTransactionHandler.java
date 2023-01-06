@@ -53,7 +53,7 @@ class EthereumTransactionHandler implements TransactionHandler {
     @SuppressWarnings("deprecation")
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        var transactionRecord = recordItem.getRecord();
+        var transactionRecord = recordItem.getTransactionRecord();
 
         // pull entity from ContractResult
         var contractFunctionResult = transactionRecord.hasContractCreateResult() ?
@@ -86,7 +86,7 @@ class EthereumTransactionHandler implements TransactionHandler {
         convertGasWeiToTinyBars(ethereumTransaction);
 
         // update ethereumTransaction with record values
-        var transactionRecord = recordItem.getRecord();
+        var transactionRecord = recordItem.getTransactionRecord();
         ethereumTransaction.setConsensusTimestamp(recordItem.getConsensusTimestamp());
         ethereumTransaction.setData(ethereumDataBytes);
         ethereumTransaction.setHash(DomainUtils.toBytes(transactionRecord.getEthereumHash()));
@@ -99,15 +99,15 @@ class EthereumTransactionHandler implements TransactionHandler {
     }
 
     private void updateAccountNonce(RecordItem recordItem, EthereumTransaction ethereumTransaction) {
-        var record = recordItem.getRecord();
+        var transactionRecord = recordItem.getTransactionRecord();
 
         // It should not update the nonce if it's unsuccessful and failed before EVM execution
-        if (!recordItem.isSuccessful() && !record.hasContractCallResult() && !record.hasContractCreateResult()) {
+        if (!recordItem.isSuccessful() && !transactionRecord.hasContractCallResult() && !transactionRecord.hasContractCreateResult()) {
             return;
         }
 
-        var functionResult = record.hasContractCreateResult() ? record.getContractCreateResult() :
-                record.getContractCallResult();
+        var functionResult = transactionRecord.hasContractCreateResult() ? transactionRecord.getContractCreateResult() :
+                transactionRecord.getContractCallResult();
         var senderId = EntityId.of(functionResult.getSenderId());
 
         if (!EntityId.isEmpty(senderId)) {

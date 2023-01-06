@@ -119,7 +119,7 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
         var recordItem = recordItemBuilder.cryptoCreate()
                 .transactionBody(b -> b.setDeclineReward(false).setStakedAccountId(stakedAccountId))
                 .build();
-        var accountId = EntityId.of(recordItem.getRecord().getReceipt().getAccountID());
+        var accountId = EntityId.of(recordItem.getTransactionRecord().getReceipt().getAccountID());
 
         // when
         transactionHandler.updateTransaction(transaction(recordItem), recordItem);
@@ -138,7 +138,7 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
         var recordItem = recordItemBuilder.cryptoCreate()
                 .transactionBody(b -> b.setDeclineReward(true).setStakedNodeId(nodeId))
                 .build();
-        var accountId = EntityId.of(recordItem.getRecord().getReceipt().getAccountID());
+        var accountId = EntityId.of(recordItem.getTransactionRecord().getReceipt().getAccountID());
 
         // when
         transactionHandler.updateTransaction(transaction(recordItem), recordItem);
@@ -155,7 +155,7 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
     void updateAlias() {
         var alias = UtilityTest.ALIAS_ECDSA_SECP256K1;
         var recordItem = recordItemBuilder.cryptoCreate().record(r -> r.setAlias(DomainUtils.fromBytes(alias))).build();
-        var accountId = EntityId.of(recordItem.getRecord().getReceipt().getAccountID());
+        var accountId = EntityId.of(recordItem.getTransactionRecord().getReceipt().getAccountID());
 
         transactionHandler.updateTransaction(transaction(recordItem), recordItem);
 
@@ -173,7 +173,7 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
                         .setAlias(DomainUtils.fromBytes(alias))
                         .setKey(Key.getDefaultInstance())
                 ).build();
-        var accountId = EntityId.of(recordItem.getRecord().getReceipt().getAccountID());
+        var accountId = EntityId.of(recordItem.getTransactionRecord().getReceipt().getAccountID());
 
         transactionHandler.updateTransaction(transaction(recordItem), recordItem);
 
@@ -204,7 +204,7 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
                 .record(r -> r.setAlias(alias))
                 .transactionBody(t -> t.setKey(key))
                 .build();
-        var accountId = EntityId.of(recordItem.getRecord().getReceipt().getAccountID());
+        var accountId = EntityId.of(recordItem.getTransactionRecord().getReceipt().getAccountID());
 
         transactionHandler.updateTransaction(transaction(recordItem), recordItem);
 
@@ -232,7 +232,7 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
                         .setAlias(ByteString.copyFrom(UtilityTest.ALIAS_ECDSA_SECP256K1))
                         .setEvmAddress(transactionBodyEvmAddress))
                 .build();
-        var accountId = EntityId.of(recordItem.getRecord().getReceipt().getAccountID());
+        var accountId = EntityId.of(recordItem.getTransactionRecord().getReceipt().getAccountID());
 
         transactionHandler.updateTransaction(transaction(recordItem), recordItem);
 
@@ -262,7 +262,7 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
     }
 
     private Transaction transaction(RecordItem recordItem) {
-        var entityId = EntityId.of(recordItem.getRecord().getReceipt().getAccountID());
+        var entityId = EntityId.of(recordItem.getTransactionRecord().getReceipt().getAccountID());
         var consensusTimestamp = recordItem.getConsensusTimestamp();
         return domainBuilder.transaction()
                 .customize(t -> t.consensusTimestamp(consensusTimestamp).entityId(entityId))

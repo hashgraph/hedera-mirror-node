@@ -26,6 +26,7 @@ import com.hedera.mirror.common.domain.job.ReconciliationStatus;
 import com.hedera.mirror.importer.exception.ImporterException;
 
 @Getter
+@SuppressWarnings("java:S110")
 class ReconciliationException extends ImporterException {
 
     private static final long serialVersionUID = -1037307345641558766L;

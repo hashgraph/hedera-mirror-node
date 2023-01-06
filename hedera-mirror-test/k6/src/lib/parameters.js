@@ -20,7 +20,19 @@
 
 import http from 'k6/http';
 
-import {accountListName, actionListName, contractListName, messageListName, resultListName, scheduleListName, tokenListName, transactionListName} from './constants.js';
+import {
+  accountListName,
+  actionListName,
+  allowanceListName,
+  balanceListName,
+  blockListName,
+  contractListName,
+  messageListName,
+  resultListName,
+  scheduleListName,
+  tokenListName,
+  transactionListName,
+} from './constants.js';
 
 const last = (arr) => arr[arr.length - 1];
 
@@ -70,7 +82,6 @@ const getPropertiesForEntity = (configuration, extractProperties, properties) =>
     if (entities.length === 0) {
       throw new Error('No ${entitiesKey} matching criteria found');
     }
-
     for (const entity of entities) {
       try {
         lastEntityId = entity[entityIdResponseKey];
@@ -140,6 +151,87 @@ export const computeAccountParameters = (configuration) =>
       entityIdResponseKey: 'account',
     });
   });
+
+export const computeAccountWithNftsParameters = (configuration) =>
+  computeProperties(['DEFAULT_ACCOUNT_ID_NFTS'], () => {
+    const tokensPath = `${configuration.baseApiUrl}/tokens?type=NON_FUNGIBLE_UNIQUE&limit=100&order=asc`;
+    const tokensResult = getEntities(tokensPath, tokenListName);
+    for (const entity of tokensResult) {
+      const tokensBalancePath = `${configuration.baseApiUrl}/tokens/${entity.token_id}/balances`;
+      const tokensBalanceEntity = getEntities(tokensBalancePath, balanceListName);
+      if(tokensBalanceEntity.length === undefined) continue;
+      for (const balanceEntity of tokensBalanceEntity) {
+        if (balanceEntity.balance >= 20) {
+          return {
+            DEFAULT_ACCOUNT_ID_NFTS: balanceEntity.account
+          };
+        }
+      }
+    }
+    throw new Error(
+      `It was not possible to find an account with with significant number of nfts.`
+    );
+  });
+
+export const computeAccountWithTokenAllowanceParameters = (configuration) => //29631749
+  computeProperties(['DEFAULT_ACCOUNT_ID_TOKEN_ALLOWANCE'], () => {
+    const accountsPath = `${configuration.baseApiUrl}/accounts?account.id=gt%3A${configuration.startAccountId}&balance=false&order=asc&limit=100`;
+    const accountsResult = getEntities(accountsPath, accountListName);
+    for (const entity of accountsResult) {
+      const tokensAllowancePath = `${configuration.baseApiUrl}/accounts/${entity.account}/allowances/tokens`;
+      let tokensAllowanceEntities;
+      try {
+        tokensAllowanceEntities = getEntities(tokensAllowancePath, allowanceListName);
+      } catch (err) {
+        //Continuing to avoid errors due to accounts not having allowance tokens.
+        continue;
+      }
+      if(tokensAllowanceEntities.length === undefined) continue;
+      if (tokensAllowanceEntities.length >= 25) {
+          return {
+            DEFAULT_ACCOUNT_ID_TOKEN_ALLOWANCE: entity.account
+          };
+      }
+    }
+    throw new Error(
+      `It was not possible to find an account with with significant number of allowance tokens.`
+    );
+  });
+
+export const computeAccountWithTokenParameters = (configuration) =>
+  computeProperties(['DEFAULT_ACCOUNT_ID_TOKEN'], () => {
+    const accountsPath = `${configuration.baseApiUrl}/accounts`;
+    const accountsResult = getEntities(accountsPath, accountListName);
+    for (const entity of accountsResult) {
+      const tokensPath = `${configuration.baseApiUrl}/accounts/${entity.account}/tokens`;
+      const tokensEntities = getEntities(tokensPath, tokenListName);
+      if (tokensEntities.length === undefined) continue;
+      if (tokensEntities.length >= 25) {
+        return {
+          DEFAULT_ACCOUNT_ID_TOKEN: entity.account
+        };
+      }
+    }
+    throw new Error(
+      `It was not possible to find an account with with significant number of tokens.`
+    );
+  });
+
+
+
+export const computeBlockParameters = (configuration) =>
+  computeProperties(['DEFAULT_BLOCK_NUMBER', 'DEFAULT_BLOCK_HASH'], () => {
+    const extractProperties = (block) => {
+      return {
+        DEFAULT_BLOCK_NUMBER: block.number,
+        DEFAULT_BLOCK_HASH: block.hash,
+      };
+    };
+    return getPropertiesForEntity(configuration, extractProperties, {
+      entitiesKey: blockListName,
+      queryParamMap: {limit: 1},
+    });
+});
 
 export const computeContractParameters = (configuration) => {
   const contractProperties = computeProperties(['DEFAULT_CONTRACT_ID', 'DEFAULT_CONTRACT_TIMESTAMP'], () => {

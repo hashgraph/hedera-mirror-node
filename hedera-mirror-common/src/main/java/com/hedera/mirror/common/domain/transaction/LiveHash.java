@@ -40,6 +40,7 @@ public class LiveHash implements Persistable<Long> {
     @Id
     private Long consensusTimestamp;
 
+    @SuppressWarnings("java:S1700")
     private byte[] livehash;
 
     @JsonIgnore

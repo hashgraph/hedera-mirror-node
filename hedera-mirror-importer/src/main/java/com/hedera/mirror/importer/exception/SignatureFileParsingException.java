@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.exception;
  * ‍
  */
 
+@SuppressWarnings("java:S110")
 public class SignatureFileParsingException extends ImporterException {
     private static final long serialVersionUID = 8172331078550974122L;
 

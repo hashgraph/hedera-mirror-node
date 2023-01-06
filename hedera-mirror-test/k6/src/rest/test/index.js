@@ -31,14 +31,20 @@ import * as accountsCryptoAllowance from './accountsCryptoAllowance.js';
 import * as accountsCryptoAllowanceSpender from './accountsCryptoAllowanceSpender.js';
 import * as accountsId from './accountsId.js';
 import * as accountsIdNe from './accountsIdNe.js';
+import * as accountsNfts from './accountsNfts.js';
+import * as accountsTokens from './accountsTokens.js';
+import * as accountsTokenAllowance from './accountsTokenAllowance.js';
 import * as balances from './balances.js';
 import * as balancesAccount from './balancesAccount.js';
+import * as blocks from './blocks.js';
+import * as blocksNumber from './blocksNumber.js';
 import * as contracts from './contracts.js';
 import * as contractsId from './contractsId.js';
 import * as contractsIdResults from './contractsIdResults.js';
 import * as contractsIdResultsLogs from './contractsIdResultsLogs.js';
 import * as contractsIdResultsTimestamp from './contractsIdResultsTimestamp.js';
 import * as contractsIdState from './contractsIdState.js';
+import * as contractsResults from './contractsResult.js';
 import * as contractsResultsId from './contractsResultsId.js';
 import * as contractsResultsIdActions from './contractsResultsIdActions.js';
 import * as contractsResultsLogs from './contractsResultsLogs.js';
@@ -82,14 +88,20 @@ const tests = {
   accountsCryptoAllowanceSpender,
   accountsId,
   accountsIdNe,
+  accountsNfts,
+  accountsTokens,
+  accountsTokenAllowance,
   balances,
   balancesAccount,
+  blocks,
+  blocksNumber,
   contracts,
   contractsId,
   contractsIdResults,
   contractsIdResultsLogs,
   contractsIdResultsTimestamp,
   contractsIdState,
+  contractsResults,
   contractsResultsId,
   contractsResultsIdActions,
   contractsResultsLogs,

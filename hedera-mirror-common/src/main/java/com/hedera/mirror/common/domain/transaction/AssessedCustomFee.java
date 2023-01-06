@@ -76,7 +76,7 @@ public class AssessedCustomFee implements Persistable<AssessedCustomFee.Id> {
     public void setEffectivePayerEntityIds(List<EntityId> effectivePayerEntityIds) {
         effectivePayerAccountIds = effectivePayerEntityIds.stream()
                 .map(AccountIdConverter.INSTANCE::convertToDatabaseColumn)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Data

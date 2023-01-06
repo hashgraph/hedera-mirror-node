@@ -22,7 +22,8 @@ To run a test suite, such as rest, use the following command.
 DEFAULT_DURATION=1s \
 DEFAULT_VUS=1 \
 BASE_URL=https://testnet.mirrornode.hedera.com \
-DEFAULT_LIMIT=100 k6 run src/rest/apis.js
+DEFAULT_LIMIT=100 \
+DEFAULT_START_ACCOUNT=0.0.34196600 k6 run src/rest/apis.js
 ```
 
 Another option is to have a parameters file named `parameters.env` with the content:
@@ -32,6 +33,7 @@ export DEFAULT_DURATION=1s
 export DEFAULT_VUS=1
 export BASE_URL=https://testnet.mirrornode.hedera.com
 export DEFAULT_LIMIT=100
+export DEFAULT_START_ACCOUNT=0.0.34196600
 ```
 
 And execute k6 after exporting the values for the env variables:

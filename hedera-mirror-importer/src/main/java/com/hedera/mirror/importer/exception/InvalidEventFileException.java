@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.exception;
  * ‍
  */
 
+@SuppressWarnings("java:S110")
 public class InvalidEventFileException extends ImporterException {
 
     private static final long serialVersionUID = -2645790051583402799L;

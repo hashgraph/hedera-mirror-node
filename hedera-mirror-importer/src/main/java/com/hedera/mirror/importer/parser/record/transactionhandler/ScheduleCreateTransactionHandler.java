@@ -47,7 +47,7 @@ class ScheduleCreateTransactionHandler extends AbstractEntityCrudTransactionHand
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        return EntityId.of(recordItem.getRecord().getReceipt().getScheduleID());
+        return EntityId.of(recordItem.getTransactionRecord().getReceipt().getScheduleID());
     }
 
     @Override
@@ -73,7 +73,7 @@ class ScheduleCreateTransactionHandler extends AbstractEntityCrudTransactionHand
         var creatorAccount = recordItem.getPayerAccountId();
         var expirationTime = body.hasExpirationTime() ? DomainUtils.timestampInNanosMax(body.getExpirationTime()) : null;
         var payerAccount = body.hasPayerAccountID() ? EntityId.of(body.getPayerAccountID()) : creatorAccount;
-        var scheduleId = EntityId.of(recordItem.getRecord().getReceipt().getScheduleID());
+        var scheduleId = EntityId.of(recordItem.getTransactionRecord().getReceipt().getScheduleID());
 
         Schedule schedule = new Schedule();
         schedule.setConsensusTimestamp(consensusTimestamp);

@@ -32,7 +32,7 @@ public abstract class AbstractEntityIdConverter implements AttributeConverter<En
     @Getter
     private final EntityType entityType;
 
-    public AbstractEntityIdConverter(EntityType entityType) {
+    protected AbstractEntityIdConverter(EntityType entityType) {
         this.entityType = entityType;
     }
 
