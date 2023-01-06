@@ -153,7 +153,7 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
         if (log.isTraceEnabled()) {
             log.trace("Transaction = {}, Record = {}",
                     Utility.printProtoMessage(recordItem.getTransaction()),
-                    Utility.printProtoMessage(recordItem.getRecord()));
+                    Utility.printProtoMessage(recordItem.getTransactionRecord()));
         } else if (log.isDebugEnabled()) {
             log.debug("Parsing transaction with consensus timestamp {}", recordItem.getConsensusTimestamp());
         }
@@ -163,7 +163,7 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
         sizeMetrics.getOrDefault(recordItem.getTransactionType(), unknownSizeMetric)
                 .record(recordItem.getTransactionBytes().length);
 
-        Instant consensusTimestamp = Utility.convertToInstant(recordItem.getRecord().getConsensusTimestamp());
+        Instant consensusTimestamp = Utility.convertToInstant(recordItem.getTransactionRecord().getConsensusTimestamp());
         latencyMetrics.getOrDefault(recordItem.getTransactionType(), unknownLatencyMetric)
                 .record(Duration.between(consensusTimestamp, Instant.now()));
     }

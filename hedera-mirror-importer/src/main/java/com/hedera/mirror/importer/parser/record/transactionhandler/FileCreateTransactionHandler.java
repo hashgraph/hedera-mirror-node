@@ -41,7 +41,7 @@ class FileCreateTransactionHandler extends AbstractEntityCrudTransactionHandler 
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        return EntityId.of(recordItem.getRecord().getReceipt().getFileID());
+        return EntityId.of(recordItem.getTransactionRecord().getReceipt().getFileID());
     }
 
     @Override
