@@ -51,8 +51,8 @@ import reactor.test.StepVerifier;
 class GrpcClientSDKTest {
 
     private static final Instant START_TIME = Instant.now();
-    public static final Duration WAIT = Duration.ofSeconds(10L);
-    public static final Duration TOPIC_RESPONSE_DELAY = Duration.ofMillis(200L);
+    private static final Duration WAIT = Duration.ofSeconds(10L);
+    private static final Duration TOPIC_RESPONSE_DELAY = Duration.ofMillis(200L);
 
     private ConsensusServiceStub consensusServiceStub;
     private GrpcClientSDK grpcClientSDK;

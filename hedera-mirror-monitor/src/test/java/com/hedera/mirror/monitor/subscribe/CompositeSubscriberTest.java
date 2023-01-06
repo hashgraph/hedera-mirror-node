@@ -38,6 +38,7 @@ import com.hedera.mirror.monitor.publish.PublishResponse;
 @ExtendWith(MockitoExtension.class)
 class CompositeSubscriberTest {
 
+    private static final Duration WAIT = Duration.ofSeconds(10L);
     @Mock
     private MirrorSubscriber mirrorSubscriber1;
 
@@ -67,10 +68,10 @@ class CompositeSubscriberTest {
         when(mirrorSubscriber2.subscribe()).thenReturn(Flux.just(subscribeResponse2));
 
         StepVerifier.withVirtualTime(() -> compositeSubscriber.subscribe())
-                .thenAwait(Duration.ofSeconds(10L))
+                .thenAwait(WAIT)
                 .expectNext(subscribeResponse1, subscribeResponse2)
                 .expectComplete()
-                .verify(Duration.ofSeconds(10L));
+                .verify(WAIT);
     }
 
     @Test
@@ -81,9 +82,9 @@ class CompositeSubscriberTest {
         when(mirrorSubscriber2.getSubscriptions()).thenReturn(Flux.just(subscription2));
 
         StepVerifier.withVirtualTime(() -> compositeSubscriber.getSubscriptions())
-                .thenAwait(Duration.ofSeconds(10L))
+                .thenAwait(WAIT)
                 .expectNext(subscription1, subscription2)
                 .expectComplete()
-                .verify(Duration.ofSeconds(10L));
+                .verify(WAIT);
     }
 }

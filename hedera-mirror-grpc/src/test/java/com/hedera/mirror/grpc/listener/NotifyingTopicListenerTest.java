@@ -53,7 +53,7 @@ class NotifyingTopicListenerTest extends AbstractSharedTopicListenerTest {
               "topic_id":1001,
               "valid_start_timestamp":1594401416000000000
             }""";
-    public static final Duration WAIT = Duration.ofSeconds(10L);
+    private static final Duration WAIT = Duration.ofSeconds(10L);
     private static boolean INITIALIZED = false;
     private final NotifyingTopicListener topicListener;
     private final JdbcTemplate jdbcTemplate;

@@ -76,7 +76,7 @@ import com.hedera.mirror.rest.model.ServiceEndpoint;
 class NodeSupplierTest {
 
     private static final String SERVER = "test2";
-    public static final Duration WAIT = Duration.ofSeconds(10);
+    private static final Duration WAIT = Duration.ofSeconds(10L);
 
     private CryptoServiceStub cryptoServiceStub;
     private MonitorProperties monitorProperties;

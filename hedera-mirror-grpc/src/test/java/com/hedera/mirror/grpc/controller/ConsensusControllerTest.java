@@ -50,7 +50,7 @@ import com.hedera.mirror.grpc.listener.ListenerProperties;
 
 @Log4j2
 class ConsensusControllerTest extends GrpcIntegrationTest {
-    public static final Duration WAIT = Duration.ofSeconds(10L);
+    private static final Duration WAIT = Duration.ofSeconds(10L);
     @GrpcClient("local")
     private ReactorConsensusServiceGrpc.ReactorConsensusServiceStub grpcConsensusService;
 
@@ -194,13 +194,14 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
         Flux<TopicMessage> generator = domainBuilder.topicMessages(2, Instant.now().plusSeconds(10L));
 
         StepVerifier.withVirtualTime(() -> grpcConsensusService.subscribeTopic(Mono.just(query)))
+                .thenAwait(WAIT)
                 .expectNext(topicMessage1.getResponse())
                 .expectNext(topicMessage2.getResponse())
                 .expectNext(topicMessage3.getResponse())
                 .then(generator::blockLast)
                 .expectNextCount(2)
                 .expectComplete()
-                .verify(Duration.ofSeconds(2));
+                .verify(WAIT);
     }
 
     @Test

@@ -46,7 +46,7 @@ import com.hedera.mirror.grpc.domain.TopicMessageFilter;
 class PollingTopicMessageRetrieverTest extends GrpcIntegrationTest {
 
     private static final EntityId TOPIC_ID = EntityId.of(100L, EntityType.TOPIC);
-    public static final Duration WAIT = Duration.ofSeconds(10L);
+    private static final Duration WAIT = Duration.ofSeconds(10L);
 
     @Autowired
     private DomainBuilder domainBuilder;

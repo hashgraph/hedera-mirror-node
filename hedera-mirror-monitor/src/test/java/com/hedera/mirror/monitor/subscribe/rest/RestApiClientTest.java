@@ -53,7 +53,7 @@ import com.hedera.mirror.rest.model.TransactionByIdResponse;
 class RestApiClientTest {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-    public static final Duration WAIT = Duration.ofSeconds(10L);
+    private static final Duration WAIT = Duration.ofSeconds(10L);
 
     @Mock
     private ExchangeFunction exchangeFunction;

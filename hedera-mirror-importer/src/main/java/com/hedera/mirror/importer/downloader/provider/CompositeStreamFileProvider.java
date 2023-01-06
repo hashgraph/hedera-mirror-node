@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Named;
+import com.google.common.annotations.VisibleForTesting;
 import lombok.CustomLog;
 import lombok.Value;
 import org.springframework.context.annotation.Primary;
@@ -106,7 +107,8 @@ final class CompositeStreamFileProvider implements StreamFileProvider {
         return true;
     }
 
-    public boolean isHealthy() {
+    @VisibleForTesting
+    boolean isHealthy() {
         return providers.stream().filter(ProviderHealth::isHealthy).map(ProviderHealth::isHealthy).findFirst().orElse(false);
     }
 

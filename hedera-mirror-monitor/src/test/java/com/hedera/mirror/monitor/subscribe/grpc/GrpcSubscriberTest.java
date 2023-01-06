@@ -47,7 +47,7 @@ import com.hedera.mirror.monitor.subscribe.SubscribeResponse;
 @ExtendWith(MockitoExtension.class)
 class GrpcSubscriberTest {
 
-    public static final Duration WAIT = Duration.ofSeconds(10L);
+    private static final Duration WAIT = Duration.ofSeconds(10L);
     private final ExpressionConverter expressionConverter = p -> p;
     private final SubscribeProperties subscribeProperties = new SubscribeProperties();
     private final GrpcSubscriberProperties grpcSubscriberProperties = new GrpcSubscriberProperties();

@@ -54,11 +54,11 @@ import com.hedera.mirror.grpc.retriever.RetrieverProperties;
 import com.hedera.mirror.grpc.retriever.TopicMessageRetriever;
 
 class TopicMessageServiceTest extends GrpcIntegrationTest {
+    private static final Duration WAIT = Duration.ofSeconds(10L);
 
     private final Instant now = Instant.now();
     private final Instant future = now.plusSeconds(30L);
     private final EntityId topicId = EntityId.of(100L, EntityType.TOPIC);
-    private final Duration WAIT = Duration.ofSeconds(10L);
 
     @Resource
     private TopicMessageService topicMessageService;
