@@ -221,32 +221,45 @@ class TransferTransactionPayerMigrationTest extends IntegrationTest {
                 assessedCustomFee2
         ));
 
+        var t1c = transfer1.getConsensusTimestamp();
+        var t2c = transfer2.getConsensusTimestamp();
+        var t3c = transfer3.getConsensusTimestamp();
+        var t4c = transfer4.getConsensusTimestamp();
+        var t5c = transfer5.getConsensusTimestamp();
+        var senderCryptoTransferBuilder = CryptoTransfer.builder()
+                .amount(senderPaymentAmount).entityId(senderId.getId());
+        var receivedCryptoTransferBuilder = CryptoTransfer.builder()
+                .amount(receivedAmount).entityId(receiverId.getId());
+        var nodeCryptoTransferBuilder = CryptoTransfer.builder()
+                .amount(nodePaymentAmount).entityId(nodeId.getId());
+        var treasuryCryptoTransferBuilder = CryptoTransfer.builder()
+                .amount(treasuryPaymentAmount).entityId(treasuryId.getId());
         persistCryptoTransfers(List.of(
                 // assessed custom fee transfer
-                new CryptoTransfer(transfer1.getConsensusTimestamp(), senderPaymentAmount, senderId),
-                new CryptoTransfer(transfer1.getConsensusTimestamp(), receivedAmount, receiverId),
-                new CryptoTransfer(transfer1.getConsensusTimestamp(), nodePaymentAmount, nodeId),
-                new CryptoTransfer(transfer1.getConsensusTimestamp(), treasuryPaymentAmount, treasuryId),
+                senderCryptoTransferBuilder.consensusTimestamp(t1c).build(),
+                receivedCryptoTransferBuilder.consensusTimestamp(t1c).build(),
+                nodeCryptoTransferBuilder.consensusTimestamp(t1c).build(),
+                treasuryCryptoTransferBuilder.consensusTimestamp(t1c).build(),
                 // crypto only transfer
-                new CryptoTransfer(transfer2.getConsensusTimestamp(), senderPaymentAmount, senderId),
-                new CryptoTransfer(transfer2.getConsensusTimestamp(), receivedAmount, receiverId),
-                new CryptoTransfer(transfer2.getConsensusTimestamp(), nodePaymentAmount, nodeId),
-                new CryptoTransfer(transfer2.getConsensusTimestamp(), treasuryPaymentAmount, treasuryId),
+                senderCryptoTransferBuilder.consensusTimestamp(t2c).build(),
+                receivedCryptoTransferBuilder.consensusTimestamp(t2c).build(),
+                nodeCryptoTransferBuilder.consensusTimestamp(t2c).build(),
+                treasuryCryptoTransferBuilder.consensusTimestamp(t2c).build(),
                 // nft transfer
-                new CryptoTransfer(transfer3.getConsensusTimestamp(), senderPaymentAmount, senderId),
-                new CryptoTransfer(transfer3.getConsensusTimestamp(), receivedAmount, receiverId),
-                new CryptoTransfer(transfer3.getConsensusTimestamp(), nodePaymentAmount, nodeId),
-                new CryptoTransfer(transfer3.getConsensusTimestamp(), treasuryPaymentAmount, treasuryId),
+                senderCryptoTransferBuilder.consensusTimestamp(t3c).build(),
+                receivedCryptoTransferBuilder.consensusTimestamp(t3c).build(),
+                nodeCryptoTransferBuilder.consensusTimestamp(t3c).build(),
+                treasuryCryptoTransferBuilder.consensusTimestamp(t3c).build(),
                 // token transfer
-                new CryptoTransfer(transfer4.getConsensusTimestamp(), senderPaymentAmount, senderId),
-                new CryptoTransfer(transfer4.getConsensusTimestamp(), receivedAmount, receiverId),
-                new CryptoTransfer(transfer4.getConsensusTimestamp(), nodePaymentAmount, nodeId),
-                new CryptoTransfer(transfer4.getConsensusTimestamp(), treasuryPaymentAmount, treasuryId),
+                senderCryptoTransferBuilder.consensusTimestamp(t4c).build(),
+                receivedCryptoTransferBuilder.consensusTimestamp(t4c).build(),
+                nodeCryptoTransferBuilder.consensusTimestamp(t4c).build(),
+                treasuryCryptoTransferBuilder.consensusTimestamp(t4c).build(),
                 // all transfers
-                new CryptoTransfer(transfer5.getConsensusTimestamp(), senderPaymentAmount, senderId),
-                new CryptoTransfer(transfer5.getConsensusTimestamp(), receivedAmount, receiverId),
-                new CryptoTransfer(transfer5.getConsensusTimestamp(), nodePaymentAmount, nodeId),
-                new CryptoTransfer(transfer5.getConsensusTimestamp(), treasuryPaymentAmount, treasuryId)
+                senderCryptoTransferBuilder.consensusTimestamp(t5c).build(),
+                receivedCryptoTransferBuilder.consensusTimestamp(t5c).build(),
+                nodeCryptoTransferBuilder.consensusTimestamp(t5c).build(),
+                treasuryCryptoTransferBuilder.consensusTimestamp(t5c).build()
         ));
 
         persistNonFeeTransfers(List.of(

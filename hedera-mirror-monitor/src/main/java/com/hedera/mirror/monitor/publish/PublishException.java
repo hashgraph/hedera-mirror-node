@@ -9,9 +9,9 @@ package com.hedera.mirror.monitor.publish;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -41,14 +41,11 @@ public class PublishException extends RuntimeException {
     public String getStatus() {
         Throwable throwable = Throwables.getRootCause(this);
 
-        if (throwable instanceof PrecheckStatusException) {
-            PrecheckStatusException pse = (PrecheckStatusException) throwable;
+        if (throwable instanceof PrecheckStatusException pse) {
             return pse.status.toString();
-        } else if (throwable instanceof ReceiptStatusException) {
-            ReceiptStatusException rse = (ReceiptStatusException) throwable;
+        } else if (throwable instanceof ReceiptStatusException rse) {
             return rse.receipt.status.toString();
-        } else if (throwable instanceof StatusRuntimeException) {
-            StatusRuntimeException sre = (StatusRuntimeException) throwable;
+        } else if (throwable instanceof StatusRuntimeException sre) {
             return sre.getStatus().getCode().toString();
         } else {
             return throwable.getClass().getSimpleName();

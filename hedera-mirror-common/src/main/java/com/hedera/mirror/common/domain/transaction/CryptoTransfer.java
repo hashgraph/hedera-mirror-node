@@ -71,16 +71,6 @@ public class CryptoTransfer implements Persistable<CryptoTransfer.Id> {
     @Convert(converter = AccountIdConverter.class)
     private EntityId payerAccountId;
 
-    /**
-     * @deprecated in favor of using the no-arg constructor and setters
-     */
-    @Deprecated(forRemoval = true)
-    public CryptoTransfer(long consensusTimestamp, long amount, EntityId entityId) {
-        setConsensusTimestamp(consensusTimestamp);
-        setAmount(amount);
-        setEntityId(entityId.getId());
-    }
-
     @JsonIgnore
     @Override
     public Id getId() {

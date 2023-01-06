@@ -81,7 +81,7 @@ public class RecordFile implements StreamFile<RecordItem> {
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
     @Transient
-    private transient final LogsBloomAggregator logsBloomAggregator = new LogsBloomAggregator();
+    private final LogsBloomAggregator logsBloomAggregator = new LogsBloomAggregator();
 
     private Integer hapiVersionMajor;
 

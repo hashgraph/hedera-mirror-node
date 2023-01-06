@@ -237,7 +237,7 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
                         .isPresent();
             }
         } else {
-            assertThat(cryptoTransferRepository.count()).isEqualTo(0L);
+            assertThat(cryptoTransferRepository.count()).isZero();
         }
     }
 
