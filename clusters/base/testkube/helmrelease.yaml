@@ -17,9 +17,6 @@ spec:
   upgrade:
     cleanupOnFail: true
     crds: CreateReplace
-  valuesFrom:
-    - kind: Secret
-      name: testkube
   values:
     testkube-api:
       cliIngress:

@@ -11,6 +11,9 @@ spec:
         kind: HelmRepository
         name: hedera-mirror-node
       version: '0.72.0-rc1'
+  dependsOn:
+    - name: testkube
+      namespace: testkube
   install:
     crds: CreateReplace
   interval: 1m
@@ -59,6 +62,13 @@ spec:
             - action: drop
               regex: (dev|integration|integration-docker|staging-lg|staging-sm)
               source_labels: [namespace]
+    testkube:
+      enabled: true
+      test:
+        gitBranch: main
+        schedule: "0 6 * * *"
+        target:
+          namespace: integration
     traefik:
       service:
         annotations:
