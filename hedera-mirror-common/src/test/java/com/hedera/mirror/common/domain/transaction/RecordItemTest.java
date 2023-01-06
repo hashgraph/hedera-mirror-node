@@ -474,6 +474,7 @@ class RecordItemTest {
         assertThat(recordItem.getTransactionType()).isEqualTo(TransactionBody.DataCase.DATA_NOT_SET.getNumber());
     }
 
+    @SuppressWarnings("java:S5778")
     private void testException(byte[] transactionBytes, byte[] recordBytes, String expectedMessage) {
         assertThatThrownBy(() -> RecordItem.builder()
                 .hapiVersion(DEFAULT_HAPI_VERSION)

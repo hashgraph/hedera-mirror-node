@@ -167,12 +167,12 @@ public class RecordFile implements StreamFile<RecordItem> {
         logsBloomAggregator.aggregate(DomainUtils.toBytes(contractResult.getBloom()));
     }
 
-    private ContractFunctionResult getContractFunctionResult(TransactionRecord record) {
-        if (record.hasContractCreateResult()) {
-            return record.getContractCreateResult();
+    private ContractFunctionResult getContractFunctionResult(TransactionRecord transactionRecord) {
+        if (transactionRecord.hasContractCreateResult()) {
+            return transactionRecord.getContractCreateResult();
         }
-        if (record.hasContractCallResult()) {
-            return record.getContractCallResult();
+        if (transactionRecord.hasContractCallResult()) {
+            return transactionRecord.getContractCallResult();
         }
         return null;
     }

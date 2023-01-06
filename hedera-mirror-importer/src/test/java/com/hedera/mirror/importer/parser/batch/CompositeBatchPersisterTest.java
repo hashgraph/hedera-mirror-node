@@ -88,7 +88,8 @@ class CompositeBatchPersisterTest extends IntegrationTest {
 
     @Test
     void persistUnknown() {
-        assertThatThrownBy(() -> compositeBatchInserter.persist(List.of(new Object())))
+        List<Object> toPersist = List.of(new Object());
+        assertThatThrownBy(() -> compositeBatchInserter.persist(toPersist))
                 .isInstanceOf(UnsupportedOperationException.class);
     }
 }

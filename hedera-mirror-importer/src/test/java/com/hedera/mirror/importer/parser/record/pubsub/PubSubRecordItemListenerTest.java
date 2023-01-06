@@ -223,14 +223,15 @@ class PubSubRecordItemListenerTest {
                 .setTransfers(TransferList.newBuilder().build())
                 .build();
         Transaction transaction = buildTransaction(builder -> builder.setCryptoTransfer(cryptoTransfer));
+        RecordItem recordItem = RecordItem.builder().record(DEFAULT_RECORD)
+                .transaction(transaction).build();
 
         // when
         when(messageChannel.send(any())).thenThrow(RuntimeException.class);
 
         // then
         assertThatThrownBy(
-                () -> pubSubRecordItemListener.onItem(RecordItem.builder().record(DEFAULT_RECORD)
-                        .transaction(transaction).build()))
+                () -> pubSubRecordItemListener.onItem(recordItem))
                 .isInstanceOf(ParserException.class)
                 .hasMessageContaining("Error sending transaction to pubsub");
         verify(messageChannel, times(1)).send(any());

@@ -99,15 +99,15 @@ class EthereumTransactionHandler implements TransactionHandler {
     }
 
     private void updateAccountNonce(RecordItem recordItem, EthereumTransaction ethereumTransaction) {
-        var record = recordItem.getRecord();
+        var transactionRecord = recordItem.getRecord();
 
         // It should not update the nonce if it's unsuccessful and failed before EVM execution
-        if (!recordItem.isSuccessful() && !record.hasContractCallResult() && !record.hasContractCreateResult()) {
+        if (!recordItem.isSuccessful() && !transactionRecord.hasContractCallResult() && !transactionRecord.hasContractCreateResult()) {
             return;
         }
 
-        var functionResult = record.hasContractCreateResult() ? record.getContractCreateResult() :
-                record.getContractCallResult();
+        var functionResult = transactionRecord.hasContractCreateResult() ? transactionRecord.getContractCreateResult() :
+                transactionRecord.getContractCallResult();
         var senderId = EntityId.of(functionResult.getSenderId());
 
         if (!EntityId.isEmpty(senderId)) {

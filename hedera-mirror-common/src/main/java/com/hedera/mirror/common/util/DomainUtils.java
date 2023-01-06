@@ -4,7 +4,7 @@ package com.hedera.mirror.common.util;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.exception.InvalidEntityException;
+import com.hedera.mirror.common.exception.ProtobufException;
 import com.hedera.services.stream.proto.HashObject;
 
 @CustomLog
@@ -101,30 +102,25 @@ public class DomainUtils {
         }
     }
 
+    @SuppressWarnings("java:S1168")
     private static byte[] getPublicKey(Key key, int depth) {
         // We don't support searching for primitive keys at multiple levels since the REST API matches by hex prefix
         if (depth > 2) {
             return null;
         }
 
-        switch (key.getKeyCase()) {
-            case ECDSA_384:
-                return toBytes(key.getECDSA384());
-            case ECDSA_SECP256K1:
-                return toBytes(key.getECDSASecp256K1());
-            case ED25519:
-                return toBytes(key.getEd25519());
-            case KEYLIST:
-                return getPublicKey(key.getKeyList(), depth);
-            case RSA_3072:
-                return toBytes(key.getRSA3072());
-            case THRESHOLDKEY:
-                return getPublicKey(key.getThresholdKey().getKeys(), depth);
-            default:
-                return null;
-        }
+        return switch (key.getKeyCase()) {
+            case ECDSA_384 -> toBytes(key.getECDSA384());
+            case ECDSA_SECP256K1 -> toBytes(key.getECDSASecp256K1());
+            case ED25519 -> toBytes(key.getEd25519());
+            case KEYLIST -> getPublicKey(key.getKeyList(), depth);
+            case RSA_3072 -> toBytes(key.getRSA3072());
+            case THRESHOLDKEY -> getPublicKey(key.getThresholdKey().getKeys(), depth);
+            default -> null;
+        };
     }
 
+    @SuppressWarnings("java:S1168")
     private static byte[] getPublicKey(KeyList keyList, int depth) {
         List<Key> keys = keyList.getKeysList();
         if (keys.size() == 1) {
@@ -233,6 +229,7 @@ public class DomainUtils {
      * @param byteString to convert
      * @return bytes extracted from the ByteString
      */
+    @SuppressWarnings("java:S1168")
     public static byte[] toBytes(ByteString byteString) {
         if (byteString == null) {
             return null;
@@ -310,7 +307,7 @@ public class DomainUtils {
             try {
                 SUPPORTED_CLASS = Class.forName(ByteString.class.getName() + "$LiteralByteString");
             } catch (ClassNotFoundException e) {
-                throw new RuntimeException(e);
+                throw new ProtobufException(String.format("Unable to locate class=%s", ByteString.class.getName() + "$LiteralByteString"));
             }
         }
 

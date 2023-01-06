@@ -194,6 +194,7 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
             case CONTRACTCREATEINSTANCE -> updateChildFromContractCreateParent(contract, parentRecordItem);
             case ETHEREUMTRANSACTION -> updateChildFromEthereumTransactionParent(contract, parentRecordItem);
             default -> {
+                //no-op
             }
         }
     }

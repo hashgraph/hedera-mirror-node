@@ -1155,10 +1155,14 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                         .addAccountAmounts(accountAmount(account2.getNum(), -100)),
                 transactionBody, ResponseCodeEnum.SUCCESS.getNumber());
 
+        RecordItem recordItem = RecordItem.builder()
+                .record(transactionRecord)
+                .transaction(transaction)
+                .build();
+
         // when, then
         assertThrows(AliasNotFoundException.class,
-                () -> parseRecordItemAndCommit(RecordItem.builder().record(transactionRecord).transaction(transaction)
-                        .build()));
+                () -> parseRecordItemAndCommit(recordItem));
         assertAll(
                 () -> assertEquals(0, transactionRepository.count()),
                 () -> assertEquals(0, cryptoTransferRepository.count()),

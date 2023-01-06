@@ -60,7 +60,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -1058,7 +1057,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                 // corresponding EntityIds should have been added to EntityListener, so skip it here.
                 List<EntityId> payerEntityIds = protoAssessedCustomFee.getEffectivePayerAccountIdList().stream()
                         .map(EntityId::of)
-                        .collect(Collectors.toList());
+                        .toList();
                 AssessedCustomFee assessedCustomFee = new AssessedCustomFee();
                 assessedCustomFee.setAmount(protoAssessedCustomFee.getAmount());
                 assessedCustomFee.setEffectivePayerEntityIds(payerEntityIds);

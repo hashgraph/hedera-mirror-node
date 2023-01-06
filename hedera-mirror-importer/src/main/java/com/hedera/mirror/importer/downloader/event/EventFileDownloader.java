@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.downloader.event;
  * ‍
  */
 
+import com.hedera.mirror.common.domain.event.EventItem;
+
 import io.micrometer.core.instrument.MeterRegistry;
 import javax.inject.Named;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -36,8 +38,9 @@ import com.hedera.mirror.importer.reader.event.EventFileReader;
 import com.hedera.mirror.importer.reader.signature.SignatureFileReader;
 
 @Named
-public class EventFileDownloader extends Downloader<EventFile> {
+public class EventFileDownloader extends Downloader<EventFile, EventItem> {
 
+    @SuppressWarnings("java:S107")
     public EventFileDownloader(ConsensusNodeService consensusNodeService,
                                EventDownloaderProperties downloaderProperties,
                                MeterRegistry meterRegistry,

@@ -26,6 +26,8 @@ import static org.mockito.Mockito.when;
 import lombok.Getter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -52,32 +54,17 @@ class ClusterHealthIndicatorTest {
     @InjectMocks
     private ClusterHealthIndicator clusterHealthIndicator;
 
-    @Test
-    void healthy() {
-        when(transactionGenerator.scenarios()).thenReturn(Flux.just(publishScenario(1.0)));
-        when(mirrorSubscriber.getSubscriptions()).thenReturn(Flux.just(subscribeScenario(1.0)));
-        assertThat(clusterHealthIndicator.health().block()).isEqualTo(Health.up().build());
-    }
-
-    @Test
-    void publishingInactive() {
-        when(transactionGenerator.scenarios()).thenReturn(Flux.just(publishScenario(0.0)));
-        when(mirrorSubscriber.getSubscriptions()).thenReturn(Flux.just(subscribeScenario(1.0)));
-        assertThat(clusterHealthIndicator.health().block()).extracting(Health::getStatus).isEqualTo(Status.UNKNOWN);
-    }
-
-    @Test
-    void subscribingInactive() {
-        when(transactionGenerator.scenarios()).thenReturn(Flux.just(publishScenario(1.0)));
-        when(mirrorSubscriber.getSubscriptions()).thenReturn(Flux.just(subscribeScenario(0.0)));
-        assertThat(clusterHealthIndicator.health().block()).extracting(Health::getStatus).isEqualTo(Status.UNKNOWN);
-    }
-
-    @Test
-    void bothInactive() {
-        when(transactionGenerator.scenarios()).thenReturn(Flux.just(publishScenario(0.0)));
-        when(mirrorSubscriber.getSubscriptions()).thenReturn(Flux.just(subscribeScenario(0.0)));
-        assertThat(clusterHealthIndicator.health().block()).extracting(Health::getStatus).isEqualTo(Status.UNKNOWN);
+    @ParameterizedTest
+    @CsvSource({
+            "1.0, 1.0, UP", // healthy
+            "0.0, 1.0, UNKNOWN", // publishing inactive
+            "1.0, 0.0, UNKNOWN", // subscribing inactive
+            "0.0, 0.0, UNKNOWN", // publishing and subscribing inactive
+    })
+    void health(double publishRate, double subscribeRate, Status status) {
+        when(transactionGenerator.scenarios()).thenReturn(Flux.just(publishScenario(publishRate)));
+        when(mirrorSubscriber.getSubscriptions()).thenReturn(Flux.just(subscribeScenario(subscribeRate)));
+        assertThat(clusterHealthIndicator.health().block()).extracting(Health::getStatus).isEqualTo(status);
     }
 
     private PublishScenario publishScenario(double rate) {
@@ -91,7 +78,7 @@ class ClusterHealthIndicatorTest {
     }
 
     @Getter
-    private class TestPublishScenario extends PublishScenario {
+    private static class TestPublishScenario extends PublishScenario {
 
         private final double rate;
 

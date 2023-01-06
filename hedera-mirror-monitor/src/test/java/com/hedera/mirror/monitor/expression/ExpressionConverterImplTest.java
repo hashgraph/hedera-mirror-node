@@ -29,6 +29,9 @@ import static org.mockito.Mockito.when;
 import com.google.protobuf.InvalidProtocolBufferException;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
+
+import com.hedera.mirror.monitor.exception.ExpressionConversionException;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -113,7 +116,7 @@ class ExpressionConverterImplTest {
         TransactionType type = TransactionType.CONSENSUS_SUBMIT_MESSAGE;
         when(transactionPublisher.publish(any())).thenReturn(response(type, 100));
         assertThatThrownBy(() -> expressionConverter.convert("${topic.foo}"))
-                .isInstanceOf(RuntimeException.class);
+                .isInstanceOf(ExpressionConversionException.class);
     }
 
     @Test

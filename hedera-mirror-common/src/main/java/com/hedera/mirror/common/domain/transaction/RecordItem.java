@@ -169,9 +169,9 @@ public class RecordItem implements StreamItem {
                 return TransactionBody.DataCase.DATA_NOT_SET.getNumber();
             }
 
-            int transactionType = unknownFields.iterator().next();
-            log.warn("Encountered unknown transaction type: {}", transactionType);
-            return transactionType;
+            int genericTransactionType = unknownFields.iterator().next();
+            log.warn("Encountered unknown transaction type: {}", genericTransactionType);
+            return genericTransactionType;
         }
 
         return dataCase.getNumber();
@@ -180,7 +180,7 @@ public class RecordItem implements StreamItem {
     private record TransactionBodyAndSignatureMap(TransactionBody transactionBody, SignatureMap signatureMap) {
     }
 
-    public static class RecordItemBuilder<C, B extends RecordItem.RecordItemBuilder> {
+    public static class RecordItemBuilder<B extends RecordItem.RecordItemBuilder> {
 
         public RecordItem build() {
             // set parent, parent-child items are assured to exist in sequential order of [Parent, Child1,..., ChildN]
@@ -197,9 +197,9 @@ public class RecordItem implements StreamItem {
             return buildInternal();
         }
 
-        public B record(TransactionRecord record) {
-            this.record = record;
-            this.recordBytes = record.toByteArray();
+        public B record(TransactionRecord transactionRecord) {
+            this.record = transactionRecord;
+            this.recordBytes = transactionRecord.toByteArray();
             return (B) this;
         }
 

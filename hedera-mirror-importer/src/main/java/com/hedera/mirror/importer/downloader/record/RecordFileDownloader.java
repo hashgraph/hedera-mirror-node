@@ -22,6 +22,9 @@ package com.hedera.mirror.importer.downloader.record;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimaps;
+
+import com.hedera.mirror.common.domain.transaction.RecordItem;
+
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Arrays;
 import java.util.function.Function;
@@ -54,11 +57,12 @@ import com.hedera.services.stream.proto.SidecarType;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 
 @Named
-public class RecordFileDownloader extends Downloader<RecordFile> {
+public class RecordFileDownloader extends Downloader<RecordFile, RecordItem> {
 
     private final SidecarFileReader sidecarFileReader;
     private final SidecarProperties sidecarProperties;
 
+    @SuppressWarnings("java:s107")
     public RecordFileDownloader(ConsensusNodeService consensusNodeService,
                                 RecordDownloaderProperties downloaderProperties,
                                 MeterRegistry meterRegistry,
@@ -144,13 +148,13 @@ public class RecordFileDownloader extends Downloader<RecordFile> {
                 });
     }
 
-    private int getSidecarType(TransactionSidecarRecord record) {
-        return switch (record.getSidecarRecordsCase()) {
+    private int getSidecarType(TransactionSidecarRecord transactionSidecarRecord) {
+        return switch (transactionSidecarRecord.getSidecarRecordsCase()) {
             case ACTIONS -> SidecarType.CONTRACT_ACTION_VALUE;
             case BYTECODE -> SidecarType.CONTRACT_BYTECODE_VALUE;
             case STATE_CHANGES -> SidecarType.CONTRACT_STATE_CHANGE_VALUE;
             default -> throw new InvalidDatasetException(
-                    "Unknown sidecar transaction record type " + record.getSidecarRecordsCase());
+                    "Unknown sidecar transaction record type " + transactionSidecarRecord.getSidecarRecordsCase());
         };
     }
 }
