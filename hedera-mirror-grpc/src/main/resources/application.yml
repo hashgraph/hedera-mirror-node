@@ -63,6 +63,8 @@ spring:
         enabled: true
       secrets:
         paths: /usr/etc/${spring.application.name}
+    discovery:
+      enabled: false
   datasource:
     name: ${hedera.mirror.grpc.db.name}
     password: ${hedera.mirror.grpc.db.password}
