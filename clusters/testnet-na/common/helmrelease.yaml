@@ -1,0 +1,58 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: mirror
+  namespace: common
+spec:
+  chart:
+    spec:
+      chart: hedera-mirror-common
+      sourceRef:
+        kind: HelmRepository
+        name: hedera-mirror-node
+      version: '0.70.2'
+  install:
+    crds: CreateReplace
+  interval: 1m
+  timeout: 10m
+  upgrade:
+    cleanupOnFail: true
+    crds: CreateReplace
+    remediation:
+      retries: 10
+  valuesFrom:
+    - kind: Secret
+      name: mirror
+  values:
+    prometheus:
+      prometheus:
+        prometheusSpec:
+          externalLabels:
+            cluster: testnet-na
+          remoteWrite:
+            - basicAuth:
+                password:
+                  key: password
+                  name: grafana-cloud
+                username:
+                  key: username
+                  name: grafana-cloud
+              url: https://prometheus-blocks-prod-us-central1.grafana.net/api/prom/push
+              writeRelabelConfigs:
+                - action: keep
+                  regex: .*(grpc|importer|monitor|rest|rosetta|traefik|web3)$
+                  sourceLabels: [job]
+                - action: drop
+                  regex: (api_.+_bucket|executor.*|lettuce_.*_bucket|traefik_.+_bucket)
+                  sourceLabels: [__name__]
+          replicaExternalLabelName: __replica__
+    promtail:
+      config:
+        snippets:
+          extraClientConfigs: |
+            external_labels:
+              cluster: testnet-na
+    traefik:
+      service:
+        annotations:
+          cloud.google.com/neg: '{ "exposed_ports":{ "443":{"name": "mirrornode-testnet-na"} } }'
