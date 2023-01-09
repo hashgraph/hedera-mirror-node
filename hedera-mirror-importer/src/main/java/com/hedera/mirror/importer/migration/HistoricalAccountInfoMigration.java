@@ -167,6 +167,7 @@ public class HistoricalAccountInfoMigration extends RepeatableMigration {
         return null;
     }
 
+    @SuppressWarnings("java:S1874")
     boolean process(AccountInfo accountInfo) {
         EntityType entityType = EntityType.ACCOUNT;
         long id = EntityId.of(accountInfo.getAccountID()).getId();

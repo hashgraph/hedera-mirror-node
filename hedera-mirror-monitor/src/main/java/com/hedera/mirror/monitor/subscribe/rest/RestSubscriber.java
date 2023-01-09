@@ -152,8 +152,8 @@ class RestSubscriber implements MirrorSubscriber {
     }
 
     protected boolean shouldRetry(Throwable t) {
-        return t instanceof WebClientResponseException &&
-                ((WebClientResponseException) t).getStatusCode() == HttpStatus.NOT_FOUND;
+        return t instanceof WebClientResponseException webClientResponseException &&
+                webClientResponseException.getStatusCode() == HttpStatus.NOT_FOUND;
     }
 
     private String toString(TransactionId tid) {

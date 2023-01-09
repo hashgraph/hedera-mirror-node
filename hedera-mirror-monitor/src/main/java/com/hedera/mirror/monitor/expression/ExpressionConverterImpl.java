@@ -63,7 +63,7 @@ public class ExpressionConverterImpl implements ExpressionConverter {
     private static final String EXPRESSION_START = "${";
     private static final String EXPRESSION_END = "}";
     private static final Pattern EXPRESSION_PATTERN = Pattern
-            .compile("\\$\\{(account|nft|token|topic|schedule)\\.([A-Za-z0-9_]+)}");
+            .compile("\\$\\{(account|nft|token|topic|schedule)\\.(\\w+)}");
 
     private final Map<Expression, String> expressions = new ConcurrentHashMap<>();
     private final MonitorProperties monitorProperties;

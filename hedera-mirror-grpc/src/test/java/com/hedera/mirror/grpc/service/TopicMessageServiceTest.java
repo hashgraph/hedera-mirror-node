@@ -504,7 +504,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
 
         Mockito.when(entityRepository.findById(filter.getTopicId().getId()))
                 .thenReturn(Optional.of(Entity.builder().type(EntityType.TOPIC).build()));
-        Mockito.when(topicMessageRetriever.retrieve(ArgumentMatchers.eq(filter), ArgumentMatchers.eq(true)))
+        Mockito.when(topicMessageRetriever.retrieve(filter, true))
                 .thenReturn(Flux.empty());
         Mockito.when(topicListener.listen(filter)).thenReturn(Flux.just(beforeMissing, afterMissing));
         Mockito.when(topicMessageRetriever.retrieve(ArgumentMatchers
@@ -655,7 +655,7 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
         // mock entity type check
         Mockito.when(entityRepository.findById(filter.getTopicId().getId()))
                 .thenReturn(Optional.of(Entity.builder().type(EntityType.TOPIC).build()));
-        Mockito.when(topicMessageRetriever.retrieve(ArgumentMatchers.eq(filter), ArgumentMatchers.eq(true)))
+        Mockito.when(topicMessageRetriever.retrieve(filter, true))
                 .thenReturn(Flux.just(retrieved1, retrieved2));
 
         TopicMessageFilter listenerFilter = TopicMessageFilter.builder()

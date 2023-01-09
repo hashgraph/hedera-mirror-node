@@ -43,7 +43,7 @@ import com.hedera.mirror.importer.repository.TransactionRepository;
 @EnabledIfV1
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
-public class BackfillBlockMigrationTest extends IntegrationTest {
+class BackfillBlockMigrationTest extends IntegrationTest {
 
     private final BackfillBlockMigration backfillBlockMigration;
 

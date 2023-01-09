@@ -73,8 +73,8 @@ class GrpcSubscription extends AbstractScenario<GrpcSubscriberProperties, TopicM
     @Override
     public void onError(Throwable t) {
         Status.Code statusCode = Status.Code.UNKNOWN;
-        if (t instanceof StatusRuntimeException) {
-            statusCode = ((StatusRuntimeException) t).getStatus().getCode();
+        if (t instanceof StatusRuntimeException statusRuntimeException) {
+            statusCode = statusRuntimeException.getStatus().getCode();
         }
         errors.add(statusCode.name());
     }

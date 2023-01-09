@@ -48,8 +48,7 @@ public class PublishScenario extends AbstractScenario<PublishScenarioProperties,
 
     @Override
     public void onError(Throwable throwable) {
-        if (throwable instanceof PublishException) {
-            PublishException publishException = (PublishException) throwable;
+        if (throwable instanceof PublishException publishException) {
             errors.add(publishException.getStatus());
         } else {
             super.onError(throwable);
