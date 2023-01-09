@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/Code-Hex/go-generics-cache v1.2.1
 	github.com/coinbase/rosetta-sdk-go v0.8.2
-	github.com/cucumber/godog v0.12.5
+	github.com/cucumber/godog v0.12.6
 	github.com/ethereum/go-ethereum v1.10.26
 	github.com/go-playground/validator/v10 v10.11.1
 	github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20220726083815-59ae9e528f56
@@ -53,7 +53,7 @@ require (
 	github.com/go-logfmt/logfmt v0.5.1 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect
-	github.com/gofrs/uuid v4.0.0+incompatible // indirect
+	github.com/gofrs/uuid v4.2.0+incompatible // indirect
 	github.com/gogo/googleapis v1.1.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/gogo/status v1.0.3 // indirect
@@ -61,7 +61,7 @@ require (
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/gorilla/mux v1.8.0 // indirect
 	github.com/hashicorp/go-immutable-radix v1.3.1 // indirect
-	github.com/hashicorp/go-memdb v1.3.0 // indirect
+	github.com/hashicorp/go-memdb v1.3.2 // indirect
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
