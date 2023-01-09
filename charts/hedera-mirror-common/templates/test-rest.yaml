@@ -7,7 +7,7 @@ metadata:
 spec:
   content:
     repository:
-      branch: {{ .Values.testkube.test.gitBranch }}
+      branch: {{ .Values.testkube.test.gitBranch | default (print "v" .Chart.AppVersion) }}
       path: hedera-mirror-test/k6
       type: git
       uri: https://github.com/hashgraph/hedera-mirror-node
