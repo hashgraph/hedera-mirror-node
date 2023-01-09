@@ -110,7 +110,7 @@ class AccountBalanceLineParserV2Test {
                         .split(tokenBalances).entrySet().stream().collect(Collectors
                                 .toMap(entry -> Long.parseLong(entry.getKey()), entry -> Long
                                         .parseLong(entry.getValue())));
-                assertThat(actualTokenBalanceList).hasSameSizeAs(expectedTokenBalances);
+                assertThat(actualTokenBalanceList).hasSameSizeAs(tokenBalances.split(","));
                 for (int i = 0; i < actualTokenBalanceList.size(); i++) {
                     TokenBalance actualTokenBalance = actualTokenBalanceList.get(i);
                     TokenBalance.Id actualId = actualTokenBalance.getId();

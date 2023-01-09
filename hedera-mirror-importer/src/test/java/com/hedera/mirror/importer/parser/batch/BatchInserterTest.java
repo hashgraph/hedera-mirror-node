@@ -210,7 +210,7 @@ class BatchInserterTest extends IntegrationTest {
                 .amount(1L)
                 .consensusTimestamp(consensusTimestamp)
                 .entityId(EntityId.of(0L, 1L, 2L, EntityType.ACCOUNT).getId())
-                .payerAccountId(EntityId.of(0L, 1L, 100L, EntityType.ACCOUNT).getId())
+                .payerAccountId(EntityId.of(0L, 1L, 100L, EntityType.ACCOUNT))
                 .build();
     }
 

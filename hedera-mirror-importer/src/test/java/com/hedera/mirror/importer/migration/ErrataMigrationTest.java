@@ -47,9 +47,10 @@ import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.util.Utility;
 
+@SuppressWarnings("java:S5786")
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
-class ErrataMigrationTest extends IntegrationTest {
+public class ErrataMigrationTest extends IntegrationTest {
 
     public static final long BAD_TIMESTAMP1 = 1568415600193620000L;
     private static final long BAD_TIMESTAMP2 = 1568528100472477002L;
