@@ -334,7 +334,8 @@ testkube:
   namespace: testkube
   test:
     duration: 600s
-    gitBranch: main
+    gitBranch: ""  # Default to .Chart.AppVersion
+    schedule: ""  # Cron schedule of the test suite, default to no schedule
     target:
       namespace: ""
       release: mirror
