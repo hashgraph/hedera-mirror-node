@@ -81,9 +81,9 @@ public class AccountFeature extends AbstractFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
-    @Given("I send {long} tℏ to {string} alias not present in the network")
-    public void createAccountOnTransferForEDAlias(long amount, String keyType) {
-        senderAccountId = accountClient.getAccount(AccountClient.AccountNameEnum.CAROL);
+    @Given("I send {long} tℏ from {string} to {string} alias not present in the network")
+    public void createAccountOnTransferForEDAlias(long amount, String senderAccount, String keyType) {
+        senderAccountId = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(senderAccount));
         startingBalance = accountClient.getBalance(senderAccountId);
 
         var recipientPrivateKey =  "ed".equalsIgnoreCase(keyType) ? PrivateKey.generateED25519() : PrivateKey.generateECDSA();
