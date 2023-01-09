@@ -25,8 +25,8 @@ plugins {
     id("io.freefair.lombok")
     id("io.spring.dependency-management")
     id("jacoco")
+    id("java-library")
     id("org.gradle.test-retry")
-    `java-library`
 }
 
 configurations.all {
@@ -64,6 +64,7 @@ dependencies {
 }
 
 tasks.compileJava {
+    dependsOn("generateEffectiveLombokConfig")
     options.encoding = "UTF-8"
     sourceCompatibility = "17"
     targetCompatibility = "17"

@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.exception;
  * ‍
  */
 
+@SuppressWarnings("java:S110")
 public class InvalidStreamFileException extends ImporterException {
 
     private static final long serialVersionUID = 2786469980314810323L;

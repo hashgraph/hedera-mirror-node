@@ -62,19 +62,17 @@ public class ScheduleCreateTransactionSupplier implements TransactionSupplier<Sc
 
     @Override
     public ScheduleCreateTransaction get() {
-        Hbar maxTransactionFee = Hbar.fromTinybars(getMaxTransactionFee());
+        Hbar maxHbarTransactionFee = Hbar.fromTinybars(getMaxTransactionFee());
         TransferTransaction innerTransaction = new TransferTransaction()
-                .setMaxTransactionFee(maxTransactionFee)
+                .setMaxTransactionFee(maxHbarTransactionFee)
                 .addHbarTransfer(getOperatorId(), Hbar.fromTinybars(1L).negated())
                 .addHbarTransfer(getPayerAccountId(), Hbar.fromTinybars(1L));
 
-        ScheduleCreateTransaction scheduleCreateTransaction = new ScheduleCreateTransaction()
+        return new ScheduleCreateTransaction()
                 .setAdminKey(getAdminPublicKey())
-                .setMaxTransactionFee(maxTransactionFee)
+                .setMaxTransactionFee(maxHbarTransactionFee)
                 .setPayerAccountId(getPayerAccountId())
                 .setScheduleMemo(Utility.getMemo("Mirror node created test schedule"))
                 .setScheduledTransaction(innerTransaction);
-
-        return scheduleCreateTransaction;
     }
 }

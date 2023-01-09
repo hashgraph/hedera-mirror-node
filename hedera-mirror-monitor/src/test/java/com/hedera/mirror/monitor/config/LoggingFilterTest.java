@@ -41,7 +41,7 @@ import reactor.test.StepVerifier;
 
 class LoggingFilterTest {
 
-    private static final Duration WAIT = Duration.ofSeconds(5);
+    private static final Duration WAIT = Duration.ofSeconds(10L);
 
     private LoggingFilter loggingFilter;
     private StringWriter logOutput;
@@ -78,8 +78,8 @@ class LoggingFilterTest {
         MockServerWebExchange exchange = MockServerWebExchange.from(MockServerHttpRequest.get(path).build());
         exchange.getResponse().setRawStatusCode(code);
 
-        loggingFilter.filter(exchange, serverWebExchange -> Mono.defer(() -> exchange.getResponse().setComplete()))
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> loggingFilter.filter(exchange, serverWebExchange -> Mono.defer(() -> exchange.getResponse().setComplete())))
+                .thenAwait(WAIT)
                 .expectComplete()
                 .verify(WAIT);
 
@@ -94,8 +94,8 @@ class LoggingFilterTest {
                 .build());
         exchange.getResponse().setRawStatusCode(200);
 
-        loggingFilter.filter(exchange, serverWebExchange -> Mono.defer(() -> exchange.getResponse().setComplete()))
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> loggingFilter.filter(exchange, serverWebExchange -> Mono.defer(() -> exchange.getResponse().setComplete())))
+                .thenAwait(WAIT)
                 .expectComplete()
                 .verify(WAIT);
 
@@ -106,8 +106,7 @@ class LoggingFilterTest {
     void filterOnCancel() {
         MockServerWebExchange exchange = MockServerWebExchange.from(MockServerHttpRequest.get("/").build());
 
-        loggingFilter.filter(exchange, serverWebExchange -> exchange.getResponse().setComplete())
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> loggingFilter.filter(exchange, serverWebExchange -> exchange.getResponse().setComplete()))
                 .thenCancel()
                 .verify(WAIT);
 
@@ -120,9 +119,8 @@ class LoggingFilterTest {
         exchange.getResponse().setRawStatusCode(500);
 
         var exception = new IllegalArgumentException("error");
-        loggingFilter.filter(exchange, serverWebExchange -> Mono.error(exception))
-                .onErrorResume((t) -> exchange.getResponse().setComplete())
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> loggingFilter.filter(exchange, serverWebExchange -> Mono.error(exception)).onErrorResume((t) -> exchange.getResponse().setComplete()))
+                .thenAwait(WAIT)
                 .expectComplete()
                 .verify(WAIT);
 

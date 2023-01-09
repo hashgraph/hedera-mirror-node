@@ -24,10 +24,11 @@ import java.io.Serial;
 
 import com.hedera.mirror.common.util.DomainUtils;
 
+@SuppressWarnings("java:S110")
 public class HashMismatchException extends ImporterException {
 
     private static final String MESSAGE = "%s hash mismatch for file %s. Expected = %s, Actual = %s";
-    
+
     @Serial
     private static final long serialVersionUID = -1093315700008851731L;
 

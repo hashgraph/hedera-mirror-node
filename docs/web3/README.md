@@ -30,13 +30,13 @@ First ensure newman is installed locally using `npm`, then execute `newman`.
 
 ```shell
 npm install -g newman
-newman run hedera-mirror-web3/postman.json --env-var baseUrl=https://previewnet.mirrornode.hedera.com
+newman run charts/hedera-mirror-web3/postman.json --env-var baseUrl=https://previewnet.mirrornode.hedera.com
 ```
 
 ### Docker
 
 ```shell
-docker run --rm -v "${PWD}/hedera-mirror-web3/postman.json:/tmp/postman.json" -t postman/newman run /tmp/postman.json --env-var baseUrl=https://previewnet.mirrornode.hedera.com
+docker run --rm -v "${PWD}/charts/hedera-mirror-web3/postman.json:/tmp/postman.json" -t postman/newman run /tmp/postman.json --env-var baseUrl=https://previewnet.mirrornode.hedera.com
 ```
 
 _Note:_ To test against an instance running on the same machine as Docker use your local IP instead of 127.0.0.1.

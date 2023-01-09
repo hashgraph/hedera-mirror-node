@@ -22,15 +22,15 @@ package com.hedera.mirror.common.exception;
 
 public abstract class MirrorNodeException extends RuntimeException {
 
-    public MirrorNodeException(String message) {
+    protected MirrorNodeException(String message) {
         super(message);
     }
 
-    public MirrorNodeException(Throwable throwable) {
+    protected MirrorNodeException(Throwable throwable) {
         super(throwable);
     }
 
-    public MirrorNodeException(String message, Throwable throwable) {
+    protected MirrorNodeException(String message, Throwable throwable) {
         super(message, throwable);
     }
 }

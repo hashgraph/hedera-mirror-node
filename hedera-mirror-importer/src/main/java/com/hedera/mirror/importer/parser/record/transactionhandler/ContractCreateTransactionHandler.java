@@ -52,7 +52,7 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        return entityIdService.lookup(recordItem.getRecord().getReceipt().getContractID());
+        return entityIdService.lookup(recordItem.getTransactionRecord().getReceipt().getContractID());
     }
 
     @Override
@@ -77,7 +77,7 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
             return;
         }
 
-        var contractCreateResult = recordItem.getRecord().getContractCreateResult();
+        var contractCreateResult = recordItem.getTransactionRecord().getContractCreateResult();
         var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
 
         if (transactionBody.hasAutoRenewAccountId()) {
@@ -126,7 +126,7 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
                 break;
         }
 
-        var contractId = recordItem.getRecord().getReceipt().getContractID();
+        var contractId = recordItem.getTransactionRecord().getReceipt().getContractID();
         var sidecarRecords = recordItem.getSidecarRecords();
 
         for (var sidecar : sidecarRecords) {
@@ -194,6 +194,7 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
             case CONTRACTCREATEINSTANCE -> updateChildFromContractCreateParent(contract, parentRecordItem);
             case ETHEREUMTRANSACTION -> updateChildFromEthereumTransactionParent(contract, parentRecordItem);
             default -> {
+                //no-op
             }
         }
     }

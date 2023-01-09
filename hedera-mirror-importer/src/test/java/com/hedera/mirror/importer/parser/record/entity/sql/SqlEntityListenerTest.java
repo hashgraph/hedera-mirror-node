@@ -1310,21 +1310,29 @@ class SqlEntityListenerTest extends IntegrationTest {
     @Test
     void onStakingRewardTransferWithExistingEntity() {
         // given
-        var entity = domainBuilder.entity()
+        var account = domainBuilder.entity()
                 .customize(e -> e.stakedNodeId(0L).stakePeriodStart(1L))
                 .persist();
-        var transfer = domainBuilder.stakingRewardTransfer()
-                .customize(t -> t.accountId(entity.getId()).amount(10L))
+        var contract = domainBuilder.entity()
+                .customize(e -> e.type(CONTRACT).stakedNodeId(0L).stakePeriodStart(1L))
+                .persist();
+        var transfer1 = domainBuilder.stakingRewardTransfer()
+                .customize(t -> t.accountId(account.getId()).amount(10L))
+                .get();
+        var transfer2 = domainBuilder.stakingRewardTransfer()
+                .customize(t -> t.accountId(contract.getId()).amount(20L))
                 .get();
 
         // when
-        sqlEntityListener.onStakingRewardTransfer(transfer);
+        sqlEntityListener.onStakingRewardTransfer(transfer1);
+        sqlEntityListener.onStakingRewardTransfer(transfer2);
         completeFileAndCommit();
 
         // then
-        entity.setStakePeriodStart(Utility.getEpochDay(transfer.getConsensusTimestamp()) - 1);
-        assertThat(entityRepository.findAll()).containsExactly(entity);
-        assertThat(stakingRewardTransferRepository.findAll()).containsExactly(transfer);
+        account.setStakePeriodStart(Utility.getEpochDay(transfer1.getConsensusTimestamp()) - 1);
+        contract.setStakePeriodStart(Utility.getEpochDay(transfer2.getConsensusTimestamp()) - 1);
+        assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(account, contract);
+        assertThat(stakingRewardTransferRepository.findAll()).containsExactlyInAnyOrder(transfer1, transfer2);
     }
 
     @Test

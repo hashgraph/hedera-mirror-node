@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.exception;
  * ‍
  */
 
+@SuppressWarnings("java:S110")
 public class FileOperationException extends ImporterException {
 
     private static final long serialVersionUID = 5194246300993814767L;

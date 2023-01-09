@@ -67,6 +67,7 @@ public class Utility {
      * @param alias the bytes representing a serialized Key protobuf
      * @return the 20 byte EVM address
      */
+    @SuppressWarnings("java:S1168")
     public static byte[] aliasToEvmAddress(byte[] alias) {
         try {
             if (alias == null || alias.length == 0) {
@@ -182,6 +183,7 @@ public class Utility {
     }
 
     // This method is copied from hedera-services EthTxSigs::recoverAddressFromPubKey and should be kept in sync
+    @SuppressWarnings("java:S1168")
     private static byte[] recoverAddressFromPubKey(byte[] pubKeyBytes) {
         LibSecp256k1.secp256k1_pubkey pubKey = new LibSecp256k1.secp256k1_pubkey();
         var parseResult = LibSecp256k1.secp256k1_ec_pubkey_parse(CONTEXT, pubKey, pubKeyBytes, pubKeyBytes.length);

@@ -132,9 +132,18 @@ public abstract class AbstractNetworkClient {
     }
 
     public TransactionReceipt getTransactionReceipt(TransactionId transactionId) {
-        // TransactionReceiptQuery is free
         var query = new TransactionReceiptQuery().setTransactionId(transactionId);
-        return executeQuery(() -> query);
+        var receipt = executeQuery(() -> query);
+
+        if (log.isDebugEnabled()) {
+            log.debug("Transaction receipt: {}", receipt);
+        }
+
+        if (receipt.status != Status.SUCCESS) {
+            throw new NetworkException("Transaction was unsuccessful: " + receipt);
+        }
+
+        return receipt;
     }
 
     @SneakyThrows
