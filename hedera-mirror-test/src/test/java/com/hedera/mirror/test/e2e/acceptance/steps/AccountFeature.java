@@ -23,6 +23,8 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.hashgraph.sdk.AccountInfo;
+import com.hedera.hashgraph.sdk.PrivateKey;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -54,6 +56,8 @@ public class AccountFeature extends AbstractFeature {
 
     private AccountId ownerAccountId;
     private AccountId receiverAccountId;
+    private AccountInfo accountInfo;
+
     private ExpandedAccountId senderAccountId;
     private long startingBalance;
 
@@ -75,6 +79,31 @@ public class AccountFeature extends AbstractFeature {
                 .sendCryptoTransfer(senderAccountId.getAccountId(), Hbar.fromTinybars(amount));
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
+    }
+
+    @Given("I send {long} tℏ to {string} alias not present in the network")
+    public void createAccountOnTransferForEDAlias(long amount, String keyType) {
+        senderAccountId = accountClient.getAccount(AccountClient.AccountNameEnum.CAROL);
+        startingBalance = accountClient.getBalance(senderAccountId);
+
+        var recipientPrivateKey =  "ed".equalsIgnoreCase(keyType) ? PrivateKey.generateED25519() : PrivateKey.generateECDSA();
+        receiverAccountId = recipientPrivateKey.toAccountId(0,0);
+
+        networkTransactionResponse = accountClient.sendApprovedCryptoTransfer(senderAccountId, receiverAccountId, Hbar.fromTinybars(amount));
+
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
+    }
+
+    @Then("the transfer auto creates a new account")
+    public void verifyAccountCreated() {
+        accountInfo = accountClient.getAccountInfo(receiverAccountId);
+        assertNotNull(accountInfo.accountId);
+    }
+
+    @Then("the balance of the new account should reflect the transferred {long}")
+    public void verifyAutoCreatedAccountBalance(long amount) {
+        assertEquals(amount, accountInfo.balance.toTinybars());
     }
 
     @When("I send {long} tℏ to newly created account")

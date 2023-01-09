@@ -17,3 +17,13 @@ Feature: Account Coverage Feature
         Examples:
             | amount | accountName | httpStatusCode |
             | 1      | "ALICE"     | 200            |
+
+    @release @acceptance @cryptotransfer @createcryptoaccount
+        Scenario Outline: Create crypto account when transferring to alias
+        Given I send <amount> tℏ to <keyType> alias not present in the network
+        Then the transfer auto creates a new account
+        And the balance of the new account should reflect the transferred <amount>
+        Examples:
+            | amount | keyType |
+            | 1      | "ED"    |
+            | 1      | "ECDSA" |
