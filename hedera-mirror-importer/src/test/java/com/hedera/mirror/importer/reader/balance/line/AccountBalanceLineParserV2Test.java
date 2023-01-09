@@ -129,7 +129,7 @@ class AccountBalanceLineParserV2Test {
                     assertThat(actualId.getTokenId().getType()).isEqualTo(EntityType.TOKEN);
                 }
             } else {
-                assertThat(actualTokenBalanceList.size()).isZero();
+                assertThat(actualTokenBalanceList).isEmpty();
             }
         } else {
             assertThrows(InvalidDatasetException.class, () -> {
