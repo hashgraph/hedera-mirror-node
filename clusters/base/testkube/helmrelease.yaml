@@ -1,0 +1,41 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: testkube
+  namespace: testkube
+spec:
+  chart:
+    spec:
+      chart: testkube
+      sourceRef:
+        kind: HelmRepository
+        name: testkube
+      version: 1.8.55
+  install:
+    crds: CreateReplace
+  interval: 90s
+  upgrade:
+    cleanupOnFail: true
+    crds: CreateReplace
+  values:
+    testkube-api:
+      cliIngress:
+        enabled: false
+      uiIngress:
+        enabled: false
+    testkube-dashboard:
+      resources:
+        limits:
+          cpu: 200m
+          memory: 256Mi
+        requests:
+          cpu: 100m
+          memory: 128Mi
+    testkube-operator:
+      resources:
+        limits:
+          cpu: 100m
+          memory: 128Mi
+        requests:
+          cpu: 50m
+          memory: 64Mi
