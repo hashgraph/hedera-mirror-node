@@ -464,7 +464,7 @@ func (tr *transactionRepository) constructTransaction(sameHashTransactions []*tr
 
 		transactionResult := types.TransactionResults[int32(transaction.Result)]
 		operations = tr.appendHbarTransferOperations(transactionResult, transactionType, nonFeeTransfers, operations)
-		// fee transfers and staking reward transfers are always successful regardless of the transaction result
+		// fee transfers are always successful regardless of the transaction result
 		operations = tr.appendHbarTransferOperations(success, types.OperationTypeFee, feeHbarTransfers, operations)
 		// staking reward transfers (both credit and debit) are always successful and marked as crypto transfer
 		operations = tr.appendHbarTransferOperations(success, types.OperationTypeCryptoTransfer,
