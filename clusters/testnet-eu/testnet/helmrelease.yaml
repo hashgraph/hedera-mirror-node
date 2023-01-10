@@ -40,8 +40,6 @@ spec:
     monitor:
       env:
         HEDERA_MIRROR_MONITOR_NETWORK: "TESTNET"
-        HEDERA_MIRROR_MONITOR_PUBLISH_SCENARIOS_PINGER_PROPERTIES_TOPICID: "0.0.368908"
-        HEDERA_MIRROR_MONITOR_SUBSCRIBE_GRPC_HCS_TOPICID: "0.0.368908"
       prometheusRules:
         MonitorPublishLatency:
           enabled: false
@@ -51,10 +49,6 @@ spec:
       enabled: false
     redis:
       enabled: false
-    rest:
-      resources:
-        requests:
-          cpu: 400m
     rosetta:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "testnet"
