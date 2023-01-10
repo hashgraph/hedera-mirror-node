@@ -47,6 +47,7 @@ import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.util.Utility;
 
+@SuppressWarnings("java:S5786")
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
 public class ErrataMigrationTest extends IntegrationTest {

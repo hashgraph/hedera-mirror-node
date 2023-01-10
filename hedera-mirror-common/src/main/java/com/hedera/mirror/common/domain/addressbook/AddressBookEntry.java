@@ -4,7 +4,7 @@ package com.hedera.mirror.common.domain.addressbook;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,6 +49,7 @@ import org.springframework.data.domain.Persistable;
 
 import com.hedera.mirror.common.converter.AccountIdConverter;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.exception.NonParsableKeyException;
 
 @Builder(toBuilder = true)
 @Data
@@ -99,7 +100,7 @@ public class AddressBookEntry implements Persistable<AddressBookEntry.Id> {
             var keyFactory = KeyFactory.getInstance("RSA");
             return keyFactory.generatePublic(publicKeySpec);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new NonParsableKeyException(e);
         }
     }
 

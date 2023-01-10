@@ -37,7 +37,7 @@ import org.springframework.context.event.EventListener;
 @RequiredArgsConstructor
 public class GrpcHealthIndicator implements HealthIndicator {
 
-    private final AtomicReference<Status> status = new AtomicReference(Status.UNKNOWN);
+    private final AtomicReference<Status> status = new AtomicReference<>(Status.UNKNOWN);
 
     @Override
     public Health health() {

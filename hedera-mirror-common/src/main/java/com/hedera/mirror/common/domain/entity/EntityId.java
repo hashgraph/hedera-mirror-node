@@ -111,7 +111,7 @@ public class EntityId implements Serializable, Comparable<EntityId> {
         List<Long> parts = SPLITTER.splitToStream(Objects.requireNonNullElse(entityId, ""))
                 .map(Long::valueOf)
                 .filter(n -> n >= 0)
-                .collect(Collectors.toList());
+                .toList();
 
         if (parts.size() != 3) {
             throw new IllegalArgumentException("Invalid entity ID: " + entityId);

@@ -100,7 +100,7 @@ public class ConfigurableTransactionGenerator implements TransactionGenerator {
                     .setTransactionMemo(scenario.getMemo());
 
             PublishRequest publishRequest = builder.receipt(shouldGenerate(properties.getReceiptPercent()))
-                    .record(shouldGenerate(properties.getRecordPercent()))
+                    .sendRecord(shouldGenerate(properties.getRecordPercent()))
                     .timestamp(Instant.now())
                     .transaction(transaction)
                     .build();

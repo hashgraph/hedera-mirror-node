@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.exception;
 /**
  * Invalid ethereum transaction bytes encountered during decode.
  */
+@SuppressWarnings("java:S110")
 public class InvalidEthereumBytesException extends InvalidDatasetException {
 
     private static final long serialVersionUID = -3253044226905756499L;

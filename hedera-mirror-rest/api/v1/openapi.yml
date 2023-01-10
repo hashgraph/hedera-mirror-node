@@ -31,6 +31,9 @@ paths:
       operationId: getAccountByIdOrAliasOrEvmAddress
       parameters:
         - $ref: '#/components/parameters/accountIdOrAliasOrEvmAddressPathParam'
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/orderQueryParamDesc'
+        - $ref: '#/components/parameters/timestampQueryParam'
         - $ref: '#/components/parameters/transactionTypeQueryParam'
       responses:
         200:
@@ -90,11 +93,11 @@ paths:
       operationId: listNftByAccountId
       parameters:
         - $ref: '#/components/parameters/accountIdOrAliasOrEvmAddressPathParam'
-        - $ref: '#/components/parameters/tokenIdQueryParam'
-        - $ref: '#/components/parameters/serialNumberQueryParam'
-        - $ref: '#/components/parameters/spenderIdQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/orderQueryParamDesc'
+        - $ref: '#/components/parameters/serialNumberQueryParam'
+        - $ref: '#/components/parameters/spenderIdQueryParam'
+        - $ref: '#/components/parameters/tokenIdQueryParam'
       responses:
         200:
           description: OK
@@ -140,9 +143,9 @@ paths:
       operationId: listTokenRelationshipByAccountId
       parameters:
         - $ref: '#/components/parameters/accountIdOrAliasOrEvmAddressPathParam'
-        - $ref: '#/components/parameters/tokenIdQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/orderQueryParam'
+        - $ref: '#/components/parameters/tokenIdQueryParam'
       responses:
         200:
           description: OK
@@ -163,9 +166,9 @@ paths:
       operationId: listCryptoAllowancesByAccountId
       parameters:
         - $ref: '#/components/parameters/accountIdOrAliasOrEvmAddressPathParam'
-        - $ref: '#/components/parameters/spenderIdQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/orderQueryParamDesc'
+        - $ref: '#/components/parameters/spenderIdQueryParam'
       responses:
         200:
           description: OK
@@ -212,10 +215,10 @@ paths:
       operationId: listTokenAllowancesByAccountId
       parameters:
         - $ref: '#/components/parameters/accountIdOrAliasOrEvmAddressPathParam'
-        - $ref: '#/components/parameters/spenderIdQueryParam'
-        - $ref: '#/components/parameters/tokenIdQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/orderQueryParam'
+        - $ref: '#/components/parameters/spenderIdQueryParam'
+        - $ref: '#/components/parameters/tokenIdQueryParam'
       responses:
         200:
           description: OK
@@ -237,10 +240,10 @@ paths:
       parameters:
         - $ref: '#/components/parameters/accountIdQueryParam'
         - $ref: '#/components/parameters/accountBalanceQueryParam'
-        - $ref: '#/components/parameters/orderQueryParamDesc'
         - $ref: '#/components/parameters/accountPublicKeyQueryParam'
-        - $ref: '#/components/parameters/timestampQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/orderQueryParamDesc'
+        - $ref: '#/components/parameters/timestampQueryParam'
       responses:
         200:
           description: OK
@@ -259,9 +262,9 @@ paths:
       operationId: listBlocks
       parameters:
         - $ref: '#/components/parameters/blockNumberQueryParam'
-        - $ref: '#/components/parameters/timestampQueryParam'
-        - $ref: '#/components/parameters/orderQueryParamDesc'
         - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/orderQueryParamDesc'
+        - $ref: '#/components/parameters/timestampQueryParam'
       responses:
         200:
           description: OK
@@ -341,14 +344,14 @@ paths:
       operationId: listContractResults
       parameters:
         - $ref: '#/components/parameters/contractIdOrAddressPathParam'
+        - $ref: '#/components/parameters/blockHashQueryParam'
+        - $ref: '#/components/parameters/contractsBlockNumberQueryParam'
         - $ref: '#/components/parameters/fromQueryParam'
+        - $ref: '#/components/parameters/internalQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/orderQueryParamDesc'
         - $ref: '#/components/parameters/timestampQueryParam'
-        - $ref: '#/components/parameters/contractsBlockNumberQueryParam'
-        - $ref: '#/components/parameters/blockHashQueryParam'
         - $ref: '#/components/parameters/transactionIndexQueryParam'
-        - $ref: '#/components/parameters/internalQueryParam'
       responses:
         200:
           description: OK
@@ -367,9 +370,9 @@ paths:
       operationId: listContractState
       parameters:
         - $ref: '#/components/parameters/contractIdOrAddressPathParam'
-        - $ref: '#/components/parameters/slotQueryParam'
-        - $ref: '#/components/parameters/orderQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/orderQueryParam'
+        - $ref: '#/components/parameters/slotQueryParam'
       responses:
         200:
           description: OK
@@ -397,13 +400,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ContractResultResponse'
+                $ref: '#/components/schemas/ContractResultDetails'
         206:
           description: Partial Content
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ContractResultResponse'
+                $ref: '#/components/schemas/ContractResultDetails'
         400:
           $ref: '#/components/responses/InvalidParameterError'
         404:
@@ -417,13 +420,13 @@ paths:
       operationId: listAllContractsResults
       parameters:
         - $ref: '#/components/parameters/fromQueryParam'
+        - $ref: '#/components/parameters/blockHashQueryParam'
+        - $ref: '#/components/parameters/contractsBlockNumberQueryParam'
+        - $ref: '#/components/parameters/internalQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/orderQueryParamDesc'
         - $ref: '#/components/parameters/timestampQueryParam'
-        - $ref: '#/components/parameters/contractsBlockNumberQueryParam'
-        - $ref: '#/components/parameters/blockHashQueryParam'
         - $ref: '#/components/parameters/transactionIndexQueryParam'
-        - $ref: '#/components/parameters/internalQueryParam'
       responses:
         200:
           description: OK
@@ -449,13 +452,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ContractResultResponse'
+                $ref: '#/components/schemas/ContractResultDetails'
         206:
           description: Partial Content
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ContractResultResponse'
+                $ref: '#/components/schemas/ContractResultDetails'
         400:
           $ref: '#/components/responses/InvalidParameterError'
         404:
@@ -621,8 +624,8 @@ paths:
       description: Returns the estimated gas in tinybars per each transaction type. Default order is ASC. Currently only `ContractCall`, `ContractCreate` and `EthereumTransaction` transaction types are supported.
       operationId: getNetworkFees
       parameters:
-        - $ref: '#/components/parameters/timestampQueryParam'
         - $ref: '#/components/parameters/orderQueryParam'
+        - $ref: '#/components/parameters/timestampQueryParam'
       responses:
         200:
           description: OK
@@ -645,8 +648,8 @@ paths:
       operationId: getNetworkNodes
       parameters:
         - $ref: '#/components/parameters/fileIdQueryParam'
-        - $ref: '#/components/parameters/nodeIdQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/nodeIdQueryParam'
         - $ref: '#/components/parameters/orderQueryParam'
       responses:
         200:
@@ -825,6 +828,13 @@ paths:
       operationId: listTopicMessagesById
       parameters:
         - $ref: '#/components/parameters/topicIdPathParam'
+        - name: encoding
+          in: query
+          example: base64
+          schema:
+            type: string
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/orderQueryParamDesc'
         - name: sequencenumber
           in: query
           example: 2
@@ -833,13 +843,6 @@ paths:
             minimum: 0
             type: integer
         - $ref: '#/components/parameters/timestampQueryParam'
-        - name: encoding
-          in: query
-          example: base64
-          schema:
-            type: string
-        - $ref: '#/components/parameters/limitQueryParam'
-        - $ref: '#/components/parameters/orderQueryParamDesc'
       responses:
         200:
           description: OK
@@ -908,12 +911,12 @@ paths:
       description: Returns a list of tokens on the network.
       operationId: listTokens
       parameters:
+        - $ref: '#/components/parameters/accountIdQueryParam'
+        - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/orderQueryParam'
         - $ref: '#/components/parameters/publicKeyQueryParam'
         - $ref: '#/components/parameters/tokenIdQueryParam'
         - $ref: '#/components/parameters/tokenTypeQueryParam'
-        - $ref: '#/components/parameters/limitQueryParam'
-        - $ref: '#/components/parameters/accountIdQueryParam'
-        - $ref: '#/components/parameters/orderQueryParam'
       responses:
         200:
           description: OK
@@ -1061,12 +1064,12 @@ paths:
       operationId: listTokenBalancesById
       parameters:
         - $ref: '#/components/parameters/tokenIdPathParam'
-        - $ref: '#/components/parameters/accountIdQueryParam'
         - $ref: '#/components/parameters/accountBalanceQueryParam'
-        - $ref: '#/components/parameters/orderQueryParam'
+        - $ref: '#/components/parameters/accountIdQueryParam'
         - $ref: '#/components/parameters/accountPublicKeyQueryParam'
-        - $ref: '#/components/parameters/timestampQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
+        - $ref: '#/components/parameters/orderQueryParam'
+        - $ref: '#/components/parameters/timestampQueryParam'
       responses:
         200:
           description: OK
@@ -1172,7 +1175,7 @@ tags:
     description: The tokens object represents the information associated with a token entity and returns a list of token information.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.72.0-SNAPSHOT
+  version: 0.73.0-SNAPSHOT
   license:
     name: Apache-2.0
     url: 'https://www.apache.org/licenses/LICENSE-2.0.html'
@@ -1266,15 +1269,10 @@ components:
           $ref: '#/components/schemas/Contracts'
         links:
           $ref: '#/components/schemas/Links'
-    ContractResultResponse:
-      type: object
-      properties:
-        contracts:
-          $ref: '#/components/schemas/ContractResultDetails'
     ContractResultsResponse:
       type: object
       properties:
-        contracts:
+        results:
           $ref: '#/components/schemas/ContractResults'
         links:
           $ref: '#/components/schemas/Links'
@@ -1332,11 +1330,6 @@ components:
           $ref: '#/components/schemas/NetworkNodes'
         links:
           $ref: '#/components/schemas/Links'
-    NetworkStakeResponse:
-      type: object
-      properties:
-        network_stake:
-          $ref: '#/components/schemas/NetworkStake'
     NetworkSupplyResponse:
       type: object
       properties:
@@ -1687,7 +1680,8 @@ components:
     AccountBalanceTransactions:
       allOf:
         - $ref: '#/components/schemas/AccountInfo'
-        - required:
+        - type: object
+          required:
             - transactions
             - links
           properties:
@@ -2505,7 +2499,7 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/NetworkFee'
-    NetworkStake:
+    NetworkStakeResponse:
       type: object
       required:
         - max_staking_reward_rate_per_hbar
@@ -2555,16 +2549,16 @@ components:
           type: integer
           format: int64
       example:
-        max_staking_reward_rate_per_hbar: 17808,
-        node_reward_fee_fraction: 1.0,
-        stake_total: 35000000000000000,
+        max_staking_reward_rate_per_hbar: 17808
+        node_reward_fee_fraction: 1.0
+        stake_total: 35000000000000000
         staking_period:
           from: '1655164800.000000000'
           to: '1655251200.000000000'
-        staking_period_duration: 1440,
-        staking_periods_stored: 365,
-        staking_reward_fee_fraction: 1.0,
-        staking_reward_rate: 100000000000,
+        staking_period_duration: 1440
+        staking_periods_stored: 365
+        staking_reward_fee_fraction: 1.0
+        staking_reward_rate: 100000000000
         staking_start_threshold: 25000000000000000
     Nft:
       type: object

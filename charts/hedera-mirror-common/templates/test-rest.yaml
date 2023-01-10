@@ -1,0 +1,22 @@
+{{- if .Values.testkube.enabled -}}
+apiVersion: tests.testkube.io/v3
+kind: Test
+metadata:
+  name: test-rest
+  namespace: {{ .Values.testkube.namespace }}
+spec:
+  content:
+    repository:
+      branch: {{ .Values.testkube.test.gitBranch | default (print "v" .Chart.AppVersion) }}
+      path: hedera-mirror-test/k6
+      type: git
+      uri: https://github.com/hashgraph/hedera-mirror-node
+    type: git-dir
+  executionRequest:
+    args:
+      - /data/repo/hedera-mirror-test/k6/src/rest/apis.js
+    artifactRequest:
+      storageClassName: standard
+      volumeMountPath: /share
+  type: k6-custom/script
+{{- end }}

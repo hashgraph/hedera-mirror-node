@@ -30,16 +30,16 @@ import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.common.aggregator.LogsBloomAggregator;
 
-public class LogsBloomAggregatorTest {
+class LogsBloomAggregatorTest {
 
     @Test
     void getLogsBloomInsertBytesTest() {
-        byte[] bytes1 = { 127, -128, 78, -1, -19, -26, 125, 15, -14, -127, -75, 3, -62, -57, -35, 14, -69, -80, 43,
-                113 };
-        byte[] bytes2 = { -127, 1, 99, -54, -4, 126, -64, -78, -115, -70, -122, 127, 127, 54, -95, -40, -25, 84, 11,
-                59 };
-        byte[] bytes3 = { 127, 127, -17, 3, -55, -10, -13, 127, -50, -61, -97, 19, -9, -2, 38, -121, -104, 103, -34,
-                -52 };
+        byte[] bytes1 = {127, -128, 78, -1, -19, -26, 125, 15, -14, -127, -75, 3, -62, -57, -35, 14, -69, -80, 43,
+                113};
+        byte[] bytes2 = {-127, 1, 99, -54, -4, 126, -64, -78, -115, -70, -122, 127, 127, 54, -95, -40, -25, 84, 11,
+                59};
+        byte[] bytes3 = {127, 127, -17, 3, -55, -10, -13, 127, -50, -61, -97, 19, -9, -2, 38, -121, -104, 103, -34,
+                -52};
 
         LogsBloomAggregator bloomAggregator = new LogsBloomAggregator();
         bloomAggregator.aggregate(bytes1);

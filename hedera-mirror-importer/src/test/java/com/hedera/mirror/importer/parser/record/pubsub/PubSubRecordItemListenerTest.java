@@ -186,7 +186,7 @@ class PubSubRecordItemListenerTest {
 
         // then
         var pubSubMessage = assertPubSubMessage(buildPubSubTransaction(transaction), 1);
-        assertThat(pubSubMessage.getEntity()).isEqualTo(null);
+        assertThat(pubSubMessage.getEntity()).isNull();
         assertThat(pubSubMessage.getNonFeeTransfers()).isNull();
     }
 
@@ -205,7 +205,7 @@ class PubSubRecordItemListenerTest {
         Transaction transaction = buildTransaction(builder -> builder.setCryptoTransfer(cryptoTransfer));
         var recordItem = RecordItem.builder().record(DEFAULT_RECORD).transaction(transaction).build();
         when(nonFeeTransferExtractionStrategy.extractNonFeeTransfers(recordItem.getTransactionBody(),
-                recordItem.getRecord())).thenReturn(cryptoTransfer.getTransfers().getAccountAmountsList());
+                recordItem.getTransactionRecord())).thenReturn(cryptoTransfer.getTransfers().getAccountAmountsList());
 
         // when
         pubSubRecordItemListener.onItem(recordItem);
@@ -223,14 +223,15 @@ class PubSubRecordItemListenerTest {
                 .setTransfers(TransferList.newBuilder().build())
                 .build();
         Transaction transaction = buildTransaction(builder -> builder.setCryptoTransfer(cryptoTransfer));
+        RecordItem recordItem = RecordItem.builder().record(DEFAULT_RECORD)
+                .transaction(transaction).build();
 
         // when
         when(messageChannel.send(any())).thenThrow(RuntimeException.class);
 
         // then
         assertThatThrownBy(
-                () -> pubSubRecordItemListener.onItem(RecordItem.builder().record(DEFAULT_RECORD)
-                        .transaction(transaction).build()))
+                () -> pubSubRecordItemListener.onItem(recordItem))
                 .isInstanceOf(ParserException.class)
                 .hasMessageContaining("Error sending transaction to pubsub");
         verify(messageChannel, times(1)).send(any());

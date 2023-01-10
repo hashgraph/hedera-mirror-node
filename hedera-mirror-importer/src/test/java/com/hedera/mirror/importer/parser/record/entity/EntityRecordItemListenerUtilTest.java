@@ -44,7 +44,7 @@ class EntityRecordItemListenerUtilTest extends AbstractEntityRecordItemListenerT
     @Test
     void prngNumber() {
         var recordItem = recordItemBuilder.prng(Integer.MAX_VALUE).build();
-        int pseudorandomNumber = recordItem.getRecord().getPrngNumber();
+        int pseudorandomNumber = recordItem.getTransactionRecord().getPrngNumber();
 
         parseRecordItemAndCommit(recordItem);
 
@@ -65,7 +65,7 @@ class EntityRecordItemListenerUtilTest extends AbstractEntityRecordItemListenerT
     @Test
     void prngBytes() {
         var recordItem = recordItemBuilder.prng(0).build();
-        byte[] pseudorandomBytes = recordItem.getRecord().getPrngBytes().toByteArray();
+        byte[] pseudorandomBytes = recordItem.getTransactionRecord().getPrngBytes().toByteArray();
 
         parseRecordItemAndCommit(recordItem);
 

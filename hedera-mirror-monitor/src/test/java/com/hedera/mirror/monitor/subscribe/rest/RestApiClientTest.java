@@ -4,7 +4,7 @@ package com.hedera.mirror.monitor.subscribe.rest;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,6 +53,7 @@ import com.hedera.mirror.rest.model.TransactionByIdResponse;
 class RestApiClientTest {
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private static final Duration WAIT = Duration.ofSeconds(10L);
 
     @Mock
     private ExchangeFunction exchangeFunction;
@@ -84,13 +85,11 @@ class RestApiClientTest {
                 .thenReturn(response(response1))
                 .thenReturn(response(response2));
 
-        restApiClient.getNodes()
-                .as(StepVerifier::create)
-                .expectNext(networkNode1)
-                .expectNext(networkNode2)
-                .expectNext(networkNode3)
+        StepVerifier.withVirtualTime(() -> restApiClient.getNodes())
+                .thenAwait(WAIT)
+                .expectNext(networkNode1, networkNode2, networkNode3)
                 .expectComplete()
-                .verify(Duration.ofSeconds(2L));
+                .verify(WAIT);
 
         verify(exchangeFunction, times(2)).exchange(isA(ClientRequest.class));
     }
@@ -101,10 +100,10 @@ class RestApiClientTest {
         when(exchangeFunction.exchange(isA(ClientRequest.class)))
                 .thenReturn(response(response));
 
-        restApiClient.getNodes()
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> restApiClient.getNodes())
+                .thenAwait(WAIT)
                 .expectComplete()
-                .verify(Duration.ofSeconds(2L));
+                .verify(WAIT);
 
         verify(exchangeFunction).exchange(isA(ClientRequest.class));
     }
@@ -115,11 +114,11 @@ class RestApiClientTest {
         when(exchangeFunction.exchange(isA(ClientRequest.class)))
                 .thenReturn(response(response));
 
-        restApiClient.retrieve(TransactionByIdResponse.class, "transactions/{transactionId}", "1.1")
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> restApiClient.retrieve(TransactionByIdResponse.class, "transactions/{transactionId}", "1.1"))
+                .thenAwait(WAIT)
                 .expectNext(response)
                 .expectComplete()
-                .verify(Duration.ofSeconds(2L));
+                .verify(WAIT);
 
         verify(exchangeFunction).exchange(isA(ClientRequest.class));
     }
@@ -127,10 +126,10 @@ class RestApiClientTest {
     @Test
     void retrieveConnectError() {
         restApiClient = new RestApiClient(monitorProperties, WebClient.builder());
-        restApiClient.retrieve(TransactionByIdResponse.class, "transactions/{transactionId}", "1.1")
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> restApiClient.retrieve(TransactionByIdResponse.class, "transactions/{transactionId}", "1.1"))
+                .thenAwait(WAIT)
                 .expectErrorMatches(t -> t.getCause() instanceof ConnectException)
-                .verify(Duration.ofSeconds(2L));
+                .verify(WAIT);
     }
 
     private Mono<ClientResponse> response(Object response) {

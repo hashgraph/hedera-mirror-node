@@ -9,9 +9,9 @@ package com.hedera.mirror.monitor.subscribe.grpc;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -73,8 +73,8 @@ class GrpcSubscription extends AbstractScenario<GrpcSubscriberProperties, TopicM
     @Override
     public void onError(Throwable t) {
         Status.Code statusCode = Status.Code.UNKNOWN;
-        if (t instanceof StatusRuntimeException) {
-            statusCode = ((StatusRuntimeException) t).getStatus().getCode();
+        if (t instanceof StatusRuntimeException statusRuntimeException) {
+            statusCode = statusRuntimeException.getStatus().getCode();
         }
         errors.add(statusCode.name());
     }

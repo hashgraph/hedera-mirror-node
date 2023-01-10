@@ -22,6 +22,8 @@ package com.hedera.mirror.common.domain.entity;
 
 import com.hedera.mirror.common.exception.InvalidEntityException;
 
+import lombok.experimental.UtilityClass;
+
 /**
  * Encodes given shard, realm, num into 8 bytes long.
  * <p/>
@@ -34,6 +36,7 @@ import com.hedera.mirror.common.exception.InvalidEntityException;
  * - 65535 <br/> num: 0 - 4294967295 <br/> Placing entity num in the end has the advantage that encoded ids <=
  * 4294967295 will also be human readable.
  */
+@UtilityClass
 public class EntityIdEndec {
     static final int SHARD_BITS = 15;
     static final int REALM_BITS = 16;

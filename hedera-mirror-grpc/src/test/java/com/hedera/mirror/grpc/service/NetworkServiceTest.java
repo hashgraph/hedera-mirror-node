@@ -113,12 +113,11 @@ class NetworkServiceTest extends GrpcIntegrationTest {
                 .fileId(addressBook.getFileId())
                 .build();
 
-        networkService.getNodes(filter)
-                .as(StepVerifier::create)
-                .thenAwait(Duration.ofMillis(100))
+        StepVerifier.withVirtualTime(()-> networkService.getNodes(filter))
+                .thenAwait(Duration.ofSeconds(10L))
                 .expectNextCount(0L)
                 .expectComplete()
-                .verify(Duration.ofMillis(500));
+                .verify(Duration.ofSeconds(10L));
     }
 
     @Test

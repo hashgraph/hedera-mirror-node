@@ -77,6 +77,7 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
     private final Set<Long> timestamps = new HashSet<>();
 
     @Lazy
+    @SuppressWarnings("java:S107")
     public ErrataMigration(Resource balanceOffsets,
                            EntityRecordItemListener entityRecordItemListener,
                            EntityProperties entityProperties,

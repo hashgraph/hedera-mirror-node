@@ -409,12 +409,10 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
                 return;
             }
 
-            // Create a non-history entity update when there's no such entity in state. The entity type is set to
-            // ACCOUNT, the upsert sql will correct it
+            // Create a non-history entity update when there's no such entity in state
             var entity = Entity.builder()
                     .id(stakingRewardTransfer.getAccountId())
                     .stakePeriodStart(stakePeriodStart)
-                    .type(EntityType.ACCOUNT)
                     .build();
             onEntity(entity);
         }
@@ -442,6 +440,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     @Override
+    @SuppressWarnings("java:S2259")
     public void onTokenTransfer(TokenTransfer tokenTransfer) throws ImporterException {
         if (tokenTransfer.isTokenDissociate()) {
             tokenDissociateTransfers.add(tokenTransfer);
@@ -715,7 +714,11 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             dest.setRealm(src.getRealm());
             dest.setShard(src.getShard());
             dest.setTimestampRange(src.getTimestampRange());
-            // It's important to set the type since some non-history updates may have incorrect entity type
+            // It's important to set the type since some non-history updates may have incorrect entity type.
+            // For example, when a contract is created in a child transaction, the initial transfer to the contract may
+            // be externalized in the parent transaction record with an earlier consensus timestamp, so the non-history
+            // entity is created from the crypto transfer then an entity with correct type is created from the contract
+            // create child transaction
             dest.setType(src.getType());
         } else {
             src.setTimestampUpper(dest.getTimestampLower());

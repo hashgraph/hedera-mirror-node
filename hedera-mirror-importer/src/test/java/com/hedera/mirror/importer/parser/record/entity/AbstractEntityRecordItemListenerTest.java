@@ -237,12 +237,12 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
                         .isPresent();
             }
         } else {
-            assertThat(cryptoTransferRepository.count()).isEqualTo(0L);
+            assertThat(cryptoTransferRepository.count()).isZero();
         }
     }
 
     protected void assertRecordItem(RecordItem recordItem) {
-        assertTransactionAndRecord(recordItem.getTransactionBody(), recordItem.getRecord());
+        assertTransactionAndRecord(recordItem.getTransactionBody(), recordItem.getTransactionRecord());
     }
 
     protected void assertTransactionAndRecord(TransactionBody transactionBody, TransactionRecord record) {

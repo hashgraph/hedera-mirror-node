@@ -329,6 +329,18 @@ promtail:
   serviceMonitor:
     enabled: true
 
+testkube:
+  enabled: false
+  namespace: testkube
+  test:
+    duration: 600s
+    gitBranch: ""  # Default to .Chart.AppVersion
+    schedule: ""  # Cron schedule of the test suite, default to no schedule
+    target:
+      namespace: ""
+      release: mirror
+    vus: 500
+
 traefik:
   affinity:
     podAntiAffinity:

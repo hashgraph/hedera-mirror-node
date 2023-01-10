@@ -46,6 +46,7 @@ public class FileData implements Persistable<Long> {
     @Id
     private Long consensusTimestamp;
 
+    @SuppressWarnings("java:S1700")
     private byte[] fileData;
 
     @Convert(converter = FileIdConverter.class)

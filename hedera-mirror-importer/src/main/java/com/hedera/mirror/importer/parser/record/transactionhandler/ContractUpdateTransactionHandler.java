@@ -56,7 +56,7 @@ class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHand
     @Override
     public EntityId getEntity(RecordItem recordItem) {
         ContractID contractIdBody = recordItem.getTransactionBody().getContractUpdateInstance().getContractID();
-        ContractID contractIdReceipt = recordItem.getRecord().getReceipt().getContractID();
+        ContractID contractIdReceipt = recordItem.getTransactionRecord().getReceipt().getContractID();
         return entityIdService.lookup(contractIdReceipt, contractIdBody);
     }
 

@@ -24,6 +24,7 @@ import static com.hedera.mirror.common.domain.entity.EntityType.FILE;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIGNATURE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -58,6 +59,10 @@ import lombok.CustomLog;
 import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.awaitility.core.ConditionEvaluationListener;
+import org.awaitility.core.ConditionEvaluationLogger;
+import org.awaitility.core.EvaluatedCondition;
+import org.awaitility.core.TimeoutEvent;
 import org.gaul.s3proxy.S3Proxy;
 import org.gaul.shaded.org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.jclouds.ContextBuilder;
@@ -285,15 +290,10 @@ public abstract class AbstractDownloaderTest {
                 .build();
         s3Proxy.start();
 
-        for (int i = 0; i < 500; i++) {
-            if (s3Proxy.getState().equals(AbstractLifeCycle.STARTED)) {
-                return;
-            }
-
-            Thread.sleep(1);
-        }
-
-        throw new RuntimeException("Timeout starting S3Proxy, state " + s3Proxy.getState());
+        await("S3Proxy").dontCatchUncaughtExceptions()
+                .atMost(Duration.ofMillis(500))
+                .pollDelay(Duration.ofMillis(1))
+                .until(() -> AbstractLifeCycle.STARTED.equals(s3Proxy.getState()));
     }
 
     @Test

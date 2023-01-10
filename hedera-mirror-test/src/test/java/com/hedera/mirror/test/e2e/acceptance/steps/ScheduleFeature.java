@@ -234,7 +234,7 @@ public class ScheduleFeature {
 
         assertNotNull(scheduleInfo);
         assertThat(scheduleInfo.scheduleId).isEqualTo(scheduleId);
-        assertThat(scheduleInfo.signatories.size()).isEqualTo(expectedSignatoriesCount);
+        assertThat(scheduleInfo.signatories).hasSize(expectedSignatoriesCount);
     }
 
     private MirrorScheduleResponse verifyScheduleFromMirror(ScheduleStatus scheduleStatus) {
@@ -249,7 +249,7 @@ public class ScheduleFeature {
             // get unique set of signatures
             signatureSet.add(k.getPublicKeyPrefix());
         });
-        assertThat(signatureSet.size()).isEqualTo(currentSignersCount);
+        assertThat(signatureSet).hasSize(currentSignersCount);
 
         switch (scheduleStatus) {
             case DELETED:
