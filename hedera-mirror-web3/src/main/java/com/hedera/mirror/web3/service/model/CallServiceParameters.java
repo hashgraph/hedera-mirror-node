@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.viewmodel;
+package com.hedera.mirror.web3.service.model;
 
 /*-
  * ‌
@@ -20,4 +20,20 @@ package com.hedera.mirror.web3.viewmodel;
  * ‍
  */
 
-public record ContractCallResponse(String result) {}
+import lombok.Builder;
+import lombok.Value;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
+
+import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
+
+@Value
+@Builder
+public class CallServiceParameters {
+    HederaEvmAccount sender;
+    Address receiver;
+    long providedGasLimit;
+    long value;
+    Bytes callData;
+    boolean isStatic;
+}

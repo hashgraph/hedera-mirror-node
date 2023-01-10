@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.evm.store.models;
+package com.hedera.mirror.web3.evm.contracts.execution;
 
 /*-
  * ‌
@@ -20,18 +20,18 @@ package com.hedera.mirror.web3.evm.store.models;
  * ‍
  */
 
-import lombok.Value;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
-import com.hedera.services.evm.store.models.HederaEvmAccount;
+import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
+import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 
-@Value
-public class MirrorEvmAccount implements HederaEvmAccount {
-
-    Address address;
-
-    @Override
-    public Address canonicalAddress() {
-        return address;
-    }
+public interface MirrorEvmTxProcessorFacade {
+    HederaEvmTransactionProcessingResult execute(
+            final HederaEvmAccount sender,
+            final Address receiver,
+            final long providedGasLimit,
+            final long value,
+            final Bytes callData,
+            final boolean isStatic);
 }

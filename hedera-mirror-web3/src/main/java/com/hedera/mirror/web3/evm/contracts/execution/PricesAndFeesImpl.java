@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.viewmodel;
+package com.hedera.mirror.web3.evm.contracts.execution;
 
 /*-
  * ‌
@@ -20,4 +20,20 @@ package com.hedera.mirror.web3.viewmodel;
  * ‍
  */
 
-public record ContractCallResponse(String result) {}
+import com.hederahashgraph.api.proto.java.HederaFunctionality;
+import java.time.Instant;
+import javax.inject.Named;
+
+import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider;
+
+@Named
+public class PricesAndFeesImpl implements PricesAndFeesProvider {
+    //FEATURE WORK - precise gas price calculation to be provided with eth_estimateGas implementation
+    private static final long GAS_PRICE = 1000L;
+
+    @Override
+    public long currentGasPrice(final Instant now, final HederaFunctionality function) {
+        return GAS_PRICE;
+    }
+}
+

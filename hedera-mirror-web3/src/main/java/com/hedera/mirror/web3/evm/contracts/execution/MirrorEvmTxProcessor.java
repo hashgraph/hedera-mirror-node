@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.evm;
+package com.hedera.mirror.web3.evm.contracts.execution;
 
 /*-
  * ‌
@@ -32,16 +32,16 @@ import org.hyperledger.besu.evm.gascalculator.GasCalculator;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
+import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
-import com.hedera.services.evm.contracts.execution.BlockMetaSource;
-import com.hedera.services.evm.contracts.execution.EvmProperties;
-import com.hedera.services.evm.contracts.execution.HederaEvmTransactionProcessingResult;
-import com.hedera.services.evm.contracts.execution.HederaEvmTxProcessor;
-import com.hedera.services.evm.contracts.execution.PricesAndFeesProvider;
-import com.hedera.services.evm.store.contracts.AbstractCodeCache;
-import com.hedera.services.evm.store.contracts.HederaEvmEntityAccess;
-import com.hedera.services.evm.store.contracts.HederaEvmMutableWorldState;
-import com.hedera.services.evm.store.models.HederaEvmAccount;
+import com.hedera.node.app.service.evm.contracts.execution.BlockMetaSource;
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
+import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
+import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTxProcessor;
+import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider;
+import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
+import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 
 public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
 
@@ -58,12 +58,18 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
             final Map<String, Provider<ContractCreationProcessor>> ccps,
             final BlockMetaSource blockMetaSource,
             final MirrorEvmContractAliases aliasManager,
-            final HederaEvmEntityAccess evmEntityAccess
+            final AbstractCodeCache codeCache
     ) {
-        super(worldState, pricesAndFeesProvider, dynamicProperties, gasCalculator, mcps, ccps,
+        super(
+                worldState,
+                pricesAndFeesProvider,
+                dynamicProperties,
+                gasCalculator,
+                mcps, ccps,
                 blockMetaSource);
+
         this.aliasManager = aliasManager;
-        this.codeCache = new AbstractCodeCache(10, evmEntityAccess);
+        this.codeCache = codeCache;
     }
 
     public HederaEvmTransactionProcessingResult execute(
@@ -75,6 +81,7 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
             final Instant consensusTime,
             final boolean isStatic) {
         final long gasPrice = gasPriceTinyBarsGiven(consensusTime, false);
+        super.setupFields(false);
 
         return super.execute(
                 sender,
@@ -83,7 +90,6 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
                 providedGasLimit,
                 value,
                 callData,
-                false,
                 isStatic,
                 aliasManager.resolveForEvm(receiver)
         );
@@ -96,10 +102,12 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
 
     @Override
     protected MessageFrame buildInitialFrame(final MessageFrame.Builder baseInitialFrame, final Address to,
-            final Bytes payload, long value) {
+                                             final Bytes payload, long value) {
         final var code = codeCache.getIfPresent(aliasManager.resolveForEvm(to));
 
-        validateTrue(code != null, ResponseCodeEnum.INVALID_TRANSACTION);
+        if (code == null) {
+            throw new InvalidTransactionException(ResponseCodeEnum.INVALID_TRANSACTION);
+        }
 
         return baseInitialFrame
                 .type(MessageFrame.Type.MESSAGE_CALL)
@@ -108,11 +116,5 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
                 .inputData(payload)
                 .code(code)
                 .build();
-    }
-
-    public static void validateTrue(final boolean flag, final ResponseCodeEnum code) {
-        if (!flag) {
-            throw new InvalidTransactionException(code);
-        }
     }
 }
