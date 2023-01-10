@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.google.common.util.concurrent.Uninterruptibles;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +35,6 @@ import org.springframework.test.context.ActiveProfiles;
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.config.IntegrationTestConfiguration;
 import com.hedera.mirror.importer.parser.domain.RecordFileBuilder;
-
 @ActiveProfiles("performance")
 @Import(IntegrationTestConfiguration.class)
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -52,14 +53,17 @@ class RecordFileParserPerformanceTest {
         long startTime = System.currentTimeMillis();
         long endTime = startTime;
         var recordFile = recordFileBuilder.recordFile();
+        long workDone = 0;
 
         performanceProperties.getTransactions().forEach(p -> {
             int count = (int) (p.getTps() * interval / 1000);
             recordFile.recordItems(i -> i.count(count).entities(p.getEntities()).type(p.getType()));
+            workDone++;
         });
 
         while (endTime - startTime < duration) {
             recordFileParser.parse(recordFile.build());
+            workDone++;
 
             long sleep = interval - (System.currentTimeMillis() - endTime);
             if (sleep > 0) {
@@ -67,5 +71,7 @@ class RecordFileParserPerformanceTest {
             }
             endTime = System.currentTimeMillis();
         }
+
+        assertTrue(workDone > 0);
     }
 }

@@ -36,6 +36,7 @@ import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import com.hedera.mirror.monitor.ScenarioProperties;
 import com.hedera.mirror.monitor.ScenarioProtocol;
 import com.hedera.mirror.monitor.ScenarioStatus;
 import com.hedera.mirror.monitor.subscribe.MirrorSubscriber;
@@ -50,6 +51,7 @@ class SubscriberController {
     private final MirrorSubscriber mirrorSubscriber;
 
     @GetMapping
+    @SuppressWarnings("java:S1452")
     public Flux<Scenario<?, ?>> subscriptions(@RequestParam Optional<ScenarioProtocol> protocol,
                                               @RequestParam Optional<List<ScenarioStatus>> status) {
         return mirrorSubscriber.getSubscriptions()
@@ -59,6 +61,7 @@ class SubscriberController {
     }
 
     @GetMapping("/{name}")
+    @SuppressWarnings("java:S1452")
     public Flux<Scenario<?, ?>> subscriptions(@PathVariable String name,
                                               @RequestParam Optional<List<ScenarioStatus>> status) {
         return subscriptions(Optional.empty(), status)
@@ -67,6 +70,7 @@ class SubscriberController {
     }
 
     @GetMapping("/{name}/{id}")
+    @SuppressWarnings("java:S1452")
     public Mono<Scenario<?, ?>> subscription(@PathVariable String name, @PathVariable int id) {
         return subscriptions(name, Optional.empty())
                 .filter(s -> s.getId() == id)

@@ -124,6 +124,7 @@ public class EntityRecordItemListener implements RecordItemListener {
     private final RecordParserProperties parserProperties;
     private final TransactionHandlerFactory transactionHandlerFactory;
 
+    @SuppressWarnings("java:S3776")
     @Override
     public void onItem(RecordItem recordItem) throws ImporterException {
         TransactionRecord txRecord = recordItem.getTransactionRecord();
@@ -840,6 +841,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         entityListener.onNft(nft);
     }
 
+    @SuppressWarnings("java:S3776")
     private void insertTokenUpdate(RecordItem recordItem) {
         if (entityProperties.getPersist().isTokens()) {
             long consensusTimestamp = recordItem.getConsensusTimestamp();

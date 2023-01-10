@@ -308,7 +308,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
      *
      * @param sigFilesMap signature files grouped by filename
      */
-    @SuppressWarnings("java:S135")
+    @SuppressWarnings({"java:S135","java:S3776"})
     private void verifySigsAndDownloadDataFiles(Multimap<StreamFilename, StreamFileSignature> sigFilesMap) {
         Instant endDate = mirrorProperties.getEndDate();
         var nodeIds = consensusNodeService.getNodes()
