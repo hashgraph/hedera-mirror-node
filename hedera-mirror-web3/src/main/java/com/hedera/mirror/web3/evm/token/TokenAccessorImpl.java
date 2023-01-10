@@ -59,11 +59,6 @@ public class TokenAccessorImpl implements TokenAccessor {
     private final CustomFeeRepository customFeeRepository;
 
     @Override
-    public Optional<TokenInfo> evmInfoForToken(final Address token, final ByteString ledgerId) {
-        return Optional.empty();
-    }
-
-    @Override
     public Optional<TokenNftInfo> evmNftInfo(final Address nft, long serialNo,
             final ByteString ledgerId) {
         final var nftOptional = nftRepository.findById(new NftId(serialNo, fromEvmAddress(nft.toArray())));
@@ -134,6 +129,11 @@ public class TokenAccessorImpl implements TokenAccessor {
     public Optional<TokenInfo> infoForToken(final Address token, final ByteString ledgerId) {
         final var tokenInfoBuilder = getTokenInfoBuilder(token, false, ledgerId);
         return Optional.of(tokenInfoBuilder.build());
+    }
+
+    @Override
+    public Key keyOf(Address token, Integer keyType) {
+        return null;
     }
 
     @Override
@@ -337,7 +337,7 @@ public class TokenAccessorImpl implements TokenAccessor {
             }
         }
 
-        return customFees.size() > 0 ? Optional.of(customFees) : Optional.empty();
+        return !customFees.isEmpty() ? Optional.of(customFees) : Optional.empty();
     }
 
     private TokenID convertEntityIdToTokenId(final EntityId entity) {
