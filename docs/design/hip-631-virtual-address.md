@@ -82,7 +82,7 @@ When parsing CryptoUpdate transactions,
 
 #### getAccountByIdOrAliasOrEvmAddress
 
-`api/v1/accounts/{idOrAliasOrEvmAddress}` changes:
+`api/v1/accounts/{idOrAliasOrEvmAddress}` changes:  Add the following two fields to the output: (one string and one tuple array)
 
 ```json
   {
