@@ -24,13 +24,18 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.PositiveOrZero;
 import lombok.Data;
 
 import com.hedera.mirror.web3.convert.BlockTypeDeserializer;
 import com.hedera.mirror.web3.convert.BlockTypeSerializer;
 import com.hedera.mirror.web3.validation.Hex;
 
+import org.hibernate.validator.group.GroupSequenceProvider;
+
 @Data
+@GroupSequenceProvider(TransferValidation.class)
 public class ContractCallRequest {
 
     private static final int ADDRESS_LENGTH = 40;
@@ -45,10 +50,11 @@ public class ContractCallRequest {
     private boolean estimate;
 
     @Hex(minLength = ADDRESS_LENGTH, maxLength = ADDRESS_LENGTH)
+    @NotNull(groups = TransferCheck.class)
     private String from;
 
     @Min(0)
-    private long gas;
+    private long gas = 120_000_000L;
 
     @Min(0)
     private long gasPrice;
@@ -57,6 +63,7 @@ public class ContractCallRequest {
     @NotEmpty
     private String to;
 
-    @Min(0)
+    @PositiveOrZero
+    @Min(value = 1, groups = TransferCheck.class)
     private long value;
 }

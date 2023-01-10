@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.evm;
+package com.hedera.mirror.web3.evm.account;
 
 /*-
  * ‌
@@ -21,10 +21,8 @@ package com.hedera.mirror.web3.evm;
  */
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.when;
-
-import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
 
 import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
@@ -34,6 +32,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
+
 @ExtendWith(MockitoExtension.class)
 class MirrorEvmContractAliasesTest {
 
@@ -41,6 +42,8 @@ class MirrorEvmContractAliasesTest {
     private static final Address ADDRESS = Address.fromHexString(HEX);
     private static final String HEX2 = "0x00000000000000000000000000000000000004e5";
     private static final Address ADDRESS2 = Address.fromHexString(HEX2);
+    private static final String INVALID_HEX_ADDRESS = "0x000000000000000000000000004e5";
+    private static final Address INVALID_ADDRESS = Address.fromHexString(INVALID_HEX_ADDRESS);
 
     @Mock
     private MirrorEntityAccess mirrorEntityAccess;
@@ -64,7 +67,8 @@ class MirrorEvmContractAliasesTest {
 
     @Test
     void resolveForEvmFail() {
-        final var result = mirrorEvmContractAliases.resolveForEvm(ADDRESS);
-        assertThat(result).isEqualTo(ADDRESS);
+        assertThatThrownBy(() -> mirrorEvmContractAliases.resolveForEvm(INVALID_ADDRESS))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("An account address must be 20 bytes long, got 0");
     }
 }

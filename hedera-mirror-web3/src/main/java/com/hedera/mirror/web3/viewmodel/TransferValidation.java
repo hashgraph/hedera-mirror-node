@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.evm;
+package com.hedera.mirror.web3.viewmodel;
 
 /*-
  * ‌
@@ -20,9 +20,20 @@ package com.hedera.mirror.web3.evm;
  * ‍
  */
 
-import com.hedera.services.evm.contracts.execution.traceability.HederaEvmOperationTracer;
+import org.hibernate.validator.spi.group.DefaultGroupSequenceProvider;
+import java.util.ArrayList;
+import java.util.List;
 
-public class MirrorOperationTracer implements HederaEvmOperationTracer {
+public class TransferValidation implements DefaultGroupSequenceProvider<ContractCallRequest> {
+    @Override
+    public List<Class<?>> getValidationGroups(ContractCallRequest request) {
+        List<Class<?>> sequence = new ArrayList<>();
 
+        if(request!= null && request.getValue() >= 1){
+            sequence.add(TransferCheck.class);
+        }
+        sequence.add(ContractCallRequest.class);
 
+        return sequence;
+    }
 }
