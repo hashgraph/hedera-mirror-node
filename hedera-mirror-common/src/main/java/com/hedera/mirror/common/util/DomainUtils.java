@@ -211,6 +211,16 @@ public class DomainUtils {
         return convertToNanosMax(timestamp.getSeconds(), timestamp.getNanos());
     }
 
+    public static Timestamp nanosMaxToTimestamp(final Long nanosMax) {
+        if (nanosMax == 0L) {
+            return Timestamp.getDefaultInstance();
+        }
+
+        final var seconds = Math.floorDiv(nanosMax, NANOS_PER_SECOND);
+        final var nanos = Math.floorMod(nanosMax, NANOS_PER_SECOND);
+        return Timestamp.newBuilder().setSeconds(seconds).setNanos((int) nanos).build();
+    }
+
     /**
      * Cleans a string of invalid characters that would cause it to fail when inserted into the database. In particular,
      * PostgreSQL does not allow the null character (0x0000) to be inserted.

@@ -97,7 +97,7 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
         }
     }
 
-    private Long entityIdFromEvmAddress(Address address) {
+    private Long entityIdFromEvmAddress(final Address address) {
         final var id = fromEvmAddress(address.toArrayUnsafe());
         return id.getId();
     }
