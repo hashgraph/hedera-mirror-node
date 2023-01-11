@@ -36,7 +36,6 @@ import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import com.hedera.mirror.monitor.ScenarioProperties;
 import com.hedera.mirror.monitor.ScenarioProtocol;
 import com.hedera.mirror.monitor.ScenarioStatus;
 import com.hedera.mirror.monitor.subscribe.MirrorSubscriber;
