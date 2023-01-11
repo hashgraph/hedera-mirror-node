@@ -24,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.util.concurrent.Uninterruptibles;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -54,17 +53,16 @@ class RecordFileParserPerformanceTest {
         long startTime = System.currentTimeMillis();
         long endTime = startTime;
         var recordFile = recordFileBuilder.recordFile();
-        AtomicLong workDone = new AtomicLong(0);
+        boolean workDone = false; // used just to assert that at least one cycle through the main "while" loop of this routine occured.
 
         performanceProperties.getTransactions().forEach(p -> {
             int count = (int) (p.getTps() * interval / 1000);
             recordFile.recordItems(i -> i.count(count).entities(p.getEntities()).type(p.getType()));
-            workDone.getAndIncrement();
         });
 
         while (endTime - startTime < duration) {
             recordFileParser.parse(recordFile.build());
-            workDone.getAndIncrement();
+            workDone = true;
 
             long sleep = interval - (System.currentTimeMillis() - endTime);
             if (sleep > 0) {
@@ -73,6 +71,6 @@ class RecordFileParserPerformanceTest {
             endTime = System.currentTimeMillis();
         }
 
-        assertTrue(workDone.get() > 0);
+        assertTrue(workDone); // Sonarcloud needs at least one assert per @Test, or else calls it a "critical" code smell
     }
 }
