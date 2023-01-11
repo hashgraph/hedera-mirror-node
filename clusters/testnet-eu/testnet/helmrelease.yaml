@@ -53,6 +53,8 @@ spec:
     rosetta:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "testnet"
+      hpa:
+        enabled: false
       replicas: 0
     test:
       enabled: false
