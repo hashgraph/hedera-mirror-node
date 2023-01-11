@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.google.common.util.concurrent.Uninterruptibles;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -53,17 +54,17 @@ class RecordFileParserPerformanceTest {
         long startTime = System.currentTimeMillis();
         long endTime = startTime;
         var recordFile = recordFileBuilder.recordFile();
-        long workDone = 0;
+        AtomicLong workDone = new AtomicLong(0);
 
         performanceProperties.getTransactions().forEach(p -> {
             int count = (int) (p.getTps() * interval / 1000);
             recordFile.recordItems(i -> i.count(count).entities(p.getEntities()).type(p.getType()));
-            workDone++;
+            workDone.getAndIncrement();
         });
 
         while (endTime - startTime < duration) {
             recordFileParser.parse(recordFile.build());
-            workDone++;
+            workDone.getAndIncrement();
 
             long sleep = interval - (System.currentTimeMillis() - endTime);
             if (sleep > 0) {
@@ -72,6 +73,6 @@ class RecordFileParserPerformanceTest {
             endTime = System.currentTimeMillis();
         }
 
-        assertTrue(workDone > 0);
+        assertTrue(workDone.get() > 0);
     }
 }
