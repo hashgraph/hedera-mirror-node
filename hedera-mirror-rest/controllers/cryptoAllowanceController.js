@@ -89,7 +89,7 @@ class CryptoAllowanceController extends BaseController {
    */
   getAccountCryptoAllowances = async (req, res) => {
     const accountId = await EntityService.getEncodedId(req.params[filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS]);
-    const filters = utils.buildAndValidateFilters(req.query);
+    const filters = utils.buildAndValidateFilters(req.query, validCryptoAllowanceParameters);
     const {conditions, params, order, limit} = this.extractCryptoAllowancesQuery(filters, accountId);
     const allowances = await CryptoAllowanceService.getAccountCryptoAllowances(conditions, params, order, limit);
 
@@ -111,5 +111,12 @@ class CryptoAllowanceController extends BaseController {
     res.locals[responseDataLabel] = response;
   };
 }
+
+const validCryptoAllowanceParameters = [
+  filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS,
+  filterKeys.LIMIT,
+  filterKeys.ORDER,
+  filterKeys.SPENDER_ID
+];
 
 export default new CryptoAllowanceController();

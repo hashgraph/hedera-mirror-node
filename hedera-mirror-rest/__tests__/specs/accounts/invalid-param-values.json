@@ -2,8 +2,8 @@
   "description": "Account api invalid parameters",
   "setup": {},
   "urls": [
-    "/api/v1/accounts?account.id=lte:0.1.2.3&account.balance=gt:-2&account.publickey=abcdef&timestamp=-1.2&order=any&balance=1",
-    "/api/v1/accounts?account.id=lte:0.1.2.3&account.balance=gt:9223372036854775808&account.publickey=-2&timestamp=-1.2&order=any&balance=1"
+    "/api/v1/accounts?account.id=lte:0.1.2.3&account.balance=gt:-2&account.publickey=abcdef&timestamp=-1.2&order=any&balance=1&token.id=0.0.45678",
+    "/api/v1/accounts?account.id=lte:0.1.2.3&account.balance=gt:9223372036854775808&account.publickey=-2&timestamp=-1.2&order=any&balance=1&token.id=0.0.45678"
   ],
   "responseStatus": 400,
   "responseJson": {
@@ -26,6 +26,9 @@
         },
         {
           "message": "Invalid parameter: balance"
+        },
+        {
+          "message": "Invalid parameter: token.id"
         }
       ]
     }

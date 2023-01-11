@@ -119,7 +119,7 @@ const getMessageByTopicAndSequenceRequest = async (req, res) => {
 const getTopicMessages = async (req, res) => {
   const topicIdStr = req.params.topicId;
   validateGetTopicMessagesParams(topicIdStr);
-  const filters = utils.buildAndValidateFilters(req.query);
+  const filters = utils.buildAndValidateFilters(req.query, topicsValidParameters);
 
   const topicId = EntityId.parse(topicIdStr);
 
@@ -237,6 +237,15 @@ const topicmessage = {
   getMessageByTopicAndSequenceRequest,
   getTopicMessages,
 };
+
+const topicsValidParameters = [
+  constants.filterKeys.TOPIC_ID,
+  constants.filterKeys.ENCODING,
+  constants.filterKeys.LIMIT,
+  constants.filterKeys.ORDER,
+  constants.filterKeys.SEQUENCE_NUMBER,
+  constants.filterKeys.TIMESTAMP
+];
 
 if (utils.isTestEnv()) {
   Object.assign(topicmessage, {

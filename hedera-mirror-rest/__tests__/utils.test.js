@@ -1023,6 +1023,7 @@ describe('utils validateReq', () => {
           timestamp: Array(config.maxRepeatedQueryParameters + 1).fill('123'),
         },
       },
+      validParameters: ['timestamp']
     },
     {
       name: 'Invalid account.id',
@@ -1031,6 +1032,7 @@ describe('utils validateReq', () => {
           'account.id': 'x',
         },
       },
+      validParameters: ['account.id']
     },
     {
       name: 'Invalid account.id and timestamp',
@@ -1040,6 +1042,7 @@ describe('utils validateReq', () => {
           timestamp: 'x',
         },
       },
+      validParameters: ['account.id', 'timestamp']
     },
     {
       name: 'Invalid account.id array',
@@ -1048,12 +1051,22 @@ describe('utils validateReq', () => {
           'account.id': ['0.0.3', 'x'],
         },
       },
+      validParameters: ['account.id']
+    },
+    {
+      name: 'Invalid parameter key',
+      req: {
+        query: {
+          'account.id': ['0.0.3'],
+        },
+      },
+      validParameters: ['timestamp']
     },
   ];
 
   specs.forEach((spec) => {
     test(spec.name, () => {
-      expect(() => utils.validateReq(spec.req)).toThrow(InvalidArgumentError);
+      expect(() => utils.validateReq(spec.req, spec.validParameters)).toThrow(InvalidArgumentError);
     });
   });
 });

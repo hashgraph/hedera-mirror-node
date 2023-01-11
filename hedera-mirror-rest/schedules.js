@@ -221,7 +221,7 @@ const getScheduleEntities = async (pgSqlQuery, pgSqlParams) => {
  */
 const getSchedules = async (req, res) => {
   // extract filters from query param
-  const filters = utils.buildAndValidateFilters(req.query);
+  const filters = utils.buildAndValidateFilters(req.query, validSchedulesParameters);
 
   // get sql filter query, params, order and limit from query filters
   const {filterQuery, params, order, limit} = extractSqlFromScheduleFilters(filters);
@@ -258,6 +258,13 @@ const schedules = {
   getScheduleById,
   getSchedules,
 };
+
+const validSchedulesParameters = [
+  constants.filterKeys.ACCOUNT_ID,
+  constants.filterKeys.LIMIT,
+  constants.filterKeys.ORDER,
+  constants.filterKeys.SCHEDULE_ID
+];
 
 if (utils.isTestEnv()) {
   Object.assign(schedules, {

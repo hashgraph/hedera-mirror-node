@@ -205,7 +205,7 @@ class NetworkController extends BaseController {
    */
   getExchangeRate = async (req, res) => {
     // extract filters from query param
-    const filters = utils.buildAndValidateFilters(req.query);
+    const filters = utils.buildAndValidateFilters(req.query, [filterKeys.TIMESTAMP]);
 
     const {filterQuery} = this.extractFileDataQuery(filters);
 
@@ -226,7 +226,7 @@ class NetworkController extends BaseController {
    */
   getNetworkNodes = async (req, res) => {
     // extract filters from query param
-    const filters = utils.buildAndValidateFilters(req.query);
+    const filters = utils.buildAndValidateFilters(req.query, this.validNodeParameters);
 
     const {conditions, params, order, limit} = this.extractNetworkNodesQuery(filters);
     const nodes = await NetworkNodeService.getNetworkNodes(conditions, params, order, limit);
@@ -302,7 +302,7 @@ class NetworkController extends BaseController {
    * @return {Promise<void>}
    */
   getSupply = async (req, res) => {
-    const filters = utils.buildAndValidateFilters(req.query);
+    const filters = utils.buildAndValidateFilters(req.query, [filterKeys.TIMESTAMP, filterKeys.Q]);
     const {conditions, params, q} = this.extractSupplyQuery(filters);
     const networkSupply = await NetworkNodeService.getSupply(conditions, params);
 
@@ -329,7 +329,7 @@ class NetworkController extends BaseController {
    * @return {Promise<void>}
    */
   getFees = async (req, res) => {
-    const filters = utils.buildAndValidateFilters(req.query);
+    const filters = utils.buildAndValidateFilters(req.query, [filterKeys.ORDER, filterKeys.TIMESTAMP]);
     const {filterQuery, order} = this.extractFileDataQuery(filters);
 
     const [exchangeRate, feeSchedule] = await Promise.all([
@@ -343,6 +343,13 @@ class NetworkController extends BaseController {
 
     res.locals[responseDataLabel] = new FeeScheduleViewModel(feeSchedule, exchangeRate, order);
   };
+
+  validNodeParameters = [
+    filterKeys.FILE_ID,
+    filterKeys.LIMIT,
+    filterKeys.NODE_ID,
+    filterKeys.ORDER
+  ];
 }
 
 export default new NetworkController();

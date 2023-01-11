@@ -1,7 +1,7 @@
 {
   "description": "Network exchange rate with invalid query params",
   "setup": {},
-  "url": "/api/v1/network/exchangerate?timestamp=test&limit=c&order=d",
+  "url": "/api/v1/network/exchangerate?timestamp=test&limit=c&order=d&schedule.id=1",
   "responseStatus": 400,
   "responseJson": {
     "_status": {
@@ -14,6 +14,9 @@
         },
         {
           "message": "Invalid parameter: order"
+        },
+        {
+          "message": "Invalid parameter: schedule.id"
         }
       ]
     }
