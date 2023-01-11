@@ -54,4 +54,6 @@ spec:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "testnet"
       replicas: 0
+    test:
+      enabled: false
 
