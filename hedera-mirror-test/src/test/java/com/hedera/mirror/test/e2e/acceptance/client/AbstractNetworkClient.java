@@ -23,11 +23,6 @@ package com.hedera.mirror.test.e2e.acceptance.client;
 import java.time.Instant;
 import java.util.function.Supplier;
 
-import com.hedera.hashgraph.sdk.AccountId;
-import com.hedera.hashgraph.sdk.AccountInfo;
-
-import com.hedera.hashgraph.sdk.AccountInfoQuery;
-
 import lombok.Data;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
@@ -173,11 +168,6 @@ public abstract class AbstractNetworkClient {
         var balance = executeQuery(() -> query).hbars;
         log.info("{} balance is {}", accountId, balance);
         return balance.toTinybars();
-    }
-
-    public AccountInfo getAccountInfo(AccountId accountId) {
-        var query = new AccountInfoQuery().setAccountId(accountId);
-        return executeQuery(() -> query);
     }
 
     protected String getMemo(String message) {

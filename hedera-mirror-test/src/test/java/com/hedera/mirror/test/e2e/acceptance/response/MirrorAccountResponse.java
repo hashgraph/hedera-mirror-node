@@ -4,14 +4,14 @@ package com.hedera.mirror.test.e2e.acceptance.response;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,12 +20,21 @@ package com.hedera.mirror.test.e2e.acceptance.response;
  * ‍
  */
 
-import java.util.List;
-import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorAccountBalance;
 
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
+
+import lombok.Data;
+import java.util.List;
+
 @Data
-public class MirrorTokenBalancesResponse {
-    List<MirrorAccountBalance> balances;
+public class MirrorAccountResponse {
+    private String account;
+    private String createdTimestamp;
+    @JsonProperty("balance")
+    private MirrorAccountBalance balanceInfo;
+    private List<MirrorTransaction> transactions;
+    private String memo;
 }

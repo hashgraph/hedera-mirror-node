@@ -20,10 +20,9 @@ Feature: Account Coverage Feature
 
     @release @acceptance @cryptotransfer @createcryptoaccount
         Scenario Outline: Create crypto account when transferring to alias
-        Given I send <amount> tℏ from <senderAccount> to <keyType> alias not present in the network
-        Then the transfer auto creates a new account
-        And the balance of the new account should reflect the transferred <amount>
+        Given I send <amount> tℏ to <keyType> alias not present in the network
+        Then the transfer auto creates a new account with balance of transferred amount <amount> tℏ
         Examples:
-            | amount | senderAccount | keyType |
-            | 1      | "ALICE"       | "ED"    |
-            | 1      | "ALICE"       | "ECDSA" |
+            | amount | keyType  |
+            | 1      | "ED25519"    |
+            | 1      | "ECDSA" |
