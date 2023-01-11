@@ -74,7 +74,7 @@ public class CommonParserProperties {
             return t -> true;
         }
         return include.stream()
-                .map(f -> f.getFilter())
+                .map(TransactionFilter::getFilter)
                 .reduce(a -> false, Predicate::or);
     }
 

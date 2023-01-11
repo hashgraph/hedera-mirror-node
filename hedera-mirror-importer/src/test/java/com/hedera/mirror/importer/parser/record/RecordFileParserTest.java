@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -32,6 +33,9 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.google.protobuf.ByteString;
+
+import com.hedera.mirror.importer.exception.ParserException;
+
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.CryptoTransferTransactionBody;
 import com.hederahashgraph.api.proto.java.SignatureMap;
@@ -56,7 +60,7 @@ import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
-import com.hedera.mirror.importer.exception.ParserSQLException;
+import com.hedera.mirror.importer.exception.HashMismatchException;
 import com.hedera.mirror.importer.parser.AbstractStreamFileParserTest;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
@@ -113,7 +117,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
 
     @Override
     protected StreamFile getStreamFile() {
-        long id = ++count;
+        long id = ++count * 100;
         recordItem = cryptoTransferRecordItem(id);
         return getStreamFile(Flux.just(recordItem), id);
     }
@@ -125,7 +129,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
 
     @Override
     protected void mockDbFailure() {
-        doThrow(ParserSQLException.class).when(recordItemListener).onItem(any());
+        doThrow(ParserException.class).when(recordItemListener).onItem(any());
     }
 
     @Test
@@ -235,6 +239,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
         var streamFile2 = (RecordFile) getStreamFile();
         streamFile1.setIndex(streamFile2.getIndex() - offset);
         streamFile1.setVersion(5);
+        streamFile2.setPreviousHash(streamFile1.getHash());
 
         // when
         parser.parse(streamFile1);
@@ -247,6 +252,35 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
     }
 
     @Test
+    void hashMismatch() {
+        // given
+        var streamFile1 = (RecordFile) getStreamFile();
+        var streamFile2 = (RecordFile) getStreamFile();
+        streamFile1.setIndex(streamFile2.getIndex() - 2);
+        streamFile1.setVersion(5);
+        when(recordFileRepository.findLatest()).thenReturn(Optional.of(streamFile1));
+
+        // when
+        assertThatThrownBy(() -> parser.parse(streamFile2)).isInstanceOf(HashMismatchException.class);
+    }
+
+    @Test
+    void noExistingRecordFile() {
+        // given
+        int offset = 2;
+        var streamFile = (RecordFile) getStreamFile();
+        streamFile.setIndex(3L);
+        streamFile.setVersion(5);
+        when(recordFileRepository.findLatest()).thenReturn(Optional.empty());
+
+        // when
+        parser.parse(streamFile);
+
+        // then
+        assertParsed(streamFile, true, false);
+    }
+
+    @Test
     void blockNumberMigrationOnStartup() {
         // given
         int offset = 2;
@@ -254,6 +288,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
         var streamFile2 = (RecordFile) getStreamFile();
         streamFile1.setIndex(streamFile2.getIndex() - offset);
         streamFile1.setVersion(5);
+        streamFile2.setPreviousHash(streamFile1.getHash());
         when(recordFileRepository.findLatest()).thenReturn(Optional.of(streamFile1));
 
         // when
@@ -272,6 +307,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
         streamFile1.setIndex(streamFile2.getIndex() - 2);
         streamFile1.setVersion(5);
         streamFile2.setVersion(5);
+        streamFile2.setPreviousHash(streamFile1.getHash());
 
         // when
         parser.parse(streamFile1);
@@ -289,6 +325,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
         var streamFile1 = (RecordFile) getStreamFile();
         var streamFile2 = (RecordFile) getStreamFile();
         streamFile1.setIndex(streamFile2.getIndex() - 1);
+        streamFile2.setPreviousHash(streamFile1.getHash());
 
         // when
         parser.parse(streamFile1);
@@ -363,7 +400,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
         return domainBuilder
                 .recordFile()
                 .customize(recordFileBuilder -> recordFileBuilder.bytes(new byte[] {0, 1, 2})
-                        .consensusEnd(timestamp)
+                        .consensusEnd(timestamp+1)
                         .consensusStart(timestamp)
                         .gasUsed(0L)
                         .items(items)

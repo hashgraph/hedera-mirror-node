@@ -111,6 +111,8 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
             delayExpression = "#{@recordParserProperties.getRetry().getMinBackoff().toMillis()}",
             maxDelayExpression = "#{@recordParserProperties.getRetry().getMaxBackoff().toMillis()}",
             multiplierExpression = "#{@recordParserProperties.getRetry().getMultiplier()}"),
+            include = Throwable.class,
+            exclude = OutOfMemoryError.class,
             maxAttemptsExpression = "#{@recordParserProperties.getRetry().getMaxAttempts()}")
     @Transactional(timeoutString = "#{@recordParserProperties.getTransactionTimeout().toSeconds()}")
     public void parse(RecordFile recordFile) {
@@ -139,9 +141,9 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
                     .block();
 
             recordFile.finishLoad(count);
-            recordStreamFileListener.onEnd(recordFile);
             updateIndex(recordFile);
-        } catch (Exception ex) {
+            recordStreamFileListener.onEnd(recordFile);
+        } catch (Throwable ex) {
             recordStreamFileListener.onError();
             throw ex;
         }
@@ -151,7 +153,7 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
         if (log.isTraceEnabled()) {
             log.trace("Transaction = {}, Record = {}",
                     Utility.printProtoMessage(recordItem.getTransaction()),
-                    Utility.printProtoMessage(recordItem.getRecord()));
+                    Utility.printProtoMessage(recordItem.getTransactionRecord()));
         } else if (log.isDebugEnabled()) {
             log.debug("Parsing transaction with consensus timestamp {}", recordItem.getConsensusTimestamp());
         }
@@ -161,14 +163,15 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
         sizeMetrics.getOrDefault(recordItem.getTransactionType(), unknownSizeMetric)
                 .record(recordItem.getTransactionBytes().length);
 
-        Instant consensusTimestamp = Utility.convertToInstant(recordItem.getRecord().getConsensusTimestamp());
+        Instant consensusTimestamp = Utility.convertToInstant(recordItem.getTransactionRecord().getConsensusTimestamp());
         latencyMetrics.getOrDefault(recordItem.getTransactionType(), unknownLatencyMetric)
                 .record(Duration.between(consensusTimestamp, Instant.now()));
     }
 
     // Correct v5 block numbers once we receive a v6 block with a canonical number
     private void updateIndex(RecordFile recordFile) {
-        var lastRecordFile = last.get();
+        var lastInMemory = last.get();
+        var lastRecordFile = lastInMemory;
         var recordFileRepository = (RecordFileRepository) streamFileRepository;
 
         if (lastRecordFile == null) {
@@ -185,6 +188,6 @@ public class RecordFileParser extends AbstractStreamFileParser<RecordFile> {
             }
         }
 
-        last.set(recordFile);
+        last.compareAndSet(lastInMemory, recordFile);
     }
 }

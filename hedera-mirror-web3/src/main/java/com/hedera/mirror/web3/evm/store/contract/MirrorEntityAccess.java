@@ -23,21 +23,20 @@ package com.hedera.mirror.web3.evm.store.contract;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.util.DomainUtils.fromBytes;
 import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
-import static com.hedera.services.evm.accounts.HederaEvmContractAliases.isMirror;
+import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 
 import com.google.protobuf.ByteString;
 import java.util.Optional;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
-import org.apache.tuweni.units.bigints.UInt256;
 import org.hyperledger.besu.datatypes.Address;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.mirror.web3.repository.ContractStateRepository;
 import com.hedera.mirror.web3.repository.EntityRepository;
-import com.hedera.services.evm.store.contracts.HederaEvmEntityAccess;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 
 @Named
 @RequiredArgsConstructor
@@ -74,11 +73,10 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
     }
 
     @Override
-    public UInt256 getStorage(Address address, Bytes key) {
+    public Bytes getStorage(Address address, Bytes key) {
         final var storage = contractStateRepository.findStorage(entityIdFromEvmAddress(address),
                 key.toArrayUnsafe());
-        final var storageBytes = storage.map(Bytes::wrap).orElse(Bytes.EMPTY);
-        return UInt256.fromBytes(storageBytes);
+        return storage.map(Bytes::wrap).orElse(Bytes.EMPTY);
     }
 
     @Override

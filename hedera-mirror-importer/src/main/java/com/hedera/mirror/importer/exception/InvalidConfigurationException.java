@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.exception;
  * ‍
  */
 
+@SuppressWarnings("java:S110")
 public class InvalidConfigurationException extends ImporterException {
 
     private static final long serialVersionUID = -2996303169427541497L;

@@ -125,7 +125,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                             .setStakedAccountId(AccountID.newBuilder().setAccountNum(1L).build());
                 })
                 .build();
-        var record = recordItem.getRecord();
+        var record = recordItem.getTransactionRecord();
         var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
 
         parseRecordItemAndCommit(recordItem);
@@ -155,7 +155,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 ))
                 .recordItem(r -> r.hapiVersion(RecordFile.HAPI_VERSION_0_23_0))
                 .build();
-        var record = recordItem.getRecord();
+        var record = recordItem.getTransactionRecord();
         var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
 
         parseRecordItemAndCommit(recordItem);
@@ -184,13 +184,13 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .sidecarRecords(s -> s.remove(0))
                 .build();
 
-        var contractCreateResult = parentRecordItem.getRecord().getContractCreateResult();
+        var contractCreateResult = parentRecordItem.getTransactionRecord().getContractCreateResult();
         var childContractId = contractCreateResult.getCreatedContractIDsList().stream()
                 .filter(c -> !c.equals(contractCreateResult.getContractID()))
                 .findFirst().get();
         var childEvmAddress = domainBuilder.evmAddress();
         var childConsensusTimestamp = TestUtils.toTimestamp(parentRecordItem.getConsensusTimestamp() + 1);
-        var childTransactionId = parentRecordItem.getRecord().getTransactionID().toBuilder().setNonce(1);
+        var childTransactionId = parentRecordItem.getTransactionRecord().getTransactionID().toBuilder().setNonce(1);
         var childRecordItem = recordItemBuilder.contractCreate(childContractId)
                 .record(r -> r.setConsensusTimestamp(childConsensusTimestamp)
                         .setTransactionID(childTransactionId)
@@ -215,8 +215,8 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertContractEntity(parentRecordItem),
                 () -> assertContractEntity(childRecordItem),
                 () -> assertThat(contractResultRepository.findAll()).hasSize(2),
-                () -> assertContractCreateResult(parentTransactionBody, parentRecordItem.getRecord()),
-                () -> assertContractCreateResult(childTransactionBody, childRecordItem.getRecord()),
+                () -> assertContractCreateResult(parentTransactionBody, parentRecordItem.getTransactionRecord()),
+                () -> assertContractCreateResult(childTransactionBody, childRecordItem.getTransactionRecord()),
                 () -> assertContractStateChanges(parentRecordItem),
                 () -> assertContractStateChanges(childRecordItem)
         );
@@ -228,7 +228,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .record(r -> r.setContractCreateResult(ContractFunctionResult.getDefaultInstance()))
                 .receipt(r -> r.clearContractID().setStatus(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION))
                 .build();
-        var record = recordItem.getRecord();
+        var record = recordItem.getTransactionRecord();
         var transactionBody = recordItem.getTransactionBody();
 
         parseRecordItemAndCommit(recordItem);
@@ -248,7 +248,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .receipt(r -> r.clearContractID().setStatus(ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE))
                 .record(TransactionRecord.Builder::clearContractCreateResult)
                 .build();
-        var record = recordItem.getRecord();
+        var record = recordItem.getTransactionRecord();
         var transactionBody = recordItem.getTransactionBody();
 
         parseRecordItemAndCommit(recordItem);
@@ -267,7 +267,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         entityProperties.getPersist().setContracts(false);
 
         RecordItem recordItem = recordItemBuilder.contractCreate().build();
-        var record = recordItem.getRecord();
+        var record = recordItem.getTransactionRecord();
         var transactionBody = recordItem.getTransactionBody();
 
         parseRecordItemAndCommit(recordItem);
@@ -556,7 +556,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
 
         var recordItem = recordItemBuilder.contractCall(CONTRACT_ID).build();
         var transactionBody = recordItem.getTransactionBody();
-        var record = recordItem.getRecord();
+        var record = recordItem.getTransactionRecord();
         var contractCallTransactionBody = transactionBody.getContractCall();
 
         parseRecordItemAndCommit(recordItem);
@@ -591,7 +591,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .build();
 
         var childEvmAddress = domainBuilder.evmAddress();
-        var record = parentRecordItem.getRecord();
+        var record = parentRecordItem.getTransactionRecord();
         var childConsensusTimestamp = TestUtils.toTimestamp(parentRecordItem.getConsensusTimestamp() + 1);
         var childContractId = record.getContractCallResult().getCreatedContractIDs(0);
         var childTransactionId = record.getTransactionID().toBuilder().setNonce(1).build();
@@ -617,12 +617,12 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(2, contractResultRepository.count()),
                 () -> assertEquals(6, cryptoTransferRepository.count()),
                 () -> assertEntities(parentId, EntityId.of(childContractId)),
-                () -> assertTransactionAndRecord(parentRecordItem.getTransactionBody(), parentRecordItem.getRecord()),
-                () -> assertTransactionAndRecord(childRecordItem.getTransactionBody(), childRecordItem.getRecord()),
+                () -> assertTransactionAndRecord(parentRecordItem.getTransactionBody(), parentRecordItem.getTransactionRecord()),
+                () -> assertTransactionAndRecord(childRecordItem.getTransactionBody(), childRecordItem.getTransactionRecord()),
                 () -> assertThat(entityRepository.findAll()).contains(setupResult.entity),
                 () -> assertCreatedContract(childRecordItem),
-                () -> assertContractCallResult(parentTransactionBody, parentRecordItem.getRecord()),
-                () -> assertContractCreateResult(childTransactionBody, childRecordItem.getRecord()),
+                () -> assertContractCallResult(parentTransactionBody, parentRecordItem.getTransactionRecord()),
+                () -> assertContractCreateResult(childTransactionBody, childRecordItem.getTransactionRecord()),
                 () -> assertContractStateChanges(parentRecordItem),
                 () -> assertContractStateChanges(childRecordItem)
         );
@@ -662,7 +662,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         RecordItem recordItemCall = recordItemBuilder.contractCall().build();
         parseRecordItemAndCommit(recordItemCall);
 
-        var parentConsensusTimestamp = recordItemCall.getRecord().getConsensusTimestamp();
+        var parentConsensusTimestamp = recordItemCall.getTransactionRecord().getConsensusTimestamp();
         var parentTransactionId = recordItemCall.getTransactionBody().getTransactionID();
         var childTransactionId = parentTransactionId.toBuilder().setNonce(1).build();
         var payerAccount = recordItemCall.getPayerAccountId();
@@ -699,7 +699,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .record(r -> r.setContractCreateResult(ContractFunctionResult.getDefaultInstance()))
                 .receipt(r -> r.clearContractID().setStatus(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION))
                 .build();
-        var record = recordItem.getRecord();
+        var record = recordItem.getTransactionRecord();
         var transactionBody = recordItem.getTransactionBody();
 
         parseRecordItemAndCommit(recordItem);
@@ -759,7 +759,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .sidecarRecords(s -> s.clear())
                 .status(ResponseCodeEnum.INVALID_CONTRACT_ID)
                 .build();
-        var record = recordItem.getRecord();
+        var record = recordItem.getTransactionRecord();
         var transactionBody = recordItem.getTransactionBody();
 
         parseRecordItemAndCommit(recordItem);
@@ -803,7 +803,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
         var adminKey = transactionBody.getAdminKey().toByteArray();
         var transaction = transactionRepository.findById(createdTimestamp).get();
-        var contractCreateResult = recordItem.getRecord().getContractCreateResult();
+        var contractCreateResult = recordItem.getTransactionRecord().getContractCreateResult();
         byte[] evmAddress = contractCreateResult.hasEvmAddress() ?
                 DomainUtils.toBytes(contractCreateResult.getEvmAddress().getValue()) : null;
         EntityId entityId = transaction.getEntityId();
@@ -859,10 +859,10 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     }
 
     private void assertCreatedContract(RecordItem recordItem) {
-        var contractCreateResult = recordItem.getRecord().getContractCreateResult();
+        var contractCreateResult = recordItem.getTransactionRecord().getContractCreateResult();
         byte[] evmAddress = contractCreateResult.hasEvmAddress() ?
                 DomainUtils.toBytes(contractCreateResult.getEvmAddress().getValue()) : null;
-        EntityId createdId = EntityId.of(recordItem.getRecord().getReceipt().getContractID());
+        EntityId createdId = EntityId.of(recordItem.getTransactionRecord().getReceipt().getContractID());
         var contractAssert = assertThat(entityRepository.findById(createdId.getId()))
                 .get()
                 .returns(recordItem.getConsensusTimestamp(), Entity::getCreatedTimestamp)

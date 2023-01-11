@@ -3,7 +3,7 @@
 This folder contains logic to support the development and deployment of the Hedera Mirror Node in a Kubernetes cluster
 in [Google Cloud Platform Marketplace](https://console.cloud.google.com/marketplace). It takes in the wrapper
 `hedera-mirror` Helm chart and bundles it into the required deployer image which is built and pushed to Google Container
-Registry on maven deploy.
+Registry on deploy.
 
 # Setup
 
@@ -55,6 +55,8 @@ cd charts/marketplace/gcp
 # Testing
 
 The mpdev tool is provided by Google Cloud Platform Marketplace to help verify the marketplace solution and install it.
+If you are trying to run mpdev on a mac M1 arm64 machine, it will not work. Google has not provided an arm64 image.
+You will need to create a non-arm64 VM to install mpdev and then run verify.
 
 ## Verify
 

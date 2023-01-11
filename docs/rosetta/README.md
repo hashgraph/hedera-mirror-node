@@ -183,13 +183,13 @@ First ensure newman is installed locally using `npm`, then execute `newman`.
 
 ```shell
 npm install -g newman
-newman run hedera-mirror-rosetta/scripts/validation/postman/rosetta-api-postman.json --env-var base_url=https://previewnet.mirrornode.hedera.com/rosetta
+newman run charts/hedera-mirror-rosetta/postman.json --env-var base_url=https://previewnet.mirrornode.hedera.com/rosetta
 ```
 
 ### Docker
 
 ```shell
-docker run --rm -v "${PWD}/hedera-mirror-rosetta/scripts/validation/postman/rosetta-api-postman.json:/tmp/postman.json" -t postman/newman run /tmp/postman.json --env-var base_url=https://previewnet.mirrornode.hedera.com/rosetta
+docker run --rm -v "${PWD}/charts/hedera-mirror-rosetta/postman.json:/tmp/postman.json" -t postman/newman run /tmp/postman.json --env-var base_url=https://previewnet.mirrornode.hedera.com/rosetta
 ```
 
 _Note:_ To test against an instance running on the same machine as Docker use your local IP instead of 127.0.0.1.

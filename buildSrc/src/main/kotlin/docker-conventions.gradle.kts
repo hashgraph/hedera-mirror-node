@@ -25,16 +25,32 @@ plugins {
     id("com.bmuschko.docker-remote-api")
 }
 
+val latest = "latest"
+
+// Get the Docker images to tag by splitting dockerTag property and adding the project version
+fun dockerImages(): Collection<String> {
+    val dockerRegistry: String by project
+    val dockerTag: String by project
+    val dockerImage = "${dockerRegistry}/${projectDir.name}:"
+    val customTags = dockerTag.split(',').map { dockerImage.plus(it) }
+    val versionTag = dockerImage.plus(project.version)
+    val tags = customTags.plus(versionTag).toMutableSet()
+
+    // Don't tag pre-release versions as latest
+    if (tags.contains(latest) && project.version.toString().contains('-')) {
+        tags.remove(latest)
+    }
+
+    return tags.toList()
+}
+
 val dockerBuild = tasks.register<DockerBuildImage>("dockerBuild") {
     onlyIf {
         projectDir.resolve("Dockerfile").exists()
     }
-    val dockerRegistry: String by project
-    val dockerTag: String by project
-    buildArgs.put("VERSION", "${project.version}")
-    images.add("$dockerRegistry/${project.name}:$dockerTag")
-    images.add("$dockerRegistry/${project.name}:${project.version}")
-    inputDir.set(file("$projectDir"))
+    buildArgs.put("VERSION", project.version.toString())
+    images.addAll(dockerImages())
+    inputDir.set(file(projectDir))
     pull.set(true)
 }
 
@@ -43,8 +59,5 @@ tasks.register<DockerPushImage>("dockerPush") {
         projectDir.resolve("Dockerfile").exists()
     }
     dependsOn(dockerBuild)
-    val dockerRegistry: String by project
-    val dockerTag: String by project
-    images.add("$dockerRegistry/${project.name}:$dockerTag")
-    images.add("$dockerRegistry/${project.name}:${project.version}")
+    images.addAll(dockerImages())
 }

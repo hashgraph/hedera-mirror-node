@@ -29,7 +29,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import com.hedera.mirror.importer.IntegrationTest;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-public class CustomFeeRepositoryTest extends IntegrationTest {
+class CustomFeeRepositoryTest extends IntegrationTest {
 
     private final CustomFeeRepository customFeeRepository;
 

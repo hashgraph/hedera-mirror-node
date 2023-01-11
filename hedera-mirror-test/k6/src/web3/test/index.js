@@ -26,6 +26,6 @@ import * as ethBlockNumber from './ethBlockNumber.js';
 // add test modules here
 const tests = {ethBlockNumber};
 
-const {funcs, options, scenarioDurationGauge} = getSequentialTestScenarios(tests);
+const {funcs, options, scenarioDurationGauge, scenarios} = getSequentialTestScenarios(tests);
 
-export {funcs, options, scenarioDurationGauge};
+export {funcs, options, scenarioDurationGauge, scenarios};

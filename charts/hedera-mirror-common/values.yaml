@@ -147,6 +147,17 @@ prometheus-adapter:
       memory: 50Mi
   rules:
     default: false
+    custom:  # This is a custom rule which exposes (requests_per_second) from the prometheus adapter to be used by any Horizontal Pod Autoscaler.
+      - seriesQuery: 'api_all_request_total{namespace!="",pod!=""}'
+        resources:
+          overrides:
+            namespace:
+              resource: "namespace"
+            pod:
+              resource: "pod"
+        name:
+          as: "requests_per_second"
+        metricsQuery: "sum(rate(<<.Series>>{<<.LabelMatchers>>}[3m])) by (<<.GroupBy>>)"
 
 prometheus:
   alertmanager:
@@ -317,6 +328,18 @@ promtail:
       memory: 32Mi
   serviceMonitor:
     enabled: true
+
+testkube:
+  enabled: false
+  namespace: testkube
+  test:
+    duration: 600s
+    gitBranch: ""  # Default to .Chart.AppVersion
+    schedule: ""  # Cron schedule of the test suite, default to no schedule
+    target:
+      namespace: ""
+      release: mirror
+    vus: 500
 
 traefik:
   affinity:

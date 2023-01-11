@@ -60,11 +60,11 @@ const processRow = (row) => {
     deleted: row.deleted,
     ethereum_nonce: row.ethereum_nonce,
     evm_address: evmAddress,
-    expiry_timestamp: utils.calculateExpiryTimestamp(
+    expiry_timestamp: utils.nsToSecNs(utils.calculateExpiryTimestamp(
       row.auto_renew_period,
       row.created_timestamp,
       row.expiration_timestamp
-    ),
+    )),
     key: utils.encodeKey(row.key),
     max_automatic_token_associations: row.max_automatic_token_associations,
     memo: row.memo,
@@ -135,8 +135,8 @@ const getEntityBalanceQuery = (
   const query = `
     with latest_token_balance as (
       select account_id, balance, token_id
-      from token_balance
-      where consensus_timestamp = (select max(consensus_timestamp) as consensus_timestamp from account_balance_file)
+      from token_account
+      where associated is true
     ), latest_record_file as (select max(consensus_end) as consensus_timestamp from record_file)
     select
       ${entityFields},

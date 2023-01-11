@@ -1,4 +1,4 @@
-[![Build](https://github.com/hashgraph/hedera-mirror-node/actions/workflows/importer.yml/badge.svg)](https://github.com/hashgraph/hedera-mirror-node/actions)
+[![Build](https://github.com/hashgraph/hedera-mirror-node/actions/workflows/gradle.yml/badge.svg)](https://github.com/hashgraph/hedera-mirror-node/actions)
 [![codecov](https://img.shields.io/codecov/c/github/hashgraph/hedera-mirror-node/main)](https://codecov.io/gh/hashgraph/hedera-mirror-node)
 [![Discord](https://img.shields.io/badge/discord-join%20chat-blue.svg)](https://hedera.com/discord)
 
@@ -66,11 +66,11 @@ fashion as outlined above.
 Multiple technologies are utilized in the mirror node. The following topics are areas where basic knowledge is valuable
 to understanding the mirror node operations.
 
+- [Docker](https://docs.docker.com/engine/reference/commandline/docker/)
 - [Git](https://git-scm.com/about)
 - [Go](https://golang.org/)
-- [Docker](https://docs.docker.com/engine/reference/commandline/docker/)
+- [Gradle](http://gradle.com/)
 - [Helm](https://helm.sh)
-- [Maven](https://maven.apache.org/guides/getting-started/index.html)
 - [Node.js](https://nodejs.org/en/about/)
 - [PostgreSQL](https://www.postgresql.org/docs)
 - [Spring Boot](https://docs.spring.io/spring-boot/docs/current/reference/html/getting-started.html#getting-started)

@@ -102,7 +102,6 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.data.util.Version;
-import org.web3j.crypto.Hash;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
@@ -126,6 +125,7 @@ import com.hedera.services.stream.proto.TransactionSidecarRecord;
 @Scope(ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class RecordItemBuilder {
 
+    public static final ByteString EVM_ADDRESS = ByteString.fromHex("ebb9a1be370150759408cd7af48e9eda2b8ead57");
     public static final String LONDON_RAW_TX =
             "02f87082012a022f2f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc181880de0b6b3a764000083123456c001a0df48f2efd10421811de2bfb125ab75b2d3c44139c4642837fb1fccce911fd479a01aaf7ae92bee896651dfc9d99ae422a296bf5d9f1ca49b2d96d82b79eb112d66";
     public static final long STAKING_REWARD_ACCOUNT = 800L;
@@ -334,8 +334,10 @@ public class RecordItemBuilder {
 
     public Builder<CryptoCreateTransactionBody.Builder> cryptoCreate() {
         var builder = CryptoCreateTransactionBody.newBuilder()
+                .setAlias(bytes(20))
                 .setAutoRenewPeriod(duration(30))
                 .setDeclineReward(true)
+                .setEvmAddress(EVM_ADDRESS)
                 .setInitialBalance(1000L)
                 .setKey(key())
                 .setMaxAutomaticTokenAssociations(2)
@@ -414,7 +416,7 @@ public class RecordItemBuilder {
                 .setMaxGasAllowance(10_000L);
 
         var contractId = contractId();
-        var digestedHash = ByteString.copyFrom(Hash.sha3(transactionBytes));
+        var digestedHash = bytes(32);
         var functionResult = contractFunctionResult(contractId);
         var builder = new Builder<>(TransactionType.ETHEREUMTRANSACTION, transactionBody)
                 .record(r -> r.setContractCallResult(functionResult).setEthereumHash(digestedHash))
@@ -575,7 +577,7 @@ public class RecordItemBuilder {
                         .setError(bytes(10))
                         .setRecipientAccount(accountId()))
                 .addContractActions(contractAction()
-                        .setInvalidSolidityAddress(bytes(20))
+                        .setTargetedAddress(bytes(20))
                         .setRevertReason(bytes(10))));
     }
 

@@ -43,10 +43,6 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-validation")
     testImplementation("org.springframework.boot:spring-boot-starter-webflux")
     testImplementation("org.springframework.retry:spring-retry")
-
-    // TODO: Figure out why these hedera-sdk-java transitive dependencies need to be explicitly defined to compile
-    testImplementation("com.google.code.gson:gson")
-    testImplementation("com.github.spotbugs:spotbugs-annotations:4.7.3")
 }
 
 // Disable the default test task and only run acceptance tests during the standalone "acceptance" task
@@ -55,7 +51,13 @@ tasks.named("test") {
 }
 
 tasks.register<Test>("acceptance") {
+    val maxParallelism = project.property("maxParallelism") as String
     jvmArgs = listOf("-Xmx1024m", "-Xms1024m")
-    maxParallelForks = Runtime.getRuntime().availableProcessors()
+    maxParallelForks = if (maxParallelism.isNotBlank()) maxParallelism.toInt()!! else Runtime.getRuntime().availableProcessors()
     useJUnitPlatform {}
+
+    // Copy relevant system properties to the forked test process
+    System.getProperties().filter { it.key.toString().matches(Regex("^(cucumber|hedera|spring)\\..*")) }.forEach {
+        systemProperty(it.key.toString(), it.value)
+    }
 }

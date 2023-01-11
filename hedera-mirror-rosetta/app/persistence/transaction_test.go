@@ -2,7 +2,7 @@
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,17 +60,21 @@ var (
 )
 
 func TestCategorizeHbarTransfers(t *testing.T) {
+	emptyHbarTransfers := []hbarTransfer{}
 	tests := []struct {
-		name                     string
-		hbarTransfers            []hbarTransfer
-		nonFeeTransfers          []hbarTransfer
-		expectedFeeHbarTransfers []hbarTransfer
-		expectedNonFeeTransfers  []hbarTransfer
+		name                           string
+		hbarTransfers                  []hbarTransfer
+		nonFeeTransfers                []hbarTransfer
+		stakingRewardPayouts           []hbarTransfer
+		expectedFeeHbarTransfers       []hbarTransfer
+		expectedNonFeeTransfers        []hbarTransfer
+		expectedStakingRewardTransfers []hbarTransfer
 	}{
 		{
-			name:                     "empty",
-			expectedFeeHbarTransfers: []hbarTransfer{},
-			expectedNonFeeTransfers:  []hbarTransfer{},
+			name:                           "empty",
+			expectedFeeHbarTransfers:       emptyHbarTransfers,
+			expectedNonFeeTransfers:        emptyHbarTransfers,
+			expectedStakingRewardTransfers: emptyHbarTransfers,
 		},
 		{
 			name: "empty non fee transfers",
@@ -84,7 +88,8 @@ func TestCategorizeHbarTransfers(t *testing.T) {
 				{nodeEntityId, 15},
 				{feeCollectorEntityId, 50},
 			},
-			expectedNonFeeTransfers: []hbarTransfer{},
+			expectedNonFeeTransfers:        emptyHbarTransfers,
+			expectedStakingRewardTransfers: emptyHbarTransfers,
 		},
 		{
 			name: "simple transfer lists",
@@ -107,6 +112,7 @@ func TestCategorizeHbarTransfers(t *testing.T) {
 				{firstEntityId, -100},
 				{secondEntityId, 100},
 			},
+			expectedStakingRewardTransfers: emptyHbarTransfers,
 		},
 		{
 			name: "non fee transfer not in transaction record",
@@ -129,14 +135,143 @@ func TestCategorizeHbarTransfers(t *testing.T) {
 			expectedNonFeeTransfers: []hbarTransfer{
 				{firstEntityId, -100000000000},
 			},
+			expectedStakingRewardTransfers: emptyHbarTransfers,
+		},
+		{
+			name: "staking reward payout",
+			hbarTransfers: []hbarTransfer{
+				{firstEntityId, -165},
+				{secondEntityId, 200},
+				{nodeEntityId, 15},
+				{feeCollectorEntityId, 50},
+				{stakingRewardAccountId, -100},
+			},
+			nonFeeTransfers: []hbarTransfer{
+				{firstEntityId, -100},
+				{secondEntityId, 100},
+			},
+			stakingRewardPayouts: []hbarTransfer{{secondEntityId, 100}},
+			expectedFeeHbarTransfers: []hbarTransfer{
+				{firstEntityId, -65},
+				{nodeEntityId, 15},
+				{feeCollectorEntityId, 50},
+			},
+			expectedNonFeeTransfers: []hbarTransfer{
+				{firstEntityId, -100},
+				{secondEntityId, 100},
+			},
+			expectedStakingRewardTransfers: []hbarTransfer{
+				{secondEntityId, 100},
+				{stakingRewardAccountId, -100},
+			},
+		},
+		{
+			name: "staking reward donation",
+			hbarTransfers: []hbarTransfer{
+				{firstEntityId, -165},
+				{secondEntityId, 100},
+				{nodeEntityId, 15},
+				{feeCollectorEntityId, 50},
+			},
+			nonFeeTransfers: []hbarTransfer{
+				{firstEntityId, -100},
+				{secondEntityId, 100},
+				{firstEntityId, -200}, // firstEntityId donates the exact amount of his pending reward
+				{stakingRewardAccountId, 200},
+			},
+			stakingRewardPayouts: []hbarTransfer{{firstEntityId, 200}},
+			expectedFeeHbarTransfers: []hbarTransfer{
+				{firstEntityId, -65},
+				{nodeEntityId, 15},
+				{feeCollectorEntityId, 50},
+			},
+			expectedNonFeeTransfers: []hbarTransfer{
+				{firstEntityId, -100},
+				{secondEntityId, 100},
+				{firstEntityId, -200},
+				{stakingRewardAccountId, 200},
+			},
+			expectedStakingRewardTransfers: []hbarTransfer{
+				{firstEntityId, 200},
+				{stakingRewardAccountId, -200},
+			},
+		},
+		{
+			name: "partial staking reward donation",
+			hbarTransfers: []hbarTransfer{
+				{firstEntityId, -105},
+				{secondEntityId, 100},
+				{nodeEntityId, 15},
+				{feeCollectorEntityId, 50},
+				{stakingRewardAccountId, -60},
+			},
+			nonFeeTransfers: []hbarTransfer{
+				{firstEntityId, -100},
+				{secondEntityId, 100},
+				{firstEntityId, -140}, // firstEntityId donates part of his pending reward
+				{stakingRewardAccountId, 140},
+			},
+			stakingRewardPayouts: []hbarTransfer{{firstEntityId, 200}},
+			expectedFeeHbarTransfers: []hbarTransfer{
+				{firstEntityId, -65},
+				{nodeEntityId, 15},
+				{feeCollectorEntityId, 50},
+			},
+			expectedNonFeeTransfers: []hbarTransfer{
+				{firstEntityId, -100},
+				{secondEntityId, 100},
+				{firstEntityId, -140},
+				{stakingRewardAccountId, 140},
+			},
+			expectedStakingRewardTransfers: []hbarTransfer{
+				{firstEntityId, 200},
+				{stakingRewardAccountId, -200},
+			},
+		},
+		{
+			name: "staking reward donation more than pending",
+			hbarTransfers: []hbarTransfer{
+				{firstEntityId, -215},
+				{secondEntityId, 100},
+				{nodeEntityId, 15},
+				{feeCollectorEntityId, 50},
+				{stakingRewardAccountId, 50},
+			},
+			nonFeeTransfers: []hbarTransfer{
+				{firstEntityId, -100},
+				{secondEntityId, 100},
+				{firstEntityId, -250}, // firstEntityId donates more than his pending reward
+				{stakingRewardAccountId, 250},
+			},
+			stakingRewardPayouts: []hbarTransfer{{firstEntityId, 200}},
+			expectedFeeHbarTransfers: []hbarTransfer{
+				{firstEntityId, -65},
+				{nodeEntityId, 15},
+				{feeCollectorEntityId, 50},
+			},
+			expectedNonFeeTransfers: []hbarTransfer{
+				{firstEntityId, -100},
+				{secondEntityId, 100},
+				{firstEntityId, -250},
+				{stakingRewardAccountId, 250},
+			},
+			expectedStakingRewardTransfers: []hbarTransfer{
+				{firstEntityId, 200},
+				{stakingRewardAccountId, -200},
+			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actualFeeHbarTransfers, actualAdjustedNonFeeTransfers := categorizeHbarTransfers(tt.hbarTransfers, tt.nonFeeTransfers)
-			assert.Equal(t, tt.expectedFeeHbarTransfers, actualFeeHbarTransfers)
-			assert.Equal(t, tt.expectedNonFeeTransfers, actualAdjustedNonFeeTransfers)
+			feeHbarTransfers, adjustedNonFeeTransfers, stakingRewardTransfers := categorizeHbarTransfers(
+				tt.hbarTransfers,
+				tt.nonFeeTransfers,
+				tt.stakingRewardPayouts,
+			)
+			assert.Equal(t, tt.expectedFeeHbarTransfers, feeHbarTransfers)
+			assert.Equal(t, tt.expectedNonFeeTransfers, adjustedNonFeeTransfers)
+			assert.Equal(t, tt.expectedStakingRewardTransfers, stakingRewardTransfers)
 		})
 	}
 }
@@ -1020,9 +1155,57 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 		},
 	}
 
+	// crypto transfer transaction with staking reward payout
+	tick(1)
+	cryptoTransfers = []domain.CryptoTransfer{
+		{Amount: -520, ConsensusTimestamp: consensusTimestamp, EntityId: firstEntityId, PayerAccountId: firstEntityId},
+		{Amount: 500, ConsensusTimestamp: consensusTimestamp, EntityId: newEntityId, PayerAccountId: firstEntityId},
+		{Amount: 100, ConsensusTimestamp: consensusTimestamp, EntityId: feeCollectorEntityId,
+			PayerAccountId: firstEntityId},
+		{Amount: 20, ConsensusTimestamp: consensusTimestamp, EntityId: nodeEntityId, PayerAccountId: firstEntityId},
+		{Amount: -100, ConsensusTimestamp: consensusTimestamp, EntityId: stakingRewardAccountId,
+			PayerAccountId: firstEntityId},
+	}
+	nonFeeTransfers = []domain.NonFeeTransfer{
+		{Amount: -500, ConsensusTimestamp: consensusTimestamp, EntityId: &firstEntityId, PayerAccountId: firstEntityId},
+		{Amount: 500, ConsensusTimestamp: consensusTimestamp, EntityId: &newEntityId, PayerAccountId: firstEntityId},
+	}
+	transactionHash = randstr.Bytes(6)
+	addTransaction(dbClient, consensusTimestamp, nil, &nodeEntityId, firstEntityId, 22, transactionHash,
+		domain.TransactionTypeCryptoTransfer, validStartNs, cryptoTransfers, nonFeeTransfers, nil, nil, nil)
+	tdomain.NewStakingRewardTransferBuilder(dbClient).
+		AccountId(firstEntityId.EncodedId).
+		Amount(100).
+		ConsensusTimestamp(consensusTimestamp).
+		PayerAccountId(firstEntityId.EncodedId).
+		Persist()
+
+	operationType = types.OperationTypeCryptoTransfer
+	expectedTransaction9 := &types.Transaction{
+		Hash: tools.SafeAddHexPrefix(hex.EncodeToString(transactionHash)),
+		Memo: []byte{},
+		Operations: types.OperationSlice{
+			{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -500}, Type: operationType,
+				Status: resultSuccess},
+			{AccountId: newAccountId, Amount: &types.HbarAmount{Value: 500}, Type: operationType,
+				Status: resultSuccess},
+			{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: -120}, Type: types.OperationTypeFee,
+				Status: resultSuccess},
+			{AccountId: feeCollectorAccountId, Amount: &types.HbarAmount{Value: 100}, Type: types.OperationTypeFee,
+				Status: resultSuccess},
+			{AccountId: nodeAccountId, Amount: &types.HbarAmount{Value: 20}, Type: types.OperationTypeFee,
+				Status: resultSuccess},
+			{AccountId: firstAccountId, Amount: &types.HbarAmount{Value: 100}, Type: types.OperationTypeCryptoTransfer,
+				Status: resultSuccess},
+			{AccountId: types.NewAccountIdFromEntityId(stakingRewardAccountId), Amount: &types.HbarAmount{Value: -100},
+				Type: types.OperationTypeCryptoTransfer, Status: resultSuccess},
+		},
+	}
+
 	return []*types.Transaction{
 		expectedTransaction1, expectedTransaction2, expectedTransaction3, expectedTransaction4,
 		expectedTransaction5, expectedTransaction6, expectedTransaction7, expectedTransaction8,
+		expectedTransaction9,
 	}
 }
 

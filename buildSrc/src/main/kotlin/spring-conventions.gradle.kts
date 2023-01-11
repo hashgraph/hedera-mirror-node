@@ -19,6 +19,7 @@
  */
 
 plugins {
+    id("com.gorylenko.gradle-git-properties")
     id("docker-conventions")
     id("java-conventions")
     id("org.springframework.boot")
@@ -29,15 +30,28 @@ springBoot {
     buildInfo()
 }
 
-// Copy jar to target/ while we're still maintaining both Gradle and Maven to avoid changing all the Dockerfiles
-val copyJar = tasks.register<Copy>("copyJar") {
-    dependsOn(tasks.getByName("bootJar"))
-    from(layout.buildDirectory.dir("libs")) {
-        exclude("*-plain.jar")
-    }
-    into(layout.projectDirectory.dir("target"))
+// Temporary for backwards compatibility with tgz
+tasks.bootJar {
+    archiveFileName.set("${projectDir.name}-v${project.version}.jar")
 }
 
 tasks.named("dockerBuild") {
-    dependsOn(copyJar)
+    dependsOn(tasks.bootJar)
+}
+
+// Temporary until we move completely off VMs
+tasks.register<Tar>("package") {
+    val name = "${projectDir.name}-v${project.version}"
+    dependsOn(tasks.bootJar)
+    archiveFileName.set("${name}.tgz")
+    compression = Compression.GZIP
+    into("/${name}") {
+        from("${buildDir}/libs")
+        exclude("*-plain.jar")
+        include("*.jar")
+    }
+    into("/${name}/scripts") {
+        from("scripts")
+        include("**/*")
+    }
 }

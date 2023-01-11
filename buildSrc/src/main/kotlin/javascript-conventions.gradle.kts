@@ -23,15 +23,24 @@ import org.gradle.internal.io.NullOutputStream
 
 plugins {
     id("com.github.node-gradle.node")
-    id("java-conventions")
+    id("common-conventions")
+    id("jacoco")
 }
 
-node {
-    download.set(true)
-    version.set("18.12.1")
+// Temporary until we move completely off VMs
+tasks.register<NpmTask>("package") {
+    dependsOn(tasks.npmInstall)
+    args.set(listOf("pack"))
+    doLast {
+        buildDir.mkdirs()
+        fileTree(projectDir).matching { include("*.tgz") }.forEach {
+            val newName = it.name.replace("hashgraph-mirror-rest-", "hedera-mirror-rest-v")
+            it.renameTo(buildDir.resolve(newName))
+        }
+    }
 }
 
-val npmTest = tasks.register<NpmTask>("npmTest") {
+val test = tasks.register<NpmTask>("test") {
     dependsOn(tasks.npmInstall)
     args.set(listOf("test"))
     execOverrides {
@@ -42,10 +51,14 @@ val npmTest = tasks.register<NpmTask>("npmTest") {
     }
 }
 
-tasks.named("assemble") {
+tasks.build {
+    dependsOn(test)
+}
+
+tasks.dependencyCheckAggregate {
     dependsOn(tasks.npmInstall)
 }
 
-tasks.named("build") {
-    dependsOn(npmTest)
+tasks.dependencyCheckAnalyze {
+    dependsOn(tasks.npmInstall)
 }

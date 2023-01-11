@@ -139,7 +139,6 @@ public abstract class AbstractEntity implements History {
     @JsonSerialize(using = RangeToStringSerializer.class)
     private Range<Long> timestampRange;
 
-    @Column(updatable = false)
     @Enumerated(EnumType.STRING)
     @Type(type = "pgsql_enum")
     private EntityType type;

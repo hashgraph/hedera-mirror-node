@@ -4,7 +4,7 @@ package com.hedera.mirror.grpc.controller;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,6 +50,7 @@ import com.hedera.mirror.grpc.listener.ListenerProperties;
 
 @Log4j2
 class ConsensusControllerTest extends GrpcIntegrationTest {
+    private static final Duration WAIT = Duration.ofSeconds(10L);
     @GrpcClient("local")
     private ReactorConsensusServiceGrpc.ReactorConsensusServiceStub grpcConsensusService;
 
@@ -76,11 +77,11 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
     @Test
     void missingTopicID() {
         ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder().build();
-        grpcConsensusService.subscribeTopic(Mono.just(query))
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> grpcConsensusService.subscribeTopic(Mono.just(query)))
+                .thenAwait(WAIT)
                 .expectErrorSatisfies(t -> assertException(t, Status.Code.INVALID_ARGUMENT, "topicId: must not be " +
                         "null"))
-                .verify(Duration.ofSeconds(2));
+                .verify(WAIT);
     }
 
     @Test
@@ -88,10 +89,10 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
         ConsensusTopicQuery query = ConsensusTopicQuery.newBuilder()
                 .setTopicID(TopicID.newBuilder().setTopicNum(-1).build())
                 .build();
-        grpcConsensusService.subscribeTopic(Mono.just(query))
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> grpcConsensusService.subscribeTopic(Mono.just(query)))
+                .thenAwait(WAIT)
                 .expectErrorSatisfies(t -> assertException(t, Status.Code.INVALID_ARGUMENT, "Invalid entity ID"))
-                .verify(Duration.ofSeconds(2));
+                .verify(WAIT);
     }
 
     @Test
@@ -101,11 +102,11 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
                 .setLimit(-1)
                 .build();
 
-        grpcConsensusService.subscribeTopic(Mono.just(query))
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> grpcConsensusService.subscribeTopic(Mono.just(query)))
+                .thenAwait(WAIT)
                 .expectErrorSatisfies(t -> assertException(t, Status.Code.INVALID_ARGUMENT, "limit: must be greater " +
                         "than or equal to 0"))
-                .verify(Duration.ofSeconds(2));
+                .verify(WAIT);
     }
 
     @Test
@@ -122,16 +123,15 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
 
         Flux<TopicMessage> generator = domainBuilder.topicMessages(2, Instant.now().plusSeconds(10L));
 
-        grpcConsensusService.subscribeTopic(Mono.just(query))
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> grpcConsensusService.subscribeTopic(Mono.just(query)))
+                .thenAwait(WAIT)
                 .expectNext(topicMessage1.getResponse())
                 .expectNext(topicMessage2.getResponse())
                 .expectNext(topicMessage3.getResponse())
-                .thenAwait(Duration.ofMillis(50))
-                .then(() -> generator.blockLast())
+                .then(generator::blockLast)
                 .expectNextCount(2)
                 .expectComplete()
-                .verify(Duration.ofSeconds(2));
+                .verify(WAIT);
     }
 
     @Test
@@ -166,16 +166,15 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
 
         Flux<TopicMessage> generator = domainBuilder.topicMessages(2, Instant.now().plusSeconds(10L));
 
-        grpcConsensusService.subscribeTopic(Mono.just(query))
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> grpcConsensusService.subscribeTopic(Mono.just(query)))
+                .thenAwait(WAIT)
                 .expectNext(topicMessage1.getResponse())
                 .expectNext(topicMessage2.getResponse())
                 .expectNext(topicMessage3.getResponse())
-                .thenAwait(Duration.ofMillis(50))
-                .then(() -> generator.blockLast())
+                .then(generator::blockLast)
                 .expectNextCount(2)
                 .expectComplete()
-                .verify(Duration.ofSeconds(2));
+                .verify(WAIT);
     }
 
     @Test
@@ -194,16 +193,15 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
 
         Flux<TopicMessage> generator = domainBuilder.topicMessages(2, Instant.now().plusSeconds(10L));
 
-        grpcConsensusService.subscribeTopic(Mono.just(query))
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> grpcConsensusService.subscribeTopic(Mono.just(query)))
+                .thenAwait(WAIT)
                 .expectNext(topicMessage1.getResponse())
                 .expectNext(topicMessage2.getResponse())
                 .expectNext(topicMessage3.getResponse())
-                .thenAwait(Duration.ofMillis(50))
-                .then(() -> generator.blockLast())
+                .then(generator::blockLast)
                 .expectNextCount(2)
                 .expectComplete()
-                .verify(Duration.ofSeconds(2));
+                .verify(WAIT);
     }
 
     @Test
@@ -220,15 +218,15 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
 
         Flux<TopicMessage> generator = domainBuilder.topicMessages(4, Instant.now().plusSeconds(10L));
 
-        grpcConsensusService.subscribeTopic(Mono.just(query))
-                .map(ConsensusTopicResponse::getSequenceNumber)
-                .as(StepVerifier::create)
+        StepVerifier.withVirtualTime(() -> grpcConsensusService.subscribeTopic(Mono.just(query))
+                        .map(ConsensusTopicResponse::getSequenceNumber))
+                .thenAwait(WAIT)
                 .expectNext(1L, 2L, 3L)
                 .thenAwait(Duration.ofMillis(50))
-                .then(() -> generator.blockLast())
+                .then(generator::blockLast)
                 .expectNext(4L, 5L, 6L, 7L)
                 .expectComplete()
-                .verify(Duration.ofSeconds(2));
+                .verify(WAIT);
     }
 
     @Test
@@ -262,16 +260,15 @@ class ConsensusControllerTest extends GrpcIntegrationTest {
                 .setTopicID(TopicID.newBuilder().setRealmNum(0).setTopicNum(100).build())
                 .build();
 
-        grpcConsensusService.subscribeTopic(Mono.just(query))
-                // mapper doesn't handle null values so replace with 0's
-                .map(x -> x.hasChunkInfo() ? x.getChunkInfo().getNumber() : 0)
-                .as(StepVerifier::create)
-                .thenAwait(Duration.ofMillis(100))
+        StepVerifier.withVirtualTime(() -> grpcConsensusService.subscribeTopic(Mono.just(query))
+                        // mapper doesn't handle null values so replace with 0's
+                        .map(x -> x.hasChunkInfo() ? x.getChunkInfo().getNumber() : 0))
+                .thenAwait(WAIT)
                 .expectNext(0, 1, 2, 0, 1)
                 .then(generator::blockLast)
                 .expectNext(2, 3, 0) // incoming messages
                 .thenCancel()
-                .verify(Duration.ofSeconds(2));
+                .verify(WAIT);
     }
 
     void assertException(Throwable t, Status.Code status, String message) {

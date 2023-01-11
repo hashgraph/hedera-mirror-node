@@ -23,29 +23,33 @@ package com.hedera.mirror.importer.parser.record;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.google.protobuf.ByteString;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import reactor.core.publisher.Flux;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.exception.ParserException;
+import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.reader.record.RecordFileReader;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
 import com.hedera.mirror.importer.repository.EntityRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
-@Disabled("Fails in CI")
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class RecordFileParserIntegrationTest extends IntegrationTest {
 
@@ -59,6 +63,7 @@ class RecordFileParserIntegrationTest extends IntegrationTest {
     private final Path recordFilePath1;
     @Value("classpath:data/recordstreams/v2/record0.0.3/2019-08-30T18_10_05.249678Z.rcd")
     private final Path recordFilePath2;
+    private final RecordItemBuilder recordItemBuilder;
 
     private RecordFileDescriptor recordFileDescriptor1;
     private RecordFileDescriptor recordFileDescriptor2;
@@ -67,8 +72,8 @@ class RecordFileParserIntegrationTest extends IntegrationTest {
     void before() {
         RecordFile recordFile1 = recordFile(recordFilePath1.toFile(), 0L);
         RecordFile recordFile2 = recordFile(recordFilePath2.toFile(), 1L);
-        recordFileDescriptor1 = new RecordFileDescriptor(93, 8, recordFile1);
-        recordFileDescriptor2 = new RecordFileDescriptor(75, 5, recordFile2);
+        recordFileDescriptor1 = new RecordFileDescriptor(83, 5, recordFile1);
+        recordFileDescriptor2 = new RecordFileDescriptor(65, 5, recordFile2);
     }
 
     @Test
@@ -96,10 +101,13 @@ class RecordFileParserIntegrationTest extends IntegrationTest {
         verifyFinalDatabaseState(recordFileDescriptor1);
 
         // when
-        Assertions.assertThrows(ParserException.class, () -> recordFileParser.parse(recordFile));
+        RecordFile recordFile2 = recordFileDescriptor2.getRecordFile();
+        recordFile2.setItems(recordFile.getItems()); // Re-processing same transactions should result in duplicate keys
+        Assertions.assertThrows(ParserException.class, () -> recordFileParser.parse(recordFile2));
 
         // then
         verifyFinalDatabaseState(recordFileDescriptor1);
+        assertThat(retryRecorder.getRetries(ParserException.class)).isEqualTo(2);
     }
 
     void verifyFinalDatabaseState(RecordFileDescriptor... recordFileDescriptors) {

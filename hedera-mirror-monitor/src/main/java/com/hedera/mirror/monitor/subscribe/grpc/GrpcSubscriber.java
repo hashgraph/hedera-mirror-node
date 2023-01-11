@@ -96,8 +96,8 @@ class GrpcSubscriber implements MirrorSubscriber {
     }
 
     private Status.Code getStatusCode(Throwable t) {
-        if (t instanceof StatusRuntimeException) {
-            return ((StatusRuntimeException) t).getStatus().getCode();
+        if (t instanceof StatusRuntimeException statusRuntimeException) {
+            return statusRuntimeException.getStatus().getCode();
         }
         return Status.Code.UNKNOWN;
     }

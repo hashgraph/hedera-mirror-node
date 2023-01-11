@@ -21,83 +21,6 @@
         "num": 5
       }
     ],
-    "balances": [
-      {
-        "timestamp": 1000,
-        "id": 1,
-        "balance": 5,
-        "tokens": [
-          {
-            "token_num": 90000,
-            "balance": 1
-          },
-          {
-            "token_num": 90001,
-            "balance": 5
-          }
-        ]
-      },
-      {
-        "timestamp": 1800,
-        "id": 1,
-        "balance": 10,
-        "tokens": [
-          {
-            "token_num": 90000,
-            "balance": 6
-          },
-          {
-            "token_num": 90001,
-            "balance": 11
-          }
-        ]
-      },
-      {
-        "timestamp": 1000,
-        "id": 2,
-        "balance": 10,
-        "tokens": [
-          {
-            "token_num": 90001,
-            "balance": 1
-          },
-          {
-            "token_num": 90010,
-            "balance": 12
-          }
-        ]
-      },
-      {
-        "timestamp": 1800,
-        "id": 2,
-        "balance": 20,
-        "tokens": [
-          {
-            "token_num": 90001,
-            "balance": 2
-          },
-          {
-            "token_num": 90010,
-            "balance": 22
-          }
-        ]
-      },
-      {
-        "timestamp": 1800,
-        "id": 5,
-        "balance": 50,
-        "tokens": [
-          {
-            "token_num": 100001,
-            "balance": 5
-          },
-          {
-            "token_num": 100002,
-            "balance": 55
-          }
-        ]
-      }
-    ],
     "entities": [
       {
         "num": 6,
@@ -116,6 +39,44 @@
       {
         "consensus_start": 1700,
         "consensus_end": 2000
+      }
+    ],
+    "tokenaccounts": [
+      {
+        "token_id": "0.0.90000",
+        "account_id": "0.0.1",
+        "balance": 6,
+        "created_timestamp": "1800"
+      },
+      {
+        "token_id": "0.0.90001",
+        "account_id": "0.0.1",
+        "balance": 11,
+        "created_timestamp": "1800"
+      },
+      {
+        "token_id": "0.0.90001",
+        "account_id": "0.0.2",
+        "balance": 2,
+        "created_timestamp": "1800"
+      },
+      {
+        "token_id": "0.0.90010",
+        "account_id": "0.0.2",
+        "balance": 22,
+        "created_timestamp": "1800"
+      },
+       {
+        "token_id": "0.0.100001",
+        "account_id": "0.0.5",
+        "balance": 5,
+        "created_timestamp": "1800"
+      },
+      {
+        "token_id": "0.0.100002",
+        "account_id": "0.0.5",
+        "balance": 55,
+        "created_timestamp": "1800"
       }
     ]
   },

@@ -378,7 +378,8 @@ class GenericUpsertQueryGeneratorTest extends IntegrationTest {
                   staked_account_id = excluded.staked_account_id,
                   staked_node_id = excluded.staked_node_id,
                   submit_key = excluded.submit_key,
-                  timestamp_range = excluded.timestamp_range
+                  timestamp_range = excluded.timestamp_range,
+                  type = excluded.type
                 """));
     }
 

@@ -20,7 +20,7 @@ package com.hedera.mirror.importer.parser.record.entity.notify;
  * ‍
  */
 
-import static com.fasterxml.jackson.databind.PropertyNamingStrategy.SNAKE_CASE;
+import static com.fasterxml.jackson.databind.PropertyNamingStrategies.SNAKE_CASE;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Stopwatch;
@@ -99,7 +99,7 @@ public class NotifyingEntityListener implements BatchEntityListener {
         topicMessages.clear();
     }
 
-    private PreparedStatementCallback callback(Collection<TopicMessage> topicMessages) {
+    private PreparedStatementCallback<int[]> callback(Collection<TopicMessage> topicMessages) {
         return preparedStatement -> {
             for (TopicMessage topicMessage : topicMessages) {
                 String json = toJson(topicMessage);

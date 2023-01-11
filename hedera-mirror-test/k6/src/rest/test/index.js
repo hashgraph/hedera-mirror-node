@@ -31,15 +31,29 @@ import * as accountsCryptoAllowance from './accountsCryptoAllowance.js';
 import * as accountsCryptoAllowanceSpender from './accountsCryptoAllowanceSpender.js';
 import * as accountsId from './accountsId.js';
 import * as accountsIdNe from './accountsIdNe.js';
+import * as accountsNfts from './accountsNfts.js';
+import * as accountsTokens from './accountsTokens.js';
+import * as accountsTokenAllowance from './accountsTokenAllowance.js';
 import * as balances from './balances.js';
 import * as balancesAccount from './balancesAccount.js';
+import * as blocks from './blocks.js';
+import * as blocksNumber from './blocksNumber.js';
 import * as contracts from './contracts.js';
 import * as contractsId from './contractsId.js';
 import * as contractsIdResults from './contractsIdResults.js';
 import * as contractsIdResultsLogs from './contractsIdResultsLogs.js';
 import * as contractsIdResultsTimestamp from './contractsIdResultsTimestamp.js';
+import * as contractsIdState from './contractsIdState.js';
+import * as contractsResults from './contractsResult.js';
+import * as contractsResultsId from './contractsResultsId.js';
+import * as contractsResultsIdActions from './contractsResultsIdActions.js';
+import * as contractsResultsLogs from './contractsResultsLogs.js';
+import * as networkExchangerate from './networkExchangerate.js';
+import * as networkFees from './networkFees.js';
+import * as networkNodes from './networkNodes.js';
 import * as networkStake from './networkStake.js';
 import * as networkSupply from './networkSupply.js';
+import * as rampUp from './rampUp.js';
 import * as schedules from './schedules.js';
 import * as schedulesAccount from './schedulesAccount.js';
 import * as schedulesId from './schedulesId.js';
@@ -58,8 +72,8 @@ import * as topicsIdMessagesSequenceQueryParam from './topicsIdMessagesSequenceQ
 import * as topicsMessagesTimestamp from './topicsMessagesTimestamp.js';
 import * as transactions from './transactions.js';
 import * as transactionsAccountId from './transactionsAccountId.js';
-import * as transactionsCryptoCreateAccountDebit from './transactionsCryptoCreateAccountDebit.js';
 import * as transactionsId from './transactionsId.js';
+import * as transactionsIdStateproof from './transactionsIdStateproof.js';
 import * as transactionsTransactionTypeAscending from './transactionsTransactionTypeAscending.js';
 
 // add test modules here
@@ -74,15 +88,29 @@ const tests = {
   accountsCryptoAllowanceSpender,
   accountsId,
   accountsIdNe,
+  accountsNfts,
+  accountsTokens,
+  accountsTokenAllowance,
   balances,
   balancesAccount,
+  blocks,
+  blocksNumber,
   contracts,
   contractsId,
   contractsIdResults,
   contractsIdResultsLogs,
   contractsIdResultsTimestamp,
+  contractsIdState,
+  contractsResults,
+  contractsResultsId,
+  contractsResultsIdActions,
+  contractsResultsLogs,
+  networkExchangerate,
+  networkFees,
+  networkNodes,
   networkStake,
   networkSupply,
+  rampUp,
   schedules,
   schedulesAccount,
   schedulesId,
@@ -101,11 +129,11 @@ const tests = {
   topicsMessagesTimestamp,
   transactions,
   transactionsAccountId,
-  transactionsCryptoCreateAccountDebit,
   transactionsId,
-  transactionsTransactionTypeAscending
+  transactionsIdStateproof,
+  transactionsTransactionTypeAscending,
 };
 
-const {funcs, options, scenarioDurationGauge} = getSequentialTestScenarios(tests);
+const {funcs, options, scenarioDurationGauge, scenarios} = getSequentialTestScenarios(tests);
 
-export {funcs, options, scenarioDurationGauge};
+export {funcs, options, scenarioDurationGauge, scenarios};

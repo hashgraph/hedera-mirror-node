@@ -81,7 +81,7 @@ public class RecordFile implements StreamFile<RecordItem> {
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
     @Transient
-    private transient final LogsBloomAggregator logsBloomAggregator = new LogsBloomAggregator();
+    private final LogsBloomAggregator logsBloomAggregator = new LogsBloomAggregator();
 
     private Integer hapiVersionMajor;
 
@@ -156,10 +156,10 @@ public class RecordFile implements StreamFile<RecordItem> {
 
     public void processItem(final RecordItem recordItem) {
         // if the record item is not the parent.
-        if (recordItem.getRecord().getTransactionID().getNonce() != 0L) {
+        if (recordItem.getTransactionRecord().getTransactionID().getNonce() != 0L) {
             return;
         }
-        var contractResult = getContractFunctionResult(recordItem.getRecord());
+        var contractResult = getContractFunctionResult(recordItem.getTransactionRecord());
         if (contractResult == null) {
             return;
         }
@@ -167,12 +167,12 @@ public class RecordFile implements StreamFile<RecordItem> {
         logsBloomAggregator.aggregate(DomainUtils.toBytes(contractResult.getBloom()));
     }
 
-    private ContractFunctionResult getContractFunctionResult(TransactionRecord record) {
-        if (record.hasContractCreateResult()) {
-            return record.getContractCreateResult();
+    private ContractFunctionResult getContractFunctionResult(TransactionRecord transactionRecord) {
+        if (transactionRecord.hasContractCreateResult()) {
+            return transactionRecord.getContractCreateResult();
         }
-        if (record.hasContractCallResult()) {
-            return record.getContractCallResult();
+        if (transactionRecord.hasContractCallResult()) {
+            return transactionRecord.getContractCallResult();
         }
         return null;
     }

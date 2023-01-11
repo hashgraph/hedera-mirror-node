@@ -18,60 +18,31 @@
  * ‍
  */
 
-import axios from 'axios';
-import {GenericContainer} from 'testcontainers';
+import {GenericContainer, Wait} from 'testcontainers';
 import {isDockerInstalled} from './integrationUtils';
 
-const localstackImageName = 'localstack/localstack';
-const localstackImageTag = 'latest';
-const defaultS3Port = 4566;
+const imageName = 'adobe/s3mock';
+const imageTag = 'latest';
+const defaultS3Port = 9090;
 
 class IntegrationS3Ops {
   async start() {
     const isInstalled = await isDockerInstalled();
     if (!isInstalled) {
-      throw new Error('docker is not installed, cannot start localstack container for mock s3 service');
+      throw new Error('docker is not installed, cannot start s3mock container');
     }
 
-    const image = `${localstackImageName}:${localstackImageTag}`;
-    logger.info(`Starting localstack docker container with image ${image}`);
+    const image = `${imageName}:${imageTag}`;
+    logger.info(`Starting docker container with image ${image}`);
     const container = await new GenericContainer(image)
-      .withEnvironment({
-        SERVICES: 's3',
-        EAGER_SERVICE_LOADING: 1,
-      })
       .withExposedPorts(defaultS3Port)
+      .withStartupTimeout(180000)
+      .withWaitStrategy(Wait.forHttp("/", defaultS3Port))
       .start();
-    logger.info('Started dockerized localstack');
+    logger.info('Started dockerized s3mock');
     this.container = container;
     this.hostname = 'localhost';
     this.port = container.getMappedPort(defaultS3Port);
-
-    logger.info(`S3Ops endpoint: ${this.getEndpointUrl()}`);
-    const {CancelToken} = axios;
-    const source = CancelToken.source();
-    const timeout = setTimeout(() => {
-      source.cancel('timed out, cancel the request');
-    }, 15 * 1000);
-
-    const healthEndpoint = `${this.getEndpointUrl()}/health`;
-    while (true) {
-      try {
-        const res = await axios.get(healthEndpoint, {cancelToken: source.token});
-        const {data} = res;
-        if (data.services && data.services.s3 && data.services.s3 === 'running') {
-          clearTimeout(timeout);
-          return;
-        }
-      } catch (err) {
-        if (axios.isCancel(err)) {
-          break;
-        }
-      }
-      await new Promise((r) => setTimeout(r, 200));
-    }
-
-    throw new Error('localstack s3 service health check failed in 15s');
   }
 
   async stop() {

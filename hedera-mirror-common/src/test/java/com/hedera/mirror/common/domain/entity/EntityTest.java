@@ -23,6 +23,7 @@ package com.hedera.mirror.common.domain.entity;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Range;
+import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -42,7 +43,9 @@ class EntityTest {
     void nullCharacters() {
         Entity entity = new Entity();
         entity.setMemo("abc" + (char) 0);
-        assertThat(entity.getMemo()).isEqualTo("abc�");
+        var actualBytes = entity.getMemo().getBytes(StandardCharsets.UTF_8);
+        var expectedBytes = "abc�".getBytes(StandardCharsets.UTF_8);
+        assertThat(actualBytes).isEqualTo(expectedBytes);
     }
 
     @Test

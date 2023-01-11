@@ -259,7 +259,7 @@ public class TokenFeature {
         assertNotNull(networkTransactionResponse.getTransactionId());
         TransactionReceipt receipt = networkTransactionResponse.getReceipt();
         assertNotNull(receipt);
-        assertThat(receipt.serials.size()).isEqualTo(1);
+        assertThat(receipt.serials.size()).isOne();
         long serialNumber = receipt.serials.get(0);
         assertThat(serialNumber).isPositive();
         tokenSerialNumbers.get(tokenId).add(serialNumber);
@@ -765,7 +765,7 @@ public class TokenFeature {
         assertNotNull(mirrorTokenRelationship);
         assertNotNull(mirrorTokenRelationship.getTokens());
         assertNotNull(mirrorTokenRelationship.getLinks());
-        assertNotEquals(mirrorTokenRelationship.getTokens().size(),0);
-        assertThat(mirrorTokenRelationship.getLinks().getNext()).isEqualTo(null);
+        assertNotEquals(0, mirrorTokenRelationship.getTokens().size());
+        assertThat(mirrorTokenRelationship.getLinks().getNext()).isNull();
     }
 }

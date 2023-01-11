@@ -1,0 +1,35 @@
+{{- if .Values.testkube.enabled -}}
+apiVersion: tests.testkube.io/v2
+kind: TestSuite
+metadata:
+  name: test-suite-rest
+  namespace: {{ .Values.testkube.namespace }}
+spec:
+  description: Mirrornode REST API performance test suite
+  executionRequest:
+    variables:
+      BASE_URL:
+        name: BASE_URL
+        type: basic
+        value: http://{{ .Values.testkube.test.target.release }}-rest.{{ .Values.testkube.test.target.namespace }}.svc.cluster.local
+      DEFAULT_DURATION:
+        name: DEFAULT_DURATION
+        type: basic
+        value: {{ .Values.testkube.test.duration }}
+      DEFAULT_VUS:
+        name: DEFAULT_VUS
+        type: basic
+        value: {{ quote .Values.testkube.test.vus }}
+      TEST_REPORTS_DIR:
+        name: TEST_REPORTS_DIR
+        type: basic
+        value: /share
+  {{- if .Values.testkube.test.schedule }}
+  schedule: {{ quote .Values.testkube.test.schedule }}
+  {{- end }}
+  steps:
+    - delay:
+        duration: 600000
+    - execute:
+        name: test-rest
+{{- end }}

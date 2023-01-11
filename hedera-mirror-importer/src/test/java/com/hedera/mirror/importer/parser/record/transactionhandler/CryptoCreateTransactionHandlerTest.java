@@ -25,16 +25,22 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 
 import com.google.common.collect.Range;
+import com.google.protobuf.ByteString;
 import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Message;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import java.util.List;
+import java.util.stream.Stream;
 import org.assertj.core.api.ObjectAssert;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -43,6 +49,8 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.util.DomainUtils;
+import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.util.Utility;
 import com.hedera.mirror.importer.util.UtilityTest;
@@ -111,7 +119,7 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
         var recordItem = recordItemBuilder.cryptoCreate()
                 .transactionBody(b -> b.setDeclineReward(false).setStakedAccountId(stakedAccountId))
                 .build();
-        var accountId = EntityId.of(recordItem.getRecord().getReceipt().getAccountID());
+        var accountId = EntityId.of(recordItem.getTransactionRecord().getReceipt().getAccountID());
 
         // when
         transactionHandler.updateTransaction(transaction(recordItem), recordItem);
@@ -130,7 +138,7 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
         var recordItem = recordItemBuilder.cryptoCreate()
                 .transactionBody(b -> b.setDeclineReward(true).setStakedNodeId(nodeId))
                 .build();
-        var accountId = EntityId.of(recordItem.getRecord().getReceipt().getAccountID());
+        var accountId = EntityId.of(recordItem.getTransactionRecord().getReceipt().getAccountID());
 
         // when
         transactionHandler.updateTransaction(transaction(recordItem), recordItem);
@@ -147,13 +155,89 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
     void updateAlias() {
         var alias = UtilityTest.ALIAS_ECDSA_SECP256K1;
         var recordItem = recordItemBuilder.cryptoCreate().record(r -> r.setAlias(DomainUtils.fromBytes(alias))).build();
-        var accountId = EntityId.of(recordItem.getRecord().getReceipt().getAccountID());
+        var accountId = EntityId.of(recordItem.getTransactionRecord().getReceipt().getAccountID());
+
+        transactionHandler.updateTransaction(transaction(recordItem), recordItem);
+
+        assertEntity(accountId, recordItem.getConsensusTimestamp())
+                .returns(alias, Entity::getAlias);
+    }
+
+    @Test
+    void updateAliasEvmKey() {
+        var alias = UtilityTest.ALIAS_ECDSA_SECP256K1;
+        var evmAddress = UtilityTest.EVM_ADDRESS;
+        var recordItem = recordItemBuilder.cryptoCreate()
+                .record(r -> r.setEvmAddress(DomainUtils.fromBytes(evmAddress)))
+                .transactionBody(t -> t
+                        .setAlias(DomainUtils.fromBytes(alias))
+                        .setKey(Key.getDefaultInstance())
+                ).build();
+        var accountId = EntityId.of(recordItem.getTransactionRecord().getReceipt().getAccountID());
 
         transactionHandler.updateTransaction(transaction(recordItem), recordItem);
 
         assertEntity(accountId, recordItem.getConsensusTimestamp())
                 .returns(alias, Entity::getAlias)
-                .returns(UtilityTest.EVM_ADDRESS, Entity::getEvmAddress);
+                .returns(alias, Entity::getKey)
+                .returns(evmAddress, Entity::getEvmAddress);
+    }
+
+    private static Stream<Arguments> provideAlias() {
+        var validKey = Key.newBuilder()
+                .setECDSASecp256K1(ByteString.copyFrom(TestUtils.generateRandomByteArray(20))).build();
+        var emptyKey = Key.getDefaultInstance();
+        var validAliasForKey = ByteString.copyFrom(UtilityTest.ALIAS_ECDSA_SECP256K1);
+        var invalidAliasForKey = ByteString.fromHex("1234");
+        return Stream.of(
+                Arguments.of(validAliasForKey, validKey, validKey.toByteArray()),
+                Arguments.of(validAliasForKey, emptyKey, validAliasForKey.toByteArray()),
+                Arguments.of(invalidAliasForKey, validKey, validKey.toByteArray()),
+                Arguments.of(invalidAliasForKey, emptyKey, null)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideAlias")
+    void updateKeyFromTransactionBody(ByteString alias, Key key, byte[] expectedKey) {
+        var recordItem = recordItemBuilder.cryptoCreate()
+                .record(r -> r.setAlias(alias))
+                .transactionBody(t -> t.setKey(key))
+                .build();
+        var accountId = EntityId.of(recordItem.getTransactionRecord().getReceipt().getAccountID());
+
+        transactionHandler.updateTransaction(transaction(recordItem), recordItem);
+
+        assertEntity(accountId, recordItem.getConsensusTimestamp())
+                .returns(expectedKey, Entity::getKey);
+    }
+
+    private static Stream<Arguments> provideEvmAddresses() {
+        var evmAddressByteString = ByteString.copyFrom(UtilityTest.EVM_ADDRESS);
+        var evmAddressTwo = RecordItemBuilder.EVM_ADDRESS;
+        return Stream.of(
+                Arguments.of(ByteString.empty(), ByteString.empty(), UtilityTest.EVM_ADDRESS),
+                Arguments.of(evmAddressByteString, ByteString.empty(), evmAddressByteString.toByteArray()),
+                Arguments.of(ByteString.empty(), evmAddressByteString, evmAddressByteString.toByteArray()),
+                Arguments.of(evmAddressByteString, evmAddressTwo, evmAddressByteString.toByteArray())
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideEvmAddresses")
+    void updateEvmAddress(ByteString recordEvmAddress, ByteString transactionBodyEvmAddress, byte[] expected) {
+        var recordItem = recordItemBuilder.cryptoCreate()
+                .record(r -> r.setEvmAddress(recordEvmAddress))
+                .transactionBody(t -> t
+                        .setAlias(ByteString.copyFrom(UtilityTest.ALIAS_ECDSA_SECP256K1))
+                        .setEvmAddress(transactionBodyEvmAddress))
+                .build();
+        var accountId = EntityId.of(recordItem.getTransactionRecord().getReceipt().getAccountID());
+
+        transactionHandler.updateTransaction(transaction(recordItem), recordItem);
+
+        assertEntity(accountId, recordItem.getConsensusTimestamp())
+                .returns(expected, Entity::getEvmAddress);
     }
 
     private ObjectAssert<Entity> assertEntity(EntityId accountId, long timestamp) {
@@ -166,12 +250,10 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
                 .returns(false, Entity::getDeleted)
                 .returns(null, Entity::getExpirationTimestamp)
                 .returns(accountId.getId(), Entity::getId)
-                .satisfies(c -> assertThat(c.getKey()).isNotEmpty())
                 .satisfies(c -> assertThat(c.getMaxAutomaticTokenAssociations()).isPositive())
                 .satisfies(c -> assertThat(c.getMemo()).isNotEmpty())
                 .returns(accountId.getEntityNum(), Entity::getNum)
                 .satisfies(c -> assertThat(c.getProxyAccountId().getId()).isPositive())
-                .satisfies(c -> assertThat(c.getPublicKey()).isNotEmpty())
                 .returns(accountId.getRealmNum(), Entity::getRealm)
                 .returns(accountId.getShardNum(), Entity::getShard)
                 .returns(ACCOUNT, Entity::getType)
@@ -180,7 +262,7 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
     }
 
     private Transaction transaction(RecordItem recordItem) {
-        var entityId = EntityId.of(recordItem.getRecord().getReceipt().getAccountID());
+        var entityId = EntityId.of(recordItem.getTransactionRecord().getReceipt().getAccountID());
         var consensusTimestamp = recordItem.getConsensusTimestamp();
         return domainBuilder.transaction()
                 .customize(t -> t.consensusTimestamp(consensusTimestamp).entityId(entityId))

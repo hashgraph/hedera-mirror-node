@@ -8,7 +8,7 @@ To run locally, first build the project using Java. Ensure you have OpenJDK 17 i
 from the top level directory. This will compile a runnable mirror node JAR file in the `target` directory.
 
 ```console
-./mvnw clean package -DskipTests
+./gradlew clean build -x test
 ```
 
 ## Running Locally
@@ -34,7 +34,7 @@ To run the Importer, first populate the configuration at one of the supported
 [configuration](configuration.md#importer) paths, then run:
 
 ```console
-java -jar hedera-mirror-importer/target/hedera-mirror-importer-*.jar
+java -jar hedera-mirror-importer/build/libs/hedera-mirror-importer-*.jar
 ```
 
 Additionally, there is a Systemd unit file located in the `hedera-mirror-importer/scripts/` directory that can be used
@@ -46,7 +46,7 @@ To run the gRPC API, first populate the configuration at one of the supported
 [configuration](configuration.md#grpc-api) paths, then run:
 
 ```console
-java -jar hedera-mirror-grpc/target/hedera-mirror-grpc-*.jar
+java -jar hedera-mirror-grpc/build/libs/hedera-mirror-grpc-*.jar
 ```
 
 ### Monitor
@@ -55,7 +55,7 @@ To run the monitor, first populate the configuration at one of the supported
 [configuration](configuration.md#monitor) paths, then run:
 
 ```console
-java -jar hedera-mirror-monitor/target/hedera-mirror-monitor-*.jar
+java -jar hedera-mirror-monitor/build/libs/hedera-mirror-monitor-*.jar
 ```
 
 The monitor is mainly intended to be run as a Docker container. See our [Docker Compose](/docker-compose.yml) and
@@ -304,7 +304,6 @@ The Web3 API container will display logs similar to the below at start:
 
 ```shell
 c.h.m.web3.Web3Application Started Web3Application in 27.808 seconds
-c.h.m.w.config.LoggingFilter /10.0.0.43 POST http://localhost:8545/web3/v1 in 8 ms: 200 OK
 ```
 
 To manually verify the Web3 API endpoints run the [acceptance tests](/docs/web3/README.md#acceptance-tests).

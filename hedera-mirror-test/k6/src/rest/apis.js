@@ -19,16 +19,16 @@
  */
 
 import exec from 'k6/execution';
-import {textSummary} from 'https://jslib.k6.io/k6-summary/0.0.1/index.js';
+import {textSummary} from 'https://jslib.k6.io/k6-summary/0.0.2/index.js';
 
-import {markdownReport} from '../lib/common.js';
-import {funcs, options, scenarioDurationGauge} from './test/index.js';
-import {setupTestParameters} from "./test/bootstrapEnvParameters.js";
+import {getTestReportFilename, markdownReport} from '../lib/common.js';
+import {funcs, options, scenarioDurationGauge, scenarios} from './test/index.js';
+import {setupTestParameters} from './test/bootstrapEnvParameters.js';
 
 function handleSummary(data) {
   return {
-    'stdout': textSummary(data, {indent: ' ', enableColors: true}),
-    'report.md': markdownReport(data, true, options.scenarios)
+    stdout: textSummary(data, {indent: ' ', enableColors: true}),
+    [getTestReportFilename()]: markdownReport(data, true, scenarios),
   };
 }
 

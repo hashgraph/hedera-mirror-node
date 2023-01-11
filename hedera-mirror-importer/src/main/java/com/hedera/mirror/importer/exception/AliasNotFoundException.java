@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.exception;
 
 import com.hedera.mirror.common.domain.entity.EntityType;
 
+@SuppressWarnings("java:S110")
 public class AliasNotFoundException extends ImporterException {
 
     private static final long serialVersionUID = 262691996461413516L;

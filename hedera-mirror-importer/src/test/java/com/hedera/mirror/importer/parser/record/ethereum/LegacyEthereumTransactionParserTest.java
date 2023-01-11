@@ -34,6 +34,7 @@ import org.junit.jupiter.api.Test;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.importer.exception.InvalidEthereumBytesException;
 
+@SuppressWarnings("java:S5786")
 public class LegacyEthereumTransactionParserTest extends AbstractEthereumTransactionParserTest {
     public static final String LEGACY_RAW_TX =
             "f864012f83018000947e3a9eaf9bcc39e2ffa38eb30bf7a93feacbc18180827653820277a0f9fbff985d374be4a55f296915002eec11ac96f1ce2df183adf992baa9390b2fa00c1e867cc960d9c74ec2e6a662b7908ec4c8cc9f3091e886bcefbeb2290fb792";
@@ -74,7 +75,7 @@ public class LegacyEthereumTransactionParserTest extends AbstractEthereumTransac
 
     @Test
     void decodeIncorrectRlpItemListSize() {
-        var ethereumTransactionBytes = RLPEncoder.encodeAsList(Integers.toBytes(1));
+        var ethereumTransactionBytes = RLPEncoder.list(Integers.toBytes(1));
 
         assertThatThrownBy(() -> ethereumTransactionParser.decode(ethereumTransactionBytes))
                 .isInstanceOf(InvalidEthereumBytesException.class)

@@ -28,6 +28,9 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.inject.Named;
+
+import com.hedera.mirror.monitor.exception.ExpressionConversionException;
+
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
@@ -60,7 +63,7 @@ public class ExpressionConverterImpl implements ExpressionConverter {
     private static final String EXPRESSION_START = "${";
     private static final String EXPRESSION_END = "}";
     private static final Pattern EXPRESSION_PATTERN = Pattern
-            .compile("\\$\\{(account|nft|token|topic|schedule)\\.([A-Za-z0-9_]+)}");
+            .compile("\\$\\{(account|nft|token|topic|schedule)\\.(\\w+)}");
 
     private final Map<Expression, String> expressions = new ConcurrentHashMap<>();
     private final MonitorProperties monitorProperties;
@@ -139,7 +142,7 @@ public class ExpressionConverterImpl implements ExpressionConverter {
                     .join();
         } catch (Exception e) {
             log.error("Error converting expression {}:", expression, e);
-            throw new RuntimeException(e);
+            throw new ExpressionConversionException(e);
         }
     }
 

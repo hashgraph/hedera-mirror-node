@@ -20,10 +20,15 @@
 
 import {
   computeAccountParameters,
+  computeAccountWithNftsParameters,
+  computeAccountWithTokenAllowanceParameters,
+  computeAccountWithTokenParameters,
+  computeBlockParameters,
   computeContractParameters,
   computeFungibleTokenParameters,
   computeNftParameters,
-  computeScheduleParameters, computeTopicInfo,
+  computeScheduleParameters,
+  computeTopicInfo,
   computeTransactionParameters,
   setDefaultValuesForEnvParameters,
 } from "../../lib/parameters.js";
@@ -31,6 +36,10 @@ import {
 const computeTestParameters = (configuration) =>
   Object.assign({},
     computeAccountParameters(configuration),
+    computeAccountWithNftsParameters(configuration),
+    computeAccountWithTokenAllowanceParameters(configuration),
+    computeAccountWithTokenParameters(configuration),
+    computeBlockParameters(configuration),
     computeContractParameters(configuration),
     computeNftParameters(configuration),
     computeScheduleParameters(configuration),
@@ -42,7 +51,8 @@ const computeTestParameters = (configuration) =>
 const setupTestParameters = () => {
   setDefaultValuesForEnvParameters();
   const baseApiUrl = __ENV['BASE_URL'];
-  const testParametersMap = computeTestParameters({baseApiUrl: `${baseApiUrl}/api/v1`});
+  const startAccountId = __ENV['DEFAULT_START_ACCOUNT'];
+  const testParametersMap = computeTestParameters({baseApiUrl: `${baseApiUrl}/api/v1`, startAccountId: `${startAccountId}`});
   return Object.assign(testParametersMap, {
     BASE_URL: baseApiUrl,
     DEFAULT_LIMIT: __ENV.DEFAULT_LIMIT

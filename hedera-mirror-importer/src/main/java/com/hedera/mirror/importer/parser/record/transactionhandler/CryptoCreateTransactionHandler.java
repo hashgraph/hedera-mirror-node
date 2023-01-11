@@ -20,8 +20,11 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import static com.hedera.mirror.common.util.DomainUtils.EVM_ADDRESS_LENGTH;
+
 import com.google.protobuf.ByteString;
 import javax.inject.Named;
+import org.apache.commons.lang3.ArrayUtils;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -44,7 +47,7 @@ class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandle
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        return EntityId.of(recordItem.getRecord().getReceipt().getAccountID());
+        return EntityId.of(recordItem.getTransactionRecord().getReceipt().getAccountID());
     }
 
     @Override
@@ -55,21 +58,40 @@ class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandle
     @Override
     @SuppressWarnings("java:S1874")
     protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
+        var transactionRecord = recordItem.getTransactionRecord();
         var transactionBody = recordItem.getTransactionBody().getCryptoCreateAccount();
-
-        if (recordItem.getRecord().getAlias() != ByteString.EMPTY) {
-            var alias = DomainUtils.toBytes(recordItem.getRecord().getAlias());
+        var alias = DomainUtils.toBytes(
+                transactionRecord.getAlias() != ByteString.EMPTY
+                        ? transactionRecord.getAlias()
+                        : transactionBody.getAlias()
+        );
+        boolean emptyAlias = ArrayUtils.isEmpty(alias);
+        var key = transactionBody.hasKey() ? transactionBody.getKey().toByteArray() : null;
+        boolean emptyKey = ArrayUtils.isEmpty(key);
+        if (!emptyAlias) {
             entity.setAlias(alias);
-            entity.setEvmAddress(Utility.aliasToEvmAddress(alias));
             entityIdService.notify(entity);
+            if (emptyKey && alias.length > EVM_ADDRESS_LENGTH) {
+                entity.setKey(alias);
+            }
+        }
+
+        if (!emptyKey) {
+            entity.setKey(key);
+        }
+
+        var evmAddress =
+                transactionRecord.getEvmAddress() != ByteString.EMPTY
+                        ? transactionRecord.getEvmAddress()
+                        : transactionBody.getEvmAddress();
+        if (evmAddress != ByteString.EMPTY) {
+            entity.setEvmAddress(DomainUtils.toBytes(evmAddress));
+        } else if (!emptyAlias) {
+            entity.setEvmAddress(Utility.aliasToEvmAddress(alias));
         }
 
         if (transactionBody.hasAutoRenewPeriod()) {
             entity.setAutoRenewPeriod(transactionBody.getAutoRenewPeriod().getSeconds());
-        }
-
-        if (transactionBody.hasKey()) {
-            entity.setKey(transactionBody.getKey().toByteArray());
         }
 
         if (transactionBody.hasProxyAccountID()) {

@@ -55,7 +55,7 @@ public class RestApiClient {
                 .uri(uri.replace(PREFIX, StringUtils.EMPTY), parameters)
                 .retrieve()
                 .bodyToMono(responseClass)
-                .onErrorResume(t -> Mono.error(t)) // Needed for some reason to avoid onErrorDropped
+                .onErrorResume(Mono::error) // Needed for some reason to avoid onErrorDropped
                 .name("rest")
                 .metrics();
     }

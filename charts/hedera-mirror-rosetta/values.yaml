@@ -231,13 +231,11 @@ terminationGracePeriodSeconds: 60
 
 test:
   enabled: true
-  git:
-    branch: ""  # Default to Chart app version
-    repository: "hashgraph/hedera-mirror-node"
   image:
     pullPolicy: IfNotPresent
     repository: postman/newman
     tag: 5.3.1-alpine
+  postman: ""  # Custom postman.json in base64 encoding
 
 tolerations: []
 

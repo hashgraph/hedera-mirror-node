@@ -55,7 +55,6 @@ dependencies {
     implementation("org.springframework.cloud:spring-cloud-starter-bootstrap")
     implementation("org.springframework.cloud:spring-cloud-starter-kubernetes-fabric8-config")
     implementation("org.springframework.integration:spring-integration-core")
-    implementation("org.web3j:core")
     implementation("software.amazon.awssdk:netty-nio-client")
     implementation("software.amazon.awssdk:s3")
     implementation("software.amazon.awssdk:sts")
@@ -70,4 +69,8 @@ dependencies {
     testImplementation("org.awaitility:awaitility")
     testImplementation("org.gaul:s3proxy")
     testImplementation("org.testcontainers:junit-jupiter")
+}
+
+tasks.assemble {
+    dependsOn("package")
 }

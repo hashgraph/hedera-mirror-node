@@ -35,7 +35,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.web3j.crypto.Hash;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -60,7 +59,7 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
     @ParameterizedTest
     void ethereumTransactionEip1559(boolean create) {
         RecordItem recordItem = recordItemBuilder.ethereumTransaction(create).build();
-        var record = recordItem.getRecord();
+        var record = recordItem.getTransactionRecord();
         var functionResult = create ? record.getContractCreateResult() : record.getContractCallResult();
         var senderId = EntityId.of(functionResult.getSenderId());
         Entity sender = domainBuilder.entity()
@@ -123,7 +122,7 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
 
     @Test
     void ethereumTransactionLegacyBadBytes() {
-        var transactionBytes = RLPEncoder.encodeAsList(
+        var transactionBytes = RLPEncoder.list(
                 Integers.toBytes(1),
                 Integers.toBytes(2),
                 Integers.toBytes(3));
@@ -139,7 +138,7 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
         var transactionBytes = Hex.decodeHex(transactionBytesString);
         return recordItemBuilder.ethereumTransaction(create)
                 .transactionBody(x -> x.setEthereumData(ByteString.copyFrom(transactionBytes)))
-                .record(x -> x.setEthereumHash(ByteString.copyFrom(Hash.sha3(transactionBytes))))
+                .record(x -> x.setEthereumHash(ByteString.copyFrom(domainBuilder.bytes(32))))
                 .build();
     }
 
@@ -155,7 +154,7 @@ class EntityRecordItemListenerEthereumTest extends AbstractEntityRecordItemListe
                 .returns(fileId, EthereumTransaction::getCallDataId)
                 .returns(DomainUtils.toBytes(transactionBody.getEthereumData()), EthereumTransaction::getData)
                 .returns(transactionBody.getMaxGasAllowance(), EthereumTransaction::getMaxGasAllowance)
-                .returns(DomainUtils.toBytes(recordItem.getRecord().getEthereumHash()), EthereumTransaction::getHash);
+                .returns(DomainUtils.toBytes(recordItem.getTransactionRecord().getEthereumHash()), EthereumTransaction::getHash);
 
         if (sender != null) {
             assertThat(entityRepository.findById(sender.getId()))

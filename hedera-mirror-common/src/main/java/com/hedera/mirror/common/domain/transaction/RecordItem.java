@@ -63,7 +63,7 @@ public class RecordItem implements StreamItem {
     private final Version hapiVersion = RecordFile.HAPI_VERSION_NOT_SET;
     private final RecordItem parent;
     private final RecordItem previous;
-    private final TransactionRecord record;
+    private final TransactionRecord transactionRecord;
     private final byte[] recordBytes;
     private final Transaction transaction;
     private final byte[] transactionBytes;
@@ -71,7 +71,7 @@ public class RecordItem implements StreamItem {
 
     // Lazily calculated fields
     @Getter(lazy = true)
-    private final long consensusTimestamp = DomainUtils.timestampInNanosMax(record.getConsensusTimestamp());
+    private final long consensusTimestamp = DomainUtils.timestampInNanosMax(transactionRecord.getConsensusTimestamp());
 
     @Getter(lazy = true)
     private final TransactionBodyAndSignatureMap transactionBodyAndSignatureMap = parseTransaction(transaction);
@@ -136,7 +136,7 @@ public class RecordItem implements StreamItem {
     }
 
     public boolean isChild() {
-        return record.hasParentConsensusTimestamp();
+        return transactionRecord.hasParentConsensusTimestamp();
     }
 
     private boolean checkSuccess() {
@@ -146,7 +146,7 @@ public class RecordItem implements StreamItem {
             return false;
         }
 
-        var status = record.getReceipt().getStatus();
+        var status = transactionRecord.getReceipt().getStatus();
         return status == ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED ||
                 status == ResponseCodeEnum.SUCCESS ||
                 status == ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION;
@@ -169,9 +169,9 @@ public class RecordItem implements StreamItem {
                 return TransactionBody.DataCase.DATA_NOT_SET.getNumber();
             }
 
-            int transactionType = unknownFields.iterator().next();
-            log.warn("Encountered unknown transaction type: {}", transactionType);
-            return transactionType;
+            int genericTransactionType = unknownFields.iterator().next();
+            log.warn("Encountered unknown transaction type: {}", genericTransactionType);
+            return genericTransactionType;
         }
 
         return dataCase.getNumber();
@@ -180,15 +180,15 @@ public class RecordItem implements StreamItem {
     private record TransactionBodyAndSignatureMap(TransactionBody transactionBody, SignatureMap signatureMap) {
     }
 
-    public static class RecordItemBuilder<C, B extends RecordItem.RecordItemBuilder> {
+    public static class RecordItemBuilder<B extends RecordItem.RecordItemBuilder> {
 
         public RecordItem build() {
             // set parent, parent-child items are assured to exist in sequential order of [Parent, Child1,..., ChildN]
-            if (record.hasParentConsensusTimestamp() && previous != null) {
-                var parentTimestamp = record.getParentConsensusTimestamp();
-                if (parentTimestamp.equals(previous.record.getConsensusTimestamp())) { // check immediately preceding
+            if (transactionRecord.hasParentConsensusTimestamp() && previous != null) {
+                var parentTimestamp = transactionRecord.getParentConsensusTimestamp();
+                if (parentTimestamp.equals(previous.transactionRecord.getConsensusTimestamp())) { // check immediately preceding
                     parent = previous;
-                } else if (previous.parent != null && parentTimestamp.equals(previous.parent.record.getConsensusTimestamp())) {
+                } else if (previous.parent != null && parentTimestamp.equals(previous.parent.transactionRecord.getConsensusTimestamp())) {
                     // check older siblings parent, if child count is > 1 this prevents having to search to parent
                     parent = previous.parent;
                 }
@@ -197,16 +197,16 @@ public class RecordItem implements StreamItem {
             return buildInternal();
         }
 
-        public B record(TransactionRecord record) {
-            this.record = record;
-            this.recordBytes = record.toByteArray();
+        public B record(TransactionRecord transactionRecord) {
+            this.transactionRecord = transactionRecord;
+            this.recordBytes = transactionRecord.toByteArray();
             return (B) this;
         }
 
         public B recordBytes(byte[] recordBytes) {
             try {
                 this.recordBytes = recordBytes;
-                this.record = TransactionRecord.parseFrom(recordBytes);
+                this.transactionRecord = TransactionRecord.parseFrom(recordBytes);
             } catch (InvalidProtocolBufferException e) {
                 throw new ProtobufException(BAD_RECORD_BYTES_MESSAGE, e);
             }
