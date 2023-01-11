@@ -6,3 +6,4 @@ resources:
 - gotk-sync.yaml
 - provider.yaml
 - sealed-secret-slack.yaml
+

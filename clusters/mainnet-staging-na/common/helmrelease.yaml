@@ -10,7 +10,10 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: hedera-mirror-node
-      version: '0.71.0-rc1'
+      version: '0.72.0-rc1'
+  dependsOn:
+    - name: testkube
+      namespace: testkube
   install:
     crds: CreateReplace
   interval: 1m
@@ -36,6 +39,11 @@ spec:
           extraClientConfigs: |
             external_labels:
               cluster: mainnet-staging-na
+    testkube:
+      enabled: true
+      test:
+        target:
+          namespace: mainnet
     traefik:
       service:
         annotations:
