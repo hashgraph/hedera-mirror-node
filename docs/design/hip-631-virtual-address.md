@@ -37,7 +37,7 @@ and more.  The purpose of this design doc is to isolate the Mirror Node requirem
 #### Virtual Address Status
 
 ```sql
-  create type virtual_address_status as enum ('ACTIVE', 'DISABLED', 'DELETED');
+  create type virtual_address_status as enum ('ACTIVE', 'DELETED', 'DISABLED');
 ```
 
 The third value, 'DELETED', is needed because our Upsert framework can't delete rows (and attempting to delete rows using a Spring Framework call could be slow).
