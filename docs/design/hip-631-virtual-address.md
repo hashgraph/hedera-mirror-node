@@ -37,18 +37,18 @@ and more.  The purpose of this design doc is to isolate the Mirror Node requirem
 #### Virtual Address Status
 
 ```sql
-  create type virtual_address_status as enum ('ACTIVE', 'DISABLED');
+  create type virtual_address_status as enum ('ACTIVE', 'DISABLED', 'DELETED');
 ```
 
-While the HIP-631 document lists a third status, 'DELETED', this value would not be present in the Mirror Node database.  Instead, we would just
-delete the row (the entry for a deleted virtual address) from the table holding them all.
+The third value, 'DELETED', is needed because our Upsert framework can't delete rows (and attempting to delete rows using a Spring Framework call could be slow).
+We will have an index that only holds the non-'DELETED' values, so skipping over the DELETED rows will be fast.  A row in 'DELETED' status will just be ignored.
 
 #### Virtual Addresses
 
 ```sql
   create table if not exists entity_virtual_addresses (
-     account_id          entity_id not null,
-     evm_address         bytea null,
+     account_id          bigint not null,
+     evm_address         bytea not null,
      status              virtual_address_status not null default 'ACTIVE',
      timestamp_range     int8range not null,
      primary key (account_id, evm_address)
@@ -58,6 +58,9 @@ delete the row (the entry for a deleted virtual address) from the table holding 
   like entity_virtual_addresses including defaults,
      primary key (account_id, evm_address, timestamp_range)
  );
+
+  create index if not exists entity_virtual_addresses__evm_address on entity_virtual_addresses (account_id, evm_address) 
+  where status <> 'DELETED';
 ```
 
 While the HIP-631 document calls this table `account_virtual_address`, since we will use it to hold virtual addresses for both accounts and contracts,
@@ -74,9 +77,9 @@ We are choosing to use the existing `evm_address` field of the `entity` table to
 When parsing CryptoUpdate transactions,
 
 * Heed new `CryptoUpdate` operations (`addVirtualAddress`, `disableVirtualAddress`, `removeVirtualAddress`, `setDefaultVirtualAddress`).
-    - addVirtualAddress: allow if already on list or if too many already on list (just give warning).  Replace default if `setDefaultVirtualAddress(true)` specified.
-    - disableVirtualAddress: allow if not on list (just give warning).  Do not allow if primary virtual address is getting disabled and other non-primary default addresses present.
-    - removeVirtualAddress: Do not allow if primary virtual address is getting removed, and other non-primary default addresses present.
+    - addVirtualAddress: The mirror node won't easily be able to see how many other virtual addresses already exist for that account, so we probably won't be able to issue a warning if too many virtual addresses are already assigned to that account.  In all cases, we should replace default virtual address if `setDefaultCVirtualAddress(true)` is involved.
+    - disableVirtualAddress: allow if not on list (just give warning).  Log a warning if primary virtual address is getting disabled and other non-primary default addresses present.
+    - removeVirtualAddress: Log a warning if primary virtual address is getting removed, and other non-primary default addresses present.
 
 ### REST API
 
