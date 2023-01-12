@@ -187,7 +187,7 @@ public class AccountFeature extends AbstractFeature {
                 .isEqualTo(networkTransactionResponse.getValidStartString());
         assertThat(mirrorTransaction.getName()).isEqualTo("CRYPTOTRANSFER");
 
-        assertThat(mirrorTransaction.getTransfers().size()).isGreaterThanOrEqualTo(3); // network, node and transfer
+        assertThat(mirrorTransaction.getTransfers()).hasSizeGreaterThanOrEqualTo(3); // network, node and transfer
 
         //verify transfer credit and debits balance out
         long transferSum = 0;
