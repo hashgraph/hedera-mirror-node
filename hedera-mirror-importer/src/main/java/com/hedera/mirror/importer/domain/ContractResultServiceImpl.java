@@ -306,14 +306,11 @@ public class ContractResultServiceImpl implements ContractResultService {
                 }
             } else if (sidecarRecord.hasBytecode()) {
                 if (migration) {
+                    ++migrationCount;
                     contractBytecodes.add(sidecarRecord.getBytecode());
                 } else if (!recordItem.isSuccessful()) {
                     failedInitcode = sidecarRecord.getBytecode().getInitcode();
                 }
-            }
-
-            if (migration) {
-                ++migrationCount;
             }
         }
 

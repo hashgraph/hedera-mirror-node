@@ -20,6 +20,8 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * ‍
  */
 
+import static org.awaitility.Awaitility.await;
+
 import com.google.common.base.Stopwatch;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +29,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Named;
 import lombok.extern.log4j.Log4j2;
+import org.awaitility.Durations;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.util.retry.Retry;
@@ -77,7 +80,10 @@ public class MirrorNodeClient {
         subscriptionResponse.setSubscription(subscription);
 
         // allow time for connection to be made and error to be caught
-        Thread.sleep(5000, 0);
+        await("responseEncountered").dontCatchUncaughtExceptions()
+                .atMost(Durations.FIVE_SECONDS)
+                .pollDelay(Durations.ONE_MILLISECOND)
+                .until(subscriptionResponse::responseEncountered);
 
         return subscriptionResponse;
     }

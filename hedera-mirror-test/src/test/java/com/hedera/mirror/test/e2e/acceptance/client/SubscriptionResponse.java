@@ -39,6 +39,7 @@ public class SubscriptionResponse {
     private List<MirrorHCSResponse> mirrorHCSResponses = new ArrayList<>();
     private Stopwatch elapsedTime;
     private Throwable responseError;
+    private boolean responseEncountered = false;
 
     public void handleConsensusTopicResponse(TopicMessage topicMessage) {
         mirrorHCSResponses.add(new SubscriptionResponse.MirrorHCSResponse(topicMessage, Instant.now()));
@@ -46,6 +47,7 @@ public class SubscriptionResponse {
         log.trace("Received message: " + messageAsString
                 + " consensus timestamp: " + topicMessage.consensusTimestamp
                 + " topic sequence number: " + topicMessage.sequenceNumber);
+        responseEncountered = true;
     }
 
     public void handleThrowable(Throwable err) {
@@ -55,6 +57,10 @@ public class SubscriptionResponse {
 
     public boolean errorEncountered() {
         return responseError != null;
+    }
+
+    public boolean responseEncountered() {
+        return responseEncountered || mirrorHCSResponses.size() > 0;
     }
 
     public void validateReceivedMessages() throws Exception {
@@ -82,6 +88,7 @@ public class SubscriptionResponse {
             }
 
             lastTopicMessage = topicMessage;
+            responseEncountered = true;
         }
 
         if (invalidMessages > 0) {

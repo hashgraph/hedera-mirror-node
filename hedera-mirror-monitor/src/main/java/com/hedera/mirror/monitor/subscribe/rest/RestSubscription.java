@@ -56,8 +56,8 @@ class RestSubscription extends AbstractScenario<RestSubscriberProperties, Transa
 
         String error = t.getClass().getSimpleName();
 
-        if (t instanceof WebClientResponseException) {
-            error = String.valueOf(((WebClientResponseException) t).getStatusCode().value());
+        if (t instanceof WebClientResponseException webClientResponseException) {
+            error = String.valueOf((webClientResponseException.getStatusCode().value());
         }
 
         log.warn("Subscription {} failed: {}", this, message);

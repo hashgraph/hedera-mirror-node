@@ -197,6 +197,7 @@ public class RecordItem implements StreamItem {
             return buildInternal();
         }
 
+        @SuppressWarnings("java:S6213")
         public B record(TransactionRecord transactionRecord) {
             this.transactionRecord = transactionRecord;
             this.recordBytes = transactionRecord.toByteArray();
