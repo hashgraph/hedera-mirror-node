@@ -177,7 +177,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
             // Only add non-fee transfers on success as the data is assured to be valid
             processNonFeeTransfers(consensusTimestamp, recordItem);
-            processTransaction(RecordItem recordItem, consensusTimestamp, transactionTypeValue);
+            processTransaction(recordItem, consensusTimestamp, transactionTypeValue);
 
             // Record token transfers can be populated for multiple transaction types
             insertTokenTransfers(recordItem);
