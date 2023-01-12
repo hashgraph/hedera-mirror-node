@@ -127,7 +127,6 @@ public class EntityRecordItemListener implements RecordItemListener {
     @Override
     public void onItem(RecordItem recordItem) throws ImporterException {
         TransactionRecord txRecord = recordItem.getTransactionRecord();
-        TransactionBody body = recordItem.getTransactionBody();
         int transactionTypeValue = recordItem.getTransactionType();
         TransactionType transactionType = TransactionType.of(transactionTypeValue);
         TransactionHandler transactionHandler = transactionHandlerFactory.get(transactionType);
@@ -177,7 +176,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
             // Only add non-fee transfers on success as the data is assured to be valid
             processNonFeeTransfers(consensusTimestamp, recordItem);
-            processTransaction(recordItem, consensusTimestamp, transactionTypeValue);
+            processTransaction(recordItem, consensusTimestamp, transactionTypeValue, txRecord);
 
             // Record token transfers can be populated for multiple transaction types
             insertTokenTransfers(recordItem);
@@ -192,9 +191,11 @@ public class EntityRecordItemListener implements RecordItemListener {
     }
 
     // reduce Cognitive Complexity of onItem() by moving the "dispatcher" part of the code into a separate method.
-    private void processTransaction(RecordItem recordItem, long consensusTimestamp, int transactionTypeValue) {
+    // This still has Cognitive Complexity of 19, but it really doesn't make sense to split into two parts.
+    @SuppressWarnings("java:S3776")
+    private void processTransaction(RecordItem recordItem, long consensusTimestamp, int transactionTypeValue,
+                                    TransactionRecord txRecord) {
         TransactionBody body = recordItem.getTransactionBody();
-        TransactionRecord txRecord = recordItem.getTransactionRecord();
 
         if (body.hasConsensusSubmitMessage()) {
             insertConsensusTopicMessage(recordItem);
