@@ -6,12 +6,11 @@ type Account implements Accountable & Entity & Node {
     allowances: Allowances!
     autoRenewAccount: Account
     autoRenewPeriod: Duration
-    balance: Long
+    balance(format: CurrencyFormat = TINYBAR): Long
     createdTimestamp: Timestamp
     declineReward: Boolean!
     deleted: Boolean
     entityId: EntityId!
-    evmAddresses: [EvmAddress!]!
     expirationTimestamp: Timestamp
     id: ID!
     key: Object
@@ -20,8 +19,7 @@ type Account implements Accountable & Entity & Node {
     nfts(after: String, before: String, first: Int, last: Int): NftConnection!
     nonce: Long
     obtainer: Accountable
-    pendingReward: Long
-    proxyAccount: Account
+    pendingReward(format: CurrencyFormat = TINYBAR): Long
     receiverSigRequired: Boolean
     stakedAccount: Account
     stakedNode: NetworkNode
@@ -30,6 +28,7 @@ type Account implements Accountable & Entity & Node {
     tokens(after: String, before: String, first: Int, last: Int): TokenAccountConnection!
     transactions(after: String, before: String, first: Int, last: Int): TransactionConnection!
     type: EntityType!
+    virtualAddresses: [EvmAddress!]!
 }
 
 """
@@ -136,36 +135,6 @@ type NftAllowanceEdge {
     The item associated with the edge.
     """
     node: NftAllowance!
-}
-
-"""
-The connection type for Nft.
-"""
-type NftConnection {
-    """
-    A list of edges.
-    """
-    edges: [NftEdge!]!
-
-    """
-    Information to aid in pagination.
-    """
-    pageInfo: PageInfo!
-}
-
-"""
-An edge in a connection.
-"""
-type NftEdge {
-    """
-    The cursor associated with this edge.
-    """
-    cursor: String!
-
-    """
-    The item associated with the edge.
-    """
-    node: Nft!
 }
 
 """

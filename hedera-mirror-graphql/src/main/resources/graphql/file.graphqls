@@ -1,64 +1,92 @@
+# Complete
+
 """
+Represents a file on the Hedera network to allow arbitrarily large byte sequences on the ledger.
 """
 type File implements Entity & Node {
+    "The account charged the auto-renewal fee."
     autoRenewAccount: Account
+
+    "The amount of time to elapse before auto-renew occurs."
     autoRenewPeriod: Duration
+
+    "The consensus timestamp at which the entity was created."
     createdTimestamp: Timestamp
+
+    "The chunked file data. Since each piece of data can potentially be 6Kib, we limit the max results to at most 5."
     data(after: String, before: String, first: Int, last: Int): FileDataConnection!
+
+    "Whether the entity still exists on the ledger."
     deleted: Boolean
+
+    "The unique identifier associated with the entity."
     entityId: EntityId!
+
+    """
+    The time at which this entity will expire and be auto-renewed, if possible. If this was not explicitly set by the
+    user it will be calculated as the createdTimestamp plus the autoRenewPeriod.
+    """
     expirationTimestamp: Timestamp
+
+    "An opaque, globally unique identifier specific to GraphQL."
     id: ID!
+
+    """
+    The admin key associated with this entity whose signing requirements must be met in order to modify the entity on
+    the network.
+    """
     key: Object
+
+    "The memo associated with the entity."
     memo: String!
-    proxyAccount: Account
-    size: Long!
+
+    "A consensus timestamp range with an inclusive from timestamp and an exclusive to timestamp."
     timestamp: TimestampRange!
+
+    "The type of Hedera entity."
     type: EntityType!
 }
 
 """
+The chunked file contents associated with a Hedera file.
 """
 type FileData {
-    bytes: String
+    "The file's chunked binary data."
+    bytes(encoding: BinaryEncoding = BASE64): String!
+
+    "The timestamp this data was added to the network."
     timestamp: Timestamp!
+
+    "The type of file transaction used to add this data. Can be one of FILEAPPEND, FILECREATE, FILEUPDATE."
     transactionType: TransactionType!
 }
 
-"""
-The connection for FileData.
-"""
+"The connection for FileData."
 type FileDataConnection {
-    """
-    A list of edges.
-    """
+    "A list of edges."
     edges: [FileDataEdge!]!
 
-    """
-    Information to aid in pagination.
-    """
+    "Information to aid in pagination."
     pageInfo: PageInfo!
 }
 
-"""
-An edge in a connection.
-"""
+"An edge in a connection."
 type FileDataEdge {
-    """
-    The cursor associated with this edge.
-    """
+    "The cursor associated with this edge."
     cursor: String!
 
-    """
-    The item associated with the edge.
-    """
+    "The item associated with the edge."
     node: FileData!
 }
 
-
 """
+The unique identifier to get a specific file. Only one of the given fields can be present at a time otherwise an error
+will occur.
 """
 input FileInput {
+    "The unique shard, realm, and number associated with a Hedera file."
     entityId: EntityIdInput
+
+    "An opaque, globally unique identifier specific to GraphQL."
     id: ID
 }

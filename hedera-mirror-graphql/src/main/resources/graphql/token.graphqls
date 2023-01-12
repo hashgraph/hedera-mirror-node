@@ -45,67 +45,100 @@ type Nft {
     tokenId: EntityId!
 }
 
-"""
-"""
-type Token implements Entity & Node {
-    autoRenewAccount: Account
-    autoRenewPeriod: Duration
-    createdTimestamp: Timestamp
-    deleted: Boolean
-    entityId: EntityId!
-    expirationTimestamp: Timestamp
-    id: ID!
-    key: Object
-    memo: String!
-    proxyAccount: Account
-    timestamp: TimestampRange!
-    type: EntityType!
+"The connection type for Nft."
+type NftConnection {
+    "A list of edges."
+    edges: [NftEdge!]!
 
-    decimals: Long!
-    customFees: [CustomFee!]!
-    feeScheduleKey: Object
-    freezeDefault: Boolean!
-    freezeKey: Object
-    initialSupply: Long!
-    kycKey: Object
-    maxSupply: Long!
-    modifiedTimestamp: Timestamp!
-    name: String!
-    pauseKey: Object
-    pauseStatus: TokenPauseStatus!
-    supplyKey: Object
-    supplyType: TokenSupplyType!
-    symbol: String!
-    totalSupply: Long!
-    treasuryAccountId: EntityId!
-    tokenType: TokenType!
-    wipeKey: Object
+    "Information to aid in pagination."
+    pageInfo: PageInfo!
+}
+
+"An edge in a connection."
+type NftEdge {
+    "The cursor associated with this edge."
+    cursor: String!
+
+    "The item associated with the edge."
+    node: Nft!
 }
 
 """
+The unique identifier to get a specific NFT. Only one of the given fields can be present at a time otherwise an error
+will occur.
 """
-input TokenInput {
-    entityId: EntityIdInput
+input NftInput {
+    "The NFT's unique serial number within the token class."
+    serialNumber: Long
+
+    "An opaque, globally unique identifier specific to GraphQL."
     id: ID
 }
 
 """
 """
+type Token implements Entity & Node {
+    accounts(after: String, before: String, first: Int, last: Int): TokenAccountConnection!
+    autoRenewAccount: Account
+    autoRenewPeriod: Duration
+    createdTimestamp: Timestamp
+    customFees: [CustomFee!]!
+    decimals: Long!
+    deleted: Boolean
+    entityId: EntityId!
+    expirationTimestamp: Timestamp
+    feeScheduleKey: Object
+    freezeDefault: Boolean!
+    freezeKey: Object
+    id: ID!
+    initialSupply: Long!
+    key: Object
+    kycKey: Object
+    maxSupply: Long!
+    memo: String!
+    modifiedTimestamp: Timestamp!
+    name: String!
+    nft(input: NftInput!): Nft
+    nfts(after: String, before: String, first: Int, last: Int): NftConnection!
+    pauseKey: Object
+    pauseStatus: TokenPauseStatus!
+    supplyKey: Object
+    supplyType: TokenSupplyType!
+    symbol: String!
+    timestamp: TimestampRange!
+    totalSupply: Long!
+    treasuryAccountId: EntityId!
+    tokenType: TokenType!
+    type: EntityType!
+    wipeKey: Object
+}
+
+"""
+The unique identifier to get a specific token. Only one of the given fields can be present at a time otherwise an error
+will occur.
+"""
+input TokenInput {
+    "The unique shard, realm, and number associated with a Hedera token."
+    entityId: EntityIdInput
+
+    "An opaque, globally unique identifier specific to GraphQL."
+    id: ID
+}
+
+"Whether the token is paused and can have transactions change its state."
 enum TokenPauseStatus {
     UNPAUSED
     PAUSED
     NOT_APPLICABLE
 }
 
-"""
-"""
+"Whether the token has an infinite supply or not."
 enum TokenSupplyType {
     FINITE
     INFINITE
 }
 
-"""
-"""
+"The token class type."
 enum TokenType {
     NON_FUNGIBLE_UNIQUE
     FUNGIBLE_COMMON

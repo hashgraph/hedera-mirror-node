@@ -1,38 +1,103 @@
+# Complete
+
 """
+A schedule entity allows a transaction to be scheduled for future execution.
 """
 type Schedule implements Entity & Node {
+    "The account charged the auto-renewal fee."
     autoRenewAccount: Account
+
+    "The amount of time to elapse before auto-renew occurs."
     autoRenewPeriod: Duration
+
+    "The consensus timestamp at which the entity was created."
     createdTimestamp: Timestamp
+
+    "The entity who created the schedule."
     creator: Accountable!
+
+    "Whether the entity still exists in consensus node state."
     deleted: Boolean
+
+    "The unique identifier associated with the entity."
     entityId: EntityId!
+
+    "The consensus timestamp at which this schedule was executed."
     executedTimestamp: Timestamp
+
+    """
+    The time at which this entity will expire and be auto-renewed, if possible. If this was not explicitly set by the
+    user it will be calculated as the createdTimestamp plus the autoRenewPeriod.
+    """
     expirationTimestamp: Timestamp
+
+    "An opaque, globally unique identifier specific to GraphQL."
     id: ID!
+
+    """
+    The admin key associated with this entity whose signing requirements must be met in order to modify the entity on
+    the network. This returns a dynamic map that varies per entity and may be arbitrarily complex depending upon this
+    key's signing requirements.
+    """
     key: Object
+
+    "The memo associated with the entity."
     memo: String!
+
+    "The entity to be charged the service fee for the scheduled transaction execution."
     payer: Accountable!
-    proxyAccount: Account
+
+    "The signatures that have signed the scheduled transaction."
     signatures: [TransactionSignature!]!
+
+    "A consensus timestamp range with an inclusive from timestamp and an exclusive to timestamp."
     timestamp: TimestampRange!
-    transactionBody: String!
+
+    "The scheduled transaction body to be executed in the future."
+    transactionBody(encoding: BinaryEncoding = BASE64): String!
+
+    "The type of Hedera entity."
     type: EntityType!
+
+    """
+    Whether the scheduled transaction will be evaluated for execution at its expiration time instead of when all
+    required signatures are received.
+    """
     waitForExpiry: Boolean!
 }
 
 """
+The unique identifier to get a specific schedule. Only one of the given fields can be present at a time otherwise an
+error will occur.
 """
 input ScheduleInput {
+    "The unique shard, realm, and number associated with a Hedera schedule."
     entityId: EntityIdInput
+
+    "An opaque, globally unique identifier specific to GraphQL."
     id: ID
 }
 
-"""
-"""
+"A signature corresponding to the unique public key used to sign a given transaction."
 type TransactionSignature {
-    publicKeyPrefix: String!
-    signature: String!
+    "First few bytes of the public key."
+    publicKeyPrefix(encoding: BinaryEncoding = BASE64): String!
+
+    "The contents of the signature used to sign the transaction."
+    signature(encoding: BinaryEncoding = BASE64): String!
+
+    "The consensus timestamp at which the scheduled transaction was signed."
     timestamp: Timestamp!
+
+    "The type of signature used to sign the scheduled transaction."
     type: TransactionSignatureType!
+}
+
+"""
+The type of signature used to sign the transaction.
+"""
+enum TransactionSignatureType {
+    ECDSA_SECP256K1
+    ED25519
+    UNKNOWN
 }

@@ -1,0 +1,22 @@
+# Complete
+
+"A hex-encoded string that represents an account alias"
+scalar Alias @Pattern(regexp: "^(?:[A-Z2-7]{8})*(?:[A-Z2-7]{2}|[A-Z2-7]{4,5}|[A-Z2-7]{7,8})$")
+
+"An ISO 8601 compatible duration with support for nanoseconds granularity in the format P[n]Y[n]M[n]DT[n]H[n]M[n]S."
+scalar Duration
+
+"A hex-encoded string that represents a 20-byte EVM address"
+scalar EvmAddress @Pattern(regexp: "^(0x)?[a-fA-F0-9]{40}$")
+
+"A 64-bit numeric type."
+scalar Long
+
+"A map-like object with dynamic key/value pairs."
+scalar Object
+
+"""
+An ISO 8601 compatible timestamp with nanoseconds granularity. All timestamps are consensus timestamps assigned by
+Hedera nodes.
+"""
+scalar Timestamp

@@ -1,68 +1,127 @@
+# Complete
+
 """
+A Hedera topic provides aBFT consensus as to the order and validity of messages submitted to it.
 """
 type Topic implements Entity & Node {
+    "The account charged the auto-renewal fee."
     autoRenewAccount: Account
+
+    "The amount of time to elapse before auto-renew occurs."
     autoRenewPeriod: Duration
+
+    "The consensus timestamp at which the entity was created."
     createdTimestamp: Timestamp
+
+    "Whether the entity still exists in consensus node state."
     deleted: Boolean
+
+    "The unique identifier associated with the entity."
     entityId: EntityId!
+
+    """
+    The time at which this entity will expire and be auto-renewed, if possible. If this was not explicitly set by the
+    user it will be calculated as the createdTimestamp plus the autoRenewPeriod.
+    """
     expirationTimestamp: Timestamp
+
+    "An opaque, globally unique identifier specific to GraphQL."
     id: ID!
+
+    """
+    The admin key associated with this entity whose signing requirements must be met in order to modify the entity on
+    the network. This returns a dynamic map that varies per entity and may be arbitrarily complex depending upon this
+    key's signing requirements.
+    """
     key: Object
+
+    "The memo associated with the entity in UTF-8."
     memo: String!
+
+    "Lookup a specific topic message by its sequence number."
+    message(input: TopicMessageInput!): TopicMessage
+
+    "The list of messages associated with this topic."
     messages(after: String, before: String, first: Int, last: Int): TopicMessageConnection!
-    proxyAccount: Account
+
+    "The key that provides access control for topic message submission."
     submitKey: Object
+
+    "A consensus timestamp range with an inclusive from timestamp and an exclusive to timestamp."
     timestamp: TimestampRange!
+
+    "The type of Hedera entity."
     type: EntityType!
 }
 
 """
+The unique identifier to get a specific topic. Only one of the given fields can be present at a time otherwise an
+error will occur.
 """
 input TopicInput {
+    "The unique shard, realm, and number associated with a Hedera topic."
     entityId: EntityIdInput
+
+    "An opaque, globally unique identifier specific to GraphQL."
     id: ID
 }
 
-"""
-"""
-type TopicMessage {
+"The message submitted to the topic."
+type TopicMessage implements Node {
+    "The sequence number (from 1 to total) of the current chunk in the message."
     chunkNum: Int
+
+    "The total number of chunks in the message."
     chunkTotal: Int
-    message: String!
-    runningHash: String!
+
+    "An opaque, globally unique identifier specific to GraphQL."
+    id: ID!
+
+    "The contents of the topic message."
+    message(encoding: BinaryEncoding = BASE64): String!
+
+    "A SHA-384 digest constructed from the current message and the previous running hash."
+    runningHash(encoding: BinaryEncoding = BASE64): String!
+
+    "The version of the SHA-384 digest used to update the running hash."
     runningHashVersion: Int!
+
+    "A unique sequence number for each message on the topic."
     sequenceNumber: Long!
+
+    "The timestamp at which this message reached consensus on the network."
     timestamp: Timestamp!
+
+    "The generic transaction information associated with this topic message."
     transaction: Transaction!
 }
 
-"""
-The connection type for TopicMessage.
-"""
+"The connection type for TopicMessage."
 type TopicMessageConnection {
-    """
-    A list of edges.
-    """
+    "A list of edges."
     edges: [TopicMessageEdge!]!
 
-    """
-    Information to aid in pagination.
-    """
+    "Information to aid in pagination."
     pageInfo: PageInfo!
 }
 
-"""
-An edge in a connection.
-"""
+"An edge in a connection."
 type TopicMessageEdge {
-    """
-    The cursor associated with this edge.
-    """
+    "The cursor associated with this edge."
     cursor: String!
 
-    """
-    The item associated with the edge.
-    """
+    "The item associated with the edge."
     node: TopicMessage!
+}
+
+"""
+The unique identifier to get a specific topic message. Only one of the given fields can be present at a time otherwise
+an error will occur.
+"""
+input TopicMessageInput {
+    "An opaque, globally unique identifier specific to GraphQL."
+    id: ID
+
+    "The sequence number of the topic message."
+    sequenceNumber: Long
 }

@@ -2,14 +2,14 @@
 The query root of the Hedera GraphQL API
 """
 type Query {
-    account(filter: AccountInput!): Account
-    block(filter: BlockInput!): Block
-    contract(filter: ContractInput!): Contract
-    file(filter: FileInput!): File
+    account(input: AccountInput!): Account
+    block(input: BlockInput!): Block
+    contract(input: ContractInput!): Contract
+    file(input: FileInput!): File
     network: Network!
     node(id: ID!): Node
-    schedule(filter: ScheduleInput!): Schedule
-    token(filter: TokenInput!): Token
-    topic(filter: TopicInput!): Topic
-    transaction(filter: TransactionInput!): Transaction
+    schedule(input: ScheduleInput!): Schedule
+    token(input: TokenInput!): Token
+    topic(input: TopicInput!): Topic
+    transaction(input: TransactionInput!): Transaction
 }

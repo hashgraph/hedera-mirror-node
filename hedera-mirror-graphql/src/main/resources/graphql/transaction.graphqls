@@ -70,7 +70,7 @@ type TokenTransfer {
 """
 Transaction contains the results of HAPI transactions on the network
 """
-type Transaction {
+type Transaction implements Node {
     assessedCustomFees: [AssessedCustomFee!]!
     chargedFee: Long
     consensusTimestamp: Timestamp!
@@ -139,31 +139,20 @@ input TransactionIdInput {
     nonce: Int! = 0 @Min(value: 0)
     payerAccountId: EntityIdInput!
     scheduled: Boolean! = false
-    validStart: TimestampInput!
+    validStart: Timestamp!
 }
 
 """
 """
 input TransactionInput {
     id: ID
-    timestamp: TimestampInput
+    timestamp: Timestamp
     transactionId: TransactionIdInput
 }
 
 """
 """
 union TransactionResponse = EthereumTransaction | Prng
-
-"""
-"""
-enum TransactionSignatureType {
-    CONTRACT
-    ECDSA_384
-    ECDSA_SECP256K1
-    ED25519
-    RSA_3072
-    UNKNOWN
-}
 
 """
 """

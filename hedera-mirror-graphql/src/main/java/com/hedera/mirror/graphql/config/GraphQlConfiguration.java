@@ -55,6 +55,8 @@ class GraphQlConfiguration {
                 .directiveWiring(validationDirectives())
                 .scalar(ExtendedScalars.GraphQLLong)
                 .scalar(ExtendedScalars.Object)
+                .scalar(GraphQlDuration.INSTANCE)
+                .scalar(GraphQlTimestamp.INSTANCE)
                 .scalar(Scalars.GraphQLString.transform(b -> b.name("Alias")
                         .description("A hex-encoded string that represents an account alias")))
                 .scalar(Scalars.GraphQLString.transform(b -> b.name("EvmAddress")

@@ -20,12 +20,16 @@ package com.hedera.mirror.graphql.service;
  * ‍
  */
 
-import reactor.core.publisher.Mono;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 
 public interface EntityService {
 
-    Mono<Entity> getAccountById(EntityId entityId);
+    Optional<Entity> getAccountById(EntityId entityId);
+
+    Collection<Entity> getAutoRenewAccounts(List<Long> autoRenewAccounts);
 }

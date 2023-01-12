@@ -20,9 +20,11 @@ package com.hedera.mirror.graphql.service;
  * ‍
  */
 
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
-import reactor.core.publisher.Mono;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -35,9 +37,12 @@ public class EntityServiceImpl implements EntityService {
     private final EntityRepository entityRepository;
 
     @Override
-    public Mono<Entity> getAccountById(EntityId entityId) {
-        return entityRepository.findById(entityId.getId())
-                .map(Mono::just)
-                .orElseGet(Mono::empty);
+    public Optional<Entity> getAccountById(EntityId entityId) {
+        return entityRepository.findById(entityId.getId());
+    }
+
+    @Override
+    public Collection<Entity> getAutoRenewAccounts(List<Long> autoRenewAccounts) {
+        return entityRepository.findByAutoRenewAccountIdIn(autoRenewAccounts);
     }
 }

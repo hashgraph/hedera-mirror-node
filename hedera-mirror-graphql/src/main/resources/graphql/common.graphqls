@@ -1,38 +1,188 @@
-"""
-A hex-encoded string that represents an account alias
-"""
-scalar Alias @Pattern(regexp: "^(?:[A-Z2-7]{8})*(?:[A-Z2-7]{2}|[A-Z2-7]{4,5}|[A-Z2-7]{7,8})$")
+# Complete
 
 """
-A hex-encoded string that represents a 20-byte EVM address
+A specialization of an Entity appropriate for entities that have a Hbar balance.
 """
-scalar EvmAddress @Pattern(regexp: "^(0x)?[a-fA-F0-9]{40}$")
+interface Accountable implements Entity & Node {
+    "The account charged the auto-renewal fee."
+    autoRenewAccount: Account
+
+    "The amount of time to elapse before auto-renew occurs."
+    autoRenewPeriod: Duration
+
+    "The balance of the accountable entity. Defaults to tinybars."
+    balance(format: CurrencyFormat = TINYBAR): Long
+
+    "The consensus timestamp at which the entity was created."
+    createdTimestamp: Timestamp
+
+    "Whether the entity declines receiving a staking reward."
+    declineReward: Boolean!
+
+    "Whether the entity still exists in consensus node state."
+    deleted: Boolean
+
+    "The unique identifier associated with the entity."
+    entityId: EntityId!
+
+    """
+    The time at which this entity will expire and be auto-renewed, if possible. If this was not explicitly set by the
+    user it will be calculated as the createdTimestamp plus the autoRenewPeriod.
+    """
+    expirationTimestamp: Timestamp
+
+    "An opaque, globally unique identifier specific to GraphQL."
+    id: ID!
+
+    """
+    The admin key associated with this entity whose signing requirements must be met in order to modify the entity on
+    the network. This returns a dynamic map that varies per entity and may be arbitrarily complex depending upon this
+    key's signing requirements.
+    """
+    key: Object
+
+    "The memo associated with the entity."
+    memo: String!
+
+    "The accountable entity to receive the remaining balance from the deleted entity."
+    obtainer: Accountable
+
+    """
+    The pending reward the account will receive in the next reward payout. Note the value is updated at the end of each
+    staking period and there may be delay to reflect the changes in the past staking period. Defaults to tinybars.
+    """
+    pendingReward(format: CurrencyFormat = TINYBAR): Long
+
+    "The account to which this account is staked. Mutually exclusive with stakedNode."
+    stakedAccount: Account
+
+    "The node to which this account is staked. Mutually exclusive with stakedAccount."
+    stakedNode: NetworkNode
+
+    """
+    The staking period during which either the staking settings for this account changed (such as starting staking or
+    changing stakedNode) or the most recent reward was earned, whichever is later. If this account is not currently
+    staked to a node, then the value is null.
+    """
+    stakePeriodStart: Timestamp
+
+    "A consensus timestamp range with an inclusive from timestamp and an exclusive to timestamp."
+    timestamp: TimestampRange!
+
+    "The type of Hedera entity."
+    type: EntityType!
+}
+
+"The encoding used to convert the raw bytes to String"
+enum BinaryEncoding {
+    "Base 64 encoding."
+    BASE64
+
+    "Base 16 hexadecimal encoding with a '0x' prefix and using lowercase letters and numbers."
+    HEX
+}
 
 """
-A 64-bit numeric type.
+The unit to format the hbar currency. Tinybars is the smallest and most exact unit. Anything beyond tinybars will
+potentially result in a loss of information.
 """
-scalar Long
+enum CurrencyFormat {
+    "1 Gℏ = 1,000,000,000 ℏ"
+    GIGABAR
+
+    "1 Mℏ = 1,000,000 ℏ"
+    MEGABAR
+
+    "1Kℏ = 1,000 ℏ"
+    KILOBAR
+
+    "1 ℏ = 1 ℏ"
+    HBAR
+
+    "1,000 mℏ = 1 ℏ"
+    MILIBAR
+
+    "1,000,000 μℏ = 1 ℏ"
+    MICROBAR
+
+    "100,000,000 tℏ = 1 ℏ"
+    TINYBAR
+}
 
 """
-A map-like object with dynamic key/value pairs.
+The base type for an entity on the Hedera network. Each entity is assigned an incrementing
+identifier that is shared across all entity types and associated with a particular shard and realm.
 """
-scalar Object
+interface Entity implements Node {
+    "The account charged the auto-renewal fee."
+    autoRenewAccount: Account
+
+    "The amount of time to elapse before auto-renew occurs."
+    autoRenewPeriod: Duration
+
+    "The consensus timestamp at which the entity was created."
+    createdTimestamp: Timestamp
+
+    "Whether the entity still exists on the ledger."
+    deleted: Boolean
+
+    "The unique identifier associated with the entity."
+    entityId: EntityId!
+
+    """
+    The time at which this entity will expire and be auto-renewed, if possible. If this was not explicitly set by the
+    user it will be calculated as the createdTimestamp plus the autoRenewPeriod.
+    """
+    expirationTimestamp: Timestamp
+
+    "An opaque, globally unique identifier specific to GraphQL."
+    id: ID!
+
+    """
+    The admin key associated with this entity whose signing requirements must be met in order to modify the entity on
+    the network.
+    """
+    key: Object
+
+    "The memo associated with the entity."
+    memo: String!
+
+    "A consensus timestamp range with an inclusive from timestamp and an exclusive to timestamp."
+    timestamp: TimestampRange!
+
+    "The type of Hedera entity."
+    type: EntityType!
+}
 
 """
-Validation directive that ensures the argument or input is a certain minimum value.
+An incrementing identifier that is shared across all entity types and associated with a particular shard and realm.
 """
-directive @Min(value : Int! = 0, message : String = "graphql.validation.Min.message")
-on ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION
+type EntityId {
+    "The shard number to allow for horizontal scaling of networks. Currently always zero."
+    shard: Long!
+
+    "The realm number. Currently always zero."
+    realm: Long!
+
+    "The unique incrementing identifier associated with this entity."
+    num: Long!
+}
 
 """
-Validation directive that ensures the argument or input value matches the given regular expression.
+The unique identifier to find an entity on the Hedera network.
 """
-directive @Pattern(regexp : String! =".*", message : String = "graphql.validation.Pattern.message")
-on ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION | SCALAR
+input EntityIdInput {
+    "The shard number to allow for horizontal scaling of networks. Defaults to zero."
+    shard: Long! = 0 @Min(value: 0)
 
-"""
-The type of Hedera entity.
-"""
+    "The realm number. Defaults to zero."
+    realm: Long! = 0 @Min(value: 0)
+
+    "The unique incrementing identifier associated with this entity."
+    num: Long! @Min(value: 0)
+}
+
+"The type of Hedera entity."
 enum EntityType {
     ACCOUNT
     CONTRACT
@@ -43,7 +193,66 @@ enum EntityType {
 }
 
 """
+A GraphQL object with a globally unique ID. A GraphQL concept and standard that's not to be confused with a consensus
+node or mirror node.
 """
+interface Node {
+    "An opaque, globally unique identifier specific to GraphQL."
+    id: ID!
+}
+
+"""
+Contains the pagination metadata for a particular connection.
+"""
+type PageInfo {
+    """
+    When paginating forwards, the cursor to continue. Empty string indicates no more results.
+    """
+    endCursor: String!
+
+    """
+    When paginating forwards, are there more items?
+    """
+    hasNextPage: Boolean!
+
+    """
+    When paginating backwards, are there more items?
+    """
+    hasPreviousPage: Boolean!
+
+    """
+    When paginating backwards, the cursor to continue. Empty string indicates no more results.
+    """
+    startCursor: String!
+}
+
+"""
+A release identifier that follows semantic versioning (https://semver.org/).
+"""
+type SemanticVersion {
+    "The major version indicates incompatible API changes."
+    major: Int!
+
+    "The minor version indicates new, backwards-compatible functionality."
+    minor: Int!
+
+    "The patch version indicates backwards compatible bug fixes."
+    patch: Int!
+}
+
+"""
+A consensus timestamp range with an inclusive from timestamp and an exclusive to timestamp. Usually indicates the
+consensus timestamp range in which the data was in effect on the network.
+"""
+type TimestampRange {
+    "A timestamp that marks the inclusive beginning of the range."
+    from: Timestamp!
+
+    "A timestamp that marks the exclusive end of the range."
+    to: Timestamp
+}
+
+"The type of transaction submitted to the Hedera network."
 enum TransactionType {
     CONSENSUSCREATETOPIC
     CONSENSUSDELETETOPIC
@@ -91,142 +300,4 @@ enum TransactionType {
     TOKENWIPE
     UNCHECKEDSUBMIT
     UNKNOWN
-}
-
-"""
-The base type for an entity on the Hedera network. Each entity is assigned an incrementing
-identifier that is shared across all entity types and associated with a particular shard and realm.
-"""
-interface Entity implements Node {
-    autoRenewAccount: Account
-    autoRenewPeriod: Duration
-    createdTimestamp: Timestamp
-    deleted: Boolean
-    entityId: EntityId!
-    expirationTimestamp: Timestamp
-    id: ID!
-    key: Object
-    memo: String!
-    proxyAccount: Account
-    timestamp: TimestampRange!
-    type: EntityType!
-}
-
-"""
-A specialization of an Entity appropriate for entities that manage a Hbar balance.
-"""
-interface Accountable implements Entity & Node {
-    autoRenewAccount: Account
-    autoRenewPeriod: Duration
-    balance: Long
-    createdTimestamp: Timestamp
-    deleted: Boolean
-    entityId: EntityId!
-    expirationTimestamp: Timestamp
-    id: ID!
-    key: Object
-    memo: String!
-    obtainer: Accountable
-    proxyAccount: Account
-    timestamp: TimestampRange!
-    type: EntityType!
-}
-
-enum CurrencyFormat {
-    GIGABAR
-    MEGABAR
-    KILOBAR
-    HBAR
-    MILIBAR
-    MICROBAR
-    TINYBAR
-}
-
-"""
-"""
-type Duration {
-    seconds: Long!
-    nanoseconds: Int!
-}
-
-"""
-An incrementing identifier that is shared across all entity types and associated with a particular shard and realm.
-"""
-type EntityId {
-    shard: Long!
-    realm: Long!
-    num: Long!
-}
-
-"""
-"""
-input EntityIdInput {
-    shard: Long! = 0 @Min(value: 0)
-    realm: Long! = 0 @Min(value: 0)
-    num: Long! @Min(value: 0)
-}
-
-"""
-A GraphQL object with a globally unique ID. A GraphQL concept and standard that's not to be confused with a consensus
-node or mirror node.
-"""
-interface Node {
-    id: ID!
-}
-
-"""
-Contain the pagination metadata for a particular connection.
-"""
-type PageInfo {
-    """
-    When paginating forwards, the cursor to continue. Empty string indicates no more results.
-    """
-    endCursor: String!
-
-    """
-    When paginating forwards, are there more items?
-    """
-    hasNextPage: Boolean!
-
-    """
-    When paginating backwards, are there more items?
-    """
-    hasPreviousPage: Boolean!
-
-    """
-    When paginating backwards, the cursor to continue. Empty string indicates no more results.
-    """
-    startCursor: String!
-}
-
-"""
-A release identifier that follows semantic versioning (https://semver.org/).
-"""
-type SemanticVersion {
-    major: Int!
-    minor: Int!
-    patch: Int!
-}
-
-"""
-A timestamp assigned by consensus nodes.
-"""
-type Timestamp {
-    seconds: Long!
-    nanoseconds: Int!
-}
-
-"""
-"""
-input TimestampInput {
-    seconds: Long! @Min(value: 0)
-    nanoseconds: Int! @Min(value: 0)
-}
-
-"""
-A consensus timestamp range with an inclusive from timestamp and an exclusive to timestamp.
-"""
-type TimestampRange {
-    from: Timestamp!
-    to: Timestamp
 }

@@ -3,26 +3,29 @@
 type Contract implements Accountable & Entity & Node {
     autoRenewAccount: Account
     autoRenewPeriod: Duration
+    balance(format: CurrencyFormat = TINYBAR): Long
     createdTimestamp: Timestamp
+    declineReward: Boolean!
     deleted: Boolean
     entityId: EntityId!
+    evmAddress: EvmAddress
     expirationTimestamp: Timestamp
+    file: File
     id: ID!
+    initcode: String
     key: Object
     memo: String!
-    proxyAccount: Account
-    timestamp: TimestampRange!
-    type: EntityType!
-
-    balance: Long
-    evmAddress: EvmAddress
-    file: File
-    initcode: String
     nonce: Long
     obtainer: Accountable
+    pendingReward(format: CurrencyFormat = TINYBAR): Long
     results(after: String, before: String, first: Int, last: Int): ContractResultConnection!
     runtimeBytecode: String
+    stakedAccount: Account
+    stakedNode: NetworkNode
+    stakePeriodStart: Timestamp
     state(after: String, before: String, first: Int, last: Int): ContractStateConnection!
+    timestamp: TimestampRange!
+    type: EntityType!
 }
 
 """
