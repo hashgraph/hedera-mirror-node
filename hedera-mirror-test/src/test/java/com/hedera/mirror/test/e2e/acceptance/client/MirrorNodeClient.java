@@ -4,7 +4,7 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,14 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Named;
+
+import com.hedera.hashgraph.sdk.AccountId;
+
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorAccountResponse;
+
+import com.hedera.mirror.test.e2e.acceptance.util.TestUtil;
+
+import lombok.NonNull;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -210,6 +218,10 @@ public class MirrorNodeClient {
                 MirrorTokenRelationshipResponse.class, accountId, tokenId);
     }
 
+    public MirrorAccountResponse getAccountDetailsUsingAlias(@NonNull AccountId accountId) {
+        log.debug("Retrieving account details for accountId '{}'", accountId);
+        return callRestEndpoint("/accounts/{accountId}", MirrorAccountResponse.class, TestUtil.getAliasFromPublicKey(accountId.aliasKey));
+    }
 
     public void unSubscribeFromTopic(SubscriptionHandle subscription) {
         subscription.unsubscribe();
