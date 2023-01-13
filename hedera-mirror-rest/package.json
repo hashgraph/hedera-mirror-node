@@ -46,7 +46,7 @@
     "qs": "^6.11.0",
     "quick-lru": "^6.1.1",
     "rfc4648": "^1.5.2",
-    "swagger-stats": "^0.99.4",
+    "swagger-stats": "^0.99.5",
     "swagger-ui-express": "^4.6.0"
   },
   "bundledDependencies": [
@@ -107,7 +107,6 @@
     "outputDirectory": "build/jest-junit"
   },
   "overrides": {
-    "json-schema": "0.4.0",
     "json5": "2.2.3",
     "protobufjs": "7.1.2"
   },
