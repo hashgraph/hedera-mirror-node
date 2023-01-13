@@ -26,6 +26,10 @@ import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstru
 
 import java.time.Instant;
 import javax.inject.Named;
+
+import com.hedera.mirror.web3.evm.token.TokenAccessorImpl;
+import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
+
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -51,15 +55,19 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final StaticBlockMetaSource blockMetaSource,
             final MirrorEvmContractAliases aliasManager,
             final PricesAndFeesImpl pricesAndFees,
-            final AccountAccessorImpl accountAccessor) {
+            final AccountAccessorImpl accountAccessor,
+            final TokenAccessorImpl tokenAccessor) {
 
         final int expirationCacheTime = (int) evmProperties.getExpirationCacheTime().toSeconds();
         final AbstractCodeCache codeCache = new AbstractCodeCache(expirationCacheTime,
                 entityAccess);
         final HederaEvmMutableWorldState worldState =
                 new HederaEvmWorldState(
-                        entityAccess, evmProperties,
-                        codeCache, accountAccessor);
+                        entityAccess,
+                        evmProperties,
+                        codeCache,
+                        accountAccessor,
+                        tokenAccessor);
 
         processor =
                 new MirrorEvmTxProcessor(

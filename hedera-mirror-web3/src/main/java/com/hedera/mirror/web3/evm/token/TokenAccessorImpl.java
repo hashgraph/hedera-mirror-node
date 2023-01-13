@@ -1,30 +1,34 @@
 package com.hedera.mirror.web3.evm.token;
 
+/*-
+ * ‌
+ * Hedera Mirror Node
+ * ​
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
-import static com.hedera.mirror.common.util.DomainUtils.nanosMaxToTimestamp;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
+import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdFromEvmAddress;
+import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.evmKey;
+import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 
-import com.google.common.primitives.Ints;
-import com.google.common.primitives.Longs;
-import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.CustomFee;
-import com.hederahashgraph.api.proto.java.Duration;
-import com.hederahashgraph.api.proto.java.FixedFee;
-import com.hederahashgraph.api.proto.java.Fraction;
-import com.hederahashgraph.api.proto.java.FractionalFee;
-import com.hederahashgraph.api.proto.java.Key;
-import com.hederahashgraph.api.proto.java.NftID;
-import com.hederahashgraph.api.proto.java.RoyaltyFee;
-import com.hederahashgraph.api.proto.java.TokenID;
-import com.hederahashgraph.api.proto.java.TokenInfo;
-import com.hederahashgraph.api.proto.java.TokenNftInfo;
-import com.hederahashgraph.api.proto.java.TokenSupplyType;
-import com.hederahashgraph.api.proto.java.TokenType;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import javax.inject.Named;
@@ -32,7 +36,6 @@ import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.web3.evm.exception.ParsingException;
@@ -44,6 +47,16 @@ import com.hedera.mirror.web3.repository.TokenAccountRepository;
 import com.hedera.mirror.web3.repository.TokenAllowanceRepository;
 import com.hedera.mirror.web3.repository.TokenBalanceRepository;
 import com.hedera.mirror.web3.repository.TokenRepository;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmKey;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmNftInfo;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmTokenInfo;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.FixedFee;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.FractionalFee;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.RoyaltyFee;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenKeyType;
+import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
+import com.hedera.node.app.service.evm.store.tokens.TokenType;
 
 @Named
 @RequiredArgsConstructor
@@ -57,25 +70,26 @@ public class TokenAccessorImpl implements TokenAccessor {
     private final TokenAllowanceRepository tokenAllowanceRepository;
     private final NftAllowanceRepository nftAllowanceRepository;
     private final CustomFeeRepository customFeeRepository;
+    //TODO get real value for ledgerId from the network props
+    private final byte[] ledgerId = new byte[20];
 
     @Override
-    public Optional<TokenNftInfo> evmNftInfo(final Address nft, long serialNo,
-            final ByteString ledgerId) {
+    public Optional<EvmTokenInfo> evmInfoForToken(Address address) {
+        return getTokenInfoBuilder(address);
+    }
+
+    @Override
+    public Optional<EvmNftInfo> evmNftInfo(final Address nft, long serialNo) {
         final var nftOptional = nftRepository.findById(new NftId(serialNo, fromEvmAddress(nft.toArray())));
-        if(nftOptional.isEmpty()) {
+        if (nftOptional.isEmpty()) {
             return Optional.empty();
         }
-
         final var nftEntity = nftOptional.get();
-        final var nftInfo = TokenNftInfo.newBuilder()
-                .setNftID(NftID.newBuilder().setTokenID(tokenIdFromEvmAddress(nft.toArray()))
-                        .setSerialNumber(serialNo).build())
-                .setAccountID(convertEntityIdToAccountId(nftEntity.getAccountId()))
-                .setCreationTime(nanosMaxToTimestamp(nftEntity.getCreatedTimestamp()))
-                .setMetadata(ByteString.copyFrom(nftEntity.getMetadata()))
-                .setSpenderId(convertEntityIdToAccountId(nftEntity.getSpender()))
-                .setLedgerId(ledgerId)
-                .build();
+        final var entityAddress = toAddress(nftEntity.getAccountId());
+        final var creationTime = nftEntity.getCreatedTimestamp();
+        final var metadata = nftEntity.getMetadata();
+        final var spender = toAddress(nftEntity.getSpender());
+        final var nftInfo = new EvmNftInfo(serialNo, entityAddress, creationTime, metadata, spender, ledgerId);
 
         return Optional.of(nftInfo);
     }
@@ -122,17 +136,11 @@ public class TokenAccessorImpl implements TokenAccessor {
     public TokenType typeOf(final Address token) {
         final var tokenId = entityIdFromEvmAddress(token);
         final var type = tokenRepository.findType(tokenId);
-        return type.map(tokenTypeEnum -> TokenType.forNumber(tokenTypeEnum.ordinal())).orElse(null);
+        return type.map(tokenTypeEnum -> TokenType.valueOf(tokenTypeEnum.name())).orElse(null);
     }
 
     @Override
-    public Optional<TokenInfo> infoForToken(final Address token, final ByteString ledgerId) {
-        final var tokenInfoBuilder = getTokenInfoBuilder(token, false, ledgerId);
-        return Optional.of(tokenInfoBuilder.build());
-    }
-
-    @Override
-    public Key keyOf(Address token, Integer keyType) {
+    public EvmKey keyOf(Address address, TokenKeyType tokenKeyType) {
         return null;
     }
 
@@ -184,7 +192,7 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public boolean staticIsOperator(final Address owner, final Address operator,
-            final Address token) {
+                                    final Address token) {
         final var tokenId = entityIdFromEvmAddress(token);
         final var ownerId = entityIdFromEvmAddress(owner);
         final var spenderId = entityIdFromEvmAddress(operator);
@@ -200,6 +208,7 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public Address canonicalAddress(final Address addressOrAlias) {
+        //TODO
         return null;
     }
 
@@ -210,83 +219,75 @@ public class TokenAccessorImpl implements TokenAccessor {
         return metadata.map(String::new).orElse("");
     }
 
-    private TokenInfo.Builder getTokenInfoBuilder(final Address token, boolean setDecimals, final ByteString ledgerId) {
+    @Override
+    public byte[] ledgerId() {
+        return ledgerId;
+    }
+
+    private Optional<EvmTokenInfo> getTokenInfoBuilder(final Address token) {
         final var tokenEntityOptional = tokenRepository.findById(new TokenId(fromEvmAddress(token.toArray())));
         final var entityOptional = entityRepository.findById(entityIdFromEvmAddress(token));
 
-        final var tokenInfoBuilder = TokenInfo.newBuilder();
-        if(tokenEntityOptional.isPresent()) {
+        if (tokenEntityOptional.isPresent() && entityOptional.isPresent()) {
             final var tokenEntity = tokenEntityOptional.get();
 
-            final var kycKey = tokenEntity.getKycKey();
-            final var supplyKey = tokenEntity.getSupplyKey();
-            final var freezeKey = tokenEntity.getFreezeKey();
-            final var wipeKey = tokenEntity.getWipeKey();
-            final var pauseKey = tokenEntity.getPauseKey();
-            final var feeScheduleKey = tokenEntity.getFeeScheduleKey();
+            final var entity = entityOptional.get();
+
+            final EvmTokenInfo evmTokenInfo = new EvmTokenInfo(
+                    ledgerId,
+                    tokenEntity.getSupplyType().ordinal(),
+                    entity.getDeleted(),
+                    tokenEntity.getSymbol(),
+                    tokenEntity.getName(),
+                    entity.getMemo(),
+                    toAddress(tokenEntity.getTreasuryAccountId()),
+                    tokenEntity.getTotalSupply(),
+                    tokenEntity.getMaxSupply(),
+                    tokenEntity.getDecimals(),
+                    entity.getExpirationTimestamp());
+            evmTokenInfo.setAutoRenewPeriod(entity.getAutoRenewPeriod());
+            evmTokenInfo.setAutoRenewAccount(toAddress(entity.getProxyAccountId()));
+
             try {
-                tokenInfoBuilder.setKycKey(Key.parseFrom(kycKey));
-                tokenInfoBuilder.setSupplyKey(Key.parseFrom(supplyKey));
-                tokenInfoBuilder.setFreezeKey(Key.parseFrom(freezeKey));
-                tokenInfoBuilder.setWipeKey(Key.parseFrom(wipeKey));
-                tokenInfoBuilder.setPauseKey(Key.parseFrom(pauseKey));
-                tokenInfoBuilder.setFeeScheduleKey(Key.parseFrom(feeScheduleKey));
+                final var adminKey = evmKey(entity.getKey());
+                final var kycKey = evmKey(tokenEntity.getKycKey());
+                final var supplyKey = evmKey(tokenEntity.getSupplyKey());
+                final var freezeKey = evmKey(tokenEntity.getFreezeKey());
+                final var wipeKey = evmKey(tokenEntity.getWipeKey());
+                final var pauseKey = evmKey(tokenEntity.getPauseKey());
+                final var feeScheduleKey = evmKey(tokenEntity.getFeeScheduleKey());
+
+                evmTokenInfo.setAdminKey(adminKey);
+                evmTokenInfo.setKycKey(kycKey);
+                evmTokenInfo.setSupplyKey(supplyKey);
+                evmTokenInfo.setFreezeKey(freezeKey);
+                evmTokenInfo.setWipeKey(wipeKey);
+                evmTokenInfo.setPauseKey(pauseKey);
+                evmTokenInfo.setFeeScheduleKey(feeScheduleKey);
             } catch (final InvalidProtocolBufferException e) {
                 throw new ParsingException("Error parsing token keys.");
             }
+            final var isPaused = tokenEntity.getPauseStatus().ordinal() == 1;
+            evmTokenInfo.setDefaultFreezeStatus(tokenEntity.getFreezeDefault());
+            evmTokenInfo.setIsPaused(isPaused);
+            //TODO kyc status
+            final var customFeesOptional = getCustomFees(token);
 
-            tokenInfoBuilder.setName(tokenEntity.getName());
-            tokenInfoBuilder.setSymbol(tokenEntity.getSymbol());
-            tokenInfoBuilder.setTokenType(TokenType.forNumber(tokenEntity.getType().ordinal()));
-            tokenInfoBuilder.setTotalSupply(tokenEntity.getTotalSupply());
-            tokenInfoBuilder.setMaxSupply(tokenEntity.getMaxSupply());
-            tokenInfoBuilder.setSupplyType(TokenSupplyType.forNumber(tokenEntity.getSupplyType().ordinal()));
-
-            final var tokenId = tokenEntity.getTokenId().getTokenId();
-            tokenInfoBuilder.setTokenId(TokenID.newBuilder().setShardNum(tokenId.getShardNum()).setRealmNum(tokenId.getRealmNum()).setTokenNum(tokenId.getEntityNum()).build());
-
-            final var treasury = tokenEntity.getTreasuryAccountId();
-            tokenInfoBuilder.setTreasury(AccountID.newBuilder().setShardNum(treasury.getShardNum()).setRealmNum(treasury.getRealmNum()).setAccountNum(treasury.getEntityNum()).build());
-
-            if(setDecimals) {
-                tokenInfoBuilder.setDecimals(tokenEntity.getDecimals());
-            }
+            customFeesOptional.ifPresent(evmTokenInfo::setCustomFees);
+            return Optional.of(evmTokenInfo);
         }
-
-        if(entityOptional.isPresent()) {
-            final var entity = entityOptional.get();
-            final var proxyAutoRenewAccount = entity.getProxyAccountId();
-
-            tokenInfoBuilder.setAutoRenewAccount(AccountID.newBuilder().setShardNum(proxyAutoRenewAccount.getShardNum()).setRealmNum(proxyAutoRenewAccount.getRealmNum()).setAccountNum(proxyAutoRenewAccount.getEntityNum()).build());
-            tokenInfoBuilder.setAutoRenewPeriod(Duration.newBuilder().setSeconds(entity.getAutoRenewPeriod()).build());
-
-            tokenInfoBuilder.setDeleted(entity.getDeleted());
-            tokenInfoBuilder.setMemo(entity.getMemo());
-            tokenInfoBuilder.setExpiry(nanosMaxToTimestamp(entity.getExpirationTimestamp()));
-        }
-
-        final var customFeesOptional = getCustomFees(token);
-        if(customFeesOptional.isPresent()) {
-            final var customFees = customFeesOptional.get();
-            for(int i = 0; i < customFees.size(); i++) {
-                tokenInfoBuilder.setCustomFees(i, customFees.get(i));
-            }
-        }
-
-        tokenInfoBuilder.setLedgerId(ledgerId);
-        return tokenInfoBuilder;
+        return Optional.empty();
     }
 
     private Optional<List<CustomFee>> getCustomFees(final Address token) {
         final List<CustomFee> customFees = new ArrayList<>();
 
         final var customFeesOptional = customFeeRepository.findCustomFees(entityIdFromEvmAddress(token));
-        if(customFeesOptional.isPresent()) {
-            for(final var customFee: customFeesOptional.get()) {
-                var feeIndex = 0;
+        if (customFeesOptional.isPresent()) {
+            for (final var customFee : customFeesOptional.get()) {
 
                 final var amount = customFee.getAmount();
-                final var collector = customFee.getCollectorAccountId();
+                final var collector = toAddress(customFee.getCollectorAccountId());
 
                 final var denominatingTokenId = customFee.getDenominatingTokenId();
                 final var amountNumerator = customFee.getRoyaltyNumerator();
@@ -298,70 +299,40 @@ public class TokenAccessorImpl implements TokenAccessor {
                 final var royaltyDenominator = customFee.getRoyaltyDenominator();
                 final var royaltyNumerator = customFee.getRoyaltyNumerator();
 
-                CustomFee customFeeConstructed;
+                CustomFee customFeeConstructed = new CustomFee();
 
-                if(amountNumerator == 0 && royaltyDenominator == 0) {
-                    final var fixedFeeBuilder = FixedFee.newBuilder().setAmount(amount);
-                    if(denominatingTokenId != null) {
-                        fixedFeeBuilder.setDenominatingTokenId(convertEntityIdToTokenId(denominatingTokenId));
-                    }
+                if (amountNumerator == 0 && royaltyDenominator == 0) {
+                    final var fixedFee = new FixedFee(
+                            amount,
+                            toAddress(denominatingTokenId),
+                            denominatingTokenId.getEntityNum() == 0,
+                            false,
+                            collector);
 
-                    customFeeConstructed = CustomFee.newBuilder().setFixedFee(fixedFeeBuilder.build())
-                            .setFeeCollectorAccountId(convertEntityIdToAccountId(collector)).build();
+                    customFeeConstructed.setFixedFee(fixedFee);
                 } else if (royaltyDenominator == 0) {
-                    final var fractionFee = FractionalFee.newBuilder().setMaximumAmount(maximumAmount)
-                            .setMinimumAmount(minimumAmount)
-                            .setNetOfTransfers(netOfTransfers)
-                            .setFractionalAmount(Fraction.newBuilder().setNumerator(amountNumerator)
-                                    .setDenominator(amountDenominator).build()).build();
-
-                    customFeeConstructed = CustomFee.newBuilder().setFractionalFee(fractionFee)
-                            .setFeeCollectorAccountId(convertEntityIdToAccountId(collector)).build();
+                    final var fractionFee = new FractionalFee(
+                            amountNumerator,
+                            amountDenominator,
+                            minimumAmount,
+                            maximumAmount,
+                            netOfTransfers,
+                            collector);
+                    customFeeConstructed.setFractionalFee(fractionFee);
                 } else {
-                    final var royaltyFeeBuilder = RoyaltyFee.newBuilder().setExchangeValueFraction(Fraction.newBuilder().setNumerator(royaltyNumerator)
-                            .setDenominator(royaltyDenominator));
-                    if(amount != 0) {
-                        final var fallbackFeeBuilder = FixedFee.newBuilder().setAmount(amount);
-
-                        if(denominatingTokenId != null) {
-                            fallbackFeeBuilder.setDenominatingTokenId(convertEntityIdToTokenId(denominatingTokenId));
-                            royaltyFeeBuilder.setFallbackFee(fallbackFeeBuilder.build());
-                        }
-                    }
-
-                    customFeeConstructed = CustomFee.newBuilder().setRoyaltyFee(royaltyFeeBuilder.build())
-                            .setFeeCollectorAccountId(convertEntityIdToAccountId(collector)).build();
+                    final var royaltyFee = new RoyaltyFee(
+                            royaltyNumerator,
+                            royaltyDenominator,
+                            amount,
+                            toAddress(denominatingTokenId),
+                            denominatingTokenId.getEntityNum() == 0,
+                            collector);
+                    customFeeConstructed.setRoyaltyFee(royaltyFee);
                 }
 
                 customFees.add(customFeeConstructed);
             }
         }
-
         return !customFees.isEmpty() ? Optional.of(customFees) : Optional.empty();
-    }
-
-    private TokenID convertEntityIdToTokenId(final EntityId entity) {
-        return TokenID.newBuilder().setShardNum(entity.getShardNum())
-                .setRealmNum(entity.getRealmNum())
-                .setTokenNum(entity.getEntityNum()).build();
-    }
-
-    private AccountID convertEntityIdToAccountId(final EntityId entity) {
-        return AccountID.newBuilder().setShardNum(entity.getShardNum())
-                .setRealmNum(entity.getRealmNum())
-                .setAccountNum(entity.getEntityNum()).build();
-    }
-
-    private Long entityIdFromEvmAddress(final Address address) {
-        final var id = fromEvmAddress(address.toArrayUnsafe());
-        return id.getId();
-    }
-
-    private static TokenID tokenIdFromEvmAddress(final byte[] bytes) {
-        return TokenID.newBuilder()
-                .setShardNum(Ints.fromByteArray(Arrays.copyOfRange(bytes, 0, 4)))
-                .setRealmNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 4, 12)))
-                .setTokenNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 12, 20)))
-                .build();
     }
 }

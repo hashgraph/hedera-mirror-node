@@ -20,6 +20,8 @@ package com.hedera.mirror.web3.evm.contracts.execution;
  * ‍
  */
 
+import static com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract.EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS;
+import static org.hyperledger.besu.datatypes.Address.fromHexString;
 import static org.hyperledger.besu.evm.MainnetEVMs.registerParisOperations;
 
 import java.math.BigInteger;
@@ -47,6 +49,9 @@ import com.hedera.node.app.service.evm.contracts.operations.HederaEvmSLoadOperat
 import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeCopyOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeHashOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeSizeOperation;
+import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
+import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 
 /**
  * This is a temporary utility class for creating all besu evm related fields needed by the
@@ -74,10 +79,19 @@ public class EvmOperationConstructionUtil {
         return Map.of(
                 EVM_VERSION_0_30,
                 () -> new MessageCallProcessor(
-                        evm, new PrecompileContractRegistry()),
+                        evm, precompileRegistry()),
                 EVM_VERSION_0_32,
                 () -> new MessageCallProcessor(
-                        evm, new PrecompileContractRegistry()));
+                        evm, precompileRegistry()));
+    }
+
+    private static PrecompileContractRegistry precompileRegistry() {
+        final var registry = new PrecompileContractRegistry();
+        final var evmFactory = new EvmInfrastructureFactory(new EvmEncodingFacade());
+        registry.put(fromHexString(EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS),
+                new EvmHTSPrecompiledContract(evmFactory));
+
+        return registry;
     }
 
     private static EVM constructEvm() {
