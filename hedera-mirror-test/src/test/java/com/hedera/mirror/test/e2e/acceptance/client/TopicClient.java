@@ -64,7 +64,6 @@ public class TopicClient extends AbstractNetworkClient {
         TopicCreateTransaction consensusTopicCreateTransaction = new TopicCreateTransaction()
                 .setAdminKey(adminAccount.getPublicKey())
                 .setAutoRenewAccountId(sdkClient.getExpandedOperatorAccountId().getAccountId())
-                .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setTopicMemo(memo)
                 .setTransactionMemo(memo)
                 .setAutoRenewPeriod(autoRenewPeriod); // INSUFFICIENT_TX_FEE, also unsupported
@@ -91,7 +90,6 @@ public class TopicClient extends AbstractNetworkClient {
                 .clearAdminKey()
                 .clearSubmitKey()
                 .clearAutoRenewAccountId()
-                .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setTransactionMemo(memo);
 
         NetworkTransactionResponse networkTransactionResponse =
@@ -103,7 +101,6 @@ public class TopicClient extends AbstractNetworkClient {
 
     public NetworkTransactionResponse deleteTopic(TopicId topicId) {
         TopicDeleteTransaction consensusTopicDeleteTransaction = new TopicDeleteTransaction()
-                .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setTopicId(topicId)
                 .setTransactionMemo(getMemo("Delete Topic"));
 
