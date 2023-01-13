@@ -37,7 +37,6 @@ import com.hedera.hashgraph.sdk.HbarUnit;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.Query;
 import com.hedera.hashgraph.sdk.Transaction;
-import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.hashgraph.sdk.TransactionReceiptQuery;
 import com.hedera.hashgraph.sdk.TransactionRecordQuery;
 import com.hedera.hashgraph.sdk.TransactionResponse;
@@ -123,7 +122,7 @@ public class TransactionPublisher implements AutoCloseable {
             return execute(client, transactionRecordQuery)
                     .map(r -> builder.transactionRecord(r).receipt(r.receipt));
         } else if (request.isReceipt()) {
-            TransactionRecordQuery receiptQuery = new TransactionReceiptQuery()
+            TransactionReceiptQuery receiptQuery = new TransactionReceiptQuery()
                     .setTransactionId(transactionResponse.transactionId);
             return execute(client, receiptQuery).map(builder::receipt);
         }
