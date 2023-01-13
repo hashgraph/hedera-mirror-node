@@ -69,4 +69,18 @@ class RestSubscription extends AbstractScenario<RestSubscriberProperties, Transa
         String name = getName();
         return getProperties().getSubscribers() <= 1 ? name : name + " #" + getId();
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof RestSubscription)) return false;
+        if (!super.equals(o)) return false;
+
+        return super.equals(o);
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
 }
