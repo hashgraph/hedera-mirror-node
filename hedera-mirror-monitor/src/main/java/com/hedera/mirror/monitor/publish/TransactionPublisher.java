@@ -122,9 +122,8 @@ public class TransactionPublisher implements AutoCloseable {
             return execute(client, transactionRecordQuery)
                     .map(r -> builder.transactionRecord(r).receipt(r.receipt));
         } else if (request.isReceipt()) {
-            TransactionReceiptQuery receiptQuery = new TransactionReceiptQuery()
-                    .setTransactionId(transactionResponse.transactionId);
-            return execute(client, receiptQuery).map(builder::receipt);
+            return execute(client, new TransactionReceiptQuery().setTransactionId(transactionResponse.transactionId))
+                    .map(builder::receipt);
         }
 
         return Mono.just(builder);
