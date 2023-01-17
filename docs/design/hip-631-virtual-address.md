@@ -23,8 +23,8 @@ and more.  The purpose of this design doc is to isolate the Mirror Node requirem
 
 * Enhance gRPC APIs with virtual address information
 * Enhance Web3 APIs with virtual address information
-* Enhance the REST API to show an account's DISABLED or DELETED virtual addresses.
-* Any sort of behavior based on the number of active/disabled virtual addresses.  (The HIP-631 document proposes incremental capacity limits as 1, then 3, then 10, then possibly an unbounded number.  For now, the Mirror Node implementation will just assume the limit is observed by HAPI/the consensus nodes, as it's really not possible for the mirror node to count how many virtual addresses already exist, when a new one is being added or deleted.)
+* Enhance the REST API to show an account's `DISABLED` or `DELETED` virtual addresses.
+* Any sort of behavior based on the number of active/disabled virtual addresses.  (See `maximum virtual address discussion in non-functional requirements section` of the HIP-631 document.)
 
 ## Architecture
 
@@ -36,38 +36,39 @@ and more.  The purpose of this design doc is to isolate the Mirror Node requirem
   create type virtual_address_status as enum ('ACTIVE', 'DELETED', 'DISABLED');
 ```
 
-We will have an index that only holds the non-'DELETED' values, so skipping over the DELETED rows will be fast.  A row in 'DELETED' status will just be ignored.
+We will have an index that only holds the non-'DELETED' values, so skipping over the DELETED rows will be fast.
 
 #### Virtual Addresses
 
 ```sql
-  create table if not exists entity_virtual_addresses (
-     account_id          bigint not null,
+  create table if not exists entity_virtual_address (
+     entity_id           bigint not null,
      evm_address         bytea not null,
+     is_default          boolean default false not null,
      status              virtual_address_status not null default 'ACTIVE',
      timestamp_range     int8range not null,
-     primary key (account_id, evm_address)
+     primary key (entity_id, evm_address)
  );
 
-  create table if not exists entity_virtual_addresses_history (
-  like entity_virtual_addresses including defaults,
-     primary key (account_id, evm_address, timestamp_range)
+  create table if not exists entity_virtual_address_history (
+  like entity_virtual_address including defaults,
+     primary key (entity_id, evm_address, timestamp_range)
  );
 
-  create index if not exists entity_virtual_addresses__evm_address on entity_virtual_addresses (account_id, evm_address) 
-  where status <> 'DELETED';
+  create index if not exists entity_virtual_address__evm_address on entity_virtual_address (evm_address) where status <> 'DELETED';
 ```
 
-While the HIP-631 document calls this table `account_virtual_address`, since we will use it to hold virtual addresses for both accounts and contracts,
-this table name is more in line with existing mirror node naming.
+While the HIP-631 document calls this table `account_virtual_address`, we will use it to hold virtual addresses for both accounts and contracts,
+and so we are using "entity" in the table name.  The HIP-631 document should be updated to reflect this.
 
-#### Existing entity table is unchanged.
+#### Migration of `entity.evm_address` data into new `entity_virtual_address` table
 
-We are choosing to use the existing `evm_address` field of the `entity` table to hold the default virtual address, rather than adding a new column for this purpose.
-The HIP-631 document indicates that whenever a virtual address gets deleted, it cannot be the default virtual address getting deleted.<F12>, so we only need to update
-the `evm_address` field of an existing account (or contract) when a `CryptoUpdate` operation is invoked that specifies `addVirtualAddress` and `setDefaultVirtualAddress(true)`
-(at which point we would update the `evm_address` feild of that account/contract to be that of the new virtual address being added).  The HIP-631 document does not indicate
-any other way (than adding a new address) to update the default virtual address of an account.
+The existing mirror node database, supporting one alias per entity, stores it in a column named `evm_address` in the `entity` table.
+With HIP-631, We now support multiple aliases per entity, with one being labelled the default virtual address for that entity.  We
+need to perform a database migration to:
+    - create the new `entity_virtual_address` table as specified in the previous section.
+    - for every exiting `entity` with a non-null `evm_address` field, add a row to that table with corresponding `entity_id` and `evm_address` fields, `is_default` set to `true`.
+    - We are not going to delete the `evm_address` column from the `entity` table at this time, but that may be a later migration.
 
 ### Importer
 
@@ -75,37 +76,40 @@ any other way (than adding a new address) to update the default virtual address 
 
 When parsing CryptoUpdate transactions,
 
-* Heed new `CryptoUpdate` operations (`addVirtualAddress`, `disableVirtualAddress`, `removeVirtualAddress`, `setDefaultVirtualAddress`).
-    - addVirtualAddress: The mirror node won't easily be able to see how many other virtual addresses already exist for that account, so we probably won't be able to issue a warning if too many virtual addresses are already assigned to that account.  In all cases, we should replace the default virtual address of the entity (the `evm_address` column) only if `setDefaultCVirtualAddress(true)` is specified in the `CryptoUpdate.`
-    - disableVirtualAddress: The address being disabled, in theory, should not be the default virtual address (`evm_address`) field.  The mirror node won't be able to query the current status of the virtual address being disabled; we just UPSERT an entry with the `evm_address` matching the address being disabled, and the `status` set to `DISABLED`.
-    - removeVirtualAddress: The address being deleted, in theory, should not be the default virtual address (`evm_address`) field.  The mirror node won't be able to query the current status of the virtual address being deleted; we just UPSERT an entry with the `evm_address` matching the address being disabled, and the `status` set to `DELETED`.
+* Support new `CryptoUpdate` operations (`addVirtualAddress`, `disableVirtualAddress`, `removeVirtualAddress`, `setDefaultVirtualAddress`).
+    - Add: The mirror node won't easily be able to see how many other virtual addresses already exist for that account, so we probably won't be able to issue a warning if too many virtual addresses are already assigned to that account.  In all cases, we should replace default the virtual address only if `setDefaultVirtualAddress(true)` is specified in the `CryptoUpdate`.
+    - Disable: Allow if not on list (just give warning).  Log a warning if primary virtual address is getting disabled and other non-primary default addresses present.
+    - Remove: Log a warning if primary virtual address is getting removed, and other non-primary default addresses present.
 
 ### REST API
 
 #### getAccountByIdOrAliasOrEvmAddress
 
-`api/v1/accounts/{idOrAliasOrEvmAddress}` changes:  Add the following two fields to the output: (one string and one tuple array)
+* `api/v1/accounts/{idOrAliasOrEvmAddress}` changes:
+    - start by checking the `entity_virtual_address table for an `evm_address` matching the `{idOrAliasOrEvmAddress}` value; if so, the entity to look up is the `entity_id` of that row.
+    - determine the `evm_address` field (for an entity) by looking up which row in the `entity_virtual_address` table matches the `entity_id` and has `is_default` set to `true` -- the `evm_address` column from the `entity` table gets removed during the migration.
+    - Add the following two fields to the output: (one string and one tuple array).  For consistency, we will output each virtual address with the label `virtual_address` (even though the column name in the database will be `evm_address`):
 
 ```json
   {
-    ...,
-  
-    hedera_address: '0x0...1', // we calculate this field by expressing the account's entity_id shard.realm.num in "long-zero" format.  It is *not* a new column to maintain.
+    hedera_address: '0x0000000000000000000000000000000000001001',    // we calculate this field by expressing the account's entity_id shard.realm.num in "long-zero" format.  This is *not* a new column on the `entity` table.
     virtual_addresses: [
       {
-        evm_address: '0x2...3',
+        virtual_address: '0x2000000000000000000000000000000000000003',
         is_default: false
       },
       {
-        evm_address: '0x4...5',
+        virtual_address: '0x4000000000000000000000000000000000000005',
         is_default: true
       }
     ]
   }
 ```
+(existing fields are omitted for brevity)
 
+#### getAccountByIdOrAliasOrEvmAddress Non-Gaols
 
-* Not (currently) adding `api/v1/accounts/{idOrAliasOrEvmAddress}/virtualAddresses endpoint (for paging through a large number of virtual addresses), but reserve that endpoint
+* Adding `api/v1/accounts/{idOrAliasOrEvmAddress}/virtualAddresses endpoint (for paging through a large number of virtual addresses), but we will reserve that endpoint
 in case a future extension to this HIP decides to implement that.
 
 * Returning any of the disabled (or deleted) virtual addresses for an account (or contract).  The only ones we return are the `ACTIVE` ones, and which (of those) is the default virtual address.
