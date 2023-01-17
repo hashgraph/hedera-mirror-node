@@ -166,6 +166,16 @@ class MirrorEntityAccessTest {
     }
 
     @Test
+    void fetchCodeIfPresentForNonMirrorEvm() {
+        final var address = Address.fromHexString("0x23f5e49569a835d7bf9aefd30e4f60cdd570f225");
+        when(mirrorEntityAccess.findEntity(address)).thenReturn(Optional.of(entity));
+        when(entity.getId()).thenReturn(ENTITY_ID);
+        when(contractRepository.findRuntimeBytecode(ENTITY_ID)).thenReturn(Optional.of(DATA));
+        final var result = mirrorEntityAccess.fetchCodeIfPresent(address);
+        assertThat(result).isEqualTo(BYTES);
+    }
+
+    @Test
     void fetchCodeIfPresentReturnsEmpy() {
         when(contractRepository.findRuntimeBytecode(ENTITY_ID)).thenReturn(Optional.empty());
         final var result = mirrorEntityAccess.fetchCodeIfPresent(ADDRESS);
