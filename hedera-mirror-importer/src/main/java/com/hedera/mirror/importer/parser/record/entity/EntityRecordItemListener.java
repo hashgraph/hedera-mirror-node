@@ -176,7 +176,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
             // Only add non-fee transfers on success as the data is assured to be valid
             processNonFeeTransfers(consensusTimestamp, recordItem);
-            processTransaction(recordItem, consensusTimestamp, transactionTypeValue, txRecord);
+            processTransaction(recordItem);
 
             // Record token transfers can be populated for multiple transaction types
             insertTokenTransfers(recordItem);
@@ -193,8 +193,10 @@ public class EntityRecordItemListener implements RecordItemListener {
     // reduce Cognitive Complexity of onItem() by moving the "dispatcher" part of the code into a separate method.
     // This still has Cognitive Complexity of 19, but it really doesn't make sense to split into two parts.
     @SuppressWarnings("java:S3776")
-    private void processTransaction(RecordItem recordItem, long consensusTimestamp, int transactionTypeValue,
-                                    TransactionRecord txRecord) {
+    private void processTransaction(RecordItem recordItem) {
+        TransactionRecord txRecord = recordItem.getTransactionRecord();
+        int transactionTypeValue = recordItem.getTransactionType();
+        long consensusTimestamp = DomainUtils.timeStampInNanos(txRecord.getConsensusTimestamp());
         TransactionBody body = recordItem.getTransactionBody();
 
         if (body.hasConsensusSubmitMessage()) {

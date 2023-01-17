@@ -21,6 +21,7 @@ package com.hedera.mirror.monitor.subscribe.rest;
  */
 
 import lombok.Getter;
+import lombok.Value;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Sinks;
@@ -31,6 +32,7 @@ import com.hedera.mirror.monitor.publish.PublishResponse;
 import com.hedera.mirror.rest.model.TransactionByIdResponse;
 
 @Getter
+@Value
 class RestSubscription extends AbstractScenario<RestSubscriberProperties, TransactionByIdResponse> {
 
     private final Sinks.Many<PublishResponse> sink;
@@ -68,19 +70,5 @@ class RestSubscription extends AbstractScenario<RestSubscriberProperties, Transa
     public String toString() {
         String name = getName();
         return getProperties().getSubscribers() <= 1 ? name : name + " #" + getId();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof RestSubscription)) return false;
-        if (!super.equals(o)) return false;
-
-        return super.equals(o);
-    }
-
-    @Override
-    public int hashCode() {
-        return super.hashCode();
     }
 }
