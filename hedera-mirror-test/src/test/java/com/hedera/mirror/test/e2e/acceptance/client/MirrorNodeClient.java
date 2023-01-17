@@ -83,7 +83,7 @@ public class MirrorNodeClient {
         await("responseEncountered").dontCatchUncaughtExceptions()
                 .atMost(Durations.FIVE_SECONDS)
                 .pollDelay(Durations.ONE_MILLISECOND)
-                .until(subscriptionResponse::getMirrorHCSResponses().size() > 0);
+                .until(() -> subscriptionResponse.getMirrorHCSResponses().size() > 0);
 
         return subscriptionResponse;
     }
