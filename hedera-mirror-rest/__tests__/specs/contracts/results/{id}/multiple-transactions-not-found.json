@@ -1,5 +1,5 @@
 {
-  "description": "Contract results api call for a transaction id with at most one transaction match invariance breached",
+  "description": "Contract results api call that results in multiple transactions",
   "setup": {
     "transactions": [
       {
