@@ -88,6 +88,9 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
         final var entityId = isMirror(addressBytes) ?
                 entityIdFromEvmAddress(address) :
                 findEntity(address).map(AbstractEntity::getId).orElse(0L);
+        if (entityId == 0) {
+            return Bytes.EMPTY;
+        }
 
         final var runtimeCode = contractRepository.findRuntimeBytecode(entityId);
         return runtimeCode.map(Bytes::wrap).orElse(Bytes.EMPTY);
