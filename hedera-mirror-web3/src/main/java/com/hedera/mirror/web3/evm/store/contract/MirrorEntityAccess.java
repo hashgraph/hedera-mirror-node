@@ -28,6 +28,9 @@ import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.
 import com.google.protobuf.ByteString;
 import java.util.Optional;
 import javax.inject.Named;
+
+import com.hedera.mirror.common.domain.entity.AbstractEntity;
+
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -81,7 +84,12 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
 
     @Override
     public Bytes fetchCodeIfPresent(Address address) {
-        final var runtimeCode = contractRepository.findRuntimeBytecode(entityIdFromEvmAddress(address));
+        final var addressBytes = address.toArrayUnsafe();
+        Long entityId = isMirror(addressBytes) ?
+                entityIdFromEvmAddress(address) :
+                findEntity(address).map(AbstractEntity::getId).orElse(0L);
+
+        final var runtimeCode = contractRepository.findRuntimeBytecode(entityId);
         return runtimeCode.map(Bytes::wrap).orElse(Bytes.EMPTY);
     }
 
