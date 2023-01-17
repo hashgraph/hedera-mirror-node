@@ -3,17 +3,12 @@
 ## Purpose
 
 [HIP-631](https://hips.hedera.com/hip/hip-631) describes new mechanisms to support "EVM equivalency" (allowing Hedera
-accounts to better interoperate with Ethereum Smart contracts than the existing "EVM compatibilty" (that may be difficult
-for users creating a new Hedera account through a Ethereum Smart Contract mechanism)) by allowing a Hedera Account to have
+accounts to better interoperate with Ethereum Smart contracts than the existing "EVM compatibilty" by allowing a Hedera Account to have
 multiple "virtual addresses" over just a single alias.  A Hedera account will have the ability to add, disable, or delete
-virtual addresses (up to a maximum number of virtual addresses per account[*]), where any virtual address can be associated with
-only one given Hedera account at a time.  When a virtual address is disabled, it is still locked to the Hedera Account it had been
-active with.  It is not until that virtual address is deleted than it can be added to another Hedera account.
+virtual addresses where any virtual address can be associated with only one given Hedera account at a time.
+ When a virtual address is disabled, it is still locked to the Hedera Account it had been actuve with.
+It is not until that virtual address is deleted than it can be added to another Hedera account.
 
-Note: The HIP proposes incremental capacity limits as 1, then 3, then 10, then possibly an umbounded number.  For now, the Mirror Node
-implementation will initially support a limit of 10 virtual addresses.  If the maximum number of virtual addreses is to grow beyond that limit,
-a seperate HIP will be proposed (and additional API endpoints to allow pagination through the additional virtual addresses will be included in
-that newer HIP).
 
 HIP 631 is very large and extensive -- it proposes changes to HAPI, the Hedera SDK, the Mirror Node, wallets,
 and more.  The purpose of this design doc is to isolate the Mirror Node requirements from the overall HIP document.
@@ -22,13 +17,14 @@ and more.  The purpose of this design doc is to isolate the Mirror Node requirem
 
 * Enhance the database schema to store an account's list of virtual addresses.
 * Store the historical state of an account's virtual address list.
-* Enhance the REST API to show an account's active virtual addresses list (only a list of ACTIVE virtual addresses).
-* Enhance the REST API to show an account's virtual addresses list (including status (ACTIVE | DISABLED) for each virtual address.
+* Enhance the REST API to show an account's active virtual addresses list (only a list of `ACTIVE` virtual addresses).
 
 ## Non-Goals
 
 * Enhance gRPC APIs with virtual address information
 * Enhance Web3 APIs with virtual address information
+* Enhance the REST API to show an account's DISABLED or DELETED virtual addresses.
+* Any sort of behavior based on the number of active/disabled virtual addresses.  (The HIP-631 document proposes incremental capacity limits as 1, then 3, then 10, then possibly an unbounded number.  For now, the Mirror Node implementation will just assume the limit is observed by HAPI/the consensus nodes, as it's really not possible for the mirror node to count how many virtual addresses already exist, when a new one is being added or deleted.)
 
 ## Architecture
 
@@ -40,7 +36,6 @@ and more.  The purpose of this design doc is to isolate the Mirror Node requirem
   create type virtual_address_status as enum ('ACTIVE', 'DELETED', 'DISABLED');
 ```
 
-The third value, 'DELETED', is needed because our Upsert framework can't delete rows (and attempting to delete rows using a Spring Framework call could be slow).
 We will have an index that only holds the non-'DELETED' values, so skipping over the DELETED rows will be fast.  A row in 'DELETED' status will just be ignored.
 
 #### Virtual Addresses
@@ -69,6 +64,10 @@ this table name is more in line with existing mirror node naming.
 #### Existing entity table is unchanged.
 
 We are choosing to use the existing `evm_address` field of the `entity` table to hold the default virtual address, rather than adding a new column for this purpose.
+The HIP-631 document indicates that whenever a virtual address gets deleted, it cannot be the default virtual address getting deleted.<F12>, so we only need to update
+the `evm_address` field of an existing account (or contract) when a `CryptoUpdate` operation is invoked that specifies `addVirtualAddress` and `setDefaultVirtualAddress(true)`
+(at which point we would update the `evm_address` feild of that account/contract to be that of the new virtual address being added).  The HIP-631 document does not indicate
+any other way (than adding a new address) to update the default virtual address of an account.
 
 ### Importer
 
@@ -77,9 +76,9 @@ We are choosing to use the existing `evm_address` field of the `entity` table to
 When parsing CryptoUpdate transactions,
 
 * Heed new `CryptoUpdate` operations (`addVirtualAddress`, `disableVirtualAddress`, `removeVirtualAddress`, `setDefaultVirtualAddress`).
-    - addVirtualAddress: The mirror node won't easily be able to see how many other virtual addresses already exist for that account, so we probably won't be able to issue a warning if too many virtual addresses are already assigned to that account.  In all cases, we should replace default virtual address if `setDefaultCVirtualAddress(true)` is involved.
-    - disableVirtualAddress: allow if not on list (just give warning).  Log a warning if primary virtual address is getting disabled and other non-primary default addresses present.
-    - removeVirtualAddress: Log a warning if primary virtual address is getting removed, and other non-primary default addresses present.
+    - addVirtualAddress: The mirror node won't easily be able to see how many other virtual addresses already exist for that account, so we probably won't be able to issue a warning if too many virtual addresses are already assigned to that account.  In all cases, we should replace the default virtual address of the entity (the `evm_address` column) only if `setDefaultCVirtualAddress(true)` is specified in the `CryptoUpdate.`
+    - disableVirtualAddress: The address being disabled, in theory, should not be the default virtual address (`evm_address`) field.  The mirror node won't be able to query the current status of the virtual address being disabled; we just UPSERT an entry with the `evm_address` matching the address being disabled, and the `status` set to `DISABLED`.
+    - removeVirtualAddress: The address being deleted, in theory, should not be the default virtual address (`evm_address`) field.  The mirror node won't be able to query the current status of the virtual address being deleted; we just UPSERT an entry with the `evm_address` matching the address being disabled, and the `status` set to `DELETED`.
 
 ### REST API
 
@@ -91,7 +90,7 @@ When parsing CryptoUpdate transactions,
   {
     ...,
   
-    hedera_address: '0x0...1', // evm_address (default virtual address) in `long-zero` format
+    hedera_address: '0x0...1', // we calculate this field by expressing the account's entity_id shard.realm.num in "long-zero" format.  It is *not* a new column to maintain.
     virtual_addresses: [
       {
         evm_address: '0x2...3',
@@ -105,15 +104,11 @@ When parsing CryptoUpdate transactions,
   }
 ```
 
-In addition, add an additional parameter to that API address call, `includeDisabledVirtualAddresses`, defaulting to `false`.  If set to `true`,
-also include the list of disabled virtual addresses in that array, and include `is_disabled: true | false` to each tuple within the `virtual_addresses` array.
-
-Optional: Only include up to ten virtual addresses in the output, and log a warning if more than ten virtual addresses are found for the given id / alias / evm address.
-
-## Non-Functional Requirements
 
 * Not (currently) adding `api/v1/accounts/{idOrAliasOrEvmAddress}/virtualAddresses endpoint (for paging through a large number of virtual addresses), but reserve that endpoint
 in case a future extension to this HIP decides to implement that.
+
+* Returning any of the disabled (or deleted) virtual addresses for an account (or contract).  The only ones we return are the `ACTIVE` ones, and which (of those) is the default virtual address.
 
 ## Open Questions
 
