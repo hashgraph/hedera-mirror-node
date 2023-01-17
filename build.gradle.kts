@@ -60,7 +60,7 @@ dependencies {
         api("com.vladmihalcea:hibernate-types-55:2.21.1")
         api("commons-beanutils:commons-beanutils:1.9.4")
         api("commons-io:commons-io:2.11.0")
-        api("io.cucumber:cucumber-bom:7.10.1")
+        api("io.cucumber:cucumber-bom:7.11.0")
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
         api("io.grpc:grpc-bom:1.51.1")
         api("io.swagger:swagger-annotations:1.6.9")
