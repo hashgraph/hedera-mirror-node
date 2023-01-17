@@ -49,7 +49,7 @@ dependencies {
         api("com.google.cloud:spring-cloud-gcp-dependencies:3.4.1")
         api("com.google.guava:guava:31.1-jre")
         api("com.google.protobuf:protobuf-java:$protobufVersion")
-        api("com.hedera.evm:hedera-evm:0.34.0-SNAPSHOT")
+        api("com.hedera.evm:hedera-evm:0.34.0")
         api("com.hedera.hashgraph:hedera-protobuf-java-api:0.33.0-virtual-addresses-SNAPSHOT")
         api("com.hedera.hashgraph:sdk:2.19.0")
         api("com.ongres.scram:client:2.1")
