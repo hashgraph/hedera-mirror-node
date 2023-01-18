@@ -196,7 +196,7 @@ public class EntityRecordItemListener implements RecordItemListener {
     private void processTransaction(RecordItem recordItem) {
         TransactionRecord txRecord = recordItem.getTransactionRecord();
         int transactionTypeValue = recordItem.getTransactionType();
-        long consensusTimestamp = DomainUtils.timeStampInNanos(txRecord.getConsensusTimestamp());
+        long consensusTimestamp = recordItem.getConsensusTimestamp();
         TransactionBody body = recordItem.getTransactionBody();
 
         if (body.hasConsensusSubmitMessage()) {
