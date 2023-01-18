@@ -37,6 +37,7 @@ class AssessedCustomFee {
   static COLLECTOR_ACCOUNT_ID = `collector_account_id`;
   static CONSENSUS_TIMESTAMP = `consensus_timestamp`;
   static EFFECTIVE_PAYER_ACCOUNT_IDS = `effective_payer_account_ids`;
+  static PAYER_ACCOUNT_ID = 'payer_account_id';
   static TOKEN_ID = `token_id`;
 
   /**
