@@ -59,6 +59,19 @@ class RepeatableMigrationTest {
     }
 
     @Test
+    void caseInsensitivity() {
+        var migrationProperties = new MigrationProperties();
+        migrationProperties.setChecksum(4);
+        var migration = new TestMigration(Map.of("TESTMIGRATION", migrationProperties));
+        migrate(migration);
+        assertThat(migration)
+                .returns(4, TestMigration::getChecksum)
+                .returns(true, TestMigration::isMigrated)
+                .returns(null, TestMigration::getVersion);
+
+    }
+
+    @Test
     void defaultMigrationProperties() {
         var migration = new TestMigration(Collections.emptyMap());
         migrate(migration);
