@@ -2,6 +2,9 @@
 -- Add repeatable partitioning logic to large tables.
 -------------------
 
+-- unschedule the partman maintenance job
+select cron.unschedule(jobid) from cron.job where jobname = 'partman-maintenance';
+
 --Changing partition intervals
 update partman.part_config set partition_interval = ${partitionTimeInterval} where parent_table = '${schema}.account_balance';
 update partman.part_config set partition_interval = ${partitionTimeInterval} where parent_table = '${schema}.assessed_custom_fee';
@@ -41,4 +44,4 @@ update partman.part_config set partition_interval = ${partitionTimeInterval} whe
 update partman.part_config set partition_interval = ${partitionTimeInterval} where parent_table = '${schema}.transaction_hash';
 update partman.part_config set partition_interval = ${partitionIdInterval} where parent_table = '${schema}.transaction_signature';
 
-SELECT cron.schedule(${cronSchedule}, $$CALL partman.run_maintenance_proc()$$);
+select cron.schedule('partman-maintenance', ${cronSchedule}, $$CALL partman.run_maintenance_proc()$$);
