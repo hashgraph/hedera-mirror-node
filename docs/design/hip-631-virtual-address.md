@@ -44,7 +44,6 @@ We will have an index that only holds the non-'DELETED' values, so skipping over
   create table if not exists entity_virtual_address (
      entity_id           bigint not null,
      evm_address         bytea not null,
-     is_default          boolean default false not null,
      status              virtual_address_status not null default 'ACTIVE',
      timestamp_range     int8range not null,
      primary key (entity_id, evm_address)
@@ -63,11 +62,13 @@ and so we are using "entity" in the table name.  The HIP-631 document should be 
 
 #### Migration of `entity.evm_address` data into new `entity_virtual_address` table
 
-The existing mirror node database, supporting one alias per entity, stores it in a column named `evm_address` in the `entity` table.
-With HIP-631, We now support multiple aliases per entity, with one being labelled the default virtual address for that entity.  We
-need to perform a database migration to:
+The existing mirror node database, supporting one evm_address per entity, stores it in a column named `evm_address` in the `entity` table.
+With HIP-631, We now support multiple virtual address per entity, with one being labelled the default virtual address for that entity.
+We will continue to use the `evm_address` column of the `entity` table, but now this value is used for the *default* virtual address.
+
+We will need to perform a database migration to:
     - create the new `entity_virtual_address` table as specified in the previous section.
-    - for every exiting `entity` with a non-null `evm_address` field, add a row to that table with corresponding `entity_id` and `evm_address` fields, `is_default` set to `true`.
+    - for every existing `entity` with a non-null `evm_address` field, add a row to that table with corresponding `entity_id` and `evm_address` fields, `is_default` set to `true`.
     - We are not going to delete the `evm_address` column from the `entity` table at this time, but that may be a later migration.
 
 ### Importer
@@ -85,21 +86,20 @@ When parsing CryptoUpdate transactions,
 
 #### getAccountByIdOrAliasOrEvmAddress
 
-* `api/v1/accounts/{idOrAliasOrEvmAddress}` changes:
-    - start by checking the `entity_virtual_address table for an `evm_address` matching the `{idOrAliasOrEvmAddress}` value; if so, the entity to look up is the `entity_id` of that row.
-    - determine the `evm_address` field (for an entity) by looking up which row in the `entity_virtual_address` table matches the `entity_id` and has `is_default` set to `true` -- the `evm_address` column from the `entity` table gets removed during the migration.
+* `/api/v1/accounts/{idOrAliasOrEvmAddress}` changes:
+    - start by checking the `entity_virtual_address` table for an `evm_address` matching the `{idOrAliasOrEvmAddress}` value; if so, the entity to look up is the `entity_id` of that row.
     - Add the following two fields to the output: (one string and one tuple array).  For consistency, we will output each virtual address with the label `virtual_address` (even though the column name in the database will be `evm_address`):
 
 ```json
   {
-    hedera_address: '0x0000000000000000000000000000000000001001',    // we calculate this field by expressing the account's entity_id shard.realm.num in "long-zero" format.  This is *not* a new column on the `entity` table.
+    hedera_address: "0x0000000000000000000000000000000000001001",    // we calculate this field by expressing the account's entity_id shard.realm.num in "long-zero" format.  This is *not* a new column on the `entity` table.
     virtual_addresses: [
       {
-        virtual_address: '0x2000000000000000000000000000000000000003',
+        virtual_address: "0x2000000000000000000000000000000000000003",
         is_default: false
       },
       {
-        virtual_address: '0x4000000000000000000000000000000000000005',
+        virtual_address: "0x4000000000000000000000000000000000000005",
         is_default: true
       }
     ]
@@ -109,7 +109,7 @@ When parsing CryptoUpdate transactions,
 
 #### getAccountByIdOrAliasOrEvmAddress Non-Gaols
 
-* Adding `api/v1/accounts/{idOrAliasOrEvmAddress}/virtualAddresses endpoint (for paging through a large number of virtual addresses), but we will reserve that endpoint
+* Adding `/api/v1/accounts/{idOrAliasOrEvmAddress}/virtualAddresses` endpoint (for paging through a large number of virtual addresses), but we will reserve that endpoint
 in case a future extension to this HIP decides to implement that.
 
 * Returning any of the disabled (or deleted) virtual addresses for an account (or contract).  The only ones we return are the `ACTIVE` ones, and which (of those) is the default virtual address.
