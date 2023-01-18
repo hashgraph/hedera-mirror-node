@@ -66,7 +66,7 @@ The existing mirror node database, supporting one evm_address per entity, stores
 With HIP-631, We now support multiple virtual address per entity, with one being labelled the default virtual address for that entity.
 We will continue to use the `evm_address` column of the `entity` table, but now this value is used for the *default* virtual address.
 
-We will need to perform a database migration to:
+* We will need to perform a database migration to:
     - create the new `entity_virtual_address` table as specified in the previous section.
     - for every existing `entity` with a non-null `evm_address` field, add a row to that table with corresponding `entity_id` and `evm_address` fields, `is_default` set to `true`.
     - We are not going to delete the `evm_address` column from the `entity` table at this time, but that may be a later migration.
@@ -92,15 +92,15 @@ When parsing CryptoUpdate transactions,
 
 ```json
   {
-    hedera_address: "0x0000000000000000000000000000000000001001",    // we calculate this field by expressing the account's entity_id shard.realm.num in "long-zero" format.  This is *not* a new column on the `entity` table.
-    virtual_addresses: [
+    "hedera_address": "0x0000000000000000000000000000000000001001",    // we calculate this field by expressing the account's entity_id shard.realm.num in "long-zero" format.  This is *not* a new column on the `entity` table.
+    "virtual_addresses": [
       {
-        virtual_address: "0x2000000000000000000000000000000000000003",
-        is_default: false
+        "virtual_address": "0x2000000000000000000000000000000000000003",
+        "is_default": false
       },
       {
-        virtual_address: "0x4000000000000000000000000000000000000005",
-        is_default: true
+        "virtual_address": "0x4000000000000000000000000000000000000005",
+        "is_default": true
       }
     ]
   }
