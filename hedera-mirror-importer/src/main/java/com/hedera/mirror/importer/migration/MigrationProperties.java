@@ -20,8 +20,8 @@ package com.hedera.mirror.importer.migration;
  * ‍
  */
 
-import java.util.Collections;
 import java.util.Map;
+import java.util.TreeMap;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
 
@@ -33,5 +33,5 @@ public class MigrationProperties {
     private boolean enabled = true;
 
     @NotNull
-    private Map<String, String> params = Collections.emptyMap();
+    private Map<String, String> params = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 }
