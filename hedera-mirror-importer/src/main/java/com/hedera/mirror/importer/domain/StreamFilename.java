@@ -120,6 +120,7 @@ public class StreamFilename implements Comparable<StreamFilename> {
         return StringUtils.joinWith(".", StringUtils.join(timestamp, suffix), extension);
     }
 
+    @SuppressWarnings("java:S3776")
     private static TypeInfo extractTypeInfo(String filename) {
         List<String> parts = FILENAME_SPLITTER.splitToList(filename);
         if (parts.size() < 2) {

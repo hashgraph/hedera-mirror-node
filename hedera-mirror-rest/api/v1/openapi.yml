@@ -2736,7 +2736,7 @@ components:
     ScheduleSignature:
       type: object
       properties:
-        consensus_timestmap:
+        consensus_timestamp:
           $ref: '#/components/schemas/Timestamp'
         public_key_prefix:
           type: string

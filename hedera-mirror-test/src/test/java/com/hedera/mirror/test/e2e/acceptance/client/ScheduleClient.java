@@ -48,7 +48,6 @@ public class ScheduleClient extends AbstractNetworkClient {
         String memo = getMemo("Create schedule");
         ScheduleCreateTransaction scheduleCreateTransaction = new ScheduleCreateTransaction()
                 .setAdminKey(payerAccountId.getPublicKey())
-                .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setPayerAccountId(payerAccountId.getAccountId())
                 .setScheduleMemo(memo)
                 .setScheduledTransaction(transaction)
@@ -81,7 +80,6 @@ public class ScheduleClient extends AbstractNetworkClient {
                                                    ScheduleId scheduleId) {
 
         ScheduleSignTransaction scheduleSignTransaction = new ScheduleSignTransaction()
-                .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setScheduleId(scheduleId)
                 .setTransactionMemo(getMemo("Sign schedule"));
 
@@ -98,7 +96,6 @@ public class ScheduleClient extends AbstractNetworkClient {
 
         log.debug("Delete schedule {}", scheduleId);
         ScheduleDeleteTransaction scheduleDeleteTransaction = new ScheduleDeleteTransaction()
-                .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setScheduleId(scheduleId)
                 .setTransactionMemo(getMemo("Delete schedule"));
 
