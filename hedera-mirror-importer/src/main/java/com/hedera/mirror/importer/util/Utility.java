@@ -33,7 +33,6 @@ import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
-import com.sun.jna.ptr.LongByReference;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -195,9 +194,10 @@ public class Utility {
     }
 
     // This method is copied from hedera-services EthTxSigs::recoverAddressFromPubKey and should be kept in sync
+    @SuppressWarnings("java:S1191")
     private static byte[] recoverAddressFromPubKey(LibSecp256k1.secp256k1_pubkey pubKey) {
         final ByteBuffer recoveredFullKey = ByteBuffer.allocate(65);
-        final LongByReference fullKeySize = new LongByReference(recoveredFullKey.limit());
+        final com.sun.jna.ptr.LongByReference fullKeySize = new com.sun.jna.ptr.LongByReference(recoveredFullKey.limit());
         LibSecp256k1.secp256k1_ec_pubkey_serialize(CONTEXT, recoveredFullKey, fullKeySize, pubKey,
                 SECP256K1_EC_UNCOMPRESSED);
 

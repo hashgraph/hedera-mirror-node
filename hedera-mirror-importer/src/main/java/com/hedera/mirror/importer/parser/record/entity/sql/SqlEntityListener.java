@@ -611,6 +611,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         return current;
     }
 
+    @SuppressWarnings("java:S3776")
     private Entity mergeEntity(Entity previous, Entity current) {
         // This entity should not trigger a history record, so just copy common non-history fields, if set, to previous
         if (!current.isHistory()) {

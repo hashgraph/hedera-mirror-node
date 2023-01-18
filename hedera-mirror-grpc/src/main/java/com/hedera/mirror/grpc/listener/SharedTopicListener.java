@@ -39,6 +39,7 @@ public abstract class SharedTopicListener implements TopicListener {
     protected final ListenerProperties listenerProperties;
 
     @Override
+    @SuppressWarnings("deprecation")
     public Flux<TopicMessage> listen(TopicMessageFilter filter) {
         DirectProcessor<TopicMessage> overflowProcessor = DirectProcessor.create();
         FluxSink<TopicMessage> overflowSink = overflowProcessor.sink();

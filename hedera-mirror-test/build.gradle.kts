@@ -37,6 +37,7 @@ dependencies {
     testImplementation(group = "io.netty", name = "netty-resolver-dns-native-macos", classifier = "osx-aarch_64")
     testImplementation("javax.inject:javax.inject")
     testImplementation("org.apache.commons:commons-lang3")
+    testImplementation("org.awaitility:awaitility")
     testImplementation("org.junit.platform:junit-platform-suite")
     testImplementation("org.springframework.boot:spring-boot-starter-aop")
     testImplementation("org.springframework.boot:spring-boot-starter-log4j2")

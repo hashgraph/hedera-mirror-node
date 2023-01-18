@@ -277,6 +277,7 @@ public class ContractResultServiceImpl implements ContractResultService {
         entityListener.onEntity(entity);
     }
 
+    @SuppressWarnings("java:S3776")
     private ByteString processSidecarRecords(RecordItem recordItem) {
         ByteString failedInitcode = null;
         var sidecarRecords = recordItem.getSidecarRecords();
@@ -310,7 +311,6 @@ public class ContractResultServiceImpl implements ContractResultService {
                     failedInitcode = sidecarRecord.getBytecode().getInitcode();
                 }
             }
-
             if (migration) {
                 ++migrationCount;
             }

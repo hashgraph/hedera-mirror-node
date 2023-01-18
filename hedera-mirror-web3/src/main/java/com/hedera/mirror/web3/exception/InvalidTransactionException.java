@@ -26,6 +26,7 @@ import org.apache.tuweni.bytes.Bytes;
 
 import com.hedera.mirror.web3.evm.exception.EvmException;
 
+@SuppressWarnings("java:S110")
 public class InvalidTransactionException extends EvmException {
 
     public InvalidTransactionException(final ResponseCodeEnum responseCode) {

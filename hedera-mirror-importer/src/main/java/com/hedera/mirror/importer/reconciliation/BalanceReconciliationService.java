@@ -107,6 +107,7 @@ class BalanceReconciliationService {
     }
 
     @Scheduled(cron = "${hedera.mirror.importer.reconciliation.cron:0 0 0 * * *}")
+    @SuppressWarnings("java:S3776")
     public synchronized void reconcile() {
         if (!reconciliationProperties.isEnabled()) {
             return;

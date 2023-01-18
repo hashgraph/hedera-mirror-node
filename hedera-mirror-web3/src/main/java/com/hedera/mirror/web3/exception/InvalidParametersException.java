@@ -20,6 +20,7 @@ package com.hedera.mirror.web3.exception;
  * ‍
  */
 
+@SuppressWarnings("java:S110")
 public class InvalidParametersException extends Web3Exception {
 
     public InvalidParametersException(String message) {

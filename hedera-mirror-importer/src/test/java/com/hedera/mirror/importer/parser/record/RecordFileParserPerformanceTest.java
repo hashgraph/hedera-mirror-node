@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.google.common.util.concurrent.Uninterruptibles;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +35,6 @@ import org.springframework.test.context.ActiveProfiles;
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.config.IntegrationTestConfiguration;
 import com.hedera.mirror.importer.parser.domain.RecordFileBuilder;
-
 @ActiveProfiles("performance")
 @Import(IntegrationTestConfiguration.class)
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -52,6 +53,7 @@ class RecordFileParserPerformanceTest {
         long startTime = System.currentTimeMillis();
         long endTime = startTime;
         var recordFile = recordFileBuilder.recordFile();
+        boolean workDone = false; // used just to assert that at least one cycle through the main "while" loop of this routine occured.
 
         performanceProperties.getTransactions().forEach(p -> {
             int count = (int) (p.getTps() * interval / 1000);
@@ -60,6 +62,7 @@ class RecordFileParserPerformanceTest {
 
         while (endTime - startTime < duration) {
             recordFileParser.parse(recordFile.build());
+            workDone = true;
 
             long sleep = interval - (System.currentTimeMillis() - endTime);
             if (sleep > 0) {
@@ -67,5 +70,7 @@ class RecordFileParserPerformanceTest {
             }
             endTime = System.currentTimeMillis();
         }
+
+        assertTrue(workDone); // Sonarcloud needs at least one assert per @Test, or else calls it a "critical" code smell
     }
 }

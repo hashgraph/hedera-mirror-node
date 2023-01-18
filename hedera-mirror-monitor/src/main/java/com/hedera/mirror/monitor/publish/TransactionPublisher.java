@@ -37,7 +37,6 @@ import com.hedera.hashgraph.sdk.HbarUnit;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.Query;
 import com.hedera.hashgraph.sdk.Transaction;
-import com.hedera.hashgraph.sdk.TransactionId;
 import com.hedera.hashgraph.sdk.TransactionReceiptQuery;
 import com.hedera.hashgraph.sdk.TransactionRecordQuery;
 import com.hedera.hashgraph.sdk.TransactionResponse;
@@ -110,22 +109,21 @@ public class TransactionPublisher implements AutoCloseable {
     private Mono<PublishResponse.PublishResponseBuilder> processTransactionResponse(Client client,
                                                                                     PublishRequest request,
                                                                                     TransactionResponse transactionResponse) {
-        TransactionId transactionId = transactionResponse.transactionId;
         PublishResponse.PublishResponseBuilder builder = PublishResponse.builder()
                 .request(request)
                 .timestamp(Instant.now())
-                .transactionId(transactionId);
+                .transactionId(transactionResponse.transactionId);
 
         if (request.isSendRecord()) {
             // TransactionId.getRecord() is inefficient doing a get receipt, a cost query, then the get record
             TransactionRecordQuery transactionRecordQuery = new TransactionRecordQuery()
                     .setQueryPayment(Hbar.from(1, HbarUnit.HBAR))
-                    .setTransactionId(transactionId);
+                    .setTransactionId(transactionResponse.transactionId);
             return execute(client, transactionRecordQuery)
                     .map(r -> builder.transactionRecord(r).receipt(r.receipt));
         } else if (request.isReceipt()) {
-            var receiptQuery = new TransactionReceiptQuery().setTransactionId(transactionId);
-            return execute(client, receiptQuery).map(builder::receipt);
+            return execute(client, new TransactionReceiptQuery().setTransactionId(transactionResponse.transactionId))
+                    .map(builder::receipt);
         }
 
         return Mono.just(builder);

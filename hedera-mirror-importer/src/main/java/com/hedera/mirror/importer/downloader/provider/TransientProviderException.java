@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.downloader.provider;
 
 import com.hedera.mirror.importer.exception.ImporterException;
 
+@SuppressWarnings("java:S110")
 public class TransientProviderException extends ImporterException {
     public TransientProviderException(Throwable throwable) {
         super(throwable);
