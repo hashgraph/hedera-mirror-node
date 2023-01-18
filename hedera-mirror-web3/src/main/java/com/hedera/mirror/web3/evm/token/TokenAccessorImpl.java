@@ -39,6 +39,7 @@ import org.hyperledger.besu.datatypes.Address;
 import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.web3.evm.exception.ParsingException;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.repository.CustomFeeRepository;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.mirror.web3.repository.NftAllowanceRepository;
@@ -70,12 +71,11 @@ public class TokenAccessorImpl implements TokenAccessor {
     private final TokenAllowanceRepository tokenAllowanceRepository;
     private final NftAllowanceRepository nftAllowanceRepository;
     private final CustomFeeRepository customFeeRepository;
-    //TODO get real value for ledgerId from the network props
-    private final byte[] ledgerId = new byte[20];
+    private final MirrorNodeEvmProperties properties;
 
     @Override
     public Optional<EvmTokenInfo> evmInfoForToken(Address address) {
-        return getTokenInfoBuilder(address);
+        return getTokenInfo(address);
     }
 
     @Override
@@ -84,6 +84,7 @@ public class TokenAccessorImpl implements TokenAccessor {
         if (nftOptional.isEmpty()) {
             return Optional.empty();
         }
+        final var ledgerId = properties.getNetwork().getLedgerId();
         final var nftEntity = nftOptional.get();
         final var entityAddress = toAddress(nftEntity.getAccountId());
         final var creationTime = nftEntity.getCreatedTimestamp();
@@ -141,7 +142,22 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public EvmKey keyOf(Address address, TokenKeyType tokenKeyType) {
-        return null;
+        final var tokenInfoOptional = getTokenInfo(address);
+
+        if (tokenInfoOptional.isPresent()) {
+            final var tokenInfo = tokenInfoOptional.get();
+            return
+                    switch (tokenKeyType) {
+                        case ADMIN_KEY -> tokenInfo.getAdminKey();
+                        case KYC_KEY -> tokenInfo.getKycKey();
+                        case FREEZE_KEY -> tokenInfo.getFreezeKey();
+                        case WIPE_KEY -> tokenInfo.getWipeKey();
+                        case SUPPLY_KEY -> tokenInfo.getSupplyKey();
+                        case FEE_SCHEDULE_KEY -> tokenInfo.getFeeScheduleKey();
+                        case PAUSE_KEY -> tokenInfo.getPauseKey();
+                    };
+        }
+        return new EvmKey();
     }
 
     @Override
@@ -208,8 +224,7 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public Address canonicalAddress(final Address addressOrAlias) {
-        //TODO
-        return null;
+        return addressOrAlias;
     }
 
     @Override
@@ -221,17 +236,17 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public byte[] ledgerId() {
-        return ledgerId;
+        return properties.getNetwork().getLedgerId();
     }
 
-    private Optional<EvmTokenInfo> getTokenInfoBuilder(final Address token) {
+    private Optional<EvmTokenInfo> getTokenInfo(final Address token) {
         final var tokenEntityOptional = tokenRepository.findById(new TokenId(fromEvmAddress(token.toArray())));
         final var entityOptional = entityRepository.findById(entityIdFromEvmAddress(token));
 
         if (tokenEntityOptional.isPresent() && entityOptional.isPresent()) {
             final var tokenEntity = tokenEntityOptional.get();
-
             final var entity = entityOptional.get();
+            final var ledgerId = properties.getNetwork().getLedgerId();
 
             final EvmTokenInfo evmTokenInfo = new EvmTokenInfo(
                     ledgerId,
@@ -270,7 +285,6 @@ public class TokenAccessorImpl implements TokenAccessor {
             final var isPaused = tokenEntity.getPauseStatus().ordinal() == 1;
             evmTokenInfo.setDefaultFreezeStatus(tokenEntity.getFreezeDefault());
             evmTokenInfo.setIsPaused(isPaused);
-            //TODO kyc status
             final var customFeesOptional = getCustomFees(token);
 
             customFeesOptional.ifPresent(evmTokenInfo::setCustomFees);

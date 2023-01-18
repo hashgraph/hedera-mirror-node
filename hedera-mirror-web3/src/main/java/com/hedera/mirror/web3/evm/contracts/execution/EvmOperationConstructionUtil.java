@@ -25,11 +25,15 @@ import static org.hyperledger.besu.datatypes.Address.fromHexString;
 import static org.hyperledger.besu.evm.MainnetEVMs.registerParisOperations;
 
 import java.math.BigInteger;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiPredicate;
 import javax.inject.Provider;
+
+import com.hedera.node.app.service.evm.contracts.execution.HederaEvmMessageCallProcessor;
+
 import lombok.experimental.UtilityClass;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
@@ -40,6 +44,7 @@ import org.hyperledger.besu.evm.gascalculator.LondonGasCalculator;
 import org.hyperledger.besu.evm.internal.EvmConfiguration;
 import org.hyperledger.besu.evm.operation.OperationRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
@@ -78,20 +83,20 @@ public class EvmOperationConstructionUtil {
    public static Map<String, Provider<MessageCallProcessor>> mcps() {
         return Map.of(
                 EVM_VERSION_0_30,
-                () -> new MessageCallProcessor(
-                        evm, precompileRegistry()),
+                () -> new HederaEvmMessageCallProcessor(
+                        evm, new PrecompileContractRegistry(),  precompiles()),
                 EVM_VERSION_0_32,
-                () -> new MessageCallProcessor(
-                        evm, precompileRegistry()));
+                () -> new HederaEvmMessageCallProcessor(
+                        evm, new PrecompileContractRegistry(),precompiles()));
     }
 
-    private static PrecompileContractRegistry precompileRegistry() {
-        final var registry = new PrecompileContractRegistry();
+    private static Map<String, PrecompiledContract> precompiles() {
+        final Map<String, PrecompiledContract> hederaPrecompiles = new HashMap<>();
         final var evmFactory = new EvmInfrastructureFactory(new EvmEncodingFacade());
-        registry.put(fromHexString(EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS),
+        hederaPrecompiles.put(EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS,
                 new EvmHTSPrecompiledContract(evmFactory));
 
-        return registry;
+        return hederaPrecompiles;
     }
 
     private static EVM constructEvm() {
