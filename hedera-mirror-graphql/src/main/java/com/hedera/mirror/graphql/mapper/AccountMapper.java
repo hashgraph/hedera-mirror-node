@@ -1,4 +1,4 @@
-package com.hedera.mirror.graphql.repository;
+package com.hedera.mirror.graphql.mapper;
 
 /*-
  * ‌
@@ -20,15 +20,15 @@ package com.hedera.mirror.graphql.repository;
  * ‍
  */
 
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import org.springframework.data.querydsl.QuerydslPredicateExecutor;
-import org.springframework.data.repository.CrudRepository;
-import org.springframework.graphql.data.GraphQlRepository;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
 import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.graphql.viewmodel.Account;
 
-@GraphQlRepository
-public interface EntityRepository extends CrudRepository<Entity, Long>,
-        JpaSpecificationExecutor<Entity>, QuerydslPredicateExecutor<Entity> {
-
+@Mapper(uses = CommonMapper.class)
+public interface AccountMapper {
+    @Mapping(target = "alias", ignore = true)
+    @Mapping(source = "ethereumNonce", target = "nonce")
+    Account map(Entity source);
 }

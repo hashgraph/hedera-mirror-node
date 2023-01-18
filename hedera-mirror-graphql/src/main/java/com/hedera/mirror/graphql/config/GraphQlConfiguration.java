@@ -4,7 +4,7 @@ package com.hedera.mirror.graphql.config;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,26 +27,19 @@ import graphql.schema.idl.SchemaDirectiveWiring;
 import graphql.validation.rules.OnValidationErrorStrategy;
 import graphql.validation.rules.ValidationRules;
 import graphql.validation.schemawiring.ValidationSchemaWiring;
-import org.modelmapper.ModelMapper;
-import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.boot.autoconfigure.graphql.GraphQlSourceBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.graphql.execution.RuntimeWiringConfigurer;
+
+import com.hedera.mirror.graphql.scalar.GraphQlDuration;
+import com.hedera.mirror.graphql.scalar.GraphQlTimestamp;
 
 @Configuration
 class GraphQlConfiguration {
     @Bean
     GraphQlSourceBuilderCustomizer graphQlCustomizer(PreparsedDocumentProvider provider) {
         return b -> b.configureGraphQl(graphQL -> graphQL.preparsedDocumentProvider(provider));
-    }
-
-    @Bean
-    ModelMapper modelMapper() {
-        var modelMapper = new ModelMapper();
-        modelMapper.getConfiguration().setSkipNullEnabled(true);
-        modelMapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
-        return modelMapper;
     }
 
     @Bean

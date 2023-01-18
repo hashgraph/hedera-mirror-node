@@ -1,10 +1,10 @@
-package com.hedera.mirror.graphql.config;
+package com.hedera.mirror.graphql.scalar;
 
 /*-
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,40 +28,41 @@ import graphql.schema.CoercingParseLiteralException;
 import graphql.schema.CoercingParseValueException;
 import graphql.schema.CoercingSerializeException;
 import graphql.schema.GraphQLScalarType;
-import java.time.Instant;
+import java.time.Duration;
 import org.jetbrains.annotations.NotNull;
 
-public class GraphQlTimestamp implements Coercing<Instant, String> {
+public class GraphQlDuration implements Coercing<Duration, String> {
 
     public static final GraphQLScalarType INSTANCE = GraphQLScalarType.newScalar()
-            .name("Timestamp")
-            .description("An ISO 8601 compatible timestamp with nanoseconds granularity.")
-            .coercing(new GraphQlTimestamp())
+            .name("Duration")
+            .description("An ISO 8601 compatible duration with support for nanoseconds granularity in the format " +
+                    "P[n]Y[n]M[n]DT[n]H[n]M[n]S.")
+            .coercing(new GraphQlDuration())
             .build();
 
     @Override
-    public String serialize(@NotNull Object input) throws CoercingSerializeException {
-        if (input instanceof Instant instant) {
-            return instant.toString();
+    public @NotNull Duration parseLiteral(@NotNull Object input) throws CoercingParseLiteralException {
+        if (input instanceof StringValue str) {
+            return Duration.parse(str.getValue());
         }
-        throw new CoercingSerializeException("Unable timestamp to serialize to string: " + input);
+        throw new CoercingParseLiteralException("Expected a 'String' but was '" + typeName(input) + "'.");
     }
 
     @Override
-    public @NotNull Instant parseValue(@NotNull Object input) throws CoercingParseValueException {
-        if (input instanceof Instant instant) {
-            return instant;
+    public @NotNull Duration parseValue(@NotNull Object input) throws CoercingParseValueException {
+        if (input instanceof Duration duration) {
+            return duration;
         } else if (input instanceof String string) {
-            return Instant.parse(string);
+            return Duration.parse(string);
         }
         throw new CoercingParseValueException("Expected a 'String' but was '" + typeName(input) + "'.");
     }
 
     @Override
-    public @NotNull Instant parseLiteral(@NotNull Object input) throws CoercingParseLiteralException {
-        if (input instanceof StringValue str) {
-            return Instant.parse(str.getValue());
+    public String serialize(@NotNull Object input) throws CoercingSerializeException {
+        if (input instanceof Duration duration) {
+            return duration.toString();
         }
-        throw new CoercingParseLiteralException("Expected a 'String' but was '" + typeName(input) + "'.");
+        throw new CoercingSerializeException("Unable to serialize duration to string: " + input);
     }
 }

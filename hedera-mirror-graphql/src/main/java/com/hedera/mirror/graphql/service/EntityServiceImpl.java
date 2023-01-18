@@ -4,7 +4,7 @@ package com.hedera.mirror.graphql.service;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,6 @@ package com.hedera.mirror.graphql.service;
  * ‍
  */
 
-import java.util.Collection;
-import java.util.List;
 import java.util.Optional;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
@@ -38,11 +36,7 @@ public class EntityServiceImpl implements EntityService {
 
     @Override
     public Optional<Entity> getAccountById(EntityId entityId) {
-        return entityRepository.findById(entityId.getId());
-    }
-
-    @Override
-    public Collection<Entity> getAutoRenewAccounts(List<Long> autoRenewAccounts) {
-        return entityRepository.findByAutoRenewAccountIdIn(autoRenewAccounts);
+        var entity = entityRepository.findById(entityId.getId());
+        return entity;
     }
 }

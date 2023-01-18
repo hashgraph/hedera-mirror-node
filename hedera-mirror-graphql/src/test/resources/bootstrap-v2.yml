@@ -1,7 +1,7 @@
 embedded:
   postgresql:
     docker-image: xinatswirlds/citus:11.1.4-alpine
-    initScriptPath: db/scripts/init-v2.sql
+    initScriptPath: db/init-v2.sql
 spring:
   flyway:
     baselineVersion: 1.999.999

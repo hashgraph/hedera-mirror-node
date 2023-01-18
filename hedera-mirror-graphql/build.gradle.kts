@@ -2,7 +2,7 @@
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,23 +24,22 @@ import com.graphql_java_generator.plugin.conf.PluginMode
 description = "Hedera Mirror Node GraphQL"
 
 plugins {
+    id("com.graphql_java_generator.graphql-gradle-plugin")
     id("spring-conventions")
-    id("com.graphql_java_generator.graphql-gradle-plugin") version "1.18.9"
 }
 
 dependencies {
-    annotationProcessor("org.mapstruct:mapstruct-processor:1.5.3.Final")
+    annotationProcessor("org.mapstruct:mapstruct-processor")
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
-    compileOnly("com.graphql-java-generator:graphql-java-client-dependencies:1.18.9")
+    compileOnly("com.graphql-java-generator:graphql-java-client-dependencies")
     implementation(project(":common"))
     implementation(platform("org.springframework.cloud:spring-cloud-dependencies"))
     implementation("com.github.ben-manes.caffeine:caffeine")
-    implementation("com.graphql-java:graphql-java-extended-scalars:20.0")
-    implementation("com.graphql-java:graphql-java-extended-validation:20.0-validator-6.2.0.Final")
+    implementation("com.graphql-java:graphql-java-extended-scalars")
+    implementation("com.graphql-java:graphql-java-extended-validation")
     implementation("io.github.mweirauch:micrometer-jvm-extras")
     implementation("javax.inject:javax.inject")
-    implementation("org.mapstruct:mapstruct:1.5.3.Final")
-    implementation("org.modelmapper:modelmapper:3.1.1")
+    implementation("org.mapstruct:mapstruct")
     implementation("org.springframework.boot:spring-boot-actuator-autoconfigure")
     implementation("org.springframework.boot:spring-boot-starter-graphql")
     implementation("org.springframework.boot:spring-boot-starter-validation")
@@ -86,6 +85,13 @@ generatePojoConf {
 
 tasks.withType<JavaCompile> {
     dependsOn(tasks.generatePojo)
+    options.compilerArgs.addAll(
+        listOf(
+            "-Amapstruct.defaultComponentModel=jsr330",
+            "-Amapstruct.defaultInjectionStrategy=constructor",
+            "-Amapstruct.disableBuilders=true"
+        )
+    )
 }
 
 java.sourceSets["main"].java {

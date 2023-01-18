@@ -4,7 +4,7 @@ package com.hedera.mirror.graphql.util;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,23 +23,45 @@ package com.hedera.mirror.graphql.util;
 import com.google.common.base.Splitter;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import java.util.List;
 import java.util.function.Function;
 import lombok.experimental.UtilityClass;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.graphql.viewmodel.CurrencyFormat;
 import com.hedera.mirror.graphql.viewmodel.Node;
 
 @UtilityClass
-public class GraphqlUtils {
+public class GraphQlUtils {
 
     private static final Splitter SPLITTER = Splitter.on(':');
 
-    public static <T> T getId(Node node, Function<String, T> converter) {
+    public static Long convertCurrency(CurrencyFormat currencyFormat, Long tinybars) {
+        if (tinybars == null) {
+            return null;
+        }
+
+        if (currencyFormat == null) {
+            return tinybars;
+        }
+
+        return switch (currencyFormat) {
+            case TINYBAR -> tinybars;
+            case MICROBAR -> tinybars / 100L;
+            case MILIBAR -> tinybars / 100_000L;
+            case HBAR -> tinybars / 100_000_000L;
+            case KILOBAR -> tinybars / 100_000_000_000L;
+            case MEGABAR -> tinybars / 100_000_000_000_000L;
+            case GIGABAR -> tinybars / 100_000_000_000_000_000L;
+        };
+    }
+
+    public static <T> T getId(Node node, Function<List<String>, T> converter) {
         var id = new String(Base64.getDecoder().decode(node.getId()), StandardCharsets.UTF_8);
         var parts = SPLITTER.splitToList(id);
 
-        if (parts.size() != 2) {
+        if (parts.size() <= 1) {
             throw new IllegalArgumentException("Invalid Node.id");
         }
 
@@ -48,7 +70,7 @@ public class GraphqlUtils {
             throw new IllegalArgumentException("Invalid Node.id");
         }
 
-        return converter.apply(parts.get(1));
+        return converter.apply(parts.subList(1, parts.size()));
     }
 
     public static EntityId toEntityId(com.hedera.mirror.graphql.viewmodel.EntityIdInput entityId) {
@@ -68,7 +90,8 @@ public class GraphqlUtils {
         }
 
         if (nonNull != 1) {
-            throw new IllegalArgumentException("Must provide exactly one input value but " + nonNull + " have been provided");
+            throw new IllegalArgumentException("Must provide exactly one input value but " + nonNull + " have been " +
+                    "provided");
         }
     }
 }

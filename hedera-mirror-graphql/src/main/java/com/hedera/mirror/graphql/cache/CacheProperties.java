@@ -1,10 +1,10 @@
-package com.hedera.mirror.graphql;
+package com.hedera.mirror.graphql.cache;
 
 /*-
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,15 +20,15 @@ package com.hedera.mirror.graphql;
  * ‍
  */
 
-import javax.validation.constraints.NotBlank;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
+import javax.validation.constraints.NotBlank;
 
-@ConfigurationProperties("hedera.mirror.graphql")
+@ConfigurationProperties("hedera.mirror.graphql.cache")
 @Data
 @Validated
-public class GraphQlProperties {
+public class CacheProperties {
     @NotBlank
-    private String queryCacheExpression = "expireAfterWrite=1h,maximumSize=1000,recordStats";
+    private String query = "expireAfterWrite=1h,maximumSize=1000,recordStats";
 }

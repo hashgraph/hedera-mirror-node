@@ -190,6 +190,7 @@ enum EntityType {
     SCHEDULE
     TOKEN
     TOPIC
+    UNKNOWN
 }
 
 """

@@ -1,7 +1,7 @@
 # Configuration
 
-The four components of the Hedera Mirror Node (Importer, Monitor, REST API, and gRPC API) all support loading
-configuration from an `application.yml` file or via the environment.
+The components of the Hedera Mirror Node all support loading configuration from an `application.yml` file or via the 
+environment.
 
 ## Default Values
 
