@@ -713,7 +713,7 @@ public class RecordItemBuilder {
             var sidecarRecords = this.sidecarRecords.stream().map(r -> r.build()).collect(Collectors.toList());
 
             return recordItemBuilder
-                    .recordBytes(record.toByteArray())
+                    .transactionRecordBytes(record.toByteArray())
                     .transactionBytes(transaction.toByteArray())
                     .sidecarRecords(sidecarRecords)
                     .build();

@@ -244,7 +244,7 @@ abstract class AbstractTransactionHandlerTest {
                                         .setSigMap(getDefaultSigMap())
                                         .build().toByteString())
                                 .build())
-                .record(transactionRecord)
+                .transactionRecord(transactionRecord)
                 .build();
         assertThat(transactionHandler.getEntity(recordItem)).isEqualTo(expectedEntity);
     }
@@ -532,7 +532,7 @@ abstract class AbstractTransactionHandlerTest {
                 )
                 .build();
 
-        return RecordItem.builder().record(record).transaction(transaction).build();
+        return RecordItem.builder().transactionRecord(record).transaction(transaction).build();
     }
 
     private boolean isCrudTransactionHandler(TransactionHandler transactionHandler) {

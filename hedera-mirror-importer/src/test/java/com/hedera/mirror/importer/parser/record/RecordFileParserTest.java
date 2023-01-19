@@ -380,7 +380,7 @@ class RecordFileParserTest extends AbstractStreamFileParserTest<RecordFileParser
                 .setSignedTransactionBytes(signedTransaction.toByteString())
                 .build();
         return RecordItem.builder()
-                .record(transactionRecord)
+                .transactionRecord(transactionRecord)
                 .transactionBytes(transaction.toByteArray())
                 .build();
     }

@@ -197,13 +197,13 @@ public class RecordItem implements StreamItem {
             return buildInternal();
         }
 
-        public B record(TransactionRecord transactionRecord) {
+        public B transactionRecord(TransactionRecord transactionRecord) {
             this.transactionRecord = transactionRecord;
             this.recordBytes = transactionRecord.toByteArray();
             return (B) this;
         }
 
-        public B recordBytes(byte[] recordBytes) {
+        public B transactionRecordBytes(byte[] recordBytes) {
             try {
                 this.recordBytes = recordBytes;
                 this.transactionRecord = TransactionRecord.parseFrom(recordBytes);

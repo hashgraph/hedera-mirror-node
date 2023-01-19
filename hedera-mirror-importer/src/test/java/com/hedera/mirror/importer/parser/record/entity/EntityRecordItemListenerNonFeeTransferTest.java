@@ -248,7 +248,7 @@ class EntityRecordItemListenerNonFeeTransferTest extends AbstractEntityRecordIte
         var record = recordBuilder.setContractCallResult(contractCallResult).build();
 
         expectedTransactions.add(new TransactionContext(transaction, record));
-        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
     }
 
     private Transaction contractCreate() {
@@ -272,7 +272,7 @@ class EntityRecordItemListenerNonFeeTransferTest extends AbstractEntityRecordIte
         var record = recordBuilder.setContractCreateResult(contractCreateResult).build();
 
         expectedTransactions.add(new TransactionContext(transaction, record));
-        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
     }
 
     private Transaction cryptoCreate() {
@@ -296,7 +296,7 @@ class EntityRecordItemListenerNonFeeTransferTest extends AbstractEntityRecordIte
         var record = transactionRecordSuccess(transactionBody, transferList).build();
 
         expectedTransactions.add(new TransactionContext(transaction, record));
-        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
     }
 
     private Transaction cryptoTransfer() {
@@ -324,7 +324,7 @@ class EntityRecordItemListenerNonFeeTransferTest extends AbstractEntityRecordIte
         var record = transactionRecord(transactionBody, rc, transferList).build();
 
         expectedTransactions.add(new TransactionContext(transaction, record));
-        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
     }
 
     private void cryptoTransferWithTransferList(TransferList.Builder transferList) {

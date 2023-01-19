@@ -190,7 +190,7 @@ public class ProtoRecordFileReader implements RecordFileReader {
             var recordItem = RecordItem.builder()
                     .hapiVersion(hapiVersion)
                     .previous(previousItem)
-                    .recordBytes(recordStreamItem.getRecord().toByteArray())
+                    .transactionRecordBytes(recordStreamItem.getRecord().toByteArray())
                     .transactionBytes(recordStreamItem.getTransaction().toByteArray())
                     .transactionIndex(items.size())
                     .build();

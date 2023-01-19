@@ -99,7 +99,7 @@ class EntityRecordItemListenerUtilTest extends AbstractEntityRecordItemListenerT
 
         var recordItem = RecordItem.builder()
                 .hapiVersion(new Version(0, 30, 0))
-                .record(TransactionRecord.newBuilder().build())
+                .transactionRecord(TransactionRecord.newBuilder().build())
                 .transaction(transaction)
                 .build();
 

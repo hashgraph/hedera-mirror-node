@@ -47,7 +47,7 @@ class EntityRecordItemListenerFreezeTest extends AbstractEntityRecordItemListene
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
 
         assertAll(
                 () -> assertRowCount(),
@@ -61,7 +61,7 @@ class EntityRecordItemListenerFreezeTest extends AbstractEntityRecordItemListene
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody, ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
 
         assertAll(
                 () -> assertRowCount(),
