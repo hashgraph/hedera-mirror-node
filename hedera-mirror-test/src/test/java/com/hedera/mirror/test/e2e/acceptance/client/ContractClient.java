@@ -120,8 +120,7 @@ public class ContractClient extends AbstractNetworkClient {
         ContractExecuteTransaction contractExecuteTransaction = new ContractExecuteTransaction()
                 .setContractId(contractId)
                 .setGas(gas)
-                .setTransactionMemo(getMemo("Execute contract"))
-                .setMaxTransactionFee(Hbar.from(100));
+                .setTransactionMemo(getMemo("Execute contract"));
 
         if (parameters == null) {
             contractExecuteTransaction.setFunction(functionName);

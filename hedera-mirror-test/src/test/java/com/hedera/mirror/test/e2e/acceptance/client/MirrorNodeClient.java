@@ -4,7 +4,7 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,8 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * ‍
  */
 
+import static org.awaitility.Awaitility.await;
+
 import com.google.common.base.Stopwatch;
 
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
@@ -30,7 +32,16 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Named;
+
+import com.hedera.hashgraph.sdk.AccountId;
+
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorAccountResponse;
+
+import com.hedera.mirror.test.e2e.acceptance.util.TestUtil;
+
+import lombok.NonNull;
 import lombok.extern.log4j.Log4j2;
+import org.awaitility.Durations;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
@@ -82,7 +93,10 @@ public class MirrorNodeClient {
         subscriptionResponse.setSubscription(subscription);
 
         // allow time for connection to be made and error to be caught
-        Thread.sleep(5000, 0);
+        await("responseEncountered").dontCatchUncaughtExceptions()
+                .atMost(Durations.FIVE_SECONDS)
+                .pollDelay(Durations.ONE_MILLISECOND)
+                .until(() -> subscriptionResponse.getMirrorHCSResponses().size() > 0);
 
         return subscriptionResponse;
     }
@@ -222,6 +236,10 @@ public class MirrorNodeClient {
                 MirrorTokenRelationshipResponse.class, accountId, tokenId);
     }
 
+    public MirrorAccountResponse getAccountDetailsUsingAlias(@NonNull AccountId accountId) {
+        log.debug("Retrieving account details for accountId '{}'", accountId);
+        return callRestEndpoint("/accounts/{accountId}", MirrorAccountResponse.class, TestUtil.getAliasFromPublicKey(accountId.aliasKey));
+    }
 
     public void unSubscribeFromTopic(SubscriptionHandle subscription) {
         subscription.unsubscribe();

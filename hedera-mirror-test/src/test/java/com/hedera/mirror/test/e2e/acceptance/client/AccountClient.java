@@ -20,12 +20,6 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * ‍
  */
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import javax.inject.Named;
-import lombok.RequiredArgsConstructor;
-import org.springframework.retry.support.RetryTemplate;
-
 import com.hedera.hashgraph.sdk.AccountAllowanceApproveTransaction;
 import com.hedera.hashgraph.sdk.AccountCreateTransaction;
 import com.hedera.hashgraph.sdk.AccountId;
@@ -37,6 +31,12 @@ import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.TransferTransaction;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
+
+import lombok.RequiredArgsConstructor;
+import org.springframework.retry.support.RetryTemplate;
+import javax.inject.Named;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Named
 public class AccountClient extends AbstractNetworkClient {
@@ -89,7 +89,6 @@ public class AccountClient extends AbstractNetworkClient {
         TransferTransaction transferTransaction = new TransferTransaction()
                 .addHbarTransfer(sender, hbarAmount.negated())
                 .addHbarTransfer(recipient, hbarAmount)
-                .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setTransactionMemo(getMemo("Crypto transfer"))
                 .setHbarTransferApproval(
                         sdkClient.getExpandedOperatorAccountId().getAccountId(),
@@ -137,7 +136,6 @@ public class AccountClient extends AbstractNetworkClient {
                 // The only _required_ property here is `key`
                 .setKey(publicKeys)
                 .setAccountMemo(memo)
-                .setMaxTransactionFee(sdkClient.getMaxTransactionFee())
                 .setReceiverSignatureRequired(receiverSigRequired)
                 .setTransactionMemo(memo);
     }

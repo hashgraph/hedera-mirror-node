@@ -80,6 +80,8 @@ class ClientConfiguration {
     @Bean
     WebClient webClient() {
         HttpClient httpClient = HttpClient.create()
+                .compress(true)
+                .followRedirect(true)
                 .option(
                         ChannelOption.CONNECT_TIMEOUT_MILLIS,
                         (int) acceptanceTestProperties.getWebClientProperties().getConnectionTimeout().toMillis())

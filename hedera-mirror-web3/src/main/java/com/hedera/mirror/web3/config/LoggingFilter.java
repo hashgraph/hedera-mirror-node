@@ -38,6 +38,7 @@ import reactor.core.publisher.Mono;
 class LoggingFilter implements WebFilter {
 
     static final String X_FORWARDED_FOR = "X-Forwarded-For";
+    @SuppressWarnings("java:S1075")
     private static final String ACTUATOR_PATH = "/actuator/";
     private static final String LOCALHOST = "127.0.0.1";
     private static final String LOG_FORMAT = "{} {} {} in {} ms: {}";

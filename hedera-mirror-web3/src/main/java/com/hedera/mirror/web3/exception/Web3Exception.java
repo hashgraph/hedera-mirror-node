@@ -24,7 +24,7 @@ import com.hedera.mirror.common.exception.MirrorNodeException;
 
 public abstract class Web3Exception extends MirrorNodeException {
 
-    public Web3Exception(String message) {
+    protected Web3Exception(String message) {
         super(message);
     }
 }
