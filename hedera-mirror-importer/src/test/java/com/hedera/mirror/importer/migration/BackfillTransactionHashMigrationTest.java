@@ -102,7 +102,7 @@ class BackfillTransactionHashMigrationTest extends IntegrationTest {
     void migrateWhenStartTimestampNotSet() {
         // given
         domainBuilder.transaction().persist();
-        migrationProperties.setParams(Collections.emptyMap());
+        migrationProperties.getParams().clear();
 
         // when
         runMigration();

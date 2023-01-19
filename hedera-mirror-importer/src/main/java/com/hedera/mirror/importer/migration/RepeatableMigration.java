@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.migration;
 
 
 import java.util.Map;
-import java.util.TreeMap;
 import org.apache.commons.lang3.StringUtils;
 import org.flywaydb.core.api.MigrationVersion;
 import org.flywaydb.core.api.configuration.Configuration;
@@ -34,12 +33,8 @@ abstract class RepeatableMigration extends MirrorBaseJavaMigration {
     protected final MigrationProperties migrationProperties;
 
     protected RepeatableMigration(Map<String, MigrationProperties> migrationPropertiesMap) {
-        Map<String, MigrationProperties> treeMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        for (Map.Entry<String, MigrationProperties> kvEntry : migrationPropertiesMap.entrySet()) {
-            treeMap.put(kvEntry.getKey(), kvEntry.getValue());
-        }
         String propertiesKey = StringUtils.uncapitalize(getClass().getSimpleName());
-        migrationProperties = treeMap.getOrDefault(propertiesKey, DEFAULT_MIGRATION_PROPERTIES);
+        migrationProperties = migrationPropertiesMap.getOrDefault(propertiesKey, DEFAULT_MIGRATION_PROPERTIES);
     }
 
     @Override

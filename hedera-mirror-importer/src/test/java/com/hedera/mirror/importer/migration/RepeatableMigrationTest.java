@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.Map;
 import lombok.Getter;
 import lombok.SneakyThrows;
+import org.apache.commons.collections4.map.CaseInsensitiveMap;
 import org.flywaydb.core.api.configuration.Configuration;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.flywaydb.core.api.migration.Context;
@@ -62,7 +63,9 @@ class RepeatableMigrationTest {
     void caseInsensitivity() {
         var migrationProperties = new MigrationProperties();
         migrationProperties.setChecksum(4);
-        var migration = new TestMigration(Map.of("TESTMIGRATION", migrationProperties));
+        CaseInsensitiveMap<String, MigrationProperties> migrationMap = new CaseInsensitiveMap<>();
+        migrationMap.put("TESTMIGRATION", migrationProperties);
+        var migration = new TestMigration(migrationMap);
         migrate(migration);
         assertThat(migration)
                 .returns(4, TestMigration::getChecksum)
