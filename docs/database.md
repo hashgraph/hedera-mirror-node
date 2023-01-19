@@ -18,6 +18,32 @@ The table below documents the database indexes with the usage in APIs / services
 | nft_transfer    | consensus_timestamp                                | Rosetta API | `/block/transaction`                                 | Used to join `nft_transfer` and `transaction` on `consensus_timestamp` equality                                                        |
 | transaction     | type, consensus_timestamp                          | REST API    | `/api/v1/transactions?type=:type&order=:order`       | Used to retrieve transactions filtered by `type` and sorted by `consensus_timestamp` to facilitate faster by-type transaction requests |
 
+## Reset
+
+Some Hedera environments get [reset](https://docs.hedera.com/hedera/testnet#test-network-resets) periodically and mirror
+nodes connected to those environments will need to be reset to remain functional.
+
+1. Stop the [Importer](/docs/importer/README.md) process.
+2. Run [cleanup.sql](/hedera-mirror-importer/src/main/resources/db/scripts/cleanup.sql) as the database owner to
+   truncate the tables.
+
+   ```bash
+   psql -h ${DB_HOST} -d mirror_node -U mirror_node -f cleanup.sql
+   ```
+
+3. Update the Importer [configuration](/docs/configuration.md) to set it to the new bucket name and adjust its start
+   date appropriately. For testnet, the bucket name will be in the format `hedera-testnet-streams-YYYY-MM` where
+   `YYYY-MM` will change depending upon the month in which it is reset. Since testnet will be reset quarterly with
+   a new bucket, the importer start date can be set to 1970 to ensure no data is missed.
+
+   ```properties
+   hedera.mirror.importer.downloader.bucketName=hedera-testnet-streams-2023-01
+   hedera.mirror.importer.startDate=1970-01-01T00:00:00Z
+   ```
+
+4. Start the Importer process and ensure it prints the new bucket on startup and successfully starts syncing.
+5. Restart the remaining mirror node components to clear any cached information.
+
 ## Retention
 
 On public networks, mirror nodes can generate tens of gigabytes worth of data every day and this rate is only projected
