@@ -21,14 +21,11 @@ package com.hedera.mirror.graphql.mapper;
  */
 
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.graphql.viewmodel.Account;
 
-@Mapper(uses = CommonMapper.class)
+@Mapper(config = EntityMapper.class)
 public interface AccountMapper {
-    @Mapping(target = "alias", ignore = true)
-    @Mapping(source = "ethereumNonce", target = "nonce")
     Account map(Entity source);
 }

@@ -48,6 +48,7 @@ import com.hedera.mirror.graphql.viewmodel.TimestampRange;
 public interface CommonMapper {
 
     Logger logger = LogManager.getLogger(CommonMapper.class);
+    String CONTRACT_ID = "CONTRACT_ID";
     String KEYS = "keys";
     String THRESHOLD = "threshold";
 
@@ -101,7 +102,7 @@ public interface CommonMapper {
     default Object mapKey(Key key) {
         var keyCase = key.getKeyCase();
         return switch (keyCase) {
-            case CONTRACTID -> Map.of(keyCase.toString(), mapEntityId(key.getContractID()));
+            case CONTRACTID -> Map.of(CONTRACT_ID, mapEntityId(key.getContractID()));
             case DELEGATABLE_CONTRACT_ID -> Map.of(keyCase.toString(), mapEntityId(key.getDelegatableContractId()));
             case ECDSA_384 -> Map.of(keyCase.toString(), encodeBase64String(toBytes(key.getECDSA384())));
             case ECDSA_SECP256K1 -> Map.of(keyCase.toString(), encodeBase64String(toBytes(key.getECDSASecp256K1())));
