@@ -4,19 +4,22 @@
     "transactions": [
       {
         "consensus_timestamp": 167654000123456,
+        "nonce": 0,
         "payerAccountId": "8001",
-        "scheduled": true,
+        "scheduled": false,
         "transaction_hash": "519a008fabde4d",
-        "valid_start_timestamp": 167654000123400,
-        "type": 7
+        "type": 42,
+        "valid_start_timestamp": 167654000123400
       },
       {
         "consensus_timestamp": 167654000123459,
+        "nonce": 0,
         "payerAccountId": "8001",
-        "transaction_hash": "519a008fabde7d",
-        "valid_start_timestamp": 167654000123400,
         "result": 10,
-        "type": 8
+        "scheduled": true,
+        "transaction_hash": "519a008fabde7d",
+        "type": 14,
+        "valid_start_timestamp": 167654000123400
       }
     ]
   },

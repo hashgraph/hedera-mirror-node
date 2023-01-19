@@ -77,6 +77,7 @@ const {default: defaultLimit} = getResponseLimit();
 
 const contractCallType = Number(TransactionType.getProtoId('CONTRACTCALL'));
 const contractCreateType = Number(TransactionType.getProtoId('CONTRACTCREATEINSTANCE'));
+const ethereumTransactionType = Number(TransactionType.getProtoId('ETHEREUMTRANSACTION'));
 const duplicateTransactionResult = TransactionResult.getProtoId('DUPLICATE_TRANSACTION');
 const wrongNonceTransactionResult = TransactionResult.getProtoId('WRONG_NONCE');
 
@@ -1080,7 +1081,9 @@ class ContractController extends BaseController {
         throw new NotFoundError();
       } else if (transactions.length > 1) {
         for (const transaction of transactions) {
-          if (transaction.type === contractCallType || transaction.type === contractCreateType) {
+          const one = isUserInitiatedTransaction(transaction);
+          const two = !isContractTransaction(transaction);
+          if (isUserInitiatedTransaction(transaction) && !isContractTransaction(transaction)) {
             throw new NotFoundError();
           }
         }
@@ -1264,6 +1267,17 @@ const exportControllerMethods = (methods = []) => {
 
     return exported;
   }, {});
+};
+
+const isContractTransaction = (transaction) => {
+  return transaction.type === contractCallType || transaction.type === contractCreateType
+    || transaction.type === ethereumTransactionType ?
+    true : false;
+};
+
+const isUserInitiatedTransaction = (transaction) => {
+  return !transaction.scheduled && transaction.nonce === 0 ?
+    true : false;
 };
 
 const contractController = exportControllerMethods([
