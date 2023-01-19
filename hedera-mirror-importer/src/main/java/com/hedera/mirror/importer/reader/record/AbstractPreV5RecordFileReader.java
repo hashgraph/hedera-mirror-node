@@ -124,7 +124,7 @@ public abstract class AbstractPreV5RecordFileReader implements RecordFileReader 
             RecordItem recordItem = RecordItem.builder()
                     .hapiVersion(recordFile.getHapiVersion())
                     .previous(lastRecordItem)
-                    .recordBytes(recordBytes)
+                    .transactionRecordBytes(recordBytes)
                     .transactionIndex(count)
                     .transactionBytes(transactionBytes)
                     .build();

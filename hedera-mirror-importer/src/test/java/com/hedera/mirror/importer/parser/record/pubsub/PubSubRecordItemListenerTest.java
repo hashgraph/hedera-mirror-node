@@ -161,7 +161,7 @@ class PubSubRecordItemListenerTest {
         Transaction transaction = buildTransaction(builder -> builder.setConsensusSubmitMessage(submitMessage));
         // when
         doReturn(topicIdEntity).when(transactionHandler).getEntity(any());
-        pubSubRecordItemListener.onItem(RecordItem.builder().record(DEFAULT_RECORD).transaction(transaction).build());
+        pubSubRecordItemListener.onItem(RecordItem.builder().transactionRecord(DEFAULT_RECORD).transaction(transaction).build());
 
         // then
         var pubSubMessage = assertPubSubMessage(buildPubSubTransaction(transaction), 1);
@@ -182,7 +182,7 @@ class PubSubRecordItemListenerTest {
         Transaction transaction = buildTransaction(builder -> builder.setConsensusSubmitMessage(submitMessage));
         // when
         doReturn(null).when(transactionHandler).getEntity(any());
-        pubSubRecordItemListener.onItem(RecordItem.builder().record(DEFAULT_RECORD).transaction(transaction).build());
+        pubSubRecordItemListener.onItem(RecordItem.builder().transactionRecord(DEFAULT_RECORD).transaction(transaction).build());
 
         // then
         var pubSubMessage = assertPubSubMessage(buildPubSubTransaction(transaction), 1);
@@ -203,7 +203,7 @@ class PubSubRecordItemListenerTest {
                         .build())
                 .build();
         Transaction transaction = buildTransaction(builder -> builder.setCryptoTransfer(cryptoTransfer));
-        var recordItem = RecordItem.builder().record(DEFAULT_RECORD).transaction(transaction).build();
+        var recordItem = RecordItem.builder().transactionRecord(DEFAULT_RECORD).transaction(transaction).build();
         when(nonFeeTransferExtractionStrategy.extractNonFeeTransfers(recordItem.getTransactionBody(),
                 recordItem.getTransactionRecord())).thenReturn(cryptoTransfer.getTransfers().getAccountAmountsList());
 
@@ -223,7 +223,7 @@ class PubSubRecordItemListenerTest {
                 .setTransfers(TransferList.newBuilder().build())
                 .build();
         Transaction transaction = buildTransaction(builder -> builder.setCryptoTransfer(cryptoTransfer));
-        RecordItem recordItem = RecordItem.builder().record(DEFAULT_RECORD)
+        RecordItem recordItem = RecordItem.builder().transactionRecord(DEFAULT_RECORD)
                 .transaction(transaction).build();
 
         // when
@@ -251,7 +251,7 @@ class PubSubRecordItemListenerTest {
                 .thenThrow(MessageTimeoutException.class)
                 .thenThrow(MessageTimeoutException.class)
                 .thenReturn(true);
-        pubSubRecordItemListener.onItem(RecordItem.builder().record(DEFAULT_RECORD).transaction(transaction).build());
+        pubSubRecordItemListener.onItem(RecordItem.builder().transactionRecord(DEFAULT_RECORD).transaction(transaction).build());
 
         // then
         var pubSubMessage = assertPubSubMessage(buildPubSubTransaction(transaction), 3);
@@ -273,7 +273,7 @@ class PubSubRecordItemListenerTest {
         // when
         EntityId entityId = EntityId.of(ADDRESS_BOOK_FILE_ID);
         doReturn(entityId).when(transactionHandler).getEntity(any());
-        pubSubRecordItemListener.onItem(RecordItem.builder().record(DEFAULT_RECORD).transaction(transaction).build());
+        pubSubRecordItemListener.onItem(RecordItem.builder().transactionRecord(DEFAULT_RECORD).transaction(transaction).build());
 
         // then
         FileData fileData = new FileData(100L, fileContents, entityId, TransactionType.FILEAPPEND
@@ -293,7 +293,7 @@ class PubSubRecordItemListenerTest {
 
         // when
         doReturn(EntityId.of(ADDRESS_BOOK_FILE_ID)).when(transactionHandler).getEntity(any());
-        pubSubRecordItemListener.onItem(RecordItem.builder().record(DEFAULT_RECORD).transaction(transaction).build());
+        pubSubRecordItemListener.onItem(RecordItem.builder().transactionRecord(DEFAULT_RECORD).transaction(transaction).build());
 
         // then
         FileData fileData = new FileData(100L, fileContents, EntityId
