@@ -24,7 +24,6 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
@@ -106,17 +105,17 @@ class CloudStorageConfiguration {
                 .endpointOverride(sourceProperties.getUri())
                 .forcePathStyle(true)
                 .httpClient(httpClient)
-                .overrideConfiguration(c -> c.addExecutionInterceptor(metricsExecutionInterceptor))
-                .overrideConfiguration(overrideProject(sourceProperties))
+                .overrideConfiguration(overrideConfiguration(sourceProperties))
                 .region(Region.of(sourceProperties.getRegion()))
                 .build();
     }
 
-    private Consumer<ClientOverrideConfiguration.Builder> overrideProject(StreamSourceProperties sourceProperties) {
+    private ClientOverrideConfiguration overrideConfiguration(StreamSourceProperties sourceProperties) {
         var projectId = sourceProperties.getProjectId();
+        var builder = ClientOverrideConfiguration.builder().addExecutionInterceptor(metricsExecutionInterceptor);
 
         if (StringUtils.isNotBlank(projectId)) {
-            return builder -> builder.addExecutionInterceptor(new ExecutionInterceptor() {
+            builder.addExecutionInterceptor(new ExecutionInterceptor() {
                 @Override
                 public SdkHttpRequest modifyHttpRequest(
                         Context.ModifyHttpRequest context, ExecutionAttributes executionAttributes) {
@@ -126,7 +125,6 @@ class CloudStorageConfiguration {
             });
         }
 
-        return builder -> {
-        };
+        return builder.build();
     }
 }
