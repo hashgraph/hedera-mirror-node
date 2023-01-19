@@ -20,7 +20,7 @@ package com.hedera.mirror.importer.parser.record.entity.notify;
  * ‍
  */
 
-import static com.fasterxml.jackson.databind.PropertyNamingStrategy.SNAKE_CASE;
+import static com.fasterxml.jackson.databind.PropertyNamingStrategies.SNAKE_CASE;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Stopwatch;

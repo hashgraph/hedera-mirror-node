@@ -1,6 +1,6 @@
 {
   "name": "@hashgraph/check-state-proof",
-  "version": "0.73.0-SNAPSHOT",
+  "version": "0.74.0-SNAPSHOT",
   "description": "An example implementation of a state proof flow for a transaction utilizing the mirror node.",
   "type": "module",
   "main": "index.js",
@@ -27,11 +27,11 @@
     "check-state-proof": "./index.js"
   },
   "dependencies": {
-    "@hashgraph/proto": "^2.11.0",
+    "@hashgraph/proto": "^2.11.1",
     "abort-controller": "^3.0.0",
     "boxen": "^7.0.1",
     "chalk": "^5.2.0",
-    "glob": "^8.0.3",
+    "glob": "^8.1.0",
     "lodash": "^4.17.21",
     "log4js": "^6.7.1",
     "node-fetch": "^3.3.0",

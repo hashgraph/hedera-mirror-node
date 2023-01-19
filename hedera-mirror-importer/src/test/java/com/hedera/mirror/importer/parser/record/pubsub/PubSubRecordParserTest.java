@@ -59,7 +59,7 @@ class PubSubRecordParserTest extends PubSubIntegrationTest {
     private final Resource[] testFiles;
 
     @Test
-    public void testPubSubExporter() throws Exception {
+    void testPubSubExporter() throws Exception {
         for (int index = 0; index < testFiles.length; index++) {
             RecordFile recordFile = recordFileReader.read(StreamFileData.from(testFiles[index].getFile()));
             recordFile.setIndex((long) index);
@@ -77,8 +77,8 @@ class PubSubRecordParserTest extends PubSubIntegrationTest {
         // map timestamps to messages and compare individual message JSON strings
         Map<Long, String> expectedMessageMap = mapMessages(expectedMessages);
         Map<Long, String> actualMessageMap = mapMessages(actualMessages);
-        assertThat(actualMessageMap.size()).isEqualTo(actualMessages.size());
-        assertThat(expectedMessageMap.size()).isEqualTo(expectedMessages.size());
+        assertThat(actualMessageMap).hasSameSizeAs(actualMessages);
+        assertThat(expectedMessageMap).hasSameSizeAs(expectedMessages);
         for (Map.Entry<Long, String> messageEntry : expectedMessageMap.entrySet()) {
             long consensusTimestamp = messageEntry.getKey();
             String expectedMessage = messageEntry.getValue();

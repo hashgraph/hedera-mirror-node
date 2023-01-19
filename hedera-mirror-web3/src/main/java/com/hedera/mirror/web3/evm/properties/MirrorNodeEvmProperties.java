@@ -20,17 +20,20 @@ package com.hedera.mirror.web3.evm.properties;
  * ‍
  */
 
-import lombok.Setter;
-import org.hyperledger.besu.datatypes.Address;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-
-import com.hedera.services.evm.contracts.execution.EvmProperties;
-
-import org.springframework.validation.annotation.Validated;
-
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import lombok.Getter;
+import lombok.Setter;
+import org.hibernate.validator.constraints.time.DurationMin;
+import org.hyperledger.besu.datatypes.Address;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
+
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
+
+import java.time.Duration;
 
 @Setter
 @Validated
@@ -49,6 +52,11 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Min(1)
     @Max(100)
     private int maxGasRefundPercentage = 20;
+
+    @Getter
+    @NotNull
+    @DurationMin(seconds = 1)
+    private Duration expirationCacheTime = Duration.ofMinutes(10L);
 
     @Override
     public boolean isRedirectTokenCallsEnabled() {
@@ -74,5 +82,4 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     public int maxGasRefundPercentage() {
         return maxGasRefundPercentage;
     }
-
 }

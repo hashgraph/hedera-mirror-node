@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.evm;
+package com.hedera.mirror.web3.evm.account;
 
 /*-
  * ‌
@@ -20,24 +20,24 @@ package com.hedera.mirror.web3.evm;
  * ‍
  */
 
-import com.hedera.mirror.common.domain.entity.Entity;
-import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
-import com.hedera.services.evm.accounts.HederaEvmContractAliases;
-
+import javax.inject.Named;
+import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
+import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
+import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
+
+@Named
+@RequiredArgsConstructor
 public class MirrorEvmContractAliases extends HederaEvmContractAliases {
-
+    private static final byte[] EMPTY_ADDRESS = new byte[0];
     private final MirrorEntityAccess mirrorEntityAccess;
-
-    public MirrorEvmContractAliases(MirrorEntityAccess mirrorEntityAccess) {
-        this.mirrorEntityAccess = mirrorEntityAccess;
-    }
 
     @Override
     public Address resolveForEvm(Address addressOrAlias) {
         final var entity = mirrorEntityAccess.findEntity(addressOrAlias);
-        return Address.wrap(Bytes.wrap(entity.map(Entity::getEvmAddress).orElse(addressOrAlias.toArray())));
+        return Address.wrap(Bytes.wrap(entity.map(Entity::getEvmAddress).orElse(EMPTY_ADDRESS)));
     }
 }

@@ -24,6 +24,7 @@ import static com.hedera.mirror.web3.controller.ContractController.NOT_IMPLEMENT
 import static com.hedera.mirror.web3.validation.HexValidator.MESSAGE;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
+import static org.springframework.http.HttpStatus.OK;
 
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
@@ -33,11 +34,13 @@ import org.junit.jupiter.params.provider.EmptySource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.reactive.function.BodyInserters;
 
+import com.hedera.mirror.web3.service.ContractCallService;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
 import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
@@ -52,12 +55,17 @@ class ContractControllerTest {
     @Resource
     private WebTestClient webClient;
 
+    @MockBean
+    private ContractCallService service;
+
     @Test
-    void call() {
+    void estimateGas() {
+        final var request = request();
+        request.setEstimate(true);
         webClient.post()
                 .uri(CALL_URI)
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(BodyInserters.fromValue(request()))
+                .body(BodyInserters.fromValue(request))
                 .exchange()
                 .expectStatus()
                 .isEqualTo(NOT_IMPLEMENTED)
@@ -119,7 +127,6 @@ class ContractControllerTest {
 
     @Test
     void callInvalidValue() {
-        final var errorString = negativeNumberErrorFrom("value");
         final var request = request();
         request.setValue(-1L);
 
@@ -130,8 +137,7 @@ class ContractControllerTest {
                 .exchange()
                 .expectStatus()
                 .isEqualTo(BAD_REQUEST)
-                .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse(errorString));
+                .expectBody(GenericErrorResponse.class);
     }
 
     @Test
@@ -168,6 +174,23 @@ class ContractControllerTest {
                 .isEqualTo(new GenericErrorResponse(errorString));
     }
 
+    @Test
+    void transferWithoutSender(){
+        final var errorString = "from field must not be null";
+        final var request = request();
+        request.setFrom(null);
+
+        webClient.post()
+                .uri(CALL_URI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(request))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(BAD_REQUEST)
+                .expectBody(GenericErrorResponse.class)
+                .isEqualTo(new GenericErrorResponse(errorString));
+    }
+
     @NullAndEmptySource
     @ParameterizedTest
     @ValueSource(strings = {"earliest", "pending", "latest", "0", "0x1a"})
@@ -181,9 +204,33 @@ class ContractControllerTest {
                 .body(BodyInserters.fromValue(request))
                 .exchange()
                 .expectStatus()
-                .isEqualTo(NOT_IMPLEMENTED)
-                .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse(NOT_IMPLEMENTED_ERROR));
+                .isEqualTo(OK);
+    }
+
+    @Test
+    void callSuccess(){
+        final var request = request();
+        request.setData("0x1079023a0000000000000000000000000000000000000000000000000000000000000156");
+        request.setValue(0);
+
+        webClient.post()
+                .uri(CALL_URI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(request))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(OK);
+    }
+
+    @Test
+    void transferSuccess(){
+        webClient.post()
+                .uri(CALL_URI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(request()))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(OK);
     }
 
     private ContractCallRequest request() {

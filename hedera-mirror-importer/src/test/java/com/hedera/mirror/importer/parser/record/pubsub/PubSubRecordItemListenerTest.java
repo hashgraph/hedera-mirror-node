@@ -186,7 +186,7 @@ class PubSubRecordItemListenerTest {
 
         // then
         var pubSubMessage = assertPubSubMessage(buildPubSubTransaction(transaction), 1);
-        assertThat(pubSubMessage.getEntity()).isEqualTo(null);
+        assertThat(pubSubMessage.getEntity()).isNull();
         assertThat(pubSubMessage.getNonFeeTransfers()).isNull();
     }
 

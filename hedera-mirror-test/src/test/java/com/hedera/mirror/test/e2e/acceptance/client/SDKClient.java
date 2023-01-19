@@ -57,7 +57,6 @@ public class SDKClient implements AutoCloseable {
 
     private final Client client;
     private final ExpandedAccountId defaultOperator;
-    private final Hbar maxTransactionFee;
     private final Map<String, AccountId> validateNetworkMap;
     private final AcceptanceTestProperties acceptanceTestProperties;
     private final MirrorNodeClient mirrorNodeClient;
@@ -71,7 +70,6 @@ public class SDKClient implements AutoCloseable {
         defaultOperator = new ExpandedAccountId(acceptanceTestProperties.getOperatorId(),
                 acceptanceTestProperties.getOperatorKey());
         this.mirrorNodeClient = mirrorNodeClient;
-        maxTransactionFee = Hbar.fromTinybars(acceptanceTestProperties.getMaxTinyBarTransactionFee());
         this.acceptanceTestProperties = acceptanceTestProperties;
         this.client = createClient();
         startupProbe.validateEnvironment(client);
@@ -144,7 +142,6 @@ public class SDKClient implements AutoCloseable {
                 var accountId = new AccountCreateTransaction()
                         .setInitialBalance(Hbar.fromTinybars(acceptanceTestProperties.getOperatorBalance()))
                         .setKey(publicKey)
-                        .setMaxTransactionFee(maxTransactionFee)
                         .execute(client)
                         .getReceipt(client)
                         .accountId;
@@ -205,7 +202,9 @@ public class SDKClient implements AutoCloseable {
     }
 
     private Client withDefaultOperator(Client client) {
-        return client.setOperator(defaultOperator.getAccountId(), defaultOperator.getPrivateKey());
+        var maxTransactionFee = Hbar.fromTinybars(acceptanceTestProperties.getMaxTinyBarTransactionFee());
+        return client.setOperator(defaultOperator.getAccountId(), defaultOperator.getPrivateKey())
+                .setDefaultMaxTransactionFee(maxTransactionFee);
     }
 
     private Map<String, AccountId> getAddressBook() {

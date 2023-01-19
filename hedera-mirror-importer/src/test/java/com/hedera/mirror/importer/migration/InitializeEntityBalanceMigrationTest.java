@@ -47,7 +47,7 @@ import com.hedera.mirror.importer.repository.RecordFileRepository;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
-public class InitializeEntityBalanceMigrationTest extends IntegrationTest {
+class InitializeEntityBalanceMigrationTest extends IntegrationTest {
 
     private final AccountBalanceFileRepository accountBalanceFileRepository;
     private final AccountBalanceRepository accountBalanceRepository;

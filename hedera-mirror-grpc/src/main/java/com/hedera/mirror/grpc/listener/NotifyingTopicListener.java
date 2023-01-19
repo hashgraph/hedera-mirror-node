@@ -53,7 +53,7 @@ public class NotifyingTopicListener extends SharedTopicListener {
         objectMapper = new ObjectMapper().setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
         channel = Mono.defer(this::createChannel).cache();
         Duration interval = listenerProperties.getInterval();
-        topicMessages = Flux.defer(() -> listen())
+        topicMessages = Flux.defer(this::listen)
                 .map(this::toTopicMessage)
                 .filter(Objects::nonNull)
                 .name("notify")

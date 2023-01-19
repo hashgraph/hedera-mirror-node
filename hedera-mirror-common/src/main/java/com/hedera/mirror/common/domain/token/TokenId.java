@@ -42,6 +42,7 @@ import com.hedera.mirror.common.converter.TokenIdConverter;
 public class TokenId implements Serializable {
     private static final long serialVersionUID = -4595724698253758379L;
 
+    @SuppressWarnings("java:S1700")
     @Convert(converter = TokenIdConverter.class)
     private EntityId tokenId;
 }

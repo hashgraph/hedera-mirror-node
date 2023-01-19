@@ -20,12 +20,25 @@ package com.hedera.mirror.web3.exception;
  * ‍
  */
 
-import com.hedera.mirror.web3.evm.exception.EvmException;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.nio.charset.StandardCharsets;
+import org.apache.tuweni.bytes.Bytes;
 
+import com.hedera.mirror.web3.evm.exception.EvmException;
+
+@SuppressWarnings("java:S110")
 public class InvalidTransactionException extends EvmException {
 
     public InvalidTransactionException(final ResponseCodeEnum responseCode) {
         super(responseCode.name());
+    }
+
+    public InvalidTransactionException(String message) {
+        super(message);
+    }
+
+    public Bytes messageBytes() {
+        final var detail = getMessage();
+        return Bytes.of(detail.getBytes(StandardCharsets.UTF_8));
     }
 }

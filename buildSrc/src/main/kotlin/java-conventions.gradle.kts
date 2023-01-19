@@ -46,6 +46,9 @@ repositories {
     maven {
         url = uri("https://us-maven.pkg.dev/swirlds-registry/maven-develop-snapshots")
     }
+    maven {
+        url = uri("https://us-maven.pkg.dev/swirlds-registry/maven-adhoc-commits")
+    }
 }
 
 dependencyManagement {

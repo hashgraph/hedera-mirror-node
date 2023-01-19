@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.batch;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -142,7 +142,7 @@ class BatchInserterTest extends IntegrationTest {
     @Test
     void persistNull() {
         batchInserter.persist(null);
-        assertThat(cryptoTransferRepository.count()).isEqualTo(0);
+        assertThat(cryptoTransferRepository.count()).isZero();
     }
 
     @Test
@@ -206,10 +206,12 @@ class BatchInserterTest extends IntegrationTest {
     }
 
     private CryptoTransfer cryptoTransfer(long consensusTimestamp) {
-        CryptoTransfer cryptoTransfer = new CryptoTransfer(consensusTimestamp, 1L, EntityId
-                .of(0L, 1L, 2L, EntityType.ACCOUNT));
-        cryptoTransfer.setPayerAccountId(EntityId.of(0L, 1L, 100L, EntityType.ACCOUNT));
-        return cryptoTransfer;
+        return CryptoTransfer.builder()
+                .amount(1L)
+                .consensusTimestamp(consensusTimestamp)
+                .entityId(EntityId.of(0L, 1L, 2L, EntityType.ACCOUNT).getId())
+                .payerAccountId(EntityId.of(0L, 1L, 100L, EntityType.ACCOUNT))
+                .build();
     }
 
     private TokenTransfer tokenTransfer(long consensusTimestamp) {

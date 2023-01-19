@@ -259,7 +259,7 @@ public class TokenFeature {
         assertNotNull(networkTransactionResponse.getTransactionId());
         TransactionReceipt receipt = networkTransactionResponse.getReceipt();
         assertNotNull(receipt);
-        assertThat(receipt.serials.size()).isEqualTo(1);
+        assertThat(receipt.serials.size()).isOne();
         long serialNumber = receipt.serials.get(0);
         assertThat(serialNumber).isPositive();
         tokenSerialNumbers.get(tokenId).add(serialNumber);

@@ -1,4 +1,4 @@
-package com.hedera.mirror.test.e2e.acceptance.response;
+package com.hedera.mirror.web3.evm.contracts.execution;
 
 /*-
  * ‌
@@ -9,9 +9,9 @@ package com.hedera.mirror.test.e2e.acceptance.response;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,12 +20,18 @@ package com.hedera.mirror.test.e2e.acceptance.response;
  * ‍
  */
 
-import java.util.List;
-import lombok.Data;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorAccountBalance;
+import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
+import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 
-@Data
-public class MirrorTokenBalancesResponse {
-    List<MirrorAccountBalance> balances;
+public interface MirrorEvmTxProcessorFacade {
+    HederaEvmTransactionProcessingResult execute(
+            final HederaEvmAccount sender,
+            final Address receiver,
+            final long providedGasLimit,
+            final long value,
+            final Bytes callData,
+            final boolean isStatic);
 }

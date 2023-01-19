@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.reader.balance.line;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -110,7 +110,7 @@ class AccountBalanceLineParserV2Test {
                         .split(tokenBalances).entrySet().stream().collect(Collectors
                                 .toMap(entry -> Long.parseLong(entry.getKey()), entry -> Long
                                         .parseLong(entry.getValue())));
-                assertThat(actualTokenBalanceList.size()).isEqualTo(expectedTokenBalances.size());
+                assertThat(actualTokenBalanceList).hasSameSizeAs(tokenBalances.split(","));
                 for (int i = 0; i < actualTokenBalanceList.size(); i++) {
                     TokenBalance actualTokenBalance = actualTokenBalanceList.get(i);
                     TokenBalance.Id actualId = actualTokenBalance.getId();
@@ -129,7 +129,7 @@ class AccountBalanceLineParserV2Test {
                     assertThat(actualId.getTokenId().getType()).isEqualTo(EntityType.TOKEN);
                 }
             } else {
-                assertThat(actualTokenBalanceList.size()).isEqualTo(0);
+                assertThat(actualTokenBalanceList).isEmpty();
             }
         } else {
             assertThrows(InvalidDatasetException.class, () -> {

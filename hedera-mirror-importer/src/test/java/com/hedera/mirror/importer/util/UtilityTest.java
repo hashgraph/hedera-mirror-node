@@ -41,6 +41,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.exception.ParserException;
 
+@SuppressWarnings("java:S5786")
 public class UtilityTest {
 
     public static final byte[] ALIAS_ECDSA_SECP256K1 = Hex.decode(

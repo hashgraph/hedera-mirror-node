@@ -20,7 +20,6 @@ package com.hedera.mirror.web3.evm.account;
  * ‍
  */
 
-
 import com.google.protobuf.ByteString;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +27,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
-import com.hedera.services.evm.accounts.AccountAccessor;
+import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 
 @Named
 @RequiredArgsConstructor

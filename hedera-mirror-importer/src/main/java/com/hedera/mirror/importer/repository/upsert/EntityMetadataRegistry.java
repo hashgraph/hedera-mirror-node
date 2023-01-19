@@ -101,6 +101,7 @@ public class EntityMetadataRegistry {
         return entityMetadata;
     }
 
+    @SuppressWarnings("java:S4276")
     private ColumnMetadata columnMetadata(Map<String, InformationSchemaColumns> schema,
                                           Attribute<?, ?> attribute, boolean id) {
         String name = attribute.getName();

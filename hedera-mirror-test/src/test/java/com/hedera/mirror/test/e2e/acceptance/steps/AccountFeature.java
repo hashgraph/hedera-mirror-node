@@ -23,9 +23,11 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.hashgraph.sdk.PrivateKey;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import java.util.Comparator;
 import java.util.List;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -54,6 +56,7 @@ public class AccountFeature extends AbstractFeature {
 
     private AccountId ownerAccountId;
     private AccountId receiverAccountId;
+
     private ExpandedAccountId senderAccountId;
     private long startingBalance;
 
@@ -75,6 +78,39 @@ public class AccountFeature extends AbstractFeature {
                 .sendCryptoTransfer(senderAccountId.getAccountId(), Hbar.fromTinybars(amount));
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
+    }
+
+    @Given("I send {long} tℏ to {string} alias not present in the network")
+    public void createAccountOnTransferForAlias(long amount, String keyType) {
+        var recipientPrivateKey =  "ED25519".equalsIgnoreCase(keyType) ? PrivateKey.generateED25519() : PrivateKey.generateECDSA();
+
+        receiverAccountId = recipientPrivateKey.toAccountId(0,0);
+        networkTransactionResponse = accountClient.sendCryptoTransfer(receiverAccountId, Hbar.fromTinybars(amount));
+
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
+    }
+
+    @Then("the transfer auto creates a new account with balance of transferred amount {long} tℏ")
+    public void verifyAccountCreated(long amount) {
+        var accountInfo = mirrorClient.getAccountDetailsUsingAlias(receiverAccountId);
+        var transactions = mirrorClient.getTransactions(networkTransactionResponse.getTransactionIdStringNoCheckSum())
+                .getTransactions()
+                .stream()
+                .sorted(Comparator.comparing(MirrorTransaction::getConsensusTimestamp))
+                .toList();
+
+        assertNotNull(accountInfo.getAccount());
+        assertEquals(amount, accountInfo.getBalanceInfo().getBalance());
+        assertEquals(1, accountInfo.getTransactions().size());
+        assertEquals(2, transactions.size());
+
+        var createAccountTransaction = transactions.get(0);
+        var transferTransaction = transactions.get(1);
+
+        assertEquals(transferTransaction, accountInfo.getTransactions().get(0));
+        assertEquals("CRYPTOCREATEACCOUNT", createAccountTransaction.getName());
+        assertEquals(createAccountTransaction.getConsensusTimestamp(), accountInfo.getCreatedTimestamp());
     }
 
     @When("I send {long} tℏ to newly created account")
@@ -151,7 +187,7 @@ public class AccountFeature extends AbstractFeature {
                 .isEqualTo(networkTransactionResponse.getValidStartString());
         assertThat(mirrorTransaction.getName()).isEqualTo("CRYPTOTRANSFER");
 
-        assertThat(mirrorTransaction.getTransfers().size()).isGreaterThanOrEqualTo(3); // network, node and transfer
+        assertThat(mirrorTransaction.getTransfers()).hasSizeGreaterThanOrEqualTo(3); // network, node and transfer
 
         //verify transfer credit and debits balance out
         long transferSum = 0;

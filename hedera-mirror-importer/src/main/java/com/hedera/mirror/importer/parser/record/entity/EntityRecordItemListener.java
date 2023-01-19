@@ -127,7 +127,6 @@ public class EntityRecordItemListener implements RecordItemListener {
     @Override
     public void onItem(RecordItem recordItem) throws ImporterException {
         TransactionRecord txRecord = recordItem.getTransactionRecord();
-        TransactionBody body = recordItem.getTransactionBody();
         int transactionTypeValue = recordItem.getTransactionType();
         TransactionType transactionType = TransactionType.of(transactionTypeValue);
         TransactionHandler transactionHandler = transactionHandlerFactory.get(transactionType);
@@ -177,47 +176,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
             // Only add non-fee transfers on success as the data is assured to be valid
             processNonFeeTransfers(consensusTimestamp, recordItem);
-
-            if (body.hasConsensusSubmitMessage()) {
-                insertConsensusTopicMessage(recordItem);
-            } else if (body.hasCryptoAddLiveHash()) {
-                insertCryptoAddLiveHash(consensusTimestamp, body.getCryptoAddLiveHash());
-            } else if (body.hasFileAppend()) {
-                insertFileAppend(consensusTimestamp, body.getFileAppend(), transactionTypeValue);
-            } else if (body.hasFileCreate()) {
-                insertFileData(consensusTimestamp, DomainUtils.toBytes(body.getFileCreate().getContents()),
-                        txRecord.getReceipt().getFileID(), transactionTypeValue);
-            } else if (body.hasFileUpdate()) {
-                insertFileUpdate(consensusTimestamp, body.getFileUpdate(), transactionTypeValue);
-            } else if (body.hasTokenAssociate()) {
-                insertTokenAssociate(recordItem);
-            } else if (body.hasTokenBurn()) {
-                insertTokenBurn(recordItem);
-            } else if (body.hasTokenCreation()) {
-                insertTokenCreate(recordItem);
-            } else if (body.hasTokenDissociate()) {
-                insertTokenDissociate(recordItem);
-            } else if (body.hasTokenFeeScheduleUpdate()) {
-                insertTokenFeeScheduleUpdate(recordItem);
-            } else if (body.hasTokenFreeze()) {
-                insertTokenAccountFreezeBody(recordItem);
-            } else if (body.hasTokenGrantKyc()) {
-                insertTokenAccountGrantKyc(recordItem);
-            } else if (body.hasTokenMint()) {
-                insertTokenMint(recordItem);
-            } else if (body.hasTokenPause()) {
-                insertTokenPause(recordItem);
-            } else if (body.hasTokenRevokeKyc()) {
-                insertTokenAccountRevokeKyc(recordItem);
-            } else if (body.hasTokenUnfreeze()) {
-                insertTokenAccountUnfreeze(recordItem);
-            } else if (body.hasTokenUnpause()) {
-                insertTokenUnpause(recordItem);
-            } else if (body.hasTokenUpdate()) {
-                insertTokenUpdate(recordItem);
-            } else if (body.hasTokenWipe()) {
-                insertTokenAccountWipe(recordItem);
-            }
+            processTransaction(recordItem);
 
             // Record token transfers can be populated for multiple transaction types
             insertTokenTransfers(recordItem);
@@ -229,6 +188,57 @@ public class EntityRecordItemListener implements RecordItemListener {
 
         entityListener.onTransaction(transaction);
         log.debug("Storing transaction: {}", transaction);
+    }
+
+    // reduce Cognitive Complexity of onItem() by moving the "dispatcher" part of the code into a separate method.
+    // This still has Cognitive Complexity of 19, but it really doesn't make sense to split into two parts.
+    @SuppressWarnings("java:S3776")
+    private void processTransaction(RecordItem recordItem) {
+        TransactionRecord txRecord = recordItem.getTransactionRecord();
+        int transactionTypeValue = recordItem.getTransactionType();
+        long consensusTimestamp = recordItem.getConsensusTimestamp();
+        TransactionBody body = recordItem.getTransactionBody();
+
+        if (body.hasConsensusSubmitMessage()) {
+            insertConsensusTopicMessage(recordItem);
+        } else if (body.hasCryptoAddLiveHash()) {
+            insertCryptoAddLiveHash(consensusTimestamp, body.getCryptoAddLiveHash());
+        } else if (body.hasFileAppend()) {
+            insertFileAppend(consensusTimestamp, body.getFileAppend(), transactionTypeValue);
+        } else if (body.hasFileCreate()) {
+            insertFileData(consensusTimestamp, DomainUtils.toBytes(body.getFileCreate().getContents()),
+                    txRecord.getReceipt().getFileID(), transactionTypeValue);
+        } else if (body.hasFileUpdate()) {
+            insertFileUpdate(consensusTimestamp, body.getFileUpdate(), transactionTypeValue);
+        } else if (body.hasTokenAssociate()) {
+            insertTokenAssociate(recordItem);
+        } else if (body.hasTokenBurn()) {
+            insertTokenBurn(recordItem);
+        } else if (body.hasTokenCreation()) {
+            insertTokenCreate(recordItem);
+        } else if (body.hasTokenDissociate()) {
+            insertTokenDissociate(recordItem);
+        } else if (body.hasTokenFeeScheduleUpdate()) {
+            insertTokenFeeScheduleUpdate(recordItem);
+        } else if (body.hasTokenFreeze()) {
+            insertTokenAccountFreezeBody(recordItem);
+        } else if (body.hasTokenGrantKyc()) {
+            insertTokenAccountGrantKyc(recordItem);
+        } else if (body.hasTokenMint()) {
+            insertTokenMint(recordItem);
+        } else if (body.hasTokenPause()) {
+            insertTokenPause(recordItem);
+        } else if (body.hasTokenRevokeKyc()) {
+            insertTokenAccountRevokeKyc(recordItem);
+        } else if (body.hasTokenUnfreeze()) {
+            insertTokenAccountUnfreeze(recordItem);
+        } else if (body.hasTokenUnpause()) {
+            insertTokenUnpause(recordItem);
+        } else if (body.hasTokenUpdate()) {
+            insertTokenUpdate(recordItem);
+        } else if (body.hasTokenWipe()) {
+            insertTokenAccountWipe(recordItem);
+        }
     }
 
     private Transaction buildTransaction(long consensusTimestamp, RecordItem recordItem) {
@@ -841,50 +851,52 @@ public class EntityRecordItemListener implements RecordItemListener {
     }
 
     private void insertTokenUpdate(RecordItem recordItem) {
-        if (entityProperties.getPersist().isTokens()) {
-            long consensusTimestamp = recordItem.getConsensusTimestamp();
-            TokenUpdateTransactionBody tokenUpdateTransactionBody = recordItem.getTransactionBody().getTokenUpdate();
-
-            Token token = Token.of(EntityId.of(tokenUpdateTransactionBody.getToken()));
-
-            if (tokenUpdateTransactionBody.hasFeeScheduleKey()) {
-                token.setFeeScheduleKey(tokenUpdateTransactionBody.getFeeScheduleKey().toByteArray());
-            }
-
-            if (tokenUpdateTransactionBody.hasFreezeKey()) {
-                token.setFreezeKey(tokenUpdateTransactionBody.getFreezeKey().toByteArray());
-            }
-
-            if (tokenUpdateTransactionBody.hasKycKey()) {
-                token.setKycKey(tokenUpdateTransactionBody.getKycKey().toByteArray());
-            }
-
-            if (tokenUpdateTransactionBody.hasPauseKey()) {
-                token.setPauseKey(tokenUpdateTransactionBody.getPauseKey().toByteArray());
-            }
-
-            if (tokenUpdateTransactionBody.hasSupplyKey()) {
-                token.setSupplyKey(tokenUpdateTransactionBody.getSupplyKey().toByteArray());
-            }
-
-            if (tokenUpdateTransactionBody.hasTreasury()) {
-                token.setTreasuryAccountId(EntityId.of(tokenUpdateTransactionBody.getTreasury()));
-            }
-
-            if (tokenUpdateTransactionBody.hasWipeKey()) {
-                token.setWipeKey(tokenUpdateTransactionBody.getWipeKey().toByteArray());
-            }
-
-            if (!tokenUpdateTransactionBody.getName().isEmpty()) {
-                token.setName(tokenUpdateTransactionBody.getName());
-            }
-
-            if (!tokenUpdateTransactionBody.getSymbol().isEmpty()) {
-                token.setSymbol(tokenUpdateTransactionBody.getSymbol());
-            }
-
-            updateToken(token, consensusTimestamp);
+        if (!entityProperties.getPersist().isTokens()) {
+            return;
         }
+
+        long consensusTimestamp = recordItem.getConsensusTimestamp();
+        TokenUpdateTransactionBody tokenUpdateTransactionBody = recordItem.getTransactionBody().getTokenUpdate();
+
+        Token token = Token.of(EntityId.of(tokenUpdateTransactionBody.getToken()));
+
+        if (tokenUpdateTransactionBody.hasFeeScheduleKey()) {
+            token.setFeeScheduleKey(tokenUpdateTransactionBody.getFeeScheduleKey().toByteArray());
+        }
+
+        if (tokenUpdateTransactionBody.hasFreezeKey()) {
+            token.setFreezeKey(tokenUpdateTransactionBody.getFreezeKey().toByteArray());
+        }
+
+        if (tokenUpdateTransactionBody.hasKycKey()) {
+            token.setKycKey(tokenUpdateTransactionBody.getKycKey().toByteArray());
+        }
+
+        if (tokenUpdateTransactionBody.hasPauseKey()) {
+            token.setPauseKey(tokenUpdateTransactionBody.getPauseKey().toByteArray());
+        }
+
+        if (tokenUpdateTransactionBody.hasSupplyKey()) {
+            token.setSupplyKey(tokenUpdateTransactionBody.getSupplyKey().toByteArray());
+        }
+
+        if (tokenUpdateTransactionBody.hasTreasury()) {
+            token.setTreasuryAccountId(EntityId.of(tokenUpdateTransactionBody.getTreasury()));
+        }
+
+        if (tokenUpdateTransactionBody.hasWipeKey()) {
+            token.setWipeKey(tokenUpdateTransactionBody.getWipeKey().toByteArray());
+        }
+
+        if (!tokenUpdateTransactionBody.getName().isEmpty()) {
+            token.setName(tokenUpdateTransactionBody.getName());
+        }
+
+        if (!tokenUpdateTransactionBody.getSymbol().isEmpty()) {
+            token.setSymbol(tokenUpdateTransactionBody.getSymbol());
+        }
+
+        updateToken(token, consensusTimestamp);
     }
 
     private void insertTokenAccountUnfreeze(RecordItem recordItem) {

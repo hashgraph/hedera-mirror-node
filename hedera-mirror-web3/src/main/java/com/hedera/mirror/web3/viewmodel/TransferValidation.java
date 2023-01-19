@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.evm.store.models;
+package com.hedera.mirror.web3.viewmodel;
 
 /*-
  * ‌
@@ -20,18 +20,20 @@ package com.hedera.mirror.web3.evm.store.models;
  * ‍
  */
 
-import lombok.Value;
-import org.hyperledger.besu.datatypes.Address;
+import org.hibernate.validator.spi.group.DefaultGroupSequenceProvider;
+import java.util.ArrayList;
+import java.util.List;
 
-import com.hedera.services.evm.store.models.HederaEvmAccount;
-
-@Value
-public class MirrorEvmAccount implements HederaEvmAccount {
-
-    Address address;
-
+public class TransferValidation implements DefaultGroupSequenceProvider<ContractCallRequest> {
     @Override
-    public Address canonicalAddress() {
-        return address;
+    public List<Class<?>> getValidationGroups(ContractCallRequest request) {
+        List<Class<?>> sequence = new ArrayList<>();
+
+        if(request!= null && request.getValue() >= 1){
+            sequence.add(TransferCheck.class);
+        }
+        sequence.add(ContractCallRequest.class);
+
+        return sequence;
     }
 }
