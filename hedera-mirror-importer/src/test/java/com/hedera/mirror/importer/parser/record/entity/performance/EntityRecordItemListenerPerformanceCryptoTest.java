@@ -105,7 +105,7 @@ class EntityRecordItemListenerPerformanceCryptoTest extends AbstractEntityRecord
                 createTransactionBody,
                 ResponseCodeEnum.SUCCESS.getNumber(),
                 accountNum);
-        return RecordItem.builder().record(createRecord).transaction(createTransaction).build();
+        return RecordItem.builder().transactionRecord(createRecord).transaction(createTransaction).build();
     }
 
     private RecordItem getUpdateAccountRecordItem(int accountNum) throws Exception {
@@ -116,7 +116,7 @@ class EntityRecordItemListenerPerformanceCryptoTest extends AbstractEntityRecord
                 updateTransactionBody,
                 ResponseCodeEnum.SUCCESS.getNumber(),
                 accountNum);
-        return RecordItem.builder().record(createRecord).transaction(updateTransaction).build();
+        return RecordItem.builder().transactionRecord(createRecord).transaction(updateTransaction).build();
     }
 
     private Transaction cryptoCreateTransaction() {
