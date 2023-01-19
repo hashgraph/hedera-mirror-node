@@ -106,7 +106,7 @@ spring:
       cronSchedule: "'@daily'"
       db-name: ${hedera.mirror.importer.db.name}
       db-user: ${hedera.mirror.importer.db.username}
-      partitionTimeInterval: "'3 months'"
+      partitionTimeInterval: "'1 month'"
       partitionIdInterval: "'1000000'"
       partitionStartDate: "'3 years'"
       schema: ${hedera.mirror.importer.db.schema}
