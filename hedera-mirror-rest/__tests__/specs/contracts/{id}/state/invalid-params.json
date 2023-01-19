@@ -54,7 +54,7 @@
         "_status": {
           "messages": [
             {
-              "message": "Invalid parameter: nonce"
+              "message": "Unknown query parameter: nonce"
             }
           ]
         }

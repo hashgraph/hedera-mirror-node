@@ -112,11 +112,10 @@ class CryptoAllowanceController extends BaseController {
   };
 }
 
-const validCryptoAllowanceParameters = [
-  filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS,
+const validCryptoAllowanceParameters = new Set([
   filterKeys.LIMIT,
   filterKeys.ORDER,
   filterKeys.SPENDER_ID
-];
+]);
 
 export default new CryptoAllowanceController();

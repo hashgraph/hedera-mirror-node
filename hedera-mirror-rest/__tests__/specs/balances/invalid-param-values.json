@@ -25,7 +25,7 @@
           "message": "Invalid parameter: order"
         },
         {
-          "message": "Invalid parameter: token.id"
+          "message": "Unknown query parameter: token.id"
         }
       ]
     }

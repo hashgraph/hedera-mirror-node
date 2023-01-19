@@ -421,9 +421,10 @@ const validateContractIdAndConsensusTimestampParam = (consensusTimestamp, contra
   }
 };
 
-const getAndValidateContractIdAndConsensusTimestampPathParams = async (params) => {
-  const {consensusTimestamp, contractId} = params;
+const getAndValidateContractIdAndConsensusTimestampPathParams = async (req) => {
+  const {consensusTimestamp, contractId} = req.params;
   validateContractIdAndConsensusTimestampParam(consensusTimestamp, contractId);
+  utils.validateReq(req);
   const encodedContractId = await ContractService.computeContractIdFromString(contractId);
   return {contractId: encodedContractId, timestamp: utils.parseTimestampParam(consensusTimestamp)};
 };
@@ -966,7 +967,7 @@ class ContractController extends BaseController {
    * @returns {Promise<void>}
    */
   getContractResultsByTimestamp = async (req, res) => {
-    const {contractId, timestamp} = await getAndValidateContractIdAndConsensusTimestampPathParams(req.params);
+    const {contractId, timestamp} = await getAndValidateContractIdAndConsensusTimestampPathParams(req);
 
     // retrieve contract result, recordFile and transaction models concurrently
     const [ethTransactions, contractResults, recordFile, contractLogs, contractStateChanges] = await Promise.all([
@@ -1240,7 +1241,7 @@ class ContractController extends BaseController {
 
 const contractCtrlInstance = new ContractController();
 
-const validContractLogParameters = [
+const validContractLogParameters = new Set([
   filterKeys.INDEX,
   filterKeys.LIMIT,
   filterKeys.ORDER,
@@ -1249,25 +1250,25 @@ const validContractLogParameters = [
   filterKeys.TOPIC1,
   filterKeys.TOPIC2,
   filterKeys.TOPIC3
-];
+]);
 
-const validContractParameters = [
+const validContractParameters = new Set([
   filterKeys.CONTRACT_ID,
   filterKeys.LIMIT,
   filterKeys.ORDER,
-];
+]);
 
-const validContractByIdParameters = [
+const validContractByIdParameters = new Set([
   filterKeys.TIMESTAMP
-];
+]);
 
-const validContractActionsParameters = [
+const validContractActionsParameters = new Set([
   filterKeys.INDEX,
   filterKeys.LIMIT,
   filterKeys.ORDER
-];
+]);
 
-const validContractResultsParameters = [
+const validContractResultsParameters = new Set([
   filterKeys.FROM,
   filterKeys.BLOCK_HASH,
   filterKeys.BLOCK_NUMBER,
@@ -1276,21 +1277,17 @@ const validContractResultsParameters = [
   filterKeys.ORDER,
   filterKeys.TIMESTAMP,
   filterKeys.TRANSACTION_INDEX
-];
+]);
 
-const validOneContractResultsParameters = [
-  filterKeys.LIMIT,
-  filterKeys.NONCE,
-  filterKeys.ORDER,
-  filterKeys.TIMESTAMP,
-  filterKeys.TRANSACTION_TYPE
-];
+const validOneContractResultsParameters = new Set([
+  filterKeys.NONCE
+]);
 
-const validContractStateParameters = [
+const validContractStateParameters = new Set([
   filterKeys.LIMIT,
   filterKeys.ORDER,
   filterKeys.SLOT
-];
+]);
 
 /**
  * Export specific methods from the controller

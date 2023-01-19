@@ -71,7 +71,7 @@
         "_status": {
           "messages": [
             {
-              "message": "Invalid parameter: token.id"
+              "message": "Unknown query parameter: token.id"
             }
           ]
         }

@@ -33,12 +33,12 @@ const {default: defaultLimit, max: maxLimit} = getResponseLimit();
 
 const blockWhereFilters = [filterKeys.BLOCK_NUMBER, filterKeys.TIMESTAMP];
 
-const validBlockParameters = [
+const validBlockParameters = new Set([
   filterKeys.BLOCK_NUMBER,
   filterKeys.LIMIT,
   filterKeys.ORDER,
   filterKeys.TIMESTAMP
-];
+]);
 
 const validateHashOrNumber = (hashOrNumber) => {
   if (utils.isValidBlockHash(hashOrNumber)) {
@@ -126,6 +126,7 @@ class BlockController extends BaseController {
   };
 
   getByHashOrNumber = async (req, res) => {
+    utils.validateReq(req);
     const {hash, number} = validateHashOrNumber(req.params.hashOrNumber);
     const block = await RecordFileService.getByHashOrNumber(hash, number);
 

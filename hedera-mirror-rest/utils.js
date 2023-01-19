@@ -407,13 +407,17 @@ const isValidContractIdQueryParam = (op, val) => {
 /**
  * Validate input http request object
  * @param {Request} req HTTP request object
- * @param {[string]} validParameters List of valid parameters
+ * @param {Set} validParameters List of valid parameters
  * @return {Object} result of validity check, and return http code/contents
  */
-const validateReq = (req, validParameters) => {
+const validateReq = (req, validParameters = new Set()) => {
   const badParams = [];
   // Check the validity of every query parameter
   for (const key in req.query) {
+    if (!validParameters.has(key)) {
+      badParams.push({code: InvalidArgumentError.UNKNOWN_PARAM_USAGE, key});
+      continue;
+    }
     if (Array.isArray(req.query[key])) {
       if (!isRepeatedQueryParameterValidLength(req.query[key])) {
         badParams.push({
@@ -425,11 +429,11 @@ const validateReq = (req, validParameters) => {
         continue;
       }
       for (const val of req.query[key]) {
-        if (!validParameters.includes(key) || !paramValidityChecks(key, val)) {
+        if (!paramValidityChecks(key, val)) {
           badParams.push({code: InvalidArgumentError.INVALID_ERROR_CODE, key});
         }
       }
-    } else if (!validParameters.includes(key) || !paramValidityChecks(key, req.query[key])) {
+    } else if (!paramValidityChecks(key, req.query[key])) {
       badParams.push({code: InvalidArgumentError.INVALID_ERROR_CODE, key});
     }
   }
@@ -1029,7 +1033,7 @@ const createTransactionId = (entityStr, validStartTimestamp) => {
  * Builds the filters from HTTP request query, validates and parses the filters.
  *
  * @param query
- * @param {[string]} validParameters
+ * @param {Set} validParameters
  * @param {function(string, string, string)} filterValidator
  * @param {function(array)} filterDependencyChecker
  * @return {[]}
@@ -1041,9 +1045,9 @@ const buildAndValidateFilters = (
   filterDependencyChecker = filterDependencyCheck
 ) => {
   const {badParams, filters} = buildFilters(query);
-  const additionalBadParams = validateAndParseFilters(filters, filterValidator, validParameters);
-  badParams.push(...additionalBadParams);
-
+  const {invalidParams, unknownParams} = validateAndParseFilters(filters, filterValidator, validParameters);
+  badParams.push(...invalidParams);
+  badParams.push(...unknownParams);
   if (badParams.length > 0) {
     throw InvalidArgumentError.forRequestValidation(badParams);
   }
@@ -1117,18 +1121,23 @@ const calculateExpiryTimestamp = (autoRenewPeriod, createdTimestamp, expirationT
  *
  * @param filters
  * @param filterValidator
- * @param {[string]} validParameters
- * @returns {string[]} the bad parameters
+ * @param {Set} validParameters
+ * @returns {string[], []{}} bad parameters, unknown parameters
  */
 const validateFilters = (filters, filterValidator, validParameters) => {
-  const badParams = [];
+  const invalidParams = [];
+  const unknownParams = [];
   for (const filter of filters) {
-    if (!validParameters.includes(filter.key) || !filterValidator(filter.key, filter.operator, filter.value)) {
-      badParams.push(filter.key);
+    if(!validParameters.has(filter.key)) {
+      unknownParams.push({key: filter.key, code: InvalidArgumentError.UNKNOWN_PARAM_USAGE});
+      continue;
+    }
+    if (!filterValidator(filter.key, filter.operator, filter.value)) {
+      invalidParams.push(filter.key);
     }
   }
 
-  return badParams;
+  return {invalidParams, unknownParams};
 };
 
 /**
@@ -1147,15 +1156,15 @@ const formatFilters = (filters) => {
  *
  * @param filters
  * @param filterValidator
- * @param {[string]} validParameters
- * @returns {string[]} the bad parameters
+ * @param {Set} validParameters
+ * @returns {string[], []{}} bad parameters, unknown parameters
  */
 const validateAndParseFilters = (filters, filterValidator, validParameters) => {
-  const badParams = validateFilters(filters, filterValidator, validParameters);
-  if (badParams.length === 0) {
+  const {invalidParams, unknownParams} = validateFilters(filters, filterValidator, validParameters);
+  if (invalidParams.length === 0 && unknownParams.length === 0) {
     formatFilters(filters);
   }
-  return badParams;
+  return {invalidParams, unknownParams};
 };
 
 const formatComparator = (comparator) => {

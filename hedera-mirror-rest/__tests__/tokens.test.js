@@ -875,7 +875,7 @@ describe('token formatTokenInfoRow tests', () => {
 });
 
 const verifyInvalidAndValidTokensFilters = (invalidQueries, validQueries, validator) => {
-  const validParameters = [constants.filterKeys.ACCOUNT_ID, constants.filterKeys.TIMESTAMP, constants.filterKeys.SERIAL_NUMBER, constants.filterKeys.TOKEN_TYPE];
+  const validParameters = new Set([constants.filterKeys.ACCOUNT_ID, constants.filterKeys.TIMESTAMP, constants.filterKeys.SERIAL_NUMBER, constants.filterKeys.TOKEN_TYPE]);
 
   invalidQueries.forEach((query) => {
     test(`Verify buildAndValidateFilters for invalid ${JSON.stringify(query)}`, () => {

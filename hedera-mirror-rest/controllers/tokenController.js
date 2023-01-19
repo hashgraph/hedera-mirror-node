@@ -110,10 +110,10 @@ class TokenController extends BaseController {
   };
 }
 
-const validTokenParameters = [
+const validTokenParameters = new Set([
   filterKeys.LIMIT,
   filterKeys.ORDER,
   filterKeys.TOKEN_ID
-];
+]);
 
 export default new TokenController();

@@ -22,7 +22,7 @@
           "message": "Invalid parameter: transaction.index"
         },
         {
-          "message": "Invalid parameter: serialnumber"
+          "message": "Unknown query parameter: serialnumber"
         }
       ]
     }

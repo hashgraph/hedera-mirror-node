@@ -674,6 +674,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NetworkStakeResponse'
+        400:
+          $ref: '#/components/responses/InvalidParameterError'
         404:
           $ref: '#/components/responses/NotFoundError'
         500:

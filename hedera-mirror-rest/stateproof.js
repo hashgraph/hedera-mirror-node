@@ -347,10 +347,10 @@ const stateproof = {
   getStateProofForTransaction,
 };
 
-const validStateProofParameters = [
+const validStateProofParameters = new Set([
   constants.filterKeys.NONCE,
   constants.filterKeys.SCHEDULED
-];
+]);
 
 if (utils.isTestEnv()) {
   Object.assign(stateproof, {

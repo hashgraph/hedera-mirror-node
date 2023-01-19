@@ -388,21 +388,21 @@ const accounts = {
   getOneAccount,
 };
 
-const accountsValidParameters = [
+const accountsValidParameters = new Set([
   constants.filterKeys.ACCOUNT_BALANCE,
   constants.filterKeys.ACCOUNT_ID,
   constants.filterKeys.ACCOUNT_PUBLICKEY,
   constants.filterKeys.BALANCE,
   constants.filterKeys.LIMIT,
   constants.filterKeys.ORDER
-];
+]);
 
-const oneAccountValidParameters = [
+const oneAccountValidParameters = new Set([
   constants.filterKeys.LIMIT,
   constants.filterKeys.ORDER,
   constants.filterKeys.TIMESTAMP,
   constants.filterKeys.TRANSACTION_TYPE
-];
+]);
 
 if (utils.isTestEnv()) {
   Object.assign(accounts, {

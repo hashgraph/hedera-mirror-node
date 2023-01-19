@@ -76,7 +76,7 @@
           "message": "Invalid parameter: order"
         },
         {
-          "message": "Invalid parameter: block.number"
+          "message": "Unknown query parameter: block.number"
         }
       ]
     }

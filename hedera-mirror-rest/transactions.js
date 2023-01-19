@@ -799,21 +799,20 @@ const transactions = {
   getTransactionsOuterQuery,
 };
 
-const validTransactionParameters = [
+const validTransactionParameters = new Set([
   constants.filterKeys.ACCOUNT_ID,
+  constants.filterKeys.CREDIT_TYPE,
   constants.filterKeys.LIMIT,
   constants.filterKeys.ORDER,
   constants.filterKeys.RESULT,
   constants.filterKeys.TIMESTAMP,
-  constants.filterKeys.TOKEN_TYPE,
   constants.filterKeys.TRANSACTION_TYPE
-];
+]);
 
-const validOneTransactionParameters = [
-  constants.filterKeys.ACCOUNT_ID,
+const validOneTransactionParameters = new Set([
   constants.filterKeys.NONCE,
   constants.filterKeys.SCHEDULED
-];
+]);
 
 if (utils.isTestEnv()) {
   Object.assign(transactions, {

@@ -99,12 +99,11 @@ class TokenAllowanceController extends BaseController {
   };
 }
 
-const validTokenAllowanceParameters = [
-  filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS,
+const validTokenAllowanceParameters = new Set([
   filterKeys.LIMIT,
   filterKeys.ORDER,
   filterKeys.SPENDER_ID,
   filterKeys.TOKEN_ID
-];
+]);
 
 export default new TokenAllowanceController();

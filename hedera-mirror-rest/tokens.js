@@ -738,6 +738,7 @@ const getNftTokensRequest = async (req, res) => {
  * @param {Response} res HTTP response object
  */
 const getNftTokenInfoRequest = async (req, res) => {
+  utils.validateReq(req);
   const tokenId = getAndValidateTokenIdRequestPathParam(req);
   const serialNumber = getAndValidateSerialNumberRequestPathParam(req);
 
@@ -953,44 +954,41 @@ const tokens = {
   getTokensRequest,
 };
 
-const validNftsParameters = [
+const validNftsParameters = new Set([
   filterKeys.ACCOUNT_ID,
   filterKeys.LIMIT,
   filterKeys.ORDER,
-  filterKeys.SERIAL_NUMBER,
-  filterKeys.TIMESTAMP,
-  filterKeys.TOKEN_ID,
-];
+  filterKeys.SERIAL_NUMBER
+]);
 
-const validNftTransferHistoryParameters = [
+const validNftTransferHistoryParameters = new Set([
   filterKeys.LIMIT,
   filterKeys.ORDER,
   filterKeys.TIMESTAMP
-];
+]);
 
-const validTokenParameters = [
+const validTokenParameters = new Set([
   filterKeys.ACCOUNT_ID,
   filterKeys.ENTITY_PUBLICKEY,
   filterKeys.LIMIT,
   filterKeys.ORDER,
   filterKeys.TOKEN_ID,
   filterKeys.TOKEN_TYPE
-];
+]);
 
-const validOneTokenParameters = [
+const validOneTokenParameters = new Set([
   filterKeys.TIMESTAMP
-];
+]);
 
-const validTokenBalancesParameters = [
+const validTokenBalancesParameters = new Set([
   filterKeys.ACCOUNT_ID,
   filterKeys.ACCOUNT_BALANCE,
   filterKeys.ACCOUNT_PUBLICKEY,
   filterKeys.ENTITY_PUBLICKEY,
   filterKeys.LIMIT,
   filterKeys.ORDER,
-  filterKeys.TOKEN_ID,
   filterKeys.TIMESTAMP
-];
+]);
 
 if (utils.isTestEnv()) {
   Object.assign(tokens, {

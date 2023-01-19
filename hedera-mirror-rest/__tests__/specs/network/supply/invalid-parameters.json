@@ -14,7 +14,7 @@
           "message": "Invalid parameter: timestamp"
         },
         {
-          "message": "Invalid parameter: limit"
+          "message": "Unknown query parameter: limit"
         }
       ]
     }

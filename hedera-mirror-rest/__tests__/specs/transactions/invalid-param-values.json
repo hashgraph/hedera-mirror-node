@@ -27,7 +27,7 @@
           "message": "Invalid parameter: transactiontype"
         },
         {
-          "message": "Invalid parameter: account.publickey"
+          "message": "Unknown query parameter: account.publickey"
         }
       ]
     }

@@ -391,7 +391,8 @@ describe('utils filterDependencyCheck tests', () => {
 });
 
 const verifyInvalidFilters = (filters) => {
-  const expected = filters.map((filter) => filter.key);
+  const expectedInvalidParams = filters.map((filter) => filter.key);
+  const expected = {invalidParams: expectedInvalidParams, unknownParams: []};
   expect(utils.validateAndParseFilters(filters, utils.filterValidityChecks, validParameters)).toStrictEqual(expected);
 };
 
@@ -408,7 +409,7 @@ const verifyValidAndInvalidFilters = (invalidFilters, validFilters) => {
 
   validFilters.forEach((filter) => {
     test(`${validateAndParseFiltersNoExMessage} for ${JSON.stringify(filter)}`, () => {
-      expect(utils.validateAndParseFilters([filter], utils.filterValidityChecks, validParameters)).toBeEmpty();
+      expect(utils.validateAndParseFilters([filter], utils.filterValidityChecks, validParameters)).toEqual({invalidParams: [], unknownParams: []})
     });
   });
 };
@@ -734,18 +735,18 @@ describe('validateAndParseFilters slot', () => {
 describe('invalid parameters', () => {
   test('Verify invalid parameter validateAndParseFilters', () => {
     const filter = utils.buildComparatorFilter(constants.filterKeys.SCHEDULED, 'true');
-    const expected = ["scheduled"];
-    expect(utils.validateAndParseFilters([filter], utils.filterValidityChecks, [])).toEqual(expected);
+    const expected = {"invalidParams": [], "unknownParams": [{"code": "unknownParamUsage", "key": "scheduled"}]};
+    expect(utils.validateAndParseFilters([filter], utils.filterValidityChecks, new Set())).toEqual(expected);
   });
 
   test('Verify invalid parameter buildAndValidateFilters', () => {
     const query = {[constants.filterKeys.ACCOUNT_ID]: '6560'};
     const fakeValidator = sinon.fake.returns(true);
-    expect(() => utils.buildAndValidateFilters(query,[], fakeValidator)).toThrow("Invalid parameter: account.id");
+    expect(() => utils.buildAndValidateFilters(query, new Set(), fakeValidator)).toThrow("Unknown query parameter: account.id");
   });
 });
 
-const validParameters = [
+const validParameters = new Set([
   constants.filterKeys.ACCOUNT_ID,
   constants.filterKeys.ACCOUNT_BALANCE,
   constants.filterKeys.ACCOUNT_PUBLICKEY,
@@ -766,4 +767,4 @@ const validParameters = [
   constants.filterKeys.TOKEN_ID,
   constants.filterKeys.TOPIC0,
   constants.filterKeys.TOKEN_TYPE
-];
+]);

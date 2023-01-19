@@ -30,7 +30,7 @@
           "message": "Invalid parameter: order"
         },
         {
-          "message": "Invalid parameter: slot"
+          "message": "Unknown query parameter: slot"
         }
       ]
     }

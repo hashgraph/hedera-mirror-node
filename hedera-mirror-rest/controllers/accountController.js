@@ -220,18 +220,18 @@ class AccountController extends BaseController {
   };
 }
 
-const validNftAccountParameters = [
+const validNftAccountParameters = new Set([
   filterKeys.LIMIT,
   filterKeys.ORDER,
   filterKeys.SERIAL_NUMBER,
   filterKeys.SPENDER_ID,
   filterKeys.TOKEN_ID
-];
+]);
 
-const validRewardsParameters = [
+const validRewardsParameters = new Set([
   filterKeys.LIMIT,
   filterKeys.ORDER,
   filterKeys.TIMESTAMP
-];
+]);
 
 export default new AccountController();

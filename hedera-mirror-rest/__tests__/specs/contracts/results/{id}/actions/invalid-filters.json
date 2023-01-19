@@ -13,7 +13,7 @@
           "message": "Invalid parameter: limit"
         },
         {
-          "message": "Invalid parameter: nonce"
+          "message": "Unknown query parameter: nonce"
         }
       ]
     }

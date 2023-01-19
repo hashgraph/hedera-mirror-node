@@ -173,14 +173,14 @@ const getTokenAccountBalanceSubQuery = (order) => {
     ) as account_token_balance`;
 };
 
-const balancesValidParameters = [
+const balancesValidParameters = new Set([
   constants.filterKeys.ACCOUNT_BALANCE,
   constants.filterKeys.ACCOUNT_ID,
   constants.filterKeys.ACCOUNT_PUBLICKEY,
   constants.filterKeys.LIMIT,
   constants.filterKeys.ORDER,
   constants.filterKeys.TIMESTAMP
-];
+]);
 
 export default {
   getBalances,

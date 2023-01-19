@@ -22,7 +22,7 @@
           "message": "Invalid parameter: transaction.index"
         },
         {
-          "message": "Invalid parameter: index"
+          "message": "Unknown query parameter: index"
         }
       ]
     }

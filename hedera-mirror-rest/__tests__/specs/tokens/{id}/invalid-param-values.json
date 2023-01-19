@@ -19,10 +19,10 @@
           "message": "Invalid parameter: timestamp"
         },
         {
-          "message": "Invalid parameter: account.id"
+          "message": "Unknown query parameter: account.id"
         },
         {
-          "message": "Invalid parameter: balance"
+          "message": "Unknown query parameter: balance"
         }
       ]
     }

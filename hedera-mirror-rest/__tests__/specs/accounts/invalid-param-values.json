@@ -19,7 +19,7 @@
           "message": "Invalid parameter: account.publickey"
         },
         {
-          "message": "Invalid parameter: timestamp"
+          "message": "Unknown query parameter: timestamp"
         },
         {
           "message": "Invalid parameter: order"
@@ -28,7 +28,7 @@
           "message": "Invalid parameter: balance"
         },
         {
-          "message": "Invalid parameter: token.id"
+          "message": "Unknown query parameter: token.id"
         }
       ]
     }

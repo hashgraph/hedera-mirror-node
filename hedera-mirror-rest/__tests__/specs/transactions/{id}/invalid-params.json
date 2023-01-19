@@ -45,7 +45,7 @@
           "message": "Invalid parameter: nonce"
         },
         {
-          "message": "Invalid parameter: token.id"
+          "message": "Unknown query parameter: token.id"
         }
       ]
     }

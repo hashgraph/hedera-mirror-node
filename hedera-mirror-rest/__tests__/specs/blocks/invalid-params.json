@@ -19,7 +19,7 @@
           "message": "Invalid parameter: limit"
         },
         {
-          "message": "Invalid parameter: index"
+          "message": "Unknown query parameter: index"
         }
       ]
     }

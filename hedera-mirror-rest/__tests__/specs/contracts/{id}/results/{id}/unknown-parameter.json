@@ -1,0 +1,20 @@
+{
+  "description": "Contract results api call for a specific contract using unknown query parameter",
+  "setup": {},
+  "urls": [
+    "/api/v1/contracts/0.0.5001/results/167654.000123456?index=3&limit=2"
+  ],
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Unknown query parameter: index"
+        },
+        {
+          "message": "Unknown query parameter: limit"
+        }
+      ]
+    }
+  }
+}

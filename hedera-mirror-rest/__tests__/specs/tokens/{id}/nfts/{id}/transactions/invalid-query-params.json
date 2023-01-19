@@ -23,7 +23,7 @@
           "message": "Invalid parameter: limit"
         },
         {
-          "message": "Invalid parameter: result"
+          "message": "Unknown query parameter: result"
         }
       ]
     }

@@ -205,7 +205,7 @@ class NetworkController extends BaseController {
    */
   getExchangeRate = async (req, res) => {
     // extract filters from query param
-    const filters = utils.buildAndValidateFilters(req.query, [filterKeys.TIMESTAMP]);
+    const filters = utils.buildAndValidateFilters(req.query, this.validExchangeRateParameters);
 
     const {filterQuery} = this.extractFileDataQuery(filters);
 
@@ -256,6 +256,7 @@ class NetworkController extends BaseController {
    * @return {Promise<void>}
    */
   getNetworkStake = async (_req, res) => {
+    utils.validateReq(_req);
     const networkStake = await NetworkNodeService.getNetworkStake();
     if (networkStake === null) {
       throw new NotFoundError();
@@ -302,7 +303,7 @@ class NetworkController extends BaseController {
    * @return {Promise<void>}
    */
   getSupply = async (req, res) => {
-    const filters = utils.buildAndValidateFilters(req.query, [filterKeys.TIMESTAMP, filterKeys.Q]);
+    const filters = utils.buildAndValidateFilters(req.query, this.validSupplyParameters);
     const {conditions, params, q} = this.extractSupplyQuery(filters);
     const networkSupply = await NetworkNodeService.getSupply(conditions, params);
 
@@ -329,7 +330,7 @@ class NetworkController extends BaseController {
    * @return {Promise<void>}
    */
   getFees = async (req, res) => {
-    const filters = utils.buildAndValidateFilters(req.query, [filterKeys.ORDER, filterKeys.TIMESTAMP]);
+    const filters = utils.buildAndValidateFilters(req.query, this.validFeesParameters);
     const {filterQuery, order} = this.extractFileDataQuery(filters);
 
     const [exchangeRate, feeSchedule] = await Promise.all([
@@ -344,12 +345,17 @@ class NetworkController extends BaseController {
     res.locals[responseDataLabel] = new FeeScheduleViewModel(feeSchedule, exchangeRate, order);
   };
 
-  validNodeParameters = [
+  validExchangeRateParameters = new Set([filterKeys.TIMESTAMP]);
+  validFeesParameters = new Set([filterKeys.ORDER, filterKeys.TIMESTAMP]);
+
+  validNodeParameters = new Set([
     filterKeys.FILE_ID,
     filterKeys.LIMIT,
     filterKeys.NODE_ID,
     filterKeys.ORDER
-  ];
+  ]);
+
+  validSupplyParameters = new Set([filterKeys.TIMESTAMP, filterKeys.Q]);
 }
 
 export default new NetworkController();

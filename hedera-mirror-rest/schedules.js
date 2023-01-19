@@ -125,6 +125,7 @@ const formatScheduleRow = (row) => {
  * @returns {Promise<void>}
  */
 const getScheduleById = async (req, res) => {
+  utils.validateReq(req);
   const parseOptions = {allowEvmAddress: false, paramName: constants.filterKeys.SCHEDULEID};
   const scheduleId = EntityId.parse(req.params.scheduleId, parseOptions).getEncodedId();
   if (logger.isTraceEnabled()) {
@@ -259,12 +260,12 @@ const schedules = {
   getSchedules,
 };
 
-const validSchedulesParameters = [
+const validSchedulesParameters = new Set([
   constants.filterKeys.ACCOUNT_ID,
   constants.filterKeys.LIMIT,
   constants.filterKeys.ORDER,
   constants.filterKeys.SCHEDULE_ID
-];
+]);
 
 if (utils.isTestEnv()) {
   Object.assign(schedules, {

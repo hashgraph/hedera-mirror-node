@@ -55,7 +55,7 @@
         "_status": {
           "messages": [
             {
-              "message": "Invalid parameter: scheduled"
+              "message": "Unknown query parameter: scheduled"
             }
           ]
         }
