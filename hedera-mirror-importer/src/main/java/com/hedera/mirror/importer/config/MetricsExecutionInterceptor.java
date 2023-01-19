@@ -57,6 +57,11 @@ public class MetricsExecutionInterceptor implements ExecutionInterceptor {
     private static final Pattern SIDECAR_PATTERN = Pattern.compile("Z_\\d{1,2}\\.rcd");
     private static final ExecutionAttribute<ResponseSizeSubscriber> SIZE = new ExecutionAttribute<>("size");
     private static final ExecutionAttribute<Instant> START_TIME = new ExecutionAttribute<>("start-time");
+    private static final String LIST = "list";
+    private static final String SIDECAR = "sidecar";
+    private static final String SIGNATURE = "signature";
+    private static final String SIGNED = "signed";
+    private static final String START_AFTER = "start-after";
 
     private final MeterRegistry meterRegistry;
 
@@ -120,14 +125,14 @@ public class MetricsExecutionInterceptor implements ExecutionInterceptor {
 
     // Instead of tagging the URI path, simplify it to the 3 actions we use from the S3 API
     private String getAction(String uri) {
-        if (uri.contains("marker")) {
-            return "list";
+        if (uri.contains(START_AFTER)) {
+            return LIST;
         } else if (uri.contains(StreamType.SIGNATURE_SUFFIX)) {
-            return "signature";
+            return SIGNATURE;
         } else if (SIDECAR_PATTERN.matcher(uri).find()) {
-            return "sidecar";
+            return SIDECAR;
         } else {
-            return "signed";
+            return SIGNED;
         }
     }
 
