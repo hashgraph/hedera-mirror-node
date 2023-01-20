@@ -33,7 +33,7 @@ const {default: defaultLimit, max: maxLimit} = getResponseLimit();
 
 const blockWhereFilters = [filterKeys.BLOCK_NUMBER, filterKeys.TIMESTAMP];
 
-const validBlockParameters = new Set([
+const acceptedBlockParameters = new Set([
   filterKeys.BLOCK_NUMBER,
   filterKeys.LIMIT,
   filterKeys.ORDER,
@@ -113,7 +113,7 @@ class BlockController extends BaseController {
   };
 
   getBlocks = async (req, res) => {
-    const filters = utils.buildAndValidateFilters(req.query, validBlockParameters);
+    const filters = utils.buildAndValidateFilters(req.query, acceptedBlockParameters);
     const formattedFilters = this.extractSqlFromBlockFilters(filters);
     const blocks = await RecordFileService.getBlocks(formattedFilters);
 

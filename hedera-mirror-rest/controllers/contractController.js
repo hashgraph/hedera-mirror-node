@@ -306,7 +306,7 @@ const getContractsQuery = (whereQuery, limitQuery, order) => {
  * @returns {void}
  */
 const alterTimestampRangeInReq = (req) => {
-  const timestamps = utils.buildAndValidateFilters(req.query, validContractLogParameters).filter((f) => f.key === filterKeys.TIMESTAMP);
+  const timestamps = utils.buildAndValidateFilters(req.query, acceptedContractLogParameters).filter((f) => f.key === filterKeys.TIMESTAMP);
   const ops = [utils.opsMap.gte, utils.opsMap.lte];
   const firstTimestamp = _.first(timestamps);
   const secondTimestamp = _.last(timestamps);
@@ -429,11 +429,11 @@ const getAndValidateContractIdAndConsensusTimestampPathParams = async (req) => {
   return {contractId: encodedContractId, timestamp: utils.parseTimestampParam(consensusTimestamp)};
 };
 
-const extractContractIdAndFiltersFromValidatedRequest = (req, validParameters) => {
+const extractContractIdAndFiltersFromValidatedRequest = (req, acceptedParameters) => {
   // extract filters from query param
   const contractId = getAndValidateContractIdRequestPathParam(req);
 
-  const filters = utils.buildAndValidateFilters(req.query, validParameters, contractResultsFilterValidityChecks);
+  const filters = utils.buildAndValidateFilters(req.query, acceptedParameters, contractResultsFilterValidityChecks);
 
   return {
     contractId,
@@ -731,7 +731,7 @@ class ContractController extends BaseController {
       return;
     }
 
-    const {filters, contractId: contractIdParam} = extractContractIdAndFiltersFromValidatedRequest(req, validContractByIdParameters);
+    const {filters, contractId: contractIdParam} = extractContractIdAndFiltersFromValidatedRequest(req, acceptedContractByIdParameters);
 
     const {conditions: timestampConditions, params: timestampParams} =
       extractTimestampConditionsFromContractFilters(filters);
@@ -758,7 +758,7 @@ class ContractController extends BaseController {
    */
   getContracts = async (req, res) => {
     // extract filters from query param
-    const filters = utils.buildAndValidateFilters(req.query, validContractParameters);
+    const filters = utils.buildAndValidateFilters(req.query, acceptedContractParameters);
 
     // get sql filter query, params, limit and limit query from query filters
     const {filterQuery, params, order, limit, limitQuery} = await extractSqlFromContractFilters(filters);
@@ -799,7 +799,7 @@ class ContractController extends BaseController {
   getContractLogsById = async (req, res) => {
     alterTimestampRangeInReq(req);
     // get sql filter query, params, limit and limit query from query filters
-    const {filters, contractId: contractIdParam} = extractContractIdAndFiltersFromValidatedRequest(req, validContractLogParameters);
+    const {filters, contractId: contractIdParam} = extractContractIdAndFiltersFromValidatedRequest(req, acceptedContractLogParameters);
     checkTimestampsForTopics(filters);
 
     const contractId = await ContractService.computeContractIdFromString(contractIdParam);
@@ -827,7 +827,7 @@ class ContractController extends BaseController {
   getContractLogs = async (req, res) => {
     alterTimestampRangeInReq(req);
     // get sql filter query, params, limit and limit query from query filters
-    const filters = utils.buildAndValidateFilters(req.query, validContractLogParameters);
+    const filters = utils.buildAndValidateFilters(req.query, acceptedContractLogParameters);
     checkTimestampsForTopics(filters);
 
     const query = this.extractContractLogsMultiUnionQuery(filters);
@@ -851,7 +851,7 @@ class ContractController extends BaseController {
    * @returns {Promise<void>}
    */
   getContractResultsById = async (req, res) => {
-    const {contractId: contractIdParam, filters} = extractContractIdAndFiltersFromValidatedRequest(req, validContractResultsParameters);
+    const {contractId: contractIdParam, filters} = extractContractIdAndFiltersFromValidatedRequest(req, acceptedContractResultsParameters);
 
     const contractId = await ContractService.computeContractIdFromString(contractIdParam);
 
@@ -931,7 +931,7 @@ class ContractController extends BaseController {
    * @returns {Promise<void>}
    */
   getContractStateById = async (req, res) => {
-    const {contractId: contractIdParam, filters} = extractContractIdAndFiltersFromValidatedRequest(req, validContractStateParameters);
+    const {contractId: contractIdParam, filters} = extractContractIdAndFiltersFromValidatedRequest(req, acceptedContractStateParameters);
 
     const contractId = await ContractService.computeContractIdFromString(contractIdParam);
     const {conditions, order, limit} = await this.extractContractStateByIdQuery(filters, contractId);
@@ -1013,7 +1013,7 @@ class ContractController extends BaseController {
    * @returns {Promise<void>}
    */
   getContractResults = async (req, res) => {
-    const filters = utils.buildAndValidateFilters(req.query, validContractResultsParameters, contractResultsFilterValidityChecks);
+    const filters = utils.buildAndValidateFilters(req.query, acceptedContractResultsParameters, contractResultsFilterValidityChecks);
     const {conditions, params, order, limit} = await this.extractContractResultsByIdQuery(filters, '');
 
     const rows = await ContractService.getContractResultsByIdAndFilters(conditions, params, order, limit);
@@ -1051,7 +1051,7 @@ class ContractController extends BaseController {
       return;
     }
 
-    utils.validateReq(req, validOneContractResultsParameters);
+    utils.validateReq(req, acceptedSingleContractResultsParameters);
 
     let contractResults;
     let ethTransactions;
@@ -1135,7 +1135,7 @@ class ContractController extends BaseController {
 
   getContractActions = async (req, res) => {
     // Supported args: index, limit, order
-    const rawFilters = utils.buildAndValidateFilters(req.query, validContractActionsParameters);
+    const rawFilters = utils.buildAndValidateFilters(req.query, acceptedContractActionsParameters);
     const filters = [];
     let order = orderFilterValues.ASC;
     let limit = defaultLimit;
@@ -1241,7 +1241,7 @@ class ContractController extends BaseController {
 
 const contractCtrlInstance = new ContractController();
 
-const validContractLogParameters = new Set([
+const acceptedContractLogParameters = new Set([
   filterKeys.INDEX,
   filterKeys.LIMIT,
   filterKeys.ORDER,
@@ -1252,23 +1252,23 @@ const validContractLogParameters = new Set([
   filterKeys.TOPIC3
 ]);
 
-const validContractParameters = new Set([
+const acceptedContractParameters = new Set([
   filterKeys.CONTRACT_ID,
   filterKeys.LIMIT,
   filterKeys.ORDER,
 ]);
 
-const validContractByIdParameters = new Set([
+const acceptedContractByIdParameters = new Set([
   filterKeys.TIMESTAMP
 ]);
 
-const validContractActionsParameters = new Set([
+const acceptedContractActionsParameters = new Set([
   filterKeys.INDEX,
   filterKeys.LIMIT,
   filterKeys.ORDER
 ]);
 
-const validContractResultsParameters = new Set([
+const acceptedContractResultsParameters = new Set([
   filterKeys.FROM,
   filterKeys.BLOCK_HASH,
   filterKeys.BLOCK_NUMBER,
@@ -1279,11 +1279,11 @@ const validContractResultsParameters = new Set([
   filterKeys.TRANSACTION_INDEX
 ]);
 
-const validOneContractResultsParameters = new Set([
+const acceptedSingleContractResultsParameters = new Set([
   filterKeys.NONCE
 ]);
 
-const validContractStateParameters = new Set([
+const acceptedContractStateParameters = new Set([
   filterKeys.LIMIT,
   filterKeys.ORDER,
   filterKeys.SLOT

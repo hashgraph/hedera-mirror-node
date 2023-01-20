@@ -229,7 +229,7 @@ class TransactionSignatureTest {
                 .setConsensusTimestamp(Utility.instantToTimestamp(Instant.ofEpochSecond(0, CONSENSUS_TIMESTAMP)))
                 .setReceipt(TransactionReceipt.newBuilder().setStatus(responseCode).build())
                 .build();
-        return RecordItem.builder().record(transactionRecord).transaction(transaction).build();
+        return RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build();
     }
 
     private TransactionBody getTransactionBody(TransactionType transactionType) {

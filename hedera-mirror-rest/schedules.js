@@ -222,7 +222,7 @@ const getScheduleEntities = async (pgSqlQuery, pgSqlParams) => {
  */
 const getSchedules = async (req, res) => {
   // extract filters from query param
-  const filters = utils.buildAndValidateFilters(req.query, validSchedulesParameters);
+  const filters = utils.buildAndValidateFilters(req.query, acceptedSchedulesParameters);
 
   // get sql filter query, params, order and limit from query filters
   const {filterQuery, params, order, limit} = extractSqlFromScheduleFilters(filters);
@@ -260,7 +260,7 @@ const schedules = {
   getSchedules,
 };
 
-const validSchedulesParameters = new Set([
+const acceptedSchedulesParameters = new Set([
   constants.filterKeys.ACCOUNT_ID,
   constants.filterKeys.LIMIT,
   constants.filterKeys.ORDER,

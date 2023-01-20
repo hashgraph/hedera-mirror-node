@@ -106,7 +106,7 @@ class AccountController extends BaseController {
    */
   getNftsByAccountId = async (req, res) => {
     const accountId = await EntityService.getEncodedId(req.params[filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS]);
-    const filters = utils.buildAndValidateFilters(req.query, validNftAccountParameters);
+    const filters = utils.buildAndValidateFilters(req.query, acceptedNftAccountParameters);
     const query = this.extractNftMultiUnionQuery(filters, accountId);
     const nonFungibleTokens = await NftService.getNfts(query);
     const nfts = nonFungibleTokens.map((nft) => new NftViewModel(nft));
@@ -190,7 +190,7 @@ class AccountController extends BaseController {
     if (!isValidAccount) {
       throw new NotFoundError();
     }
-    const filters = utils.buildAndValidateFilters(req.query, validRewardsParameters);
+    const filters = utils.buildAndValidateFilters(req.query, acceptedRewardsParameters);
     const query = this.extractStakingRewardsQuery(filters);
     // insert account id at $1, and limit (at $2)
     query.params.unshift(accountId, query.limit);
@@ -220,7 +220,7 @@ class AccountController extends BaseController {
   };
 }
 
-const validNftAccountParameters = new Set([
+const acceptedNftAccountParameters = new Set([
   filterKeys.LIMIT,
   filterKeys.ORDER,
   filterKeys.SERIAL_NUMBER,
@@ -228,7 +228,7 @@ const validNftAccountParameters = new Set([
   filterKeys.TOKEN_ID
 ]);
 
-const validRewardsParameters = new Set([
+const acceptedRewardsParameters = new Set([
   filterKeys.LIMIT,
   filterKeys.ORDER,
   filterKeys.TIMESTAMP

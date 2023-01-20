@@ -655,7 +655,7 @@ const reqToSql = function (req) {
  */
 const getTransactions = async (req, res) => {
   // Validate query parameters first
-  utils.validateReq(req, validTransactionParameters);
+  utils.validateReq(req, acceptedTransactionParameters);
 
   const query = reqToSql(req);
   if (logger.isTraceEnabled()) {
@@ -771,7 +771,7 @@ const extractSqlFromTransactionsByIdOrHashRequest = (transactionIdOrHash, filter
  * @return {Promise<None>}
  */
 const getTransactionsByIdOrHash = async (req, res) => {
-  const filters = utils.buildAndValidateFilters(req.query, validOneTransactionParameters);
+  const filters = utils.buildAndValidateFilters(req.query, acceptedSingleTransactionParameters);
   const {query, params} = extractSqlFromTransactionsByIdOrHashRequest(req.params.transactionIdOrHash, filters);
   if (logger.isTraceEnabled()) {
     logger.trace(`getTransactionsByIdOrHash query: ${query} ${utils.JSONStringify(params)}`);
@@ -799,7 +799,7 @@ const transactions = {
   getTransactionsOuterQuery,
 };
 
-const validTransactionParameters = new Set([
+const acceptedTransactionParameters = new Set([
   constants.filterKeys.ACCOUNT_ID,
   constants.filterKeys.CREDIT_TYPE,
   constants.filterKeys.LIMIT,
@@ -809,7 +809,7 @@ const validTransactionParameters = new Set([
   constants.filterKeys.TRANSACTION_TYPE
 ]);
 
-const validOneTransactionParameters = new Set([
+const acceptedSingleTransactionParameters = new Set([
   constants.filterKeys.NONCE,
   constants.filterKeys.SCHEDULED
 ]);

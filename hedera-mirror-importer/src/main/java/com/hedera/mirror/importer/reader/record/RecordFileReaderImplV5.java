@@ -115,7 +115,7 @@ public class RecordFileReaderImplV5 implements RecordFileReader {
             var recordItem = RecordItem.builder()
                     .hapiVersion(recordFile.getHapiVersion())
                     .previous(lastRecordItem)
-                    .recordBytes(recordStreamObject.recordBytes)
+                    .transactionRecordBytes(recordStreamObject.recordBytes)
                     .transactionIndex(count)
                     .transactionBytes(recordStreamObject.transactionBytes)
                     .build();

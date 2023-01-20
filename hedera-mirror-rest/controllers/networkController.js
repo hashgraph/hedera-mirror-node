@@ -205,7 +205,7 @@ class NetworkController extends BaseController {
    */
   getExchangeRate = async (req, res) => {
     // extract filters from query param
-    const filters = utils.buildAndValidateFilters(req.query, this.validExchangeRateParameters);
+    const filters = utils.buildAndValidateFilters(req.query, this.acceptedExchangeRateParameters);
 
     const {filterQuery} = this.extractFileDataQuery(filters);
 
@@ -226,7 +226,7 @@ class NetworkController extends BaseController {
    */
   getNetworkNodes = async (req, res) => {
     // extract filters from query param
-    const filters = utils.buildAndValidateFilters(req.query, this.validNodeParameters);
+    const filters = utils.buildAndValidateFilters(req.query, this.acceptedNodeParameters);
 
     const {conditions, params, order, limit} = this.extractNetworkNodesQuery(filters);
     const nodes = await NetworkNodeService.getNetworkNodes(conditions, params, order, limit);
@@ -303,7 +303,7 @@ class NetworkController extends BaseController {
    * @return {Promise<void>}
    */
   getSupply = async (req, res) => {
-    const filters = utils.buildAndValidateFilters(req.query, this.validSupplyParameters);
+    const filters = utils.buildAndValidateFilters(req.query, this.acceptedSupplyParameters);
     const {conditions, params, q} = this.extractSupplyQuery(filters);
     const networkSupply = await NetworkNodeService.getSupply(conditions, params);
 
@@ -330,7 +330,7 @@ class NetworkController extends BaseController {
    * @return {Promise<void>}
    */
   getFees = async (req, res) => {
-    const filters = utils.buildAndValidateFilters(req.query, this.validFeesParameters);
+    const filters = utils.buildAndValidateFilters(req.query, this.acceptedFeesParameters);
     const {filterQuery, order} = this.extractFileDataQuery(filters);
 
     const [exchangeRate, feeSchedule] = await Promise.all([
@@ -345,17 +345,17 @@ class NetworkController extends BaseController {
     res.locals[responseDataLabel] = new FeeScheduleViewModel(feeSchedule, exchangeRate, order);
   };
 
-  validExchangeRateParameters = new Set([filterKeys.TIMESTAMP]);
-  validFeesParameters = new Set([filterKeys.ORDER, filterKeys.TIMESTAMP]);
+  acceptedExchangeRateParameters = new Set([filterKeys.TIMESTAMP]);
+  acceptedFeesParameters = new Set([filterKeys.ORDER, filterKeys.TIMESTAMP]);
 
-  validNodeParameters = new Set([
+  acceptedNodeParameters = new Set([
     filterKeys.FILE_ID,
     filterKeys.LIMIT,
     filterKeys.NODE_ID,
     filterKeys.ORDER
   ]);
 
-  validSupplyParameters = new Set([filterKeys.TIMESTAMP, filterKeys.Q]);
+  acceptedSupplyParameters = new Set([filterKeys.TIMESTAMP, filterKeys.Q]);
 }
 
 export default new NetworkController();

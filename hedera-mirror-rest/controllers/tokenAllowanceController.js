@@ -85,7 +85,7 @@ class TokenAllowanceController extends BaseController {
    */
   getAccountTokenAllowances = async (req, res) => {
     const accountId = await EntityService.getEncodedId(req.params[filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS]);
-    const filters = utils.buildAndValidateFilters(req.query, validTokenAllowanceParameters);
+    const filters = utils.buildAndValidateFilters(req.query, acceptedTokenAllowanceParameters);
     const query = this.extractTokenMultiUnionQuery(filters, accountId);
     const tokenAllowances = await TokenAllowanceService.getAccountTokenAllowances(query);
     const allowances = tokenAllowances.map((model) => new TokenAllowanceViewModel(model));
@@ -99,7 +99,7 @@ class TokenAllowanceController extends BaseController {
   };
 }
 
-const validTokenAllowanceParameters = new Set([
+const acceptedTokenAllowanceParameters = new Set([
   filterKeys.LIMIT,
   filterKeys.ORDER,
   filterKeys.SPENDER_ID,

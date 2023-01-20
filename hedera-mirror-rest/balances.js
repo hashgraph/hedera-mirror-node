@@ -72,7 +72,7 @@ const entityJoin = `join (select id, public_key from entity where type in ('ACCO
  * @return {Promise} Promise for PostgreSQL query
  */
 const getBalances = async (req, res) => {
-  utils.validateReq(req, balancesValidParameters);
+  utils.validateReq(req, acceptedBalancesParameters);
 
   // Parse the filter parameters for credit/debit, account-numbers, timestamp and pagination
   const [accountQuery, accountParams] = utils.parseAccountIdQueryParam(req.query, 'ab.account_id');
@@ -173,7 +173,7 @@ const getTokenAccountBalanceSubQuery = (order) => {
     ) as account_token_balance`;
 };
 
-const balancesValidParameters = new Set([
+const acceptedBalancesParameters = new Set([
   constants.filterKeys.ACCOUNT_BALANCE,
   constants.filterKeys.ACCOUNT_ID,
   constants.filterKeys.ACCOUNT_PUBLICKEY,

@@ -77,14 +77,14 @@ describe('utils buildAndValidateFilters test', () => {
       },
     ];
 
-    expect(utils.buildAndValidateFilters(query, validParameters, fakeValidator)).toStrictEqual(expected);
+    expect(utils.buildAndValidateFilters(query, acceptedParameters, fakeValidator)).toStrictEqual(expected);
     expect(fakeValidator.callCount).toEqual(6);
   });
 
   test('validator fails', () => {
     const fakeValidator = sinon.fake.returns(false);
 
-    expect(() => utils.buildAndValidateFilters(query, validParameters, fakeValidator)).toThrowErrorMatchingSnapshot();
+    expect(() => utils.buildAndValidateFilters(query, acceptedParameters, fakeValidator)).toThrowErrorMatchingSnapshot();
     expect(fakeValidator.callCount).toEqual(6);
   });
 
@@ -97,7 +97,7 @@ describe('utils buildAndValidateFilters test', () => {
       [constants.filterKeys.TIMESTAMP]: '12345.001',
     };
 
-    expect(() => utils.buildAndValidateFilters(repeatedParamQuery, validParameters, fakeValidator)).toThrowErrorMatchingSnapshot();
+    expect(() => utils.buildAndValidateFilters(repeatedParamQuery, acceptedParameters, fakeValidator)).toThrowErrorMatchingSnapshot();
     expect(fakeValidator.callCount).toEqual(3);
   });
 });
@@ -393,7 +393,7 @@ describe('utils filterDependencyCheck tests', () => {
 const verifyInvalidFilters = (filters) => {
   const expectedInvalidParams = filters.map((filter) => filter.key);
   const expected = {invalidParams: expectedInvalidParams, unknownParams: []};
-  expect(utils.validateAndParseFilters(filters, utils.filterValidityChecks, validParameters)).toStrictEqual(expected);
+  expect(utils.validateAndParseFilters(filters, utils.filterValidityChecks, acceptedParameters)).toStrictEqual(expected);
 };
 
 const validateAndParseFiltersNoExMessage = 'Verify validateAndParseFilters for valid filters does not throw exception';
@@ -409,7 +409,7 @@ const verifyValidAndInvalidFilters = (invalidFilters, validFilters) => {
 
   validFilters.forEach((filter) => {
     test(`${validateAndParseFiltersNoExMessage} for ${JSON.stringify(filter)}`, () => {
-      expect(utils.validateAndParseFilters([filter], utils.filterValidityChecks, validParameters)).toEqual({invalidParams: [], unknownParams: []})
+      expect(utils.validateAndParseFilters([filter], utils.filterValidityChecks, acceptedParameters)).toEqual({invalidParams: [], unknownParams: []})
     });
   });
 };
@@ -746,7 +746,7 @@ describe('invalid parameters', () => {
   });
 });
 
-const validParameters = new Set([
+const acceptedParameters = new Set([
   constants.filterKeys.ACCOUNT_ID,
   constants.filterKeys.ACCOUNT_BALANCE,
   constants.filterKeys.ACCOUNT_PUBLICKEY,

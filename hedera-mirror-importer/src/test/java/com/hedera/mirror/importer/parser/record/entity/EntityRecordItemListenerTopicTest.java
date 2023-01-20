@@ -83,7 +83,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var transaction = createCreateTopicTransaction(adminKey, submitKey, memo, autoRenewAccountNum, autoRenewPeriod);
         var transactionRecord = createTransactionRecord(topicId, consensusTimestamp, responseCode);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
 
         var entity = getTopicEntity(topicId);
 
@@ -105,7 +105,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var transaction = createCreateTopicTransaction(null, null, "", null, null);
         var transactionRecord = createTransactionRecord(TOPIC_ID, null, null, 2, consensusTimestamp, responseCode);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
 
         var entity = getTopicEntity(TOPIC_ID);
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
@@ -127,7 +127,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var transaction = createCreateTopicTransaction(null, null, "", autoRenewAccountId, null);
         var transactionRecord = createTransactionRecord(TOPIC_ID, null, null, 1, consensusTimestamp, responseCode);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
 
         var entity = getTopicEntity(TOPIC_ID);
 
@@ -151,7 +151,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var transactionRecord = createTransactionRecord(TopicID.newBuilder().setTopicNum(topicId)
                 .build(), null, null, 1, consensusTimestamp, responseCode);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
 
         assertEquals(0L, entityRepository.count());
         assertEquals(0L, transactionRepository.count());
@@ -164,7 +164,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var transaction = createCreateTopicTransaction(null, null, "memo", null, null);
         var transactionRecord = createTransactionRecord(null, consensusTimestamp, responseCode);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
 
         assertTransactionInRepository(responseCode, consensusTimestamp, null);
         assertEquals(0L, entityRepository.count());
@@ -198,7 +198,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         expected.setDeleted(false);
         expected.setTimestampLower(updateTimestamp);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
 
         assertTransactionInRepository(SUCCESS, updateTimestamp, topic.getId());
         assertEntity(expected);
@@ -223,7 +223,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
                 updatedAdminKey, updatedSubmitKey, "updated-memo", null, 30L);
         var transactionRecord = createTransactionRecord(topicId, consensusTimestamp, responseCode);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
         var entity = getTopicEntity(topicId);
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
         assertEquals(1L, entityRepository.count());
@@ -244,7 +244,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
                 autoRenewAccount.getId(), 30L);
         var transactionRecord = createTransactionRecord(TOPIC_ID, consensusTimestamp, responseCode);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
         var entity = getTopicEntity(TOPIC_ID);
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
         assertEquals(1L, entityRepository.count());
@@ -307,7 +307,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
                 updatedAutoRenewPeriod);
         var transactionRecord = createTransactionRecord(topicId, consensusTimestamp, responseCode);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
 
         if (updatedAutoRenewAccountNum != null) {
             topic.setAutoRenewAccountId(updatedAutoRenewAccountNum);
@@ -337,7 +337,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var transaction = createDeleteTopicTransaction(TOPIC_ID);
         var transactionRecord = createTransactionRecord(TOPIC_ID, consensusTimestamp, responseCode);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
 
         var entity = getTopicEntity(TOPIC_ID);
         assertTransactionInRepository(SUCCESS, consensusTimestamp, entity.getId());
@@ -359,7 +359,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var transaction = createDeleteTopicTransaction(TOPIC_ID);
         var transactionRecord = createTransactionRecord(TOPIC_ID, consensusTimestamp, responseCode);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
 
         var entity = getTopicEntity(TOPIC_ID);
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
@@ -379,7 +379,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var transaction = createDeleteTopicTransaction(TOPIC_ID);
         var transactionRecord = createTransactionRecord(TOPIC_ID, consensusTimestamp, responseCode);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
 
         var entity = getTopicEntity(TOPIC_ID);
         assertTransactionInRepository(responseCode, consensusTimestamp, entity.getId());
@@ -412,7 +412,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var transactionRecord = createTransactionRecord(topicId, sequenceNumber, runningHash
                 .getBytes(), runningHashVersion, consensusTimestamp, responseCode);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
 
         assertTransactionInRepository(responseCode, consensusTimestamp, topicId.getTopicNum());
         assertEquals(0L, entityRepository.count());
@@ -443,7 +443,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var transactionRecord = createTransactionRecord(TOPIC_ID, sequenceNumber, runningHash
                 .getBytes(), runningHashVersion, consensusTimestamp, responseCode);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
 
         assertTransactionInRepository(responseCode, consensusTimestamp, TOPIC_ID.getTopicNum());
         assertEquals(0L, entityRepository.count());
@@ -477,7 +477,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
                 .getBytes(), runningHashVersion, consensusTimestamp, responseCode);
 
         // when
-        parseRecordItemAndCommit(RecordItem.builder().record(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
 
         // then
         assertEquals(0L, entityRepository.count());
@@ -511,7 +511,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
                 .getBytes(), runningHashVersion, consensusTimestamp, responseCode);
 
         // when
-        parseRecordItemAndCommit(RecordItem.builder().record(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
 
         // then
         // if the transaction is filtered out, nothing in it should affect the state
@@ -534,7 +534,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
                 .getBytes(), 2, id, SUCCESS);
 
         // when
-        parseRecordItemAndCommit(RecordItem.builder().record(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
 
         // then
         assertEquals(0L, entityRepository.count());
@@ -566,7 +566,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var transactionRecord = createTransactionRecord(TOPIC_ID, sequenceNumber, runningHash.getBytes(),
                 runningHashVersion, consensusTimestamp, responseCode);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
 
         assertTransactionInRepository(responseCode, consensusTimestamp, TOPIC_ID.getTopicNum());
         assertEquals(0, entityRepository.count());
@@ -599,7 +599,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var transactionRecord = createTransactionRecord(TOPIC_ID, sequenceNumber, runningHash
                 .getBytes(), runningHashVersion, consensusTimestamp, responseCode);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
 
         assertTransactionInRepository(responseCode, consensusTimestamp, TOPIC_ID.getTopicNum());
         assertEquals(0, entityRepository.count());
@@ -648,7 +648,7 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
         var transactionRecord = createTransactionRecord(TOPIC_ID, sequenceNumber, runningHash
                 .getBytes(), runningHashVersion, consensusTimestamp, responseCode);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
 
         assertTransactionInRepository(responseCode, consensusTimestamp, TOPIC_ID.getTopicNum());
         assertEquals(0L, entityRepository.count());
