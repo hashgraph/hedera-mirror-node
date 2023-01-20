@@ -19,38 +19,27 @@ package com.hedera.mirror.importer.migration;
  * limitations under the License.
  * ‍
  */
-import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork.TESTNET;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.test.context.ContextConfiguration;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
-@ContextConfiguration(classes = {DummyMigrationTest.DummyMigration.class})
 @Tag("migration")
 class DummyMigrationTest extends IntegrationTest {
 
-    private final DummyMigration dummyMigration;
-
     private final MirrorProperties mirrorProperties;
-
-
-    @BeforeEach
-    void setup() {
-        mirrorProperties.setNetwork(TESTNET);
-    }
 
     @Test
     void checksum() {
-        assertThat(dummyMigration.getChecksum()).isEqualTo(5);
+       var dummyMigration= new DummyMigration(mirrorProperties);
+       assertThat(dummyMigration.getChecksum()).isEqualTo(5);
     }
 
     static class DummyMigration extends RepeatableMigration {
