@@ -63,7 +63,7 @@ class BackfillTransactionHashMigrationTest extends IntegrationTest {
     void setup() {
         entityProperties.getPersist().setTransactionHash(true);
         migrationProperties = new MigrationProperties();
-        migrationProperties.setParams(Map.of("startTimestamp", Long.valueOf(DEFAULT_START_TIMESTAMP).toString()));
+        migrationProperties.getParams().put("startTimestamp", Long.valueOf(DEFAULT_START_TIMESTAMP).toString());
         mirrorProperties.getMigration().put(MIGRATION_NAME, migrationProperties);
         migration = new BackfillTransactionHashMigration(entityProperties, jdbcTemplate, mirrorProperties);
     }
@@ -102,13 +102,34 @@ class BackfillTransactionHashMigrationTest extends IntegrationTest {
     void migrateWhenStartTimestampNotSet() {
         // given
         domainBuilder.transaction().persist();
-        migrationProperties.setParams(Collections.emptyMap());
+        migrationProperties.getParams().clear();
 
         // when
         runMigration();
 
         // then
         assertThat(transactionHashRepository.findAll()).isEmpty();
+    }
+
+    @Test
+    void migrateWithCaseInsensitiveStartTimestamp() {
+        // given
+        domainBuilder.transactionHash().persist();
+        migrationProperties.getParams().remove("startTimestamp");
+        migrationProperties.getParams().put("STARTTIMESTAMP", Long.valueOf(DEFAULT_START_TIMESTAMP).toString());
+        var transaction = domainBuilder.transaction()
+                .customize(t -> t.consensusTimestamp(DEFAULT_START_TIMESTAMP))
+                .persist();
+        var expected = TransactionHash.builder()
+                .consensusTimestamp(transaction.getConsensusTimestamp())
+                .hash(transaction.getTransactionHash())
+                .build();
+
+        // when
+        runMigration();
+
+        // then
+        assertThat(transactionHashRepository.findAll()).containsExactly(expected);
     }
 
     @Test

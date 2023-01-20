@@ -13,6 +13,10 @@ hedera:
       downloader:
         bucketName: test
       importHistoricalAccountInfo: false
+      migration:
+        DUMMYMIGRATION:
+          checksum: 5
+      network: TESTNET
       parser:
         exclude:
           - entity: 0.0.999
@@ -24,8 +28,8 @@ hedera:
               enabled: false
           retry:
             maxAttempts: 2
-      network: TESTNET
       startDate: 1970-01-01T00:00:00Z
+
 
 spring:
   flyway:

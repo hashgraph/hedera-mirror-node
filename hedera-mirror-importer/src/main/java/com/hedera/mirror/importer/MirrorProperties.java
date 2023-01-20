@@ -23,13 +23,13 @@ package com.hedera.mirror.importer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.util.Collections;
 import java.util.Map;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.map.CaseInsensitiveMap;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
@@ -54,7 +54,7 @@ public class MirrorProperties {
     private boolean leaderElection = false;
 
     @NotNull
-    private Map<String, MigrationProperties> migration = Collections.emptyMap();
+    private Map<String, MigrationProperties> migration = new CaseInsensitiveMap<>();
 
     @NotNull
     private HederaNetwork network = HederaNetwork.DEMO;
