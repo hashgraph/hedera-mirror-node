@@ -36,6 +36,7 @@ class CryptoTransfer {
   static CONSENSUS_TIMESTAMP = 'consensus_timestamp';
   static ENTITY_ID = 'entity_id';
   static IS_APPROVAL = 'is_approval';
+  static PAYER_ACCOUNT_ID = 'payer_account_id';
 
   /**
    * Gets full column name with table alias prepended.
