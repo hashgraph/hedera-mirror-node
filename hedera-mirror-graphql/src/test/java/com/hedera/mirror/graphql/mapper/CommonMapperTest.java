@@ -52,7 +52,7 @@ class CommonMapperTest {
         var duration = Duration.ofDays(1L).minusNanos(1L).toSeconds();
         assertThat(commonMapper.mapDuration(null)).isNull();
         assertThat(commonMapper.mapDuration(0L)).isEqualTo(Duration.ZERO);
-        assertThat(commonMapper.mapDuration(duration).toString()).isEqualTo("PT23H59M59S");
+        assertThat(commonMapper.mapDuration(duration)).hasToString("PT23H59M59S");
     }
 
     @Test

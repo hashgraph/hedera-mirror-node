@@ -20,15 +20,15 @@ package com.hedera.mirror.graphql.scalar;
  * ‍
  */
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import graphql.language.StringValue;
 import graphql.schema.CoercingParseLiteralException;
 import graphql.schema.CoercingParseValueException;
 import graphql.schema.CoercingSerializeException;
-import org.junit.jupiter.api.Test;
 import java.time.Instant;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import org.junit.jupiter.api.Test;
 
 class GraphQlTimestampTest {
     @Test
@@ -38,7 +38,7 @@ class GraphQlTimestampTest {
         assertThat(graphQlTimestamp.parseLiteral(StringValue.newStringValue(instant.toString())
                 .build())).isEqualTo(instant);
         assertThatThrownBy(() -> graphQlTimestamp.parseLiteral(instant)).isInstanceOf(CoercingParseLiteralException.class);
-        assertThatThrownBy(() -> graphQlTimestamp.parseLiteral(new Object())).isInstanceOf(CoercingParseLiteralException.class);
+        assertThatThrownBy(() -> graphQlTimestamp.parseLiteral("")).isInstanceOf(CoercingParseLiteralException.class);
     }
 
     @Test
@@ -47,7 +47,7 @@ class GraphQlTimestampTest {
         var instant = Instant.EPOCH;
         assertThat(graphQlTimestamp.parseValue(instant)).isEqualTo(instant);
         assertThat(graphQlTimestamp.parseValue("1970-01-01T00:00:00Z")).isEqualTo(instant);
-        assertThatThrownBy(() -> graphQlTimestamp.parseValue(new Object())).isInstanceOf(CoercingParseValueException.class);
+        assertThatThrownBy(() -> graphQlTimestamp.parseValue(5L)).isInstanceOf(CoercingParseValueException.class);
     }
 
     @Test

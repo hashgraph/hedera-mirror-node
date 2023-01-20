@@ -37,7 +37,7 @@ class GraphQlDurationTest {
         var duration = Duration.ofSeconds(1L);
         assertThat(graphQlDuration.parseLiteral(StringValue.newStringValue("PT1s").build())).isEqualTo(duration);
         assertThatThrownBy(() -> graphQlDuration.parseLiteral(duration)).isInstanceOf(CoercingParseLiteralException.class);
-        assertThatThrownBy(() -> graphQlDuration.parseLiteral(new Object())).isInstanceOf(CoercingParseLiteralException.class);
+        assertThatThrownBy(() -> graphQlDuration.parseLiteral("")).isInstanceOf(CoercingParseLiteralException.class);
     }
 
     @Test
@@ -46,7 +46,7 @@ class GraphQlDurationTest {
         var duration = Duration.ofSeconds(1L);
         assertThat(graphQlDuration.parseValue(duration)).isEqualTo(duration);
         assertThat(graphQlDuration.parseValue("PT1s")).isEqualTo(duration);
-        assertThatThrownBy(() -> graphQlDuration.parseValue(new Object())).isInstanceOf(CoercingParseValueException.class);
+        assertThatThrownBy(() -> graphQlDuration.parseValue(5L)).isInstanceOf(CoercingParseValueException.class);
     }
 
     @Test

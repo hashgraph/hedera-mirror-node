@@ -59,7 +59,7 @@ class AccountController {
 
         if (entityId != null) {
             return Mono.justOrEmpty(entityService.getByIdAndType(toEntityId(entityId), EntityType.ACCOUNT)
-                    .map(e -> accountMapper.map(e)));
+                    .map(accountMapper::map));
         }
 
         return Mono.error(new IllegalStateException("Not implemented"));
