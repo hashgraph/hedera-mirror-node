@@ -97,7 +97,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
 
         assertAll(
                 () -> assertRowCountOnSuccess(FILE_ID),
@@ -114,7 +114,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
 
         assertAll(
                 () -> assertRowCountOnSuccessNoData(FILE_ID),
@@ -130,7 +130,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         FileID fileID = FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(10).build();
         TransactionRecord record = transactionRecord(transactionBody, fileID);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
 
         assertAll(
                 () -> assertRowCountOnSuccess(fileID),
@@ -147,7 +147,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         FileID fileID = FileID.newBuilder().setShardNum(0).setRealmNum(0).setFileNum(2000).build();
         TransactionRecord record = transactionRecord(transactionBody, fileID);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
 
         assertAll(
                 () -> assertRowCountOnSuccessNoData(fileID),
@@ -168,7 +168,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
 
         var dbAccountEntity = getTransactionEntity(record.getConsensusTimestamp());
         assertEquals(expectedNanosTimestamp, dbAccountEntity.getExpirationTimestamp());
@@ -180,7 +180,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
 
         assertAll(
                 () -> assertRowCount(1, 3, 1),
@@ -199,7 +199,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         entityProperties.getPersist().setFiles(true);
         entityProperties.getPersist().setSystemFiles(true);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
 
         assertAll(
                 () -> assertRowCount(1, 3, 1),
@@ -215,14 +215,14 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         TransactionBody createTransactionBody = getTransactionBody(fileCreateTransaction);
         TransactionRecord recordCreate = transactionRecord(createTransactionBody);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(recordCreate).transaction(fileCreateTransaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(recordCreate).transaction(fileCreateTransaction).build());
 
         // now update
         Transaction transaction = fileUpdateAllTransaction();
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
 
         assertAll(
                 () -> assertRowCountOnTwoFileTransactions(),
@@ -238,7 +238,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         TransactionBody createTransactionBody = getTransactionBody(fileCreateTransaction);
         TransactionRecord recordCreate = transactionRecord(createTransactionBody);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(recordCreate).transaction(fileCreateTransaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(recordCreate).transaction(fileCreateTransaction).build());
 
         // now update
         Transaction transaction = fileUpdateAllTransaction();
@@ -246,7 +246,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         TransactionRecord record = transactionRecord(transactionBody,
                 ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
 
         assertAll(
                 () -> assertEquals(2, transactionRepository.count())
@@ -278,8 +278,8 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         FileAppendTransactionBody fileAppendTransactionBody = transactionBodyAppend.getFileAppend();
         TransactionRecord recordAppend = transactionRecord(transactionBodyAppend, ADDRESS_BOOK_FILEID);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(recordUpdate).transaction(transactionUpdate).build());
-        parseRecordItemAndCommit(RecordItem.builder().record(recordAppend).transaction(transactionAppend).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(recordUpdate).transaction(transactionUpdate).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(recordAppend).transaction(transactionAppend).build());
 
         // verify current address book is updated
         AddressBook newAddressBook = addressBookService.getCurrent();
@@ -315,7 +315,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         Transaction transactionCreate = fileUpdateAllTransaction(ADDRESS_BOOK_FILEID, addressBookCreate);
         TransactionBody transactionBodyCreate = getTransactionBody(transactionCreate);
         TransactionRecord recordCreate = transactionRecord(transactionBodyCreate, ADDRESS_BOOK_FILEID);
-        parseRecordItemAndCommit(RecordItem.builder().record(recordCreate).transaction(transactionCreate).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(recordCreate).transaction(transactionCreate).build());
 
         assertAll(
                 () -> assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT,
@@ -340,8 +340,8 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         TransactionRecord recordAppend = transactionRecord(transactionBodyAppend, ADDRESS_BOOK_FILEID);
 
         parseRecordItemsAndCommit(List.of(
-                RecordItem.builder().record(recordUpdate).transaction(transactionUpdate).build(),
-                RecordItem.builder().record(recordAppend).transaction(transactionAppend).build()));
+                RecordItem.builder().transactionRecord(recordUpdate).transaction(transactionUpdate).build(),
+                RecordItem.builder().transactionRecord(recordAppend).transaction(transactionAppend).build()));
 
         // verify current address book is updated
         AddressBook newAddressBook = addressBookService.getCurrent();
@@ -365,7 +365,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
 
         assertAll(
                 () -> assertRowCountOnSuccess(FILE_ID),
@@ -382,14 +382,14 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
 
         TransactionRecord recordCreate = transactionRecord(createTransactionBody);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(recordCreate).transaction(fileCreateTransaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(recordCreate).transaction(fileCreateTransaction).build());
 
         // now update
         Transaction transaction = fileUpdateContentsTransaction();
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
 
         Entity actualFile = getTransactionEntity(record.getConsensusTimestamp());
 
@@ -412,7 +412,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
 
         Entity actualFile = getTransactionEntity(record.getConsensusTimestamp());
 
@@ -435,14 +435,14 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         TransactionBody createTransactionBody = getTransactionBody(fileCreateTransaction);
         TransactionRecord recordCreate = transactionRecord(createTransactionBody);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(recordCreate).transaction(fileCreateTransaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(recordCreate).transaction(fileCreateTransaction).build());
 
         // now update
         Transaction transaction = fileUpdateExpiryTransaction();
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
 
         Entity actualFile = getTransactionEntity(record.getConsensusTimestamp());
 
@@ -466,7 +466,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
 
         Entity actualFile = getTransactionEntity(record.getConsensusTimestamp());
 
@@ -491,7 +491,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         TransactionBody createTransactionBody = getTransactionBody(fileCreateTransaction);
         TransactionRecord recordCreate = transactionRecord(createTransactionBody);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(recordCreate).transaction(fileCreateTransaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(recordCreate).transaction(fileCreateTransaction).build());
 
         // now update
         Transaction transaction = fileUpdateKeysTransaction();
@@ -499,7 +499,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         TransactionRecord record = transactionRecord(transactionBody);
         FileUpdateTransactionBody fileUpdateTransactionBody = transactionBody.getFileUpdate();
 
-        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
 
         Entity dbFileEntity = getTransactionEntity(record.getConsensusTimestamp());
 
@@ -523,7 +523,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         FileUpdateTransactionBody fileUpdateTransactionBody = transactionBody.getFileUpdate();
         TransactionRecord record = transactionRecord(transactionBody);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
 
         Entity dbFileEntity = getTransactionEntity(record.getConsensusTimestamp());
 
@@ -551,7 +551,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         entityProperties.getPersist().setFiles(true);
         entityProperties.getPersist().setSystemFiles(true);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
 
         assertAll(
                 () -> assertRowCountOnSuccess(fileID),
@@ -572,7 +572,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         entityProperties.getPersist().setFiles(true);
         entityProperties.getPersist().setSystemFiles(true);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
 
         addressBookService.getCurrent();
         assertAll(
@@ -597,7 +597,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         entityProperties.getPersist().setFiles(true);
         entityProperties.getPersist().setSystemFiles(true);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
 
         // verify current address book is changed
         AddressBook currentAddressBook = addressBookService.getCurrent();
@@ -622,7 +622,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody, ResponseCodeEnum.FEE_SCHEDULE_FILE_PART_UPLOADED);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
 
         assertAll(
                 () -> assertRowCountOnSuccess(fileId),
@@ -639,7 +639,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         TransactionRecord record = transactionRecord(transactionBody,
                 ResponseCodeEnum.SUCCESS_BUT_MISSING_EXPECTED_OPERATION);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
 
         assertAll(
                 () -> assertRowCountOnSuccess(fileId),
@@ -655,14 +655,14 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         TransactionBody createTransactionBody = getTransactionBody(fileCreateTransaction);
         TransactionRecord recordCreate = transactionRecord(createTransactionBody);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(recordCreate).transaction(fileCreateTransaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(recordCreate).transaction(fileCreateTransaction).build());
 
         // now update
         Transaction transaction = fileDeleteTransaction();
         TransactionBody transactionBody = getTransactionBody(transaction);
         TransactionRecord record = transactionRecord(transactionBody);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(transaction).build());
 
         Entity dbFileEntity = getTransactionEntity(record.getConsensusTimestamp());
 
@@ -689,7 +689,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         TransactionBody transactionBody = getTransactionBody(fileDeleteTransaction);
         TransactionRecord record = transactionRecord(transactionBody);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(fileDeleteTransaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(fileDeleteTransaction).build());
         Entity fileEntity = getTransactionEntity(record.getConsensusTimestamp());
 
         assertAll(
@@ -706,7 +706,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         TransactionBody transactionBody = getTransactionBody(fileDeleteTransaction);
         TransactionRecord record = transactionRecord(transactionBody, ResponseCodeEnum.INSUFFICIENT_PAYER_BALANCE);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(fileDeleteTransaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(fileDeleteTransaction).build());
 
         assertAll(
                 () -> assertRowCountOnFailureNoData(),
@@ -720,7 +720,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         TransactionBody transactionBody = getTransactionBody(systemDeleteTransaction);
         TransactionRecord record = transactionRecord(transactionBody);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(systemDeleteTransaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(systemDeleteTransaction).build());
         Entity fileEntity = getTransactionEntity(record.getConsensusTimestamp());
 
         assertAll(
@@ -736,7 +736,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         TransactionBody transactionBody = getTransactionBody(systemUndeleteTransaction);
         TransactionRecord record = transactionRecord(transactionBody);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(systemUndeleteTransaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(systemUndeleteTransaction).build());
 
         assertAll(
                 () -> assertRowCountOnSuccessNoData(FILE_ID),
@@ -751,7 +751,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         TransactionBody transactionBody = getTransactionBody(systemDeleteTransaction);
         TransactionRecord record = transactionRecord(transactionBody, ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(systemDeleteTransaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(systemDeleteTransaction).build());
 
         assertFailedFileTransaction(transactionBody, record);
     }
@@ -762,7 +762,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
         TransactionBody transactionBody = getTransactionBody(systemUndeleteTransaction);
         TransactionRecord record = transactionRecord(transactionBody, ResponseCodeEnum.INSUFFICIENT_ACCOUNT_BALANCE);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(record).transaction(systemUndeleteTransaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(record).transaction(systemUndeleteTransaction).build());
 
         assertFailedFileTransaction(transactionBody, record);
     }

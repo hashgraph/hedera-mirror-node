@@ -98,7 +98,7 @@ class RecordItemTest {
             parentRecord.getReceiptBuilder().setStatus(parentStatus);
             parent = RecordItem.builder()
                     .hapiVersion(DEFAULT_HAPI_VERSION)
-                    .record(parentRecord.build())
+                    .transactionRecord(parentRecord.build())
                     .transaction(Transaction.newBuilder().build())
                     .build();
         }
@@ -108,7 +108,7 @@ class RecordItemTest {
         RecordItem recordItem = RecordItem.builder()
                 .hapiVersion(DEFAULT_HAPI_VERSION)
                 .parent(parent)
-                .record(childRecord.build())
+                .transactionRecord(childRecord.build())
                 .transaction(Transaction.newBuilder().build())
                 .build();
         assertThat(recordItem.isSuccessful()).isEqualTo(expected);
@@ -138,7 +138,7 @@ class RecordItemTest {
                 .build();
         RecordItem recordItem = RecordItem.builder()
                 .hapiVersion(DEFAULT_HAPI_VERSION)
-                .record(TRANSACTION_RECORD)
+                .transactionRecord(TRANSACTION_RECORD)
                 .transaction(transaction)
                 .build();
         assertRecordItem(transaction, recordItem);
@@ -157,7 +157,7 @@ class RecordItemTest {
 
         RecordItem recordItem = RecordItem.builder()
                 .hapiVersion(DEFAULT_HAPI_VERSION)
-                .recordBytes(TRANSACTION_RECORD.toByteArray())
+                .transactionRecordBytes(TRANSACTION_RECORD.toByteArray())
                 .transactionBytes(transactionFromProto)
                 .build();
         assertRecordItem(expectedTransaction, recordItem);
@@ -171,7 +171,7 @@ class RecordItemTest {
                 .build();
         RecordItem recordItem = RecordItem.builder()
                 .hapiVersion(DEFAULT_HAPI_VERSION)
-                .record(TRANSACTION_RECORD)
+                .transactionRecord(TRANSACTION_RECORD)
                 .transaction(transaction)
                 .build();
         assertRecordItem(transaction, recordItem);
@@ -184,7 +184,7 @@ class RecordItemTest {
                 .build();
         RecordItem recordItem = RecordItem.builder()
                 .hapiVersion(DEFAULT_HAPI_VERSION)
-                .record(TRANSACTION_RECORD)
+                .transactionRecord(TRANSACTION_RECORD)
                 .transaction(transaction)
                 .build();
         assertRecordItem(transaction, recordItem);
@@ -199,7 +199,7 @@ class RecordItemTest {
                 .build();
         RecordItem recordItem = RecordItem.builder()
                 .hapiVersion(DEFAULT_HAPI_VERSION)
-                .record(transactionRecord)
+                .transactionRecord(transactionRecord)
                 .transaction(DEFAULT_TRANSACTION)
                 .build();
 
@@ -217,7 +217,7 @@ class RecordItemTest {
                 .build();
         RecordItem recordItem = RecordItem.builder()
                 .hapiVersion(DEFAULT_HAPI_VERSION)
-                .record(transactionRecord)
+                .transactionRecord(transactionRecord)
                 .transaction(DEFAULT_TRANSACTION)
                 .build();
 
@@ -239,7 +239,7 @@ class RecordItemTest {
 
         RecordItem previousRecordItem = RecordItem.builder()
                 .hapiVersion(DEFAULT_HAPI_VERSION)
-                .record(parentTransactionRecord)
+                .transactionRecord(parentTransactionRecord)
                 .transaction(transaction)
                 .build();
 
@@ -251,7 +251,7 @@ class RecordItemTest {
         RecordItem recordItem = RecordItem.builder()
                 .hapiVersion(DEFAULT_HAPI_VERSION)
                 .previous(previousRecordItem)
-                .record(transactionRecord)
+                .transactionRecord(transactionRecord)
                 .transaction(DEFAULT_TRANSACTION)
                 .build();
 
@@ -273,7 +273,7 @@ class RecordItemTest {
 
         RecordItem previousRecordItem = RecordItem.builder()
                 .hapiVersion(DEFAULT_HAPI_VERSION)
-                .record(parentTransactionRecord)
+                .transactionRecord(parentTransactionRecord)
                 .transaction(transaction)
                 .build();
 
@@ -286,7 +286,7 @@ class RecordItemTest {
         RecordItem recordItem = RecordItem.builder()
                 .hapiVersion(DEFAULT_HAPI_VERSION)
                 .previous(previousRecordItem)
-                .record(transactionRecord)
+                .transactionRecord(transactionRecord)
                 .transaction(DEFAULT_TRANSACTION)
                 .build();
 
@@ -308,7 +308,7 @@ class RecordItemTest {
 
         RecordItem previousRecordItem = RecordItem.builder()
                 .hapiVersion(DEFAULT_HAPI_VERSION)
-                .record(parentTransactionRecord)
+                .transactionRecord(parentTransactionRecord)
                 .transaction(transaction)
                 .build();
 
@@ -320,7 +320,7 @@ class RecordItemTest {
                 .build();
         RecordItem recordItem = RecordItem.builder()
                 .hapiVersion(DEFAULT_HAPI_VERSION)
-                .record(transactionRecord)
+                .transactionRecord(transactionRecord)
                 .previous(previousRecordItem)
                 .transaction(DEFAULT_TRANSACTION)
                 .build();
@@ -345,7 +345,7 @@ class RecordItemTest {
 
         RecordItem parentRecordItem = RecordItem.builder()
                 .hapiVersion(DEFAULT_HAPI_VERSION)
-                .record(parentTransactionRecord)
+                .transactionRecord(parentTransactionRecord)
                 .transaction(transaction)
                 .build();
 
@@ -358,7 +358,7 @@ class RecordItemTest {
         RecordItem siblingRecordItem = RecordItem.builder()
                 .hapiVersion(DEFAULT_HAPI_VERSION)
                 .parent(parentRecordItem)
-                .record(siblingTransactionRecord)
+                .transactionRecord(siblingTransactionRecord)
                 .transaction(DEFAULT_TRANSACTION)
                 .build();
 
@@ -371,7 +371,7 @@ class RecordItemTest {
         RecordItem recordItem = RecordItem.builder()
                 .hapiVersion(DEFAULT_HAPI_VERSION)
                 .previous(siblingRecordItem)
-                .record(transactionRecord)
+                .transactionRecord(transactionRecord)
                 .transaction(DEFAULT_TRANSACTION)
                 .build();
 
@@ -395,7 +395,7 @@ class RecordItemTest {
 
         RecordItem parentRecordItem = RecordItem.builder()
                 .hapiVersion(DEFAULT_HAPI_VERSION)
-                .record(parentTransactionRecord)
+                .transactionRecord(parentTransactionRecord)
                 .transaction(transaction)
                 .build();
 
@@ -407,7 +407,7 @@ class RecordItemTest {
                 .build();
         RecordItem siblingRecordItem = RecordItem.builder()
                 .hapiVersion(DEFAULT_HAPI_VERSION)
-                .record(siblingTransactionRecord)
+                .transactionRecord(siblingTransactionRecord)
                 .parent(parentRecordItem)
                 .transaction(DEFAULT_TRANSACTION)
                 .build();
@@ -421,7 +421,7 @@ class RecordItemTest {
         RecordItem recordItem = RecordItem.builder()
                 .hapiVersion(DEFAULT_HAPI_VERSION)
                 .previous(siblingRecordItem)
-                .record(transactionRecord)
+                .transactionRecord(transactionRecord)
                 .transaction(DEFAULT_TRANSACTION)
                 .build();
 
@@ -444,7 +444,7 @@ class RecordItemTest {
 
         RecordItem recordItem = RecordItem.builder()
                 .hapiVersion(DEFAULT_HAPI_VERSION)
-                .record(TRANSACTION_RECORD)
+                .transactionRecord(TRANSACTION_RECORD)
                 .transaction(transaction)
                 .build();
 
@@ -467,7 +467,7 @@ class RecordItemTest {
 
         RecordItem recordItem = RecordItem.builder()
                 .hapiVersion(DEFAULT_HAPI_VERSION)
-                .record(TRANSACTION_RECORD)
+                .transactionRecord(TRANSACTION_RECORD)
                 .transaction(transaction)
                 .build();
 
@@ -478,7 +478,7 @@ class RecordItemTest {
     private void testException(byte[] transactionBytes, byte[] recordBytes, String expectedMessage) {
         assertThatThrownBy(() -> RecordItem.builder()
                 .hapiVersion(DEFAULT_HAPI_VERSION)
-                .recordBytes(recordBytes)
+                .transactionRecordBytes(recordBytes)
                 .transactionBytes(transactionBytes)
                 .build()
                 .getTransactionBody())

@@ -442,7 +442,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         var createTransactionRecord = createTransactionRecord(createdTimestamp, scheduleID, createTransactionBody,
                 SUCCESS, false);
 
-        var recordItem = RecordItem.builder().record(createTransactionRecord).transaction(createTransaction).build();
+        var recordItem = RecordItem.builder().transactionRecord(createTransactionRecord).transaction(createTransaction).build();
         parseRecordItemAndCommit(recordItem);
     }
 
@@ -451,7 +451,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         var transactionBody = getTransactionBody(transaction);
         var transactionRecord = createTransactionRecord(timestamp, scheduleId, transactionBody, SUCCESS, false);
 
-        parseRecordItemAndCommit(RecordItem.builder().record(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
     }
 
     private void insertScheduleSign(long signTimestamp, SignatureMap signatureMap, ScheduleID scheduleID) {
@@ -460,7 +460,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         var signTransactionRecord = createTransactionRecord(signTimestamp, scheduleID, signTransactionBody,
                 SUCCESS, false);
 
-        var recordItem = RecordItem.builder().transaction(signTransaction).record(signTransactionRecord).build();
+        var recordItem = RecordItem.builder().transaction(signTransaction).transactionRecord(signTransactionRecord).build();
         parseRecordItemAndCommit(recordItem);
     }
 
@@ -469,7 +469,7 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         var transaction = scheduledTransaction();
         var transactionBody = getTransactionBody(transaction);
         var record = createTransactionRecord(signTimestamp, scheduleID, transactionBody, responseCodeEnum, true);
-        var recordItem = RecordItem.builder().record(record).transaction(transaction).build();
+        var recordItem = RecordItem.builder().transactionRecord(record).transaction(transaction).build();
         parseRecordItemAndCommit(recordItem);
     }
 

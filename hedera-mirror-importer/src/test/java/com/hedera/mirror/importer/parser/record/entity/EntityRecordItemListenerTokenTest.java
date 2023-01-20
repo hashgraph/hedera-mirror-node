@@ -1883,7 +1883,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
             customBuilder.accept(builder);
         }, transactionBody, ResponseCodeEnum.SUCCESS.getNumber());
 
-        return RecordItem.builder().record(transactionRecord).transaction(transaction).build();
+        return RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build();
     }
 
     private void insertAndParseTransaction(long consensusTimestamp, Transaction transaction) {
@@ -2294,7 +2294,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 builder -> builder.setConsensusTimestamp(TestUtils.toTimestamp(consensusTimestamp)),
                 transactionBody, ResponseCodeEnum.SUCCESS.getNumber());
 
-        parseRecordItemAndCommit(RecordItem.builder().record(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
     }
 
     private TokenTransferList tokenTransfer(TokenID tokenId, AccountID accountId, long amount) {
