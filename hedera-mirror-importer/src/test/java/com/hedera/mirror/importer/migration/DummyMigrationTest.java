@@ -72,12 +72,10 @@ class DummyMigrationTest extends IntegrationTest {
         @Getter
         private boolean migrated = false;
 
-        //private final MirrorProperties mirrorProperties;
 
         @Lazy
         public DummyMigration(MirrorProperties mirrorProperties) {
             super(mirrorProperties.getMigration());
-            //this.mirrorProperties = mirrorProperties;
         }
 
         @Override
