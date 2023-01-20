@@ -14,7 +14,7 @@ hedera:
         bucketName: test
       importHistoricalAccountInfo: false
       migration:
-        BLOCKNUMBERMIGRATION:
+        DUMMYMIGRATION:
           checksum: 5
       network: TESTNET
       parser:

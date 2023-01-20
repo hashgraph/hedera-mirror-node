@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.migration;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.apache.commons.collections4.map.CaseInsensitiveMap;
+import java.util.Map;
 
 @Data
 public class MigrationProperties {
@@ -32,5 +33,5 @@ public class MigrationProperties {
     private boolean enabled = true;
 
     @NotNull
-    private CaseInsensitiveMap<String, String> params = new CaseInsensitiveMap<>();
+    private Map<String, String> params = new CaseInsensitiveMap<>();
 }

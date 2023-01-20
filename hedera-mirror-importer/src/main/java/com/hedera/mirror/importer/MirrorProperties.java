@@ -23,6 +23,7 @@ package com.hedera.mirror.importer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.Map;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import lombok.Data;
@@ -53,7 +54,7 @@ public class MirrorProperties {
     private boolean leaderElection = false;
 
     @NotNull
-    private CaseInsensitiveMap<String, MigrationProperties> migration = new CaseInsensitiveMap<>();
+    private Map<String, MigrationProperties> migration = new CaseInsensitiveMap<>();
 
     @NotNull
     private HederaNetwork network = HederaNetwork.DEMO;

@@ -59,7 +59,7 @@ class BlockNumberMigrationTest extends IntegrationTest {
 
     @Test
     void checksum() {
-        assertThat(blockNumberMigration.getChecksum()).isEqualTo(5);
+        assertThat(blockNumberMigration.getChecksum()).isEqualTo(4);
     }
 
     @Test
