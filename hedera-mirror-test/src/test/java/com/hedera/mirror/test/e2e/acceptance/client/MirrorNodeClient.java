@@ -23,22 +23,11 @@ package com.hedera.mirror.test.e2e.acceptance.client;
 import static org.awaitility.Awaitility.await;
 
 import com.google.common.base.Stopwatch;
-
-import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
-import com.hedera.mirror.test.e2e.acceptance.response.JsonRpcSuccessResponse;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Named;
-
-import com.hedera.hashgraph.sdk.AccountId;
-
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorAccountResponse;
-
-import com.hedera.mirror.test.e2e.acceptance.util.TestUtil;
-
 import lombok.NonNull;
 import lombok.extern.log4j.Log4j2;
 import org.awaitility.Durations;
@@ -48,13 +37,17 @@ import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 import reactor.util.retry.RetryBackoffSpec;
 
+import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.SubscriptionHandle;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TopicMessageQuery;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
+import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorNetworkNode;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorNetworkNodes;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorNetworkStake;
+import com.hedera.mirror.test.e2e.acceptance.response.JsonRpcSuccessResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorAccountResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResultResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResultsResponse;
@@ -62,9 +55,10 @@ import com.hedera.mirror.test.e2e.acceptance.response.MirrorCryptoAllowanceRespo
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorScheduleResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenRelationshipResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
+import com.hedera.mirror.test.e2e.acceptance.util.TestUtil;
 
 @Log4j2
 @Named
@@ -170,11 +164,11 @@ public class MirrorNodeClient {
                 transactionId);
     }
 
-    public JsonRpcSuccessResponse contractsCallSimulations(String data, String contractSolidityAddress, String clientSolidityAddress) {
-        ContractCallRequest contractCallRequest = new ContractCallRequest("latest", data, false, clientSolidityAddress,
-                100000000, 100000000, contractSolidityAddress, 0);
+    public JsonRpcSuccessResponse contractsCallSimulation(String data, String to, String from) {
+        ContractCallRequest contractCallRequest = new ContractCallRequest("latest", data, false, from,
+                100000000, 100000000, to, 0);
 
-        return callRestEndpointPost("/contracts/call", JsonRpcSuccessResponse.class, contractCallRequest);
+        return callWeb3RestEndpointPost("/contracts/call", JsonRpcSuccessResponse.class, contractCallRequest);
     }
 
     public List<MirrorNetworkNode> getNetworkNodes() {
@@ -257,8 +251,10 @@ public class MirrorNodeClient {
                 .block();
     }
 
-    private <T> T callRestEndpointPost(String uri, Class<T> classType, ContractCallRequest contractCallRequest) {
-        return webClient.post()
+    private <T> T callWeb3RestEndpointPost(String uri, Class<T> classType, ContractCallRequest contractCallRequest) {
+        final var web3Client = webClient.mutate().baseUrl(acceptanceTestProperties.getWeb3RestProperties().getBaseUrl()).build();
+
+        return web3Client.post()
                 .uri(uri)
                 .body(Mono.just(contractCallRequest), ContractCallRequest.class)
                 .accept(MediaType.APPLICATION_JSON)

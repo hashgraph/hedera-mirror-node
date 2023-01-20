@@ -26,9 +26,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-
-import com.hedera.mirror.test.e2e.acceptance.response.JsonRpcSuccessResponse;
-
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import java.io.IOException;
@@ -53,6 +50,7 @@ import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorContractResult;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
+import com.hedera.mirror.test.e2e.acceptance.response.JsonRpcSuccessResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResultResponse;
 import com.hedera.mirror.test.e2e.acceptance.util.FeatureInputHandler;
@@ -134,7 +132,7 @@ public class ContractFeature extends AbstractFeature {
         verifyContractExecutionResultsByTransactionId();
     }
 
-    @Then("the mirror node REST API should execute simulations")
+    @Then("the mirror node Web3 REST API should execute simulations")
     public void verifyContractSimulations() {
         verifyContractCallSimulations();
     }
@@ -231,16 +229,16 @@ public class ContractFeature extends AbstractFeature {
     }
 
     private void verifyContractCallSimulations() {
-        JsonRpcSuccessResponse getAccountBalanceResponse = mirrorClient.contractsCallSimulations("6896fabf", contractId.toSolidityAddress(), contractClient.getClientAddress());
+        JsonRpcSuccessResponse getAccountBalanceResponse = mirrorClient.contractsCallSimulation("6896fabf", contractId.toSolidityAddress(), contractClient.getClientAddress());
         assertThat(getAccountBalanceResponse.getResult()).isNotNull();
 
-        JsonRpcSuccessResponse getSenderResponse = mirrorClient.contractsCallSimulations("5e01eb5a", contractId.toSolidityAddress(), contractClient.getClientAddress());
+        JsonRpcSuccessResponse getSenderResponse = mirrorClient.contractsCallSimulation("5e01eb5a", contractId.toSolidityAddress(), contractClient.getClientAddress());
         assertThat(getSenderResponse.getResult()).isNotNull();
 
-        JsonRpcSuccessResponse multiplySimpleNumbersResponse = mirrorClient.contractsCallSimulations("8070450f", contractId.toSolidityAddress(), contractClient.getClientAddress());
+        JsonRpcSuccessResponse multiplySimpleNumbersResponse = mirrorClient.contractsCallSimulation("8070450f", contractId.toSolidityAddress(), contractClient.getClientAddress());
         assertThat(multiplySimpleNumbersResponse.getResult()).isNotNull();
 
-        JsonRpcSuccessResponse identifierResponse = mirrorClient.contractsCallSimulations("7998a1c4", contractId.toSolidityAddress(), contractClient.getClientAddress());
+        JsonRpcSuccessResponse identifierResponse = mirrorClient.contractsCallSimulation("7998a1c4", contractId.toSolidityAddress(), contractClient.getClientAddress());
         assertThat(identifierResponse.getResult()).isNotNull();
     }
 
