@@ -66,7 +66,7 @@ class AccountController {
     }
 
     @SchemaMapping
-    Mono<Long> balance(@Argument @Valid CurrencyFormat currencyFormat, Account account) {
-        return Mono.just(convertCurrency(currencyFormat, account.getBalance()));
+    Mono<Long> balance(@Argument @Valid CurrencyFormat format, Account account) {
+        return Mono.just(convertCurrency(format, account.getBalance()));
     }
 }

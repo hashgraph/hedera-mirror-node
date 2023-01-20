@@ -88,11 +88,11 @@ class AccountControllerTest extends GraphqlIntegrationTest {
     void success() {
         var entity = domainBuilder.entity().persist();
         tester.document("""
-                        query {
-                          account(input: { entityId: { num: %d } }) {
+                        query Account($id: Long!) {
+                          account(input: { entityId: { num: $id } }) {
                             alias
                             autoRenewPeriod
-                            balance(format: HBAR)
+                            balance
                             createdTimestamp
                             declineReward
                             deleted
@@ -110,7 +110,8 @@ class AccountControllerTest extends GraphqlIntegrationTest {
                             type
                           }
                         }
-                        """.formatted(entity.getNum()))
+                        """)
+                .variable("id", entity.getNum())
                 .execute()
                 .errors()
                 .verify()
@@ -118,5 +119,20 @@ class AccountControllerTest extends GraphqlIntegrationTest {
                 .hasValue()
                 .entity(Account.class)
                 .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(accountMapper.map(entity)));
+    }
+
+    @Test
+    void balanceFormat() {
+        var entity = domainBuilder.entity().persist();
+        var query = "query Account($id: Long!) {account(input: { entityId: { num: $id } }) {balance(format: HBAR) }}";
+        tester.document(query)
+                .variable("id", entity.getNum())
+                .execute()
+                .errors()
+                .verify()
+                .path("account.balance")
+                .hasValue()
+                .entity(Long.class)
+                .isEqualTo(entity.getBalance() / 100_000_000L);
     }
 }
