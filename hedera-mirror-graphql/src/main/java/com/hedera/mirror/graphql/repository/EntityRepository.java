@@ -20,15 +20,12 @@ package com.hedera.mirror.graphql.repository;
  * ‍
  */
 
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import org.springframework.data.querydsl.QuerydslPredicateExecutor;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.graphql.data.GraphQlRepository;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 
 @GraphQlRepository
-public interface EntityRepository extends CrudRepository<Entity, Long>,
-        JpaSpecificationExecutor<Entity>, QuerydslPredicateExecutor<Entity> {
+public interface EntityRepository extends CrudRepository<Entity, Long> {
 
 }

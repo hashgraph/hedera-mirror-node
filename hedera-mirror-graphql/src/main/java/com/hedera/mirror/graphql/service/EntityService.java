@@ -24,8 +24,9 @@ import java.util.Optional;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 
 public interface EntityService {
 
-    Optional<Entity> getAccountById(EntityId entityId);
+    Optional<Entity> getByIdAndType(EntityId entityId, EntityType type);
 }

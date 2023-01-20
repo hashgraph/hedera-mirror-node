@@ -20,34 +20,103 @@ package com.hedera.mirror.graphql.controller;
  * ‍
  */
 
-import javax.annotation.Resource;
-import org.junit.jupiter.api.BeforeEach;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.graphql.tester.AutoConfigureHttpGraphQlTester;
+import org.springframework.graphql.ResponseError;
 import org.springframework.graphql.test.tester.HttpGraphQlTester;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.springframework.test.web.reactive.server.WebTestClient;
 
-@ExtendWith(SpringExtension.class)
-@WebFluxTest(controllers = AccountController.class)
-class AccountControllerTest {
+import com.hedera.mirror.graphql.GraphqlIntegrationTest;
+import com.hedera.mirror.graphql.mapper.AccountMapper;
+import com.hedera.mirror.graphql.viewmodel.Account;
 
-    @Resource
-    private WebTestClient webClient;
-    private HttpGraphQlTester tester;
+@AutoConfigureHttpGraphQlTester
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
+class AccountControllerTest extends GraphqlIntegrationTest {
 
-    @BeforeEach
-    void setup() {
-        tester = HttpGraphQlTester.create(webClient);
+    private final AccountMapper accountMapper;
+    private final HttpGraphQlTester tester;
+
+    @CsvSource(delimiter = '|', textBlock = """
+              query { account { id }}                                                                    | Missing field argument input
+              query { account(input: {}) { id }}                                                         | Must provide exactly one input value
+              query { account(input: {alias: ""}) { id }}                                                | alias must match
+              query { account(input: {alias: "abcZ"}) { id }}                                            | alias must match
+              query { account(input: {alias: "CIQ"}) { id }}                                             | Not implemented
+              query { account(input: {entityId: {num: -1}}) { id }}                                      | num must be greater than or equal to 0
+              query { account(input: {entityId: {realm: -1, num: 1}}) { id }}                            | realm must be greater than or equal to 0
+              query { account(input: {entityId: {shard: -1, num: 1}}) { id }}                            | shard must be greater than or equal to 0
+              query { account(input: {entityId: {num: 1}, id: "a"}) { id }}                              | Must provide exactly one input value
+              query { account(input: {evmAddress: ""}) { id }}                                           | evmAddress must match
+              query { account(input: {evmAddress: "abc"}) { id }}                                        | evmAddress must match
+              query { account(input: {evmAddress: "01234567890123456789012345678901234567890"}) { id }}  | evmAddress must match
+              query { account(input: {evmAddress: "0x0123456789012345678901234567890123456789"}) { id }} | Not implemented
+              query { account(input: {id: ""}) { id }}                                                   | id must match
+              query { account(input: {id: "*"}) { id }}                                                  | id must match
+              query { account(input: {id: "azAZ0123456789+/="}) { id }}                                  | Not implemented
+            """)
+    @ParameterizedTest
+    void invalidInput(String query, String error) {
+        tester.document(query)
+                .execute()
+                .errors()
+                .satisfy(r -> assertThat(r)
+                        .hasSize(1)
+                        .first()
+                        .extracting(ResponseError::getMessage)
+                        .asString()
+                        .contains(error)
+                );
     }
 
     @Test
-    void invalid() {
-        tester.document("""
-                        account() { id }
-                        """)
+    void missing() {
+        tester.document("query { account(input: {entityId: {num: 999}}) { id }}")
                 .execute()
-                .errors().expect(r -> r.getErrorType() != null);
+                .errors()
+                .verify()
+                .path("account")
+                .valueIsNull();
+    }
+
+    @Test
+    void success() {
+        var entity = domainBuilder.entity().persist();
+        tester.document("""
+                        query {
+                          account(input: { entityId: { num: %d } }) {
+                            alias
+                            autoRenewPeriod
+                            balance(format: HBAR)
+                            createdTimestamp
+                            declineReward
+                            deleted
+                            entityId { shard, realm, num }
+                            expirationTimestamp
+                            id
+                            key
+                            maxAutomaticTokenAssociations
+                            memo
+                            nonce
+                            pendingReward
+                            receiverSigRequired
+                            stakePeriodStart
+                            timestamp {from, to}
+                            type
+                          }
+                        }
+                        """.formatted(entity.getNum()))
+                .execute()
+                .errors()
+                .verify()
+                .path("account")
+                .hasValue()
+                .entity(Account.class)
+                .satisfies(a -> assertThat(a).usingRecursiveComparison().isEqualTo(accountMapper.map(entity)));
     }
 }

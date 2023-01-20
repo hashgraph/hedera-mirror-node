@@ -33,6 +33,7 @@ import org.springframework.graphql.data.method.annotation.SchemaMapping;
 import org.springframework.stereotype.Controller;
 import reactor.core.publisher.Mono;
 
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.graphql.mapper.AccountMapper;
 import com.hedera.mirror.graphql.service.EntityService;
 import com.hedera.mirror.graphql.viewmodel.Account;
@@ -57,7 +58,7 @@ class AccountController {
         validateOneOf(alias, entityId, evmAddress, id);
 
         if (entityId != null) {
-            return Mono.justOrEmpty(entityService.getAccountById(toEntityId(entityId))
+            return Mono.justOrEmpty(entityService.getByIdAndType(toEntityId(entityId), EntityType.ACCOUNT)
                     .map(e -> accountMapper.map(e)));
         }
 

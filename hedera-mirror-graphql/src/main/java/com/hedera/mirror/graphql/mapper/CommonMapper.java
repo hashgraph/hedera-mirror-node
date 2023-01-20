@@ -52,6 +52,18 @@ public interface CommonMapper {
     String KEYS = "keys";
     String THRESHOLD = "threshold";
 
+    default EntityId mapContractId(ContractID contractID) {
+        if (contractID == null || ContractID.getDefaultInstance().equals(contractID)) {
+            return null;
+        }
+
+        var entityId = new EntityId();
+        entityId.setShard(contractID.getShardNum());
+        entityId.setRealm(contractID.getRealmNum());
+        entityId.setNum(contractID.getContractNum());
+        return entityId;
+    }
+
     default Duration mapDuration(Long source) {
         return source != null ? Duration.ofSeconds(source) : null;
     }
@@ -102,8 +114,8 @@ public interface CommonMapper {
     default Object mapKey(Key key) {
         var keyCase = key.getKeyCase();
         return switch (keyCase) {
-            case CONTRACTID -> Map.of(CONTRACT_ID, mapEntityId(key.getContractID()));
-            case DELEGATABLE_CONTRACT_ID -> Map.of(keyCase.toString(), mapEntityId(key.getDelegatableContractId()));
+            case CONTRACTID -> Map.of(CONTRACT_ID, mapContractId(key.getContractID()));
+            case DELEGATABLE_CONTRACT_ID -> Map.of(keyCase.toString(), mapContractId(key.getDelegatableContractId()));
             case ECDSA_384 -> Map.of(keyCase.toString(), encodeBase64String(toBytes(key.getECDSA384())));
             case ECDSA_SECP256K1 -> Map.of(keyCase.toString(), encodeBase64String(toBytes(key.getECDSASecp256K1())));
             case ED25519 -> Map.of(keyCase.toString(), encodeBase64String(toBytes(key.getEd25519())));
@@ -117,18 +129,6 @@ public interface CommonMapper {
         };
     }
 
-    default EntityId mapEntityId(ContractID contractID) {
-        if (contractID == null || ContractID.getDefaultInstance().equals(contractID)) {
-            return null;
-        }
-
-        var entityId = new EntityId();
-        entityId.setShard(contractID.getShardNum());
-        entityId.setRealm(contractID.getRealmNum());
-        entityId.setNum(contractID.getContractNum());
-        return entityId;
-    }
-
     default List<Object> mapKeyList(KeyList keyList) {
         var keys = keyList.getKeysList();
         if (CollectionUtils.isEmpty(keys)) {
@@ -136,6 +136,7 @@ public interface CommonMapper {
         }
 
         var target = new ArrayList<>(keys.size());
+
         for (var key : keys) {
             target.add(mapKey(key));
         }

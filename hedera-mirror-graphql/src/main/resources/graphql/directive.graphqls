@@ -6,4 +6,4 @@ on ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION
 
 "Validation directive that ensures the argument or input value matches the given regular expression."
 directive @Pattern(regexp : String! =".*", message : String = "graphql.validation.Pattern.message")
-on ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION | SCALAR
+on ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION

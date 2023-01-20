@@ -8,7 +8,6 @@ type Contract implements Accountable & Entity & Node {
     declineReward: Boolean!
     deleted: Boolean
     entityId: EntityId!
-    evmAddress: EvmAddress
     expirationTimestamp: Timestamp
     file: File
     id: ID!
@@ -52,8 +51,14 @@ type ContractAction {
 """
 """
 input ContractInput {
+
+    "The unique shard, realm, and number associated with a Hedera contract."
     entityId: EntityIdInput
-    evmAddress: EvmAddress
+
+    "A hex-encoded string that represents a 20-byte EVM address."
+    evmAddress: String @Pattern(regexp: "^(0x)?[a-fA-F0-9]{40}$")
+
+    "An opaque, globally unique identifier specific to GraphQL."
     id: ID
 }
 

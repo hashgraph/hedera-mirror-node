@@ -20,7 +20,6 @@ package com.hedera.mirror.graphql.config;
  * ‍
  */
 
-import graphql.Scalars;
 import graphql.execution.preparsed.PreparsedDocumentProvider;
 import graphql.scalars.ExtendedScalars;
 import graphql.schema.idl.SchemaDirectiveWiring;
@@ -49,11 +48,7 @@ class GraphQlConfiguration {
                 .scalar(ExtendedScalars.GraphQLLong)
                 .scalar(ExtendedScalars.Object)
                 .scalar(GraphQlDuration.INSTANCE)
-                .scalar(GraphQlTimestamp.INSTANCE)
-                .scalar(Scalars.GraphQLString.transform(b -> b.name("Alias")
-                        .description("A hex-encoded string that represents an account alias")))
-                .scalar(Scalars.GraphQLString.transform(b -> b.name("EvmAddress")
-                        .description("A hex-encoded string that represents a 20-byte EVM address")));
+                .scalar(GraphQlTimestamp.INSTANCE);
     }
 
     @Bean

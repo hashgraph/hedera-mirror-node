@@ -37,24 +37,24 @@ import com.hedera.mirror.graphql.viewmodel.EntityIdInput;
 
 class GraphQlUtilsTest {
 
-    @CsvSource(nullValues = "null", value = {
-            "null,1,1",
-            "HBAR,null,null",
-            "TINYBAR,1,1",
-            "MICROBAR,100,1",
-            "MILIBAR,100_000,1",
-            "HBAR,100_000_000,1",
-            "KILOBAR,100_000_000_000,1",
-            "MEGABAR,100_000_000_000_000,1",
-            "GIGABAR,100_000_000_000_000_000,1",
-            "TINYBAR,5_000_000_000_000_000_000,5_000_000_000_000_000_000",
-            "MICROBAR,5_000_000_000_000_000_000,50_000_000_000_000_000",
-            "MILIBAR,5_000_000_000_000_000_000,50_000_000_000_000",
-            "HBAR,5_000_000_000_000_000_000,50_000_000_000",
-            "KILOBAR,5_000_000_000_000_000_000,50_000_000",
-            "MEGABAR,5_000_000_000_000_000_000,50_000",
-            "GIGABAR,5_000_000_000_000_000_000,50",
-    })
+    @CsvSource(nullValues = "null", textBlock = """
+              null,     1,                         1
+              HBAR,     null,                      null
+              TINYBAR,  1,                         1
+              MICROBAR, 100,                       1
+              MILIBAR,  100_000,                   1
+              HBAR,     100_000_000,               1
+              KILOBAR,  100_000_000_000,           1
+              MEGABAR,  100_000_000_000_000,       1
+              GIGABAR,  100_000_000_000_000_000,   1
+              TINYBAR,  5_000_000_000_000_000_000, 5_000_000_000_000_000_000
+              MICROBAR, 5_000_000_000_000_000_000, 50_000_000_000_000_000
+              MILIBAR,  5_000_000_000_000_000_000, 50_000_000_000_000
+              HBAR,     5_000_000_000_000_000_000, 50_000_000_000
+              KILOBAR,  5_000_000_000_000_000_000, 50_000_000
+              MEGABAR,  5_000_000_000_000_000_000, 50_000
+              GIGABAR,  5_000_000_000_000_000_000, 50
+            """)
     @ParameterizedTest
     void convertCurrency(CurrencyFormat format, Long input, Long output) {
         assertThat(GraphQlUtils.convertCurrency(format, input)).isEqualTo(output);

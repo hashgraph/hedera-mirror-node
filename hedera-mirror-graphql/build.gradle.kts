@@ -65,11 +65,9 @@ generatePojoConf {
     isSeparateUtilityClasses = true
     setCustomScalars(
         arrayOf(
-            CustomScalarDefinition("Alias", "java.lang.String", "", "graphql.scalars.GraphQLString", ""),
             CustomScalarDefinition(
                 "Duration", "java.time.Duration", "", "com.hedera.mirror.graphql.config.GraphQlDuration.INSTANCE", ""
             ),
-            CustomScalarDefinition("EvmAddress", "java.lang.String", "", "graphql.scalars.GraphQLString", ""),
             CustomScalarDefinition("Long", "java.lang.Long", "", "graphql.scalars.GraphQLLong", ""),
             CustomScalarDefinition("Object", "java.lang.Object", "", "graphql.scalars.Object", ""),
             CustomScalarDefinition(

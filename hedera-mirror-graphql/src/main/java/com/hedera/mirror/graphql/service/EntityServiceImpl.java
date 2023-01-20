@@ -26,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.graphql.repository.EntityRepository;
 
 @Named
@@ -35,8 +36,8 @@ public class EntityServiceImpl implements EntityService {
     private final EntityRepository entityRepository;
 
     @Override
-    public Optional<Entity> getAccountById(EntityId entityId) {
-        var entity = entityRepository.findById(entityId.getId());
-        return entity;
+    public Optional<Entity> getByIdAndType(EntityId entityId, EntityType type) {
+        return entityRepository.findById(entityId.getId())
+                .filter(e -> e.getType() == type);
     }
 }
