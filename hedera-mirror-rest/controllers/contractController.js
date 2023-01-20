@@ -1081,9 +1081,7 @@ class ContractController extends BaseController {
         throw new NotFoundError();
       } else if (transactions.length > 1) {
         for (const transaction of transactions) {
-          const one = isUserInitiatedTransaction(transaction);
-          const two = !isContractTransaction(transaction);
-          if (isUserInitiatedTransaction(transaction) && !isContractTransaction(transaction)) {
+          if (!isContractTransaction(transaction)) {
             throw new NotFoundError();
           }
         }
@@ -1269,16 +1267,9 @@ const exportControllerMethods = (methods = []) => {
   }, {});
 };
 
-const isContractTransaction = (transaction) => {
-  return transaction.type === contractCallType || transaction.type === contractCreateType
-    || transaction.type === ethereumTransactionType ?
-    true : false;
-};
-
-const isUserInitiatedTransaction = (transaction) => {
-  return !transaction.scheduled && transaction.nonce === 0 ?
-    true : false;
-};
+const isContractTransaction = (transaction) =>
+  transaction.type === contractCallType || transaction.type === contractCreateType
+    || transaction.type === ethereumTransactionType;
 
 const contractController = exportControllerMethods([
   'getContractActions',
