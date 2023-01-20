@@ -19,33 +19,19 @@ package com.hedera.mirror.importer.migration;
  * limitations under the License.
  * ‍
  */
+import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork.TESTNET;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
-
-import com.hedera.mirror.importer.repository.RecordFileRepository;
-
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
-import org.apache.commons.collections4.map.CaseInsensitiveMap;
-import org.flywaydb.core.api.configuration.Configuration;
-import org.flywaydb.core.api.configuration.FluentConfiguration;
-import org.flywaydb.core.api.migration.Context;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.stereotype.Component;
 import org.springframework.test.context.ContextConfiguration;
-import javax.inject.Named;
-import java.sql.Connection;
-import java.util.Collections;
-import java.util.Map;
-
-import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork.TESTNET;
-import static org.assertj.core.api.Assertions.assertThat;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @ContextConfiguration(classes = {DummyMigrationTest.DummyMigration.class})
