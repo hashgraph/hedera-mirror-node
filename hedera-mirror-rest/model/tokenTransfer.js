@@ -37,6 +37,7 @@ class TokenTransfer {
   static AMOUNT = 'amount';
   static CONSENSUS_TIMESTAMP = 'consensus_timestamp';
   static IS_APPROVAL = `is_approval`;
+  static PAYER_ACCOUNT_ID = 'payer_account_id';
   static TOKEN_ID = 'token_id';
 
   /**

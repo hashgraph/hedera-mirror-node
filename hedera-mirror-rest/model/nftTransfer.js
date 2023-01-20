@@ -38,6 +38,7 @@ class NftTransfer {
 
   static CONSENSUS_TIMESTAMP = `consensus_timestamp`;
   static IS_APPROVAL = `is_approval`;
+  static PAYER_ACCOUNT_ID = 'payer_account_id';
   static RECEIVER_ACCOUNT_ID = `receiver_account_id`;
   static SENDER_ACCOUNT_ID = `sender_account_id`;
   static SERIAL_NUMBER = `serial_number`;

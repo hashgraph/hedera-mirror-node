@@ -59,12 +59,39 @@ const transactionFields = [
   Transaction.VALID_START_NS,
   Transaction.INDEX,
 ];
-const STAKING_REWARD_ACCOUNT = '0.0.800';
 const transactionFullFields = transactionFields.map((f) => Transaction.getFullName(f));
 // consensus_timestamp in transfer_list is a coalesce of multiple consensus timestamp columns
 const transferListFullFields = transactionFields
   .filter((f) => f !== Transaction.CONSENSUS_TIMESTAMP)
   .map((f) => `t.${f}`);
+
+const cryptoTransferJsonAgg = `jsonb_agg(jsonb_build_object(
+    '${CryptoTransfer.AMOUNT}', ${CryptoTransfer.AMOUNT},
+    '${CryptoTransfer.ENTITY_ID}', ${CryptoTransfer.getFullName(CryptoTransfer.ENTITY_ID)},
+    '${CryptoTransfer.IS_APPROVAL}', ${CryptoTransfer.IS_APPROVAL}
+  ) order by ${CryptoTransfer.getFullName(CryptoTransfer.ENTITY_ID)}, ${CryptoTransfer.AMOUNT})`;
+
+const tokenTransferJsonAgg = `jsonb_agg(jsonb_build_object(
+    '${TokenTransfer.ACCOUNT_ID}', ${TokenTransfer.ACCOUNT_ID},
+    '${TokenTransfer.AMOUNT}', ${TokenTransfer.AMOUNT},
+    '${TokenTransfer.TOKEN_ID}', ${TokenTransfer.TOKEN_ID},
+    '${TokenTransfer.IS_APPROVAL}', ${TokenTransfer.IS_APPROVAL}
+  ) order by ${TokenTransfer.TOKEN_ID}, ${TokenTransfer.ACCOUNT_ID})`;
+
+const nftTransferJsonAgg = `jsonb_agg(jsonb_build_object(
+    '${NftTransfer.RECEIVER_ACCOUNT_ID}', ${NftTransfer.RECEIVER_ACCOUNT_ID},
+    '${NftTransfer.SENDER_ACCOUNT_ID}', ${NftTransfer.SENDER_ACCOUNT_ID},
+    '${NftTransfer.SERIAL_NUMBER}', ${NftTransfer.SERIAL_NUMBER},
+    '${NftTransfer.TOKEN_ID}', ${NftTransfer.TOKEN_ID},
+    '${NftTransfer.IS_APPROVAL}', ${NftTransfer.IS_APPROVAL}
+  ) order by ${NftTransfer.TOKEN_ID}, ${NftTransfer.SERIAL_NUMBER})`;
+
+const assessedCustomFeeJsonAgg = `jsonb_agg(jsonb_build_object(
+    '${AssessedCustomFee.AMOUNT}', ${AssessedCustomFee.AMOUNT},
+    '${AssessedCustomFee.COLLECTOR_ACCOUNT_ID}', ${AssessedCustomFee.COLLECTOR_ACCOUNT_ID},
+    '${AssessedCustomFee.EFFECTIVE_PAYER_ACCOUNT_IDS}', ${AssessedCustomFee.EFFECTIVE_PAYER_ACCOUNT_IDS},
+    '${AssessedCustomFee.TOKEN_ID}', ${AssessedCustomFee.TOKEN_ID}
+  ) order by ${AssessedCustomFee.COLLECTOR_ACCOUNT_ID}, ${AssessedCustomFee.AMOUNT})`;
 
 /**
  * Gets the select clause with crypto transfers, token transfers, and nft transfers
@@ -100,56 +127,28 @@ const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'des
 
   // aggregate crypto transfers, token transfers, and nft transfers
   const cryptoTransferListCte = `c_list as (
-      select jsonb_agg(jsonb_build_object(
-              '${CryptoTransfer.AMOUNT}', ${CryptoTransfer.AMOUNT},
-              '${CryptoTransfer.ENTITY_ID}', ${CryptoTransfer.getFullName(CryptoTransfer.ENTITY_ID)},
-              '${CryptoTransfer.IS_APPROVAL}', ${CryptoTransfer.IS_APPROVAL}
-          ) order by ${CryptoTransfer.getFullName(CryptoTransfer.ENTITY_ID)}, ${CryptoTransfer.AMOUNT}
-        ) as ctr_list,
-        ${CryptoTransfer.getFullName(CryptoTransfer.CONSENSUS_TIMESTAMP)}
+      select ${cryptoTransferJsonAgg} as ctr_list, ${CryptoTransfer.getFullName(CryptoTransfer.CONSENSUS_TIMESTAMP)}
       from ${CryptoTransfer.tableName} ${CryptoTransfer.tableAlias}
       join tlist on ${CryptoTransfer.getFullName(CryptoTransfer.CONSENSUS_TIMESTAMP)} = tlist.consensus_timestamp
       group by ${CryptoTransfer.getFullName(CryptoTransfer.CONSENSUS_TIMESTAMP)}
   )`;
 
   const tokenTransferListCte = `t_list as (
-    select jsonb_agg(jsonb_build_object(
-          '${TokenTransfer.ACCOUNT_ID}', ${TokenTransfer.ACCOUNT_ID},
-          '${TokenTransfer.AMOUNT}', ${TokenTransfer.AMOUNT},
-          '${TokenTransfer.TOKEN_ID}', ${TokenTransfer.TOKEN_ID},
-          '${TokenTransfer.IS_APPROVAL}', ${TokenTransfer.IS_APPROVAL}
-        ) order by ${TokenTransfer.TOKEN_ID}, ${TokenTransfer.ACCOUNT_ID}
-      ) as ttr_list,
-      ${TokenTransfer.getFullName(TokenTransfer.CONSENSUS_TIMESTAMP)}
+    select ${tokenTransferJsonAgg} as ttr_list, ${TokenTransfer.getFullName(TokenTransfer.CONSENSUS_TIMESTAMP)}
     from ${TokenTransfer.tableName} ${TokenTransfer.tableAlias}
     join tlist on ${TokenTransfer.getFullName(TokenTransfer.CONSENSUS_TIMESTAMP)} = tlist.consensus_timestamp
     group by ${TokenTransfer.getFullName(TokenTransfer.CONSENSUS_TIMESTAMP)}
   )`;
 
   const nftTransferListCte = `nft_list as (
-    select jsonb_agg(jsonb_build_object(
-          '${NftTransfer.RECEIVER_ACCOUNT_ID}', ${NftTransfer.RECEIVER_ACCOUNT_ID},
-          '${NftTransfer.SENDER_ACCOUNT_ID}', ${NftTransfer.SENDER_ACCOUNT_ID},
-          '${NftTransfer.SERIAL_NUMBER}', ${NftTransfer.SERIAL_NUMBER},
-          '${NftTransfer.TOKEN_ID}', ${NftTransfer.TOKEN_ID},
-          '${NftTransfer.IS_APPROVAL}', ${NftTransfer.IS_APPROVAL}
-        ) order by ${NftTransfer.TOKEN_ID}, ${NftTransfer.SERIAL_NUMBER}
-      ) as ntr_list,
-      ${NftTransfer.getFullName(NftTransfer.CONSENSUS_TIMESTAMP)}
+    select ${nftTransferJsonAgg} as ntr_list, ${NftTransfer.getFullName(NftTransfer.CONSENSUS_TIMESTAMP)}
     from ${NftTransfer.tableName} ${NftTransfer.tableAlias}
     join tlist on ${NftTransfer.getFullName(NftTransfer.CONSENSUS_TIMESTAMP)} = tlist.consensus_timestamp
     group by ${NftTransfer.getFullName(NftTransfer.CONSENSUS_TIMESTAMP)}
   )`;
 
   const assessedFeeListCte = `fee_list as (
-    select jsonb_agg(jsonb_build_object(
-          '${AssessedCustomFee.AMOUNT}', ${AssessedCustomFee.AMOUNT},
-          '${AssessedCustomFee.COLLECTOR_ACCOUNT_ID}', ${AssessedCustomFee.COLLECTOR_ACCOUNT_ID},
-          '${AssessedCustomFee.EFFECTIVE_PAYER_ACCOUNT_IDS}', ${AssessedCustomFee.EFFECTIVE_PAYER_ACCOUNT_IDS},
-          'payer_account_id', ${AssessedCustomFee.COLLECTOR_ACCOUNT_ID},
-          '${AssessedCustomFee.TOKEN_ID}', ${AssessedCustomFee.TOKEN_ID}
-        ) order by ${AssessedCustomFee.COLLECTOR_ACCOUNT_ID}, ${AssessedCustomFee.AMOUNT}
-      ) as ftr_list,
+    select ${assessedCustomFeeJsonAgg} as ftr_list,
       ${AssessedCustomFee.getFullName(AssessedCustomFee.CONSENSUS_TIMESTAMP)}
     from ${AssessedCustomFee.tableName} ${AssessedCustomFee.tableAlias}
     join tlist on ${AssessedCustomFee.getFullName(AssessedCustomFee.CONSENSUS_TIMESTAMP)} = tlist.consensus_timestamp
@@ -695,18 +694,43 @@ const transactionHashRegex = /^([\dA-Za-z+\-\/_]{64}|(0x)?[\dA-Fa-f]{96})$/;
 
 const isValidTransactionHash = (hash) => transactionHashRegex.test(hash);
 
+const transactionByIdQuery = `
+  select
+    ${transactionFullFields},
+    (
+      select ${cryptoTransferJsonAgg}
+      from ${CryptoTransfer.tableName} ${CryptoTransfer.tableAlias}
+      where ${CryptoTransfer.getFullName(CryptoTransfer.PAYER_ACCOUNT_ID)} = $1 and
+            ${CryptoTransfer.getFullName(CryptoTransfer.CONSENSUS_TIMESTAMP)} = t.consensus_timestamp
+    ) as crypto_transfer_list,
+    (
+      select ${tokenTransferJsonAgg}
+      from ${TokenTransfer.tableName} ${TokenTransfer.tableAlias}
+      where ${TokenTransfer.getFullName(TokenTransfer.PAYER_ACCOUNT_ID)} = $1 and 
+            ${TokenTransfer.getFullName(TokenTransfer.CONSENSUS_TIMESTAMP)} = t.consensus_timestamp
+    ) as token_transfer_list,
+    (
+      select ${nftTransferJsonAgg}
+      from ${NftTransfer.tableName} ${NftTransfer.tableAlias}
+      where ${NftTransfer.getFullName(NftTransfer.PAYER_ACCOUNT_ID)} = $1 and 
+            ${NftTransfer.getFullName(NftTransfer.CONSENSUS_TIMESTAMP)} = t.consensus_timestamp
+    ) as nft_transfer_list,
+    (
+      select ${assessedCustomFeeJsonAgg}
+      from ${AssessedCustomFee.tableName} ${AssessedCustomFee.tableAlias}
+      where ${AssessedCustomFee.getFullName(AssessedCustomFee.PAYER_ACCOUNT_ID)} = $1 and 
+            ${AssessedCustomFee.getFullName(AssessedCustomFee.CONSENSUS_TIMESTAMP)} = t.consensus_timestamp
+    ) as assessed_custom_fees
+  from ${Transaction.tableName} ${Transaction.tableAlias}`;
+
 /**
  * Extracts the sql query and params for transactions request by transaction id
  *
  * @param {String} transactionIdOrHash
  * @param {Array} filters
- * @return {{query: string, params: string[]}}
+ * @return {{query: string, params: *[]}}
  */
 const extractSqlFromTransactionsByIdOrHashRequest = (transactionIdOrHash, filters) => {
-  const conditions = [];
-  let innerQuery;
-  const params = [];
-
   if (isValidTransactionHash(transactionIdOrHash)) {
     const encoding = transactionIdOrHash.length === Transaction.BASE64_HASH_SIZE ? 'base64url' : 'hex';
     if (transactionIdOrHash.length === Transaction.HEX_HASH_WITH_PREFIX_SIZE) {
@@ -714,53 +738,54 @@ const extractSqlFromTransactionsByIdOrHashRequest = (transactionIdOrHash, filter
     }
 
     const transactionHash = Buffer.from(transactionIdOrHash, encoding);
-    innerQuery = `select ${TransactionHash.CONSENSUS_TIMESTAMP}
+    const innerQuery = `select ${TransactionHash.CONSENSUS_TIMESTAMP}
                   from ${TransactionHash.tableName}
                   where ${TransactionHash.HASH} = $1`;
-    params.push(transactionHash);
-  } else {
-    // try to parse it as a transaction id
-    const transactionId = TransactionId.fromString(transactionIdOrHash);
-    conditions.push(`${Transaction.PAYER_ACCOUNT_ID} = $1`, `${Transaction.VALID_START_NS} = $2`);
-    params.push(transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs());
 
-    // only parse nonce and scheduled query filters if the path parameter is transaction id
-    let nonce;
-    let scheduled;
-    for (const filter of filters) {
-      // honor the last for both nonce and scheduled
-      switch (filter.key) {
-        case constants.filterKeys.NONCE:
-          nonce = filter.value;
-          break;
-        case constants.filterKeys.SCHEDULED:
-          scheduled = filter.value;
-          break;
-        default:
-          break;
-      }
-    }
-
-    if (nonce !== undefined) {
-      params.push(nonce);
-      conditions.push(`${Transaction.NONCE} = $${params.length}`);
-    }
-
-    if (scheduled !== undefined) {
-      params.push(scheduled);
-      conditions.push(`${Transaction.SCHEDULED} = $${params.length}`);
-    }
-
-    const whereClause = buildWhereClause(...conditions);
-    innerQuery = `select ${Transaction.CONSENSUS_TIMESTAMP}
-                  from ${Transaction.tableName}
-                  ${whereClause}`;
-  }
-
-  const query = `
+    const query = `
     ${getSelectClauseWithTransfers(true, innerQuery)}
     from transfer_list t
     order by ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} asc`;
+
+    return {query, params: [transactionHash]};
+  }
+
+  // try to parse it as a transaction id
+  const transactionId = TransactionId.fromString(transactionIdOrHash);
+  const conditions = [`${Transaction.PAYER_ACCOUNT_ID} = $1`, `${Transaction.VALID_START_NS} = $2`];
+  const params = [transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs()];
+
+  // only parse nonce and scheduled query filters if the path parameter is transaction id
+  let nonce;
+  let scheduled;
+  for (const filter of filters) {
+    // honor the last for both nonce and scheduled
+    switch (filter.key) {
+      case constants.filterKeys.NONCE:
+        nonce = filter.value;
+        break;
+      case constants.filterKeys.SCHEDULED:
+        scheduled = filter.value;
+        break;
+      default:
+        break;
+    }
+  }
+
+  if (nonce !== undefined) {
+    params.push(nonce);
+    conditions.push(`${Transaction.NONCE} = $${params.length}`);
+  }
+
+  if (scheduled !== undefined) {
+    params.push(scheduled);
+    conditions.push(`${Transaction.SCHEDULED} = $${params.length}`);
+  }
+
+  const query = `
+    ${transactionByIdQuery}
+    where ${conditions.join(' and ')}
+    order by ${Transaction.CONSENSUS_TIMESTAMP} asc`;
 
   return {query, params};
 };

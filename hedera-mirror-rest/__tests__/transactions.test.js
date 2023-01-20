@@ -746,119 +746,142 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
     const defaultTransactionIdStr = '0.0.200-123456789-987654321';
     const defaultParams = [200, '123456789987654321'];
 
-    const getQuery = (timestampQuery) => {
-      return `with timestampFilter as (${timestampQuery}), tlist as (
-      select t.charged_tx_fee,
-        t.consensus_timestamp,
-        t.entity_id,
-        t.max_fee,
-        t.memo,
-        t.node_account_id,
-        t.nonce,
-        t.parent_consensus_timestamp,
-        t.payer_account_id,
-        t.result,
-        t.scheduled,
-        t.transaction_bytes,
-        t.transaction_hash,
-        t.type,
-        t.valid_duration_seconds,
-        t.valid_start_ns,
-        t.index
-      from transaction t
-      join timestampFilter tf
+    const getTransactionByHashQuery = `
+      with timestampFilter as (select consensus_timestamp from transaction_hash where hash = $1),
+        tlist as (
+        select t.charged_tx_fee,
+            t.consensus_timestamp,
+            t.entity_id,
+            t.max_fee,
+            t.memo,
+            t.node_account_id,
+            t.nonce,
+            t.parent_consensus_timestamp,
+            t.payer_account_id,
+            t.result,
+            t.scheduled,
+            t.transaction_bytes,
+            t.transaction_hash,
+            t.type,
+            t.valid_duration_seconds,
+            t.valid_start_ns,
+            t.index
+        from transaction t
+            join timestampFilter tf
         on t.consensus_timestamp = tf.consensus_timestamp
-      order by t.consensus_timestamp desc
-    ), c_list as (
-      select jsonb_agg(jsonb_build_object(
-          'amount', amount,
-          'entity_id', ctr.entity_id,
-          'is_approval', is_approval
-        ) order by ctr.entity_id, amount) as ctr_list,
-         ctr.consensus_timestamp
-      from crypto_transfer ctr
-      join tlist
+        order by t.consensus_timestamp desc
+            ), c_list as (
+        select jsonb_agg(jsonb_build_object(
+            'amount', amount,
+            'entity_id', ctr.entity_id,
+            'is_approval', is_approval
+            ) order by ctr.entity_id, amount) as ctr_list,
+            ctr.consensus_timestamp
+        from crypto_transfer ctr
+            join tlist
         on ctr.consensus_timestamp = tlist.consensus_timestamp
-      group by ctr.consensus_timestamp
-    ), t_list as (
-      select jsonb_agg(jsonb_build_object(
-          'account_id', account_id,
-          'amount', amount,
-          'token_id', token_id,
-          'is_approval', is_approval
-        ) order by token_id, account_id) as ttr_list,
-        tk_tr.consensus_timestamp
-      from token_transfer tk_tr
-      join tlist
+        group by ctr.consensus_timestamp
+            ), t_list as (
+        select jsonb_agg(jsonb_build_object(
+            'account_id', account_id,
+            'amount', amount,
+            'token_id', token_id,
+            'is_approval', is_approval
+            ) order by token_id, account_id) as ttr_list,
+            tk_tr.consensus_timestamp
+        from token_transfer tk_tr
+            join tlist
         on tk_tr.consensus_timestamp = tlist.consensus_timestamp
-      group by tk_tr.consensus_timestamp
-    ), nft_list as (
-      select jsonb_agg(jsonb_build_object(
-          'receiver_account_id', receiver_account_id,
-          'sender_account_id', sender_account_id,
-          'serial_number', serial_number,
-          'token_id', token_id,
-          'is_approval', is_approval
-        ) order by token_id, serial_number) as ntr_list,
-        nft_tr.consensus_timestamp
-      from nft_transfer nft_tr
-      join tlist
+        group by tk_tr.consensus_timestamp
+            ), nft_list as (
+        select jsonb_agg(jsonb_build_object(
+            'receiver_account_id', receiver_account_id,
+            'sender_account_id', sender_account_id,
+            'serial_number', serial_number,
+            'token_id', token_id,
+            'is_approval', is_approval
+            ) order by token_id, serial_number) as ntr_list,
+            nft_tr.consensus_timestamp
+        from nft_transfer nft_tr
+            join tlist
         on nft_tr.consensus_timestamp = tlist.consensus_timestamp
-      group by nft_tr.consensus_timestamp
-    ), fee_list as (
-      select jsonb_agg(jsonb_build_object(
-          'amount', amount,
-          'collector_account_id',
-          collector_account_id,
-          'effective_payer_account_ids',
-          effective_payer_account_ids,
-          'payer_account_id',
-          collector_account_id,
-          'token_id', token_id
-        ) order by collector_account_id, amount) as ftr_list,
-        acf.consensus_timestamp
-      from assessed_custom_fee acf
-      join tlist
+        group by nft_tr.consensus_timestamp
+            ), fee_list as (
+        select jsonb_agg(jsonb_build_object(
+            'amount', amount,
+            'collector_account_id', collector_account_id,
+            'effective_payer_account_ids', effective_payer_account_ids,
+            'token_id', token_id
+            ) order by collector_account_id, amount) as ftr_list,
+            acf.consensus_timestamp
+        from assessed_custom_fee acf
+            join tlist
         on acf.consensus_timestamp = tlist.consensus_timestamp
-      group by acf.consensus_timestamp
-    ), transfer_list as (
-      select coalesce(
-          t.consensus_timestamp,
-          ctrl.consensus_timestamp,
-          ttrl.consensus_timestamp,
-          ntrl.consensus_timestamp,
-          ftrl.consensus_timestamp
-        ) as consensus_timestamp,
-        ctrl.ctr_list,
-        ttrl.ttr_list,
-        ntrl.ntr_list,
-        ftrl.ftr_list,
-        t.charged_tx_fee,
-        t.entity_id,
-        t.max_fee,
-        t.memo,
-        t.node_account_id,
-        t.nonce,
-        t.parent_consensus_timestamp,
-        t.payer_account_id,
-        t.result,
-        t.scheduled,
-        t.transaction_bytes,
-        t.transaction_hash,
-        t.type,
-        t.valid_duration_seconds,
-        t.valid_start_ns,
-        t.index
-      from tlist t
-      full outer join c_list ctrl
+        group by acf.consensus_timestamp
+            ), transfer_list as (
+        select coalesce(
+            t.consensus_timestamp,
+            ctrl.consensus_timestamp,
+            ttrl.consensus_timestamp,
+            ntrl.consensus_timestamp,
+            ftrl.consensus_timestamp
+            ) as consensus_timestamp,
+            ctrl.ctr_list,
+            ttrl.ttr_list,
+            ntrl.ntr_list,
+            ftrl.ftr_list,
+            t.charged_tx_fee,
+            t.entity_id,
+            t.max_fee,
+            t.memo,
+            t.node_account_id,
+            t.nonce,
+            t.parent_consensus_timestamp,
+            t.payer_account_id,
+            t.result,
+            t.scheduled,
+            t.transaction_bytes,
+            t.transaction_hash,
+            t.type,
+            t.valid_duration_seconds,
+            t.valid_start_ns,
+            t.index
+        from tlist t
+            full outer join c_list ctrl
         on t.consensus_timestamp = ctrl.consensus_timestamp
-      full outer join t_list ttrl
-        on t.consensus_timestamp = ttrl.consensus_timestamp
-      full outer join nft_list ntrl
-        on t.consensus_timestamp = ntrl.consensus_timestamp
-      full outer join fee_list ftrl
-        on t.consensus_timestamp = ftrl.consensus_timestamp
-    )
+            full outer join t_list ttrl
+            on t.consensus_timestamp = ttrl.consensus_timestamp
+            full outer join nft_list ntrl
+            on t.consensus_timestamp = ntrl.consensus_timestamp
+            full outer join fee_list ftrl
+            on t.consensus_timestamp = ftrl.consensus_timestamp
+            )
+        select
+            t.charged_tx_fee,
+            t.consensus_timestamp,
+            t.entity_id,
+            t.max_fee,
+            t.memo,
+            t.node_account_id,
+            t.nonce,
+            t.parent_consensus_timestamp,
+            t.payer_account_id,
+            t.result,
+            t.scheduled,
+            t.transaction_bytes,
+            t.transaction_hash,
+            t.type,
+            t.valid_duration_seconds,
+            t.valid_start_ns,
+            t.index,
+            t.ctr_list as crypto_transfer_list,
+            t.ttr_list as token_transfer_list,
+            t.ntr_list as nft_transfer_list,
+            t.ftr_list as assessed_custom_fees
+        from transfer_list t
+        order by t.consensus_timestamp asc`;
+
+    const getTransactionIdQuery = (extraConditions) => `
     select
       t.charged_tx_fee,
       t.consensus_timestamp,
@@ -877,19 +900,41 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
       t.valid_duration_seconds,
       t.valid_start_ns,
       t.index,
-      t.ctr_list as crypto_transfer_list,
-      t.ttr_list as token_transfer_list,
-      t.ntr_list as nft_transfer_list,
-      t.ftr_list as assessed_custom_fees
-    from transfer_list t
-    order by t.consensus_timestamp asc`;
-    };
-
-    const getTransactionHashQuery = () => getQuery('select consensus_timestamp from transaction_hash where hash = $1');
-    const getTransactionIdQuery = (extraConditions) =>
-      getQuery(`select consensus_timestamp
-      from transaction
-      where payer_account_id = $1 and valid_start_ns = $2 ${(extraConditions && 'and ' + extraConditions) || ''}`);
+      (
+          select jsonb_agg(jsonb_build_object('amount', amount, 'entity_id', ctr.entity_id, 'is_approval', is_approval) order by ctr.entity_id, amount)
+          from crypto_transfer ctr
+          where ctr.payer_account_id = $1 and ctr.consensus_timestamp = t.consensus_timestamp
+      ) as crypto_transfer_list,
+      (
+          select jsonb_agg(
+              jsonb_build_object('account_id', account_id, 'amount', amount, 'token_id', token_id, 'is_approval', is_approval)
+              order by token_id, account_id)
+          from token_transfer tk_tr
+          where tk_tr.payer_account_id = $1 and tk_tr.consensus_timestamp = t.consensus_timestamp
+      ) as token_transfer_list,
+      (
+          select jsonb_agg(
+              jsonb_build_object(
+                  'receiver_account_id', receiver_account_id,
+                  'sender_account_id', sender_account_id,
+                  'serial_number', serial_number,
+                  'token_id', token_id, 'is_approval', is_approval
+                  ) order by token_id, serial_number)
+          from nft_transfer nft_tr
+          where nft_tr.payer_account_id = $1 and nft_tr.consensus_timestamp = t.consensus_timestamp
+      ) as nft_transfer_list,
+      (
+          select jsonb_agg(
+              jsonb_build_object(
+                  'amount', amount, 'collector_account_id', collector_account_id,
+                  'effective_payer_account_ids', effective_payer_account_ids,
+                  'token_id', token_id) order by collector_account_id, amount)
+          from assessed_custom_fee acf
+          where acf.payer_account_id = $1 and acf.consensus_timestamp = t.consensus_timestamp
+      ) as assessed_custom_fees
+    from transaction t
+    where payer_account_id = $1 and valid_start_ns = $2 ${(extraConditions && 'and ' + extraConditions) || ''}
+    order by consensus_timestamp asc`;
 
     const testSpecs = [
       {
@@ -992,7 +1037,7 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
           filters: [],
         },
         expected: {
-          query: getTransactionHashQuery(),
+          query: getTransactionByHashQuery,
           params: defaultTransactionHashParams,
         },
       },
@@ -1003,7 +1048,7 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
           filters: [],
         },
         expected: {
-          query: getTransactionHashQuery(),
+          query: getTransactionByHashQuery,
           params: defaultTransactionHashParams,
         },
       },
@@ -1014,7 +1059,7 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
           filters: [],
         },
         expected: {
-          query: getTransactionHashQuery(),
+          query: getTransactionByHashQuery,
           params: defaultTransactionHashParams,
         },
       },
@@ -1025,7 +1070,7 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
           filters: [],
         },
         expected: {
-          query: getTransactionHashQuery(),
+          query: getTransactionByHashQuery,
           params: defaultTransactionHashParams,
         },
       },
@@ -1039,7 +1084,7 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
           ],
         },
         expected: {
-          query: getTransactionHashQuery(),
+          query: getTransactionByHashQuery,
           params: defaultTransactionHashParams,
         },
       },
