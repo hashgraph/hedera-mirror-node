@@ -87,6 +87,8 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -96,6 +98,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.inject.Named;
+
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -136,9 +139,10 @@ public class RecordItemBuilder {
     private static final AccountID TREASURY = AccountID.newBuilder().setAccountNum(98).build();
 
     private final Map<TransactionType, Supplier<Builder>> builders = new HashMap<>();
-    private final AtomicLong id = new AtomicLong(1000L);
-    private final Instant now = Instant.now();
+    private final AtomicLong id = new AtomicLong(0L);
     private final SecureRandom random = new SecureRandom();
+
+    private Instant now = Instant.now();
 
     {
         // Dynamically lookup method references for every transaction body builder in this class
@@ -463,6 +467,11 @@ public class RecordItemBuilder {
         });
     }
 
+    public void reset(Instant start) {
+        now = start;
+        id.set(0L);
+    }
+
     public Builder<ScheduleCreateTransactionBody.Builder> scheduleCreate() {
         var scheduledTransaction = SchedulableTransactionBody.newBuilder()
                 .setTransactionFee(1_00_000_000)
@@ -671,7 +680,11 @@ public class RecordItemBuilder {
     }
 
     public Timestamp timestamp() {
-        return Utility.instantToTimestamp(now.plusSeconds(id()));
+        return timestamp(ChronoUnit.SECONDS);
+    }
+
+    public Timestamp timestamp(TemporalUnit unit) {
+        return Utility.instantToTimestamp(now.plus(id(), unit));
     }
 
     public TokenID tokenId() {
