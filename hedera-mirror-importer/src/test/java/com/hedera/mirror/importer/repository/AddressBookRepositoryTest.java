@@ -24,10 +24,12 @@ import static com.hedera.mirror.importer.addressbook.AddressBookServiceImpl.FILE
 import static com.hedera.mirror.importer.addressbook.AddressBookServiceImpl.FILE_102;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.concurrent.atomic.AtomicReference;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.collections.CollectionUtils;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import com.hedera.mirror.common.domain.addressbook.AddressBook;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class AddressBookRepositoryTest extends AbstractRepositoryTest {
@@ -36,14 +38,19 @@ class AddressBookRepositoryTest extends AbstractRepositoryTest {
 
     @Test
     void save() {
-        var addressBookEntry = domainBuilder.addressBookEntry().get();
         var addressBook = domainBuilder.addressBook().get();
+        var addressBookEntry = domainBuilder.addressBookEntry()
+                .customize(e -> e.consensusTimestamp(addressBook.getStartConsensusTimestamp()))
+                .get();
         addressBook.getEntries().add(addressBookEntry);
         addressBookRepository.save(addressBook);
         assertThat(addressBookRepository.findById(addressBook.getStartConsensusTimestamp()))
                 .get()
                 .isEqualTo(addressBook)
-                .satisfies(a -> CollectionUtils.isEqualCollection(a.getEntries(), addressBook.getEntries()));
+                .extracting(AddressBook::getEntries)
+                .usingRecursiveComparison()
+                .ignoringFieldsOfTypes(AtomicReference.class)
+                .isEqualTo(addressBook.getEntries());
     }
 
     @Test

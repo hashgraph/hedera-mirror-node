@@ -116,10 +116,9 @@ public class TransactionPublisher implements AutoCloseable {
 
         if (request.isSendRecord()) {
             // TransactionId.getRecord() is inefficient doing a get receipt, a cost query, then the get record
-            TransactionRecordQuery transactionRecordQuery = new TransactionRecordQuery()
+            return execute(client, new TransactionRecordQuery()
                     .setQueryPayment(Hbar.from(1, HbarUnit.HBAR))
-                    .setTransactionId(transactionResponse.transactionId);
-            return execute(client, transactionRecordQuery)
+                    .setTransactionId(transactionResponse.transactionId))
                     .map(r -> builder.transactionRecord(r).receipt(r.receipt));
         } else if (request.isReceipt()) {
             return execute(client, new TransactionReceiptQuery().setTransactionId(transactionResponse.transactionId))

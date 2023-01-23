@@ -32,6 +32,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 @SelectClasspathResource("features")
 @SpringBootTest(properties = "spring.main.banner-mode=off")
 @CucumberContextConfiguration
+@SuppressWarnings("java:S2187") // Ignore no tests in file warning
 @Tag("acceptance")
 public class AcceptanceTest {
 }

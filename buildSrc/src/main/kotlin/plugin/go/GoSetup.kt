@@ -67,7 +67,10 @@ open class GoSetup : DefaultTask() {
                     file.mkdirs()
                 } else {
                     Files.copy(it, file.toPath(), StandardCopyOption.REPLACE_EXISTING)
-                    file.setExecutable(true, true)
+                    if (!file.setExecutable(true, true)) {
+                        throw IllegalStateException("Unable to set execute bit on file " + file)
+                    }
+
                 }
                 entry = it.nextEntry
             }

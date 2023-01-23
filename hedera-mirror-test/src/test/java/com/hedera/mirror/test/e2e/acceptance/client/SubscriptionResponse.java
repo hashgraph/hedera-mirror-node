@@ -9,9 +9,9 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -42,19 +42,24 @@ public class SubscriptionResponse {
 
     public void handleConsensusTopicResponse(TopicMessage topicMessage) {
         mirrorHCSResponses.add(new SubscriptionResponse.MirrorHCSResponse(topicMessage, Instant.now()));
-        String messageAsString = new String(topicMessage.contents, StandardCharsets.UTF_8);
-        log.trace("Received message: " + messageAsString
-                + " consensus timestamp: " + topicMessage.consensusTimestamp
-                + " topic sequence number: " + topicMessage.sequenceNumber);
+        if (log.isTraceEnabled()) {
+            String messageAsString = new String(topicMessage.contents, StandardCharsets.UTF_8);
+            log.trace("Received consensus timestamp: {} topic sequence number: , message: {}",
+                    topicMessage.consensusTimestamp, topicMessage.sequenceNumber, messageAsString);
+        }
     }
 
-    public void handleThrowable(Throwable err) {
+    public void handleThrowable(Throwable err, TopicMessage topicMessage) {
         log.error("GRPC error on subscription : {}", err.getMessage());
         responseError = err;
     }
 
     public boolean errorEncountered() {
         return responseError != null;
+    }
+
+    public boolean hasResponse() {
+        return errorEncountered() || !mirrorHCSResponses.isEmpty();
     }
 
     public void validateReceivedMessages() throws Exception {

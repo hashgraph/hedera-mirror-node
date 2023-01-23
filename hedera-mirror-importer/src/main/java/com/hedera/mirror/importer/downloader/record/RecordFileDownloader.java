@@ -22,9 +22,6 @@ package com.hedera.mirror.importer.downloader.record;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimaps;
-
-import com.hedera.mirror.common.domain.transaction.RecordItem;
-
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Arrays;
 import java.util.function.Function;
@@ -35,6 +32,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.SidecarFile;
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import com.hedera.mirror.importer.addressbook.ConsensusNodeService;
@@ -62,7 +60,7 @@ public class RecordFileDownloader extends Downloader<RecordFile, RecordItem> {
     private final SidecarFileReader sidecarFileReader;
     private final SidecarProperties sidecarProperties;
 
-    @SuppressWarnings("java:s107")
+    @SuppressWarnings("java:S107")
     public RecordFileDownloader(ConsensusNodeService consensusNodeService,
                                 RecordDownloaderProperties downloaderProperties,
                                 MeterRegistry meterRegistry,

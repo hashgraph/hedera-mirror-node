@@ -59,10 +59,6 @@ import lombok.CustomLog;
 import lombok.SneakyThrows;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.tuple.Pair;
-import org.awaitility.core.ConditionEvaluationListener;
-import org.awaitility.core.ConditionEvaluationLogger;
-import org.awaitility.core.EvaluatedCondition;
-import org.awaitility.core.TimeoutEvent;
 import org.gaul.s3proxy.S3Proxy;
 import org.gaul.shaded.org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.jclouds.ContextBuilder;
@@ -692,6 +688,7 @@ public abstract class AbstractDownloaderTest {
         });
     }
 
+    @SuppressWarnings("java:S6103")
     protected void verifyStreamFiles(List<String> files, Consumer<StreamFile>... extraAsserts) {
         var captor = ArgumentCaptor.forClass(StreamFile.class);
         var expectedFileIndexMap = getExpectedFileIndexMap();
@@ -708,6 +705,7 @@ public abstract class AbstractDownloaderTest {
                     }
                 })
                 .allMatch(s -> downloaderProperties.isPersistBytes() ^ (s.getBytes() == null));
+
         for (var extraAssert : extraAsserts) {
             streamFileAssert.allSatisfy(extraAssert::accept);
         }

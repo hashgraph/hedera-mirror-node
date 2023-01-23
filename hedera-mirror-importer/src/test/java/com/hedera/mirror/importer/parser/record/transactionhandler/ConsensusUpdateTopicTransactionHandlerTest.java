@@ -161,6 +161,7 @@ class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHand
         assertConsensusTopicUpdate(timestamp, topicId, id -> assertEquals(0L, id));
     }
 
+    @SuppressWarnings("java:S6103")
     private void assertConsensusTopicUpdate(long timestamp, EntityId topicId, Consumer<Long> assertAutoRenewAccountId) {
         verify(entityListener, times(1)).onEntity(assertArg(t -> assertThat(t)
                 .isNotNull()
