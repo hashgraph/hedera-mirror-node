@@ -321,7 +321,6 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
             Instant startTime = Instant.now();
             var sigFilename = sigFilenameIter.next();
             var signatures = sigFilesMap.get(sigFilename);
-            boolean valid = false;
 
             try {
                 nodeSignatureVerifier.verify(signatures);
@@ -346,7 +345,8 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
                 throw new SignatureVerificationException(ex.getMessage() + ": " + statusMapMessage);
             }
 
-            if (!verifySignatures(signatures)) {
+            boolean valid = verifySignatures(signatures);
+            if (!valid) {
                 log.error("None of the data files could be verified, signatures: {}", signatures);
             }
 
