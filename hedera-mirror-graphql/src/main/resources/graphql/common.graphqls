@@ -1,5 +1,3 @@
-# Complete
-
 """
 A specialization of an Entity appropriate for entities that have a Hbar balance.
 """
@@ -11,7 +9,7 @@ interface Accountable implements Entity & Node {
     autoRenewPeriod: Duration
 
     "The balance of the accountable entity. Defaults to tinybars."
-    balance(format: CurrencyFormat = TINYBAR): Long
+    balance(unit: HbarUnit = TINYBAR): Long
 
     "The consensus timestamp at which the entity was created."
     createdTimestamp: Timestamp
@@ -51,7 +49,7 @@ interface Accountable implements Entity & Node {
     The pending reward the account will receive in the next reward payout. Note the value is updated at the end of each
     staking period and there may be delay to reflect the changes in the past staking period. Defaults to tinybars.
     """
-    pendingReward(format: CurrencyFormat = TINYBAR): Long
+    pendingReward(unit: HbarUnit = TINYBAR): Long
 
     "The account to which this account is staked. Mutually exclusive with stakedNode."
     stakedAccount: Account
@@ -83,7 +81,7 @@ enum BinaryEncoding {
 The unit to format the hbar currency. Tinybars is the smallest and most exact unit. Anything beyond tinybars will
 potentially result in a loss of information.
 """
-enum CurrencyFormat {
+enum HbarUnit {
     "1 Gℏ = 1,000,000,000 ℏ"
     GIGABAR
 

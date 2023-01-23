@@ -29,7 +29,7 @@ import lombok.experimental.UtilityClass;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.graphql.viewmodel.CurrencyFormat;
+import com.hedera.mirror.graphql.viewmodel.HbarUnit;
 import com.hedera.mirror.graphql.viewmodel.Node;
 
 @UtilityClass
@@ -37,16 +37,16 @@ public class GraphQlUtils {
 
     private static final Splitter SPLITTER = Splitter.on(':');
 
-    public static Long convertCurrency(CurrencyFormat currencyFormat, Long tinybars) {
+    public static Long convertCurrency(HbarUnit unit, Long tinybars) {
         if (tinybars == null) {
             return null;
         }
 
-        if (currencyFormat == null) {
+        if (unit == null) {
             return tinybars;
         }
 
-        return switch (currencyFormat) {
+        return switch (unit) {
             case TINYBAR -> tinybars;
             case MICROBAR -> tinybars / 100L;
             case MILIBAR -> tinybars / 100_000L;

@@ -32,8 +32,8 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.graphql.viewmodel.Account;
-import com.hedera.mirror.graphql.viewmodel.CurrencyFormat;
 import com.hedera.mirror.graphql.viewmodel.EntityIdInput;
+import com.hedera.mirror.graphql.viewmodel.HbarUnit;
 
 class GraphQlUtilsTest {
 
@@ -56,8 +56,8 @@ class GraphQlUtilsTest {
               GIGABAR,  5_000_000_000_000_000_000, 50
             """)
     @ParameterizedTest
-    void convertCurrency(CurrencyFormat format, Long input, Long output) {
-        assertThat(GraphQlUtils.convertCurrency(format, input)).isEqualTo(output);
+    void convertCurrency(HbarUnit unit, Long input, Long output) {
+        assertThat(GraphQlUtils.convertCurrency(unit, input)).isEqualTo(output);
     }
 
     @Test

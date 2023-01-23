@@ -1,5 +1,3 @@
-# Complete
-
 "An ISO 8601 compatible duration with support for nanoseconds granularity in the format P[n]Y[n]M[n]DT[n]H[n]M[n]S."
 scalar Duration
 

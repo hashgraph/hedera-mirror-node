@@ -38,7 +38,7 @@ import com.hedera.mirror.graphql.mapper.AccountMapper;
 import com.hedera.mirror.graphql.service.EntityService;
 import com.hedera.mirror.graphql.viewmodel.Account;
 import com.hedera.mirror.graphql.viewmodel.AccountInput;
-import com.hedera.mirror.graphql.viewmodel.CurrencyFormat;
+import com.hedera.mirror.graphql.viewmodel.HbarUnit;
 
 @Controller
 @CustomLog
@@ -66,7 +66,7 @@ class AccountController {
     }
 
     @SchemaMapping
-    Mono<Long> balance(@Argument @Valid CurrencyFormat format, Account account) {
-        return Mono.just(convertCurrency(format, account.getBalance()));
+    Mono<Long> balance(@Argument @Valid HbarUnit unit, Account account) {
+        return Mono.just(convertCurrency(unit, account.getBalance()));
     }
 }

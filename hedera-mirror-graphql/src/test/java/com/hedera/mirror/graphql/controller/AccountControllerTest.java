@@ -124,7 +124,7 @@ class AccountControllerTest extends GraphqlIntegrationTest {
     @Test
     void balanceFormat() {
         var entity = domainBuilder.entity().persist();
-        var query = "query Account($id: Long!) {account(input: { entityId: { num: $id } }) {balance(format: HBAR) }}";
+        var query = "query Account($id: Long!) {account(input: { entityId: { num: $id } }) {balance(unit: HBAR) }}";
         tester.document(query)
                 .variable("id", entity.getNum())
                 .execute()

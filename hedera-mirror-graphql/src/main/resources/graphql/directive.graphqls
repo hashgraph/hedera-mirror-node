@@ -1,5 +1,3 @@
-# Complete
-
 "Validation directive that ensures the argument or input is a certain minimum value."
 directive @Min(value : Int! = 0, message : String = "graphql.validation.Min.message")
 on ARGUMENT_DEFINITION | INPUT_FIELD_DEFINITION
