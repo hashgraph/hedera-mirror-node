@@ -49,7 +49,7 @@ public class LocalStreamFileProvider implements StreamFileProvider {
     public Mono<StreamFileData> get(ConsensusNode node, StreamFilename streamFilename) {
         return Mono.fromSupplier(() -> getDirectory(node, streamFilename))
                 .map(dir -> dir.toPath().resolve(streamFilename.getFilename()).toFile())
-                .map(file -> StreamFileData.from(file))
+                .map(StreamFileData::from)
                 .timeout(commonDownloaderProperties.getTimeout())
                 .onErrorMap(FileOperationException.class, TransientProviderException::new);
     }
