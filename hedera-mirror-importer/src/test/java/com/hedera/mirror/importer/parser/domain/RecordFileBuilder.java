@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.parser.domain;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -59,7 +60,11 @@ public class RecordFileBuilder {
 
     public class Builder {
 
+        private final static long CLOSE_INTERVAL = StreamType.RECORD.getFileCloseInterval().toNanos();
+
         private final List<ItemBuilder> itemBuilders = new ArrayList<>();
+
+        private RecordFile previous;
 
         private Builder() {
         }
@@ -69,6 +74,10 @@ public class RecordFileBuilder {
             var recordFile = domainBuilder.recordFile();
             var recordItems = new ArrayList<RecordItem>();
             recordFile.customize(r -> r.items(Flux.fromIterable(recordItems)));
+
+            if (previous != null) {
+                recordItemBuilder.reset(Instant.ofEpochSecond(0, previous.getConsensusStart() + CLOSE_INTERVAL));
+            }
 
             for (var itemBuilder : itemBuilders) {
                 var supplier = itemBuilder.build();
@@ -84,13 +93,22 @@ public class RecordFileBuilder {
             Instant instant = Instant.ofEpochSecond(0, consensusStart);
             String filename = StreamFilename.getFilename(StreamType.RECORD, DATA, instant);
 
-            recordFile.customize(r -> r.consensusEnd(consensusEnd)
-                    .consensusStart(consensusStart)
-                    .count((long) recordItems.size())
-                    .name(filename)
-            );
+            recordFile.customize(r -> {
+                r.consensusEnd(consensusEnd)
+                        .consensusStart(consensusStart)
+                        .count((long) recordItems.size())
+                        .name(filename);
+                if (previous != null) {
+                    r.index(previous.getIndex() + 1).previousHash(previous.getHash());
+                }
+            });
 
             return recordFile.get();
+        }
+
+        public Builder previous(RecordFile recordFile) {
+            this.previous = recordFile;
+            return this;
         }
 
         public Builder recordItem(RecordItemBuilder.Builder<?> recordItem) {
@@ -182,10 +200,11 @@ public class RecordFileBuilder {
         }
 
         private RecordItem wrap(RecordItemBuilder.Builder<?> builder) {
-            return builder.record(r -> r.setConsensusTimestamp(recordItemBuilder.timestamp()))
+            var consensusTimestamp = recordItemBuilder.timestamp(ChronoUnit.NANOS);
+            var validStart = Utility.instantToTimestamp(Utility.convertToInstant(consensusTimestamp).minusNanos(10));
+            return builder.record(r -> r.setConsensusTimestamp(consensusTimestamp))
                     .receipt(r -> r.setTopicSequenceNumber(id.getAndIncrement()))
-                    .transactionBodyWrapper(tb ->
-                            tb.setTransactionID(Utility.getTransactionId(tb.getTransactionID().getAccountID())))
+                    .transactionBodyWrapper(tb -> tb.getTransactionIDBuilder().setTransactionValidStart(validStart))
                     .build();
         }
     }
