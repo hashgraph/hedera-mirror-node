@@ -75,9 +75,11 @@ const contractWithBytecodeSelectFields = [
 ];
 const {default: defaultLimit} = getResponseLimit();
 
+const contractCallType = Number(TransactionType.getProtoId('CONTRACTCALL'));
+const contractCreateType = Number(TransactionType.getProtoId('CONTRACTCREATEINSTANCE'));
+const ethereumTransactionType = Number(TransactionType.getProtoId('ETHEREUMTRANSACTION'));
 const duplicateTransactionResult = TransactionResult.getProtoId('DUPLICATE_TRANSACTION');
 const wrongNonceTransactionResult = TransactionResult.getProtoId('WRONG_NONCE');
-const ethereumTransactionType = TransactionType.getProtoId('ETHEREUMTRANSACTION');
 
 const emptyBloomBuffer = Buffer.alloc(256);
 /**
@@ -1078,6 +1080,12 @@ class ContractController extends BaseController {
       if (transactions.length === 0) {
         throw new NotFoundError();
       } else if (transactions.length > 1) {
+        for (const transaction of transactions) {
+          if (!isContractTransaction(transaction)) {
+            throw new NotFoundError();
+          }
+        }
+
         logger.error(
           'Transaction invariance breached: there should be at most one transaction with none-duplicate-transaction ' +
             'result for a specific (payer + valid start timestamp + nonce) combination'
@@ -1258,6 +1266,10 @@ const exportControllerMethods = (methods = []) => {
     return exported;
   }, {});
 };
+
+const isContractTransaction = (transaction) =>
+  transaction.type === contractCallType || transaction.type === contractCreateType
+    || transaction.type === ethereumTransactionType;
 
 const contractController = exportControllerMethods([
   'getContractActions',

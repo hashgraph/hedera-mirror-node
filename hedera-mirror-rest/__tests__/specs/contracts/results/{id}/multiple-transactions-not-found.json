@@ -1,0 +1,40 @@
+{
+  "description": "Contract results api call that results in multiple transactions",
+  "setup": {
+    "transactions": [
+      {
+        "consensus_timestamp": 167654000123456,
+        "nonce": 0,
+        "payerAccountId": "8001",
+        "scheduled": false,
+        "transaction_hash": "519a008fabde4d",
+        "type": 42,
+        "valid_start_timestamp": 167654000123400
+      },
+      {
+        "consensus_timestamp": 167654000123459,
+        "nonce": 0,
+        "payerAccountId": "8001",
+        "result": 10,
+        "scheduled": true,
+        "transaction_hash": "519a008fabde7d",
+        "type": 14,
+        "valid_start_timestamp": 167654000123400
+      }
+    ]
+  },
+  "urls": [
+    "/api/v1/contracts/results/0.0.8001-167654-000123400",
+    "/api/v1/contracts/results/0.0.8001-167654-000123400?nonce=0"
+  ],
+  "responseStatus": 404,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Not found"
+        }
+      ]
+    }
+  }
+}
