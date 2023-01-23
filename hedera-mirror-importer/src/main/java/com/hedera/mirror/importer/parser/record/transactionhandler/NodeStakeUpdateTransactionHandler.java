@@ -57,8 +57,7 @@ class NodeStakeUpdateTransactionHandler implements TransactionHandler {
     public void updateTransaction(Transaction transaction, RecordItem recordItem) {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         if (!recordItem.isSuccessful()) {
-            var record = recordItem.getTransactionRecord();
-            var status = record.getReceipt().getStatus();
+            var status = recordItem.getTransactionRecord().getReceipt().getStatus();
             log.warn("NodeStakeUpdateTransaction at {} failed with status {}", consensusTimestamp, status);
             return;
         }
@@ -67,7 +66,10 @@ class NodeStakeUpdateTransactionHandler implements TransactionHandler {
         long epochDay = Utility.getEpochDay(consensusTimestamp) - 1L;
         var transactionBody = recordItem.getTransactionBody().getNodeStakeUpdate();
         long stakingPeriod = DomainUtils.timestampInNanosMax(transactionBody.getEndOfStakingPeriod());
-        long stakeTotal = transactionBody.getNodeStakeList().stream().map(n -> n.getStake()).reduce(0L, Long::sum);
+        long stakeTotal = transactionBody.getNodeStakeList()
+                .stream()
+                .map(com.hederahashgraph.api.proto.java.NodeStake::getStake)
+                .reduce(0L, Long::sum);
 
         NetworkStake networkStake = new NetworkStake();
         networkStake.setConsensusTimestamp(consensusTimestamp);

@@ -29,6 +29,7 @@ import com.hedera.mirror.grpc.domain.StreamMessage;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 
 @Log4j2
+@SuppressWarnings("java:S2187") // Ignore no tests in file warning
 class RedisTopicListenerTest extends AbstractSharedTopicListenerTest {
 
     @Resource

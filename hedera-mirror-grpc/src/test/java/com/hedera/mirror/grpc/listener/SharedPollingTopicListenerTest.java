@@ -20,6 +20,7 @@ package com.hedera.mirror.grpc.listener;
  * ‍
  */
 
+@SuppressWarnings("java:S2187") // Ignore no tests in file warning
 class SharedPollingTopicListenerTest extends AbstractSharedTopicListenerTest {
 
     @Override

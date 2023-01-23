@@ -21,11 +21,13 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import io.grpc.StatusRuntimeException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
@@ -274,16 +276,9 @@ public class TopicFeature {
 
     @Then("the network should observe an error {string}")
     public void verifySubscribeAndUnsubscribeChannelConnection(String errorCode) throws Throwable {
-        try {
-            verifySubscriptionChannelConnection();
-        } catch (Exception ex) {
-            if (!ex.getMessage().contains(errorCode)) {
-                log.info("Exception mismatch : {}", ex.getMessage());
-                throw new Exception("Unexpected error code returned");
-            } else {
-                log.warn("Expected error found");
-            }
-        }
+        assertThatThrownBy(this::verifySubscriptionChannelConnection)
+                .isInstanceOf(StatusRuntimeException.class)
+                .hasMessageContaining(errorCode);
     }
 
     @Then("I subscribe with a filter to retrieve messages")
