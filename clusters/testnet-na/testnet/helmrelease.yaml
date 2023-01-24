@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '0.71.0'
+      version: '0.72.0'
   dependsOn:
     - name: mirror
       namespace: common
@@ -37,7 +37,6 @@ spec:
         HEDERA_MIRROR_IMPORTER_PARSER_RECORD_SIDECAR_ENABLED: "true"
         HEDERA_MIRROR_IMPORTER_RECONCILIATION_ENABLED: "false"
         HEDERA_MIRROR_IMPORTER_START_DATE: "1970-01-01T00:00:00.000000000Z"
-      replicas: 0
     monitor:
       env:
         HEDERA_MIRROR_MONITOR_NETWORK: "TESTNET"
@@ -55,7 +54,6 @@ spec:
         HEDERA_MIRROR_ROSETTA_NETWORK: "testnet"
       hpa:
         enabled: false
-      replicas: 0
     test:
       enabled: false
 
