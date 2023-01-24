@@ -112,14 +112,30 @@ services:
     volumes:
       - ./application.yml:/src/hedera-mirror-rosetta/application.yml
 
+#  web3:
+#    image: gcr.io/mirrornode/hedera-mirror-web3:0.74.0-SNAPSHOT
+#    pull_policy: always
+#    environment:
+#      HEDERA_MIRROR_WEB3_DB_HOST: db
+#      SPRING_CONFIG_ADDITIONAL_LOCATION: file:/usr/etc/hedera-mirror-web3/
+#    ports:
+#      - 8545:8545
+#    restart: unless-stopped
+#    tty: true
+#    volumes:
+#      - ./application.yml:/usr/etc/hedera-mirror-web3/application.yml
+
   web3:
-    image: gcr.io/mirrornode/hedera-mirror-web3:0.74.0-SNAPSHOT
+    #    image: gcr.io/mirrornode/hedera-mirror-web3:0.74.0-SNAPSHOT
+    build:
+      context: hedera-mirror-web3/
     pull_policy: always
     environment:
       HEDERA_MIRROR_WEB3_DB_HOST: db
       SPRING_CONFIG_ADDITIONAL_LOCATION: file:/usr/etc/hedera-mirror-web3/
     ports:
       - 8545:8545
+      - 5005:5005
     restart: unless-stopped
     tty: true
     volumes:

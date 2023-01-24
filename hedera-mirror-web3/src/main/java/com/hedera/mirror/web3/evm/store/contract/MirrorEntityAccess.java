@@ -28,13 +28,11 @@ import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.
 import com.google.protobuf.ByteString;
 import java.util.Optional;
 import javax.inject.Named;
-
-import com.hedera.mirror.common.domain.entity.AbstractEntity;
-
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
+import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.mirror.web3.repository.ContractStateRepository;

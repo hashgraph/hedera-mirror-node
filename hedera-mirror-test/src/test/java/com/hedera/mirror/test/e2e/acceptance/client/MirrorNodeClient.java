@@ -260,7 +260,9 @@ public class MirrorNodeClient {
     }
 
     private <T> T callPostRestEndpoint(String uri, Class<T> classType, ContractCallRequest contractCallRequest) {
-        return webClient.post()
+        final var web3Client = webClient.mutate().baseUrl("http://localhost:8545/api/v1").build();
+
+        return web3Client.post()
                 .uri(uri)
                 .body(Mono.just(contractCallRequest), ContractCallRequest.class)
                 .accept(MediaType.APPLICATION_JSON)
