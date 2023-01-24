@@ -54,6 +54,8 @@ const ltLte = [opsMap.lt, opsMap.lte];
 
 const gtLtPattern = /[gl]t[e]?:/;
 
+const emptySet = new Set();
+
 /**
  * Returns null if the value is equal to the default, otherwise value.
  *
@@ -410,7 +412,7 @@ const isValidContractIdQueryParam = (op, val) => {
  * @param {Set} acceptedParameters List of valid parameters
  * @return {Object} result of validity check, and return http code/contents
  */
-const validateReq = (req, acceptedParameters = new Set()) => {
+const validateReq = (req, acceptedParameters = emptySet) => {
   const badParams = [];
   // Check the validity of every query parameter
   for (const key in req.query) {

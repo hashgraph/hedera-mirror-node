@@ -984,7 +984,6 @@ const acceptedTokenBalancesParameters = new Set([
   filterKeys.ACCOUNT_ID,
   filterKeys.ACCOUNT_BALANCE,
   filterKeys.ACCOUNT_PUBLICKEY,
-  filterKeys.ENTITY_PUBLICKEY,
   filterKeys.LIMIT,
   filterKeys.ORDER,
   filterKeys.TIMESTAMP
