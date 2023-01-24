@@ -29,9 +29,6 @@ import com.google.common.collect.Multimaps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.google.common.collect.TreeMultimap;
-
-import com.hedera.mirror.common.domain.StreamItem;
-
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
@@ -58,6 +55,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import com.hedera.mirror.common.domain.StreamFile;
+import com.hedera.mirror.common.domain.StreamItem;
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
@@ -308,9 +306,8 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
      *
      * @param sigFilesMap signature files grouped by filename
      */
-    @SuppressWarnings({"java:S135", "java:S3776"})
+    @SuppressWarnings("java:S135")
     private void verifySigsAndDownloadDataFiles(Multimap<StreamFilename, StreamFileSignature> sigFilesMap) {
-        Instant endDate = mirrorProperties.getEndDate();
         var nodeIds = consensusNodeService.getNodes()
                 .stream()
                 .map(ConsensusNode::getNodeId)
@@ -324,7 +321,6 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
             Instant startTime = Instant.now();
             var sigFilename = sigFilenameIter.next();
             var signatures = sigFilesMap.get(sigFilename);
-            boolean valid = false;
 
             try {
                 nodeSignatureVerifier.verify(signatures);
@@ -349,64 +345,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
                 throw new SignatureVerificationException(ex.getMessage() + ": " + statusMapMessage);
             }
 
-            for (var signature : signatures) {
-                if (ShutdownHelper.isStopping()) {
-                    return;
-                }
-
-                // Ignore signatures that didn't validate or weren't in the majority
-                if (signature.getStatus() != StreamFileSignature.SignatureStatus.CONSENSUS_REACHED) {
-                    continue;
-                }
-
-                var nodeId = signature.getNode().getNodeId();
-
-                try {
-                    var dataFilename = signature.getDataFilename();
-                    var node = signature.getNode();
-                    var streamFileData = streamFileProvider.get(node, dataFilename).block();
-                    T streamFile = streamFileReader.read(streamFileData);
-                    streamFile.setNodeId(nodeId);
-
-                    verify(streamFile, signature);
-
-                    if (downloaderProperties.isWriteFiles()) {
-                        Utility.archiveFile(streamFile.getName(), streamFile.getBytes(),
-                                downloaderProperties.getNodeStreamPath(nodeId));
-                    }
-
-                    if (downloaderProperties.isWriteSignatures()) {
-                        signatures.forEach(s -> {
-                            Path destination = downloaderProperties.getNodeStreamPath(nodeId);
-                            Utility.archiveFile(s.getFilename().getFilename(), s.getBytes(), destination);
-                        });
-                    }
-
-                    if (!downloaderProperties.isPersistBytes()) {
-                        streamFile.setBytes(null);
-                    }
-
-                    if (dataFilename.getInstant().isAfter(endDate)) {
-                        downloaderProperties.setEnabled(false);
-                        log.warn("Disabled polling after downloading all files <= endDate ({})", endDate);
-                        return;
-                    }
-
-                    onVerified(streamFileData, streamFile, node);
-                    valid = true;
-                    break;
-                } catch (HashMismatchException e) {
-                    log.warn("Failed to verify data file from node {} corresponding to {}. Will retry another node",
-                            nodeId, sigFilename, e);
-                } catch (TransientProviderException e) {
-                    log.warn("Error downloading data file from node {} corresponding to {}. Will retry another node: {}",
-                            nodeId, sigFilename, e.getMessage());
-                } catch (Exception e) {
-                    log.error("Error downloading data file from node {} corresponding to {}. Will retry another node",
-                            nodeId, sigFilename, e);
-                }
-            }
-
+            boolean valid = verifySignatures(signatures);
             if (!valid) {
                 log.error("None of the data files could be verified, signatures: {}", signatures);
             }
@@ -415,6 +354,62 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
                     .register(meterRegistry)
                     .record(Duration.between(startTime, Instant.now()));
         }
+    }
+
+    private boolean verifySignatures(Collection<StreamFileSignature> signatures) {
+        Instant endDate = mirrorProperties.getEndDate();
+
+        for (var signature : signatures) {
+            // Ignore signatures that didn't validate or weren't in the majority
+            if (signature.getStatus() != StreamFileSignature.SignatureStatus.CONSENSUS_REACHED) {
+                continue;
+            }
+
+            var nodeId = signature.getNode().getNodeId();
+
+            try {
+                var dataFilename = signature.getDataFilename();
+                var node = signature.getNode();
+                var streamFileData = streamFileProvider.get(node, dataFilename).block();
+                T streamFile = streamFileReader.read(streamFileData);
+                streamFile.setNodeId(nodeId);
+
+                verify(streamFile, signature);
+
+                if (downloaderProperties.isWriteFiles()) {
+                    Utility.archiveFile(streamFile.getName(), streamFile.getBytes(),
+                            downloaderProperties.getNodeStreamPath(nodeId));
+                }
+
+                if (downloaderProperties.isWriteSignatures()) {
+                    signatures.forEach(s -> {
+                        Path destination = downloaderProperties.getNodeStreamPath(nodeId);
+                        Utility.archiveFile(s.getFilename().getFilename(), s.getBytes(), destination);
+                    });
+                }
+
+                if (!downloaderProperties.isPersistBytes()) {
+                    streamFile.setBytes(null);
+                }
+
+                if (dataFilename.getInstant().isAfter(endDate)) {
+                    downloaderProperties.setEnabled(false);
+                    log.warn("Disabled polling after downloading all files <= endDate ({})", endDate);
+                    return false;
+                }
+
+                onVerified(streamFileData, streamFile, node);
+                return true;
+            } catch (HashMismatchException | TransientProviderException e) {
+                log.warn("Failed processing signature from node {} corresponding to {}. Will retry another node: {}",
+                        nodeId, signature.getFilename(), e.getMessage());
+            } catch (Exception e) {
+                log.error("Error downloading data file from node {} corresponding to {}. Will retry another node",
+                        nodeId, signature.getFilename(), e);
+            }
+        }
+
+        return false;
     }
 
     @SuppressWarnings("java:S1172") // Unused Parameter (node) required by subclass implementations

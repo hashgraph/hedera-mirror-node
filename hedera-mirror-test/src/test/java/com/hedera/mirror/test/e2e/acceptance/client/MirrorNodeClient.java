@@ -82,15 +82,20 @@ public class MirrorNodeClient {
         log.debug("Subscribing to topic.");
         SubscriptionResponse subscriptionResponse = new SubscriptionResponse();
         SubscriptionHandle subscription = topicMessageQuery
+                .setErrorHandler(subscriptionResponse::handleThrowable)
                 .subscribe(sdkClient.getClient(), subscriptionResponse::handleConsensusTopicResponse);
 
         subscriptionResponse.setSubscription(subscription);
 
         // allow time for connection to be made and error to be caught
-        await("responseEncountered").dontCatchUncaughtExceptions()
-                .atMost(Durations.FIVE_SECONDS)
-                .pollDelay(Durations.ONE_MILLISECOND)
-                .until(() -> subscriptionResponse.getMirrorHCSResponses().size() > 0);
+        await("responseEncountered")
+                .atMost(Durations.ONE_MINUTE)
+                .pollDelay(Durations.ONE_HUNDRED_MILLISECONDS)
+                .until(() -> subscriptionResponse.hasResponse());
+
+        if (subscriptionResponse.errorEncountered()) {
+            throw subscriptionResponse.getResponseError();
+        }
 
         return subscriptionResponse;
     }
@@ -107,6 +112,7 @@ public class MirrorNodeClient {
         Stopwatch stopwatch = Stopwatch.createStarted();
 
         SubscriptionHandle subscription = topicMessageQuery
+                .setErrorHandler(subscriptionResponse::handleThrowable)
                 .subscribe(sdkClient.getClient(), resp -> {
                     // add expected messages only to messages list
                     if (subscriptionResponse.getMirrorHCSResponses().size() < numMessages) {
@@ -225,14 +231,16 @@ public class MirrorNodeClient {
     }
 
     public MirrorTokenRelationshipResponse getTokenRelationships(String accountId, String tokenId) {
-        log.debug("Verify tokenRelationship  for account '{}' and token '{}' is returned by Mirror Node", accountId, tokenId);
+        log.debug("Verify tokenRelationship  for account '{}' and token '{}' is returned by Mirror Node", accountId,
+                tokenId);
         return callRestEndpoint("/accounts/{accountId}/tokens?token.id={tokenId}",
                 MirrorTokenRelationshipResponse.class, accountId, tokenId);
     }
 
     public MirrorAccountResponse getAccountDetailsUsingAlias(@NonNull AccountId accountId) {
         log.debug("Retrieving account details for accountId '{}'", accountId);
-        return callRestEndpoint("/accounts/{accountId}", MirrorAccountResponse.class, TestUtil.getAliasFromPublicKey(accountId.aliasKey));
+        return callRestEndpoint("/accounts/{accountId}", MirrorAccountResponse.class,
+                TestUtil.getAliasFromPublicKey(accountId.aliasKey));
     }
 
     public void unSubscribeFromTopic(SubscriptionHandle subscription) {

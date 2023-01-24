@@ -34,7 +34,7 @@ class TransactionService extends BaseService {
   }
 
   static transactionDetailsFromTransactionIdQuery = `
-    select ${Transaction.CONSENSUS_TIMESTAMP}
+    select ${Transaction.CONSENSUS_TIMESTAMP}, ${Transaction.NONCE}, ${Transaction.SCHEDULED}, ${Transaction.TYPE}
     from ${Transaction.tableName}
     where ${Transaction.PAYER_ACCOUNT_ID} = $1 and ${Transaction.VALID_START_NS} = $2`;
 

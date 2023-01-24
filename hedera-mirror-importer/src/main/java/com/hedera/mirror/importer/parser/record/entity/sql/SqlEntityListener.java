@@ -49,7 +49,6 @@ import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.file.FileData;
@@ -152,6 +151,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     // get the full state at time T
     private final Map<AbstractTokenAccount.Id, TokenAccount> tokenAccountState;
 
+    @SuppressWarnings("java:S107")
     public SqlEntityListener(BatchPersister batchPersister,
                              EntityIdService entityIdService,
                              EntityProperties entityProperties,

@@ -75,7 +75,8 @@ class EntityIdServiceImplTest extends IntegrationTest {
 
         // cache miss
         reset();
-        assertThrows(AliasNotFoundException.class, () -> entityIdService.lookup(getProtoContractId(contract)));
+        var contractIdProto = getProtoContractId(contract);
+        assertThrows(AliasNotFoundException.class, () -> entityIdService.lookup(contractIdProto));
     }
 
     @Test
@@ -93,13 +94,15 @@ class EntityIdServiceImplTest extends IntegrationTest {
     @Test
     void lookupAccountAliasNoMatch() {
         Entity account = domainBuilder.entity().get();
-        assertThrows(AliasNotFoundException.class, () -> entityIdService.lookup(getProtoAccountId(account)));
+        var accountId = getProtoContractId(account);
+        assertThrows(AliasNotFoundException.class, () -> entityIdService.lookup(accountId));
     }
 
     @Test
     void lookupAccountAliasDeleted() {
         Entity account = domainBuilder.entity().customize(e -> e.deleted(true)).persist();
-        assertThrows(AliasNotFoundException.class, () -> entityIdService.lookup(getProtoAccountId(account)));
+        var accountId = getProtoContractId(account);
+        assertThrows(AliasNotFoundException.class, () -> entityIdService.lookup(accountId));
     }
 
     @Test
@@ -146,8 +149,10 @@ class EntityIdServiceImplTest extends IntegrationTest {
     void lookupAccountsAliasNotFoundActionError() {
         Entity account1 = domainBuilder.entity().get();
         Entity account2 = domainBuilder.entity().customize(e -> e.alias(null)).get();
+        var accountId1 = getProtoContractId(account1);
+        var accountId2 = getProtoContractId(account2);
         assertThrows(AliasNotFoundException.class, () -> entityIdService.lookup(AliasNotFoundAction.ERROR,
-                getProtoAccountId(account1), getProtoAccountId(account2)));
+                accountId1, accountId2));
     }
 
     @Test
@@ -171,13 +176,15 @@ class EntityIdServiceImplTest extends IntegrationTest {
     @Test
     void lookupContractEvmAddressNoMatch() {
         Entity contract = domainBuilder.entity().customize(e -> e.alias(null).type(CONTRACT)).get();
-        assertThrows(AliasNotFoundException.class, () -> entityIdService.lookup(getProtoContractId(contract)));
+        var contractId = getProtoContractId(contract);
+        assertThrows(AliasNotFoundException.class, () -> entityIdService.lookup(contractId));
     }
 
     @Test
     void lookupContractEvmAddressDeleted() {
         Entity contract = domainBuilder.entity().customize(e -> e.alias(null).deleted(true).type(CONTRACT)).persist();
-        assertThrows(AliasNotFoundException.class, () -> entityIdService.lookup(getProtoContractId(contract)));
+        var contractId = getProtoContractId(contract);
+        assertThrows(AliasNotFoundException.class, () -> entityIdService.lookup(contractId));
     }
 
     @Test
@@ -235,8 +242,10 @@ class EntityIdServiceImplTest extends IntegrationTest {
     void lookupContractsAliasNotFoundActionError() {
         Entity contract1 = domainBuilder.entity().customize(e -> e.alias(null).type(CONTRACT)).get();
         Entity contract2 = domainBuilder.entity().customize(c -> c.alias(null).evmAddress(null).type(CONTRACT)).get();
+        var contractId1 = getProtoContractId(contract1);
+        var contractId2 = getProtoContractId(contract2);
         assertThrows(AliasNotFoundException.class, () -> entityIdService.lookup(AliasNotFoundAction.ERROR,
-                getProtoContractId(contract1), getProtoContractId(contract2)));
+                contractId1, contractId2));
     }
 
     @ParameterizedTest
@@ -251,7 +260,8 @@ class EntityIdServiceImplTest extends IntegrationTest {
     void storeAccountDeleted() {
         Entity account = domainBuilder.entity().customize(e -> e.deleted(true)).get();
         entityIdService.notify(account);
-        assertThrows(AliasNotFoundException.class, () -> entityIdService.lookup(getProtoAccountId(account)));
+        var accountId = getProtoContractId(account);
+        assertThrows(AliasNotFoundException.class, () -> entityIdService.lookup(accountId));
     }
 
     @ParameterizedTest
@@ -266,7 +276,8 @@ class EntityIdServiceImplTest extends IntegrationTest {
     void storeContractDeleted() {
         Entity contract = domainBuilder.entity().customize(c -> c.alias(null).deleted(true).type(CONTRACT)).get();
         entityIdService.notify(contract);
-        assertThrows(AliasNotFoundException.class, () -> entityIdService.lookup(getProtoContractId(contract)));
+        var contractId = getProtoContractId(contract);
+        assertThrows(AliasNotFoundException.class, () -> entityIdService.lookup(contractId));
     }
 
     @Test
