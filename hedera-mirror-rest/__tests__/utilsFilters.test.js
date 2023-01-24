@@ -77,14 +77,14 @@ describe('utils buildAndValidateFilters test', () => {
       },
     ];
 
-    expect(utils.buildAndValidateFilters(query, fakeValidator)).toStrictEqual(expected);
+    expect(utils.buildAndValidateFilters(query, acceptedParameters, fakeValidator)).toStrictEqual(expected);
     expect(fakeValidator.callCount).toEqual(6);
   });
 
   test('validator fails', () => {
     const fakeValidator = sinon.fake.returns(false);
 
-    expect(() => utils.buildAndValidateFilters(query, fakeValidator)).toThrowErrorMatchingSnapshot();
+    expect(() => utils.buildAndValidateFilters(query, acceptedParameters, fakeValidator)).toThrowErrorMatchingSnapshot();
     expect(fakeValidator.callCount).toEqual(6);
   });
 
@@ -97,7 +97,7 @@ describe('utils buildAndValidateFilters test', () => {
       [constants.filterKeys.TIMESTAMP]: '12345.001',
     };
 
-    expect(() => utils.buildAndValidateFilters(repeatedParamQuery, fakeValidator)).toThrowErrorMatchingSnapshot();
+    expect(() => utils.buildAndValidateFilters(repeatedParamQuery, acceptedParameters, fakeValidator)).toThrowErrorMatchingSnapshot();
     expect(fakeValidator.callCount).toEqual(3);
   });
 });
@@ -391,8 +391,9 @@ describe('utils filterDependencyCheck tests', () => {
 });
 
 const verifyInvalidFilters = (filters) => {
-  const expected = filters.map((filter) => filter.key);
-  expect(utils.validateAndParseFilters(filters, utils.filterValidityChecks)).toStrictEqual(expected);
+  const expectedInvalidParams = filters.map((filter) => filter.key);
+  const expected = {invalidParams: expectedInvalidParams, unknownParams: []};
+  expect(utils.validateAndParseFilters(filters, utils.filterValidityChecks, acceptedParameters)).toStrictEqual(expected);
 };
 
 const validateAndParseFiltersNoExMessage = 'Verify validateAndParseFilters for valid filters does not throw exception';
@@ -408,7 +409,7 @@ const verifyValidAndInvalidFilters = (invalidFilters, validFilters) => {
 
   validFilters.forEach((filter) => {
     test(`${validateAndParseFiltersNoExMessage} for ${JSON.stringify(filter)}`, () => {
-      expect(utils.validateAndParseFilters([filter], utils.filterValidityChecks)).toBeEmpty();
+      expect(utils.validateAndParseFilters([filter], utils.filterValidityChecks, acceptedParameters)).toEqual({invalidParams: [], unknownParams: []})
     });
   });
 };
@@ -730,3 +731,40 @@ describe('validateAndParseFilters slot', () => {
 
   verifyValidAndInvalidFilters(invalidFilters, filters);
 });
+
+describe('invalid parameters', () => {
+  test('Verify invalid parameter validateAndParseFilters', () => {
+    const filter = utils.buildComparatorFilter(constants.filterKeys.SCHEDULED, 'true');
+    const expected = {"invalidParams": [], "unknownParams": [{"code": "unknownParamUsage", "key": "scheduled"}]};
+    expect(utils.validateAndParseFilters([filter], utils.filterValidityChecks, new Set())).toEqual(expected);
+  });
+
+  test('Verify invalid parameter buildAndValidateFilters', () => {
+    const query = {[constants.filterKeys.ACCOUNT_ID]: '6560'};
+    const fakeValidator = sinon.fake.returns(true);
+    expect(() => utils.buildAndValidateFilters(query, new Set(), fakeValidator)).toThrow("Unknown query parameter: account.id");
+  });
+});
+
+const acceptedParameters = new Set([
+  constants.filterKeys.ACCOUNT_ID,
+  constants.filterKeys.ACCOUNT_BALANCE,
+  constants.filterKeys.ACCOUNT_PUBLICKEY,
+  constants.filterKeys.ENCODING,
+  constants.filterKeys.ENTITY_PUBLICKEY,
+  constants.filterKeys.FILE_ID,
+  constants.filterKeys.FROM,
+  constants.filterKeys.LIMIT,
+  constants.filterKeys.NODE_ID,
+  constants.filterKeys.NONCE,
+  constants.filterKeys.ORDER,
+  constants.filterKeys.RESULT,
+  constants.filterKeys.SEQUENCE_NUMBER,
+  constants.filterKeys.SCHEDULED,
+  constants.filterKeys.SCHEDULE_ID,
+  constants.filterKeys.SLOT,
+  constants.filterKeys.TIMESTAMP,
+  constants.filterKeys.TOKEN_ID,
+  constants.filterKeys.TOPIC0,
+  constants.filterKeys.TOKEN_TYPE
+]);

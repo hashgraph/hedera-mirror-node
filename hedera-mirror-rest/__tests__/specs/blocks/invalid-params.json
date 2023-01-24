@@ -1,7 +1,7 @@
 {
   "description": "Get blocks with invalid params",
   "setup": {},
-  "urls": ["/api/v1/blocks?block.number=gt:invalidnumber&timestamp=invalidtimestamp&order=any&limit=invalidlimit"],
+  "urls": ["/api/v1/blocks?block.number=gt:invalidnumber&timestamp=invalidtimestamp&order=any&limit=invalidlimit&index=2"],
   "responseStatus": 400,
   "responseJson": {
     "_status": {
@@ -17,6 +17,9 @@
         },
         {
           "message": "Invalid parameter: limit"
+        },
+        {
+          "message": "Unknown query parameter: index"
         }
       ]
     }

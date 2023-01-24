@@ -87,7 +87,7 @@ class TokenController extends BaseController {
     if (!isValidAccount) {
       throw new NotFoundError();
     }
-    const filters = utils.buildAndValidateFilters(req.query);
+    const filters = utils.buildAndValidateFilters(req.query, acceptedTokenParameters);
     const query = this.extractTokensRelationshipQuery(filters, accountId);
     const tokenRelationships = await TokenService.getTokens(query);
     const tokens = tokenRelationships.map((token) => new TokenRelationshipViewModel(token));
@@ -109,5 +109,11 @@ class TokenController extends BaseController {
     };
   };
 }
+
+const acceptedTokenParameters = new Set([
+  filterKeys.LIMIT,
+  filterKeys.ORDER,
+  filterKeys.TOKEN_ID
+]);
 
 export default new TokenController();

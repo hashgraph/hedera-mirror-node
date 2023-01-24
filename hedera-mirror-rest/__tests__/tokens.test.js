@@ -875,15 +875,17 @@ describe('token formatTokenInfoRow tests', () => {
 });
 
 const verifyInvalidAndValidTokensFilters = (invalidQueries, validQueries, validator) => {
+  const acceptedParameters = new Set([constants.filterKeys.ACCOUNT_ID, constants.filterKeys.TIMESTAMP, constants.filterKeys.SERIAL_NUMBER, constants.filterKeys.TOKEN_TYPE]);
+
   invalidQueries.forEach((query) => {
     test(`Verify buildAndValidateFilters for invalid ${JSON.stringify(query)}`, () => {
-      expect(() => utils.buildAndValidateFilters(query, validator)).toThrowErrorMatchingSnapshot();
+      expect(() => utils.buildAndValidateFilters(query, acceptedParameters, validator)).toThrowErrorMatchingSnapshot();
     });
   });
 
   validQueries.forEach((query) => {
     test(`Verify buildAndValidateFilters for valid ${JSON.stringify(query)}`, () => {
-      utils.buildAndValidateFilters(query, validator);
+      utils.buildAndValidateFilters(query, acceptedParameters, validator);
     });
   });
 };

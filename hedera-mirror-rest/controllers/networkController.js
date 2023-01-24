@@ -205,7 +205,7 @@ class NetworkController extends BaseController {
    */
   getExchangeRate = async (req, res) => {
     // extract filters from query param
-    const filters = utils.buildAndValidateFilters(req.query);
+    const filters = utils.buildAndValidateFilters(req.query, this.acceptedExchangeRateParameters);
 
     const {filterQuery} = this.extractFileDataQuery(filters);
 
@@ -226,7 +226,7 @@ class NetworkController extends BaseController {
    */
   getNetworkNodes = async (req, res) => {
     // extract filters from query param
-    const filters = utils.buildAndValidateFilters(req.query);
+    const filters = utils.buildAndValidateFilters(req.query, this.acceptedNodeParameters);
 
     const {conditions, params, order, limit} = this.extractNetworkNodesQuery(filters);
     const nodes = await NetworkNodeService.getNetworkNodes(conditions, params, order, limit);
@@ -256,6 +256,7 @@ class NetworkController extends BaseController {
    * @return {Promise<void>}
    */
   getNetworkStake = async (_req, res) => {
+    utils.validateReq(_req);
     const networkStake = await NetworkNodeService.getNetworkStake();
     if (networkStake === null) {
       throw new NotFoundError();
@@ -302,7 +303,7 @@ class NetworkController extends BaseController {
    * @return {Promise<void>}
    */
   getSupply = async (req, res) => {
-    const filters = utils.buildAndValidateFilters(req.query);
+    const filters = utils.buildAndValidateFilters(req.query, this.acceptedSupplyParameters);
     const {conditions, params, q} = this.extractSupplyQuery(filters);
     const networkSupply = await NetworkNodeService.getSupply(conditions, params);
 
@@ -329,7 +330,7 @@ class NetworkController extends BaseController {
    * @return {Promise<void>}
    */
   getFees = async (req, res) => {
-    const filters = utils.buildAndValidateFilters(req.query);
+    const filters = utils.buildAndValidateFilters(req.query, this.acceptedFeesParameters);
     const {filterQuery, order} = this.extractFileDataQuery(filters);
 
     const [exchangeRate, feeSchedule] = await Promise.all([
@@ -343,6 +344,18 @@ class NetworkController extends BaseController {
 
     res.locals[responseDataLabel] = new FeeScheduleViewModel(feeSchedule, exchangeRate, order);
   };
+
+  acceptedExchangeRateParameters = new Set([filterKeys.TIMESTAMP]);
+  acceptedFeesParameters = new Set([filterKeys.ORDER, filterKeys.TIMESTAMP]);
+
+  acceptedNodeParameters = new Set([
+    filterKeys.FILE_ID,
+    filterKeys.LIMIT,
+    filterKeys.NODE_ID,
+    filterKeys.ORDER
+  ]);
+
+  acceptedSupplyParameters = new Set([filterKeys.TIMESTAMP, filterKeys.Q]);
 }
 
 export default new NetworkController();
