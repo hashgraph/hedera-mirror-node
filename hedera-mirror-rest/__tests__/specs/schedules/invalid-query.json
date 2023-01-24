@@ -12,7 +12,7 @@
     "_status": {
       "messages": [
         {
-          "message": "Invalid parameter: crypto"
+          "message": "Unknown query parameter: crypto"
         }
       ]
     }

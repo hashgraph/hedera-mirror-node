@@ -1,0 +1,15 @@
+{
+  "description": "Topic messages for single message - invalid params",
+  "setup": {},
+  "urls": ["/api/v1/topics/0.7/messages/3?account.id=0.0.3"],
+  "responseStatus": 400,
+  "responseJson": {
+    "_status": {
+      "messages": [
+        {
+          "message": "Unknown query parameter: account.id"
+        }
+      ]
+    }
+  }
+}

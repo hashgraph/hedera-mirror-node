@@ -6,7 +6,7 @@
     "schedules": [],
     "transactionsignatures": []
   },
-  "url": "/api/v1/schedules?account.id=-1&schedule.id=x.y.z&order=d&limit=-1",
+  "url": "/api/v1/schedules?account.id=-1&schedule.id=x.y.z&order=d&limit=-1&timestamp=1234",
   "responseStatus": 400,
   "responseJson": {
     "_status": {
@@ -22,6 +22,9 @@
         },
         {
           "message": "Invalid parameter: limit"
+        },
+        {
+          "message": "Unknown query parameter: timestamp"
         }
       ]
     }

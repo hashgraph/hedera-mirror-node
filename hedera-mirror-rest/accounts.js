@@ -225,7 +225,7 @@ const getBalanceParamValue = (query) => {
  */
 const getAccounts = async (req, res) => {
   // Validate query parameters first
-  utils.validateReq(req);
+  utils.validateReq(req, acceptedAccountsParameters);
 
   // Parse the filter parameters for account-numbers, balances, publicKey and pagination
   const entityAccountQuery = toQueryObject(utils.parseAccountIdQueryParam(req.query, 'e.id'));
@@ -291,7 +291,7 @@ const getAccounts = async (req, res) => {
  */
 const getOneAccount = async (req, res) => {
   // Validate query parameters first
-  utils.validateReq(req);
+  utils.validateReq(req, acceptedSingleAccountParameters);
 
   const encodedId = await EntityService.getEncodedId(req.params[constants.filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS]);
 
@@ -387,6 +387,22 @@ const accounts = {
   getAccounts,
   getOneAccount,
 };
+
+const acceptedAccountsParameters = new Set([
+  constants.filterKeys.ACCOUNT_BALANCE,
+  constants.filterKeys.ACCOUNT_ID,
+  constants.filterKeys.ACCOUNT_PUBLICKEY,
+  constants.filterKeys.BALANCE,
+  constants.filterKeys.LIMIT,
+  constants.filterKeys.ORDER
+]);
+
+const acceptedSingleAccountParameters = new Set([
+  constants.filterKeys.LIMIT,
+  constants.filterKeys.ORDER,
+  constants.filterKeys.TIMESTAMP,
+  constants.filterKeys.TRANSACTION_TYPE
+]);
 
 if (utils.isTestEnv()) {
   Object.assign(accounts, {

@@ -10,10 +10,10 @@
           "message": "Invalid parameter: timestamp"
         },
         {
-          "message": "Invalid parameter: limit"
+          "message": "Unknown query parameter: limit"
         },
         {
-          "message": "Invalid parameter: order"
+          "message": "Unknown query parameter: order"
         }
       ]
     }

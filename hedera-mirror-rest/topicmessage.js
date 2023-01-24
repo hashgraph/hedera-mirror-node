@@ -75,6 +75,7 @@ const validateGetTopicMessagesParams = (topicId) => {
  * @return {Promise} Promise for PostgreSQL query
  */
 const getMessageByConsensusTimestamp = async (req, res) => {
+  utils.validateReq(req);
   const consensusTimestampParam = req.params.consensusTimestamp;
   validateConsensusTimestampParam(consensusTimestampParam);
 
@@ -96,6 +97,7 @@ const getMessageByConsensusTimestamp = async (req, res) => {
  * @return {Promise} Promise for PostgreSQL query
  */
 const getMessageByTopicAndSequenceRequest = async (req, res) => {
+  utils.validateReq(req);
   const topicIdStr = req.params.topicId;
   const seqNum = req.params.sequenceNumber;
   validateGetSequenceMessageParams(topicIdStr, seqNum);
@@ -119,7 +121,7 @@ const getMessageByTopicAndSequenceRequest = async (req, res) => {
 const getTopicMessages = async (req, res) => {
   const topicIdStr = req.params.topicId;
   validateGetTopicMessagesParams(topicIdStr);
-  const filters = utils.buildAndValidateFilters(req.query);
+  const filters = utils.buildAndValidateFilters(req.query, acceptedTopicsParameters);
 
   const topicId = EntityId.parse(topicIdStr);
 
@@ -237,6 +239,14 @@ const topicmessage = {
   getMessageByTopicAndSequenceRequest,
   getTopicMessages,
 };
+
+const acceptedTopicsParameters = new Set([
+  constants.filterKeys.ENCODING,
+  constants.filterKeys.LIMIT,
+  constants.filterKeys.ORDER,
+  constants.filterKeys.SEQUENCE_NUMBER,
+  constants.filterKeys.TIMESTAMP
+]);
 
 if (utils.isTestEnv()) {
   Object.assign(topicmessage, {

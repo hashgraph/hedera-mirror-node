@@ -2,8 +2,8 @@
   "description": "Balance api invalid account id format",
   "setup": {},
   "urls": [
-    "/api/v1/balances?account.id=lte:0.1.2.3&account.balance=gt:-2&account.publickey=-2&timestamp=-1.2&order=any",
-    "/api/v1/balances?account.id=lte:0.1.2.3&account.balance=gt:9223372036854775808&account.publickey=-2&timestamp=-1.2&order=any"
+    "/api/v1/balances?account.id=lte:0.1.2.3&account.balance=gt:-2&account.publickey=-2&timestamp=-1.2&order=any&token.id=0.0.45678",
+    "/api/v1/balances?account.id=lte:0.1.2.3&account.balance=gt:9223372036854775808&account.publickey=-2&timestamp=-1.2&order=any,&token.id=0.0.45678"
   ],
   "responseStatus": 400,
   "responseJson": {
@@ -23,6 +23,9 @@
         },
         {
           "message": "Invalid parameter: order"
+        },
+        {
+          "message": "Unknown query parameter: token.id"
         }
       ]
     }

@@ -294,7 +294,7 @@ const formatRecordFile = (data, transactionId, nonce, scheduled) => {
  * @returns none
  */
 const getStateProofForTransaction = async (req, res) => {
-  const filters = utils.buildAndValidateFilters(req.query);
+  const filters = utils.buildAndValidateFilters(req.query, acceptedStateProofParameters);
 
   const transactionId = TransactionId.fromString(req.params.transactionId);
   const {nonce, scheduled} = getQueryParamValues(filters);
@@ -346,6 +346,11 @@ const getStateProofForTransaction = async (req, res) => {
 const stateproof = {
   getStateProofForTransaction,
 };
+
+const acceptedStateProofParameters = new Set([
+  constants.filterKeys.NONCE,
+  constants.filterKeys.SCHEDULED
+]);
 
 if (utils.isTestEnv()) {
   Object.assign(stateproof, {
