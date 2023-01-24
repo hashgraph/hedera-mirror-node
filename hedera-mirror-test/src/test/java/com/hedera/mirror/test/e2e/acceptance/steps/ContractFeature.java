@@ -35,6 +35,7 @@ import java.nio.file.Path;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.apache.tuweni.bytes.Bytes;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.ResourceUtils;
@@ -50,7 +51,7 @@ import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorContractResult;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
-import com.hedera.mirror.test.e2e.acceptance.response.JsonRpcSuccessResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResultResponse;
 import com.hedera.mirror.test.e2e.acceptance.util.FeatureInputHandler;
@@ -62,6 +63,12 @@ public class ContractFeature extends AbstractFeature {
     private static final ObjectMapper MAPPER = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+
+    private static final String GET_ACCOUNT_BALANCE_SELECTOR = "6896fabf";
+    private static final String GET_SENDER_SELECTOR = "5e01eb5a";
+    private static final String MULTIPLY_SIMPLE_NUMBERS_SELECTOR = "8070450f";
+    private static final String IDENTIFIER_SELECTOR = "7998a1c4";
+    private static final String WRONG_SELECTOR = "000000";
 
     private final ContractClient contractClient;
     private final FileClient fileClient;
@@ -132,9 +139,25 @@ public class ContractFeature extends AbstractFeature {
         verifyContractExecutionResultsByTransactionId();
     }
 
-    @Then("the mirror node Web3 REST API should execute simulations")
-    public void verifyContractSimulations() {
-        verifyContractCallSimulations();
+    @Then("I call the contract via the mirror node REST API")
+    public void restContractCall() {
+        ContractCallResponse getAccountBalanceResponse = mirrorClient.contractsCall(GET_ACCOUNT_BALANCE_SELECTOR, contractId.toSolidityAddress(), contractClient.getClientAddress());
+        assertThat(convertContractCallResponseToNum(getAccountBalanceResponse)).isEqualTo(BigInteger.valueOf(1000L));
+
+        ContractCallResponse getSenderResponse = mirrorClient.contractsCall(GET_SENDER_SELECTOR, contractId.toSolidityAddress(), contractClient.getClientAddress());
+        assertThat(convertContractCallResponseToAddress(getSenderResponse)).isEqualTo(contractClient.getClientAddress());
+
+        ContractCallResponse multiplySimpleNumbersResponse = mirrorClient.contractsCall(MULTIPLY_SIMPLE_NUMBERS_SELECTOR, contractId.toSolidityAddress(), contractClient.getClientAddress());
+        assertThat(convertContractCallResponseToNum(multiplySimpleNumbersResponse)).isEqualTo(BigInteger.valueOf(4L));
+
+        ContractCallResponse identifierResponse = mirrorClient.contractsCall(IDENTIFIER_SELECTOR, contractId.toSolidityAddress(), contractClient.getClientAddress());
+        assertThat(convertContractCallResponseToSelector(identifierResponse)).isEqualTo(IDENTIFIER_SELECTOR);
+
+        try {
+            mirrorClient.contractsCall(WRONG_SELECTOR, contractId.toSolidityAddress(), contractClient.getClientAddress());
+        } catch (Exception e) {
+            assertThat(e.getCause().getMessage()).contains("400 Bad Request from POST");
+        }
     }
 
     @Then("the mirror node REST API should verify the deleted contract entity")
@@ -228,18 +251,16 @@ public class ContractFeature extends AbstractFeature {
         assertThat(contractResult.getHash()).isNotBlank();
     }
 
-    private void verifyContractCallSimulations() {
-        JsonRpcSuccessResponse getAccountBalanceResponse = mirrorClient.contractsCallSimulation("6896fabf", contractId.toSolidityAddress(), contractClient.getClientAddress());
-        assertThat(getAccountBalanceResponse.getResult()).isNotNull();
+    private BigInteger convertContractCallResponseToNum(final ContractCallResponse response) {
+        return Bytes.fromHexString((String) response.getResult()).toBigInteger();
+    }
 
-        JsonRpcSuccessResponse getSenderResponse = mirrorClient.contractsCallSimulation("5e01eb5a", contractId.toSolidityAddress(), contractClient.getClientAddress());
-        assertThat(getSenderResponse.getResult()).isNotNull();
+    private String convertContractCallResponseToSelector(final ContractCallResponse response) {
+        return Bytes.fromHexString((String) response.getResult()).trimTrailingZeros().toUnprefixedHexString();
+    }
 
-        JsonRpcSuccessResponse multiplySimpleNumbersResponse = mirrorClient.contractsCallSimulation("8070450f", contractId.toSolidityAddress(), contractClient.getClientAddress());
-        assertThat(multiplySimpleNumbersResponse.getResult()).isNotNull();
-
-        JsonRpcSuccessResponse identifierResponse = mirrorClient.contractsCallSimulation("7998a1c4", contractId.toSolidityAddress(), contractClient.getClientAddress());
-        assertThat(identifierResponse.getResult()).isNotNull();
+    private String convertContractCallResponseToAddress(final ContractCallResponse response) {
+        return Bytes.fromHexString((String) response.getResult()).slice(12).toUnprefixedHexString();
     }
 
     private boolean isEmptyHex(String hexString) {

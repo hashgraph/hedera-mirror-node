@@ -46,7 +46,7 @@ import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorNetworkNode;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorNetworkNodes;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorNetworkStake;
-import com.hedera.mirror.test.e2e.acceptance.response.JsonRpcSuccessResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorAccountResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResultResponse;
@@ -164,11 +164,11 @@ public class MirrorNodeClient {
                 transactionId);
     }
 
-    public JsonRpcSuccessResponse contractsCallSimulation(String data, String to, String from) {
+    public ContractCallResponse contractsCall(String data, String to, String from) {
         ContractCallRequest contractCallRequest = new ContractCallRequest("latest", data, false, from,
                 100000000, 100000000, to, 0);
 
-        return callWeb3RestEndpointPost("/contracts/call", JsonRpcSuccessResponse.class, contractCallRequest);
+        return callPostRestEndpoint("/contracts/call", ContractCallResponse.class, contractCallRequest);
     }
 
     public List<MirrorNetworkNode> getNetworkNodes() {
@@ -251,10 +251,8 @@ public class MirrorNodeClient {
                 .block();
     }
 
-    private <T> T callWeb3RestEndpointPost(String uri, Class<T> classType, ContractCallRequest contractCallRequest) {
-        final var web3Client = webClient.mutate().baseUrl(acceptanceTestProperties.getWeb3RestProperties().getBaseUrl()).build();
-
-        return web3Client.post()
+    private <T> T callPostRestEndpoint(String uri, Class<T> classType, ContractCallRequest contractCallRequest) {
+        return webClient.post()
                 .uri(uri)
                 .body(Mono.just(contractCallRequest), ContractCallRequest.class)
                 .accept(MediaType.APPLICATION_JSON)

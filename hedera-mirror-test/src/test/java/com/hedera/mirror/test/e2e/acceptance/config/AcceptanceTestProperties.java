@@ -45,7 +45,6 @@ public class AcceptanceTestProperties {
     private final RestPollingProperties restPollingProperties;
     private final SdkProperties sdkProperties;
     private final WebClientProperties webClientProperties;
-    private final Web3RestProperties web3RestProperties;
 
     @NotNull
     private Duration backOffPeriod = Duration.ofMillis(5000);

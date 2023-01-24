@@ -8,5 +8,3 @@ hedera:
         network: testnet
         rest:
           baseUrl: http://testnet.mirrornode.hedera.com/api/v1
-        web3:
-          baseUrl: http://testnet.mirrornode.hedera.com/api/v1
