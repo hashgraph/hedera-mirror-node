@@ -780,6 +780,7 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
         from crypto_transfer ctr
             join tlist
         on ctr.consensus_timestamp = tlist.consensus_timestamp
+        and ctr.payer_account_id = tlist.payer_account_id
         group by ctr.consensus_timestamp
             ), t_list as (
         select jsonb_agg(jsonb_build_object(
@@ -792,6 +793,7 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
         from token_transfer tk_tr
             join tlist
         on tk_tr.consensus_timestamp = tlist.consensus_timestamp
+        and tk_tr.payer_account_id = tlist.payer_account_id
         group by tk_tr.consensus_timestamp
             ), nft_list as (
         select jsonb_agg(jsonb_build_object(
