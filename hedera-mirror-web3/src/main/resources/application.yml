@@ -13,6 +13,7 @@ logging:
     root: warn
     com.hedera.mirror.web3: info
     org.springframework.cloud.kubernetes.fabric8.config: error
+    org.hibernate.stat: debug
 management:
   endpoints:
     web:
