@@ -20,7 +20,11 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
  * ‍
  */
 
+import static com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse.convertContractCallResponseToAddress;
+import static com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse.convertContractCallResponseToNum;
+import static com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse.convertContractCallResponseToSelector;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -50,6 +54,7 @@ import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorContractResult;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
+import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResultResponse;
 import com.hedera.mirror.test.e2e.acceptance.util.FeatureInputHandler;
@@ -61,6 +66,12 @@ public class ContractFeature extends AbstractFeature {
     private static final ObjectMapper MAPPER = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+
+    private static final String GET_ACCOUNT_BALANCE_SELECTOR = "6896fabf";
+    private static final String GET_SENDER_SELECTOR = "5e01eb5a";
+    private static final String MULTIPLY_SIMPLE_NUMBERS_SELECTOR = "8070450f";
+    private static final String IDENTIFIER_SELECTOR = "7998a1c4";
+    private static final String WRONG_SELECTOR = "000000";
 
     private final ContractClient contractClient;
     private final FileClient fileClient;
@@ -129,6 +140,24 @@ public class ContractFeature extends AbstractFeature {
         verifyContractFromMirror(false);
         verifyContractExecutionResultsById();
         verifyContractExecutionResultsByTransactionId();
+    }
+
+    @Then("I call the contract via the mirror node REST API")
+    public void restContractCall() {
+        ContractCallResponse getAccountBalanceResponse = mirrorClient.contractsCall(GET_ACCOUNT_BALANCE_SELECTOR, contractId.toSolidityAddress(), contractClient.getClientAddress());
+        assertThat(convertContractCallResponseToNum(getAccountBalanceResponse)).isEqualTo(BigInteger.valueOf(1000L));
+
+        ContractCallResponse getSenderResponse = mirrorClient.contractsCall(GET_SENDER_SELECTOR, contractId.toSolidityAddress(), contractClient.getClientAddress());
+        assertThat(convertContractCallResponseToAddress(getSenderResponse)).isEqualTo(contractClient.getClientAddress());
+
+        ContractCallResponse multiplySimpleNumbersResponse = mirrorClient.contractsCall(MULTIPLY_SIMPLE_NUMBERS_SELECTOR, contractId.toSolidityAddress(), contractClient.getClientAddress());
+        assertThat(convertContractCallResponseToNum(multiplySimpleNumbersResponse)).isEqualTo(BigInteger.valueOf(4L));
+
+        ContractCallResponse identifierResponse = mirrorClient.contractsCall(IDENTIFIER_SELECTOR, contractId.toSolidityAddress(), contractClient.getClientAddress());
+        assertThat(convertContractCallResponseToSelector(identifierResponse)).isEqualTo(IDENTIFIER_SELECTOR);
+
+        assertThatThrownBy(() -> mirrorClient.contractsCall(WRONG_SELECTOR, contractId.toSolidityAddress(), contractClient.getClientAddress())).getCause()
+                .isInstanceOf(Exception.class).hasMessageContaining("400 Bad Request from POST");
     }
 
     @Then("the mirror node REST API should verify the deleted contract entity")

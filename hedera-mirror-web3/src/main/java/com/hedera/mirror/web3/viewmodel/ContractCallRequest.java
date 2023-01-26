@@ -27,12 +27,11 @@ import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.PositiveOrZero;
 import lombok.Data;
+import org.hibernate.validator.group.GroupSequenceProvider;
 
 import com.hedera.mirror.web3.convert.BlockTypeDeserializer;
 import com.hedera.mirror.web3.convert.BlockTypeSerializer;
 import com.hedera.mirror.web3.validation.Hex;
-
-import org.hibernate.validator.group.GroupSequenceProvider;
 
 @Data
 @GroupSequenceProvider(TransferValidation.class)

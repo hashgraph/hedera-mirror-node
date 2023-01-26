@@ -42,6 +42,22 @@ contract Parent {
         return childAddresses[1];
     }
 
+    function getAccountBalance() external view returns (uint) {
+        return childAddresses[1].balance;
+    }
+
+    function getSender() external view returns (address) {
+        return msg.sender;
+    }
+
+    function multiplySimpleNumbers() public pure returns (uint) {
+        return 2 * 2;
+    }
+
+    function identifier() public pure returns (bytes4) {
+        return msg.sig;
+    }
+
     receive() external payable {}
 
     event ParentActivityLog(string message);

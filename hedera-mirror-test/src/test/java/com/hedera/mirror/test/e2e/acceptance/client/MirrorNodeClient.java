@@ -33,6 +33,7 @@ import lombok.extern.log4j.Log4j2;
 import org.awaitility.Durations;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 import reactor.util.retry.RetryBackoffSpec;
 
@@ -41,9 +42,11 @@ import com.hedera.hashgraph.sdk.SubscriptionHandle;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TopicMessageQuery;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
+import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorNetworkNode;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorNetworkNodes;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorNetworkStake;
+import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorAccountResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResultResponse;
@@ -167,6 +170,13 @@ public class MirrorNodeClient {
                 transactionId);
     }
 
+    public ContractCallResponse contractsCall(String data, String to, String from) {
+        ContractCallRequest contractCallRequest = new ContractCallRequest("latest", data, false, from,
+                100000000, 100000000, to, 0);
+
+        return callPostRestEndpoint("/contracts/call", ContractCallResponse.class, contractCallRequest);
+    }
+
     public List<MirrorNetworkNode> getNetworkNodes() {
         List<MirrorNetworkNode> nodes = new ArrayList<>();
         String next = "/network/nodes?limit=25";
@@ -241,6 +251,18 @@ public class MirrorNodeClient {
     private <T> T callRestEndpoint(String uri, Class<T> classType, Object... uriVariables) {
         return webClient.get()
                 .uri(uri.replace("/api/v1", ""), uriVariables)
+                .accept(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .bodyToMono(classType)
+                .retryWhen(retrySpec)
+                .doOnError(x -> log.error("Endpoint failed, returning: {}", x.getMessage()))
+                .block();
+    }
+
+    private <T> T callPostRestEndpoint(String uri, Class<T> classType, ContractCallRequest contractCallRequest) {
+        return webClient.post()
+                .uri(uri)
+                .body(Mono.just(contractCallRequest), ContractCallRequest.class)
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
                 .bodyToMono(classType)
