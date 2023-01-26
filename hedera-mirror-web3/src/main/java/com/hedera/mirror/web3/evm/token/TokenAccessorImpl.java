@@ -107,7 +107,8 @@ public class TokenAccessorImpl implements TokenAccessor {
     public boolean isFrozen(final Address account, final Address token) {
         final var accountId = entityIdFromEvmAddress(account);
         final var tokenId = entityIdFromEvmAddress(token);
-        return tokenAccountRepository.findFrozenStatus(accountId, tokenId);
+        final var status = tokenAccountRepository.findFrozenStatus(accountId, tokenId);
+        return status.filter(e -> e == 1).isPresent();
     }
 
     @Override
@@ -118,14 +119,16 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public boolean defaultKycStatus(final Address token) {
-        return false;
+        final var tokenId = entityIdFromEvmAddress(token);
+        return tokenRepository.findKycDefault(tokenId).isPresent();
     }
 
     @Override
     public boolean isKyc(final Address account, final Address token) {
         final var accountId = entityIdFromEvmAddress(account);
-        final var tokenId = entityIdFromEvmAddress(account);
-        return tokenAccountRepository.findKycStatus(accountId, tokenId);
+        final var tokenId = entityIdFromEvmAddress(token);
+        final var status = tokenAccountRepository.findKycStatus(accountId, tokenId);
+        return status.filter(e -> e == 1).isPresent();
     }
 
     @Override

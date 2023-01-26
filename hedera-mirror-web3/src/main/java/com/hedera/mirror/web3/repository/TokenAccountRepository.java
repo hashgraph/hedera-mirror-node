@@ -20,6 +20,7 @@ package com.hedera.mirror.web3.repository;
  * ‍
  */
 
+import java.util.Optional;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
@@ -30,9 +31,9 @@ public interface TokenAccountRepository extends CrudRepository<TokenAccount, Id>
 
     @Query(value = "select freeze_status from token_account where account_id = ?1 and token_id = ?2",
             nativeQuery = true)
-    boolean findFrozenStatus(final Long accountId, final Long tokenId);
+    Optional<Integer> findFrozenStatus(final Long accountId, final Long tokenId);
 
     @Query(value = "select kyc_status from token_account where account_id = ?1 and token_id = ?2",
             nativeQuery = true)
-    boolean findKycStatus(final Long accountId, final Long tokenId);
+    Optional<Integer> findKycStatus(final Long accountId, final Long tokenId);
 }
