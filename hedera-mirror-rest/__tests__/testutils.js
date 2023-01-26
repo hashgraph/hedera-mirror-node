@@ -187,7 +187,8 @@ const testBadParams = (request, server, url, param, badValues) => {
       let check = false;
       const err = JSON.parse(response.text);
       if ('_status' in err && 'messages' in err._status && err._status.messages.length > 0) {
-        if (err._status.messages[0].message === `Invalid parameter: ${param}`) {
+        if (err._status.messages[0].message === `Invalid parameter: ${param}` ||
+          err._status.messages[0].message === `Unknown query parameter: ${param}`) {
           check = true;
         }
       }

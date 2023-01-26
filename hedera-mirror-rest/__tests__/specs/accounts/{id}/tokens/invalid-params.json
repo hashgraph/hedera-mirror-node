@@ -44,21 +44,38 @@
       }
     ]
   },
-  "url": "/api/v1/accounts/0.0.1001/tokens?token.id=x&&order=12&limit=a",
-  "responseStatus": 400,
-  "responseJson": {
-    "_status": {
-      "messages": [
-        {
-          "message": "Invalid parameter: token.id"
-        },
-        {
-          "message": "Invalid parameter: order"
-        },
-        {
-          "message": "Invalid parameter: limit"
+  "tests": [
+    {
+      "url": "/api/v1/accounts/0.0.1001/tokens?token.id=x&&order=12&limit=a",
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Invalid parameter: token.id"
+            },
+            {
+              "message": "Invalid parameter: order"
+            },
+            {
+              "message": "Invalid parameter: limit"
+            }
+          ]
         }
-      ]
+      }
+    },
+    {
+      "url": "/api/v1/accounts/0.0.1001?token.id=0.0.45678",
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Unknown query parameter: token.id"
+            }
+          ]
+        }
+      }
     }
-  }
+  ]
 }

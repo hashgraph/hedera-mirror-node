@@ -29,20 +29,37 @@
       }
     ]
   },
-  "urls": [
-    "/api/v1/contracts/0.0.1000/results/logs?topic1=0xqqq",
-    "/api/v1/contracts/0.0.1000/results/logs?topic1=gt:0xaaaaaaa",
-    "/api/v1/contracts/0.0.1000/results/logs?topic1=00qqq",
-    "/api/v1/contracts/0.0.1000/results/logs?topic1=lte:00aaaaaaa"
-  ],
-  "responseStatus": 400,
-  "responseJson": {
-    "_status": {
-      "messages": [
-        {
-          "message": "Invalid parameter: topic1"
+  "tests": [
+    {
+      "urls": [
+        "/api/v1/contracts/0.0.1000/results/logs?topic1=0xqqq",
+        "/api/v1/contracts/0.0.1000/results/logs?topic1=gt:0xaaaaaaa",
+        "/api/v1/contracts/0.0.1000/results/logs?topic1=00qqq",
+        "/api/v1/contracts/0.0.1000/results/logs?topic1=lte:00aaaaaaa"
+      ],
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Invalid parameter: topic1"
+            }
+          ]
         }
-      ]
+      }
+    },
+    {
+      "url": "/api/v1/contracts/0.0.1000/results/logs?scheduled=true",
+      "responseStatus": 400,
+      "responseJson": {
+        "_status": {
+          "messages": [
+            {
+              "message": "Unknown query parameter: scheduled"
+            }
+          ]
+        }
+      }
     }
-  }
+  ]
 }

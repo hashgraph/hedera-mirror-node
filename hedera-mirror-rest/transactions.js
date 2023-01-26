@@ -130,6 +130,7 @@ const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'des
       select ${cryptoTransferJsonAgg} as ctr_list, ${CryptoTransfer.getFullName(CryptoTransfer.CONSENSUS_TIMESTAMP)}
       from ${CryptoTransfer.tableName} ${CryptoTransfer.tableAlias}
       join tlist on ${CryptoTransfer.getFullName(CryptoTransfer.CONSENSUS_TIMESTAMP)} = tlist.consensus_timestamp
+      and ${CryptoTransfer.getFullName(CryptoTransfer.PAYER_ACCOUNT_ID)} = tlist.payer_account_id
       group by ${CryptoTransfer.getFullName(CryptoTransfer.CONSENSUS_TIMESTAMP)}
   )`;
 
@@ -137,6 +138,7 @@ const getSelectClauseWithTransfers = (includeExtraInfo, innerQuery, order = 'des
     select ${tokenTransferJsonAgg} as ttr_list, ${TokenTransfer.getFullName(TokenTransfer.CONSENSUS_TIMESTAMP)}
     from ${TokenTransfer.tableName} ${TokenTransfer.tableAlias}
     join tlist on ${TokenTransfer.getFullName(TokenTransfer.CONSENSUS_TIMESTAMP)} = tlist.consensus_timestamp
+    and ${TokenTransfer.getFullName(TokenTransfer.PAYER_ACCOUNT_ID)} = tlist.payer_account_id
     group by ${TokenTransfer.getFullName(TokenTransfer.CONSENSUS_TIMESTAMP)}
   )`;
 
@@ -654,7 +656,7 @@ const reqToSql = function (req) {
  */
 const getTransactions = async (req, res) => {
   // Validate query parameters first
-  utils.validateReq(req);
+  utils.validateReq(req, acceptedTransactionParameters);
 
   const query = reqToSql(req);
   if (logger.isTraceEnabled()) {
@@ -796,7 +798,7 @@ const extractSqlFromTransactionsByIdOrHashRequest = (transactionIdOrHash, filter
  * @return {Promise<None>}
  */
 const getTransactionsByIdOrHash = async (req, res) => {
-  const filters = utils.buildAndValidateFilters(req.query);
+  const filters = utils.buildAndValidateFilters(req.query, acceptedSingleTransactionParameters);
   const {query, params} = extractSqlFromTransactionsByIdOrHashRequest(req.params.transactionIdOrHash, filters);
   if (logger.isTraceEnabled()) {
     logger.trace(`getTransactionsByIdOrHash query: ${query} ${utils.JSONStringify(params)}`);
@@ -823,6 +825,21 @@ const transactions = {
   getTransactionsInnerQuery,
   getTransactionsOuterQuery,
 };
+
+const acceptedTransactionParameters = new Set([
+  constants.filterKeys.ACCOUNT_ID,
+  constants.filterKeys.CREDIT_TYPE,
+  constants.filterKeys.LIMIT,
+  constants.filterKeys.ORDER,
+  constants.filterKeys.RESULT,
+  constants.filterKeys.TIMESTAMP,
+  constants.filterKeys.TRANSACTION_TYPE
+]);
+
+const acceptedSingleTransactionParameters = new Set([
+  constants.filterKeys.NONCE,
+  constants.filterKeys.SCHEDULED
+]);
 
 if (utils.isTestEnv()) {
   Object.assign(transactions, {

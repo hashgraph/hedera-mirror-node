@@ -8,7 +8,7 @@
     "cryptotransfers": [],
     "nfts": []
   },
-  "urls": ["/api/v1/tokens/1500/nfts/2/transactions?timestamp=now&order=down&limit=alot"],
+  "urls": ["/api/v1/tokens/1500/nfts/2/transactions?timestamp=now&order=down&limit=alot&result=success"],
   "responseStatus": 400,
   "responseJson": {
     "_status": {
@@ -21,6 +21,9 @@
         },
         {
           "message": "Invalid parameter: limit"
+        },
+        {
+          "message": "Unknown query parameter: result"
         }
       ]
     }
