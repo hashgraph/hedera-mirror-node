@@ -20,7 +20,11 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
  * ‍
  */
 
+import static com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse.convertContractCallResponseToAddress;
+import static com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse.convertContractCallResponseToNum;
+import static com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse.convertContractCallResponseToSelector;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -35,7 +39,6 @@ import java.nio.file.Path;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.apache.tuweni.bytes.Bytes;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.ResourceUtils;
@@ -153,11 +156,8 @@ public class ContractFeature extends AbstractFeature {
         ContractCallResponse identifierResponse = mirrorClient.contractsCall(IDENTIFIER_SELECTOR, contractId.toSolidityAddress(), contractClient.getClientAddress());
         assertThat(convertContractCallResponseToSelector(identifierResponse)).isEqualTo(IDENTIFIER_SELECTOR);
 
-        try {
-            mirrorClient.contractsCall(WRONG_SELECTOR, contractId.toSolidityAddress(), contractClient.getClientAddress());
-        } catch (Exception e) {
-            assertThat(e.getCause().getMessage()).contains("400 Bad Request from POST");
-        }
+        assertThatThrownBy(() -> mirrorClient.contractsCall(WRONG_SELECTOR, contractId.toSolidityAddress(), contractClient.getClientAddress())).getCause()
+                .isInstanceOf(Exception.class).hasMessageContaining("400 Bad Request from POST");
     }
 
     @Then("the mirror node REST API should verify the deleted contract entity")
@@ -249,18 +249,6 @@ public class ContractFeature extends AbstractFeature {
         assertThat(contractResult.getBlockHash()).isNotBlank();
         assertThat(contractResult.getBlockNumber()).isPositive();
         assertThat(contractResult.getHash()).isNotBlank();
-    }
-
-    private BigInteger convertContractCallResponseToNum(final ContractCallResponse response) {
-        return Bytes.fromHexString((String) response.getResult()).toBigInteger();
-    }
-
-    private String convertContractCallResponseToSelector(final ContractCallResponse response) {
-        return Bytes.fromHexString((String) response.getResult()).trimTrailingZeros().toUnprefixedHexString();
-    }
-
-    private String convertContractCallResponseToAddress(final ContractCallResponse response) {
-        return Bytes.fromHexString((String) response.getResult()).slice(12).toUnprefixedHexString();
     }
 
     private boolean isEmptyHex(String hexString) {

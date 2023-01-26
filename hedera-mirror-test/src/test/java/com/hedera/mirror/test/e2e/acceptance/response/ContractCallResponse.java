@@ -20,9 +20,23 @@ package com.hedera.mirror.test.e2e.acceptance.response;
  * ‍
  */
 
+import java.math.BigInteger;
 import lombok.Data;
+import org.apache.tuweni.bytes.Bytes;
 
 @Data
-public class ContractCallResponse<T> {
-    private T result;
+public class ContractCallResponse {
+    private String result;
+
+    public static BigInteger convertContractCallResponseToNum(final ContractCallResponse response) {
+        return Bytes.fromHexString(response.getResult()).toBigInteger();
+    }
+
+    public static String convertContractCallResponseToSelector(final ContractCallResponse response) {
+        return Bytes.fromHexString(response.getResult()).trimTrailingZeros().toUnprefixedHexString();
+    }
+
+    public static String convertContractCallResponseToAddress(final ContractCallResponse response) {
+        return Bytes.fromHexString(response.getResult()).slice(12).toUnprefixedHexString();
+    }
 }
