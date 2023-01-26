@@ -6,7 +6,7 @@
     "transactions": [],
     "cryptotransfers": []
   },
-  "url": "/api/v1/transactions?timestamp=-1&account.id=0.x&type=good&result=best&transactionType=invalid",
+  "url": "/api/v1/transactions?timestamp=-1&account.id=0.x&type=good&result=best&transactionType=invalid&account.publickey=3c3d546321ff6f63d701d2ec5c277095874e19f4a235bee1e6bb19258bf362be",
   "responseStatus": 400,
   "responseJson": {
     "_status": {
@@ -25,6 +25,9 @@
         },
         {
           "message": "Invalid parameter: transactiontype"
+        },
+        {
+          "message": "Unknown query parameter: account.publickey"
         }
       ]
     }

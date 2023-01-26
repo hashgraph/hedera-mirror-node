@@ -24,7 +24,7 @@ import lombok.Data;
 
 @Data
 public class MirrorContractResult {
-    private Integer amount;
+    private Long amount;
     private String callResult;
     private String contractId;
     private String[] createdContractIds;
@@ -32,8 +32,8 @@ public class MirrorContractResult {
     private String failedInitcode;
     private String from;
     private String functionParameters;
-    private Integer gasLimit;
-    private Integer gasUsed;
+    private Long gasLimit;
+    private Long gasUsed;
     private String timestamp;
     private String to;
 }

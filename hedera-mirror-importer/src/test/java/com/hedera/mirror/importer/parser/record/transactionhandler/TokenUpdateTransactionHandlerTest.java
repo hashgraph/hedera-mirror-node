@@ -165,6 +165,7 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         assertTokenUpdate(timestamp, tokenId, Assertions::assertNull);
     }
 
+    @SuppressWarnings("java:S6103")
     void assertTokenUpdate(long timestamp, EntityId tokenId, Consumer<Long> assertAutoRenewAccountId) {
         verify(entityListener).onEntity(assertArg(t -> assertThat(t)
                 .isNotNull()
