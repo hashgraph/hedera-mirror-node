@@ -56,11 +56,6 @@ public class PubSubAutoConfiguration {
     @ServiceActivator(inputChannel = "pubsubOutputChannel")
     MessageHandler pubSubMessageSender() {
         pubSubTemplate.setMessageConverter(new JacksonPubSubMessageConverter(new ObjectMapper()));
-        PubSubMessageHandler pubSubMessageHandler =
-                new PubSubMessageHandler(pubSubTemplate, pubSubProperties.getTopicName());
-        // Optimize in future to use async to support higher TPS. Can do ~20-30/sec right now which is sufficient
-        // to setup BQ dataset for mainnet. Exposing pubsub for testnet will have to wait.
-        pubSubMessageHandler.setSync(true);
-        return pubSubMessageHandler;
+        return new PubSubMessageHandler(pubSubTemplate, pubSubProperties.getTopicName());
     }
 }
