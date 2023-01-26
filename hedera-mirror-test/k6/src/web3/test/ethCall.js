@@ -18,14 +18,28 @@
  * ‍
  */
 
-import {getSequentialTestScenarios} from '../../lib/common.js';
+import http from "k6/http";
 
-// import test modules
-import * as ethCall from './ethCall.js';
+import {TestScenarioBuilder} from '../../lib/common.js';
+import {isNonErrorResponse} from "./common.js";
 
-// add test modules here
-const tests = {ethCall};
+const url = __ENV.BASE_URL;
 
-const {funcs, options, scenarioDurationGauge, scenarios} = getSequentialTestScenarios(tests);
+const payload = JSON.stringify({
+  "to":"000000000000000000000000000000000000043a",
+  "data":"0x6896fabf"
+});
 
-export {funcs, options, scenarioDurationGauge, scenarios};
+const httpParams = {
+  headers: {
+    'Content-Type': 'application/json',
+  },
+};
+
+const {options, run} = new TestScenarioBuilder()
+  .name('eth_call') // use unique scenario name among all tests
+  .request(() => http.post(url, payload, httpParams))
+  .check('eth_call', (r) => isNonErrorResponse(r))
+  .build();
+
+export {options, run};
