@@ -24,6 +24,7 @@ plugins {
 
 rootProject.name = "hedera-mirror-node"
 include(":hedera-mirror-common")
+include(":hedera-mirror-graphql")
 include(":hedera-mirror-grpc")
 include(":hedera-mirror-importer")
 include(":hedera-mirror-monitor")

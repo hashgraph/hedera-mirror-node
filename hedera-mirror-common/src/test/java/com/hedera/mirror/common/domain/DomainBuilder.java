@@ -382,7 +382,7 @@ public class DomainBuilder {
                 .alias(key())
                 .autoRenewAccountId(id())
                 .autoRenewPeriod(1800L)
-                .balance(id())
+                .balance(tinybar())
                 .createdTimestamp(timestamp)
                 .declineReward(false)
                 .deleted(false)
@@ -910,6 +910,10 @@ public class DomainBuilder {
 
     public long timestamp() {
         return DomainUtils.convertToNanosMax(now.getEpochSecond(), now.getNano()) + id();
+    }
+
+    private long tinybar() {
+        return id() * TINYBARS_IN_ONE_HBAR;
     }
 
     private long getEpochDay(long timestamp) {
