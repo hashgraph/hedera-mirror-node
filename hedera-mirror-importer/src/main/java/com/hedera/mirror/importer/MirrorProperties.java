@@ -78,7 +78,7 @@ public class MirrorProperties {
         MAINNET("hedera-mainnet-streams"),
         PREVIEWNET("hedera-preview-testnet-streams"),
         OTHER(""), // Pre-prod or ad hoc environments
-        TESTNET("hedera-stable-testnet-streams-2020-08-27");
+        TESTNET("hedera-testnet-streams-2023-01");
 
         private final String bucketName;
 
