@@ -116,6 +116,7 @@ associated with the downloading of stream files are paid for by the requester an
 ## Documentation
 
 - Components
+  - [GraphQL API](docs/graphql/README.md)
   - [gRPC API](docs/grpc/README.md)
   - [Importer](docs/importer/README.md)
   - [Monitor](docs/monitor/README.md)

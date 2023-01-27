@@ -1,0 +1,8 @@
+embedded:
+  postgresql:
+    docker-image: xinatswirlds/citus:11.1.4-alpine
+    initScriptPath: db/init-v2.sql
+spring:
+  flyway:
+    baselineVersion: 1.999.999
+    locations: "filesystem:../hedera-mirror-importer/src/main/resources/db/migration/v2"

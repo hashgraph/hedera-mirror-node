@@ -29,6 +29,7 @@ plugins {
 // Can't use typed variable syntax due to Dependabot limitations
 extra.apply {
     set("gson.version", "2.8.9") // Temporary until Apache jclouds supports gson 2.9
+    set("mapStructVersion", "1.5.3.Final")
     set("postgresql.version", "42.5.1") // Temporary fix for transient dependency security issue
     set("protobufVersion", "3.21.12")
     set("reactorGrpcVersion", "1.2.3")
@@ -39,6 +40,7 @@ extra.apply {
 // Creates a platform/BOM with specific versions so subprojects don't need to specify a version when using a dependency
 dependencies {
     constraints {
+        val mapStructVersion: String by rootProject.extra
         val protobufVersion: String by rootProject.extra
         val reactorGrpcVersion: String by rootProject.extra
         val testcontainersSpringBootVersion: String by rootProject.extra
@@ -49,6 +51,9 @@ dependencies {
         api("com.google.cloud:spring-cloud-gcp-dependencies:3.4.2")
         api("com.google.guava:guava:31.1-jre")
         api("com.google.protobuf:protobuf-java:$protobufVersion")
+        api("com.graphql-java-generator:graphql-java-client-dependencies:1.18.9")
+        api("com.graphql-java:graphql-java-extended-scalars:20.0")
+        api("com.graphql-java:graphql-java-extended-validation:20.0-validator-6.2.0.Final")
         api("com.hedera.evm:hedera-evm:0.34.0")
         api("com.hedera.hashgraph:hedera-protobuf-java-api:0.34.0")
         api("com.hedera.hashgraph:sdk:2.19.0")
@@ -75,6 +80,8 @@ dependencies {
         api("org.gaul:s3proxy:2.0.0")
         api("org.hyperledger.besu:secp256k1:0.6.1")
         api("org.hyperledger.besu:evm:22.7.6")
+        api("org.mapstruct:mapstruct:$mapStructVersion")
+        api("org.mapstruct:mapstruct-processor:$mapStructVersion")
         api("org.msgpack:jackson-dataformat-msgpack:0.9.3")
         api("org.springdoc:springdoc-openapi-webflux-ui:1.6.14")
         api("org.springframework.cloud:spring-cloud-dependencies:2021.0.5")

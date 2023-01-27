@@ -1,0 +1,80 @@
+hedera:
+  mirror:
+    graphql:
+      db:
+        host: 127.0.0.1
+        name: mirror_node
+        password: mirror_graphql_pass
+        port: 5432
+        sslMode: DISABLE
+        username: mirror_graphql
+logging:
+  level:
+    root: warn
+    com.hedera.mirror.graphql: info
+    org.springframework.cloud.kubernetes.fabric8.config: error
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus
+  metrics:
+    export:
+      prometheus:
+        step: 30s
+    tags:
+      application: ${spring.application.name}
+  endpoint:
+    health:
+      group:
+        liveness:
+          include: ping
+        readiness:
+          include: db, ping
+server:
+  compression:
+    enabled: true
+  http2:
+    enabled: true
+  max-http-header-size: 1KB
+  netty:
+    connection-timeout: 3s
+  port: 8083
+  shutdown: graceful
+spring:
+  application:
+    name: hedera-mirror-graphql
+  cloud:
+    kubernetes:
+      reload:
+        enabled: true
+      secrets:
+        paths: /usr/etc/${spring.application.name}
+  datasource:
+    name: ${hedera.mirror.graphql.db.name}
+    password: ${hedera.mirror.graphql.db.password}
+    url: jdbc:postgresql://${hedera.mirror.graphql.db.host}:${hedera.mirror.graphql.db.port}/${hedera.mirror.graphql.db.name}
+    username: ${hedera.mirror.graphql.db.username}
+    hikari:
+      connection-timeout: 3000
+      data-source-properties:
+        idle_in_transaction_session_timeout: "30000"
+        lock_timeout: "10000"
+        statement_timeout: "60000"
+        sslmode: ${hedera.mirror.graphql.db.sslMode}
+        tcpKeepAlive: true
+      maximum-pool-size: 50
+      minimum-idle: 4
+      validation-timeout: 3000
+  graphql:
+    graphiql:
+      enabled: true
+    path: /graphql/alpha
+  jpa:
+    database: postgresql
+    properties:
+      hibernate.criteria.literal_handling_mode: BIND # Ensure Criteria API queries use bind parameters and not literals
+      hibernate.generate_statistics: true
+      hibernate.hbm2ddl.auto: none
+  lifecycle:
+    timeout-per-shutdown-phase: 20s

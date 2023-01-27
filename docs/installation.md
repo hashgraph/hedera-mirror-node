@@ -266,6 +266,16 @@ c.h.m.i.d.r.RecordFileDownloader Downloaded 1 signatures in 102.8 ms (9/s)
 c.h.m.i.p.r.RecordFileParser Successfully processed 2 items from 2022-01-05T18_16_24.581564299Z.rcd in 3.784 ms
 ```
 
+#### GraphQL API
+
+The GraphQL API container will display logs similar to the below at start:
+
+```shell
+c.h.m.graphql.GraphQlApplication Started GraphqlApplication in 23.05 seconds
+```
+
+To manually verify the GraphQL API endpoints run the [acceptance tests](/docs/graphql/README.md#acceptance-tests).
+
 #### gRPC API
 
 The gRPC container will display logs similar to the below at start:

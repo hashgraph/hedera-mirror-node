@@ -69,7 +69,9 @@ node {
 
 spotless {
     isEnforceCheck = false
-    ratchetFrom("origin/main")
+    if (!System.getenv().containsKey("CI")) {
+        ratchetFrom("origin/main")
+    }
     format("javascript", {
         indentWithSpaces(2)
         licenseHeader(licenseHeader, "(import|const|//)")
