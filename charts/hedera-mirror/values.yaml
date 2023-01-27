@@ -72,8 +72,8 @@ citus:
     configuration: |
       checkpoint_timeout = 1800
       citus.executor_slow_start_interval = 100ms
-      citus.max_shared_pool_size = 380
       citus.max_cached_conns_per_worker = 4
+      citus.max_shared_pool_size = 380
       citus.node_conninfo = 'sslmode=prefer'
       cron.database_name = 'mirror_node'
       listen_addresses = '*'
