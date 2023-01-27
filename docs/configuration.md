@@ -488,12 +488,12 @@ hedera:
       stateproof:
         enabled: true
         streams:
-          network: 'TESTNET'
-          cloudProvider: 'GCP'
-          region: 'us-east-1'
           accessKey: <accessKey>
+          bucketName: 'hedera-mainnet-streams'
+          cloudProvider: 'GCP'
+          network: 'MAINNET'
+          region: 'us-east-1'
           secretKey: <secretKey>
-          bucketName: 'hedera-stable-testnet-streams-2020-08-27'
 ```
 
 ## Rosetta API
