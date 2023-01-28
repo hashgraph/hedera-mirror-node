@@ -60,11 +60,9 @@ const processRow = (row) => {
     deleted: row.deleted,
     ethereum_nonce: row.ethereum_nonce,
     evm_address: evmAddress,
-    expiry_timestamp: utils.nsToSecNs(utils.calculateExpiryTimestamp(
-      row.auto_renew_period,
-      row.created_timestamp,
-      row.expiration_timestamp
-    )),
+    expiry_timestamp: utils.nsToSecNs(
+      utils.calculateExpiryTimestamp(row.auto_renew_period, row.created_timestamp, row.expiration_timestamp)
+    ),
     key: utils.encodeKey(row.key),
     max_automatic_token_associations: row.max_automatic_token_associations,
     memo: row.memo,
@@ -137,10 +135,10 @@ const getEntityBalanceQuery = (
       select account_id, balance, token_id
       from token_account
       where associated is true
-    ), latest_record_file as (select max(consensus_end) as consensus_timestamp from record_file)
+    )
     select
       ${entityFields},
-      latest_record_file.consensus_timestamp,
+      (select max(consensus_end) from record_file) as consensus_timestamp,
       balance,
       (
         select json_agg(json_build_object('token_id', token_id, 'balance', balance))
@@ -151,8 +149,8 @@ const getEntityBalanceQuery = (
         order by token_id ${order}
         limit ${tokenBalanceLimit}) as account_token_balance
       ) as token_balances
-    from entity e left join entity_stake es on es.id = e.id,
-      latest_record_file
+    from entity e
+    left join entity_stake es on es.id = e.id
     where ${whereCondition}
     order by e.id ${order}
     ${limitQuery}`;

@@ -71,6 +71,9 @@ citus:
     args: ["-c", "config_file=/bitnami/postgresql/conf/postgresql.conf"]
     configuration: |
       checkpoint_timeout = 1800
+      citus.executor_slow_start_interval = 100ms
+      citus.max_cached_conns_per_worker = 4
+      citus.max_shared_pool_size = 380
       citus.node_conninfo = 'sslmode=prefer'
       cron.database_name = 'mirror_node'
       listen_addresses = '*'
@@ -81,6 +84,7 @@ citus:
       max_wal_senders = 5
       max_wal_size = 24GB
       random_page_cost = 1.1
+      shared_buffers = 12GB
       shared_preload_libraries = 'citus,pg_cron,pg_partman_bgw'
       wal_level = logical
       work_mem = 32MB
@@ -99,11 +103,12 @@ citus:
       listen_addresses = '*'
       log_checkpoints = true
       log_timezone = 'Etc/UTC'
-      max_connections = 300
+      max_connections = 400
       max_replication_slots = 5
       max_wal_senders = 5
       max_wal_size = 24GB
       random_page_cost = 1.1
+      shared_buffers = 12GB
       shared_preload_libraries = 'citus'
       wal_level = logical
       work_mem = 32MB
