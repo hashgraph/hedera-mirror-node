@@ -2,7 +2,7 @@
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,10 +26,14 @@ plugins {
 
 dependencies {
     val testClasses by configurations.creating
+    annotationProcessor(group = "com.querydsl", name = "querydsl-apt", classifier = "jpa")
+    annotationProcessor("javax.persistence:javax.persistence-api")
     api("com.fasterxml.jackson.core:jackson-databind")
     api("com.google.guava:guava")
     api("com.google.protobuf:protobuf-java")
     api("com.hedera.hashgraph:hedera-protobuf-java-api") { isTransitive = false }
+    api("com.querydsl:querydsl-apt")
+    api("com.querydsl:querydsl-jpa")
     api("com.vladmihalcea:hibernate-types-55")
     api("commons-codec:commons-codec")
     api("io.projectreactor:reactor-core")
@@ -40,4 +44,8 @@ dependencies {
     api("org.springframework.boot:spring-boot-starter-log4j2")
     testImplementation("org.hyperledger.besu:evm")
     testClasses(sourceSets["test"].output)
+}
+
+java.sourceSets["main"].java {
+    srcDir("build/generated/sources/annotationProcessor/java/main")
 }

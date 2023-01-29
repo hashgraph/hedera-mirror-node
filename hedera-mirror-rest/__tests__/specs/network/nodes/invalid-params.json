@@ -1,7 +1,7 @@
 {
   "description": "Network nodes API with all invalid params",
   "setup": {},
-  "url": "/api/v1/network/nodes?file.id=a&node.id=b&limit=c&order=d",
+  "url": "/api/v1/network/nodes?file.id=a&node.id=b&limit=c&order=d&token.id=2",
   "responseStatus": 400,
   "responseJson": {
     "_status": {
@@ -17,6 +17,9 @@
         },
         {
           "message": "Invalid parameter: order"
+        },
+        {
+          "message": "Unknown query parameter: token.id"
         }
       ]
     }

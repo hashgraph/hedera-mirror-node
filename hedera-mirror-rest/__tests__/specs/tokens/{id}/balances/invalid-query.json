@@ -12,7 +12,7 @@
     "_status": {
       "messages": [
         {
-          "message": "Invalid parameter: consensus"
+          "message": "Unknown query parameter: consensus"
         }
       ]
     }

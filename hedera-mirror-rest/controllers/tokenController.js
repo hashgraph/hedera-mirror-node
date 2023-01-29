@@ -2,7 +2,7 @@
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -87,7 +87,7 @@ class TokenController extends BaseController {
     if (!isValidAccount) {
       throw new NotFoundError();
     }
-    const filters = utils.buildAndValidateFilters(req.query);
+    const filters = utils.buildAndValidateFilters(req.query, acceptedTokenParameters);
     const query = this.extractTokensRelationshipQuery(filters, accountId);
     const tokenRelationships = await TokenService.getTokens(query);
     const tokens = tokenRelationships.map((token) => new TokenRelationshipViewModel(token));
@@ -109,5 +109,11 @@ class TokenController extends BaseController {
     };
   };
 }
+
+const acceptedTokenParameters = new Set([
+  filterKeys.LIMIT,
+  filterKeys.ORDER,
+  filterKeys.TOKEN_ID
+]);
 
 export default new TokenController();

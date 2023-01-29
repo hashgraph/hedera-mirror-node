@@ -2,7 +2,7 @@
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ dependencies {
     implementation("com.github.node-gradle:gradle-node-plugin:3.5.1")
     implementation("com.google.protobuf:protobuf-gradle-plugin:0.9.2")
     implementation("com.gorylenko.gradle-git-properties:gradle-git-properties:2.4.1")
+    implementation("gradle.plugin.com.graphql-java-generator:graphql-gradle-plugin:1.18.9")
     implementation("io.freefair.gradle:lombok-plugin:6.6.1")
     implementation("io.spring.gradle:dependency-management-plugin:1.1.0")
     implementation("org.apache.commons:commons-compress:1.22")

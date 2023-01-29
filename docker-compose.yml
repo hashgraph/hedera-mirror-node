@@ -1,28 +1,29 @@
 version: "3.7"
 services:
   citus:
-     image: xinatswirlds/citus:11.1.4-alpine
-     deploy:
+    image: xinatswirlds/citus:11.1.4-alpine
+    deploy:
       replicas: 0
-     environment:
-       PGDATA: /var/lib/postgresql/data
-       # These should all be changed from the default before running in production
-       GRPC_PASSWORD: mirror_grpc_pass
-       IMPORTER_PASSWORD: mirror_importer_pass
-       OWNER_PASSWORD: mirror_node_pass
-       POSTGRES_PASSWORD: postgres_password
-       REST_PASSWORD: mirror_api_pass
-       ROSETTA_PASSWORD: mirror_rosetta_pass
-       SCHEMA_V2: "true"
-     ports:
+    environment:
+      PGDATA: /var/lib/postgresql/data
+      # These should all be changed from the default before running in production
+      GRAPHQL_PASSWORD: mirror_graphql_pass
+      GRPC_PASSWORD: mirror_grpc_pass
+      IMPORTER_PASSWORD: mirror_importer_pass
+      OWNER_PASSWORD: mirror_node_pass
+      POSTGRES_PASSWORD: postgres_password
+      REST_PASSWORD: mirror_api_pass
+      ROSETTA_PASSWORD: mirror_rosetta_pass
+      SCHEMA_V2: "true"
+    ports:
       - 5432:5432
-     restart: unless-stopped
-     stop_grace_period: 2m
-     stop_signal: SIGTERM
-     tty: true
-     volumes:
-       - ./db:/var/lib/postgresql/data
-       - ./hedera-mirror-importer/src/main/resources/db/scripts/init.sh:/docker-entrypoint-initdb.d/init.sh
+    restart: unless-stopped
+    stop_grace_period: 2m
+    stop_signal: SIGTERM
+    tty: true
+    volumes:
+      - ./db:/var/lib/postgresql/data
+      - ./hedera-mirror-importer/src/main/resources/db/scripts/init.sh:/docker-entrypoint-initdb.d/init.sh
   db:
     image: postgres:14-alpine
     environment:
@@ -45,6 +46,19 @@ services:
     volumes:
       - ./db:/var/lib/postgresql/data
       - ./hedera-mirror-importer/src/main/resources/db/scripts/init.sh:/docker-entrypoint-initdb.d/init.sh
+
+  graphql:
+    image: gcr.io/mirrornode/hedera-mirror-graphql:0.73.0-SNAPSHOT
+    pull_policy: always
+    environment:
+      HEDERA_MIRROR_GRAPHQL_DB_HOST: db
+      SPRING_CONFIG_ADDITIONAL_LOCATION: file:/usr/etc/hedera-mirror-graphql/
+    ports:
+      - 8083:8083
+    restart: unless-stopped
+    tty: true
+    volumes:
+      - ./application.yml:/usr/etc/hedera-mirror-graphql/application.yml
 
   grpc:
     image: gcr.io/mirrornode/hedera-mirror-grpc:0.74.0-SNAPSHOT

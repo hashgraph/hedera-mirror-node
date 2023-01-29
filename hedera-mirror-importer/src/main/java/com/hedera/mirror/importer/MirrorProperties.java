@@ -4,7 +4,7 @@ package com.hedera.mirror.importer;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,7 +78,7 @@ public class MirrorProperties {
         MAINNET("hedera-mainnet-streams"),
         PREVIEWNET("hedera-preview-testnet-streams"),
         OTHER(""), // Pre-prod or ad hoc environments
-        TESTNET("hedera-stable-testnet-streams-2020-08-27");
+        TESTNET("hedera-testnet-streams-2023-01");
 
         private final String bucketName;
 

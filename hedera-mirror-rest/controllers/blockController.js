@@ -2,7 +2,7 @@
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,13 @@ import {BlockViewModel} from '../viewmodel';
 const {default: defaultLimit, max: maxLimit} = getResponseLimit();
 
 const blockWhereFilters = [filterKeys.BLOCK_NUMBER, filterKeys.TIMESTAMP];
+
+const acceptedBlockParameters = new Set([
+  filterKeys.BLOCK_NUMBER,
+  filterKeys.LIMIT,
+  filterKeys.ORDER,
+  filterKeys.TIMESTAMP
+]);
 
 const validateHashOrNumber = (hashOrNumber) => {
   if (utils.isValidBlockHash(hashOrNumber)) {
@@ -106,7 +113,7 @@ class BlockController extends BaseController {
   };
 
   getBlocks = async (req, res) => {
-    const filters = utils.buildAndValidateFilters(req.query);
+    const filters = utils.buildAndValidateFilters(req.query, acceptedBlockParameters);
     const formattedFilters = this.extractSqlFromBlockFilters(filters);
     const blocks = await RecordFileService.getBlocks(formattedFilters);
 
@@ -119,6 +126,7 @@ class BlockController extends BaseController {
   };
 
   getByHashOrNumber = async (req, res) => {
+    utils.validateReq(req);
     const {hash, number} = validateHashOrNumber(req.params.hashOrNumber);
     const block = await RecordFileService.getByHashOrNumber(hash, number);
 

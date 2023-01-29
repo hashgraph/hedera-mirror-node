@@ -1,7 +1,7 @@
 # Configuration
 
-The four components of the Hedera Mirror Node (Importer, Monitor, REST API, and gRPC API) all support loading
-configuration from an `application.yml` file or via the environment.
+The components of the Hedera Mirror Node all support loading configuration from an `application.yml` file or via the 
+environment.
 
 ## Default Values
 
@@ -488,12 +488,12 @@ hedera:
       stateproof:
         enabled: true
         streams:
-          network: 'TESTNET'
-          cloudProvider: 'GCP'
-          region: 'us-east-1'
           accessKey: <accessKey>
+          bucketName: 'hedera-mainnet-streams'
+          cloudProvider: 'GCP'
+          network: 'MAINNET'
+          region: 'us-east-1'
           secretKey: <secretKey>
-          bucketName: 'hedera-stable-testnet-streams-2020-08-27'
 ```
 
 ## Rosetta API

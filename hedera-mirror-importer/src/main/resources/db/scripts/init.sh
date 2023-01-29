@@ -33,6 +33,8 @@ psql -d "user=postgres connect_timeout=3" \
   --set ON_ERROR_STOP=1 \
   --set "dbName=${DB_NAME:-mirror_node}" \
   --set "dbSchema=${DB_SCHEMA:-public}" \
+  --set "graphqlPassword=${GRAPHQL_PASSWORD:-mirror_graphql_pass}" \
+  --set "graphqlUsername=${GRAPHQL_USERNAME:-mirror_graphql}" \
   --set "grpcPassword=${GRPC_PASSWORD:-mirror_grpc_pass}" \
   --set "grpcUsername=${GRPC_USERNAME:-mirror_grpc}" \
   --set "importerPassword=${IMPORTER_PASSWORD:-mirror_importer_pass}" \
@@ -58,6 +60,7 @@ create role readonly;
 create role readwrite in role readonly;
 
 -- Create users
+create user :graphqlUsername with login password :'graphqlPassword' in role readonly;
 create user :grpcUsername with login password :'grpcPassword' in role readonly;
 create user :importerUsername with login password :'importerPassword' in role readwrite;
 create user :rosettaUsername with login password :'rosettaPassword' in role readonly;

@@ -2,7 +2,7 @@
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,11 +60,9 @@ const processRow = (row) => {
     deleted: row.deleted,
     ethereum_nonce: row.ethereum_nonce,
     evm_address: evmAddress,
-    expiry_timestamp: utils.nsToSecNs(utils.calculateExpiryTimestamp(
-      row.auto_renew_period,
-      row.created_timestamp,
-      row.expiration_timestamp
-    )),
+    expiry_timestamp: utils.nsToSecNs(
+      utils.calculateExpiryTimestamp(row.auto_renew_period, row.created_timestamp, row.expiration_timestamp)
+    ),
     key: utils.encodeKey(row.key),
     max_automatic_token_associations: row.max_automatic_token_associations,
     memo: row.memo,
@@ -137,10 +135,10 @@ const getEntityBalanceQuery = (
       select account_id, balance, token_id
       from token_account
       where associated is true
-    ), latest_record_file as (select max(consensus_end) as consensus_timestamp from record_file)
+    )
     select
       ${entityFields},
-      latest_record_file.consensus_timestamp,
+      (select max(consensus_end) from record_file) as consensus_timestamp,
       balance,
       (
         select json_agg(json_build_object('token_id', token_id, 'balance', balance))
@@ -151,8 +149,8 @@ const getEntityBalanceQuery = (
         order by token_id ${order}
         limit ${tokenBalanceLimit}) as account_token_balance
       ) as token_balances
-    from entity e left join entity_stake es on es.id = e.id,
-      latest_record_file
+    from entity e
+    left join entity_stake es on es.id = e.id
     where ${whereCondition}
     order by e.id ${order}
     ${limitQuery}`;
@@ -225,7 +223,7 @@ const getBalanceParamValue = (query) => {
  */
 const getAccounts = async (req, res) => {
   // Validate query parameters first
-  utils.validateReq(req);
+  utils.validateReq(req, acceptedAccountsParameters);
 
   // Parse the filter parameters for account-numbers, balances, publicKey and pagination
   const entityAccountQuery = toQueryObject(utils.parseAccountIdQueryParam(req.query, 'e.id'));
@@ -291,7 +289,7 @@ const getAccounts = async (req, res) => {
  */
 const getOneAccount = async (req, res) => {
   // Validate query parameters first
-  utils.validateReq(req);
+  utils.validateReq(req, acceptedSingleAccountParameters);
 
   const encodedId = await EntityService.getEncodedId(req.params[constants.filterKeys.ID_OR_ALIAS_OR_EVM_ADDRESS]);
 
@@ -387,6 +385,22 @@ const accounts = {
   getAccounts,
   getOneAccount,
 };
+
+const acceptedAccountsParameters = new Set([
+  constants.filterKeys.ACCOUNT_BALANCE,
+  constants.filterKeys.ACCOUNT_ID,
+  constants.filterKeys.ACCOUNT_PUBLICKEY,
+  constants.filterKeys.BALANCE,
+  constants.filterKeys.LIMIT,
+  constants.filterKeys.ORDER
+]);
+
+const acceptedSingleAccountParameters = new Set([
+  constants.filterKeys.LIMIT,
+  constants.filterKeys.ORDER,
+  constants.filterKeys.TIMESTAMP,
+  constants.filterKeys.TRANSACTION_TYPE
+]);
 
 if (utils.isTestEnv()) {
   Object.assign(accounts, {

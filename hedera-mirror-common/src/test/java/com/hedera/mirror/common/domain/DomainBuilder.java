@@ -4,7 +4,7 @@ package com.hedera.mirror.common.domain;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -382,7 +382,7 @@ public class DomainBuilder {
                 .alias(key())
                 .autoRenewAccountId(id())
                 .autoRenewPeriod(1800L)
-                .balance(id())
+                .balance(tinybar())
                 .createdTimestamp(timestamp)
                 .declineReward(false)
                 .deleted(false)
@@ -910,6 +910,10 @@ public class DomainBuilder {
 
     public long timestamp() {
         return DomainUtils.convertToNanosMax(now.getEpochSecond(), now.getNano()) + id();
+    }
+
+    private long tinybar() {
+        return id() * TINYBARS_IN_ONE_HBAR;
     }
 
     private long getEpochDay(long timestamp) {

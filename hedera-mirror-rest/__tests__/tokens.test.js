@@ -2,7 +2,7 @@
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -875,15 +875,17 @@ describe('token formatTokenInfoRow tests', () => {
 });
 
 const verifyInvalidAndValidTokensFilters = (invalidQueries, validQueries, validator) => {
+  const acceptedParameters = new Set([constants.filterKeys.ACCOUNT_ID, constants.filterKeys.TIMESTAMP, constants.filterKeys.SERIAL_NUMBER, constants.filterKeys.TOKEN_TYPE]);
+
   invalidQueries.forEach((query) => {
     test(`Verify buildAndValidateFilters for invalid ${JSON.stringify(query)}`, () => {
-      expect(() => utils.buildAndValidateFilters(query, validator)).toThrowErrorMatchingSnapshot();
+      expect(() => utils.buildAndValidateFilters(query, acceptedParameters, validator)).toThrowErrorMatchingSnapshot();
     });
   });
 
   validQueries.forEach((query) => {
     test(`Verify buildAndValidateFilters for valid ${JSON.stringify(query)}`, () => {
-      utils.buildAndValidateFilters(query, validator);
+      utils.buildAndValidateFilters(query, acceptedParameters, validator);
     });
   });
 };

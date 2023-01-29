@@ -2,7 +2,7 @@
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -155,7 +155,7 @@ const networks = {
 const defaultBucketNames = {
   [networks.DEMO]: 'hedera-demo-streams',
   [networks.MAINNET]: 'hedera-mainnet-streams',
-  [networks.TESTNET]: 'hedera-stable-testnet-streams-2020-08-27',
+  [networks.TESTNET]: 'hedera-testnet-streams-2023-01',
   [networks.PREVIEWNET]: 'hedera-preview-testnet-streams',
   [networks.OTHER]: null,
 };

@@ -1,7 +1,7 @@
 {
   "description": "Contract actions api call for all contracts with invalid filters",
   "setup": {},
-  "urls": ["/api/v1/contracts/results/0.0.5001-1676540001-234390005/actions?order=b&limit=c"],
+  "urls": ["/api/v1/contracts/results/0.0.5001-1676540001-234390005/actions?order=b&limit=c&nonce=2"],
   "responseStatus": 400,
   "responseJson": {
     "_status": {
@@ -11,6 +11,9 @@
         },
         {
           "message": "Invalid parameter: limit"
+        },
+        {
+          "message": "Unknown query parameter: nonce"
         }
       ]
     }
