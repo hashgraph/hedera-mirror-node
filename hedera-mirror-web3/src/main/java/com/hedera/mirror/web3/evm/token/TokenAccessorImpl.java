@@ -28,6 +28,9 @@ import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.evmKey;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -264,7 +267,13 @@ public class TokenAccessorImpl implements TokenAccessor {
                     tokenEntity.getDecimals(),
                     asSeconds(entity.getExpirationTimestamp()));
             evmTokenInfo.setAutoRenewPeriod(entity.getAutoRenewPeriod() != null ? entity.getAutoRenewPeriod() : 0);
-            evmTokenInfo.setAutoRenewAccount(toAddress(entity.getProxyAccountId()));
+
+            final var autoRenewAccountOptional = entityRepository.findById(entity.getAutoRenewAccountId());
+            if (autoRenewAccountOptional.isPresent()) {
+                final var autoRenewAccount = autoRenewAccountOptional.get();
+                evmTokenInfo.setAutoRenewAccount(toAddress(new EntityId(autoRenewAccount.getShard(), autoRenewAccount.getRealm(), autoRenewAccount.getNum(), EntityType.ACCOUNT)));
+            }
+
 
             try {
                 final var adminKey = evmKey(entity.getKey());
