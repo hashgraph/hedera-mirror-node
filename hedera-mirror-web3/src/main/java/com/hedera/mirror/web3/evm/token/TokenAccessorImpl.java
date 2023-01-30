@@ -133,7 +133,7 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public Optional<List<CustomFee>> infoForTokenCustomFees(final Address token) {
-        return getCustomFees(token);
+        return Optional.of(getCustomFees(token));
     }
 
     @Override
@@ -262,8 +262,8 @@ public class TokenAccessorImpl implements TokenAccessor {
                     tokenEntity.getTotalSupply(),
                     tokenEntity.getMaxSupply(),
                     tokenEntity.getDecimals(),
-                    entity.getExpirationTimestamp());
-            evmTokenInfo.setAutoRenewPeriod(entity.getAutoRenewPeriod());
+                    asSeconds(entity.getExpirationTimestamp()));
+            evmTokenInfo.setAutoRenewPeriod(entity.getAutoRenewPeriod() != null ? entity.getAutoRenewPeriod() : 0);
             evmTokenInfo.setAutoRenewAccount(toAddress(entity.getProxyAccountId()));
 
             try {
@@ -290,13 +290,13 @@ public class TokenAccessorImpl implements TokenAccessor {
             evmTokenInfo.setIsPaused(isPaused);
             final var customFeesOptional = getCustomFees(token);
 
-            customFeesOptional.ifPresent(evmTokenInfo::setCustomFees);
+            evmTokenInfo.setCustomFees(customFeesOptional);
             return Optional.of(evmTokenInfo);
         }
         return Optional.empty();
     }
 
-    private Optional<List<CustomFee>> getCustomFees(final Address token) {
+    private List<CustomFee> getCustomFees(final Address token) {
         final List<CustomFee> customFees = new ArrayList<>();
 
         final var customFeesOptional = customFeeRepository.findCustomFees(entityIdFromEvmAddress(token));
@@ -350,6 +350,10 @@ public class TokenAccessorImpl implements TokenAccessor {
                 customFees.add(customFeeConstructed);
             }
         }
-        return !customFees.isEmpty() ? Optional.of(customFees) : Optional.empty();
+        return customFees;
+    }
+
+    private long asSeconds(long nanoSeconds) {
+        return nanoSeconds / 1000000000;
     }
 }
