@@ -252,18 +252,6 @@ public class ContractFeature extends AbstractFeature {
         assertThat(contractResult.getHash()).isNotBlank();
     }
 
-    private BigInteger convertContractCallResponseToNum(final ContractCallResponse response) {
-        return Bytes.fromHexString((String) response.getResult()).toBigInteger();
-    }
-
-    private String convertContractCallResponseToSelector(final ContractCallResponse response) {
-        return Bytes.fromHexString((String) response.getResult()).trimTrailingZeros().toUnprefixedHexString();
-    }
-
-    private String convertContractCallResponseToAddress(final ContractCallResponse response) {
-        return Bytes.fromHexString((String) response.getResult()).slice(12).toUnprefixedHexString();
-    }
-
     private boolean isEmptyHex(String hexString) {
         return StringUtils.isEmpty(hexString) || hexString.equals("0x");
     }

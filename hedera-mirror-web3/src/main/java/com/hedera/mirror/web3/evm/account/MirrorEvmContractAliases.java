@@ -25,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 
@@ -37,7 +38,6 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
     @Override
     public Address resolveForEvm(Address addressOrAlias) {
         final var entity = mirrorEntityAccess.findEntity(addressOrAlias);
-        return entity.isPresent() ? Address.wrap(Bytes.wrap(entity.get().getEvmAddress())) : Address.ZERO;
-//        return Address.wrap(Bytes.wrap(entity.map(Entity::getEvmAddress).orElse(EMPTY_ADDRESS)));
+        return Address.wrap(Bytes.wrap(entity.map(Entity::getEvmAddress).orElse(EMPTY_ADDRESS)));
     }
 }
