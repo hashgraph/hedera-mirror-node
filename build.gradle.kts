@@ -48,7 +48,7 @@ dependencies {
         api("com.esaulpaugh:headlong:9.1.1")
         api("com.github.meanbeanlib:meanbean:3.0.0-M9")
         api("com.github.vertical-blank:sql-formatter:2.0.3")
-        api("com.google.cloud:spring-cloud-gcp-dependencies:3.4.2")
+        api("com.google.cloud:spring-cloud-gcp-dependencies:3.4.3")
         api("com.google.guava:guava:31.1-jre")
         api("com.google.protobuf:protobuf-java:$protobufVersion")
         api("com.graphql-java-generator:graphql-java-client-dependencies:1.18.9")
@@ -87,8 +87,8 @@ dependencies {
         api("org.springdoc:springdoc-openapi-webflux-ui:1.6.14")
         api("org.springframework.cloud:spring-cloud-dependencies:2021.0.5")
         api("org.testcontainers:junit-jupiter:1.17.6")
-        api("software.amazon.awssdk:bom:2.19.21")
-        api("uk.org.webcompere:system-stubs-jupiter:2.0.1")
+        api("software.amazon.awssdk:bom:2.19.26")
+        api("uk.org.webcompere:system-stubs-jupiter:2.0.2")
     }
 }
 
