@@ -30,15 +30,15 @@ import com.hedera.mirror.common.domain.token.NftId;
 
 public interface NftRepository extends CrudRepository<Nft, NftId> {
 
-    @Query(value = "select spender from nft where token_id = ?1, serialNumber = ?2",
+    @Query(value = "select spender from nft where token_id = ?1 and serial_number = ?2",
             nativeQuery = true)
-    Optional<EntityId> findSpender(final Long tokenId, final Long serialNo);
+    long findSpender(final Long tokenId, final Long serialNo);
 
-    @Query(value = "select account_id from nft where token_id = ?1, serialNumber = ?2",
+    @Query(value = "select account_id from nft where token_id = ?1 and serial_number = ?2",
             nativeQuery = true)
-    Optional<EntityId> findOwner(final Long tokenId, final Long serialNo);
+    long findOwner(final Long tokenId, final Long serialNo);
 
-    @Query(value = "select metadata from nft where token_id = ?1, serialNumber = ?2",
+    @Query(value = "select metadata from nft where token_id = ?1 and serial_number = ?2",
             nativeQuery = true)
     Optional<byte[]> findMetadata(final Long tokenId, final Long serialNo);
 }

@@ -20,6 +20,7 @@ package com.hedera.mirror.web3.evm.token;
  * ‍
  */
 
+import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
@@ -28,9 +29,6 @@ import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.evmKey;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -39,6 +37,9 @@ import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityIdEndec;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.web3.evm.exception.ParsingException;
@@ -208,8 +209,13 @@ public class TokenAccessorImpl implements TokenAccessor {
     @Override
     public Address staticApprovedSpenderOf(final Address nft, long serialNo) {
         final var tokenId = entityIdFromEvmAddress(nft);
-        final var spender = nftRepository.findSpender(tokenId, serialNo);
-        return spender.map(s -> Address.wrap(Bytes.wrap(toEvmAddress(s)))).orElse(Address.ZERO);
+        final var spenderNum = nftRepository.findSpender(tokenId, serialNo);
+        if (spenderNum <= 0L) {
+            return Address.ZERO;
+        }
+        final var spenderEntity = EntityIdEndec.decode(spenderNum, ACCOUNT);
+        final var spenderAddress = Address.wrap(Bytes.wrap(toEvmAddress(spenderEntity)));
+        return spenderAddress;
     }
 
     @Override
@@ -218,14 +224,20 @@ public class TokenAccessorImpl implements TokenAccessor {
         final var tokenId = entityIdFromEvmAddress(token);
         final var ownerId = entityIdFromEvmAddress(owner);
         final var spenderId = entityIdFromEvmAddress(operator);
-        return nftAllowanceRepository.isSpenderAnOperator(tokenId, spenderId, ownerId);
+        return nftAllowanceRepository.isSpenderAnOperator(tokenId, ownerId, spenderId);
     }
 
     @Override
     public Address ownerOf(final Address nft, long serialNo) {
         final var tokenId = entityIdFromEvmAddress(nft);
-        final var owner = nftRepository.findOwner(tokenId, serialNo);
-        return owner.map(s -> Address.wrap(Bytes.wrap(toEvmAddress(s)))).orElse(Address.ZERO);
+        final var ownerNum = nftRepository.findOwner(tokenId, serialNo);
+        if (ownerNum <= 0L) {
+            return Address.ZERO;
+        }
+        final var ownerEntity = EntityIdEndec.decode(ownerNum, ACCOUNT);
+        final var ownerAddress = Address.wrap(Bytes.wrap(toEvmAddress(ownerEntity)));
+
+        return ownerAddress;
     }
 
     @Override
@@ -271,9 +283,9 @@ public class TokenAccessorImpl implements TokenAccessor {
             final var autoRenewAccountOptional = entityRepository.findById(entity.getAutoRenewAccountId());
             if (autoRenewAccountOptional.isPresent()) {
                 final var autoRenewAccount = autoRenewAccountOptional.get();
-                evmTokenInfo.setAutoRenewAccount(toAddress(new EntityId(autoRenewAccount.getShard(), autoRenewAccount.getRealm(), autoRenewAccount.getNum(), EntityType.ACCOUNT)));
+                evmTokenInfo.setAutoRenewAccount(toAddress(new EntityId(autoRenewAccount.getShard(),
+                        autoRenewAccount.getRealm(), autoRenewAccount.getNum(), EntityType.ACCOUNT)));
             }
-
 
             try {
                 final var adminKey = evmKey(entity.getKey());
