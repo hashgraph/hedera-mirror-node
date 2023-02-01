@@ -128,12 +128,11 @@ spotless {
     })
 }
 
+tasks.nodeSetup {
+    onlyIf { !node.workDir.asFile.get().exists() }
+}
+
 tasks.spotlessApply {
-    doFirst {
-        val npmExec = node.workDir.asFile.get().walk().first({ it -> it.name.startsWith("npm") })
-        val taskNpmExec = (tasks.named("npmSetup").get() as NpmSetupTask).npmDir.get()
-        println("the file is " + npmExec.absolutePath + " task " + taskNpmExec.asFile.absolutePath)
-    }
     dependsOn(tasks.nodeSetup)
 }
 
