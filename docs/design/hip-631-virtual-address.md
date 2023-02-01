@@ -84,9 +84,10 @@ any other way (than adding a new address) to update the default virtual address 
 When parsing CryptoUpdate transactions,
 
 * Heed new `CryptoUpdate` operations (`addVirtualAddress`, `disableVirtualAddress`, `removeVirtualAddress`, `setDefaultVirtualAddress`).
-    - add: The mirror node won't easily be able to see how many other virtual addresses already exist for that account, so we probably won't be able to issue a warning if too many virtual addresses are already assigned to that account.  In all cases, we should replace the default virtual address of the entity (the `evm_address` column) only if `setDefaultCVirtualAddress(true)` is specified in the `CryptoUpdate.`
+    - add: The mirror node won't easily be able to see how many other virtual addresses already exist for that account, so we probably won't be able to issue a warning if too many virtual addresses are already assigned to that account.
     - disable: The address being disabled, in theory, should not be the default virtual address (`evm_address`) field.  The mirror node won't be able to query the current status of the virtual address being disabled; we just UPSERT an entry with the `evm_address` matching the address being disabled, and the `status` set to `DISABLED`.
     - remove: The address being deleted, in theory, should not be the default virtual address (`evm_address`) field.  The mirror node won't be able to query the current status of the virtual address being deleted; we just UPSERT an entry with the `evm_address` matching the address being disabled, and the `status` set to `DELETED`.
+    - setDefaultVirtualAddress: the most recent update to the Services HIP-631 design doc have (finally) changed the argument of this operation to be a string and not a boolean.  As a result, the logic to make the a newly-added virtual address the new default one is now two isolated steps.  Processing an "add" operation will no longer update the `evm_address` entity column, only processing the "setDefault" will do so.
 
 #### CryptoFunctionResult Parsing
 
@@ -130,9 +131,6 @@ in case a future extension to this HIP decides to implement that.
 
 ## Open Questions
 
-1) How far in advance will we know about needing to support very large (e.g. ore than 10) virtual addresses for one account? (That is, to implement the
-`/api/v1/accounts/{idOrAliasOrEvmAddress}/virtualAddresses` endpoint.)
-
 ## Answered Questions
 
 1) Are the CryptoUpdate migrations detailed in the https://hips.hedera.com/hip/hip-631#alias-to-virtual-account-migration section of the HIP-631 document
@@ -148,3 +146,8 @@ in case a future extension to this HIP decides to implement that.
    - If we have only one virtual address (it will be default as well) then it may be possible to delete/disable it.
 
    - In general it *may not be possible to delete/disable* a virtual address that is the default one *unless before that* we update the default virtual address to be another one.
+
+3) How far in advance will we know about needing to support very large (e.g. ore than 10) virtual addresses for one account? (That is, to implement the
+`/api/v1/accounts/{idOrAliasOrEvmAddress}/virtualAddresses` endpoint.)
+
+  Uncertain. Depends on community usage
