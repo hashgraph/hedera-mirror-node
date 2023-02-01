@@ -128,10 +128,6 @@ spotless {
     })
 }
 
-tasks.nodeSetup {
-    onlyIf { !node.workDir.asFile.get().exists() }
-}
-
 tasks.spotlessApply {
     dependsOn(tasks.nodeSetup)
 }
