@@ -50,6 +50,7 @@ import {
   ContractStateViewModel,
   ContractViewModel,
 } from '../viewmodel';
+import {encode} from "qs/lib/utils.js";
 
 const contractSelectFields = [
   Entity.AUTO_RENEW_ACCOUNT_ID,
@@ -235,7 +236,7 @@ const getContractByIdOrAddressQueryForTable = (table, conditions) => {
  * @param timestampConditions
  * @return {query: string, params: any[]}
  */
-const getContractByIdOrAddressQuery = ({timestampConditions, timestampParams, contractIdParam}) => {
+const getContractByIdOrAddressContractEntityQuery = ({timestampConditions, timestampParams, contractIdParam}) => {
   const conditions = [...timestampConditions];
   const params = [...timestampParams];
   const contractIdParamParts = EntityId.computeContractIdPartsFromContractIdValue(contractIdParam);
@@ -269,14 +270,44 @@ const getContractByIdOrAddressQuery = ({timestampConditions, timestampParams, co
 
   return {
     query: [
-      `with contract_entity as (${tableUnionQueries.join('\n')}),
-                    contract_file as (${FileDataService.getContractInitCodeFiledataQuery()})`,
-      `select ce.*, coalesce(encode(ce.initcode, 'hex')::bytea, cf.bytecode) as bytecode`,
-      `from contract_entity ce, contract_file cf`,
+      `select ce.* from (${tableUnionQueries.join('\n')}) as ce`,
     ].join('\n'),
     params,
   };
 };
+
+/**
+ * Gets the sql query for a specific file, with parameters from getContractByIdOrAddressContractEntityQuery
+ * @param timestampConditions
+ * @return {query: string, params: any[]}
+ */
+const getFileBytecodeQuery = (timestampParam, fileIdParam) => {
+
+  console.log(`The params are ${timestampParam} and ${fileIdParam}`);
+  return {
+    query: [
+      `select
+         string_agg(
+           f.file_data, ''
+           order by f.consensus_timestamp
+           ) bytecode
+        from file_data f
+        where
+        f.entity_id = ${fileIdParam}
+        and f.consensus_timestamp >= (
+        select f.consensus_timestamp
+        from file_data f
+        where f.entity_id = ${fileIdParam}
+        and f.consensus_timestamp <= ${timestampParam}
+        and (f.transaction_type = 17 or ( f.transaction_type = 19 and length(f.file_data) <> 0 ))
+        order by f.consensus_timestamp desc
+        limit 1
+        ) and f.consensus_timestamp <= ${timestampParam}`,
+    ].join('\n'),
+  };
+};
+
+
 
 /**
  * Gets the sql query for contracts
@@ -738,7 +769,7 @@ class ContractController extends BaseController {
     const {conditions: timestampConditions, params: timestampParams} =
       extractTimestampConditionsFromContractFilters(filters);
 
-    const {query, params} = getContractByIdOrAddressQuery({timestampConditions, timestampParams, contractIdParam});
+    const {query, params} = getContractByIdOrAddressContractEntityQuery({timestampConditions, timestampParams, contractIdParam});
 
     if (logger.isTraceEnabled()) {
       logger.trace(`getContractById query: ${query}, params: ${params}`);
@@ -748,8 +779,22 @@ class ContractController extends BaseController {
     if (rows.length !== 1) {
       throw new NotFoundError();
     }
-
-    res.locals[responseDataLabel] = formatContractRow(rows[0], ContractBytecodeViewModel);
+    const contractRows = rows;
+    if(_.first(rows).file_id !== null) {
+      const {query} = getFileBytecodeQuery(contractRows[0].created_timestamp, contractRows[0].file_id);
+      if (logger.isTraceEnabled()) {
+        logger.trace(`getFileBytecode query: ${query}`);
+      }
+      const {rows} = await pool.queryQuietly(query);
+      console.log(`The fileRows is ${rows}`);
+      if (rows.length !== 1) {
+        throw new NotFoundError();
+      }
+      contractRows[0].bytecode = rows[0].bytecode;
+    } else {
+      contractRows[0].bytecode = encode(contractRows[0].initcode, 'hex');
+    }
+    res.locals[responseDataLabel] = formatContractRow(contractRows[0], ContractBytecodeViewModel);
   };
 
   /**
@@ -1342,7 +1387,7 @@ if (utils.isTestEnv()) {
       extractSqlFromContractFilters,
       extractTimestampConditionsFromContractFilters,
       formatContractRow,
-      getContractByIdOrAddressQuery,
+      getContractByIdOrAddressQuery: getContractByIdOrAddressContractEntityQuery,
       getContractsQuery,
       getLastNonceParamValue,
       validateContractIdAndConsensusTimestampParam,
