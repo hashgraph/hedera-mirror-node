@@ -20,12 +20,15 @@ package com.hedera.mirror.web3.repository;
  * ‍
  */
 
+import io.micrometer.core.annotation.Timed;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.common.domain.contract.ContractState;
 
+
+@Timed
 public interface ContractStateRepository extends CrudRepository<ContractState, Long> {
 
     @Query(value = "select value from contract_state where contract_id = ?1 and slot =?2",

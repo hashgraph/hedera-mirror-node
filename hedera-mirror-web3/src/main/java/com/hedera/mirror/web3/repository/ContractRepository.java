@@ -20,12 +20,14 @@ package com.hedera.mirror.web3.repository;
  * ‍
  */
 
+import io.micrometer.core.annotation.Timed;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.common.domain.contract.Contract;
 
+@Timed
 public interface ContractRepository extends CrudRepository<Contract, Long> {
 
     @Query(value = "select runtime_bytecode from contract where id = ?1",

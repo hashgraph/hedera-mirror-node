@@ -23,6 +23,7 @@ package com.hedera.mirror.web3.repository;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_10MIN;
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_500MS;
 
+import io.micrometer.core.annotation.Timed;
 import java.util.Optional;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Query;
@@ -30,6 +31,7 @@ import org.springframework.data.repository.PagingAndSortingRepository;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 
+@Timed
 public interface RecordFileRepository extends PagingAndSortingRepository<RecordFile, Long> {
 
     @Cacheable(cacheNames = "record_file.latest_index", cacheManager = CACHE_MANAGER_500MS, unless = "#result == null")

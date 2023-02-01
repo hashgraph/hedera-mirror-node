@@ -20,11 +20,13 @@ package com.hedera.mirror.web3.repository;
  * ‍
  */
 
+import io.micrometer.core.annotation.Timed;
 import java.util.Optional;
 import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 
+@Timed
 public interface EntityRepository extends CrudRepository<Entity, Long> {
     Optional<Entity> findByIdAndDeletedIsFalse(Long entityId);
 
