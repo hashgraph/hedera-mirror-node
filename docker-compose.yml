@@ -38,7 +38,7 @@ services:
       REST_PASSWORD: mirror_api_pass
       ROSETTA_PASSWORD: mirror_rosetta_pass
     ports:
-      - 5432:5432
+      - 54322:5432
     restart: unless-stopped
     stop_grace_period: 2m
     stop_signal: SIGTERM

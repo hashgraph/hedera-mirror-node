@@ -75,5 +75,6 @@ spring:
       hibernate.criteria.literal_handling_mode: BIND # Ensure Criteria API queries use bind parameters and not literals
       hibernate.generate_statistics: true
       hibernate.hbm2ddl.auto: none
+      hibernate.session.events.log.LOG_QUERIES_SLOWER_THAN_MS: 10
   lifecycle:
     timeout-per-shutdown-phase: 20s
