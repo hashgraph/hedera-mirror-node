@@ -1,3 +1,5 @@
+import com.github.gradle.node.npm.task.NpmSetupTask
+import com.github.gradle.node.task.NodeSetupTask
 import org.owasp.dependencycheck.gradle.extension.AnalyzerExtension
 
 /*-
@@ -68,6 +70,11 @@ node {
 }
 
 spotless {
+    val npmExec = when(System.getProperty("os.name".toLowerCase()).contains("windows")) {
+        true -> "/npm.cmd"
+        else -> "/bin/npm"
+    }
+
     isEnforceCheck = false
     if (!System.getenv().containsKey("CI")) {
         ratchetFrom("origin/main")
@@ -75,13 +82,15 @@ spotless {
     format("javascript", {
         indentWithSpaces(2)
         licenseHeader(licenseHeader, "(import|const|//)")
-        prettier().config(
-            mapOf(
-                "bracketSpacing" to false,
-                "printWidth" to 120,
-                "singleQuote" to true,
+        prettier()
+            .npmExecutable("${(tasks.named("npmSetup").get() as NpmSetupTask).npmDir.get()}${npmExec}")
+            .config(
+                mapOf(
+                    "bracketSpacing" to false,
+                    "printWidth" to 120,
+                    "singleQuote" to true,
+                )
             )
-        )
         target("**/*.js")
         targetExclude("node_modules/**", ".node-flywaydb/**")
     })
@@ -101,6 +110,7 @@ spotless {
         endWithNewline()
         indentWithSpaces(2)
         prettier()
+            .npmExecutable("${(tasks.named("npmSetup").get() as NpmSetupTask).npmDir.get()}${npmExec}")
         target("**/*.json", "**/*.md", "**/*.yml", "**/*.yaml")
         trimTrailingWhitespace()
     })
@@ -116,15 +126,6 @@ spotless {
         target("**/*.xml")
         trimTrailingWhitespace()
     })
-}
-
-tasks.nodeSetup {
-    doLast {
-        val npmExecutable = node.workDir.asFile.get().walk().first({ it -> it.name == "npm" })
-        spotless.format("javascript", { prettier().npmExecutable(npmExecutable) })
-        spotless.format("miscellaneous", { prettier().npmExecutable(npmExecutable) })
-    }
-    onlyIf { !node.workDir.asFile.get().exists() }
 }
 
 tasks.spotlessApply {
