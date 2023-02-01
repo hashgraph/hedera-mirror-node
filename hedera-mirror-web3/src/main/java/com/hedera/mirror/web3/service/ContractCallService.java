@@ -22,6 +22,10 @@ package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.web3.evm.exception.ResponseCodeUtil.getStatusOrDefault;
 
+import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorFacadeImpl;
+
+import io.micrometer.core.instrument.MeterRegistry;
+import io.prometheus.client.Gauge;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
@@ -36,7 +40,16 @@ import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionP
 public class ContractCallService {
     private final MirrorEvmTxProcessorFacade mirrorEvmTxProcessor;
 
+    private final MeterRegistry meterRegistry;
+
+    static {
+
+    }
+
     public String processCall(final CallServiceParameters body) {
+        //TODO register gauge
+//        meterRegistry.gauge("gas.per.second", () -> ((MirrorEvmTxProcessorFacadeImpl)mirrorEvmTxProcessor).getTracer())
+//
         final var txnResult = doProcessCall(body);
 
         final var callResult = txnResult.getOutput() != null

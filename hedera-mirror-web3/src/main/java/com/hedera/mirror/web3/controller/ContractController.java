@@ -26,6 +26,7 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import javax.validation.Valid;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;

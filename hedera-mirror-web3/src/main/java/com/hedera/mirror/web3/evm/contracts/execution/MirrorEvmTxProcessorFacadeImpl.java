@@ -44,6 +44,7 @@ import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 @Named
 public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacade {
     private final MirrorEvmTxProcessor processor;
+    private final DefaultHederaTracer defaultHederaTracer;
 
     public MirrorEvmTxProcessorFacadeImpl(
             final MirrorEntityAccess entityAccess,
@@ -73,7 +74,8 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                         aliasManager,
                         codeCache);
 
-        processor.setOperationTracer(new DefaultHederaTracer());
+        defaultHederaTracer = new DefaultHederaTracer();
+        processor.setOperationTracer(defaultHederaTracer);
     }
 
     @Override
@@ -93,5 +95,9 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                 callData,
                 Instant.now(),
                 isStatic);
+    }
+
+    public DefaultHederaTracer getTracer() {
+        return defaultHederaTracer;
     }
 }
