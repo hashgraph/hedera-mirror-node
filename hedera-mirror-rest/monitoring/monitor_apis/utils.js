@@ -80,17 +80,27 @@ const getBackoff = (retryAfter, xRetryIn) => {
  *
  * @param url
  * @param opts
+ * @param {Function} retryPredicate An optional predicate that returns true if a successful request should be retried.
  * @returns {Promise<Response>}
  */
-const fetchWithRetry = async (url, opts = {}) => {
+const fetchWithRetry = async (url, opts = {}, retryPredicate) => {
   let statusCode = 200;
 
   for (let attempt = 1; attempt <= config.retry.maxAttempts + 1; attempt++) {
     const response = await fetch(url, opts);
     statusCode = response.status;
 
-    if (statusCode !== 429 && statusCode < 500) {
-      return response;
+    // Most 404s are due to race conditions with requests that span multiple clusters.
+    if (statusCode !== 404 && statusCode !== 429 && statusCode < 500) {
+      if (!response.ok) {
+        const message = `GET ${url} failed with ${response.statusText} (${response.status})`;
+        throw httpErrors(message);
+      }
+
+      const json = await response.json();
+      if (!retryPredicate(json)) {
+        return json;
+      }
     }
 
     const backoffMillis = getBackoff(response.headers.get('retry-after'), response.headers.get('x-retry-in'));
@@ -101,14 +111,17 @@ const fetchWithRetry = async (url, opts = {}) => {
   throw new Error(`Retries exhausted with ${statusCode} status code`);
 };
 
+const noRetry = () => false;
+
 /**
  * Make an http request to mirror-node api
  * Host info is prepended to if only path is provided
  * @param {*} url rest-api endpoint
  * @param {String} key JSON key of the object to return
+ * @param {Function} retryPredicate An optional predicate that returns true if a successful request should be retried.
  * @return {Object} JSON object representing api response or error
  */
-const getAPIResponse = async (url, key = undefined) => {
+const getAPIResponse = async (url, key = undefined, retryPredicate = noRetry) => {
   const controller = new AbortController();
   const timeout = setTimeout(
     () => {
@@ -118,13 +131,8 @@ const getAPIResponse = async (url, key = undefined) => {
   );
 
   try {
-    const response = await fetchWithRetry(url, {signal: controller.signal});
-    if (!response.ok) {
-      const message = `GET ${url} failed with ${response.statusText} (${response.status})`;
-      return httpErrors(message);
-    }
+    const json = await fetchWithRetry(url, {signal: controller.signal}, retryPredicate);
 
-    const json = await response.json();
     return key ? json[key] : json;
   } catch (error) {
     return Error(`${error}`);
@@ -160,6 +168,14 @@ class ServerTestResult {
     this.result.endTime = Date.now();
   }
 }
+
+/**
+ * Builds a retry predicate that checks if the JSON response contains a non-empty list.
+ *
+ * @param jsonRespKey The field within the JSON response that contains the list to check.
+ * @returns function A retry predicate
+ */
+const hasEmptyList = (jsonRespKey) => (res) => !res.hasOwnProperty(jsonRespKey) || res[jsonRespKey].length < 1;
 
 /**
  * Creates a function to run specific tests with the provided server address, classs result, and resource
@@ -444,5 +460,6 @@ export {
   checkRespObjDefined,
   getAPIResponse,
   getUrl,
+  hasEmptyList,
   testRunner,
 };

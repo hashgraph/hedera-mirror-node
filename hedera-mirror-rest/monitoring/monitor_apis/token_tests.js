@@ -23,18 +23,19 @@ import config from './config';
 
 import {
   accountIdCompare,
+  checkAccountId,
   checkAPIResponseError,
   checkElementsOrder,
-  checkRespObjDefined,
-  checkRespArrayLength,
-  checkAccountId,
   checkMandatoryParams,
   checkResourceFreshness,
+  checkRespArrayLength,
+  checkRespObjDefined,
+  CheckRunner,
   DEFAULT_LIMIT,
   getAPIResponse,
   getUrl,
+  hasEmptyList,
   testRunner,
-  CheckRunner,
 } from './utils';
 
 const tokensPath = '/tokens';
@@ -384,7 +385,7 @@ const getTokenBalancesForAccount = async (server) => {
   }
 
   let url = getUrl(server, tokenBalancesPath(tokenId), {limit: 1});
-  let balances = await getAPIResponse(url, tokenBalancesJsonRespKey);
+  let balances = await getAPIResponse(url, tokenBalancesJsonRespKey, hasEmptyList(tokenBalancesJsonRespKey));
 
   const checkRunner = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)

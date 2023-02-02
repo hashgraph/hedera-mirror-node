@@ -32,6 +32,7 @@ import {
   DEFAULT_LIMIT,
   getAPIResponse,
   getUrl,
+  hasEmptyList,
   testRunner,
 } from './utils';
 
@@ -84,7 +85,7 @@ const getAccountsWithAccountCheck = async (server) => {
     type: 'credit',
     limit: 1,
   });
-  const singleAccount = await getAPIResponse(url, jsonRespKey);
+  const singleAccount = await getAPIResponse(url, jsonRespKey, hasEmptyList(jsonRespKey));
 
   result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -131,7 +132,7 @@ const getAccountsWithTimeAndLimitParams = async (server) => {
     timestamp: [`gt:${minusOne.toString()}`, `lt:${plusOne.toString()}`],
     limit: 1,
   });
-  accounts = await getAPIResponse(url, jsonRespKey);
+  accounts = await getAPIResponse(url, jsonRespKey, hasEmptyList(jsonRespKey));
 
   result = checkRunner.run(accounts);
   if (!result.passed) {
@@ -213,10 +214,10 @@ const getSingleAccountTokenRelationships = async (server) => {
   if (tokens.length === 0) {
     tokenResult.passed = true;
     tokenResult.message = 'No tokens were returned';
-    return {token_url, ...tokenResult};
+    return {url: token_url, ...tokenResult};
   }
   if (!tokenResult.passed) {
-    return {token_url, ...tokenResult};
+    return {url: token_url, ...tokenResult};
   }
 
   // get balances for a token and retrieve an  account id from it.
@@ -235,10 +236,10 @@ const getSingleAccountTokenRelationships = async (server) => {
   if (balances.length === 0) {
     balancesResult.passed = true;
     balancesResult.message = 'No balances were returned';
-    return {balances_url, ...balancesResult};
+    return {url: balances_url, ...balancesResult};
   }
   if (!balancesResult.passed) {
-    return {balances_url, ...balancesResult};
+    return {url: balances_url, ...balancesResult};
   }
   const accountId = balances[0].account;
 
@@ -246,7 +247,7 @@ const getSingleAccountTokenRelationships = async (server) => {
   const accountsTokenPath = `/accounts/${accountId}/tokens`;
   const accountsLimit = 1;
   let url = getUrl(server, accountsTokenPath, {limit: accountsLimit, order: 'asc'});
-  const tokenRelationships = await getAPIResponse(url, tokensJsonRespKey);
+  const tokenRelationships = await getAPIResponse(url, tokensJsonRespKey, hasEmptyList(tokensJsonRespKey));
   let result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
     .withCheckSpec(checkRespObjDefined, {message: 'tokens is undefined '})

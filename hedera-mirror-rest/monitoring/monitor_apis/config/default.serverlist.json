@@ -8,7 +8,7 @@
   ],
   "interval": 60,
   "retry": {
-    "maxAttempts": 2,
+    "maxAttempts": 4,
     "minBackoff": 1000
   },
   "shard": 0,
@@ -38,11 +38,7 @@
   },
   "stateproof": {
     "enabled": true,
-    "intervalMultiplier": 10,
-    "retry": {
-      "backoff": 10000,
-      "maxAttempts": 5
-    }
+    "intervalMultiplier": 10
   },
   "transaction": {
     "enabled": true,

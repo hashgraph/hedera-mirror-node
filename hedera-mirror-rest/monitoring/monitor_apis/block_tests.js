@@ -23,15 +23,15 @@ import config from './config';
 
 import {
   checkAPIResponseError,
-  checkRespObjDefined,
-  checkRespArrayLength,
   checkMandatoryParams,
   checkResourceFreshness,
+  checkRespArrayLength,
+  checkRespObjDefined,
+  CheckRunner,
   DEFAULT_LIMIT,
   getAPIResponse,
   getUrl,
   testRunner,
-  CheckRunner,
 } from './utils';
 
 const blocksPath = '/blocks';
@@ -73,7 +73,7 @@ const getSingleBlockById = async (server) => {
     })
     .run(blocks);
   if (!result.passed) {
-    return {blockUrl, ...result};
+    return {url, ...result};
   }
 
   const highestBlock = _.max(_.map(blocks, (block) => block.number));
