@@ -1,6 +1,6 @@
 import com.github.gradle.node.npm.task.NpmSetupTask
-import com.github.gradle.node.task.NodeSetupTask
 import org.owasp.dependencycheck.gradle.extension.AnalyzerExtension
+import java.nio.file.Paths
 
 /*-
  * ‌
@@ -71,8 +71,8 @@ node {
 
 spotless {
     val npmExec = when(System.getProperty("os.name").toLowerCase().contains("windows")) {
-        true -> "/npm.cmd"
-        else -> "/bin/npm"
+        true -> Paths.get("npm.cmd")
+        else -> Paths.get("bin", "npm")
     }
 
     isEnforceCheck = false
@@ -83,7 +83,7 @@ spotless {
         indentWithSpaces(2)
         licenseHeader(licenseHeader, "(import|const|//)")
         prettier()
-            .npmExecutable("${(tasks.named("npmSetup").get() as NpmSetupTask).npmDir.get()}${npmExec}")
+            .npmExecutable("${(tasks.named("npmSetup").get() as NpmSetupTask).npmDir.get().asFile.toPath().resolve(npmExec)}")
             .config(
                 mapOf(
                     "bracketSpacing" to false,
