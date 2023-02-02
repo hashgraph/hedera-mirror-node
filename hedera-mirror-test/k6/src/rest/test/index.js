@@ -48,7 +48,7 @@ import * as contractsResults from './contractsResult.js';
 import * as contractsResultsId from './contractsResultsId.js';
 import * as contractsResultsIdActions from './contractsResultsIdActions.js';
 import * as contractsResultsLogs from './contractsResultsLogs.js';
-import * as networkExchangerate from './networkExchangerate.js';
+import * as networkExchangeRate from './networkExchangeRate.js';
 import * as networkFees from './networkFees.js';
 import * as networkNodes from './networkNodes.js';
 import * as networkStake from './networkStake.js';
@@ -105,7 +105,7 @@ const tests = {
   contractsResultsId,
   contractsResultsIdActions,
   contractsResultsLogs,
-  networkExchangerate,
+  networkExchangeRate,
   networkFees,
   networkNodes,
   networkStake,

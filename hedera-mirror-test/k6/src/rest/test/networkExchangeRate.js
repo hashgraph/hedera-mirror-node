@@ -18,17 +18,17 @@
  * ‍
  */
 
-import http from "k6/http";
+import http from 'k6/http';
 
 import {TestScenarioBuilder} from '../../lib/common.js';
 import {urlPrefix} from '../../lib/constants.js';
-import {isSuccess} from "./common.js";
-import {setupTestParameters} from "./bootstrapEnvParameters.js";
+import {isSuccess} from './common.js';
+import {setupTestParameters} from './bootstrapEnvParameters.js';
 
 const urlTag = '/network/exchangerate';
 
 const {options, run} = new TestScenarioBuilder()
-  .name('networkExchangerate') // use unique scenario name among all tests
+  .name('networkExchangeRate') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request((testParameters) => {
     const url = `${testParameters['BASE_URL']}${urlPrefix}${urlTag}`;
