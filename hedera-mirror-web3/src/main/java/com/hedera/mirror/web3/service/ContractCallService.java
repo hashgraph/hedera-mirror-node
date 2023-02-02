@@ -22,10 +22,13 @@ package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.web3.evm.exception.ResponseCodeUtil.getStatusOrDefault;
 
+//<<<<<<< Updated upstream
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorFacadeImpl;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.prometheus.client.Gauge;
+//=======
+//>>>>>>> Stashed changes
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
@@ -43,7 +46,7 @@ public class ContractCallService {
     private final MeterRegistry meterRegistry;
 
     static {
-
+        //TODO update gauge
     }
 
     public String processCall(final CallServiceParameters body) {
@@ -60,16 +63,15 @@ public class ContractCallService {
 
     private HederaEvmTransactionProcessingResult doProcessCall(final CallServiceParameters body) {
         HederaEvmTransactionProcessingResult txnResult;
-        try {
-            txnResult =
-                    mirrorEvmTxProcessor.execute(
-                            body.getSender(),
-                            body.getReceiver(),
-                            body.getProvidedGasLimit(),
-                            body.getValue(),
-                            body.getCallData(),
-                            body.isStatic());
 
+        try {
+            txnResult = mirrorEvmTxProcessor.execute(
+                    body.getSender(),
+                    body.getReceiver(),
+                    body.getProvidedGasLimit(),
+                    body.getValue(),
+                    body.getCallData(),
+                    body.isStatic());
             if (!txnResult.isSuccessful()) {
                 throw new InvalidTransactionException(getStatusOrDefault(txnResult));
             }
