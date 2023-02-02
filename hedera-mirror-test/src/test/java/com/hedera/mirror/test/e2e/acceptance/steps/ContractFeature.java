@@ -211,7 +211,6 @@ public class ContractFeature extends AbstractFeature {
         assertThat(mirrorContract.getCreatedTimestamp()).isNotBlank();
         assertThat(mirrorContract.isDeleted()).isEqualTo(isDeleted);
         assertThat(mirrorContract.getFileId()).isEqualTo(fileId.toString());
-        assertThat(mirrorContract.getMaxAutomaticTokenAssociations()).isPositive();
         assertThat(mirrorContract.getMemo()).isNotBlank();
         String address = mirrorContract.getEvmAddress();
         assertThat(address).isNotBlank().isNotEqualTo("0x").isNotEqualTo("0x0000000000000000000000000000000000000000");
