@@ -280,7 +280,8 @@ const getContractByIdOrAddressContractEntityQuery = ({timestampConditions, times
 /**
  * Gets the sql query for a specific file, with parameters from getContractByIdOrAddressContractEntityQuery
  * @param timestampConditions
- * @return {query: string, params: any[]}
+ * @param fileIdParam
+ * @return {query: string}
  */
 const getFileBytecodeQuery = (timestampParam, fileIdParam) => {
 
@@ -796,7 +797,9 @@ class ContractController extends BaseController {
       }
       contractRows[0].bytecode = rows[0].bytecode;
     } else {
-      contractRows[0].bytecode = encode(contractRows[0].initcode, 'hex');
+      contractRows[0].bytecode = Array.from(contractRows[0].initcode, function(byte) {
+        return ('0' + (byte & 0xFF).toString(16)).slice(-2);
+      }).join('');
     }
     res.locals[responseDataLabel] = formatContractRow(contractRows[0], ContractBytecodeViewModel);
   };
@@ -1393,6 +1396,7 @@ if (utils.isTestEnv()) {
       formatContractRow,
       getContractByIdOrAddressQuery: getContractByIdOrAddressContractEntityQuery,
       getContractsQuery,
+      getFileBytecodeQuery,
       getLastNonceParamValue,
       validateContractIdAndConsensusTimestampParam,
       validateContractIdParam,

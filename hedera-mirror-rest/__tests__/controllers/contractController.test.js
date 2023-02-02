@@ -26,7 +26,6 @@ import contracts from '../../controllers/contractController';
 import {assertSqlQueryEqual} from '../testutils';
 import * as utils from '../../utils';
 import {Entity} from '../../model';
-import {FileDataService} from '../../service';
 import Bound from '../../controllers/bound';
 import {ContractBytecodeViewModel, ContractViewModel} from '../../viewmodel';
 
@@ -272,9 +271,6 @@ describe('formatContractRow', () => {
 });
 
 describe('getContractByIdOrAddressQuery', () => {
-  const mainQuery = `select ce.*, coalesce(encode(ce.initcode, 'hex')::bytea, cf.bytecode) as bytecode
-                     from contract_entity ce,
-                          contract_file cf`;
 
   const queryForTable = ({table, extraConditions, columnName}) => {
     return `select ${contracts.contractWithBytecodeSelectFields}
@@ -285,6 +281,25 @@ describe('getContractByIdOrAddressQuery', () => {
               and ${(extraConditions && extraConditions.join(' and ') + ' and ') || ''} e.${columnName} = $3`;
   };
 
+  const fileQueryForTable = ({table, timestampParams, fileIdParam}) => {
+    return `select string_agg(
+                     f.file_data, ''
+            order by f.consensus_timestamp
+                     ) bytecode
+            from ${table} f
+            where
+              f.entity_id = ${fileIdParam}
+              and f.consensus_timestamp >= (
+              select f.consensus_timestamp
+              from file_data f
+              where f.entity_id = ${fileIdParam}
+                and f.consensus_timestamp <= ${timestampParams}
+                and (f.transaction_type = 17 or ( f.transaction_type = 19 and length(f.file_data) <> 0 ))
+              order by f.consensus_timestamp desc
+              limit 1
+              ) and f.consensus_timestamp <= ${timestampParams}`;
+  };
+
   const timestampConditions = ['c.timestamp_range && $1', 'c.timestamp_range && $2'];
 
   const specs = [
@@ -292,11 +307,14 @@ describe('getContractByIdOrAddressQuery', () => {
       name: 'latest',
       isCreate2Test: false,
       input: {timestampConditions: [], timestampParams: [1234, 5678], contractIdParam: '0.0.2'},
+      timestampParams: 12345678,
+      fileIdParam: '0.0.2',
       expectedParams: [1234, 5678, 2],
       expectedQuery: (columnName) => `
-        with contract_entity as (${queryForTable({table: 'entity', columnName})}),
-             contract_file as (${FileDataService.getContractInitCodeFiledataQuery()})
-          ${mainQuery}`,
+        select ce.* from (${queryForTable({table: 'entity', columnName})}) as ce`,
+      expectedFileQuery: (timestampParams, fileIdParam) => `
+       ${fileQueryForTable({table: 'file_data', timestampParams, fileIdParam})}
+       `,
     },
     {
       name: 'historical',
@@ -306,13 +324,15 @@ describe('getContractByIdOrAddressQuery', () => {
         timestampParams: [5678, 1234],
         contractIdParam: '70f2b2914a2a4b783faefb75f459a580616fcb5e',
       },
+      timestampParams: 12345678,
+      fileIdParam: '70f2b2914a2a4b783faefb75f459a580616fcb5e',
       expectedParams: [
         5678,
         1234,
         Buffer.from([112, 242, 178, 145, 74, 42, 75, 120, 63, 174, 251, 117, 244, 89, 165, 128, 97, 111, 203, 94]),
       ],
       expectedQuery: (columnName) => `
-        with contract_entity as (${queryForTable({table: 'entity', extraConditions: timestampConditions, columnName})}
+        select ce.* from (${queryForTable({table: 'entity', extraConditions: timestampConditions, columnName})}
             union
                                 ${queryForTable({
                                   table: 'entity_history',
@@ -320,9 +340,10 @@ describe('getContractByIdOrAddressQuery', () => {
                                   columnName,
                                 })}
                                 order by timestamp_range desc
-                                limit 1),
-             contract_file as (${FileDataService.getContractInitCodeFiledataQuery()})
-          ${mainQuery}`,
+                                limit 1) as ce`,
+      expectedFileQuery: (timestampParams, fileIdParam) => `
+       ${fileQueryForTable({table: 'file_data', timestampParams, fileIdParam})}
+       `,
     },
     {
       name: 'latest',
@@ -332,23 +353,28 @@ describe('getContractByIdOrAddressQuery', () => {
         timestampParams: [1234, 5678],
         contractIdParam: '70f2b2914a2a4b783faefb75f459a580616fcb5e',
       },
+      timestampParams: 12345678,
+      fileIdParam: '70f2b2914a2616fcb5e2a4b783faefb75f45',
       expectedParams: [
         1234,
         5678,
         Buffer.from([112, 242, 178, 145, 74, 42, 75, 120, 63, 174, 251, 117, 244, 89, 165, 128, 97, 111, 203, 94]),
       ],
       expectedQuery: (columnName) => `
-        with contract_entity as (${queryForTable({table: 'entity', columnName})}),
-             contract_file as (${FileDataService.getContractInitCodeFiledataQuery()})
-          ${mainQuery}`,
+        select ce.* from (${queryForTable({table: 'entity', columnName})}) as ce`,
+      expectedFileQuery: (timestampParams, fileIdParam) => `
+       ${fileQueryForTable({table: 'file_data', timestampParams, fileIdParam})}
+       `,
     },
     {
       name: 'historical',
       isCreate2Test: false,
       input: {timestampConditions, timestampParams: [5678, 1234], contractIdParam: '0.0.1'},
+      timestampParams: 12345678,
+      fileIdParam: '0.0.5',
       expectedParams: [5678, 1234, 1],
       expectedQuery: (columnName) => `
-        with contract_entity as (${queryForTable({table: 'entity', extraConditions: timestampConditions, columnName})}
+        select ce.* from (${queryForTable({table: 'entity', extraConditions: timestampConditions, columnName})}
             union
                                 ${queryForTable({
                                   table: 'entity_history',
@@ -356,39 +382,52 @@ describe('getContractByIdOrAddressQuery', () => {
                                   columnName,
                                 })}
                                 order by timestamp_range desc
-                                limit 1),
-             contract_file as (${FileDataService.getContractInitCodeFiledataQuery()})
-          ${mainQuery}`,
+                                limit 1) as ce`,
+      expectedFileQuery: (timestampParams, fileIdParam) => `
+       ${fileQueryForTable({table: 'file_data', timestampParams, fileIdParam})}
+       `,
     },
     {
       name: 'latest',
       isCreate2Test: false,
       input: {timestampConditions: [], timestampParams: [1234, 5678], contractIdParam: '0.0.924569'},
+      timestampParams: 12345678,
+      fileIdParam: '0.0.924136',
       expectedParams: [1234, 5678, 924569],
       expectedQuery: (columnName) => `
-        with contract_entity as (${queryForTable({table: 'entity', columnName})}),
-             contract_file as (${FileDataService.getContractInitCodeFiledataQuery()})
-          ${mainQuery}`,
+        select ce.* from (${queryForTable({table: 'entity', columnName})})
+        as ce`,
+      expectedFileQuery: (timestampParams, fileIdParam) => `
+       ${fileQueryForTable({table: 'file_data', timestampParams, fileIdParam})}
+       `,
     },
     {
       name: 'latest',
       isCreate2Test: false,
       input: {timestampConditions: [], timestampParams: [1234, 5678], contractIdParam: '1.1.924569'},
+      timestampParams: 12345678,
+      fileIdParam: '1.1.924136',
       expectedParams: [1234, 5678, 281479272602521],
       expectedQuery: (columnName) => `
-        with contract_entity as (${queryForTable({table: 'entity', columnName})}),
-             contract_file as (${FileDataService.getContractInitCodeFiledataQuery()})
-          ${mainQuery}`,
+        select ce.* from (${queryForTable({table: 'entity', columnName})})
+        as ce`,
+      expectedFileQuery: (timestampParams, fileIdParam) => `
+       ${fileQueryForTable({table: 'file_data', timestampParams, fileIdParam})}
+       `,
     },
   ];
 
   specs.forEach((spec) => {
     test(`${spec.name}`, () => {
-      const actualContract = contracts.getContractByIdOrAddressQuery(spec.input);
-      const actualQuery = actualContract.query;
+      const actualContractDetails = contracts.getContractByIdOrAddressQuery(spec.input);
+      const actualQuery = actualContractDetails.query;
       const expectedQuery = spec.expectedQuery(spec.isCreate2Test ? Entity.EVM_ADDRESS : Entity.ID);
       assertSqlQueryEqual(actualQuery, expectedQuery);
-      expect(actualContract.params).toEqual(spec.expectedParams);
+      expect(actualContractDetails.params).toEqual(spec.expectedParams);
+      const actualFileBytecode = contracts.getFileBytecodeQuery(spec.timestampParams, spec.fileIdParam);
+      const actualFileQuery = actualFileBytecode.query;
+      const expectedFileQuery = spec.expectedFileQuery(spec.timestampParams, spec.fileIdParam);
+      assertSqlQueryEqual(actualFileQuery, expectedFileQuery);
     });
   });
 });
