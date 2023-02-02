@@ -52,7 +52,6 @@ public class ContractClient extends AbstractNetworkClient {
                 .setBytecodeFileId(fileId)
                 .setContractMemo(memo)
                 .setGas(gas)
-                .setMaxAutomaticTokenAssociations(1)
                 .setTransactionMemo(memo);
 
         if (contractFunctionParameters != null) {
