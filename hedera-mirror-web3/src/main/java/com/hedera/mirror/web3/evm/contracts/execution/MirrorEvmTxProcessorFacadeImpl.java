@@ -26,7 +26,6 @@ import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstru
 
 import java.time.Instant;
 import javax.inject.Named;
-import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
