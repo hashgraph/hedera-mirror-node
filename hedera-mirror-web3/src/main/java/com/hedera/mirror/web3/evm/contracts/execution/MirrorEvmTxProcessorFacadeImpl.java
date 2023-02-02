@@ -43,7 +43,13 @@ import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 
 @Named
 public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacade {
-    private final MirrorEvmTxProcessor processor;
+
+    private MirrorNodeEvmProperties evmProperties;
+    private StaticBlockMetaSource blockMetaSource;
+    private MirrorEvmContractAliases aliasManager;
+    private PricesAndFeesImpl pricesAndFees;
+    private AbstractCodeCache codeCache;
+    private HederaEvmMutableWorldState worldState;
 
     public MirrorEvmTxProcessorFacadeImpl(
             final MirrorEntityAccess entityAccess,
@@ -52,16 +58,30 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final MirrorEvmContractAliases aliasManager,
             final PricesAndFeesImpl pricesAndFees,
             final AccountAccessorImpl accountAccessor) {
+        this.evmProperties = evmProperties;
+        this.blockMetaSource = blockMetaSource;
+        this.aliasManager = aliasManager;
+        this.pricesAndFees = pricesAndFees;
 
         final int expirationCacheTime = (int) evmProperties.getExpirationCacheTime().toSeconds();
-        final AbstractCodeCache codeCache = new AbstractCodeCache(expirationCacheTime,
+
+        this.codeCache = new AbstractCodeCache(expirationCacheTime,
                 entityAccess);
-        final HederaEvmMutableWorldState worldState =
+        this.worldState =
                 new HederaEvmWorldState(
                         entityAccess, evmProperties,
                         codeCache, accountAccessor);
+    }
 
-        processor =
+    @Override
+    public HederaEvmTransactionProcessingResult execute(
+            final HederaEvmAccount sender,
+            final Address receiver,
+            final long providedGasLimit,
+            final long value,
+            final Bytes callData,
+            final boolean isStatic) {
+        final var processor =
                 new MirrorEvmTxProcessor(
                         worldState,
                         pricesAndFees,
@@ -74,16 +94,6 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                         codeCache);
 
         processor.setOperationTracer(new DefaultHederaTracer());
-    }
-
-    @Override
-    public HederaEvmTransactionProcessingResult execute(
-            final HederaEvmAccount sender,
-            final Address receiver,
-            final long providedGasLimit,
-            final long value,
-            final Bytes callData,
-            final boolean isStatic) {
 
         return processor.execute(
                 sender,

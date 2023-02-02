@@ -34,7 +34,7 @@ import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionP
 @Named
 @RequiredArgsConstructor
 public class ContractCallService {
-    private final MirrorEvmTxProcessorFacade mirrorEvmTxProcessor;
+    private final MirrorEvmTxProcessorFacade mirrorEvmTxProcessorFacade;
 
     public String processCall(final CallServiceParameters body) {
         final var txnResult = doProcessCall(body);
@@ -47,9 +47,10 @@ public class ContractCallService {
 
     private HederaEvmTransactionProcessingResult doProcessCall(final CallServiceParameters body) {
         HederaEvmTransactionProcessingResult txnResult;
+
         try {
             txnResult =
-                    mirrorEvmTxProcessor.execute(
+                    mirrorEvmTxProcessorFacade.execute(
                             body.getSender(),
                             body.getReceiver(),
                             body.getProvidedGasLimit(),
