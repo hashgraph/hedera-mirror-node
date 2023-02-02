@@ -1,9 +1,9 @@
 /*-
  * ‌
  * Hedera Mirror Node
- * ​
+ *
  * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,22 +18,28 @@
  * ‍
  */
 
-import {getSequentialTestScenarios} from '../../lib/common.js';
+import http from "k6/http";
 
-// import test modules
-import * as ethCallBalance from './ethCallBalance.js';
-import * as ethCallSender from './ethCallSender.js';
-import * as ethCallMultiply from './ethCallMultiply.js';
-import * as ethCallIdentifier from './ethCallIdentifier.js';
+import {TestScenarioBuilder} from '../../lib/common.js';
+import {isNonErrorResponse} from "./common.js";
 
-// add test modules here
-const tests = {
-  ethCallBalance,
-  ethCallSender,
-  ethCallMultiply,
-  ethCallIdentifier,
+const url = __ENV.BASE_URL;
+
+const payload = JSON.stringify({
+  "to":"00000000000000000000000000000000000003eb",
+  "data":"0x7998a1c4"
+});
+
+const httpParams = {
+  headers: {
+    'Content-Type': 'application/json',
+  },
 };
 
-const {funcs, options, scenarioDurationGauge, scenarios} = getSequentialTestScenarios(tests);
+const {options, run} = new TestScenarioBuilder()
+  .name('ethCallIdentifier') // use unique scenario name among all tests
+  .request(() => http.post(url, payload, httpParams))
+  .check('ethCallIdentifier', (r) => isNonErrorResponse(r))
+  .build();
 
-export {funcs, options, scenarioDurationGauge, scenarios};
+export {options, run};
