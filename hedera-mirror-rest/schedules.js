@@ -39,34 +39,48 @@ const filterColumnMap = {
   [constants.filterKeys.SCHEDULE_ID]: sqlQueryColumns.SCHEDULE_ID,
 };
 
-const scheduleGroupByQuery = 'group by s.schedule_id, e.id';
-const scheduleIdMatchQuery = 'where s.schedule_id = $1';
-const scheduleLimitQuery = (paramCount) => `limit $${paramCount}`;
-const scheduleMainQuery = `
-select
-  s.consensus_timestamp,
-  s.creator_account_id,
-  e.deleted,
-  s.executed_timestamp,
-  s.expiration_time,
-  e.key,
-  e.memo,
-  s.payer_account_id,
-  s.schedule_id,
-  jsonb_agg(jsonb_build_object(
+const commonSelectFields = [
+  's.consensus_timestamp',
+  's.creator_account_id',
+  'e.deleted',
+  's.executed_timestamp',
+  's.expiration_time',
+  'e.key',
+  'e.memo',
+  's.payer_account_id',
+  's.schedule_id',
+  's.transaction_body',
+  's.wait_for_expiry',
+].join(',\n');
+const transactionSignatureJsonAgg = `
+  json_agg(json_build_object(
     'consensus_timestamp', ts.consensus_timestamp,
     'public_key_prefix', encode(ts.public_key_prefix, 'base64'),
     'signature', encode(ts.signature, 'base64'),
     'type', ts.type
-  ) order by ts.consensus_timestamp) as signatures,
-  s.transaction_body,
-  s.wait_for_expiry
-from schedule s
-left join entity e on e.id = s.schedule_id
-left join transaction_signature ts on ts.entity_id = s.schedule_id`;
-const scheduleOrderQuery = (order) => `order by s.schedule_id ${order}`;
+  ) order by ts.consensus_timestamp)`;
+const getScheduleByIdQuery = `
+  select
+    ${commonSelectFields},
+    ${transactionSignatureJsonAgg} as signatures
+  from schedule s
+  left join entity e on e.id = s.schedule_id
+  left join transaction_signature ts on ts.entity_id = s.schedule_id
+  where s.schedule_id = $1
+  group by s.schedule_id, e.id`;
+const schedulesMainQuery = `
+  select
+    ${commonSelectFields},
+    (
+      select ${transactionSignatureJsonAgg}
+      from transaction_signature ts
+      where ts.entity_id = s.schedule_id
+    ) as signatures
+  from schedule s
+  left join entity e on e.id = s.schedule_id`;
 
-const getScheduleByIdQuery = [scheduleMainQuery, scheduleIdMatchQuery, scheduleGroupByQuery].join('\n');
+const scheduleLimitQuery = (paramCount) => `limit $${paramCount}`;
+const scheduleOrderQuery = (order) => `order by s.schedule_id ${order}`;
 
 /**
  * Get the schedules list sql query to be used given the where clause, order and param count
@@ -76,13 +90,7 @@ const getScheduleByIdQuery = [scheduleMainQuery, scheduleIdMatchQuery, scheduleG
  * @returns {string}
  */
 const getSchedulesQuery = (whereQuery, order, count) => {
-  return [
-    scheduleMainQuery,
-    whereQuery,
-    scheduleGroupByQuery,
-    scheduleOrderQuery(order),
-    scheduleLimitQuery(count),
-  ].join('\n');
+  return [schedulesMainQuery, whereQuery, scheduleOrderQuery(order), scheduleLimitQuery(count)].join('\n');
 };
 
 const formatScheduleRow = (row) => {
