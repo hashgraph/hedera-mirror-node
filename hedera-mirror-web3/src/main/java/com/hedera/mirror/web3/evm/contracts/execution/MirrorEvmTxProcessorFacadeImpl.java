@@ -43,15 +43,36 @@ import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldState;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 
 @Named
-@RequiredArgsConstructor
 public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacade {
 
-    private final MirrorEntityAccess entityAccess;
-    private final MirrorNodeEvmProperties evmProperties;
-    private final StaticBlockMetaSource blockMetaSource;
-    private final MirrorEvmContractAliases aliasManager;
-    private final PricesAndFeesImpl pricesAndFees;
-    private final AccountAccessorImpl accountAccessor;
+    private MirrorNodeEvmProperties evmProperties;
+    private StaticBlockMetaSource blockMetaSource;
+    private MirrorEvmContractAliases aliasManager;
+    private PricesAndFeesImpl pricesAndFees;
+    private AbstractCodeCache codeCache;
+    private HederaEvmMutableWorldState worldState;
+
+    public MirrorEvmTxProcessorFacadeImpl(
+            final MirrorEntityAccess entityAccess,
+            final MirrorNodeEvmProperties evmProperties,
+            final StaticBlockMetaSource blockMetaSource,
+            final MirrorEvmContractAliases aliasManager,
+            final PricesAndFeesImpl pricesAndFees,
+            final AccountAccessorImpl accountAccessor) {
+        this.evmProperties = evmProperties;
+        this.blockMetaSource = blockMetaSource;
+        this.aliasManager = aliasManager;
+        this.pricesAndFees = pricesAndFees;
+
+        final int expirationCacheTime = (int) evmProperties.getExpirationCacheTime().toSeconds();
+
+        this.codeCache = new AbstractCodeCache(expirationCacheTime,
+                entityAccess);
+        this.worldState =
+                new HederaEvmWorldState(
+                        entityAccess, evmProperties,
+                        codeCache, accountAccessor);
+    }
 
     @Override
     public HederaEvmTransactionProcessingResult execute(
@@ -61,15 +82,6 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final long value,
             final Bytes callData,
             final boolean isStatic) {
-        final int expirationCacheTime = (int) evmProperties.getExpirationCacheTime().toSeconds();
-
-        final AbstractCodeCache codeCache = new AbstractCodeCache(expirationCacheTime,
-                entityAccess);
-        final HederaEvmMutableWorldState worldState =
-                new HederaEvmWorldState(
-                        entityAccess, evmProperties,
-                        codeCache, accountAccessor);
-
         final var processor =
                 new MirrorEvmTxProcessor(
                         worldState,
