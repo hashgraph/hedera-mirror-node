@@ -32,7 +32,7 @@ import {
   DEFAULT_LIMIT,
   getAPIResponse,
   getUrl,
-  hasListItems,
+  hasEmptyList,
   testRunner,
 } from './utils';
 
@@ -99,7 +99,7 @@ const getSingleBalanceById = async (server) => {
 
   const highestAccount = _.max(_.map(balances, (balance) => balance.account));
   url = getUrl(server, balancesPath, {'account.id': highestAccount});
-  const singleBalance = await getAPIResponse(url, jsonRespKey, hasListItems(jsonRespKey));
+  const singleBalance = await getAPIResponse(url, jsonRespKey, hasEmptyList(jsonRespKey));
 
   result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)

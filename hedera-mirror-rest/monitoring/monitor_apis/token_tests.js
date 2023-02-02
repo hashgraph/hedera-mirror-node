@@ -34,7 +34,7 @@ import {
   DEFAULT_LIMIT,
   getAPIResponse,
   getUrl,
-  hasListItems,
+  hasEmptyList,
   testRunner,
 } from './utils';
 
@@ -385,7 +385,7 @@ const getTokenBalancesForAccount = async (server) => {
   }
 
   let url = getUrl(server, tokenBalancesPath(tokenId), {limit: 1});
-  let balances = await getAPIResponse(url, tokenBalancesJsonRespKey, hasListItems(jsonRespKey));
+  let balances = await getAPIResponse(url, tokenBalancesJsonRespKey, hasEmptyList(tokenBalancesJsonRespKey));
 
   const checkRunner = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)

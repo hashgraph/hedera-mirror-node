@@ -98,7 +98,7 @@ const fetchWithRetry = async (url, opts = {}, retryPredicate) => {
       }
 
       const json = await response.json();
-      if (!retryPredicate || !retryPredicate(json)) {
+      if (!retryPredicate(json)) {
         return json;
       }
     }
@@ -111,6 +111,8 @@ const fetchWithRetry = async (url, opts = {}, retryPredicate) => {
   throw new Error(`Retries exhausted with ${statusCode} status code`);
 };
 
+const noRetry = () => false;
+
 /**
  * Make an http request to mirror-node api
  * Host info is prepended to if only path is provided
@@ -119,7 +121,7 @@ const fetchWithRetry = async (url, opts = {}, retryPredicate) => {
  * @param {Function} retryPredicate An optional predicate that returns true if a successful request should be retried.
  * @return {Object} JSON object representing api response or error
  */
-const getAPIResponse = async (url, key = undefined, retryPredicate = undefined) => {
+const getAPIResponse = async (url, key = undefined, retryPredicate = noRetry) => {
   const controller = new AbortController();
   const timeout = setTimeout(
     () => {
@@ -173,7 +175,7 @@ class ServerTestResult {
  * @param jsonRespKey The field within the JSON response that contains the list to check.
  * @returns function A retry predicate
  */
-const hasListItems = (jsonRespKey) => (res) => !res.hasOwnProperty(jsonRespKey) || res[jsonRespKey].length < 1;
+const hasEmptyList = (jsonRespKey) => (res) => !res.hasOwnProperty(jsonRespKey) || res[jsonRespKey].length < 1;
 
 /**
  * Creates a function to run specific tests with the provided server address, classs result, and resource
@@ -458,6 +460,6 @@ export {
   checkRespObjDefined,
   getAPIResponse,
   getUrl,
-  hasListItems,
+  hasEmptyList,
   testRunner,
 };

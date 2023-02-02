@@ -32,7 +32,7 @@ import {
   DEFAULT_LIMIT,
   getAPIResponse,
   getUrl,
-  hasListItems,
+  hasEmptyList,
   testRunner,
 } from './utils';
 
@@ -85,7 +85,7 @@ const getAccountsWithAccountCheck = async (server) => {
     type: 'credit',
     limit: 1,
   });
-  const singleAccount = await getAPIResponse(url, jsonRespKey, hasListItems(jsonRespKey));
+  const singleAccount = await getAPIResponse(url, jsonRespKey, hasEmptyList(jsonRespKey));
 
   result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -132,7 +132,7 @@ const getAccountsWithTimeAndLimitParams = async (server) => {
     timestamp: [`gt:${minusOne.toString()}`, `lt:${plusOne.toString()}`],
     limit: 1,
   });
-  accounts = await getAPIResponse(url, jsonRespKey, hasListItems(jsonRespKey));
+  accounts = await getAPIResponse(url, jsonRespKey, hasEmptyList(jsonRespKey));
 
   result = checkRunner.run(accounts);
   if (!result.passed) {
@@ -247,7 +247,7 @@ const getSingleAccountTokenRelationships = async (server) => {
   const accountsTokenPath = `/accounts/${accountId}/tokens`;
   const accountsLimit = 1;
   let url = getUrl(server, accountsTokenPath, {limit: accountsLimit, order: 'asc'});
-  const tokenRelationships = await getAPIResponse(url, tokensJsonRespKey, hasListItems(jsonRespKey));
+  const tokenRelationships = await getAPIResponse(url, tokensJsonRespKey, hasEmptyList(tokensJsonRespKey));
   let result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
     .withCheckSpec(checkRespObjDefined, {message: 'tokens is undefined '})
