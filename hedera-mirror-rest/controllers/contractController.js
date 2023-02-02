@@ -33,6 +33,7 @@ import {
   ContractResult,
   ContractState,
   Entity,
+  FileData,
   RecordFile,
   Transaction,
   TransactionResult,
@@ -288,21 +289,24 @@ const getFileBytecodeQuery = (timestampParam, fileIdParam) => {
     query: [
       `select
          string_agg(
-           f.file_data, ''
-           order by f.consensus_timestamp
+           ${FileData.getFullName(FileData.FILE_DATA)}, ''
+           order by ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)}
            ) bytecode
-        from file_data f
+        from ${FileData.tableName} ${FileData.tableAlias}
         where
-        f.entity_id = ${fileIdParam}
-        and f.consensus_timestamp >= (
-        select f.consensus_timestamp
-        from file_data f
-        where f.entity_id = ${fileIdParam}
-        and f.consensus_timestamp <= ${timestampParam}
-        and (f.transaction_type = 17 or ( f.transaction_type = 19 and length(f.file_data) <> 0 ))
-        order by f.consensus_timestamp desc
+         ${FileData.getFullName(FileData.ENTITY_ID)} = ${fileIdParam}
+        and ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)} >= (
+        select ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)}
+        from ${FileData.tableName} ${FileData.tableAlias}
+        where ${FileData.getFullName(FileData.ENTITY_ID)} = ${fileIdParam}
+        and ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)} <= ${timestampParam}
+        and (${FileData.getFullName(FileData.TRANSACTION_TYPE)} = 17
+             or ( ${FileData.getFullName(FileData.TRANSACTION_TYPE)} = 19
+                  and
+                  length(${FileData.getFullName(FileData.FILE_DATA)}) <> 0 ))
+        order by ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)} desc
         limit 1
-        ) and f.consensus_timestamp <= ${timestampParam}`,
+        ) and ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)} <= ${timestampParam}`,
     ].join('\n'),
   };
 };
