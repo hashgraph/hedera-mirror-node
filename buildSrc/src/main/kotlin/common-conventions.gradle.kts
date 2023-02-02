@@ -70,7 +70,7 @@ node {
 }
 
 spotless {
-    val npmExec = when(System.getProperty("os.name".toLowerCase()).contains("windows")) {
+    val npmExec = when(System.getProperty("os.name").toLowerCase().contains("windows")) {
         true -> "/npm.cmd"
         else -> "/bin/npm"
     }
