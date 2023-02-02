@@ -24,9 +24,10 @@ import {TestScenarioBuilder} from '../../lib/common.js';
 import {isNonErrorResponse} from "./common.js";
 
 const url = __ENV.BASE_URL;
+const contract = __ENV.DEFAULT_CONTRACT_ADDRESS
 
 const payload = JSON.stringify({
-  "to":"00000000000000000000000000000000000003eb",
+  "to":String(contract),
   "data":"0x7998a1c4"
 });
 
