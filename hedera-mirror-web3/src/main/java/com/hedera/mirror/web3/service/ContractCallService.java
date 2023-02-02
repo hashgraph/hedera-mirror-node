@@ -22,12 +22,11 @@ package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.web3.evm.exception.ResponseCodeUtil.getStatusOrDefault;
 
-import java.util.Optional;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 
-import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessFactory;
+import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorFacade;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
@@ -35,25 +34,22 @@ import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionP
 @Named
 @RequiredArgsConstructor
 public class ContractCallService {
-    private final MirrorEvmTxProcessFactory mirrorEvmTxProcessFactory;
+    private final MirrorEvmTxProcessorFacade mirrorEvmTxProcessor;
 
     public String processCall(final CallServiceParameters body) {
         final var txnResult = doProcessCall(body);
 
-        final var callResult = txnResult.isPresent() && txnResult.get().getOutput() != null
-                ? txnResult.get().getOutput() : Bytes.EMPTY;
+        final var callResult = txnResult.getOutput() != null
+                ? txnResult.getOutput() : Bytes.EMPTY;
 
         return callResult.toHexString();
     }
 
-    private Optional<HederaEvmTransactionProcessingResult> doProcessCall(final CallServiceParameters body) {
-        HederaEvmTransactionProcessingResult txnResult = null;
+    private HederaEvmTransactionProcessingResult doProcessCall(final CallServiceParameters body) {
+        HederaEvmTransactionProcessingResult txnResult;
 
-        final var mirrorEvmTxProcessor = mirrorEvmTxProcessFactory.getObject();
-
-        if(mirrorEvmTxProcessor != null) {
-            try {
-                txnResult =
+        try {
+            txnResult =
                     mirrorEvmTxProcessor.execute(
                             body.getSender(),
                             body.getReceiver(),
@@ -62,13 +58,12 @@ public class ContractCallService {
                             body.getCallData(),
                             body.isStatic());
 
-                if (!txnResult.isSuccessful()) {
-                    throw new InvalidTransactionException(getStatusOrDefault(txnResult));
-                }
-            } catch (IllegalStateException | IllegalArgumentException e) {
-                throw new InvalidTransactionException(e.getMessage());
+            if (!txnResult.isSuccessful()) {
+                throw new InvalidTransactionException(getStatusOrDefault(txnResult));
             }
+        } catch (IllegalStateException | IllegalArgumentException e) {
+            throw new InvalidTransactionException(e.getMessage());
         }
-        return txnResult != null ? Optional.of(txnResult) : Optional.empty();
+        return txnResult;
     }
 }
