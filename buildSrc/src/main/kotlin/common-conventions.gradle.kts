@@ -110,7 +110,7 @@ spotless {
         endWithNewline()
         indentWithSpaces(2)
         prettier()
-            .npmExecutable("${(tasks.named("npmSetup").get() as NpmSetupTask).npmDir.get()}${npmExec}")
+            .npmExecutable("${(tasks.named("npmSetup").get() as NpmSetupTask).npmDir.get().asFile.toPath().resolve(npmExec)}")
         target("**/*.json", "**/*.md", "**/*.yml", "**/*.yaml")
         trimTrailingWhitespace()
     })
