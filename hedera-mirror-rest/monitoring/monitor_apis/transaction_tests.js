@@ -34,6 +34,7 @@ import {
   DEFAULT_LIMIT,
   getAPIResponse,
   getUrl,
+  hasEmptyList,
   testRunner,
 } from './utils';
 
@@ -124,7 +125,7 @@ const getTransactionsWithAccountCheck = async (server) => {
     type: 'credit',
     limit: 1,
   });
-  const accTransactions = await getAPIResponse(url, jsonRespKey);
+  const accTransactions = await getAPIResponse(url, jsonRespKey, hasEmptyList(jsonRespKey));
 
   result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -238,7 +239,7 @@ const getTransactionsWithTimeAndLimitParams = async (server) => {
     timestamp: [`gt:${minusOne.toString()}`, `lt:${plusOne.toString()}`],
     limit: 1,
   });
-  transactions = await getAPIResponse(url, jsonRespKey);
+  transactions = await getAPIResponse(url, jsonRespKey, hasEmptyList(jsonRespKey));
 
   result = checkRunner.run(transactions);
   if (!result.passed) {
