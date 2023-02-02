@@ -46,12 +46,14 @@ import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 @RequiredArgsConstructor
 public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacade {
 
-    final MirrorEntityAccess entityAccess;
-    final MirrorNodeEvmProperties evmProperties;
-    final StaticBlockMetaSource blockMetaSource;
-    final MirrorEvmContractAliases aliasManager;
-    final PricesAndFeesImpl pricesAndFees;
-    final AccountAccessorImpl accountAccessor;
+    private final MirrorEntityAccess entityAccess;
+    private final MirrorNodeEvmProperties evmProperties;
+    private final StaticBlockMetaSource blockMetaSource;
+    private final MirrorEvmContractAliases aliasManager;
+    private final PricesAndFeesImpl pricesAndFees;
+    private final AccountAccessorImpl accountAccessor;
+
+    private DefaultHederaTracer defaultHederaTracer;
 
     @Override
     public HederaEvmTransactionProcessingResult execute(
@@ -82,7 +84,8 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                         aliasManager,
                         codeCache);
 
-        processor.setOperationTracer(new DefaultHederaTracer());
+        defaultHederaTracer = new DefaultHederaTracer();
+        processor.setOperationTracer(defaultHederaTracer);
 
         return processor.execute(
                 sender,
@@ -94,7 +97,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                 isStatic);
     }
 
-//    public DefaultHederaTracer getTracer() {
-//        return defaultHederaTracer;
-//    }
+    public DefaultHederaTracer getTracer() {
+        return defaultHederaTracer;
+    }
 }

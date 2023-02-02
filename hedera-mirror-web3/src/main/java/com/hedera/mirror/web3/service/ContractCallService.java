@@ -51,7 +51,7 @@ public class ContractCallService {
 
     public String processCall(final CallServiceParameters body) {
         //TODO register gauge
-//        meterRegistry.gauge("gas.per.second", () -> ((MirrorEvmTxProcessorFacadeImpl)mirrorEvmTxProcessor).getTracer())
+//        meterRegistry.gauge("gas.per.second", () -> ((MirrorEvmTxProcessorFacadeImpl)mirrorEvmTxProcessor).getTracer());
 //
         final var txnResult = doProcessCall(body);
 
