@@ -26,6 +26,7 @@ import (
 	"math/big"
 	"reflect"
 	"testing"
+	"time"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -171,11 +172,11 @@ func getConstructionHashRequest(signedTx string) *rTypes.ConstructionHashRequest
 	}
 }
 
-func getConstructionParseRequest(txHash string, signed bool) *rTypes.ConstructionParseRequest {
+func getConstructionParseRequest(transaction string, signed bool) *rTypes.ConstructionParseRequest {
 	return &rTypes.ConstructionParseRequest{
 		NetworkIdentifier: networkIdentifier(),
 		Signed:            signed,
-		Transaction:       txHash,
+		Transaction:       transaction,
 	}
 }
 
@@ -229,6 +230,16 @@ func getNodeAccountIds(network map[string]hedera.AccountID) []hedera.AccountID {
 	}
 
 	return nodeAccountIds
+}
+
+func getUnsignedCryptoTransaction(validStart time.Time, validDuration time.Duration) string {
+	tx, _ := hedera.NewTransferTransaction().
+		SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
+		SetTransactionID(hedera.NewTransactionIDWithValidStart(payerId, validStart)).
+		SetTransactionValidDuration(validDuration).
+		Freeze()
+	bytes, _ := tx.ToBytes()
+	return tools.SafeAddHexPrefix(hex.EncodeToString(bytes))
 }
 
 func TestNewConstructionAPIService(t *testing.T) {
@@ -783,21 +794,30 @@ func TestConstructionParse(t *testing.T) {
 	}{
 		{
 			name:     "NotSigned",
-			metadata: map[string]interface{}{},
+			metadata: map[string]interface{}{"valid_until": int64(1620236406997196590)},
 			request:  getConstructionParseRequest(validSignedTransaction, false),
 			signers:  []*rTypes.AccountIdentifier{},
 		},
 		{
 			name:     "Signed",
-			metadata: map[string]interface{}{},
+			metadata: map[string]interface{}{"valid_until": int64(1620236406997196590)},
 			request:  getConstructionParseRequest(validSignedTransaction, true),
 			signers:  []*rTypes.AccountIdentifier{defaultCryptoAccountId1.ToRosetta()},
 		},
 		{
 			name:     "memo",
-			metadata: map[string]interface{}{"memo": "transfer"},
+			metadata: map[string]interface{}{"memo": "transfer", "valid_until": int64(123456969000000123)},
 			request:  getConstructionParseRequest(unsignedTransactionWithMemo, false),
 			signers:  []*rTypes.AccountIdentifier{},
+		},
+		{
+			name:     "valid until",
+			metadata: map[string]interface{}{"valid_until": int64(123457000000000333)},
+			request: getConstructionParseRequest(
+				getUnsignedCryptoTransaction(time.Unix(123456789, 333), time.Second*211),
+				false,
+			),
+			signers: []*rTypes.AccountIdentifier{},
 		},
 	}
 
