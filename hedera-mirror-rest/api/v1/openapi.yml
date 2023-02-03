@@ -27,7 +27,7 @@ paths:
     get:
       summary: Get account by alias, id, or evm address
       description: |
-        Return the account transactions and balance information given an account alias, an account id, or an evm address
+        Return the account transactions and balance information given an account alias, an account id, or an evm address. The information will be limited to at most 1000 token balances for the account.
       operationId: getAccountByIdOrAliasOrEvmAddress
       parameters:
         - $ref: '#/components/parameters/accountIdOrAliasOrEvmAddressPathParam'
