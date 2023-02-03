@@ -70,28 +70,27 @@ class FileDataService extends BaseService {
     const params = [fileId, timestamp];
 
     return {
-      query: [
+      query:
         `select
          string_agg(
-           f.file_data, ''
-           order by f.consensus_timestamp
+           ${FileData.FILE_DATA}, ''
+           order by ${FileData.CONSENSUS_TIMESTAMP}
            ) data
-        from file_data f
+        from ${FileData.tableName}
         where
-           f.entity_id = $1
-        and f.consensus_timestamp >= (
-        select f.consensus_timestamp
-        from file_data f
-        where f.entity_id = $1
-        and f.consensus_timestamp <= $2
-        and (f.transaction_type = 17
-             or ( f.transaction_type = 19
+           ${FileData.ENTITY_ID} = $1
+        and ${FileData.CONSENSUS_TIMESTAMP} >= (
+        select ${FileData.CONSENSUS_TIMESTAMP}
+        from ${FileData.tableName}
+        where ${FileData.ENTITY_ID} = $1
+        and ${FileData.CONSENSUS_TIMESTAMP} <= $2
+        and (${FileData.TRANSACTION_TYPE} = 17
+             or ( ${FileData.TRANSACTION_TYPE} = 19
                   and
-                  length(f.file_data) <> 0 ))
-        order by f.consensus_timestamp desc
+                  length(${FileData.FILE_DATA}) <> 0 ))
+        order by ${FileData.CONSENSUS_TIMESTAMP} desc
         limit 1
-        ) and f.consensus_timestamp <= $2`,
-      ].join('\n'),
+        ) and ${FileData.CONSENSUS_TIMESTAMP} <= $2`,
       params,
     };
   };
