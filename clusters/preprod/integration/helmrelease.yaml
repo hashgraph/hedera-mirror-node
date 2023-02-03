@@ -62,6 +62,8 @@ spec:
             test:
               acceptance:
                 network: OTHER
+                web3:
+                  baseUrl: mirror-web3
       enabled: true
       git:
         branch: 5334-fix-web3-acceptance
