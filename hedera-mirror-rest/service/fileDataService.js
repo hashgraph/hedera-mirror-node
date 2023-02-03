@@ -95,7 +95,6 @@ class FileDataService extends BaseService {
     };
   };
 
-
   getLatestFileContentsQuery = (innerWhere = '') => {
     const outerWhere = innerWhere.replace('and ', `and ${FileData.tableAlias}.`);
     return FileDataService.latestFileContentsQuery
