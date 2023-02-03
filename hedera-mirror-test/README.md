@@ -57,7 +57,7 @@ under `hedera.mirror.test.acceptance` include:
 - `operatorKey` - Account private key to be used for signing transaction and client identification. Please do not check
   in.
 - `rest`
-  - `baseUrl` - The host URL to the mirror node. For example, https://testnet.mirrornode.hedera.com/api/v1
+  - `baseUrl` - The host URL to the mirror node. For example, https://testnet.mirrornode.hedera.com
   - `delay` - The time to wait in between failed REST API calls.
   - `maxAttempts` - The maximum number of attempts when calling a REST API endpoint and receiving a 404.
   - `maxBackoff` - The maximum backoff duration the mirror grpc subscriber will wait between attempts.
@@ -70,6 +70,8 @@ under `hedera.mirror.test.acceptance` include:
   - `maxAttempts` - The maximum number of times the sdk should try to submit a transaction to the network.
 - `startupTimeout` - How long the startup probe should wait for the network as a whole to be healthy before failing the
   tests
+- `web3`
+  - `baseUrl` - The endpoint associated with the web3 API.
 - `webclient`
   - `connectionTimeout` - The timeout duration to wait to establish a connection with the server
   - `readTimeout` - The timeout duration to wait for data to be read.
