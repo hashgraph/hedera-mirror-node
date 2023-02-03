@@ -62,8 +62,7 @@ spec:
             test:
               acceptance:
                 network: OTHER
-      cucumberTags: "@acceptance and not @contractbase"
       enabled: true
       git:
-        branch: main
+        branch: 5334-fix-web3-acceptance
 
