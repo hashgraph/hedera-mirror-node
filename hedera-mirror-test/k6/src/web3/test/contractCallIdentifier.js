@@ -28,7 +28,7 @@ const contract = __ENV.DEFAULT_CONTRACT_ADDRESS
 
 const payload = JSON.stringify({
   "to":String(contract),
-  "data":"0x6896fabf"
+  "data":"0x7998a1c4"
 });
 
 const httpParams = {
@@ -38,9 +38,9 @@ const httpParams = {
 };
 
 const {options, run} = new TestScenarioBuilder()
-  .name('ethCallBalance') // use unique scenario name among all tests
+  .name('contractCallIdentifier') // use unique scenario name among all tests
   .request(() => http.post(url, payload, httpParams))
-  .check('ethCallBalance', (r) => isNonErrorResponse(r))
+  .check('contractCallIdentifier', (r) => isNonErrorResponse(r))
   .build();
 
 export {options, run};

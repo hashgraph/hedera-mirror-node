@@ -28,7 +28,7 @@ const contract = __ENV.DEFAULT_CONTRACT_ADDRESS
 
 const payload = JSON.stringify({
   "to":String(contract),
-  "data":"0x8070450f"
+  "data":"0x5e01eb5a"
 });
 
 const httpParams = {
@@ -38,9 +38,9 @@ const httpParams = {
 };
 
 const {options, run} = new TestScenarioBuilder()
-  .name('ethCallMultiply') // use unique scenario name among all tests
+  .name('contractCallSender') // use unique scenario name among all tests
   .request(() => http.post(url, payload, httpParams))
-  .check('ethCallMultiply', (r) => isNonErrorResponse(r))
+  .check('contractCallSender', (r) => isNonErrorResponse(r))
   .build();
 
 export {options, run};

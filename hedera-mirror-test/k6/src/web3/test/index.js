@@ -21,17 +21,17 @@
 import {getSequentialTestScenarios} from '../../lib/common.js';
 
 // import test modules
-import * as ethCallBalance from './ethCallBalance.js';
-import * as ethCallSender from './ethCallSender.js';
-import * as ethCallMultiply from './ethCallMultiply.js';
-import * as ethCallIdentifier from './ethCallIdentifier.js';
+import * as contractCallBalance from './contractCallBalance.js';
+import * as contractCallIdentifier from './contractCallIdentifier.js';
+import * as contractCallMultiply from './contractCallMultiply.js';
+import * as contractCallSender from './contractCallSender.js';
 
 // add test modules here
 const tests = {
-  ethCallBalance,
-  ethCallSender,
-  ethCallMultiply,
-  ethCallIdentifier,
+  contractCallBalance,
+  contractCallIdentifier,
+  contractCallMultiply,
+  contractCallSender,
 };
 
 const {funcs, options, scenarioDurationGauge, scenarios} = getSequentialTestScenarios(tests);
