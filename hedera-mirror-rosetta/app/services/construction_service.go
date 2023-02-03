@@ -50,6 +50,7 @@ const (
 	metadataKeyAccountMap           = "account_map"
 	metadataKeyValidDurationSeconds = "valid_duration"
 	metadataKeyValidStartNanos      = "valid_start_nanos"
+	metadataKeyValidUntil           = "valid_until"
 	optionKeyAccountAliases         = "account_aliases"
 	optionKeyOperationType          = "operation_type"
 )
@@ -220,13 +221,14 @@ func (c *constructionAPIService) ConstructionParse(
 	}
 
 	metadata := make(map[string]interface{})
-	if memo, err := hedera.TransactionGetTransactionMemo(transaction); err == nil {
-		if memo != "" {
-			metadata[types.MetadataKeyMemo] = memo
-		}
-	} else {
-		return nil, errors.ErrInvalidTransactionMemo
+	memo := transaction.GetTransactionMemo()
+	if memo != "" {
+		metadata[types.MetadataKeyMemo] = memo
 	}
+
+	validStart := transaction.GetTransactionID().ValidStart
+	validDuration := transaction.GetTransactionValidDuration()
+	metadata[metadataKeyValidUntil] = validStart.Add(validDuration).UnixNano()
 
 	operations, accounts, err := c.transactionHandler.Parse(ctx, transaction)
 	if err != nil {

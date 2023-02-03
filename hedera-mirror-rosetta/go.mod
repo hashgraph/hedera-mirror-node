@@ -116,6 +116,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace github.com/hashgraph/hedera-sdk-go/v2 => github.com/xin-hedera/hedera-sdk-go/v2 v2.8.0-beta.1.0.20220913034050-c1eb810845f7
+replace github.com/hashgraph/hedera-sdk-go/v2 => github.com/xin-hedera/hedera-sdk-go/v2 v2.8.0-beta.1.0.20230203191435-1a44e6887cbd
 
 replace google.golang.org/protobuf => google.golang.org/protobuf v1.26.1-0.20210525005349-febffdd88e85
