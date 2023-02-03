@@ -60,18 +60,7 @@ class FileDataService extends BaseService {
   }
     group by ${FileData.getFullName(FileData.ENTITY_ID)}`;
 
-  /**
-   * The function returns the query and params to get the active file content for the fileId at the provided consensus timestamp.
-   * @param fileId
-   * @param timestamp
-   * @return {query: string, params: any[]}
-   */
-  getFileData = (fileId, timestamp) => {
-    const params = [fileId, timestamp];
-
-    return {
-      query:
-        `select
+  static getFileDataQuery = `select
          string_agg(
            ${FileData.FILE_DATA}, ''
            order by ${FileData.CONSENSUS_TIMESTAMP}
@@ -90,7 +79,18 @@ class FileDataService extends BaseService {
                   length(${FileData.FILE_DATA}) <> 0 ))
         order by ${FileData.CONSENSUS_TIMESTAMP} desc
         limit 1
-        ) and ${FileData.CONSENSUS_TIMESTAMP} <= $2`,
+        ) and ${FileData.CONSENSUS_TIMESTAMP} <= $2`;
+
+  /**
+   * The function returns the query and params to get the active file content for the fileId at the provided consensus timestamp.
+   * @param fileId
+   * @param timestamp
+   * @return {query: string, params: any[]}
+   */
+  getFileData = (fileId, timestamp) => {
+    const params = [fileId, timestamp];
+    return {
+      query: FileDataService.getFileDataQuery,
       params,
     };
   };
