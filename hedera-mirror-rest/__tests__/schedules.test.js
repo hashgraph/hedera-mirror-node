@@ -118,7 +118,18 @@ describe('schedule formatScheduleRow tests', () => {
       description: 'input with undefined signatures',
       input: {
         ...defaultInput,
-        signatures: null,
+        signatures: undefined,
+      },
+      expected: {
+        ...defaultExpected,
+        signatures: [],
+      },
+    },
+    {
+      description: 'input with null signature object',
+      input: {
+        ...defaultInput,
+        signatures: [{consensus_timestamp: null, public_key_prefix: null, signature: null, type: null}],
       },
       expected: {
         ...defaultExpected,
