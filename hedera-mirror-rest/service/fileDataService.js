@@ -73,24 +73,24 @@ class FileDataService extends BaseService {
       query: [
         `select
          string_agg(
-           ${FileData.getFullName(FileData.FILE_DATA)}, ''
-           order by ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)}
+           f.file_data, ''
+           order by f.consensus_timestamp
            ) data
-        from ${FileData.tableName} ${FileData.tableAlias}
+        from file_data f
         where
-         ${FileData.getFullName(FileData.ENTITY_ID)} = $1
-        and ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)} >= (
-        select ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)}
-        from ${FileData.tableName} ${FileData.tableAlias}
-        where ${FileData.getFullName(FileData.ENTITY_ID)} = $1
-        and ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)} <= $2
-        and (${FileData.getFullName(FileData.TRANSACTION_TYPE)} = 17
-             or ( ${FileData.getFullName(FileData.TRANSACTION_TYPE)} = 19
+           f.entity_id = $1
+        and f.consensus_timestamp >= (
+        select f.consensus_timestamp
+        from file_data f
+        where f.entity_id = $1
+        and f.consensus_timestamp <= $2
+        and (f.transaction_type = 17
+             or ( f.transaction_type = 19
                   and
-                  length(${FileData.getFullName(FileData.FILE_DATA)}) <> 0 ))
-        order by ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)} desc
+                  length(f.file_data) <> 0 ))
+        order by f.consensus_timestamp desc
         limit 1
-        ) and ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)} <= $2`,
+        ) and f.consensus_timestamp <= $2`,
       ].join('\n'),
       params,
     };
