@@ -41,7 +41,7 @@ import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionP
 @Named
 @RequiredArgsConstructor
 public class ContractCallService {
-    private final MirrorEvmTxProcessorFacade mirrorEvmTxProcessor;
+    private final MirrorEvmTxProcessorFacade mirrorEvmTxProcessorFacade;
 
     private final MeterRegistry meterRegistry;
 
@@ -65,13 +65,15 @@ public class ContractCallService {
         HederaEvmTransactionProcessingResult txnResult;
 
         try {
-            txnResult = mirrorEvmTxProcessor.execute(
-                    body.getSender(),
-                    body.getReceiver(),
-                    body.getProvidedGasLimit(),
-                    body.getValue(),
-                    body.getCallData(),
-                    body.isStatic());
+            txnResult =
+                    mirrorEvmTxProcessorFacade.execute(
+                            body.getSender(),
+                            body.getReceiver(),
+                            body.getProvidedGasLimit(),
+                            body.getValue(),
+                            body.getCallData(),
+                            body.isStatic());
+
             if (!txnResult.isSuccessful()) {
                 throw new InvalidTransactionException(getStatusOrDefault(txnResult));
             }

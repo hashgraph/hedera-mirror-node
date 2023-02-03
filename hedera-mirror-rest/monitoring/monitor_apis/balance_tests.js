@@ -22,17 +22,18 @@ import _ from 'lodash';
 import config from './config';
 
 import {
-  checkAPIResponseError,
-  checkRespObjDefined,
-  checkRespArrayLength,
   checkAccountId,
+  checkAPIResponseError,
   checkMandatoryParams,
   checkResourceFreshness,
+  checkRespArrayLength,
+  checkRespObjDefined,
+  CheckRunner,
   DEFAULT_LIMIT,
   getAPIResponse,
   getUrl,
+  hasEmptyList,
   testRunner,
-  CheckRunner,
 } from './utils';
 
 const balancesPath = '/balances';
@@ -98,7 +99,7 @@ const getSingleBalanceById = async (server) => {
 
   const highestAccount = _.max(_.map(balances, (balance) => balance.account));
   url = getUrl(server, balancesPath, {'account.id': highestAccount});
-  const singleBalance = await getAPIResponse(url, jsonRespKey);
+  const singleBalance = await getAPIResponse(url, jsonRespKey, hasEmptyList(jsonRespKey));
 
   result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
