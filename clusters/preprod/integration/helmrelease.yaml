@@ -63,7 +63,7 @@ spec:
               acceptance:
                 network: OTHER
                 web3:
-                  baseUrl: mirror-web3
+                  baseUrl: mirror-web3/api/v1
       enabled: true
       git:
         branch: 5334-fix-web3-acceptance
