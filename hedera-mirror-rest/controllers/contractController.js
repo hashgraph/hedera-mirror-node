@@ -33,7 +33,6 @@ import {
   ContractResult,
   ContractState,
   Entity,
-  FileData,
   RecordFile,
   Transaction,
   TransactionResult,
@@ -51,7 +50,6 @@ import {
   ContractStateViewModel,
   ContractViewModel,
 } from '../viewmodel';
-import {encode} from "qs/lib/utils.js";
 
 const contractSelectFields = [
   Entity.AUTO_RENEW_ACCOUNT_ID,
@@ -270,48 +268,10 @@ const getContractByIdOrAddressContractEntityQuery = ({timestampConditions, times
   }
 
   return {
-    query: [
-      `select ce.* from (${tableUnionQueries.join('\n')}) as ce`,
-    ].join('\n'),
+    query: tableUnionQueries.join('\n'),
     params,
   };
 };
-
-/**
- * Gets the sql query for a specific file, with parameters from getContractByIdOrAddressContractEntityQuery
- * @param timestampConditions
- * @param fileIdParam
- * @return {query: string}
- */
-const getFileBytecodeQuery = (timestampParam, fileIdParam) => {
-
-  console.log(`The params are ${timestampParam} and ${fileIdParam}`);
-  return {
-    query: [
-      `select
-         string_agg(
-           ${FileData.getFullName(FileData.FILE_DATA)}, ''
-           order by ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)}
-           ) bytecode
-        from ${FileData.tableName} ${FileData.tableAlias}
-        where
-         ${FileData.getFullName(FileData.ENTITY_ID)} = ${fileIdParam}
-        and ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)} >= (
-        select ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)}
-        from ${FileData.tableName} ${FileData.tableAlias}
-        where ${FileData.getFullName(FileData.ENTITY_ID)} = ${fileIdParam}
-        and ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)} <= ${timestampParam}
-        and (${FileData.getFullName(FileData.TRANSACTION_TYPE)} = 17
-             or ( ${FileData.getFullName(FileData.TRANSACTION_TYPE)} = 19
-                  and
-                  length(${FileData.getFullName(FileData.FILE_DATA)}) <> 0 ))
-        order by ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)} desc
-        limit 1
-        ) and ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)} <= ${timestampParam}`,
-    ].join('\n'),
-  };
-};
-
 
 
 /**
@@ -784,24 +744,20 @@ class ContractController extends BaseController {
     if (rows.length !== 1) {
       throw new NotFoundError();
     }
-    const contractRows = rows;
+    const contract = rows[0];
     if(_.first(rows).file_id !== null) {
-      const {query} = getFileBytecodeQuery(contractRows[0].created_timestamp, contractRows[0].file_id);
+      const {query, params} = FileDataService.getFileData(contract.file_id, contract.created_timestamp);
       if (logger.isTraceEnabled()) {
-        logger.trace(`getFileBytecode query: ${query}`);
+        logger.trace(`getFileBytecode query: ${query}, params: ${params}`);
       }
-      const {rows} = await pool.queryQuietly(query);
-      console.log(`The fileRows is ${rows}`);
-      if (rows.length !== 1) {
-        throw new NotFoundError();
+      const {rows} = await pool.queryQuietly(query, params);
+      if (rows.length === 1) {
+        contract.bytecode = rows[0].bytecode;
       }
-      contractRows[0].bytecode = rows[0].bytecode;
     } else {
-      contractRows[0].bytecode = Array.from(contractRows[0].initcode, function(byte) {
-        return ('0' + (byte & 0xFF).toString(16)).slice(-2);
-      }).join('');
+      contract.bytecode = contract.initcode.toString('hex');
     }
-    res.locals[responseDataLabel] = formatContractRow(contractRows[0], ContractBytecodeViewModel);
+    res.locals[responseDataLabel] = formatContractRow(contract, ContractBytecodeViewModel);
   };
 
   /**
@@ -1394,9 +1350,8 @@ if (utils.isTestEnv()) {
       extractSqlFromContractFilters,
       extractTimestampConditionsFromContractFilters,
       formatContractRow,
-      getContractByIdOrAddressQuery: getContractByIdOrAddressContractEntityQuery,
+      getContractByIdOrAddressContractEntityQuery,
       getContractsQuery,
-      getFileBytecodeQuery,
       getLastNonceParamValue,
       validateContractIdAndConsensusTimestampParam,
       validateContractIdParam,
