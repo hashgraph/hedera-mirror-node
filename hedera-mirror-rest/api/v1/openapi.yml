@@ -27,7 +27,7 @@ paths:
     get:
       summary: Get account by alias, id, or evm address
       description: |
-        Return the account transactions and balance information given an account alias, an account id, or an evm address
+        Return the account transactions and balance information given an account alias, an account id, or an evm address. The information will be limited to at most 1000 token balances for the account as outlined in HIP-367.
       operationId: getAccountByIdOrAliasOrEvmAddress
       parameters:
         - $ref: '#/components/parameters/accountIdOrAliasOrEvmAddressPathParam'
@@ -235,7 +235,7 @@ paths:
   /api/v1/balances:
     get:
       summary: List account balances
-      description: Returns a timestamped list of account balances on the network. This includes both HBAR and token balances for accounts.
+      description: Returns a timestamped list of account balances on the network, limited to at most 50 token balances per account as outlined in HIP-367. This includes both HBAR and token balances for accounts.
       operationId: listAccountBalances
       parameters:
         - $ref: '#/components/parameters/accountIdQueryParam'
@@ -3573,7 +3573,7 @@ components:
     balanceQueryParam:
       name: balance
       in: query
-      description: Whether to include balance information or not
+      description: Whether to include balance information or not. If included, token balances are limited to at most 50 per account as outlined in HIP-367.
       example: true
       schema:
         type: boolean
