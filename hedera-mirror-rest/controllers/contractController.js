@@ -745,7 +745,7 @@ class ContractController extends BaseController {
       throw new NotFoundError();
     }
     const contract = rows[0];
-    if(_.first(rows).file_id !== null) {
+    if(contract.file_id !== null) {
       const {query, params} = FileDataService.getFileData(contract.file_id, contract.created_timestamp);
       if (logger.isTraceEnabled()) {
         logger.trace(`getFileBytecode query: ${query}, params: ${params}`);
