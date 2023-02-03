@@ -75,7 +75,7 @@ class FileDataService extends BaseService {
          string_agg(
            ${FileData.getFullName(FileData.FILE_DATA)}, ''
            order by ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)}
-           ) bytecode
+           ) data
         from ${FileData.tableName} ${FileData.tableAlias}
         where
          ${FileData.getFullName(FileData.ENTITY_ID)} = $1
