@@ -25,6 +25,7 @@ import * as contractCallBalance from './contractCallBalance.js';
 import * as contractCallIdentifier from './contractCallIdentifier.js';
 import * as contractCallMultiply from './contractCallMultiply.js';
 import * as contractCallSender from './contractCallSender.js';
+import * as contractCallReceive from './contractCallReceive.js';
 
 // add test modules here
 const tests = {
@@ -32,6 +33,7 @@ const tests = {
   contractCallIdentifier,
   contractCallMultiply,
   contractCallSender,
+  contractCallReceive,
 };
 
 const {funcs, options, scenarioDurationGauge, scenarios} = getSequentialTestScenarios(tests);
