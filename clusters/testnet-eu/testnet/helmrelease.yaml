@@ -56,5 +56,6 @@ spec:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "testnet"
     test:
+      cucumberTags: "@acceptance and not @negative"
       enabled: true
 
