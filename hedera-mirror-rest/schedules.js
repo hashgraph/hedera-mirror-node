@@ -27,32 +27,6 @@ import * as utils from './utils';
 
 const {default: defaultLimit} = getResponseLimit();
 
-const scheduleSelectFields = [
-  'e.key',
-  's.consensus_timestamp',
-  's.creator_account_id',
-  'e.deleted',
-  's.expiration_time',
-  's.executed_timestamp',
-  'e.memo',
-  's.payer_account_id',
-  's.schedule_id',
-  's.transaction_body',
-  's.wait_for_expiry',
-  `(
-    select json_agg(
-      json_build_object(
-        'consensus_timestamp', ts.consensus_timestamp::text,
-        'public_key_prefix', encode(ts.public_key_prefix, 'base64'),
-        'signature', encode(ts.signature, 'base64'),
-        'type', ts.type
-      ) order by ts.consensus_timestamp
-    )
-    from transaction_signature ts
-    where ts.entity_id = s.schedule_id
-  ) as signatures`,
-];
-
 // select columns
 const sqlQueryColumns = {
   ACCOUNT: 'creator_account_id',
@@ -65,13 +39,48 @@ const filterColumnMap = {
   [constants.filterKeys.SCHEDULE_ID]: sqlQueryColumns.SCHEDULE_ID,
 };
 
-const entityIdJoinQuery = 'left join entity e on e.id = s.schedule_id';
-const scheduleIdMatchQuery = 'where s.schedule_id = $1';
+const commonSelectFields = [
+  's.consensus_timestamp',
+  's.creator_account_id',
+  'e.deleted',
+  's.executed_timestamp',
+  's.expiration_time',
+  'e.key',
+  'e.memo',
+  's.payer_account_id',
+  's.schedule_id',
+  's.transaction_body',
+  's.wait_for_expiry',
+].join(',\n');
+const transactionSignatureJsonAgg = `
+  json_agg(json_build_object(
+    'consensus_timestamp', ts.consensus_timestamp,
+    'public_key_prefix', encode(ts.public_key_prefix, 'base64'),
+    'signature', encode(ts.signature, 'base64'),
+    'type', ts.type
+  ) order by ts.consensus_timestamp)`;
+const getScheduleByIdQuery = `
+  select
+    ${commonSelectFields},
+    ${transactionSignatureJsonAgg} as signatures
+  from schedule s
+  left join entity e on e.id = s.schedule_id
+  left join transaction_signature ts on ts.entity_id = s.schedule_id
+  where s.schedule_id = $1
+  group by s.schedule_id, e.id`;
+const schedulesMainQuery = `
+  select
+    ${commonSelectFields},
+    (
+      select ${transactionSignatureJsonAgg}
+      from transaction_signature ts
+      where ts.entity_id = s.schedule_id
+    ) as signatures
+  from schedule s
+  left join entity e on e.id = s.schedule_id`;
+
 const scheduleLimitQuery = (paramCount) => `limit $${paramCount}`;
 const scheduleOrderQuery = (order) => `order by s.schedule_id ${order}`;
-const scheduleSelectQuery = ['select', scheduleSelectFields.join(',\n'), 'from schedule s'].join('\n');
-
-const getScheduleByIdQuery = [scheduleSelectQuery, entityIdJoinQuery, scheduleIdMatchQuery].join('\n');
 
 /**
  * Get the schedules list sql query to be used given the where clause, order and param count
@@ -81,25 +90,19 @@ const getScheduleByIdQuery = [scheduleSelectQuery, entityIdJoinQuery, scheduleId
  * @returns {string}
  */
 const getSchedulesQuery = (whereQuery, order, count) => {
-  return [
-    scheduleSelectQuery,
-    entityIdJoinQuery,
-    whereQuery,
-    scheduleOrderQuery(order),
-    scheduleLimitQuery(count),
-  ].join('\n');
+  return [schedulesMainQuery, whereQuery, scheduleOrderQuery(order), scheduleLimitQuery(count)].join('\n');
 };
 
 const formatScheduleRow = (row) => {
   const signatures = row.signatures
-    ? row.signatures.map((signature) => {
-        return {
+    ? row.signatures
+        .filter((signature) => signature.consensus_timestamp !== null)
+        .map((signature) => ({
           consensus_timestamp: utils.nsToSecNs(signature.consensus_timestamp),
           public_key_prefix: signature.public_key_prefix,
           signature: signature.signature,
           type: SignatureType.getName(signature.type),
-        };
-      })
+        }))
     : [];
 
   return {
@@ -264,7 +267,7 @@ const acceptedSchedulesParameters = new Set([
   constants.filterKeys.ACCOUNT_ID,
   constants.filterKeys.LIMIT,
   constants.filterKeys.ORDER,
-  constants.filterKeys.SCHEDULE_ID
+  constants.filterKeys.SCHEDULE_ID,
 ]);
 
 if (utils.isTestEnv()) {
