@@ -207,7 +207,7 @@ describe('ContractService.getContractLogsQuery tests', () => {
       from contract_log cl
       left join entity e on id = contract_id
       left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
-        and cl.payer_account_id = cr.payer_account_id
+        and cl.contract_id = cr.contract_id
       left join lateral (
         select index as block_number,hash as block_hash
         from record_file
@@ -254,7 +254,7 @@ describe('ContractService.getContractLogsQuery tests', () => {
       from contract_log cl
       left join entity e on id = contract_id
       left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
-        and cl.payer_account_id = cr.payer_account_id
+        and cl.contract_id = cr.contract_id
       left join lateral (
         select index as block_number,hash as block_hash
         from record_file
@@ -298,7 +298,7 @@ describe('ContractService.getContractLogsQuery tests', () => {
         from contract_log cl
         left join entity e on id = contract_id
         left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
-          and cl.payer_account_id = cr.payer_account_id
+          and cl.contract_id = cr.contract_id
         left join lateral (
           select index as block_number,hash as block_hash
           from record_file
@@ -316,7 +316,7 @@ describe('ContractService.getContractLogsQuery tests', () => {
         from contract_log cl
         left join entity e on id = contract_id
         left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
-          and cl.payer_account_id = cr.payer_account_id
+          and cl.contract_id = cr.contract_id
         left join lateral (
           select index as block_number,hash as block_hash
           from record_file
@@ -377,7 +377,7 @@ describe('ContractService.getContractLogsQuery tests', () => {
           contract_log cl
           left join entity e on id = contract_id
           left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
-            and cl.payer_account_id = cr.payer_account_id
+            and cl.contract_id = cr.contract_id
           left join lateral (
             select index as block_number, hash as block_hash
             from  record_file
@@ -415,7 +415,7 @@ describe('ContractService.getContractLogsQuery tests', () => {
           contract_log cl
           left join entity e on id = contract_id
           left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
-            and cl.payer_account_id = cr.payer_account_id
+            and cl.contract_id = cr.contract_id
           left join lateral (
             select index as block_number, hash as block_hash
             from record_file
@@ -454,7 +454,7 @@ describe('ContractService.getContractLogsQuery tests', () => {
           contract_log cl
           left join entity e on id = contract_id
           left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
-            and cl.payer_account_id = cr.payer_account_id
+            and cl.contract_id = cr.contract_id
           left join lateral (
             select index as block_number, hash as block_hash
             from  record_file

@@ -157,8 +157,8 @@ class ContractService extends BaseService {
     left join ${ContractResult.tableName} ${ContractResult.tableAlias}
       on ${ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP)} =
         ${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)} and
-        ${ContractLog.getFullName(ContractLog.PAYER_ACCOUNT_ID)} =
-        ${ContractResult.getFullName(ContractResult.PAYER_ACCOUNT_ID)}
+        ${ContractLog.getFullName(ContractLog.CONTRACT_ID)} =
+        ${ContractResult.getFullName(ContractResult.CONTRACT_ID)}
     left join lateral (
       select ${RecordFile.INDEX} as block_number, ${RecordFile.HASH} as block_hash
       from ${RecordFile.tableName}

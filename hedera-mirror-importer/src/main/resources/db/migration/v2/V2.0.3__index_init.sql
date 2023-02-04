@@ -39,13 +39,13 @@ alter table if exists contract_action
 
 -- contract_log
 alter table if exists contract_log
-    add constraint contract_log__pk primary key (consensus_timestamp, index, contract_id, payer_account_id);
+    add constraint contract_log__pk primary key (consensus_timestamp, index, contract_id);
 create index if not exists contract_log__contract_id_timestamp_index
     on contract_log (contract_id, consensus_timestamp desc, index);
 
 -- contract_result
 alter table if exists contract_result
-    add constraint contract_result__pk primary key (consensus_timestamp, contract_id, payer_account_id);
+    add constraint contract_result__pk primary key (consensus_timestamp, contract_id);
 
 create index if not exists contract_result__hash
     on contract_result using hash (transaction_hash);
