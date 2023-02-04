@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mirror-rest
+  namespace: integration
+spec:
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: http
+  selector:
+    app.kubernetes.io/component: rest
+    app.kubernetes.io/instance: mirror
+    app.kubernetes.io/name: rest
+  type: LoadBalancer
+
