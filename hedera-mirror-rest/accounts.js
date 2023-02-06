@@ -297,7 +297,7 @@ const getOneAccount = async (req, res) => {
 
   const accountIdParams = [encodedId, encodedId];
   const {query: entityQuery, params: entityParams} = getAccountQuery(
-    {query: 'e.id = ? and (es.id IS NULL OR es.id = ?)', params: accountIdParams},
+    {query: 'e.id = ? and (es.id = ? OR es.id IS NULL)', params: accountIdParams},
     tokenBalanceResponseLimit.singleAccount
   );
   const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entityQuery);
