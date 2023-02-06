@@ -755,7 +755,7 @@ class ContractController extends BaseController {
         contract.bytecode = rows[0].data;
       }
     } else {
-      contract.bytecode = contract.initcode.toString('hex');
+      contract.bytecode = contract.initcode?.toString('hex');
     }
     res.locals[responseDataLabel] = formatContractRow(contract, ContractBytecodeViewModel);
   };
