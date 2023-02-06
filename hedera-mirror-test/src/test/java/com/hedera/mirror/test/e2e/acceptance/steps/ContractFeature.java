@@ -43,6 +43,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.ResourceUtils;
 import org.springframework.util.StringUtils;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import com.hedera.hashgraph.sdk.ContractFunctionParameters;
 import com.hedera.hashgraph.sdk.ContractId;
@@ -54,7 +55,6 @@ import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorContractResult;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
-import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResultResponse;
 import com.hedera.mirror.test.e2e.acceptance.util.FeatureInputHandler;
@@ -144,20 +144,24 @@ public class ContractFeature extends AbstractFeature {
 
     @Then("I call the contract via the mirror node REST API")
     public void restContractCall() {
-        ContractCallResponse getAccountBalanceResponse = mirrorClient.contractsCall(GET_ACCOUNT_BALANCE_SELECTOR, contractId.toSolidityAddress(), contractClient.getClientAddress());
+        var from = contractClient.getClientAddress();
+        var to = contractId.toSolidityAddress();
+
+        var getAccountBalanceResponse = mirrorClient.contractsCall(GET_ACCOUNT_BALANCE_SELECTOR, to, from);
         assertThat(convertContractCallResponseToNum(getAccountBalanceResponse)).isEqualTo(BigInteger.valueOf(1000L));
 
-        ContractCallResponse getSenderResponse = mirrorClient.contractsCall(GET_SENDER_SELECTOR, contractId.toSolidityAddress(), contractClient.getClientAddress());
-        assertThat(convertContractCallResponseToAddress(getSenderResponse)).isEqualTo(contractClient.getClientAddress());
+        var getSenderResponse = mirrorClient.contractsCall(GET_SENDER_SELECTOR, to, from);
+        assertThat(convertContractCallResponseToAddress(getSenderResponse)).isEqualTo(from);
 
-        ContractCallResponse multiplySimpleNumbersResponse = mirrorClient.contractsCall(MULTIPLY_SIMPLE_NUMBERS_SELECTOR, contractId.toSolidityAddress(), contractClient.getClientAddress());
+        var multiplySimpleNumbersResponse = mirrorClient.contractsCall(MULTIPLY_SIMPLE_NUMBERS_SELECTOR, to, from);
         assertThat(convertContractCallResponseToNum(multiplySimpleNumbersResponse)).isEqualTo(BigInteger.valueOf(4L));
 
-        ContractCallResponse identifierResponse = mirrorClient.contractsCall(IDENTIFIER_SELECTOR, contractId.toSolidityAddress(), contractClient.getClientAddress());
+        var identifierResponse = mirrorClient.contractsCall(IDENTIFIER_SELECTOR, to, from);
         assertThat(convertContractCallResponseToSelector(identifierResponse)).isEqualTo(IDENTIFIER_SELECTOR);
 
-        assertThatThrownBy(() -> mirrorClient.contractsCall(WRONG_SELECTOR, contractId.toSolidityAddress(), contractClient.getClientAddress())).getCause()
-                .isInstanceOf(Exception.class).hasMessageContaining("400 Bad Request from POST");
+        assertThatThrownBy(() -> mirrorClient.contractsCall(WRONG_SELECTOR, to, from))
+                .isInstanceOf(WebClientResponseException.class)
+                .hasMessageContaining("400 Bad Request from POST");
     }
 
     @Then("the mirror node REST API should verify the deleted contract entity")

@@ -30,14 +30,18 @@ import javax.validation.constraints.NotNull;
 import lombok.Data;
 import org.hibernate.validator.constraints.time.DurationMin;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 @Component
 @ConfigurationProperties(prefix = "hedera.mirror.test.acceptance.rest")
 @Data
 @Validated
 public class RestPollingProperties {
+
+    public static final String URL_SUFFIX = "/api/v1";
 
     @NotBlank
     private String baseUrl;
@@ -58,7 +62,18 @@ public class RestPollingProperties {
     private Set<Class> retryableExceptions = Set.of(Exception.class);
 
     public boolean shouldRetry(Throwable t) {
+        // Don't retry negative test cases
+        if (t instanceof WebClientResponseException wcre && wcre.getStatusCode() == HttpStatus.BAD_REQUEST) {
+            return false;
+        }
         return retryableExceptions.stream()
                 .anyMatch(ex -> ex.isInstance(t) || ex.isInstance(Throwables.getRootCause(t)));
+    }
+
+    public String getBaseUrl() {
+        if (baseUrl != null && !baseUrl.endsWith(URL_SUFFIX)) {
+            return baseUrl + URL_SUFFIX;
+        }
+        return baseUrl;
     }
 }

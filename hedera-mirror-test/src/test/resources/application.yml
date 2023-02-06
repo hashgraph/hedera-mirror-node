@@ -4,7 +4,7 @@ hedera:
       acceptance:
         messageTimeout: 20s
         # grpc endpoint
-        mirrorNodeAddress: hcs.testnet.mirrornode.hedera.com:5600
+        mirrorNodeAddress: testnet.mirrornode.hedera.com:443
         network: testnet
         rest:
-          baseUrl: http://testnet.mirrornode.hedera.com/api/v1
+          baseUrl: https://testnet.mirrornode.hedera.com

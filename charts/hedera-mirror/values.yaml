@@ -376,7 +376,9 @@ test:
           acceptance:
             mirrorNodeAddress: "{{ .Release.Name }}-grpc:5600"
             rest:
-              baseUrl: "http://{{ .Release.Name }}-rest/api/v1"
+              baseUrl: "http://{{ .Release.Name }}-rest"
+            web3:
+              baseUrl: "http://{{ .Release.Name }}-web3"
   cucumberTags: "@acceptance"
   enabled: false
   git:
