@@ -1,8 +1,5 @@
-/*-
- * ‌
- * Hedera Mirror Node
- *
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,20 +12,19 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
-import http from "k6/http";
+import http from 'k6/http';
 
 import {TestScenarioBuilder} from '../../lib/common.js';
-import {isNonErrorResponse} from "./common.js";
+import {isNonErrorResponse} from './common.js';
 
 const url = __ENV.BASE_URL;
-const contract = __ENV.DEFAULT_CONTRACT_ADDRESS
+const contract = __ENV.DEFAULT_CONTRACT_ADDRESS;
 
 const payload = JSON.stringify({
-  "to":String(contract),
-  "data":"0x5e01eb5a"
+  to: `${contract}`,
+  data: '0x5e01eb5a',
 });
 
 const httpParams = {
