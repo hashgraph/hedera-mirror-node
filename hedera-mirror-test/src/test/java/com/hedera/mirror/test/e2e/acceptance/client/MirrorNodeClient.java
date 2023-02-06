@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import javax.inject.Named;
 import lombok.NonNull;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.StringUtils;
 import org.awaitility.Durations;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -42,6 +43,7 @@ import com.hedera.hashgraph.sdk.SubscriptionHandle;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TopicMessageQuery;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
+import com.hedera.mirror.test.e2e.acceptance.config.Web3Properties;
 import com.hedera.mirror.test.e2e.acceptance.props.ContractCallRequest;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorNetworkNode;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorNetworkNodes;
@@ -66,12 +68,16 @@ public class MirrorNodeClient {
 
     private final AcceptanceTestProperties acceptanceTestProperties;
     private final WebClient webClient;
+    private final WebClient web3Client;
     private final RetryBackoffSpec retrySpec;
 
     public MirrorNodeClient(AcceptanceTestProperties acceptanceTestProperties,
-                            WebClient webClient) {
+                            WebClient webClient, Web3Properties web3Properties) {
         this.acceptanceTestProperties = acceptanceTestProperties;
         this.webClient = webClient;
+        this.web3Client = StringUtils.isBlank(web3Properties.getBaseUrl()) ? webClient : webClient.mutate()
+                .baseUrl(web3Properties.getBaseUrl())
+                .build();
         var properties = acceptanceTestProperties.getRestPollingProperties();
         retrySpec = Retry.backoff(properties.getMaxAttempts(), properties.getMinBackoff())
                 .maxBackoff(properties.getMaxBackoff())
@@ -260,7 +266,7 @@ public class MirrorNodeClient {
     }
 
     private <T> T callPostRestEndpoint(String uri, Class<T> classType, ContractCallRequest contractCallRequest) {
-        return webClient.post()
+        return web3Client.post()
                 .uri(uri)
                 .body(Mono.just(contractCallRequest), ContractCallRequest.class)
                 .accept(MediaType.APPLICATION_JSON)
