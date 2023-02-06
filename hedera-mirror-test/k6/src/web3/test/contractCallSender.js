@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-import http from 'k6/http';
-
 import {TestScenarioBuilder} from '../../lib/common.js';
 import {isNonErrorResponse} from './common.js';
+import {jsonPost} from './common.js';
 
 const url = __ENV.BASE_URL;
 const contract = __ENV.DEFAULT_CONTRACT_ADDRESS;
@@ -27,15 +26,9 @@ const payload = JSON.stringify({
   data: '0x5e01eb5a',
 });
 
-const httpParams = {
-  headers: {
-    'Content-Type': 'application/json',
-  },
-};
-
 const {options, run} = new TestScenarioBuilder()
   .name('contractCallSender') // use unique scenario name among all tests
-  .request(() => http.post(url, payload, httpParams))
+  .request(() => jsonPost(url, payload))
   .check('contractCallSender', (r) => isNonErrorResponse(r))
   .build();
 
