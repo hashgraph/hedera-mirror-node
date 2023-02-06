@@ -1,9 +1,6 @@
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,7 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
 import base32 from './base32';
@@ -299,9 +295,9 @@ const getOneAccount = async (req, res) => {
   const resultTypeQuery = utils.parseResultParams(req);
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
 
-  const accountIdParams = [encodedId];
+  const accountIdParams = [encodedId, encodedId];
   const {query: entityQuery, params: entityParams} = getAccountQuery(
-    {query: 'e.id = ?', params: accountIdParams},
+    {query: 'e.id = ? and (es.id IS NULL OR es.id = ?)', params: accountIdParams},
     tokenBalanceResponseLimit.singleAccount
   );
   const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entityQuery);
