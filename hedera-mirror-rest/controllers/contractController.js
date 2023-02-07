@@ -745,15 +745,8 @@ class ContractController extends BaseController {
       throw new NotFoundError();
     }
     const contract = rows[0];
-    if(contract.file_id !== null) {
-      const {query, params} = FileDataService.getFileData(contract.file_id, contract.created_timestamp);
-      if (logger.isTraceEnabled()) {
-        logger.trace(`getFileData query: ${query}, params: ${params}`);
-      }
-      const {rows} = await pool.queryQuietly(query, params);
-      if (rows.length === 1) {
-        contract.bytecode = rows[0].data;
-      }
+    if (contract.file_id !== null) {
+      contract.bytecode = await FileDataService.getFileData(contract.file_id, contract.created_timestamp);
     } else {
       contract.bytecode = contract.initcode?.toString('hex');
     }

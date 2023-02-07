@@ -82,17 +82,16 @@ class FileDataService extends BaseService {
         ) and ${FileData.CONSENSUS_TIMESTAMP} <= $2`;
 
   /**
-   * The function returns the query and params to get the active file content for the fileId at the provided consensus timestamp.
+   * The function returns the data for the fileId at the provided consensus timestamp.
    * @param fileId
    * @param timestamp
-   * @return {query: string, params: any[]}
+   * @return {data: string}
    */
-  getFileData = (fileId, timestamp) => {
+  getFileData = async (fileId, timestamp) => {
     const params = [fileId, timestamp];
-    return {
-      query: FileDataService.getFileDataQuery,
-      params,
-    };
+    const query = FileDataService.getFileDataQuery;
+    const row = await super.getSingleRow(query, params, 'getFileData');
+    return _.isNil(row) ? null : row.data;
   };
 
   getLatestFileContentsQuery = (innerWhere = '') => {
