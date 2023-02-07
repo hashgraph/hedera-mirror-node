@@ -16,7 +16,6 @@
 
 import http from 'k6/http';
 
-const errorField = 'error';
 const resultField = 'result';
 
 function isNonErrorResponse(response) {
@@ -28,7 +27,7 @@ function isNonErrorResponse(response) {
       return false;
     }
     const body = JSON.parse(response.body);
-    return body.hasOwnProperty(resultField) && !body.hasOwnProperty(errorField);
+    return body.hasOwnProperty(resultField);
   } catch (e) {
     return false;
   }
