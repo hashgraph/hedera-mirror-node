@@ -342,12 +342,12 @@ describe('Override stateproof config', () => {
 });
 
 describe('Override db pool config', () => {
-  const customConfig = (dbConfig) => ({
+  const customConfig = (poolConfig) => ({
     hedera: {
       mirror: {
         rest: {
           db: {
-            pool: dbConfig,
+            pool: poolConfig,
           },
         },
       },

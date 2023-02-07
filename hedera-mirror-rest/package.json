@@ -110,37 +110,5 @@
     "json5": "2.2.3",
     "protobufjs": "7.1.2"
   },
-  "baseUrlPath": "/api/v1",
-  "bundleDependencies": [
-    "@awaitjs/express",
-    "@godaddy/terminus",
-    "@hashgraph/proto",
-    "asn1js",
-    "aws-sdk",
-    "bigint-buffer",
-    "body-parser",
-    "compression",
-    "cors",
-    "express",
-    "express-http-context",
-    "express-openapi-validator",
-    "extend",
-    "ip-anonymize",
-    "js-yaml",
-    "json-bigint",
-    "lodash",
-    "log4js",
-    "long",
-    "mathjs",
-    "mem",
-    "parse-duration",
-    "pg",
-    "pg-range",
-    "prom-client",
-    "qs",
-    "quick-lru",
-    "rfc4648",
-    "swagger-stats",
-    "swagger-ui-express"
-  ]
+  "baseUrlPath": "/api/v1"
 }

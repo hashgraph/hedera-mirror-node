@@ -664,9 +664,10 @@ const transactionHashQuery = `
 /**
  * Get the query for either getting transaction by id or getting transaction by payer account id and a list of
  * consensus timestamps
+ *
  * @param {string[]} extraMainConditions extra where conditions for the main query
  * @param {string} timestampRangeCondition timestamp range condition to limit the number of timestamp partitions to scan
- * @return {string}
+ * @return {string} The query
  */
 const getTransactionByPayerAccountIdQuery = (extraMainConditions, timestampRangeCondition) => {
   return `

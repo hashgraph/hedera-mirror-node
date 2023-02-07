@@ -169,17 +169,17 @@ const parseDurationConfig = (name, value) => {
   if (!ms) {
     throw new InvalidConfigError(`invalid ${name} ${value}`);
   }
-  return BigInt(ms) * 1000_000n;
+  return BigInt(ms) * 1_000_000n;
 };
 
 const parseQueryConfig = () => {
   const conf = getConfig();
 
-  // maxRepeatedQueryParameters, for backwards compatibility, config.maxRepeatedQueryParameters takes priority
+  // maxRepeatedQueryParameters, for backwards compatibility, conf.maxRepeatedQueryParameters takes priority
   conf.query.maxRepeatedQueryParameters = conf?.maxRepeatedQueryParameters ?? conf.query.maxRepeatedQueryParameters;
   delete conf.maxRepeatedQueryParameters;
 
-  // maxTimestampRange
+  // maxTimestampRange, for backwards compatibility, conf.maxTimestampRange takes priority
   conf.query.maxTimestampRangeNs = parseDurationConfig(
     'query.maxTimestampRange',
     conf?.maxTimestampRange ?? conf.query.maxTimestampRange
