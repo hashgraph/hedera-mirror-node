@@ -4,7 +4,7 @@ package com.hedera.mirror.test.e2e.acceptance.client;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +52,6 @@ public class ContractClient extends AbstractNetworkClient {
                 .setBytecodeFileId(fileId)
                 .setContractMemo(memo)
                 .setGas(gas)
-                .setMaxAutomaticTokenAssociations(1)
                 .setTransactionMemo(memo);
 
         if (contractFunctionParameters != null) {
@@ -151,5 +150,9 @@ public class ContractClient extends AbstractNetworkClient {
                 contractFunctionResult.contractId,
                 contractFunctionResult.gasUsed,
                 contractFunctionResult.logs.size());
+    }
+
+    public String getClientAddress() {
+        return sdkClient.getClient().getOperatorAccountId().toSolidityAddress();
     }
 }

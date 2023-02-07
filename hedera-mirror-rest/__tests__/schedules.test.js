@@ -2,7 +2,7 @@
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -118,7 +118,18 @@ describe('schedule formatScheduleRow tests', () => {
       description: 'input with undefined signatures',
       input: {
         ...defaultInput,
-        signatures: null,
+        signatures: undefined,
+      },
+      expected: {
+        ...defaultExpected,
+        signatures: [],
+      },
+    },
+    {
+      description: 'input with null signature object',
+      input: {
+        ...defaultInput,
+        signatures: [{consensus_timestamp: null, public_key_prefix: null, signature: null, type: null}],
       },
       expected: {
         ...defaultExpected,

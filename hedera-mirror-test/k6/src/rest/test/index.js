@@ -2,7 +2,7 @@
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,7 +48,7 @@ import * as contractsResults from './contractsResult.js';
 import * as contractsResultsId from './contractsResultsId.js';
 import * as contractsResultsIdActions from './contractsResultsIdActions.js';
 import * as contractsResultsLogs from './contractsResultsLogs.js';
-import * as networkExchangerate from './networkExchangerate.js';
+import * as networkExchangeRate from './networkExchangeRate.js';
 import * as networkFees from './networkFees.js';
 import * as networkNodes from './networkNodes.js';
 import * as networkStake from './networkStake.js';
@@ -105,7 +105,7 @@ const tests = {
   contractsResultsId,
   contractsResultsIdActions,
   contractsResultsLogs,
-  networkExchangerate,
+  networkExchangeRate,
   networkFees,
   networkNodes,
   networkStake,

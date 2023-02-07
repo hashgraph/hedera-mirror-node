@@ -12,6 +12,7 @@ Feature: Contract Base Coverage Feature
         When I successfully call the contract
         Then the mirror node REST API should return status <httpStatusCode> for the contract transaction
         And the mirror node REST API should verify the called contract function
+        And I call the contract via the mirror node REST API
         When I successfully delete the contract
         Then the mirror node REST API should return status <httpStatusCode> for the contract transaction
         And the mirror node REST API should verify the deleted contract entity

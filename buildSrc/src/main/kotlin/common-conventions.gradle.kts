@@ -1,10 +1,12 @@
+import com.github.gradle.node.npm.task.NpmSetupTask
 import org.owasp.dependencycheck.gradle.extension.AnalyzerExtension
+import java.nio.file.Paths
 
 /*-
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,18 +70,27 @@ node {
 }
 
 spotless {
+    val npmExec = when(System.getProperty("os.name").toLowerCase().contains("windows")) {
+        true -> Paths.get("npm.cmd")
+        else -> Paths.get("bin", "npm")
+    }
+
     isEnforceCheck = false
-    ratchetFrom("origin/main")
+    if (!System.getenv().containsKey("CI")) {
+        ratchetFrom("origin/main")
+    }
     format("javascript", {
         indentWithSpaces(2)
         licenseHeader(licenseHeader, "(import|const|//)")
-        prettier().config(
-            mapOf(
-                "bracketSpacing" to false,
-                "printWidth" to 120,
-                "singleQuote" to true,
+        prettier()
+            .npmExecutable("${(tasks.named("npmSetup").get() as NpmSetupTask).npmDir.get().asFile.toPath().resolve(npmExec)}")
+            .config(
+                mapOf(
+                    "bracketSpacing" to false,
+                    "printWidth" to 120,
+                    "singleQuote" to true,
+                )
             )
-        )
         target("**/*.js")
         targetExclude("node_modules/**", ".node-flywaydb/**")
     })
@@ -99,6 +110,7 @@ spotless {
         endWithNewline()
         indentWithSpaces(2)
         prettier()
+            .npmExecutable("${(tasks.named("npmSetup").get() as NpmSetupTask).npmDir.get().asFile.toPath().resolve(npmExec)}")
         target("**/*.json", "**/*.md", "**/*.yml", "**/*.yaml")
         trimTrailingWhitespace()
     })
@@ -117,11 +129,6 @@ spotless {
 }
 
 tasks.nodeSetup {
-    doLast {
-        val npmExecutable = node.workDir.asFile.get().walk().first({ it -> it.name == "npm" })
-        spotless.format("javascript", { prettier().npmExecutable(npmExecutable) })
-        spotless.format("miscellaneous", { prettier().npmExecutable(npmExecutable) })
-    }
     onlyIf { !node.workDir.asFile.get().exists() }
 }
 

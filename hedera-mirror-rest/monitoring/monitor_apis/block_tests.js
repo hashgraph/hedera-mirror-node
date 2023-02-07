@@ -2,7 +2,7 @@
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,15 +23,15 @@ import config from './config';
 
 import {
   checkAPIResponseError,
-  checkRespObjDefined,
-  checkRespArrayLength,
   checkMandatoryParams,
   checkResourceFreshness,
+  checkRespArrayLength,
+  checkRespObjDefined,
+  CheckRunner,
   DEFAULT_LIMIT,
   getAPIResponse,
   getUrl,
   testRunner,
-  CheckRunner,
 } from './utils';
 
 const blocksPath = '/blocks';
@@ -73,7 +73,7 @@ const getSingleBlockById = async (server) => {
     })
     .run(blocks);
   if (!result.passed) {
-    return {blockUrl, ...result};
+    return {url, ...result};
   }
 
   const highestBlock = _.max(_.map(blocks, (block) => block.number));

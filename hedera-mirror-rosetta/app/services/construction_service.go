@@ -2,7 +2,7 @@
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,6 +50,7 @@ const (
 	metadataKeyAccountMap           = "account_map"
 	metadataKeyValidDurationSeconds = "valid_duration"
 	metadataKeyValidStartNanos      = "valid_start_nanos"
+	metadataKeyValidUntil           = "valid_until"
 	optionKeyAccountAliases         = "account_aliases"
 	optionKeyOperationType          = "operation_type"
 )
@@ -220,13 +221,14 @@ func (c *constructionAPIService) ConstructionParse(
 	}
 
 	metadata := make(map[string]interface{})
-	if memo, err := hedera.TransactionGetTransactionMemo(transaction); err == nil {
-		if memo != "" {
-			metadata[types.MetadataKeyMemo] = memo
-		}
-	} else {
-		return nil, errors.ErrInvalidTransactionMemo
+	memo := transaction.GetTransactionMemo()
+	if memo != "" {
+		metadata[types.MetadataKeyMemo] = memo
 	}
+
+	validStart := transaction.GetTransactionID().ValidStart
+	validDuration := transaction.GetTransactionValidDuration()
+	metadata[metadataKeyValidUntil] = validStart.Add(validDuration).UnixNano()
 
 	operations, accounts, err := c.transactionHandler.Parse(ctx, transaction)
 	if err != nil {

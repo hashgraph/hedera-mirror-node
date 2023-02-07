@@ -2,7 +2,7 @@
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,10 @@
 
 package interfaces
 
-import "github.com/hashgraph/hedera-sdk-go/v2"
+import (
+	"github.com/hashgraph/hedera-sdk-go/v2"
+	"time"
+)
 
 // Transaction defines the transaction methods used by constructor service
 type Transaction interface {
@@ -45,6 +48,12 @@ type Transaction interface {
 
 	// GetTransactionID returns the transaction id
 	GetTransactionID() hedera.TransactionID
+
+	// GetTransactionMemo returns the transaction memo
+	GetTransactionMemo() string
+
+	// GetTransactionValidDuration returns the transaction valid duration
+	GetTransactionValidDuration() time.Duration
 
 	// String encodes the Transaction to a string
 	String() string

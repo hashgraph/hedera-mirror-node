@@ -4,7 +4,7 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,11 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
  * ‍
  */
 
+import static com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse.convertContractCallResponseToAddress;
+import static com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse.convertContractCallResponseToNum;
+import static com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse.convertContractCallResponseToSelector;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -39,6 +43,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.ResourceUtils;
 import org.springframework.util.StringUtils;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import com.hedera.hashgraph.sdk.ContractFunctionParameters;
 import com.hedera.hashgraph.sdk.ContractId;
@@ -61,6 +66,12 @@ public class ContractFeature extends AbstractFeature {
     private static final ObjectMapper MAPPER = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
+
+    private static final String GET_ACCOUNT_BALANCE_SELECTOR = "6896fabf";
+    private static final String GET_SENDER_SELECTOR = "5e01eb5a";
+    private static final String MULTIPLY_SIMPLE_NUMBERS_SELECTOR = "8070450f";
+    private static final String IDENTIFIER_SELECTOR = "7998a1c4";
+    private static final String WRONG_SELECTOR = "000000";
 
     private final ContractClient contractClient;
     private final FileClient fileClient;
@@ -131,6 +142,28 @@ public class ContractFeature extends AbstractFeature {
         verifyContractExecutionResultsByTransactionId();
     }
 
+    @Then("I call the contract via the mirror node REST API")
+    public void restContractCall() {
+        var from = contractClient.getClientAddress();
+        var to = contractId.toSolidityAddress();
+
+        var getAccountBalanceResponse = mirrorClient.contractsCall(GET_ACCOUNT_BALANCE_SELECTOR, to, from);
+        assertThat(convertContractCallResponseToNum(getAccountBalanceResponse)).isEqualTo(BigInteger.valueOf(1000L));
+
+        var getSenderResponse = mirrorClient.contractsCall(GET_SENDER_SELECTOR, to, from);
+        assertThat(convertContractCallResponseToAddress(getSenderResponse)).isEqualTo(from);
+
+        var multiplySimpleNumbersResponse = mirrorClient.contractsCall(MULTIPLY_SIMPLE_NUMBERS_SELECTOR, to, from);
+        assertThat(convertContractCallResponseToNum(multiplySimpleNumbersResponse)).isEqualTo(BigInteger.valueOf(4L));
+
+        var identifierResponse = mirrorClient.contractsCall(IDENTIFIER_SELECTOR, to, from);
+        assertThat(convertContractCallResponseToSelector(identifierResponse)).isEqualTo(IDENTIFIER_SELECTOR);
+
+        assertThatThrownBy(() -> mirrorClient.contractsCall(WRONG_SELECTOR, to, from))
+                .isInstanceOf(WebClientResponseException.class)
+                .hasMessageContaining("400 Bad Request from POST");
+    }
+
     @Then("the mirror node REST API should verify the deleted contract entity")
     public void verifyDeletedContractMirror() {
         verifyContractFromMirror(true);
@@ -182,7 +215,6 @@ public class ContractFeature extends AbstractFeature {
         assertThat(mirrorContract.getCreatedTimestamp()).isNotBlank();
         assertThat(mirrorContract.isDeleted()).isEqualTo(isDeleted);
         assertThat(mirrorContract.getFileId()).isEqualTo(fileId.toString());
-        assertThat(mirrorContract.getMaxAutomaticTokenAssociations()).isPositive();
         assertThat(mirrorContract.getMemo()).isNotBlank();
         String address = mirrorContract.getEvmAddress();
         assertThat(address).isNotBlank().isNotEqualTo("0x").isNotEqualTo("0x0000000000000000000000000000000000000000");

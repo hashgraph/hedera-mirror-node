@@ -2,7 +2,7 @@
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ import {
   DEFAULT_LIMIT,
   getAPIResponse,
   getUrl,
+  hasEmptyList,
   testRunner,
 } from './utils';
 
@@ -124,7 +125,7 @@ const getTransactionsWithAccountCheck = async (server) => {
     type: 'credit',
     limit: 1,
   });
-  const accTransactions = await getAPIResponse(url, jsonRespKey);
+  const accTransactions = await getAPIResponse(url, jsonRespKey, hasEmptyList(jsonRespKey));
 
   result = new CheckRunner()
     .withCheckSpec(checkAPIResponseError)
@@ -238,7 +239,7 @@ const getTransactionsWithTimeAndLimitParams = async (server) => {
     timestamp: [`gt:${minusOne.toString()}`, `lt:${plusOne.toString()}`],
     limit: 1,
   });
-  transactions = await getAPIResponse(url, jsonRespKey);
+  transactions = await getAPIResponse(url, jsonRespKey, hasEmptyList(jsonRespKey));
 
   result = checkRunner.run(transactions);
   if (!result.passed) {

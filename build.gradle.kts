@@ -2,7 +2,7 @@
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,16 +29,18 @@ plugins {
 // Can't use typed variable syntax due to Dependabot limitations
 extra.apply {
     set("gson.version", "2.8.9") // Temporary until Apache jclouds supports gson 2.9
+    set("mapStructVersion", "1.5.3.Final")
     set("postgresql.version", "42.5.1") // Temporary fix for transient dependency security issue
     set("protobufVersion", "3.21.12")
     set("reactorGrpcVersion", "1.2.3")
     set("snakeyaml.version", "1.33") // Temporary fix for transient dependency security issue
-    set("testcontainersSpringBootVersion", "2.2.14")
+    set("testcontainersSpringBootVersion", "2.3.1")
 }
 
 // Creates a platform/BOM with specific versions so subprojects don't need to specify a version when using a dependency
 dependencies {
     constraints {
+        val mapStructVersion: String by rootProject.extra
         val protobufVersion: String by rootProject.extra
         val reactorGrpcVersion: String by rootProject.extra
         val testcontainersSpringBootVersion: String by rootProject.extra
@@ -46,9 +48,12 @@ dependencies {
         api("com.esaulpaugh:headlong:9.1.1")
         api("com.github.meanbeanlib:meanbean:3.0.0-M9")
         api("com.github.vertical-blank:sql-formatter:2.0.3")
-        api("com.google.cloud:spring-cloud-gcp-dependencies:3.4.2")
+        api("com.google.cloud:spring-cloud-gcp-dependencies:3.4.3")
         api("com.google.guava:guava:31.1-jre")
         api("com.google.protobuf:protobuf-java:$protobufVersion")
+        api("com.graphql-java-generator:graphql-java-client-dependencies:1.18.9")
+        api("com.graphql-java:graphql-java-extended-scalars:20.0")
+        api("com.graphql-java:graphql-java-extended-validation:20.0-validator-6.2.0.Final")
         api("com.hedera.evm:hedera-evm:0.34.0")
         api("com.hedera.hashgraph:hedera-protobuf-java-api:0.34.0")
         api("com.hedera.hashgraph:sdk:2.19.0")
@@ -60,7 +65,7 @@ dependencies {
         api("com.vladmihalcea:hibernate-types-55:2.21.1")
         api("commons-beanutils:commons-beanutils:1.9.4")
         api("commons-io:commons-io:2.11.0")
-        api("io.cucumber:cucumber-bom:7.11.0")
+        api("io.cucumber:cucumber-bom:7.11.1")
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
         api("io.grpc:grpc-bom:1.52.1")
         api("io.swagger:swagger-annotations:1.6.9")
@@ -75,12 +80,14 @@ dependencies {
         api("org.gaul:s3proxy:2.0.0")
         api("org.hyperledger.besu:secp256k1:0.6.1")
         api("org.hyperledger.besu:evm:22.7.6")
+        api("org.mapstruct:mapstruct:$mapStructVersion")
+        api("org.mapstruct:mapstruct-processor:$mapStructVersion")
         api("org.msgpack:jackson-dataformat-msgpack:0.9.3")
         api("org.springdoc:springdoc-openapi-webflux-ui:1.6.14")
         api("org.springframework.cloud:spring-cloud-dependencies:2021.0.5")
         api("org.testcontainers:junit-jupiter:1.17.6")
-        api("software.amazon.awssdk:bom:2.19.21")
-        api("uk.org.webcompere:system-stubs-jupiter:2.0.1")
+        api("software.amazon.awssdk:bom:2.19.31")
+        api("uk.org.webcompere:system-stubs-jupiter:2.0.2")
     }
 }
 
