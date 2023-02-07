@@ -36,8 +36,8 @@ public class BackfillTransactionHashMigration extends RepeatableMigration {
     private static final String BACKFILL_TRANSACTION_HASH_SQL = """
             begin;
             truncate transaction_hash;
-            insert into transaction_hash (consensus_timestamp, hash)
-            select consensus_timestamp, transaction_hash
+            insert into transaction_hash (consensus_timestamp, hash, payer_account_id)
+            select consensus_timestamp, transaction_hash, payer_account_id
             from transaction
             where consensus_timestamp >= ?;
             commit;

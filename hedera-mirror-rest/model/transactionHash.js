@@ -23,6 +23,7 @@ class TransactionHash {
   static tableName = 'transaction_hash';
   static CONSENSUS_TIMESTAMP = 'consensus_timestamp';
   static HASH = 'hash';
+  static PAYER_ACCOUNT_ID = 'payer_account_id';
 
   /**
    * Parses transaction_hash table columns into object
