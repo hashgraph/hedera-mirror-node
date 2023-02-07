@@ -60,35 +60,38 @@ class FileDataService extends BaseService {
   }
     group by ${FileData.getFullName(FileData.ENTITY_ID)}`;
 
-  // contract byte code
-  // the query finds the file content valid at the contract's created timestamp T by aggregating the contents of all the
-  // file* txs from the latest FileCreate or FileUpdate transaction before T, to T
-  // Note the 'contract' relation is the cte not the 'contract' table
-  static contractInitCodeFileDataQuery = `select
-      string_agg(
-          ${FileData.getFullName(FileData.FILE_DATA)}, ''
-          order by ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)}
-      ) bytecode
-    from ${FileData.tableName} ${FileData.tableAlias}
-    join contract_entity ce
-      on ce.file_id = ${FileData.getFullName(FileData.ENTITY_ID)}
-    where ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)} >= (
-      select ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)}
-      from ${FileData.tableName} ${FileData.tableAlias}
-      join contract_entity ce
-        on ce.file_id = ${FileData.getFullName(FileData.ENTITY_ID)}
-          and ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)} <= ce.created_timestamp
-      where ${FileData.getFullName(FileData.TRANSACTION_TYPE)} = 17
-        or (${FileData.getFullName(FileData.TRANSACTION_TYPE)} = 19 and length(${FileData.getFullName(
-    FileData.FILE_DATA
-  )}) <> 0)
-      order by ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)} desc
-      limit 1
-    ) and ${FileData.getFullName(FileData.CONSENSUS_TIMESTAMP)} <= ce.created_timestamp
-      and ce.file_id is not null`;
+  static getFileDataQuery = `select
+         string_agg(
+           ${FileData.FILE_DATA}, ''
+           order by ${FileData.CONSENSUS_TIMESTAMP}
+           ) data
+        from ${FileData.tableName}
+        where
+           ${FileData.ENTITY_ID} = $1
+        and ${FileData.CONSENSUS_TIMESTAMP} >= (
+        select ${FileData.CONSENSUS_TIMESTAMP}
+        from ${FileData.tableName}
+        where ${FileData.ENTITY_ID} = $1
+        and ${FileData.CONSENSUS_TIMESTAMP} <= $2
+        and (${FileData.TRANSACTION_TYPE} = 17
+             or ( ${FileData.TRANSACTION_TYPE} = 19
+                  and
+                  length(${FileData.FILE_DATA}) <> 0 ))
+        order by ${FileData.CONSENSUS_TIMESTAMP} desc
+        limit 1
+        ) and ${FileData.CONSENSUS_TIMESTAMP} <= $2`;
 
-  getContractInitCodeFiledataQuery = () => {
-    return FileDataService.contractInitCodeFileDataQuery;
+  /**
+   * The function returns the data for the fileId at the provided consensus timestamp.
+   * @param fileId
+   * @param timestamp
+   * @return {data: string}
+   */
+  getFileData = async (fileId, timestamp) => {
+    const params = [fileId, timestamp];
+    const query = FileDataService.getFileDataQuery;
+    const row = await super.getSingleRow(query, params, 'getFileData');
+    return _.isNil(row) ? null : row.data;
   };
 
   getLatestFileContentsQuery = (innerWhere = '') => {
