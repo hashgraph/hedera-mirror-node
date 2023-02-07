@@ -49,6 +49,5 @@ spec:
     postgresql:
       enabled: false
     test:
-      cucumberTags: "@acceptance and not @contractbase"
       enabled: true
 
