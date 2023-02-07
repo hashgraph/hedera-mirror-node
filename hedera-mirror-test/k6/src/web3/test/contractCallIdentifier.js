@@ -14,30 +14,22 @@
  * limitations under the License.
  */
 
-import http from 'k6/http';
+import {TestScenarioBuilder} from '../../lib/common.js';
+import {isNonErrorResponse} from './common.js';
+import {jsonPost} from './common.js';
 
-const resultField = 'result';
+const url = __ENV.BASE_URL;
+const contract = __ENV.DEFAULT_CONTRACT_ADDRESS;
 
-function isNonErrorResponse(response) {
-  //instead of doing multiple type checks,
-  //lets just do the normal path and return false,
-  //if an exception happens.
-  try {
-    if (response.status !== 200) {
-      return false;
-    }
-    const body = JSON.parse(response.body);
-    return body.hasOwnProperty(resultField);
-  } catch (e) {
-    return false;
-  }
-}
+const payload = JSON.stringify({
+  to: `${contract}`,
+  data: '0x7998a1c4',
+});
 
-const jsonPost = (url, payload) =>
-  http.post(url, payload, {
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
+const {options, run} = new TestScenarioBuilder()
+  .name('contractCallIdentifier') // use unique scenario name among all tests
+  .request(() => jsonPost(url, payload))
+  .check('contractCallIdentifier', (r) => isNonErrorResponse(r))
+  .build();
 
-export {isNonErrorResponse, jsonPost};
+export {options, run};
