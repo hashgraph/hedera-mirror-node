@@ -27,9 +27,12 @@ import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import javax.validation.Valid;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.time.StopWatch;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -53,10 +56,35 @@ import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 @RequestMapping("/api/v1/contracts")
 @RequiredArgsConstructor
 @RestController
+public
 class ContractController {
 
     static final String NOT_IMPLEMENTED_ERROR = "Operation not supported yet!";
     private final ContractCallService contractCallService;
+
+    private static long accumulatedGasUsed = 0L;
+    private static StopWatch watch;
+    private static long startTime;
+
+//    static {
+//        final var executor = Executors.newFixedThreadPool(1);
+//        executor.submit()
+//        executor.schedule(() -> accumulatedGasUsed = 0, 1, TimeUnit.SECONDS);
+//    }
+
+    static {
+        watch = StopWatch.create();
+        watch.start();
+        startTime = watch.getStartTime();
+    }
+
+    public static void clearAccumulatedGas() {
+        accumulatedGasUsed = 0L;
+    }
+
+    public long getAccumulatedGasUsed() {
+        return accumulatedGasUsed;
+    }
 
     @PostMapping(value = "/call")
     Mono<ContractCallResponse> call(@RequestBody @Valid ContractCallRequest request) {
@@ -64,10 +92,26 @@ class ContractController {
             throw new UnsupportedOperationException(NOT_IMPLEMENTED_ERROR);
         }
 
+        if(watch.isStarted()) {
+            watch.stop();
+        }
+
+        long currentTime = watch.getStopTime();
+
+        if(currentTime - startTime >= 1000) {
+            accumulatedGasUsed = 0;
+            startTime = currentTime;
+        }
+
+        watch.reset();
+        watch.start();
+
         final var params = constructServiceParameters(request);
         final var callResponse =
                 new ContractCallResponse(
                         contractCallService.processCall(params));
+
+        accumulatedGasUsed += contractCallService.getGasUsed();
 
         return Mono.just(callResponse);
     }

@@ -22,37 +22,28 @@ package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.web3.evm.exception.ResponseCodeUtil.getStatusOrDefault;
 
-//<<<<<<< Updated upstream
-import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorFacadeImpl;
-
 import io.micrometer.core.instrument.MeterRegistry;
-import io.prometheus.client.Gauge;
-//=======
-//>>>>>>> Stashed changes
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorFacade;
+import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorFacadeImpl;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
+import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultHederaTracer;
 
 @Named
 @RequiredArgsConstructor
 public class ContractCallService {
     private final MirrorEvmTxProcessorFacade mirrorEvmTxProcessorFacade;
-
-    private final MeterRegistry meterRegistry;
-
-    static {
-        //TODO update gauge
-    }
+    private DefaultHederaTracer tracer;
 
     public String processCall(final CallServiceParameters body) {
-        //TODO register gauge
-//        meterRegistry.gauge("gas.per.second", () -> ((MirrorEvmTxProcessorFacadeImpl)mirrorEvmTxProcessor).getTracer());
-//
         final var txnResult = doProcessCall(body);
 
         final var callResult = txnResult.getOutput() != null
@@ -81,5 +72,9 @@ public class ContractCallService {
             throw new InvalidTransactionException(e.getMessage());
         }
         return txnResult;
+    }
+
+    public long getGasUsed() {
+        return ((MirrorEvmTxProcessorFacadeImpl)mirrorEvmTxProcessorFacade).getTracer().getGasUsed();
     }
 }

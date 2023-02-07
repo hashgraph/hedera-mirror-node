@@ -43,7 +43,6 @@ import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldState;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 
 @Named
-@RequiredArgsConstructor
 public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacade {
 
     private MirrorNodeEvmProperties evmProperties;
@@ -66,6 +65,15 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
         this.blockMetaSource = blockMetaSource;
         this.aliasManager = aliasManager;
         this.pricesAndFees = pricesAndFees;
+
+        final int expirationCacheTime = (int) evmProperties.getExpirationCacheTime().toSeconds();
+
+        this.codeCache = new AbstractCodeCache(expirationCacheTime,
+                entityAccess);
+        this.worldState =
+                new HederaEvmWorldState(
+                        entityAccess, evmProperties,
+                        codeCache, accountAccessor, null);
     }
 
     @Override
@@ -87,7 +95,9 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                         blockMetaSource,
                         aliasManager,
                         codeCache);
-        processor.setOperationTracer(new DefaultHederaTracer());
+
+        defaultHederaTracer = new DefaultHederaTracer();
+        processor.setOperationTracer(defaultHederaTracer);
 
 
         return processor.execute(
