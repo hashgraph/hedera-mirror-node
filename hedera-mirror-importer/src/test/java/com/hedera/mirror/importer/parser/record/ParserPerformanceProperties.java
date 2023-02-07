@@ -35,7 +35,7 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 public class ParserPerformanceProperties {
 
     @NotNull
-    private Duration duration = Duration.ofSeconds(60L);
+    private Duration duration = Duration.ofSeconds(900L);
 
     @NotNull
     private List<PerformanceTransactionProperties> transactions = Collections.emptyList();

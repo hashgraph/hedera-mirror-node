@@ -4,7 +4,7 @@ package com.hedera.mirror.importer.parser.record.pubsub;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.google.cloud.spring.pubsub.core.PubSubTemplate;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -76,6 +77,8 @@ import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHa
 import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.util.Utility;
 
+import org.springframework.util.concurrent.ListenableFuture;
+
 @ExtendWith(MockitoExtension.class)
 class PubSubRecordItemListenerTest {
     private static final Long CONSENSUS_TIMESTAMP = 100L;
@@ -98,6 +101,9 @@ class PubSubRecordItemListenerTest {
 
     @Mock
     private NonFeeTransferExtractionStrategy nonFeeTransferExtractionStrategy;
+
+    @Mock
+    private PubSubTemplate pubSubTemplate;
 
     @Mock
     private TransactionHandler transactionHandler;
@@ -144,7 +150,10 @@ class PubSubRecordItemListenerTest {
         pubSubProperties = new PubSubProperties();
         when(transactionHandlerFactory.get(any())).thenReturn(transactionHandler);
         doReturn(true).when(addressBookService).isAddressBook(EntityId.of(ADDRESS_BOOK_FILE_ID));
-        pubSubRecordItemListener = new PubSubRecordItemListener(pubSubProperties, messageChannel, addressBookService,
+        when(transactionHandlerFactory.get(any())).thenReturn(transactionHandler);
+        var responseFuture = mock(ListenableFuture.class);
+        doReturn(responseFuture).when(pubSubTemplate).publish(any(), any(), any());
+        pubSubRecordItemListener = new PubSubRecordItemListener(pubSubProperties, pubSubTemplate, addressBookService,
                 fileDataRepository, nonFeeTransferExtractionStrategy, transactionHandlerFactory);
     }
 

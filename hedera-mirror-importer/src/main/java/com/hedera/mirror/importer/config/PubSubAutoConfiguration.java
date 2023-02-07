@@ -4,7 +4,7 @@ package com.hedera.mirror.importer.config;
  * ‌
  * Hedera Mirror Node
  * ​
- * Copyright (C) 2019 - 2022 Hedera Hashgraph, LLC
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
  * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,18 +23,15 @@ package com.hedera.mirror.importer.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.cloud.spring.autoconfigure.pubsub.GcpPubSubAutoConfiguration;
 import com.google.cloud.spring.pubsub.core.PubSubTemplate;
-import com.google.cloud.spring.pubsub.integration.outbound.PubSubMessageHandler;
+import com.google.cloud.spring.pubsub.support.PublisherFactory;
+import com.google.cloud.spring.pubsub.support.SubscriberFactory;
 import com.google.cloud.spring.pubsub.support.converter.JacksonPubSubMessageConverter;
-import com.hedera.mirror.importer.parser.record.pubsub.ConditionalOnPubSubRecordParser;
-import com.hedera.mirror.importer.parser.record.pubsub.PubSubProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.integration.annotation.ServiceActivator;
-import org.springframework.integration.channel.DirectChannel;
-import org.springframework.messaging.MessageChannel;
-import org.springframework.messaging.MessageHandler;
+
+import com.hedera.mirror.importer.parser.record.pubsub.ConditionalOnPubSubRecordParser;
 
 @Configuration
 @AutoConfigureAfter(GcpPubSubAutoConfiguration.class)  // for SubscriberFactory and PublisherFactory
@@ -42,20 +39,10 @@ import org.springframework.messaging.MessageHandler;
 @RequiredArgsConstructor
 public class PubSubAutoConfiguration {
 
-    private final PubSubProperties pubSubProperties;
-
-    private final PubSubTemplate pubSubTemplate;
-
-    // Required by PubSubRecordItemListener
     @Bean
-    MessageChannel pubsubOutputChannel() {
-        return new DirectChannel();
-    }
-
-    @Bean
-    @ServiceActivator(inputChannel = "pubsubOutputChannel")
-    MessageHandler pubSubMessageSender() {
+    PubSubTemplate pubSubTemplate(PublisherFactory publisherFactory, SubscriberFactory subscriberFactory) {
+        PubSubTemplate pubSubTemplate = new PubSubTemplate(publisherFactory, subscriberFactory);
         pubSubTemplate.setMessageConverter(new JacksonPubSubMessageConverter(new ObjectMapper()));
-        return new PubSubMessageHandler(pubSubTemplate, pubSubProperties.getTopicName());
+        return pubSubTemplate;
     }
 }
