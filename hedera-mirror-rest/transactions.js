@@ -20,6 +20,7 @@
 
 import _ from 'lodash';
 
+import config from './config';
 import * as constants from './constants';
 import EntityId from './entityId';
 import {NotFoundError} from './errors';
@@ -39,6 +40,8 @@ import {
 } from './model';
 
 import {AssessedCustomFeeViewModel, NftTransferViewModel} from './viewmodel';
+
+const {maxTransactionConsensusTimestampRangeNs} = config.query;
 
 const transactionFields = [
   Transaction.CHARGED_TX_FEE,
@@ -741,8 +744,11 @@ const extractSqlFromTransactionsByIdOrHashRequest = async (transactionIdOrHash, 
   } else {
     // try to parse it as a transaction id
     const transactionId = TransactionId.fromString(transactionIdOrHash);
-    conditions.push(`${Transaction.VALID_START_NS} = $2`);
-    params.push(transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs());
+    const maxConsensusTimestamp = BigInt(transactionId.getValidStartNs()) + maxTransactionConsensusTimestampRangeNs;
+    params.push(transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs(), maxConsensusTimestamp);
+
+    timestampRangeCondition = `${Transaction.CONSENSUS_TIMESTAMP} >= $2 and ${Transaction.CONSENSUS_TIMESTAMP} <= $3`;
+    conditions.push(`${Transaction.VALID_START_NS} = $2`, timestampRangeCondition);
 
     // only parse nonce and scheduled query filters if the path parameter is transaction id
     let nonce;
