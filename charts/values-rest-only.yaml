@@ -1,0 +1,51 @@
+citus:
+  enabled: false
+
+db:
+  host: 10.16.0.10
+
+importer:
+  enabled: false
+
+monitor:
+  enabled: false
+
+grpc:
+  enabled: false
+
+postgresql:
+  enabled: false
+
+redis:
+  enabled: false
+
+rest:
+  enabled: true
+  db:
+    password: mirror_rest_pass
+  hpa:
+    enabled: false
+  ingress:
+    enabled: false
+  resources:
+    limits:
+      cpu: 2
+    requests:
+      cpu: 1.1
+  service:
+    annotations:
+      networking.gke.io/load-balancer-type: Internal
+    type: LoadBalancer
+  tolerations:
+    - key: rest
+      operator: Equal
+      value: 'true'
+      effect: NoSchedule
+  test:
+    enabled: false
+
+rosetta:
+  enabled: false
+
+web3:
+  enabled: false
