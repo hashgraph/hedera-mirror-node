@@ -767,9 +767,10 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .build();
         var record = recordItem.getTransactionRecord();
         var transactionBody = recordItem.getTransactionBody();
+        var consensusTimestamp = record.getConsensusTimestamp();
 
         assertThrows(InvalidEntityException.class, () -> parseRecordItemAndCommit(recordItem));
-        assertThrows(NoSuchElementException.class, () -> getDbTransaction(record.getConsensusTimestamp()));
+        assertThrows(NoSuchElementException.class, () -> getDbTransaction(consensusTimestamp));
 
         assertEntities();
     }
