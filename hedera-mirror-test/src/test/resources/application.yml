@@ -4,26 +4,22 @@
 #      acceptance:
 #        messageTimeout: 20s
 #        # grpc endpoint
-#        mirrorNodeAddress: hcs.testnet.mirrornode.hedera.com:5600
+#        mirrorNodeAddress: testnet.mirrornode.hedera.com:443
 #        network: testnet
 #        rest:
-#          baseUrl: http://testnet.mirrornode.hedera.com/api/v1
-
+#          baseUrl: https://testnet.mirrornode.hedera.com
 hedera:
   mirror:
     test:
       acceptance:
         messageTimeout: 20s
         # grpc endpoint
-        #        mirrorNodeAddress: hcs.testnet.mirrornode.hedera.com:5600
         mirrorNodeAddress: localhost:5600
-        network: TESTNET
-        #        network: OTHER
+        network: testnet
         nodes:
           - accountId: 0.0.3
             host: 127.0.0.1
         operatorId: 0.0.2
         operatorKey: 302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137
         rest:
-          #          baseUrl: http://testnet.mirrornode.hedera.com/api/v1
           baseUrl: http://localhost:5551/api/v1

@@ -235,7 +235,7 @@ const getContractByIdOrAddressQueryForTable = (table, conditions) => {
  * @param timestampConditions
  * @return {query: string, params: any[]}
  */
-const getContractByIdOrAddressQuery = ({timestampConditions, timestampParams, contractIdParam}) => {
+const getContractByIdOrAddressContractEntityQuery = ({timestampConditions, timestampParams, contractIdParam}) => {
   const conditions = [...timestampConditions];
   const params = [...timestampParams];
   const contractIdParamParts = EntityId.computeContractIdPartsFromContractIdValue(contractIdParam);
@@ -268,15 +268,11 @@ const getContractByIdOrAddressQuery = ({timestampConditions, timestampParams, co
   }
 
   return {
-    query: [
-      `with contract_entity as (${tableUnionQueries.join('\n')}),
-                    contract_file as (${FileDataService.getContractInitCodeFiledataQuery()})`,
-      `select ce.*, coalesce(encode(ce.initcode, 'hex')::bytea, cf.bytecode) as bytecode`,
-      `from contract_entity ce, contract_file cf`,
-    ].join('\n'),
+    query: tableUnionQueries.join('\n'),
     params,
   };
 };
+
 
 /**
  * Gets the sql query for contracts
@@ -738,7 +734,7 @@ class ContractController extends BaseController {
     const {conditions: timestampConditions, params: timestampParams} =
       extractTimestampConditionsFromContractFilters(filters);
 
-    const {query, params} = getContractByIdOrAddressQuery({timestampConditions, timestampParams, contractIdParam});
+    const {query, params} = getContractByIdOrAddressContractEntityQuery({timestampConditions, timestampParams, contractIdParam});
 
     if (logger.isTraceEnabled()) {
       logger.trace(`getContractById query: ${query}, params: ${params}`);
@@ -748,8 +744,13 @@ class ContractController extends BaseController {
     if (rows.length !== 1) {
       throw new NotFoundError();
     }
-
-    res.locals[responseDataLabel] = formatContractRow(rows[0], ContractBytecodeViewModel);
+    const contract = rows[0];
+    if (contract.file_id !== null) {
+      contract.bytecode = await FileDataService.getFileData(contract.file_id, contract.created_timestamp);
+    } else {
+      contract.bytecode = contract.initcode?.toString('hex');
+    }
+    res.locals[responseDataLabel] = formatContractRow(contract, ContractBytecodeViewModel);
   };
 
   /**
@@ -1342,7 +1343,7 @@ if (utils.isTestEnv()) {
       extractSqlFromContractFilters,
       extractTimestampConditionsFromContractFilters,
       formatContractRow,
-      getContractByIdOrAddressQuery,
+      getContractByIdOrAddressContractEntityQuery,
       getContractsQuery,
       getLastNonceParamValue,
       validateContractIdAndConsensusTimestampParam,
