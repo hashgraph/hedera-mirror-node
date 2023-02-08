@@ -24,9 +24,10 @@ import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstru
 import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.gasCalculator;
 import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.mcps;
 
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.GasMetricsHederaTracer;
+
 import java.time.Instant;
 import javax.inject.Named;
-import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -36,7 +37,6 @@ import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.properties.StaticBlockMetaSource;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
-import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultHederaTracer;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldState;
@@ -52,7 +52,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
     private AbstractCodeCache codeCache;
     private HederaEvmMutableWorldState worldState;
 
-    private DefaultHederaTracer defaultHederaTracer;
+    private GasMetricsHederaTracer gasMetricsHederaTracer;
 
     public MirrorEvmTxProcessorFacadeImpl(
             final MirrorEntityAccess entityAccess,
@@ -96,8 +96,8 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                         aliasManager,
                         codeCache);
 
-        defaultHederaTracer = new DefaultHederaTracer();
-        processor.setOperationTracer(defaultHederaTracer);
+        gasMetricsHederaTracer = new GasMetricsHederaTracer();
+        processor.setOperationTracer(gasMetricsHederaTracer);
 
 
         return processor.execute(
@@ -110,7 +110,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                 isStatic);
     }
 
-    public DefaultHederaTracer getTracer() {
-        return defaultHederaTracer;
+    public GasMetricsHederaTracer getTracer() {
+        return gasMetricsHederaTracer;
     }
 }

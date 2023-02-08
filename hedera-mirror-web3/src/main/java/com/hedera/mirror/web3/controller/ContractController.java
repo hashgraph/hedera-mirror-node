@@ -26,13 +26,11 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
 
-import io.micrometer.core.instrument.MeterRegistry;
-import java.util.concurrent.Executors;
+import java.util.Timer;
 import java.util.concurrent.TimeUnit;
 import javax.validation.Valid;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.time.StopWatch;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -63,19 +61,12 @@ class ContractController {
     private final ContractCallService contractCallService;
 
     private static long accumulatedGasUsed = 0L;
-    private static StopWatch watch;
-    private static long startTime;
 
-//    static {
-//        final var executor = Executors.newFixedThreadPool(1);
-//        executor.submit()
-//        executor.schedule(() -> accumulatedGasUsed = 0, 1, TimeUnit.SECONDS);
-//    }
+    private static Timer timer;
 
     static {
-        watch = StopWatch.create();
-        watch.start();
-        startTime = watch.getStartTime();
+        timer = new Timer();
+        timer.schedule(new ClearAccumulatedGasTask(), TimeUnit.MILLISECONDS.toMillis(500), TimeUnit.SECONDS.toMillis(1));
     }
 
     public static void clearAccumulatedGas() {
@@ -91,20 +82,6 @@ class ContractController {
         if (request.isEstimate()) {
             throw new UnsupportedOperationException(NOT_IMPLEMENTED_ERROR);
         }
-
-        if(watch.isStarted()) {
-            watch.stop();
-        }
-
-        long currentTime = watch.getStopTime();
-
-        if(currentTime - startTime >= 1000) {
-            accumulatedGasUsed = 0;
-            startTime = currentTime;
-        }
-
-        watch.reset();
-        watch.start();
 
         final var params = constructServiceParameters(request);
         final var callResponse =
