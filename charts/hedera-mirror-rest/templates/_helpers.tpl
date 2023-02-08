@@ -28,15 +28,30 @@ If release name contains chart name it will be used as a full name.
 {{/*
 Common labels
 */}}
-{{- define "hedera-mirror-rest.labels" -}}
-{{ include "hedera-mirror-rest.selectorLabels" . }}
+{{- define "hedera-mirror-rest.commonLabels" -}}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 app.kubernetes.io/part-of: hedera-mirror-node
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 helm.sh/chart: {{ include "hedera-mirror-rest.chart" . }}
+{{- end -}}
+
+{{/*
+Labels
+*/}}
+{{- define "hedera-mirror-rest.labels" -}}
+{{ include "hedera-mirror-rest.selectorLabels" . }}
+{{ include "hedera-mirror-rest.commonLabels" . }}
 {{- if .Values.labels }}
 {{ toYaml .Values.labels }}
 {{- end }}
+{{- end -}}
+
+{{/*
+Monitor labels
+*/}}
+{{- define "hedera-mirror-rest-monitor.labels" -}}
+{{ include "hedera-mirror-rest-monitor.selectorLabels" . }}
+{{ include "hedera-mirror-rest.commonLabels" . }}
 {{- end -}}
 
 {{/*
@@ -63,6 +78,15 @@ Selector labels
 {{- define "hedera-mirror-rest.selectorLabels" -}}
 app.kubernetes.io/component: rest
 app.kubernetes.io/name: {{ include "hedera-mirror-rest.name" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end -}}
+
+{{/*
+Monitor selector labels
+*/}}
+{{- define "hedera-mirror-rest-monitor.selectorLabels" -}}
+app.kubernetes.io/component: rest-monitor
+app.kubernetes.io/name: {{ include "hedera-mirror-rest.name" . }}-monitor
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
 

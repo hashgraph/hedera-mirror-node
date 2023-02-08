@@ -313,7 +313,7 @@ const getOneAccount = async (req, res) => {
   // Execute query & get a promise
   const entityPromise = pool.queryQuietly(pgEntityQuery, entityParams);
 
-  const [creditDebitQuery] = utils.parseCreditDebitParams(parsedQueryParams, 'ctl.amount');
+  const creditDebitQuery = ''; // type=credit|debit is not supported
   const accountQuery = 'ctl.entity_id = ?';
   const accountParams = [encodedId];
   const transactionTypeQuery = utils.parseTransactionTypeParam(parsedQueryParams);

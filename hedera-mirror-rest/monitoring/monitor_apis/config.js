@@ -45,6 +45,10 @@ const REQUIRED_FIELDS = [
 
 const load = (configFile) => {
   try {
+    if (!configFile) {
+      return {};
+    }
+
     const data = JSON.parse(fs.readFileSync(configFile).toString('utf-8'));
     logger.info(`Loaded configuration source: ${configFile}`);
     return data;
@@ -62,6 +66,11 @@ if (!loaded) {
   config = load(path.join(moduleDirname, 'config', 'default.serverlist.json'));
   const customConfig = load(path.join(moduleDirname, 'config', 'serverlist.json'));
   extend(true, config, customConfig);
+
+  if (process.env.CONFIG_PATH) {
+    const customPathConfig = load(path.join(process.env.CONFIG_PATH, 'serverlist.json'));
+    extend(true, config, customPathConfig);
+  }
 
   for (const field of REQUIRED_FIELDS) {
     if (!_.has(config, field)) {

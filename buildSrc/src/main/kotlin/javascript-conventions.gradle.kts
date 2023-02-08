@@ -40,6 +40,11 @@ tasks.register<NpmTask>("package") {
     }
 }
 
+tasks.register<NpmTask>("start") {
+    dependsOn(tasks.npmInstall)
+    args.set(listOf("start"))
+}
+
 val test = tasks.register<NpmTask>("test") {
     dependsOn(tasks.npmInstall)
     args.set(listOf("test"))

@@ -48,10 +48,24 @@ app.use(compression());
 app.use(cors());
 
 const apiPrefix = '/api/v1';
+const healthDown = '{"status": "DOWN"}';
+const healthUp = '{"status": "UP"}';
 
 common.initResults();
 
 // routes
+app.get('/health/liveness', (req, res) => res.status(200).send(healthUp));
+app.get('/health/readiness', (req, res) => {
+  const status = common.getStatus();
+  const total = status.results.map((r) => r.results.testResults ? 1 : 0).reduce((r, i) => r + i);
+
+  if (total > 0) {
+    res.status(200).send(healthUp);
+  } else {
+    res.status(503).send(healthDown);
+  }
+});
+
 app.get(`${apiPrefix}/status`, (req, res) => {
   const status = common.getStatus();
   const passed = status.results.map((r) => r.results.numPassedTests).reduce((r, i) => r + i);

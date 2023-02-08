@@ -1,0 +1,23 @@
+{{- if (and .Values.monitor.enabled .Values.monitor.test.enabled) -}}
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    helm.sh/hook: test-success
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+  labels: {{- include "hedera-mirror-rest-monitor.labels" . | nindent 4 }}
+  name: {{ include "hedera-mirror-rest.fullname" . }}-monitor-test
+  namespace: {{ include "hedera-mirror-rest.namespace" . }}
+spec:
+  containers:
+    - name: test
+      image: "{{ .Values.monitor.test.image.repository }}:{{ .Values.monitor.test.image.tag }}"
+      imagePullPolicy: {{ .Values.monitor.test.image.pullPolicy }}
+      args:
+        - wget
+        - --no-check-certificate
+        - -O-
+        - http://{{ include "hedera-mirror-rest.fullname" . }}-monitor:3000/api/v1/status
+  terminationGracePeriodSeconds: 1
+  restartPolicy: Never
+{{- end -}}

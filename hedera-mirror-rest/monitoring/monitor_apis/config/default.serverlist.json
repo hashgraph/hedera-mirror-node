@@ -6,6 +6,7 @@
       "name": "local"
     }
   ],
+  "freshness": true,
   "interval": 60,
   "retry": {
     "maxAttempts": 4,

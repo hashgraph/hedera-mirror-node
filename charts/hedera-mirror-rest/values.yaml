@@ -105,6 +105,38 @@ middleware:
       attempts: 10
       initialInterval: 100ms
 
+monitor:
+  config: |-
+    {
+      "servers": [
+        {
+          "baseUrl": "http://{{ .Release.Name }}-rest:{{ .Values.service.port }}",
+          "name": "kubernetes"
+        }
+      ]
+    }
+  enabled: true
+  image:
+    pullPolicy: IfNotPresent
+    registry: gcr.io
+    repository: mirrornode/hedera-mirror-rest-monitor
+    tag: ""  # Defaults to the chart's app version
+  resources:
+    limits:
+      cpu: 250m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 64Mi
+  service:
+    type: ClusterIP
+  test:
+    enabled: true
+    image:
+      pullPolicy: IfNotPresent
+      repository: busybox
+      tag: latest
+
 nodeSelector: {}
 
 podAnnotations: {}
