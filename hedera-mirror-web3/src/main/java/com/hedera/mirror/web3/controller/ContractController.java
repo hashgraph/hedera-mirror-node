@@ -66,7 +66,7 @@ class ContractController {
 
     static {
         timer = new Timer();
-        timer.schedule(new ClearAccumulatedGasTask(), TimeUnit.MILLISECONDS.toMillis(500), TimeUnit.SECONDS.toMillis(1));
+        timer.schedule(new ClearAccumulatedGasTask(), TimeUnit.MILLISECONDS.toMillis(1), TimeUnit.SECONDS.toMillis(1));
     }
 
     public static void clearAccumulatedGas() {
