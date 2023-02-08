@@ -1941,7 +1941,7 @@ components:
         contract_id:
           $ref: '#/components/schemas/EntityId'
         created_contract_ids:
-          description: The network's released supply of hbars in tinybars
+          description: The list of smart contracts that were created by the function call.
           items:
             $ref: '#/components/schemas/EntityId'
           nullable: true
@@ -2994,13 +2994,13 @@ components:
       properties:
         automatic_association:
           type: boolean
-          description: Specifies if the relationship is implicitly/explicity (true/false) associated.
+          description: Specifies if the relationship is implicitly/explicitly associated.
           example: true
           nullable: false
         balance:
           format: int64
           type: integer
-          description: For FUNGIBLE_COMMON the balance that the Account holds in the smallest denomination.NON_FUNGIBLE_UNIQUE - the number of NFTs held by the account.
+          description: For FUNGIBLE_COMMON, the balance that the account holds in the smallest denomination. For NON_FUNGIBLE_UNIQUE, the number of NFTs held by the account.
           example: 5
           nullable: false
         created_timestamp:
