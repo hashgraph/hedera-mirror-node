@@ -144,6 +144,8 @@ public class PubSubRecordItemListener implements RecordItemListener {
                 log.warn("Attempt {} to send message to PubSub failed: {}", retry, ex);
                 if (retry < pubSubProperties.getMaxSendAttempts()) {
                     sendPubSubMessage(message, header, retry);
+                } else {
+                    throw new RuntimeException(ex);
                 }
             }
 

@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.parser.record.pubsub;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -53,6 +54,7 @@ import com.hederahashgraph.api.proto.java.TransferList;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -60,11 +62,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.integration.MessageTimeoutException;
-import org.springframework.messaging.Message;
-import org.springframework.messaging.MessageChannel;
+import org.springframework.util.concurrent.ListenableFuture;
+import org.springframework.util.concurrent.ListenableFutureCallback;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
@@ -77,8 +79,6 @@ import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHa
 import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.util.Utility;
 
-import org.springframework.util.concurrent.ListenableFuture;
-
 @ExtendWith(MockitoExtension.class)
 class PubSubRecordItemListenerTest {
     private static final Long CONSENSUS_TIMESTAMP = 100L;
@@ -90,8 +90,7 @@ class PubSubRecordItemListenerTest {
 
     private static final NodeAddressBook UPDATED = addressBook(3);
 
-    @Mock
-    private MessageChannel messageChannel;
+    private static final String TOPIC_NAME = "topic-name";
 
     @Mock(lenient = true)
     private AddressBookService addressBookService;
@@ -131,9 +130,15 @@ class PubSubRecordItemListenerTest {
                 .build();
     }
 
-    private static PubSubMessage.Transaction buildPubSubTransaction(Transaction transaction) throws InvalidProtocolBufferException {
-        return new PubSubMessage.Transaction(TransactionBody.parseFrom(SignedTransaction.parseFrom(transaction.getSignedTransactionBytes())
-                .getBodyBytes()), SignatureMap.getDefaultInstance());
+    private static PubSubMessage buildPubSubTransaction(RecordItem recordItem, Transaction transaction) throws InvalidProtocolBufferException {
+        var pubSubTransaction =
+                new PubSubMessage.Transaction(TransactionBody.parseFrom(SignedTransaction.parseFrom(transaction.getSignedTransactionBytes())
+                        .getBodyBytes()), SignatureMap.getDefaultInstance());
+        var entityId = EntityId.of(10, EntityType.ACCOUNT);
+        var transactionType = recordItem.getTransactionType();
+        var transactionRecord = recordItem.getTransactionRecord();
+        return new PubSubMessage(recordItem.getConsensusTimestamp(), entityId, transactionType, pubSubTransaction,
+                transactionRecord, null);
     }
 
     private static NodeAddressBook addressBook(int size) {
@@ -148,6 +153,7 @@ class PubSubRecordItemListenerTest {
     void beforeEach() {
         TransactionHandlerFactory transactionHandlerFactory = mock(TransactionHandlerFactory.class);
         pubSubProperties = new PubSubProperties();
+        pubSubProperties.setTopicName(TOPIC_NAME);
         when(transactionHandlerFactory.get(any())).thenReturn(transactionHandler);
         doReturn(true).when(addressBookService).isAddressBook(EntityId.of(ADDRESS_BOOK_FILE_ID));
         when(transactionHandlerFactory.get(any())).thenReturn(transactionHandler);
@@ -168,12 +174,24 @@ class PubSubRecordItemListenerTest {
                 .setTopicID(topicID)
                 .build();
         Transaction transaction = buildTransaction(builder -> builder.setConsensusSubmitMessage(submitMessage));
+
         // when
         doReturn(topicIdEntity).when(transactionHandler).getEntity(any());
-        pubSubRecordItemListener.onItem(RecordItem.builder().transactionRecord(DEFAULT_RECORD).transaction(transaction).build());
+        var successFuture = mock(ListenableFuture.class);
+        when(pubSubTemplate.publish(any(), any(), any()))
+                .thenReturn(successFuture);
+        doAnswer(invocationOnMock -> {
+            ListenableFutureCallback callback = invocationOnMock.getArgument(0);
+            callback.onSuccess("success");
+            return null;
+        }).when(successFuture).addCallback(any(ListenableFutureCallback.class));
+
+        var recordItem = RecordItem.builder().transactionRecord(DEFAULT_RECORD).transaction(transaction).build();
+        pubSubRecordItemListener.onItem(recordItem);
 
         // then
-        var pubSubMessage = assertPubSubMessage(buildPubSubTransaction(transaction), 1);
+        verify(successFuture).addCallback(any(ListenableFutureCallback.class));
+        var pubSubMessage = assertPubSubMessage(buildPubSubTransaction(recordItem, transaction), 1);
         assertThat(pubSubMessage.getEntity()).isEqualTo(topicIdEntity);
         assertThat(pubSubMessage.getNonFeeTransfers()).isNull();
     }
@@ -191,10 +209,11 @@ class PubSubRecordItemListenerTest {
         Transaction transaction = buildTransaction(builder -> builder.setConsensusSubmitMessage(submitMessage));
         // when
         doReturn(null).when(transactionHandler).getEntity(any());
-        pubSubRecordItemListener.onItem(RecordItem.builder().transactionRecord(DEFAULT_RECORD).transaction(transaction).build());
+        var recordItem = RecordItem.builder().transactionRecord(DEFAULT_RECORD).transaction(transaction).build();
+        pubSubRecordItemListener.onItem(recordItem);
 
         // then
-        var pubSubMessage = assertPubSubMessage(buildPubSubTransaction(transaction), 1);
+        var pubSubMessage = assertPubSubMessage(buildPubSubTransaction(recordItem, transaction), 1);
         assertThat(pubSubMessage.getEntity()).isNull();
         assertThat(pubSubMessage.getNonFeeTransfers()).isNull();
     }
@@ -220,7 +239,7 @@ class PubSubRecordItemListenerTest {
         pubSubRecordItemListener.onItem(recordItem);
 
         // then
-        var pubSubMessage = assertPubSubMessage(buildPubSubTransaction(transaction), 1);
+        var pubSubMessage = assertPubSubMessage(buildPubSubTransaction(recordItem, transaction), 1);
         assertThat(pubSubMessage.getEntity()).isNull();
         assertThat(pubSubMessage.getNonFeeTransfers()).isEqualTo(nonFeeTransfers);
     }
@@ -236,19 +255,18 @@ class PubSubRecordItemListenerTest {
                 .transaction(transaction).build();
 
         // when
-        when(messageChannel.send(any())).thenThrow(RuntimeException.class);
+        when(pubSubTemplate.publish(any(), any(), any())).thenThrow(RuntimeException.class);
 
         // then
         assertThatThrownBy(
                 () -> pubSubRecordItemListener.onItem(recordItem))
                 .isInstanceOf(ParserException.class)
                 .hasMessageContaining("Error sending transaction to pubsub");
-        verify(messageChannel, times(1)).send(any());
+        verify(pubSubTemplate, times(1)).publish(any(), any(), any());
     }
 
     @Test
     void testSendRetries() throws Exception {
-        // when
         CryptoTransferTransactionBody cryptoTransfer = CryptoTransferTransactionBody.newBuilder()
                 .setTransfers(TransferList.newBuilder().build())
                 .build();
@@ -256,20 +274,28 @@ class PubSubRecordItemListenerTest {
         pubSubProperties.setMaxSendAttempts(3);
 
         // when
-        when(messageChannel.send(any()))
-                .thenThrow(MessageTimeoutException.class)
-                .thenThrow(MessageTimeoutException.class)
-                .thenReturn(true);
-        pubSubRecordItemListener.onItem(RecordItem.builder().transactionRecord(DEFAULT_RECORD).transaction(transaction).build());
+        var failFuture = mock(ListenableFuture.class);
+        when(pubSubTemplate.publish(any(), any(), any()))
+                .thenReturn(failFuture);
+        doAnswer(invocationOnMock -> {
+            ListenableFutureCallback callback = invocationOnMock.getArgument(0);
+            callback.onFailure(new RuntimeException("error"));
+            return null;
+        }).when(failFuture).addCallback(any(ListenableFutureCallback.class));
+
+        var recordItem = RecordItem.builder().transactionRecord(DEFAULT_RECORD).transaction
+                (transaction).build();
 
         // then
-        var pubSubMessage = assertPubSubMessage(buildPubSubTransaction(transaction), 3);
-        assertThat(pubSubMessage.getEntity()).isNull();
-        assertThat(pubSubMessage.getNonFeeTransfers()).isNull();
+        assertThatThrownBy(
+                () -> pubSubRecordItemListener.onItem(recordItem))
+                .isInstanceOf(ParserException.class)
+                .hasMessageContaining("Error sending transaction to pubsub");
+        assertPubSubMessage(buildPubSubTransaction(recordItem, transaction), 3);
     }
 
     @Test
-    void testNetworkAddressBookAppend() throws Exception {
+    void testNetworkAddressBookAppend() {
         // given
         byte[] fileContents = new byte[] {0b0, 0b1, 0b10};
         Transaction transaction = buildTransaction(builder -> {
@@ -291,7 +317,7 @@ class PubSubRecordItemListenerTest {
     }
 
     @Test
-    void testNetworkAddressBookUpdate() throws Exception {
+    void testNetworkAddressBookUpdate() {
         // given
         byte[] fileContents = UPDATED.toByteArray();
         var fileUpdate = FileUpdateTransactionBody.newBuilder()
@@ -302,7 +328,8 @@ class PubSubRecordItemListenerTest {
 
         // when
         doReturn(EntityId.of(ADDRESS_BOOK_FILE_ID)).when(transactionHandler).getEntity(any());
-        pubSubRecordItemListener.onItem(RecordItem.builder().transactionRecord(DEFAULT_RECORD).transaction(transaction).build());
+        pubSubRecordItemListener.onItem(RecordItem.builder().transactionRecord(DEFAULT_RECORD).transaction(transaction)
+                .build());
 
         // then
         FileData fileData = new FileData(100L, fileContents, EntityId
@@ -311,16 +338,23 @@ class PubSubRecordItemListenerTest {
         verify(addressBookService).update(fileData);
     }
 
-    private PubSubMessage assertPubSubMessage(PubSubMessage.Transaction expectedTransaction, int numSendTries) throws Exception {
-        ArgumentCaptor<Message<PubSubMessage>> argument = ArgumentCaptor.forClass(Message.class);
-        verify(messageChannel, times(numSendTries)).send(argument.capture());
-        var actual = argument.getValue().getPayload();
-        assertThat(actual.getConsensusTimestamp()).isEqualTo(CONSENSUS_TIMESTAMP);
-        assertThat(actual.getTransaction()).isEqualTo(expectedTransaction);
-        assertThat(actual.getTransactionRecord()).isEqualTo(DEFAULT_RECORD);
-        assertThat(argument.getValue().getHeaders()).describedAs("Headers contain consensus timestamp")
-                .hasSize(3) // +2 are default attributes 'id' and 'timestamp' (publish)
-                .containsEntry("consensusTimestamp", CONSENSUS_TIMESTAMP);
-        return actual;
+    private PubSubMessage assertPubSubMessage(PubSubMessage pubSubMessage, int numSendTries) {
+        Map<String, String> header = Map.of("consensusTimestamp", CONSENSUS_TIMESTAMP.toString());
+        ArgumentCaptor<String> topicCaptor = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<PubSubMessage> pubSubMessageCaptor = ArgumentCaptor.forClass(PubSubMessage.class);
+        ArgumentCaptor<Map> headerCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(pubSubTemplate, times(numSendTries)).publish(topicCaptor.capture(), pubSubMessageCaptor.capture(),
+                headerCaptor.capture());
+
+        var actualTopic = topicCaptor.getValue();
+        assertThat(actualTopic).isEqualTo(TOPIC_NAME);
+
+        var actualHeader = headerCaptor.getValue();
+        assertThat(actualHeader).isEqualTo(header);
+
+        var actualPubSubMessage = pubSubMessageCaptor.getValue();
+        assertThat(actualPubSubMessage.getTransaction()).isEqualTo(pubSubMessage.getTransaction());
+        assertThat(actualPubSubMessage.getTransactionRecord()).isEqualTo(DEFAULT_RECORD);
+        return actualPubSubMessage;
     }
 }
