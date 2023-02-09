@@ -71,6 +71,15 @@ spec:
         curl -s "http://${REST_IP}/api/v1/transactions?limit=1"
 
       {{ end -}}
+
+      {{- if .Values.rest.enabled -}}
+      To access the GraphQL API:
+
+        GRAPHQL_API=$(kubectl get service/{{ .Release.Name }}-graphql -n {{ include "hedera-mirror.namespace" . }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+
+        curl --location --request POST "http://${GRAPHQL_API}/graphql/alpha" --header 'Content-Type: application/json' --data-raw '{"query":"{  account(input: {entityId: {shard: 0, realm: 0, num: 111146}}) {alias autoRenewPeriod createdTimestamp declineReward createdTimestamp}}}"}'
+
+      {{ end -}}
     type: hedera-mirror-node
     version: {{ default .Chart.AppVersion .Values.applicationResource.version | quote }}
   {{- end }}
