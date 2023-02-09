@@ -37,6 +37,12 @@
         "transaction_index": 1
       },
       {
+        "consensus_timestamp": 1639010141000000000,
+        "contract_id": 1004,
+        "transaction_hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb98",
+        "transaction_index": 1
+      },
+      {
         "consensus_timestamp": 1639010151000000000,
         "contract_id": 1004,
         "transaction_hash": "0x9db63968721fc76815d11b0b97734669bf88ae3810e07c199924553f0548eb99",
@@ -52,28 +58,28 @@
     "contractlogs": [
       {
         "consensus_timestamp": 1639010141000000000,
-        "contract_id": 1003,
+        "contract_id": 1004,
         "index": 0,
         "topic0": [10],
         "topic1": [11]
       },
       {
         "consensus_timestamp": 1639010141000000000,
-        "contract_id": 1003,
+        "contract_id": 1004,
         "index": 1,
         "topic0": [10],
         "topic1": [11]
       },
       {
         "consensus_timestamp": 1639010141000000000,
-        "contract_id": 1003,
+        "contract_id": 1004,
         "index": 2,
         "topic0": [10],
         "topic1": [11]
       },
       {
         "consensus_timestamp": 1639010141000000000,
-        "contract_id": 1003,
+        "contract_id": 1004,
         "index": 3,
         "topic0": [10],
         "topic1": [11]
@@ -139,9 +145,9 @@
             "block_number": 1
           },
           {
-            "address": "0x00000000000000000000000000000000000003eb",
+            "address": "0x00000000000000000000000000000000000003ec",
             "bloom": "0x0123",
-            "contract_id": "0.0.1003",
+            "contract_id": "0.0.1004",
             "data": "0x0123",
             "index": 3,
             "root_contract_id": null,
@@ -207,9 +213,9 @@
             "block_number": 1
           },
           {
-            "address": "0x00000000000000000000000000000000000003eb",
+            "address": "0x00000000000000000000000000000000000003ec",
             "bloom": "0x0123",
-            "contract_id": "0.0.1003",
+            "contract_id": "0.0.1004",
             "data": "0x0123",
             "index": 3,
             "root_contract_id": null,
@@ -226,9 +232,9 @@
             "block_number": 1
           },
           {
-            "address": "0x00000000000000000000000000000000000003eb",
+            "address": "0x00000000000000000000000000000000000003ec",
             "bloom": "0x0123",
-            "contract_id": "0.0.1003",
+            "contract_id": "0.0.1004",
             "data": "0x0123",
             "index": 2,
             "root_contract_id": null,
@@ -245,9 +251,9 @@
             "block_number": 1
           },
           {
-            "address": "0x00000000000000000000000000000000000003eb",
+            "address": "0x00000000000000000000000000000000000003ec",
             "bloom": "0x0123",
-            "contract_id": "0.0.1003",
+            "contract_id": "0.0.1004",
             "data": "0x0123",
             "index": 1,
             "root_contract_id": null,
