@@ -285,12 +285,9 @@ class PubSubRecordItemListenerTest {
 
         var recordItem = RecordItem.builder().transactionRecord(DEFAULT_RECORD).transaction
                 (transaction).build();
+        pubSubRecordItemListener.onItem(recordItem);
 
         // then
-        assertThatThrownBy(
-                () -> pubSubRecordItemListener.onItem(recordItem))
-                .isInstanceOf(ParserException.class)
-                .hasMessageContaining("Error sending transaction to pubsub");
         assertPubSubMessage(buildPubSubTransaction(recordItem, transaction), 3);
     }
 
