@@ -9,6 +9,20 @@ monitor:
   enabled: false
 postgresql:
   enabled: false
+rest:
+  monitor:
+    config: |-
+      {
+        "freshness": false,
+        "network": { "enabled": false },
+        "servers": [
+          {
+            "baseUrl": "http://{{ .Release.Name }}-rest:{{ .Values.service.port }}",
+            "name": "kubernetes"
+          }
+        ],
+        "stateproof": { "enabled": false }
+      }
 rosetta:
   test:
     enabled: false

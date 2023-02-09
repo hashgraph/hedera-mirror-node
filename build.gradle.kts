@@ -34,7 +34,7 @@ extra.apply {
     set("protobufVersion", "3.21.12")
     set("reactorGrpcVersion", "1.2.3")
     set("snakeyaml.version", "1.33") // Temporary fix for transient dependency security issue
-    set("testcontainersSpringBootVersion", "2.2.14")
+    set("testcontainersSpringBootVersion", "2.3.1")
 }
 
 // Creates a platform/BOM with specific versions so subprojects don't need to specify a version when using a dependency
@@ -86,7 +86,7 @@ dependencies {
         api("org.springdoc:springdoc-openapi-webflux-ui:1.6.14")
         api("org.springframework.cloud:spring-cloud-dependencies:2021.0.5")
         api("org.testcontainers:junit-jupiter:1.17.6")
-        api("software.amazon.awssdk:bom:2.19.26")
+        api("software.amazon.awssdk:bom:2.19.31")
         api("uk.org.webcompere:system-stubs-jupiter:2.0.2")
     }
 }

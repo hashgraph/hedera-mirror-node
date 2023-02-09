@@ -1,0 +1,21 @@
+{{- if .Values.monitor.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  annotations: {{ toYaml .Values.service.annotations | nindent 4 }}
+  labels: {{ include "hedera-mirror-rest-monitor.labels" . | nindent 4 }}
+  name: {{ include "hedera-mirror-rest.fullname" . }}-monitor
+  namespace: {{ include "hedera-mirror-rest.namespace" . }}
+spec:
+  ports:
+    - name: api
+      port: 3000
+      protocol: TCP
+      targetPort: api
+    - name: ui
+      port: 80
+      protocol: TCP
+      targetPort: ui
+  selector: {{ include "hedera-mirror-rest-monitor.selectorLabels" . | nindent 4 }}
+  type: {{ .Values.monitor.service.type }}
+{{- end }}

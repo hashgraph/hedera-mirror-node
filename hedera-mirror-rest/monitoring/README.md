@@ -11,7 +11,7 @@ It then checks the responses using a few simple checks for those APIs.
 The results of these checks are exposed as a set of REST APIs by this monitoring service as follows:
 
 | API                 | HTTP return code | Description                                                                                                                                          |
-| ------------------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+|---------------------|------------------|------------------------------------------------------------------------------------------------------------------------------------------------------|
 | /api/v1/status      | 200 (OK)         | Provides a list of results of all tests run on all servers                                                                                           |
 | /api/v1/status/{id} | 200 (OK)         | If all tests pass for a server, then it returns the results                                                                                          |
 |                     | 4xx              | If any tests fail for a server, or if the server is not running, then it returns a 4xx error code to make it easy to integrate with alerting systems |
@@ -83,3 +83,11 @@ pm2 serve . 3001 // Serve the dashboard html pages on another port
 ```
 
 Using your browser, connect to `http://<host>:<port>/index.html`
+
+## Docker
+
+Create a custom `serverlist.json` in the current working directory. Then execute:
+
+```shell
+docker run -it --rm -e CONFIG_PATH=/config -v "${PWD}/serverlist.json:/config/serverlist.json" -p 8080:8080 -p 3000:3000 gcr.io/mirrornode/hedera-mirror-dashboard
+```
