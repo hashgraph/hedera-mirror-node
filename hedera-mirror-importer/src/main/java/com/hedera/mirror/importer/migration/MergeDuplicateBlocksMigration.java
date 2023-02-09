@@ -23,12 +23,13 @@ package com.hedera.mirror.importer.migration;
 import java.io.IOException;
 import java.util.Map;
 import javax.inject.Named;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 
 import com.hedera.mirror.importer.MirrorProperties;
 
 @Named
-class FixMainnetBlockMigration extends RepeatableMigration {
+class MergeDuplicateBlocksMigration extends RepeatableMigration {
 
     private static final String SQL = """
             with block1 as (
@@ -65,7 +66,9 @@ class FixMainnetBlockMigration extends RepeatableMigration {
     private final NamedParameterJdbcOperations jdbcOperations;
     private final MirrorProperties mirrorProperties;
 
-    protected FixMainnetBlockMigration(NamedParameterJdbcOperations jdbcOperations, MirrorProperties mirrorProperties) {
+    @Lazy
+    protected MergeDuplicateBlocksMigration(NamedParameterJdbcOperations jdbcOperations,
+                                            MirrorProperties mirrorProperties) {
         super(mirrorProperties.getMigration());
         this.jdbcOperations = jdbcOperations;
         this.mirrorProperties = mirrorProperties;
@@ -82,6 +85,6 @@ class FixMainnetBlockMigration extends RepeatableMigration {
 
     @Override
     public String getDescription() {
-        return "Fix duplicate block number issue on mainnet by combining multiple blocks into one";
+        return "Fix duplicate block number issue on mainnet by merging them";
     }
 }
