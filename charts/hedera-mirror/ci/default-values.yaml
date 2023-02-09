@@ -3,3 +3,17 @@ monitor:
   enabled: false
 postgresql:
   fullnameOverride: db
+rest:
+  monitor:
+    config: |-
+      {
+        "freshness": false,
+        "network": { "enabled": false },
+        "servers": [
+          {
+            "baseUrl": "http://{{ .Release.Name }}-rest:{{ .Values.service.port }}",
+            "name": "kubernetes"
+          }
+        ],
+        "stateproof": { "enabled": false }
+      }
