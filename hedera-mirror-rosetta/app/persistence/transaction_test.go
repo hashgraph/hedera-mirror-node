@@ -276,6 +276,11 @@ func TestCategorizeHbarTransfers(t *testing.T) {
 	}
 }
 
+func TestGeneralOperationStatus(t *testing.T) {
+	tx := transaction{Result: 400}
+	assert.Equal(t, types.GeneralStatus, getTransactionResult(&tx))
+}
+
 func TestTransactionGetHashString(t *testing.T) {
 	tx := transaction{Hash: []byte{1, 2, 3, 0xaa, 0xff}}
 	assert.Equal(t, "0x010203aaff", tx.getHashString())

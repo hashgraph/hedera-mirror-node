@@ -25,6 +25,7 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"sync"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
@@ -462,7 +463,8 @@ func (tr *transactionRepository) constructTransaction(sameHashTransactions []*tr
 			stakingRewardPayouts,
 		)
 
-		transactionResult := types.TransactionResults[int32(transaction.Result)]
+		transactionResult := fmt.Sprintf("%v", getTransactionResult(transaction))
+
 		operations = tr.appendHbarTransferOperations(transactionResult, transactionType, nonFeeTransfers, operations)
 		// fee transfers are always successful regardless of the transaction result
 		operations = tr.appendHbarTransferOperations(success, types.OperationTypeFee, feeHbarTransfers, operations)
@@ -496,6 +498,15 @@ func (tr *transactionRepository) constructTransaction(sameHashTransactions []*tr
 
 	result.Operations = operations
 	return result, nil
+}
+
+func getTransactionResult(transaction *transaction) interface{} {
+	transactionResult, ok := types.TransactionResults[int32(transaction.Result)]
+	if !ok {
+		// If transactionResult does not exist default to general status
+		transactionResult = types.GeneralStatus
+	}
+	return transactionResult
 }
 
 func (tr *transactionRepository) appendHbarTransferOperations(

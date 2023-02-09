@@ -23,6 +23,7 @@ package types
 import "github.com/coinbase/rosetta-sdk-go/types"
 
 const (
+	GeneralStatus   = "GENERAL_ERROR"
 	MetadataKeyMemo = "memo"
 
 	OperationTypeCryptoCreateAccount = "CRYPTOCREATEACCOUNT"
