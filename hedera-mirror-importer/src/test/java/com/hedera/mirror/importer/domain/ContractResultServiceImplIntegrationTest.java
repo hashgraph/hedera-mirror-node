@@ -279,9 +279,8 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     @Test
     void processContractCallFailure() {
         RecordItem recordItem = recordItemBuilder.contractCall()
-                .record(r -> r.setContractCallResult(r.getContractCallResultBuilder()
-                        .addCreatedContractIDs(r.getContractCallResult().getContractID())))
-                .receipt(r -> r.setStatus(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION))
+                .record(TransactionRecord.Builder::clearContractCallResult)
+                .receipt(r -> r.clearContractID().setStatus(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION))
                 .build();
 
         process(recordItem);
@@ -298,9 +297,8 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     void processContractCreateFailure() {
         RecordItem recordItem = recordItemBuilder.contractCreate()
                 .transactionBody(t -> t.setInitcode(ByteString.copyFrom(new byte[] {9, 8, 7})))
-                .record(r -> r.setContractCreateResult(r.getContractCreateResultBuilder()
-                                .addCreatedContractIDs(r.getContractCreateResult().getContractID())))
-                .receipt(r -> r.setStatus(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION))
+                .record(TransactionRecord.Builder::clearContractCreateResult)
+                .receipt(r -> r.clearContractID().setStatus(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION))
                 .build();
 
         process(recordItem);
@@ -316,9 +314,8 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     @Test
     void processSidecarContractCreateFailure() {
         RecordItem recordItem = recordItemBuilder.contractCreate()
-                .record(r -> r.setContractCreateResult(r.getContractCreateResultBuilder()
-                                .addCreatedContractIDs(r.getContractCreateResult().getContractID())))
-                .receipt(r -> r.setStatus(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION))
+                .record(TransactionRecord.Builder::clearContractCreateResult)
+                .receipt(r -> r.clearContractID().setStatus(ResponseCodeEnum.CONTRACT_EXECUTION_EXCEPTION))
                 .build();
 
         process(recordItem);

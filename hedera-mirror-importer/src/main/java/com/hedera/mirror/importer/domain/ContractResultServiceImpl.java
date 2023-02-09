@@ -208,12 +208,13 @@ public class ContractResultServiceImpl implements ContractResultService {
             ContractLoginfo contractLoginfo = functionResult.getLogInfo(index);
 
             ContractLog contractLog = new ContractLog();
+            EntityId contractId = EntityId.of(contractResult.getContractId(), EntityType.CONTRACT);
             contractLog.setBloom(DomainUtils.toBytes(contractLoginfo.getBloom()));
             contractLog.setConsensusTimestamp(contractResult.getConsensusTimestamp());
-            contractLog.setContractId(lookup(EntityId.of(contractResult.getContractId(), EntityType.CONTRACT), contractLoginfo.getContractID()));
+            contractLog.setContractId(lookup(contractId, contractLoginfo.getContractID()));
             contractLog.setData(DomainUtils.toBytes(contractLoginfo.getData()));
             contractLog.setIndex(index);
-            contractLog.setRootContractId(EntityId.of(contractResult.getContractId(), EntityType.CONTRACT));
+            contractLog.setRootContractId(contractId);
             contractLog.setPayerAccountId(contractResult.getPayerAccountId());
             contractLog.setTopic0(Utility.getTopic(contractLoginfo, 0));
             contractLog.setTopic1(Utility.getTopic(contractLoginfo, 1));
