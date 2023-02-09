@@ -66,26 +66,6 @@ class MirrorEntityAccessTest {
 
     //We hard-code isUsable to always return true, due to this method logic not applicable to mirror-node state
     @Test
-    void isUsableWithPositiveBalanceReturnsTrue() {
-        final long balance = 23L;
-        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
-        when(entity.getBalance()).thenReturn(balance);
-        final var result = mirrorEntityAccess.isUsable(ADDRESS);
-        assertThat(result).isTrue();
-    }
-
-    //We hard-code isUsable to always return true, due to this method logic not applicable to mirror-node state
-    @Test
-    void isUsableWithNegativeBalanceReturnsTrue() {
-        final long balance = -1L;
-        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
-        when(entity.getBalance()).thenReturn(balance);
-        final var result = mirrorEntityAccess.isUsable(ADDRESS);
-        assertThat(result).isTrue();
-    }
-
-    //We hard-code isUsable to always return true, due to this method logic not applicable to mirror-node state
-    @Test
     void isUsableWithWrongAliasReturnsTrue() {
         final var address = Address.fromHexString("0x3232134567785444e");
         final var result = mirrorEntityAccess.isUsable(address);

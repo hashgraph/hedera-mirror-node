@@ -37,9 +37,6 @@ public class AccountAccessorImpl implements AccountAccessor {
 
     @Override
     public Address canonicalAddress(Address addressOrAlias) {
-        if (mirrorEntityAccess.isUsable(addressOrAlias)) {
-            return addressOrAlias;
-        }
         return getAddressOrAlias(addressOrAlias);
     }
 

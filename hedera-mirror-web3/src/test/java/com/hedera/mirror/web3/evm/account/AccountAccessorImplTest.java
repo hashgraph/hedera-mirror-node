@@ -65,14 +65,12 @@ class AccountAccessorImplTest {
 
     @Test
     void canonicalAddressIsUsableTrue() {
-        when(mirrorEntityAccess.isUsable(ADDRESS)).thenReturn(true);
         final var result = accountAccessor.canonicalAddress(ADDRESS);
         assertThat(result).isEqualTo(ADDRESS);
     }
 
     @Test
     void canonicalAddressIsUsableFalse() {
-        when(mirrorEntityAccess.isUsable(ADDRESS)).thenReturn(false);
         final var result = accountAccessor.canonicalAddress(ADDRESS);
         assertThat(result).isEqualTo(ADDRESS);
     }
