@@ -41,9 +41,6 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 class MetricsConfiguration {
 
-    @Autowired
-    private GasPerSecond gasPerSecond;
-
     @Bean
     MeterBinder processMemoryMetrics() {
         return new ProcessMemoryMetrics();
@@ -55,7 +52,7 @@ class MetricsConfiguration {
     }
 
     @Bean
-    MeterBinder gasPerSecondMetrics() {
+    MeterBinder gasPerSecondMetrics(final GasPerSecond gasPerSecond) {
         return new GasPerSecondMetrics(gasPerSecond);
     }
 
