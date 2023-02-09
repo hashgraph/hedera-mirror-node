@@ -26,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
 
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.Transaction;
@@ -106,7 +107,7 @@ class MergeDuplicateBlocksMigrationTest extends IntegrationTest {
                 .returns(block1.getSize() + block2.getSize(), RecordFile::getSize)
                 .returns(block2.getVersion(), RecordFile::getVersion);
 
-        assertThat(transactionRepository.findAll())
+        assertThat(transactionRepository.findAll(Sort.by("consensusTimestamp").ascending()))
                 .hasSize(4)
                 .extracting(Transaction::getIndex)
                 .containsExactly(0, 1, 2, 3);
