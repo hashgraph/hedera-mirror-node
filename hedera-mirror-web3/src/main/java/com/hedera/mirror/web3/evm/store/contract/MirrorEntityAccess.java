@@ -26,6 +26,7 @@ import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 
 import com.google.protobuf.ByteString;
+import java.time.Instant;
 import java.util.Optional;
 import javax.inject.Named;
 
@@ -48,17 +49,49 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
     private final ContractRepository contractRepository;
     private final ContractStateRepository contractStateRepository;
 
-    //In the corresponding services implementation, we check whether the account is expired. We don't have this concept
-    //in mirror-node side, so we should always return true.
     @Override
     public boolean isUsable(final Address address) {
+        final var optionalEntity = findEntity(address);
+
+        if (optionalEntity.isEmpty()) {
+            return false;
+        } else {
+            final var entity = optionalEntity.get();
+
+            final var balance = entity.getBalance();
+            if(balance != null && balance > 0) {
+                return true;
+            }
+
+            final var expirationTimestamp = entity.getExpirationTimestamp();
+            final var createdTimestamp = entity.getCreatedTimestamp();
+            final var autoRenewPeriod = entity.getAutoRenewPeriod();
+
+            final var currentTime = Instant.now().getEpochSecond();
+            if((expirationTimestamp != null && expirationTimestamp <= currentTime) ||
+                    (createdTimestamp != null && autoRenewPeriod != null &&
+                            (createdTimestamp + autoRenewPeriod) <= currentTime)) {
+                return false;
+            }
+        }
+
         return true;
     }
 
     @Override
     public long getBalance(final Address address) {
         final var entity = findEntity(address);
-        return entity.map(Entity::getBalance).orElse(0L);
+
+        if(entity.isPresent()) {
+            final var balance = entity.get().getBalance();
+            if(balance != null && balance > 0) {
+                return balance;
+            } else {
+                return 0L;
+            }
+        }
+
+        return 0L;
     }
 
     @Override
