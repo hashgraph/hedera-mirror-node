@@ -56,8 +56,7 @@ public class ContractResult implements Persistable<Long> {
     @Id
     private Long consensusTimestamp;
 
-    @Convert(converter = ContractIdConverter.class)
-    private EntityId contractId;
+    private long contractId;
 
     @Type(type = "com.vladmihalcea.hibernate.type.array.ListArrayType")
     @JsonSerialize(using = LongListToStringSerializer.class)

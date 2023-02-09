@@ -288,7 +288,7 @@ public class DomainBuilder {
                 .bloom(bytes(256))
                 .callResult(bytes(512))
                 .consensusTimestamp(timestamp())
-                .contractId(entityId(CONTRACT))
+                .contractId(entityId(CONTRACT).getId())
                 .createdContractIds(List.of(entityId(CONTRACT).getId()))
                 .errorMessage("")
                 .functionParameters(bytes(64))
