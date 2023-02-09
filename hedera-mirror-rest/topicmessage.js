@@ -137,9 +137,11 @@ const getTopicMessages = async (req, res) => {
   };
 
   // get results and return formatted response
-  // set random_page_cost to 0 to make the cost estimation of using the index on (topic_id, consensus_timestamp)
-  // lower than that of the primary key so pg planner will choose the better index when querying topic messages by id
-  const messages = await getMessages(query, params, constants.zeroRandomPageCostQueryHint);
+  // if limit is not 1, set random_page_cost to 0 to make the cost estimation of using the index on
+  // (topic_id, consensus_timestamp) lower than that of the primary key so pg planner will choose the better index
+  // when querying topic messages by id
+  const queryHint = limit !== 1 ? constants.zeroRandomPageCostQueryHint : undefined;
+  const messages = await getMessages(query, params, queryHint);
   topicMessagesResponse.messages = messages.map((m) => new TopicMessageViewModel(m, messageEncoding));
 
   // populate next
@@ -245,7 +247,7 @@ const acceptedTopicsParameters = new Set([
   constants.filterKeys.LIMIT,
   constants.filterKeys.ORDER,
   constants.filterKeys.SEQUENCE_NUMBER,
-  constants.filterKeys.TIMESTAMP
+  constants.filterKeys.TIMESTAMP,
 ]);
 
 if (utils.isTestEnv()) {
