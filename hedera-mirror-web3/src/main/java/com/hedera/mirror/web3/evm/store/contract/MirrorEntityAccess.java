@@ -48,9 +48,11 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
     private final ContractRepository contractRepository;
     private final ContractStateRepository contractStateRepository;
 
+    //In the corresponding services implementation, we check whether the account is expired. We don't have this concept
+    //in mirror-node side, so we should always return true.
     @Override
     public boolean isUsable(final Address address) {
-        return findEntity(address).filter(e -> e.getBalance() > 0).isPresent();
+        return true;
     }
 
     @Override
