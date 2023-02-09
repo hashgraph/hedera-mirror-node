@@ -64,8 +64,9 @@ class MirrorEntityAccessTest {
     @InjectMocks
     private MirrorEntityAccess mirrorEntityAccess;
 
+    //We hard-code isUsable to always return true, due to this method logic not applicable to mirror-node state
     @Test
-    void isUsableWithPositiveBalance() {
+    void isUsableWithPositiveBalanceReturnsTrue() {
         final long balance = 23L;
         when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
         when(entity.getBalance()).thenReturn(balance);
@@ -73,20 +74,22 @@ class MirrorEntityAccessTest {
         assertThat(result).isTrue();
     }
 
+    //We hard-code isUsable to always return true, due to this method logic not applicable to mirror-node state
     @Test
-    void isUsableWithNegativeBalance() {
+    void isUsableWithNegativeBalanceReturnsTrue() {
         final long balance = -1L;
         when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
         when(entity.getBalance()).thenReturn(balance);
         final var result = mirrorEntityAccess.isUsable(ADDRESS);
-        assertThat(result).isFalse();
+        assertThat(result).isTrue();
     }
 
+    //We hard-code isUsable to always return true, due to this method logic not applicable to mirror-node state
     @Test
-    void isUsableWithAliasNegative() {
+    void isUsableWithWrongAliasReturnsTrue() {
         final var address = Address.fromHexString("0x3232134567785444e");
         final var result = mirrorEntityAccess.isUsable(address);
-        assertThat(result).isFalse();
+        assertThat(result).isTrue();
     }
 
     @Test
