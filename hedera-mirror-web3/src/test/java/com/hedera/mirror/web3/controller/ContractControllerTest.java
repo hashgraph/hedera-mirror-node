@@ -22,11 +22,17 @@ package com.hedera.mirror.web3.controller;
 
 import static com.hedera.mirror.web3.controller.ContractController.NOT_IMPLEMENTED_ERROR;
 import static com.hedera.mirror.web3.validation.HexValidator.MESSAGE;
+import static org.mockito.BDDMockito.given;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
 import static org.springframework.http.HttpStatus.OK;
+import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
 
 import javax.annotation.Resource;
+import io.github.bucket4j.Bandwidth;
+import io.github.bucket4j.Bucket;
+import io.github.bucket4j.Refill;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -45,18 +51,30 @@ import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
 import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
 
+import java.time.Duration;
+
 @ExtendWith(SpringExtension.class)
 @WebFluxTest(controllers = ContractController.class)
 class ContractControllerTest {
 
     private static final String CALL_URI = "/api/v1/contracts/call";
     private static final String NEGATIVE_NUMBER_ERROR = "{} field must be greater than or equal to 0";
+    private int rateLimitPerSecond = 3;
 
     @Resource
     private WebTestClient webClient;
 
     @MockBean
     private ContractCallService service;
+
+    @MockBean
+    private BucketProvider bucketProvider;
+
+    @BeforeEach
+    void setup(){
+        given(bucketProvider.getBucket()).willReturn(Bucket.builder().addLimit(
+                Bandwidth.classic(rateLimitPerSecond, Refill.greedy(rateLimitPerSecond, Duration.ofSeconds(1)))).build());
+    }
 
     @Test
     void estimateGas() {
@@ -71,6 +89,27 @@ class ContractControllerTest {
                 .isEqualTo(NOT_IMPLEMENTED)
                 .expectBody(GenericErrorResponse.class)
                 .isEqualTo(new GenericErrorResponse(NOT_IMPLEMENTED_ERROR));
+    }
+
+    @Test
+    void exceedingRateLimit(){
+        for(var i = 0; i < rateLimitPerSecond ; i++) {
+            webClient.post()
+                    .uri(CALL_URI)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(BodyInserters.fromValue(request()))
+                    .exchange()
+                    .expectStatus()
+                    .isEqualTo(OK);
+        }
+
+        webClient.post()
+                .uri(CALL_URI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(request()))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(TOO_MANY_REQUESTS);
     }
 
     @NullAndEmptySource

@@ -58,6 +58,10 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @DurationMin(seconds = 1)
     private Duration expirationCacheTime = Duration.ofMinutes(10L);
 
+    @Getter
+    @Min(100)
+    private int rateLimitPerSecond = 100;
+
     @Override
     public boolean isRedirectTokenCallsEnabled() {
         return directTokenCall;

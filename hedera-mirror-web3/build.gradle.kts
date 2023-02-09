@@ -30,6 +30,7 @@ dependencies {
     implementation(project(":common"))
     implementation("com.github.ben-manes.caffeine:caffeine")
     implementation("io.github.mweirauch:micrometer-jvm-extras")
+    implementation("com.github.vladimir-bukhtoyarov:bucket4j-core")
     implementation("io.micrometer:micrometer-registry-prometheus")
     implementation("javax.inject:javax.inject")
     implementation("org.springframework:spring-context-support")
