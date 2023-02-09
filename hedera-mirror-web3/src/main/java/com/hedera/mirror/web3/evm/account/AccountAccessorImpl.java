@@ -20,19 +20,16 @@ package com.hedera.mirror.web3.evm.account;
  * ‍
  */
 
-import static com.hedera.mirror.common.util.DomainUtils.fromBytes;
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 
 import com.google.protobuf.ByteString;
-
-import com.hedera.mirror.web3.repository.EntityRepository;
-
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
+import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 
 @Named
