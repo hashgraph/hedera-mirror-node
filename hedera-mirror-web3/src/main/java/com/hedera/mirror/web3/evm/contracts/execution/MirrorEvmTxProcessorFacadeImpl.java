@@ -24,18 +24,20 @@ import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstru
 import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.gasCalculator;
 import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.mcps;
 
+import com.hedera.mirror.web3.evm.contracts.execution.traceability.GasMetricsHederaTracer;
+
 import java.time.Instant;
 import javax.inject.Named;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
+import com.hedera.mirror.web3.config.GasPerSecond;
 import com.hedera.mirror.web3.evm.account.AccountAccessorImpl;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.properties.StaticBlockMetaSource;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
-import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultHederaTracer;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldState;
@@ -50,6 +52,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
     private PricesAndFeesImpl pricesAndFees;
     private AbstractCodeCache codeCache;
     private HederaEvmMutableWorldState worldState;
+    private GasPerSecond gasPerSecond;
 
     public MirrorEvmTxProcessorFacadeImpl(
             final MirrorEntityAccess entityAccess,
@@ -57,11 +60,13 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final StaticBlockMetaSource blockMetaSource,
             final MirrorEvmContractAliases aliasManager,
             final PricesAndFeesImpl pricesAndFees,
-            final AccountAccessorImpl accountAccessor) {
+            final AccountAccessorImpl accountAccessor,
+            final GasPerSecond gasPerSecond) {
         this.evmProperties = evmProperties;
         this.blockMetaSource = blockMetaSource;
         this.aliasManager = aliasManager;
         this.pricesAndFees = pricesAndFees;
+        this.gasPerSecond = gasPerSecond;
 
         final int expirationCacheTime = (int) evmProperties.getExpirationCacheTime().toSeconds();
 
@@ -93,7 +98,8 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                         aliasManager,
                         codeCache);
 
-        processor.setOperationTracer(new DefaultHederaTracer());
+        processor.setOperationTracer(new GasMetricsHederaTracer(gasPerSecond));
+
 
         return processor.execute(
                 sender,
