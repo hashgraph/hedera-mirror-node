@@ -12,5 +12,5 @@ hedera:
           performance:
             transactions:
               - entities: 1
-                tps: 3000
+                tps: 1
                 type: CRYPTOTRANSFER

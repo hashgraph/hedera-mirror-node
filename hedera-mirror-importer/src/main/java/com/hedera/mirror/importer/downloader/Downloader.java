@@ -446,10 +446,10 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
         String filename = streamFile.getName();
         String expectedPrevHash = lastStreamFile.get().map(StreamFile::getHash).orElse(null);
 
-//        if (!verifyHashChain(streamFile, expectedPrevHash)) {
-//            throw new HashMismatchException(filename, expectedPrevHash, streamFile
-//                    .getPreviousHash(), HASH_TYPE_RUNNING);
-//        }
+        if (!verifyHashChain(streamFile, expectedPrevHash)) {
+            throw new HashMismatchException(filename, expectedPrevHash, streamFile
+                    .getPreviousHash(), HASH_TYPE_RUNNING);
+        }
 
         verifyHash(filename, streamFile.getFileHash(), signature.getFileHashAsHex(), HASH_TYPE_FILE);
         verifyHash(filename, streamFile.getMetadataHash(), signature.getMetadataHashAsHex(), HASH_TYPE_METADATA);

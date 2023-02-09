@@ -110,18 +110,18 @@ public abstract class AbstractStreamFileParser<T extends StreamFile> implements 
         var lastStreamFile = last.get();
         var name = streamFile.getName();
 
-//        if (lastStreamFile.getConsensusEnd() >= streamFile.getConsensusStart()) {
-//            log.warn("Skipping existing stream file {}", name);
-//            return false;
-//        }
+        if (lastStreamFile.getConsensusEnd() >= streamFile.getConsensusStart()) {
+            log.warn("Skipping existing stream file {}", name);
+            return false;
+        }
 
         var actualHash = streamFile.getPreviousHash();
         var expectedHash = lastStreamFile.getHash();
 
         // Verify hash chain
-//        if (streamFile.getType().isChained() && !expectedHash.contentEquals(actualHash)) {
-//            throw new HashMismatchException(name, expectedHash, actualHash, getClass().getSimpleName());
-//        }
+        if (streamFile.getType().isChained() && !expectedHash.contentEquals(actualHash)) {
+            throw new HashMismatchException(name, expectedHash, actualHash, getClass().getSimpleName());
+        }
 
         return true;
     }
