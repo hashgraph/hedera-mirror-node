@@ -6,6 +6,7 @@
     "the rest api only returns the exact matching transaction hash even though the database also returns the last",
     "transaction since its hash prefix is a match"
   ],
+  "matrix": "transactionHashV1Matrix.js",
   "setup": {
     "accounts": [
       {

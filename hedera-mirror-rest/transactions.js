@@ -665,44 +665,36 @@ const transactionHashQuery = `
  * Get the query for either getting transaction by id or getting transaction by payer account id and a list of
  * consensus timestamps
  *
- * @param {string[]} extraMainConditions extra where conditions for the main query
- * @param {string} timestampRangeCondition timestamp range condition to limit the number of timestamp partitions to scan
+ * @param {string} mainCondition conditions for the main query
+ * @param {string} subQueryCondition conditions for the transfer table subquery
  * @return {string} The query
  */
-const getTransactionByPayerAccountIdQuery = (extraMainConditions, timestampRangeCondition) => {
+const getTransactionQuery = (mainCondition, subQueryCondition) => {
   return `
     select
     ${transactionFullFields},
     (
       select ${cryptoTransferJsonAgg}
       from ${CryptoTransfer.tableName} ${CryptoTransfer.tableAlias}
-      where ${CryptoTransfer.PAYER_ACCOUNT_ID} = $1
-            and ${CryptoTransfer.CONSENSUS_TIMESTAMP} = t.consensus_timestamp
-            ${(timestampRangeCondition && 'and ' + timestampRangeCondition) || ''}
+      where ${CryptoTransfer.CONSENSUS_TIMESTAMP} = t.consensus_timestamp and ${subQueryCondition}
     ) as crypto_transfer_list,
     (
       select ${tokenTransferJsonAgg}
       from ${TokenTransfer.tableName} ${TokenTransfer.tableAlias}
-      where ${TokenTransfer.PAYER_ACCOUNT_ID} = $1
-            and ${TokenTransfer.CONSENSUS_TIMESTAMP} = t.consensus_timestamp
-            ${(timestampRangeCondition && 'and ' + timestampRangeCondition) || ''}
+      where ${TokenTransfer.CONSENSUS_TIMESTAMP} = t.consensus_timestamp and ${subQueryCondition}
     ) as token_transfer_list,
     (
       select ${nftTransferJsonAgg}
       from ${NftTransfer.tableName} ${NftTransfer.tableAlias}
-      where ${NftTransfer.PAYER_ACCOUNT_ID} = $1
-            and ${NftTransfer.CONSENSUS_TIMESTAMP} = t.consensus_timestamp
-            ${(timestampRangeCondition && 'and ' + timestampRangeCondition) || ''}
+      where ${NftTransfer.CONSENSUS_TIMESTAMP} = t.consensus_timestamp and ${subQueryCondition}
     ) as nft_transfer_list,
     (
       select ${assessedCustomFeeJsonAgg}
       from ${AssessedCustomFee.tableName} ${AssessedCustomFee.tableAlias}
-      where ${AssessedCustomFee.PAYER_ACCOUNT_ID} = $1
-            and ${AssessedCustomFee.CONSENSUS_TIMESTAMP} = t.consensus_timestamp
-            ${(timestampRangeCondition && 'and ' + timestampRangeCondition) || ''}
+      where ${AssessedCustomFee.CONSENSUS_TIMESTAMP} = t.consensus_timestamp and ${subQueryCondition}
     ) as assessed_custom_fees
   from ${Transaction.tableName} ${Transaction.tableAlias}
-  where ${Transaction.PAYER_ACCOUNT_ID} = $1 and ${extraMainConditions.join(' and ')}
+  where ${mainCondition}
   order by ${Transaction.CONSENSUS_TIMESTAMP}`;
 };
 
@@ -714,9 +706,9 @@ const getTransactionByPayerAccountIdQuery = (extraMainConditions, timestampRange
  * @return {{query: string, params: *[]}}
  */
 const extractSqlFromTransactionsByIdOrHashRequest = async (transactionIdOrHash, filters) => {
-  const conditions = [];
+  const mainConditions = [];
+  const commonConditions = [];
   const params = [];
-  let timestampRangeCondition;
 
   if (isValidTransactionHash(transactionIdOrHash)) {
     const encoding = transactionIdOrHash.length === Transaction.BASE64_HASH_SIZE ? 'base64url' : 'hex';
@@ -734,22 +726,34 @@ const extractSqlFromTransactionsByIdOrHashRequest = async (transactionIdOrHash, 
       throw new NotFoundError();
     }
 
-    params.push(rows[0].payer_account_id); // all rows should have the same payer account id
+    if (rows[0].payer_account_id !== null) {
+      params.push(rows[0].payer_account_id); // all rows should have the same payer account id
+      commonConditions.push(`${Transaction.PAYER_ACCOUNT_ID} = $1`);
+    }
+
+    const minTimestampPosition = params.length + 1;
     const timestampPositions = rows
       .map((row) => params.push(row.consensus_timestamp))
       .map((pos) => `$${pos}`)
       .join(',');
-    conditions.push(`${TransactionHash.CONSENSUS_TIMESTAMP} in (${timestampPositions})`);
-    timestampRangeCondition = `${TransactionHash.CONSENSUS_TIMESTAMP} >= $2 and
-      ${TransactionHash.CONSENSUS_TIMESTAMP} <= $${params.length}`;
+    mainConditions.push(`${Transaction.CONSENSUS_TIMESTAMP} in (${timestampPositions})`);
+    // timestamp range condition
+    commonConditions.push(
+      `${Transaction.CONSENSUS_TIMESTAMP} >= $${minTimestampPosition}`,
+      `${Transaction.CONSENSUS_TIMESTAMP} <= $${params.length}`
+    );
   } else {
     // try to parse it as a transaction id
     const transactionId = TransactionId.fromString(transactionIdOrHash);
     const maxConsensusTimestamp = BigInt(transactionId.getValidStartNs()) + maxTransactionConsensusTimestampRangeNs;
     params.push(transactionId.getEntityId().getEncodedId(), transactionId.getValidStartNs(), maxConsensusTimestamp);
-
-    timestampRangeCondition = `${Transaction.CONSENSUS_TIMESTAMP} >= $2 and ${Transaction.CONSENSUS_TIMESTAMP} <= $3`;
-    conditions.push(`${Transaction.VALID_START_NS} = $2`, timestampRangeCondition);
+    commonConditions.push(
+      `${Transaction.PAYER_ACCOUNT_ID} = $1`,
+      // timestamp range conditions
+      `${Transaction.CONSENSUS_TIMESTAMP} >= $2`,
+      `${Transaction.CONSENSUS_TIMESTAMP} <= $3`
+    );
+    mainConditions.push(`${Transaction.VALID_START_NS} = $2`);
 
     // only parse nonce and scheduled query filters if the path parameter is transaction id
     let nonce;
@@ -770,16 +774,17 @@ const extractSqlFromTransactionsByIdOrHashRequest = async (transactionIdOrHash, 
 
     if (nonce !== undefined) {
       params.push(nonce);
-      conditions.push(`${Transaction.NONCE} = $${params.length}`);
+      mainConditions.push(`${Transaction.NONCE} = $${params.length}`);
     }
 
     if (scheduled !== undefined) {
       params.push(scheduled);
-      conditions.push(`${Transaction.SCHEDULED} = $${params.length}`);
+      mainConditions.push(`${Transaction.SCHEDULED} = $${params.length}`);
     }
   }
 
-  return {query: getTransactionByPayerAccountIdQuery(conditions, timestampRangeCondition), params};
+  mainConditions.unshift(...commonConditions);
+  return {query: getTransactionQuery(mainConditions.join(' and '), commonConditions.join(' and ')), params};
 };
 
 /**

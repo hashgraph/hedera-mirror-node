@@ -763,14 +763,14 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
       (
           select jsonb_agg(jsonb_build_object('amount', amount, 'entity_id', ctr.entity_id, 'is_approval', is_approval) order by ctr.entity_id, amount)
           from crypto_transfer ctr
-          where payer_account_id = $1 and consensus_timestamp = t.consensus_timestamp and consensus_timestamp >= $2 and consensus_timestamp <= $3
+          where consensus_timestamp = t.consensus_timestamp and payer_account_id = $1 and consensus_timestamp >= $2 and consensus_timestamp <= $3
       ) as crypto_transfer_list,
       (
           select jsonb_agg(
               jsonb_build_object('account_id', account_id, 'amount', amount, 'token_id', token_id, 'is_approval', is_approval)
               order by token_id, account_id)
           from token_transfer tk_tr
-          where payer_account_id = $1 and consensus_timestamp = t.consensus_timestamp and consensus_timestamp >= $2 and consensus_timestamp <= $3
+          where consensus_timestamp = t.consensus_timestamp and payer_account_id = $1 and consensus_timestamp >= $2 and consensus_timestamp <= $3
       ) as token_transfer_list,
       (
           select jsonb_agg(
@@ -781,7 +781,7 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
                   'token_id', token_id, 'is_approval', is_approval
                   ) order by token_id, serial_number)
           from nft_transfer nft_tr
-          where payer_account_id = $1 and consensus_timestamp = t.consensus_timestamp and consensus_timestamp >= $2 and consensus_timestamp <= $3
+          where consensus_timestamp = t.consensus_timestamp and payer_account_id = $1 and consensus_timestamp >= $2 and consensus_timestamp <= $3
       ) as nft_transfer_list,
       (
           select jsonb_agg(
@@ -790,11 +790,11 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
                   'effective_payer_account_ids', effective_payer_account_ids,
                   'token_id', token_id) order by collector_account_id, amount)
           from assessed_custom_fee acf
-          where payer_account_id = $1 and consensus_timestamp = t.consensus_timestamp and consensus_timestamp >= $2 and consensus_timestamp <= $3
+          where consensus_timestamp = t.consensus_timestamp and payer_account_id = $1 and consensus_timestamp >= $2 and consensus_timestamp <= $3
       ) as assessed_custom_fees
     from transaction t
-    where payer_account_id = $1 and valid_start_ns = $2 and  consensus_timestamp >= $2
-      and consensus_timestamp <= $3 ${(extraConditions && 'and ' + extraConditions) || ''}
+    where payer_account_id = $1 and consensus_timestamp >= $2 and consensus_timestamp <= $3 and valid_start_ns = $2
+      ${(extraConditions && 'and ' + extraConditions) || ''}
     order by consensus_timestamp`;
 
     const testSpecs = [
