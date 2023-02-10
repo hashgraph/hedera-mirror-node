@@ -23,7 +23,6 @@ package com.hedera.mirror.web3.evm.store.contract;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.util.DomainUtils.fromBytes;
 import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
-import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_10MIN;
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 
 import com.google.protobuf.ByteString;
@@ -41,8 +40,6 @@ import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.mirror.web3.repository.ContractStateRepository;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
-
-import org.springframework.cache.annotation.Cacheable;
 
 @Named
 @RequiredArgsConstructor
