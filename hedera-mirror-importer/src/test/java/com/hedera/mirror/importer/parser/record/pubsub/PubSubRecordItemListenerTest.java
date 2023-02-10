@@ -201,7 +201,6 @@ class PubSubRecordItemListenerTest {
         // given
         byte[] message = new byte[] {'a', 'b', 'c'};
         TopicID topicID = TopicID.newBuilder().setTopicNum(10L).build();
-        EntityId topicIdEntity = EntityId.of(topicID);
         ConsensusSubmitMessageTransactionBody submitMessage = ConsensusSubmitMessageTransactionBody.newBuilder()
                 .setMessage(ByteString.copyFrom(message))
                 .setTopicID(topicID)
