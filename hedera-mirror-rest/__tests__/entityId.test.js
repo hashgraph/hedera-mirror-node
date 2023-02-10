@@ -403,7 +403,7 @@ describe('EntityId toEvmAddress', () => {
   const evmAddress = '71eaa748d5252be68c1185588beca495459fdba4';
 
   test('0.0.0', () => {
-    expect(EntityId.of(0, 0, 0).toEvmAddress()).toEqual('0x0000000000000000000000000000000000000000');
+    expect(EntityId.of(0, 0, 0).toEvmAddress()).toEqual(null);
   });
 
   test('0.0.7', () => {
