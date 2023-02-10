@@ -24,6 +24,7 @@ import static com.google.protobuf.ByteString.EMPTY;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.when;
 
+import java.time.Instant;
 import java.util.Optional;
 import org.apache.tuweni.bytes.Bytes;
 import org.apache.tuweni.units.bigints.UInt256;
@@ -74,7 +75,7 @@ class MirrorEntityAccessTest {
     }
 
     @Test
-    void isUsableWithNegativeBalance() {
+    void isNotUsableWithNegativeBalance() {
         final long balance = -1L;
         when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
         when(entity.getBalance()).thenReturn(balance);
@@ -83,10 +84,81 @@ class MirrorEntityAccessTest {
     }
 
     @Test
-    void isUsableWithAliasNegative() {
+    void isNotUsableWithWrongAlias() {
         final var address = Address.fromHexString("0x3232134567785444e");
         final var result = mirrorEntityAccess.isUsable(address);
         assertThat(result).isFalse();
+    }
+
+    @Test
+    void isNotUsableWithExpiredTimestamp() {
+        final long expiredTimestamp = Instant.MIN.getEpochSecond();
+        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
+        when(entity.getExpirationTimestamp()).thenReturn(expiredTimestamp);
+        final var result = mirrorEntityAccess.isUsable(ADDRESS);
+        assertThat(result).isFalse();
+    }
+
+    @Test
+    void isNotUsableWithExpiredTimestampAndNullBalance() {
+        final long expiredTimestamp = Instant.MIN.getEpochSecond();
+        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
+        when(entity.getExpirationTimestamp()).thenReturn(expiredTimestamp);
+        when(entity.getBalance()).thenReturn(null);
+        final var result = mirrorEntityAccess.isUsable(ADDRESS);
+        assertThat(result).isFalse();
+    }
+
+    @Test
+    void isUsableWithNotExpiredTimestamp() {
+        final long expiredTimestamp = Instant.MAX.getEpochSecond();
+        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
+        when(entity.getExpirationTimestamp()).thenReturn(expiredTimestamp);
+        when(entity.getCreatedTimestamp()).thenReturn(Instant.now().getEpochSecond());
+        when(entity.getAutoRenewPeriod()).thenReturn(Instant.MAX.getEpochSecond());
+        final var result = mirrorEntityAccess.isUsable(ADDRESS);
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    void isNotUsableWithExpiredAutoRenewTimestamp() {
+        final long autoRenewPeriod = Instant.MAX.getEpochSecond();
+        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
+        when(entity.getCreatedTimestamp()).thenReturn(Instant.now().getEpochSecond() - 1000L);
+        when(entity.getAutoRenewPeriod()).thenReturn(autoRenewPeriod);
+        final var result = mirrorEntityAccess.isUsable(ADDRESS);
+        assertThat(result).isFalse();
+    }
+
+    @Test
+    void isUsableWithNotExpiredAutoRenewTimestamp() {
+        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
+        when(entity.getCreatedTimestamp()).thenReturn(Instant.now().getEpochSecond());
+        when(entity.getAutoRenewPeriod()).thenReturn(Instant.MAX.getEpochSecond());
+        when(entity.getExpirationTimestamp()).thenReturn(Instant.MAX.getEpochSecond());
+        final var result = mirrorEntityAccess.isUsable(ADDRESS);
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    void isUsableWithEmptyExpiryAndAutoRenewPeriod() {
+        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
+        when(entity.getCreatedTimestamp()).thenReturn(Instant.now().getEpochSecond());
+        when(entity.getAutoRenewPeriod()).thenReturn(null);
+        when(entity.getExpirationTimestamp()).thenReturn(null);
+        final var result = mirrorEntityAccess.isUsable(ADDRESS);
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    void isUsableWithEmptyExpiryAndAutoRenewAndCreatedTimestampPeriod() {
+        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
+        when(entity.getCreatedTimestamp()).thenReturn(Instant.now().getEpochSecond());
+        when(entity.getAutoRenewPeriod()).thenReturn(null);
+        when(entity.getExpirationTimestamp()).thenReturn(null);
+        when(entity.getCreatedTimestamp()).thenReturn(null);
+        final var result = mirrorEntityAccess.isUsable(ADDRESS);
+        assertThat(result).isTrue();
     }
 
     @Test

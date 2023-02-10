@@ -26,6 +26,7 @@ import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 
 import com.google.protobuf.ByteString;
+import java.time.Instant;
 import java.util.Optional;
 import javax.inject.Named;
 
@@ -50,7 +51,29 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
 
     @Override
     public boolean isUsable(final Address address) {
-        return findEntity(address).filter(e -> e.getBalance() > 0).isPresent();
+        final var optionalEntity = findEntity(address);
+
+        if (optionalEntity.isEmpty()) {
+            return false;
+        }
+
+        final var entity = optionalEntity.get();
+        final var balance = entity.getBalance();
+        if (balance != null && balance > 0) {
+            return true;
+        }
+
+        final var expirationTimestamp = entity.getExpirationTimestamp();
+        final var createdTimestamp = entity.getCreatedTimestamp();
+        final var autoRenewPeriod = entity.getAutoRenewPeriod();
+        final var currentTime = Instant.now().getEpochSecond();
+
+        if (expirationTimestamp != null && expirationTimestamp <= currentTime) {
+            return false;
+        }
+
+        return createdTimestamp == null || autoRenewPeriod == null ||
+                (createdTimestamp + autoRenewPeriod) > currentTime;
     }
 
     @Override
