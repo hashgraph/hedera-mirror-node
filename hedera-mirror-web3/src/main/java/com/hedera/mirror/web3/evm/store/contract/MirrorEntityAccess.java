@@ -63,9 +63,8 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
     }
 
     @Override
-    @Cacheable(cacheNames = "entity.extant", cacheManager = CACHE_MANAGER_10MIN , unless = "#result == null")
     public boolean isExtant(final Address address) {
-        return entityRepository.existsById(entityIdFromEvmAddress(address));
+        return entityRepository.findByIdAndDeletedIsFalse(entityIdFromEvmAddress(address)).isPresent();
     }
 
     @Override

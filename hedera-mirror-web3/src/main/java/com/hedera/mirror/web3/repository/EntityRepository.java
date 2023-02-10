@@ -20,7 +20,7 @@ package com.hedera.mirror.web3.repository;
  * ‍
  */
 
-import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_10MIN;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_ENTITY;
 
 import java.util.Optional;
 import org.springframework.cache.annotation.Cacheable;
@@ -30,7 +30,7 @@ import com.hedera.mirror.common.domain.entity.Entity;
 
 public interface EntityRepository extends CrudRepository<Entity, Long> {
 
-    @Cacheable(cacheNames = "entity.id_and_deleted_is_false", cacheManager = CACHE_MANAGER_10MIN , unless = "#result == null")
+    @Cacheable(cacheNames = "entity.id_and_deleted_is_false", cacheManager = CACHE_MANAGER_ENTITY , unless = "#result == null")
     Optional<Entity> findByIdAndDeletedIsFalse(Long entityId);
 
     Optional<Entity> findByEvmAddressAndDeletedIsFalse(byte[] alias);
