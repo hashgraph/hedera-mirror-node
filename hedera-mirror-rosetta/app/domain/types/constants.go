@@ -428,3 +428,7 @@ func GetTransactionResult(code int32) string {
 	}
 	return transactionResult
 }
+
+func GetTransactionResults() map[int32]string {
+	return transactionResults
+}
