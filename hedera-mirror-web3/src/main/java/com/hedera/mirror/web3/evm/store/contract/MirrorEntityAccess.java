@@ -72,12 +72,8 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
             return false;
         }
 
-        if (createdTimestamp != null && autoRenewPeriod != null &&
-                (createdTimestamp + autoRenewPeriod) <= currentTime) {
-            return false;
-        }
-
-        return true;
+        return createdTimestamp == null || autoRenewPeriod == null ||
+                (createdTimestamp + autoRenewPeriod) > currentTime;
     }
 
     @Override
