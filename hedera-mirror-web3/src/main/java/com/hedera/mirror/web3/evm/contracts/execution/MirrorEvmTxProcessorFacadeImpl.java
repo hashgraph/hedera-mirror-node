@@ -95,7 +95,6 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
 
         processor.setOperationTracer(new DefaultHederaTracer());
 
-
         return processor.execute(
                 sender,
                 receiver,
