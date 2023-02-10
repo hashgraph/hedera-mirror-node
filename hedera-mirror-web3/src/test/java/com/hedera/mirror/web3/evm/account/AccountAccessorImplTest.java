@@ -74,14 +74,20 @@ class AccountAccessorImplTest {
     }
 
     @Test
-    void canonicalAddressIsUsable() {
+    void canonicalAddress() {
         final var result = accountAccessor.canonicalAddress(ADDRESS);
         assertThat(result).isEqualTo(ADDRESS);
     }
 
     @Test
-    void canonicalAliasAddressIsUsable() {
+    void canonicalAliasAddress() {
         when(entityRepository.findByEvmAddressAndDeletedIsFalse(ALIAS_ADDRESS.toArray())).thenReturn(Optional.of(account));
+        final var result = accountAccessor.canonicalAddress(ALIAS_ADDRESS);
+        assertThat(result).isEqualTo(ALIAS_ADDRESS);
+    }
+
+    @Test
+    void missingCanonicalAliasAddressResolvesToItself() {
         final var result = accountAccessor.canonicalAddress(ALIAS_ADDRESS);
         assertThat(result).isEqualTo(ALIAS_ADDRESS);
     }
