@@ -75,7 +75,11 @@ public class TopicMessageRepositoryCustomImpl implements TopicMessageRepositoryC
             typedQuery.setMaxResults((int) filter.getLimit());
         }
 
-        entityManager.createNativeQuery(TOPIC_MESSAGES_BY_ID_QUERY_HINT).executeUpdate();
+        if (filter.getLimit() != 1) {
+            // only apply the hint when limit is not 1
+            entityManager.createNativeQuery(TOPIC_MESSAGES_BY_ID_QUERY_HINT).executeUpdate();
+        }
+
         return typedQuery.getResultList().stream(); // getResultStream()'s cursor doesn't work with reactive streams
     }
 }
