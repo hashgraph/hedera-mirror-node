@@ -121,7 +121,7 @@ class MergeDuplicateBlocksMigrationTest extends IntegrationTest {
 
     private RecordFile block(long timestamp) {
         return domainBuilder.recordFile()
-                .customize(r -> r.consensusEnd(timestamp).consensusStart(timestamp - 1).index(NUMBER)
+                .customize(r -> r.consensusEnd(timestamp).consensusStart(timestamp - 1).count(2L).index(NUMBER)
                         .hapiVersionMinor((int) domainBuilder.id()))
                 .persist();
     }

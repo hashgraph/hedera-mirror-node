@@ -50,17 +50,11 @@ class MergeDuplicateBlocksMigration extends RepeatableMigration {
               from block1
               where block2.consensus_end = 1675962001984524003 and block1.index = block2.index
               returning block2.*
-            ),
-            transaction_index as (
-              select row_number() over (order by t.consensus_timestamp asc) - 1 as new_index, t.consensus_timestamp
-              from transaction t, merged_block b
-              where t.consensus_timestamp >= b.consensus_start and t.consensus_timestamp <= b.consensus_end
-              order by consensus_timestamp asc
             )
             update transaction t
-            set index = ti.new_index
-            from transaction_index ti
-            where t.consensus_timestamp = ti.consensus_timestamp;
+            set index = t.index + block1.count
+            from block1
+            where consensus_timestamp > 1675962000231859003 and consensus_timestamp <= 1675962001984524003;
             """;
 
     private final JdbcTemplate jdbcTemplate;
