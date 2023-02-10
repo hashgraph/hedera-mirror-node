@@ -22,8 +22,9 @@ package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.web3.evm.exception.ResponseCodeUtil.getStatusOrDefault;
 
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import javax.inject.Named;
-import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorFacade;
@@ -32,9 +33,17 @@ import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 
 @Named
-@RequiredArgsConstructor
 public class ContractCallService {
     private final MirrorEvmTxProcessorFacade mirrorEvmTxProcessorFacade;
+    private final Counter counter;
+
+    public ContractCallService(final MirrorEvmTxProcessorFacade mirrorEvmTxProcessorFacade, final MeterRegistry meterRegistry) {
+        this.mirrorEvmTxProcessorFacade = mirrorEvmTxProcessorFacade;
+
+        counter = Counter.builder("hedera.mirror.web3.call.gas")
+                .description("The amount of gas consumed by the EVM")
+                .register(meterRegistry);
+    }
 
     public String processCall(final CallServiceParameters body) {
         final var txnResult = doProcessCall(body);
@@ -57,6 +66,8 @@ public class ContractCallService {
                             body.getValue(),
                             body.getCallData(),
                             body.isStatic());
+
+            counter.increment(txnResult.getGasUsed());
 
             if (!txnResult.isSuccessful()) {
                 throw new InvalidTransactionException(getStatusOrDefault(txnResult));
