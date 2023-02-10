@@ -48,8 +48,6 @@ public class ContractCallService {
     public String processCall(final CallServiceParameters body) {
         final var txnResult = doProcessCall(body);
 
-        counter.increment(txnResult.getGasUsed());
-
         final var callResult = txnResult.getOutput() != null
                 ? txnResult.getOutput() : Bytes.EMPTY;
 
@@ -68,6 +66,8 @@ public class ContractCallService {
                             body.getValue(),
                             body.getCallData(),
                             body.isStatic());
+
+            counter.increment(txnResult.getGasUsed());
 
             if (!txnResult.isSuccessful()) {
                 throw new InvalidTransactionException(getStatusOrDefault(txnResult));
