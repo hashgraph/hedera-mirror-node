@@ -277,8 +277,7 @@ func TestCategorizeHbarTransfers(t *testing.T) {
 }
 
 func TestGeneralOperationStatus(t *testing.T) {
-	tx := transaction{Result: 400}
-	assert.Equal(t, types.GeneralStatus, getTransactionResult(&tx))
+	assert.Equal(t, "GENERAL_ERROR", types.GetTransactionResult(400))
 }
 
 func TestTransactionGetHashString(t *testing.T) {
@@ -1119,7 +1118,7 @@ func (suite *transactionRepositorySuite) setupDb(createTokenEntity bool) []*type
 			{AccountId: nodeAccountId, Amount: &types.HbarAmount{Value: 20}, Type: types.OperationTypeFee,
 				Status: resultSuccess},
 			{AccountId: firstAccountId, Amount: &types.HbarAmount{}, Type: types.OperationTypeCryptoTransfer,
-				Status: types.TransactionResults[28]},
+				Status: types.GetTransactionResult(28)},
 		},
 	}
 

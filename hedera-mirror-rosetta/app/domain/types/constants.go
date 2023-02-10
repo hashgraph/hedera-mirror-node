@@ -23,8 +23,8 @@ package types
 import "github.com/coinbase/rosetta-sdk-go/types"
 
 const (
-	GeneralStatus   = "GENERAL_ERROR"
-	MetadataKeyMemo = "memo"
+	generalErrorStatus = "GENERAL_ERROR"
+	MetadataKeyMemo    = "memo"
 
 	OperationTypeCryptoCreateAccount = "CRYPTOCREATEACCOUNT"
 	OperationTypeCryptoTransfer      = "CRYPTOTRANSFER"
@@ -51,7 +51,7 @@ const (
 	currencyDecimals = 8
 )
 
-var TransactionResults = map[int32]string{
+var transactionResults = map[int32]string{
 	0:   "OK",
 	1:   "INVALID_TRANSACTION",
 	2:   "PAYER_ACCOUNT_NOT_FOUND",
@@ -419,3 +419,12 @@ var (
 		OperationTypeTokenWipe,
 	}
 )
+
+func GetTransactionResult(code int32) string {
+	transactionResult, ok := transactionResults[code]
+	if !ok {
+		// If transactionResult does not exist default to general status
+		transactionResult = generalErrorStatus
+	}
+	return transactionResult
+}

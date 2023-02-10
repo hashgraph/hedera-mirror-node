@@ -25,7 +25,6 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"sync"
 
 	rTypes "github.com/coinbase/rosetta-sdk-go/types"
@@ -421,7 +420,7 @@ func (tr *transactionRepository) constructTransaction(sameHashTransactions []*tr
 	firstTransaction := sameHashTransactions[0]
 	operations := make(types.OperationSlice, 0)
 	result := &types.Transaction{Hash: firstTransaction.getHashString(), Memo: firstTransaction.Memo}
-	success := types.TransactionResults[transactionResultSuccess]
+	success := types.GetTransactionResult(transactionResultSuccess)
 	transactionType := types.TransactionTypes[int32(firstTransaction.Type)]
 
 	for _, transaction := range sameHashTransactions {
@@ -463,7 +462,7 @@ func (tr *transactionRepository) constructTransaction(sameHashTransactions []*tr
 			stakingRewardPayouts,
 		)
 
-		transactionResult := fmt.Sprintf("%v", getTransactionResult(transaction))
+		transactionResult := types.GetTransactionResult(int32(transaction.Result))
 
 		operations = tr.appendHbarTransferOperations(transactionResult, transactionType, nonFeeTransfers, operations)
 		// fee transfers are always successful regardless of the transaction result
@@ -489,7 +488,7 @@ func (tr *transactionRepository) constructTransaction(sameHashTransactions []*tr
 	if allFailed {
 		// add an 0-amount hbar transfer with the failed status to indicate the transaction has failed
 		operations = tr.appendHbarTransferOperations(
-			types.TransactionResults[int32(firstTransaction.Result)],
+			types.GetTransactionResult(int32(firstTransaction.Result)),
 			transactionType,
 			[]hbarTransfer{{AccountId: firstTransaction.PayerAccountId}},
 			operations,
@@ -498,15 +497,6 @@ func (tr *transactionRepository) constructTransaction(sameHashTransactions []*tr
 
 	result.Operations = operations
 	return result, nil
-}
-
-func getTransactionResult(transaction *transaction) interface{} {
-	transactionResult, ok := types.TransactionResults[int32(transaction.Result)]
-	if !ok {
-		// If transactionResult does not exist default to general status
-		transactionResult = types.GeneralStatus
-	}
-	return transactionResult
 }
 
 func (tr *transactionRepository) appendHbarTransferOperations(
