@@ -1,68 +1,252 @@
 {
-    "info": {
-        "_postman_id": "b8489f6a-2cf4-4a46-8bd6-67c001792122",
-        "name": "GraphQL API",
-        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-    },
-    "item": [
+  "info": {
+    "_postman_id": "553483ca-fd77-4ccd-93e0-4628bc1c6a8f",
+    "name": "GraphQL API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "24928384"
+  },
+  "item": [
+    {
+      "name": "Negative Tests",
+      "item": [
         {
-            "name": "Negative tests",
-            "item": [
-                {
-                    "name": "Invalid request for contracts/call",
-                    "event": [
-                        {
-                            "listen": "test",
-                            "script": {
-                                "exec": [
-                                  "pm.test(\"Invalid request\", () => {",
-                                  "                                       var response = pm.response.json();",
-                                  "                                       pm.expect(pm.response.code).to.equal(400);",
-                                  "                                      pm.expect(response).to.not.have.key('result');",
-                                  "                                      let result = \"\";",
-                                  "                                      response._status.messages.forEach(msg => {",
-                                  "                                      result += msg.message;})",
-                                  "                                     pm.expect(result)",
-                                  "                                        .to.contain(\"to field invalid hexadecimal string\")",
-                                  "                                         .and.contain(\"from field invalid hexadecimal string\")",
-                                  "                                         .and.contain(\"value field must be greater than or equal to 0\")",
-                                  "                                         .and.contain(\"gas field must be greater than or equal to 0\")",
-                                  "                                        .and.contain(\"gasPrice field must be greater than or equal to 0\");",
-                                  "                                    });",
-                                  ""
-                                ],
-                                "type": "text/javascript"
-                            }
-                        }
-                    ],
-                    "request": {
-                        "method": "POST",
-                        "header": [],
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\"to\": \"0x\", \"from\": \"0x\", \"value\": -1, \"gas\": -1, \"gasPrice\": -1}",
-                            "options": {
-                                "raw": {
-                                    "language": "json"
-                                }
-                            }
-                        },
-                        "url": {
-                            "raw": "{{baseUrl}}/api/v1/contracts/call",
-                            "host": ["{{baseUrl}}"],
-                            "path": ["api", "v1", "contracts", "call"]
-                        }
-                    },
-                    "response": []
-                }
+          "name": "Get Account Non Existing field",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Non Existing Field\", () => {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "",
+                  "    var response = pm.response.json();",
+                  "",
+                  "    pm.expect(response.errors.length).to.equal(1);",
+                  "    pm.expect(response.errors[0].message).to.equal(\"Validation error of type FieldUndefined: Field 'alais' in type 'Account' is undefined @ 'account/alais'\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "{\n  account(input: {\n    entityId: {\n    shard: 0, realm: 0, num: 111146}}) {\n    alais\n    autoRenewPeriod\n    autoRenewAccount {\n        alias\n        deleted\n        entityId {\n            shard\n            realm\n            num\n        }\n        createdTimestamp\n    }\n    \n  }\n}",
+                "variables": ""
+              }
+            },
+            "url": {
+              "raw": "{{GRAPHQL_BASE_URL}}",
+              "host": [
+                "{{GRAPHQL_BASE_URL}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Account by id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"By Id (Unimplemented)\", () => {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "",
+                  "    var response = pm.response.json();",
+                  "    var account = response.data.account;",
+                  "",
+                  "    pm.expect(account).to.equal(null);",
+                  "    pm.expect(response.errors.length).to.equal(1);",
+                  "    pm.expect(response.errors[0].message).to.equal(\"Not implemented\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "{\n  account(input: \n    {id: \"azAZ0123456789+/=\"}) {\n    alias\n    autoRenewPeriod\n    autoRenewAccount {\n        alias\n        deleted\n        entityId {\n            shard\n            realm\n            num\n        }\n        createdTimestamp\n    }\n    \n  }\n}",
+                "variables": ""
+              }
+            },
+            "url": {
+              "raw": "{{GRAPHQL_BASE_URL}}",
+              "host": [
+                "{{GRAPHQL_BASE_URL}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Account Null entity id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Null Entity ID\", () => {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "",
+                  "    var response = pm.response.json();",
+                  "    var account = response.data.account;",
+                  "",
+                  "    pm.expect(account).to.equal(null);",
+                  "    pm.expect(response.errors.length).to.equal(1);",
+                  "    pm.expect(response.errors[0].message).to.equal(\"Must provide exactly one input value but 0 have been provided\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "graphql",
+              "graphql": {
+                "query": "{\n  account(input: {\n    entityId: null}) {\n    alias\n    autoRenewPeriod\n    autoRenewAccount {\n        alias\n        deleted\n        entityId {\n            shard\n            realm\n            num\n        }\n        createdTimestamp\n    }\n    \n  }\n}",
+                "variables": ""
+              }
+            },
+            "url": {
+              "raw": "{{GRAPHQL_BASE_URL}}",
+              "host": [
+                "{{GRAPHQL_BASE_URL}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.set(\"default_account\", 111146);"
             ]
-        }
-    ],
-
-    "variable": [
+          }
+        },
         {
-            "key": "baseUrl",
-            "value": "http://localhost:8545"
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              ""
+            ]
+          }
         }
-    ]
+      ]
+    },
+    {
+      "name": "Get Account",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              ""
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Get By Entity Id (All Fields)\", () => {",
+              "    pm.expect(pm.response.code).to.equal(200);",
+              "",
+              "var response = pm.response.json();",
+              "var account = response.data.account;",
+              "",
+              "pm.expect(account).to.include.keys(",
+              "    'type', 'autoRenewAccount', ",
+              "    'autoRenewPeriod', 'balance', ",
+              "    'createdTimestamp', 'declineReward',",
+              "    'deleted', 'entityId',",
+              "    'expirationTimestamp', 'id',",
+              "    'key', 'maxAutomaticTokenAssociations',",
+              "    'memo', 'nonce',",
+              "    'obtainer', 'pendingReward',",
+              "    'receiverSigRequired', 'stakedAccount',",
+              "    'stakePeriodStart', 'timestamp',",
+              "    'type'",
+              "    );",
+              "pm.expect(account.entityId).to.have.keys('shard', 'realm', 'num');",
+              "pm.expect(account.timestamp).to.have.keys('from', 'to');",
+              "",
+              "pm.expect(account.type).to.equal('ACCOUNT');",
+              "pm.expect(account.entityId.num).to.equal(pm.collectionVariables.get(\"default_account\"));",
+              "",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "graphql",
+          "graphql": {
+            "query": "{\n  account(input: {\n    entityId: {\n    shard: 0, realm: 0, num: {{default_account}}}}) {\n    alias\n    autoRenewAccount {\n        entityId {\n            shard\n            realm\n            num\n        }\n    }\n    autoRenewPeriod\n    balance\n    createdTimestamp\n    declineReward\n    deleted\n    entityId {\n            shard\n            realm\n            num\n        }\n    expirationTimestamp\n    id\n    key\n    maxAutomaticTokenAssociations\n    memo\n    nonce\n    obtainer {\n        entityId {\n                shard\n                realm\n                num\n        }\n    }\n    pendingReward\n    receiverSigRequired\n    stakedAccount {\n        entityId {\n            shard\n            realm\n            num\n        }\n    }\n    stakePeriodStart\n    timestamp {\n        from\n        to\n    }\n    type\n  }\n}",
+            "variables": ""
+          }
+        },
+        "url": {
+          "raw": "{{GRAPHQL_BASE_URL}}",
+          "host": [
+            "{{GRAPHQL_BASE_URL}}"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          ""
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "default_account",
+      "value": "98"
+    },
+    {
+      "key": "GRAPHQL_BASE_URL",
+      "value": "http://localhost:8083/graphql/alpha"
+    }
+  ]
 }
