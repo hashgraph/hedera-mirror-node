@@ -21,14 +21,18 @@ package com.hedera.mirror.importer.parser.record.pubsub;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
+import com.google.common.base.Stopwatch;
 import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.PubsubMessage;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -69,7 +73,16 @@ class PubSubRecordParserTest extends PubSubIntegrationTest {
 
         // then
         List<String> expectedMessages = Files.readAllLines(pubSubMessages);
-        List<String> actualMessages = getAllMessages(NUM_TXNS).stream()
+        List<PubsubMessage> subscriberMessages = new ArrayList<>();
+        var stopWatch = Stopwatch.createStarted();
+        while (subscriberMessages.size() < NUM_TXNS) {
+            subscriberMessages.addAll(getAllMessages(NUM_TXNS));
+            if (stopWatch.elapsed(TimeUnit.SECONDS) > 10) {
+                fail("Timed out waiting for subscriber messages");
+            }
+        }
+
+        List<String> actualMessages = subscriberMessages.stream()
                 .map(PubsubMessage::getData)
                 .map(ByteString::toStringUtf8)
                 .collect(Collectors.toList());
