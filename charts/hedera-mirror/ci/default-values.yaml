@@ -3,3 +3,5 @@ monitor:
   enabled: false
 postgresql:
   fullnameOverride: db
+
+#global.image.tag...

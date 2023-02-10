@@ -1,7 +1,7 @@
 Hedera Mirror Node {{ .Chart.AppVersion }} successfully installed.
 
 {{- if and .Values.graphql.enabled .Values.graphql.service }}
-To access the GraphQl API:
+To access the GraphQL API:
 {{- if contains "LoadBalancer" .Values.graphql.service.type }}
   GRAPHQL_API=$(kubectl get service/{{ .Release.Name }}-graphql -n {{ include "hedera-mirror.namespace" . }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
 {{- else if contains "ClusterIP" .Values.graphql.service.type }}
