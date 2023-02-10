@@ -20,13 +20,13 @@ package com.hedera.mirror.importer.migration;
  * ‍
  */
 
-import java.io.IOException;
-import java.util.Map;
 import javax.inject.Named;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
+import java.io.IOException;
 
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.config.Owner;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 @Named
 class MergeDuplicateBlocksMigration extends RepeatableMigration {
@@ -63,14 +63,14 @@ class MergeDuplicateBlocksMigration extends RepeatableMigration {
             where t.consensus_timestamp = ti.consensus_timestamp;
             """;
 
-    private final NamedParameterJdbcOperations jdbcOperations;
+    private final JdbcTemplate jdbcTemplate;
     private final MirrorProperties mirrorProperties;
 
     @Lazy
-    protected MergeDuplicateBlocksMigration(NamedParameterJdbcOperations jdbcOperations,
+    protected MergeDuplicateBlocksMigration(@Owner JdbcTemplate jdbcTemplate,
                                             MirrorProperties mirrorProperties) {
         super(mirrorProperties.getMigration());
-        this.jdbcOperations = jdbcOperations;
+        this.jdbcTemplate = jdbcTemplate;
         this.mirrorProperties = mirrorProperties;
     }
 
@@ -80,7 +80,7 @@ class MergeDuplicateBlocksMigration extends RepeatableMigration {
             return;
         }
 
-        jdbcOperations.update(SQL, Map.of());
+        jdbcTemplate.update(SQL);
     }
 
     @Override
