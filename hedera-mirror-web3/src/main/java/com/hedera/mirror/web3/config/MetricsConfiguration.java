@@ -52,11 +52,6 @@ class MetricsConfiguration {
     }
 
     @Bean
-    MeterBinder gasPerSecondMetrics(final GasPerSecond gasPerSecond) {
-        return new GasPerSecondMetrics(gasPerSecond);
-    }
-
-    @Bean
     NettyServerCustomizer nettyServerCustomizer(ApplicationContext applicationContext) {
         var provider = new DispatcherHandlersMappingDescriptionProvider();
         Set<String> patterns = provider.describeMappings(applicationContext)
