@@ -41,8 +41,9 @@ public class AccountAccessorImpl implements AccountAccessor {
 
     @Override
     public Address canonicalAddress(Address addressOrAlias) {
-        if(!isMirror(addressOrAlias.toArray())) {
-            final var entityFoundByAlias = entityRepository.findByEvmAddressAndDeletedIsFalse(addressOrAlias.toArray());
+        final var addressBytes = addressOrAlias.toArrayUnsafe();
+        if(!isMirror(addressBytes)) {
+            final var entityFoundByAlias = entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes);
             if(entityFoundByAlias.isPresent()) {
                 return addressOrAlias;
             }

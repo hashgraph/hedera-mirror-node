@@ -55,24 +55,26 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
 
         if (optionalEntity.isEmpty()) {
             return false;
-        } else {
-            final var entity = optionalEntity.get();
+        }
 
-            final var balance = entity.getBalance();
-            if(balance != null && balance > 0) {
-                return true;
-            }
+        final var entity = optionalEntity.get();
+        final var balance = entity.getBalance();
+        if (balance != null && balance > 0) {
+            return true;
+        }
 
-            final var expirationTimestamp = entity.getExpirationTimestamp();
-            final var createdTimestamp = entity.getCreatedTimestamp();
-            final var autoRenewPeriod = entity.getAutoRenewPeriod();
+        final var expirationTimestamp = entity.getExpirationTimestamp();
+        final var createdTimestamp = entity.getCreatedTimestamp();
+        final var autoRenewPeriod = entity.getAutoRenewPeriod();
+        final var currentTime = Instant.now().getEpochSecond();
 
-            final var currentTime = Instant.now().getEpochSecond();
-            if((expirationTimestamp != null && expirationTimestamp <= currentTime) ||
-                    (createdTimestamp != null && autoRenewPeriod != null &&
-                            (createdTimestamp + autoRenewPeriod) <= currentTime)) {
-                return false;
-            }
+        if (expirationTimestamp != null && expirationTimestamp <= currentTime) {
+            return false;
+        }
+
+        if (createdTimestamp != null && autoRenewPeriod != null &&
+                (createdTimestamp + autoRenewPeriod) <= currentTime) {
+            return false;
         }
 
         return true;
@@ -81,17 +83,7 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
     @Override
     public long getBalance(final Address address) {
         final var entity = findEntity(address);
-
-        if(entity.isPresent()) {
-            final var balance = entity.get().getBalance();
-            if(balance != null && balance > 0) {
-                return balance;
-            } else {
-                return 0L;
-            }
-        }
-
-        return 0L;
+        return entity.map(Entity::getBalance).orElse(0L);
     }
 
     @Override

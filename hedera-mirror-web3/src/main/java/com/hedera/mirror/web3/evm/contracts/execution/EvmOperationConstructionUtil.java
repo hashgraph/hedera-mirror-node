@@ -57,6 +57,7 @@ import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeSizeOpe
 public class EvmOperationConstructionUtil {
     private static final String EVM_VERSION_0_30 = "v0.30";
     private static final String EVM_VERSION_0_34 = "v0.34";
+    public static final String EVM_VERSION = EVM_VERSION_0_34;
     static final GasCalculator gasCalculator = new LondonGasCalculator();
     private static final EVM evm = constructEvm();
 
