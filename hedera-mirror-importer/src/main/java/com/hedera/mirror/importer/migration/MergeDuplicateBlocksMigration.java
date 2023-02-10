@@ -1,0 +1,90 @@
+package com.hedera.mirror.importer.migration;
+
+/*-
+ * ‌
+ * Hedera Mirror Node
+ * ​
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
+import java.io.IOException;
+import java.util.Map;
+import javax.inject.Named;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
+
+import com.hedera.mirror.importer.MirrorProperties;
+
+@Named
+class MergeDuplicateBlocksMigration extends RepeatableMigration {
+
+    private static final String SQL = """
+            with block1 as (
+              delete from record_file
+              where consensus_end = 1675962000231859003 and index = 44029066
+              returning *
+            ),
+            merged_block as (
+              update record_file block2 set
+              consensus_start = block1.consensus_start,
+              count = block1.count + block2.count,
+              gas_used = block1.gas_used + block2.gas_used,
+              load_start = block1.load_start,
+              name = block1.name,
+              prev_hash = block1.prev_hash,
+              sidecar_count = block1.sidecar_count + block2.sidecar_count,
+              size = block1.size + block2.size
+              from block1
+              where block2.consensus_end = 1675962001984524003 and block1.index = block2.index
+              returning block2.*
+            ),
+            transaction_index as (
+              select row_number() over (order by t.consensus_timestamp asc) - 1 as new_index, t.consensus_timestamp
+              from transaction t, merged_block b
+              where t.consensus_timestamp >= b.consensus_start and t.consensus_timestamp <= b.consensus_end
+              order by consensus_timestamp asc
+            )
+            update transaction t
+            set index = ti.new_index
+            from transaction_index ti
+            where t.consensus_timestamp = ti.consensus_timestamp;
+            """;
+
+    private final NamedParameterJdbcOperations jdbcOperations;
+    private final MirrorProperties mirrorProperties;
+
+    @Lazy
+    protected MergeDuplicateBlocksMigration(NamedParameterJdbcOperations jdbcOperations,
+                                            MirrorProperties mirrorProperties) {
+        super(mirrorProperties.getMigration());
+        this.jdbcOperations = jdbcOperations;
+        this.mirrorProperties = mirrorProperties;
+    }
+
+    @Override
+    protected void doMigrate() throws IOException {
+        if (mirrorProperties.getNetwork() != MirrorProperties.HederaNetwork.MAINNET) {
+            return;
+        }
+
+        jdbcOperations.update(SQL, Map.of());
+    }
+
+    @Override
+    public String getDescription() {
+        return "Fix duplicate block number issue on mainnet by merging them";
+    }
+}
