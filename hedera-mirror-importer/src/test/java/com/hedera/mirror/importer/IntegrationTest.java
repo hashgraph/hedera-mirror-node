@@ -115,6 +115,7 @@ public abstract class IntegrationTest {
     protected void reset() {
         cacheManagers.forEach(c -> c.getCacheNames().forEach(name -> c.getCache(name).clear()));
         mirrorDateRangePropertiesProcessor.clear();
+        mirrorProperties.setNetwork(MirrorProperties.HederaNetwork.TESTNET);
         mirrorProperties.setStartDate(Instant.EPOCH);
         jdbcOperations.execute(cleanupSql);
         retryRecorder.reset();

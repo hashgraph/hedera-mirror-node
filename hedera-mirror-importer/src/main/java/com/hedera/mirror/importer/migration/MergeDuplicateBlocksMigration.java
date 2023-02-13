@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.migration;
 import javax.inject.Named;
 import java.io.IOException;
 
+import com.google.common.base.Stopwatch;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.config.Owner;
 import org.springframework.context.annotation.Lazy;
@@ -74,7 +75,9 @@ class MergeDuplicateBlocksMigration extends RepeatableMigration {
             return;
         }
 
-        jdbcTemplate.update(SQL);
+        var stopwatch = Stopwatch.createStarted();
+        int count = jdbcTemplate.update(SQL);
+        log.info("Successfully merged the blocks and fixed {} transaction indexes in {}", count, stopwatch);
     }
 
     @Override
