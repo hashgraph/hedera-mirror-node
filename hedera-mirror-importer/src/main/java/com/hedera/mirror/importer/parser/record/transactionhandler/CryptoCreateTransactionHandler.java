@@ -80,10 +80,7 @@ class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandle
             entity.setKey(key);
         }
 
-        var evmAddress =
-                transactionRecord.getEvmAddress() != ByteString.EMPTY
-                        ? transactionRecord.getEvmAddress()
-                        : transactionBody.getEvmAddress();
+        var evmAddress = transactionRecord.getEvmAddress();
         if (evmAddress != ByteString.EMPTY) {
             entity.setEvmAddress(DomainUtils.toBytes(evmAddress));
         } else if (!emptyAlias) {

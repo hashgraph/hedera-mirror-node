@@ -158,9 +158,6 @@ public class EntityIdServiceImpl implements EntityIdService {
                         entityRepository.findByAlias(alias)
                                 .map(id -> EntityId.of(id, ACCOUNT))
                                 .orElseThrow(() -> new AliasNotFoundException(Hex.encodeHexString(alias), ACCOUNT));
-            case EVM_ADDRESS:
-                byte[] evmAddress = DomainUtils.toBytes(accountId.getEvmAddress());
-                return findByEvmAddress(evmAddress, accountId.getShardNum(), accountId.getRealmNum(), ACCOUNT);
             default:
                 throw new InvalidDatasetException("Invalid AccountID: " + accountId);
         }

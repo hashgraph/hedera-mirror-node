@@ -69,8 +69,14 @@ public class Utility {
     @SuppressWarnings("java:S1168")
     public static byte[] aliasToEvmAddress(byte[] alias) {
         try {
-            if (alias == null || alias.length == 0) {
+            if (alias == null ||
+                    alias.length != DomainUtils.EVM_ADDRESS_LENGTH
+                            && alias.length < ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH) {
                 return null;
+            }
+
+            if (alias.length == DomainUtils.EVM_ADDRESS_LENGTH) {
+                return alias;
             }
 
             byte[] evmAddress = null;

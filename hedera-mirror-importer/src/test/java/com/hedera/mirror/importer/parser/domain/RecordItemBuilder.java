@@ -341,7 +341,6 @@ public class RecordItemBuilder {
                 .setAlias(bytes(20))
                 .setAutoRenewPeriod(duration(30))
                 .setDeclineReward(true)
-                .setEvmAddress(EVM_ADDRESS)
                 .setInitialBalance(1000L)
                 .setKey(key())
                 .setMaxAutomaticTokenAssociations(2)

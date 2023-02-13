@@ -213,24 +213,20 @@ class CryptoCreateTransactionHandlerTest extends AbstractTransactionHandlerTest 
     }
 
     private static Stream<Arguments> provideEvmAddresses() {
-        var evmAddressByteString = ByteString.copyFrom(UtilityTest.EVM_ADDRESS);
-        var evmAddressTwo = RecordItemBuilder.EVM_ADDRESS;
+        var evmAddress = RecordItemBuilder.EVM_ADDRESS;
         return Stream.of(
-                Arguments.of(ByteString.empty(), ByteString.empty(), UtilityTest.EVM_ADDRESS),
-                Arguments.of(evmAddressByteString, ByteString.empty(), evmAddressByteString.toByteArray()),
-                Arguments.of(ByteString.empty(), evmAddressByteString, evmAddressByteString.toByteArray()),
-                Arguments.of(evmAddressByteString, evmAddressTwo, evmAddressByteString.toByteArray())
+                Arguments.of(ByteString.empty(), UtilityTest.EVM_ADDRESS),
+                Arguments.of(evmAddress, evmAddress.toByteArray())
         );
     }
 
     @ParameterizedTest
     @MethodSource("provideEvmAddresses")
-    void updateEvmAddress(ByteString recordEvmAddress, ByteString transactionBodyEvmAddress, byte[] expected) {
+    void updateEvmAddress(ByteString recordEvmAddress, byte[] expected) {
         var recordItem = recordItemBuilder.cryptoCreate()
                 .record(r -> r.setEvmAddress(recordEvmAddress))
                 .transactionBody(t -> t
-                        .setAlias(ByteString.copyFrom(UtilityTest.ALIAS_ECDSA_SECP256K1))
-                        .setEvmAddress(transactionBodyEvmAddress))
+                        .setAlias(ByteString.copyFrom(UtilityTest.ALIAS_ECDSA_SECP256K1)))
                 .build();
         var accountId = EntityId.of(recordItem.getTransactionRecord().getReceipt().getAccountID());
 

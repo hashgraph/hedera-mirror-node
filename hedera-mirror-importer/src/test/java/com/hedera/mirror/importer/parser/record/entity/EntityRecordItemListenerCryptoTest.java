@@ -1215,7 +1215,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         var contractId = ContractID.newBuilder().setContractNum(accountId.getAccountNum()).build();
         var evmAddress = recordItemBuilder.evmAddress();
         var cryptoCreate = recordItemBuilder.cryptoCreate()
-                .transactionBody(b -> b.clearAlias().clearKey().setEvmAddress(evmAddress.getValue()))
+                .transactionBody(b -> b.clearAlias().clearKey().setAlias(evmAddress.getValue()))
                 .receipt(r -> r.setAccountID(accountId))
                 .build();
         var contractCreate = recordItemBuilder.contractCreate()
@@ -1259,7 +1259,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         var accountId = recordItemBuilder.accountId();
         var evmAddress = recordItemBuilder.evmAddress();
         var cryptoCreate = recordItemBuilder.cryptoCreate()
-                .transactionBody(b -> b.clearAlias().clearKey().setEvmAddress(evmAddress.getValue()))
+                .transactionBody(b -> b.clearAlias().clearKey().setAlias(evmAddress.getValue()))
                 .receipt(r -> r.setAccountID(accountId))
                 .build();
 
