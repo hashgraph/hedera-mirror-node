@@ -31,6 +31,7 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -48,8 +49,10 @@ import com.hedera.mirror.common.exception.ProtobufException;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.services.stream.proto.TransactionSidecarRecord;
 
+import static lombok.AccessLevel.PRIVATE;
+
 @Builder(buildMethodName = "buildInternal")
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
+@AllArgsConstructor(access = PRIVATE)
 @Log4j2
 @Value
 public class RecordItem implements StreamItem {
@@ -86,6 +89,13 @@ public class RecordItem implements StreamItem {
     private final int transactionType = getTransactionType(getTransactionBody());
 
     // Mutable fields
+    @Getter(PRIVATE)
+    private final AtomicInteger logIndex = new AtomicInteger(0);
+
+    public int incrementLogIndex() {
+        return logIndex.incrementAndGet();
+    }
+
     @NonFinal
     @Setter
     private EthereumTransaction ethereumTransaction;

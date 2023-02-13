@@ -33,6 +33,9 @@ import com.google.protobuf.Descriptors.FieldDescriptor;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.Message;
 import com.google.protobuf.StringValue;
+
+import com.hedera.mirror.importer.parser.contractlog.SyntheticContractLogService;
+
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Duration;
@@ -122,6 +125,9 @@ abstract class AbstractTransactionHandlerTest {
 
     @Mock
     protected EntityRepository entityRepository;
+
+    @Mock
+    protected SyntheticContractLogService syntheticContractLogService;
 
     @Captor
     protected ArgumentCaptor<Entity> entityCaptor;
