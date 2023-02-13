@@ -21,9 +21,8 @@ package com.hedera.mirror.importer.parser.record.pubsub;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
+import static org.awaitility.Awaitility.await;
 
-import com.google.common.base.Stopwatch;
 import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.PubsubMessage;
 import java.nio.file.Files;
@@ -74,13 +73,13 @@ class PubSubRecordParserTest extends PubSubIntegrationTest {
         // then
         List<String> expectedMessages = Files.readAllLines(pubSubMessages);
         List<PubsubMessage> subscriberMessages = new ArrayList<>();
-        var stopWatch = Stopwatch.createStarted();
-        while (subscriberMessages.size() < NUM_TXNS) {
-            subscriberMessages.addAll(getAllMessages(NUM_TXNS));
-            if (stopWatch.elapsed(TimeUnit.SECONDS) > 10) {
-                fail("Timed out waiting for subscriber messages");
-            }
-        }
+        await().atMost(5, TimeUnit.SECONDS)
+                .until(() -> {
+                    while (subscriberMessages.size() < NUM_TXNS) {
+                        subscriberMessages.addAll(getAllMessages(NUM_TXNS));
+                    }
+                    return subscriberMessages.size() == NUM_TXNS;
+                });
 
         List<String> actualMessages = subscriberMessages.stream()
                 .map(PubsubMessage::getData)

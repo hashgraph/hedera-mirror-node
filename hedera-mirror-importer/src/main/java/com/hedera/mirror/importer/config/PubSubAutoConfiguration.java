@@ -22,9 +22,6 @@ package com.hedera.mirror.importer.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.cloud.spring.autoconfigure.pubsub.GcpPubSubAutoConfiguration;
-import com.google.cloud.spring.pubsub.core.PubSubTemplate;
-import com.google.cloud.spring.pubsub.support.PublisherFactory;
-import com.google.cloud.spring.pubsub.support.SubscriberFactory;
 import com.google.cloud.spring.pubsub.support.converter.JacksonPubSubMessageConverter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
@@ -40,9 +37,7 @@ import com.hedera.mirror.importer.parser.record.pubsub.ConditionalOnPubSubRecord
 public class PubSubAutoConfiguration {
 
     @Bean
-    PubSubTemplate pubSubTemplate(PublisherFactory publisherFactory, SubscriberFactory subscriberFactory) {
-        PubSubTemplate pubSubTemplate = new PubSubTemplate(publisherFactory, subscriberFactory);
-        pubSubTemplate.setMessageConverter(new JacksonPubSubMessageConverter(new ObjectMapper()));
-        return pubSubTemplate;
+    JacksonPubSubMessageConverter jacksonPubSubMessageConverter() {
+        return new JacksonPubSubMessageConverter(new ObjectMapper());
     }
 }
