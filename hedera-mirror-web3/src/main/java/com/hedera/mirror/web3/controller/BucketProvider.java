@@ -34,13 +34,19 @@ import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 public class BucketProvider {
 
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
+    private Bucket bucket;
 
     public Bucket getBucket() {
+        if (bucket != null) {
+            return bucket;
+        }
         final var rateLimitPerSecond = mirrorNodeEvmProperties.getRateLimitPerSecond();
-        final var limit = Bandwidth.classic(rateLimitPerSecond, Refill.greedy(rateLimitPerSecond, Duration.ofSeconds(1)));
-
-        return Bucket.builder()
+        final var limit = Bandwidth.classic(rateLimitPerSecond, Refill.greedy(rateLimitPerSecond,
+                Duration.ofSeconds(1)));
+        bucket = Bucket.builder()
                 .addLimit(limit)
                 .build();
+
+        return bucket;
     }
 }
