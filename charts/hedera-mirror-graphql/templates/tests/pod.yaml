@@ -18,6 +18,8 @@ spec:
         - /test/postman.json
         - --env-var
         - baseUrl=http://{{ include "hedera-mirror-graphql.fullname" . }}:{{ .Values.service.port }}
+        - --env-var
+        - default_account={{ .Values.test.defaultAccount }}
       securityContext:
         allowPrivilegeEscalation: false
         capabilities:

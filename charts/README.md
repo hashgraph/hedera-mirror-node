@@ -161,7 +161,7 @@ To access the GraphQL API:
 
 
 ```shell script
-curl --location --request POST "http://${SERVICE_IP}:8083/graphql/alpha" \
+curl --location --request POST "http://${SERVICE_IP}/graphql/alpha" \
        --header 'Content-Type: application/json' \
        --data-raw '{"query":"{  account(input: {entityId: {shard: 0, realm: 0, num: 98}}) {alias autoRenewPeriod createdTimestamp declineReward createdTimestamp}}"}'
 ```

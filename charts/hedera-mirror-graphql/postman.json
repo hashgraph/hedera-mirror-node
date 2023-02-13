@@ -35,21 +35,22 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "{\n  account(input: {\n    entityId: {\n    shard: 0, realm: 0, num: 111146}}) {\n    alais\n    autoRenewPeriod\n    autoRenewAccount {\n        alias\n        deleted\n        entityId {\n            shard\n            realm\n            num\n        }\n        createdTimestamp\n    }\n    \n  }\n}",
+                "query": "{\n  account(input: {\n    entityId: {\n    shard: 0, realm: 0, num: {{default_account}}}}) {\n    alais\n    autoRenewPeriod\n    autoRenewAccount {\n        alias\n        deleted\n        entityId {\n            shard\n            realm\n            num\n        }\n        createdTimestamp\n    }\n    \n  }\n}",
                 "variables": ""
               }
             },
             "url": {
-              "raw": "{{GRAPHQL_BASE_URL}}",
+              "raw": "{{baseUrl}}/graphql/alpha",
               "host": [
-                "{{GRAPHQL_BASE_URL}}"
-              ]
+                "{{baseUrl}}"
+              ],
+              "path": ["graphql", "alpha"]
             }
           },
           "response": []
         },
         {
-          "name": "Get Account by id",
+          "name": "By Id (Unimplemented)",
           "event": [
             {
               "listen": "test",
@@ -81,89 +82,20 @@
               }
             },
             "url": {
-              "raw": "{{GRAPHQL_BASE_URL}}",
+              "raw": "{{baseUrl}}/graphql/alpha",
               "host": [
-                "{{GRAPHQL_BASE_URL}}"
-              ]
+                "{{baseUrl}}"
+              ],
+              "path": ["graphql", "alpha"]
             }
           },
           "response": []
-        },
-        {
-          "name": "Get Account Null entity id",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"Null Entity ID\", () => {",
-                  "    pm.expect(pm.response.code).to.equal(200);",
-                  "",
-                  "    var response = pm.response.json();",
-                  "    var account = response.data.account;",
-                  "",
-                  "    pm.expect(account).to.equal(null);",
-                  "    pm.expect(response.errors.length).to.equal(1);",
-                  "    pm.expect(response.errors[0].message).to.equal(\"Must provide exactly one input value but 0 have been provided\");",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "graphql",
-              "graphql": {
-                "query": "{\n  account(input: {\n    entityId: null}) {\n    alias\n    autoRenewPeriod\n    autoRenewAccount {\n        alias\n        deleted\n        entityId {\n            shard\n            realm\n            num\n        }\n        createdTimestamp\n    }\n    \n  }\n}",
-                "variables": ""
-              }
-            },
-            "url": {
-              "raw": "{{GRAPHQL_BASE_URL}}",
-              "host": [
-                "{{GRAPHQL_BASE_URL}}"
-              ]
-            }
-          },
-          "response": []
-        }
-      ],
-      "event": [
-        {
-          "listen": "prerequest",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.collectionVariables.set(\"default_account\", 111146);"
-            ]
-          }
-        },
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              ""
-            ]
-          }
         }
       ]
     },
     {
       "name": "Get Account",
       "event": [
-        {
-          "listen": "prerequest",
-          "script": {
-            "exec": [
-              ""
-            ],
-            "type": "text/javascript"
-          }
-        },
         {
           "listen": "test",
           "script": {
@@ -210,33 +142,14 @@
           }
         },
         "url": {
-          "raw": "{{GRAPHQL_BASE_URL}}",
+          "raw": "{{baseUrl}}/graphql/alpha",
           "host": [
-            "{{GRAPHQL_BASE_URL}}"
-          ]
+            "{{baseUrl}}"
+          ],
+          "path": ["graphql", "alpha"]
         }
       },
       "response": []
-    }
-  ],
-  "event": [
-    {
-      "listen": "prerequest",
-      "script": {
-        "type": "text/javascript",
-        "exec": [
-          ""
-        ]
-      }
-    },
-    {
-      "listen": "test",
-      "script": {
-        "type": "text/javascript",
-        "exec": [
-          ""
-        ]
-      }
     }
   ],
   "variable": [
@@ -245,7 +158,7 @@
       "value": "98"
     },
     {
-      "key": "GRAPHQL_BASE_URL",
+      "key": "baseUrl",
       "value": "http://localhost:8083/graphql/alpha"
     }
   ]

@@ -15,7 +15,7 @@ dependencies:
     version: ">=0.18.0-0"
   - alias: graphql
     condition: graphql.enabled
-    name: hedera-mirror-grpc
+    name: hedera-mirror-graphql
     repository: file://../hedera-mirror-graphql
     tags:
       - api

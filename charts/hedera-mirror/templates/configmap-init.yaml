@@ -9,6 +9,8 @@ data:
     #!/bin/bash
     set -e
 
+    echo "I am executing this script"
+
     PGHBACONF="/opt/bitnami/postgresql/conf/pg_hba.conf"
     if [[ -f "${PGHBACONF}" ]]; then
       cp "${PGHBACONF}" "${PGHBACONF}.bak"
@@ -21,7 +23,7 @@ data:
       --set "dbName=${HEDERA_MIRROR_IMPORTER_DB_NAME}" \
       --set "dbSchema=${HEDERA_MIRROR_IMPORTER_DB_SCHEMA}" \
       --set "graphQLPassword=${HEDERA_MIRROR_GRAPHQL_DB_PASSWORD}" \
-      --set "graphQLUsername=${HEDERA_MIRROR_GRAPHQL_DB_USERNAME}
+      --set "graphQLUsername=${HEDERA_MIRROR_GRAPHQL_DB_USERNAME}" \
       --set "grpcPassword=${HEDERA_MIRROR_GRPC_DB_PASSWORD}" \
       --set "grpcUsername=${HEDERA_MIRROR_GRPC_DB_USERNAME}" \
       --set "importerPassword=${HEDERA_MIRROR_IMPORTER_DB_PASSWORD}" \
@@ -83,6 +85,7 @@ data:
       mv "${PGHBACONF}.bak" "${PGHBACONF}"
       pg_ctl reload
     fi
+    echo "I finished executing the script"
   {{- if .Values.citus.enabled }}
   002-citus.sh: |
     #!/bin/bash

@@ -15,6 +15,6 @@ Get the GraphQL service endpoint by running these commands:
 
   export POD_NAME=$(kubectl get pods -n {{ include "hedera-mirror-graphql.namespace" . }} -l "app.kubernetes.io/name={{ include "hedera-mirror-graphql.name" . }},app.kubernetes.io/instance={{ .Release.Name }}" -o jsonpath="{.items[0].metadata.name}")
   echo 127.0.0.1:{{ .Values.service.port }}
-  kubectl -n {{ include "hedera-mirror-graphql.namespace" . }} port-forward $POD_NAME {{ .Values.service.port }}:8545
+  kubectl -n {{ include "hedera-mirror-graphql.namespace" . }} port-forward $POD_NAME {{ .Values.service.port }}:8083
 
 {{- end }}
