@@ -41,7 +41,7 @@ public class BucketProvider {
             return bucket;
         }
         final var rateLimitPerSecond = mirrorNodeEvmProperties.getRateLimitPerSecond();
-        final var limit = Bandwidth.classic(rateLimitPerSecond, Refill.greedy(rateLimitPerSecond,
+        final var limit = Bandwidth.classic(rateLimitPerSecond, Refill.greedy(10,
                 Duration.ofSeconds(1)));
         bucket = Bucket.builder()
                 .addLimit(limit)
