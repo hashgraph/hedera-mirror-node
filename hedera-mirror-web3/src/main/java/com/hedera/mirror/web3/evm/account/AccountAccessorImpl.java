@@ -20,6 +20,8 @@ package com.hedera.mirror.web3.evm.account;
  * ‍
  */
 
+import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
+
 import com.google.protobuf.ByteString;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
+import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 
 @Named
@@ -34,12 +37,18 @@ import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 public class AccountAccessorImpl implements AccountAccessor {
     public static final int EVM_ADDRESS_SIZE = 20;
     private final MirrorEntityAccess mirrorEntityAccess;
+    private final EntityRepository entityRepository;
 
     @Override
     public Address canonicalAddress(Address addressOrAlias) {
-        if (mirrorEntityAccess.isUsable(addressOrAlias)) {
-            return addressOrAlias;
+        final var addressBytes = addressOrAlias.toArrayUnsafe();
+        if(!isMirror(addressBytes)) {
+            final var entityFoundByAlias = entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes);
+            if(entityFoundByAlias.isPresent()) {
+                return addressOrAlias;
+            }
         }
+
         return getAddressOrAlias(addressOrAlias);
     }
 

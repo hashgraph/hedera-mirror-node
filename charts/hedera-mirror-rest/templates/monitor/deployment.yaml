@@ -1,0 +1,74 @@
+{{- if .Values.monitor.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations: {{ toYaml .Values.annotations | nindent 4 }}
+  labels: {{ include "hedera-mirror-rest-monitor.labels" . | nindent 4 }}
+  name: {{ include "hedera-mirror-rest.fullname" . }}-monitor
+  namespace: {{ include "hedera-mirror-rest.namespace" . }}
+spec:
+  replicas: {{ .Values.monitor.replicas }}
+  selector:
+    matchLabels: {{ include "hedera-mirror-rest-monitor.selectorLabels" . | nindent 6 }}
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        checksum/secret: {{ include (print $.Template.BasePath "/monitor/secret.yaml") . | sha256sum }}
+      labels: {{ include "hedera-mirror-rest-monitor.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: rest-monitor
+          env:
+            - name: CONFIG_PATH
+              value: "/config"
+          {{ $image := mergeOverwrite .Values.monitor.image .Values.global.image -}}
+          image: "{{ $image.registry }}/{{ $image.repository }}:{{ $image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ $image.pullPolicy }}
+          livenessProbe:
+            httpGet:
+              path: /health/liveness
+              port: api
+            initialDelaySeconds: 10
+            timeoutSeconds: 2
+          ports:
+            - containerPort: 3000
+              name: api
+              protocol: TCP
+            - containerPort: 8080
+              name: ui
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /health/readiness
+              port: api
+            initialDelaySeconds: 10
+            timeoutSeconds: 2
+          resources: {{ toYaml .Values.monitor.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ ALL ]
+            readOnlyRootFilesystem: false
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: pm2
+              mountPath: /home/node/.pm2
+      securityContext:
+        fsGroup: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      serviceAccountName: {{ include "hedera-mirror-rest.serviceAccountName" . }}
+      volumes:
+        - name: config
+          secret:
+            secretName: {{ include "hedera-mirror-rest.fullname" . }}-monitor
+        - name: pm2
+          emptyDir:
+            medium: Memory
+{{- end }}

@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.repository;
+package com.hedera.mirror.test.e2e.acceptance.config;
 
 /*-
  * ‌
@@ -20,18 +20,25 @@ package com.hedera.mirror.web3.repository;
  * ‍
  */
 
-import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_ENTITY;
+import static com.hedera.mirror.test.e2e.acceptance.config.RestPollingProperties.URL_SUFFIX;
 
-import java.util.Optional;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.data.repository.CrudRepository;
+import javax.inject.Named;
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
 
-import com.hedera.mirror.common.domain.entity.Entity;
+@ConfigurationProperties(prefix = "hedera.mirror.test.acceptance.web3")
+@Data
+@Named
+@Validated
+public class Web3Properties {
 
-public interface EntityRepository extends CrudRepository<Entity, Long> {
+    private String baseUrl;
 
-    @Cacheable(cacheNames = "entity.id_and_deleted_is_false", cacheManager = CACHE_MANAGER_ENTITY , unless = "#result == null")
-    Optional<Entity> findByIdAndDeletedIsFalse(Long entityId);
-
-    Optional<Entity> findByEvmAddressAndDeletedIsFalse(byte[] alias);
+    public String getBaseUrl() {
+        if (baseUrl != null && !baseUrl.endsWith(URL_SUFFIX)) {
+            return baseUrl + URL_SUFFIX;
+        }
+        return baseUrl;
+    }
 }
