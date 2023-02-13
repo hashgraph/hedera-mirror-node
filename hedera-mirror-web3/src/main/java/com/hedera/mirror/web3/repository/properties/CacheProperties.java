@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.repository;
+package com.hedera.mirror.web3.repository.properties;
 
 /*-
  * ‌
@@ -20,18 +20,19 @@ package com.hedera.mirror.web3.repository;
  * ‍
  */
 
-import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_ENTITY;
+import javax.validation.constraints.NotBlank;
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
 
-import java.util.Optional;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.data.repository.CrudRepository;
+@Data
+@Validated
+@ConfigurationProperties(prefix = "hedera.mirror.web3.cache")
+public class CacheProperties {
 
-import com.hedera.mirror.common.domain.entity.Entity;
+    @NotBlank
+    private String contractState = "expireAfterWrite=5s,maximumSize=10000,recordStats";
+    @NotBlank
+    private String entity = "expireAfterWrite=30s,maximumSize=10000,recordStats";
 
-public interface EntityRepository extends CrudRepository<Entity, Long> {
-
-    @Cacheable(cacheNames = "entity.id_and_deleted_is_false", cacheManager = CACHE_MANAGER_ENTITY , unless = "#result == null")
-    Optional<Entity> findByIdAndDeletedIsFalse(Long entityId);
-
-    Optional<Entity> findByEvmAddressAndDeletedIsFalse(byte[] alias);
 }
