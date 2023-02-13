@@ -31,11 +31,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.awaitility.Durations;
 import org.junit.jupiter.api.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
@@ -73,11 +73,10 @@ class PubSubRecordParserTest extends PubSubIntegrationTest {
         // then
         List<String> expectedMessages = Files.readAllLines(pubSubMessages);
         List<PubsubMessage> subscriberMessages = new ArrayList<>();
-        await().atMost(5, TimeUnit.SECONDS)
+        await().atMost(Durations.TEN_SECONDS)
+                .pollInterval(Durations.ONE_HUNDRED_MILLISECONDS)
                 .until(() -> {
-                    while (subscriberMessages.size() < NUM_TXNS) {
-                        subscriberMessages.addAll(getAllMessages(NUM_TXNS));
-                    }
+                    subscriberMessages.addAll(getAllMessages(NUM_TXNS));
                     return subscriberMessages.size() == NUM_TXNS;
                 });
 
