@@ -52,6 +52,7 @@ const (
 )
 
 var transactionResults = map[int32]string{
+	-1:  generalErrorStatus,
 	0:   "OK",
 	1:   "INVALID_TRANSACTION",
 	2:   "PAYER_ACCOUNT_NOT_FOUND",
