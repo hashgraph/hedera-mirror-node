@@ -47,19 +47,15 @@ public class EvmConfiguration {
 
     @Bean(CACHE_MANAGER_STATE)
     CacheManager cacheManagerState() {
-        final var caffeine =
-                Caffeine.newBuilder().expireAfterWrite(cacheProperties.getStateCacheSeconds(), TimeUnit.SECONDS).maximumSize(10000);
         final CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
-        caffeineCacheManager.setCaffeine(caffeine);
+        caffeineCacheManager.setCacheSpecification(cacheProperties.getContractState());
         return caffeineCacheManager;
     }
 
     @Bean(CACHE_MANAGER_ENTITY)
     CacheManager cacheManagerEntity() {
-        final var caffeine =
-                Caffeine.newBuilder().expireAfterWrite(cacheProperties.getEntityCacheSeconds(), TimeUnit.SECONDS).maximumSize(10000);
         final CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
-        caffeineCacheManager.setCaffeine(caffeine);
+        caffeineCacheManager.setCacheSpecification(cacheProperties.getEntity());
         return caffeineCacheManager;
     }
 
