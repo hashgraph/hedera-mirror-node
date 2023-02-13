@@ -31,7 +31,7 @@ import (
 func TestResponseCodeUpToDate(t *testing.T) {
 	// given
 	for code, name := range services.ResponseCodeEnum_name {
-		assert.Equal(t, name, TransactionResults[code], "Expected %s for code %d", name, code)
+		assert.Equal(t, name, transactionResults[code], "Expected %s for code %d", name, code)
 	}
 }
 
