@@ -22,19 +22,13 @@ package com.hedera.mirror.importer.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.cloud.spring.autoconfigure.pubsub.GcpPubSubAutoConfiguration;
-import com.google.cloud.spring.pubsub.core.PubSubTemplate;
-import com.google.cloud.spring.pubsub.integration.outbound.PubSubMessageHandler;
 import com.google.cloud.spring.pubsub.support.converter.JacksonPubSubMessageConverter;
-import com.hedera.mirror.importer.parser.record.pubsub.ConditionalOnPubSubRecordParser;
-import com.hedera.mirror.importer.parser.record.pubsub.PubSubProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.integration.annotation.ServiceActivator;
-import org.springframework.integration.channel.DirectChannel;
-import org.springframework.messaging.MessageChannel;
-import org.springframework.messaging.MessageHandler;
+
+import com.hedera.mirror.importer.parser.record.pubsub.ConditionalOnPubSubRecordParser;
 
 @Configuration
 @AutoConfigureAfter(GcpPubSubAutoConfiguration.class)  // for SubscriberFactory and PublisherFactory
@@ -42,25 +36,8 @@ import org.springframework.messaging.MessageHandler;
 @RequiredArgsConstructor
 public class PubSubAutoConfiguration {
 
-    private final PubSubProperties pubSubProperties;
-
-    private final PubSubTemplate pubSubTemplate;
-
-    // Required by PubSubRecordItemListener
     @Bean
-    MessageChannel pubsubOutputChannel() {
-        return new DirectChannel();
-    }
-
-    @Bean
-    @ServiceActivator(inputChannel = "pubsubOutputChannel")
-    MessageHandler pubSubMessageSender() {
-        pubSubTemplate.setMessageConverter(new JacksonPubSubMessageConverter(new ObjectMapper()));
-        PubSubMessageHandler pubSubMessageHandler =
-                new PubSubMessageHandler(pubSubTemplate, pubSubProperties.getTopicName());
-        // Optimize in future to use async to support higher TPS. Can do ~20-30/sec right now which is sufficient
-        // to setup BQ dataset for mainnet. Exposing pubsub for testnet will have to wait.
-        pubSubMessageHandler.setSync(true);
-        return pubSubMessageHandler;
+    JacksonPubSubMessageConverter jacksonPubSubMessageConverter() {
+        return new JacksonPubSubMessageConverter(new ObjectMapper());
     }
 }
