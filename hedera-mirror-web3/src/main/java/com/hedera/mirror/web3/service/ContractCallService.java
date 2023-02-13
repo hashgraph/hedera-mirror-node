@@ -24,6 +24,10 @@ import static com.hedera.mirror.web3.evm.exception.ResponseCodeUtil.getStatusOrD
 
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Named;
 import org.apache.tuweni.bytes.Bytes;
 
@@ -35,18 +39,23 @@ import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionP
 @Named
 public class ContractCallService {
     private final MirrorEvmTxProcessorFacade mirrorEvmTxProcessorFacade;
-    private final Counter counter;
+    private final MeterRegistry meterRegistry;
+    private final Map<CallType, Counter> gasPerSecondMetricMap = new ConcurrentHashMap<>();
 
     public ContractCallService(final MirrorEvmTxProcessorFacade mirrorEvmTxProcessorFacade, final MeterRegistry meterRegistry) {
+        this.meterRegistry = meterRegistry;
         this.mirrorEvmTxProcessorFacade = mirrorEvmTxProcessorFacade;
 
-        counter = Counter.builder("hedera.mirror.web3.call.gas")
-                .description("The amount of gas consumed by the EVM")
-                .register(meterRegistry);
+        final List<CallType> metricTypes = new ArrayList<>();
+        metricTypes.add(CallType.ETH_CALL);
+        metricTypes.add(CallType.ETH_ESTIMATE_GAS);
+        metricTypes.add(CallType.ERROR);
+
+        metricTypes.forEach(t -> gasPerSecondMetricMap.put(t, newGasPerSecondMetric(t)));
     }
 
-    public String processCall(final CallServiceParameters body) {
-        final var txnResult = doProcessCall(body);
+    public String processCall(final CallServiceParameters body, final CallType callType) {
+        final var txnResult = doProcessCall(body, callType);
 
         final var callResult = txnResult.getOutput() != null
                 ? txnResult.getOutput() : Bytes.EMPTY;
@@ -54,7 +63,7 @@ public class ContractCallService {
         return callResult.toHexString();
     }
 
-    private HederaEvmTransactionProcessingResult doProcessCall(final CallServiceParameters body) {
+    private HederaEvmTransactionProcessingResult doProcessCall(final CallServiceParameters body, final CallType callType) {
         HederaEvmTransactionProcessingResult txnResult;
 
         try {
@@ -67,14 +76,32 @@ public class ContractCallService {
                             body.getCallData(),
                             body.isStatic());
 
-            counter.increment(txnResult.getGasUsed());
+            Counter gasPerSecondCounter;
+            if(!txnResult.isSuccessful()) {
+                gasPerSecondCounter = gasPerSecondMetricMap.get(CallType.ERROR);
+                gasPerSecondCounter.increment(txnResult.getGasUsed());
 
-            if (!txnResult.isSuccessful()) {
                 throw new InvalidTransactionException(getStatusOrDefault(txnResult));
+            } else {
+                gasPerSecondCounter = gasPerSecondMetricMap.get(callType);
+                gasPerSecondCounter.increment(txnResult.getGasUsed());
             }
         } catch (IllegalStateException | IllegalArgumentException e) {
             throw new InvalidTransactionException(e.getMessage());
         }
         return txnResult;
+    }
+
+    private Counter newGasPerSecondMetric(CallType type) {
+        return Counter.builder("hedera.mirror.web3.call.gas")
+                .description("The amount of gas consumed by the EVM")
+                .tag("type", type.toString())
+                .register(meterRegistry);
+    }
+
+    public enum CallType {
+        ETH_CALL,
+        ETH_ESTIMATE_GAS,
+        ERROR
     }
 }

@@ -24,6 +24,7 @@ import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
+import static com.hedera.mirror.web3.service.ContractCallService.CallType.ETH_CALL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
@@ -72,7 +73,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
 
         persistEntities(false);
 
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulReadResponse);
+        assertThat(contractCallService.processCall(serviceParameters, ETH_CALL)).isEqualTo(successfulReadResponse);
     }
 
     @Test
@@ -86,7 +87,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
 
         persistEntities(false);
 
-        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulReadResponse);
+        assertThat(contractCallService.processCall(serviceParameters, ETH_CALL)).isEqualTo(successfulReadResponse);
     }
 
 
@@ -95,7 +96,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
         final var serviceParameters = serviceParameters("0x", 7L);
         persistEntities(true);
 
-        assertThatCode(() -> contractCallService.processCall(serviceParameters)).doesNotThrowAnyException();
+        assertThatCode(() -> contractCallService.processCall(serviceParameters, ETH_CALL)).doesNotThrowAnyException();
     }
 
     @Test
@@ -109,7 +110,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
 
         persistEntities(false);
 
-        final var isSuccessful = contractCallService.processCall(params);
+        final var isSuccessful = contractCallService.processCall(params, ETH_CALL);
         assertThat(isSuccessful).isEqualTo(expectedBalance);
     }
 
@@ -120,7 +121,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
 
         persistEntities(false);
 
-        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters)).isInstanceOf(InvalidTransactionException.class)
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters, ETH_CALL)).isInstanceOf(InvalidTransactionException.class)
                 .hasMessage("CONTRACT_REVERT_EXECUTED");
     }
 
@@ -129,7 +130,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
         final var serviceParameters = serviceParameters("0x", -5L);
         persistEntities(true);
 
-        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters)).isInstanceOf(InvalidTransactionException.class);
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters, ETH_CALL)).isInstanceOf(InvalidTransactionException.class);
     }
 
     @Test
@@ -137,7 +138,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
         final var serviceParameters = serviceParameters("0x", 210000L);
         persistEntities(true);
 
-        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters)).isInstanceOf(InvalidTransactionException.class);
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters, ETH_CALL)).isInstanceOf(InvalidTransactionException.class);
     }
 
     /**
@@ -153,7 +154,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
 
         persistEntities(false);
 
-        assertThatThrownBy(() -> contractCallService.processCall(params)).
+        assertThatThrownBy(() -> contractCallService.processCall(params, ETH_CALL)).
                 isInstanceOf(InvalidTransactionException.class)
                 .hasMessage(LOCAL_CALL_MODIFICATION_EXCEPTION.toString());
     }
@@ -167,7 +168,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
 
         persistEntities(false);
 
-        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters)).
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters, ETH_CALL)).
                 isInstanceOf(InvalidTransactionException.class);
     }
 
