@@ -68,9 +68,7 @@ public class UtilityTest {
         assertThat(Utility.aliasToEvmAddress(aliasEd25519)).isNull();
         assertThat(Utility.aliasToEvmAddress(null)).isNull();
         assertThat(Utility.aliasToEvmAddress(new byte[] {})).isNull();
-        assertThatThrownBy(() -> Utility.aliasToEvmAddress(invalidBytes))
-                .isInstanceOf(ParserException.class)
-                .hasRootCauseExactlyInstanceOf(InvalidProtocolBufferException.class);
+        assertThat(Utility.aliasToEvmAddress(invalidBytes)).isNull();
     }
 
     @ParameterizedTest

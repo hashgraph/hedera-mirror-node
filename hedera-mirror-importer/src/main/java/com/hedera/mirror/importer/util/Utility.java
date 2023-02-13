@@ -69,7 +69,7 @@ public class Utility {
     @SuppressWarnings("java:S1168")
     public static byte[] aliasToEvmAddress(byte[] alias) {
         try {
-            if (alias == null || alias.length == 0) {
+            if (alias == null || alias.length <= DomainUtils.EVM_ADDRESS_LENGTH) {
                 return null;
             }
 
