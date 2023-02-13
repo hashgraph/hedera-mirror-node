@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.google.common.primitives.Bytes;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -61,7 +62,8 @@ public class UtilityTest {
                 "3a374349514637575a4f55475132415336334d504757573633484750484b584b5442344f3643505a334b3437374133354b584257525a4e4941");
         byte[] evmAddress2 = Hex.decode("efa0d905af20199aa03aca71cfa5f7647f29f439");
         byte[] randomBytes = TestUtils.generateRandomByteArray(DomainUtils.EVM_ADDRESS_LENGTH);
-        byte[] invalidBytes = new byte[] {'a', 'b'};
+        byte[] tooShortBytes = TestUtils.generateRandomByteArray(32);
+        byte[] invalidBytes = Bytes.concat(new byte[] {'a'}, TestUtils.generateRandomByteArray(32));
 
         assertThat(Utility.aliasToEvmAddress(ALIAS_ECDSA_SECP256K1)).isEqualTo(EVM_ADDRESS);
         assertThat(Utility.aliasToEvmAddress(aliasEcdsa2)).isEqualTo(evmAddress2);
@@ -71,9 +73,9 @@ public class UtilityTest {
         assertThat(Utility.aliasToEvmAddress(aliasEd25519)).isNull();
         assertThat(Utility.aliasToEvmAddress(null)).isNull();
         assertThat(Utility.aliasToEvmAddress(new byte[] {})).isNull();
+        assertThat(Utility.aliasToEvmAddress(tooShortBytes)).isNull();
         assertThatThrownBy(() -> Utility.aliasToEvmAddress(invalidBytes))
-                .isInstanceOf(ParserException.class)
-                .hasRootCauseExactlyInstanceOf(InvalidProtocolBufferException.class);
+                .isInstanceOf(ParserException.class);
     }
 
     @ParameterizedTest
