@@ -180,6 +180,10 @@ func (suite *offlineNetworkServiceSuite) TestNetworkOptions() {
 					Status:     "OK",
 					Successful: false,
 				},
+				{
+					Status:     "GENERAL_ERROR",
+					Successful: false,
+				},
 			},
 			OperationTypes:          suite.operationTypes,
 			Errors:                  expectedErrors,

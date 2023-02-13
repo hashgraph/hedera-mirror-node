@@ -45,7 +45,7 @@ var (
 	accountAlias, _ = types.NewAccountIdFromEntity(domain.Entity{Alias: ed25519Alias, Id: accountEntityId})
 	entityId        = domain.MustDecodeEntityId(600)
 	hbarAmount      = types.HbarAmount{Value: 300}
-	statusSuccess   = types.TransactionResults[22]
+	statusSuccess   = types.GetTransactionResult(22)
 )
 
 func block() *types.Block {
