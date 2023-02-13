@@ -10,7 +10,7 @@ jobs:
       matrix:
         module: [ graphql, grpc, importer, monitor, rest, rest-monitor, rosetta, web3 ]
     env:
-      MODULE: hedera-mirror-${{ matrix.module }}
+      CONTEXT: hedera-mirror-${{ matrix.module }}
       IMAGE: gcr.io/mirrornode/hedera-mirror-${{ matrix.module }}
     name: Publish images
     runs-on: ubuntu-latest
@@ -19,6 +19,10 @@ jobs:
 
       - name: Get tag
         run: echo "TAG=${GITHUB_REF#refs/*/v}" >> $GITHUB_ENV
+
+      - name: Custom monitor path
+        if: matrix.module == 'rest-monitor'
+        run: echo "CONTEXT=hedera-mirror-rest/monitoring" >> $GITHUB_ENV
 
       - name: Install JDK
         uses: actions/setup-java@v3
@@ -54,7 +58,7 @@ jobs:
           build-args: VERSION=${{env.TAG}}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-          context: ${{env.MODULE}}
+          context: ${{env.CONTEXT}}
           platforms: linux/amd64, linux/arm64
           push: true
           tags: ${{env.IMAGE}}:${{env.TAG}},${{env.IMAGE}}:latest
