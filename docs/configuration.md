@@ -1,6 +1,6 @@
 # Configuration
 
-The components of the Hedera Mirror Node all support loading configuration from an `application.yml` file or via the 
+The components of the Hedera Mirror Node all support loading configuration from an `application.yml` file or via the
 environment.
 
 ## Default Values
@@ -558,3 +558,5 @@ Name                                                        | Default           
 `hedera.mirror.web3.evm.fundingAccount`                     | 0x0000000000000000000000000000000000000062 | Default Hedera funding account
 `hedera.mirror.web3.evm.maxGasRefundPercentage`             | 20%                                        | Maximal procent of gas refunding
 `hedera.mirror.web3.evm.expirationCacheTime`                | 10m                                        | Maximum time for contract bytecode's caching
+`hedera.mirror.web3.cache.contractState`                    | expireAfterWrite=5s,maximumSize=10000,recordStats | Cache configuration for contract state
+`hedera.mirror.web3.cache.entity `                          | expireAfterWrite=30s,maximumSize=10000,recordStats | Cache configuration for entity
