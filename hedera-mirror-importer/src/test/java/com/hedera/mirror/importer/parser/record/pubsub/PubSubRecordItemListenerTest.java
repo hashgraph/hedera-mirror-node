@@ -287,7 +287,7 @@ class PubSubRecordItemListenerTest {
         pubSubRecordItemListener.onItem(recordItem);
 
         // then
-        assertPubSubMessage(buildPubSubTransaction(recordItem, transaction), 3);
+        assertPubSubMessage(buildPubSubTransaction(recordItem, transaction), 4);
     }
 
     @Test

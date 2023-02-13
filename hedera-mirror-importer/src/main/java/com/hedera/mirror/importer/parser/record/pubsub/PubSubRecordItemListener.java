@@ -141,8 +141,10 @@ public class PubSubRecordItemListener implements RecordItemListener {
         publishResult.addCallback(new ListenableFutureCallback<>() {
             @Override
             public void onFailure(Throwable ex) {
-                log.warn("Attempt {} to send message to PubSub failed: {}", retry, ex);
-                if (retry < pubSubProperties.getMaxSendAttempts()) {
+                if (retry > pubSubProperties.getMaxSendAttempts()) {
+                    log.error("Failed to send message to PubSub after {} attempts: {}", retry - 1, ex);
+                } else {
+                    log.warn("Attempt {} to send message to PubSub failed: {}", retry, ex);
                     sendPubSubMessage(message, header, retry);
                 }
             }
