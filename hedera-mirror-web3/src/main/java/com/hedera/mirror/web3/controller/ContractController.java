@@ -21,8 +21,8 @@ package com.hedera.mirror.web3.controller;
  */
 
 import static com.hedera.mirror.web3.controller.ValidationErrorParser.extractValidationError;
-import static com.hedera.mirror.web3.service.ContractCallService.CallType.ETH_CALL;
-import static com.hedera.mirror.web3.service.ContractCallService.CallType.ETH_ESTIMATE_GAS;
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static org.apache.tuweni.bytes.Bytes.EMPTY;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
@@ -67,9 +67,11 @@ class ContractController {
 
         final var params = constructServiceParameters(request);
         final var callType = request.isEstimate() ? ETH_ESTIMATE_GAS : ETH_CALL;
+        params.setCallType(callType);
+
         final var callResponse =
                 new ContractCallResponse(
-                        contractCallService.processCall(params, callType));
+                        contractCallService.processCall(params));
 
         return Mono.just(callResponse);
     }

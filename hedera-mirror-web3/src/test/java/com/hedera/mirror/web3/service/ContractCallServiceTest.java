@@ -24,7 +24,7 @@ import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
-import static com.hedera.mirror.web3.service.ContractCallService.CallType.ETH_CALL;
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
@@ -42,6 +42,7 @@ import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
+import com.hedera.mirror.web3.service.model.CallServiceParameters.CallType;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -69,11 +70,11 @@ class ContractCallServiceTest extends Web3IntegrationTest {
         final var pureFuncHash = "8070450f";
         final var successfulReadResponse =
                 "0x0000000000000000000000000000000000000000000000000000000000000004";
-        final var serviceParameters = serviceParameters(pureFuncHash, 0);
+        final var serviceParameters = serviceParameters(pureFuncHash, 0, ETH_CALL);
 
         persistEntities(false);
 
-        assertThat(contractCallService.processCall(serviceParameters, ETH_CALL)).isEqualTo(successfulReadResponse);
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulReadResponse);
     }
 
     @Test
@@ -83,20 +84,20 @@ class ContractCallServiceTest extends Web3IntegrationTest {
                 "0x6601c296000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000036b75720000000000000000000000000000000000000000000000000000000000";
         final var successfulReadResponse =
                 "0x4746573740000000000000000000000000000000000000000000000000000000";
-        final var serviceParameters = serviceParameters(viewFuncHash, 0);
+        final var serviceParameters = serviceParameters(viewFuncHash, 0, ETH_CALL);
 
         persistEntities(false);
 
-        assertThat(contractCallService.processCall(serviceParameters, ETH_CALL)).isEqualTo(successfulReadResponse);
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulReadResponse);
     }
 
 
     @Test
     void transferFunds() {
-        final var serviceParameters = serviceParameters("0x", 7L);
+        final var serviceParameters = serviceParameters("0x", 7L, ETH_CALL);
         persistEntities(true);
 
-        assertThatCode(() -> contractCallService.processCall(serviceParameters, ETH_CALL)).doesNotThrowAnyException();
+        assertThatCode(() -> contractCallService.processCall(serviceParameters)).doesNotThrowAnyException();
     }
 
     @Test
@@ -106,39 +107,39 @@ class ContractCallServiceTest extends Web3IntegrationTest {
                 "0x93423e9c00000000000000000000000000000000000000000000000000000000000004e6";
         final var expectedBalance =
                 "0x0000000000000000000000000000000000000000000000000000000000004e20";
-        final var params = serviceParameters(balanceCall, 0);
+        final var params = serviceParameters(balanceCall, 0, ETH_CALL);
 
         persistEntities(false);
 
-        final var isSuccessful = contractCallService.processCall(params, ETH_CALL);
+        final var isSuccessful = contractCallService.processCall(params);
         assertThat(isSuccessful).isEqualTo(expectedBalance);
     }
 
     @Test
     void invalidFunctionSig() {
         final var wrongFunctionSignature = "0x542ec32e";
-        final var serviceParameters = serviceParameters(wrongFunctionSignature, 0);
+        final var serviceParameters = serviceParameters(wrongFunctionSignature, 0, ETH_CALL);
 
         persistEntities(false);
 
-        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters, ETH_CALL)).isInstanceOf(InvalidTransactionException.class)
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters)).isInstanceOf(InvalidTransactionException.class)
                 .hasMessage("CONTRACT_REVERT_EXECUTED");
     }
 
     @Test
     void transferNegative() {
-        final var serviceParameters = serviceParameters("0x", -5L);
+        final var serviceParameters = serviceParameters("0x", -5L, ETH_CALL);
         persistEntities(true);
 
-        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters, ETH_CALL)).isInstanceOf(InvalidTransactionException.class);
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters)).isInstanceOf(InvalidTransactionException.class);
     }
 
     @Test
     void transferExceedsBalance() {
-        final var serviceParameters = serviceParameters("0x", 210000L);
+        final var serviceParameters = serviceParameters("0x", 210000L, ETH_CALL);
         persistEntities(true);
 
-        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters, ETH_CALL)).isInstanceOf(InvalidTransactionException.class);
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters)).isInstanceOf(InvalidTransactionException.class);
     }
 
     /**
@@ -150,11 +151,11 @@ class ContractCallServiceTest extends Web3IntegrationTest {
         //transferHbarsToAddress(address)
         final var stateChangePayable =
                 "0x80b9f03c00000000000000000000000000000000000000000000000000000000000004e6";
-        final var params = serviceParameters(stateChangePayable, 90L);
+        final var params = serviceParameters(stateChangePayable, 90L, ETH_CALL);
 
         persistEntities(false);
 
-        assertThatThrownBy(() -> contractCallService.processCall(params, ETH_CALL)).
+        assertThatThrownBy(() -> contractCallService.processCall(params)).
                 isInstanceOf(InvalidTransactionException.class)
                 .hasMessage(LOCAL_CALL_MODIFICATION_EXCEPTION.toString());
     }
@@ -164,15 +165,15 @@ class ContractCallServiceTest extends Web3IntegrationTest {
         //writeToStorageSlot(string)
         final var stateChangeHash =
                 "0x9ac27b62000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000033233320000000000000000000000000000000000000000000000000000000000";
-        final var serviceParameters = serviceParameters(stateChangeHash, 0);
+        final var serviceParameters = serviceParameters(stateChangeHash, 0, ETH_CALL);
 
         persistEntities(false);
 
-        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters, ETH_CALL)).
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters)).
                 isInstanceOf(InvalidTransactionException.class);
     }
 
-    private CallServiceParameters serviceParameters(String callData, long value) {
+    private CallServiceParameters serviceParameters(String callData, long value, CallType callType) {
         final var sender = new HederaEvmAccount(SENDER_ADDRESS);
         final var data = Bytes.fromHexString(callData);
         final var receiver = callData.equals("0x") ? RECEIVER_ADDRESS : CONTRACT_ADDRESS;
@@ -184,6 +185,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
                 .callData(data)
                 .providedGasLimit(120000000L)
                 .isStatic(true)
+                .callType(callType)
                 .build();
     }
 
