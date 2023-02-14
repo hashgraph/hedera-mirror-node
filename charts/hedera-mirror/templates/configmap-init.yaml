@@ -9,8 +9,6 @@ data:
     #!/bin/bash
     set -e
 
-    echo "I am executing this script"
-
     PGHBACONF="/opt/bitnami/postgresql/conf/pg_hba.conf"
     if [[ -f "${PGHBACONF}" ]]; then
       cp "${PGHBACONF}" "${PGHBACONF}.bak"
@@ -85,7 +83,7 @@ data:
       mv "${PGHBACONF}.bak" "${PGHBACONF}"
       pg_ctl reload
     fi
-    echo "I finished executing the script"
+
   {{- if .Values.citus.enabled }}
   002-citus.sh: |
     #!/bin/bash

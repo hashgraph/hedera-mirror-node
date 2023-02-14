@@ -4,4 +4,3 @@ monitor:
 postgresql:
   fullnameOverride: db
 
-#global.image.tag...
