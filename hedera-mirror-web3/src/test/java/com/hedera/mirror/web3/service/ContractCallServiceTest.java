@@ -25,6 +25,7 @@ import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.LOCAL_CALL_MODIFICATION_EXCEPTION;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
@@ -171,6 +172,20 @@ class ContractCallServiceTest extends Web3IntegrationTest {
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters)).
                 isInstanceOf(InvalidTransactionException.class);
+    }
+
+    @Test
+    void estimateGasSimpleCase() {
+        //multiplySimpleNumbers()
+        final var pureFuncHash = "8070450f";
+        final var successfulReadResponse =
+                "0x0000000000000000000000000000000000000000000000000000000000000004";
+        final var serviceParameters = serviceParameters(pureFuncHash, 0, ETH_ESTIMATE_GAS);
+        serviceParameters.setStatic(false);
+
+        persistEntities(false);
+
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulReadResponse);
     }
 
     private CallServiceParameters serviceParameters(String callData, long value, CallType callType) {
