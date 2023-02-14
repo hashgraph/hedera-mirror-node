@@ -19,7 +19,6 @@
  */
 
 import _ from 'lodash';
-import * as math from 'mathjs';
 import config from './config';
 
 import {
@@ -82,7 +81,6 @@ const getAccountsWithAccountCheck = async (server) => {
   const highestAccount = _.max(_.map(accounts, (acct) => acct.account));
   url = getUrl(server, accountsPath, {
     'account.id': highestAccount,
-    type: 'credit',
     limit: 1,
   });
   const singleAccount = await getAPIResponse(url, jsonRespKey, hasEmptyList(jsonRespKey));
@@ -100,49 +98,6 @@ const getAccountsWithAccountCheck = async (server) => {
     url,
     passed: true,
     message: 'Successfully called accounts and performed account check',
-  };
-};
-
-/**
- * Verify accounts call with time and limit query params provided
- * @param {Object} server API host endpoint
- */
-const getAccountsWithTimeAndLimitParams = async (server) => {
-  let url = getUrl(server, accountsPath, {
-    'account.balance': 'gte:0',
-    limit: 1,
-  });
-  let accounts = await getAPIResponse(url, jsonRespKey);
-
-  const checkRunner = new CheckRunner()
-    .withCheckSpec(checkAPIResponseError)
-    .withCheckSpec(checkRespObjDefined, {message: 'accounts is undefined'})
-    .withCheckSpec(checkRespArrayLength, {
-      limit: 1,
-      message: (accts) => `accounts.length of ${accts.length} was expected to be 1`,
-    });
-  let result = checkRunner.run(accounts);
-  if (!result.passed) {
-    return {url, ...result};
-  }
-
-  const plusOne = math.add(math.bignumber(accounts[0].balance.timestamp), math.bignumber(1));
-  const minusOne = math.subtract(math.bignumber(accounts[0].balance.timestamp), math.bignumber(1));
-  url = getUrl(server, accountsPath, {
-    timestamp: [`gt:${minusOne.toString()}`, `lt:${plusOne.toString()}`],
-    limit: 1,
-  });
-  accounts = await getAPIResponse(url, jsonRespKey, hasEmptyList(jsonRespKey));
-
-  result = checkRunner.run(accounts);
-  if (!result.passed) {
-    return {url, ...result};
-  }
-
-  return {
-    url,
-    passed: true,
-    message: 'Successfully called accounts with time and limit params',
   };
 };
 
@@ -302,7 +257,6 @@ const runTests = async (server, testResult) => {
   const runTest = testRunner(server, testResult, resource);
   return Promise.all([
     runTest(getAccountsWithAccountCheck),
-    runTest(getAccountsWithTimeAndLimitParams),
     runTest(getSingleAccount),
     tokenRelationshipEnabled ? runTest(getSingleAccountTokenRelationships) : '',
     stakingRewardAccountId !== null ? runTest(getAccountStakingRewards) : '',

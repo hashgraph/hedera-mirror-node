@@ -31,6 +31,7 @@ import config from './config';
 
 const apiPrefix = '/api/v1';
 const DEFAULT_LIMIT = 10;
+const {freshness} = config;
 const logger = log4js.getLogger();
 
 /**
@@ -357,7 +358,7 @@ const checkResourceFreshness = async (
   query = {limit: 1, order: 'desc'}
 ) => {
   const {freshnessThreshold} = config[resource];
-  if (freshnessThreshold === 0) {
+  if (!freshness || freshnessThreshold === 0) {
     return {skipped: true};
   }
 

@@ -20,16 +20,17 @@ package com.hedera.mirror.importer.parser.record.pubsub;
  * ‍
  */
 
+import com.google.cloud.spring.pubsub.core.PubSubTemplate;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import java.util.Map;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.integration.MessageTimeoutException;
-import org.springframework.messaging.MessageChannel;
-import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.util.concurrent.ListenableFuture;
+import org.springframework.util.concurrent.ListenableFutureCallback;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.file.FileData;
@@ -55,7 +56,7 @@ import com.hedera.mirror.importer.util.Utility;
 public class PubSubRecordItemListener implements RecordItemListener {
 
     private final PubSubProperties pubSubProperties;
-    private final MessageChannel pubsubOutputChannel;
+    private final PubSubTemplate pubSubTemplate;
     private final AddressBookService addressBookService;
     private final FileDataRepository fileDataRepository;
     private final NonFeeTransferExtractionStrategy nonFeeTransfersExtractor;
@@ -79,15 +80,15 @@ public class PubSubRecordItemListener implements RecordItemListener {
         }
 
         PubSubMessage pubSubMessage = buildPubSubMessage(consensusTimestamp, entityId, recordItem);
+        Map<String, String> header = Map.of("consensusTimestamp", pubSubMessage.getConsensusTimestamp().toString());
         try {
-            sendPubSubMessage(pubSubMessage);
+            sendPubSubMessage(pubSubMessage, header, 0);
         } catch (Exception e) {
             // This will make RecordFileParser to retry whole file, thus sending duplicates of previous transactions
             // in this file. In needed in future, this can be optimized to resend only the txns with consensusTimestamp
             // greater than that of last correctly sent txn.
             throw new ParserException("Error sending transaction to pubsub", e);
         }
-        log.debug("Published transaction : {}", consensusTimestamp);
 
         if (addressBookService.isAddressBook(entityId)) {
             FileID fileID = null;
@@ -111,20 +112,9 @@ public class PubSubRecordItemListener implements RecordItemListener {
         }
     }
 
-    // Publishes the PubSubMessage while retrying if a retryable error is encountered.
-    private void sendPubSubMessage(PubSubMessage pubSubMessage) {
-        for (int numTries = 0; numTries < pubSubProperties.getMaxSendAttempts(); numTries++) {
-            try {
-                pubsubOutputChannel.send(MessageBuilder
-                        .withPayload(pubSubMessage)
-                        .setHeader("consensusTimestamp", pubSubMessage.getConsensusTimestamp())
-                        .build());
-            } catch (MessageTimeoutException e) {
-                log.warn("Attempt {} to send message to PubSub timed out", numTries + 1);
-                continue;
-            }
-            return;
-        }
+    private void sendPubSubMessage(PubSubMessage message, Map<String, String> header, int retryCount) {
+        var publishResult = pubSubTemplate.publish(pubSubProperties.getTopicName(), message, header);
+        setPublishCallback(publishResult, message, header, retryCount);
     }
 
     private PubSubMessage buildPubSubMessage(long consensusTimestamp, EntityId entity, RecordItem recordItem) {
@@ -143,5 +133,26 @@ public class PubSubRecordItemListener implements RecordItemListener {
             return null;
         }
         return nonFeeTransfers;
+    }
+
+    private void setPublishCallback(ListenableFuture<String> publishResult, PubSubMessage message,
+                                    Map<String, String> header, int retryCount) {
+        int retry = retryCount + 1;
+        publishResult.addCallback(new ListenableFutureCallback<>() {
+            @Override
+            public void onFailure(Throwable ex) {
+                if (retry > pubSubProperties.getMaxSendAttempts()) {
+                    log.error("Failed to send message to PubSub after {} attempts: {}", retry - 1, ex);
+                } else {
+                    log.warn("Attempt {} to send message to PubSub failed: {}", retry, ex);
+                    sendPubSubMessage(message, header, retry);
+                }
+            }
+
+            @Override
+            public void onSuccess(String result) {
+                log.debug("Published transaction : {}", message.getConsensusTimestamp());
+            }
+        });
     }
 }

@@ -56,7 +56,8 @@ import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeSizeOpe
 @UtilityClass
 public class EvmOperationConstructionUtil {
     private static final String EVM_VERSION_0_30 = "v0.30";
-    private static final String EVM_VERSION_0_32 = "v0.32";
+    private static final String EVM_VERSION_0_34 = "v0.34";
+    public static final String EVM_VERSION = EVM_VERSION_0_34;
     static final GasCalculator gasCalculator = new LondonGasCalculator();
     private static final EVM evm = constructEvm();
 
@@ -65,7 +66,7 @@ public class EvmOperationConstructionUtil {
                 EVM_VERSION_0_30,
                 () -> new ContractCreationProcessor(
                         gasCalculator, evm, true, List.of(), 1),
-                EVM_VERSION_0_32,
+                EVM_VERSION_0_34,
                 () -> new ContractCreationProcessor(
                         gasCalculator, evm, true, List.of(), 1));
     }
@@ -75,7 +76,7 @@ public class EvmOperationConstructionUtil {
                 EVM_VERSION_0_30,
                 () -> new MessageCallProcessor(
                         evm, new PrecompileContractRegistry()),
-                EVM_VERSION_0_32,
+                EVM_VERSION_0_34,
                 () -> new MessageCallProcessor(
                         evm, new PrecompileContractRegistry()));
     }
@@ -84,14 +85,14 @@ public class EvmOperationConstructionUtil {
         var operationRegistry = new OperationRegistry();
         BiPredicate<Address, MessageFrame> validator = (Address x, MessageFrame y) -> true;
 
-         Set.of(new HederaBalanceOperation(gasCalculator, validator),
+        registerParisOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
+        Set.of(new HederaBalanceOperation(gasCalculator, validator),
                 new HederaDelegateCallOperation(gasCalculator, validator),
                 new HederaExtCodeCopyOperation(gasCalculator, validator),
                 new HederaExtCodeHashOperation(gasCalculator, validator),
                 new HederaExtCodeSizeOperation(gasCalculator, validator),
                 new HederaEvmSLoadOperation(gasCalculator)).forEach(operationRegistry::put);
-        registerParisOperations(operationRegistry, gasCalculator, BigInteger.ZERO);
 
-        return new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT, EvmSpecVersion.LONDON);
+        return new EVM(operationRegistry, gasCalculator, EvmConfiguration.DEFAULT, EvmSpecVersion.PARIS);
     }
 }

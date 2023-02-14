@@ -29,6 +29,7 @@ import swaggerUi from 'swagger-ui-express';
 import config from '../config';
 
 let v1OpenApiDocument;
+let v1OpenApiFile;
 
 /**
  * Check if apiVersion is currently supported
@@ -57,8 +58,19 @@ const getSpecPath = (apiVersion) => {
  * @param {Number} apiVersion
  */
 const getOpenApiSpecObject = (apiVersion) => {
-  const openApiSpecPath = path.resolve(process.cwd(), getSpecPath(apiVersion));
-  return yaml.load(fs.readFileSync(openApiSpecPath, 'utf8'));
+  return yaml.load(getV1OpenApiFile(apiVersion));
+};
+
+/**
+ * Get the YAML file of the open api spec for the v1 rest api
+ */
+const getV1OpenApiFile = (apiVersion) => {
+  if (_.isUndefined(v1OpenApiFile)) {
+    const openApiSpecPath = path.resolve(process.cwd(), getSpecPath(apiVersion));
+    v1OpenApiFile = fs.readFileSync(openApiSpecPath, 'utf8');
+  }
+
+  return v1OpenApiFile;
 };
 
 /**
@@ -71,6 +83,8 @@ const getV1OpenApiObject = () => {
 
   return v1OpenApiDocument;
 };
+
+const serveSpec = (req, res) => res.type('text/yaml').send(getV1OpenApiFile());
 
 /**
  * Serve the open api spec on the given express object
@@ -86,6 +100,9 @@ const serveSwaggerDocs = (app) => {
       tagsSorter: 'alpha',
     },
   };
+
+  app.get(`/api/v1/${config.openapi.swaggerUIPath}/${config.openapi.specFileName}.yml`, serveSpec);
+  app.get(`/api/v1/${config.openapi.swaggerUIPath}/${config.openapi.specFileName}.yaml`, serveSpec);
   app.use(`/api/v1/${config.openapi.swaggerUIPath}`, swaggerUi.serve, swaggerUi.setup(getV1OpenApiObject(), options));
 };
 
