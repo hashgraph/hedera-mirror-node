@@ -20,10 +20,14 @@ import {jsonPost} from './common.js';
 
 const url = __ENV.BASE_URL;
 const contract = __ENV.ERC_CONTRACT_ADDRESS;
+const selector = '0xf49f40db';
+const token = __ENV.TOKEN_ADDRESS;
+const account = __ENV.ACCOUNT_ADDRESS;
+const operator = __ENV.OPERATOR_ADDRESS;
 
 const payload = JSON.stringify({
   to: `${contract}`,
-  data: '',
+  data: selector.concat(token, account, operator),
 });
 
 const {options, run} = new TestScenarioBuilder()

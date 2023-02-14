@@ -20,10 +20,13 @@ import {jsonPost} from './common.js';
 
 const url = __ENV.BASE_URL;
 const contract = __ENV.HTS_CONTRACT_ADDRESS;
+const selector = '0xbf39bd9d';
+const token = __ENV.TOKEN_ADDRESS;
+const serialNumber = __ENV.SERIAL_NUMBER;
 
 const payload = JSON.stringify({
   to: `${contract}`,
-  data: '',
+  data: selector.concat(token, serialNumber),
 });
 
 const {options, run} = new TestScenarioBuilder()

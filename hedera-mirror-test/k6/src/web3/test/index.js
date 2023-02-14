@@ -22,6 +22,28 @@ import * as contractCallIdentifier from './contractCallIdentifier.js';
 import * as contractCallMultiply from './contractCallMultiply.js';
 import * as contractCallSender from './contractCallSender.js';
 import * as contractCallReceive from './contractCallReceive.js';
+import * as contractCallIsToken from './contractCallIsToken.js';
+import * as contractCallTokenDefaultFreezeStatus from './contractCallTokenDefaultFreezeStatus.js';
+import * as contractCallTokenDefaultKycStatus from './contractCallTokenDefaultKycStatus.js';
+import * as contractCallTokenCustomFees from './contractCallTokenCustomFees.js';
+import * as contractCallTokenInfo from './contractCallTokenInfo.js';
+import * as contractCallFungibleTokenInfo from './contractCallFungibleTokenInfo.js';
+import * as contractCallTokenType from './contractCallTokenType.js';
+import * as contractCallTokenExpiryInfo from './contractCallTokenExpiryInfo.js';
+import * as contractCallName from './contractCallName.js';
+import * as contractCallSymbol from './contractCallSymbol.js';
+import * as contractCallDecimals from './contractCallDecimals.js';
+import * as contractCallTotalSupply from './contractCallTotalSupply.js';
+import * as contractCallIsFrozen from './contractCallIsFrozen.js';
+import * as contractCallIsKyc from './contractCallIsKyc.js';
+import * as contractCallNonFungibleTokenInfo from './contractCallNonFungibleTokenInfo.js';
+import * as contractCallTokenKey from './contractCallTokenKey.js';
+import * as contractCallBalanceOf from './contractCallBalanceOf.js';
+import * as contractCallAllowance from './contractCallAllowance.js';
+import * as contractCallApproved from './contractCallApproved.js';
+import * as contractCallApprovedForAll from './contractCallApprovedForAll.js';
+import * as contractCallOwnerOf from './contractCallOwnerOf.js';
+import * as contractCallTokenURI from './contractCallTokenURI.js';
 
 // add test modules here
 const tests = {
@@ -30,6 +52,28 @@ const tests = {
   contractCallMultiply,
   contractCallSender,
   contractCallReceive,
+  contractCallIsToken,
+  contractCallTokenDefaultFreezeStatus,
+  contractCallTokenDefaultKycStatus,
+  contractCallTokenCustomFees,
+  contractCallTokenInfo,
+  contractCallFungibleTokenInfo,
+  contractCallTokenType,
+  contractCallTokenExpiryInfo,
+  contractCallName,
+  contractCallSymbol,
+  contractCallDecimals,
+  contractCallTotalSupply,
+  contractCallIsFrozen,
+  contractCallIsKyc,
+  contractCallNonFungibleTokenInfo,
+  contractCallTokenKey,
+  contractCallBalanceOf,
+  contractCallAllowance,
+  contractCallApproved,
+  contractCallApprovedForAll,
+  contractCallOwnerOf,
+  contractCallTokenURI,
 };
 
 const {funcs, options, scenarioDurationGauge, scenarios} = getSequentialTestScenarios(tests);
