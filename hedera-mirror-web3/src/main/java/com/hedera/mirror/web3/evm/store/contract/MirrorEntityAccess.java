@@ -84,7 +84,7 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
 
     @Override
     public boolean isExtant(final Address address) {
-        return entityRepository.existsById(entityIdFromEvmAddress(address));
+        return entityRepository.findByIdAndDeletedIsFalse(entityIdFromEvmAddress(address)).isPresent();
     }
 
     @Override

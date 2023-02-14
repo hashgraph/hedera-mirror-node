@@ -179,7 +179,7 @@ class MirrorEntityAccessTest {
 
     @Test
     void isExtant() {
-        when(entityRepository.existsById(ENTITY_ID)).thenReturn(true);
+        when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
         final var result = mirrorEntityAccess.isExtant(ADDRESS);
         assertThat(result).isTrue();
     }

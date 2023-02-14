@@ -20,7 +20,10 @@ package com.hedera.mirror.web3.repository;
  * ‍
  */
 
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_STATE;
+
 import java.util.Optional;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
@@ -30,5 +33,6 @@ public interface ContractStateRepository extends CrudRepository<ContractState, L
 
     @Query(value = "select value from contract_state where contract_id = ?1 and slot =?2",
             nativeQuery = true)
+    @Cacheable(cacheNames = "contract_state.storage", cacheManager = CACHE_MANAGER_STATE , unless = "#result == null")
     Optional<byte[]> findStorage(final Long contractId, final byte[] key);
 }

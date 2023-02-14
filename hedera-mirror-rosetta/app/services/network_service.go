@@ -54,8 +54,8 @@ func (n *networkAPIService) NetworkOptions(
 	_ context.Context,
 	_ *rTypes.NetworkRequest,
 ) (*rTypes.NetworkOptionsResponse, *rTypes.Error) {
-	operationStatuses := make([]*rTypes.OperationStatus, 0, len(types.TransactionResults))
-	for value, name := range types.TransactionResults {
+	operationStatuses := make([]*rTypes.OperationStatus, 0, len(types.GetTransactionResults()))
+	for value, name := range types.GetTransactionResults() {
 		operationStatuses = append(operationStatuses, &rTypes.OperationStatus{
 			Status:     name,
 			Successful: persistence.IsTransactionResultSuccessful(value),
