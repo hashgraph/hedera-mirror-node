@@ -15,3 +15,9 @@ spring:
         # https://github.com/testcontainers/testcontainers-spring-boot#embedded-google-pubsub
         projectId: ${embedded.google.pubsub.project-id}
         emulator-host: ${embedded.google.pubsub.host}:${embedded.google.pubsub.port}
+        publisher:
+          batching:
+            enabled: true
+            element-count-threshold: 1000
+            request-byte-threshold: 10000
+            delay-threshold-seconds: 2
