@@ -39,6 +39,12 @@ public class GenericErrorResponse {
         messages.add(new ErrorMessage(message));
     }
 
+    public GenericErrorResponse(String message, String detailedMessage) {
+        final var errorMessage = new ErrorMessage(message);
+        errorMessage.setDetail(detailedMessage);
+        messages.add(errorMessage);
+    }
+
     public GenericErrorResponse(List<String> errorMessages) {
         errorMessages.forEach(m -> messages.add(new ErrorMessage(m)));
     }
@@ -46,5 +52,6 @@ public class GenericErrorResponse {
     @Data
     public static class ErrorMessage {
         private final String message;
+        private String detail;
     }
 }

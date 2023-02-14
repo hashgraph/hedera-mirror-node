@@ -114,7 +114,7 @@ class ContractController {
     @ResponseStatus(BAD_REQUEST)
     private Mono<GenericErrorResponse> invalidTxnError(InvalidTransactionException e) {
         log.warn("Transaction error: {}", e.getMessage());
-        return errorResponse(e.getMessage());
+        return errorResponse(e.getMessage(), e.getDetail());
     }
 
     @ExceptionHandler()
@@ -126,5 +126,9 @@ class ContractController {
 
     private Mono<GenericErrorResponse> errorResponse(String errorMessage) {
         return Mono.just(new GenericErrorResponse(errorMessage));
+    }
+
+    private Mono<GenericErrorResponse> errorResponse(String errorMessage, String detailedErrorMessage) {
+        return Mono.just(new GenericErrorResponse(errorMessage, detailedErrorMessage));
     }
 }

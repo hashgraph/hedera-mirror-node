@@ -22,9 +22,14 @@ package com.hedera.mirror.web3.controller;
 
 import static com.hedera.mirror.web3.controller.ContractController.NOT_IMPLEMENTED_ERROR;
 import static com.hedera.mirror.web3.validation.HexValidator.MESSAGE;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
 import static org.springframework.http.HttpStatus.OK;
+
+import com.hedera.mirror.web3.exception.InvalidTransactionException;
 
 import javax.annotation.Resource;
 import org.junit.jupiter.api.Test;
@@ -129,6 +134,24 @@ class ContractControllerTest {
     void callInvalidValue() {
         final var request = request();
         request.setValue(-1L);
+
+        webClient.post()
+                .uri(CALL_URI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(request))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(BAD_REQUEST)
+                .expectBody(GenericErrorResponse.class);
+    }
+
+    @Test
+    void callRevertMethodAndExpectDetailMessage() {
+        final var detailErrorMessage = "";
+        final var request = request();
+        request.setData("0xa26388bb");
+
+        given(service.processCall(any())).willThrow(new InvalidTransactionException(CONTRACT_REVERT_EXECUTED, detailErrorMessage));
 
         webClient.post()
                 .uri(CALL_URI)

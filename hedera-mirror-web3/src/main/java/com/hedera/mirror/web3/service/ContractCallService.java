@@ -70,7 +70,12 @@ public class ContractCallService {
             counter.increment(txnResult.getGasUsed());
 
             if (!txnResult.isSuccessful()) {
-                throw new InvalidTransactionException(getStatusOrDefault(txnResult));
+                final var revertReason = txnResult.getRevertReason().orElse(Bytes.EMPTY);
+
+                //FEATURE WORK Remove all non-ASCII symbols
+                final var revertReasonAsReadableString = new String(revertReason.toArray()).replaceAll("[^a-zA-Z0-9\\s+]", "");
+
+                throw new InvalidTransactionException(getStatusOrDefault(txnResult), revertReasonAsReadableString);
             }
         } catch (IllegalStateException | IllegalArgumentException e) {
             throw new InvalidTransactionException(e.getMessage());
