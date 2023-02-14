@@ -31,6 +31,7 @@ import javax.validation.Valid;
 
 import com.hedera.mirror.web3.exception.RateLimitException;
 
+import io.github.bucket4j.Bucket;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
@@ -60,7 +61,7 @@ class ContractController {
 
     static final String NOT_IMPLEMENTED_ERROR = "Operation not supported yet!";
     private final ContractCallService contractCallService;
-    private final BucketProvider bucketProvider;
+    private final Bucket bucket;
 
     @PostMapping(value = "/call")
     Mono<ContractCallResponse> call(@RequestBody @Valid ContractCallRequest request) {
@@ -68,7 +69,7 @@ class ContractController {
             throw new UnsupportedOperationException(NOT_IMPLEMENTED_ERROR);
         }
 
-        if(bucketProvider.getBucket().tryConsume(1)) {
+        if(bucket.tryConsume(1)) {
             final var params = constructServiceParameters(request);
             final var callResponse =
                     new ContractCallResponse(

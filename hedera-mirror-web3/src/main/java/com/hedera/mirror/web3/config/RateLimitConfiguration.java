@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.controller;
+package com.hedera.mirror.web3.config;
 
 /*-
  * ‌
@@ -24,29 +24,24 @@ import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.Refill;
 import java.time.Duration;
-import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 
-@Named
+@Configuration
 @RequiredArgsConstructor
-public class BucketProvider {
-
+class RateLimitConfiguration {
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
-    private Bucket bucket;
 
-    public Bucket getBucket() {
-        if (bucket != null) {
-            return bucket;
-        }
+    @Bean
+    Bucket buildBucket() {
         final var rateLimitPerSecond = mirrorNodeEvmProperties.getRateLimitPerSecond();
-        final var limit = Bandwidth.classic(rateLimitPerSecond, Refill.greedy(10,
-                Duration.ofSeconds(1)));
-        bucket = Bucket.builder()
+        final var limit = Bandwidth.classic(rateLimitPerSecond, Refill.greedy(10, Duration.ofSeconds(1)));
+
+        return Bucket.builder()
                 .addLimit(limit)
                 .build();
-
-        return bucket;
     }
 }
