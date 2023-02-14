@@ -25,6 +25,7 @@ import static com.hedera.mirror.web3.evm.exception.ResponseCodeUtil.getStatusOrD
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Arrays;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Named;
@@ -44,7 +45,7 @@ public class ContractCallService {
     public ContractCallService(final MirrorEvmTxProcessorFacade mirrorEvmTxProcessorFacade, final MeterRegistry meterRegistry) {
         this.mirrorEvmTxProcessorFacade = mirrorEvmTxProcessorFacade;
 
-        gasPerSecondMetricMap = new HashMap<>();
+        gasPerSecondMetricMap = new EnumMap<>(CallType.class);
         Arrays.stream(CallType.values()).toList().forEach(type ->
                 gasPerSecondMetricMap.put(type, Counter.builder("hedera.mirror.web3.call.gas")
                 .description("The amount of gas consumed by the EVM")
