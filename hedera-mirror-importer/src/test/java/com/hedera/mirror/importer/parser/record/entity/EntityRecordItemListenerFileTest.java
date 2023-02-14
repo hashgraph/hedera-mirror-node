@@ -300,7 +300,7 @@ class EntityRecordItemListenerFileTest extends AbstractEntityRecordItemListenerT
                 , () -> assertFileData(fileUpdateTransactionBody.getContents(), recordUpdate.getConsensusTimestamp())
                 , () -> assertAddressBookData(addressBook, recordAppend.getConsensusTimestamp())
                 , () -> assertEquals(13 + TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT, addressBookEntryRepository.count())
-                , () -> assertEquals(2, addressBookRepository.count())
+                , () -> assertEquals(3, addressBookRepository.count())
                 , () -> assertEquals(2, fileDataRepository.count()) // update and append
         );
     }
