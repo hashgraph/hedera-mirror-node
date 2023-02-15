@@ -249,6 +249,7 @@ postgresql:
     extraEnvVarsSecret: mirror-passwords
     image:
       debug: true
+      tag: 14.7.0-debian-11-r1
     initdbScriptsCM: "{{ .Release.Name }}-init"
     password: ""  # Randomly generated if left blank
     podAntiAffinityPreset: soft
@@ -267,7 +268,7 @@ postgresql:
 
 redis:
   auth:
-    existingSecret: mirror-redis
+    existingSecret: "{{ .Release.Name }}-redis"
     existingSecretPasswordKey: SPRING_REDIS_PASSWORD
     password: ""  # Randomly generated if left blank
   enabled: true
