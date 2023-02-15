@@ -25,8 +25,8 @@ import static com.hedera.mirror.web3.evm.exception.ResponseCodeUtil.getStatusOrD
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.Map;
 import javax.inject.Named;
 import org.apache.tuweni.bytes.Bytes;
@@ -45,12 +45,14 @@ public class ContractCallService {
     public ContractCallService(final MirrorEvmTxProcessorFacade mirrorEvmTxProcessorFacade, final MeterRegistry meterRegistry) {
         this.mirrorEvmTxProcessorFacade = mirrorEvmTxProcessorFacade;
 
-        gasPerSecondMetricMap = new EnumMap<>(CallType.class);
+        final var gasPerSecondMetricEnumMap = new EnumMap<CallType, Counter>(CallType.class);
         Arrays.stream(CallType.values()).toList().forEach(type ->
-                gasPerSecondMetricMap.put(type, Counter.builder("hedera.mirror.web3.call.gas")
+                gasPerSecondMetricEnumMap.put(type, Counter.builder("hedera.mirror.web3.call.gas")
                 .description("The amount of gas consumed by the EVM")
                 .tag("type", type.toString())
                 .register(meterRegistry)));
+
+        gasPerSecondMetricMap = Collections.unmodifiableMap(gasPerSecondMetricEnumMap);
     }
 
     public String processCall(final CallServiceParameters body) {
@@ -76,12 +78,11 @@ public class ContractCallService {
                             body.isStatic());
 
             if(!txnResult.isSuccessful()) {
-                body.setCallType(CallType.ERROR);
-                onComplete(body, txnResult);
+                onComplete(CallType.ERROR, txnResult);
 
                 throw new InvalidTransactionException(getStatusOrDefault(txnResult));
             } else {
-                onComplete(body, txnResult);
+                onComplete(body.getCallType(), txnResult);
             }
         } catch (IllegalStateException | IllegalArgumentException e) {
             throw new InvalidTransactionException(e.getMessage());
@@ -89,8 +90,8 @@ public class ContractCallService {
         return txnResult;
     }
 
-    private void onComplete(final CallServiceParameters body, final HederaEvmTransactionProcessingResult result) {
-        final var counter = gasPerSecondMetricMap.get(body.getCallType());
+    private void onComplete(final CallType callType, final HederaEvmTransactionProcessingResult result) {
+        final var counter = gasPerSecondMetricMap.get(callType);
         counter.increment(result.getGasUsed());
     }
 }

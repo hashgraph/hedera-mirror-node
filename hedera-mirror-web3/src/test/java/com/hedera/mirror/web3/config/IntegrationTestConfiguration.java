@@ -20,6 +20,8 @@ package com.hedera.mirror.web3.config;
  * ‍
  */
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import javax.persistence.EntityManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.transaction.support.TransactionOperations;
@@ -33,5 +35,10 @@ public class IntegrationTestConfiguration {
     @Bean
     DomainBuilder domainBuilder(EntityManager entityManager, TransactionOperations transactionOperations) {
         return new DomainBuilder(entityManager, transactionOperations);
+    }
+
+    @Bean
+    MeterRegistry meterRegistry() {
+        return new SimpleMeterRegistry();
     }
 }

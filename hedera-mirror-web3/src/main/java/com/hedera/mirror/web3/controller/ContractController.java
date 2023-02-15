@@ -66,8 +66,6 @@ class ContractController {
         }
 
         final var params = constructServiceParameters(request);
-        final var callType = request.isEstimate() ? ETH_ESTIMATE_GAS : ETH_CALL;
-        params.setCallType(callType);
 
         final var callResponse =
                 new ContractCallResponse(
@@ -89,6 +87,7 @@ class ContractController {
                         ? Bytes.fromHexString(request.getData())
                         : EMPTY;
         final var isStaticCall = !request.isEstimate();
+        final var callType = request.isEstimate() ? ETH_ESTIMATE_GAS : ETH_CALL;
 
         return CallServiceParameters.builder()
                 .sender(sender)
@@ -97,6 +96,7 @@ class ContractController {
                 .providedGasLimit(request.getGas())
                 .value(request.getValue())
                 .isStatic(isStaticCall)
+                .callType(callType)
                 .build();
     }
 
