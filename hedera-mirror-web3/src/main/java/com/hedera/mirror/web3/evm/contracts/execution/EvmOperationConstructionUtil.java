@@ -21,7 +21,6 @@ package com.hedera.mirror.web3.evm.contracts.execution;
  */
 
 import static com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract.EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS;
-import static org.hyperledger.besu.datatypes.Address.fromHexString;
 import static org.hyperledger.besu.evm.MainnetEVMs.registerParisOperations;
 
 import java.math.BigInteger;
@@ -31,9 +30,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiPredicate;
 import javax.inject.Provider;
-
-import com.hedera.node.app.service.evm.contracts.execution.HederaEvmMessageCallProcessor;
-
 import lombok.experimental.UtilityClass;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.EVM;
@@ -48,6 +44,7 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
+import com.hedera.node.app.service.evm.contracts.execution.HederaEvmMessageCallProcessor;
 import com.hedera.node.app.service.evm.contracts.operations.HederaBalanceOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaDelegateCallOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaEvmSLoadOperation;
