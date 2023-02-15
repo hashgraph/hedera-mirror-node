@@ -69,17 +69,16 @@ class ContractController {
             throw new UnsupportedOperationException(NOT_IMPLEMENTED_ERROR);
         }
 
-        if(bucket.tryConsume(1)) {
-            final var params = constructServiceParameters(request);
-            final var callResponse =
-                    new ContractCallResponse(
-                            contractCallService.processCall(params));
-
-            return Mono.just(callResponse);
-        } else {
+        if (!bucket.tryConsume(1)) {
             throw new RateLimitException("Rate limit exceeded.");
         }
-    }
+        final var params = constructServiceParameters(request);
+        final var callResponse =
+                new ContractCallResponse(
+                        contractCallService.processCall(params));
+
+        return Mono.just(callResponse);
+}
 
     private CallServiceParameters constructServiceParameters(ContractCallRequest request) {
         final var fromAddress =
