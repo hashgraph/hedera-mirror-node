@@ -21,7 +21,11 @@ package com.hedera.mirror.web3.evm.config;
  */
 
 import com.github.benmanes.caffeine.cache.Caffeine;
+
+import com.hedera.mirror.web3.repository.properties.CacheProperties;
+
 import java.util.concurrent.TimeUnit;
+import lombok.RequiredArgsConstructor;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
@@ -31,10 +35,29 @@ import org.springframework.context.annotation.Primary;
 
 @Configuration
 @EnableCaching
+@RequiredArgsConstructor
 public class EvmConfiguration {
+
+    private final CacheProperties cacheProperties;
 
     public static final String CACHE_MANAGER_10MIN = "cacheManager10Min";
     public static final String CACHE_MANAGER_500MS = "cacheManager500Ms";
+    public static final String CACHE_MANAGER_STATE = "cacheManagerState";
+    public static final String CACHE_MANAGER_ENTITY = "cacheManagerEntity";
+
+    @Bean(CACHE_MANAGER_STATE)
+    CacheManager cacheManagerState() {
+        final CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
+        caffeineCacheManager.setCacheSpecification(cacheProperties.getContractState());
+        return caffeineCacheManager;
+    }
+
+    @Bean(CACHE_MANAGER_ENTITY)
+    CacheManager cacheManagerEntity() {
+        final CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
+        caffeineCacheManager.setCacheSpecification(cacheProperties.getEntity());
+        return caffeineCacheManager;
+    }
 
     @Bean(CACHE_MANAGER_10MIN)
     @Primary
