@@ -21,11 +21,13 @@ package com.hedera.mirror.importer.parser.record.pubsub;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import com.google.protobuf.ByteString;
 import com.google.pubsub.v1.PubsubMessage;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +35,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.awaitility.Durations;
 import org.junit.jupiter.api.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
@@ -69,7 +72,15 @@ class PubSubRecordParserTest extends PubSubIntegrationTest {
 
         // then
         List<String> expectedMessages = Files.readAllLines(pubSubMessages);
-        List<String> actualMessages = getAllMessages(NUM_TXNS).stream()
+        List<PubsubMessage> subscriberMessages = new ArrayList<>();
+        await().atMost(Durations.TEN_SECONDS)
+                .pollInterval(Durations.ONE_HUNDRED_MILLISECONDS)
+                .until(() -> {
+                    subscriberMessages.addAll(getAllMessages(NUM_TXNS));
+                    return subscriberMessages.size() == NUM_TXNS;
+                });
+
+        List<String> actualMessages = subscriberMessages.stream()
                 .map(PubsubMessage::getData)
                 .map(ByteString::toStringUtf8)
                 .collect(Collectors.toList());
