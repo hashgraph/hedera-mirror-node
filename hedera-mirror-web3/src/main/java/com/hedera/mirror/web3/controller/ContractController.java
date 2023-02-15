@@ -21,6 +21,8 @@ package com.hedera.mirror.web3.controller;
  */
 
 import static com.hedera.mirror.web3.controller.ValidationErrorParser.extractValidationError;
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static org.apache.tuweni.bytes.Bytes.EMPTY;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
@@ -64,6 +66,7 @@ class ContractController {
         }
 
         final var params = constructServiceParameters(request);
+
         final var callResponse =
                 new ContractCallResponse(
                         contractCallService.processCall(params));
@@ -84,6 +87,7 @@ class ContractController {
                         ? Bytes.fromHexString(request.getData())
                         : EMPTY;
         final var isStaticCall = !request.isEstimate();
+        final var callType = request.isEstimate() ? ETH_ESTIMATE_GAS : ETH_CALL;
 
         return CallServiceParameters.builder()
                 .sender(sender)
@@ -92,6 +96,7 @@ class ContractController {
                 .providedGasLimit(request.getGas())
                 .value(request.getValue())
                 .isStatic(isStaticCall)
+                .callType(callType)
                 .build();
     }
 
