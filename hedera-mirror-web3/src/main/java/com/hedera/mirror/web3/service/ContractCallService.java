@@ -46,7 +46,7 @@ public class ContractCallService {
         this.mirrorEvmTxProcessorFacade = mirrorEvmTxProcessorFacade;
 
         final var gasPerSecondMetricEnumMap = new EnumMap<CallType, Counter>(CallType.class);
-        Arrays.stream(CallType.values()).toList().forEach(type ->
+        Arrays.stream(CallType.values()).forEach(type ->
                 gasPerSecondMetricEnumMap.put(type, Counter.builder("hedera.mirror.web3.call.gas")
                 .description("The amount of gas consumed by the EVM")
                 .tag("type", type.toString())
