@@ -130,7 +130,7 @@ podSecurityContext:
 priorityClassName: ""
 
 prometheusRules:
-  enabled: true
+  enabled: false
   GraphQLErrors:
     annotations:
       description: "{{ $value | humanizePercentage }} graphql request error rate for {{ $labels.namespace }}/{{ $labels.pod }}"
