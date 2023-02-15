@@ -1,9 +1,6 @@
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2019-2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -15,7 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
 
 import base32 from './base32';
@@ -39,10 +35,10 @@ const processRow = (row) => {
     row.balance === undefined
       ? null
       : {
-          balance: row.balance,
-          timestamp: utils.nsToSecNs(row.consensus_timestamp),
-          tokens: utils.parseTokenBalances(row.token_balances),
-        };
+        balance: row.balance,
+        timestamp: utils.nsToSecNs(row.consensus_timestamp),
+        tokens: utils.parseTokenBalances(row.token_balances),
+      };
   const entityId = EntityId.parse(row.id);
   let evmAddress = row.evm_address && utils.toHexString(row.evm_address, true);
   if (evmAddress === null && row.type === constants.entityTypes.CONTRACT) {
@@ -110,7 +106,7 @@ const entityFields = [
  * @param entityAccountQuery
  * @param limitAndOrderQuery
  * @param pubKeyQuery
- * @param tokenBalanceLimit
+ * @param tokenBalanceQuery
  * @return {{query: string, params: *[]}}
  */
 const getEntityBalanceQuery = (
@@ -118,7 +114,7 @@ const getEntityBalanceQuery = (
   entityAccountQuery,
   limitAndOrderQuery,
   pubKeyQuery,
-  tokenBalanceLimit
+  tokenBalanceQuery
 ) => {
   const {query: limitQuery, params: limitParams, order} = limitAndOrderQuery;
   const whereCondition = [
@@ -129,7 +125,7 @@ const getEntityBalanceQuery = (
   ]
     .filter((x) => !!x)
     .join(' and ');
-  const params = utils.mergeParams([], balanceQuery.params, entityAccountQuery.params, pubKeyQuery.params, limitParams);
+  const params = utils.mergeParams([], tokenBalanceQuery.params, balanceQuery.params, entityAccountQuery.params, pubKeyQuery.params, limitParams);
   const query = `
     with latest_token_balance as (
       select account_id, balance, token_id
@@ -145,9 +141,9 @@ const getEntityBalanceQuery = (
         from (
           select token_id, balance
           from latest_token_balance
-          where account_id = e.id
+          where ${tokenBalanceQuery.query}
         order by token_id ${order}
-        limit ${tokenBalanceLimit}) as account_token_balance
+        limit ${tokenBalanceQuery.limit}) as account_token_balance
       ) as token_balances
     from entity e
     left join entity_stake es on es.id = e.id
@@ -162,6 +158,7 @@ const getEntityBalanceQuery = (
  *
  * @param entityAccountQuery entity id query
  * @param tokenBalanceLimit The max number of token balances for an account
+ * @param tokenBalanceQuery token balance query
  * @param balanceQuery optional account balance query
  * @param limitAndOrderQuery optional limit and order query
  * @param pubKeyQuery optional entity public key query
@@ -170,7 +167,7 @@ const getEntityBalanceQuery = (
  */
 const getAccountQuery = (
   entityAccountQuery,
-  tokenBalanceLimit,
+  tokenBalanceQuery = {query: 'account_id = e.id', params: [], limit: tokenBalanceResponseLimit.multipleAccounts},
   balanceQuery = {query: '', params: []},
   limitAndOrderQuery = {query: '', params: [], order: constants.orderFilterValues.ASC},
   pubKeyQuery = {query: '', params: []},
@@ -193,7 +190,7 @@ const getAccountQuery = (
     };
   }
 
-  return getEntityBalanceQuery(balanceQuery, entityAccountQuery, limitAndOrderQuery, pubKeyQuery, tokenBalanceLimit);
+  return getEntityBalanceQuery(balanceQuery, entityAccountQuery, limitAndOrderQuery, pubKeyQuery, tokenBalanceQuery);
 };
 
 const toQueryObject = (queryAndParams) => {
@@ -234,7 +231,7 @@ const getAccounts = async (req, res) => {
 
   const {query, params} = getAccountQuery(
     entityAccountQuery,
-    tokenBalanceResponseLimit.multipleAccounts,
+    undefined,
     balanceQuery,
     limitAndOrderQuery,
     pubKeyQuery,
@@ -299,10 +296,11 @@ const getOneAccount = async (req, res) => {
   const resultTypeQuery = utils.parseResultParams(req);
   const {query, params, order, limit} = utils.parseLimitAndOrderParams(req);
 
-  const accountIdParams = [encodedId];
+  const accountIdParams = [encodedId, encodedId];
+  const tokenBalanceParams = [encodedId];
   const {query: entityQuery, params: entityParams} = getAccountQuery(
-    {query: 'e.id = ?', params: accountIdParams},
-    tokenBalanceResponseLimit.singleAccount
+    {query: 'e.id = ? and (es.id = ? OR es.id IS NULL)', params: accountIdParams},
+    {query: 'account_id = ?', params: tokenBalanceParams, limit: tokenBalanceResponseLimit.singleAccount}
   );
   const pgEntityQuery = utils.convertMySqlStyleQueryToPostgres(entityQuery);
 
