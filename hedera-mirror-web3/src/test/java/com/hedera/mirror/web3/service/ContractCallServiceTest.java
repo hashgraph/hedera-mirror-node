@@ -117,12 +117,12 @@ class ContractCallServiceTest extends Web3IntegrationTest {
     @Test
     void testRevertDetailMessage() {
         final var revertFunctionSignature = "0xa26388bb";
-        final var detailedErrorMessage = "";
         final var serviceParameters = serviceParameters(revertFunctionSignature, 0);
 
         persistEntities(false);
 
-        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters)).isEqualTo(new InvalidTransactionException(CONTRACT_REVERT_EXECUTED, detailedErrorMessage));
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters)).
+                isInstanceOf(InvalidTransactionException.class).hasMessage(CONTRACT_REVERT_EXECUTED.name());
     }
 
     @Test

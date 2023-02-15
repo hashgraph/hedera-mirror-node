@@ -20,6 +20,7 @@ package com.hedera.mirror.web3.service;
  * ‍
  */
 
+import static com.hedera.mirror.web3.convert.BytesDecoder.decodeBytesToReadableMessage;
 import static com.hedera.mirror.web3.evm.exception.ResponseCodeUtil.getStatusOrDefault;
 
 import io.micrometer.core.instrument.Counter;
@@ -70,12 +71,9 @@ public class ContractCallService {
             counter.increment(txnResult.getGasUsed());
 
             if (!txnResult.isSuccessful()) {
-                final var revertReason = txnResult.getRevertReason().orElse(Bytes.EMPTY);
+                var revertReason = txnResult.getRevertReason().orElse(Bytes.EMPTY);
 
-                //FEATURE WORK Remove all non-ASCII symbols
-                final var revertReasonAsReadableString = new String(revertReason.toArray()).replaceAll("[^a-zA-Z0-9\\s+]", "");
-
-                throw new InvalidTransactionException(getStatusOrDefault(txnResult), revertReasonAsReadableString);
+                throw new InvalidTransactionException(getStatusOrDefault(txnResult), decodeBytesToReadableMessage(revertReason));
             }
         } catch (IllegalStateException | IllegalArgumentException e) {
             throw new InvalidTransactionException(e.getMessage());

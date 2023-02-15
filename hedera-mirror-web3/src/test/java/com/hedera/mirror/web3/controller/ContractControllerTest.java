@@ -147,11 +147,11 @@ class ContractControllerTest {
 
     @Test
     void callRevertMethodAndExpectDetailMessage() {
-        final var detailErrorMessage = "";
+        final var detailedErrorMessage = "Custom revert message";
         final var request = request();
         request.setData("0xa26388bb");
 
-        given(service.processCall(any())).willThrow(new InvalidTransactionException(CONTRACT_REVERT_EXECUTED, detailErrorMessage));
+        given(service.processCall(any())).willThrow(new InvalidTransactionException(CONTRACT_REVERT_EXECUTED, detailedErrorMessage));
 
         webClient.post()
                 .uri(CALL_URI)
@@ -160,7 +160,8 @@ class ContractControllerTest {
                 .exchange()
                 .expectStatus()
                 .isEqualTo(BAD_REQUEST)
-                .expectBody(GenericErrorResponse.class);
+                .expectBody(GenericErrorResponse.class)
+                .isEqualTo(new GenericErrorResponse(CONTRACT_REVERT_EXECUTED.name(), detailedErrorMessage));
     }
 
     @Test
