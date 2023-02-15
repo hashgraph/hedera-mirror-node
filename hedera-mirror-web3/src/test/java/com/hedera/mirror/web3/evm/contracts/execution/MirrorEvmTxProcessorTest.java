@@ -31,6 +31,8 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
+
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.math.BigInteger;
 import java.time.Instant;
@@ -84,7 +86,7 @@ class MirrorEvmTxProcessorTest {
     @Mock private Set<Operation> operations;
     @Mock private Transaction transaction;
     @Mock private HederaEvmWorldState.Updater updater;
-    @Mock private HederaEvmWorldUpdater stackedUpdater;
+    @Mock private AbstractLedgerEvmWorldUpdater stackedUpdater;
     @Mock private MirrorEvmContractAliases hederaEvmContractAliases;
     @Mock private HederaBlockValues hederaBlockValues;
     @Mock private BlockMetaSource blockMetaSource;

@@ -27,6 +27,7 @@ import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.hibernate.validator.constraints.time.DurationMin;
 import org.hyperledger.besu.datatypes.Address;
@@ -36,6 +37,8 @@ import org.springframework.validation.annotation.Validated;
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 
 import java.time.Duration;
+
+import static com.swirlds.common.utility.CommonUtils.unhex;
 
 @Setter
 @Validated
@@ -60,6 +63,10 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @DurationMin(seconds = 1)
     private Duration expirationCacheTime = Duration.ofMinutes(10L);
 
+    @Getter
+    @NotNull
+    private HederaNetwork network = HederaNetwork.TESTNET;
+
     @Override
     public boolean isRedirectTokenCallsEnabled() {
         return directTokenCall;
@@ -83,5 +90,16 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Override
     public int maxGasRefundPercentage() {
         return maxGasRefundPercentage;
+    }
+
+    @Getter
+    @RequiredArgsConstructor
+    public enum HederaNetwork {
+        MAINNET(unhex("00")),
+        TESTNET(unhex("01")),
+        PREVIEWNET(unhex("02")),
+        OTHER(unhex("03"));
+
+        private final byte [] ledgerId;
     }
 }

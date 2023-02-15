@@ -26,6 +26,9 @@ import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstru
 
 import java.time.Instant;
 import javax.inject.Named;
+
+import com.hedera.mirror.web3.evm.token.TokenAccessorImpl;
+
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
@@ -44,12 +47,12 @@ import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 @Named
 public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacade {
 
-    private MirrorNodeEvmProperties evmProperties;
-    private StaticBlockMetaSource blockMetaSource;
-    private MirrorEvmContractAliases aliasManager;
-    private PricesAndFeesImpl pricesAndFees;
-    private AbstractCodeCache codeCache;
-    private HederaEvmMutableWorldState worldState;
+    private final MirrorNodeEvmProperties evmProperties;
+    private final StaticBlockMetaSource blockMetaSource;
+    private final MirrorEvmContractAliases aliasManager;
+    private final PricesAndFeesImpl pricesAndFees;
+    private final AbstractCodeCache codeCache;
+    private final HederaEvmMutableWorldState worldState;
 
     public MirrorEvmTxProcessorFacadeImpl(
             final MirrorEntityAccess entityAccess,
@@ -57,7 +60,8 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final StaticBlockMetaSource blockMetaSource,
             final MirrorEvmContractAliases aliasManager,
             final PricesAndFeesImpl pricesAndFees,
-            final AccountAccessorImpl accountAccessor) {
+            final AccountAccessorImpl accountAccessor,
+            final TokenAccessorImpl tokenAccessor) {
         this.evmProperties = evmProperties;
         this.blockMetaSource = blockMetaSource;
         this.aliasManager = aliasManager;
@@ -70,7 +74,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
         this.worldState =
                 new HederaEvmWorldState(
                         entityAccess, evmProperties,
-                        codeCache, accountAccessor);
+                        codeCache, accountAccessor, tokenAccessor);
     }
 
     @Override
