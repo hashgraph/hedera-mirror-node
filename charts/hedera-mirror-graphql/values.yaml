@@ -102,10 +102,6 @@ middleware:
       sourceCriterion:
         ipStrategy:
           depth: 1
-  - rateLimit:
-      average: 10
-      sourceCriterion:
-        requestHost: true
   - retry:
       attempts: 3
       initialInterval: 100ms
@@ -134,7 +130,7 @@ prometheusRules:
   GraphQLErrors:
     annotations:
       description: "{{ $value | humanizePercentage }} graphql request error rate for {{ $labels.namespace }}/{{ $labels.pod }}"
-      summary: "Mirror graphql request error rate exceeds 5%"
+      summary: "Mirror GraphQL request error rate exceeds 5%"
     enabled: true
     expr: sum(rate(graphql_request_seconds_count{application="hedera-mirror-graphql", status="ERROR"}[5m])) by (namespace, pod) / sum(rate(graphql_request_seconds_count{application="hedera-mirror-graphql"}[5m])) by (namespace, pod) > 0.05
     for: 2m
@@ -144,10 +140,10 @@ prometheusRules:
 
   GraphQLDataFetcherErrors:
     annotations:
-      description: "High data fetcher error rate of {{ $value | humanizePercentage }} for {{ $labels.namespace }}/{{ $labels.pod }} / {{$labels.path}}"
-      summary: "Mirror graphql data fetcher high error rate exceeds 5%"
+      description: "High data fetcher error rate of {{ $value | humanizePercentage }} for {{ $labels.namespace }}/{{ $labels.pod }}"
+      summary: "Mirror GraphQL data fetcher high error rate exceeds 5%"
     enabled: true
-    expr: sum(rate(graphql_datafetcher_seconds_count{application="hedera-mirror-graphql", outcome="ERROR"}[5m])) by (namespace, pod, path) / sum(rate(graphql_datafetcher_seconds_count{application="hedera-mirror-graphql"}[5m])) by (namespace, pod, path) > .05
+    expr: sum(rate(graphql_datafetcher_seconds_count{application="hedera-mirror-graphql", outcome="ERROR"}[5m])) by (namespace, pod) / sum(rate(graphql_datafetcher_seconds_count{application="hedera-mirror-graphql"}[5m])) by (namespace, pod) > .05
     for: 1m
     labels:
       application: hedera-mirror-graphql
@@ -156,7 +152,7 @@ prometheusRules:
   GraphQLHighCPU:
     annotations:
       description: "{{ $labels.namespace }}/{{ $labels.pod }} CPU usage reached {{ $value | humanizePercentage }}"
-      summary: "Mirror graphql API CPU usage exceeds 80%"
+      summary: "Mirror GraphQL API CPU usage exceeds 80%"
     enabled: true
     expr: sum(process_cpu_usage{application="hedera-mirror-graphql"}) by (namespace, pod) / sum(system_cpu_count{application="hedera-mirror-graphql"}) by (namespace, pod) > 0.8
     for: 5m
@@ -168,7 +164,7 @@ prometheusRules:
   GraphQLHighDBConnections:
     annotations:
       description: "{{ $labels.namespace }}/{{ $labels.pod }} is using {{ $value | humanizePercentage }} of available database connections"
-      summary: "Mirror graphql API database connection utilization exceeds 75%"
+      summary: "Mirror GraphQL API database connection utilization exceeds 75%"
     enabled: true
     expr: sum(hikaricp_connections_active{application="hedera-mirror-graphql"}) by (namespace, pod) / sum(hikaricp_connections_max{application="hedera-mirror-graphql"}) by (namespace, pod) > 0.75
     for: 5m
@@ -180,7 +176,7 @@ prometheusRules:
   GraphQLHighFileDescriptors:
     annotations:
       description: "{{ $labels.namespace }}/{{ $labels.pod }} file descriptor usage reached {{ $value | humanizePercentage }}"
-      summary: "Mirror graphql API file descriptor usage exceeds 80%"
+      summary: "Mirror GraphQL API file descriptor usage exceeds 80%"
     enabled: true
     expr: sum(process_files_open_files{application="hedera-mirror-graphql"}) by (namespace, pod) / sum(process_files_max_files{application="hedera-mirror-graphql"}) by (namespace, pod) > 0.8
     for: 5m
@@ -192,7 +188,7 @@ prometheusRules:
   GraphQLHighMemory:
     annotations:
       description: "{{ $labels.namespace }}/{{ $labels.pod }} memory usage reached {{ $value | humanizePercentage }}"
-      summary: "Mirror graphql API memory usage exceeds 80%"
+      summary: "Mirror GraphQL API memory usage exceeds 80%"
     enabled: true
     expr: sum(jvm_memory_used_bytes{application="hedera-mirror-graphql"}) by (namespace, pod) / sum(jvm_memory_max_bytes{application="hedera-mirror-graphql"}) by (namespace, pod) > 0.8
     for: 5m
@@ -214,8 +210,8 @@ prometheusRules:
 
   GraphQLNoPodsReady:
     annotations:
-      description: "No graphql API instances are currently running in {{ $labels.namespace }}"
-      summary: No graphql API instances running
+      description: "No GraphQL API instances are currently running in {{ $labels.namespace }}"
+      summary: No GraphQL API instances running
     enabled: true
     expr: sum(kube_pod_status_ready{pod=~".*-graphql-.*",condition="true"}) by (namespace) < 1
     for: 2m
@@ -226,9 +222,9 @@ prometheusRules:
 
   GraphQLNoRequests:
     annotations:
-      description: "graphql API has not seen any requests to {{ $labels.namespace }} for 5m"
-      summary: "No graphql API requests seen for awhile"
-    enabled: false
+      description: "GraphQL API has not seen any requests to {{ $labels.namespace }} for 5m"
+      summary: "No GraphQL API requests seen for awhile"
+    enabled: true
     expr: sum(rate(http_server_requests_seconds_count{application="hedera-mirror-graphql"}[3m])) by (namespace) <= 0
     for: 5m
     labels:
@@ -238,7 +234,7 @@ prometheusRules:
   GraphQLQueryLatency:
     annotations:
       description: "High average database query latency of {{ $value | humanizeDuration }} for {{ $labels.namespace }}/{{ $labels.pod }}"
-      summary: "Mirror graphql API query latency exceeds 1s"
+      summary: "Mirror GraphQL API query latency exceeds 1s"
     enabled: true
     expr: sum(rate(spring_data_repository_invocations_seconds_sum{application="hedera-mirror-graphql"}[5m])) by (namespace, pod) / sum(rate(spring_data_repository_invocations_seconds_count{application="hedera-mirror-graphql"}[5m])) by (namespace, pod) > 1
     for: 1m
@@ -249,7 +245,7 @@ prometheusRules:
   GraphQLRequestLatency:
     annotations:
       description: "High average request latency of {{ $value | humanizeDuration }} for {{ $labels.namespace }}/{{ $labels.pod }}"
-      summary: "Mirror graphql API request latency exceeds 2s"
+      summary: "Mirror GraphQL API request latency exceeds 2s"
     enabled: true
     expr: sum(rate(graphql_request_seconds_sum{application="hedera-mirror-graphql"}[5m])) by (namespace, pod) / sum(rate(graphql_request_seconds_count{application="hedera-mirror-graphql"}[5m])) by (namespace, pod) > 2
     for: 1m

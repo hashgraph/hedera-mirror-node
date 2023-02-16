@@ -2,7 +2,7 @@
 
 Installs the Hedera Mirror Node Helm wrapper chart. This chart will install the mirror node components:
 
-- [Hedera Mirror GRAPHQL API](hedera-mirror-graphql)
+- [Hedera Mirror GraphQL API](hedera-mirror-graphql)
 - [Hedera Mirror GRPC API](hedera-mirror-grpc)
 - [Hedera Mirror Importer](hedera-mirror-importer)
 - [Hedera Mirror Monitor](hedera-mirror-monitor)

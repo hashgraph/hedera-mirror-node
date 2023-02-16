@@ -406,8 +406,6 @@ test:
               baseUrl: "http://{{ .Release.Name }}-rest"
             web3:
               baseUrl: "http://{{ .Release.Name }}-web3"
-            graphql:
-              baseUrl: "http://{{ .Release.Name }}-graphql"
   cucumberTags: "@acceptance"
   enabled: false
   git:

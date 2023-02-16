@@ -4,8 +4,6 @@ monitor:
 postgresql:
   fullnameOverride: db
 rest:
-  test:
-    enabled: false
   monitor:
     config: |-
       {

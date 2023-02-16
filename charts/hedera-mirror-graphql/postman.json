@@ -50,7 +50,7 @@
           "response": []
         },
         {
-          "name": "By Id (Unimplemented)",
+          "name": "By Alias (Unimplemented)",
           "event": [
             {
               "listen": "test",
@@ -77,7 +77,7 @@
             "body": {
               "mode": "graphql",
               "graphql": {
-                "query": "{\n  account(input: \n    {id: \"azAZ0123456789+/=\"}) {\n    alias\n    autoRenewPeriod\n    autoRenewAccount {\n        alias\n        deleted\n        entityId {\n            shard\n            realm\n            num\n        }\n        createdTimestamp\n    }\n    \n  }\n}",
+                "query": "{\n  account(input: \n    {alias: \"AZ234567\"}) {\n    alias\n    autoRenewPeriod\n    autoRenewAccount {\n        alias\n        deleted\n        entityId {\n            shard\n            realm\n            num\n        }\n        createdTimestamp\n    }\n    \n  }\n}",
                 "variables": ""
               }
             },

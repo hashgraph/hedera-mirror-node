@@ -95,3 +95,6 @@ rosetta:
 
 web3:
   enabled: false
+
+graphql:
+  enabled: false

@@ -111,7 +111,6 @@ data:
       grant temporary on database ${HEDERA_MIRROR_IMPORTER_DB_NAME} to ${HEDERA_MIRROR_IMPORTER_DB_OWNER};
     EOSQL
 
-      echo 'Adding workers';
       # Add workers
       id=0
       replicas={{.Values.citus.readReplicas.replicaCount}}
