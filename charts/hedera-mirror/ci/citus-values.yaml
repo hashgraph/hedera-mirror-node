@@ -26,3 +26,6 @@ rest:
 rosetta:
   test:
     enabled: false
+graphql:
+  test:
+    defaultAccount: 111571

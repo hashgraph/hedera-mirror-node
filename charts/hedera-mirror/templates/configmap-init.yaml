@@ -111,6 +111,7 @@ data:
       grant temporary on database ${HEDERA_MIRROR_IMPORTER_DB_NAME} to ${HEDERA_MIRROR_IMPORTER_DB_OWNER};
     EOSQL
 
+      echo 'Adding workers';
       # Add workers
       id=0
       replicas={{.Values.citus.readReplicas.replicaCount}}
@@ -147,7 +148,7 @@ data:
       create user ${HEDERA_MIRROR_IMPORTER_DB_RESTUSERNAME} with login password '${HEDERA_MIRROR_IMPORTER_DB_RESTPASSWORD}' in role readonly;
       insert into pg_dist_authinfo(nodeid, rolename, authinfo) values
         (0, '${POSTGRES_USER}', 'password=${POSTGRES_PASSWORD}'),
-        (0, '${HEDERA_MIRROR_GRAPHQL_DB_USERNAME}', 'password=${HEDERA_GRAPHQL_DB_PASSWORD}'),
+        (0, '${HEDERA_MIRROR_GRAPHQL_DB_USERNAME}', 'password=${HEDERA_MIRROR_GRAPHQL_DB_PASSWORD}'),
         (0, '${HEDERA_MIRROR_GRPC_DB_USERNAME}', 'password=${HEDERA_MIRROR_GRPC_DB_PASSWORD}'),
         (0, '${HEDERA_MIRROR_IMPORTER_DB_USERNAME}', 'password=${HEDERA_MIRROR_IMPORTER_DB_PASSWORD}'),
         (0, '${HEDERA_MIRROR_IMPORTER_DB_OWNER}', 'password=${HEDERA_MIRROR_IMPORTER_DB_OWNERPASSWORD}'),
