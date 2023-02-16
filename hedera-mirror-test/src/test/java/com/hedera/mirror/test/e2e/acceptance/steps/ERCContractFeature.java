@@ -82,6 +82,27 @@ public class ERCContractFeature extends AbstractFeature {
         var from = contractClient.getClientAddress();
         var to = contractId.toSolidityAddress();
 
+        // TODO: assert results
+        var getNameResponse = mirrorClient.contractsCall(NAME_SELECTOR, to, from);
+
+        var getSymbolResponse = mirrorClient.contractsCall(SYMBOL_SELECTOR, to, from);
+
+        var getDecimalsResponse = mirrorClient.contractsCall(DECIMALS_SELECTOR, to, from);
+
+        var getTotalSupplyResponse = mirrorClient.contractsCall(TOTAL_SUPPLY_SELECTOR, to, from);
+
+        var getBalanceOfResponse = mirrorClient.contractsCall(BALANCE_OF_SELECTOR, to, from);
+
+        var getAllowanceResponse = mirrorClient.contractsCall(ALLOWANCE_SELECTOR, to, from);
+
+        var getApprovedResponse = mirrorClient.contractsCall(GET_APPROVED_SELECTOR, to, from);
+
+        var getIsApprovedForAllResponse = mirrorClient.contractsCall(IS_APPROVED_FOR_ALL_SELECTOR, to, from);
+
+        var getOwnerOfResponse = mirrorClient.contractsCall(GET_OWNER_OF_SELECTOR, to, from);
+
+        var getTokenURIResponse = mirrorClient.contractsCall(TOKEN_URI_SELECTOR, to, from);
+
 
         assertThatThrownBy(() -> mirrorClient.contractsCall(WRONG_SELECTOR, to, from))
                 .isInstanceOf(WebClientResponseException.class)

@@ -104,6 +104,31 @@ public class PrecompileContractFeature extends AbstractFeature {
         var from = contractClient.getClientAddress();
         var to = contractId.toSolidityAddress();
 
+        // TODO: assert results
+        var getIsTokenResponse = mirrorClient.contractsCall(IS_TOKEN_SELECTOR, to, from);
+
+        var getIsTokenFrozenResponse = mirrorClient.contractsCall(IS_TOKEN_FROZEN_SELECTOR, to, from);
+
+        var getIsKycGrantedResponse = mirrorClient.contractsCall(IS_KYC_GRANTED_SELECTOR, to, from);
+
+        var getTokenDefaultFreezeResponse = mirrorClient.contractsCall(GET_TOKEN_DEFAULT_FREEZE_SELECTOR, to, from);
+
+        var getTokenDefaultKycResponse = mirrorClient.contractsCall(GET_TOKEN_DEFAULT_KYC_SELECTOR, to, from);
+
+        var getCustomFeesForTokenResponse = mirrorClient.contractsCall(GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR, to, from);
+
+        var getInformationForTokenResponse = mirrorClient.contractsCall(GET_INFORMATION_FOR_TOKEN_SELECTOR, to, from);
+
+        var getInformationForFungibleTokenResponse = mirrorClient.contractsCall(GET_INFORMATION_FOR_FUNGIBLE_TOKEN_SELECTOR, to, from);
+
+        var getInformationForNonFungibleTokenResponse = mirrorClient.contractsCall(GET_INFORMATION_FOR_NON_FUNGIBLE_TOKEN_SELECTOR, to, from);
+
+        var getTypeResponse = mirrorClient.contractsCall(GET_TYPE_SELECTOR, to, from);
+
+        var getExpiryInfoForTokenResponse = mirrorClient.contractsCall(GET_EXPIRY_INFO_FOR_TOKEN_SELECTOR, to, from);
+
+        var getTokenKeyResponse = mirrorClient.contractsCall(GET_TOKEN_KEY_PUBLIC_SELECTOR, to, from);
+
 
         assertThatThrownBy(() -> mirrorClient.contractsCall(WRONG_SELECTOR, to, from))
                 .isInstanceOf(WebClientResponseException.class)
