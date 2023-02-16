@@ -123,7 +123,7 @@
               "pm.expect(account.timestamp).to.have.keys('from', 'to');",
               "",
               "pm.expect(account.type).to.equal('ACCOUNT');",
-              "pm.expect(account.entityId.num).to.equal(pm.collectionVariables.get(\"default_account\"));",
+              "pm.expect(account.entityId.num).to.equal(parseInt(pm.environment.get(\"default_account\")));",
               "",
               "});"
             ],
