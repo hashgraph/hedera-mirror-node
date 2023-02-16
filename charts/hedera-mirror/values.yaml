@@ -171,12 +171,12 @@ grpc:
     SPRING_REDIS_HOST:
       valueFrom:
         secretKeyRef:
-          name: mirror-redis
+          name: "{{ .Release.Name }}-redis"
           key: SPRING_REDIS_HOST
     SPRING_REDIS_PASSWORD:
       valueFrom:
         secretKeyRef:
-          name: mirror-redis
+          name: "{{ .Release.Name }}-redis"
           key: SPRING_REDIS_PASSWORD
 
 importer:
@@ -188,7 +188,7 @@ importer:
     - secretRef:
         name: mirror-passwords
     - secretRef:
-        name: mirror-redis
+        name: "{{ .Release.Name }}-redis"
 
 labels: {}
 
@@ -305,6 +305,8 @@ redis:
     masterSet: mirror
     persistence:
       enabled: true
+    readinessProbe:
+      timeoutSeconds: 4
     resources:
       limits:
         cpu: 150m
