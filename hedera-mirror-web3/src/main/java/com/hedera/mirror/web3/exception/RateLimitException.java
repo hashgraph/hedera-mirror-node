@@ -1,4 +1,4 @@
-package com.hedera.mirror.web3.service.model;
+package com.hedera.mirror.web3.exception;
 
 /*-
  * ‌
@@ -20,27 +20,11 @@ package com.hedera.mirror.web3.service.model;
  * ‍
  */
 
-import lombok.Builder;
-import lombok.Value;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
+import com.hedera.mirror.common.exception.MirrorNodeException;
 
-import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
+public class RateLimitException extends MirrorNodeException {
 
-@Value
-@Builder
-public class CallServiceParameters {
-    HederaEvmAccount sender;
-    Address receiver;
-    long providedGasLimit;
-    long value;
-    Bytes callData;
-    boolean isStatic;
-    CallType callType;
-
-    public enum CallType {
-        ETH_CALL,
-        ETH_ESTIMATE_GAS,
-        ERROR
+    public RateLimitException(String message) {
+        super(message);
     }
 }

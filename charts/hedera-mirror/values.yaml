@@ -198,12 +198,12 @@ grpc:
     SPRING_REDIS_HOST:
       valueFrom:
         secretKeyRef:
-          name: mirror-redis
+          name: "{{ .Release.Name }}-redis"
           key: SPRING_REDIS_HOST
     SPRING_REDIS_PASSWORD:
       valueFrom:
         secretKeyRef:
-          name: mirror-redis
+          name: "{{ .Release.Name }}-redis"
           key: SPRING_REDIS_PASSWORD
 
 importer:
@@ -215,7 +215,7 @@ importer:
     - secretRef:
         name: mirror-passwords
     - secretRef:
-        name: mirror-redis
+        name: "{{ .Release.Name }}-redis"
 
 labels: {}
 
@@ -276,6 +276,7 @@ postgresql:
     extraEnvVarsSecret: mirror-passwords
     image:
       debug: true
+      tag: 14.7.0-debian-11-r1
     initdbScriptsCM: "{{ .Release.Name }}-init"
     password: ""  # Randomly generated if left blank
     podAntiAffinityPreset: soft
@@ -294,7 +295,7 @@ postgresql:
 
 redis:
   auth:
-    existingSecret: mirror-redis
+    existingSecret: "{{ .Release.Name }}-redis"
     existingSecretPasswordKey: SPRING_REDIS_PASSWORD
     password: ""  # Randomly generated if left blank
   enabled: true
@@ -331,6 +332,8 @@ redis:
     masterSet: mirror
     persistence:
       enabled: true
+    readinessProbe:
+      timeoutSeconds: 4
     resources:
       limits:
         cpu: 150m

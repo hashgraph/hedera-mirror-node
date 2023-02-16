@@ -48,6 +48,7 @@ dependencies {
         api("com.esaulpaugh:headlong:9.1.1")
         api("com.github.meanbeanlib:meanbean:3.0.0-M9")
         api("com.github.vertical-blank:sql-formatter:2.0.3")
+        api("com.github.vladimir-bukhtoyarov:bucket4j-core:7.6.0")
         api("com.google.cloud:spring-cloud-gcp-dependencies:3.4.4")
         api("com.google.guava:guava:31.1-jre")
         api("com.google.protobuf:protobuf-java:$protobufVersion")
