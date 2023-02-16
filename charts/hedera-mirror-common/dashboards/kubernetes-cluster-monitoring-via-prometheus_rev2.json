@@ -1548,7 +1548,7 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "sum (rate (container_network_receive_bytes_total{kubernetes_io_hostname=~\"^$Node$\",namespace=~\"$namespace\"}[$interval]))",
+          "expr": "sum(rate(container_network_receive_bytes_total{node=~\"^$Node$\"}[__rate_interval]))",
           "format": "time_series",
           "interval": "10s",
           "intervalFactor": 1,
@@ -1559,7 +1559,7 @@
         },
         {
           "exemplar": true,
-          "expr": "- sum (rate (container_network_transmit_bytes_total{kubernetes_io_hostname=~\"^$Node$\",namespace=~\"$namespace\"}[$interval]))",
+          "expr": "- sum(rate(container_network_transmit_bytes_total{node=~\"^$Node$\"}[__rate_interval]))",
           "format": "time_series",
           "interval": "10s",
           "intervalFactor": 1,
@@ -1670,22 +1670,22 @@
       "targets": [
         {
           "exemplar": true,
-          "expr": "sum (rate (container_network_receive_bytes_total{image!=\"\",kubernetes_io_hostname=~\"^$Node$\",namespace=~\"$namespace\"}[$interval])) by (pod)",
+          "expr": "sum(rate(container_network_receive_bytes_total{node=~\"^$Node$\"}[$__rate_interval]))",
           "format": "time_series",
           "interval": "10s",
           "intervalFactor": 1,
-          "legendFormat": "-> {{ pod }}",
+          "legendFormat": "Received",
           "metric": "network",
           "refId": "A",
           "step": 10
         },
         {
           "exemplar": true,
-          "expr": "- sum (rate (container_network_transmit_bytes_total{image!=\"\",kubernetes_io_hostname=~\"^$Node$\",namespace=~\"$namespace\"}[$interval])) by (pod)",
+          "expr": "- sum(rate(container_network_transmit_bytes_total{node=~\"^$Node$\"}[__rate_interval]))",
           "format": "time_series",
           "interval": "10s",
           "intervalFactor": 1,
-          "legendFormat": "<- {{ pod }}",
+          "legendFormat": "Sent",
           "metric": "network",
           "refId": "B",
           "step": 10
