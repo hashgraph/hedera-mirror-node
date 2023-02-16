@@ -2,8 +2,8 @@
 apiVersion: monitoring.coreos.com/v1alpha1
 kind: AlertmanagerConfig
 metadata:
-  name: {{ include "hedera-mirror.fullname" . }}
   labels: {{ include "hedera-mirror.labels" . | nindent 4 }}
+  name: {{ include "hedera-mirror.fullname" . }}
   namespace: {{ include "hedera-mirror.namespace" . }}
 spec:
   inhibitRules:
