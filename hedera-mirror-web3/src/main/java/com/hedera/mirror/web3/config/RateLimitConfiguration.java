@@ -22,7 +22,6 @@ package com.hedera.mirror.web3.config;
 
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
-import io.github.bucket4j.Refill;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -38,7 +37,7 @@ class RateLimitConfiguration {
     @Bean
     Bucket buildBucket() {
         final var rateLimitPerSecond = mirrorNodeEvmProperties.getRateLimit().getSeconds();
-        final var limit = Bandwidth.classic(rateLimitPerSecond, Refill.greedy(10, Duration.ofSeconds(1)));
+        final var limit = Bandwidth.simple(rateLimitPerSecond, Duration.ofSeconds(1));
 
         return Bucket.builder()
                 .addLimit(limit)
