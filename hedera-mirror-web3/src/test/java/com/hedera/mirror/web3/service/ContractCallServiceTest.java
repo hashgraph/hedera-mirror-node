@@ -53,13 +53,13 @@ class ContractCallServiceTest extends Web3IntegrationTest {
             "0x00000000000000000000000000000000000004e9");
 
     private static final Address SENDER_ADDRESS = Address.fromHexString(
-            "0x00000000000000000000000000000000000004e6");
+            "0x00000000000000000000000000000000000003e6");
 
     private static final Address RECEIVER_ADDRESS = Address.fromHexString(
-            "0x00000000000000000000000000000000000004e5");
+            "0x00000000000000000000000000000000000003e5");
 
     private static final Address TOKEN_ADDRESS = Address.fromHexString(
-            "0x00000000000000000000000000000000000004e4");
+            "0x00000000000000000000000000000000000003e4");
 
     private final ContractCallService contractCallService;
 
@@ -103,7 +103,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
     void balanceCall() {
         //getAccountBalance(address)
         final var balanceCall =
-                "0x93423e9c00000000000000000000000000000000000000000000000000000000000004e6";
+                "0x93423e9c00000000000000000000000000000000000000000000000000000000000003e6";
         final var expectedBalance =
                 "0x0000000000000000000000000000000000000000000000000000000000004e20";
         final var params = serviceParameters(balanceCall, 0);
@@ -149,7 +149,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
     void transferThruContract() {
         //transferHbarsToAddress(address)
         final var stateChangePayable =
-                "0x80b9f03c00000000000000000000000000000000000000000000000000000000000004e6";
+                "0x80b9f03c00000000000000000000000000000000000000000000000000000000000003e6";
         final var params = serviceParameters(stateChangePayable, 90L);
 
         persistEntities(false);
