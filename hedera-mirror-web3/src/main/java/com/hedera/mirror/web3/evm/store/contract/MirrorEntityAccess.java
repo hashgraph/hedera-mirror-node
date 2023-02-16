@@ -84,7 +84,7 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
 
     @Override
     public boolean isExtant(final Address address) {
-        return entityRepository.findByIdAndDeletedIsFalse(entityIdFromEvmAddress(address)).isPresent();
+        return entityRepository.findByIdAndDeletedIsFalse(fetchEntityIdNum(address)).isPresent();
     }
 
     @Override
@@ -100,17 +100,14 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
 
     @Override
     public Bytes getStorage(final Address address, final Bytes key) {
-        final var storage = contractStateRepository.findStorage(entityIdFromEvmAddress(address),
+        final var storage = contractStateRepository.findStorage(fetchEntityIdNum(address),
                 key.toArrayUnsafe());
         return storage.map(Bytes::wrap).orElse(Bytes.EMPTY);
     }
 
     @Override
     public Bytes fetchCodeIfPresent(final Address address) {
-        final var addressBytes = address.toArrayUnsafe();
-        final var entityId = isMirror(addressBytes) ?
-                entityIdFromEvmAddress(address) :
-                findEntity(address).map(AbstractEntity::getId).orElse(0L);
+        final var entityId = fetchEntityIdNum(address);
         if (entityId == 0) {
             return Bytes.EMPTY;
         }
@@ -127,6 +124,16 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
         } else {
             return entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes);
         }
+    }
+
+    private Long fetchEntityIdNum(final Address address) {
+        final var addressBytes = address.toArrayUnsafe();
+        final var entityIdNum = isMirror(addressBytes) ?
+                entityIdFromEvmAddress(address) :
+                findEntity(address)
+                        .map(AbstractEntity::getId).orElse(0L);
+
+        return entityIdNum;
     }
 
     private Long entityIdFromEvmAddress(final Address address) {
