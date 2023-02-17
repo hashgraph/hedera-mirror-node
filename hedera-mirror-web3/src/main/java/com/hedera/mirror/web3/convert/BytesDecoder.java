@@ -23,14 +23,12 @@ package com.hedera.mirror.web3.convert;
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
+import lombok.experimental.UtilityClass;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 
+@UtilityClass
 public class BytesDecoder {
-
-    private BytesDecoder() {
-        //Utility class
-    }
 
     //Error(string)
     private static final String ERROR_SIGNATURE = "0x08c379a0";
@@ -38,17 +36,22 @@ public class BytesDecoder {
     private static final ABIType<Tuple> STRING_DECODER = TypeFactory.create("(string)");
     private static final int SIGNATURE_BYTES_LENGTH = 4;
 
-    public static String decodeBytesToReadableMessage(final Bytes revertReason) {
-        if(revertReason.isEmpty()) {
+    public static String decodeEvmRevertReasonBytesToReadableMessage(final Bytes revertReason) {
+        if(revertReason == null || revertReason.isEmpty()) {
             return StringUtils.EMPTY;
         }
 
         Bytes encodedMessage = revertReason;
 
-        if(ERROR_SIGNATURE_BYTES.equals(revertReason.slice(0, SIGNATURE_BYTES_LENGTH))) {
+        if(revertReason.size() > SIGNATURE_BYTES_LENGTH && ERROR_SIGNATURE_BYTES.equals(revertReason.slice(0, SIGNATURE_BYTES_LENGTH))) {
             encodedMessage = revertReason.slice(SIGNATURE_BYTES_LENGTH);
         }
 
-        return STRING_DECODER.decode(encodedMessage.toArray()).get(0);
+        final var tuple = STRING_DECODER.decode(encodedMessage.toArray());
+        if(tuple.size() > 0) {
+            return STRING_DECODER.decode(encodedMessage.toArray()).get(0);
+        } else {
+            return StringUtils.EMPTY;
+        }
     }
 }
