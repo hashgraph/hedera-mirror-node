@@ -164,13 +164,31 @@ function parseStateProofStreamsConfig() {
   }
 }
 
-const parseMaxTimestampRange = () => {
-  const conf = getConfig();
-  const ms = parseDuration(conf.maxTimestampRange);
+const parseDurationConfig = (name, value) => {
+  const ms = parseDuration(value);
   if (!ms) {
-    throw new InvalidConfigError(`invalid maxTimestampRange ${conf.maxTimestampRange}`);
+    throw new InvalidConfigError(`invalid ${name} ${value}`);
   }
-  conf.maxTimestampRangeNs = BigInt(ms) * 1000000n;
+  return BigInt(ms) * 1_000_000n;
+};
+
+const parseQueryConfig = () => {
+  const conf = getConfig();
+
+  // maxRepeatedQueryParameters, for backwards compatibility, conf.maxRepeatedQueryParameters takes priority
+  conf.query.maxRepeatedQueryParameters = conf?.maxRepeatedQueryParameters ?? conf.query.maxRepeatedQueryParameters;
+  delete conf.maxRepeatedQueryParameters;
+
+  // maxTimestampRange, for backwards compatibility, conf.maxTimestampRange takes priority
+  conf.query.maxTimestampRangeNs = parseDurationConfig(
+    'query.maxTimestampRange',
+    conf?.maxTimestampRange ?? conf.query.maxTimestampRange
+  );
+
+  conf.query.maxTransactionConsensusTimestampRangeNs = parseDurationConfig(
+    'query.maxTransactionConsensusTimestampRange',
+    conf.query.maxTransactionConsensusTimestampRange
+  );
 };
 
 const parseNetworkConfig = () => {
@@ -192,9 +210,9 @@ if (!loaded) {
   load(process.env.CONFIG_PATH, configName);
   loadEnvironment();
   parseDbPoolConfig();
-  parseStateProofStreamsConfig();
-  parseMaxTimestampRange();
   parseNetworkConfig();
+  parseQueryConfig();
+  parseStateProofStreamsConfig();
   loaded = true;
   configureLogger(getConfig().log.level);
 }

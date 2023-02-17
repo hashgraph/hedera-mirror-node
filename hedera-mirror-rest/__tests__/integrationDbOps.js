@@ -25,7 +25,7 @@ import path from 'path';
 
 import config from '../config';
 import {getDatabaseName} from './globalSetup';
-import {getModuleDirname} from './testutils';
+import {getModuleDirname, isV2Schema} from './testutils';
 import {getPoolClass} from '../utils';
 
 const {db: defaultDbConfig} = config;
@@ -58,8 +58,6 @@ const v2SchemaConfigs = {
   baselineVersion: '1.999.999',
   locations: '../hedera-mirror-importer/src/main/resources/db/migration/v2',
 };
-
-const isV2Schema = () => process.env.MIRROR_NODE_SCHEMA === 'v2';
 
 const schemaConfigs = isV2Schema() ? v2SchemaConfigs : v1SchemaConfigs;
 
