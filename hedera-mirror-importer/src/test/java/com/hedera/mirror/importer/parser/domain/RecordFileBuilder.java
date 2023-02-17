@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.parser.domain;
  */
 
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
+import static org.bouncycastle.asn1.its.HashAlgorithm.sha384;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -31,8 +32,10 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import javax.inject.Named;
+import com.google.protobuf.ByteString;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.util.Assert;
 import reactor.core.publisher.Flux;
 
@@ -202,7 +205,9 @@ public class RecordFileBuilder {
         private RecordItem wrap(RecordItemBuilder.Builder<?> builder) {
             var consensusTimestamp = recordItemBuilder.timestamp(ChronoUnit.NANOS);
             var validStart = Utility.instantToTimestamp(Utility.convertToInstant(consensusTimestamp).minusNanos(10));
-            return builder.record(r -> r.setConsensusTimestamp(consensusTimestamp))
+            var hash = ByteString.copyFrom(DigestUtils.sha384(consensusTimestamp.toByteArray()));
+            return builder.record(r -> r.setConsensusTimestamp(consensusTimestamp)
+                            .setTransactionHash(hash))
                     .receipt(r -> r.setTopicSequenceNumber(id.getAndIncrement()))
                     .transactionBodyWrapper(tb -> tb.getTransactionIDBuilder().setTransactionValidStart(validStart))
                     .build();

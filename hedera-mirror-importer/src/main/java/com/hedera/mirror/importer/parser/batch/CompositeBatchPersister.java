@@ -20,14 +20,18 @@ package com.hedera.mirror.importer.parser.batch;
  * ‍
  */
 
+import com.hedera.mirror.common.domain.transaction.TransactionHash;
+
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Named;
 import javax.persistence.Entity;
 import javax.sql.DataSource;
-import lombok.RequiredArgsConstructor;
+
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.annotation.AnnotationUtils;
 
@@ -36,9 +40,10 @@ import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.repository.upsert.UpsertQueryGenerator;
 import com.hedera.mirror.importer.repository.upsert.UpsertQueryGeneratorFactory;
 
+import static com.hedera.mirror.importer.config.MirrorImporterConfiguration.TRANSACTION_HASH_BATCH_PERSISTER;
+
 @Named
 @Primary
-@RequiredArgsConstructor
 public class CompositeBatchPersister implements BatchPersister {
 
     private final Map<Class<?>, BatchPersister> batchPersisters = new ConcurrentHashMap<>();
@@ -46,6 +51,19 @@ public class CompositeBatchPersister implements BatchPersister {
     private final MeterRegistry meterRegistry;
     private final CommonParserProperties properties;
     private final UpsertQueryGeneratorFactory upsertQueryGeneratorFactory;
+
+    public CompositeBatchPersister(DataSource dataSource, MeterRegistry meterRegistry,
+                                   CommonParserProperties properties,
+                                   UpsertQueryGeneratorFactory upsertQueryGeneratorFactory,
+                                   @Qualifier(TRANSACTION_HASH_BATCH_PERSISTER) Optional<BatchPersister> transactionHashV1BatchPersister) {
+        this.dataSource = dataSource;
+        this.meterRegistry = meterRegistry;
+        this.properties = properties;
+        this.upsertQueryGeneratorFactory = upsertQueryGeneratorFactory;
+
+        transactionHashV1BatchPersister.ifPresent(batchPersister -> batchPersisters.put(TransactionHash.class,
+                batchPersister));
+    }
 
     @Override
     public void persist(Collection<? extends Object> items) {

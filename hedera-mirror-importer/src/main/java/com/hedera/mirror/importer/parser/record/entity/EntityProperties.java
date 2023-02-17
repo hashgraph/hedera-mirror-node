@@ -67,7 +67,7 @@ public class EntityProperties {
 
         private boolean trackBalance = true;
 
-        private boolean transactionHash = false;
+        private boolean transactionHash = true; //TODO:// revert pre-pr
 
         /**
          * If configured the mirror node will store the raw transaction bytes on the transaction table

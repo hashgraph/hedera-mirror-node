@@ -69,7 +69,7 @@ class RecordFileParserPerformanceTest {
             recordFileParser.parse(recordFile);
             workDone = true;
 
-            long sleep = interval - (System.currentTimeMillis() - endTime);
+            long sleep = (interval - (System.currentTimeMillis() - endTime)) / 100;
             if (sleep > 0) {
                 Uninterruptibles.sleepUninterruptibly(sleep, TimeUnit.MILLISECONDS);
             }
