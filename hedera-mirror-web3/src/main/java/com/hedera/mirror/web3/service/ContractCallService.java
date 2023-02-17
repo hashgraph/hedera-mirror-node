@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
 import javax.inject.Named;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorFacade;
@@ -87,7 +88,7 @@ public class ContractCallService {
                 onComplete(body.getCallType(), txnResult);
             }
         } catch (IllegalStateException | IllegalArgumentException e) {
-            throw new InvalidTransactionException(e.getMessage());
+            throw new InvalidTransactionException(e.getMessage(), StringUtils.EMPTY);
         }
         return txnResult;
     }
