@@ -426,7 +426,7 @@ const validateReq = (req, acceptedParameters = emptySet) => {
           code: InvalidArgumentError.PARAM_COUNT_EXCEEDS_MAX_CODE,
           key,
           count: req.query[key].length,
-          max: config.maxRepeatedQueryParameters,
+          max: config.query.maxRepeatedQueryParameters,
         });
         continue;
       }
@@ -445,7 +445,7 @@ const validateReq = (req, acceptedParameters = emptySet) => {
   }
 };
 
-const isRepeatedQueryParameterValidLength = (values) => values.length <= config.maxRepeatedQueryParameters;
+const isRepeatedQueryParameterValidLength = (values) => values.length <= config.query.maxRepeatedQueryParameters;
 
 const parseTimestampParam = (timestampParam) => {
   // Expect timestamp input as (a) just seconds,
@@ -1078,7 +1078,7 @@ const buildFilters = (query) => {
           code: InvalidArgumentError.PARAM_COUNT_EXCEEDS_MAX_CODE,
           key,
           count: values.length,
-          max: config.maxRepeatedQueryParameters,
+          max: config.query.maxRepeatedQueryParameters,
         });
         continue;
       }
@@ -1114,8 +1114,8 @@ const buildComparatorFilter = (name, filter) => {
  */
 const calculateExpiryTimestamp = (autoRenewPeriod, createdTimestamp, expirationTimestamp) => {
   return _.isNil(expirationTimestamp) && !_.isNil(createdTimestamp) && !_.isNil(autoRenewPeriod)
-    ? (BigInt(createdTimestamp) + BigInt(autoRenewPeriod) * constants.AUTO_RENEW_PERIOD_MULTIPLE)
-    : (expirationTimestamp);
+    ? BigInt(createdTimestamp) + BigInt(autoRenewPeriod) * constants.AUTO_RENEW_PERIOD_MULTIPLE
+    : expirationTimestamp;
 };
 
 /**
@@ -1130,7 +1130,7 @@ const validateFilters = (filters, filterValidator, acceptedParameters) => {
   const invalidParams = [];
   const unknownParams = [];
   for (const filter of filters) {
-    if(!acceptedParameters.has(filter.key)) {
+    if (!acceptedParameters.has(filter.key)) {
       unknownParams.push({key: filter.key, code: InvalidArgumentError.UNKNOWN_PARAM_USAGE});
       continue;
     }
@@ -1421,15 +1421,10 @@ const checkTimestampRange = (timestampFilters) => {
     valuesByOp[opsMap.lt].length > 0 ? BigInt(valuesByOp[opsMap.lt][0]) - 1n : BigInt(valuesByOp[opsMap.lte][0]);
   const difference = latest - earliest + 1n;
 
-  if (difference > config.maxTimestampRangeNs || difference <= 0n) {
-    throw new InvalidArgumentError(
-      `Timestamp lower and upper bounds must be positive and within ${config.maxTimestampRange}`
-    );
+  const {maxTimestampRange, maxTimestampRangeNs} = config.query;
+  if (difference > maxTimestampRangeNs || difference <= 0n) {
+    throw new InvalidArgumentError(`Timestamp lower and upper bounds must be positive and within ${maxTimestampRange}`);
   }
-};
-
-const isRegexMatch = (regex, value) => {
-  return regex.test(value.trim());
 };
 
 /**
@@ -1522,7 +1517,6 @@ export {
   ipMask,
   isNonNegativeInt32,
   isPositiveLong,
-  isRegexMatch,
   isRepeatedQueryParameterValidLength,
   isTestEnv,
   isValidBlockHash,

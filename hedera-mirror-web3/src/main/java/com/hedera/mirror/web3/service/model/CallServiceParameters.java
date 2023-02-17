@@ -36,4 +36,11 @@ public class CallServiceParameters {
     long value;
     Bytes callData;
     boolean isStatic;
+    CallType callType;
+
+    public enum CallType {
+        ETH_CALL,
+        ETH_ESTIMATE_GAS,
+        ERROR
+    }
 }

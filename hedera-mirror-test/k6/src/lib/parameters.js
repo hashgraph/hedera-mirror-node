@@ -19,10 +19,10 @@
  */
 
 import http from 'k6/http';
+import {b64decode, b64encode} from 'k6/encoding';
 
 import {
   accountListName,
-  actionListName,
   allowanceListName,
   balanceListName,
   blockListName,
@@ -159,21 +159,19 @@ export const computeAccountWithNftsParameters = (configuration) =>
     for (const entity of tokensResult) {
       const tokensBalancePath = `${configuration.baseApiUrl}/tokens/${entity.token_id}/balances`;
       const tokensBalanceEntity = getEntities(tokensBalancePath, balanceListName);
-      if(tokensBalanceEntity.length === undefined) continue;
+      if (tokensBalanceEntity.length === undefined) continue;
       for (const balanceEntity of tokensBalanceEntity) {
         if (balanceEntity.balance >= 20) {
           return {
-            DEFAULT_ACCOUNT_ID_NFTS: balanceEntity.account
+            DEFAULT_ACCOUNT_ID_NFTS: balanceEntity.account,
           };
         }
       }
     }
-    throw new Error(
-      `It was not possible to find an account with with significant number of nfts.`
-    );
+    throw new Error(`It was not possible to find an account with with significant number of nfts.`);
   });
 
-export const computeAccountWithTokenAllowanceParameters = (configuration) => //29631749
+export const computeAccountWithTokenAllowanceParameters = (configuration) =>
   computeProperties(['DEFAULT_ACCOUNT_ID_TOKEN_ALLOWANCE'], () => {
     const accountsPath = `${configuration.baseApiUrl}/accounts?account.id=gt%3A${configuration.startAccountId}&balance=false&order=asc&limit=100`;
     const accountsResult = getEntities(accountsPath, accountListName);
@@ -186,16 +184,14 @@ export const computeAccountWithTokenAllowanceParameters = (configuration) => //2
         //Continuing to avoid errors due to accounts not having allowance tokens.
         continue;
       }
-      if(tokensAllowanceEntities.length === undefined) continue;
+      if (tokensAllowanceEntities.length === undefined) continue;
       if (tokensAllowanceEntities.length >= 25) {
-          return {
-            DEFAULT_ACCOUNT_ID_TOKEN_ALLOWANCE: entity.account
-          };
+        return {
+          DEFAULT_ACCOUNT_ID_TOKEN_ALLOWANCE: entity.account,
+        };
       }
     }
-    throw new Error(
-      `It was not possible to find an account with with significant number of allowance tokens.`
-    );
+    throw new Error(`It was not possible to find an account with with significant number of allowance tokens.`);
   });
 
 export const computeAccountWithTokenParameters = (configuration) =>
@@ -208,16 +204,12 @@ export const computeAccountWithTokenParameters = (configuration) =>
       if (tokensEntities.length === undefined) continue;
       if (tokensEntities.length >= 25) {
         return {
-          DEFAULT_ACCOUNT_ID_TOKEN: entity.account
+          DEFAULT_ACCOUNT_ID_TOKEN: entity.account,
         };
       }
     }
-    throw new Error(
-      `It was not possible to find an account with with significant number of tokens.`
-    );
+    throw new Error(`It was not possible to find an account with with significant number of tokens.`);
   });
-
-
 
 export const computeBlockParameters = (configuration) =>
   computeProperties(['DEFAULT_BLOCK_NUMBER', 'DEFAULT_BLOCK_HASH'], () => {
@@ -231,7 +223,7 @@ export const computeBlockParameters = (configuration) =>
       entitiesKey: blockListName,
       queryParamMap: {limit: 1},
     });
-});
+  });
 
 export const computeContractParameters = (configuration) => {
   const contractProperties = computeProperties(['DEFAULT_CONTRACT_ID', 'DEFAULT_CONTRACT_TIMESTAMP'], () => {
@@ -289,8 +281,11 @@ export const computeFungibleTokenParameters = (configuration) =>
   });
 
 export const computeTransactionParameters = (configuration) =>
-  computeProperties(['DEFAULT_TRANSACTION_ID'], () => {
-    const extractProperties = (transaction) => ({DEFAULT_TRANSACTION_ID: transaction.transaction_id});
+  computeProperties(['DEFAULT_TRANSACTION_HASH', 'DEFAULT_TRANSACTION_ID'], () => {
+    const extractProperties = (transaction) => ({
+      DEFAULT_TRANSACTION_HASH: b64encode(b64decode(transaction.transaction_hash), 'url'),
+      DEFAULT_TRANSACTION_ID: transaction.transaction_id,
+    });
     return getPropertiesForEntity(configuration, extractProperties, {
       entitiesKey: transactionListName,
       queryParamMap: {limit: 1, transactiontype: 'cryptotransfer'},

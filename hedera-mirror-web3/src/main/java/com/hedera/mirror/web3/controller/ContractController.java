@@ -21,12 +21,19 @@ package com.hedera.mirror.web3.controller;
  */
 
 import static com.hedera.mirror.web3.controller.ValidationErrorParser.extractValidationError;
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static org.apache.tuweni.bytes.Bytes.EMPTY;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
+import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
 
 import javax.validation.Valid;
+
+import com.hedera.mirror.web3.exception.RateLimitException;
+
+import io.github.bucket4j.Bucket;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
@@ -56,6 +63,7 @@ class ContractController {
 
     static final String NOT_IMPLEMENTED_ERROR = "Operation not supported yet!";
     private final ContractCallService contractCallService;
+    private final Bucket bucket;
 
     @PostMapping(value = "/call")
     Mono<ContractCallResponse> call(@RequestBody @Valid ContractCallRequest request) {
@@ -63,13 +71,17 @@ class ContractController {
             throw new UnsupportedOperationException(NOT_IMPLEMENTED_ERROR);
         }
 
+        if (!bucket.tryConsume(1)) {
+            throw new RateLimitException("Rate limit exceeded.");
+        }
         final var params = constructServiceParameters(request);
+
         final var callResponse =
                 new ContractCallResponse(
                         contractCallService.processCall(params));
 
         return Mono.just(callResponse);
-    }
+}
 
     private CallServiceParameters constructServiceParameters(ContractCallRequest request) {
         final var fromAddress =
@@ -84,6 +96,7 @@ class ContractController {
                         ? Bytes.fromHexString(request.getData())
                         : EMPTY;
         final var isStaticCall = !request.isEstimate();
+        final var callType = request.isEstimate() ? ETH_ESTIMATE_GAS : ETH_CALL;
 
         return CallServiceParameters.builder()
                 .sender(sender)
@@ -92,6 +105,7 @@ class ContractController {
                 .providedGasLimit(request.getGas())
                 .value(request.getValue())
                 .isStatic(isStaticCall)
+                .callType(callType)
                 .build();
     }
 
@@ -99,6 +113,12 @@ class ContractController {
     @ExceptionHandler
     @ResponseStatus(NOT_IMPLEMENTED)
     private Mono<GenericErrorResponse> unsupportedOpResponse(UnsupportedOperationException e) {
+        return errorResponse(e.getMessage());
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(TOO_MANY_REQUESTS)
+    private Mono<GenericErrorResponse> rateLimitError(RateLimitException e) {
         return errorResponse(e.getMessage());
     }
 
@@ -114,7 +134,7 @@ class ContractController {
     @ResponseStatus(BAD_REQUEST)
     private Mono<GenericErrorResponse> invalidTxnError(InvalidTransactionException e) {
         log.warn("Transaction error: {}", e.getMessage());
-        return errorResponse(e.getMessage());
+        return errorResponse(e.getMessage(), e.getDetail());
     }
 
     @ExceptionHandler()
@@ -126,5 +146,9 @@ class ContractController {
 
     private Mono<GenericErrorResponse> errorResponse(String errorMessage) {
         return Mono.just(new GenericErrorResponse(errorMessage));
+    }
+
+    private Mono<GenericErrorResponse> errorResponse(String errorMessage, String detailedErrorMessage) {
+        return Mono.just(new GenericErrorResponse(errorMessage, detailedErrorMessage));
     }
 }

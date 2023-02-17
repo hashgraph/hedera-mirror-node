@@ -5,8 +5,41 @@ labels: {}
 
 loki:
   enabled: true
-  # TODO: Enhance Loki to support watching for PrometheusRules via the Kubernetes API so we can declare these within their chart
-  alerting_groups:
+  gateway:
+    enabled: false
+  loki:
+    auth_enabled: false
+    commonConfig:
+      replication_factor: 1
+    storage:
+      type: 'filesystem'
+    structuredConfig:
+      ruler:
+        alertmanager_url: http://{{ .Release.Name }}-prometheus-alertmanager:9093
+        enable_alertmanager_v2: true
+        enable_api: true
+        ring:
+          kvstore:
+            store: inmemory
+        rule_path: /tmp/scratch
+        storage:
+          type: local
+          local:
+            directory: /rules
+      table_manager:
+        retention_deletes_enabled: true
+        retention_period: 2184h
+  monitoring:
+    lokiCanary:
+      enabled: false
+    selfMonitoring:
+      enabled: false
+      grafanaAgent:
+        installOperator: false
+  persistence:
+    enableStatefulSetAutoDeletePVC: true
+    size: 100Gi
+  rules:
     - name: hedera-mirror-grpc
       rules:
         - alert: GrpcLogErrors
@@ -94,38 +127,27 @@ loki:
           for: 1m
           labels:
             severity: critical
-  config:
-    ruler:
-      alertmanager_url: http://{{ .Release.Name }}-prometheus-alertmanager:9093
-      enable_alertmanager_v2: true
-      enable_api: true
-      ring:
-        kvstore:
-          store: inmemory
-      rule_path: /tmp/scratch
-      storage:
-        type: local
-        local:
-          directory: /rules
-    table_manager:
-      retention_deletes_enabled: true
-      retention_period: 2184h
-  networkPolicy:
-    enabled: true
-  persistence:
-    enabled: true
-    size: 100Gi
-  rbac:
-    pspEnabled: false
-  resources:
-    limits:
-      cpu: 200m
-      memory: 256Mi
-    requests:
-      cpu: 50m
-      memory: 64Mi
   serviceMonitor:
     enabled: true
+  singleBinary:
+    extraVolumeMounts:
+      - mountPath: /rules
+        name: rules
+    extraVolumes:
+      - name: rules
+        configMap:
+          defaultMode: 420
+          name: mirror-log-alerts
+    replicas: 1
+    resources:
+      limits:
+        cpu: 200m
+        memory: 256Mi
+      requests:
+        cpu: 50m
+        memory: 64Mi
+  test:
+    enabled: false
 
 networkPolicy:
   enabled: false
@@ -361,7 +383,10 @@ traefik:
     access:
       enabled: true
       filters:
-        statuscodes: 300-599
+        statuscodes: 400-599
+  metrics:
+    prometheus:
+      addServicesLabels: true
   podDisruptionBudget:
     enabled: true
     minAvailable: 1

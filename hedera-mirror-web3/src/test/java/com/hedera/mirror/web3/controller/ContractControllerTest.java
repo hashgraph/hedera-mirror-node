@@ -22,11 +22,20 @@ package com.hedera.mirror.web3.controller;
 
 import static com.hedera.mirror.web3.controller.ContractController.NOT_IMPLEMENTED_ERROR;
 import static com.hedera.mirror.web3.validation.HexValidator.MESSAGE;
+import static org.mockito.BDDMockito.given;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
 import static org.springframework.http.HttpStatus.OK;
+import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
 
+import com.hedera.mirror.web3.exception.InvalidTransactionException;
+
+import io.github.bucket4j.Bucket;
 import javax.annotation.Resource;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -58,6 +67,14 @@ class ContractControllerTest {
     @MockBean
     private ContractCallService service;
 
+    @MockBean
+    private Bucket bucket;
+
+    @BeforeEach
+    void setUp(){
+        given(bucket.tryConsume(1)).willReturn(true);
+    }
+
     @Test
     void estimateGas() {
         final var request = request();
@@ -71,6 +88,28 @@ class ContractControllerTest {
                 .isEqualTo(NOT_IMPLEMENTED)
                 .expectBody(GenericErrorResponse.class)
                 .isEqualTo(new GenericErrorResponse(NOT_IMPLEMENTED_ERROR));
+    }
+
+    @Test
+    void exceedingRateLimit() {
+        for (var i = 0; i < 3; i++) {
+            webClient.post()
+                    .uri(CALL_URI)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(BodyInserters.fromValue(request()))
+                    .exchange()
+                    .expectStatus()
+                    .isEqualTo(OK);
+        }
+        given(bucket.tryConsume(1)).willReturn(false);
+
+        webClient.post()
+                .uri(CALL_URI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(request()))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(TOO_MANY_REQUESTS);
     }
 
     @NullAndEmptySource
@@ -141,6 +180,25 @@ class ContractControllerTest {
     }
 
     @Test
+    void callRevertMethodAndExpectDetailMessage() {
+        final var detailedErrorMessage = "Custom revert message";
+        final var request = request();
+        request.setData("0xa26388bb");
+
+        given(service.processCall(any())).willThrow(new InvalidTransactionException(CONTRACT_REVERT_EXECUTED, detailedErrorMessage));
+
+        webClient.post()
+                .uri(CALL_URI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(request))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(BAD_REQUEST)
+                .expectBody(GenericErrorResponse.class)
+                .isEqualTo(new GenericErrorResponse(CONTRACT_REVERT_EXECUTED.name(), detailedErrorMessage));
+    }
+
+    @Test
     void callInvalidGas() {
         final var errorString = negativeNumberErrorFrom("gas");
         final var request = request();
@@ -175,7 +233,7 @@ class ContractControllerTest {
     }
 
     @Test
-    void transferWithoutSender(){
+    void transferWithoutSender() {
         final var errorString = "from field must not be null";
         final var request = request();
         request.setFrom(null);
@@ -208,7 +266,7 @@ class ContractControllerTest {
     }
 
     @Test
-    void callSuccess(){
+    void callSuccess() {
         final var request = request();
         request.setData("0x1079023a0000000000000000000000000000000000000000000000000000000000000156");
         request.setValue(0);
@@ -223,7 +281,7 @@ class ContractControllerTest {
     }
 
     @Test
-    void transferSuccess(){
+    void transferSuccess() {
         webClient.post()
                 .uri(CALL_URI)
                 .contentType(MediaType.APPLICATION_JSON)

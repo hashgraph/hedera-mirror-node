@@ -20,6 +20,8 @@ package com.hedera.mirror.web3.evm.properties;
  * ‍
  */
 
+import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.EVM_VERSION;
+
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
@@ -44,7 +46,7 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     private boolean dynamicEvmVersion;
 
     @NotBlank
-    private String evmVersion = "v0.32";
+    private String evmVersion = EVM_VERSION;
 
     @NotBlank
     private String fundingAccount = "0x0000000000000000000000000000000000000062";
@@ -57,6 +59,11 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @NotNull
     @DurationMin(seconds = 1)
     private Duration expirationCacheTime = Duration.ofMinutes(10L);
+
+    @Getter
+    @NotNull
+    @DurationMin(seconds = 100)
+    private Duration rateLimit = Duration.ofSeconds(100L);
 
     @Override
     public boolean isRedirectTokenCallsEnabled() {
