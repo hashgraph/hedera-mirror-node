@@ -20,25 +20,27 @@ package com.hedera.mirror.web3.config;
  * ‍
  */
 
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import javax.persistence.EntityManager;
+import io.github.bucket4j.Bandwidth;
+import io.github.bucket4j.Bucket;
+import java.time.Duration;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
-import org.springframework.transaction.support.TransactionOperations;
-import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Configuration;
 
-import com.hedera.mirror.common.domain.DomainBuilder;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 
-@TestConfiguration
-public class IntegrationTestConfiguration {
-
-    @Bean
-    DomainBuilder domainBuilder(EntityManager entityManager, TransactionOperations transactionOperations) {
-        return new DomainBuilder(entityManager, transactionOperations);
-    }
+@Configuration
+@RequiredArgsConstructor
+class RateLimitConfiguration {
+    private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
 
     @Bean
-    MeterRegistry meterRegistry() {
-        return new SimpleMeterRegistry();
+    Bucket buildBucket() {
+        final var rateLimitPerSecond = mirrorNodeEvmProperties.getRateLimit().getSeconds();
+        final var limit = Bandwidth.simple(rateLimitPerSecond, Duration.ofSeconds(1));
+
+        return Bucket.builder()
+                .addLimit(limit)
+                .build();
     }
 }
