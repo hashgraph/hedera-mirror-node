@@ -1,7 +1,0 @@
-testkube:
-  enabled: true
-  namespace: testkube
-  test:
-    target:
-      namespace: dev
-      release: mirror
