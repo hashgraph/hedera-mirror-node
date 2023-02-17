@@ -33,6 +33,7 @@ dependencies {
     implementation("com.github.vladimir-bukhtoyarov:bucket4j-core")
     implementation("io.micrometer:micrometer-registry-prometheus")
     implementation("javax.inject:javax.inject")
+    implementation("com.esaulpaugh:headlong")
     implementation("org.springframework:spring-context-support")
     implementation("org.springframework.boot:spring-boot-actuator-autoconfigure")
     implementation("org.springframework.boot:spring-boot-configuration-processor")
