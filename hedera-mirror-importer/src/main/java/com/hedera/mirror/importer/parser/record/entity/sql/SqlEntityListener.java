@@ -471,6 +471,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             transactionHashes.add(TransactionHash.builder()
                     .consensusTimestamp(transaction.getConsensusTimestamp())
                     .hash(transaction.getTransactionHash())
+                    .payerAccountId(transaction.getPayerAccountId().getId())
                     .build());
         }
 

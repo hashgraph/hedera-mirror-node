@@ -645,7 +645,8 @@ comment on table transaction is 'Submitted network transactions';
 create table if not exists transaction_hash
 (
     consensus_timestamp bigint not null,
-    hash                bytea  not null
+    hash                bytea  not null,
+    payer_account_id    bigint not null
 ) partition by range (consensus_timestamp);
 comment on table transaction_hash is 'Network transaction hash to consensus timestamp mapping';
 

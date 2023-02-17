@@ -111,13 +111,13 @@ alter table if exists entity_stake
 -- ethereum_transaction
 alter table ethereum_transaction
     add constraint ethereum_transaction__pk primary key (consensus_timestamp, payer_account_id);
-create index if not exists ethereum_transaction__hash on ethereum_transaction (hash);
+create index if not exists ethereum_transaction__hash on ethereum_transaction using hash (hash);
 
 -- event_file
 alter table event_file
     add constraint event_file__pk primary key (consensus_end, node_id);
 create index if not exists event_file__hash
-    on event_file (hash);
+    on event_file using hash (hash);
 
 -- file_data
 alter table file_data

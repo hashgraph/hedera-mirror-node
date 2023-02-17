@@ -893,6 +893,7 @@ class SqlEntityListenerTest extends IntegrationTest {
                 .map(transaction -> TransactionHash.builder()
                         .consensusTimestamp(transaction.getConsensusTimestamp())
                         .hash(transaction.getTransactionHash())
+                        .payerAccountId(transaction.getPayerAccountId().getId())
                         .build())
                 .toList();
 

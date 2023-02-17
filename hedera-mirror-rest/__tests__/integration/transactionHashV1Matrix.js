@@ -18,30 +18,23 @@
  * ‍
  */
 
-class TransactionHash {
-  static tableAlias = 'th';
-  static tableName = 'transaction_hash';
-  static CONSENSUS_TIMESTAMP = 'consensus_timestamp';
-  static HASH = 'hash';
-  static PAYER_ACCOUNT_ID = 'payer_account_id';
+import {isV2Schema} from '../testutils.js';
 
-  /**
-   * Parses transaction_hash table columns into object
-   */
-  constructor(transactionHash) {
-    this.consensusTimestamp = transactionHash.consensus_timestamp;
-    this.hash = transactionHash.hash;
+const nullifyPayerAccountId = async () => pool.queryQuietly('update transaction_hash set payer_account_id = null');
+
+const applyMatrix = (spec) => {
+  if (isV2Schema()) {
+    return [spec];
   }
 
-  /**
-   * Gets full column name with table alias prepended.
-   *
-   * @param {string} columnName
-   * @private
-   */
-  static getFullName(columnName) {
-    return `${this.tableAlias}.${columnName}`;
-  }
-}
+  const defaultSpec = {...spec};
+  defaultSpec.name = `${defaultSpec.name} - default`;
 
-export default TransactionHash;
+  const nullPayerAccountIdSpec = {...spec};
+  nullPayerAccountIdSpec.name = `${nullPayerAccountIdSpec.name} - null transaction_hash.payer_account_id`;
+  nullPayerAccountIdSpec.postSetup = nullifyPayerAccountId;
+
+  return [defaultSpec, nullPayerAccountIdSpec];
+};
+
+export default applyMatrix;

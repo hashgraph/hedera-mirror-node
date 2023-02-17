@@ -87,6 +87,7 @@ class BackfillTransactionHashMigrationTest extends IntegrationTest {
                 .map(t -> TransactionHash.builder()
                         .consensusTimestamp(t.getConsensusTimestamp())
                         .hash(t.getTransactionHash())
+                        .payerAccountId(t.getPayerAccountId().getId())
                         .build())
                 .toList();
         entityProperties.getPersist().setTransactionHash(persistTransactionHash);
@@ -123,6 +124,7 @@ class BackfillTransactionHashMigrationTest extends IntegrationTest {
         var expected = TransactionHash.builder()
                 .consensusTimestamp(transaction.getConsensusTimestamp())
                 .hash(transaction.getTransactionHash())
+                .payerAccountId(transaction.getPayerAccountId().getId())
                 .build();
 
         // when
@@ -142,6 +144,7 @@ class BackfillTransactionHashMigrationTest extends IntegrationTest {
         var expected = TransactionHash.builder()
                 .consensusTimestamp(transaction.getConsensusTimestamp())
                 .hash(transaction.getTransactionHash())
+                .payerAccountId(transaction.getPayerAccountId().getId())
                 .build();
 
         // when

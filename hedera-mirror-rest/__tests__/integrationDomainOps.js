@@ -818,7 +818,11 @@ const addTransaction = async (transaction) => {
   const {node_account_id: nodeAccount, payer_account_id: payerAccount} = transaction;
   await insertDomainObject('transaction', transactionFields, transaction);
 
-  await addTransactionHash({consensus_timestamp: transaction.consensus_timestamp, hash: transaction.transaction_hash});
+  await addTransactionHash({
+    consensus_timestamp: transaction.consensus_timestamp,
+    hash: transaction.transaction_hash,
+    payer_account_id: transaction.payer_account_id,
+  });
   await insertTransfers(
     'crypto_transfer',
     transaction.consensus_timestamp,
