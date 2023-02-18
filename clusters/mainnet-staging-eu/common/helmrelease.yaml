@@ -30,12 +30,6 @@ spec:
           externalLabels:
             cluster: mainnet-staging-eu
           replicaExternalLabelName: __replica__
-    promtail:
-      config:
-        snippets:
-          extraClientConfigs: |
-            external_labels:
-              cluster: mainnet-staging-eu
     traefik:
       service:
         annotations:

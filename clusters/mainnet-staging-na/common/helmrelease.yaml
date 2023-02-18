@@ -33,12 +33,6 @@ spec:
           externalLabels:
             cluster: mainnet-staging-na
           replicaExternalLabelName: __replica__
-    promtail:
-      config:
-        snippets:
-          extraClientConfigs: |
-            external_labels:
-              cluster: mainnet-staging-na
     testkube:
       enabled: true
       test:
