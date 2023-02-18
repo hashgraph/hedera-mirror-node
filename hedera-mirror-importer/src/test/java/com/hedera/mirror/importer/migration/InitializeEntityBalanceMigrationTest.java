@@ -71,7 +71,7 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
 
     @Test
     void checksum() {
-        assertThat(initializeEntityBalanceMigration.getChecksum()).isEqualTo(2);
+        assertThat(initializeEntityBalanceMigration.getChecksum()).isEqualTo(3);
     }
 
     @Test
