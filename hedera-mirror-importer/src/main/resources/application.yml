@@ -17,11 +17,11 @@ hedera:
         blockNumberMigration:
           checksum: 4
         errataMigration:
-          checksum: 4
+          checksum: 5
         historicalAccountInfoMigration:
           checksum: 3
         initializeEntityBalanceMigration:
-          checksum: 2
+          checksum: 3
 
 logging:
   level:

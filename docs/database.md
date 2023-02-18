@@ -187,3 +187,14 @@ transactions in the balance and record streams. These issues should only appear 
   to the record stream.
 * Solution: Fixed in Hedera Services [v0.27.7](https://docs.hedera.com/guides/docs/release-notes/services#v0.27.7) on
   August 9th 2022. Fixed in Mirror Node in v0.64.0 by a migration that adds the missing transactions and transfers.
+
+### Record Missing for FAIL_INVALID NFT transfers
+
+* Period: 2023-02-10 to 2023-02-14
+* Scope: Affected the records of 12 transactions.
+* Problem: Fixes a bug in bookkeeping for NFT TokenWipe and TokenBurn operations with redundant serial numbers. The bug
+  makes an account appear to own fewer NFTs than it actually does. This can subsequently prevent an NFT owner from being
+  changed as part of an atomic operation. When the atomic operation fails, an errata record is required for the missing
+  transactions.
+* Solution: Fixed in Hedera Services [v0.34.2](https://github.com/hashgraph/hedera-services/releases/tag/v0.34.2) on
+  February 17, 2023. Fixed in Mirror Node in v0.74.3 by a migration that adds the missing transactions.
