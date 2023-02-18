@@ -55,9 +55,6 @@ spec:
     promtail:
       config:
         snippets:
-          extraClientConfigs: |
-            external_labels:
-              cluster: preprod
           extraRelabelConfigs:
             - action: drop
               regex: (dev|integration|integration-docker|staging-lg|staging-sm)
