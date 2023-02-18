@@ -196,13 +196,14 @@ public class ContractResultServiceImpl implements ContractResultService {
                 contractResult.setSenderId(EntityId.of(functionResult.getSenderId()));
             }
 
-            processContractLogs(functionResult, contractResult);
+            processContractLogs(functionResult, contractResult, transactionHash, transaction.getIndex());
         }
 
         entityListener.onContractResult(contractResult);
     }
 
-    private void processContractLogs(ContractFunctionResult functionResult, ContractResult contractResult) {
+    private void processContractLogs(ContractFunctionResult functionResult, ContractResult contractResult,
+            byte[] transactionHash, Integer transactionIndex) {
         for (int index = 0; index < functionResult.getLogInfoCount(); ++index) {
             ContractLoginfo contractLoginfo = functionResult.getLogInfo(index);
 
@@ -218,6 +219,8 @@ public class ContractResultServiceImpl implements ContractResultService {
             contractLog.setTopic1(Utility.getTopic(contractLoginfo, 1));
             contractLog.setTopic2(Utility.getTopic(contractLoginfo, 2));
             contractLog.setTopic3(Utility.getTopic(contractLoginfo, 3));
+            contractLog.setTransactionHash(transactionHash);
+            contractLog.setTransactionIndex(transactionIndex);
             entityListener.onContractLog(contractLog);
         }
     }
