@@ -527,7 +527,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                 .hasSize(contractFunctionResult.getLogInfoCount());
         var transactionHash = ethereum ? recordItem.getEthereumTransaction().getHash() :
                 Arrays.copyOfRange(transaction.getTransactionHash(), 0, 32);
-        Integer transactionIndex = transaction.getTransactionIndex();
+        Integer transactionIndex = transaction.getIndex();
 
         if (contractFunctionResult.getLogInfoCount() > 0) {
             var blooms = new ArrayList<byte[]>();
