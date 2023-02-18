@@ -46,12 +46,6 @@ spec:
                   regex: (api_.+_bucket|executor.*|lettuce_.*_bucket|traefik_.+_bucket)
                   sourceLabels: [__name__]
           replicaExternalLabelName: __replica__
-    promtail:
-      config:
-        snippets:
-          extraClientConfigs: |
-            external_labels:
-              cluster: testnet-eu
     traefik:
       service:
         annotations:
