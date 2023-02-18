@@ -1,3 +1,5 @@
+package com.hedera.mirror.web3.exception;
+
 /*-
  * ‌
  * Hedera Mirror Node
@@ -18,30 +20,11 @@
  * ‍
  */
 
-class TransactionHash {
-  static tableAlias = 'th';
-  static tableName = 'transaction_hash';
-  static CONSENSUS_TIMESTAMP = 'consensus_timestamp';
-  static HASH = 'hash';
-  static PAYER_ACCOUNT_ID = 'payer_account_id';
+import com.hedera.mirror.common.exception.MirrorNodeException;
 
-  /**
-   * Parses transaction_hash table columns into object
-   */
-  constructor(transactionHash) {
-    this.consensusTimestamp = transactionHash.consensus_timestamp;
-    this.hash = transactionHash.hash;
-  }
+public class RateLimitException extends MirrorNodeException {
 
-  /**
-   * Gets full column name with table alias prepended.
-   *
-   * @param {string} columnName
-   * @private
-   */
-  static getFullName(columnName) {
-    return `${this.tableAlias}.${columnName}`;
-  }
+    public RateLimitException(String message) {
+        super(message);
+    }
 }
-
-export default TransactionHash;

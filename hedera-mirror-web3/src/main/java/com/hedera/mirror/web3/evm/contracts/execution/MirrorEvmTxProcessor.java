@@ -25,6 +25,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.time.Instant;
 import java.util.Map;
 import javax.inject.Provider;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -106,7 +107,7 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
         final var code = codeCache.getIfPresent(aliasManager.resolveForEvm(to));
 
         if (code == null) {
-            throw new InvalidTransactionException(ResponseCodeEnum.INVALID_TRANSACTION);
+            throw new InvalidTransactionException(ResponseCodeEnum.INVALID_TRANSACTION, StringUtils.EMPTY);
         }
 
         return baseInitialFrame

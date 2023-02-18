@@ -20,6 +20,7 @@ package com.hedera.mirror.web3.service;
  * ‍
  */
 
+import static com.hedera.mirror.web3.convert.BytesDecoder.decodeEvmRevertReasonBytesToReadableMessage;
 import static com.hedera.mirror.web3.evm.exception.ResponseCodeUtil.getStatusOrDefault;
 
 import io.micrometer.core.instrument.Counter;
@@ -29,6 +30,7 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
 import javax.inject.Named;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 
 import com.hedera.mirror.web3.evm.contracts.execution.MirrorEvmTxProcessorFacade;
@@ -80,12 +82,13 @@ public class ContractCallService {
             if(!txnResult.isSuccessful()) {
                 onComplete(CallType.ERROR, txnResult);
 
-                throw new InvalidTransactionException(getStatusOrDefault(txnResult));
+                var revertReason = txnResult.getRevertReason().orElse(Bytes.EMPTY);
+                throw new InvalidTransactionException(getStatusOrDefault(txnResult), decodeEvmRevertReasonBytesToReadableMessage(revertReason));
             } else {
                 onComplete(body.getCallType(), txnResult);
             }
         } catch (IllegalStateException | IllegalArgumentException e) {
-            throw new InvalidTransactionException(e.getMessage());
+            throw new InvalidTransactionException(e.getMessage(), StringUtils.EMPTY);
         }
         return txnResult;
     }

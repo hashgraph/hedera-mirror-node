@@ -1,5 +1,6 @@
 {
   "description": "Transaction api calls using transaction id or hash with duplicate transactions",
+  "matrix": "transactionHashV1Matrix.js",
   "setup": {
     "accounts": [
       {

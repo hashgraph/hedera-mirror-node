@@ -27,6 +27,7 @@ import java.util.List;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.Value;
+import org.apache.commons.lang3.StringUtils;
 
 @JsonTypeInfo(include = JsonTypeInfo.As.WRAPPER_OBJECT, use = JsonTypeInfo.Id.NAME)
 @JsonTypeName("_status")
@@ -36,15 +37,21 @@ public class GenericErrorResponse {
     List<ErrorMessage> messages = new ArrayList<>();
 
     public GenericErrorResponse(String message) {
-        messages.add(new ErrorMessage(message));
+        messages.add(new ErrorMessage(message, StringUtils.EMPTY));
+    }
+
+    public GenericErrorResponse(String message, String detailedMessage) {
+        final var errorMessage = new ErrorMessage(message, detailedMessage);
+        messages.add(errorMessage);
     }
 
     public GenericErrorResponse(List<String> errorMessages) {
-        errorMessages.forEach(m -> messages.add(new ErrorMessage(m)));
+        errorMessages.forEach(m -> messages.add(new ErrorMessage(m, StringUtils.EMPTY)));
     }
 
-    @Data
+    @Value
     public static class ErrorMessage {
-        private final String message;
+        private String message;
+        private String detail;
     }
 }
