@@ -29,13 +29,11 @@ import com.google.protobuf.ByteString;
 import java.time.Instant;
 import java.util.Optional;
 import javax.inject.Named;
-
-import com.hedera.mirror.common.domain.entity.AbstractEntity;
-
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
+import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.mirror.web3.repository.ContractStateRepository;
@@ -84,12 +82,7 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
 
     @Override
     public boolean isExtant(final Address address) {
-        final var entityId = entityIdFromAddress(address);
-        if (entityId == 0) {
-            return false;
-        }
-
-        return entityRepository.findByIdAndDeletedIsFalse(entityId).isPresent();
+        return findEntity(address).isPresent();
     }
 
     @Override
@@ -105,19 +98,18 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
 
     @Override
     public Bytes getStorage(final Address address, final Bytes key) {
-        final var entityId = entityIdFromAddress(address);
+        final var entityId = fetchEntityId(address);
         if (entityId == 0) {
             return Bytes.EMPTY;
         }
+        final var storage = contractStateRepository.findStorage(entityId, key.toArrayUnsafe());
 
-        final var storage =
-                contractStateRepository.findStorage(entityId, key.toArrayUnsafe());
         return storage.map(Bytes::wrap).orElse(Bytes.EMPTY);
     }
 
     @Override
     public Bytes fetchCodeIfPresent(final Address address) {
-        final var entityId = entityIdFromAddress(address);
+        final var entityId = fetchEntityId(address);
         if (entityId == 0) {
             return Bytes.EMPTY;
         }
@@ -136,8 +128,13 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
         }
     }
 
-    private Long entityIdFromAddress(final Address address) {
-        return findEntity(address)
+    private Long fetchEntityId(final Address address) {
+        final var addressBytes = address.toArrayUnsafe();
+        if (isMirror(addressBytes)) {
+            return fromEvmAddress(addressBytes).getId();
+        }
+
+        return entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes)
                 .map(AbstractEntity::getId).orElse(0L);
     }
 }
