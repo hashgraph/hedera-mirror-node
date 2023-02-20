@@ -72,6 +72,7 @@ import * as topicsIdMessagesSequenceQueryParam from './topicsIdMessagesSequenceQ
 import * as topicsMessagesTimestamp from './topicsMessagesTimestamp.js';
 import * as transactions from './transactions.js';
 import * as transactionsAccountId from './transactionsAccountId.js';
+import * as transactionsHash from './transactionsHash.js';
 import * as transactionsId from './transactionsId.js';
 import * as transactionsIdStateproof from './transactionsIdStateproof.js';
 import * as transactionsTransactionTypeAscending from './transactionsTransactionTypeAscending.js';
@@ -129,6 +130,7 @@ const tests = {
   topicsMessagesTimestamp,
   transactions,
   transactionsAccountId,
+  transactionsHash,
   transactionsId,
   transactionsIdStateproof,
   transactionsTransactionTypeAscending,

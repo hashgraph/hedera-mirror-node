@@ -68,6 +68,9 @@ const formatSqlQueryString = (query) => {
 const getAllAccountAliases = (alias) => [alias, `0.${alias}`, `0.0.${alias}`];
 
 const getModuleDirname = (importMeta) => path.dirname(fileURLToPath(importMeta.url));
+
+const isV2Schema = () => process.env.MIRROR_NODE_SCHEMA === 'v2';
+
 /**
  * Parse the sql query with positional parameters and an array of corresponding
  * values to extracts the filter clauses of the query (e.g. consensus_timestamp < xyz)
@@ -187,8 +190,10 @@ const testBadParams = (request, server, url, param, badValues) => {
       let check = false;
       const err = JSON.parse(response.text);
       if ('_status' in err && 'messages' in err._status && err._status.messages.length > 0) {
-        if (err._status.messages[0].message === `Invalid parameter: ${param}` ||
-          err._status.messages[0].message === `Unknown query parameter: ${param}`) {
+        if (
+          err._status.messages[0].message === `Invalid parameter: ${param}` ||
+          err._status.messages[0].message === `Unknown query parameter: ${param}`
+        ) {
           check = true;
         }
       }
@@ -239,6 +244,7 @@ export {
   getAllAccountAliases,
   getModuleDirname,
   invalidBase32Strs,
+  isV2Schema,
   parseSqlQueryAndParams,
   testBadParams,
   validateAccNumInArray,

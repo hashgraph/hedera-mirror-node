@@ -65,6 +65,11 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     @Getter
     @NotNull
+    @DurationMin(seconds = 100)
+    private Duration rateLimit = Duration.ofSeconds(100L);
+
+    @Getter
+    @NotNull
     private HederaNetwork network = HederaNetwork.TESTNET;
 
     @Override

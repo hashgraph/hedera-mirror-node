@@ -738,150 +738,8 @@ describe('create transferLists', () => {
 
 describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
   describe('success', () => {
-    const defaultTransactionHashBase64 = 'rovr8cn6DzCTVuSAV/YEevfN5jA30FCdFt3Dsg4IUVi/3xTRU0XBsYsZm3L+1Kxv';
-    const defaultTransactionHashBase64Url = 'rovr8cn6DzCTVuSAV_YEevfN5jA30FCdFt3Dsg4IUVi_3xTRU0XBsYsZm3L-1Kxv';
-    const defaultTransactionHash = Buffer.from(defaultTransactionHashBase64, 'base64');
-    const defaultTransactionHashHex = defaultTransactionHash.toString('hex');
-    const defaultTransactionHashParams = [defaultTransactionHash];
     const defaultTransactionIdStr = '0.0.200-123456789-987654321';
-    const defaultParams = [200, '123456789987654321'];
-
-    const getTransactionByHashQuery = `
-      with timestampFilter as (select consensus_timestamp from transaction_hash where hash = $1),
-        tlist as (
-        select t.charged_tx_fee,
-            t.consensus_timestamp,
-            t.entity_id,
-            t.max_fee,
-            t.memo,
-            t.node_account_id,
-            t.nonce,
-            t.parent_consensus_timestamp,
-            t.payer_account_id,
-            t.result,
-            t.scheduled,
-            t.transaction_bytes,
-            t.transaction_hash,
-            t.type,
-            t.valid_duration_seconds,
-            t.valid_start_ns,
-            t.index
-        from transaction t
-            join timestampFilter tf
-        on t.consensus_timestamp = tf.consensus_timestamp
-        order by t.consensus_timestamp desc
-            ), c_list as (
-        select jsonb_agg(jsonb_build_object(
-            'amount', amount,
-            'entity_id', ctr.entity_id,
-            'is_approval', is_approval
-            ) order by ctr.entity_id, amount) as ctr_list,
-            ctr.consensus_timestamp
-        from crypto_transfer ctr
-            join tlist
-        on ctr.consensus_timestamp = tlist.consensus_timestamp
-        and ctr.payer_account_id = tlist.payer_account_id
-        group by ctr.consensus_timestamp
-            ), t_list as (
-        select jsonb_agg(jsonb_build_object(
-            'account_id', account_id,
-            'amount', amount,
-            'token_id', token_id,
-            'is_approval', is_approval
-            ) order by token_id, account_id) as ttr_list,
-            tk_tr.consensus_timestamp
-        from token_transfer tk_tr
-            join tlist
-        on tk_tr.consensus_timestamp = tlist.consensus_timestamp
-        and tk_tr.payer_account_id = tlist.payer_account_id
-        group by tk_tr.consensus_timestamp
-            ), nft_list as (
-        select jsonb_agg(jsonb_build_object(
-            'receiver_account_id', receiver_account_id,
-            'sender_account_id', sender_account_id,
-            'serial_number', serial_number,
-            'token_id', token_id,
-            'is_approval', is_approval
-            ) order by token_id, serial_number) as ntr_list,
-            nft_tr.consensus_timestamp
-        from nft_transfer nft_tr
-            join tlist
-        on nft_tr.consensus_timestamp = tlist.consensus_timestamp
-        group by nft_tr.consensus_timestamp
-            ), fee_list as (
-        select jsonb_agg(jsonb_build_object(
-            'amount', amount,
-            'collector_account_id', collector_account_id,
-            'effective_payer_account_ids', effective_payer_account_ids,
-            'token_id', token_id
-            ) order by collector_account_id, amount) as ftr_list,
-            acf.consensus_timestamp
-        from assessed_custom_fee acf
-            join tlist
-        on acf.consensus_timestamp = tlist.consensus_timestamp
-        group by acf.consensus_timestamp
-            ), transfer_list as (
-        select coalesce(
-            t.consensus_timestamp,
-            ctrl.consensus_timestamp,
-            ttrl.consensus_timestamp,
-            ntrl.consensus_timestamp,
-            ftrl.consensus_timestamp
-            ) as consensus_timestamp,
-            ctrl.ctr_list,
-            ttrl.ttr_list,
-            ntrl.ntr_list,
-            ftrl.ftr_list,
-            t.charged_tx_fee,
-            t.entity_id,
-            t.max_fee,
-            t.memo,
-            t.node_account_id,
-            t.nonce,
-            t.parent_consensus_timestamp,
-            t.payer_account_id,
-            t.result,
-            t.scheduled,
-            t.transaction_bytes,
-            t.transaction_hash,
-            t.type,
-            t.valid_duration_seconds,
-            t.valid_start_ns,
-            t.index
-        from tlist t
-            full outer join c_list ctrl
-        on t.consensus_timestamp = ctrl.consensus_timestamp
-            full outer join t_list ttrl
-            on t.consensus_timestamp = ttrl.consensus_timestamp
-            full outer join nft_list ntrl
-            on t.consensus_timestamp = ntrl.consensus_timestamp
-            full outer join fee_list ftrl
-            on t.consensus_timestamp = ftrl.consensus_timestamp
-            )
-        select
-            t.charged_tx_fee,
-            t.consensus_timestamp,
-            t.entity_id,
-            t.max_fee,
-            t.memo,
-            t.node_account_id,
-            t.nonce,
-            t.parent_consensus_timestamp,
-            t.payer_account_id,
-            t.result,
-            t.scheduled,
-            t.transaction_bytes,
-            t.transaction_hash,
-            t.type,
-            t.valid_duration_seconds,
-            t.valid_start_ns,
-            t.index,
-            t.ctr_list as crypto_transfer_list,
-            t.ttr_list as token_transfer_list,
-            t.ntr_list as nft_transfer_list,
-            t.ftr_list as assessed_custom_fees
-        from transfer_list t
-        order by t.consensus_timestamp asc`;
+    const defaultParams = [200, '123456789987654321', 123458889987654321n];
 
     const getTransactionIdQuery = (extraConditions) => `
     select
@@ -905,14 +763,14 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
       (
           select jsonb_agg(jsonb_build_object('amount', amount, 'entity_id', ctr.entity_id, 'is_approval', is_approval) order by ctr.entity_id, amount)
           from crypto_transfer ctr
-          where ctr.payer_account_id = $1 and ctr.consensus_timestamp = t.consensus_timestamp
+          where consensus_timestamp = t.consensus_timestamp and payer_account_id = $1 and consensus_timestamp >= $2 and consensus_timestamp <= $3
       ) as crypto_transfer_list,
       (
           select jsonb_agg(
               jsonb_build_object('account_id', account_id, 'amount', amount, 'token_id', token_id, 'is_approval', is_approval)
               order by token_id, account_id)
           from token_transfer tk_tr
-          where tk_tr.payer_account_id = $1 and tk_tr.consensus_timestamp = t.consensus_timestamp
+          where consensus_timestamp = t.consensus_timestamp and payer_account_id = $1 and consensus_timestamp >= $2 and consensus_timestamp <= $3
       ) as token_transfer_list,
       (
           select jsonb_agg(
@@ -923,7 +781,7 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
                   'token_id', token_id, 'is_approval', is_approval
                   ) order by token_id, serial_number)
           from nft_transfer nft_tr
-          where nft_tr.payer_account_id = $1 and nft_tr.consensus_timestamp = t.consensus_timestamp
+          where consensus_timestamp = t.consensus_timestamp and payer_account_id = $1 and consensus_timestamp >= $2 and consensus_timestamp <= $3
       ) as nft_transfer_list,
       (
           select jsonb_agg(
@@ -932,11 +790,12 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
                   'effective_payer_account_ids', effective_payer_account_ids,
                   'token_id', token_id) order by collector_account_id, amount)
           from assessed_custom_fee acf
-          where acf.payer_account_id = $1 and acf.consensus_timestamp = t.consensus_timestamp
+          where consensus_timestamp = t.consensus_timestamp and payer_account_id = $1 and consensus_timestamp >= $2 and consensus_timestamp <= $3
       ) as assessed_custom_fees
     from transaction t
-    where payer_account_id = $1 and valid_start_ns = $2 ${(extraConditions && 'and ' + extraConditions) || ''}
-    order by consensus_timestamp asc`;
+    where payer_account_id = $1 and consensus_timestamp >= $2 and consensus_timestamp <= $3 and valid_start_ns = $2
+      ${(extraConditions && 'and ' + extraConditions) || ''}
+    order by consensus_timestamp`;
 
     const testSpecs = [
       {
@@ -957,7 +816,7 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
           filters: [{key: constants.filterKeys.NONCE, op: 'eq', value: 1}],
         },
         expected: {
-          query: getTransactionIdQuery('nonce = $3'),
+          query: getTransactionIdQuery('nonce = $4'),
           params: [...defaultParams, 1],
         },
       },
@@ -971,7 +830,7 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
           ],
         },
         expected: {
-          query: getTransactionIdQuery('nonce = $3'),
+          query: getTransactionIdQuery('nonce = $4'),
           params: [...defaultParams, 2],
         },
       },
@@ -982,7 +841,7 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
           filters: [{key: constants.filterKeys.SCHEDULED, op: 'eq', value: true}],
         },
         expected: {
-          query: getTransactionIdQuery('scheduled = $3'),
+          query: getTransactionIdQuery('scheduled = $4'),
           params: [...defaultParams, true],
         },
       },
@@ -996,7 +855,7 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
           ],
         },
         expected: {
-          query: getTransactionIdQuery('scheduled = $3'),
+          query: getTransactionIdQuery('scheduled = $4'),
           params: [...defaultParams, false],
         },
       },
@@ -1010,7 +869,7 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
           ],
         },
         expected: {
-          query: getTransactionIdQuery('nonce = $3 and scheduled = $4'),
+          query: getTransactionIdQuery('nonce = $4 and scheduled = $5'),
           params: [...defaultParams, 1, true],
         },
       },
@@ -1028,73 +887,15 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
           ],
         },
         expected: {
-          query: getTransactionIdQuery('nonce = $3 and scheduled = $4'),
+          query: getTransactionIdQuery('nonce = $4 and scheduled = $5'),
           params: [...defaultParams, 3, false],
-        },
-      },
-      {
-        name: 'base64 transaction hash',
-        input: {
-          transactionIdOrHash: defaultTransactionHashBase64,
-          filters: [],
-        },
-        expected: {
-          query: getTransactionByHashQuery,
-          params: defaultTransactionHashParams,
-        },
-      },
-      {
-        name: 'base64 transaction hash url escaped',
-        input: {
-          transactionIdOrHash: defaultTransactionHashBase64Url,
-          filters: [],
-        },
-        expected: {
-          query: getTransactionByHashQuery,
-          params: defaultTransactionHashParams,
-        },
-      },
-      {
-        name: 'hex transaction hash',
-        input: {
-          transactionIdOrHash: defaultTransactionHashHex,
-          filters: [],
-        },
-        expected: {
-          query: getTransactionByHashQuery,
-          params: defaultTransactionHashParams,
-        },
-      },
-      {
-        name: 'hex transaction hash with 0x prefix',
-        input: {
-          transactionIdOrHash: `0x${defaultTransactionHashHex}`,
-          filters: [],
-        },
-        expected: {
-          query: getTransactionByHashQuery,
-          params: defaultTransactionHashParams,
-        },
-      },
-      {
-        name: 'hex transaction hash with nonce and scheduled',
-        input: {
-          transactionIdOrHash: `0x${defaultTransactionHashHex}`,
-          filters: [
-            {key: constants.filterKeys.NONCE, op: 'eq', value: 1},
-            {key: constants.filterKeys.SCHEDULED, op: 'eq', value: true},
-          ],
-        },
-        expected: {
-          query: getTransactionByHashQuery,
-          params: defaultTransactionHashParams,
         },
       },
     ];
 
     for (const testSpec of testSpecs) {
-      test(testSpec.name, () => {
-        const actual = extractSqlFromTransactionsByIdOrHashRequest(
+      test(testSpec.name, async () => {
+        const actual = await extractSqlFromTransactionsByIdOrHashRequest(
           testSpec.input.transactionIdOrHash,
           testSpec.input.filters
         );
@@ -1112,10 +913,10 @@ describe('extractSqlFromTransactionsByIdOrHashRequest', () => {
       '0xab4af784ae69ca3e1d17fef8491f7f89a0e8a3b80ad3748b841110f0345ada53456bc14bbe9ee6f441829c2849',
       'ab4af784ae69ca3e1d17fef8491f7f89a0e8a3b80ad3748b841110f0345ada53456bc14bbe9ee6f441829c2849',
     ].forEach((transactionIdOrHash) => {
-      test(transactionIdOrHash, () => {
-        expect(() => {
-          extractSqlFromTransactionsByIdOrHashRequest(transactionIdOrHash, []);
-        }).toThrowErrorMatchingSnapshot();
+      test(transactionIdOrHash, async () => {
+        await expect(
+          extractSqlFromTransactionsByIdOrHashRequest(transactionIdOrHash, [])
+        ).rejects.toThrowErrorMatchingSnapshot();
       });
     });
   });

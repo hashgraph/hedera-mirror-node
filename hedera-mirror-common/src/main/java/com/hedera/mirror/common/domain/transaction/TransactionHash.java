@@ -42,6 +42,8 @@ public class TransactionHash implements Persistable<byte[]> {
     @Id
     private byte[] hash;
 
+    private long payerAccountId;
+
     @JsonIgnore
     @Override
     public byte[] getId() {
