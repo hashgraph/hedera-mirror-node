@@ -22,6 +22,7 @@ package com.hedera.mirror.web3.evm.store.contract;
 
 import static com.google.protobuf.ByteString.EMPTY;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.hyperledger.besu.datatypes.Address.ZERO;
 import static org.mockito.Mockito.when;
 
 import java.time.Instant;
@@ -185,6 +186,12 @@ class MirrorEntityAccessTest {
     }
 
     @Test
+    void isExtantForZeroAddress() {
+        final var result = mirrorEntityAccess.isExtant(ZERO);
+        assertThat(result).isFalse();
+    }
+
+    @Test
     void isTokenAccount() {
         when(entityRepository.findByIdAndDeletedIsFalse(ENTITY_ID)).thenReturn(Optional.of(entity));
         when(entity.getType()).thenReturn(EntityType.TOKEN);
@@ -228,6 +235,12 @@ class MirrorEntityAccessTest {
         when(contractStateRepository.findStorage(ENTITY_ID, BYTES.toArrayUnsafe())).thenReturn(Optional.of(DATA));
         final var result = UInt256.fromBytes(mirrorEntityAccess.getStorage(ADDRESS, BYTES));
         assertThat(result).isEqualTo(UInt256.fromHexString(HEX));
+    }
+
+    @Test
+    void getStorageFailsForZeroAddress() {
+        final var result = UInt256.fromBytes(mirrorEntityAccess.getStorage(ZERO, BYTES));
+        assertThat(result).isEqualTo(UInt256.fromHexString(ZERO.toHexString()));
     }
 
     @Test
