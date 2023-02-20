@@ -25,6 +25,7 @@ import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import lombok.RequiredArgsConstructor;
@@ -80,6 +81,7 @@ class PrecompileCallServiceTest extends Web3IntegrationTest {
                 .callData(data)
                 .providedGasLimit(120000000L)
                 .isStatic(true)
+                .callType(ETH_CALL)
                 .build();
     }
 

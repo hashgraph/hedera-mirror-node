@@ -32,7 +32,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
-import io.micrometer.core.instrument.MeterRegistry;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -68,7 +67,6 @@ class ContractCallServiceTest extends Web3IntegrationTest {
 
     private static final String GAS_METRICS = "hedera.mirror.web3.call.gas";
 
-    private final MeterRegistry meterRegistry;
     private final ContractCallService contractCallService;
 
     @Test

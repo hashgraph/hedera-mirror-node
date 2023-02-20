@@ -20,8 +20,7 @@ package com.hedera.mirror.web3;
  * ‍
  */
 
-import com.hedera.mirror.common.domain.DomainBuilder;
-import com.hedera.mirror.web3.config.IntegrationTestConfiguration;
+import io.micrometer.core.instrument.MeterRegistry;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
@@ -30,6 +29,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.jdbc.Sql;
+
+import com.hedera.mirror.common.domain.DomainBuilder;
+import com.hedera.mirror.web3.config.IntegrationTestConfiguration;
 
 @Sql(executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD, scripts = "classpath:cleanup.sql")
 @Sql(executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD, scripts = "classpath:cleanup.sql")
@@ -41,6 +43,10 @@ public abstract class Web3IntegrationTest {
 
     @Resource
     protected DomainBuilder domainBuilder;
+
+    @Resource
+    protected  MeterRegistry meterRegistry;
+
 
     @BeforeEach
     void logTest(TestInfo testInfo) {

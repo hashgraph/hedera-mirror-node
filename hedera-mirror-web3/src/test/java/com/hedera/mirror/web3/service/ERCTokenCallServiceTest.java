@@ -26,6 +26,7 @@ import static com.hedera.mirror.common.domain.token.TokenTypeEnum.FUNGIBLE_COMMO
 import static com.hedera.mirror.common.domain.token.TokenTypeEnum.NON_FUNGIBLE_UNIQUE;
 import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import lombok.RequiredArgsConstructor;
@@ -67,10 +68,8 @@ class ERCTokenCallServiceTest extends Web3IntegrationTest {
 
     @Test
     void metadataOf() {
-        final var functionHash =
-                "0xe9dc637500000000000000000000000000000000000000000000000000000000000004170000000000000000000000000000000000000000000000000000000000000001";
-        final var emptyMetadata =
-                "0x000000000000000000000000000000000000000000000000000000000000000";
+        final var functionHash = "0xe9dc637500000000000000000000000000000000000000000000000000000000000004170000000000000000000000000000000000000000000000000000000000000001";
+        final var emptyMetadata = "0x000000000000000000000000000000000000000000000000000000000000000";
         final var serviceParameters = serviceParameters(functionHash);
 
         assertThat(contractCallService.processCall(serviceParameters)).isNotEqualTo(emptyMetadata);
@@ -104,6 +103,7 @@ class ERCTokenCallServiceTest extends Web3IntegrationTest {
                 .callData(data)
                 .providedGasLimit(120000000L)
                 .isStatic(true)
+                .callType(ETH_CALL)
                 .build();
     }
 
