@@ -84,7 +84,7 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
 
     @Override
     public boolean isExtant(final Address address) {
-        final var entityId = fetchEntityId(address);
+        final var entityId = entityIdFromAddress(address);
         if (entityId == 0) {
             return false;
         }
@@ -105,7 +105,7 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
 
     @Override
     public Bytes getStorage(final Address address, final Bytes key) {
-        final var entityId = fetchEntityId(address);
+        final var entityId = entityIdFromAddress(address);
         if (entityId == 0) {
             return Bytes.EMPTY;
         }
@@ -117,7 +117,7 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
 
     @Override
     public Bytes fetchCodeIfPresent(final Address address) {
-        final var entityId = fetchEntityId(address);
+        final var entityId = entityIdFromAddress(address);
         if (entityId == 0) {
             return Bytes.EMPTY;
         }
@@ -129,24 +129,15 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
     public Optional<Entity> findEntity(final Address address) {
         final var addressBytes = address.toArrayUnsafe();
         if (isMirror(addressBytes)) {
-            final var entityId = entityIdFromEvmAddress(address);
+            final var entityId = fromEvmAddress(addressBytes).getId();
             return entityRepository.findByIdAndDeletedIsFalse(entityId);
         } else {
             return entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes);
         }
     }
 
-    private Long fetchEntityId(final Address address) {
-        final var addressBytes = address.toArrayUnsafe();
-
-        return isMirror(addressBytes) ?
-                entityIdFromEvmAddress(address) :
-                findEntity(address)
-                        .map(AbstractEntity::getId).orElse(0L);
-    }
-
-    private Long entityIdFromEvmAddress(final Address address) {
-        final var id = fromEvmAddress(address.toArrayUnsafe());
-        return id.getId();
+    private Long entityIdFromAddress(final Address address) {
+        return findEntity(address)
+                .map(AbstractEntity::getId).orElse(0L);
     }
 }
