@@ -116,18 +116,18 @@ comment on table contract_action is 'Contract action';
 -- contract_log
 create table if not exists contract_log
 (
-    bloom               bytea  not null,
-    consensus_timestamp bigint not null,
-    contract_id         bigint not null,
-    data                bytea  not null,
-    index               int    not null,
-    payer_account_id    bigint not null,
-    root_contract_id    bigint null,
-    topic0              bytea  null,
-    topic1              bytea  null,
-    topic2              bytea  null,
-    topic3              bytea  null,
-    transaction_hash    bytea,
+    bloom               bytea   not null,
+    consensus_timestamp bigint  not null,
+    contract_id         bigint  not null,
+    data                bytea   not null,
+    index               int     not null,
+    payer_account_id    bigint  not null,
+    root_contract_id    bigint  null,
+    topic0              bytea   null,
+    topic1              bytea   null,
+    topic2              bytea   null,
+    topic3              bytea   null,
+    transaction_hash    bytea   null,
     transaction_index   integer null
 ) partition by range (consensus_timestamp);
 comment on table contract_log is 'Contract execution result logs';
@@ -647,8 +647,7 @@ comment on table transaction is 'Submitted network transactions';
 create table if not exists transaction_hash
 (
     consensus_timestamp bigint not null,
-    hash                bytea  not null,
-    payer_account_id    bigint not null
+    hash                bytea  not null
 ) partition by range (consensus_timestamp);
 comment on table transaction_hash is 'Network transaction hash to consensus timestamp mapping';
 
