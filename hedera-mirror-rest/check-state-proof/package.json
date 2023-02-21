@@ -27,7 +27,7 @@
     "check-state-proof": "./index.js"
   },
   "dependencies": {
-    "@hashgraph/proto": "^2.11.2",
+    "@hashgraph/proto": "^2.12.0",
     "abort-controller": "^3.0.0",
     "boxen": "^7.0.1",
     "chalk": "^5.2.0",
