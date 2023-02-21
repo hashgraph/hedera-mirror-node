@@ -52,6 +52,12 @@ spec:
                   regex: (dev|integration|integration-docker|staging-lg|staging-sm)
                   sourceLabels: [namespace]
           replicaExternalLabelName: __replica__
+          storageSpec:
+            volumeClaimTemplate:
+              spec:
+                resources:
+                  requests:
+                    storage: 100Gi
     promtail:
       config:
         snippets:
