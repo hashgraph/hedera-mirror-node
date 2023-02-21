@@ -120,7 +120,7 @@ public class TokenAccessorImpl implements TokenAccessor {
     public boolean defaultFreezeStatus(final Address token) {
         final var tokenId = entityIdFromEvmAddress(token);
         final var defaultFreezeStatus = tokenRepository.findFreezeDefault(tokenId);
-        return defaultFreezeStatus != null ? defaultFreezeStatus : false;
+        return defaultFreezeStatus != null && defaultFreezeStatus;
     }
 
     @Override
@@ -227,7 +227,7 @@ public class TokenAccessorImpl implements TokenAccessor {
         final var spenderId = entityIdFromEvmAddress(operator);
         final var isSpenderAnOperator = nftAllowanceRepository.isSpenderAnOperator(tokenId, ownerId, spenderId);
 
-        return isSpenderAnOperator != null ? isSpenderAnOperator : false;
+        return isSpenderAnOperator != null && isSpenderAnOperator;
     }
 
     @Override
@@ -285,10 +285,8 @@ public class TokenAccessorImpl implements TokenAccessor {
         evmTokenInfo.setAutoRenewPeriod(entity.getAutoRenewPeriod() != null ? entity.getAutoRenewPeriod() : 0);
 
         entityRepository.findById(entity.getAutoRenewAccountId())
-                .ifPresent(a -> {
-                    evmTokenInfo.setAutoRenewAccount(toAddress(new EntityId(
-                            a.getShard(), a.getRealm(), a.getNum(), EntityType.ACCOUNT)));
-                });
+                .ifPresent(a -> evmTokenInfo.setAutoRenewAccount(toAddress(
+                        new EntityId(a.getShard(), a.getRealm(), a.getNum(), EntityType.ACCOUNT))));
 
         try {
             final var adminKey = evmKey(entity.getKey());
@@ -298,7 +296,9 @@ public class TokenAccessorImpl implements TokenAccessor {
             final var wipeKey = evmKey(tokenEntity.getWipeKey());
             final var pauseKey = evmKey(tokenEntity.getPauseKey());
             final var feeScheduleKey = evmKey(tokenEntity.getFeeScheduleKey());
+            final var isPaused = tokenEntity.getPauseStatus().ordinal() == 1;
 
+            evmTokenInfo.setIsPaused(isPaused);
             evmTokenInfo.setAdminKey(adminKey);
             evmTokenInfo.setKycKey(kycKey);
             evmTokenInfo.setSupplyKey(supplyKey);
@@ -306,21 +306,16 @@ public class TokenAccessorImpl implements TokenAccessor {
             evmTokenInfo.setWipeKey(wipeKey);
             evmTokenInfo.setPauseKey(pauseKey);
             evmTokenInfo.setFeeScheduleKey(feeScheduleKey);
+            evmTokenInfo.setDefaultFreezeStatus(tokenEntity.getFreezeDefault());
+            evmTokenInfo.setCustomFees(getCustomFees(token));
         } catch (final InvalidProtocolBufferException e) {
             throw new ParsingException("Error parsing token keys.");
         }
-        final var isPaused = tokenEntity.getPauseStatus().ordinal() == 1;
-        evmTokenInfo.setDefaultFreezeStatus(tokenEntity.getFreezeDefault());
-        evmTokenInfo.setIsPaused(isPaused);
-        final var customFeesOptional = getCustomFees(token);
-
-        evmTokenInfo.setCustomFees(customFeesOptional);
 
         return Optional.of(evmTokenInfo);
     }
 
     private List<CustomFee> getCustomFees(final Address token) {
-        //evm-lib CustomFee POJO
         final List<CustomFee> customFees = new ArrayList<>();
         final var customFeesCollection = customFeeRepository.findCustomFees(entityIdFromEvmAddress(token));
 
