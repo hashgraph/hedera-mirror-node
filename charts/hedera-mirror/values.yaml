@@ -266,11 +266,11 @@ postgresql:
       create: true
     resources:
       limits:
-        cpu: 300m
-        memory: 750Mi
+        cpu: 600m
+        memory: 1500Mi
       requests:
-        cpu: 150m
-        memory: 256Mi
+        cpu: 300m
+        memory: 512Mi
   postgresql:
     existingSecret: mirror-passwords
     extraEnvVarsSecret: mirror-passwords
