@@ -1,4 +1,5 @@
 package com.hedera.mirror.common.domain.contract;
+// no-effect change to kick off the tests
 
 /*-
  * ‌
