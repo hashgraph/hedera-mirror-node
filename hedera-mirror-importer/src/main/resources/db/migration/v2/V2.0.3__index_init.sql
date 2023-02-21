@@ -65,7 +65,7 @@ alter table if exists contract_state
 
 -- contract_state_change
 alter table if exists contract_state_change
-    add constraint contract_state_change__pk primary key (consensus_timestamp, contract_id, slot, contract_id);
+    add constraint contract_state_change__pk primary key (consensus_timestamp, contract_id, slot, payer_account_id);
 
 -- crypto_allowance
 alter table if exists crypto_allowance
