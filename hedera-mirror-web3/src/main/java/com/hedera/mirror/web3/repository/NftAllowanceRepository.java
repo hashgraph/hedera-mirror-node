@@ -30,5 +30,5 @@ public interface NftAllowanceRepository extends CrudRepository<NftAllowance, Id>
 
     @Query(value = "select approved_for_all from nft_allowance where token_id = ?1 and owner = ?2 and spender = ?3",
             nativeQuery = true)
-    boolean isSpenderAnOperator(final Long tokenId, final Long ownerId, final Long spenderId);
+    Boolean isSpenderAnOperator(final Long tokenId, final Long ownerId, final Long spenderId);
 }

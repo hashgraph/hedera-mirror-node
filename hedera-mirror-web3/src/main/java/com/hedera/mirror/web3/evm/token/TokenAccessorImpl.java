@@ -27,7 +27,6 @@ import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdFromEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.evmKey;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
-import static org.hyperledger.besu.evm.internal.Words.toAddress;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import java.util.ArrayList;
@@ -37,6 +36,7 @@ import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.springframework.util.CollectionUtils;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityIdEndec;
@@ -119,7 +119,8 @@ public class TokenAccessorImpl implements TokenAccessor {
     @Override
     public boolean defaultFreezeStatus(final Address token) {
         final var tokenId = entityIdFromEvmAddress(token);
-        return tokenRepository.findFreezeDefault(tokenId);
+        final var defaultFreezeStatus = tokenRepository.findFreezeDefault(tokenId);
+        return defaultFreezeStatus != null ? defaultFreezeStatus : false;
     }
 
     @Override
@@ -149,7 +150,7 @@ public class TokenAccessorImpl implements TokenAccessor {
     }
 
     @Override
-    public EvmKey keyOf(Address address, TokenKeyType tokenKeyType) {
+    public EvmKey keyOf(final Address address, final TokenKeyType tokenKeyType) {
         final var tokenInfoOptional = getTokenInfo(address);
 
         if (tokenInfoOptional.isPresent()) {
@@ -211,10 +212,10 @@ public class TokenAccessorImpl implements TokenAccessor {
     public Address staticApprovedSpenderOf(final Address nft, long serialNo) {
         final var tokenId = entityIdFromEvmAddress(nft);
         final var spenderNum = nftRepository.findSpender(tokenId, serialNo);
-        if (spenderNum <= 0L) {
+        if (spenderNum.isEmpty()) {
             return Address.ZERO;
         }
-        final var spenderEntity = EntityIdEndec.decode(spenderNum, ACCOUNT);
+        final var spenderEntity = EntityIdEndec.decode(spenderNum.get(), ACCOUNT);
         return Address.wrap(Bytes.wrap(toEvmAddress(spenderEntity)));
     }
 
@@ -224,17 +225,19 @@ public class TokenAccessorImpl implements TokenAccessor {
         final var tokenId = entityIdFromEvmAddress(token);
         final var ownerId = entityIdFromEvmAddress(owner);
         final var spenderId = entityIdFromEvmAddress(operator);
-        return nftAllowanceRepository.isSpenderAnOperator(tokenId, ownerId, spenderId);
+        final var isSpenderAnOperator = nftAllowanceRepository.isSpenderAnOperator(tokenId, ownerId, spenderId);
+
+        return isSpenderAnOperator != null ? isSpenderAnOperator : false;
     }
 
     @Override
     public Address ownerOf(final Address nft, long serialNo) {
         final var tokenId = entityIdFromEvmAddress(nft);
         final var ownerNum = nftRepository.findOwner(tokenId, serialNo);
-        if (ownerNum <= 0L) {
+        if (ownerNum.isEmpty()) {
             return Address.ZERO;
         }
-        final var ownerEntity = EntityIdEndec.decode(ownerNum, ACCOUNT);
+        final var ownerEntity = EntityIdEndec.decode(ownerNum.get(), ACCOUNT);
         return Address.wrap(Bytes.wrap(toEvmAddress(ownerEntity)));
     }
 
@@ -259,115 +262,118 @@ public class TokenAccessorImpl implements TokenAccessor {
         final var tokenEntityOptional = tokenRepository.findById(new TokenId(fromEvmAddress(token.toArray())));
         final var entityOptional = entityRepository.findById(entityIdFromEvmAddress(token));
 
-        if (tokenEntityOptional.isPresent() && entityOptional.isPresent()) {
-            final var tokenEntity = tokenEntityOptional.get();
-            final var entity = entityOptional.get();
-            final var ledgerId = properties.getNetwork().getLedgerId();
-
-            final EvmTokenInfo evmTokenInfo = new EvmTokenInfo(
-                    ledgerId,
-                    tokenEntity.getSupplyType().ordinal(),
-                    entity.getDeleted(),
-                    tokenEntity.getSymbol(),
-                    tokenEntity.getName(),
-                    entity.getMemo(),
-                    toAddress(tokenEntity.getTreasuryAccountId()),
-                    tokenEntity.getTotalSupply(),
-                    tokenEntity.getMaxSupply(),
-                    tokenEntity.getDecimals(),
-                    asSeconds(entity.getExpirationTimestamp()));
-            evmTokenInfo.setAutoRenewPeriod(entity.getAutoRenewPeriod() != null ? entity.getAutoRenewPeriod() : 0);
-
-            final var autoRenewAccountOptional = entityRepository.findById(entity.getAutoRenewAccountId());
-            if (autoRenewAccountOptional.isPresent()) {
-                final var autoRenewAccount = autoRenewAccountOptional.get();
-                evmTokenInfo.setAutoRenewAccount(toAddress(new EntityId(autoRenewAccount.getShard(),
-                        autoRenewAccount.getRealm(), autoRenewAccount.getNum(), EntityType.ACCOUNT)));
-            }
-
-            try {
-                final var adminKey = evmKey(entity.getKey());
-                final var kycKey = evmKey(tokenEntity.getKycKey());
-                final var supplyKey = evmKey(tokenEntity.getSupplyKey());
-                final var freezeKey = evmKey(tokenEntity.getFreezeKey());
-                final var wipeKey = evmKey(tokenEntity.getWipeKey());
-                final var pauseKey = evmKey(tokenEntity.getPauseKey());
-                final var feeScheduleKey = evmKey(tokenEntity.getFeeScheduleKey());
-
-                evmTokenInfo.setAdminKey(adminKey);
-                evmTokenInfo.setKycKey(kycKey);
-                evmTokenInfo.setSupplyKey(supplyKey);
-                evmTokenInfo.setFreezeKey(freezeKey);
-                evmTokenInfo.setWipeKey(wipeKey);
-                evmTokenInfo.setPauseKey(pauseKey);
-                evmTokenInfo.setFeeScheduleKey(feeScheduleKey);
-            } catch (final InvalidProtocolBufferException e) {
-                throw new ParsingException("Error parsing token keys.");
-            }
-            final var isPaused = tokenEntity.getPauseStatus().ordinal() == 1;
-            evmTokenInfo.setDefaultFreezeStatus(tokenEntity.getFreezeDefault());
-            evmTokenInfo.setIsPaused(isPaused);
-            final var customFeesOptional = getCustomFees(token);
-
-            evmTokenInfo.setCustomFees(customFeesOptional);
-            return Optional.of(evmTokenInfo);
+        if (tokenEntityOptional.isEmpty() && entityOptional.isEmpty()) {
+            return Optional.empty();
         }
-        return Optional.empty();
+
+        final var tokenEntity = tokenEntityOptional.get();
+        final var entity = entityOptional.get();
+        final var ledgerId = properties.getNetwork().getLedgerId();
+
+        final EvmTokenInfo evmTokenInfo = new EvmTokenInfo(
+                ledgerId,
+                tokenEntity.getSupplyType().ordinal(),
+                entity.getDeleted(),
+                tokenEntity.getSymbol(),
+                tokenEntity.getName(),
+                entity.getMemo(),
+                toAddress(tokenEntity.getTreasuryAccountId()),
+                tokenEntity.getTotalSupply(),
+                tokenEntity.getMaxSupply(),
+                tokenEntity.getDecimals(),
+                asSeconds(entity.getExpirationTimestamp()));
+        evmTokenInfo.setAutoRenewPeriod(entity.getAutoRenewPeriod() != null ? entity.getAutoRenewPeriod() : 0);
+
+        entityRepository.findById(entity.getAutoRenewAccountId())
+                .ifPresent(a -> {
+                    evmTokenInfo.setAutoRenewAccount(toAddress(new EntityId(
+                            a.getShard(), a.getRealm(), a.getNum(), EntityType.ACCOUNT)));
+                });
+
+        try {
+            final var adminKey = evmKey(entity.getKey());
+            final var kycKey = evmKey(tokenEntity.getKycKey());
+            final var supplyKey = evmKey(tokenEntity.getSupplyKey());
+            final var freezeKey = evmKey(tokenEntity.getFreezeKey());
+            final var wipeKey = evmKey(tokenEntity.getWipeKey());
+            final var pauseKey = evmKey(tokenEntity.getPauseKey());
+            final var feeScheduleKey = evmKey(tokenEntity.getFeeScheduleKey());
+
+            evmTokenInfo.setAdminKey(adminKey);
+            evmTokenInfo.setKycKey(kycKey);
+            evmTokenInfo.setSupplyKey(supplyKey);
+            evmTokenInfo.setFreezeKey(freezeKey);
+            evmTokenInfo.setWipeKey(wipeKey);
+            evmTokenInfo.setPauseKey(pauseKey);
+            evmTokenInfo.setFeeScheduleKey(feeScheduleKey);
+        } catch (final InvalidProtocolBufferException e) {
+            throw new ParsingException("Error parsing token keys.");
+        }
+        final var isPaused = tokenEntity.getPauseStatus().ordinal() == 1;
+        evmTokenInfo.setDefaultFreezeStatus(tokenEntity.getFreezeDefault());
+        evmTokenInfo.setIsPaused(isPaused);
+        final var customFeesOptional = getCustomFees(token);
+
+        evmTokenInfo.setCustomFees(customFeesOptional);
+
+        return Optional.of(evmTokenInfo);
     }
 
     private List<CustomFee> getCustomFees(final Address token) {
+        //evm-lib CustomFee POJO
         final List<CustomFee> customFees = new ArrayList<>();
+        final var customFeesCollection = customFeeRepository.findCustomFees(entityIdFromEvmAddress(token));
 
-        final var customFeesOptional = customFeeRepository.findCustomFees(entityIdFromEvmAddress(token));
-        if (customFeesOptional.isPresent()) {
-            for (final var customFee : customFeesOptional.get()) {
+        if (CollectionUtils.isEmpty(customFeesCollection)) {
+            return customFees;
+        }
 
-                final var amount = customFee.getAmount();
-                final var collector = toAddress(customFee.getCollectorAccountId());
+        for (final var customFee : customFeesCollection) {
 
-                final var denominatingTokenId = customFee.getDenominatingTokenId();
-                final var amountNumerator = customFee.getRoyaltyNumerator();
-                final var amountDenominator = customFee.getAmountDenominator();
-                final var maximumAmount = customFee.getMaximumAmount();
-                final var minimumAmount = customFee.getMinimumAmount();
+            final var amount = customFee.getAmount();
+            final var collector = toAddress(customFee.getCollectorAccountId());
 
-                final var netOfTransfers = customFee.getNetOfTransfers();
-                final var royaltyDenominator = customFee.getRoyaltyDenominator();
-                final var royaltyNumerator = customFee.getRoyaltyNumerator();
+            final var denominatingTokenId = customFee.getDenominatingTokenId();
+            final var amountNumerator = customFee.getRoyaltyNumerator();
+            final var amountDenominator = customFee.getAmountDenominator();
+            final var maximumAmount = customFee.getMaximumAmount();
+            final var minimumAmount = customFee.getMinimumAmount();
 
-                CustomFee customFeeConstructed = new CustomFee();
+            final var netOfTransfers = customFee.getNetOfTransfers();
+            final var royaltyDenominator = customFee.getRoyaltyDenominator();
+            final var royaltyNumerator = customFee.getRoyaltyNumerator();
 
-                if (amountNumerator == 0 && royaltyDenominator == 0) {
-                    final var fixedFee = new FixedFee(
-                            amount,
-                            toAddress(denominatingTokenId),
-                            denominatingTokenId.getEntityNum() == 0,
-                            false,
-                            collector);
+            CustomFee customFeeConstructed = new CustomFee();
 
-                    customFeeConstructed.setFixedFee(fixedFee);
-                } else if (royaltyDenominator == 0) {
-                    final var fractionFee = new FractionalFee(
-                            amountNumerator,
-                            amountDenominator,
-                            minimumAmount,
-                            maximumAmount,
-                            netOfTransfers,
-                            collector);
-                    customFeeConstructed.setFractionalFee(fractionFee);
-                } else {
-                    final var royaltyFee = new RoyaltyFee(
-                            royaltyNumerator,
-                            royaltyDenominator,
-                            amount,
-                            toAddress(denominatingTokenId),
-                            denominatingTokenId.getEntityNum() == 0,
-                            collector);
-                    customFeeConstructed.setRoyaltyFee(royaltyFee);
-                }
+            if (amountNumerator == 0 && royaltyDenominator == 0) {
+                final var fixedFee = new FixedFee(
+                        amount,
+                        toAddress(denominatingTokenId),
+                        denominatingTokenId.getEntityNum() == 0,
+                        false,
+                        collector);
 
-                customFees.add(customFeeConstructed);
+                customFeeConstructed.setFixedFee(fixedFee);
+            } else if (royaltyDenominator == 0) {
+                final var fractionFee = new FractionalFee(
+                        amountNumerator,
+                        amountDenominator,
+                        minimumAmount,
+                        maximumAmount,
+                        netOfTransfers,
+                        collector);
+                customFeeConstructed.setFractionalFee(fractionFee);
+            } else {
+                final var royaltyFee = new RoyaltyFee(
+                        royaltyNumerator,
+                        royaltyDenominator,
+                        amount,
+                        toAddress(denominatingTokenId),
+                        denominatingTokenId.getEntityNum() == 0,
+                        collector);
+                customFeeConstructed.setRoyaltyFee(royaltyFee);
             }
+            customFees.add(customFeeConstructed);
         }
         return customFees;
     }

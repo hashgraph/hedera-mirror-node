@@ -32,5 +32,5 @@ public interface CustomFeeRepository extends CrudRepository<CustomFee, Id> {
 
     @Query(value = "select * from custom_fee where token_id = ?1",
             nativeQuery = true)
-    Optional<List<CustomFee>> findCustomFees(final Long tokenId);
+    List<CustomFee> findCustomFees(final Long tokenId);
 }

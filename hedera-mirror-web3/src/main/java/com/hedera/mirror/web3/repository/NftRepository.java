@@ -31,11 +31,11 @@ public interface NftRepository extends CrudRepository<Nft, NftId> {
 
     @Query(value = "select spender from nft where token_id = ?1 and serial_number = ?2",
             nativeQuery = true)
-    long findSpender(final Long tokenId, final Long serialNo);
+    Optional<Long> findSpender(final Long tokenId, final Long serialNo);
 
     @Query(value = "select account_id from nft where token_id = ?1 and serial_number = ?2",
             nativeQuery = true)
-    long findOwner(final Long tokenId, final Long serialNo);
+    Optional<Long> findOwner(final Long tokenId, final Long serialNo);
 
     @Query(value = "select metadata from nft where token_id = ?1 and serial_number = ?2",
             nativeQuery = true)

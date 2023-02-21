@@ -34,14 +34,15 @@ import org.hyperledger.besu.datatypes.Address;
 
 import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
+
 @UtilityClass
 public class EvmTokenUtils {
-    public static Address toAddress(EntityId contractID){
+    public static Address toAddress(EntityId contractID) {
         final var bytes = Bytes.wrap(toEvmAddress(contractID));
         return Address.wrap(bytes);
     }
 
-    public static Address toAddress(ContractID contractID){
+    public static Address toAddress(ContractID contractID) {
         final var bytes = Bytes.wrap(toEvmAddress(contractID));
         return Address.wrap(bytes);
     }
@@ -51,28 +52,26 @@ public class EvmTokenUtils {
         final var contractId =
                 key.getContractID().getContractNum() > 0
                         ? toAddress(key.getContractID())
-                        : toAddress(
-                        ContractID.newBuilder()
-                                .setShardNum(0L)
-                                .setRealmNum(0L)
-                                .setContractNum(0L)
-                                .build());
+                        : emptyContract();
         final var ed25519 = key.getEd25519().toByteArray();
         final var ecdsaSecp256K1 = key.getECDSASecp256K1().toByteArray();
         final var delegatableContractId =
                 key.getDelegatableContractId().getContractNum() > 0
                         ? toAddress(key.getDelegatableContractId())
-                        : toAddress(
-                        ContractID.newBuilder()
-                                .setShardNum(0L)
-                                .setRealmNum(0L)
-                                .setContractNum(0L)
-                                .build());
+                        : emptyContract();
 
         return new EvmKey(contractId, ed25519, ecdsaSecp256K1, delegatableContractId);
     }
 
-     public static Long entityIdFromEvmAddress(final Address address) {
+    private Address emptyContract() {
+        return toAddress(ContractID.newBuilder()
+                .setShardNum(0L)
+                .setRealmNum(0L)
+                .setContractNum(0L)
+                .build());
+    }
+
+    public static Long entityIdFromEvmAddress(final Address address) {
         final var id = fromEvmAddress(address.toArrayUnsafe());
         return id.getId();
     }
