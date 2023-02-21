@@ -51,6 +51,8 @@ class MirrorEntityAccessTest {
     private static final Bytes BYTES = Bytes.fromHexString(HEX);
     private static final byte[] DATA = BYTES.toArrayUnsafe();
     private static final Address ADDRESS = Address.fromHexString(HEX);
+    private static final Address NON_MIRROR_ADDRESS = Address.fromHexString("0x23f5e49569a835d7bf9aefd30e4f60cdd570f225");
+
     private static final EntityId ENTITY = DomainUtils.fromEvmAddress(ADDRESS.toArrayUnsafe());
     private static final Long ENTITY_ID = EntityIdEndec.encode(ENTITY.getShardNum(), ENTITY.getRealmNum(),
             ENTITY.getEntityNum());
@@ -186,6 +188,13 @@ class MirrorEntityAccessTest {
     }
 
     @Test
+    void isExtantForNonMirrorAddress() {
+        when(entityRepository.findByEvmAddressAndDeletedIsFalse(NON_MIRROR_ADDRESS.toArrayUnsafe())).thenReturn(Optional.of(entity));
+        final var result = mirrorEntityAccess.isExtant(NON_MIRROR_ADDRESS);
+        assertThat(result).isTrue();
+    }
+
+    @Test
     void isExtantForZeroAddress() {
         final var result = mirrorEntityAccess.isExtant(ZERO);
         assertThat(result).isFalse();
@@ -238,6 +247,13 @@ class MirrorEntityAccessTest {
     }
 
     @Test
+    void getStorageFailsForNonMirrorAddress() {
+        final var key = Bytes.fromHexString(NON_MIRROR_ADDRESS.toHexString());
+        final var result = UInt256.fromBytes(mirrorEntityAccess.getStorage(ZERO, key));
+        assertThat(result).isEqualTo(UInt256.fromHexString(ZERO.toHexString()));
+    }
+
+    @Test
     void getStorageFailsForZeroAddress() {
         final var result = UInt256.fromBytes(mirrorEntityAccess.getStorage(ZERO, BYTES));
         assertThat(result).isEqualTo(UInt256.fromHexString(ZERO.toHexString()));
@@ -252,11 +268,10 @@ class MirrorEntityAccessTest {
 
     @Test
     void fetchCodeIfPresentForNonMirrorEvm() {
-        final var address = Address.fromHexString("0x23f5e49569a835d7bf9aefd30e4f60cdd570f225");
-        when(mirrorEntityAccess.findEntity(address)).thenReturn(Optional.of(entity));
+        when(mirrorEntityAccess.findEntity(NON_MIRROR_ADDRESS)).thenReturn(Optional.of(entity));
         when(entity.getId()).thenReturn(ENTITY_ID);
         when(contractRepository.findRuntimeBytecode(ENTITY_ID)).thenReturn(Optional.of(DATA));
-        final var result = mirrorEntityAccess.fetchCodeIfPresent(address);
+        final var result = mirrorEntityAccess.fetchCodeIfPresent(NON_MIRROR_ADDRESS);
         assertThat(result).isEqualTo(BYTES);
     }
 
