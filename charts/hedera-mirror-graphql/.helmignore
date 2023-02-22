@@ -1,0 +1,23 @@
+# OS
+.DS_Store
+
+# VCS
+.git/
+.gitignore
+.bzr/
+.bzrignore
+.hg/
+.hgignore
+.svn/
+
+# Backup
+*.swp
+*.bak
+*.tmp
+*~
+
+# IDE
+.project
+.idea/
+.vscode/
+*.tmproj

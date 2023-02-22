@@ -20,6 +20,8 @@ data:
       --set ON_ERROR_STOP=1 \
       --set "dbName=${HEDERA_MIRROR_IMPORTER_DB_NAME}" \
       --set "dbSchema=${HEDERA_MIRROR_IMPORTER_DB_SCHEMA}" \
+      --set "graphQLPassword=${HEDERA_MIRROR_GRAPHQL_DB_PASSWORD}" \
+      --set "graphQLUsername=${HEDERA_MIRROR_GRAPHQL_DB_USERNAME}" \
       --set "grpcPassword=${HEDERA_MIRROR_GRPC_DB_PASSWORD}" \
       --set "grpcUsername=${HEDERA_MIRROR_GRPC_DB_USERNAME}" \
       --set "importerPassword=${HEDERA_MIRROR_IMPORTER_DB_PASSWORD}" \
@@ -45,6 +47,7 @@ data:
     create role readwrite in role readonly;
 
     -- Create users
+    create user :graphQLUsername with login password :'graphQLPassword' in role readonly;
     create user :grpcUsername with login password :'grpcPassword' in role readonly;
     create user :importerUsername with login password :'importerPassword' in role readwrite;
     create user :rosettaUsername with login password :'rosettaPassword' in role readonly;
@@ -81,14 +84,14 @@ data:
       pg_ctl reload
     fi
   {{- if .Values.citus.enabled }}
-  002-citus.sh: |
+  002-citus.sh: |-
     #!/bin/bash
     set -e
 
     function setup_coordinator() {
       name="{{ include "postgresql.primary.fullname" .Subcharts.citus }}"
-      coordinator="${name}-0.${name}-hl.{{ .Release.Namespace }}.svc.cluster.local"
-      
+      coordinator="${name}-0.${name}-hl"
+
       # Setup coordinator
       psql -v ON_ERROR_STOP=1 --username "${POSTGRES_USER}" --dbname "${POSTGRES_DB}" -p "${POSTGRESQL_PORT_NUMBER}" <<-EOSQL
         select citus_set_coordinator_host('${coordinator}', ${POSTGRESQL_PORT_NUMBER});
@@ -114,7 +117,7 @@ data:
       echo "Adding ${replicas} workers"
 
       while [[ ${id} -lt ${replicas} ]]; do
-        host="${name}-${id}.${name}-hl.{{ .Release.Namespace }}.svc.cluster.local"
+        host="${name}-${id}.${name}-hl"
 
         until ( exec pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB" -h "${host}" -p "${POSTGRESQL_PORT_NUMBER}" ); do
           echo "Waiting for worker ${id} to become ready"
@@ -143,6 +146,7 @@ data:
       create user ${HEDERA_MIRROR_IMPORTER_DB_RESTUSERNAME} with login password '${HEDERA_MIRROR_IMPORTER_DB_RESTPASSWORD}' in role readonly;
       insert into pg_dist_authinfo(nodeid, rolename, authinfo) values
         (0, '${POSTGRES_USER}', 'password=${POSTGRES_PASSWORD}'),
+        (0, '${HEDERA_MIRROR_GRAPHQL_DB_USERNAME}', 'password=${HEDERA_MIRROR_GRAPHQL_DB_PASSWORD}'),
         (0, '${HEDERA_MIRROR_GRPC_DB_USERNAME}', 'password=${HEDERA_MIRROR_GRPC_DB_PASSWORD}'),
         (0, '${HEDERA_MIRROR_IMPORTER_DB_USERNAME}', 'password=${HEDERA_MIRROR_IMPORTER_DB_PASSWORD}'),
         (0, '${HEDERA_MIRROR_IMPORTER_DB_OWNER}', 'password=${HEDERA_MIRROR_IMPORTER_DB_OWNERPASSWORD}'),

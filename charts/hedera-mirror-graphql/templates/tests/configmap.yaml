@@ -1,0 +1,14 @@
+{{- if .Values.test.enabled -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  annotations:
+    helm.sh/hook: test-success
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+  labels: {{- include "hedera-mirror-graphql.labels" . | nindent 4 }}
+  name: {{ include "hedera-mirror-graphql.fullname" . }}-test
+  namespace: {{ include "hedera-mirror-graphql.namespace" . }}
+data:
+  postman.json: |-
+    {{- .Values.test.postman | b64dec | default (.Files.Get "postman.json") | nindent 4 }}
+{{- end -}}
