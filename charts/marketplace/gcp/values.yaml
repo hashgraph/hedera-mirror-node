@@ -8,6 +8,9 @@ applicationResource:
 global:
   useReleaseForNameLabel: true
 
+graphql:
+  enabled: false
+
 grpc:
   config:
     hedera:
@@ -95,3 +98,4 @@ rosetta:
 
 web3:
   enabled: false
+

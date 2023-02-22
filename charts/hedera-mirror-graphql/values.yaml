@@ -1,0 +1,328 @@
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          topologyKey: kubernetes.io/hostname
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/component: graphql
+
+alertmanager:
+  inhibitRules:
+    enabled: false
+    InhibitAllWhenPodIssues:
+      enabled: true
+      matches:
+        - sourceMatch:
+            - name: area
+              value: resource
+          targetMatch:
+            - name: application
+              value: hedera-mirror-graphql
+          equal:
+            - namespace
+            - pod
+
+annotations: {}
+
+config: {}
+
+# Environment variables to add to the container. The value can either be a string or an EnvVarSource. Evaluated as a template.
+env:
+  SPRING_CLOUD_KUBERNETES_ENABLED: "true"
+  SPRING_CONFIG_ADDITIONAL_LOCATION: "file:/usr/etc/hedera/"
+  # FOO:
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: "{{ .Release.Name }}-custom"
+  #       key: BAR
+
+# Add config maps or secrets as environment variables. Evaluated as a template.
+envFrom: []
+# - secretRef:
+#     name: "{{ .Release.Name }}-env"
+
+fullnameOverride: ""
+
+global:
+  image: {}
+  middleware: false
+  namespaceOverride: ""
+  podAnnotations: {}
+
+hpa:
+  behavior: {}
+  enabled: false
+  maxReplicas: 8
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 80
+  minReplicas: 1
+
+image:
+  pullPolicy: IfNotPresent
+  registry: gcr.io
+  repository: mirrornode/hedera-mirror-graphql
+  tag: ""  # Defaults to the chart's app version
+
+imagePullSecrets: []
+
+ingress:
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: '{{ include "hedera-mirror-graphql.namespace" . }}-{{ include "hedera-mirror-graphql.fullname" . }}@kubernetescrd'
+  enabled: true
+  hosts:
+    - host: ""
+      paths:
+        - "/graphql/alpha"
+  tls:
+    enabled: false
+    secretName: ""
+
+labels: {}
+
+livenessProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: http
+  initialDelaySeconds: 50
+  periodSeconds: 10
+  timeoutSeconds: 2
+
+middleware:
+  - circuitBreaker:
+      expression: NetworkErrorRatio() > 0.10 || ResponseCodeRatio(500, 600, 0, 600) > 0.25
+  - inFlightReq:
+      amount: 5
+      sourceCriterion:
+        ipStrategy:
+          depth: 1
+  - retry:
+      attempts: 3
+      initialInterval: 100ms
+
+nodeSelector: {}
+
+podAnnotations: {}
+
+podDisruptionBudget:
+  enabled: false
+  # maxUnavailable: 0
+  minAvailable: 50%
+
+podSecurityContext:
+  fsGroup: 1000
+  runAsGroup: 1000
+  runAsNonRoot: true
+  runAsUser: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+priorityClassName: ""
+
+prometheusRules:
+  enabled: false
+  GraphQLErrors:
+    annotations:
+      description: "{{ $value | humanizePercentage }} graphql request error rate for {{ $labels.namespace }}/{{ $labels.pod }}"
+      summary: "Mirror GraphQL request error rate exceeds 5%"
+    enabled: true
+    expr: sum(rate(graphql_request_seconds_count{application="hedera-mirror-graphql", status="ERROR"}[5m])) by (namespace, pod) / sum(rate(graphql_request_seconds_count{application="hedera-mirror-graphql"}[5m])) by (namespace, pod) > 0.05
+    for: 2m
+    labels:
+      application: hedera-mirror-graphql
+      severity: critical
+
+  GraphQLDataFetcherErrors:
+    annotations:
+      description: "High data fetcher error rate of {{ $value | humanizePercentage }} for {{ $labels.namespace }}/{{ $labels.pod }}"
+      summary: "Mirror GraphQL data fetcher high error rate exceeds 5%"
+    enabled: true
+    expr: sum(rate(graphql_datafetcher_seconds_count{application="hedera-mirror-graphql", outcome="ERROR"}[5m])) by (namespace, pod) / sum(rate(graphql_datafetcher_seconds_count{application="hedera-mirror-graphql"}[5m])) by (namespace, pod) > .05
+    for: 1m
+    labels:
+      application: hedera-mirror-graphql
+      severity: critical
+
+  GraphQLHighCPU:
+    annotations:
+      description: "{{ $labels.namespace }}/{{ $labels.pod }} CPU usage reached {{ $value | humanizePercentage }}"
+      summary: "Mirror GraphQL API CPU usage exceeds 80%"
+    enabled: true
+    expr: sum(process_cpu_usage{application="hedera-mirror-graphql"}) by (namespace, pod) / sum(system_cpu_count{application="hedera-mirror-graphql"}) by (namespace, pod) > 0.8
+    for: 5m
+    labels:
+      application: hedera-mirror-graphql
+      area: resource
+      severity: critical
+
+  GraphQLHighDBConnections:
+    annotations:
+      description: "{{ $labels.namespace }}/{{ $labels.pod }} is using {{ $value | humanizePercentage }} of available database connections"
+      summary: "Mirror GraphQL API database connection utilization exceeds 75%"
+    enabled: true
+    expr: sum(hikaricp_connections_active{application="hedera-mirror-graphql"}) by (namespace, pod) / sum(hikaricp_connections_max{application="hedera-mirror-graphql"}) by (namespace, pod) > 0.75
+    for: 5m
+    labels:
+      application: hedera-mirror-graphql
+      area: resource
+      severity: critical
+
+  GraphQLHighFileDescriptors:
+    annotations:
+      description: "{{ $labels.namespace }}/{{ $labels.pod }} file descriptor usage reached {{ $value | humanizePercentage }}"
+      summary: "Mirror GraphQL API file descriptor usage exceeds 80%"
+    enabled: true
+    expr: sum(process_files_open_files{application="hedera-mirror-graphql"}) by (namespace, pod) / sum(process_files_max_files{application="hedera-mirror-graphql"}) by (namespace, pod) > 0.8
+    for: 5m
+    labels:
+      application: hedera-mirror-graphql
+      area: resource
+      severity: critical
+
+  GraphQLHighMemory:
+    annotations:
+      description: "{{ $labels.namespace }}/{{ $labels.pod }} memory usage reached {{ $value | humanizePercentage }}"
+      summary: "Mirror GraphQL API memory usage exceeds 80%"
+    enabled: true
+    expr: sum(jvm_memory_used_bytes{application="hedera-mirror-graphql"}) by (namespace, pod) / sum(jvm_memory_max_bytes{application="hedera-mirror-graphql"}) by (namespace, pod) > 0.8
+    for: 5m
+    labels:
+      application: hedera-mirror-graphql
+      area: resource
+      severity: critical
+
+  GraphQLLogErrors:
+    annotations:
+      description: "Logs for {{ $labels.namespace }}/{{ $labels.pod }} have reached {{ $value }} error messages/s in a 3m period"
+      summary: "High rate of log errors"
+    enabled: true
+    expr: sum(increase(log4j2_events_total{application="hedera-mirror-graphql", level="error"}[1m])) by (namespace, pod) >= 2
+    for: 3m
+    labels:
+      application: hedera-mirror-graphql
+      severity: critical
+
+  GraphQLNoPodsReady:
+    annotations:
+      description: "No GraphQL API instances are currently running in {{ $labels.namespace }}"
+      summary: No GraphQL API instances running
+    enabled: true
+    expr: sum(kube_pod_status_ready{pod=~".*-graphql-.*",condition="true"}) by (namespace) < 1
+    for: 2m
+    labels:
+      application: hedera-mirror-graphql
+      area: resource
+      severity: critical
+
+  GraphQLNoRequests:
+    annotations:
+      description: "GraphQL API has not seen any requests to {{ $labels.namespace }} for 5m"
+      summary: "No GraphQL API requests seen for awhile"
+    enabled: true
+    expr: sum(rate(http_server_requests_seconds_count{application="hedera-mirror-graphql"}[3m])) by (namespace) <= 0
+    for: 5m
+    labels:
+      application: hedera-mirror-graphql
+      severity: warning
+
+  GraphQLQueryLatency:
+    annotations:
+      description: "High average database query latency of {{ $value | humanizeDuration }} for {{ $labels.namespace }}/{{ $labels.pod }}"
+      summary: "Mirror GraphQL API query latency exceeds 1s"
+    enabled: true
+    expr: sum(rate(spring_data_repository_invocations_seconds_sum{application="hedera-mirror-graphql"}[5m])) by (namespace, pod) / sum(rate(spring_data_repository_invocations_seconds_count{application="hedera-mirror-graphql"}[5m])) by (namespace, pod) > 1
+    for: 1m
+    labels:
+      application: hedera-mirror-graphql
+      severity: warning
+
+  GraphQLRequestLatency:
+    annotations:
+      description: "High average request latency of {{ $value | humanizeDuration }} for {{ $labels.namespace }}/{{ $labels.pod }}"
+      summary: "Mirror GraphQL API request latency exceeds 2s"
+    enabled: true
+    expr: sum(rate(graphql_request_seconds_sum{application="hedera-mirror-graphql"}[5m])) by (namespace, pod) / sum(rate(graphql_request_seconds_count{application="hedera-mirror-graphql"}[5m])) by (namespace, pod) > 2
+    for: 1m
+    labels:
+      application: hedera-mirror-graphql
+      severity: warning
+
+rbac:
+  enabled: true
+
+readinessProbe:
+  httpGet:
+    path: /actuator/health/readiness
+    port: http
+  initialDelaySeconds: 40
+  timeoutSeconds: 2
+
+# Only set if HPA is disabled
+# replicas: 1
+
+resources:
+  limits:
+    cpu: 2
+    memory: 2048Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+revisionHistoryLimit: 3
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: [ALL]
+  readOnlyRootFilesystem: true
+
+service:
+  annotations: {}
+  port: 80
+  type: ClusterIP
+
+serviceAccount:
+  create: true
+  # The name of the service account to use. If not set and create is true, a name is generated using the fullname template
+  name:
+
+serviceMonitor:
+  enabled: false
+  interval: 30s
+
+terminationGracePeriodSeconds: 60
+
+test:
+  enabled: true
+  defaultAccount: 98
+  image:
+    pullPolicy: IfNotPresent
+    repository: postman/newman
+    tag: 5.3.1-alpine
+  postman: ""  # Custom postman.json in base64 encoding
+
+tolerations: []
+
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 10%
+    maxUnavailable: 25%
+
+# Volumes to add to the container. The key is the volume name and the value is the volume mount definition. The same keys should also appear in volumes below.
+volumeMounts:
+  config:
+    mountPath: /usr/etc/hedera
+
+# Volume mounts to add to the container. The key is the volume name and the value is the volume definition. Evaluated as a template.
+volumes:
+  config:
+    secret:
+      defaultMode: 420
+      secretName: '{{ include "hedera-mirror-graphql.fullname" . }}'

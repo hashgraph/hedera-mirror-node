@@ -1,0 +1,20 @@
+Get the GraphQL service endpoint by running these commands:
+
+{{- if contains "NodePort" .Values.service.type }}
+
+  export NODE_PORT=$(kubectl get -n {{ include "hedera-mirror-graphql.namespace" . }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "hedera-mirror-graphql.fullname" . }})
+  export NODE_IP=$(kubectl get nodes -n {{ include "hedera-mirror-graphql.namespace" . }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo ${NODE_IP}:${NODE_PORT}
+
+{{- else if contains "LoadBalancer" .Values.service.type }}
+
+  export SERVICE_IP=$(kubectl get svc -n {{ include "hedera-mirror-graphql.namespace" . }} {{ include "hedera-mirror-graphql.fullname" . }} -o jsonpath="{.items[0].status.loadBalancer.ingress[0].ip}")
+  echo ${SERVICE_IP}:{{ .Values.service.port }}
+
+{{- else if contains "ClusterIP" .Values.service.type }}
+
+  export POD_NAME=$(kubectl get pods -n {{ include "hedera-mirror-graphql.namespace" . }} -l "app.kubernetes.io/name={{ include "hedera-mirror-graphql.name" . }},app.kubernetes.io/instance={{ .Release.Name }}" -o jsonpath="{.items[0].metadata.name}")
+  echo 127.0.0.1:{{ .Values.service.port }}
+  kubectl -n {{ include "hedera-mirror-graphql.namespace" . }} port-forward $POD_NAME {{ .Values.service.port }}:8083
+
+{{- end }}

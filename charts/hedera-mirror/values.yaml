@@ -142,6 +142,33 @@ global:
   podAnnotations: {}
   useReleaseForNameLabel: false  # Set the name label to the release name for Marketplace
 
+graphql:
+  db:
+    password: ""  # Randomly generated if left blank
+    username: mirror_graphql
+  enabled: true
+  env:
+    HEDERA_MIRROR_GRAPHQL_DB_HOST:
+      valueFrom:
+        secretKeyRef:
+          name: mirror-passwords
+          key: HEDERA_MIRROR_IMPORTER_DB_HOST
+    HEDERA_MIRROR_GRAPHQL_DB_NAME:
+      valueFrom:
+        secretKeyRef:
+          name: mirror-passwords
+          key: HEDERA_MIRROR_IMPORTER_DB_NAME
+    HEDERA_MIRROR_GRAPHQL_DB_PASSWORD:
+      valueFrom:
+        secretKeyRef:
+          name: mirror-passwords
+          key: HEDERA_MIRROR_GRAPHQL_DB_PASSWORD
+    HEDERA_MIRROR_GRAPHQL_DB_USERNAME:
+      valueFrom:
+        secretKeyRef:
+          name: mirror-passwords
+          key: HEDERA_MIRROR_GRAPHQL_DB_USERNAME
+
 grpc:
   db:
     password: ""  # Randomly generated if left blank
@@ -239,10 +266,10 @@ postgresql:
       create: true
     resources:
       limits:
-        cpu: 300m
+        cpu: 600m
         memory: 750Mi
       requests:
-        cpu: 150m
+        cpu: 200m
         memory: 256Mi
   postgresql:
     existingSecret: mirror-passwords
