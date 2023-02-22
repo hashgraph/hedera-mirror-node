@@ -2,8 +2,9 @@
 
 Installs the Hedera Mirror Node Helm wrapper chart. This chart will install the mirror node components:
 
-- [Hedera Mirror Importer](hedera-mirror-importer)
+- [Hedera Mirror GraphQL API](hedera-mirror-graphql)
 - [Hedera Mirror GRPC API](hedera-mirror-grpc)
+- [Hedera Mirror Importer](hedera-mirror-importer)
 - [Hedera Mirror Monitor](hedera-mirror-monitor)
 - [Hedera Mirror REST API](hedera-mirror-rest)
 - [Hedera Mirror Rosetta API](hedera-mirror-rosetta)
@@ -154,6 +155,15 @@ All the public APIs can be accessed via a single IP. First, get the load balance
 
 ```shell script
 export SERVICE_IP=$(kubectl get service "${RELEASE}-traefik" -o jsonpath="{.status.loadBalancer.ingress[0].ip}")
+```
+
+To access the GraphQL API:
+
+
+```shell script
+curl --location --request POST "http://${SERVICE_IP}/graphql/alpha" \
+       --header 'Content-Type: application/json' \
+       --data-raw '{"query":"{  account(input: {entityId: {shard: 0, realm: 0, num: 98}}) {alias autoRenewPeriod createdTimestamp declineReward createdTimestamp}}"}'
 ```
 
 To access the GRPC API (using [grpcurl](https://github.com/fullstorydev/grpcurl)):

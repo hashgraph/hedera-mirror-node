@@ -1,0 +1,26 @@
+{{- if and .Values.global.middleware .Values.middleware -}}
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  labels: {{ include "hedera-mirror-graphql.labels" . | nindent 4 }}
+  name: {{ include "hedera-mirror-graphql.fullname" . }}
+  namespace: {{ include "hedera-mirror-graphql.namespace" . }}
+spec:
+  chain:
+    middlewares:
+{{- range .Values.middleware }}
+      - name: {{ include "hedera-mirror-graphql.fullname" $ }}-{{ keys . | first | kebabcase }}
+{{- end }}
+
+{{- range .Values.middleware }}
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  labels: {{ include "hedera-mirror-graphql.labels" $ | nindent 4 }}
+  name: {{ include "hedera-mirror-graphql.fullname" $ }}-{{ keys . | first | kebabcase }}
+  namespace: {{ include "hedera-mirror-graphql.namespace" $ }}
+spec:
+  {{- . | toYaml | nindent 2 }}
+{{- end }}
+{{- end }}
