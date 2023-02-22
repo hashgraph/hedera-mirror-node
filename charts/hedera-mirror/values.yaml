@@ -65,7 +65,7 @@ citus:
   enabled: false
   image:
     repository: xinatswirlds/citus
-    tag: 11.1.4-pg14
+    tag: 11.2.0-pg14
   nameOverride: citus
   primary:
     args: ["-c", "config_file=/bitnami/postgresql/conf/postgresql.conf"]
