@@ -269,6 +269,8 @@ public class TokenAccessorImpl implements TokenAccessor {
         final var tokenEntity = tokenEntityOptional.get();
         final var entity = entityOptional.get();
         final var ledgerId = properties.getNetwork().getLedgerId();
+        final var expirationTimeInSec = entity.getExpirationTimestamp() == null ? 0L :
+                entity.getExpirationTimestamp() / 1000000000;
 
         final EvmTokenInfo evmTokenInfo = new EvmTokenInfo(
                 ledgerId,
@@ -281,7 +283,7 @@ public class TokenAccessorImpl implements TokenAccessor {
                 tokenEntity.getTotalSupply(),
                 tokenEntity.getMaxSupply(),
                 tokenEntity.getDecimals(),
-                asSeconds(entity.getExpirationTimestamp()));
+                expirationTimeInSec);
         evmTokenInfo.setAutoRenewPeriod(entity.getAutoRenewPeriod() != null ? entity.getAutoRenewPeriod() : 0);
 
         entityRepository.findById(entity.getAutoRenewAccountId())
@@ -371,9 +373,5 @@ public class TokenAccessorImpl implements TokenAccessor {
             customFees.add(customFeeConstructed);
         }
         return customFees;
-    }
-
-    private long asSeconds(long nanoSeconds) {
-        return nanoSeconds / 1000000000;
     }
 }
