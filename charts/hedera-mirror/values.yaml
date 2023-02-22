@@ -267,10 +267,10 @@ postgresql:
     resources:
       limits:
         cpu: 600m
-        memory: 1500Mi
+        memory: 750Mi
       requests:
-        cpu: 300m
-        memory: 512Mi
+        cpu: 200m
+        memory: 256Mi
   postgresql:
     existingSecret: mirror-passwords
     extraEnvVarsSecret: mirror-passwords
@@ -287,8 +287,8 @@ postgresql:
         cpu: 1500m
         memory: 1000Mi
       requests:
-        cpu: 1500m
-        memory: 750Mi
+        cpu: 250m
+        memory: 500Mi
     repmgrLogLevel: DEBUG
   serviceAccount:
     create: true
