@@ -139,7 +139,7 @@ create table if not exists contract_result
     bloom                bytea        null,
     call_result          bytea        null,
     consensus_timestamp  bigint       not null,
-    contract_id          bigint       null,
+    contract_id          bigint       not null default 0,
     created_contract_ids bigint array null,
     error_message        text         null,
     failed_initcode      bytea        null,
