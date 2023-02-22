@@ -128,7 +128,7 @@ create table if not exists contract_log
     topic2              bytea   null,
     topic3              bytea   null,
     transaction_hash    bytea   null,
-    transaction_index   integer null
+    transaction_index   integer not null default 0
 ) partition by range (consensus_timestamp);
 comment on table contract_log is 'Contract execution result logs';
 

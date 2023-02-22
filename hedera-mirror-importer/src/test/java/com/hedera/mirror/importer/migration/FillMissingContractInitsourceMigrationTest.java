@@ -131,8 +131,7 @@ class FillMissingContractInitsourceMigrationTest extends IntegrationTest {
 
     private void insertContractResult(Contract caller, List<Long> createdContractIds) {
         domainBuilder.contractResult()
-                .customize(cr -> cr.contractId(EntityId.of(caller.getId(), EntityType.CONTRACT))
-                        .createdContractIds(createdContractIds))
+                .customize(cr -> cr.contractId(caller.getId()).createdContractIds(createdContractIds))
                 .persist();
     }
 

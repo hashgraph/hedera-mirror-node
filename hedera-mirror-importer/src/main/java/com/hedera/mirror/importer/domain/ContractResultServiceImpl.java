@@ -41,6 +41,7 @@ import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
@@ -166,7 +167,7 @@ public class ContractResultServiceImpl implements ContractResultService {
 
         ContractResult contractResult = new ContractResult();
         contractResult.setConsensusTimestamp(recordItem.getConsensusTimestamp());
-        contractResult.setContractId(contractEntityId);
+        contractResult.setContractId(contractEntityId.getId());
         contractResult.setPayerAccountId(recordItem.getPayerAccountId());
         contractResult.setTransactionHash(transactionHash);
         contractResult.setTransactionIndex(transaction.getIndex());
@@ -208,12 +209,13 @@ public class ContractResultServiceImpl implements ContractResultService {
             ContractLoginfo contractLoginfo = functionResult.getLogInfo(index);
 
             ContractLog contractLog = new ContractLog();
+            EntityId contractId = EntityId.of(contractResult.getContractId(), EntityType.CONTRACT);
             contractLog.setBloom(DomainUtils.toBytes(contractLoginfo.getBloom()));
             contractLog.setConsensusTimestamp(contractResult.getConsensusTimestamp());
-            contractLog.setContractId(lookup(contractResult.getContractId(), contractLoginfo.getContractID()));
+            contractLog.setContractId(lookup(contractId, contractLoginfo.getContractID()));
             contractLog.setData(DomainUtils.toBytes(contractLoginfo.getData()));
             contractLog.setIndex(index);
-            contractLog.setRootContractId(contractResult.getContractId());
+            contractLog.setRootContractId(contractId);
             contractLog.setPayerAccountId(contractResult.getPayerAccountId());
             contractLog.setTopic0(Utility.getTopic(contractLoginfo, 0));
             contractLog.setTopic1(Utility.getTopic(contractLoginfo, 1));

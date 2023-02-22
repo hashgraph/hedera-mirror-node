@@ -101,6 +101,10 @@ class EntityId {
       return `0x${this.evmAddress}`;
     }
 
+    if (this.isAllZero()) {
+      return null;
+    }
+
     // shard, realm, and num take 4, 8, and 8 bytes respectively from the left
     return this.num === null
       ? null
