@@ -35,6 +35,7 @@ import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import java.util.Map;
 import java.util.stream.Stream;
 import lombok.experimental.UtilityClass;
+import org.apache.commons.lang3.StringUtils;
 import org.hyperledger.besu.evm.frame.ExceptionalHaltReason;
 
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
@@ -55,7 +56,7 @@ public class ResponseCodeUtil {
                             toMap(
                                     status ->
                                             new BytesKey(
-                                                    new InvalidTransactionException(status)
+                                                    new InvalidTransactionException(status, StringUtils.EMPTY)
                                                             .messageBytes()
                                                             .toArrayUnsafe()),
                                     status -> status));

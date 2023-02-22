@@ -23,10 +23,15 @@ package com.hedera.mirror.web3.controller;
 import static com.hedera.mirror.web3.controller.ContractController.NOT_IMPLEMENTED_ERROR;
 import static com.hedera.mirror.web3.validation.HexValidator.MESSAGE;
 import static org.mockito.BDDMockito.given;
+import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
 import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
+
+import com.hedera.mirror.web3.exception.InvalidTransactionException;
 
 import io.github.bucket4j.Bucket;
 import javax.annotation.Resource;
@@ -172,6 +177,25 @@ class ContractControllerTest {
                 .expectStatus()
                 .isEqualTo(BAD_REQUEST)
                 .expectBody(GenericErrorResponse.class);
+    }
+
+    @Test
+    void callRevertMethodAndExpectDetailMessage() {
+        final var detailedErrorMessage = "Custom revert message";
+        final var request = request();
+        request.setData("0xa26388bb");
+
+        given(service.processCall(any())).willThrow(new InvalidTransactionException(CONTRACT_REVERT_EXECUTED, detailedErrorMessage));
+
+        webClient.post()
+                .uri(CALL_URI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(request))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(BAD_REQUEST)
+                .expectBody(GenericErrorResponse.class)
+                .isEqualTo(new GenericErrorResponse(CONTRACT_REVERT_EXECUTED.name(), detailedErrorMessage));
     }
 
     @Test
