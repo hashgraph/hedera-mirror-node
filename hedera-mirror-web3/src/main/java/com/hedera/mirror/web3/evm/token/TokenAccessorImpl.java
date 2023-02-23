@@ -326,10 +326,12 @@ public class TokenAccessorImpl implements TokenAccessor {
         }
 
         for (final var customFee : customFeesCollection) {
-
             final var amount = customFee.getAmount();
-            final var collector = toAddress(customFee.getCollectorAccountId());
+            if (amount == null) {
+                return customFees;
+            }
 
+            final var collector = toAddress(customFee.getCollectorAccountId());
             final var denominatingTokenId = customFee.getDenominatingTokenId();
             final var amountNumerator = customFee.getRoyaltyNumerator();
             final var amountDenominator = customFee.getAmountDenominator();
