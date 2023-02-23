@@ -331,7 +331,7 @@ public class TokenAccessorImpl implements TokenAccessor {
         for (final var customFee : customFeesCollection) {
             final var collectorId = customFee.getCollectorAccountId();
             if (collectorId == null) {
-                return customFees;
+               continue;
             }
 
             final var amount = customFee.getAmount();
