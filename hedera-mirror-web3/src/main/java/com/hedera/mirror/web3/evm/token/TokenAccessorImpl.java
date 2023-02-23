@@ -105,7 +105,7 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public boolean isTokenAddress(final Address address) {
-        final var entityId = entityIdFromEvmAddress(address);
+        final var entityId = entityIdFromAccountAddress(address);
         final var entity = entityRepository.findByIdAndDeletedIsFalse(entityId);
 
         return entity.filter(e -> e.getType() == TOKEN).isPresent();
@@ -354,7 +354,7 @@ public class TokenAccessorImpl implements TokenAccessor {
                 final var fixedFee = new FixedFee(
                         amount,
                         denominatingTokenAddress,
-                        denominatingTokenId.getEntityNum() == 0,
+                        denominatingTokenId == null,
                         false,
                         collector);
 
@@ -374,7 +374,7 @@ public class TokenAccessorImpl implements TokenAccessor {
                         royaltyDenominator,
                         amount,
                         denominatingTokenAddress,
-                        denominatingTokenId.getEntityNum() == 0,
+                        denominatingTokenId == null,
                         collector);
                 customFeeConstructed.setRoyaltyFee(royaltyFee);
             }
