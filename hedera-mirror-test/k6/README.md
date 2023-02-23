@@ -79,6 +79,19 @@ The following parameters can be used to configure a rosetta test:
 - DEFAULT_NETWORK
 - DEFAULT_TRANSACTION_HASH
 
+The following parameters can be used to configure a web3 test:
+
+- TOKEN_ADDRESS - 32bytes token address
+- SERIAL_NUMBER - 32bytes nft serial number
+- DEFAULT_CONTRACT_ADDRESS - 20bytes contract address (Parent contract should be deployed)
+- DEFAULT_ACCOUNT_ADDRESS - 32bytes account address
+- ERC_CONTRACT_ADDRESS - 20bytes contract address (ErcTestContract contract in web3/reference should be deployed)
+- HTS_CONTRACT_ADDRESS - 20bytes contract address (ViewContract contract in web3/reference should be deployed)
+- ACCOUNT_ADDRESS - 32bytes account address.
+- SPENDER_ADDRESS - 32bytes account address
+- OPERATOR_ADDRESS - 32bytes account address
+- KEY_TYPE - 32bytes key type
+
 The test suite will run the tests sequentially with a configurable graceful stop time in between, so they don't
 interfere with each other.
 
