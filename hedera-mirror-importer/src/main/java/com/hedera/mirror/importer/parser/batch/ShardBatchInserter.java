@@ -23,8 +23,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -37,6 +39,8 @@ public class ShardBatchInserter implements BatchPersister {
     private final CommonParserProperties commonParserProperties;
     private final Timer insertDurationMetric;
     private final String shardedTableName;
+
+    private final ExecutorService executorService = Executors.newFixedThreadPool(16);
 
     public ShardBatchInserter(Class<?> entityClass, DataSource dataSource, MeterRegistry meterRegistry,
                               CommonParserProperties commonParserProperties) {
@@ -63,11 +67,20 @@ public class ShardBatchInserter implements BatchPersister {
                     .map(TransactionHash.class::cast)
                     .collect(Collectors.groupingBy((item) -> Math.abs(item.getHash()[0] % 32)));
 
-            Mono.when(shardedItems.entrySet()
-                            .stream()
-                            .map(this::processShard)
-                            .toList())
-                    .block();
+
+            shardedItems.entrySet()
+                    .stream()
+                    .map(this::processShard)
+                    .map(executorService::submit).toList()
+                    .forEach(item -> {
+                        try {
+                            item.get();
+                        } catch (InterruptedException e) {
+                            throw new RuntimeException(e);
+                        } catch (ExecutionException e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
 
             insertDurationMetric.record(stopwatch.elapsed());
             log.info("Copied {} rows from {} shards to {} in {}", items.size(), shardedItems.size(), this.shardedTableName, stopwatch);
@@ -76,15 +89,21 @@ public class ShardBatchInserter implements BatchPersister {
         }
     }
 
-    private Mono<Void> processShard(Map.Entry<Integer, List<TransactionHash>> shardData) {
-        return Mono.just(shardData)
-                .doOnNext(data -> batchInserters.computeIfAbsent(data.getKey(),
-                        (key) -> new BatchInserter(TransactionHash.class, dataSource,
+    private Runnable processShard(Map.Entry<Integer, List<TransactionHash>> shardData) {
+        return () -> batchInserters.computeIfAbsent(shardData.getKey(),
+                (key) -> new BatchInserter(TransactionHash.class, dataSource,
                         meterRegistry, commonParserProperties,
-                        String.format("%s_%02d", shardedTableName, shardData.getKey())))
-                        .persist(data.getValue()))
-                .subscribeOn(Schedulers.parallel())
-                .then();
+                        String.format("%s_%02d", shardedTableName, shardData.getKey()))).persist(shardData.getValue());
     }
+//    private Mono<Void> processShard(Map.Entry<Integer, List<TransactionHash>> shardData) {
+//        return Mono.just(shardData)
+//                .doOnNext(data -> batchInserters.computeIfAbsent(data.getKey(),
+//                        (key) -> new BatchInserter(TransactionHash.class, dataSource,
+//                        meterRegistry, commonParserProperties,
+//                        String.format("%s_%02d", shardedTableName, shardData.getKey())))
+//                        .persist(data.getValue()))
+//                .subscribeOn(Schedulers.parallel())
+//                .then();
+//    }
 
 }
