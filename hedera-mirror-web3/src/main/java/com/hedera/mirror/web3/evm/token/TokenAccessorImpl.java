@@ -27,6 +27,8 @@ import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdFromEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.evmKey;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
+import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
+import static org.apache.tuweni.bytes.Bytes.EMPTY;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import java.util.ArrayList;
@@ -38,6 +40,7 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.springframework.util.CollectionUtils;
 
+import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
@@ -110,7 +113,7 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public boolean isFrozen(final Address account, final Address token) {
-        final var accountId = entityIdFromEvmAddress(account);
+        final var accountId = entityIdFromAccountAddress(account);
         final var tokenId = entityIdFromEvmAddress(token);
         final var status = tokenAccountRepository.findFrozenStatus(accountId, tokenId);
         return status.filter(e -> e == 1).isPresent();
@@ -131,7 +134,7 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public boolean isKyc(final Address account, final Address token) {
-        final var accountId = entityIdFromEvmAddress(account);
+        final var accountId = entityIdFromAccountAddress(account);
         final var tokenId = entityIdFromEvmAddress(token);
         final var status = tokenAccountRepository.findKycStatus(accountId, tokenId);
         return status.filter(e -> e == 1).isPresent();
@@ -196,15 +199,15 @@ public class TokenAccessorImpl implements TokenAccessor {
     @Override
     public long balanceOf(Address account, Address token) {
         final var tokenId = entityIdFromEvmAddress(token);
-        final var accountId = entityIdFromEvmAddress(account);
+        final var accountId = entityIdFromAccountAddress(account);
         return tokenBalanceRepository.findBalance(tokenId, accountId).orElse(0L);
     }
 
     @Override
     public long staticAllowanceOf(final Address owner, final Address spender, final Address token) {
         final var tokenId = entityIdFromEvmAddress(token);
-        final var ownerId = entityIdFromEvmAddress(owner);
-        final var spenderId = entityIdFromEvmAddress(spender);
+        final var ownerId = entityIdFromAccountAddress(owner);
+        final var spenderId = entityIdFromAccountAddress(spender);
         return tokenAllowanceRepository.findAllowance(tokenId, ownerId, spenderId).orElse(0L);
     }
 
@@ -223,8 +226,8 @@ public class TokenAccessorImpl implements TokenAccessor {
     public boolean staticIsOperator(final Address owner, final Address operator,
                                     final Address token) {
         final var tokenId = entityIdFromEvmAddress(token);
-        final var ownerId = entityIdFromEvmAddress(owner);
-        final var spenderId = entityIdFromEvmAddress(operator);
+        final var ownerId = entityIdFromAccountAddress(owner);
+        final var spenderId = entityIdFromAccountAddress(operator);
         final var isSpenderAnOperator = nftAllowanceRepository.isSpenderAnOperator(tokenId, ownerId, spenderId);
 
         return isSpenderAnOperator != null && isSpenderAnOperator;
@@ -326,13 +329,16 @@ public class TokenAccessorImpl implements TokenAccessor {
         }
 
         for (final var customFee : customFeesCollection) {
-            final var amount = customFee.getAmount();
-            if (amount == null) {
+            final var collectorId = customFee.getCollectorAccountId();
+            if (collectorId == null) {
                 return customFees;
             }
 
-            final var collector = toAddress(customFee.getCollectorAccountId());
+            final var amount = customFee.getAmount();
+            final var collector = toAddress(collectorId);
             final var denominatingTokenId = customFee.getDenominatingTokenId();
+            final var denominatingTokenAddress = denominatingTokenId == null ? Address.wrap(EMPTY)
+                    : toAddress(denominatingTokenId);
             final var amountNumerator = customFee.getRoyaltyNumerator();
             final var amountDenominator = customFee.getAmountDenominator();
             final var maximumAmount = customFee.getMaximumAmount();
@@ -347,7 +353,7 @@ public class TokenAccessorImpl implements TokenAccessor {
             if (amountNumerator == 0 && royaltyDenominator == 0) {
                 final var fixedFee = new FixedFee(
                         amount,
-                        toAddress(denominatingTokenId),
+                        denominatingTokenAddress,
                         denominatingTokenId.getEntityNum() == 0,
                         false,
                         collector);
@@ -367,7 +373,7 @@ public class TokenAccessorImpl implements TokenAccessor {
                         royaltyNumerator,
                         royaltyDenominator,
                         amount,
-                        toAddress(denominatingTokenId),
+                        denominatingTokenAddress,
                         denominatingTokenId.getEntityNum() == 0,
                         collector);
                 customFeeConstructed.setRoyaltyFee(royaltyFee);
@@ -375,5 +381,19 @@ public class TokenAccessorImpl implements TokenAccessor {
             customFees.add(customFeeConstructed);
         }
         return customFees;
+    }
+
+    /**
+     * This method is temporary and prevent wrong conversion for eth_call account and contract addresses. This will be
+     * later addressed directly in the hedera-evm-lib and this method will be removed.
+     */
+    private Long entityIdFromAccountAddress(final Address address) {
+        final var addressBytes = address.toArrayUnsafe();
+        if (isMirror(addressBytes)) {
+            return fromEvmAddress(addressBytes).getId();
+        }
+
+        return entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes)
+                .map(AbstractEntity::getId).orElse(0L);
     }
 }
