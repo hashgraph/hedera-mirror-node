@@ -1,5 +1,17 @@
 Hedera Mirror Node {{ .Chart.AppVersion }} successfully installed.
 
+{{- if and .Values.graphql.enabled .Values.graphql.service }}
+To access the GraphQL API:
+{{- if contains "LoadBalancer" .Values.graphql.service.type }}
+  GRAPHQL_IP=$(kubectl get service/{{ .Release.Name }}-graphql -n {{ include "hedera-mirror.namespace" . }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+{{- else if contains "ClusterIP" .Values.graphql.service.type }}
+  kubectl port-forward "service/{{ .Release.Name }}-graphql" -n {{ include "hedera-mirror.namespace" . }} {{ .Values.graphql.service.port }}:80 &
+{{- end }}
+  curl --location --request POST "http://${GRAPHQL_IP:-127.0.0.1}:{{.Values.graphql.service.port}}/graphql/alpha" \
+       --header 'Content-Type: application/json' \
+       --data-raw '{"query":"{  account(input: {entityId: {shard: 0, realm: 0, num: 98}}) {alias autoRenewPeriod createdTimestamp declineReward createdTimestamp}}"}'
+{{- end }}
+
 {{- if and .Values.grpc.enabled .Values.grpc.service }}
 To access the gRPC API:
 {{- if contains "LoadBalancer" .Values.grpc.service.type }}

@@ -2,9 +2,9 @@
 # see citusdata/tools/packaging_automation/templates/docker/alpine/alpine.tmpl.dockerfile.
 FROM postgres:14.5-alpine
 ARG PG_CRON_DB='mirror_node'
-ARG PG_CRON_VERSION=1.4.2
-ARG PG_PARTMAN_VERSION=4.7.1
-ARG VERSION=11.1.4
+ARG PG_CRON_VERSION=1.5.1
+ARG PG_PARTMAN_VERSION=4.7.2
+ARG VERSION=11.2.0
 
 LABEL maintainer="Citus Data https://citusdata.com" \
       org.label-schema.name="Citus" \

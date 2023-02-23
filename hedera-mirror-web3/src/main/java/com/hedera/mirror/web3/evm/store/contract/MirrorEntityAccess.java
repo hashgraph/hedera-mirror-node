@@ -29,13 +29,11 @@ import com.google.protobuf.ByteString;
 import java.time.Instant;
 import java.util.Optional;
 import javax.inject.Named;
-
-import com.hedera.mirror.common.domain.entity.AbstractEntity;
-
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
+import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.web3.repository.ContractRepository;
 import com.hedera.mirror.web3.repository.ContractStateRepository;
@@ -84,7 +82,7 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
 
     @Override
     public boolean isExtant(final Address address) {
-        return entityRepository.findByIdAndDeletedIsFalse(entityIdFromEvmAddress(address)).isPresent();
+        return findEntity(address).isPresent();
     }
 
     @Override
@@ -100,17 +98,18 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
 
     @Override
     public Bytes getStorage(final Address address, final Bytes key) {
-        final var storage = contractStateRepository.findStorage(entityIdFromEvmAddress(address),
-                key.toArrayUnsafe());
+        final var entityId = fetchEntityId(address);
+        if (entityId == 0) {
+            return Bytes.EMPTY;
+        }
+        final var storage = contractStateRepository.findStorage(entityId, key.toArrayUnsafe());
+
         return storage.map(Bytes::wrap).orElse(Bytes.EMPTY);
     }
 
     @Override
     public Bytes fetchCodeIfPresent(final Address address) {
-        final var addressBytes = address.toArrayUnsafe();
-        final var entityId = isMirror(addressBytes) ?
-                entityIdFromEvmAddress(address) :
-                findEntity(address).map(AbstractEntity::getId).orElse(0L);
+        final var entityId = fetchEntityId(address);
         if (entityId == 0) {
             return Bytes.EMPTY;
         }
@@ -122,15 +121,20 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
     public Optional<Entity> findEntity(final Address address) {
         final var addressBytes = address.toArrayUnsafe();
         if (isMirror(addressBytes)) {
-            final var entityId = entityIdFromEvmAddress(address);
+            final var entityId = fromEvmAddress(addressBytes).getId();
             return entityRepository.findByIdAndDeletedIsFalse(entityId);
         } else {
             return entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes);
         }
     }
 
-    private Long entityIdFromEvmAddress(final Address address) {
-        final var id = fromEvmAddress(address.toArrayUnsafe());
-        return id.getId();
+    private Long fetchEntityId(final Address address) {
+        final var addressBytes = address.toArrayUnsafe();
+        if (isMirror(addressBytes)) {
+            return fromEvmAddress(addressBytes).getId();
+        }
+
+        return entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes)
+                .map(AbstractEntity::getId).orElse(0L);
     }
 }
