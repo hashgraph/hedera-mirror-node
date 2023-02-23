@@ -115,7 +115,7 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
     @Override
     protected TransactionHandler getTransactionHandler() {
         recordParserProperties = new RecordParserProperties();
-        return new CryptoApproveAllowanceTransactionHandler(entityIdService, entityListener, recordParserProperties);
+        return new CryptoApproveAllowanceTransactionHandler(entityIdService, entityListener);
     }
 
     @Override

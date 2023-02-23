@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import javax.inject.Named;
+import lombok.CustomLog;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -30,6 +31,7 @@ import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
+@CustomLog
 @Named
 class CryptoDeleteTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
@@ -47,6 +49,10 @@ class CryptoDeleteTransactionHandler extends AbstractEntityCrudTransactionHandle
     protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
         var transactionBody = recordItem.getTransactionBody().getCryptoDelete();
         var obtainerId = entityIdService.lookup(transactionBody.getTransferAccountID());
+        if (obtainerId == EntityId.EMPTY) {
+            log.error("Unable to lookup ObtainerId at consensusTimestamp {}", recordItem.getConsensusTimestamp());
+        }
+
         entity.setObtainerId(obtainerId);
         entityListener.onEntity(entity);
     }

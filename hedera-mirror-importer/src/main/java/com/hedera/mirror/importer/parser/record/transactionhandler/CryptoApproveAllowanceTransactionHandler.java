@@ -20,13 +20,11 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import static com.hedera.mirror.importer.parser.PartialDataAction.DEFAULT;
-import static com.hedera.mirror.importer.parser.PartialDataAction.ERROR;
-
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.HashMap;
 import java.util.List;
 import javax.inject.Named;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 
 import com.hedera.mirror.common.domain.entity.AbstractCryptoAllowance;
@@ -42,10 +40,9 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.domain.EntityIdService;
-import com.hedera.mirror.importer.exception.AliasNotFoundException;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
+@CustomLog
 @Named
 @RequiredArgsConstructor
 class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
@@ -53,8 +50,6 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
     private final EntityIdService entityIdService;
 
     private final EntityListener entityListener;
-
-    private final RecordParserProperties recordParserProperties;
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
@@ -90,8 +85,7 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
             var cryptoApproval = iterator.previous();
             EntityId ownerAccountId = getOwnerAccountId(cryptoApproval.getOwner(), payerAccountId);
             if (ownerAccountId == EntityId.EMPTY) {
-                // ownerAccountId will be EMPTY only when getOwnerAccountId fails to resolve the owner in the alias form
-                // and the partialDataAction is SKIP
+                log.error("Empty ownerAccountId at consensusTimestamp {}", consensusTimestamp);
                 continue;
             }
 
@@ -204,18 +198,7 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
      * @return The effective owner account id
      */
     private EntityId getOwnerAccountId(AccountID owner, EntityId payerAccountId) {
-        try {
-            var entityId = entityIdService.lookup(owner);
-            return !EntityId.isEmpty(entityId) ? entityId : payerAccountId;
-        } catch (AliasNotFoundException e) {
-            var partialDataAction = recordParserProperties.getPartialDataAction();
-            if (partialDataAction == DEFAULT || partialDataAction == ERROR) {
-                // There is no appropriate default for allowance owner, so throw an exception
-                throw e;
-            }
-
-            // The action is SKIP
-            return EntityId.EMPTY;
-        }
+        var entityId = entityIdService.lookup(owner);
+        return !EntityId.isEmpty(entityId) ? entityId : payerAccountId;
     }
 }

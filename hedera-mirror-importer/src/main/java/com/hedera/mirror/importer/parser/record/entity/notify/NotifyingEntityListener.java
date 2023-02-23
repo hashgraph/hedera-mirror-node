@@ -123,7 +123,8 @@ public class NotifyingEntityListener implements BatchEntityListener {
 
             return json;
         } catch (Exception e) {
-            throw new ParserException(e);
+            log.error("Error writing topicMessage: {}", topicMessage, e);
+            return null;
         }
     }
 }

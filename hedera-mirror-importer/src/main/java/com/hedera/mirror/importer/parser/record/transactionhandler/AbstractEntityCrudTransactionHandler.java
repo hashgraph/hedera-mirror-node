@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.Optional;
 import lombok.AccessLevel;
+import lombok.CustomLog;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -38,6 +39,7 @@ import com.hedera.mirror.importer.parser.PartialDataAction;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
+@CustomLog
 @RequiredArgsConstructor(access = AccessLevel.PROTECTED)
 abstract class AbstractEntityCrudTransactionHandler implements TransactionHandler {
 
@@ -51,14 +53,11 @@ abstract class AbstractEntityCrudTransactionHandler implements TransactionHandle
     private final TransactionType type;
 
     protected Optional<EntityId> getAccountId(AccountID accountId) {
-        try {
-            return Optional.of(entityIdService.lookup(accountId));
-        } catch (AliasNotFoundException ex) {
-            if (recordParserProperties.getPartialDataAction() == PartialDataAction.SKIP) {
-                return Optional.empty();
-            }
-            throw ex;
-        }
+        return Optional.of(entityIdService.lookup(accountId))
+                .or(() -> {
+                    log.error("Unable to get account id {}", accountId);
+                    return Optional.empty();
+                });
     }
 
     @Override

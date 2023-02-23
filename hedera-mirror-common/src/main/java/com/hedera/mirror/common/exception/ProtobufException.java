@@ -26,7 +26,4 @@ public class ProtobufException extends MirrorNodeException {
         super(message);
     }
 
-    public ProtobufException(String message, Throwable throwable) {
-        super(message, throwable);
-    }
 }

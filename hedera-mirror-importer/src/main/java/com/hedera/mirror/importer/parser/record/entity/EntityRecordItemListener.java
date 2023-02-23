@@ -90,19 +90,15 @@ import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.ContractResultService;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.domain.TransactionFilterFields;
-import com.hedera.mirror.importer.exception.AliasNotFoundException;
 import com.hedera.mirror.importer.exception.ImporterException;
-import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy;
 import com.hedera.mirror.importer.parser.record.RecordItemListener;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 import com.hedera.mirror.importer.repository.FileDataRepository;
@@ -121,7 +117,6 @@ public class EntityRecordItemListener implements RecordItemListener {
     private final EntityProperties entityProperties;
     private final FileDataRepository fileDataRepository;
     private final NonFeeTransferExtractionStrategy nonFeeTransfersExtractor;
-    private final RecordParserProperties parserProperties;
     private final TransactionHandlerFactory transactionHandlerFactory;
 
     @Override
@@ -132,11 +127,9 @@ public class EntityRecordItemListener implements RecordItemListener {
         TransactionHandler transactionHandler = transactionHandlerFactory.get(transactionType);
 
         long consensusTimestamp = DomainUtils.timeStampInNanos(txRecord.getConsensusTimestamp());
-        EntityId entityId;
-        try {
-            entityId = transactionHandler.getEntity(recordItem);
-        } catch (InvalidEntityException e) { // transaction can have invalid topic/contract/file id
-            log.warn("Invalid entity encountered for consensusTimestamp {} : {}", consensusTimestamp, e.getMessage());
+        var entityId = transactionHandler.getEntity(recordItem);
+        if (entityId == EntityId.EMPTY) {
+            log.warn("Invalid entity encountered for consensusTimestamp {}", consensusTimestamp);
             entityId = null;
         }
 
@@ -290,27 +283,13 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
 
         var body = recordItem.getTransactionBody();
-        var partialDataAction = parserProperties.getPartialDataAction();
         var transactionRecord = recordItem.getTransactionRecord();
         for (var aa : nonFeeTransfersExtractor.extractNonFeeTransfers(body, transactionRecord)) {
             var entityId = EntityId.EMPTY;
             if (aa.getAmount() != 0) {
-                try {
-                    entityId = entityIdService.lookup(aa.getAccountID());
-                } catch (AliasNotFoundException ex) {
-                    switch (partialDataAction) {
-                        case DEFAULT:
-                            log.warn("Setting non-fee transfer account to default value due to partial data issue");
-                            break;
-                        case ERROR:
-                            throw ex;
-                        case SKIP:
-                            log.warn("Skipping non-fee transfer due to partial data issue");
-                            continue;
-                        default:
-                            log.warn("Unsupported partial data action");
-                            break;
-                    }
+                entityId = entityIdService.lookup(aa.getAccountID());
+                if (entityId == EntityId.EMPTY) {
+                    continue;
                 }
 
                 NonFeeTransfer nonFeeTransfer = new NonFeeTransfer();
@@ -1027,11 +1006,13 @@ public class EntityRecordItemListener implements RecordItemListener {
                     }
 
                     if (signature == null) {
-                        throw new InvalidDatasetException("Unsupported signature: " + unknownFields);
+                        log.error("Unsupported signature: {}", unknownFields);
+                        return;
                     }
                     break;
                 default:
-                    throw new InvalidDatasetException("Unsupported signature: " + signaturePair.getSignatureCase());
+                    log.error("Unsupported signature: {}", signaturePair.getSignatureCase());
+                    return;
             }
 
             // Handle potential public key prefix collisions by taking first occurrence only ignoring duplicates
@@ -1122,7 +1103,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                     break;
                 default:
                     log.error("Invalid CustomFee FeeCase {}", feeCase);
-                    throw new InvalidDatasetException(String.format("Invalid CustomFee FeeCase %s", feeCase));
+                    continue;
             }
 
             if (isTokenCreate && chargedInAttachedToken) {

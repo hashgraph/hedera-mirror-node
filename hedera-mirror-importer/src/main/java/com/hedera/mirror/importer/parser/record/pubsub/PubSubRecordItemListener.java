@@ -71,11 +71,9 @@ public class PubSubRecordItemListener implements RecordItemListener {
         log.trace("Storing transaction body: {}", () -> Utility.printProtoMessage(body));
         long consensusTimestamp = DomainUtils.timeStampInNanos(txRecord.getConsensusTimestamp());
 
-        EntityId entityId;
-        try {
-            entityId = transactionHandler.getEntity(recordItem);
-        } catch (InvalidEntityException e) { // transaction can have invalid topic/contract/file id
-            log.warn("Invalid entity encountered for consensusTimestamp {} : {}", consensusTimestamp, e.getMessage());
+        EntityId entityId = transactionHandler.getEntity(recordItem);
+        if (entityId == EntityId.EMPTY) {
+            log.warn("Invalid entity encountered for consensusTimestamp {}", consensusTimestamp);
             entityId = null;
         }
 

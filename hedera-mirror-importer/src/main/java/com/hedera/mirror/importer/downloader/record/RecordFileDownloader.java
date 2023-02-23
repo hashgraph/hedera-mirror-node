@@ -151,8 +151,10 @@ public class RecordFileDownloader extends Downloader<RecordFile, RecordItem> {
             case ACTIONS -> SidecarType.CONTRACT_ACTION_VALUE;
             case BYTECODE -> SidecarType.CONTRACT_BYTECODE_VALUE;
             case STATE_CHANGES -> SidecarType.CONTRACT_STATE_CHANGE_VALUE;
-            default -> throw new InvalidDatasetException(
-                    "Unknown sidecar transaction record type " + transactionSidecarRecord.getSidecarRecordsCase());
+            default -> {
+                log.error("Unknown sidecar transaction record type " + transactionSidecarRecord.getSidecarRecordsCase());
+                yield SidecarType.UNRECOGNIZED.getNumber();
+            }
         };
     }
 }

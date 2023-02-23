@@ -37,7 +37,7 @@ import com.hedera.mirror.importer.parser.PartialDataAction;
 public class RecordParserProperties extends AbstractParserProperties {
 
     @NotNull
-    private PartialDataAction partialDataAction = PartialDataAction.ERROR;
+    private PartialDataAction partialDataAction = PartialDataAction.SKIP;
 
     @Override
     public StreamType getStreamType() {

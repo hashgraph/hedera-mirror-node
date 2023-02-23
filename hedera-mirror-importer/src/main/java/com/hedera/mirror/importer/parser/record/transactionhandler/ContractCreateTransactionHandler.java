@@ -214,7 +214,6 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
                 }
                 break;
             default:
-                // should we throw in this case?
                 break;
         }
     }

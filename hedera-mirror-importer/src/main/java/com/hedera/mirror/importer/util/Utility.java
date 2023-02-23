@@ -68,18 +68,18 @@ public class Utility {
      */
     @SuppressWarnings("java:S1168")
     public static byte[] aliasToEvmAddress(byte[] alias) {
+        if (alias == null ||
+                alias.length != DomainUtils.EVM_ADDRESS_LENGTH
+                        && alias.length < ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH) {
+            return null;
+        }
+
+        if (alias.length == DomainUtils.EVM_ADDRESS_LENGTH) {
+            return alias;
+        }
+
+        byte[] evmAddress = null;
         try {
-            if (alias == null ||
-                    alias.length != DomainUtils.EVM_ADDRESS_LENGTH
-                            && alias.length < ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH) {
-                return null;
-            }
-
-            if (alias.length == DomainUtils.EVM_ADDRESS_LENGTH) {
-                return alias;
-            }
-
-            byte[] evmAddress = null;
             var key = Key.parseFrom(alias);
             if (key.getKeyCase() == Key.KeyCase.ECDSA_SECP256K1 &&
                     key.getECDSASecp256K1().size() == ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH) {
@@ -89,12 +89,12 @@ public class Utility {
                     log.warn("Unable to recover EVM address from {}", Hex.encodeHexString(rawCompressedKey));
                 }
             }
-
-            return evmAddress;
         } catch (Exception e) {
             var aliasHex = Hex.encodeHexString(alias);
-            throw new ParserException("Unable to decode alias to EVM address: " + aliasHex, e);
+            log.error("Unable to decode alias to EVM address: {}", aliasHex, e);
         }
+
+        return evmAddress;
     }
 
     /**
