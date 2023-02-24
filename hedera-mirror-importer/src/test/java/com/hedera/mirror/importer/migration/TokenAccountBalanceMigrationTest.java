@@ -52,10 +52,15 @@ import com.hedera.mirror.importer.repository.TokenTransferRepository;
 @Tag("migration")
 class TokenAccountBalanceMigrationTest extends IntegrationTest {
 
-    private AccountBalanceFile accountBalanceFile;
     private final AccountBalanceFileRepository accountBalanceFileRepository;
-
     private final RecordFileRepository recordFileRepository;
+    private final TokenAccountRepository tokenAccountRepository;
+    private final TokenAccountHistoryRepository tokenAccountHistoryRepository;
+    private final TokenBalanceRepository tokenBalanceRepository;
+    private final TokenAccountBalanceMigration tokenAccountBalanceMigration;
+    private final TokenTransferRepository tokenTransferRepository;
+
+    private AccountBalanceFile accountBalanceFile;
     private AtomicLong timestamp;
     private TokenAccount tokenAccount;
     private TokenAccount tokenAccount2;
@@ -63,15 +68,15 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
     private TokenAccount deletedEntityTokenAccount4;
     private TokenAccount disassociatedTokenAccount5;
     private TokenBalance tokenBalance;
-    private final TokenAccountRepository tokenAccountRepository;
-    private final TokenAccountHistoryRepository tokenAccountHistoryRepository;
-    private final TokenBalanceRepository tokenBalanceRepository;
-    private final TokenAccountBalanceMigration tokenAccountBalanceMigration;
-    private final TokenTransferRepository tokenTransferRepository;
 
     @BeforeEach
     void beforeEach() {
         timestamp = new AtomicLong(0L);
+    }
+
+    @Test
+    void checksum() {
+        assertThat(tokenAccountBalanceMigration.getChecksum()).isEqualTo(2);
     }
 
     @Test
