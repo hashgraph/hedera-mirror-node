@@ -230,40 +230,14 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
                         .build();
                 long timestamp = recordItem.getConsensusTimestamp();
                 boolean inRange = dateRangeFilter.filter(timestamp);
-                var count = new AtomicLong(0L);
 
                 if (transactionRepository.findById(timestamp).isEmpty() && inRange) {
                     entityRecordItemListener.onItem(recordItem);
                     consensusTimestamps.add(timestamp);
-                    count.incrementAndGet();
                     log.info("Processed errata {} successfully", name);
                 } else if (inRange) {
-                    // We missed inserting the token transfers from the 2023-02 FAIL_INVALID transactions
-                    recordItem.getTransactionRecord().getTokenTransferListsList().forEach(t -> {
-                        var tokenId = EntityId.of(t.getToken());
-                        t.getTransfersList().forEach(aa -> {
-                            var accountId = EntityId.of(aa.getAccountID());
-                            var id = new TokenTransfer.Id(recordItem.getConsensusTimestamp(), tokenId, accountId);
-
-                            if (tokenTransferRepository.findById(id).isEmpty()) {
-                                TokenTransfer tokenTransfer = new TokenTransfer();
-                                tokenTransfer.setAmount(aa.getAmount());
-                                tokenTransfer.setId(id);
-                                tokenTransfer.setIsApproval(false);
-                                tokenTransfer.setPayerAccountId(recordItem.getPayerAccountId());
-                                tokenTransfer.setTokenDissociate(false);
-                                tokenTransferRepository.save(tokenTransfer);
-                                count.incrementAndGet();
-                            }
-                        });
-                    });
-
-                    if (count.get() > 0) {
-                        log.info("Processed errata {} successfully with {} missing token transfers", name, count);
-                    }
-                }
-
-                if (count.get() == 0) {
+                    missingTokenTransfers(name, recordItem);
+                } else {
                     log.info("Skipped previously processed errata {}", name);
                 }
             } catch (IOException e) {
@@ -285,6 +259,37 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
         Long min = consensusTimestamps.stream().min(Long::compareTo).orElse(null);
         Long max = consensusTimestamps.stream().max(Long::compareTo).orElse(null);
         log.info("Inserted {} missing transactions between {} and {}", consensusTimestamps.size(), min, max);
+    }
+
+    // We missed inserting the token transfers from the 2023-02 FAIL_INVALID transactions
+    private void missingTokenTransfers(String name, RecordItem recordItem) {
+        var count = new AtomicLong(0L);
+
+        recordItem.getTransactionRecord().getTokenTransferListsList().forEach(t -> {
+            var tokenId = EntityId.of(t.getToken());
+
+            t.getTransfersList().forEach(aa -> {
+                var accountId = EntityId.of(aa.getAccountID());
+                var id = new TokenTransfer.Id(recordItem.getConsensusTimestamp(), tokenId, accountId);
+
+                if (tokenTransferRepository.findById(id).isEmpty()) {
+                    TokenTransfer tokenTransfer = new TokenTransfer();
+                    tokenTransfer.setAmount(aa.getAmount());
+                    tokenTransfer.setId(id);
+                    tokenTransfer.setIsApproval(false);
+                    tokenTransfer.setPayerAccountId(recordItem.getPayerAccountId());
+                    tokenTransfer.setTokenDissociate(false);
+                    tokenTransferRepository.save(tokenTransfer);
+                    count.incrementAndGet();
+                }
+            });
+        });
+
+        if (count.get() > 0) {
+            log.info("Processed errata {} successfully with {} missing token transfers", name, count);
+        } else {
+            log.info("Skipped previously processed errata {}", name);
+        }
     }
 
     private Set<Long> getTimestamps() {
