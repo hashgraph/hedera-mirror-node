@@ -14,25 +14,18 @@
  * limitations under the License.
  */
 
-import {TestScenarioBuilder} from '../../lib/common.js';
-import {isNonErrorResponse} from './common.js';
-import {jsonPost} from './common.js';
+import {ContractCallTestScenarioBuilder} from './common.js';
 
-const url = __ENV.BASE_URL;
 const contract = __ENV.HTS_CONTRACT_ADDRESS;
 const selector = '0xbf39bd9d';
 const token = __ENV.TOKEN_ADDRESS;
 const serialNumber = __ENV.SERIAL_NUMBER;
 
-const payload = JSON.stringify({
-  to: `${contract}`,
-  data: selector.concat(token, serialNumber),
-});
-
-const {options, run} = new TestScenarioBuilder()
+const {options, run} = new ContractCallTestScenarioBuilder()
   .name('contractCallNonFungibleTokenInfo') // use unique scenario name among all tests
-  .request(() => jsonPost(url, payload))
-  .check('contractCallNonFungibleTokenInfo', (r) => isNonErrorResponse(r))
+  .selector(selector)
+  .args([token,serialNumber])
+  .to(contract)
   .build();
 
 export {options, run};

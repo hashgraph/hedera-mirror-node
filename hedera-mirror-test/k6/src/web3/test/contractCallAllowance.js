@@ -14,26 +14,19 @@
  * limitations under the License.
  */
 
-import {TestScenarioBuilder} from '../../lib/common.js';
-import {isNonErrorResponse} from './common.js';
-import {jsonPost} from './common.js';
+import {ContractCallTestScenarioBuilder} from './common.js';
 
-const url = __ENV.BASE_URL;
 const contract = __ENV.ERC_CONTRACT_ADDRESS;
 const selector = '0x927da105';
 const token = __ENV.TOKEN_ADDRESS;
 const account = __ENV.ACCOUNT_ADDRESS;
 const spender = __ENV.SPENDER_ADDRESS;
 
-const payload = JSON.stringify({
-  to: `${contract}`,
-  data: selector.concat(token, account, spender),
-});
-
-const {options, run} = new TestScenarioBuilder()
+const {options, run} = new ContractCallTestScenarioBuilder()
   .name('contractCallAllowance') // use unique scenario name among all tests
-  .request(() => jsonPost(url, payload))
-  .check('contractCallAllowance', (r) => isNonErrorResponse(r))
+  .selector(selector)
+  .args([token,account,spender])
+  .to(contract)
   .build();
 
 export {options, run};
