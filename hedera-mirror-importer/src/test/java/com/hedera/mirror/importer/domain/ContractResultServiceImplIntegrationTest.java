@@ -518,7 +518,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     }
 
     private void assertContractLogs(RecordItem recordItem) {
-        assertContractResult(recordItem, false);
+        assertContractLogs(recordItem, false);
     }
 
     private void assertContractLogs(RecordItem recordItem, boolean ethereum) {
