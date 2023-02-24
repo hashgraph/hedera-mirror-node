@@ -33,6 +33,7 @@ import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.FractionalFee;
 import com.hederahashgraph.api.proto.java.NftTransfer;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.RoyaltyFee;
 import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
@@ -154,11 +155,8 @@ public class EntityRecordItemListener implements RecordItemListener {
         transaction.setEntityId(entityId);
         transactionHandler.updateTransaction(transaction, recordItem);
 
-        if (txRecord.hasTransferList() && entityProperties.getPersist().isCryptoTransferAmounts()) {
-            insertTransferList(recordItem);
-        }
-
-        // insert staking reward transfers even on failure
+        // Insert transfers even on failure
+        insertTransferList(recordItem);
         insertStakingRewardTransfers(recordItem);
 
         // handle scheduled transaction, even on failure
@@ -177,7 +175,12 @@ public class EntityRecordItemListener implements RecordItemListener {
             // Only add non-fee transfers on success as the data is assured to be valid
             processNonFeeTransfers(consensusTimestamp, recordItem);
             processTransaction(recordItem);
+        }
 
+        var status = recordItem.getTransactionRecord().getReceipt().getStatus();
+
+        // Errata records can fail with FAIL_INVALID but still have items in the record committed to state.
+        if (recordItem.isSuccessful() || status == ResponseCodeEnum.FAIL_INVALID) {
             // Record token transfers can be populated for multiple transaction types
             insertTokenTransfers(recordItem);
             insertAssessedCustomFees(recordItem);
@@ -415,9 +418,13 @@ public class EntityRecordItemListener implements RecordItemListener {
      * ErrataMigration.spuriousTransfers().
      */
     private void insertTransferList(RecordItem recordItem) {
-        long consensusTimestamp = recordItem.getConsensusTimestamp();
+        var transactionRecord = recordItem.getTransactionRecord();
+        if (!transactionRecord.hasTransferList() || !entityProperties.getPersist().isCryptoTransferAmounts()) {
+            return;
+        }
 
-        var transferList = recordItem.getTransactionRecord().getTransferList();
+        long consensusTimestamp = recordItem.getConsensusTimestamp();
+        var transferList = transactionRecord.getTransferList();
         EntityId payerAccountId = recordItem.getPayerAccountId();
         var body = recordItem.getTransactionBody();
         boolean failedTransfer =
@@ -1218,5 +1225,4 @@ public class EntityRecordItemListener implements RecordItemListener {
         entities.remove(null);
         return new TransactionFilterFields(entities, TransactionType.of(recordItem.getTransactionType()));
     }
-
 }
