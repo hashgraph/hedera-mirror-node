@@ -44,6 +44,7 @@ import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.ContractResultRepository;
 import com.hedera.mirror.importer.repository.CryptoTransferRepository;
+import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -78,6 +79,7 @@ public class ErrataMigrationTest extends IntegrationTest {
     private final AccountBalanceFileRepository accountBalanceFileRepository;
     private final ContractResultRepository contractResultRepository;
     private final CryptoTransferRepository cryptoTransferRepository;
+    private final TokenTransferRepository tokenTransferRepository;
     private final ErrataMigration errataMigration;
     private final MirrorProperties mirrorProperties;
     private final TransactionRepository transactionRepository;
@@ -96,7 +98,7 @@ public class ErrataMigrationTest extends IntegrationTest {
 
     @Test
     void checksum() {
-        assertThat(errataMigration.getChecksum()).isEqualTo(5);
+        assertThat(errataMigration.getChecksum()).isEqualTo(6);
     }
 
     @Test
@@ -146,6 +148,7 @@ public class ErrataMigrationTest extends IntegrationTest {
 
         assertBalanceOffsets(EXPECTED_ACCOUNT_BALANCE_FILES);
         assertThat(contractResultRepository.count()).isEqualTo(1L);
+        assertThat(tokenTransferRepository.count()).isEqualTo(24L);
         assertErrataTransactions(ErrataType.INSERT, 113);
         assertErrataTransactions(ErrataType.DELETE, 0);
         assertErrataTransfers(ErrataType.INSERT, 566);
@@ -171,6 +174,15 @@ public class ErrataMigrationTest extends IntegrationTest {
         assertErrataTransfers(ErrataType.INSERT, 566);
         assertErrataTransfers(ErrataType.DELETE, 6);
         assertThat(contractResultRepository.count()).isEqualTo(1L);
+        assertThat(tokenTransferRepository.count()).isEqualTo(24L);
+    }
+
+    @Test
+    void migrateMissedTokenTransfers() throws Exception {
+        long existingTimestamp = DomainUtils.convertToNanosMax(Instant.parse("2023-02-10T02:16:18.649144003Z"));
+        domainBuilder.transaction().customize(t -> t.consensusTimestamp(existingTimestamp)).persist();
+        errataMigration.doMigrate();
+        assertThat(tokenTransferRepository.count()).isEqualTo(24L);
     }
 
     @Test
