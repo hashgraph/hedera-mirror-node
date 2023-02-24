@@ -1068,7 +1068,7 @@ const contractLogDefaults = {
   topic2: '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
   topic3: '0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67',
   transaction_hash: Buffer.from([...Array(32).keys()]),
-  transaction_index: 1,
+  transaction_index: 0,
 };
 
 const addContractLog = async (contractLogInput) => {
