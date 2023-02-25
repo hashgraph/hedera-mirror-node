@@ -758,6 +758,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .record(r -> r.clearContractCallResult())
                 .sidecarRecords(s -> s.clear())
                 .status(ResponseCodeEnum.INVALID_CONTRACT_ID)
+                .receipt(r -> r.clearContractID().setStatus(ResponseCodeEnum.INVALID_CONTRACT_ID))
                 .build();
         var record = recordItem.getTransactionRecord();
         var transactionBody = recordItem.getTransactionBody();
@@ -988,12 +989,12 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .first()
                 .returns(transactionBody.getInitialBalance(), ContractResult::getAmount)
                 .returns(consensusTimestamp, ContractResult::getConsensusTimestamp)
-                .returns(EntityId.of(receipt.getContractID()), ContractResult::getContractId)
+                .returns(receipt.getContractID().getContractNum(), ContractResult::getContractId)
                 .returns(toBytes(transactionBody.getConstructorParameters()), ContractResult::getFunctionParameters)
                 .returns(transactionBody.getGas(), ContractResult::getGasLimit);
 
         if (receipt.getStatus() == ResponseCodeEnum.SUCCESS) {
-            contractResult.returns(EntityId.of(receipt.getContractID()), ContractResult::getContractId);
+            contractResult.returns(receipt.getContractID().getContractNum(), ContractResult::getContractId);
         }
 
         assertContractResult(consensusTimestamp, result, result.getLogInfoList(), contractResult);
@@ -1012,7 +1013,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .hasSize(1)
                 .first()
                 .returns(transactionBody.getAmount(), ContractResult::getAmount)
-                .returns(contractId, ContractResult::getContractId)
+                .returns(contractId.getId(), ContractResult::getContractId)
                 .returns(consensusTimestamp, ContractResult::getConsensusTimestamp)
                 .returns(toBytes(transactionBody.getFunctionParameters()), ContractResult::getFunctionParameters)
                 .returns(transactionBody.getGas(), ContractResult::getGasLimit);
@@ -1143,7 +1144,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .first()
                 .returns(transactionBody.getAmount(), ContractResult::getAmount)
                 .returns(consensusTimestamp, ContractResult::getConsensusTimestamp)
-                .returns(EntityId.of(transactionBody.getContractID()), ContractResult::getContractId)
+                .returns(transactionBody.getContractID().getContractNum(), ContractResult::getContractId)
                 .returns(toBytes(transactionBody.getFunctionParameters()), ContractResult::getFunctionParameters)
                 .returns(transactionBody.getGas(), ContractResult::getGasLimit);
 
