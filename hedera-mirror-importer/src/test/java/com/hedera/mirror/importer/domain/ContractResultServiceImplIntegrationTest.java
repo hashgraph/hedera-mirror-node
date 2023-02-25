@@ -177,7 +177,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
         process(recordItem);
 
         assertContractResult(recordItem, true);
-        assertContractLogs(recordItem);
+        assertContractLogs(recordItem, true);
         assertContractActions(recordItem);
         assertContractStateChanges(recordItem);
         assertThat(contractRepository.count()).isZero();
@@ -518,9 +518,16 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     }
 
     private void assertContractLogs(RecordItem recordItem) {
+        assertContractLogs(recordItem, false);
+    }
+
+    private void assertContractLogs(RecordItem recordItem, boolean ethereum) {
         var contractFunctionResult = getFunctionResult(recordItem);
         var listAssert = assertThat(contractLogRepository.findAll())
                 .hasSize(contractFunctionResult.getLogInfoCount());
+        var transactionHash = ethereum ? recordItem.getEthereumTransaction().getHash() :
+                Arrays.copyOfRange(transaction.getTransactionHash(), 0, 32);
+        Integer transactionIndex = transaction.getIndex();
 
         if (contractFunctionResult.getLogInfoCount() > 0) {
             var blooms = new ArrayList<byte[]>();
@@ -540,6 +547,8 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
             listAssert.extracting(ContractLog::getIndex).containsExactlyInAnyOrder(0, 1);
             listAssert.extracting(ContractLog::getBloom).containsAll(blooms);
             listAssert.extracting(ContractLog::getData).containsAll(data);
+            listAssert.extracting(ContractLog::getTransactionHash).containsOnly(transactionHash);
+            listAssert.extracting(ContractLog::getTransactionIndex).containsOnly(transactionIndex);
         }
     }
 
