@@ -202,12 +202,10 @@ describe('ContractService.getContractLogsQuery tests', () => {
       query,
       `with record_file as (select consensus_end,hash,index from record_file), entity as (select evm_address, id from entity)
       select cl.bloom, cl.contract_id, cl.consensus_timestamp, cl.data, cl.index, cl.root_contract_id,
-             cl.topic0, cl.topic1, cl.topic2, cl.topic3, cr.transaction_hash, cr.transaction_index,
+             cl.topic0, cl.topic1, cl.topic2, cl.topic3, cl.transaction_hash, cl.transaction_index,
              block_number,block_hash,evm_address
       from contract_log cl
       left join entity e on id = contract_id
-      left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
-        and cl.payer_account_id = cr.payer_account_id
       left join lateral (
         select index as block_number,hash as block_hash
         from record_file
@@ -249,12 +247,10 @@ describe('ContractService.getContractLogsQuery tests', () => {
       query,
       `with record_file as (select consensus_end,hash,index from record_file), entity as (select evm_address, id from entity)
       select cl.bloom, cl.contract_id, cl.consensus_timestamp, cl.data, cl.index, cl.root_contract_id,
-             cl.topic0, cl.topic1, cl.topic2, cl.topic3, cr.transaction_hash, cr.transaction_index,
+             cl.topic0, cl.topic1, cl.topic2, cl.topic3, cl.transaction_hash, cl.transaction_index,
              block_number, block_hash, evm_address
       from contract_log cl
       left join entity e on id = contract_id
-      left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
-        and cl.payer_account_id = cr.payer_account_id
       left join lateral (
         select index as block_number,hash as block_hash
         from record_file
@@ -294,11 +290,9 @@ describe('ContractService.getContractLogsQuery tests', () => {
       `(
         with record_file as (select consensus_end,hash,index from record_file), entity as (select evm_address, id from entity)
         select cl.bloom,cl.contract_id,cl.consensus_timestamp,cl.data,cl.index,cl.root_contract_id,cl.topic0,
-          cl.topic1,cl.topic2,cl.topic3,cr.transaction_hash,cr.transaction_index,block_number,block_hash,evm_address
+          cl.topic1,cl.topic2,cl.topic3,cl.transaction_hash,cl.transaction_index,block_number,block_hash,evm_address
         from contract_log cl
         left join entity e on id = contract_id
-        left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
-          and cl.payer_account_id = cr.payer_account_id
         left join lateral (
           select index as block_number,hash as block_hash
           from record_file
@@ -312,11 +306,9 @@ describe('ContractService.getContractLogsQuery tests', () => {
       ) union (
         with record_file as (select consensus_end,hash,index from record_file), entity as (select evm_address, id from entity)
         select cl.bloom,cl.contract_id,cl.consensus_timestamp,cl.data,cl.index,cl.root_contract_id,cl.topic0,
-          cl.topic1,cl.topic2,cl.topic3,cr.transaction_hash,cr.transaction_index,block_number,block_hash,evm_address
+          cl.topic1,cl.topic2,cl.topic3,cl.transaction_hash,cl.transaction_index,block_number,block_hash,evm_address
         from contract_log cl
         left join entity e on id = contract_id
-        left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
-          and cl.payer_account_id = cr.payer_account_id
         left join lateral (
           select index as block_number,hash as block_hash
           from record_file
@@ -368,16 +360,14 @@ describe('ContractService.getContractLogsQuery tests', () => {
           cl.topic1,
           cl.topic2,
           cl.topic3,
-          cr.transaction_hash,
-          cr.transaction_index,
+          cl.transaction_hash,
+          cl.transaction_index,
           block_number,
           block_hash,
           evm_address
         from
           contract_log cl
           left join entity e on id = contract_id
-          left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
-            and cl.payer_account_id = cr.payer_account_id
           left join lateral (
             select index as block_number, hash as block_hash
             from  record_file
@@ -406,16 +396,14 @@ describe('ContractService.getContractLogsQuery tests', () => {
           cl.topic1,
           cl.topic2,
           cl.topic3,
-          cr.transaction_hash,
-          cr.transaction_index,
+          cl.transaction_hash,
+          cl.transaction_index,
           block_number,
           block_hash,
           evm_address
         from
           contract_log cl
           left join entity e on id = contract_id
-          left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
-            and cl.payer_account_id = cr.payer_account_id
           left join lateral (
             select index as block_number, hash as block_hash
             from record_file
@@ -445,16 +433,14 @@ describe('ContractService.getContractLogsQuery tests', () => {
           cl.topic1,
           cl.topic2,
           cl.topic3,
-          cr.transaction_hash,
-          cr.transaction_index,
+          cl.transaction_hash,
+          cl.transaction_index,
           block_number,
           block_hash,
           evm_address
         from
           contract_log cl
           left join entity e on id = contract_id
-          left join contract_result cr on cl.consensus_timestamp = cr.consensus_timestamp
-            and cl.payer_account_id = cr.payer_account_id
           left join lateral (
             select index as block_number, hash as block_hash
             from  record_file
