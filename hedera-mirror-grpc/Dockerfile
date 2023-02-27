@@ -16,7 +16,7 @@ RUN true  # Workaround https://github.com/moby/moby/issues/37965
 COPY --chown=1000:1000 --from=builder /app/spring-boot-loader/ ./
 COPY --chown=1000:1000 --from=builder /app/application/ ./
 RUN apt-get update \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    && DEBIAN_FRONTEND=noninteractive apt-get upgrade -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*    # install OS updates
 USER 1000:1000
 

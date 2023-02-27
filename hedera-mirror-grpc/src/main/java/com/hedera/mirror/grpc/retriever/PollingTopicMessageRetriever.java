@@ -68,7 +68,7 @@ public class PollingTopicMessageRetriever implements TopicMessageRetriever {
                         .fixedBackoff(context.getFrequency())
                         .jitter(Jitter.random(0.1))
                         .withBackoffScheduler(scheduler))
-                .name("retriever")
+                .name(METRIC)
                 .metrics()
                 .retryWhen(Retry.backoff(Long.MAX_VALUE, Duration.ofSeconds(1)))
                 .timeout(retrieverProperties.getTimeout(), scheduler)
@@ -91,9 +91,7 @@ public class PollingTopicMessageRetriever implements TopicMessageRetriever {
                 .build();
 
         log.debug("Executing query: {}", newFilter);
-        return Flux.fromStream(topicMessageRepository.findByFilter(newFilter))
-                .name("findByFilter")
-                .metrics();
+        return Flux.fromStream(topicMessageRepository.findByFilter(newFilter));
     }
 
     @Data

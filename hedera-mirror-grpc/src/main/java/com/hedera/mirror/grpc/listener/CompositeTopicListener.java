@@ -46,13 +46,12 @@ public class CompositeTopicListener implements TopicListener {
     private final RedisTopicListener redisTopicListener;
     private final SharedPollingTopicListener sharedPollingTopicListener;
     private final MeterRegistry meterRegistry;
-    private Timer consensusToPublishTimer;
+    private Timer consensusLatencyTimer;
 
     @PostConstruct
     public void registerMetrics() {
-        consensusToPublishTimer = Timer.builder("hedera.mirror.publish.latency")
-                .description("The difference in ms between the time consensus was achieved and the mirror node " +
-                        "published the entity")
+        consensusLatencyTimer = Timer.builder("hedera.mirror.grpc.consensus.latency")
+                .description("The difference in ms between the time consensus was achieved and the message was sent")
                 .tag("type", TopicMessage.class.getSimpleName())
                 .register(meterRegistry);
     }
@@ -92,6 +91,6 @@ public class CompositeTopicListener implements TopicListener {
 
     private void recordMetric(TopicMessage topicMessage) {
         long latency = System.currentTimeMillis() - topicMessage.getConsensusTimestampInstant().toEpochMilli();
-        consensusToPublishTimer.record(latency, TimeUnit.MILLISECONDS);
+        consensusLatencyTimer.record(latency, TimeUnit.MILLISECONDS);
     }
 }

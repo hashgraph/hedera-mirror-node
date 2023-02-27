@@ -7,7 +7,7 @@ This checklist verifies a release is rolled out successfully.
 - [ ] Milestone field populated on
   relevant [issues](https://github.com/hashgraph/hedera-mirror-node/issues?q=is%3Aclosed+no%3Amilestone+sort%3Aupdated-desc)
 - [ ] Nothing open
-  for [milestone](https://github.com/hashgraph/hedera-mirror-node/issues?q=is%3Aopen+sort%3Aupdated-desc+milestone%3A0.67.0)
+  for [milestone](https://github.com/hashgraph/hedera-mirror-node/issues?q=is%3Aopen+sort%3Aupdated-desc+milestone%3A0.76.0)
 - [ ] GitHub checks for branch are passing
 - [ ] Automated Kubernetes deployment successful
 - [ ] Tag release
@@ -18,28 +18,26 @@ This checklist verifies a release is rolled out successfully.
 
 ## Performance
 
-- [ ] Deploy to Kubernetes
-- [ ] Deploy to VM
+- [ ] Deployed
 - [ ] gRPC API performance tests
 - [ ] Importer performance tests
 - [ ] REST API performance tests
 
 ## Previewnet
 
-- [ ] Deploy to Kubernetes
-- [ ] Deploy to VM
+- [ ] Deployed
 
 ## Staging
 
-- [ ] Deploy to Kubernetes
+- [ ] Deployed
 
 ## Testnet
 
-- [ ] Deploy to VM
+- [ ] Deployed
 
 ## Mainnet
 
-- [ ] Deploy to Kubernetes EU
-- [ ] Deploy to Kubernetes NA
-- [ ] Deploy to VM
-- [ ] Deploy to ETL
+- [ ] Deployed to Kubernetes EU
+- [ ] Deployed to Kubernetes NA
+- [ ] Deployed to VM
+- [ ] Deployed to ETL
