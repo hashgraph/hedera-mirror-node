@@ -3,6 +3,7 @@ ARG PG_CRON_DB='mirror_node'
 
 # install pg cron and partman
 RUN apt-get update \
+    && apt-get upgrade -y --no-install-recommends \
     && apt-get install -y postgresql-14-cron postgresql-14-partman \
     && rm -rf /var/lib/apt/lists/*
 
