@@ -59,7 +59,8 @@ public class PollingTopicListener implements TopicListener {
                         .fixedBackoff(interval)
                         .jitter(Jitter.random(0.1))
                         .withBackoffScheduler(scheduler))
-                .name("poll")
+                .name(METRIC)
+                .tag(METRIC_TAG, "poll")
                 .metrics()
                 .doOnNext(context::onNext)
                 .doOnSubscribe(s -> log.info("Starting to poll every {}ms: {}", interval.toMillis(), filter));
@@ -77,9 +78,7 @@ public class PollingTopicListener implements TopicListener {
                 .startTime(startTime)
                 .build();
 
-        return Flux.fromStream(topicMessageRepository.findByFilter(newFilter))
-                .name("findByFilter")
-                .metrics();
+        return Flux.fromStream(topicMessageRepository.findByFilter(newFilter));
     }
 
     @Data

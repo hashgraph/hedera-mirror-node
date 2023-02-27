@@ -30,5 +30,9 @@ import com.hedera.mirror.grpc.domain.TopicMessageFilter;
  * either hot or cold publishers.
  */
 public interface TopicListener {
+
+    String METRIC = "hedera_mirror_grpc_listener";
+    String METRIC_TAG = "mode";
+
     Flux<TopicMessage> listen(TopicMessageFilter filter);
 }
