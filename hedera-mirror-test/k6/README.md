@@ -81,16 +81,16 @@ The following parameters can be used to configure a rosetta test:
 
 The following parameters can be used to configure a web3 test:
 
-- TOKEN_ADDRESS - 32bytes token address
-- SERIAL_NUMBER - 32bytes nft serial number
-- DEFAULT_CONTRACT_ADDRESS - 20bytes contract address (Parent contract should be deployed)
-- DEFAULT_ACCOUNT_ADDRESS - 32bytes account address
-- ERC_CONTRACT_ADDRESS - 20bytes contract address (ErcTestContract contract in web3/reference should be deployed)
-- HTS_CONTRACT_ADDRESS - 20bytes contract address (ViewContract contract in web3/reference should be deployed)
-- ACCOUNT_ADDRESS - 32bytes account address.
-- SPENDER_ADDRESS - 32bytes account address
-- OPERATOR_ADDRESS - 32bytes account address
-- KEY_TYPE - 32bytes key type
+- ACCOUNT_ADDRESS - 64 character hex encoded account address without `0x` prefix
+- DEFAULT_ACCOUNT_ADDRESS - 64 character hex encoded account address without `0x` prefix
+- DEFAULT_CONTRACT_ADDRESS - 40 character hex encoded contract address without `0x` prefix (Parent contract should be deployed)
+- ERC_CONTRACT_ADDRESS - 40 character hex encoded contract address without `0x` prefix (ErcTestContract contract in web3/reference should be deployed)
+- HTS_CONTRACT_ADDRESS - 40 character hex encoded contract address without `0x` prefix (ViewContract contract in web3/reference should be deployed)
+- KEY_TYPE - 64 character hex encoded key type without `0x` prefix
+- OPERATOR_ADDRESS - 64 character hex encoded account address without `0x` prefix
+- SERIAL_NUMBER - 64 character hex encoded nft serial number without `0x` prefix
+- SPENDER_ADDRESS - 64 character hex encoded account address without `0x` prefix
+- TOKEN_ADDRESS - 64 character hex encoded token address without `0x` prefix
 
 The test suite will run the tests sequentially with a configurable graceful stop time in between, so they don't
 interfere with each other.
