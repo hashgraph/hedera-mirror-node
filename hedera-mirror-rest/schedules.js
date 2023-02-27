@@ -258,9 +258,46 @@ const getSchedules = async (req, res) => {
   res.locals[constants.responseDataLabel] = schedulesResponse;
 };
 
+const getSchedulesEx = async (req, res) => {
+  // extract filters from query param
+  const filters = utils.buildAndValidateFilters(req.query, acceptedSchedulesParameters);
+
+  // get sql filter query, params, order and limit from query filters
+  const {order, limit} = extractSqlFromScheduleFilters(filters);
+  const query = `select * from schedule order by schedule_id desc limit $1`;
+  // const schedulesQuery = getSchedulesQuery(filterQuery, order, params.length);
+
+  const schedulesResponse = {
+    schedules: [],
+    links: {
+      next: null,
+    },
+  };
+
+  schedulesResponse.schedules = await getScheduleEntities(query, [limit]);
+
+  // populate next link
+  const lastScheduleId =
+    schedulesResponse.schedules.length > 0
+      ? schedulesResponse.schedules[schedulesResponse.schedules.length - 1].schedule_id
+      : null;
+
+  schedulesResponse.links.next = utils.getPaginationLink(
+    req,
+    schedulesResponse.schedules.length !== limit,
+    {
+      [constants.filterKeys.SCHEDULE_ID]: lastScheduleId,
+    },
+    order
+  );
+
+  res.locals[constants.responseDataLabel] = schedulesResponse;
+};
+
 const schedules = {
   getScheduleById,
   getSchedules,
+  getSchedulesEx,
 };
 
 const acceptedSchedulesParameters = new Set([

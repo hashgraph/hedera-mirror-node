@@ -147,6 +147,7 @@ app.useAsync(`${apiPrefix}/${BlockRoutes.resource}`, BlockRoutes.router);
 
 // schedules routes
 app.getAsync(`${apiPrefix}/schedules`, schedules.getSchedules);
+app.getAsync(`${apiPrefix}/schedulesex`, schedules.getSchedulesEx);
 app.getAsync(`${apiPrefix}/schedules/:scheduleId`, schedules.getScheduleById);
 
 // stateproof route
