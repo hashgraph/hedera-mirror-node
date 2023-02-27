@@ -24,6 +24,7 @@ import com.google.common.base.Stopwatch;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Named;
 import lombok.Data;
 import org.reactivestreams.Subscription;
@@ -43,8 +44,8 @@ import com.hedera.mirror.grpc.repository.TopicMessageRepository;
 @Named
 public class SharedPollingTopicListener extends SharedTopicListener {
 
-    private final TopicMessageRepository topicMessageRepository;
     private final InstantToLongConverter instantToLongConverter;
+    private final TopicMessageRepository topicMessageRepository;
     private final Flux<TopicMessage> topicMessages;
 
     public SharedPollingTopicListener(ListenerProperties listenerProperties,
@@ -62,7 +63,8 @@ public class SharedPollingTopicListener extends SharedTopicListener {
                 .repeatWhen(Repeat.times(Long.MAX_VALUE)
                         .fixedBackoff(interval)
                         .withBackoffScheduler(scheduler))
-                .name("shared-poll")
+                .name(METRIC)
+                .tag(METRIC_TAG, "shared poll")
                 .metrics()
                 .doOnCancel(() -> log.info("Cancelled polling"))
                 .doOnError(t -> log.error("Error polling the database", t))
@@ -82,9 +84,7 @@ public class SharedPollingTopicListener extends SharedTopicListener {
         }
 
         Pageable pageable = PageRequest.of(0, listenerProperties.getMaxPageSize());
-        return Flux.fromIterable(topicMessageRepository.findLatest(context.getLastConsensusTimestamp(), pageable))
-                .name("findLatest")
-                .metrics()
+        return Flux.fromIterable(topicMessageRepository.findLatest(context.getLastConsensusTimestamp().get(), pageable))
                 .doOnNext(context::onNext)
                 .doOnCancel(context::onPollEnd)
                 .doOnComplete(context::onPollEnd)
@@ -94,13 +94,13 @@ public class SharedPollingTopicListener extends SharedTopicListener {
     @Data
     private class PollingContext {
 
-        private long count = 0;
+        private final AtomicLong count = new AtomicLong(0L);
         private final Stopwatch stopwatch = Stopwatch.createUnstarted();
-        private volatile Long lastConsensusTimestamp;
+        private final AtomicLong lastConsensusTimestamp = new AtomicLong();
 
         void onNext(TopicMessage topicMessage) {
-            count++;
-            lastConsensusTimestamp = topicMessage.getConsensusTimestamp();
+            count.incrementAndGet();
+            lastConsensusTimestamp.set(topicMessage.getConsensusTimestamp());
             if (log.isTraceEnabled()) {
                 log.trace("Next message: {}", topicMessage);
             }
@@ -108,19 +108,19 @@ public class SharedPollingTopicListener extends SharedTopicListener {
 
         void onPollEnd() {
             var elapsed = stopwatch.elapsed(TimeUnit.MILLISECONDS);
-            var rate = elapsed > 0 ? (int) (1000.0 * count / elapsed) : 0;
+            var rate = elapsed > 0 ? (int) (1000.0 * count.get() / elapsed) : 0;
             log.info("Finished querying with {} messages in {} ({}/s)", count, stopwatch, rate);
-            count = 0;
+            count.set(0L);
         }
 
         void onPollStart(Subscription subscription) {
-            count = 0;
+            count.set(0L);
             stopwatch.reset().start();
             log.debug("Querying for messages after timestamp {}", lastConsensusTimestamp);
         }
 
         void onStart(Subscription subscription) {
-            lastConsensusTimestamp = instantToLongConverter.convert(Instant.now());
+            lastConsensusTimestamp.set(instantToLongConverter.convert(Instant.now()));
             log.info("Starting to poll every {}ms", listenerProperties.getInterval().toMillis());
         }
     }
