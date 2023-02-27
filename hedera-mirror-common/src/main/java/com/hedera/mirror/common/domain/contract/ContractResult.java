@@ -35,7 +35,6 @@ import org.hibernate.annotations.Type;
 import org.springframework.data.domain.Persistable;
 
 import com.hedera.mirror.common.converter.AccountIdConverter;
-import com.hedera.mirror.common.converter.ContractIdConverter;
 import com.hedera.mirror.common.converter.LongListToStringSerializer;
 import com.hedera.mirror.common.domain.entity.EntityId;
 
@@ -56,8 +55,7 @@ public class ContractResult implements Persistable<Long> {
     @Id
     private Long consensusTimestamp;
 
-    @Convert(converter = ContractIdConverter.class)
-    private EntityId contractId;
+    private long contractId;
 
     @Type(type = "com.vladmihalcea.hibernate.type.array.ListArrayType")
     @JsonSerialize(using = LongListToStringSerializer.class)

@@ -64,7 +64,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
 
     @PostConstruct
     void init() {
-        Gauge.builder("hedera.mirror.subscribers", () -> subscriberCount)
+        Gauge.builder("hedera.mirror.grpc.subscribers", () -> subscriberCount)
                 .description("The number of active subscribers")
                 .tag("type", TopicMessage.class.getSimpleName())
                 .register(meterRegistry);
@@ -167,9 +167,7 @@ public class TopicMessageServiceImpl implements TopicMessageService {
                 current.getSequenceNumber());
 
         return topicMessageRetriever.retrieve(newFilter, false)
-                .concatWithValues(current)
-                .name("findMissing")
-                .metrics();
+                .concatWithValues(current);
     }
 
     @Data

@@ -21,7 +21,7 @@ package com.hedera.mirror.grpc.listener;
  */
 
 import java.time.Duration;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Named;
@@ -62,6 +62,9 @@ public class RedisTopicListener extends SharedTopicListener {
         // Workaround Spring DATAREDIS-1208 by lazily starting connection once with retry
         Duration interval = listenerProperties.getInterval();
         this.container = Mono.defer(() -> Mono.just(new ReactiveRedisMessageListenerContainer(connectionFactory)))
+                .name(METRIC)
+                .tag(METRIC_TAG, "redis")
+                .metrics()
                 .doOnError(t -> log.error("Error connecting to Redis: ", t))
                 .doOnSubscribe(s -> log.info("Attempting to connect to Redis"))
                 .doOnSuccess(c -> log.info("Connected to Redis"))
@@ -82,10 +85,9 @@ public class RedisTopicListener extends SharedTopicListener {
     private Flux<TopicMessage> subscribe(Topic topic) {
         Duration interval = listenerProperties.getInterval();
 
-        return container.flatMapMany(r -> r.receive(Arrays.asList(topic), channelSerializer, messageSerializer))
+        return container.flatMapMany(r -> r.receive(Collections.singletonList(topic), channelSerializer,
+                        messageSerializer))
                 .map(Message::getMessage)
-                .name("redis")
-                .metrics()
                 .doOnCancel(() -> unsubscribe(topic))
                 .doOnComplete(() -> unsubscribe(topic))
                 .doOnError(t -> log.error("Error listening for messages", t))

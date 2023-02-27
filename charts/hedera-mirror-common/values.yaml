@@ -248,7 +248,7 @@ prometheus:
     resources:
       limits:
         cpu: 300m
-        memory: 300Mi
+        memory: 500Mi
       requests:
         cpu: 150m
         memory: 75Mi
@@ -309,7 +309,7 @@ prometheus:
       resources:
         limits:
           cpu: 750m
-          memory: 1Gi
+          memory: 2Gi
         requests:
           cpu: 250m
           memory: 250Mi
@@ -322,13 +322,13 @@ prometheus:
           spec:
             resources:
               requests:
-                storage: 50Gi
+                storage: 100Gi
       walCompression: true
   prometheusOperator:
     resources:
       limits:
         cpu: 100m
-        memory: 100Mi
+        memory: 200Mi
       requests:
         cpu: 50m
         memory: 50Mi
@@ -344,10 +344,10 @@ promtail:
   resources:
     limits:
       cpu: 125m
-      memory: 100Mi
+      memory: 150Mi
     requests:
       cpu: 50m
-      memory: 32Mi
+      memory: 50Mi
   serviceMonitor:
     enabled: true
 
