@@ -92,6 +92,16 @@ The following parameters can be used to configure a web3 test:
 - SPENDER_ADDRESS - 64 character hex encoded account address without `0x` prefix
 - TOKEN_ADDRESS - 64 character hex encoded token address without `0x` prefix
 
+For k6 to be run we need to deploy contracts first. For that, we can use Hedera SDK.
+Example for ERC_CONTRACT deployment with js SDK
+
+```js
+const contractCreate = await new ContractCreateFlow()
+.setBytecode("HERE YOU NEED TO PUT INITCODE FROM web3/reference/ERCTestContract/ERCTestContract.bin")
+.setGas(200_000)
+.execute(client);
+```
+
 The test suite will run the tests sequentially with a configurable graceful stop time in between, so they don't
 interfere with each other.
 
