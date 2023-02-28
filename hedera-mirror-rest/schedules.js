@@ -18,6 +18,8 @@
  * ‍
  */
 
+import _ from 'lodash';
+
 import {getResponseLimit} from './config';
 import * as constants from './constants';
 import EntityId from './entityId';
@@ -52,6 +54,17 @@ const commonSelectFields = [
   's.transaction_body',
   's.wait_for_expiry',
 ].join(',\n');
+const scheduleFields = [
+  'consensus_timestamp',
+  'creator_account_id',
+  'executed_timestamp',
+  'expiration_time',
+  'payer_account_id',
+  'schedule_id',
+  'transaction_body',
+  'wait_for_expiry',
+].join(',\n');
+const entityFields = ['deleted', 'id', 'key', 'memo'].join(',\n');
 const transactionSignatureJsonAgg = `
   json_agg(json_build_object(
     'consensus_timestamp', ts.consensus_timestamp,
@@ -263,18 +276,58 @@ const getSchedulesEx = async (req, res) => {
   const filters = utils.buildAndValidateFilters(req.query, acceptedSchedulesParameters);
 
   // get sql filter query, params, order and limit from query filters
-  const {order, limit} = extractSqlFromScheduleFilters(filters);
-  const query = `select * from schedule order by schedule_id desc limit $1`;
-  // const schedulesQuery = getSchedulesQuery(filterQuery, order, params.length);
+  const {filterQuery, params, order, limit} = extractSqlFromScheduleFilters(filters);
+  const schedulesQuery = `select ${scheduleFields} from schedule order by schedule_id ${order} limit $1`;
+  const {rows: schedules} = await pool.queryQuietly(schedulesQuery, [limit]);
+
+  const entityIds = schedules.map((s) => s.schedule_id);
+  const positions = _.range(1, entityIds.length + 1)
+    .map((i) => `$${i}`)
+    .join(',');
+  const entityQuery = `select ${entityFields} from entity where id in (${positions}) order by id ${order}`;
+  const signatureQuery = `select entity_id, json_agg(json_build_object(
+    'consensus_timestamp', consensus_timestamp,
+    'public_key_prefix', encode(public_key_prefix, 'base64'),
+    'signature', encode(signature, 'base64'),
+    'type', type
+  ) order by consensus_timestamp) as signatures
+  from transaction_signature
+  where entity_id in (${positions})
+  group by entity_id
+  order by entity_id ${order}`;
+
+  const [{rows: entities}, {rows: signatures}] = await Promise.all([
+    pool.queryQuietly(entityQuery, entityIds),
+    pool.queryQuietly(signatureQuery, entityIds),
+  ]);
+
+  let entityIndex = 0;
+  let signatureIndex = 0;
 
   const schedulesResponse = {
-    schedules: [],
+    schedules: schedules.map((schedule) => {
+      const {schedule_id: scheduleId} = schedule;
+      const entity = entities[entityIndex];
+      if (scheduleId === entity.id) {
+        schedule.deleted = entity.deleted;
+        schedule.key = entity.key;
+        schedule.memo = entity.memo;
+
+        entityIndex++;
+      }
+
+      const signature = signatures[signatureIndex];
+      if (scheduleId === signature.entity_id) {
+        schedule.signatures = signature.signatures;
+        signatureIndex++;
+      }
+
+      return formatScheduleRow(schedule);
+    }),
     links: {
       next: null,
     },
   };
-
-  schedulesResponse.schedules = await getScheduleEntities(query, [limit]);
 
   // populate next link
   const lastScheduleId =
@@ -302,7 +355,7 @@ const getPersons = async (req, res) => {
   const {order, limit} = extractSqlFromScheduleFilters(filters);
   const query = `select * from person order by id ${order} limit $1`;
 
-  const {rows} = pool.queryQuietly(query, [limit]);
+  const {rows} = await pool.queryQuietly(query, [limit]);
   res.locals[constants.responseDataLabel] = {persons: rows};
 };
 
