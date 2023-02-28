@@ -86,6 +86,8 @@ rest:
     enabled: false
   ingress:
     enabled: false
+  monitor:
+    enabled: false
   rbac:
     enabled: false
   serviceAccount:
@@ -98,4 +100,3 @@ rosetta:
 
 web3:
   enabled: false
-
