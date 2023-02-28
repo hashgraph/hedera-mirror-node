@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '0.75.0-rc4'
+      version: '0.75.0'
   dependsOn:
     - name: mirror
       namespace: common
@@ -55,3 +55,5 @@ spec:
     rosetta:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "mainnet"
+    test:
+      enabled: true
