@@ -129,6 +129,11 @@ class ContractService extends BaseService {
       on ${Entity.getFullName(Entity.ID)} = ${ContractState.getFullName(ContractState.CONTRACT_ID)}
     `;
 
+    static contractStateTimestampQuery = `
+      select DISTINCT on (${ContractStateChange.SLOT}) *
+      from ${ContractStateChange.tableName} ${ContractStateChange.tableAlias}
+    `;
+
   static contractLogsWithEvmAddressQuery = `
     with ${ContractService.entityCTE}
     select
@@ -262,14 +267,21 @@ class ContractService extends BaseService {
     });
   }
 
-  async getContractStateByIdAndFilters(whereConditions = [], order = orderFilterValues.ASC, limit = defaultLimit) {
-    const orderClause = this.getOrderByQuery(OrderSpec.from(ContractStateChange.SLOT, order));
+  async getContractStateByIdAndFilters(whereConditions = [], order = orderFilterValues.ASC, limit = defaultLimit, timestamp = false) {
+    let orderClause = this.getOrderByQuery(OrderSpec.from(ContractStateChange.SLOT, order));
     const {where, params} = this.buildWhereSqlStatement(whereConditions);
     const limitClause = this.getLimitQuery(params.push(limit));
+    let query = [ContractService.contractStateQuery, where, orderClause, limitClause].join(' ');
 
-    const query = [ContractService.contractStateQuery, where, orderClause, limitClause].join(' ');
+    if (timestamp) {
+      const slotOrder = this.getOrderByQuery(OrderSpec.from(ContractStateChange.SLOT, order));
+      //timestamp order needs to be always desc to get only the latest changes until the provided timestamp
+      const timestampOrder = this.getOrderByQuery(OrderSpec.from(ContractStateChange.CONSENSUS_TIMESTAMP, orderFilterValues.DESC)).replace('order by', ',');
+      orderClause = [slotOrder, timestampOrder].join(' ');
+
+      query = [ContractService.contractStateTimestampQuery, where, orderClause, limitClause].join(' ');
+    }
     const rows = await super.getRows(query, params, 'getContractStateByIdAndFilters');
-
     return rows.map((row) => new ContractState(row));
   }
 

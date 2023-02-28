@@ -365,14 +365,15 @@ paths:
         - contracts
   /api/v1/contracts/{contractIdOrAddress}/state:
     get:
-      summary: The contract current state from a contract on the network
-      description: Returns a list of all contract's slots.
+      summary: The contract state from a contract on the network
+      description: Returns a list of all contract's slots. If no timestamp is provided, returns the current state.
       operationId: listContractState
       parameters:
         - $ref: '#/components/parameters/contractIdOrAddressPathParam'
+        - $ref: '#/components/parameters/stateTimestampQueryParam'
+        - $ref: '#/components/parameters/slotQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/orderQueryParam'
-        - $ref: '#/components/parameters/slotQueryParam'
       responses:
         200:
           description: OK
@@ -4027,6 +4028,15 @@ components:
       in: path
       description: The timestamp at which the associated transaction reached consensus
       required: true
+      example: 1234567890.000000700
+      schema:
+        type: string
+        pattern: ^\d{1,10}(.\d{1,9})?$
+    stateTimestampQueryParam:
+      name: timestamp
+      in: query
+      description: The timestamp at which the contract state is
+      required: false
       example: 1234567890.000000700
       schema:
         type: string

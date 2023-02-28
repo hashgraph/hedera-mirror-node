@@ -27,6 +27,14 @@ describe('ContractStateViewModel', () => {
     slot: Buffer.from([0x1]),
     value: Buffer.from([0x1]),
   };
+
+  const defaultTimestampContractState = {
+    contractId: 1500,
+    consensusTimestamp: 1651770056616171000,
+    slot: Buffer.from([0x1]),
+    valueWritten: Buffer.from([0x1]),
+  };
+
   const defaultExpected = {
     contract_id: '0.0.1500',
     timestamp: '1651770056.616171000',
@@ -38,4 +46,9 @@ describe('ContractStateViewModel', () => {
   test('default', () => {
     expect(new ContractStateViewModel(defaultContractState)).toEqual(defaultExpected);
   });
+
+  test('with timestamp', () => {
+    expect(new ContractStateViewModel(defaultTimestampContractState)).toEqual(defaultExpected);
+  })
+
 });
