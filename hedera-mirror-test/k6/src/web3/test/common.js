@@ -50,7 +50,7 @@ function ContractCallTestScenarioBuilder() {
     this._to = null;
     this._scenario = null;
     this._tags = {};
-    this._url = __ENV.BASE_URL;
+    this._url = `${__ENV.BASE_URL}/api/v1/contracts/call`;
 
     this.build = function () {
       const that = this;
