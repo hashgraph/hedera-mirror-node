@@ -150,6 +150,9 @@ app.getAsync(`${apiPrefix}/schedules`, schedules.getSchedules);
 app.getAsync(`${apiPrefix}/schedulesex`, schedules.getSchedulesEx);
 app.getAsync(`${apiPrefix}/schedules/:scheduleId`, schedules.getScheduleById);
 
+// persons
+app.getAsync(`${apiPrefix}/persons`, schedules.getPersons);
+
 // stateproof route
 if (config.stateproof.enabled || isTestEnv()) {
   logger.info('stateproof REST API is enabled, install handler');

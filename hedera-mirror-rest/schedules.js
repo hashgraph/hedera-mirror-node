@@ -294,10 +294,23 @@ const getSchedulesEx = async (req, res) => {
   res.locals[constants.responseDataLabel] = schedulesResponse;
 };
 
+const getPersons = async (req, res) => {
+  // extract filters from query param
+  const filters = utils.buildAndValidateFilters(req.query, acceptedSchedulesParameters);
+
+  // get sql filter query, params, order and limit from query filters
+  const {order, limit} = extractSqlFromScheduleFilters(filters);
+  const query = `select * from person order by id ${order} limit $1`;
+
+  const {rows} = pool.queryQuietly(query, [limit]);
+  res.locals[constants.responseDataLabel] = {persons: rows};
+};
+
 const schedules = {
   getScheduleById,
   getSchedules,
   getSchedulesEx,
+  getPersons,
 };
 
 const acceptedSchedulesParameters = new Set([
