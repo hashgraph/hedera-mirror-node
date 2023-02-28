@@ -26,7 +26,6 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 import static org.apache.tuweni.bytes.Bytes.EMPTY;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
-import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
 import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
 
 import javax.validation.Valid;
@@ -67,9 +66,6 @@ class ContractController {
 
     @PostMapping(value = "/call")
     Mono<ContractCallResponse> call(@RequestBody @Valid ContractCallRequest request) {
-        if (request.isEstimate()) {
-            throw new UnsupportedOperationException(NOT_IMPLEMENTED_ERROR);
-        }
 
         if (!bucket.tryConsume(1)) {
             throw new RateLimitException("Rate limit exceeded.");
@@ -102,19 +98,14 @@ class ContractController {
                 .sender(sender)
                 .receiver(receiver)
                 .callData(data)
-                .providedGasLimit(request.getGas())
+                .gas(request.getGas())
                 .value(request.getValue())
                 .isStatic(isStaticCall)
                 .callType(callType)
+                .isEstimate(request.isEstimate())
                 .build();
     }
 
-    //This is temporary method till estimate_gas business logic got impl.
-    @ExceptionHandler
-    @ResponseStatus(NOT_IMPLEMENTED)
-    private Mono<GenericErrorResponse> unsupportedOpResponse(UnsupportedOperationException e) {
-        return errorResponse(e.getMessage());
-    }
 
     @ExceptionHandler
     @ResponseStatus(TOO_MANY_REQUESTS)

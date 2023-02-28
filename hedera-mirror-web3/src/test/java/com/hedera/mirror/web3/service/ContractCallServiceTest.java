@@ -246,7 +246,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
                 .value(value)
                 .receiver(receiver)
                 .callData(data)
-                .providedGasLimit(120000L)
+                .gas(120000L)
                 .isStatic(isStatic)
                 .callType(callType)
                 .build();

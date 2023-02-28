@@ -44,53 +44,99 @@ public class ContractCallService {
     private final MirrorEvmTxProcessorFacade mirrorEvmTxProcessorFacade;
     private final Map<CallType, Counter> gasPerSecondMetricMap;
 
-    public ContractCallService(final MirrorEvmTxProcessorFacade mirrorEvmTxProcessorFacade, final MeterRegistry meterRegistry) {
+    public ContractCallService(final MirrorEvmTxProcessorFacade mirrorEvmTxProcessorFacade,
+                               final MeterRegistry meterRegistry) {
         this.mirrorEvmTxProcessorFacade = mirrorEvmTxProcessorFacade;
 
         final var gasPerSecondMetricEnumMap = new EnumMap<CallType, Counter>(CallType.class);
         Arrays.stream(CallType.values()).forEach(type ->
                 gasPerSecondMetricEnumMap.put(type, Counter.builder("hedera.mirror.web3.call.gas")
-                .description("The amount of gas consumed by the EVM")
-                .tag("type", type.toString())
-                .register(meterRegistry)));
+                        .description("The amount of gas consumed by the EVM")
+                        .tag("type", type.toString())
+                        .register(meterRegistry)));
 
         gasPerSecondMetricMap = Collections.unmodifiableMap(gasPerSecondMetricEnumMap);
     }
 
-    public String processCall(final CallServiceParameters body) {
-        final var txnResult = doProcessCall(body);
+    public String processCall(final CallServiceParameters params) {
+        if (params.isEstimate()) {
+            return estimateGas(params);
+        }
 
-        final var callResult = txnResult.getOutput() != null
-                ? txnResult.getOutput() : Bytes.EMPTY;
+        final var ethCallTxnResult = processEthTxn(params);
+        validateTxnResult(ethCallTxnResult, params.getCallType());
+
+        final var callResult = ethCallTxnResult.getOutput() != null
+                ? ethCallTxnResult.getOutput() : Bytes.EMPTY;
 
         return callResult.toHexString();
     }
 
-    private HederaEvmTransactionProcessingResult doProcessCall(final CallServiceParameters body) {
+    private String estimateGas(final CallServiceParameters params) {
+        final var providedGasLimit = params.getGas();
+        long lo = 0;
+        long hi = providedGasLimit;
+
+        int minDiffBetweenIterations = 1200;
+        long prevGasLimit = providedGasLimit;
+        HederaEvmTransactionProcessingResult txnResult;
+        do {
+            // Take a guess at the gas, and check transaction validity
+            long mid = (hi + lo) / 2;
+            params.setGas(mid);
+            txnResult = processEthTxn(params);
+
+            boolean err = !txnResult.isSuccessful() || txnResult.getGasUsed() < 0;
+            long gasUsed = err ? providedGasLimit : txnResult.getGasUsed();
+
+            if (err || gasUsed == 0) {
+                lo = mid;
+            } else {
+                hi = mid;
+                // Perf improvement: stop the binary search when the difference in gas between two iterations
+                // is less then `minDiffBetweenIterations`. Doing this cuts the number of iterations from 23
+                // to 12, with only a ~1000 gas loss in precision.
+                if (Math.abs(prevGasLimit - mid) < minDiffBetweenIterations) {
+                    lo = hi;
+                }
+            }
+            prevGasLimit = mid;
+        } while (lo + 1 < hi);
+        validateTxnResult(txnResult, params.getCallType());
+
+        long hiFloor = (long) Math.floor(hi);
+        return Long.toHexString(hiFloor);
+    }
+
+    private HederaEvmTransactionProcessingResult processEthTxn(final CallServiceParameters params) {
         HederaEvmTransactionProcessingResult txnResult;
 
         try {
             txnResult =
                     mirrorEvmTxProcessorFacade.execute(
-                            body.getSender(),
-                            body.getReceiver(),
-                            body.getProvidedGasLimit(),
-                            body.getValue(),
-                            body.getCallData(),
-                            body.isStatic());
-
-            if(!txnResult.isSuccessful()) {
-                onComplete(CallType.ERROR, txnResult);
-
-                var revertReason = txnResult.getRevertReason().orElse(Bytes.EMPTY);
-                throw new InvalidTransactionException(getStatusOrDefault(txnResult), decodeEvmRevertReasonBytesToReadableMessage(revertReason));
-            } else {
-                onComplete(body.getCallType(), txnResult);
-            }
+                            params.getSender(),
+                            params.getReceiver(),
+                            params.getGas(),
+                            params.getValue(),
+                            params.getCallData(),
+                            params.isStatic());
         } catch (IllegalStateException | IllegalArgumentException e) {
             throw new InvalidTransactionException(e.getMessage(), StringUtils.EMPTY);
         }
         return txnResult;
+    }
+
+    private void validateTxnResult(final HederaEvmTransactionProcessingResult txnResult,
+                                   final CallType type) {
+        if (!txnResult.isSuccessful()) {
+            onComplete(CallType.ERROR, txnResult);
+
+            var revertReason = txnResult.getRevertReason().orElse(Bytes.EMPTY);
+            throw new InvalidTransactionException(getStatusOrDefault(txnResult),
+                    decodeEvmRevertReasonBytesToReadableMessage(revertReason));
+        } else {
+            onComplete(type, txnResult);
+        }
     }
 
     private void onComplete(final CallType callType, final HederaEvmTransactionProcessingResult result) {

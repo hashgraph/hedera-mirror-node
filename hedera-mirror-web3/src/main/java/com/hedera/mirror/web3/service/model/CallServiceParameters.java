@@ -21,22 +21,23 @@ package com.hedera.mirror.web3.service.model;
  */
 
 import lombok.Builder;
-import lombok.Value;
+import lombok.Data;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 
-@Value
+@Data
 @Builder
 public class CallServiceParameters {
     HederaEvmAccount sender;
     Address receiver;
-    long providedGasLimit;
+    long gas;
     long value;
     Bytes callData;
     boolean isStatic;
     CallType callType;
+    boolean isEstimate;
 
     public enum CallType {
         ETH_CALL,

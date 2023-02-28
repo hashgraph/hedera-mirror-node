@@ -85,9 +85,7 @@ class ContractControllerTest {
                 .body(BodyInserters.fromValue(request))
                 .exchange()
                 .expectStatus()
-                .isEqualTo(NOT_IMPLEMENTED)
-                .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse(NOT_IMPLEMENTED_ERROR));
+                .isEqualTo(OK);
     }
 
     @Test
