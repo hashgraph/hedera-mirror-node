@@ -1,7 +1,7 @@
 # CT generates release names that are too long for postgresql-ha, so we override it here
 graphql:
   test:
-    defaultAccount: 111571
+    defaultAccount: 111146
 monitor:
   enabled: false
 postgresql:

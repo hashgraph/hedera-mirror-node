@@ -2,7 +2,7 @@ citus:
   enabled: true
 graphql:
   test:
-    defaultAccount: 111571
+    defaultAccount: 111146
 importer:
   env:
     SPRING_FLYWAY_PLACEHOLDERS_SHARDCOUNT: "2"
