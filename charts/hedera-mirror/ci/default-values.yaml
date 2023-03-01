@@ -20,3 +20,10 @@ rest:
         ],
         "stateproof": { "enabled": false }
       }
+
+#Ensure importer has time to start stream processing after startup
+importer:
+  readinessProbe:
+    initialDelaySeconds: 20
+    periodSeconds: 15
+    successThreshold: 2
