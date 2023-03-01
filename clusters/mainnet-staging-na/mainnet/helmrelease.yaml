@@ -51,8 +51,19 @@ spec:
       enabled: false
     redis:
       enabled: false
+    rest:
+      env:
+        HEDERA_MIRROR_REST_STATEPROOF_ENABLED: "true"
+        HEDERA_MIRROR_REST_STATEPROOF_STREAMS_NETWORK: MAINNET
     rosetta:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "mainnet"
     test:
+      config:
+        hedera:
+          mirror:
+            test:
+              acceptance:
+                cucumberTags: "@critical and not @contractbase"
+                network: MAINNET
       enabled: true
