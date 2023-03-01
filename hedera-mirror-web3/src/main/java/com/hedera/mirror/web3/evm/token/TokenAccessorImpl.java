@@ -273,7 +273,7 @@ public class TokenAccessorImpl implements TokenAccessor {
 
         final var tokenEntity = tokenEntityOptional.get();
         final var entity = entityOptional.get();
-        final var ledgerId = properties.getNetwork().getLedgerId();
+        final var ledgerId = ledgerId();
         final var expirationTimeInSec = entity.getExpirationTimestamp() == null ? 0L :
                 entity.getExpirationTimestamp() / 1000000000;
 

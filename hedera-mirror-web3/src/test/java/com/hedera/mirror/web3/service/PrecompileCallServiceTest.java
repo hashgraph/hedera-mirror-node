@@ -58,6 +58,7 @@ class PrecompileCallServiceTest extends Web3IntegrationTest {
     private static final String HEXED_ZERO = "0x0000000000000000000000000000000000000000000000000000000000000000";
     private static final String HEXED_ONE = "0x0000000000000000000000000000000000000000000000000000000000000001";
     private static final String TOKEN_KEY_SUCCESS_RESULT = "0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000021ccd4f651636406f8a2a9902a2a604be1fb480dba6591ff4d992f8a6bc6abc137c700000000000000000000000000000000000000000000000000000000000000";
+    private static final Address ETH_ACCOUNT_ADDRESS = Address.fromHexString("0x23f5e49569a835d7bf9aefd30e4f60cdd570f225");
     private final ContractCallService contractCallService;
 
     @ParameterizedTest
@@ -67,6 +68,14 @@ class PrecompileCallServiceTest extends Web3IntegrationTest {
         final var serviceParameters = serviceParameters(funcHash.functionHash);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulReadResponse);
+    }
+
+    @Test
+    void isFrozenWithEthAddress(){
+        final var functionHash = "0x565ca6fa00000000000000000000000000000000000000000000000000000000000004e400000000000000000000000023f5e49569a835d7bf9aefd30e4f60cdd570f225";
+        final var serviceParameters = serviceParameters(functionHash);
+
+        assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(HEXED_ONE);
     }
 
     private CallServiceParameters serviceParameters(String callData) {
@@ -122,6 +131,15 @@ class PrecompileCallServiceTest extends Web3IntegrationTest {
                                 .balance(20000L))
                 .persist();
 
+        final var ethAccount = 358L;
+
+        domainBuilder.entity().customize(e ->
+                        e.id(ethAccount)
+                                .num(ethAccount)
+                                .evmAddress(ETH_ACCOUNT_ADDRESS.toArrayUnsafe())
+                                .balance(2000L))
+                .persist();
+
         final var tokenEntityId = fromEvmAddress(TOKEN_ADDRESS.toArrayUnsafe());
         final var tokenEvmAddress = toEvmAddress(tokenEntityId);
         final var key = new byte[] {58, 33, -52, -44, -10, 81, 99, 100, 6, -8, -94, -87, -112, 42, 42, 96, 75, -31,
@@ -155,6 +173,13 @@ class PrecompileCallServiceTest extends Web3IntegrationTest {
         domainBuilder.tokenAccount().customize(
                         e -> e.freezeStatus(TokenFreezeStatusEnum.FROZEN)
                                 .accountId(senderEntityId.getId())
+                                .tokenId(tokenEntityId.getId())
+                                .kycStatus(TokenKycStatusEnum.GRANTED))
+                .persist();
+
+        domainBuilder.tokenAccount().customize(
+                        e -> e.freezeStatus(TokenFreezeStatusEnum.FROZEN)
+                                .accountId(ethAccount)
                                 .tokenId(tokenEntityId.getId())
                                 .kycStatus(TokenKycStatusEnum.GRANTED))
                 .persist();
@@ -211,6 +236,14 @@ class PrecompileCallServiceTest extends Web3IntegrationTest {
         domainBuilder.customFee().customize(f ->
                         f.collectorAccountId(senderEntityId)
                                 .id(new CustomFee.Id(3L, tokenEntityId))
+                                .royaltyDenominator(0L)
+                                .royaltyNumerator(0L)
+                                .denominatingTokenId(tokenEntityId))
+                .persist();
+
+        domainBuilder.customFee().customize(f ->
+                        f.collectorAccountId(null)
+                                .id(new CustomFee.Id(4L, tokenEntityId))
                                 .royaltyDenominator(0L)
                                 .royaltyNumerator(0L)
                                 .denominatingTokenId(tokenEntityId))
