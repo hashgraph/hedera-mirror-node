@@ -41,10 +41,12 @@ import org.hyperledger.besu.datatypes.Address;
 import org.springframework.util.CollectionUtils;
 
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
+import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.NftId;
+import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.web3.evm.exception.ParsingException;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
@@ -265,7 +267,7 @@ public class TokenAccessorImpl implements TokenAccessor {
         final var tokenEntityOptional = tokenRepository.findById(new TokenId(fromEvmAddress(token.toArray())));
         final var entityOptional = entityRepository.findById(entityIdFromEvmAddress(token));
 
-        if (tokenEntityOptional.isEmpty() && entityOptional.isEmpty()) {
+        if (tokenEntityOptional.isEmpty() || entityOptional.isEmpty()) {
             return Optional.empty();
         }
 
@@ -288,34 +290,15 @@ public class TokenAccessorImpl implements TokenAccessor {
                 tokenEntity.getDecimals(),
                 expirationTimeInSec);
         evmTokenInfo.setAutoRenewPeriod(entity.getAutoRenewPeriod() != null ? entity.getAutoRenewPeriod() : 0);
+        evmTokenInfo.setDefaultFreezeStatus(tokenEntity.getFreezeDefault());
+        evmTokenInfo.setCustomFees(getCustomFees(token));
+        setEvmKeys(entity, tokenEntity, evmTokenInfo);
+        final var isPaused = tokenEntity.getPauseStatus().ordinal() == 1;
+        evmTokenInfo.setIsPaused(isPaused);
 
         entityRepository.findById(entity.getAutoRenewAccountId())
                 .ifPresent(a -> evmTokenInfo.setAutoRenewAccount(toAddress(
                         new EntityId(a.getShard(), a.getRealm(), a.getNum(), EntityType.ACCOUNT))));
-
-        try {
-            final var adminKey = evmKey(entity.getKey());
-            final var kycKey = evmKey(tokenEntity.getKycKey());
-            final var supplyKey = evmKey(tokenEntity.getSupplyKey());
-            final var freezeKey = evmKey(tokenEntity.getFreezeKey());
-            final var wipeKey = evmKey(tokenEntity.getWipeKey());
-            final var pauseKey = evmKey(tokenEntity.getPauseKey());
-            final var feeScheduleKey = evmKey(tokenEntity.getFeeScheduleKey());
-            final var isPaused = tokenEntity.getPauseStatus().ordinal() == 1;
-
-            evmTokenInfo.setIsPaused(isPaused);
-            evmTokenInfo.setAdminKey(adminKey);
-            evmTokenInfo.setKycKey(kycKey);
-            evmTokenInfo.setSupplyKey(supplyKey);
-            evmTokenInfo.setFreezeKey(freezeKey);
-            evmTokenInfo.setWipeKey(wipeKey);
-            evmTokenInfo.setPauseKey(pauseKey);
-            evmTokenInfo.setFeeScheduleKey(feeScheduleKey);
-            evmTokenInfo.setDefaultFreezeStatus(tokenEntity.getFreezeDefault());
-            evmTokenInfo.setCustomFees(getCustomFees(token));
-        } catch (final InvalidProtocolBufferException e) {
-            throw new ParsingException("Error parsing token keys.");
-        }
 
         return Optional.of(evmTokenInfo);
     }
@@ -331,7 +314,7 @@ public class TokenAccessorImpl implements TokenAccessor {
         for (final var customFee : customFeesCollection) {
             final var collectorId = customFee.getCollectorAccountId();
             if (collectorId == null) {
-               continue;
+                continue;
             }
 
             final var amount = customFee.getAmount();
@@ -381,6 +364,28 @@ public class TokenAccessorImpl implements TokenAccessor {
             customFees.add(customFeeConstructed);
         }
         return customFees;
+    }
+
+    private void setEvmKeys(final Entity entity, final Token tokenEntity, final EvmTokenInfo evmTokenInfo) {
+        try {
+            final var adminKey = evmKey(entity.getKey());
+            final var kycKey = evmKey(tokenEntity.getKycKey());
+            final var supplyKey = evmKey(tokenEntity.getSupplyKey());
+            final var freezeKey = evmKey(tokenEntity.getFreezeKey());
+            final var wipeKey = evmKey(tokenEntity.getWipeKey());
+            final var pauseKey = evmKey(tokenEntity.getPauseKey());
+            final var feeScheduleKey = evmKey(tokenEntity.getFeeScheduleKey());
+
+            adminKey.ifPresent(evmTokenInfo::setAdminKey);
+            kycKey.ifPresent(evmTokenInfo::setKycKey);
+            supplyKey.ifPresent(evmTokenInfo::setSupplyKey);
+            freezeKey.ifPresent(evmTokenInfo::setFreezeKey);
+            wipeKey.ifPresent(evmTokenInfo::setWipeKey);
+            pauseKey.ifPresent(evmTokenInfo::setPauseKey);
+            feeScheduleKey.ifPresent(evmTokenInfo::setFeeScheduleKey);
+        } catch (final InvalidProtocolBufferException e) {
+            throw new ParsingException("Error parsing token keys.");
+        }
     }
 
     /**

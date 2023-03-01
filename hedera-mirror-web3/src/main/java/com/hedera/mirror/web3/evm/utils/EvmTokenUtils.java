@@ -32,6 +32,8 @@ import lombok.experimental.UtilityClass;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
+import java.util.Optional;
+
 import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 
@@ -47,7 +49,10 @@ public class EvmTokenUtils {
         return Address.wrap(bytes);
     }
 
-    public static EvmKey evmKey(byte[] keyBytes) throws InvalidProtocolBufferException {
+    public static Optional<EvmKey> evmKey(byte[] keyBytes) throws InvalidProtocolBufferException {
+        if(keyBytes == null){
+            return Optional.empty();
+        }
         var key = Key.parseFrom(keyBytes);
         final var contractId =
                 key.getContractID().getContractNum() > 0
@@ -60,7 +65,7 @@ public class EvmTokenUtils {
                         ? toAddress(key.getDelegatableContractId())
                         : emptyContract();
 
-        return new EvmKey(contractId, ed25519, ecdsaSecp256K1, delegatableContractId);
+        return Optional.of(new EvmKey(contractId, ed25519, ecdsaSecp256K1, delegatableContractId));
     }
 
     private Address emptyContract() {
