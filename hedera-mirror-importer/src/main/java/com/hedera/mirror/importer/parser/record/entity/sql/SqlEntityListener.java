@@ -353,15 +353,15 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     // If nftTransferId is null, this will throw an NPE.  That behavior is correct, for that case.
     public void onNftTransfer(NftTransfer nftTransfer) throws ImporterException {
         var nftTransferId = nftTransfer.getId();
+        long tokenId = nftTransferId.getTokenId().getId();
         if (nftTransferId.getSerialNumber() == NftTransferId.WILDCARD_SERIAL_NUMBER) {
             flushNftState();
 
             long payerAccountId = nftTransfer.getPayerAccountId().getId();
-            EntityId newTreasury = nftTransfer.getReceiverAccountId();
-            EntityId previousTreasury = nftTransfer.getSenderAccountId();
-            EntityId tokenId = nftTransferId.getTokenId();
+            var newTreasury = nftTransfer.getReceiverAccountId();
+            var previousTreasury = nftTransfer.getSenderAccountId();
 
-            nftRepository.updateTreasury(tokenId.getId(), previousTreasury.getId(), newTreasury.getId(),
+            nftRepository.updateTreasury(tokenId, previousTreasury.getId(), newTreasury.getId(),
                     nftTransferId.getConsensusTimestamp(), payerAccountId, nftTransfer.getIsApproval());
             return;
         }
@@ -370,7 +370,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             if (nftTransfer.getSenderAccountId() != EntityId.EMPTY) {
                 var tokenAccount = new TokenAccount();
                 tokenAccount.setAccountId(nftTransfer.getSenderAccountId().getId());
-                tokenAccount.setTokenId(nftTransfer.getId().getTokenId().getId());
+                tokenAccount.setTokenId(tokenId);
                 tokenAccount.setBalance(-1);
                 onTokenAccount(tokenAccount);
             }
@@ -378,7 +378,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             if (nftTransfer.getReceiverAccountId() != EntityId.EMPTY) {
                 var tokenAccount = new TokenAccount();
                 tokenAccount.setAccountId(nftTransfer.getReceiverAccountId().getId());
-                tokenAccount.setTokenId(nftTransfer.getId().getTokenId().getId());
+                tokenAccount.setTokenId(tokenId);
                 tokenAccount.setBalance(1);
                 onTokenAccount(tokenAccount);
             }
