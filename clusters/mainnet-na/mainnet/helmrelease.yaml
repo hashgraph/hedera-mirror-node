@@ -13,7 +13,7 @@ spec:
       valuesFiles:
         - values.yaml
         - values-prod.yaml
-      version: '0.74.4'
+      version: '0.75.0'
   dependsOn:
     - name: mirror
       namespace: common
@@ -31,6 +31,8 @@ spec:
     - kind: Secret
       name: mirror
   values:
+    global:
+      hostname: mainnet-public.mirrornode.hedera.com
     importer:
       env:
         HEDERA_MIRROR_IMPORTER_NETWORK: "MAINNET"
@@ -54,10 +56,19 @@ spec:
     redis:
       enabled: false
     rest:
-      resources:
-        requests:
-          cpu: 400m
+      env:
+        HEDERA_MIRROR_REST_STATEPROOF_ENABLED: "true"
+        HEDERA_MIRROR_REST_STATEPROOF_STREAMS_NETWORK: MAINNET
     rosetta:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "mainnet"
+    test:
+      config:
+        hedera:
+          mirror:
+            test:
+              acceptance:
+                network: MAINNET
+      cucumberTags: "@critical and not @contractbase"
+      enabled: true
 
