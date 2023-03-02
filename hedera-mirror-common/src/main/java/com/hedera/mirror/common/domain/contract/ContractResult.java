@@ -27,6 +27,7 @@ import java.util.List;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Id;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
@@ -57,6 +58,7 @@ public class ContractResult implements Persistable<Long> {
 
     private long contractId;
 
+    @Builder.Default
     @Type(type = "com.vladmihalcea.hibernate.type.array.ListArrayType")
     @JsonSerialize(using = LongListToStringSerializer.class)
     private List<Long> createdContractIds = Collections.emptyList();
