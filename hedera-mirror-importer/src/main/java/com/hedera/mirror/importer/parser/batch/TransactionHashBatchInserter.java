@@ -75,24 +75,24 @@ public class TransactionHashBatchInserter implements BatchPersister {
 
     private Mono<Void> processShard(Map.Entry<Integer, List<TransactionHash>> shardData) {
         //TODO:// handle error
-        return Mono.zip(Mono.just(shardData),
-                Mono.just(TransactionSynchronizationManager.getCurrentTransactionName()),//TODO handle no active transaction
-                Mono.just(TransactionSynchronizationManager.getResourceMap())).doOnNext((tuple) -> {
+        return Mono.zip(
+                        Mono.just(TransactionSynchronizationManager.getCurrentTransactionName()),//TODO handle no
+                        Mono.just(TransactionSynchronizationManager.getResourceMap()))
+                .doOnNext((tuple) -> {
 
-            // Configure thread to have transaction properties from calling thread
-            TransactionSynchronizationManager.clear();
-            tuple.getT3().forEach((key, value) -> {
-                TransactionSynchronizationManager.unbindResourceIfPossible(key);
-                TransactionSynchronizationManager.bindResource(key, value);
-            });
-            TransactionSynchronizationManager.initSynchronization();
-            TransactionSynchronizationManager.setActualTransactionActive(true);
-            TransactionSynchronizationManager.setCurrentTransactionName(tuple.getT2());
+                    // Configure thread to have transaction properties from calling thread
+                    TransactionSynchronizationManager.clear();
+                    tuple.getT2().forEach((key, value) -> {
+                        TransactionSynchronizationManager.unbindResourceIfPossible(key);
+                        TransactionSynchronizationManager.bindResource(key, value);
+                    });
+                    TransactionSynchronizationManager.initSynchronization();
+                    TransactionSynchronizationManager.setActualTransactionActive(true);
+                    TransactionSynchronizationManager.setCurrentTransactionName(tuple.getT1());
 
-            batchInserters.computeIfAbsent(tuple.getT1()
-                    .getKey(), key -> new BatchInserter(TransactionHash.class, dataSource, meterRegistry,
-                    commonParserProperties, String.format("%s_%02d", shardedTableName, tuple.getT1()
-                    .getKey()))).persist(tuple.getT1().getValue());
-        }).subscribeOn(scheduler).then();
+                    batchInserters.computeIfAbsent(shardData.getKey(), key -> new BatchInserter(TransactionHash.class, dataSource,
+                            meterRegistry,
+                            commonParserProperties, String.format("%s_%02d", shardedTableName, shardData.getKey()))).persist(shardData.getValue());
+                }).subscribeOn(scheduler).then();
     }
 }
