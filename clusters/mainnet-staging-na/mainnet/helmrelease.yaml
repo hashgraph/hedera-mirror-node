@@ -64,6 +64,6 @@ spec:
           mirror:
             test:
               acceptance:
-                cucumberTags: "@critical and not @contractbase"
                 network: MAINNET
+      cucumberTags: "@critical and not @contractbase"
       enabled: true
