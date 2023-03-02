@@ -15,7 +15,7 @@ create index if not exists record_file__hash on record_file (hash collate "C");
 
 drop index if exists transaction_signature__timestamp_public_key_prefix;
 create index if not exists transaction_signature__timestamp_public_key_prefix
-    on schedule_signature (consensus_timestamp desc, public_key_prefix);
+    on transaction_signature (consensus_timestamp desc, public_key_prefix);
 
 -- one last unique index -- topic_message__topic_id_seqnum -- still remains, but it would be very expensive to rebuild
 -- (with 4 billion rows as of March 1, 2023).
