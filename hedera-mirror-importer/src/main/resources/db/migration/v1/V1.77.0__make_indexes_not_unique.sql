@@ -1,10 +1,7 @@
--- replace the 5 "create unique index" currently-existing indices with non-"unique" versions of the same index.
+-- replace the "unique" currently-existing indices with non-"unique" versions of the same index.
 
 drop index if exists account_balance_file__name;
 create index if not exists account_balance_file__name on account_balance_file(name);
-
-drop index if exists entity_state_start__id;
-create index if not exists entity_state_start__id on entity_state_start (id);
 
 drop index if exists nft_transfer__token_id_serial_num_timestamp;
 create index if not exists nft_transfer__token_id_serial_num_timestamp
