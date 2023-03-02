@@ -90,7 +90,7 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public Optional<EvmNftInfo> evmNftInfo(final Address nft, long serialNo) {
-        final var nftOptional = nftRepository.findById(new NftId(serialNo, fromEvmAddress(nft.toArray())));
+        final var nftOptional = nftRepository.findById(new NftId(serialNo, fromEvmAddress(nft.toArrayUnsafe())));
         if (nftOptional.isEmpty()) {
             return Optional.empty();
         }
@@ -305,7 +305,7 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     private List<CustomFee> getCustomFees(final Address token) {
         final List<CustomFee> customFees = new ArrayList<>();
-        final var customFeesCollection = customFeeRepository.findCustomFees(entityIdFromEvmAddress(token));
+        final var customFeesCollection = customFeeRepository.findByTokenId(entityIdFromEvmAddress(token));
 
         if (CollectionUtils.isEmpty(customFeesCollection)) {
             return customFees;
