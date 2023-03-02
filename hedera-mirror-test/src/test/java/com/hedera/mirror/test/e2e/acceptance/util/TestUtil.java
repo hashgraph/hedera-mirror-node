@@ -30,6 +30,7 @@ import com.hedera.hashgraph.sdk.proto.Key;
 
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
+import org.apache.commons.lang3.StringUtils;
 
 @UtilityClass
 public class TestUtil {
@@ -51,5 +52,9 @@ public class TestUtil {
         }
 
         throw new IllegalStateException("Unsupported key type");
+    }
+
+    public static String to32BytesString(String data) {
+        return StringUtils.leftPad(data, 64, '0');
     }
 }

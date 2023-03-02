@@ -39,4 +39,8 @@ public class ContractCallResponse {
     public static String convertContractCallResponseToAddress(final ContractCallResponse response) {
         return Bytes.fromHexString(response.getResult()).slice(12).toUnprefixedHexString();
     }
+
+    public static boolean convertContractCallResponseToBoolean(final ContractCallResponse response) {
+        return Long.parseUnsignedLong(response.getResult().replace("0x", ""), 16) > 0;
+    }
 }

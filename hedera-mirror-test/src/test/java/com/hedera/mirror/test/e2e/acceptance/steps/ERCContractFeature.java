@@ -69,7 +69,7 @@ public class ERCContractFeature extends AbstractFeature {
     private FileId fileId;
     private CompiledSolidityArtifact compiledSolidityArtifact;
 
-    @Given("I successfully create a contract from contract bytes with {int} balance")
+    @Given("I successfully create a erc contract from contract bytes with {int} balance")
     public void createNewContract(int initialBalance) throws IOException {
         compiledSolidityArtifact = MAPPER.readValue(
                 ResourceUtils.getFile(ercContract.toUri()),
@@ -77,7 +77,7 @@ public class ERCContractFeature extends AbstractFeature {
         createContract(compiledSolidityArtifact.getBytecode(), initialBalance);
     }
 
-    @Then("I call the contract via the mirror node REST API")
+    @Then("I call the erc contract via the mirror node REST API")
     public void restContractCall() {
         var from = contractClient.getClientAddress();
         var to = contractId.toSolidityAddress();
@@ -109,7 +109,7 @@ public class ERCContractFeature extends AbstractFeature {
                 .hasMessageContaining("400 Bad Request from POST");
     }
 
-    @Given("I successfully delete the contract")
+    @Given("I successfully delete the erc contract")
     public void deleteContract() {
         networkTransactionResponse = contractClient.deleteContract(
                 contractId,
@@ -120,14 +120,14 @@ public class ERCContractFeature extends AbstractFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
-    @Then("the mirror node REST API should return status {int} for the contract transaction")
+    @Then("the mirror node REST API should return status {int} for the erc contract transaction")
     public void verifyMirrorAPIResponses(int status) {
         log.info("Verify contract transaction");
         MirrorTransaction mirrorTransaction = verifyMirrorTransactionsResponse(mirrorClient, status);
         assertThat(mirrorTransaction.getEntityId()).isEqualTo(contractId.toString());
     }
 
-    @Then("the mirror node REST API should verify the deployed contract entity")
+    @Then("the mirror node REST API should verify the deployed erc contract entity")
     public void verifyDeployedContractMirror() {
         verifyContractFromMirror(false);
         verifyContractExecutionResultsById();

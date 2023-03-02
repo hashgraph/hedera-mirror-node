@@ -21,46 +21,53 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 
-import com.hedera.hashgraph.sdk.ContractId;
-import com.hedera.hashgraph.sdk.FileId;
-import com.hedera.hashgraph.sdk.Hbar;
-import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
-import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
-import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
+import com.hedera.hashgraph.sdk.TokenId;
+import com.hedera.hashgraph.sdk.TokenSupplyType;
+import com.hedera.hashgraph.sdk.TokenType;
+import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
+import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
 
-import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
+import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
+import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorContractResult;
-import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
+import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
 
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResponse;
-import com.hedera.mirror.test.e2e.acceptance.response.MirrorContractResultResponse;
-import com.hedera.mirror.test.e2e.acceptance.util.FeatureInputHandler;
+import com.hedera.mirror.test.e2e.acceptance.util.TestUtil;
 
 import io.cucumber.java.en.Given;
-import io.cucumber.java.en.Then;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
+import io.cucumber.java.en.Then;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.util.ResourceUtils;
-import org.springframework.util.StringUtils;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
+
+import com.hedera.hashgraph.sdk.ContractId;
+import com.hedera.hashgraph.sdk.FileId;
+import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
+import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
+import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
+import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 
 @Log4j2
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class PrecompileContractFeature extends AbstractFeature {
+    private final List<TokenId> tokenIds = new ArrayList<>();
 
     private static final ObjectMapper MAPPER = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
@@ -78,187 +85,215 @@ public class PrecompileContractFeature extends AbstractFeature {
     public static final String GET_TYPE_SELECTOR = "f429f19b";
     public static final String GET_EXPIRY_INFO_FOR_TOKEN_SELECTOR = "1de8edad";
     public static final String GET_TOKEN_KEY_PUBLIC_SELECTOR = "7a3f45cb";
-    private static final String WRONG_SELECTOR = "000000";
 
     private final ContractClient contractClient;
+    private final TokenClient tokenClient;
     private final FileClient fileClient;
     private final MirrorNodeClient mirrorClient;
 
     @Value("classpath:solidity/artifacts/contracts/PrecompileTestContract.sol/PrecompileTestContract.json")
-    private Path precompileContract;
+    private Path precompileTestContract;
 
     private ContractId contractId;
     private FileId fileId;
-    private CompiledSolidityArtifact compiledSolidityArtifact;
 
-    @Given("I successfully create a contract from contract bytes with {int} balance")
-    public void createNewContract(int initialBalance) throws IOException {
-        compiledSolidityArtifact = MAPPER.readValue(
-                ResourceUtils.getFile(precompileContract.toUri()),
+    @Given("I successfully create a precompile contract from contract bytes")
+    public void createNewContract() throws IOException {
+        CompiledSolidityArtifact compiledSolidityArtifact = MAPPER.readValue(
+                ResourceUtils.getFile(precompileTestContract.toUri()),
                 CompiledSolidityArtifact.class);
-        createContract(compiledSolidityArtifact.getBytecode(), initialBalance);
+        createContract(compiledSolidityArtifact.getBytecode());
     }
 
-    @Then("I call the contract via the mirror node REST API")
-    public void restContractCall() {
-        var from = contractClient.getClientAddress();
-        var to = contractId.toSolidityAddress();
-
-        // TODO: assert results
-        var getIsTokenResponse = mirrorClient.contractsCall(IS_TOKEN_SELECTOR, to, from);
-
-        var getIsTokenFrozenResponse = mirrorClient.contractsCall(IS_TOKEN_FROZEN_SELECTOR, to, from);
-
-        var getIsKycGrantedResponse = mirrorClient.contractsCall(IS_KYC_GRANTED_SELECTOR, to, from);
-
-        var getTokenDefaultFreezeResponse = mirrorClient.contractsCall(GET_TOKEN_DEFAULT_FREEZE_SELECTOR, to, from);
-
-        var getTokenDefaultKycResponse = mirrorClient.contractsCall(GET_TOKEN_DEFAULT_KYC_SELECTOR, to, from);
-
-        var getCustomFeesForTokenResponse = mirrorClient.contractsCall(GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR, to, from);
-
-        var getInformationForTokenResponse = mirrorClient.contractsCall(GET_INFORMATION_FOR_TOKEN_SELECTOR, to, from);
-
-        var getInformationForFungibleTokenResponse = mirrorClient.contractsCall(GET_INFORMATION_FOR_FUNGIBLE_TOKEN_SELECTOR, to, from);
-
-        var getInformationForNonFungibleTokenResponse = mirrorClient.contractsCall(GET_INFORMATION_FOR_NON_FUNGIBLE_TOKEN_SELECTOR, to, from);
-
-        var getTypeResponse = mirrorClient.contractsCall(GET_TYPE_SELECTOR, to, from);
-
-        var getExpiryInfoForTokenResponse = mirrorClient.contractsCall(GET_EXPIRY_INFO_FOR_TOKEN_SELECTOR, to, from);
-
-        var getTokenKeyResponse = mirrorClient.contractsCall(GET_TOKEN_KEY_PUBLIC_SELECTOR, to, from);
-
-
-        assertThatThrownBy(() -> mirrorClient.contractsCall(WRONG_SELECTOR, to, from))
-                .isInstanceOf(WebClientResponseException.class)
-                .hasMessageContaining("400 Bad Request from POST");
+    @Given("I successfully create a fungible token for precompile contract tests")
+    public void createFungibleToken() {
+        createNewToken(
+                RandomStringUtils.randomAlphabetic(4).toUpperCase(),
+                TokenType.FUNGIBLE_COMMON,
+                TokenSupplyType.INFINITE
+        );
     }
 
-    @Given("I successfully delete the contract")
-    public void deleteContract() {
-        networkTransactionResponse = contractClient.deleteContract(
-                contractId,
-                contractClient.getSdkClient().getExpandedOperatorAccountId().getAccountId(),
-                null);
+    @Given("I successfully create a non fungible token for precompile contract tests")
+    public void createNonFungibleToken() {
+        createNewToken(
+                RandomStringUtils.randomAlphabetic(4).toUpperCase(),
+                TokenType.NON_FUNGIBLE_UNIQUE,
+                TokenSupplyType.INFINITE
+        );
+    }
 
+    @Then("Check if fungible token is token")
+    public void checkIfFungibleTokenIsToken() {
+        ContractCallResponse isTokenResponse = mirrorClient.contractsCall(
+                PrecompileContractFeature.IS_TOKEN_SELECTOR + TestUtil
+                        .to32BytesString(tokenIds.get(0).toSolidityAddress()),
+                contractId.toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+
+        assertTrue(ContractCallResponse.convertContractCallResponseToBoolean(isTokenResponse));
+    }
+
+    @Then("Check if non fungible token is token")
+    public void checkIfNonFungibleTokenIsToken() {
+        ContractCallResponse isTokenResponse = mirrorClient.contractsCall(
+                PrecompileContractFeature.IS_TOKEN_SELECTOR + TestUtil
+                        .to32BytesString(tokenIds.get(1).toSolidityAddress()),
+                contractId.toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+
+        assertTrue(ContractCallResponse.convertContractCallResponseToBoolean(isTokenResponse));
+    }
+
+    @Then("Check if fungible token is frozen")
+    public void checkIfFungibleTokenIsFrozen() {
+        ContractCallResponse isFrozenResponse = mirrorClient.contractsCall(
+                PrecompileContractFeature.IS_TOKEN_FROZEN_SELECTOR
+                        + TestUtil.to32BytesString(tokenIds.get(0).toSolidityAddress())
+                        + TestUtil.to32BytesString(contractClient.getClientAddress()),
+                contractId.toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+
+        assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(isFrozenResponse));
+    }
+
+    @Then("Check if non fungible token is frozen")
+    public void checkIfNonFungibleTokenIsFrozen() {
+        ContractCallResponse isFrozenResponse = mirrorClient.contractsCall(
+                PrecompileContractFeature.IS_TOKEN_FROZEN_SELECTOR
+                        + TestUtil.to32BytesString(tokenIds.get(1).toSolidityAddress())
+                        + TestUtil.to32BytesString(contractClient.getClientAddress()),
+                contractId.toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+
+        assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(isFrozenResponse));
+    }
+
+    @Then("Check if fungible token is kyc granted")
+    public void checkIfFungibleTokenIsKycGranted() {
+        ContractCallResponse isFrozenResponse = mirrorClient.contractsCall(
+                PrecompileContractFeature.IS_KYC_GRANTED_SELECTOR
+                        + TestUtil.to32BytesString(tokenIds.get(0).toSolidityAddress())
+                        + TestUtil.to32BytesString(contractClient.getClientAddress()),
+                contractId.toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+
+        assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(isFrozenResponse));
+    }
+
+    @Then("Check if non fungible token is kyc granted")
+    public void checkIfNonFungibleTokenIsKycGranted() {
+        ContractCallResponse isFrozenResponse = mirrorClient.contractsCall(
+                PrecompileContractFeature.IS_KYC_GRANTED_SELECTOR
+                        + TestUtil.to32BytesString(tokenIds.get(1).toSolidityAddress())
+                        + TestUtil.to32BytesString(contractClient.getClientAddress()),
+                contractId.toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+
+        assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(isFrozenResponse));
+    }
+
+    @Then("Get token default freeze of fungible token")
+    public void getDefaultFreezeOfFungibleToken() {
+        ContractCallResponse isFrozenResponse = mirrorClient.contractsCall(
+                PrecompileContractFeature.GET_TOKEN_DEFAULT_FREEZE_SELECTOR
+                        + TestUtil.to32BytesString(tokenIds.get(0).toSolidityAddress()),
+                contractId.toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+
+        assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(isFrozenResponse));
+    }
+
+    @Then("Get token default freeze of non fungible token")
+    public void getDefaultFreezeOfNonFungibleToken() {
+        ContractCallResponse isFrozenResponse = mirrorClient.contractsCall(
+                PrecompileContractFeature.GET_TOKEN_DEFAULT_FREEZE_SELECTOR
+                        + TestUtil.to32BytesString(tokenIds.get(1).toSolidityAddress()),
+                contractId.toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+
+        assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(isFrozenResponse));
+    }
+
+    @Then("Get token default kyc of fungible token")
+    public void getDefaultKycOfFungibleToken() {
+        ContractCallResponse isFrozenResponse = mirrorClient.contractsCall(
+                PrecompileContractFeature.GET_TOKEN_DEFAULT_KYC_SELECTOR
+                        + TestUtil.to32BytesString(tokenIds.get(0).toSolidityAddress()),
+                contractId.toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+
+        assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(isFrozenResponse));
+    }
+
+    @Then("Get token default kyc of non fungible token")
+    public void getDefaultKycOfNonFungibleToken() {
+        ContractCallResponse isFrozenResponse = mirrorClient.contractsCall(
+                PrecompileContractFeature.GET_TOKEN_DEFAULT_KYC_SELECTOR
+                        + TestUtil.to32BytesString(tokenIds.get(1).toSolidityAddress()),
+                contractId.toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+
+        assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(isFrozenResponse));
+    }
+
+    @Retryable(value = {AssertionError.class},
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
+            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
+    private void verifyToken(TokenId tokenId) {
+        MirrorTokenResponse mirrorToken = mirrorClient.getTokenInfo(tokenId.toString());
+
+        assertNotNull(mirrorToken);
+        assertThat(mirrorToken.getTokenId()).isEqualTo(tokenId.toString());
+    }
+
+    private TokenId createNewToken(
+            String symbol,
+            TokenType tokenType,
+            TokenSupplyType tokenSupplyType
+    ) {
+        ExpandedAccountId admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
+        networkTransactionResponse = tokenClient.createToken(
+                admin,
+                symbol,
+                TokenFreezeStatus.FreezeNotApplicable_VALUE,
+                TokenKycStatus.KycNotApplicable_VALUE,
+                admin,
+                1_000_000,
+                tokenSupplyType,
+                1_000_000,
+                tokenType,
+                new ArrayList<>());
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
+        TokenId tokenId = networkTransactionResponse.getReceipt().tokenId;
+        assertNotNull(tokenId);
+        tokenIds.add(tokenId);
+
+        verifyToken(tokenId);
+
+        return tokenId;
     }
 
-    @Then("the mirror node REST API should return status {int} for the contract transaction")
-    public void verifyMirrorAPIResponses(int status) {
-        log.info("Verify contract transaction");
-        MirrorTransaction mirrorTransaction = verifyMirrorTransactionsResponse(mirrorClient, status);
-        assertThat(mirrorTransaction.getEntityId()).isEqualTo(contractId.toString());
-    }
-
-    @Then("the mirror node REST API should verify the deployed contract entity")
-    public void verifyDeployedContractMirror() {
-        verifyContractFromMirror(false);
-        verifyContractExecutionResultsById();
-        verifyContractExecutionResultsByTransactionId();
-    }
-
-    private MirrorContractResponse verifyContractFromMirror(boolean isDeleted) {
-        MirrorContractResponse mirrorContract = mirrorClient.getContractInfo(contractId.toString());
-
-        assertNotNull(mirrorContract);
-        assertThat(mirrorContract.getAdminKey()).isNotNull();
-        assertThat(mirrorContract.getAdminKey().getKey())
-                .isEqualTo(contractClient.getSdkClient().getExpandedOperatorAccountId().getPublicKey().toStringRaw());
-        assertThat(mirrorContract.getAutoRenewPeriod()).isNotNull();
-        assertThat(mirrorContract.getBytecode()).isNotBlank();
-        assertThat(mirrorContract.getContractId()).isEqualTo(contractId.toString());
-        assertThat(mirrorContract.getCreatedTimestamp()).isNotBlank();
-        assertThat(mirrorContract.isDeleted()).isEqualTo(isDeleted);
-        assertThat(mirrorContract.getFileId()).isEqualTo(fileId.toString());
-        assertThat(mirrorContract.getMemo()).isNotBlank();
-        String address = mirrorContract.getEvmAddress();
-        assertThat(address).isNotBlank().isNotEqualTo("0x").isNotEqualTo("0x0000000000000000000000000000000000000000");
-        assertThat(mirrorContract.getTimestamp()).isNotNull();
-        assertThat(mirrorContract.getTimestamp().getFrom()).isNotNull();
-
-        if (contractClient.getSdkClient().getAcceptanceTestProperties().getFeatureProperties().isSidecars()) {
-            assertThat(mirrorContract.getRuntimeBytecode()).isNotNull();
-        }
-
-        assertThat(mirrorContract.getBytecode()).isEqualTo(compiledSolidityArtifact.getBytecode());
-
-        if (isDeleted) {
-            assertThat(mirrorContract.getObtainerId())
-                    .isEqualTo(contractClient.getSdkClient().getExpandedOperatorAccountId().getAccountId().toString());
-        } else {
-            assertThat(mirrorContract.getObtainerId()).isNull();
-        }
-
-        return mirrorContract;
-    }
-
-    private void verifyContractExecutionResultsById() {
-        List<MirrorContractResult> contractResults = mirrorClient.getContractResultsById(contractId.toString())
-                .getResults();
-
-        assertThat(contractResults).isNotEmpty().allSatisfy(this::verifyContractExecutionResults);
-    }
-
-    private void verifyContractExecutionResultsByTransactionId() {
-        MirrorContractResultResponse contractResult = mirrorClient
-                .getContractResultByTransactionId(networkTransactionResponse.getTransactionIdStringNoCheckSum());
-
-        verifyContractExecutionResults(contractResult);
-        assertThat(contractResult.getBlockHash()).isNotBlank();
-        assertThat(contractResult.getBlockNumber()).isPositive();
-        assertThat(contractResult.getHash()).isNotBlank();
-    }
-
-    private void verifyContractExecutionResults(MirrorContractResult contractResult) {
-        ContractExecutionStage contractExecutionStage = isEmptyHex(contractResult.getFunctionParameters()) ?
-                ContractExecutionStage.CREATION : ContractExecutionStage.CALL;
-
-        assertThat(contractResult.getCallResult()).isNotBlank();
-        assertThat(contractResult.getContractId()).isEqualTo(contractId.toString());
-        String[] createdIds = contractResult.getCreatedContractIds();
-        assertThat(createdIds).isNotEmpty();
-        assertThat(contractResult.getErrorMessage()).isBlank();
-        assertThat(contractResult.getFailedInitcode()).isBlank();
-        assertThat(contractResult.getFrom()).isEqualTo(FeatureInputHandler.evmAddress(
-                contractClient.getSdkClient().getExpandedOperatorAccountId().getAccountId()));
-        assertThat(contractResult.getGasLimit())
-                .isEqualTo(contractClient.getSdkClient().getAcceptanceTestProperties().getFeatureProperties()
-                        .getMaxContractFunctionGas());
-        assertThat(contractResult.getGasUsed()).isPositive();
-        assertThat(contractResult.getTo()).isEqualTo(FeatureInputHandler.evmAddress(contractId));
-
-        int amount = 0; // no payment in contract construction phase
-        int numCreatedIds = 2; // parent and child contract
-        switch (contractExecutionStage) {
-            case CREATION:
-                amount = 10000000;
-                assertThat(createdIds).contains(contractId.toString());
-                assertThat(isEmptyHex(contractResult.getFunctionParameters())).isTrue();
-                break;
-            case CALL:
-                numCreatedIds = 1;
-                assertThat(createdIds).doesNotContain(contractId.toString());
-                assertThat(isEmptyHex(contractResult.getFunctionParameters())).isFalse();
-                break;
-            default:
-                break;
-        }
-
-        assertThat(contractResult.getAmount()).isEqualTo(amount);
-        assertThat(createdIds).hasSize(numCreatedIds);
-    }
-
-    private void createContract(String byteCode, int initialBalance) {
+    private void createContract(String byteCode) {
         persistContractBytes(byteCode.replaceFirst("0x", ""));
         networkTransactionResponse = contractClient.createContract(
                 fileId,
                 contractClient.getSdkClient().getAcceptanceTestProperties().getFeatureProperties()
                         .getMaxContractFunctionGas(),
-                initialBalance == 0 ? null : Hbar.fromTinybars(initialBalance),
-                null);
+                null,
+                null
+        );
 
         verifyCreateContractNetworkResponse();
     }
@@ -283,15 +318,4 @@ public class PrecompileContractFeature extends AbstractFeature {
         contractId = networkTransactionResponse.getReceipt().contractId;
         assertNotNull(contractId);
     }
-
-    private enum ContractExecutionStage {
-        CREATION,
-        CALL
-    }
-
-    private boolean isEmptyHex(String hexString) {
-        return StringUtils.isEmpty(hexString) || hexString.equals("0x");
-    }
-
-
 }
