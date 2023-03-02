@@ -76,7 +76,7 @@ where bt.consensus_timestamp is not null;
 
 comment on materialized view entity_state_start is 'Network entity state at start of staking period';
 
-create unique index if not exists entity_state_start__id on entity_state_start (id);
+create index if not exists entity_state_start__id on entity_state_start (id);
 create index if not exists entity_state_start__staked_account_id
   on entity_state_start (staked_account_id) where staked_account_id <> 0;
 
