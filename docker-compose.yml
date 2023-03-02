@@ -74,7 +74,7 @@ services:
 #      - ./application.yml:/usr/etc/hedera-mirror-grpc/application.yml
 #
 #  importer:
-#    image: gcr.io/mirrornode/hedera-mirror-importer:0.76.0-SNAPSHOT
+#    image: docker.io/jesseswirldslabs/hedera-mirror-importer:0.76.0-SNAPSHOT
 #    pull_policy: always
 #    restart: unless-stopped
 #    environment:
@@ -83,7 +83,7 @@ services:
 #      SPRING_REDIS_HOST: redis
 #    volumes:
 #      - ./application.yml:/usr/etc/hedera-mirror-importer/application.yml
-#
+
 #  monitor:
 #    deploy:
 #      replicas: 0
@@ -104,15 +104,15 @@ services:
 #    stop_signal: SIGTERM
 #    tty: true
 #
-#  rest:
-#    image: gcr.io/mirrornode/hedera-mirror-rest:0.76.0-SNAPSHOT
-#    pull_policy: always
-#    environment:
-#      HEDERA_MIRROR_REST_DB_HOST: db
-#    ports:
-#      - 5551:5551
-#    restart: unless-stopped
-#    tty: true
+  rest:
+    image: docker.io/jesseswirldslabs/hedera-mirror-rest:0.76.0-SNAPSHOT
+    pull_policy: always
+    environment:
+      HEDERA_MIRROR_REST_DB_HOST: db
+    ports:
+      - 5551:5551
+    restart: unless-stopped
+    tty: true
 #
 #  rosetta:
 #    image: gcr.io/mirrornode/hedera-mirror-rosetta:0.76.0-SNAPSHOT

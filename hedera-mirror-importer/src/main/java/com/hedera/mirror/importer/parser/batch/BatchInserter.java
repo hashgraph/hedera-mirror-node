@@ -48,6 +48,8 @@ import com.hedera.mirror.importer.converter.ByteArrayToHexSerializer;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
 
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+
 /**
  * Stateless writer to insert rows into PostgreSQL using COPY.
  */

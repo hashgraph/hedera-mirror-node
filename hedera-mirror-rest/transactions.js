@@ -555,14 +555,13 @@ const getTransactionsInnerQuery = function (
     return `
       SELECT coalesce(t.consensus_timestamp, ctl.consensus_timestamp, ttl.consensus_timestamp) AS consensus_timestamp
       FROM (${transactionOnlyQuery}) AS ${Transaction.tableAlias}
-      FULL OUTER JOIN (${ctlQuery}) AS ctl
-      ON ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} = ctl.consensus_timestamp
-      FULL OUTER JOIN (${ttlQuery}) AS ttl
-      ON coalesce(${Transaction.getFullName(
-        Transaction.CONSENSUS_TIMESTAMP
-      )}, ctl.consensus_timestamp) = ttl.consensus_timestamp
-      order by consensus_timestamp ${order}
-      ${namedLimitQuery}`;
+             FULL OUTER JOIN (${ctlQuery}) AS ctl
+                             ON ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} = ctl.consensus_timestamp
+             FULL OUTER JOIN (${ttlQuery}) AS ttl
+                             ON coalesce(${Transaction.getFullName(
+                               Transaction.CONSENSUS_TIMESTAMP
+                             )}, ctl.consensus_timestamp) = ttl.consensus_timestamp
+      order by consensus_timestamp ${order} ${namedLimitQuery}`;
   }
 
   return transactionOnlyQuery;
@@ -655,11 +654,21 @@ const transactionHashRegex = /^([\dA-Za-z+\-\/_]{64}|(0x)?[\dA-Fa-f]{96})$/;
 
 const isValidTransactionHash = (hash) => transactionHashRegex.test(hash);
 
+const transactionHashShardedQueryEnabled = (() => {
+  let result = undefined;
+  return () => result = (result || (async () => pool.queryQuietly(`SELECT count(*) > 0 as shardedQueryEnabled
+                                                                   from pg_proc
+                                                                   where proname = 'get_transaction_info_by_hash'`, []))())
+})();
+
 const transactionHashQuery = `
   select ${TransactionHash.CONSENSUS_TIMESTAMP}, ${TransactionHash.PAYER_ACCOUNT_ID}
   from ${TransactionHash.tableName}
   where ${TransactionHash.HASH} = $1
   order by ${TransactionHash.CONSENSUS_TIMESTAMP}`;
+
+const transactionHashShardedQuery = `select ${TransactionHash.CONSENSUS_TIMESTAMP}, ${TransactionHash.PAYER_ACCOUNT_ID}
+                                     from get_transaction_info_by_hash($1)`;
 
 /**
  * Get the query for either getting transaction by id or getting transaction by payer account id and a list of
@@ -716,12 +725,15 @@ const extractSqlFromTransactionsByIdOrHashRequest = async (transactionIdOrHash, 
       transactionIdOrHash = transactionIdOrHash.substring(2);
     }
 
+    const {rows: {0: shardedQueryEnabled}} = await transactionHashShardedQueryEnabled();
+    const usedTransactionHashQuery = shardedQueryEnabled ? transactionHashShardedQuery : transactionHashQuery;
     const transactionHash = Buffer.from(transactionIdOrHash, encoding);
+
     if (logger.isTraceEnabled()) {
-      logger.trace(`transactionHashQuery: ${transactionHashQuery}, ${utils.JSONStringify(transactionHash)}`);
+      logger.trace(`transactionHashQuery: ${usedTransactionHashQuery}, ${utils.JSONStringify(transactionHash)}`);
     }
 
-    const {rows} = await pool.queryQuietly(transactionHashQuery, [transactionHash]);
+    const {rows} = await pool.queryQuietly(usedTransactionHashQuery, [transactionHash]);
     if (rows.length === 0) {
       throw new NotFoundError();
     }

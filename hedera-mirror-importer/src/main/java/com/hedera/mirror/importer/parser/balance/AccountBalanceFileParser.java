@@ -123,6 +123,7 @@ public class AccountBalanceFileParser extends AbstractStreamFileParser<AccountBa
         accountBalanceFile.setLoadEnd(loadEnd.getEpochSecond());
         streamFileListener.onEnd(accountBalanceFile);
         streamFileRepository.save(accountBalanceFile);
+        //TODO:// look at this for adding synchronization
         applicationEventPublisher.publishEvent(new AccountBalanceFileParsedEvent(this));
     }
 }
