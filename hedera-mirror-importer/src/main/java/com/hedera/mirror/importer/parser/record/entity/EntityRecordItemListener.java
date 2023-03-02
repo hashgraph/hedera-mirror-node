@@ -181,10 +181,10 @@ public class EntityRecordItemListener implements RecordItemListener {
 
         // Errata records can fail with FAIL_INVALID but still have items in the record committed to state.
         if (recordItem.isSuccessful() || status == ResponseCodeEnum.FAIL_INVALID) {
+            insertAutomaticTokenAssociations(recordItem);
             // Record token transfers can be populated for multiple transaction types
             insertTokenTransfers(recordItem);
             insertAssessedCustomFees(recordItem);
-            insertAutomaticTokenAssociations(recordItem);
         }
 
         contractResultService.process(recordItem, transaction);
@@ -838,9 +838,8 @@ public class EntityRecordItemListener implements RecordItemListener {
 
             long consensusTimestamp = recordItem.getConsensusTimestamp();
             recordItem.getTransactionRecord().getAutomaticTokenAssociationsList().forEach(tokenAssociation -> {
-                // the only other transaction which creates auto associations is crypto transfer. The accounts and
-                // tokens in the associations should have been added to EntityListener when inserting the corresponding
-                // token transfers, so no need to duplicate the logic here
+                // The accounts and tokens in the associations should have been added to EntityListener when inserting
+                // the corresponding token transfers, so no need to duplicate the logic here
                 EntityId accountId = EntityId.of(tokenAssociation.getAccountId());
                 EntityId tokenId = EntityId.of(tokenAssociation.getTokenId());
                 TokenAccount tokenAccount = getAssociatedTokenAccount(accountId, true, consensusTimestamp, tokenId);

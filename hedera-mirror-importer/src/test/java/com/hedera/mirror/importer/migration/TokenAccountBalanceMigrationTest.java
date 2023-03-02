@@ -76,7 +76,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
 
     @Test
     void checksum() {
-        assertThat(tokenAccountBalanceMigration.getChecksum()).isEqualTo(2);
+        assertThat(tokenAccountBalanceMigration.getChecksum()).isEqualTo(3);
     }
 
     @Test
