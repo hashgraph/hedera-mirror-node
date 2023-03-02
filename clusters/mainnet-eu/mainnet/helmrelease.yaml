@@ -60,4 +60,13 @@ spec:
     rosetta:
       env:
         HEDERA_MIRROR_ROSETTA_NETWORK: "mainnet"
+    test:
+      config:
+        hedera:
+          mirror:
+            test:
+              acceptance:
+                network: MAINNET
+      cucumberTags: "@critical and not @contractbase"
+      enabled: true
 
