@@ -20,6 +20,9 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
  * ‍
  */
 
+import static com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse.hexToASCII;
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -33,6 +36,7 @@ import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TokenSupplyType;
 import com.hedera.hashgraph.sdk.TokenType;
+import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
 import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
@@ -47,6 +51,7 @@ import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 
 import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -57,7 +62,9 @@ import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.apache.commons.codec.DecoderException;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.RandomUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.ResourceUtils;
@@ -70,6 +77,7 @@ public class ERCContractFeature extends AbstractFeature {
     private static final int MAX_SUPPLY = 1;
 
     private final List<TokenId> tokenIds = new ArrayList<>();
+    private final Map<TokenId, List<Long>> tokenSerialNumbers = new HashMap<>();
     private final Map<TokenId, List<CustomFee>> tokenCustomFees = new HashMap<>();
 
     private static final ObjectMapper MAPPER = new ObjectMapper()
@@ -100,30 +108,65 @@ public class ERCContractFeature extends AbstractFeature {
     private FileId fileId;
     private CompiledSolidityArtifact compiledSolidityArtifact;
 
-    @Given("I successfully create an erc contract from contract bytes with {int} balance")
-    public void createNewContract(int initialBalance) throws IOException {
+    @Then("I call the erc contract via the mirror node REST API")
+    public void restContractCall() throws DecoderException {
+        var from = contractClient.getClientAddress();
+        var to = contractId.toSolidityAddress();
+        var token = to32BytesString(tokenIds.get(0).toSolidityAddress());
+
+        var getAccountBalanceResponse = mirrorClient.contractsCall(NAME_SELECTOR + token, to, from);
+        assertThat(hexToASCII(getAccountBalanceResponse.getResult())).isEqualTo("TEST_name");
+
+        var getSymbolResponse = mirrorClient.contractsCall(SYMBOL_SELECTOR + token, to, from);
+        assertThat(hexToASCII(getSymbolResponse.getResult())).isEqualTo("TEST");
+
+    }
+
+    @Given("I successfully create an erc contract from contract bytes with balance")
+    public void createNewContract() throws IOException {
         compiledSolidityArtifact = MAPPER.readValue(
                 ResourceUtils.getFile(ercContract.toUri()),
                 CompiledSolidityArtifact.class);
-        createContract(compiledSolidityArtifact.getBytecode(), initialBalance);
+        createContract(compiledSolidityArtifact.getBytecode());
     }
 
-    @Given("I  create a new token")
+    @Then("I create a new token with freeze status 2 and kyc status 1")
     public void createNewToken() {
         createNewToken(
-                RandomStringUtils.randomAlphabetic(4).toUpperCase(),
+                "TEST",
                 TokenFreezeStatus.FreezeNotApplicable_VALUE,
                 TokenKycStatus.KycNotApplicable_VALUE
         );
     }
 
-    private void createContract(String byteCode, int initialBalance) {
+    @Then("I create a new nft with supplyType {string}")
+    public void createNewNft(String tokenSupplyType) {
+        createNewNft(RandomStringUtils.randomAlphabetic(4)
+                        .toUpperCase(), TokenFreezeStatus.FreezeNotApplicable_VALUE,
+                TokenKycStatus.KycNotApplicable_VALUE,
+                TokenSupplyType.valueOf(tokenSupplyType));
+    }
+
+    @Then("I mint a serial number")
+    public void mintNftToken() {
+        TokenId tokenId = tokenIds.get(1);
+        networkTransactionResponse = tokenClient.mint(tokenId, RandomUtils.nextBytes(4));
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        TransactionReceipt receipt = networkTransactionResponse.getReceipt();
+        assertNotNull(receipt);
+        assertThat(receipt.serials.size()).isOne();
+        long serialNumber = receipt.serials.get(0);
+        assertThat(serialNumber).isPositive();
+        tokenSerialNumbers.get(tokenId).add(serialNumber);
+    }
+
+    private void createContract(String byteCode) {
         persistContractBytes(byteCode.replaceFirst("0x", ""));
         networkTransactionResponse = contractClient.createContract(
                 fileId,
                 contractClient.getSdkClient().getAcceptanceTestProperties().getFeatureProperties()
                         .getMaxContractFunctionGas(),
-                initialBalance == 0 ? null : Hbar.fromTinybars(initialBalance),
+                null,
                 null);
 
         verifyCreateContractNetworkResponse();
@@ -179,4 +222,15 @@ public class ERCContractFeature extends AbstractFeature {
         return tokenId;
     }
 
+    private void createNewNft(String symbol, int freezeStatus, int kycStatus, TokenSupplyType tokenSupplyType) {
+        TokenId tokenId = createNewToken(
+                symbol,
+                freezeStatus,
+                kycStatus,
+                TokenType.NON_FUNGIBLE_UNIQUE,
+                tokenSupplyType,
+                Collections.emptyList());
+        tokenIds.add(tokenId);
+        tokenSerialNumbers.put(tokenId, new ArrayList<>());
+    }
 }

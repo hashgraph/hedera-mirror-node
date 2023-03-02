@@ -21,7 +21,10 @@ package com.hedera.mirror.test.e2e.acceptance.response;
  */
 
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
 import lombok.Data;
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.tuweni.bytes.Bytes;
 
 @Data
@@ -38,5 +41,12 @@ public class ContractCallResponse {
 
     public static String convertContractCallResponseToAddress(final ContractCallResponse response) {
         return Bytes.fromHexString(response.getResult()).slice(12).toUnprefixedHexString();
+
+    }
+
+    public static String hexToASCII(String str) throws DecoderException {
+        String hex = str.substring(2);
+        byte[] bytes = Hex.decodeHex(hex.toCharArray());
+        return new String(bytes, StandardCharsets.UTF_8).trim();
     }
 }

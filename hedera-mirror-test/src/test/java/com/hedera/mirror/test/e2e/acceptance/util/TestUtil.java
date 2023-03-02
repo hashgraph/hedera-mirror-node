@@ -30,10 +30,15 @@ import com.hedera.hashgraph.sdk.proto.Key;
 
 import lombok.NonNull;
 import lombok.experimental.UtilityClass;
+import org.apache.commons.lang3.StringUtils;
 
 @UtilityClass
 public class TestUtil {
     private static final BaseEncoding BASE32_ENCODER = BaseEncoding.base32().omitPadding();
+
+    public static String to32BytesString(String data) {
+        return StringUtils.leftPad(data, 64, '0');
+    }
 
     public static String getAliasFromPublicKey(@NonNull PublicKey key) {
         if (key.isECDSA()) {
