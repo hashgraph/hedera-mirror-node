@@ -74,7 +74,6 @@ from entity_state
      balance_timestamp bt
 where bt.consensus_timestamp is not null;
 
-drop index if exists entity_state_start__id;
 create index if not exists entity_state_start__id on entity_state_start (id);
 create index if not exists entity_state_start__staked_account_id
   on entity_state_start (staked_account_id) where staked_account_id <> 0;
