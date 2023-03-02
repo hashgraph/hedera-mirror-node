@@ -56,6 +56,7 @@ public class AccountBalance implements Persistable<AccountBalance.Id>, StreamIte
 
     private long balance;
 
+    @Builder.Default
     @EqualsAndHashCode.Exclude
     @JsonIgnore
     @OneToMany(cascade = {CascadeType.ALL}, orphanRemoval = true)
