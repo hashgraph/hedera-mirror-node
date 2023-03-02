@@ -42,6 +42,10 @@
     "jest-junit": "^15.0.0",
     "jest-standard-reporter": "^2.0.0"
   },
+  "jest-junit": {
+    "outputDirectory": "build/test-results/test",
+    "outputName": "TEST-jest.xml"
+  },
   "overrides": {
     "json5": "2.2.3",
     "protobufjs": "7.1.2"
