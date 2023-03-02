@@ -738,7 +738,6 @@ public class DomainBuilder {
                 .accountId(id())
                 .automaticAssociation(false)
                 .associated(true)
-                .balance(0L)
                 .createdTimestamp(timestamp)
                 .freezeStatus(TokenFreezeStatusEnum.NOT_APPLICABLE)
                 .kycStatus(TokenKycStatusEnum.NOT_APPLICABLE)
