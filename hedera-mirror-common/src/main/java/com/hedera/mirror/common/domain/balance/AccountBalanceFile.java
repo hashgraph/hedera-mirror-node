@@ -53,6 +53,7 @@ public class AccountBalanceFile implements StreamFile<AccountBalance> {
     @ToString.Exclude
     private String fileHash;
 
+    @Builder.Default
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
     @Transient
