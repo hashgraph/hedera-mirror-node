@@ -30,6 +30,7 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
 import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
+import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
 
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 
@@ -53,6 +54,9 @@ import com.hedera.mirror.web3.service.ContractCallService;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
 import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
+
+import org.springframework.web.server.ServerWebInputException;
+import org.springframework.web.server.UnsupportedMediaTypeStatusException;
 
 @ExtendWith(SpringExtension.class)
 @WebFluxTest(controllers = ContractController.class)
@@ -177,6 +181,30 @@ class ContractControllerTest {
                 .expectStatus()
                 .isEqualTo(BAD_REQUEST)
                 .expectBody(GenericErrorResponse.class);
+    }
+
+    @Test
+    void callWithMalformedJsonBody() {
+        webClient.post()
+                .uri(CALL_URI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue("{from: 0x00000000000000000000000000000000000004e2"))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(BAD_REQUEST)
+                .expectBody(ServerWebInputException.class);
+    }
+
+    @Test
+    void callWithUnsupportedMediaTypeBody() {
+        webClient.post()
+                .uri(CALL_URI)
+                .contentType(MediaType.TEXT_PLAIN)
+                .body(BodyInserters.fromValue("plain text"))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(UNSUPPORTED_MEDIA_TYPE)
+                .expectBody(UnsupportedMediaTypeStatusException.class);
     }
 
     @Test
