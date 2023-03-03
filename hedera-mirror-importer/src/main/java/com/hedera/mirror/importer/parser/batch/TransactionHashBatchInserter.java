@@ -13,16 +13,27 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
+import org.postgresql.PGConnection;
+import org.postgresql.copy.CopyIn;
+import org.postgresql.copy.PGCopyOutputStream;
+import org.springframework.jdbc.datasource.DataSourceUtils;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationAdapter;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
 import javax.sql.DataSource;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -37,7 +48,6 @@ public class TransactionHashBatchInserter implements BatchPersister {
     private final String shardedTableName;
 
     private final Scheduler scheduler;
-
     public TransactionHashBatchInserter(DataSource dataSource, MeterRegistry meterRegistry,
                                         CommonParserProperties commonParserProperties) {
         this.dataSource = dataSource;
@@ -63,7 +73,33 @@ public class TransactionHashBatchInserter implements BatchPersister {
             Map<Integer, List<TransactionHash>> shardedItems = items.stream().map(TransactionHash.class::cast)
                     .collect(Collectors.groupingBy(item -> Math.abs(item.getHash()[0] % 32)));
 
-            Mono.when(shardedItems.entrySet().stream().map(this::processShard).toList()).block();
+            List<Mono<Connection>> connections = shardedItems.entrySet().stream().map(this::processShard).toList();
+            List<Connection> conns = Flux.fromIterable(connections)
+                    .flatMap(Function.identity())
+                    .collectList()
+                    .block();
+
+            // After parser transaction commits, commit all connections used for shards
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit () {
+                    if (conns != null) {
+                        for (Connection connection : conns) {
+                            try {
+                                connection.commit();
+                                DataSourceUtils.releaseConnection(connection, dataSource);
+                            } catch (SQLException e) {
+                                // TODO Handle error in commit
+                                throw new RuntimeException(e);
+                            }
+
+                        }
+                    }
+                }
+
+            });
+
+
             insertDurationMetric.record(stopwatch.elapsed());
             log.info("Copied {} rows from {} shards to {} table in {}", items.size(), shardedItems.size(),
                     this.shardedTableName, stopwatch);
@@ -73,26 +109,30 @@ public class TransactionHashBatchInserter implements BatchPersister {
         }
     }
 
-    private Mono<Void> processShard(Map.Entry<Integer, List<TransactionHash>> shardData) {
+    private Mono<Connection> processShard(Map.Entry<Integer, List<TransactionHash>> shardData) {
         //TODO:// handle error
-        return Mono.zip(
-                        Mono.just(TransactionSynchronizationManager.getCurrentTransactionName()),//TODO handle no
-                        Mono.just(TransactionSynchronizationManager.getResourceMap()))
-                .doOnNext((tuple) -> {
+        return Mono.just(shardData)
+                .flatMap(data -> {
 
-                    // Configure thread to have transaction properties from calling thread
-                    TransactionSynchronizationManager.clear();
-                    tuple.getT2().forEach((key, value) -> {
-                        TransactionSynchronizationManager.unbindResourceIfPossible(key);
-                        TransactionSynchronizationManager.bindResource(key, value);
-                    });
-                    TransactionSynchronizationManager.initSynchronization();
-                    TransactionSynchronizationManager.setActualTransactionActive(true);
-                    TransactionSynchronizationManager.setCurrentTransactionName(tuple.getT1());
+                    if (data.getValue() == null || data.getValue().isEmpty()) {
+                        return Mono.empty();
+                    }
 
-                    batchInserters.computeIfAbsent(shardData.getKey(), key -> new BatchInserter(TransactionHash.class, dataSource,
-                            meterRegistry,
-                            commonParserProperties, String.format("%s_%02d", shardedTableName, shardData.getKey()))).persist(shardData.getValue());
-                }).subscribeOn(scheduler).then();
+                    Connection connection = DataSourceUtils.getConnection(dataSource);
+                    try {
+                        connection.setAutoCommit(false);
+                        batchInserters.computeIfAbsent(data.getKey(), key -> new BatchInserter(TransactionHash.class, dataSource,
+                                meterRegistry,
+                                commonParserProperties, String.format("%s_%02d", shardedTableName, data.getKey()))).persistItems(data.getValue(), connection);
+                        return Mono.just(connection);
+
+                    } catch (Exception e) {
+                        //TODO handle
+                        return Mono.error(new RuntimeException(e));
+                    }
+//                    finally {
+//                        DataSourceUtils.releaseConnection(connection, dataSource);
+//                    }
+                }).subscribeOn(scheduler);
     }
 }
