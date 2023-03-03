@@ -311,6 +311,7 @@ const protoToName = {
   329: 'INSUFFICIENT_BALANCES_FOR_RENEWAL_FEES',
   330: 'TRANSACTION_HAS_UNKNOWN_FIELDS',
   331: 'ACCOUNT_IS_IMMUTABLE',
+  332: 'ALIAS_ALREADY_ASSIGNED',
 };
 
 const nameToProto = _.invert(protoToName);
