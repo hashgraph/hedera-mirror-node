@@ -85,7 +85,7 @@ TABLES=$(psql -q -t --csv -h "${OLD_DB_HOST}" -p "${OLD_DB_PORT}" -U "${OLD_DB_U
 for table in ${TABLES}; do
   COLUMNS=$(psql -q -t -h "${OLD_DB_HOST}" -p "${OLD_DB_PORT}" -U "${OLD_DB_USER}" -c "select string_agg(column_name, ', ' order by ordinal_position) from information_schema.columns where table_schema = 'public' and table_name = '${table}';")
   COLUMNS="${COLUMNS#"${COLUMNS%%[![:space:]]*}"}" # Trim leading whitespace
-  echo "\copy ${table} ($COLUMNS) from program 'gzip -d ${table}.csv.gz' csv;" >> "${SCRIPTS_DIR}/restore.sql"
+  echo "\copy ${table} ($COLUMNS) from program 'gzip -dc ${table}.csv.gz' DELIMITER ',' CSV HEADER NULL '';" >> "${SCRIPTS_DIR}/restore.sql"
   echo "\copy ${table} to program 'gzip -v9> ${table}.csv.gz' delimiter ',' csv header;" >> "${SCRIPTS_DIR}/backup.sql"
 done
 
