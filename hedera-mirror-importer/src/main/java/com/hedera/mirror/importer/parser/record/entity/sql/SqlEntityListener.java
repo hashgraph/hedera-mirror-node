@@ -353,17 +353,35 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     // If nftTransferId is null, this will throw an NPE.  That behavior is correct, for that case.
     public void onNftTransfer(NftTransfer nftTransfer) throws ImporterException {
         var nftTransferId = nftTransfer.getId();
+        long tokenId = nftTransferId.getTokenId().getId();
         if (nftTransferId.getSerialNumber() == NftTransferId.WILDCARD_SERIAL_NUMBER) {
             flushNftState();
 
             long payerAccountId = nftTransfer.getPayerAccountId().getId();
-            EntityId newTreasury = nftTransfer.getReceiverAccountId();
-            EntityId previousTreasury = nftTransfer.getSenderAccountId();
-            EntityId tokenId = nftTransferId.getTokenId();
+            var newTreasury = nftTransfer.getReceiverAccountId();
+            var previousTreasury = nftTransfer.getSenderAccountId();
 
-            nftRepository.updateTreasury(tokenId.getId(), previousTreasury.getId(), newTreasury.getId(),
+            nftRepository.updateTreasury(tokenId, previousTreasury.getId(), newTreasury.getId(),
                     nftTransferId.getConsensusTimestamp(), payerAccountId, nftTransfer.getIsApproval());
             return;
+        }
+
+        if (entityProperties.getPersist().isTrackBalance()) {
+            if (nftTransfer.getSenderAccountId() != EntityId.EMPTY) {
+                var tokenAccount = new TokenAccount();
+                tokenAccount.setAccountId(nftTransfer.getSenderAccountId().getId());
+                tokenAccount.setTokenId(tokenId);
+                tokenAccount.setBalance(-1);
+                onTokenAccount(tokenAccount);
+            }
+
+            if (nftTransfer.getReceiverAccountId() != EntityId.EMPTY) {
+                var tokenAccount = new TokenAccount();
+                tokenAccount.setAccountId(nftTransfer.getReceiverAccountId().getId());
+                tokenAccount.setTokenId(tokenId);
+                tokenAccount.setBalance(1);
+                onTokenAccount(tokenAccount);
+            }
         }
 
         nftTransferState.merge(nftTransferId, nftTransfer, this::mergeNftTransfer);
@@ -442,13 +460,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     @Override
     @SuppressWarnings("java:S2259")
     public void onTokenTransfer(TokenTransfer tokenTransfer) throws ImporterException {
-        if (tokenTransfer.isTokenDissociate()) {
-            tokenDissociateTransfers.add(tokenTransfer);
-            return;
-        }
-
-        tokenTransfers.add(tokenTransfer);
-
         if (entityProperties.getPersist().isTrackBalance()) {
             var tokenAccount = new TokenAccount();
             tokenAccount.setAccountId(tokenTransfer.getId().getAccountId().getId());
@@ -456,6 +467,13 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             tokenAccount.setBalance(tokenTransfer.getAmount());
             onTokenAccount(tokenAccount);
         }
+
+        if (tokenTransfer.isTokenDissociate()) {
+            tokenDissociateTransfers.add(tokenTransfer);
+            return;
+        }
+
+        tokenTransfers.add(tokenTransfer);
     }
 
     @Override
@@ -589,14 +607,18 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     }
 
     private void flushNftState() {
-        // like flush(), but only for the Nft table
         try {
+            // flush tables required for an accurate nft state in database to ensure correct state-dependent changes
+            batchPersister.persist(tokens.values());
+            batchPersister.persist(tokenAccounts);
             batchPersister.persist(nfts.values());
         } catch (ParserException e) {
             throw e;
         } catch (Exception e) {
             throw new ParserException(e);
         } finally {
+            tokens.clear();
+            tokenAccounts.clear();
             nfts.clear();
         }
     }

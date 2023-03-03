@@ -72,6 +72,7 @@ import com.hederahashgraph.api.proto.java.SignaturePair;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
+import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -484,6 +485,13 @@ public class RecordItemBuilder {
                 .setExpirationTime(timestamp())
                 .setWaitForExpiry(true);
         return new Builder<>(TransactionType.SCHEDULECREATE, builder);
+    }
+
+    public Builder<TokenAssociateTransactionBody.Builder> tokenAssociate() {
+        var transactionBody = TokenAssociateTransactionBody.newBuilder()
+                .setAccount(accountId())
+                .addTokens(tokenId());
+        return new Builder<>(TransactionType.TOKENASSOCIATE, transactionBody);
     }
 
     public Builder<TokenMintTransactionBody.Builder> tokenMint() {
