@@ -82,7 +82,7 @@ loki:
               | regexp `(?P<timestamp>\S+) (?P<level>\S+) (?P<thread>\S+) (?P<class>\S+) (?P<message>.+)`
               | level = "ERROR"
               != "UnusedChannelExceptionHandler"
-              | message =~ ".*(Exception|Hash mismatch for file|Unknown record file delimiter|Unknown file delimiter|Error parsing record file|Expecting previous file hash|Unable to extract hash and signature from file|Failed to verify record files|Account balance dataset timestamp mismatch!|ERRORS processing account balances file|does not exist in the database|Unable to connect to database|Address book file).*"
+              | message =~ ".*(Exception|hash mismatch for file|Unknown record file delimiter|Unknown file delimiter|Error parsing record file|Expecting previous file hash|Unable to extract hash and signature from file|Failed to verify record files|Account balance dataset timestamp mismatch!|ERRORS processing account balances file|does not exist in the database|Unable to connect to database|Address book file).*"
             [1m])) by (namespace, pod) > 0.5
           for: 5m
           labels:

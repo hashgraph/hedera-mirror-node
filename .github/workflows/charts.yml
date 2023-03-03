@@ -44,7 +44,7 @@ jobs:
       - name: Build images
         uses: gradle/gradle-build-action@v2
         with:
-          arguments: dockerPush -PdockerRegistry=localhost:5001/mirrornode -PdockerTag=test -Dorg.gradle.parallel=false
+          arguments: dockerPush -PdockerRegistry=localhost:5001/mirrornode -PdockerTag=test
 
       - name: Install ct
         uses: helm/chart-testing-action@v2.3.1
