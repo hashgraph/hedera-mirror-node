@@ -32,6 +32,7 @@ import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -47,7 +48,6 @@ public class TransactionHashBatchInserter implements BatchPersister {
     private final Timer insertDurationMetric;
     private final String shardedTableName;
 
-    private final Scheduler scheduler;
     public TransactionHashBatchInserter(DataSource dataSource, MeterRegistry meterRegistry,
                                         CommonParserProperties commonParserProperties) {
         this.dataSource = dataSource;
@@ -58,7 +58,6 @@ public class TransactionHashBatchInserter implements BatchPersister {
         this.insertDurationMetric = Timer.builder("hedera.mirror.importer.parse.insert")
                 .description("Time to insert transactions into sharded table").tag("table", this.shardedTableName)
                 .register(meterRegistry);
-        this.scheduler = Schedulers.newParallel(this.shardedTableName + "_shard_inserter", 8);
     }
 
     @Override
@@ -67,16 +66,23 @@ public class TransactionHashBatchInserter implements BatchPersister {
             return;
         }
 
+        var scheduler = Schedulers.newParallel(this.shardedTableName + "_shard_inserter", 8);
+
         try {
             Stopwatch stopwatch = Stopwatch.createStarted();
 
             Map<Integer, List<TransactionHash>> shardedItems = items.stream().map(TransactionHash.class::cast)
                     .collect(Collectors.groupingBy(item -> Math.abs(item.getHash()[0] % 32)));
 
-            List<Mono<Connection>> connections = shardedItems.entrySet().stream().map(this::processShard).toList();
-            List<Connection> conns = Flux.fromIterable(connections)
+            List<Mono<Connection>> connections = shardedItems.entrySet()
+                    .stream()
+                    .map(shard -> this.processShard(shard, scheduler))
+                    .toList();
+
+            Set<Connection> conns = Flux.fromIterable(connections)
                     .flatMap(Function.identity())
-                    .collectList()
+                    .collect(Collectors.toSet())
+                    .doFinally(signal -> scheduler.dispose())
                     .block();
 
             // After parser transaction commits, commit all connections used for shards
@@ -86,13 +92,14 @@ public class TransactionHashBatchInserter implements BatchPersister {
                     if (conns != null) {
                         for (Connection connection : conns) {
                             try {
-                                connection.commit();
-                                DataSourceUtils.releaseConnection(connection, dataSource);
+                                if (!connection.isClosed()) {
+                                    connection.commit();
+                                    DataSourceUtils.releaseConnection(connection, dataSource);
+                                }
                             } catch (SQLException e) {
                                 // TODO Handle error in commit
                                 throw new RuntimeException(e);
                             }
-
                         }
                     }
                 }
@@ -109,7 +116,7 @@ public class TransactionHashBatchInserter implements BatchPersister {
         }
     }
 
-    private Mono<Connection> processShard(Map.Entry<Integer, List<TransactionHash>> shardData) {
+    private Mono<Connection> processShard(Map.Entry<Integer, List<TransactionHash>> shardData, Scheduler scheduler) {
         //TODO:// handle error
         return Mono.just(shardData)
                 .flatMap(data -> {
@@ -117,8 +124,15 @@ public class TransactionHashBatchInserter implements BatchPersister {
                     if (data.getValue() == null || data.getValue().isEmpty()) {
                         return Mono.empty();
                     }
+                    Connection connection;
+                    if (!TransactionSynchronizationManager.hasResource(dataSource)) {
+                        connection = DataSourceUtils.getConnection(dataSource);
+                        TransactionSynchronizationManager.bindResource(dataSource, connection);
+                    }
+                    else {
+                        connection = (Connection) TransactionSynchronizationManager.getResource(dataSource);
+                    }
 
-                    Connection connection = DataSourceUtils.getConnection(dataSource);
                     try {
                         connection.setAutoCommit(false);
                         batchInserters.computeIfAbsent(data.getKey(), key -> new BatchInserter(TransactionHash.class, dataSource,
