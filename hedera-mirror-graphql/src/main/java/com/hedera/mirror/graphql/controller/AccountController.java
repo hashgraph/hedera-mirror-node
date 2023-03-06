@@ -25,6 +25,7 @@ import static com.hedera.mirror.graphql.util.GraphQlUtils.toEntityId;
 import static com.hedera.mirror.graphql.util.GraphQlUtils.validateOneOf;
 
 import javax.validation.Valid;
+
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.graphql.data.method.annotation.Argument;
@@ -59,6 +60,16 @@ class AccountController {
 
         if (entityId != null) {
             return Mono.justOrEmpty(entityService.getByIdAndType(toEntityId(entityId), EntityType.ACCOUNT)
+                    .map(accountMapper::map));
+        }
+
+        if (alias != null) {
+            return Mono.justOrEmpty(entityService.getByAliasAndType(alias, EntityType.ACCOUNT)
+                    .map(accountMapper::map));
+        }
+
+        if (evmAddress != null) {
+            return Mono.justOrEmpty(entityService.getByEvmAddressAndType(evmAddress, EntityType.ACCOUNT)
                     .map(accountMapper::map));
         }
 
