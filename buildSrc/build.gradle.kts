@@ -42,6 +42,7 @@ dependencies {
     implementation("org.owasp:dependency-check-gradle:8.1.2")
     implementation("org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:4.0.0.2929")
     implementation("org.springframework.boot:spring-boot-gradle-plugin:2.7.6")
+    implementation("gradle.plugin.io.snyk.gradle.plugin:snyk:0.4")
 }
 
 val gitHook = tasks.register<Exec>("gitHook") {
