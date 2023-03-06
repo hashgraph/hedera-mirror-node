@@ -96,7 +96,7 @@
     "jest-junit": "^15.0.0",
     "jest-standard-reporter": "^2.0.0",
     "node-flywaydb": "^3.0.7",
-    "nodemon": "^2.0.20",
+    "nodemon": "^2.0.21",
     "pg-format": "^1.0.4",
     "rewire": "^6.0.0",
     "sinon": "^15.0.1",
