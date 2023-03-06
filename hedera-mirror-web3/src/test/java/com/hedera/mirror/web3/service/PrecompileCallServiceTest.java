@@ -27,6 +27,9 @@ import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+
+import com.hedera.mirror.web3.exception.InvalidTransactionException;
 
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
@@ -76,6 +79,24 @@ class PrecompileCallServiceTest extends Web3IntegrationTest {
         final var serviceParameters = serviceParameters(functionHash);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(HEXED_ONE);
+    }
+
+    @Test
+    void nftInfoForInvalidSerialNo(){
+        final var functionHash = "0x8e5e799600000000000000000000000000000000000000000000000000000000000004e30000000000000000000000000000000000000000000000000000000000000004";
+        final var serviceParameters = serviceParameters(functionHash);
+
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+                .isInstanceOf(InvalidTransactionException.class);
+    }
+
+    @Test
+    void tokenInfoForNonTokenAccount(){
+        final var functionHash = "0x35589a1300000000000000000000000000000000000000000000000000000000000004e7";
+        final var serviceParameters = serviceParameters(functionHash);
+
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
+                .isInstanceOf(InvalidTransactionException.class);
     }
 
     private CallServiceParameters serviceParameters(String callData) {
