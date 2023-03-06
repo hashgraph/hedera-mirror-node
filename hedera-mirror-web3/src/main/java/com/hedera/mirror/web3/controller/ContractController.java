@@ -145,7 +145,7 @@ class ContractController {
     @ResponseStatus(BAD_REQUEST)
     private Mono<GenericErrorResponse> invalidTxnBodyError(final ServerWebInputException e) {
         log.warn("Transaction body parsing error: {}", e.getMessage());
-        return errorResponse(e.getReason(), e.getMessage());
+        return errorResponse(e.getReason(), e.getMostSpecificCause().getMessage());
     }
 
     @ExceptionHandler

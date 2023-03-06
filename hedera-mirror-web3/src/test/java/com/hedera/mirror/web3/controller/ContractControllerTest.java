@@ -180,7 +180,8 @@ class ContractControllerTest {
                 .exchange()
                 .expectStatus()
                 .isEqualTo(BAD_REQUEST)
-                .expectBody(GenericErrorResponse.class);
+                .expectBody(GenericErrorResponse.class)
+                .isEqualTo(new GenericErrorResponse("value field must be greater than or equal to 0"));
     }
 
     @Test
@@ -192,19 +193,24 @@ class ContractControllerTest {
                 .exchange()
                 .expectStatus()
                 .isEqualTo(BAD_REQUEST)
-                .expectBody(ServerWebInputException.class);
+                .expectBody(GenericErrorResponse.class)
+                .isEqualTo(new GenericErrorResponse("Failed to read HTTP message", "Unexpected character ('f' (code 102)): was expecting double-quote to start field name\n"
+                        + " at [Source: (org.springframework.core.io.buffer.DefaultDataBuffer$DefaultDataBufferInputStream); line: 1, column: 3]"));
     }
 
     @Test
     void callWithUnsupportedMediaTypeBody() {
+        final var request = request();
+
         webClient.post()
                 .uri(CALL_URI)
                 .contentType(MediaType.TEXT_PLAIN)
-                .body(BodyInserters.fromValue("plain text"))
+                .body(BodyInserters.fromValue(request.toString()))
                 .exchange()
                 .expectStatus()
                 .isEqualTo(UNSUPPORTED_MEDIA_TYPE)
-                .expectBody(UnsupportedMediaTypeStatusException.class);
+                .expectBody(GenericErrorResponse.class)
+                .isEqualTo(new GenericErrorResponse("Unsupported Media Type", "Content type 'text/plain' not supported for bodyType=com.hedera.mirror.web3.viewmodel.ContractCallRequest"));
     }
 
     @Test
