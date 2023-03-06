@@ -27,9 +27,7 @@ import java.sql.SQLException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
@@ -44,7 +42,7 @@ public class TransactionHashBatchInserter implements BatchPersister {
     private final String shardedTableName;
 
     private final Scheduler scheduler;
-    private final Map<String, ConnectionHolder> threadConnections = new ConcurrentHashMap<>();
+    private final Map<String, Connection> threadConnections = new ConcurrentHashMap<>();
 
     public TransactionHashBatchInserter(DataSource dataSource, MeterRegistry meterRegistry,
                                         CommonParserProperties commonParserProperties) {
@@ -65,7 +63,6 @@ public class TransactionHashBatchInserter implements BatchPersister {
             return;
         }
 
-//        var scheduler = Schedulers.newParallel(this.shardedTableName + "_shard_inserter", 8);
         try {
             Stopwatch stopwatch = Stopwatch.createStarted();
 
@@ -82,11 +79,10 @@ public class TransactionHashBatchInserter implements BatchPersister {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
-                    for (ConnectionHolder holder : threadConnections.values()) {
+                    for (Connection connection : threadConnections.values()) {
                         try {
-                            holder.getConnection().commit();
-                            holder.released();
-                            holder.clear();
+                            connection.commit();
+                            connection.close();
                         } catch (SQLException e) {
                             // TODO Handle error in commit
                             throw new RuntimeException(e);
@@ -95,11 +91,12 @@ public class TransactionHashBatchInserter implements BatchPersister {
                     threadConnections.clear();
                 }
             });
-//            scheduler.createWorker()
+
             insertDurationMetric.record(stopwatch.elapsed());
             log.info("Copied {} rows from {} shards to {} table in {}", items.size(), shardedItems.size(),
                     this.shardedTableName, stopwatch);
         } catch (Exception e) {
+            log.error("The exception is ", e);
             throw new ParserException(String.format("Error copying %d items to table %s", items.size(),
                     this.shardedTableName));
         }
@@ -114,47 +111,39 @@ public class TransactionHashBatchInserter implements BatchPersister {
                         return;
                     }
 
-                    ConnectionHolder holder = threadConnections.computeIfAbsent(Thread.currentThread().getName(),
+                    threadConnections.computeIfAbsent(Thread.currentThread().getName(),
                             key -> {
-                        // Clean scheduler thread locals from previous run
+                                // Clean thread from previous run
                                 TransactionSynchronizationManager.clear();
-                                TransactionSynchronizationManager.getResourceMap().entrySet().forEach(TransactionSynchronizationManager::unbindResourceIfPossible);
+                                TransactionSynchronizationManager.unbindResourceIfPossible(dataSource);
 
-                                //
-                                TransactionSynchronizationManager.initSynchronization();
-                                TransactionSynchronizationManager.setActualTransactionActive(true);
-                                // Need to setup the thread locals for TransactionSynchronizationManager
                                 try {
-                                    //TODO
-                                    DataSourceUtils.getConnection(dataSource).setAutoCommit(false);
+                                    // initialize transaction for thread
+                                    TransactionSynchronizationManager.initSynchronization();
+                                    TransactionSynchronizationManager.setActualTransactionActive(true);
+                                    // Subsequent calls to get connection on this thread will use the same connection
+                                    Connection connection = DataSourceUtils.getConnection(dataSource);
+                                    connection.setAutoCommit(false);
+                                    return connection;
                                 } catch (SQLException e) {
+                                    //TODO
                                     throw new RuntimeException(e);
                                 }
-
-
-                                return (ConnectionHolder) TransactionSynchronizationManager.getResource(dataSource);
                             });
 
-                    if (holder == null) {
-                        //todo handle this
-                    }
-
                     try {
-                        BatchInserter batchInserter = batchInserters.computeIfAbsent(data.getKey(), key -> new BatchInserter(TransactionHash.class,
-                                        dataSource,
-                                        meterRegistry,
-                                        commonParserProperties, String.format("%s_%02d", shardedTableName,
-                                        data.getKey())));
+                        BatchInserter batchInserter = batchInserters.computeIfAbsent(data.getKey(),
+                                key -> new BatchInserter(TransactionHash.class,
+                                dataSource,
+                                meterRegistry,
+                                commonParserProperties, String.format("%s_%02d", shardedTableName,
+                                data.getKey())));
 
-                                batchInserter.persist(data.getValue());
-//                        log.info("Copied {} rows to {} table in {}", data.getValue().size(), batchInserter.tableName, stopwatch);
+                        batchInserter.persist(data.getValue());
                     } catch (Exception e) {
                         //TODO handle
                         throw new RuntimeException(e);
                     }
-//                    finally {
-//                        DataSourceUtils.releaseConnection(connection, dataSource);
-//                    }
                 }).then();
     }
 }
