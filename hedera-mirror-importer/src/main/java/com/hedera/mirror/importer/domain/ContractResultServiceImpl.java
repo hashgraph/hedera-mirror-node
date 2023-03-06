@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
+
 import com.google.common.base.Stopwatch;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -39,6 +41,7 @@ import com.hedera.mirror.common.domain.contract.ContractLog;
 import com.hedera.mirror.common.domain.contract.ContractResult;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.EthereumTransaction;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
@@ -110,7 +113,8 @@ public class ContractResultServiceImpl implements ContractResultService {
             case CALLING_CONTRACT -> contractAction.setCaller(EntityId.of(action.getCallingContract()));
             case CALLING_ACCOUNT -> contractAction.setCaller(EntityId.of(action.getCallingAccount()));
             default -> {
-                log.error("Invalid caller for contract action: {}", action.getCallerCase());
+                log.error(RECOVERABLE_ERROR + "Invalid caller for contract action at {}: {}", consensusTimestamp,
+                        action.getCallerCase());
                 return;
             }
         }
@@ -129,7 +133,9 @@ public class ContractResultServiceImpl implements ContractResultService {
             case REVERT_REASON -> contractAction.setResultData(DomainUtils.toBytes(action.getRevertReason()));
             case OUTPUT -> contractAction.setResultData(DomainUtils.toBytes(action.getOutput()));
             default -> {
-                log.error("Invalid result data for contract action: {}", action.getResultDataCase());
+                log.error(RECOVERABLE_ERROR + "Invalid result data for contract action at {}: {}",
+                        consensusTimestamp,
+                        action.getResultDataCase());
                 return;
             }
         }
@@ -166,7 +172,7 @@ public class ContractResultServiceImpl implements ContractResultService {
 
         ContractResult contractResult = new ContractResult();
         contractResult.setConsensusTimestamp(recordItem.getConsensusTimestamp());
-        contractResult.setContractId(contractEntityId);
+        contractResult.setContractId(contractEntityId.getId());
         contractResult.setPayerAccountId(recordItem.getPayerAccountId());
         contractResult.setTransactionHash(transactionHash);
         contractResult.setTransactionIndex(transaction.getIndex());
@@ -196,29 +202,33 @@ public class ContractResultServiceImpl implements ContractResultService {
                 contractResult.setSenderId(EntityId.of(functionResult.getSenderId()));
             }
 
-            processContractLogs(functionResult, contractResult);
+            processContractLogs(functionResult, contractResult, transactionHash, transaction.getIndex());
         }
 
         entityListener.onContractResult(contractResult);
     }
 
-    private void processContractLogs(ContractFunctionResult functionResult, ContractResult contractResult) {
+    private void processContractLogs(ContractFunctionResult functionResult, ContractResult contractResult,
+                                     byte[] transactionHash, Integer transactionIndex) {
         for (int index = 0; index < functionResult.getLogInfoCount(); ++index) {
             var contractLoginfo = functionResult.getLogInfo(index);
             var contractLogId = entityIdService.lookup(contractLoginfo.getContractID());
 
             ContractLog contractLog = new ContractLog();
+            EntityId contractId = EntityId.of(contractResult.getContractId(), EntityType.CONTRACT);
             contractLog.setBloom(DomainUtils.toBytes(contractLoginfo.getBloom()));
             contractLog.setConsensusTimestamp(contractResult.getConsensusTimestamp());
             contractLog.setContractId(contractLogId);
             contractLog.setData(DomainUtils.toBytes(contractLoginfo.getData()));
             contractLog.setIndex(index);
-            contractLog.setRootContractId(contractResult.getContractId());
+            contractLog.setRootContractId(contractId);
             contractLog.setPayerAccountId(contractResult.getPayerAccountId());
             contractLog.setTopic0(Utility.getTopic(contractLoginfo, 0));
             contractLog.setTopic1(Utility.getTopic(contractLoginfo, 1));
             contractLog.setTopic2(Utility.getTopic(contractLoginfo, 2));
             contractLog.setTopic3(Utility.getTopic(contractLoginfo, 3));
+            contractLog.setTransactionHash(transactionHash);
+            contractLog.setTransactionIndex(transactionIndex);
             entityListener.onContractLog(contractLog);
         }
     }

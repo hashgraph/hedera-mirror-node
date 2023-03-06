@@ -20,6 +20,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import static com.hedera.mirror.importer.parser.PartialDataAction.SKIP;
+import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
+
 import com.hederahashgraph.api.proto.java.AccountID;
 import java.util.HashMap;
 import java.util.List;
@@ -40,6 +43,7 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.domain.EntityIdService;
+import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @CustomLog
@@ -50,6 +54,8 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
     private final EntityIdService entityIdService;
 
     private final EntityListener entityListener;
+
+    private final RecordParserProperties recordParserProperties;
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
@@ -84,8 +90,8 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
         while (iterator.hasPrevious()) {
             var cryptoApproval = iterator.previous();
             EntityId ownerAccountId = getOwnerAccountId(cryptoApproval.getOwner(), payerAccountId);
-            if (ownerAccountId == EntityId.EMPTY) {
-                log.error("Empty ownerAccountId at consensusTimestamp {}", consensusTimestamp);
+            if (EntityId.isEmpty(ownerAccountId)) {
+                log.error(RECOVERABLE_ERROR + "Empty ownerAccountId at consensusTimestamp {}", consensusTimestamp);
                 continue;
             }
 
@@ -116,7 +122,7 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
         while (iterator.hasPrevious()) {
             var nftApproval = iterator.previous();
             EntityId ownerAccountId = getOwnerAccountId(nftApproval.getOwner(), payerAccountId);
-            if (ownerAccountId == EntityId.EMPTY) {
+            if (EntityId.isEmpty(ownerAccountId)) {
                 // ownerAccountId will be EMPTY only when getOwnerAccountId fails to resolve the owner in the alias form
                 // and the partialDataAction is SKIP
                 continue;
@@ -169,7 +175,7 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
         while (iterator.hasPrevious()) {
             var tokenApproval = iterator.previous();
             EntityId ownerAccountId = getOwnerAccountId(tokenApproval.getOwner(), payerAccountId);
-            if (ownerAccountId == EntityId.EMPTY) {
+            if (EntityId.isEmpty(ownerAccountId)) {
                 // ownerAccountId will be EMPTY only when getOwnerAccountId fails to resolve the owner in the alias form
                 // and the partialDataAction is SKIP
                 continue;
@@ -199,6 +205,12 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
      */
     private EntityId getOwnerAccountId(AccountID owner, EntityId payerAccountId) {
         var entityId = entityIdService.lookup(owner);
-        return !EntityId.isEmpty(entityId) ? entityId : payerAccountId;
+        if (entityId == null && recordParserProperties.getPartialDataAction() == SKIP) {
+            return EntityId.EMPTY;
+        }
+
+        var emptyEntityId = EntityId.isEmpty(entityId);
+        return !emptyEntityId || emptyEntityId && recordParserProperties.getPartialDataAction() != SKIP ?
+                entityId : payerAccountId;
     }
 }

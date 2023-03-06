@@ -30,8 +30,6 @@ import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
-import com.hedera.mirror.common.domain.contract.Contract;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -49,12 +47,12 @@ import com.hederahashgraph.api.proto.java.ShardID;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -71,12 +69,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
@@ -87,14 +86,13 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.exception.AliasNotFoundException;
-import com.hedera.mirror.importer.parser.PartialDataAction;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.CryptoAllowanceRepository;
 import com.hedera.mirror.importer.repository.NftAllowanceRepository;
 import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
+import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.util.Utility;
 import com.hedera.mirror.importer.util.UtilityTest;
 
@@ -112,6 +110,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     private final NftRepository nftRepository;
     private final RecordParserProperties parserProperties;
     private final TokenAllowanceRepository tokenAllowanceRepository;
+    private final TokenTransferRepository tokenTransferRepository;
 
     @BeforeEach
     void before() {
@@ -939,6 +938,9 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         entityProperties.getPersist().setCryptoTransferAmounts(true);
         Transaction transaction = cryptoTransferTransaction();
         TransactionBody transactionBody = getTransactionBody(transaction);
+        var tokenId = EntityId.of(1020L, EntityType.TOKEN);
+        long amount = 100L;
+
         TransactionRecord record = buildTransactionRecord(r -> {
             r.setConsensusTimestamp(TestUtils.toTimestamp(1577836799000000000L - 1));
             for (int i = 0; i < additionalTransfers.length; i++) {
@@ -946,7 +948,12 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 var accountAmount = accountAmount(additionalTransfers[i], additionalTransferAmounts[i]);
                 r.getTransferListBuilder().addAccountAmounts(accountAmount);
             }
-        }, transactionBody, ResponseCodeEnum.INVALID_ACCOUNT_ID.getNumber());
+            r.addTokenTransferLists(TokenTransferList.newBuilder()
+                    .setToken(TokenID.newBuilder().setTokenNum(tokenId.getEntityNum()))
+                    .addTransfers(AccountAmount.newBuilder()
+                            .setAccountID(accountId1)
+                            .setAmount(amount)));
+        }, transactionBody, ResponseCodeEnum.FAIL_INVALID.getNumber());
 
         var recordItem = RecordItem.builder().transactionRecord(record).transaction(transaction).build();
         parseRecordItemAndCommit(recordItem);
@@ -956,6 +963,12 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertEntities(),
                 () -> assertEquals(4, cryptoTransferRepository.count(), "Node, network fee & errata"),
                 () -> assertEquals(0, nonFeeTransferRepository.count()),
+                () -> assertThat(tokenTransferRepository.findAll())
+                        .hasSize(1)
+                        .first()
+                        .returns(tokenId, t -> t.getId().getTokenId())
+                        .returns(amount, t -> t.getAmount())
+                        .returns(EntityId.of(accountId1), t -> t.getId().getAccountId()),
                 () -> assertTransactionAndRecord(transactionBody, record),
                 () -> {
                     for (int i = 0; i < additionalTransfers.length; i++) {
@@ -1096,14 +1109,12 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 format("Is %s the receiver account amount.", receiver));
     }
 
-    @ParameterizedTest
-    @EnumSource(value = PartialDataAction.class, names = {"DEFAULT", "SKIP"})
-    void cryptoTransferWithUnknownAlias(PartialDataAction partialDataAction) {
+    @Test
+    void cryptoTransferWithUnknownAlias() {
         // given
         // both accounts have alias, and only account2's alias is in db
         entityProperties.getPersist().setCryptoTransferAmounts(true);
         entityProperties.getPersist().setNonFeeTransfers(true);
-        parserProperties.setPartialDataAction(partialDataAction);
 
         Entity account1 = domainBuilder.entity().get();
         Entity account2 = domainBuilder.entity().persist();
@@ -1117,8 +1128,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                         .addAccountAmounts(accountAmount(account1.getNum(), 100))
                         .addAccountAmounts(accountAmount(account2.getNum(), -100)),
                 transactionBody, ResponseCodeEnum.SUCCESS.getNumber());
-        List<EntityId> expectedEntityIds = partialDataAction == PartialDataAction.DEFAULT ?
-                Arrays.asList(account2.toEntityId(), null) : List.of(account2.toEntityId());
+        List<EntityId> expectedEntityIds = List.of(account2.toEntityId());
 
         // when
         parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
@@ -1131,42 +1141,6 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertThat(findNonFeeTransfers())
                         .extracting(NonFeeTransfer::getEntityId)
                         .containsExactlyInAnyOrderElementsOf(expectedEntityIds)
-        );
-    }
-
-    @Test
-    void cryptoTransferWithUnknownAliasActionError() {
-        // given
-        // both accounts have alias, and only account2's alias is in db
-        entityProperties.getPersist().setCryptoTransferAmounts(true);
-        entityProperties.getPersist().setNonFeeTransfers(true);
-        parserProperties.setPartialDataAction(PartialDataAction.ERROR);
-
-        Entity account1 = domainBuilder.entity().get();
-        Entity account2 = domainBuilder.entity().persist();
-
-        // crypto transfer from unknown account1 alias to account2 alias
-        Transaction transaction = buildTransaction(builder -> builder.getCryptoTransferBuilder().getTransfersBuilder()
-                .addAccountAmounts(accountAliasAmount(DomainUtils.fromBytes(account1.getAlias()), 100))
-                .addAccountAmounts(accountAliasAmount(DomainUtils.fromBytes(account2.getAlias()), -100)));
-        TransactionBody transactionBody = getTransactionBody(transaction);
-        TransactionRecord transactionRecord = buildTransactionRecord(r -> r.getTransferListBuilder()
-                        .addAccountAmounts(accountAmount(account1.getNum(), 100))
-                        .addAccountAmounts(accountAmount(account2.getNum(), -100)),
-                transactionBody, ResponseCodeEnum.SUCCESS.getNumber());
-
-        RecordItem recordItem = RecordItem.builder()
-                .transactionRecord(transactionRecord)
-                .transaction(transaction)
-                .build();
-
-        // when, then
-        assertThrows(AliasNotFoundException.class,
-                () -> parseRecordItemAndCommit(recordItem));
-        assertAll(
-                () -> assertEquals(0, transactionRepository.count()),
-                () -> assertEquals(0, cryptoTransferRepository.count()),
-                () -> assertThat(findNonFeeTransfers()).isEmpty()
         );
     }
 

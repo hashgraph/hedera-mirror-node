@@ -19,13 +19,13 @@ select create_distributed_table('contract', 'id', colocate_with => 'entity');
 
 select create_distributed_table('contract_action', 'payer_account_id', colocate_with => 'entity');
 
-select create_distributed_table('contract_log', 'payer_account_id', colocate_with => 'entity');
+select create_distributed_table('contract_log', 'contract_id', colocate_with => 'entity');
 
-select create_distributed_table('contract_result', 'payer_account_id', colocate_with => 'entity');
+select create_distributed_table('contract_result', 'contract_id', colocate_with => 'entity');
 
 select create_distributed_table('contract_state', 'contract_id', colocate_with => 'entity');
 
-select create_distributed_table('contract_state_change', 'payer_account_id', colocate_with => 'entity');
+select create_distributed_table('contract_state_change', 'contract_id', colocate_with => 'entity');
 
 select create_distributed_table('crypto_allowance', 'owner', colocate_with => 'entity');
 

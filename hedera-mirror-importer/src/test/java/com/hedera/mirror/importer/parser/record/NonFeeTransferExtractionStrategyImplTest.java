@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -49,7 +49,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.EntityIdService;
@@ -164,14 +163,14 @@ class NonFeeTransferExtractionStrategyImplTest {
     }
 
     @Test
-    void extractNonFeeTransfersContractCallFailedThrows() {
+    void extractNonFeeTransfersContractCallEmptyId() {
         var amount = 123456L;
         var transactionBody = getContractCallTransactionBody(TestUtils.generateRandomByteArray(20), amount);
         var transactionRecord = getSimpleTransactionRecord();
-        when(entityIdService.lookup(ContractID.getDefaultInstance(), transactionBody.getContractCall().getContractID()
-        )).thenThrow(new InvalidEntityException(""));
-        assertThrows(InvalidEntityException.class,
-                () -> extractionStrategy.extractNonFeeTransfers(transactionBody, transactionRecord));
+        when(entityIdService.lookup(ContractID.getDefaultInstance(), transactionBody.getContractCall()
+                .getContractID())).thenReturn(EntityId.EMPTY);
+        var result = extractionStrategy.extractNonFeeTransfers(transactionBody, transactionRecord);
+        assertEquals(0, StreamSupport.stream(result.spliterator(), false).count());
     }
 
     @Test

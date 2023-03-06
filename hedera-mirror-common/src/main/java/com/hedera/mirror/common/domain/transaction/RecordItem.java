@@ -121,13 +121,10 @@ public class RecordItem implements StreamItem {
                 return new TransactionBodyAndSignatureMap(transaction.getBody(), transaction.getSigMap());
             }
 
-            log.error(BAD_TRANSACTION_BODY_BYTES_MESSAGE);
+            throw new ProtobufException(BAD_TRANSACTION_BODY_BYTES_MESSAGE);
         } catch (InvalidProtocolBufferException e) {
-            log.error(BAD_TRANSACTION_BODY_BYTES_MESSAGE, e);
+            throw new ProtobufException(BAD_TRANSACTION_BODY_BYTES_MESSAGE, e);
         }
-
-        return new TransactionBodyAndSignatureMap(TransactionBody.getDefaultInstance(),
-                SignatureMap.getDefaultInstance());
     }
 
     public SignatureMap getSignatureMap() {
@@ -211,7 +208,7 @@ public class RecordItem implements StreamItem {
                 this.recordBytes = recordBytes;
                 this.transactionRecord = TransactionRecord.parseFrom(recordBytes);
             } catch (InvalidProtocolBufferException e) {
-                log.error(BAD_RECORD_BYTES_MESSAGE, e);
+                throw new ProtobufException(BAD_RECORD_BYTES_MESSAGE, e);
             }
             return (B) this;
         }
@@ -227,7 +224,7 @@ public class RecordItem implements StreamItem {
                 this.transactionBytes = transactionBytes;
                 this.transaction = Transaction.parseFrom(transactionBytes);
             } catch (InvalidProtocolBufferException e) {
-                log.error(BAD_TRANSACTION_BYTES_MESSAGE, e);
+                throw new ProtobufException(BAD_TRANSACTION_BYTES_MESSAGE, e);
             }
             return (B) this;
         }

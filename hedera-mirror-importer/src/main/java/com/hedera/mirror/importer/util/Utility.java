@@ -49,13 +49,14 @@ import org.bouncycastle.jcajce.provider.digest.Keccak;
 import org.hyperledger.besu.nativelib.secp256k1.LibSecp256k1;
 
 import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.exception.ParserException;
 
 @Log4j2
 @UtilityClass
 public class Utility {
 
     public static final Instant MAX_INSTANT_LONG = Instant.ofEpochSecond(0, Long.MAX_VALUE);
+
+    public static final String RECOVERABLE_ERROR = "Recoverable error. ";
 
     private static final int ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH = 33;
 
@@ -91,7 +92,7 @@ public class Utility {
             }
         } catch (Exception e) {
             var aliasHex = Hex.encodeHexString(alias);
-            log.error("Unable to decode alias to EVM address: {}", aliasHex, e);
+            log.error(RECOVERABLE_ERROR + "Unable to decode alias to EVM address: {}", aliasHex, e);
         }
 
         return evmAddress;

@@ -41,7 +41,6 @@ import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -51,8 +50,6 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.exception.AliasNotFoundException;
-import com.hedera.mirror.importer.parser.PartialDataAction;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.util.Utility;
@@ -205,29 +202,9 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
         );
     }
 
-    @ParameterizedTest(name = "{0}")
-    @EnumSource(value = PartialDataAction.class, names = {"DEFAULT", "ERROR"})
-    void updateTransactionThrowsWithAliasNotFound(PartialDataAction partialDataAction) {
-        // given
-        recordParserProperties.setPartialDataAction(partialDataAction);
-        var alias = DomainUtils.fromBytes(domainBuilder.key());
-        var recordItem = recordItemBuilder.contractUpdate()
-                .transactionBody(b -> b.getAutoRenewAccountIdBuilder().setAlias(alias))
-                .build();
-        var contractId = EntityId.of(recordItem.getTransactionRecord().getReceipt().getContractID());
-        var timestamp = recordItem.getConsensusTimestamp();
-        var transaction = domainBuilder.transaction().
-                customize(t -> t.consensusTimestamp(timestamp).entityId(contractId)).get();
-        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
-                .thenThrow(new AliasNotFoundException("alias", ACCOUNT));
-
-        // when, then
-        assertThrows(AliasNotFoundException.class, () -> transactionHandler.updateTransaction(transaction, recordItem));
-    }
-
     @Test
-    void updateTransactionWithAliasNotFoundAndPartialDataActionSkip() {
-        recordParserProperties.setPartialDataAction(PartialDataAction.SKIP);
+    void updateTransactionEntityNotFound() {
+        // given
         var alias = DomainUtils.fromBytes(domainBuilder.key());
         var recordItem = recordItemBuilder.contractUpdate()
                 .transactionBody(b -> b.getAutoRenewAccountIdBuilder().setAlias(alias))
@@ -236,11 +213,14 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder.transaction().
                 customize(t -> t.consensusTimestamp(timestamp).entityId(contractId)).get();
-        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
-                .thenThrow(new AliasNotFoundException("alias", ACCOUNT));
+        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build())).thenReturn(EntityId.EMPTY);
+
+        // when
         transactionHandler.updateTransaction(transaction, recordItem);
+
+        // then
         assertContractUpdate(timestamp, contractId, t -> assertThat(t)
-                .returns(null, Entity::getAutoRenewAccountId)
+                .returns(0L, Entity::getAutoRenewAccountId)
                 .satisfies(c -> assertThat(c.getAutoRenewPeriod()).isPositive())
                 .satisfies(c -> assertThat(c.getExpirationTimestamp()).isPositive())
                 .satisfies(c -> assertThat(c.getKey()).isNotEmpty())

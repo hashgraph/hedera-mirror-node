@@ -29,6 +29,7 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.util.Collections;
 import java.util.LinkedList;
 import javax.inject.Named;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -38,6 +39,7 @@ import com.hedera.mirror.importer.domain.EntityIdService;
  * Non-fee transfers are explicitly requested transfers. This implementation extracts non_fee_transfer requested by a
  * transaction into an iterable of transfers.
  */
+@CustomLog
 @Named
 @RequiredArgsConstructor
 public class NonFeeTransferExtractionStrategyImpl implements NonFeeTransferExtractionStrategy {
@@ -63,6 +65,11 @@ public class NonFeeTransferExtractionStrategyImpl implements NonFeeTransferExtra
 
             EntityId contractId = entityIdService.lookup(transactionRecord.getReceipt().getContractID(),
                     body.getContractCall().getContractID());
+            if (EntityId.isEmpty(contractId)) {
+                log.error("Contract ID not found at {}", transactionRecord.getConsensusTimestamp());
+                return Collections.emptyList();
+            }
+
             LinkedList<AccountAmount> result = new LinkedList<>();
             var amount = body.getContractCall().getAmount();
 

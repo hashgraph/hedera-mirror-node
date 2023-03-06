@@ -84,6 +84,7 @@ public class AddressBookEntry implements Persistable<AddressBookEntry.Id> {
     @Transient
     private final PublicKey publicKeyObject = parsePublicKey();
 
+    @Builder.Default
     @EqualsAndHashCode.Exclude
     @JoinColumn(name = "consensusTimestamp", referencedColumnName = "consensusTimestamp")
     @JoinColumn(name = "nodeId", referencedColumnName = "nodeId")

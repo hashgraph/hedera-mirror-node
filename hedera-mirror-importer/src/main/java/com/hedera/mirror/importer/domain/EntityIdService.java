@@ -25,7 +25,6 @@ import com.hederahashgraph.api.proto.java.ContractID;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.importer.exception.AliasNotFoundException;
 
 /**
  * This service is used to centralize the conversion logic from protobuf-based Hedera entities to its internal EntityId
@@ -38,7 +37,6 @@ public interface EntityIdService {
      *
      * @param accountId The protobuf account ID
      * @return The converted EntityId
-     * @throws AliasNotFoundException if it fails to resolve the alias
      */
     EntityId lookup(AccountID accountId);
 
@@ -50,27 +48,14 @@ public interface EntityIdService {
      * @return The converted EntityId or EntityId.EMPTY if none can be resolved
      */
     default EntityId lookup(AccountID... accountIds) {
-        return lookup(AliasNotFoundAction.FALLTHROUGH, accountIds);
+        return lookup(accountIds);
     }
-
-    /**
-     * Specialized form of lookup(AccountID) that returns the first account ID parameter that resolves to a non-empty
-     * EntityId. If the {@code action} is {@link AliasNotFoundAction#ERROR}, the method throws
-     * {@link AliasNotFoundException} as soon as resolving an alias fails.
-     *
-     * @param action     The action when looking up an alias results in {@link AliasNotFoundException}
-     * @param accountIds The protobuf account IDs
-     * @return The converted EntityId or EntityId.EMPTY if none can be resolved
-     * @throws AliasNotFoundException
-     */
-    EntityId lookup(AliasNotFoundAction action, AccountID... accountIds);
 
     /**
      * Converts a protobuf ContractID to an EntityID, resolving any EVM addresses that may be present.
      *
      * @param contractId The protobuf contract ID
      * @return The converted EntityId
-     * @throws com.hedera.mirror.importer.exception.AliasNotFoundException Throws exception if alias not found
      */
     EntityId lookup(ContractID contractId);
 
@@ -82,19 +67,8 @@ public interface EntityIdService {
      * @return The converted EntityId or EntityId.EMPTY if none can be resolved
      */
     default EntityId lookup(ContractID... contractIds) {
-        return lookup(AliasNotFoundAction.FALLTHROUGH, contractIds);
+        return lookup(contractIds);
     }
-
-    /**
-     * Specialized form of lookup(ContractID) that returns the first contract ID parameter that resolves to a non-empty
-     * EntityId. If the {@code action} is {@link AliasNotFoundAction#ERROR}, the method throws
-     * {@link AliasNotFoundException} as soon as resolving an evm address fails.
-     *
-     * @param contractIds The protobuf contract IDs
-     * @return The converted EntityId or EntityId.EMPTY if none can be resolved
-     * @throws AliasNotFoundException
-     */
-    EntityId lookup(AliasNotFoundAction action, ContractID... contractIds);
 
     /**
      * Used to notify the system of new aliases for potential use in future lookups.

@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
+
 import javax.inject.Named;
 import lombok.CustomLog;
 
@@ -49,11 +51,13 @@ class CryptoDeleteTransactionHandler extends AbstractEntityCrudTransactionHandle
     protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
         var transactionBody = recordItem.getTransactionBody().getCryptoDelete();
         var obtainerId = entityIdService.lookup(transactionBody.getTransferAccountID());
-        if (obtainerId == EntityId.EMPTY) {
-            log.error("Unable to lookup ObtainerId at consensusTimestamp {}", recordItem.getConsensusTimestamp());
+        if (EntityId.isEmpty(obtainerId)) {
+            log.error(RECOVERABLE_ERROR + "Unable to lookup ObtainerId at consensusTimestamp {}",
+                    recordItem.getConsensusTimestamp());
+        } else {
+            entity.setObtainerId(obtainerId);
         }
-
-        entity.setObtainerId(obtainerId);
+        
         entityListener.onEntity(entity);
     }
 }

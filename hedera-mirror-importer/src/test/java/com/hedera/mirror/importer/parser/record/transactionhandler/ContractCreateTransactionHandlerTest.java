@@ -23,7 +23,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -46,8 +45,6 @@ import java.util.List;
 import org.assertj.core.api.ObjectAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 
@@ -62,8 +59,6 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.exception.AliasNotFoundException;
-import com.hedera.mirror.importer.parser.PartialDataAction;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.util.Utility;
@@ -310,29 +305,8 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .returns(Utility.getEpochDay(recordItem.getConsensusTimestamp()), Entity::getStakePeriodStart);
     }
 
-    @ParameterizedTest(name = "{0}")
-    @EnumSource(value = PartialDataAction.class, names = {"DEFAULT", "ERROR"})
-    void updateTransactionThrowsWithAliasNotFound(PartialDataAction partialDataAction) {
-        // given
-        recordParserProperties.setPartialDataAction(partialDataAction);
-        var alias = DomainUtils.fromBytes(domainBuilder.key());
-        var recordItem = recordItemBuilder.contractCreate()
-                .transactionBody(b -> b.getAutoRenewAccountIdBuilder().setAlias(alias))
-                .build();
-        var contractId = EntityId.of(recordItem.getTransactionRecord().getReceipt().getContractID());
-        var timestamp = recordItem.getConsensusTimestamp();
-        var transaction = domainBuilder.transaction().
-                customize(t -> t.consensusTimestamp(timestamp).entityId(contractId)).get();
-        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
-                .thenThrow(new AliasNotFoundException("alias", ACCOUNT));
-
-        // when, then
-        assertThrows(AliasNotFoundException.class, () -> transactionHandler.updateTransaction(transaction, recordItem));
-    }
-
     @Test
-    void updateTransactionWithAliasNotFoundAndPartialDataActionSkip() {
-        recordParserProperties.setPartialDataAction(PartialDataAction.SKIP);
+    void updateTransactionEntityNotFound() {
         var alias = DomainUtils.fromBytes(domainBuilder.key());
         var recordItem = recordItemBuilder.contractCreate()
                 .transactionBody(b -> b.getAutoRenewAccountIdBuilder().setAlias(alias))
@@ -342,11 +316,10 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         var transaction = domainBuilder.transaction().
                 customize(t -> t.consensusTimestamp(timestamp).entityId(contractId)).get();
         var initCode = DomainUtils.toBytes(recordItem.getSidecarRecords().get(2).getBytecode().getInitcode());
-        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
-                .thenThrow(new AliasNotFoundException("alias", ACCOUNT));
+        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build())).thenReturn(EntityId.EMPTY);
         transactionHandler.updateTransaction(transaction, recordItem);
         assertEntity(contractId, timestamp)
-                .returns(null, Entity::getAutoRenewAccountId)
+                .returns(0L, Entity::getAutoRenewAccountId)
                 .returns(null, Entity::getEvmAddress);
         assertContract(contractId)
                 .satisfies(c -> assertThat(c.getFileId().getId()).isPositive())

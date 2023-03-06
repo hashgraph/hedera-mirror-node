@@ -2231,7 +2231,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .filteredOn(c -> c.getConsensusTimestamp().equals(timestamp))
                 .hasSize(1)
                 .first()
-                .returns(EntityId.of(CONTRACT_ID), ContractResult::getContractId);
+                .returns(EntityId.of(CONTRACT_ID).getId(), ContractResult::getContractId);
 
         contractResult
                 .returns(contractFunctionResult.getBloom().toByteArray(), ContractResult::getBloom)

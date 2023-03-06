@@ -49,7 +49,6 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.exception.AliasNotFoundException;
 import com.hedera.mirror.importer.parser.PartialDataAction;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 
@@ -115,7 +114,7 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
     @Override
     protected TransactionHandler getTransactionHandler() {
         recordParserProperties = new RecordParserProperties();
-        return new CryptoApproveAllowanceTransactionHandler(entityIdService, entityListener);
+        return new CryptoApproveAllowanceTransactionHandler(entityIdService, entityListener, recordParserProperties);
     }
 
     @Override
@@ -173,25 +172,29 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
 
     @ParameterizedTest(name = "{0}")
     @EnumSource(value = PartialDataAction.class, names = {"DEFAULT", "ERROR"})
-    void updateTransactionThrowsWithAliasNotFound(PartialDataAction partialDataAction) {
+    void updateTransactionReturnsEmptyEntity(PartialDataAction partialDataAction) {
         // given
         recordParserProperties.setPartialDataAction(partialDataAction);
         var alias = DomainUtils.fromBytes(domainBuilder.key());
-        var recordItem = recordItemBuilder.cryptoApproveAllowance().transactionBody(b -> {
-            b.getCryptoAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
-            b.getNftAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
-            b.getTokenAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
-        }).build();
+        var recordItem = recordItemBuilder.cryptoApproveAllowance()
+                .transactionBody(this::customizeTransactionBody)
+                .transactionBody(b -> {
+                    b.getCryptoAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
+                    b.getNftAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
+                    b.getTokenAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
+                }).build();
         var transaction = domainBuilder.transaction().get();
-        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
-                .thenThrow(new AliasNotFoundException("alias", EntityType.ACCOUNT));
+        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build())).thenReturn(EntityId.EMPTY);
 
-        // when, then
-        assertThrows(AliasNotFoundException.class, () -> transactionHandler.updateTransaction(transaction, recordItem));
+        // when
+        transactionHandler.updateTransaction(transaction, recordItem);
+
+        // then
+        verifyNoInteractions(entityListener);
     }
 
     @Test
-    void updateTransactionWithAliasNotFoundAndPartialDataActionSkip() {
+    void updateTransactionWithNullEntityIdAndPartialDataActionSkip() {
         recordParserProperties.setPartialDataAction(PartialDataAction.SKIP);
         var alias = DomainUtils.fromBytes(domainBuilder.key());
         var recordItem = recordItemBuilder.cryptoApproveAllowance().transactionBody(b -> {
@@ -200,8 +203,7 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
             b.getTokenAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
         }).build();
         var transaction = domainBuilder.transaction().get();
-        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
-                .thenThrow(new AliasNotFoundException("alias", EntityType.ACCOUNT));
+        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build())).thenReturn(null);
         transactionHandler.updateTransaction(transaction, recordItem);
         verifyNoInteractions(entityListener);
     }

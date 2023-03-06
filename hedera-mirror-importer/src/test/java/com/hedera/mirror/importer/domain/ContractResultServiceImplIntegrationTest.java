@@ -26,7 +26,6 @@ import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 import static com.hedera.services.stream.proto.ContractAction.CallerCase.CALLING_CONTRACT;
 import static com.hedera.services.stream.proto.ContractAction.RecipientCase.RECIPIENT_NOT_SET;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
@@ -68,7 +67,6 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.repository.ContractActionRepository;
@@ -177,7 +175,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
         process(recordItem);
 
         assertContractResult(recordItem, true);
-        assertContractLogs(recordItem);
+        assertContractLogs(recordItem, true);
         assertContractActions(recordItem);
         assertContractStateChanges(recordItem);
         assertThat(contractRepository.count()).isZero();
@@ -190,8 +188,14 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                 .sidecarRecords(s -> s.get(1).getActionsBuilder().getContractActionsBuilder(0).clearCaller())
                 .build();
 
-        assertThatThrownBy(() -> process(recordItem)).isInstanceOf(InvalidDatasetException.class)
-                .hasMessageContaining("Invalid caller");
+        process(recordItem);
+
+        assertContractResult(recordItem);
+        assertContractLogs(recordItem);
+        assertContractActions(recordItem);
+        assertContractStateChanges(recordItem);
+        assertThat(contractRepository.count()).isZero();
+        assertThat(entityRepository.count()).isZero();
     }
 
     @Test
@@ -200,8 +204,14 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                 .sidecarRecords(s -> s.get(1).getActionsBuilder().getContractActionsBuilder(0).clearResultData())
                 .build();
 
-        assertThatThrownBy(() -> process(recordItem)).isInstanceOf(InvalidDatasetException.class)
-                .hasMessageContaining("Invalid result data");
+        process(recordItem);
+
+        assertContractResult(recordItem);
+        assertContractLogs(recordItem);
+        assertContractActions(recordItem);
+        assertContractStateChanges(recordItem);
+        assertThat(contractRepository.count()).isZero();
+        assertThat(entityRepository.count()).isZero();
     }
 
     @Test
@@ -467,7 +477,10 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                     var actionsMap = new HashMap<ContractAction.Id, com.hedera.services.stream.proto.ContractAction>();
                     for (int i = 0; i < actions.getContractActionsCount(); i++) {
                         var action = actions.getContractActions(i);
-                        actionsMap.put(new ContractAction.Id(recordItem.getConsensusTimestamp(), i), action);
+                        if ((action.hasCallingAccount() || action.hasCallingContract()) &&
+                                !action.getResultDataCase().name().equals("RESULTDATA_NOT_SET")) {
+                            actionsMap.put(new ContractAction.Id(recordItem.getConsensusTimestamp(), i), action);
+                        }
                     }
                     return actionsMap;
                 })
@@ -518,9 +531,16 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     }
 
     private void assertContractLogs(RecordItem recordItem) {
+        assertContractLogs(recordItem, false);
+    }
+
+    private void assertContractLogs(RecordItem recordItem, boolean ethereum) {
         var contractFunctionResult = getFunctionResult(recordItem);
         var listAssert = assertThat(contractLogRepository.findAll())
                 .hasSize(contractFunctionResult.getLogInfoCount());
+        var transactionHash = ethereum ? recordItem.getEthereumTransaction().getHash() :
+                Arrays.copyOfRange(transaction.getTransactionHash(), 0, 32);
+        Integer transactionIndex = transaction.getIndex();
 
         if (contractFunctionResult.getLogInfoCount() > 0) {
             var blooms = new ArrayList<byte[]>();
@@ -540,6 +560,8 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
             listAssert.extracting(ContractLog::getIndex).containsExactlyInAnyOrder(0, 1);
             listAssert.extracting(ContractLog::getBloom).containsAll(blooms);
             listAssert.extracting(ContractLog::getData).containsAll(data);
+            listAssert.extracting(ContractLog::getTransactionHash).containsOnly(transactionHash);
+            listAssert.extracting(ContractLog::getTransactionIndex).containsOnly(transactionIndex);
         }
     }
 

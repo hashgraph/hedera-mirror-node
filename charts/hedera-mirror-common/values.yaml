@@ -75,8 +75,8 @@ loki:
       rules:
         - alert: ImporterLogErrors
           annotations:
-            description: "Logs for {{ $labels.namespace }}/{{ $labels.pod }} have reached {{ $value }} error messages/s in a 1m period"
-            summary: Error found in logs
+            description: "Logs for {{ $labels.namespace }}/{{ $labels.pod }} have reached {{ $value }} error messages/s in a 5m period"
+            summary: High rate of errors in logs
           expr: >
             sum(rate({component="importer"}
               | regexp `(?P<timestamp>\S+) (?P<level>\S+) (?P<thread>\S+) (?P<class>\S+) (?P<message>.+)`
@@ -96,6 +96,18 @@ loki:
               | regexp `(?P<timestamp>\S+) (?P<level>\S+) (?P<thread>\S+) (?P<class>\S+) (?P<message>.+)`
               | message =~ ".*(Error starting watch service|Unable to fetch entity types|Unable to fetch transaction types|environment variable not set|Cannot load configuration from).*"
             [1m])) by (namespace, pod, message) > 0.01
+          for: 1m
+          labels:
+            severity: critical
+        - alert: ImporterRecoverableErrors
+          annotations:
+            description: "Recoverable Error Logs for {{ $labels.namespace }}/{{ $labels.pod }} have reached {{ $value }} error messages/s in a 1m period"
+            summary: Recoverable Error found in logs
+          expr: >
+            sum(rate({component="importer"}
+              | regexp `(?P<timestamp>\S+) (?P<level>\S+) (?P<thread>\S+) (?P<class>\S+) (?P<message>.+)`
+              | level = "ERROR"
+            [1m])) by (namespace, pod) > 0
           for: 1m
           labels:
             severity: critical
@@ -248,7 +260,7 @@ prometheus:
     resources:
       limits:
         cpu: 300m
-        memory: 300Mi
+        memory: 500Mi
       requests:
         cpu: 150m
         memory: 75Mi
@@ -309,7 +321,7 @@ prometheus:
       resources:
         limits:
           cpu: 750m
-          memory: 1Gi
+          memory: 2Gi
         requests:
           cpu: 250m
           memory: 250Mi
@@ -322,13 +334,13 @@ prometheus:
           spec:
             resources:
               requests:
-                storage: 50Gi
+                storage: 100Gi
       walCompression: true
   prometheusOperator:
     resources:
       limits:
         cpu: 100m
-        memory: 100Mi
+        memory: 200Mi
       requests:
         cpu: 50m
         memory: 50Mi
@@ -344,10 +356,10 @@ promtail:
   resources:
     limits:
       cpu: 125m
-      memory: 100Mi
+      memory: 150Mi
     requests:
       cpu: 50m
-      memory: 32Mi
+      memory: 50Mi
   serviceMonitor:
     enabled: true
 
