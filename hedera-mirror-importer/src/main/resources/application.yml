@@ -23,7 +23,7 @@ hedera:
         initializeEntityBalanceMigration:
           checksum: 3
         tokenAccountBalanceMigration:
-          checksum: 2
+          checksum: 3
 
 logging:
   level:
