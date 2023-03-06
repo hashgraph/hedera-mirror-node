@@ -22,6 +22,7 @@ description = "Hedera Mirror Node Test"
 
 plugins {
     id("java-conventions")
+    id("org.web3j") version "4.9.4"
 }
 
 dependencies {

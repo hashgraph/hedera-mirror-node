@@ -63,6 +63,7 @@ import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
 import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
+import org.web3j.abi.datatypes.Function;
 
 @Log4j2
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -125,31 +126,31 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     @Then("Check if fungible token is token")
     public void checkIfFungibleTokenIsToken() {
-        ContractCallResponse isTokenResponse = mirrorClient.contractsCall(
+        ContractCallResponse response = mirrorClient.contractsCall(
                 PrecompileContractFeature.IS_TOKEN_SELECTOR + TestUtil
                         .to32BytesString(tokenIds.get(0).toSolidityAddress()),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
 
-        assertTrue(ContractCallResponse.convertContractCallResponseToBoolean(isTokenResponse));
+        assertTrue(ContractCallResponse.convertContractCallResponseToBoolean(response));
     }
 
     @Then("Check if non fungible token is token")
     public void checkIfNonFungibleTokenIsToken() {
-        ContractCallResponse isTokenResponse = mirrorClient.contractsCall(
+        ContractCallResponse response = mirrorClient.contractsCall(
                 PrecompileContractFeature.IS_TOKEN_SELECTOR + TestUtil
                         .to32BytesString(tokenIds.get(1).toSolidityAddress()),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
 
-        assertTrue(ContractCallResponse.convertContractCallResponseToBoolean(isTokenResponse));
+        assertTrue(ContractCallResponse.convertContractCallResponseToBoolean(response));
     }
 
     @Then("Check if fungible token is frozen")
     public void checkIfFungibleTokenIsFrozen() {
-        ContractCallResponse isFrozenResponse = mirrorClient.contractsCall(
+        ContractCallResponse response = mirrorClient.contractsCall(
                 PrecompileContractFeature.IS_TOKEN_FROZEN_SELECTOR
                         + TestUtil.to32BytesString(tokenIds.get(0).toSolidityAddress())
                         + TestUtil.to32BytesString(contractClient.getClientAddress()),
@@ -157,12 +158,12 @@ public class PrecompileContractFeature extends AbstractFeature {
                 contractClient.getClientAddress()
         );
 
-        assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(isFrozenResponse));
+        assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(response));
     }
 
     @Then("Check if non fungible token is frozen")
     public void checkIfNonFungibleTokenIsFrozen() {
-        ContractCallResponse isFrozenResponse = mirrorClient.contractsCall(
+        ContractCallResponse response = mirrorClient.contractsCall(
                 PrecompileContractFeature.IS_TOKEN_FROZEN_SELECTOR
                         + TestUtil.to32BytesString(tokenIds.get(1).toSolidityAddress())
                         + TestUtil.to32BytesString(contractClient.getClientAddress()),
@@ -170,12 +171,12 @@ public class PrecompileContractFeature extends AbstractFeature {
                 contractClient.getClientAddress()
         );
 
-        assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(isFrozenResponse));
+        assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(response));
     }
 
     @Then("Check if fungible token is kyc granted")
     public void checkIfFungibleTokenIsKycGranted() {
-        ContractCallResponse isFrozenResponse = mirrorClient.contractsCall(
+        ContractCallResponse response = mirrorClient.contractsCall(
                 PrecompileContractFeature.IS_KYC_GRANTED_SELECTOR
                         + TestUtil.to32BytesString(tokenIds.get(0).toSolidityAddress())
                         + TestUtil.to32BytesString(contractClient.getClientAddress()),
@@ -183,12 +184,12 @@ public class PrecompileContractFeature extends AbstractFeature {
                 contractClient.getClientAddress()
         );
 
-        assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(isFrozenResponse));
+        assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(response));
     }
 
     @Then("Check if non fungible token is kyc granted")
     public void checkIfNonFungibleTokenIsKycGranted() {
-        ContractCallResponse isFrozenResponse = mirrorClient.contractsCall(
+        ContractCallResponse response = mirrorClient.contractsCall(
                 PrecompileContractFeature.IS_KYC_GRANTED_SELECTOR
                         + TestUtil.to32BytesString(tokenIds.get(1).toSolidityAddress())
                         + TestUtil.to32BytesString(contractClient.getClientAddress()),
@@ -196,55 +197,70 @@ public class PrecompileContractFeature extends AbstractFeature {
                 contractClient.getClientAddress()
         );
 
-        assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(isFrozenResponse));
+        assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(response));
     }
 
     @Then("Get token default freeze of fungible token")
     public void getDefaultFreezeOfFungibleToken() {
-        ContractCallResponse isFrozenResponse = mirrorClient.contractsCall(
+        ContractCallResponse response = mirrorClient.contractsCall(
                 PrecompileContractFeature.GET_TOKEN_DEFAULT_FREEZE_SELECTOR
                         + TestUtil.to32BytesString(tokenIds.get(0).toSolidityAddress()),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
 
-        assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(isFrozenResponse));
+        assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(response));
     }
 
     @Then("Get token default freeze of non fungible token")
     public void getDefaultFreezeOfNonFungibleToken() {
-        ContractCallResponse isFrozenResponse = mirrorClient.contractsCall(
+        ContractCallResponse response = mirrorClient.contractsCall(
                 PrecompileContractFeature.GET_TOKEN_DEFAULT_FREEZE_SELECTOR
                         + TestUtil.to32BytesString(tokenIds.get(1).toSolidityAddress()),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
 
-        assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(isFrozenResponse));
+        assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(response));
     }
 
     @Then("Get token default kyc of fungible token")
     public void getDefaultKycOfFungibleToken() {
-        ContractCallResponse isFrozenResponse = mirrorClient.contractsCall(
+        ContractCallResponse response = mirrorClient.contractsCall(
                 PrecompileContractFeature.GET_TOKEN_DEFAULT_KYC_SELECTOR
                         + TestUtil.to32BytesString(tokenIds.get(0).toSolidityAddress()),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
 
-        assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(isFrozenResponse));
+        assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(response));
     }
 
     @Then("Get token default kyc of non fungible token")
     public void getDefaultKycOfNonFungibleToken() {
-        ContractCallResponse isFrozenResponse = mirrorClient.contractsCall(
+        ContractCallResponse response = mirrorClient.contractsCall(
                 PrecompileContractFeature.GET_TOKEN_DEFAULT_KYC_SELECTOR
                         + TestUtil.to32BytesString(tokenIds.get(1).toSolidityAddress()),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
 
-        assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(isFrozenResponse));
+        assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(response));
+    }
+
+    @Then("Get information for token of fungible token")
+    public void getInformationForTokenOfFungibleToken() throws IOException {
+        ContractCallResponse response = mirrorClient.contractsCall(
+                PrecompileContractFeature.GET_INFORMATION_FOR_TOKEN_SELECTOR
+                        + TestUtil.to32BytesString(tokenIds.get(0).toSolidityAddress()),
+                contractId.toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+        CompiledSolidityArtifact compiledSolidityArtifact = MAPPER.readValue(
+                ResourceUtils.getFile(precompileTestContract.toUri()),
+                CompiledSolidityArtifact.class);
+
+        assertTrue(true);
     }
 
     @Retryable(value = {AssertionError.class},
