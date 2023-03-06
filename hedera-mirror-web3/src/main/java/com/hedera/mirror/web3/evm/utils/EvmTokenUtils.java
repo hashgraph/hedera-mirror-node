@@ -20,22 +20,18 @@ package com.hedera.mirror.web3.evm.utils;
  * ‍
  */
 
+import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
+import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
+
 import com.google.protobuf.InvalidProtocolBufferException;
-
-import com.hedera.mirror.common.domain.entity.EntityId;
-
-import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmKey;
-
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import lombok.experimental.UtilityClass;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
-import java.util.Optional;
-
-import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
-import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmKey;
 
 @UtilityClass
 public class EvmTokenUtils {
@@ -49,31 +45,27 @@ public class EvmTokenUtils {
         return Address.wrap(bytes);
     }
 
-    public static Optional<EvmKey> evmKey(byte[] keyBytes) throws InvalidProtocolBufferException {
+    public static EvmKey evmKey(byte[] keyBytes) throws InvalidProtocolBufferException {
         if(keyBytes == null){
-            return Optional.empty();
+            return new EvmKey();
         }
         var key = Key.parseFrom(keyBytes);
         final var contractId =
                 key.getContractID().getContractNum() > 0
                         ? toAddress(key.getContractID())
-                        : emptyContract();
+                        : emptyContractAddress();
         final var ed25519 = key.getEd25519().toByteArray();
         final var ecdsaSecp256K1 = key.getECDSASecp256K1().toByteArray();
         final var delegatableContractId =
                 key.getDelegatableContractId().getContractNum() > 0
                         ? toAddress(key.getDelegatableContractId())
-                        : emptyContract();
+                        : emptyContractAddress();
 
-        return Optional.of(new EvmKey(contractId, ed25519, ecdsaSecp256K1, delegatableContractId));
+        return new EvmKey(contractId, ed25519, ecdsaSecp256K1, delegatableContractId);
     }
 
-    private Address emptyContract() {
-        return toAddress(ContractID.newBuilder()
-                .setShardNum(0L)
-                .setRealmNum(0L)
-                .setContractNum(0L)
-                .build());
+    private Address emptyContractAddress() {
+        return Address.wrap(Bytes.wrap(new byte[20]));
     }
 
     public static Long entityIdFromEvmAddress(final Address address) {

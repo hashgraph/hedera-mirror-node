@@ -20,6 +20,7 @@ package com.hedera.mirror.web3.evm.exception;
  * ‍
  */
 
+@SuppressWarnings("java:S110")
 public class ParsingException extends EvmException {
 
     public ParsingException(String message) {

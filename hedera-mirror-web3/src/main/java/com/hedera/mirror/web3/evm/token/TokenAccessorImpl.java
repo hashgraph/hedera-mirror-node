@@ -376,13 +376,14 @@ public class TokenAccessorImpl implements TokenAccessor {
             final var pauseKey = evmKey(tokenEntity.getPauseKey());
             final var feeScheduleKey = evmKey(tokenEntity.getFeeScheduleKey());
 
-            adminKey.ifPresent(evmTokenInfo::setAdminKey);
-            kycKey.ifPresent(evmTokenInfo::setKycKey);
-            supplyKey.ifPresent(evmTokenInfo::setSupplyKey);
-            freezeKey.ifPresent(evmTokenInfo::setFreezeKey);
-            wipeKey.ifPresent(evmTokenInfo::setWipeKey);
-            pauseKey.ifPresent(evmTokenInfo::setPauseKey);
-            feeScheduleKey.ifPresent(evmTokenInfo::setFeeScheduleKey);
+            evmTokenInfo.setAdminKey(adminKey);
+            evmTokenInfo.setKycKey(kycKey);
+            evmTokenInfo.setSupplyKey(supplyKey);
+            evmTokenInfo.setFreezeKey(freezeKey);
+            evmTokenInfo.setWipeKey(wipeKey);
+            evmTokenInfo.setPauseKey(pauseKey);
+            evmTokenInfo.setFeeScheduleKey(feeScheduleKey);
+
         } catch (final InvalidProtocolBufferException e) {
             throw new ParsingException("Error parsing token keys.");
         }
