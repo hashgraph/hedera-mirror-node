@@ -21,6 +21,7 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
  */
 
 import static com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse.convertContractCallResponseToAddress;
+import static com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse.convertContractCallResponseToBoolean;
 import static com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse.convertContractCallResponseToNum;
 import static com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse.hexToASCII;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
@@ -95,7 +96,6 @@ public class ERCContractFeature extends AbstractFeature {
     public static final String IS_APPROVED_FOR_ALL_SELECTOR = "f49f40db";
     public static final String GET_OWNER_OF_SELECTOR = "d5d03e21";
     public static final String TOKEN_URI_SELECTOR = "e9dc6375";
-    private static final String WRONG_SELECTOR = "000000";
 
     private final ContractClient contractClient;
     private final FileClient fileClient;
@@ -133,6 +133,28 @@ public class ERCContractFeature extends AbstractFeature {
         assertThat(convertContractCallResponseToAddress(getOwnerOfResponse))
                 .isEqualTo(tokenClient.getSdkClient().getExpandedOperatorAccountId().getAccountId().toSolidityAddress());
 
+        var getTokenURIResponse = mirrorClient.contractsCall(TOKEN_URI_SELECTOR + nft
+                + to32BytesString("1"), to, from);
+        assertThat(hexToASCII(getTokenURIResponse.getResult())).isEqualTo("TEST_metadata");
+
+        var getApprovedResponse = mirrorClient.contractsCall(GET_APPROVED_SELECTOR + nft +
+                to32BytesString("1"), to, from);
+        assertThat(convertContractCallResponseToAddress(getApprovedResponse))
+                .isEqualTo("0000000000000000000000000000000000000000");
+
+        var getAllowanceResponse = mirrorClient.contractsCall(ALLOWANCE_SELECTOR + token
+                + to32BytesString(tokenClient.getSdkClient().getExpandedOperatorAccountId().getAccountId().toSolidityAddress())
+                + to32BytesString(contractClient.getClientAddress()), to, from);
+        assertThat(convertContractCallResponseToNum(getAllowanceResponse)).isEqualTo(0L);
+
+        var getIsApproveForAllResponse = mirrorClient.contractsCall(IS_APPROVED_FOR_ALL_SELECTOR + nft
+                + to32BytesString(tokenClient.getSdkClient().getExpandedOperatorAccountId().getAccountId().toSolidityAddress())
+                + to32BytesString(contractClient.getClientAddress()), to, from);
+        assertThat(convertContractCallResponseToBoolean(getIsApproveForAllResponse)).isFalse();
+
+        var getBalanceOfResponse = mirrorClient.contractsCall(BALANCE_OF_SELECTOR + token
+                + to32BytesString(contractClient.getClientAddress()), to, from);
+        assertThat(convertContractCallResponseToNum(getBalanceOfResponse)).isEqualTo(0L);
     }
 
     @Given("I successfully create an erc contract from contract bytes with balance")
@@ -163,7 +185,7 @@ public class ERCContractFeature extends AbstractFeature {
     @Then("I mint a serial number")
     public void mintNftToken() {
         TokenId tokenId = tokenIds.get(1);
-        networkTransactionResponse = tokenClient.mint(tokenId, RandomUtils.nextBytes(4));
+        networkTransactionResponse = tokenClient.mint(tokenId, "TEST_metadata".getBytes());
         assertNotNull(networkTransactionResponse.getTransactionId());
         TransactionReceipt receipt = networkTransactionResponse.getReceipt();
         assertNotNull(receipt);

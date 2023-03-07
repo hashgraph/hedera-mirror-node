@@ -48,4 +48,8 @@ public class ContractCallResponse {
         byte[] bytes = Hex.decodeHex(hex.toCharArray());
         return new String(bytes, StandardCharsets.UTF_8).trim();
     }
+
+    public static boolean convertContractCallResponseToBoolean(final ContractCallResponse response) {
+        return Long.parseUnsignedLong(response.getResult().replace("0x", ""), 16) > 0;
+    }
 }
