@@ -20,6 +20,8 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
  * ‍
  */
 
+import static com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse.convertContractCallResponseToAddress;
+import static com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse.convertContractCallResponseToNum;
 import static com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse.hexToASCII;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,7 +34,6 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.hedera.hashgraph.sdk.ContractId;
 import com.hedera.hashgraph.sdk.CustomFee;
 import com.hedera.hashgraph.sdk.FileId;
-import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TokenSupplyType;
 import com.hedera.hashgraph.sdk.TokenType;
@@ -113,12 +114,24 @@ public class ERCContractFeature extends AbstractFeature {
         var from = contractClient.getClientAddress();
         var to = contractId.toSolidityAddress();
         var token = to32BytesString(tokenIds.get(0).toSolidityAddress());
+        var nft = to32BytesString(tokenIds.get(1).toSolidityAddress());
 
-        var getAccountBalanceResponse = mirrorClient.contractsCall(NAME_SELECTOR + token, to, from);
-        assertThat(hexToASCII(getAccountBalanceResponse.getResult())).isEqualTo("TEST_name");
+        var getNameResponse = mirrorClient.contractsCall(NAME_SELECTOR + token, to, from);
+        assertThat(hexToASCII(getNameResponse.getResult())).isEqualTo("TEST_name");
 
         var getSymbolResponse = mirrorClient.contractsCall(SYMBOL_SELECTOR + token, to, from);
         assertThat(hexToASCII(getSymbolResponse.getResult())).isEqualTo("TEST");
+
+        var getDecimalsResponse = mirrorClient.contractsCall(DECIMALS_SELECTOR + token, to, from);
+        assertThat(convertContractCallResponseToNum(getDecimalsResponse)).isEqualTo(10L);
+
+        var getTotalSupplyResponse = mirrorClient.contractsCall(TOTAL_SUPPLY_SELECTOR + token, to, from);
+        assertThat(convertContractCallResponseToNum(getTotalSupplyResponse)).isEqualTo(1_000_000L);
+
+        var getOwnerOfResponse = mirrorClient.contractsCall(GET_OWNER_OF_SELECTOR + nft +
+                to32BytesString("1"), to, from);
+        assertThat(convertContractCallResponseToAddress(getOwnerOfResponse))
+                .isEqualTo(tokenClient.getSdkClient().getExpandedOperatorAccountId().getAccountId().toSolidityAddress());
 
     }
 

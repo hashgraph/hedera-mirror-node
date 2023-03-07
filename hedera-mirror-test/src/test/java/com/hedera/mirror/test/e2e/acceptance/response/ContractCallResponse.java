@@ -41,7 +41,6 @@ public class ContractCallResponse {
 
     public static String convertContractCallResponseToAddress(final ContractCallResponse response) {
         return Bytes.fromHexString(response.getResult()).slice(12).toUnprefixedHexString();
-
     }
 
     public static String hexToASCII(String str) throws DecoderException {
