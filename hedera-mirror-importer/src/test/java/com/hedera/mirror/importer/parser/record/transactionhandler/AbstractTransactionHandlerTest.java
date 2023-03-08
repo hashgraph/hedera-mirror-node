@@ -547,4 +547,8 @@ abstract class AbstractTransactionHandlerTest {
         AbstractEntity expected;
         RecordItem recordItem;
     }
+
+    protected static Stream<EntityId> provideEntities() {
+        return Stream.of(null, EntityId.EMPTY);
+    }
 }

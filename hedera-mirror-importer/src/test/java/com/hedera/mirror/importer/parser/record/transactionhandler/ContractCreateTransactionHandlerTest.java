@@ -45,6 +45,8 @@ import java.util.List;
 import org.assertj.core.api.ObjectAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 
@@ -305,8 +307,9 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .returns(Utility.getEpochDay(recordItem.getConsensusTimestamp()), Entity::getStakePeriodStart);
     }
 
-    @Test
-    void updateTransactionEntityNotFound() {
+    @ParameterizedTest
+    @MethodSource("provideEntities")
+    void updateTransactionEntityNotFound(EntityId entityId) {
         var alias = DomainUtils.fromBytes(domainBuilder.key());
         var recordItem = recordItemBuilder.contractCreate()
                 .transactionBody(b -> b.getAutoRenewAccountIdBuilder().setAlias(alias))
@@ -316,10 +319,12 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         var transaction = domainBuilder.transaction().
                 customize(t -> t.consensusTimestamp(timestamp).entityId(contractId)).get();
         var initCode = DomainUtils.toBytes(recordItem.getSidecarRecords().get(2).getBytecode().getInitcode());
-        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build())).thenReturn(EntityId.EMPTY);
+        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build())).thenReturn(entityId);
         transactionHandler.updateTransaction(transaction, recordItem);
+
+        var expectedAutoRenewAccountId = entityId == null ? null : entityId.getId();
         assertEntity(contractId, timestamp)
-                .returns(0L, Entity::getAutoRenewAccountId)
+                .returns(expectedAutoRenewAccountId, Entity::getAutoRenewAccountId)
                 .returns(null, Entity::getEvmAddress);
         assertContract(contractId)
                 .satisfies(c -> assertThat(c.getFileId().getId()).isPositive())

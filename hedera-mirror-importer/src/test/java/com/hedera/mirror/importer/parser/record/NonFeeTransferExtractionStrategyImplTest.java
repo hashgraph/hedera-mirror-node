@@ -41,9 +41,12 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -162,13 +165,14 @@ class NonFeeTransferExtractionStrategyImplTest {
         );
     }
 
-    @Test
-    void extractNonFeeTransfersContractCallEmptyId() {
+    @ParameterizedTest
+    @MethodSource("provideEntities")
+    void extractNonFeeTransfersContractCallEmptyEntityId(EntityId entityId) {
         var amount = 123456L;
         var transactionBody = getContractCallTransactionBody(TestUtils.generateRandomByteArray(20), amount);
         var transactionRecord = getSimpleTransactionRecord();
         when(entityIdService.lookup(ContractID.getDefaultInstance(), transactionBody.getContractCall()
-                .getContractID())).thenReturn(EntityId.EMPTY);
+                .getContractID())).thenReturn(entityId);
         var result = extractionStrategy.extractNonFeeTransfers(transactionBody, transactionRecord);
         assertEquals(0, StreamSupport.stream(result.spliterator(), false).count());
     }
@@ -201,6 +205,10 @@ class NonFeeTransferExtractionStrategyImplTest {
     private void assertResult(List<AccountAmount> expected, Iterable<AccountAmount> actual) {
         assertArrayEquals(expected.toArray(), StreamSupport.stream(actual.spliterator(), false)
                 .toArray());
+    }
+
+    private static Stream<EntityId> provideEntities() {
+        return Stream.of(null, EntityId.EMPTY);
     }
 
     private TransactionBody.Builder transactionBodyBuilder() {

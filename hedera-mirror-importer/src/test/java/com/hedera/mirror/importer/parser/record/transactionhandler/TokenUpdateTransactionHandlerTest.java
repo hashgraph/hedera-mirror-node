@@ -39,6 +39,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -123,8 +125,9 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         assertTokenUpdate(timestamp, tokenId, id -> assertEquals(10L, id));
     }
 
-    @Test
-    void updateTransactionWithNullEntity() {
+    @ParameterizedTest
+    @MethodSource("provideEntities")
+    void updateTransactionWithNullEntity(EntityId entityId) {
         var alias = DomainUtils.fromBytes(domainBuilder.key());
         var recordItem = recordItemBuilder.tokenUpdate()
                 .transactionBody(b -> b.getAutoRenewAccountBuilder().setAlias(alias))
@@ -133,9 +136,11 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder.transaction().
                 customize(t -> t.consensusTimestamp(timestamp).entityId(tokenId)).get();
-        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build())).thenReturn(null);
+        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build())).thenReturn(entityId);
         transactionHandler.updateTransaction(transaction, recordItem);
-        assertTokenUpdate(timestamp, tokenId, id -> assertEquals(null, id));
+
+        var expectedEntityId = entityId == null ? null : entityId.getId();
+        assertTokenUpdate(timestamp, tokenId, id -> assertEquals(expectedEntityId, id));
     }
 
     @SuppressWarnings("java:S6103")

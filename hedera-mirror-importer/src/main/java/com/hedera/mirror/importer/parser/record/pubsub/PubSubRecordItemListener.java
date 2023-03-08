@@ -72,7 +72,7 @@ public class PubSubRecordItemListener implements RecordItemListener {
 
         EntityId entityId = transactionHandler.getEntity(recordItem);
         if (EntityId.isEmpty(entityId)) {
-            log.warn("Invalid entity encountered for consensusTimestamp {}", consensusTimestamp);
+            log.error("Invalid entity encountered for consensusTimestamp {}", consensusTimestamp);
             entityId = null;
         }
 

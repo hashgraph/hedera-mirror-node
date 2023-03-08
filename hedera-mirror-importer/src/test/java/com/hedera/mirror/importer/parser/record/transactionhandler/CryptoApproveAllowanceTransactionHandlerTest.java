@@ -52,6 +52,8 @@ import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.parser.PartialDataAction;
 import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 
+import org.junit.jupiter.params.provider.MethodSource;
+
 class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     private long consensusTimestamp;
@@ -193,19 +195,32 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
         verifyNoInteractions(entityListener);
     }
 
-    @Test
-    void updateTransactionWithNullEntityIdAndPartialDataActionSkip() {
-        recordParserProperties.setPartialDataAction(PartialDataAction.SKIP);
+    @ParameterizedTest
+    @MethodSource("provideEntities")
+    void updateTransactionWithEmptyEntityIdAndPartialDataActionSkip(EntityId entityId) {
         var alias = DomainUtils.fromBytes(domainBuilder.key());
-        var recordItem = recordItemBuilder.cryptoApproveAllowance().transactionBody(b -> {
-            b.getCryptoAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
-            b.getNftAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
-            b.getTokenAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
-        }).build();
+        var recordItem = recordItemBuilder.cryptoApproveAllowance()
+                .transactionBody(this::customizeTransactionBody)
+                .transactionBody(b -> {
+                    b.getCryptoAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
+                    b.getNftAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
+                    b.getTokenAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
+                })
+                .transactionBodyWrapper(this::setTransactionPayer)
+                .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(consensusTimestamp)))
+                .build();
         var transaction = domainBuilder.transaction().get();
-        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build())).thenReturn(null);
+        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build())).thenReturn(entityId);
         transactionHandler.updateTransaction(transaction, recordItem);
-        verifyNoInteractions(entityListener);
+
+        if (entityId == null) {
+            // Unable to determine the entity id
+            verifyNoInteractions(entityListener);
+        } else {
+            // The implicit entity id is used
+            var effectiveOwner = recordItem.getPayerAccountId().getId();
+            assertAllowances(effectiveOwner);
+        }
     }
 
     @Test

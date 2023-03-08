@@ -290,9 +290,8 @@ public class EntityRecordItemListener implements RecordItemListener {
         var body = recordItem.getTransactionBody();
         var transactionRecord = recordItem.getTransactionRecord();
         for (var aa : nonFeeTransfersExtractor.extractNonFeeTransfers(body, transactionRecord)) {
-            var entityId = EntityId.EMPTY;
             if (aa.getAmount() != 0) {
-                entityId = entityIdService.lookup(aa.getAccountID());
+                var entityId = entityIdService.lookup(aa.getAccountID());
                 if (EntityId.isEmpty(entityId)) {
                     continue;
                 }

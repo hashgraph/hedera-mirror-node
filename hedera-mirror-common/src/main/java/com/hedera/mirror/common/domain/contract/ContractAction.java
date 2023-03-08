@@ -111,7 +111,9 @@ public class ContractAction implements Persistable<ContractAction.Id> {
 
     public void setCaller(EntityId caller) {
         this.caller = caller;
-        this.callerType = caller.getType();
+        if (caller != null) {
+            this.callerType = caller.getType();
+        }
     }
 
     @Data

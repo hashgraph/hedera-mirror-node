@@ -22,6 +22,8 @@ package com.hedera.mirror.importer;
 
 import static java.lang.invoke.MethodType.methodType;
 
+import com.hedera.mirror.common.domain.entity.EntityId;
+
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -42,6 +44,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 import lombok.experimental.UtilityClass;
 import org.apache.commons.beanutils.BeanUtilsBean;
 
@@ -60,6 +63,7 @@ public class TestUtils {
             }
         }
     };
+    public static String provideEntities;
 
     public static <T> T clone(T object) {
         try {

@@ -94,6 +94,12 @@ public class ContractResultServiceImpl implements ContractResultService {
         // in pre-compile case transaction is not a contract type and entityId will be of a different type
         var contractId = isContractCreateOrCall(transactionBody) ? transaction.getEntityId() :
                 entityIdService.lookup(functionResult.getContractID());
+        if (contractId == null) {
+            log.error(RECOVERABLE_ERROR + "Invalid contract id for contract result at {}", recordItem
+                    .getConsensusTimestamp());
+            return;
+        }
+
         processContractResult(recordItem, contractId, functionResult, transaction, transactionHandler,
                 sidecarFailedInitcode);
     }
@@ -112,11 +118,8 @@ public class ContractResultServiceImpl implements ContractResultService {
         switch (action.getCallerCase()) {
             case CALLING_CONTRACT -> contractAction.setCaller(EntityId.of(action.getCallingContract()));
             case CALLING_ACCOUNT -> contractAction.setCaller(EntityId.of(action.getCallingAccount()));
-            default -> {
-                log.error(RECOVERABLE_ERROR + "Invalid caller for contract action at {}: {}", consensusTimestamp,
-                        action.getCallerCase());
-                return;
-            }
+            default -> log.error(RECOVERABLE_ERROR + "Invalid caller for contract action at {}: {}", consensusTimestamp,
+                    action.getCallerCase());
         }
 
         switch (action.getRecipientCase()) {
@@ -132,12 +135,9 @@ public class ContractResultServiceImpl implements ContractResultService {
             case ERROR -> contractAction.setResultData(DomainUtils.toBytes(action.getError()));
             case REVERT_REASON -> contractAction.setResultData(DomainUtils.toBytes(action.getRevertReason()));
             case OUTPUT -> contractAction.setResultData(DomainUtils.toBytes(action.getOutput()));
-            default -> {
-                log.error(RECOVERABLE_ERROR + "Invalid result data for contract action at {}: {}",
-                        consensusTimestamp,
-                        action.getResultDataCase());
-                return;
-            }
+            default -> log.error(RECOVERABLE_ERROR + "Invalid result data for contract action at {}: {}",
+                    consensusTimestamp,
+                    action.getResultDataCase());
         }
 
         contractAction.setCallDepth(action.getCallDepth());
@@ -213,6 +213,10 @@ public class ContractResultServiceImpl implements ContractResultService {
         for (int index = 0; index < functionResult.getLogInfoCount(); ++index) {
             var contractLoginfo = functionResult.getLogInfo(index);
             var contractLogId = entityIdService.lookup(contractLoginfo.getContractID());
+            if (EntityId.isEmpty(contractLogId)) {
+                log.error(RECOVERABLE_ERROR + "invalid contractLogId at {}", contractResult.getConsensusTimestamp());
+                continue;
+            }
 
             ContractLog contractLog = new ContractLog();
             EntityId contractId = EntityId.of(contractResult.getContractId(), EntityType.CONTRACT);

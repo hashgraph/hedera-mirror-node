@@ -41,6 +41,7 @@ import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -202,8 +203,9 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
         );
     }
 
-    @Test
-    void updateTransactionEntityNotFound() {
+    @ParameterizedTest
+    @MethodSource("provideEntities")
+    void updateTransactionEntityNotFound(EntityId entityId) {
         // given
         var alias = DomainUtils.fromBytes(domainBuilder.key());
         var recordItem = recordItemBuilder.contractUpdate()
@@ -213,14 +215,15 @@ class ContractUpdateTransactionHandlerTest extends AbstractTransactionHandlerTes
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder.transaction().
                 customize(t -> t.consensusTimestamp(timestamp).entityId(contractId)).get();
-        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build())).thenReturn(EntityId.EMPTY);
+        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build())).thenReturn(entityId);
 
         // when
         transactionHandler.updateTransaction(transaction, recordItem);
 
         // then
+        var expectedAutoRenewAccountId = entityId == null ? null : entityId.getId();
         assertContractUpdate(timestamp, contractId, t -> assertThat(t)
-                .returns(0L, Entity::getAutoRenewAccountId)
+                .returns(expectedAutoRenewAccountId, Entity::getAutoRenewAccountId)
                 .satisfies(c -> assertThat(c.getAutoRenewPeriod()).isPositive())
                 .satisfies(c -> assertThat(c.getExpirationTimestamp()).isPositive())
                 .satisfies(c -> assertThat(c.getKey()).isNotEmpty())
