@@ -31,34 +31,11 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-
-import com.hedera.hashgraph.sdk.ContractId;
-import com.hedera.hashgraph.sdk.CustomFee;
-import com.hedera.hashgraph.sdk.FileId;
-import com.hedera.hashgraph.sdk.TokenId;
-import com.hedera.hashgraph.sdk.TokenSupplyType;
-import com.hedera.hashgraph.sdk.TokenType;
-import com.hedera.hashgraph.sdk.TransactionReceipt;
-import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
-import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
-import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
-
-import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
-
-import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
-
-import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
-import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
-
-import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
-
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,21 +43,27 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.apache.commons.lang3.RandomUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.ResourceUtils;
+
+import com.hedera.hashgraph.sdk.ContractId;
+import com.hedera.hashgraph.sdk.TokenId;
+import com.hedera.hashgraph.sdk.TokenSupplyType;
+import com.hedera.hashgraph.sdk.TransactionReceipt;
+import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
+import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
+import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
+import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
+import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
+import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 
 @Log4j2
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class ERCContractFeature extends AbstractFeature {
 
-    private static final int INITIAL_SUPPLY = 1_000_000;
-    private static final int MAX_SUPPLY = 1;
-
     private final List<TokenId> tokenIds = new ArrayList<>();
     private final Map<TokenId, List<Long>> tokenSerialNumbers = new HashMap<>();
-    private final Map<TokenId, List<CustomFee>> tokenCustomFees = new HashMap<>();
 
     private static final ObjectMapper MAPPER = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
@@ -98,15 +81,15 @@ public class ERCContractFeature extends AbstractFeature {
     public static final String TOKEN_URI_SELECTOR = "e9dc6375";
 
     private final ContractClient contractClient;
-    private final FileClient fileClient;
     private final MirrorNodeClient mirrorClient;
     private final TokenClient tokenClient;
+    private final ContractFeature contractFeature;
+    private final TokenFeature tokenFeature;
 
     @Value("classpath:solidity/artifacts/contracts/ERCTestContract.sol/ERCTestContract.json")
     private Path ercContract;
 
     private ContractId contractId;
-    private FileId fileId;
     private CompiledSolidityArtifact compiledSolidityArtifact;
 
     @Then("I call the erc contract via the mirror node REST API")
@@ -162,24 +145,26 @@ public class ERCContractFeature extends AbstractFeature {
         compiledSolidityArtifact = MAPPER.readValue(
                 ResourceUtils.getFile(ercContract.toUri()),
                 CompiledSolidityArtifact.class);
-        createContract(compiledSolidityArtifact.getBytecode());
+        contractId = contractFeature.createContract(compiledSolidityArtifact.getBytecode(), 0);
     }
 
     @Then("I create a new token with freeze status 2 and kyc status 1")
     public void createNewToken() {
-        createNewToken(
-                "TEST",
-                TokenFreezeStatus.FreezeNotApplicable_VALUE,
-                TokenKycStatus.KycNotApplicable_VALUE
-        );
+        tokenIds.add(
+                tokenFeature.createNewToken(
+                        "TEST",
+                        TokenFreezeStatus.FreezeNotApplicable_VALUE,
+                        TokenKycStatus.KycNotApplicable_VALUE));
     }
 
     @Then("I create a new nft with supplyType {string}")
     public void createNewNft(String tokenSupplyType) {
-        createNewNft(RandomStringUtils.randomAlphabetic(4)
-                        .toUpperCase(), TokenFreezeStatus.FreezeNotApplicable_VALUE,
+        TokenId tokenId = tokenFeature.createNewNft(RandomStringUtils.randomAlphabetic(4).toUpperCase(),
+                TokenFreezeStatus.FreezeNotApplicable_VALUE,
                 TokenKycStatus.KycNotApplicable_VALUE,
                 TokenSupplyType.valueOf(tokenSupplyType));
+        tokenIds.add(tokenId);
+        tokenSerialNumbers.put(tokenId, new ArrayList<>());
     }
 
     @Then("I mint a serial number")
@@ -193,79 +178,5 @@ public class ERCContractFeature extends AbstractFeature {
         long serialNumber = receipt.serials.get(0);
         assertThat(serialNumber).isPositive();
         tokenSerialNumbers.get(tokenId).add(serialNumber);
-    }
-
-    private void createContract(String byteCode) {
-        persistContractBytes(byteCode.replaceFirst("0x", ""));
-        networkTransactionResponse = contractClient.createContract(
-                fileId,
-                contractClient.getSdkClient().getAcceptanceTestProperties().getFeatureProperties()
-                        .getMaxContractFunctionGas(),
-                null,
-                null);
-
-        verifyCreateContractNetworkResponse();
-    }
-
-    private void persistContractBytes(String contractContents) {
-        // rely on SDK chunking feature to upload larger files
-        networkTransactionResponse = fileClient.createFile(new byte[] {});
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-        fileId = networkTransactionResponse.getReceipt().fileId;
-        assertNotNull(fileId);
-        log.info("Created file {} to hold contract init code", fileId);
-
-        networkTransactionResponse = fileClient.appendFile(fileId, contractContents.getBytes(StandardCharsets.UTF_8));
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-    }
-
-    private void verifyCreateContractNetworkResponse() {
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-        contractId = networkTransactionResponse.getReceipt().contractId;
-        assertNotNull(contractId);
-    }
-
-    private void createNewToken(String symbol, int freezeStatus, int kycStatus) {
-        createNewToken(symbol, freezeStatus, kycStatus, TokenType.FUNGIBLE_COMMON, TokenSupplyType.INFINITE, Collections
-                .emptyList());
-    }
-
-    private TokenId createNewToken(String symbol, int freezeStatus, int kycStatus, TokenType tokenType,
-            TokenSupplyType tokenSupplyType, List<CustomFee> customFees) {
-        ExpandedAccountId admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
-        networkTransactionResponse = tokenClient.createToken(
-                admin,
-                symbol,
-                freezeStatus,
-                kycStatus,
-                admin,
-                INITIAL_SUPPLY,
-                tokenSupplyType,
-                MAX_SUPPLY,
-                tokenType,
-                customFees);
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-        TokenId tokenId = networkTransactionResponse.getReceipt().tokenId;
-        assertNotNull(tokenId);
-        tokenIds.add(tokenId);
-        tokenCustomFees.put(tokenId, customFees);
-
-        return tokenId;
-    }
-
-    private void createNewNft(String symbol, int freezeStatus, int kycStatus, TokenSupplyType tokenSupplyType) {
-        TokenId tokenId = createNewToken(
-                symbol,
-                freezeStatus,
-                kycStatus,
-                TokenType.NON_FUNGIBLE_UNIQUE,
-                tokenSupplyType,
-                Collections.emptyList());
-        tokenIds.add(tokenId);
-        tokenSerialNumbers.put(tokenId, new ArrayList<>());
     }
 }

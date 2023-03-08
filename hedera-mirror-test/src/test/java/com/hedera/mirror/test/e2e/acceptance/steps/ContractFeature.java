@@ -190,7 +190,7 @@ public class ContractFeature extends AbstractFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
-    private void createContract(String byteCode, int initialBalance) {
+    public ContractId createContract(String byteCode, int initialBalance) {
         persistContractBytes(byteCode.replaceFirst("0x", ""));
         networkTransactionResponse = contractClient.createContract(
                 fileId,
@@ -200,6 +200,8 @@ public class ContractFeature extends AbstractFeature {
                 null);
 
         verifyCreateContractNetworkResponse();
+
+        return contractId;
     }
 
     private MirrorContractResponse verifyContractFromMirror(boolean isDeleted) {

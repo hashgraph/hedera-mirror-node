@@ -508,12 +508,12 @@ public class TokenFeature {
         return tokenId;
     }
 
-    private void createNewToken(String symbol, int freezeStatus, int kycStatus) {
-        createNewToken(symbol, freezeStatus, kycStatus, TokenType.FUNGIBLE_COMMON, TokenSupplyType.INFINITE, Collections
+    public TokenId createNewToken(String symbol, int freezeStatus, int kycStatus) {
+        return createNewToken(symbol, freezeStatus, kycStatus, TokenType.FUNGIBLE_COMMON, TokenSupplyType.INFINITE, Collections
                 .emptyList());
     }
 
-    private void createNewNft(String symbol, int freezeStatus, int kycStatus, TokenSupplyType tokenSupplyType) {
+    public TokenId createNewNft(String symbol, int freezeStatus, int kycStatus, TokenSupplyType tokenSupplyType) {
         TokenId tokenId = createNewToken(
                 symbol,
                 freezeStatus,
@@ -522,6 +522,7 @@ public class TokenFeature {
                 tokenSupplyType,
                 Collections.emptyList());
         tokenSerialNumbers.put(tokenId, new ArrayList<>());
+        return tokenId;
     }
 
     private void associateWithToken(ExpandedAccountId accountId, TokenId tokenId) {
