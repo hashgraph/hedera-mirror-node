@@ -35,6 +35,7 @@
   },
   "urls": [
     "/api/v1/accounts/1001/rewards?timestamp=1234567890.000022222",
+    "/api/v1/accounts/0x00000000000000000000000000000000000003e9/rewards?timestamp=1234567890.000022222",
     "/api/v1/accounts/KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/rewards?timestamp=eq:1234567890.000022222"
   ],
   "responseStatus": 200,

@@ -80,7 +80,10 @@
   },
   "tests": [
     {
-      "url": "/api/v1/accounts/1001/allowances/tokens?spender.id=gte:2001&token.id=gt:10002",
+      "urls": [
+        "/api/v1/accounts/1001/allowances/tokens?spender.id=gte:2001&token.id=gt:10002",
+        "/api/v1/accounts/0x00000000000000000000000000000000000003e9/allowances/tokens?spender.id=gte:2001&token.id=gt:10002"
+      ],
       "responseStatus": 200,
       "responseJson": {
         "allowances": [
@@ -172,6 +175,37 @@
       }
     },
     {
+      "url": "/api/v1/accounts/0x00000000000000000000000000000000000003e9/allowances/tokens?spender.id=gte:2001&token.id=gt:10002&limit=2",
+      "responseStatus": 200,
+      "responseJson": {
+        "allowances": [
+          {
+            "amount_granted": 66,
+            "owner": "0.0.1001",
+            "spender": "0.0.2001",
+            "timestamp": {
+              "from": "1234567890.000000004",
+              "to": null
+            },
+            "token_id": "0.0.10006"
+          },
+          {
+            "amount_granted": 77,
+            "owner": "0.0.1001",
+            "spender": "0.0.3001",
+            "timestamp": {
+              "from": "1234567890.000000005",
+              "to": null
+            },
+            "token_id": "0.0.10005"
+          }
+        ],
+        "links": {
+          "next": "/api/v1/accounts/0x00000000000000000000000000000000000003e9/allowances/tokens?limit=2&spender.id=gte:0.0.3001&token.id=gt:0.0.10005"
+        }
+      }
+    },
+    {
       "url": "/api/v1/accounts/1001/allowances/tokens?spender.id=gte:2001&token.id=gt:10002&order=desc&limit=2",
       "responseStatus": 200,
       "responseJson": {
@@ -199,6 +233,37 @@
         ],
         "links": {
           "next": "/api/v1/accounts/1001/allowances/tokens?spender.id=gte:2001&spender.id=lte:0.0.3101&token.id=gt:10002&token.id=lt:0.0.10006&order=desc&limit=2"
+        }
+      }
+    },
+    {
+      "url": "/api/v1/accounts/0x00000000000000000000000000000000000003e9/allowances/tokens?spender.id=gte:2001&token.id=gt:10002&order=desc&limit=2",
+      "responseStatus": 200,
+      "responseJson": {
+        "allowances": [
+          {
+            "amount_granted": 99,
+            "owner": "0.0.1001",
+            "spender": "0.0.3102",
+            "timestamp": {
+              "from": "1234567890.000000008",
+              "to": null
+            },
+            "token_id": "0.0.10006"
+          },
+          {
+            "amount_granted": 98,
+            "owner": "0.0.1001",
+            "spender": "0.0.3101",
+            "timestamp": {
+              "from": "1234567890.000000007",
+              "to": null
+            },
+            "token_id": "0.0.10006"
+          }
+        ],
+        "links": {
+          "next": "/api/v1/accounts/0x00000000000000000000000000000000000003e9/allowances/tokens?spender.id=gte:2001&spender.id=lte:0.0.3101&token.id=gt:10002&token.id=lt:0.0.10006&order=desc&limit=2"
         }
       }
     }

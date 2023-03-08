@@ -67,6 +67,7 @@
   },
   "urls": [
     "/api/v1/accounts/0.0.1001/nfts?token.id=1500&serialnumber=lt:9",
+    "/api/v1/accounts/0x00000000000000000000000000000000000003e9/nfts?token.id=1500&serialnumber=lt:9",
     "/api/v1/accounts/0.0.1001/nfts?token.id=1500&serialnumber=lte:8"
   ],
   "responseStatus": 200,

@@ -46,6 +46,7 @@
   },
   "urls": [
     "/api/v1/accounts/0.0.1001/tokens?token.id=gt:1000",
+    "/api/v1/accounts/0x00000000000000000000000000000000000003e9/tokens?token.id=gt:1000",
     "/api/v1/accounts/0.0.1001/tokens?token.id=lte:2500",
     "/api/v1/accounts/0.0.1001/tokens?token.id=gt:1000&token.id=lte:2500",
     "/api/v1/accounts/0.0.1001/tokens?token.id=1500&token.id=2500"

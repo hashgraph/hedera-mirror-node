@@ -71,7 +71,9 @@
   },
   "urls": [
     "/api/v1/accounts/0.0.3001/nfts",
+    "/api/v1/accounts/0x0000000000000000000000000000000000000889/nfts",
     "/api/v1/accounts/0.0.1001/nfts?token.id=1",
+    "/api/v1/accounts/0x00000000000000000000000000000000000003e9/nfts?token.id=1",
     "/api/v1/accounts/0.0.1001/nfts?token.id=1500&serialnumber=5",
     "/api/v1/accounts/0.0.1001/nfts?token.id=1500&serialnumber=3&spender.id=2001"
   ],

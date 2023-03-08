@@ -57,7 +57,10 @@
       }
     ]
   },
-  "url": "/api/v1/accounts/1001/allowances/tokens?spender.id=2001&token.id=0.0.10002",
+  "urls": [
+    "/api/v1/accounts/1001/allowances/tokens?spender.id=2001&token.id=0.0.10002",
+    "/api/v1/accounts/0x00000000000000000000000000000000000003e9/allowances/tokens?spender.id=2001&token.id=0.0.10002"
+  ],
   "responseStatus": 200,
   "responseJson": {
     "allowances": [

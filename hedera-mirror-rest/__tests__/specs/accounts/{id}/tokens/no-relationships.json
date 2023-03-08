@@ -50,7 +50,8 @@
   "urls": [
     "/api/v1/accounts/3001/tokens",
     "/api/v1/accounts/0.1001/tokens?token.id=0.1.1135",
-    "/api/v1/accounts/0.0.1001/tokens?token.id=0.1.1135"
+    "/api/v1/accounts/0.0.1001/tokens?token.id=0.1.1135",
+    "/api/v1/accounts/0x00000000000000000000000000000000000003e9/tokens?token.id=0.1.1135"
   ],
   "responseStatus": 200,
   "responseJson": {

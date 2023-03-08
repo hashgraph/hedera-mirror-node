@@ -76,6 +76,7 @@
     "/api/v1/accounts/1001/nfts",
     "/api/v1/accounts/0.1001/nfts",
     "/api/v1/accounts/0.0.1001/nfts",
+    "/api/v1/accounts/0x00000000000000000000000000000000000003e9/nfts",
     "/api/v1/accounts/ebb9a1be370150759408cd7af48e9eda2b8ead57/nfts",
     "/api/v1/accounts/0xebb9a1be370150759408cd7af48e9eda2b8ead57/nfts",
     "/api/v1/accounts/0.0.ebb9a1be370150759408cd7af48e9eda2b8ead57/nfts"
