@@ -12,8 +12,8 @@ import com.hedera.mirror.importer.parser.CommonParserProperties;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import lombok.CustomLog;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
-import org.springframework.jdbc.datasource.ConnectionHolder;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -25,8 +25,10 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -42,7 +44,7 @@ public class TransactionHashBatchInserter implements BatchPersister {
     private final String shardedTableName;
 
     private final Scheduler scheduler;
-    private final Map<String, Connection> threadConnections = new ConcurrentHashMap<>();
+    private final Map<String, ThreadState> threadConnections = new ConcurrentHashMap<>();
 
     public TransactionHashBatchInserter(DataSource dataSource, MeterRegistry meterRegistry,
                                         CommonParserProperties commonParserProperties) {
@@ -66,8 +68,12 @@ public class TransactionHashBatchInserter implements BatchPersister {
         try {
             Stopwatch stopwatch = Stopwatch.createStarted();
 
-            Map<Integer, List<TransactionHash>> shardedItems = items.stream().map(TransactionHash.class::cast)
+            Map<Integer, List<TransactionHash>> shardedItems = items.stream()
+                    .map(TransactionHash.class::cast)
                     .collect(Collectors.groupingBy(item -> Math.abs(item.getHash()[0] % 32)));
+
+            // After parser transaction completes, process all transactions for shards
+            addTransactionSynchronization(items);
 
             Mono.when(shardedItems.entrySet()
                             .stream()
@@ -75,35 +81,84 @@ public class TransactionHashBatchInserter implements BatchPersister {
                             .toList())
                     .block();
 
-            // After parser transaction commits, commit all connections used for shards
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    for (Connection connection : threadConnections.values()) {
-                        try {
-                            connection.commit();
-                            connection.close();
-                        } catch (SQLException e) {
-                            // TODO Handle error in commit
-                            throw new RuntimeException(e);
-                        }
-                    }
-                    threadConnections.clear();
-                }
-            });
-
             insertDurationMetric.record(stopwatch.elapsed());
             log.info("Copied {} rows from {} shards to {} table in {}", items.size(), shardedItems.size(),
                     this.shardedTableName, stopwatch);
         } catch (Exception e) {
-            log.error("The exception is ", e);
             throw new ParserException(String.format("Error copying %d items to table %s", items.size(),
                     this.shardedTableName));
         }
     }
 
+    private void addTransactionSynchronization(Collection<?> items) {
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            final long itemCount = items.size();
+            final long minConsensusTimestamp = items.stream()
+                    .map(TransactionHash.class::cast)
+                    .mapToLong(TransactionHash::getConsensusTimestamp)
+                    .min()
+                    .orElse(0);
+
+            final long maxConsensusTimestamp = items.stream()
+                    .map(TransactionHash.class::cast)
+                    .mapToLong(TransactionHash::getConsensusTimestamp)
+                    .max()
+                    .orElse(0);
+
+            @Override
+            public void afterCompletion(int status) {
+
+                Set<Integer> failedShards = new HashSet<>();
+                Set<Integer> successfulShards = new HashSet<>();
+
+                for (ThreadState threadState : threadConnections.values()) {
+                    try (Connection connection = threadState.getConnection()) {
+                        if (status == STATUS_COMMITTED) {
+                            connection.commit();
+                            successfulShards.addAll(threadState.getProcessedShards());
+                        } else if (status == STATUS_ROLLED_BACK) {
+                            connection.rollback();
+                            successfulShards.addAll(threadState.getProcessedShards());
+                        } else {
+                            connection.rollback();
+                            failedShards.addAll(threadState.getProcessedShards());
+                        }
+                    } catch (Exception e) {
+                        log.error("Received exception processing connections for shards {} from {} to {}",
+                                threadState.getProcessedShards(), minConsensusTimestamp, maxConsensusTimestamp, e);
+                        failedShards.addAll(threadState.getProcessedShards());
+                    }
+                }
+
+                String statusString = switch (status) {
+                    case STATUS_COMMITTED -> "committed";
+                    case STATUS_ROLLED_BACK -> "rolled back";
+                    default -> "unknown";
+                };
+
+                if (failedShards.isEmpty()) {
+                    log.info("Successfully {} {} items in shards {} from {} to {}",
+                            statusString,
+                            itemCount,
+                            successfulShards,
+                            minConsensusTimestamp,
+                            maxConsensusTimestamp);
+                } else {
+                    log.error("Errors occurred processing shard transactions. parent status {} successful shards {} " +
+                                    "failed shards {} from={} to={}",
+                            statusString,
+                            successfulShards,
+                            failedShards,
+                            minConsensusTimestamp,
+                            maxConsensusTimestamp);
+                }
+
+                threadConnections.clear();
+            }
+        });
+    }
+
     private Mono<Void> processShard(Map.Entry<Integer, List<TransactionHash>> shardData) {
-        //TODO:// handle error
         return Mono.just(shardData)
                 .doOnNext(data -> {
 
@@ -111,39 +166,59 @@ public class TransactionHashBatchInserter implements BatchPersister {
                         return;
                     }
 
-                    threadConnections.computeIfAbsent(Thread.currentThread().getName(),
-                            key -> {
-                                // Clean thread from previous run
-                                TransactionSynchronizationManager.clear();
-                                TransactionSynchronizationManager.unbindResourceIfPossible(dataSource);
+                    configureThread(data);
 
-                                try {
-                                    // initialize transaction for thread
-                                    TransactionSynchronizationManager.initSynchronization();
-                                    TransactionSynchronizationManager.setActualTransactionActive(true);
-                                    // Subsequent calls to get connection on this thread will use the same connection
-                                    Connection connection = DataSourceUtils.getConnection(dataSource);
-                                    connection.setAutoCommit(false);
-                                    return connection;
-                                } catch (SQLException e) {
-                                    //TODO
-                                    throw new RuntimeException(e);
-                                }
-                            });
-
-                    try {
-                        BatchInserter batchInserter = batchInserters.computeIfAbsent(data.getKey(),
-                                key -> new BatchInserter(TransactionHash.class,
-                                dataSource,
-                                meterRegistry,
-                                commonParserProperties, String.format("%s_%02d", shardedTableName,
-                                data.getKey())));
-
-                        batchInserter.persist(data.getValue());
-                    } catch (Exception e) {
-                        //TODO handle
-                        throw new RuntimeException(e);
-                    }
+                    batchInserters.computeIfAbsent(data.getKey(),
+                                    key -> new BatchInserter(TransactionHash.class,
+                                            dataSource,
+                                            meterRegistry,
+                                            commonParserProperties,
+                                            String.format("%s_%02d", shardedTableName, data.getKey())))
+                            .persist(data.getValue());
                 }).then();
+    }
+
+    private void configureThread(Map.Entry<Integer, List<TransactionHash>> data) {
+        threadConnections.compute(Thread.currentThread().getName(),
+                (key, value) -> {
+                    if (value == null) {
+                        ThreadState returnVal = setupThreadTransaction();
+                        returnVal.getProcessedShards().add(data.getKey());
+
+                        return returnVal;
+                    }
+                    value.getProcessedShards().add(data.getKey());
+                    return value;
+                });
+    }
+
+    private ThreadState setupThreadTransaction() {
+        // Clean thread from previous run
+        TransactionSynchronizationManager.clear();
+        TransactionSynchronizationManager.unbindResourceIfPossible(dataSource);
+
+        try {
+            // initialize transaction for thread
+            TransactionSynchronizationManager.initSynchronization();
+            TransactionSynchronizationManager.setActualTransactionActive(true);
+
+            // Subsequent calls to get connection on this thread will use the same connection
+            Connection connection = DataSourceUtils.getConnection(dataSource);
+            connection.setAutoCommit(false);
+            return new ThreadState(connection);
+        } catch (SQLException e) {
+            log.error("Unable to configure autoCommit", e);
+            throw new ParserException(e);
+        }
+    }
+
+    @Data
+    private static class ThreadState {
+        private final Connection connection;
+        private final Set<Integer> processedShards = new HashSet<>();
+
+        public ThreadState(Connection connection) {
+            this.connection = connection;
+        }
     }
 }
