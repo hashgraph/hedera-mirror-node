@@ -370,10 +370,10 @@ paths:
       operationId: listContractState
       parameters:
         - $ref: '#/components/parameters/contractIdOrAddressPathParam'
-        - $ref: '#/components/parameters/stateTimestampQueryParam'
-        - $ref: '#/components/parameters/slotQueryParam'
         - $ref: '#/components/parameters/limitQueryParam'
         - $ref: '#/components/parameters/orderQueryParam'
+        - $ref: '#/components/parameters/slotQueryParam'
+        - $ref: '#/components/parameters/stateTimestampQueryParam'
       responses:
         200:
           description: OK
