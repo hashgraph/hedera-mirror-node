@@ -909,11 +909,10 @@ class ContractController extends BaseController {
           timestamp = true;
           break;
         case filterKeys.SLOT:
-          let slot = Buffer.from(utils.stripHexPrefix(filter.value).padStart(64, 0), 'hex');
+          let slot = utils.formatSlot(filter.value);
           //we need this additional conversion, because there is inconsistency between colums slot in table contract_state and contract_state_change.
           if (timestamp) {
-            const formatedSlot = utils.stripHexPrefix(filter.value).replace(/^0+(?=\d)0/, '0');
-            slot = Buffer.from(formatedSlot === '0' ? '' : formatedSlot, 'hex');
+            slot = utils.formatSlot(filter.value, 'contract_state_change');
           }
           if (filter.operator === utils.opsMap.eq) {
             slotInValues.push(slot);

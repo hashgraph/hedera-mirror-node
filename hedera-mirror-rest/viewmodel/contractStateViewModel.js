@@ -37,13 +37,9 @@ class ContractStateViewModel {
       ? toHexString(contractState.evmAddress, true)
       : contractId.toEvmAddress();
     this.contract_id = contractId.toString();
-    this.timestamp = contractState.modifiedTimestamp 
-      ? nsToSecNs(contractState.modifiedTimestamp) 
-      : nsToSecNs(contractState.consensusTimestamp);
+    this.timestamp = nsToSecNs(contractState.modifiedTimestamp);
     this.slot = toUint256(contractState.slot);
-    this.value = contractState.value
-      ? toUint256(contractState.value)
-      : toUint256(contractState.valueWritten);
+    this.value = toUint256(contractState.value);
   }
 }
 

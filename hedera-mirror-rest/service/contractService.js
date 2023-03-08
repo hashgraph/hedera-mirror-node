@@ -130,7 +130,9 @@ class ContractService extends BaseService {
     `;
 
     static contractStateTimestampQuery = `
-      select DISTINCT on (${ContractStateChange.SLOT}) *
+      select DISTINCT on (${ContractStateChange.SLOT}) *,
+            ${ContractStateChange.VALUE_WRITTEN} as ${ContractState.VALUE},
+            ${ContractStateChange.CONSENSUS_TIMESTAMP} as ${ContractState.MODIFIED_TIMESTAMP}
       from ${ContractStateChange.tableName} ${ContractStateChange.tableAlias}
     `;
 
@@ -274,12 +276,14 @@ class ContractService extends BaseService {
     let query = [ContractService.contractStateQuery, where, orderClause, limitClause].join(' ');
 
     if (timestamp) {
-      const slotOrder = this.getOrderByQuery(OrderSpec.from(ContractStateChange.SLOT, order));
       //timestamp order needs to be always desc to get only the latest changes until the provided timestamp
-      const timestampOrder = this.getOrderByQuery(OrderSpec.from(ContractStateChange.CONSENSUS_TIMESTAMP, orderFilterValues.DESC)).replace('order by', ',');
-      orderClause = [slotOrder, timestampOrder].join(' ');
-
+      orderClause = this.getOrderByQuery(
+        OrderSpec.from(ContractStateChange.SLOT, order),
+        OrderSpec.from(ContractStateChange.CONSENSUS_TIMESTAMP, orderFilterValues.DESC)
+      );
+      
       query = [ContractService.contractStateTimestampQuery, where, orderClause, limitClause].join(' ');
+      console.log(query)
     }
     const rows = await super.getRows(query, params, 'getContractStateByIdAndFilters');
     return rows.map((row) => new ContractState(row));

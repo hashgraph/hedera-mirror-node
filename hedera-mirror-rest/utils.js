@@ -1153,6 +1153,18 @@ const formatFilters = (filters) => {
 };
 
 /**
+ * Update slot format to be persistence query compatible
+ * @param slot
+ */
+const formatSlot = (slot, tableName = 'contract_state') => {
+  if (tableName === 'contract_state_change') {
+    const formatedSlot = stripHexPrefix(slot).replace(/^0+(?=\d)0/, '0');
+    return Buffer.from(formatedSlot === '0' ? '' : formatedSlot, 'hex');
+  }
+  return Buffer.from(stripHexPrefix(slot).padStart(64, 0), 'hex');
+};
+
+/**
  * Verify param and filters meet expected format
  * Additionally update format to be persistence query compatible
  *
@@ -1506,6 +1518,7 @@ export {
   filterValidityChecks,
   formatComparator,
   formatFilters,
+  formatSlot,
   getLimitParamValue,
   getNextParamQueries,
   getNullableNumber,
