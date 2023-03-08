@@ -131,7 +131,7 @@ class ContractService extends BaseService {
 
     static contractStateTimestampQuery = `
       select DISTINCT on (${ContractStateChange.SLOT}) *,
-            ${ContractStateChange.VALUE_WRITTEN} as ${ContractState.VALUE},
+            coalesce(${ContractStateChange.VALUE_WRITTEN}, ${ContractStateChange.VALUE_READ}) as ${ContractState.VALUE},
             ${ContractStateChange.CONSENSUS_TIMESTAMP} as ${ContractState.MODIFIED_TIMESTAMP}
       from ${ContractStateChange.tableName} ${ContractStateChange.tableAlias}
     `;
