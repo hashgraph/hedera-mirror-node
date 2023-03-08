@@ -23,6 +23,9 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.esaulpaugh.headlong.abi.Function;
+import com.esaulpaugh.headlong.abi.Tuple;
+import com.esaulpaugh.headlong.util.FastHex;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
@@ -30,6 +33,7 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TokenSupplyType;
 import com.hedera.hashgraph.sdk.TokenType;
+import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
 import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
 
@@ -39,18 +43,26 @@ import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
 
+import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import com.hedera.mirror.test.e2e.acceptance.util.TestUtil;
 
+import io.cucumber.java.Before;
 import io.cucumber.java.en.Given;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import io.cucumber.java.en.Then;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.RandomUtils;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.retry.annotation.Backoff;
@@ -63,7 +75,6 @@ import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
 import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
-import org.web3j.abi.datatypes.Function;
 
 @Log4j2
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
@@ -94,15 +105,19 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     @Value("classpath:solidity/artifacts/contracts/PrecompileTestContract.sol/PrecompileTestContract.json")
     private Path precompileTestContract;
-
     private ContractId contractId;
     private FileId fileId;
+    private CompiledSolidityArtifact compiledSolidityArtifact;
+
+    @Before
+    public void initialization() throws IOException {
+        compiledSolidityArtifact = MAPPER.readValue(
+                ResourceUtils.getFile(precompileTestContract.toUri()),
+                CompiledSolidityArtifact.class);
+    }
 
     @Given("I successfully create a precompile contract from contract bytes")
     public void createNewContract() throws IOException {
-        CompiledSolidityArtifact compiledSolidityArtifact = MAPPER.readValue(
-                ResourceUtils.getFile(precompileTestContract.toUri()),
-                CompiledSolidityArtifact.class);
         createContract(compiledSolidityArtifact.getBytecode());
     }
 
@@ -249,18 +264,201 @@ public class PrecompileContractFeature extends AbstractFeature {
     }
 
     @Then("Get information for token of fungible token")
-    public void getInformationForTokenOfFungibleToken() throws IOException {
+    public void getInformationForTokenOfFungibleToken() throws Exception {
         ContractCallResponse response = mirrorClient.contractsCall(
                 PrecompileContractFeature.GET_INFORMATION_FOR_TOKEN_SELECTOR
                         + TestUtil.to32BytesString(tokenIds.get(0).toSolidityAddress()),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
-        CompiledSolidityArtifact compiledSolidityArtifact = MAPPER.readValue(
-                ResourceUtils.getFile(precompileTestContract.toUri()),
-                CompiledSolidityArtifact.class);
 
-        assertTrue(true);
+        Tuple result = this.decodeFunctionResult("getInformationForToken", response);
+        assertThat(result).isNotEmpty();
+
+        Tuple tokenInfo = ((Tuple) result.get(0));
+        Tuple token = tokenInfo.get(0);
+        Long totalSupply = tokenInfo.get(1);
+        boolean deleted = tokenInfo.get(2);
+        boolean defaultKycStatus = tokenInfo.get(3);
+        boolean pauseStatus = tokenInfo.get(4);
+        Tuple[] fixedFees = tokenInfo.get(5);
+        Tuple[] fractionalFees = tokenInfo.get(6);
+        Tuple[] royaltyFees = tokenInfo.get(7);
+        String ledgerId = tokenInfo.get(8);
+
+        assertFalse(token.isEmpty());
+        assertThat(totalSupply).isEqualTo(1000000);
+        assertFalse(deleted);
+        assertFalse(defaultKycStatus);
+        assertFalse(pauseStatus);
+        assertThat(fixedFees).isEmpty();
+        assertThat(fractionalFees).isEmpty();
+        assertThat(royaltyFees).isEmpty();
+        assertThat(ledgerId).isEqualTo("0x01");
+    }
+
+    @Then("Get information for token of non fungible token")
+    public void getInformationForTokenOfNonFungibleToken() throws Exception {
+        ContractCallResponse response = mirrorClient.contractsCall(
+                PrecompileContractFeature.GET_INFORMATION_FOR_TOKEN_SELECTOR
+                        + TestUtil.to32BytesString(tokenIds.get(1).toSolidityAddress()),
+                contractId.toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+
+        Tuple result = this.decodeFunctionResult("getInformationForToken", response);
+        assertThat(result).isNotEmpty();
+
+        Tuple tokenInfo = ((Tuple) result.get(0));
+        Tuple token = tokenInfo.get(0);
+        long totalSupply = tokenInfo.get(1);
+        boolean deleted = tokenInfo.get(2);
+        boolean defaultKycStatus = tokenInfo.get(3);
+        boolean pauseStatus = tokenInfo.get(4);
+        Tuple[] fixedFees = tokenInfo.get(5);
+        Tuple[] fractionalFees = tokenInfo.get(6);
+        Tuple[] royaltyFees = tokenInfo.get(7);
+        String ledgerId = tokenInfo.get(8);
+
+        assertFalse(token.isEmpty());
+        assertThat(totalSupply).isEqualTo(0);
+        assertFalse(deleted);
+        assertFalse(defaultKycStatus);
+        assertFalse(pauseStatus);
+        assertThat(fixedFees).isEmpty();
+        assertThat(fractionalFees).isEmpty();
+        assertThat(royaltyFees).isEmpty();
+        assertThat(ledgerId).isEqualTo("0x01");
+    }
+
+    @Then("Get information for fungible token")
+    public void getInformationForFungibleToken() throws Exception {
+        ContractCallResponse response = mirrorClient.contractsCall(
+                PrecompileContractFeature.GET_INFORMATION_FOR_FUNGIBLE_TOKEN_SELECTOR
+                        + TestUtil.to32BytesString(tokenIds.get(0).toSolidityAddress()),
+                contractId.toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+
+        Tuple result = this.decodeFunctionResult("getInformationForFungibleToken", response);
+        assertThat(result).isNotEmpty();
+
+        Tuple tokenInfo = ((Tuple) result.get(0));
+        Tuple token = tokenInfo.get(0);
+        int decimals = tokenInfo.get(1);
+
+        assertFalse(token.isEmpty());
+        assertThat(decimals).isEqualTo(10);
+    }
+
+    @Then("Get information for non fungible token")
+    public void getInformationForNonFungibleToken() throws Exception {
+        NetworkTransactionResponse tx = tokenClient.mint(tokenIds.get(1), RandomUtils.nextBytes(4));
+        assertNotNull(tx.getTransactionId());
+        TransactionReceipt receipt = tx.getReceipt();
+        assertNotNull(receipt);
+        assertThat(receipt.serials.size()).isOne();
+        String serialNumber = receipt.serials.get(0).toString();
+
+        ContractCallResponse response = mirrorClient.contractsCall(
+                PrecompileContractFeature.GET_INFORMATION_FOR_NON_FUNGIBLE_TOKEN_SELECTOR
+                        + TestUtil.to32BytesString(tokenIds.get(1).toSolidityAddress())
+                        + TestUtil.to32BytesString(serialNumber),
+                contractId.toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+
+        Tuple result = this.decodeFunctionResult("getInformationForNonFungibleToken", response);
+        assertThat(result).isNotEmpty();
+        // TODO: tests
+    }
+
+    @Then("Get type for fungible token")
+    public void getTypeForFungibleToken() {
+        ContractCallResponse response = mirrorClient.contractsCall(
+                PrecompileContractFeature.GET_TYPE_SELECTOR
+                        + TestUtil.to32BytesString(tokenIds.get(0).toSolidityAddress()),
+                contractId.toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+
+        assertThat(ContractCallResponse.convertContractCallResponseToNum(response)).isEqualTo(0);
+    }
+
+    @Then("Get type for non fungible token")
+    public void getTypeForNonFungibleToken() {
+        ContractCallResponse response = mirrorClient.contractsCall(
+                PrecompileContractFeature.GET_TYPE_SELECTOR
+                        + TestUtil.to32BytesString(tokenIds.get(1).toSolidityAddress()),
+                contractId.toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+
+        assertThat(ContractCallResponse.convertContractCallResponseToNum(response)).isEqualTo(1);
+    }
+
+    @Then("Get expiry token info for fungible token")
+    public void getExpiryTokenInfoForFungibleToken() throws Exception {
+        ContractCallResponse response = mirrorClient.contractsCall(
+                PrecompileContractFeature.GET_EXPIRY_INFO_FOR_TOKEN_SELECTOR
+                        + TestUtil.to32BytesString(tokenIds.get(0).toSolidityAddress()),
+                contractId.toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+
+        Tuple result = this.decodeFunctionResult("getExpiryInfoForToken", response);
+        assertThat(result).isNotEmpty();
+
+        Tuple expiryInfo = ((Tuple) result.get(0));
+        assertThat(expiryInfo).isNotEmpty();
+        assertThat(expiryInfo.size()).isEqualTo(3);
+    }
+
+    @Then("Get expiry token info for non fungible token")
+    public void getExpiryTokenInfoForNonFungibleToken() throws Exception {
+        ContractCallResponse response = mirrorClient.contractsCall(
+                PrecompileContractFeature.GET_EXPIRY_INFO_FOR_TOKEN_SELECTOR
+                        + TestUtil.to32BytesString(tokenIds.get(1).toSolidityAddress()),
+                contractId.toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+
+        Tuple result = this.decodeFunctionResult("getExpiryInfoForToken", response);
+        assertThat(result).isNotEmpty();
+
+        Tuple expiryInfo = ((Tuple) result.get(0));
+        assertThat(expiryInfo).isNotEmpty();
+        assertThat(expiryInfo.size()).isEqualTo(3);
+    }
+
+    @Then("Get token key for fungible token")
+    public void getTokenKeyForFungibleToken() throws Exception {
+        ContractCallResponse response = mirrorClient.contractsCall(
+                PrecompileContractFeature.GET_TOKEN_KEY_PUBLIC_SELECTOR
+                        + TestUtil.to32BytesString(tokenIds.get(0).toSolidityAddress())
+                        + TestUtil.to32BytesString("1"),
+                contractId.toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+
+        Tuple result = this.decodeFunctionResult("getTokenKeyPublic", response);
+        assertThat(result).isNotEmpty();
+        // TODO: tests
+    }
+
+    @Then("Get token key for non fungible token")
+    public void getTokenKeyForNonFungibleToken() throws Exception {
+        ContractCallResponse response = mirrorClient.contractsCall(
+                PrecompileContractFeature.GET_TOKEN_KEY_PUBLIC_SELECTOR
+                        + TestUtil.to32BytesString(tokenIds.get(1).toSolidityAddress())
+                        + TestUtil.to32BytesString("1"),
+                contractId.toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+
+        Tuple result = this.decodeFunctionResult("getTokenKeyPublic", response);
+        assertThat(result).isNotEmpty();
+        // TODO: tests
     }
 
     @Retryable(value = {AssertionError.class},
@@ -333,5 +531,18 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
         contractId = networkTransactionResponse.getReceipt().contractId;
         assertNotNull(contractId);
+    }
+
+    private Tuple decodeFunctionResult(String functionName, ContractCallResponse response) throws Exception {
+        Optional<Object> function = Arrays.stream(compiledSolidityArtifact.getAbi())
+                .filter(item -> ((LinkedHashMap) item).get("name").equals(functionName)).findFirst();
+
+        try {
+            String abiFunctionAsJsonString = (new JSONObject((Map) function.get())).toString();
+            return Function.fromJson(abiFunctionAsJsonString)
+                    .decodeReturn(FastHex.decode(response.getResult().replace("0x", "")));
+        } catch (Exception e) {
+            throw new Exception("Function not found in abi.");
+        }
     }
 }

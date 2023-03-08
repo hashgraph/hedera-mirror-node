@@ -22,10 +22,10 @@ description = "Hedera Mirror Node Test"
 
 plugins {
     id("java-conventions")
-    id("org.web3j") version "4.9.4"
 }
 
 dependencies {
+    implementation("com.esaulpaugh:headlong")
     implementation(platform("io.cucumber:cucumber-bom"))
     implementation("org.springframework.boot:spring-boot-autoconfigure")
     implementation("org.springframework.boot:spring-boot-configuration-processor")
