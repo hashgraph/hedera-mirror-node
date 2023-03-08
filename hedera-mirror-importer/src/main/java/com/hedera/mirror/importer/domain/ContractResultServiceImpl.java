@@ -214,7 +214,7 @@ public class ContractResultServiceImpl implements ContractResultService {
             var contractLoginfo = functionResult.getLogInfo(index);
             var contractLogId = entityIdService.lookup(contractLoginfo.getContractID());
             if (EntityId.isEmpty(contractLogId)) {
-                log.error(RECOVERABLE_ERROR + "invalid contractLogId at {}", contractResult.getConsensusTimestamp());
+                log.error(RECOVERABLE_ERROR + "Invalid contractLogId at {}", contractResult.getConsensusTimestamp());
                 continue;
             }
 

@@ -47,9 +47,7 @@ public interface EntityIdService {
      * @param accountIds The protobuf account IDs
      * @return The converted EntityId or EntityId.EMPTY if none can be resolved
      */
-    default EntityId lookup(AccountID... accountIds) {
-        return lookup(accountIds);
-    }
+    EntityId lookup(AccountID... accountIds);
 
     /**
      * Converts a protobuf ContractID to an EntityID, resolving any EVM addresses that may be present.
@@ -66,9 +64,7 @@ public interface EntityIdService {
      * @param contractIds The protobuf contract IDs
      * @return The converted EntityId or EntityId.EMPTY if none can be resolved
      */
-    default EntityId lookup(ContractID... contractIds) {
-        return lookup(contractIds);
-    }
+    EntityId lookup(ContractID... contractIds);
 
     /**
      * Used to notify the system of new aliases for potential use in future lookups.
