@@ -105,7 +105,11 @@
       }
     ]
   },
-  "urls": ["/api/v1/accounts/0.0.8", "/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ"],
+  "urls": [
+    "/api/v1/accounts/0.0.8",
+    "/api/v1/accounts/0x0000000000000000000000000000000000000008",
+    "/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ"
+  ],
   "responseStatus": 200,
   "responseJson": {
     "transactions": [
@@ -229,7 +233,7 @@
     "decline_reward": false,
     "deleted": false,
     "ethereum_nonce": null,
-    "evm_address": null,
+    "evm_address": "0x0000000000000000000000000000000000000008",
     "expiry_timestamp": null,
     "auto_renew_period": null,
     "key": null,

@@ -111,7 +111,10 @@
       }
     ]
   },
-  "url": "/api/v1/accounts/0.0.1001/nfts?token.id=gt:1000&token.id=lt:2500",
+  "urls": [
+    "/api/v1/accounts/0.0.1001/nfts?token.id=gt:1000&token.id=lt:2500",
+    "/api/v1/accounts/0x00000000000000000000000000000000000003e9/nfts?token.id=gt:1000&token.id=lt:2500"
+  ],
   "responseStatus": 200,
   "responseJson": {
     "nfts": [

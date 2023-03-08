@@ -30,7 +30,8 @@
       "urls": [
         "/api/v1/accounts/0.0.1001/nfts?token.id=gt:2&token.id=gt:3",
         "/api/v1/accounts/0.0.1001/nfts?token.id=gte:2&token.id=gte:3",
-        "/api/v1/accounts/0.0.1001/nfts?token.id=gt:2&token.id=gte:3"
+        "/api/v1/accounts/0.0.1001/nfts?token.id=gt:2&token.id=gte:3",
+        "/api/v1/accounts/0x00000000000000000000000000000000000003e9/nfts?token.id=gt:2&token.id=gte:3"
       ],
       "responseStatus": 400,
       "responseJson": {

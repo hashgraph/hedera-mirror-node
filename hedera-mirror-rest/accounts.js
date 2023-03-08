@@ -40,15 +40,22 @@ const processRow = (row) => {
         tokens: utils.parseTokenBalances(row.token_balances),
       };
   const entityId = EntityId.parse(row.id);
+  let alias = base32.encode(row.alias);
   let evmAddress = row.evm_address && utils.toHexString(row.evm_address, true);
   if (evmAddress === null && row.type === constants.entityTypes.CONTRACT) {
     evmAddress = entityId.toEvmAddress();
-  }
+  } else if (evmAddress === null && row.type === constants.entityTypes.ACCOUNT) {
+    if (alias && alias.length == 40) {
+      evmAddress = alias;
+    } else {
+      evmAddress = entityId.toEvmAddress();
+    }
+  };
 
   const stakedToNode = row.staked_node_id !== null && row.staked_node_id !== -1;
   return {
     account: entityId.toString(),
-    alias: base32.encode(row.alias),
+    alias: alias,
     auto_renew_period: row.auto_renew_period,
     balance,
     created_timestamp: utils.nsToSecNs(row.created_timestamp),

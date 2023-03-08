@@ -67,7 +67,9 @@
   },
   "urls": [
     "/api/v1/accounts/0.0.1001/nfts?token.id=1500&serialnumber=gt:2",
-    "/api/v1/accounts/0.0.1001/nfts?token.id=1500&serialnumber=gte:3"
+    "/api/v1/accounts/0x00000000000000000000000000000000000003e9/nfts?token.id=1500&serialnumber=gt:2",
+    "/api/v1/accounts/0.0.1001/nfts?token.id=1500&serialnumber=gte:3",
+    "/api/v1/accounts/0x00000000000000000000000000000000000003e9/nfts?token.id=1500&serialnumber=gte:3"
   ],
   "responseStatus": 200,
   "responseJson": {

@@ -59,7 +59,12 @@
   },
   "tests": [
     {
-      "urls": ["/api/v1/accounts/7", "/api/v1/accounts/0.7", "/api/v1/accounts/0.0.7"],
+      "urls": [
+        "/api/v1/accounts/7",
+        "/api/v1/accounts/0.7",
+        "/api/v1/accounts/0.0.7",
+        "/api/v1/accounts/0x0000000000000000000000000000000000000007"
+      ],
       "responseStatus": 404,
       "responseJson": {
         "_status": {

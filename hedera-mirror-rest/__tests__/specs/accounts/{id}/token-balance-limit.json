@@ -64,7 +64,7 @@
   },
   "tests": [
     {
-      "url": "/api/v1/accounts/8",
+      "urls": ["/api/v1/accounts/8", "/api/v1/accounts/0x0000000000000000000000000000000000000008"],
       "responseStatus": 200,
       "responseJson": {
         "transactions": [],
@@ -105,7 +105,7 @@
       }
     },
     {
-      "url": "/api/v1/accounts/7",
+      "urls": ["/api/v1/accounts/7", "/api/v1/accounts/0x0000000000000000000000000000000000000007"],
       "responseStatus": 200,
       "responseJson": {
         "transactions": [],
@@ -129,7 +129,7 @@
         "decline_reward": false,
         "deleted": false,
         "ethereum_nonce": null,
-        "evm_address": null,
+        "evm_address": "0x0000000000000000000000000000000000000007",
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,

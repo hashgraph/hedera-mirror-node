@@ -67,6 +67,7 @@
   },
   "urls": [
     "/api/v1/accounts/0.0.1001/nfts?serialnumber=3",
+    "/api/v1/accounts/0x00000000000000000000000000000000000003e9/nfts?serialnumber=3",
     "/api/v1/accounts/0.0.1001/nfts?serialnumber=lt:3",
     "/api/v1/accounts/0.0.1001/nfts?serialnumber=lte:3",
     "/api/v1/accounts/0.0.1001/nfts?serialnumber=gt:3",

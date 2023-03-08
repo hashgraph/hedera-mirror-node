@@ -96,7 +96,7 @@
         "decline_reward": false,
         "deleted": false,
         "ethereum_nonce": null,
-        "evm_address": null,
+        "evm_address": "0x0000000000000000000000000000000000000009",
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,

@@ -46,7 +46,10 @@
   },
   "tests": [
     {
-      "url": "/api/v1/accounts/0.0.1001/tokens?token.id=x&&order=12&limit=a",
+      "urls": [
+        "/api/v1/accounts/0.0.1001/tokens?token.id=x&&order=12&limit=a",
+        "/api/v1/accounts/0x00000000000000000000000000000000000003e9/tokens?token.id=x&&order=12&limit=a"
+      ],
       "responseStatus": 400,
       "responseJson": {
         "_status": {
