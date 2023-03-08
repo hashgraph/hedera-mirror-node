@@ -45,8 +45,8 @@ const processRow = (row) => {
   if (evmAddress === null && row.type === constants.entityTypes.CONTRACT) {
     evmAddress = entityId.toEvmAddress();
   } else if (evmAddress === null && row.type === constants.entityTypes.ACCOUNT) {
-    if (alias && alias.length == 40) {
-      evmAddress = alias;
+    if (alias && row.alias.length == 20) {
+      evmAddress = utils.toHexString(row.alias, true);
     } else {
       evmAddress = entityId.toEvmAddress();
     }

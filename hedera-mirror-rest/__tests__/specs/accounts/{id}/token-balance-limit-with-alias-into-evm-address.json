@@ -1,0 +1,149 @@
+{
+  "description": "Account api calls for specific account with token balance limit",
+  "setup": {
+    "config": {
+      "response": {
+        "limit": {
+          "tokenBalance": {
+            "singleAccount": 2
+          }
+        }
+      }
+    },
+    "accounts": [
+      {
+        "alias": "AAAQEAYEAUDAOCAJCAIREEYUCULBOGAZ",
+        "balance": 70,
+        "num": 7
+      },
+      {
+        "alias": "AEBAGBAFAYDQQCIQCEJBGFAVCYLRQGJA",
+        "balance": 80,
+        "num": 8,
+        "public_key": "519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9"
+      }
+    ],
+    "recordFiles": [
+      {
+        "consensus_start": 2000,
+        "consensus_end": 2345
+      }
+    ],
+    "tokenaccounts": [
+      {
+        "token_id": "0.0.99997",
+        "account_id": "0.0.7",
+        "balance": 3,
+        "created_timestamp": "2200"
+      },
+      {
+        "token_id": "0.0.99998",
+        "account_id": "0.0.7",
+        "balance": 7,
+        "created_timestamp": "2200"
+      },
+      {
+        "token_id": "0.0.99999",
+        "account_id": "0.0.7",
+        "balance": 77,
+        "created_timestamp": "2200"
+      },
+      {
+        "token_id": "0.0.99998",
+        "account_id": "0.0.8",
+        "balance": 8,
+        "created_timestamp": "2200"
+      },
+      {
+        "token_id": "0.0.99999",
+        "account_id": "0.0.8",
+        "balance": 88,
+        "created_timestamp": "2200"
+      }
+    ]
+  },
+  "tests": [
+    {
+      "urls": ["/api/v1/accounts/8", "/api/v1/accounts/0x0000000000000000000000000000000000000008"],
+      "responseStatus": 200,
+      "responseJson": {
+        "transactions": [],
+        "balance": {
+          "timestamp": "0.000002345",
+          "balance": 80,
+          "tokens": [
+            {
+              "token_id": "0.0.99998",
+              "balance": 8
+            },
+            {
+              "token_id": "0.0.99999",
+              "balance": 88
+            }
+          ]
+        },
+        "account": "0.0.8",
+        "alias": "AEBAGBAFAYDQQCIQCEJBGFAVCYLRQGJA",
+        "created_timestamp": null,
+        "decline_reward": false,
+        "deleted": false,
+        "ethereum_nonce": null,
+        "evm_address": "0x0102030405060708091011121314151617181920",
+        "expiry_timestamp": null,
+        "auto_renew_period": null,
+        "key": null,
+        "max_automatic_token_associations": 0,
+        "memo": "entity memo",
+        "pending_reward": 0,
+        "receiver_sig_required": false,
+        "staked_account_id": null,
+        "staked_node_id": null,
+        "stake_period_start": null,
+        "links": {
+          "next": null
+        }
+      }
+    },
+    {
+      "urls": ["/api/v1/accounts/7", "/api/v1/accounts/0x0000000000000000000000000000000000000007"],
+      "responseStatus": 200,
+      "responseJson": {
+        "transactions": [],
+        "balance": {
+          "timestamp": "0.000002345",
+          "balance": 70,
+          "tokens": [
+            {
+              "token_id": "0.0.99997",
+              "balance": 3
+            },
+            {
+              "token_id": "0.0.99998",
+              "balance": 7
+            }
+          ]
+        },
+        "account": "0.0.7",
+        "alias": "AAAQEAYEAUDAOCAJCAIREEYUCULBOGAZ",
+        "created_timestamp": null,
+        "decline_reward": false,
+        "deleted": false,
+        "ethereum_nonce": null,
+        "evm_address": "0x0001020304050607080910111213141516171819",
+        "expiry_timestamp": null,
+        "auto_renew_period": null,
+        "key": null,
+        "max_automatic_token_associations": 0,
+        "memo": "entity memo",
+        "pending_reward": 0,
+        "receiver_sig_required": false,
+        "staked_account_id": null,
+        "staked_node_id": null,
+        "stake_period_start": null,
+        "links": {
+          "next": null
+        }
+      }
+    }
+  ]
+}
