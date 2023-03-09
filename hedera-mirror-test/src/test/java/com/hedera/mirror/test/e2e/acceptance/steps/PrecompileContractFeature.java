@@ -41,6 +41,7 @@ import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 
 import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
 
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
@@ -93,15 +94,16 @@ public class PrecompileContractFeature extends AbstractFeature {
     public static final String GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR = "44f38bc8";
     public static final String GET_INFORMATION_FOR_TOKEN_SELECTOR = "35589a13";
     public static final String GET_INFORMATION_FOR_FUNGIBLE_TOKEN_SELECTOR = "59c16f5a";
-    public static final String GET_INFORMATION_FOR_NON_FUNGIBLE_TOKEN_SELECTOR = "bf39bd9d";
+    public static final String GET_INFORMATION_FOR_NON_FUNGIBLE_TOKEN_SELECTOR = "8e5e7996";
     public static final String GET_TYPE_SELECTOR = "f429f19b";
     public static final String GET_EXPIRY_INFO_FOR_TOKEN_SELECTOR = "1de8edad";
-    public static final String GET_TOKEN_KEY_PUBLIC_SELECTOR = "7a3f45cb";
+    public static final String GET_TOKEN_KEY_PUBLIC_SELECTOR = "1955de0b";
 
     private final ContractClient contractClient;
     private final TokenClient tokenClient;
     private final FileClient fileClient;
     private final MirrorNodeClient mirrorClient;
+    private final long firstNftSerialNumber = 1;
 
     @Value("classpath:solidity/artifacts/contracts/PrecompileTestContract.sol/PrecompileTestContract.json")
     private Path precompileTestContract;
@@ -116,12 +118,12 @@ public class PrecompileContractFeature extends AbstractFeature {
                 CompiledSolidityArtifact.class);
     }
 
-    @Given("I successfully create a precompile contract from contract bytes")
+    @Given("I successfully create and verify a precompile contract from contract bytes")
     public void createNewContract() throws IOException {
         createContract(compiledSolidityArtifact.getBytecode());
     }
 
-    @Given("I successfully create a fungible token for precompile contract tests")
+    @Given("I successfully create and verify a fungible token for precompile contract tests")
     public void createFungibleToken() {
         createNewToken(
                 RandomStringUtils.randomAlphabetic(4).toUpperCase(),
@@ -130,13 +132,24 @@ public class PrecompileContractFeature extends AbstractFeature {
         );
     }
 
-    @Given("I successfully create a non fungible token for precompile contract tests")
+    @Given("I successfully create and verify a non fungible token for precompile contract tests")
     public void createNonFungibleToken() {
         createNewToken(
                 RandomStringUtils.randomAlphabetic(4).toUpperCase(),
                 TokenType.NON_FUNGIBLE_UNIQUE,
                 TokenSupplyType.INFINITE
         );
+    }
+
+    @Then("I mint and verify a nft")
+    public void mintNft() {
+        NetworkTransactionResponse tx = tokenClient.mint(tokenIds.get(1), RandomUtils.nextBytes(4));
+        assertNotNull(tx.getTransactionId());
+        TransactionReceipt receipt = tx.getReceipt();
+        assertNotNull(receipt);
+        assertThat(receipt.serials.size()).isOne();
+
+        verifyNft(tokenIds.get(1), firstNftSerialNumber);
     }
 
     @Then("Check if fungible token is token")
@@ -297,6 +310,9 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertThat(ledgerId).isEqualTo("0x01");
     }
 
+    @Retryable(value = {AssertionError.class},
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
+            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     @Then("Get information for token of non fungible token")
     public void getInformationForTokenOfNonFungibleToken() throws Exception {
         ContractCallResponse response = mirrorClient.contractsCall(
@@ -321,7 +337,7 @@ public class PrecompileContractFeature extends AbstractFeature {
         String ledgerId = tokenInfo.get(8);
 
         assertFalse(token.isEmpty());
-        assertThat(totalSupply).isEqualTo(0);
+        assertThat(totalSupply).isEqualTo(1);
         assertFalse(deleted);
         assertFalse(defaultKycStatus);
         assertFalse(pauseStatus);
@@ -353,24 +369,31 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     @Then("Get information for non fungible token")
     public void getInformationForNonFungibleToken() throws Exception {
-        NetworkTransactionResponse tx = tokenClient.mint(tokenIds.get(1), RandomUtils.nextBytes(4));
-        assertNotNull(tx.getTransactionId());
-        TransactionReceipt receipt = tx.getReceipt();
-        assertNotNull(receipt);
-        assertThat(receipt.serials.size()).isOne();
-        String serialNumber = receipt.serials.get(0).toString();
-
         ContractCallResponse response = mirrorClient.contractsCall(
                 PrecompileContractFeature.GET_INFORMATION_FOR_NON_FUNGIBLE_TOKEN_SELECTOR
                         + TestUtil.to32BytesString(tokenIds.get(1).toSolidityAddress())
-                        + TestUtil.to32BytesString(serialNumber),
+                        + TestUtil.to32BytesString(String.valueOf(firstNftSerialNumber)),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
 
         Tuple result = this.decodeFunctionResult("getInformationForNonFungibleToken", response);
         assertThat(result).isNotEmpty();
-        // TODO: tests
+
+        Tuple tokenInfo = ((Tuple) result.get(0));
+        Tuple token = tokenInfo.get(0);
+        long serialNumber = tokenInfo.get(1);
+        String ownerId = tokenInfo.get(2).toString();
+        long creationTime = tokenInfo.get(3);
+        byte[] metadata = tokenInfo.get(4);
+        String spenderId = tokenInfo.get(5).toString();
+
+        assertThat(token).isNotEmpty();
+        assertThat(serialNumber).isEqualTo(firstNftSerialNumber);
+        assertThat(ownerId).isNotBlank();
+        assertThat(creationTime).isGreaterThan(0);
+        assertThat(metadata).isNotEmpty();
+        assertThat(spenderId).isNotBlank();
     }
 
     @Then("Get type for fungible token")
@@ -443,7 +466,20 @@ public class PrecompileContractFeature extends AbstractFeature {
 
         Tuple result = this.decodeFunctionResult("getTokenKeyPublic", response);
         assertThat(result).isNotEmpty();
-        // TODO: tests
+
+        Tuple keyValue = (Tuple) result.get(0);
+        boolean inheritAccountKey = keyValue.get(0);
+        String contractId = keyValue.get(1).toString();
+        byte[] ed25519 = ((Tuple) result.get(0)).get(2);
+        byte[] ecdsa = ((Tuple) result.get(0)).get(3);
+        String delegatableContractId = keyValue.get(4).toString();
+
+        assertThat(keyValue).isNotEmpty();
+        assertFalse(inheritAccountKey);
+        assertThat(contractId).isNotBlank();
+        assertThat(ed25519).isNotEmpty();
+        assertThat(ecdsa).isEmpty();
+        assertThat(delegatableContractId).isNotBlank();
     }
 
     @Then("Get token key for non fungible token")
@@ -458,7 +494,20 @@ public class PrecompileContractFeature extends AbstractFeature {
 
         Tuple result = this.decodeFunctionResult("getTokenKeyPublic", response);
         assertThat(result).isNotEmpty();
-        // TODO: tests
+
+        Tuple keyValue = (Tuple) result.get(0);
+        boolean inheritAccountKey = keyValue.get(0);
+        String contractId = keyValue.get(1).toString();
+        byte[] ed25519 = ((Tuple) result.get(0)).get(2);
+        byte[] ecdsa = ((Tuple) result.get(0)).get(3);
+        String delegatableContractId = keyValue.get(4).toString();
+
+        assertThat(keyValue).isNotEmpty();
+        assertFalse(inheritAccountKey);
+        assertThat(contractId).isNotBlank();
+        assertThat(ed25519).isNotEmpty();
+        assertThat(ecdsa).isEmpty();
+        assertThat(delegatableContractId).isNotBlank();
     }
 
     @Retryable(value = {AssertionError.class},
@@ -469,6 +518,19 @@ public class PrecompileContractFeature extends AbstractFeature {
 
         assertNotNull(mirrorToken);
         assertThat(mirrorToken.getTokenId()).isEqualTo(tokenId.toString());
+    }
+
+    @Retryable(value = {AssertionError.class},
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
+            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
+    private MirrorNftResponse verifyNft(TokenId tokenId, Long serialNumber) {
+        MirrorNftResponse mirrorNft = mirrorClient.getNftInfo(tokenId.toString(), serialNumber);
+
+        assertNotNull(mirrorNft);
+        assertThat(mirrorNft.getTokenId()).isEqualTo(tokenId.toString());
+        assertThat(mirrorNft.getSerialNumber()).isEqualTo(serialNumber);
+
+        return mirrorNft;
     }
 
     private TokenId createNewToken(
