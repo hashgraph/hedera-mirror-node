@@ -8,6 +8,8 @@ Feature: ERC Contract Base Coverage Feature
         Then I create a new nft with supplyType <supplyType>
         Then I mint a serial number
         Then I call the erc contract via the mirror node REST API
+        Then I approve <spenderName> for nft
+        Then Verify allowance
         Examples:
-            | supplyType |
-            | "INFINITE" |
+            | supplyType | spenderName |
+            | "INFINITE" | "BOB"      |

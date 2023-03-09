@@ -25,6 +25,7 @@ import com.hedera.hashgraph.sdk.AccountCreateTransaction;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.KeyList;
+import com.hedera.hashgraph.sdk.NftId;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
@@ -198,6 +199,20 @@ public class AccountClient extends AbstractNetworkClient {
 
         var transaction = new AccountAllowanceApproveTransaction()
                 .approveHbarAllowance(null, spender, hbarAmount);
+
+        NetworkTransactionResponse networkTransactionResponse =
+                executeTransactionAndRetrieveReceipt(transaction);
+
+        log.debug("Sent Account Allowance Approval");
+
+        return networkTransactionResponse;
+    }
+
+    public NetworkTransactionResponse approveNft(NftId nftId, AccountId spender) {
+        var ownerAccountId = sdkClient.getExpandedOperatorAccountId().getAccountId();
+
+        var transaction = new AccountAllowanceApproveTransaction()
+                .approveTokenNftAllowance(nftId, ownerAccountId, spender);
 
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(transaction);

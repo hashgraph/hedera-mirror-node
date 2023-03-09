@@ -31,6 +31,11 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+
+import com.hedera.hashgraph.sdk.NftId;
+import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
+import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
+
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import java.io.IOException;
@@ -45,6 +50,8 @@ import org.apache.commons.codec.DecoderException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.util.ResourceUtils;
 
 import com.hedera.hashgraph.sdk.ContractId;
@@ -80,11 +87,15 @@ public class ERCContractFeature extends AbstractFeature {
     public static final String GET_OWNER_OF_SELECTOR = "d5d03e21";
     public static final String TOKEN_URI_SELECTOR = "e9dc6375";
 
+    private ExpandedAccountId spenderAccountId;
+
     private final ContractClient contractClient;
     private final MirrorNodeClient mirrorClient;
+    private final AccountClient accountClient;
     private final TokenClient tokenClient;
     private final ContractFeature contractFeature;
     private final TokenFeature tokenFeature;
+    private final AccountFeature accountFeature;
 
     @Value("classpath:solidity/artifacts/contracts/ERCTestContract.sol/ERCTestContract.json")
     private Path ercContract;
@@ -138,6 +149,27 @@ public class ERCContractFeature extends AbstractFeature {
         var getBalanceOfResponse = mirrorClient.contractsCall(BALANCE_OF_SELECTOR + token
                 + to32BytesString(contractClient.getClientAddress()), to, from);
         assertThat(convertContractCallResponseToNum(getBalanceOfResponse)).isEqualTo(0L);
+    }
+
+    @Then("I approve {string} for nft")
+    public void approveCryptoAllowance(String accountName) {
+        var serial = tokenSerialNumbers.get(tokenIds.get(1));
+       spenderAccountId = accountFeature.setNftAllowance(accountName, new NftId(tokenIds.get(1), serial.get(0)));
+    }
+
+    @Then("Verify allowance")
+    @Retryable(value = {AssertionError.class},
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
+            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
+    public void verifyNftAllowance() {
+        var from = contractClient.getClientAddress();
+        var to = contractId.toSolidityAddress();
+        var nft = to32BytesString(tokenIds.get(1).toSolidityAddress());
+
+        var getApprovedResponse = mirrorClient.contractsCall(GET_APPROVED_SELECTOR + nft +
+                to32BytesString("1"), to, from);
+        assertThat(convertContractCallResponseToAddress(getApprovedResponse))
+                .isEqualTo(spenderAccountId.getAccountId().toSolidityAddress());
     }
 
     @Given("I successfully create an erc contract from contract bytes with balance")

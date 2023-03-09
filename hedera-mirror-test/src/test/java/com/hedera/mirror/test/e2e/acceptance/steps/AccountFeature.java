@@ -23,6 +23,7 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.hashgraph.sdk.NftId;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -240,6 +241,19 @@ public class AccountFeature extends AbstractFeature {
     private void setCryptoAllowance(AccountId accountId, long amount) {
         ownerAccountId = accountClient.getClient().getOperatorAccountId();
         networkTransactionResponse = accountClient.approveCryptoAllowance(accountId, Hbar.fromTinybars(amount));
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
+    }
+
+    public ExpandedAccountId setNftAllowance(String accountName, NftId nftId) {
+        senderAccountId = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
+        setNftAllowance(senderAccountId.getAccountId(), nftId);
+        return senderAccountId;
+    }
+
+    private void setNftAllowance(AccountId accountId, NftId nftId) {
+        ownerAccountId = accountClient.getClient().getOperatorAccountId();
+        networkTransactionResponse = accountClient.approveNft(nftId, accountId);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
