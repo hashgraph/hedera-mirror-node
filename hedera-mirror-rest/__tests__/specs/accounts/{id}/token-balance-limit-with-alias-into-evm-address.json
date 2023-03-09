@@ -64,7 +64,11 @@
   },
   "tests": [
     {
-      "urls": ["/api/v1/accounts/8", "/api/v1/accounts/0x0000000000000000000000000000000000000008"],
+      "urls": [
+        "/api/v1/accounts/8", 
+        "/api/v1/accounts/0x0000000000000000000000000000000000000008",
+        "/api/v1/accounts/0000000000000000000000000000000000000008"
+      ],
       "responseStatus": 200,
       "responseJson": {
         "transactions": [],
@@ -105,7 +109,11 @@
       }
     },
     {
-      "urls": ["/api/v1/accounts/7", "/api/v1/accounts/0x0000000000000000000000000000000000000007"],
+      "urls": [
+        "/api/v1/accounts/7", 
+        "/api/v1/accounts/0x0000000000000000000000000000000000000007",
+        "/api/v1/accounts/0000000000000000000000000000000000000007"
+      ],
       "responseStatus": 200,
       "responseJson": {
         "transactions": [],
