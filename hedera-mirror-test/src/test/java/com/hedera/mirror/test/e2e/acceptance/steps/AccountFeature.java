@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.hedera.hashgraph.sdk.NftId;
 import com.hedera.hashgraph.sdk.PrivateKey;
+import com.hedera.hashgraph.sdk.TokenId;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -254,6 +255,19 @@ public class AccountFeature extends AbstractFeature {
     private void setNftAllowance(AccountId accountId, NftId nftId) {
         ownerAccountId = accountClient.getClient().getOperatorAccountId();
         networkTransactionResponse = accountClient.approveNft(nftId, accountId);
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
+    }
+
+    public ExpandedAccountId setNftAllowanceAllSerials(String accountName, TokenId tokenId) {
+        senderAccountId = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
+        setNftAllowanceAllSerials(senderAccountId.getAccountId(), tokenId);
+        return senderAccountId;
+    }
+
+    private void setNftAllowanceAllSerials(AccountId accountId, TokenId tokenId) {
+        ownerAccountId = accountClient.getClient().getOperatorAccountId();
+        networkTransactionResponse = accountClient.approveNftAllSerials(tokenId, accountId);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }

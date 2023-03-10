@@ -19,6 +19,8 @@ Feature: ERC Contract Base Coverage Feature
         And I call the erc contract via the mirror node REST API for token balance
         Then I approve <spenderName> for nft
         And I call the erc contract via the mirror node REST API for token getApproved with response BOB
+        Then I approve <approvedForAllSpenderName> for nft all serials
+        And I call the erc contract via the mirror node REST API for token isApprovedForAll with response true
         Examples:
-            | supplyType | spenderName |
-            | "INFINITE" | "BOB"      |
+            | supplyType | spenderName | approvedForAllSpenderName |
+            | "INFINITE" | "BOB"       | "ALICE"                   |

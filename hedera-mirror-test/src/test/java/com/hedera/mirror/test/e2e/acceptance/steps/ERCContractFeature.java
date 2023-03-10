@@ -88,6 +88,7 @@ public class ERCContractFeature extends AbstractFeature {
     public static final String TOKEN_URI_SELECTOR = "e9dc6375";
 
     private ExpandedAccountId spenderAccountId;
+    private ExpandedAccountId spenderAccountIdForAllSeerials;
 
     private final ContractClient contractClient;
     private final MirrorNodeClient mirrorClient;
@@ -216,6 +217,20 @@ public class ERCContractFeature extends AbstractFeature {
         assertThat(convertContractCallResponseToBoolean(getIsApproveForAllResponse)).isFalse();
     }
 
+    @Then("I call the erc contract via the mirror node REST API for token isApprovedForAll with response true")
+    @Retryable(value = {AssertionError.class},
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
+            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
+    public void isApprovedForAllSecondContractCall() {
+        var getIsApproveForAllResponse = mirrorClient.contractsCall(IS_APPROVED_FOR_ALL_SELECTOR
+                        + to32BytesString(tokenIds.get(1).toSolidityAddress())
+                        + to32BytesString(tokenClient.getSdkClient().getExpandedOperatorAccountId().getAccountId().toSolidityAddress())
+                        + to32BytesString(spenderAccountIdForAllSeerials.getAccountId().toSolidityAddress()),
+                contractId.toSolidityAddress(), contractClient.getClientAddress());
+
+        assertThat(convertContractCallResponseToBoolean(getIsApproveForAllResponse)).isTrue();
+    }
+
     @Then("I call the erc contract via the mirror node REST API for token balance")
     @Retryable(value = {AssertionError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
@@ -287,5 +302,10 @@ public class ERCContractFeature extends AbstractFeature {
     public void approveCryptoAllowance(String accountName) {
         var serial = tokenSerialNumbers.get(tokenIds.get(1));
         spenderAccountId = accountFeature.setNftAllowance(accountName, new NftId(tokenIds.get(1), serial.get(0)));
+    }
+
+    @Then("I approve {string} for nft all serials")
+    public void approveCryptoAllowanceAllSerials(String accountName) {
+        spenderAccountIdForAllSeerials = accountFeature.setNftAllowanceAllSerials(accountName, tokenIds.get(1));
     }
 }
