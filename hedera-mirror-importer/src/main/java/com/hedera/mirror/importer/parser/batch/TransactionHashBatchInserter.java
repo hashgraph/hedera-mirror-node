@@ -1,5 +1,6 @@
 package com.hedera.mirror.importer.parser.batch;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.CaseFormat;
 
 import com.google.common.base.Stopwatch;
@@ -61,6 +62,8 @@ public class TransactionHashBatchInserter implements BatchPersister {
 
     @Override
     public void persist(Collection<?> items) {
+        threadConnections.clear();
+
         if (items == null || items.isEmpty()) {
             return;
         }
@@ -107,25 +110,28 @@ public class TransactionHashBatchInserter implements BatchPersister {
 
             @Override
             public void afterCompletion(int status) {
-
-                Set<Integer> failedShards = new HashSet<>();
-                Set<Integer> successfulShards = new HashSet<>();
+                var failedShards = new HashSet<Integer>();
+                var successfulShards = new HashSet<Integer>();
 
                 for (ThreadState threadState : threadConnections.values()) {
                     try (Connection connection = threadState.getConnection()) {
                         if (status == STATUS_COMMITTED) {
                             connection.commit();
                             successfulShards.addAll(threadState.getProcessedShards());
+                            threadState.setStatus(STATUS_COMMITTED);
                         } else if (status == STATUS_ROLLED_BACK) {
                             connection.rollback();
                             successfulShards.addAll(threadState.getProcessedShards());
+                            threadState.setStatus(STATUS_ROLLED_BACK);
                         } else {
                             connection.rollback();
                             failedShards.addAll(threadState.getProcessedShards());
+                            threadState.setStatus(STATUS_UNKNOWN);
                         }
                     } catch (Exception e) {
                         log.error("Received exception processing connections for shards {} from {} to {}",
                                 threadState.getProcessedShards(), minConsensusTimestamp, maxConsensusTimestamp, e);
+                        threadState.setStatus(Integer.MAX_VALUE);
                         failedShards.addAll(threadState.getProcessedShards());
                     }
                 }
@@ -152,8 +158,6 @@ public class TransactionHashBatchInserter implements BatchPersister {
                             minConsensusTimestamp,
                             maxConsensusTimestamp);
                 }
-
-                threadConnections.clear();
             }
         });
     }
@@ -175,6 +179,8 @@ public class TransactionHashBatchInserter implements BatchPersister {
                                             commonParserProperties,
                                             String.format("%s_%02d", shardedTableName, data.getKey())))
                             .persist(data.getValue());
+
+
                 }).then();
     }
 
@@ -212,10 +218,17 @@ public class TransactionHashBatchInserter implements BatchPersister {
         }
     }
 
+    @VisibleForTesting
+    Map<String, ThreadState> getThreadConnections() {
+        return threadConnections;
+    }
+
     @Data
-    private static class ThreadState {
+    @VisibleForTesting
+    static class ThreadState {
         private final Connection connection;
         private final Set<Integer> processedShards = new HashSet<>();
+        private int status = -1;
 
         public ThreadState(Connection connection) {
             this.connection = connection;
