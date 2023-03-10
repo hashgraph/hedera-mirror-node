@@ -200,7 +200,7 @@ public class ERCContractFeature extends AbstractFeature {
                         + to32BytesString(contractClient.getClientAddress()),
                 contractId.toSolidityAddress(), contractClient.getClientAddress());
 
-        assertThat(convertContractCallResponseToNum(getAllowanceResponse)).isEqualTo(0L);
+        assertThat(convertContractCallResponseToNum(getAllowanceResponse)).isZero();
     }
 
     @Then("I call the erc contract via the mirror node REST API for token isApprovedForAll")
@@ -240,7 +240,7 @@ public class ERCContractFeature extends AbstractFeature {
                 + to32BytesString(tokenIds.get(0).toSolidityAddress())
                 + to32BytesString(contractClient.getClientAddress()), contractId.toSolidityAddress(), contractClient.getClientAddress());
 
-        assertThat(convertContractCallResponseToNum(getBalanceOfResponse)).isEqualTo(0L);
+        assertThat(convertContractCallResponseToNum(getBalanceOfResponse)).isZero();
     }
 
     @Then("I call the erc contract via the mirror node REST API for token getApproved with response BOB")
