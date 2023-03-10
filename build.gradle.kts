@@ -49,7 +49,7 @@ dependencies {
         api("com.github.meanbeanlib:meanbean:3.0.0-M9")
         api("com.github.vertical-blank:sql-formatter:2.0.3")
         api("com.github.vladimir-bukhtoyarov:bucket4j-core:7.6.0")
-        api("com.google.cloud:spring-cloud-gcp-dependencies:3.4.4")
+        api("com.google.cloud:spring-cloud-gcp-dependencies:3.4.5")
         api("com.google.guava:guava:31.1-jre")
         api("com.google.protobuf:protobuf-java:$protobufVersion")
         api("com.graphql-java-generator:graphql-java-client-dependencies:1.18.10")
@@ -70,7 +70,7 @@ dependencies {
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
         api("io.grpc:grpc-bom:1.53.0")
         api("io.swagger:swagger-annotations:1.6.9")
-        api("io.vertx:vertx-pg-client:4.3.8")
+        api("io.vertx:vertx-pg-client:4.4.0")
         api("javax.inject:javax.inject:1")
         api("net.devh:grpc-spring-boot-starter:2.14.0.RELEASE")
         api("net.java.dev.jna:jna:5.13.0")
@@ -87,7 +87,7 @@ dependencies {
         api("org.springdoc:springdoc-openapi-webflux-ui:1.6.14")
         api("org.springframework.cloud:spring-cloud-dependencies:2021.0.5")
         api("org.testcontainers:junit-jupiter:1.17.6")
-        api("software.amazon.awssdk:bom:2.20.12")
+        api("software.amazon.awssdk:bom:2.20.17")
         api("uk.org.webcompere:system-stubs-jupiter:2.0.2")
     }
 }

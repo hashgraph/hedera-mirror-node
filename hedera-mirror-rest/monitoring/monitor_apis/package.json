@@ -27,12 +27,18 @@
     "log4js": "^6.8.0",
     "mathjs": "^11.6.0",
     "node-fetch": "^3.3.0",
-    "parse-duration": "^1.0.2",
+    "parse-duration": "^1.0.3",
     "pretty-ms": "^8.0.0"
   },
   "devDependencies": {
     "jest": "^29.4.3",
-    "nodemon": "^2.0.20"
+    "nodemon": "^2.0.21",
+    "jest-junit": "^15.0.0",
+    "jest-standard-reporter": "^2.0.0"
+  },
+  "jest-junit": {
+    "outputDirectory": "build/test-results/test",
+    "outputName": "TEST-jest.xml"
   },
   "overrides": {
     "json5": "2.2.3"
