@@ -16,40 +16,70 @@
 
 package com.hedera.mirror.web3.evm.store.hedera;
 
+import com.google.common.annotations.VisibleForTesting;
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.account.Account;
+import org.apache.commons.lang3.tuple.Pair;
 
-public abstract class CachingStateFrame implements StateFrame {
+public abstract class CachingStateFrame<Address, Account, Token> {
+    // ⮕ Nominations for a _better name_ than `StateFrame` are open ...
 
-    protected final @NonNull Optional<CachingStateFrame> parentFrame;
-    protected final @NonNull Map<Address, Account> accounts = new HashMap<>();
-    protected final @NonNull Set<Address> deletedAccounts = new HashSet<>();
+    @NonNull
+    protected final Optional<CachingStateFrame<Address, Account, Token>> parentFrame;
 
-    protected CachingStateFrame(final @NonNull Optional<CachingStateFrame> parentFrame) {
+    @NonNull
+    protected final UpdatableReferenceCache<Address, Account> accountCache;
+
+    @NonNull
+    protected final UpdatableReferenceCache<Address, Token> tokenCache;
+
+    protected CachingStateFrame(
+            @NonNull final Optional<CachingStateFrame<Address, Account, Token>> parentFrame,
+            @NonNull final Class<Account> klassAccount,
+            @NonNull final Class<Token> klassToken) {
         Objects.requireNonNull(parentFrame, "parentFrame");
         this.parentFrame = parentFrame;
+
+        accountCache = new UpdatableReferenceCache<>(klassAccount);
+        tokenCache = new UpdatableReferenceCache<>(klassToken);
     }
 
-    public abstract void updatesFromChild(final @NonNull CachingStateFrame childFrame);
+    @NonNull
+    public abstract Optional<Account> getAccount(@NonNull final Address address);
 
-    @Override
+    public abstract void setAccount(@NonNull final Address address, @NonNull final Account account);
+
+    public abstract void deleteAccount(@NonNull final Address address);
+
+    @NonNull
+    public abstract Optional<Token> getToken(@NonNull final Address address);
+
+    public abstract void setToken(@NonNull final Address address, @NonNull final Token token);
+
+    public abstract void deleteToken(@NonNull final Address address);
+
+    public abstract void updatesFromChild(@NonNull final CachingStateFrame<Address, Account, Token> childFrame);
+
     public void commit() {
         parentFrame.ifPresent(frame -> frame.updatesFromChild(this));
     }
 
-    @Override
-    public @NonNull Optional<StateFrame> getParent() {
+    public @NonNull Optional<CachingStateFrame<Address, Account, Token>> getParent() {
         return parentFrame.map(o -> o);
     }
 
-    protected @NonNull Map<Address, Account> getAccounts() {
-        return accounts;
+    public int height() {
+        return parentFrame.map(pf -> 1 + pf.height()).orElse(1);
+    }
+
+    public @NonNull Optional<CachingStateFrame<Address, Account, Token>> next() {
+        return parentFrame;
+    }
+
+    @VisibleForTesting
+    public Pair<UpdatableReferenceCache<Address, Account>, UpdatableReferenceCache<Address, Token>>
+            getInternalCaches() {
+        return Pair.of(accountCache, tokenCache);
     }
 }

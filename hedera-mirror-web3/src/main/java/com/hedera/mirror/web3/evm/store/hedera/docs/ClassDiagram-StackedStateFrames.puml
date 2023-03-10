@@ -1,0 +1,39 @@
+@startuml
+title Stacked State for eth_estimateGas (class diagram)
+hide empty members
+class UpdatableReferenceCache<K,V> {
+  +Optional<V> get(K)
+  +updated(K,V)
+  +delete(K)
+  +coalesceFrom(UpdatableReferenceCache
+  +fill(K,V)
+}
+
+abstract CachingStateFrame<Addr,Acct,Tok> <<(A,salmon)>> {
+  #parentFrame
+  #accountCache
+  #tokenCache
+  +getAccount()
+  +setAccount()
+  +deleteAccount()
+  +getToken()
+  +setToken()
+  +deleteToken()
+  +updatesFromChild()
+  +getParent()
+}
+
+class StackedStateFrames<Address,Account,Token> {
+  -stack
+}
+
+StackedStateFrames::stack *-- CachingStateFrame : owns list of
+CachingStateFrame::parentFrame o- CachingStateFrame
+CachingStateFrame::accountCache *- UpdatableReferenceCache : accounts
+CachingStateFrame::tokenCache *- UpdatableReferenceCache : tokens
+CachingStateFrame <|-- RWCachingStateFrame
+CachingStateFrame <|-- ROCachingStateFrame
+CachingStateFrame <|-- DatabaseBackedStateFrame
+
+skinparam groupInheritance 2
+@enduml

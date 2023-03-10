@@ -22,10 +22,13 @@ import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.account.Account;
 
-public class BottomCachingStateFrame extends CachingStateFrame {
+public class BottomCachingStateFrame<Address, Account, Token> extends CachingStateFrame<Address, Account, Token> {
 
-    public BottomCachingStateFrame(final @NonNull Optional<CachingStateFrame> parentFrame) {
-        super(parentFrame);
+    public BottomCachingStateFrame(
+            @NonNull final Optional<CachingStateFrame<Address, Account, Token>> parentFrame,
+            @NonNull final Class<Account> klassAccount,
+            @NonNull final Class<Token> klassToken) {
+        super(parentFrame, klassAccount, klassToken);
         Objects.requireNonNull(parentFrame, "parentFrame");
         parentFrame.ifPresent(dummy -> {
             throw new UnsupportedOperationException("bottom cache can not have a parent");
@@ -33,26 +36,45 @@ public class BottomCachingStateFrame extends CachingStateFrame {
     }
 
     @Override
-    public @NonNull Optional<Account> getAccount(final @NonNull Address address) {
+    public @NonNull Optional<Account> getAccount(@NonNull final Address address) {
         Objects.requireNonNull(address, "address");
         return Optional.empty();
     }
 
     @Override
-    public void setAccount(final @NonNull Address address, final @NonNull Account account) {
+    public void setAccount(@NonNull final Address address, @NonNull final Account account) {
         Objects.requireNonNull(address, "address");
         Objects.requireNonNull(account, "account");
         throw new UnsupportedOperationException("cannot write to a bottom cache");
     }
 
     @Override
-    public void deleteAccount(final @NonNull Address address) {
+    public void deleteAccount(@NonNull final Address address) {
         Objects.requireNonNull(address);
         throw new UnsupportedOperationException("cannot delete from a bottom cache");
     }
 
     @Override
-    public void updatesFromChild(final @NonNull CachingStateFrame childFrame) {
+    public @NonNull Optional<Token> getToken(@NonNull final Address address) {
+        Objects.requireNonNull(address, "address");
+        return Optional.empty();
+    }
+
+    @Override
+    public void setToken(@NonNull final Address address, @NonNull final Token token) {
+        Objects.requireNonNull(address, "address");
+        Objects.requireNonNull(token, "token");
+        throw new UnsupportedOperationException("cannot write to a R/O cache");
+    }
+
+    @Override
+    public void deleteToken(@NonNull final Address address) {
+        Objects.requireNonNull(address);
+        throw new UnsupportedOperationException("cannot delete from a R/O cache");
+    }
+
+    @Override
+    public void updatesFromChild(@NonNull final CachingStateFrame<Address, Account, Token> childFrame) {
         Objects.requireNonNull(childFrame, "childFrame");
         // do nothing or throw unsupported?
     }

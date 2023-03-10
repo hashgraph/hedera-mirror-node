@@ -19,22 +19,30 @@ package com.hedera.mirror.web3.evm.store.hedera;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.Optional;
+import org.apache.commons.lang3.tuple.Pair;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.account.Account;
 
-public class DatabaseBackedStateFrame extends CachingStateFrame {
+@SuppressWarnings("java:S1192") // "string literals should not be duplicated"
+public class DatabaseBackedStateFrame<Address, Account, Token> extends CachingStateFrame<Address, Account, Token> {
 
-    public DatabaseBackedStateFrame(/*some kind of database accessor is passed in here*/ ) {
-        super(Optional.empty());
-        // TODO: get ready to access the database to find accounts
+    final Accessor<Address, Account> accountAccessor;
+    final Accessor<Address, Token> tokenAccessor;
+
+    public DatabaseBackedStateFrame(
+            @NonNull final Pair<Accessor<Address, Account>, Accessor<Address, Token>> databaseAccessor,
+            @NonNull final Class<Account> klassAccount,
+            @NonNull final Class<Token> klassToken) {
+        super(Optional.empty(), klassAccount, klassToken);
+        accountAccessor = databaseAccessor.getLeft();
+        tokenAccessor = databaseAccessor.getRight();
     }
 
     @NonNull
     @Override
     public Optional<Account> getAccount(@NonNull final Address address) {
         Objects.requireNonNull(address, "address");
-        // TODO: This is where we go to the database and get the proper account
-        return Optional.empty();
+        return accountAccessor.get(address);
     }
 
     @Override
@@ -51,13 +59,32 @@ public class DatabaseBackedStateFrame extends CachingStateFrame {
     }
 
     @Override
-    public void updatesFromChild(@NonNull final CachingStateFrame childFrame) {
+    public @NonNull Optional<Token> getToken(@NonNull final Address address) {
+        Objects.requireNonNull(address, "address");
+        return tokenAccessor.get(address);
+    }
+
+    @Override
+    public void setToken(@NonNull final Address address, @NonNull final Token token) {
+        Objects.requireNonNull(address, "address");
+        Objects.requireNonNull(token, "token");
+        throw new UnsupportedOperationException("cannot add/update a token in a database-backed StateFrame");
+    }
+
+    @Override
+    public void deleteToken(@NonNull final Address address) {
+        Objects.requireNonNull(address);
+        throw new UnsupportedOperationException("cannot delete token in a database-backed StateFrame");
+    }
+
+    @Override
+    public void updatesFromChild(@NonNull final CachingStateFrame<Address, Account, Token> childFrame) {
         Objects.requireNonNull(childFrame, "childFrame");
         throw new UnsupportedOperationException("cannot commit to a database-backed StateFrame (oddly enough)");
     }
 
     @Override
     public void commit() {
-        throw new UnsupportedOperationException("cannot commit a database-backed StateFrame");
+        throw new UnsupportedOperationException("cannot commit to a database-backed StateFrame (oddly enough)");
     }
 }

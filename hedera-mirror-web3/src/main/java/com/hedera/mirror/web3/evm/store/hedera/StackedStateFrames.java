@@ -19,35 +19,54 @@ package com.hedera.mirror.web3.evm.store.hedera;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EmptyStackException;
 import java.util.Optional;
+import org.apache.commons.lang3.tuple.Pair;
 
-public class StackedStateFrames {
+public class StackedStateFrames<Address, Account, Token> {
 
-    final CachingStateFrame stackBase;
-    CachingStateFrame stack = null;
+    @NonNull
+    final CachingStateFrame<Address, Account, Token> stackBase; // fixed "base" of stack: a R/O cache on top of the DB
 
-    public StackedStateFrames() {
+    CachingStateFrame<Address, Account, Token> stack = null; // current top of stack (which is all linked together)
+
+    @NonNull
+    final Class<Account> klassAccount;
+
+    @NonNull
+    final Class<Token> klassToken;
+
+    public StackedStateFrames(
+            @NonNull final Pair<Accessor<Address, Account>, Accessor<Address, Token>> accessors,
+            @NonNull final Class<Account> klassAccount,
+            @NonNull final Class<Token> klassToken) {
+        this.klassAccount = klassAccount;
+        this.klassToken = klassToken;
+
         // TODO: probably takes the database connection thing/abstraction as a parameter and saves it away
-        final var database = new DatabaseBackedStateFrame(/*some kind of database accessor goes here*/ );
-        final var roCache = new ROCachingStateFrame(Optional.of(database));
-        stack = stackBase = roCache;
+        final var database = new DatabaseBackedStateFrame<Address, Account, Token>(accessors, klassAccount, klassToken);
+        stack = stackBase = new ROCachingStateFrame<>(Optional.of(database), klassAccount, klassToken);
         // Initial state is just the R/O cache on top of the database.  You really need to do a
         // `push()` before you can expect to write anything to this state
     }
 
-    public @NonNull StateFrame top() {
+    public int height() {
+        return stack.height() - stackBase.height();
+    }
+
+    public int cachedFramesDepth() {
+        return stack.height();
+    }
+
+    public @NonNull CachingStateFrame<Address, Account, Token> top() {
         return stack;
     }
 
-    public @NonNull StateFrame push() {
-        stack = new RWCachingStateFrame(Optional.of(stack));
+    public @NonNull CachingStateFrame<Address, Account, Token> push() {
+        stack = new RWCachingStateFrame<>(Optional.of(stack), klassAccount, klassToken);
         return stack;
     }
 
     public void pop() {
         if (stack == stackBase) throw new EmptyStackException();
-        stack = (CachingStateFrame) (stack.getParent().get());
-        // TODO: Two things need some reworking here.  First, the interface `StateFrame` and its relationship to the
-        // abstract class `CachingStateFrame`.  Second, why isn't the parent of the right type here?
-        // (Maybe don't need `StateFrame`?)
+        stack = stack.getParent().orElseThrow(EmptyStackException::new);
     }
 }
