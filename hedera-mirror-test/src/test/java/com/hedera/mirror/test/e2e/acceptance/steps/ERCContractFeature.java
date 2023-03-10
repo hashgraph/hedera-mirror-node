@@ -91,7 +91,6 @@ public class ERCContractFeature extends AbstractFeature {
 
     private final ContractClient contractClient;
     private final MirrorNodeClient mirrorClient;
-    private final AccountClient accountClient;
     private final TokenClient tokenClient;
     private final ContractFeature contractFeature;
     private final TokenFeature tokenFeature;
@@ -218,7 +217,10 @@ public class ERCContractFeature extends AbstractFeature {
     }
 
     @Then("I call the erc contract via the mirror node REST API for token balance")
-    public void restContractCall() {
+    @Retryable(value = {AssertionError.class},
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
+            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
+    public void balanceOfContractCall() {
         var getBalanceOfResponse = mirrorClient.contractsCall(BALANCE_OF_SELECTOR
                 + to32BytesString(tokenIds.get(0).toSolidityAddress())
                 + to32BytesString(contractClient.getClientAddress()), contractId.toSolidityAddress(), contractClient.getClientAddress());
@@ -241,7 +243,7 @@ public class ERCContractFeature extends AbstractFeature {
                 .isEqualTo(spenderAccountId.getAccountId().toSolidityAddress());
     }
 
-    @Given("I successfully create an erc contract from contract bytes with balance")
+    @Given("I successfully create an erc contract from contract bytes with balance 0")
     public void createNewContract() throws IOException {
         compiledSolidityArtifact = MAPPER.readValue(
                 ResourceUtils.getFile(ercContract.toUri()),
