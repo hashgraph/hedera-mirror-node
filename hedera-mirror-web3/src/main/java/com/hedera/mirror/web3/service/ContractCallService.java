@@ -104,8 +104,7 @@ public class ContractCallService {
         } while (lo + 1 < hi);
         validateTxnResult(txnResult, params.getCallType());
 
-        long hiFloor = (long) Math.floor(hi);
-        return Long.toHexString(hiFloor);
+        return Long.toHexString(hi);
     }
 
     private HederaEvmTransactionProcessingResult processEthTxn(final CallServiceParameters params) {
