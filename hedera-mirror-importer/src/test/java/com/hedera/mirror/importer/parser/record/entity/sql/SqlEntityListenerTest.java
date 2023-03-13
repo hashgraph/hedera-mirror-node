@@ -36,6 +36,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -46,6 +47,9 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jdbc.core.DataClassRowMapper;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
@@ -160,6 +164,10 @@ class SqlEntityListenerTest extends IntegrationTest {
     private final TransactionHashRepository transactionHashRepository;
     private final TransactionSignatureRepository transactionSignatureRepository;
     private final TransactionTemplate transactionTemplate;
+    private final JdbcTemplate jdbcTemplate;
+
+    @Value("#{environment.acceptsProfiles('v2')}")
+    private boolean isV2;
 
     private static Key keyFromString(String key) {
         return Key.newBuilder().setEd25519(ByteString.copyFromUtf8(key)).build();
@@ -927,7 +935,19 @@ class SqlEntityListenerTest extends IntegrationTest {
                 .extracting(Transaction::getIndex)
                 .isEqualTo(2);
 
-        assertThat(transactionHashRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedTransactionHashes);
+        if (isV2) {
+            assertThat(transactionHashRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedTransactionHashes);
+        }
+        else {
+            expectedTransactionHashes.stream()
+                    .collect(Collectors.groupingBy(item -> Math.abs(item.getHash()[0] % 32)))
+                    .forEach((key, value) -> assertThat(getShardTransactionHashes(key)).containsExactlyInAnyOrderElementsOf(value));
+        }
+    }
+
+    private List<TransactionHash> getShardTransactionHashes(int shard) {
+        var sql = String.format("SELECT * from transaction_hash_sharded_%02d", shard);
+        return jdbcTemplate.query(sql, new DataClassRowMapper<>(TransactionHash.class));
     }
 
     @Test
