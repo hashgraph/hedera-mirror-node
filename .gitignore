@@ -30,8 +30,6 @@ junit.xml
 node/
 node_modules/
 cache/
-artifacts/build-info
-artifacts/contracts/**/**.dbg.json
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
@@ -145,3 +143,7 @@ release_notes.md
 .gradle
 build
 !gradle/wrapper/gradle-wrapper.jar
+
+# hardhat
+hedera-mirror-test/src/test/resources/solidity/artifacts/build-info
+hedera-mirror-test/src/test/resources/solidity/artifacts/contracts/**/*.dbg.json

@@ -1,0 +1,40 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "Child",
+  "sourceName": "contracts/Parent.sol",
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "_from",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "_to",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "Transfer",
+      "type": "event"
+    },
+    {
+      "stateMutability": "payable",
+      "type": "receive"
+    }
+  ],
+  "bytecode": "0x6080604052348015600f57600080fd5b50607c8061001e6000396000f3fe608060405236604157604051348152309033907fddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef9060200160405180910390a3005b600080fdfea26469706673582212207d767a886855844f814472cf01fd1b1c127e3b4339920eb1a00c489b235a84d564736f6c63430008040033",
+  "deployedBytecode": "0x608060405236604157604051348152309033907fddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef9060200160405180910390a3005b600080fdfea26469706673582212207d767a886855844f814472cf01fd1b1c127e3b4339920eb1a00c489b235a84d564736f6c63430008040033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}
