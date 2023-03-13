@@ -128,7 +128,7 @@ class ContractController {
 
     @ExceptionHandler
     @ResponseStatus(TOO_MANY_REQUESTS)
-    private Mono<GenericErrorResponse> rateLimitError(RateLimitException e) {
+    private Mono<GenericErrorResponse> rateLimitError(final RateLimitException e) {
         return errorResponse(e.getMessage());
     }
 
