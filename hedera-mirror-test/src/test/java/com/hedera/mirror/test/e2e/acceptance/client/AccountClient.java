@@ -223,6 +223,20 @@ public class AccountClient extends AbstractNetworkClient {
         return networkTransactionResponse;
     }
 
+    public NetworkTransactionResponse approveToken(TokenId tokenId, AccountId spender, long amount) {
+        var ownerAccountId = sdkClient.getExpandedOperatorAccountId().getAccountId();
+
+        var transaction = new AccountAllowanceApproveTransaction()
+                .approveTokenAllowance(tokenId, ownerAccountId, spender, amount);
+
+        NetworkTransactionResponse networkTransactionResponse =
+                executeTransactionAndRetrieveReceipt(transaction);
+
+        log.debug("Sent Account Allowance Approval");
+
+        return networkTransactionResponse;
+    }
+
     public NetworkTransactionResponse approveNftAllSerials(TokenId tokenId, AccountId spender) {
         var ownerAccountId = sdkClient.getExpandedOperatorAccountId().getAccountId();
 

@@ -32,8 +32,9 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 
+import com.hedera.hashgraph.sdk.CustomFee;
 import com.hedera.hashgraph.sdk.NftId;
-import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
+import com.hedera.hashgraph.sdk.TokenType;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 
 import io.cucumber.java.en.Given;
@@ -41,6 +42,7 @@ import io.cucumber.java.en.Then;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -69,6 +71,9 @@ import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class ERCContractFeature extends AbstractFeature {
 
+    private static final int INITIAL_SUPPLY = 1_000_000;
+    private static final int MAX_SUPPLY = 1;
+
     private final List<TokenId> tokenIds = new ArrayList<>();
     private final Map<TokenId, List<Long>> tokenSerialNumbers = new HashMap<>();
 
@@ -89,6 +94,7 @@ public class ERCContractFeature extends AbstractFeature {
 
     private ExpandedAccountId spenderAccountId;
     private ExpandedAccountId spenderAccountIdForAllSeerials;
+    private ExpandedAccountId allowanceSpenderAccountId;
 
     private final ContractClient contractClient;
     private final MirrorNodeClient mirrorClient;
@@ -180,7 +186,7 @@ public class ERCContractFeature extends AbstractFeature {
     @Retryable(value = {AssertionError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
-    public void getApprovedContractCall() throws DecoderException {
+    public void getApprovedContractCall() {
         var getApprovedResponse = mirrorClient.contractsCall(GET_APPROVED_SELECTOR
                         + to32BytesString(tokenIds.get(1).toSolidityAddress()) + to32BytesString("1"),
                 contractId.toSolidityAddress(), contractClient.getClientAddress());
@@ -193,7 +199,7 @@ public class ERCContractFeature extends AbstractFeature {
     @Retryable(value = {AssertionError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
-    public void allowanceContractCall() throws DecoderException {
+    public void allowanceContractCall() {
         var getAllowanceResponse = mirrorClient.contractsCall(ALLOWANCE_SELECTOR
                         + to32BytesString(tokenIds.get(0).toSolidityAddress())
                         + to32BytesString(tokenClient.getSdkClient().getExpandedOperatorAccountId().getAccountId().toSolidityAddress())
@@ -201,6 +207,20 @@ public class ERCContractFeature extends AbstractFeature {
                 contractId.toSolidityAddress(), contractClient.getClientAddress());
 
         assertThat(convertContractCallResponseToNum(getAllowanceResponse)).isZero();
+    }
+
+    @Then("I call the erc contract via the mirror node REST API for token allowance with allowances")
+    @Retryable(value = {AssertionError.class},
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
+            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
+    public void allowanceSecondContractCall() {
+        var getAllowanceResponse = mirrorClient.contractsCall(ALLOWANCE_SELECTOR
+                        + to32BytesString(tokenIds.get(0).toSolidityAddress())
+                        + to32BytesString(tokenClient.getSdkClient().getExpandedOperatorAccountId().getAccountId().toSolidityAddress())
+                        + to32BytesString(allowanceSpenderAccountId.getAccountId().toSolidityAddress()),
+                contractId.toSolidityAddress(), contractClient.getClientAddress());
+
+        assertThat(convertContractCallResponseToNum(getAllowanceResponse)).isEqualTo(2);
     }
 
     @Then("I call the erc contract via the mirror node REST API for token isApprovedForAll")
@@ -268,11 +288,7 @@ public class ERCContractFeature extends AbstractFeature {
 
     @Then("I create a new token with freeze status 2 and kyc status 1")
     public void createNewToken() {
-        tokenIds.add(
-                tokenFeature.createNewToken(
-                        "TEST",
-                        TokenFreezeStatus.FreezeNotApplicable_VALUE,
-                        TokenKycStatus.KycNotApplicable_VALUE));
+        createNewToken("TEST", TokenFreezeStatus.FreezeNotApplicable_VALUE, TokenKycStatus.KycNotApplicable_VALUE);
     }
 
     @Then("I create a new nft with supplyType {string}")
@@ -304,8 +320,40 @@ public class ERCContractFeature extends AbstractFeature {
         spenderAccountId = accountFeature.setNftAllowance(accountName, new NftId(tokenIds.get(1), serial.get(0)));
     }
 
+    @Then("I approve {string} with {long}")
+    public void approveTokenAllowance(String accountName, long amount) {
+        allowanceSpenderAccountId = accountFeature.setTokenAllowance(accountName, tokenIds.get(0), amount);
+    }
+
     @Then("I approve {string} for nft all serials")
     public void approveCryptoAllowanceAllSerials(String accountName) {
         spenderAccountIdForAllSeerials = accountFeature.setNftAllowanceAllSerials(accountName, tokenIds.get(1));
+    }
+
+
+    public void createNewToken(String symbol, int freezeStatus, int kycStatus) {
+        createNewToken(symbol, freezeStatus, kycStatus, TokenType.FUNGIBLE_COMMON, TokenSupplyType.INFINITE, Collections
+                .emptyList());
+    }
+
+    private void createNewToken(String symbol, int freezeStatus, int kycStatus, TokenType tokenType,
+            TokenSupplyType tokenSupplyType, List<CustomFee> customFees) {
+        ExpandedAccountId admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
+        networkTransactionResponse = tokenClient.createToken(
+                admin,
+                symbol,
+                freezeStatus,
+                kycStatus,
+                admin,
+                INITIAL_SUPPLY,
+                tokenSupplyType,
+                MAX_SUPPLY,
+                tokenType,
+                customFees);
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
+        TokenId tokenId = networkTransactionResponse.getReceipt().tokenId;
+        assertNotNull(tokenId);
+        tokenIds.add(tokenId);
     }
 }

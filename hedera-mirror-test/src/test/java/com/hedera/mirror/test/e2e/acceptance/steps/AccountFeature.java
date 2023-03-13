@@ -246,6 +246,19 @@ public class AccountFeature extends AbstractFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
+    public ExpandedAccountId setTokenAllowance(String accountName, TokenId tokenId, long amount) {
+        senderAccountId = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
+        setTokenAllowance(senderAccountId.getAccountId(), tokenId, amount);
+        return senderAccountId;
+    }
+
+    private void setTokenAllowance(AccountId accountId, TokenId tokenId, long amount) {
+        ownerAccountId = accountClient.getClient().getOperatorAccountId();
+        networkTransactionResponse = accountClient.approveToken(tokenId, accountId, amount);
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
+    }
+
     public ExpandedAccountId setNftAllowance(String accountName, NftId nftId) {
         senderAccountId = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
         setNftAllowance(senderAccountId.getAccountId(), nftId);
