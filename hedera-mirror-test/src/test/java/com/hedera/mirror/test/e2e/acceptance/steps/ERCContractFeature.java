@@ -227,7 +227,7 @@ public class ERCContractFeature extends AbstractFeature {
     @Retryable(value = {AssertionError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
-    public void isApprovedForAllContractCall() throws DecoderException {
+    public void isApprovedForAllContractCall() {
         var getIsApproveForAllResponse = mirrorClient.contractsCall(IS_APPROVED_FOR_ALL_SELECTOR
                         + to32BytesString(tokenIds.get(1).toSolidityAddress())
                         + to32BytesString(tokenClient.getSdkClient().getExpandedOperatorAccountId().getAccountId().toSolidityAddress())
