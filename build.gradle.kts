@@ -84,7 +84,7 @@ dependencies {
         api("org.mapstruct:mapstruct:$mapStructVersion")
         api("org.mapstruct:mapstruct-processor:$mapStructVersion")
         api("org.msgpack:jackson-dataformat-msgpack:0.9.3")
-        api("org.springdoc:springdoc-openapi-webflux-ui:1.6.14")
+        api("org.springdoc:springdoc-openapi-webflux-ui:1.6.15")
         api("org.springframework.cloud:spring-cloud-dependencies:2021.0.5")
         api("org.testcontainers:junit-jupiter:1.17.6")
         api("software.amazon.awssdk:bom:2.20.22")
