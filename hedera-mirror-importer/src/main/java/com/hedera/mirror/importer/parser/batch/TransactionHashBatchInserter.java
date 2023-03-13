@@ -36,8 +36,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @CustomLog
 public class TransactionHashBatchInserter implements BatchPersister {
-    // Map of table name
-    private final Map<Integer, BatchInserter> batchInserters = new ConcurrentHashMap<>();
+    private final Map<Integer, BatchInserter> shardBatchInserters = new ConcurrentHashMap<>();
     private final DataSource dataSource;
     private final MeterRegistry meterRegistry;
     private final CommonParserProperties commonParserProperties;
@@ -143,15 +142,17 @@ public class TransactionHashBatchInserter implements BatchPersister {
                 };
 
                 if (failedShards.isEmpty()) {
-                    log.info("Successfully {} {} items in shards {} from {} to {}",
+                    log.info("Successfully {} {} items in {} shards {} from {} to {}",
                             statusString,
                             itemCount,
+                            shardedTableName,
                             successfulShards,
                             minConsensusTimestamp,
                             maxConsensusTimestamp);
                 } else {
-                    log.error("Errors occurred processing shard transactions. parent status {} successful shards {} " +
+                    log.error("Errors occurred processing sharded table {}. parent status {} successful shards {} " +
                                     "failed shards {} from={} to={}",
+                            shardedTableName,
                             statusString,
                             successfulShards,
                             failedShards,
@@ -172,7 +173,7 @@ public class TransactionHashBatchInserter implements BatchPersister {
 
                     configureThread(data);
 
-                    batchInserters.computeIfAbsent(data.getKey(),
+                    shardBatchInserters.computeIfAbsent(data.getKey(),
                                     key -> new BatchInserter(TransactionHash.class,
                                             dataSource,
                                             meterRegistry,

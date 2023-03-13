@@ -57,7 +57,7 @@ const applyMatrix = (spec) => {
   transactionHashOldSpec.name = `${transactionHashOldSpec.name} - in old transaction_hash table`
   transactionHashOldSpec.postSetup = putHashInOldTable(transactionHashOldSpec);
 
-  return [defaultSpec, nullPayerAccountIdSpec, transactionHashOldSpec];
+  return [defaultSpec, transactionHashOldSpec, nullPayerAccountIdSpec];
 };
 
 export default applyMatrix;

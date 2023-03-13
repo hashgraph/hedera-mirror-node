@@ -1581,5 +1581,5 @@ export default {
   loadStakingRewardTransfers,
   loadTransactions,
   setAccountBalance,
-  setup
+  setup,
 };
