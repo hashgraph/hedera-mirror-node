@@ -99,7 +99,7 @@
     "nodemon": "^2.0.21",
     "pg-format": "^1.0.4",
     "rewire": "^6.0.0",
-    "sinon": "^15.0.1",
+    "sinon": "^15.0.2",
     "supertest": "^6.3.3",
     "testcontainers": "^9.1.3"
   },
