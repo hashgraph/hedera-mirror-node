@@ -1,12 +1,15 @@
 changelog:
+  contributors:
+    exclude:
+      names: [ "dependabot", "hedera-github-bot" ]
   exclude:
-    labels: ["wontfix", "question", "duplicate", "invalid"]
+    labels: [ "wontfix", "question", "duplicate", "invalid" ]
   categories:
     - title: "Enhancements"
-      labels: ["enhancement", "epic"]
+      labels: [ "enhancement", "epic" ]
     - title: "Bug Fixes"
-      labels: ["bug"]
+      labels: [ "bug" ]
     - title: "Documentation"
-      labels: ["documentation"]
+      labels: [ "documentation" ]
     - title: "Dependency Upgrades"
-      labels: ["dependencies"]
+      labels: [ "dependencies" ]
