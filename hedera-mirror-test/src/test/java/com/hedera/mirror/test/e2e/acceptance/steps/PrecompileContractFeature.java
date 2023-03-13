@@ -21,6 +21,7 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.esaulpaugh.headlong.abi.Function;
@@ -37,6 +38,7 @@ import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
 import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
 
+import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 
@@ -77,6 +79,8 @@ import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+
 @Log4j2
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class PrecompileContractFeature extends AbstractFeature {
@@ -103,6 +107,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     private final TokenClient tokenClient;
     private final FileClient fileClient;
     private final MirrorNodeClient mirrorClient;
+    private final AccountClient accountClient;
     private final long firstNftSerialNumber = 1;
 
     @Value("classpath:solidity/artifacts/contracts/PrecompileTestContract.sol/PrecompileTestContract.json")
@@ -174,6 +179,30 @@ public class PrecompileContractFeature extends AbstractFeature {
         );
 
         assertTrue(ContractCallResponse.convertContractCallResponseToBoolean(response));
+    }
+
+    @Then("Invalid account is token should return an error")
+    public void checkIfInvalidAccountIsToken() {
+        assertThatThrownBy(() -> mirrorClient.contractsCall(
+                PrecompileContractFeature.IS_TOKEN_SELECTOR + TestUtil
+                        .to32BytesString("0x0000000000000000000000000000000000000000"),
+                contractId.toSolidityAddress(),
+                contractClient.getClientAddress()
+        ))
+                .isInstanceOf(WebClientResponseException.class)
+                .hasMessageContaining("400 Bad Request from POST");
+    }
+
+    @Then("Valid account is token should return an error")
+    public void checkIfValidAccountIsToken() {
+        assertThatThrownBy(() -> mirrorClient.contractsCall(
+                PrecompileContractFeature.IS_TOKEN_SELECTOR + TestUtil
+                        .to32BytesString(accountClient.getTokenTreasuryAccount().getAccountId().toSolidityAddress()),
+                contractId.toSolidityAddress(),
+                contractClient.getClientAddress()
+        ))
+                .isInstanceOf(WebClientResponseException.class)
+                .hasMessageContaining("400 Bad Request from POST");
     }
 
     @Then("Check if fungible token is frozen")
