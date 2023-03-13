@@ -7,7 +7,7 @@ require (
 	github.com/coinbase/rosetta-sdk-go v0.8.3
 	github.com/coinbase/rosetta-sdk-go/types v1.0.0
 	github.com/cucumber/godog v0.12.6
-	github.com/ethereum/go-ethereum v1.11.2
+	github.com/ethereum/go-ethereum v1.11.4
 	github.com/go-playground/validator/v10 v10.11.2
 	github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20221223083421-851698720852
 	github.com/hashgraph/hedera-sdk-go/v2 v2.17.2
