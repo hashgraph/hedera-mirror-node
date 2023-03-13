@@ -422,7 +422,7 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertThat(ownerId).isNotBlank();
         assertThat(creationTime).isGreaterThan(0);
         assertThat(metadata).isNotEmpty();
-        assertThat(spenderId).isNotBlank();
+        assertThat(spenderId).isEqualTo(TestUtil.ZERO_ADDRESS);
     }
 
     @Then("Get type for fungible token")
@@ -505,10 +505,10 @@ public class PrecompileContractFeature extends AbstractFeature {
 
         assertThat(keyValue).isNotEmpty();
         assertFalse(inheritAccountKey);
-        assertThat(contractId).isNotBlank();
+        assertThat(contractId).isEqualTo(TestUtil.ZERO_ADDRESS);
         assertThat(ed25519).isNotEmpty();
         assertThat(ecdsa).isEmpty();
-        assertThat(delegatableContractId).isNotBlank();
+        assertThat(delegatableContractId).isEqualTo(TestUtil.ZERO_ADDRESS);
     }
 
     @Then("Get token key for non fungible token")
@@ -533,10 +533,10 @@ public class PrecompileContractFeature extends AbstractFeature {
 
         assertThat(keyValue).isNotEmpty();
         assertFalse(inheritAccountKey);
-        assertThat(contractId).isNotBlank();
+        assertThat(contractId).isEqualTo(TestUtil.ZERO_ADDRESS);
         assertThat(ed25519).isNotEmpty();
         assertThat(ecdsa).isEmpty();
-        assertThat(delegatableContractId).isNotBlank();
+        assertThat(delegatableContractId).isEqualTo(TestUtil.ZERO_ADDRESS);
     }
 
     @Retryable(value = {AssertionError.class},
