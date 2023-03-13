@@ -31,7 +31,7 @@
     "abort-controller": "^3.0.0",
     "boxen": "^7.0.2",
     "chalk": "^5.2.0",
-    "glob": "^8.1.0",
+    "glob": "^9.2.1",
     "lodash": "^4.17.21",
     "log4js": "^6.8.0",
     "node-fetch": "^3.3.0",
