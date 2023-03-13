@@ -20,7 +20,10 @@ package com.hedera.mirror.web3.repository;
  * ‍
  */
 
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_TOKEN;
+
 import java.util.Optional;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
@@ -31,5 +34,6 @@ public interface TokenAllowanceRepository extends CrudRepository<TokenAllowance,
 
     @Query(value = "select amount from token_allowance where token_id = ?1 and owner = ?2 and spender = ?3",
             nativeQuery = true)
+    @Cacheable(cacheNames = "token_allowance", cacheManager = CACHE_MANAGER_TOKEN , unless = "#result == null")
     Optional<Long> findAllowance(final Long tokenId, final Long ownerId, final Long spenderId);
 }

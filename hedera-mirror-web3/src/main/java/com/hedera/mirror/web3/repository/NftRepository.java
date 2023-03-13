@@ -20,7 +20,10 @@ package com.hedera.mirror.web3.repository;
  * ‍
  */
 
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_TOKEN;
+
 import java.util.Optional;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
@@ -31,13 +34,16 @@ public interface NftRepository extends CrudRepository<Nft, NftId> {
 
     @Query(value = "select spender from nft where token_id = ?1 and serial_number = ?2",
             nativeQuery = true)
+    @Cacheable(cacheNames = "nft.spender", cacheManager = CACHE_MANAGER_TOKEN , unless = "#result == null")
     Optional<Long> findSpender(final Long tokenId, final Long serialNo);
 
     @Query(value = "select account_id from nft where token_id = ?1 and serial_number = ?2",
             nativeQuery = true)
+    @Cacheable(cacheNames = "nft.owner", cacheManager = CACHE_MANAGER_TOKEN , unless = "#result == null")
     Optional<Long> findOwner(final Long tokenId, final Long serialNo);
 
     @Query(value = "select metadata from nft where token_id = ?1 and serial_number = ?2",
             nativeQuery = true)
+    @Cacheable(cacheNames = "nft.metadata", cacheManager = CACHE_MANAGER_TOKEN , unless = "#result == null")
     Optional<byte[]> findMetadata(final Long tokenId, final Long serialNo);
 }

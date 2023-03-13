@@ -34,5 +34,7 @@ public class CacheProperties {
     private String contractState = "expireAfterWrite=5s,maximumSize=10000,recordStats";
     @NotBlank
     private String entity = "expireAfterWrite=30s,maximumSize=10000,recordStats";
+    @NotBlank
+    private String token = "expireAfterWrite=2s,maximumSize=10000,recordStats";
 
 }

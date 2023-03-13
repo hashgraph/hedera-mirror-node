@@ -20,7 +20,10 @@ package com.hedera.mirror.web3.repository;
  * ‍
  */
 
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_TOKEN;
+
 import java.util.Optional;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
@@ -32,29 +35,36 @@ public interface TokenRepository extends CrudRepository<Token, TokenId> {
 
     @Query(value = "select name from token where token_id = ?1",
             nativeQuery = true)
+    @Cacheable(cacheNames = "token.name", cacheManager = CACHE_MANAGER_TOKEN , unless = "#result == null")
     Optional<String> findName(final Long tokenId);
 
     @Query(value = "select symbol from token where token_id = ?1",
             nativeQuery = true)
+    @Cacheable(cacheNames = "token.symbol", cacheManager = CACHE_MANAGER_TOKEN , unless = "#result == null")
     Optional<String> findSymbol(final Long tokenId);
 
     @Query(value = "select total_supply from token where token_id = ?1",
             nativeQuery = true)
+    @Cacheable(cacheNames = "token.total_supply", cacheManager = CACHE_MANAGER_TOKEN , unless = "#result == null")
     Optional<Long> findTotalSupply(final Long tokenId);
 
     @Query(value = "select decimals from token where token_id = ?1",
             nativeQuery = true)
+    @Cacheable(cacheNames = "token.decimals", cacheManager = CACHE_MANAGER_TOKEN , unless = "#result == null")
     Optional<Integer> findDecimals(final Long tokenId);
 
     @Query(value = "select type from token where token_id = ?1",
             nativeQuery = true)
+    @Cacheable(cacheNames = "token.type", cacheManager = CACHE_MANAGER_TOKEN , unless = "#result == null")
     Optional<TokenTypeEnum> findType(final Long tokenId);
 
     @Query(value = "select freeze_default from token where token_id = ?1",
             nativeQuery = true)
+    @Cacheable(cacheNames = "token.freeze_default", cacheManager = CACHE_MANAGER_TOKEN , unless = "#result == null")
     Boolean findFreezeDefault(final Long tokenId);
 
     @Query(value = "select kyc_key from token where token_id = ?1",
             nativeQuery = true)
+    @Cacheable(cacheNames = "token.kyc_key", cacheManager = CACHE_MANAGER_TOKEN , unless = "#result == null")
     Optional<byte[]> findKycDefault(final Long tokenId);
 }
