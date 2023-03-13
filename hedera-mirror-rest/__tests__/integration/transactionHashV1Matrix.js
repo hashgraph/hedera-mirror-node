@@ -18,9 +18,27 @@
  * ‍
  */
 
-import {isV2Schema} from '../testutils.js';
+import {isV2Schema, valueToBuffer} from '../testutils.js';
 
-const nullifyPayerAccountId = async () => pool.queryQuietly('update transaction_hash set payer_account_id = null');
+const getShardMap = (transactions) => transactions.reduce((result, transaction) => {
+  const shard = Math.abs(valueToBuffer(transaction.transaction_hash)[0] % 32).toString().padStart(2, '0');
+  result[shard] = result[shard] || [];
+  result[shard].push(transaction);
+  return result;
+}, {});
+
+const nullifyPayerAccountId = (spec) => async () => {
+  return Promise.all(Object.keys(getShardMap(spec.setup.transactions))
+    .map(key => pool.queryQuietly(`update transaction_hash_sharded_${key} set payer_account_id = null`)))
+}
+const putHashInOldTable = (spec) => async () => {
+  return Promise.all(Object.keys(getShardMap(spec.setup.transactions))
+    .map(key => pool.queryQuietly(
+      `with deleted as (DELETE from transaction_hash_sharded_${key} RETURNING *)
+                    INSERT into transaction_hash(consensus_timestamp, hash, payer_account_id)
+                       SELECT consensus_timestamp, hash, payer_account_id from deleted`
+    )))
+}
 
 const applyMatrix = (spec) => {
   if (isV2Schema()) {
@@ -28,13 +46,18 @@ const applyMatrix = (spec) => {
   }
 
   const defaultSpec = {...spec};
+
   defaultSpec.name = `${defaultSpec.name} - default`;
 
   const nullPayerAccountIdSpec = {...spec};
   nullPayerAccountIdSpec.name = `${nullPayerAccountIdSpec.name} - null transaction_hash.payer_account_id`;
-  nullPayerAccountIdSpec.postSetup = nullifyPayerAccountId;
+  nullPayerAccountIdSpec.postSetup = nullifyPayerAccountId(nullPayerAccountIdSpec);
 
-  return [defaultSpec, nullPayerAccountIdSpec];
+  const transactionHashOldSpec = {...spec};
+  transactionHashOldSpec.name = `${transactionHashOldSpec.name} - in old transaction_hash table`
+  transactionHashOldSpec.postSetup = putHashInOldTable(transactionHashOldSpec);
+
+  return [defaultSpec, nullPayerAccountIdSpec, transactionHashOldSpec];
 };
 
 export default applyMatrix;
