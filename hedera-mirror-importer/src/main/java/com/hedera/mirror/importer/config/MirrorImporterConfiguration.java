@@ -20,8 +20,6 @@ package com.hedera.mirror.importer.config;
  * ‍
  */
 
-import com.hedera.mirror.common.domain.transaction.TransactionHash;
-
 import com.hedera.mirror.importer.parser.batch.TransactionHashBatchInserter;
 
 import io.micrometer.core.instrument.MeterRegistry;
