@@ -617,7 +617,7 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertThat(mirrorNft.getSerialNumber()).isEqualTo(serialNumber);
     }
 
-    private TokenId createNewToken(
+    private void createNewToken(
             String symbol,
             TokenType tokenType,
             TokenSupplyType tokenSupplyType
@@ -641,8 +641,6 @@ public class PrecompileContractFeature extends AbstractFeature {
         tokenIds.add(tokenId);
 
         verifyToken(tokenId);
-
-        return tokenId;
     }
 
     private void createContract(String byteCode) {
