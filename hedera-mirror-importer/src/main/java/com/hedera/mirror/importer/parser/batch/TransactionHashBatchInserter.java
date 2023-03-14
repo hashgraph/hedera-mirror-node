@@ -33,7 +33,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-@RequiredArgsConstructor
 @CustomLog
 public class TransactionHashBatchInserter implements BatchPersister {
     private final Map<Integer, BatchInserter> shardBatchInserters = new ConcurrentHashMap<>();
@@ -166,13 +165,7 @@ public class TransactionHashBatchInserter implements BatchPersister {
     private Mono<Void> processShard(Map.Entry<Integer, List<TransactionHash>> shardData) {
         return Mono.just(shardData)
                 .doOnNext(data -> {
-
-                    if (data.getValue() == null || data.getValue().isEmpty()) {
-                        return;
-                    }
-
                     configureThread(data);
-
                     shardBatchInserters.computeIfAbsent(data.getKey(),
                                     key -> new BatchInserter(TransactionHash.class,
                                             dataSource,
@@ -180,8 +173,6 @@ public class TransactionHashBatchInserter implements BatchPersister {
                                             commonParserProperties,
                                             String.format("%s_%02d", shardedTableName, data.getKey())))
                             .persist(data.getValue());
-
-
                 }).then();
     }
 

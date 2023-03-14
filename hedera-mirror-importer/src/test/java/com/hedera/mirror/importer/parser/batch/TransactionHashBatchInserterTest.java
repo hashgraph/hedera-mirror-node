@@ -22,10 +22,12 @@ import javax.annotation.Resource;
 import javax.sql.DataSource;
 import java.sql.SQLException;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
@@ -70,7 +72,6 @@ class TransactionHashBatchInserterTest extends IntegrationTest {
             shardMap.keySet()
                     .forEach(shard -> assertThat(getShardTransactionHashes(shard)).isEmpty());
 
-            //
             assertThat(hashBatchInserter.getThreadConnections()).isNotEmpty();
             hashBatchInserter.getThreadConnections().values()
                     .forEach(threadState -> assertThat(threadState.getStatus()).isEqualTo(-1));
@@ -83,6 +84,21 @@ class TransactionHashBatchInserterTest extends IntegrationTest {
 
         shardMap.keySet()
                 .forEach(shard -> assertThat(getShardTransactionHashes(shard)).containsExactlyInAnyOrderElementsOf(shardMap.get(shard)));
+    }
+
+    @Test
+    void persistEmpty() {
+        //Execute inside a parent transaction
+        transactionTemplate.execute(status -> {
+            batchPersister.persist(transactions);
+            assertThat(transactionRepository.findAll()).containsExactlyInAnyOrderElementsOf(transactions);
+
+            hashBatchInserter.persist(Collections.emptyList());
+            assertThat(hashBatchInserter.getThreadConnections()).isEmpty();
+            return new HashSet<>(); //ignored
+        });
+        assertThat(transactionRepository.findAll()).containsExactlyInAnyOrderElementsOf(transactions);
+        assertThat(hashBatchInserter.getThreadConnections()).isEmpty();
     }
 
     @Test
