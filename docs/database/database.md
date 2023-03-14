@@ -99,7 +99,7 @@ The time to dump the whole database usually depends on the size of the largest t
 
 ### New PostgreSQL Database Instance Configuration
 
-Run [init.sh](/hedera-mirror-importer/src/main/resources/db/scripts/init.sh) or the equivalent SQL statements to create
+Run [init.sh](/db/scripts/init.sh) or the equivalent SQL statements to create
 required database objects including the `mirror_node` database, the roles, the schema, and access privileges.
 
 The following configuration needs to be applied to the database instance to improve the write speed.
