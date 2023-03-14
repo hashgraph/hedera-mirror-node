@@ -218,7 +218,7 @@ public class AccountClient extends AbstractNetworkClient {
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(transaction);
 
-        log.debug("Sent Account Allowance Approval");
+        log.debug("Sent Account Allowance Approval for Nft with id: {} and serialNumber: {}", nftId.tokenId, nftId.serial);
 
         return networkTransactionResponse;
     }
@@ -232,7 +232,7 @@ public class AccountClient extends AbstractNetworkClient {
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(transaction);
 
-        log.debug("Sent Account Allowance Approval");
+        log.debug("Sent Account Allowance Approval for Token with id: {} and amount: {}", tokenId, amount);
 
         return networkTransactionResponse;
     }
@@ -246,7 +246,7 @@ public class AccountClient extends AbstractNetworkClient {
         NetworkTransactionResponse networkTransactionResponse =
                 executeTransactionAndRetrieveReceipt(transaction);
 
-        log.debug("Sent Account Allowance Approval");
+        log.debug("Sent Account Allowance Approval for all serial numbers for Nft with id: {}", tokenId);
 
         return networkTransactionResponse;
     }

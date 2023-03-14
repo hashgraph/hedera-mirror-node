@@ -287,8 +287,8 @@ public class ERCContractFeature extends AbstractFeature {
     }
 
     @Then("I create a new token with freeze status 2 and kyc status 1")
-    public void createNewToken() {
-        createNewToken("TEST", TokenFreezeStatus.FreezeNotApplicable_VALUE, TokenKycStatus.KycNotApplicable_VALUE);
+    public void createNewFungibleToken() {
+        createNewFungibleToken("TEST", TokenFreezeStatus.FreezeNotApplicable_VALUE, TokenKycStatus.KycNotApplicable_VALUE);
     }
 
     @Then("I create a new nft with supplyType {string}")
@@ -331,12 +331,12 @@ public class ERCContractFeature extends AbstractFeature {
     }
 
 
-    public void createNewToken(String symbol, int freezeStatus, int kycStatus) {
-        createNewToken(symbol, freezeStatus, kycStatus, TokenType.FUNGIBLE_COMMON, TokenSupplyType.INFINITE, Collections
+    public void createNewFungibleToken(String symbol, int freezeStatus, int kycStatus) {
+        createNewFungibleToken(symbol, freezeStatus, kycStatus, TokenType.FUNGIBLE_COMMON, TokenSupplyType.INFINITE, Collections
                 .emptyList());
     }
 
-    private void createNewToken(String symbol, int freezeStatus, int kycStatus, TokenType tokenType,
+    private void createNewFungibleToken(String symbol, int freezeStatus, int kycStatus, TokenType tokenType,
             TokenSupplyType tokenSupplyType, List<CustomFee> customFees) {
         ExpandedAccountId admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
         networkTransactionResponse = tokenClient.createToken(
