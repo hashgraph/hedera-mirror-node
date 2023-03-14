@@ -250,3 +250,7 @@ create index if not exists transaction_signature__timestamp_public_key_prefix
 
 -- revert to default
 set local citus.multi_shard_modify_mode to 'parallel';
+
+-- contract_state_index
+create index if not exists contract_state_index
+    on contract_state_change (contract_id, slot, consensus_timestamp);

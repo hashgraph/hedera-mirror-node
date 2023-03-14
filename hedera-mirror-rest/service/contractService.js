@@ -130,10 +130,16 @@ class ContractService extends BaseService {
     `;
 
     static contractStateTimestampQuery = `
-      select DISTINCT on (${ContractStateChange.SLOT}) *,
+      with ${ContractService.entityCTE}
+      select DISTINCT on (${ContractStateChange.SLOT}) 
+            ${ContractStateChange.CONTRACT_ID},
+            ${ContractStateChange.SLOT},
+            ${Entity.EVM_ADDRESS},
             coalesce(${ContractStateChange.VALUE_WRITTEN}, ${ContractStateChange.VALUE_READ}) as ${ContractState.VALUE},
             ${ContractStateChange.CONSENSUS_TIMESTAMP} as ${ContractState.MODIFIED_TIMESTAMP}
       from ${ContractStateChange.tableName} ${ContractStateChange.tableAlias}
+      left join ${Entity.tableName} ${Entity.tableAlias}
+        on ${Entity.getFullName(Entity.ID)} = ${ContractStateChange.getFullName(ContractStateChange.CONTRACT_ID)}
     `;
 
   static contractLogsWithEvmAddressQuery = `
