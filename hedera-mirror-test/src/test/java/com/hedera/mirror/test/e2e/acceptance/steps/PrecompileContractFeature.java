@@ -21,7 +21,6 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.esaulpaugh.headlong.abi.Function;
@@ -30,22 +29,19 @@ import com.esaulpaugh.headlong.util.FastHex;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TokenSupplyType;
 import com.hedera.hashgraph.sdk.TokenType;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
 import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
-
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
-
 import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
-
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import com.hedera.mirror.test.e2e.acceptance.util.TestUtil;
 
@@ -181,28 +177,28 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertTrue(ContractCallResponse.convertContractCallResponseToBoolean(response));
     }
 
-    @Then("Invalid account is token should return an error")
+    @Then("Invalid account is token should return false")
     public void checkIfInvalidAccountIsToken() {
-        assertThatThrownBy(() -> mirrorClient.contractsCall(
+        ContractCallResponse response = mirrorClient.contractsCall(
                 PrecompileContractFeature.IS_TOKEN_SELECTOR + TestUtil
                         .to32BytesString("0x0000000000000000000000000000000000000000"),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
-        ))
-                .isInstanceOf(WebClientResponseException.class)
-                .hasMessageContaining("400 Bad Request from POST");
+        );
+
+        assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(response));
     }
 
-    @Then("Valid account is token should return an error")
+    @Then("Valid account is token should return false")
     public void checkIfValidAccountIsToken() {
-        assertThatThrownBy(() -> mirrorClient.contractsCall(
+        ContractCallResponse response = mirrorClient.contractsCall(
                 PrecompileContractFeature.IS_TOKEN_SELECTOR + TestUtil
                         .to32BytesString(accountClient.getTokenTreasuryAccount().getAccountId().toSolidityAddress()),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
-        ))
-                .isInstanceOf(WebClientResponseException.class)
-                .hasMessageContaining("400 Bad Request from POST");
+        );
+
+        assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(response));
     }
 
     @Then("Check if fungible token is frozen")
@@ -229,6 +225,72 @@ public class PrecompileContractFeature extends AbstractFeature {
         );
 
         assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(response));
+    }
+
+    @Then("Check if can freeze token")
+    public void checkIfCanFreezeToken() {
+        ContractCallResponse responseBefore = mirrorClient.contractsCall(
+                PrecompileContractFeature.IS_TOKEN_FROZEN_SELECTOR
+                        + TestUtil.to32BytesString(tokenIds.get(1).toSolidityAddress())
+                        + TestUtil.to32BytesString(contractClient.getClientAddress()),
+                contractId.toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+        boolean isFrozenBefore = ContractCallResponse.convertContractCallResponseToBoolean(responseBefore);
+        assertFalse(isFrozenBefore);
+
+        NetworkTransactionResponse freezeResponse = tokenClient
+                .freeze(tokenIds.get(1), contractClient.getClient().getOperatorAccountId());
+        verifyTx(freezeResponse.getTransactionIdStringNoCheckSum());
+
+        ContractCallResponse responseAfter = mirrorClient.contractsCall(
+                PrecompileContractFeature.IS_TOKEN_FROZEN_SELECTOR
+                        + TestUtil.to32BytesString(tokenIds.get(1).toSolidityAddress())
+                        + TestUtil.to32BytesString(contractClient.getClientAddress()),
+                contractId.toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+
+        boolean isFrozenAfter = ContractCallResponse.convertContractCallResponseToBoolean(responseAfter);
+        assertTrue(isFrozenAfter);
+    }
+
+    @Then("Check if can unfreeze token")
+    public void checkIfCanUnfreezeToken() {
+        ContractCallResponse responseBefore = mirrorClient.contractsCall(
+                PrecompileContractFeature.IS_TOKEN_FROZEN_SELECTOR
+                        + TestUtil.to32BytesString(tokenIds.get(1).toSolidityAddress())
+                        + TestUtil.to32BytesString(contractClient.getClientAddress()),
+                contractId.toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+        boolean isFrozenBefore = ContractCallResponse.convertContractCallResponseToBoolean(responseBefore);
+        assertTrue(isFrozenBefore);
+
+        NetworkTransactionResponse freezeResponse = tokenClient
+                .unfreeze(tokenIds.get(1), contractClient.getClient().getOperatorAccountId());
+        verifyTx(freezeResponse.getTransactionIdStringNoCheckSum());
+
+        ContractCallResponse responseAfter = mirrorClient.contractsCall(
+                PrecompileContractFeature.IS_TOKEN_FROZEN_SELECTOR
+                        + TestUtil.to32BytesString(tokenIds.get(1).toSolidityAddress())
+                        + TestUtil.to32BytesString(contractClient.getClientAddress()),
+                contractId.toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+
+        boolean isFrozenAfter = ContractCallResponse.convertContractCallResponseToBoolean(responseAfter);
+        assertFalse(isFrozenAfter);
+    }
+
+    @Retryable(value = {AssertionError.class, WebClientResponseException.class},
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
+            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
+    private MirrorTransactionsResponse verifyTx(String txId) {
+        MirrorTransactionsResponse txResponse = mirrorClient.getTransactions(txId);
+        assertNotNull(txResponse);
+
+        return txResponse;
     }
 
     @Then("Check if fungible token is kyc granted")
@@ -571,7 +633,7 @@ public class PrecompileContractFeature extends AbstractFeature {
         networkTransactionResponse = tokenClient.createToken(
                 admin,
                 symbol,
-                TokenFreezeStatus.FreezeNotApplicable_VALUE,
+                TokenFreezeStatus.Unfrozen_VALUE,
                 TokenKycStatus.KycNotApplicable_VALUE,
                 admin,
                 1_000_000,

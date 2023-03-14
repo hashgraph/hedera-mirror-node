@@ -1,8 +1,7 @@
 @contractbase @fullsuite
 Feature: Precompile Contract Base Coverage Feature
 
-#    @release @acceptance
-    @precompile
+    @release @acceptance
     Scenario Outline: Validate Precompile Contract
         Given I successfully create and verify a precompile contract from contract bytes
         Given I successfully create and verify a fungible token for precompile contract tests
@@ -10,10 +9,12 @@ Feature: Precompile Contract Base Coverage Feature
         Then I mint and verify a nft
         Then Check if fungible token is token
         Then Check if non fungible token is token
-        Then Invalid account is token should return an error
-        Then Valid account is token should return an error
+        Then Invalid account is token should return false
+        Then Valid account is token should return false
         Then Check if fungible token is frozen
         Then Check if non fungible token is frozen
+        Then Check if can freeze token
+        Then Check if can unfreeze token
         Then Check if fungible token is kyc granted
         Then Check if non fungible token is kyc granted
         Then Get token default freeze of fungible token
