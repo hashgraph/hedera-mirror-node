@@ -20,6 +20,10 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
  * ‍
  */
 
+import static com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse.convertContractCallResponseToBoolean;
+import static com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse.convertContractCallResponseToNum;
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.ZERO_ADDRESS;
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -172,87 +176,84 @@ public class PrecompileContractFeature extends AbstractFeature {
     @Then("Check if fungible token is token")
     public void checkIfFungibleTokenIsToken() {
         ContractCallResponse response = mirrorClient.contractsCall(
-                PrecompileContractFeature.IS_TOKEN_SELECTOR + TestUtil
-                        .to32BytesString(tokenIds.get(0).toSolidityAddress()),
+                IS_TOKEN_SELECTOR + to32BytesString(tokenIds.get(0).toSolidityAddress()),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
 
-        assertTrue(ContractCallResponse.convertContractCallResponseToBoolean(response));
+        assertTrue(convertContractCallResponseToBoolean(response));
     }
 
     @Then("Check if non fungible token is token")
     public void checkIfNonFungibleTokenIsToken() {
         ContractCallResponse response = mirrorClient.contractsCall(
-                PrecompileContractFeature.IS_TOKEN_SELECTOR + TestUtil
-                        .to32BytesString(tokenIds.get(1).toSolidityAddress()),
+                IS_TOKEN_SELECTOR + to32BytesString(tokenIds.get(1).toSolidityAddress()),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
 
-        assertTrue(ContractCallResponse.convertContractCallResponseToBoolean(response));
+        assertTrue(convertContractCallResponseToBoolean(response));
     }
 
     @Then("Invalid account is token should return false")
     public void checkIfInvalidAccountIsToken() {
         ContractCallResponse response = mirrorClient.contractsCall(
-                PrecompileContractFeature.IS_TOKEN_SELECTOR + TestUtil
-                        .to32BytesString("0x0000000000000000000000000000000000000000"),
+                IS_TOKEN_SELECTOR + to32BytesString(ZERO_ADDRESS),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
 
-        assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(response));
+        assertFalse(convertContractCallResponseToBoolean(response));
     }
 
     @Then("Valid account is token should return false")
     public void checkIfValidAccountIsToken() {
         ContractCallResponse response = mirrorClient.contractsCall(
-                PrecompileContractFeature.IS_TOKEN_SELECTOR + TestUtil
-                        .to32BytesString(accountClient.getTokenTreasuryAccount().getAccountId().toSolidityAddress()),
+                IS_TOKEN_SELECTOR + to32BytesString(accountClient.getTokenTreasuryAccount().getAccountId()
+                        .toSolidityAddress()),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
 
-        assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(response));
+        assertFalse(convertContractCallResponseToBoolean(response));
     }
 
     @Then("Verify fungible token isn't frozen")
     public void verifyFungibleTokenIsNotFrozen() {
         ContractCallResponse response = mirrorClient.contractsCall(
-                PrecompileContractFeature.IS_TOKEN_FROZEN_SELECTOR
-                        + TestUtil.to32BytesString(tokenIds.get(0).toSolidityAddress())
-                        + TestUtil.to32BytesString(contractClient.getClientAddress()),
+                IS_TOKEN_FROZEN_SELECTOR
+                        + to32BytesString(tokenIds.get(0).toSolidityAddress())
+                        + to32BytesString(contractClient.getClientAddress()),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
 
-        assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(response));
+        assertFalse(convertContractCallResponseToBoolean(response));
     }
 
     @Then("Verify non fungible token isn't frozen")
     public void verifyNonFungibleTokenIsNotFrozen() {
         ContractCallResponse response = mirrorClient.contractsCall(
-                PrecompileContractFeature.IS_TOKEN_FROZEN_SELECTOR
-                        + TestUtil.to32BytesString(tokenIds.get(1).toSolidityAddress())
-                        + TestUtil.to32BytesString(contractClient.getClientAddress()),
+                IS_TOKEN_FROZEN_SELECTOR
+                        + to32BytesString(tokenIds.get(1).toSolidityAddress())
+                        + to32BytesString(contractClient.getClientAddress()),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
 
-        assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(response));
+        assertFalse(convertContractCallResponseToBoolean(response));
     }
 
     @Then("Check if can freeze token")
     public void checkIfCanFreezeToken() {
         ContractCallResponse responseBefore = mirrorClient.contractsCall(
-                PrecompileContractFeature.IS_TOKEN_FROZEN_SELECTOR
-                        + TestUtil.to32BytesString(tokenIds.get(1).toSolidityAddress())
-                        + TestUtil.to32BytesString(contractClient.getClientAddress()),
+                IS_TOKEN_FROZEN_SELECTOR
+                        + to32BytesString(tokenIds.get(1).toSolidityAddress())
+                        + to32BytesString(contractClient.getClientAddress()),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
-        boolean isFrozenBefore = ContractCallResponse.convertContractCallResponseToBoolean(responseBefore);
+        boolean isFrozenBefore = convertContractCallResponseToBoolean(responseBefore);
         assertFalse(isFrozenBefore);
 
         NetworkTransactionResponse freezeResponse = tokenClient
@@ -260,27 +261,27 @@ public class PrecompileContractFeature extends AbstractFeature {
         verifyTx(freezeResponse.getTransactionIdStringNoCheckSum());
 
         ContractCallResponse responseAfter = mirrorClient.contractsCall(
-                PrecompileContractFeature.IS_TOKEN_FROZEN_SELECTOR
-                        + TestUtil.to32BytesString(tokenIds.get(1).toSolidityAddress())
-                        + TestUtil.to32BytesString(contractClient.getClientAddress()),
+                IS_TOKEN_FROZEN_SELECTOR
+                        + to32BytesString(tokenIds.get(1).toSolidityAddress())
+                        + to32BytesString(contractClient.getClientAddress()),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
 
-        boolean isFrozenAfter = ContractCallResponse.convertContractCallResponseToBoolean(responseAfter);
+        boolean isFrozenAfter = convertContractCallResponseToBoolean(responseAfter);
         assertTrue(isFrozenAfter);
     }
 
     @Then("Check if can unfreeze token")
     public void checkIfCanUnfreezeToken() {
         ContractCallResponse responseBefore = mirrorClient.contractsCall(
-                PrecompileContractFeature.IS_TOKEN_FROZEN_SELECTOR
-                        + TestUtil.to32BytesString(tokenIds.get(1).toSolidityAddress())
-                        + TestUtil.to32BytesString(contractClient.getClientAddress()),
+                IS_TOKEN_FROZEN_SELECTOR
+                        + to32BytesString(tokenIds.get(1).toSolidityAddress())
+                        + to32BytesString(contractClient.getClientAddress()),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
-        boolean isFrozenBefore = ContractCallResponse.convertContractCallResponseToBoolean(responseBefore);
+        boolean isFrozenBefore = convertContractCallResponseToBoolean(responseBefore);
         assertTrue(isFrozenBefore);
 
         NetworkTransactionResponse freezeResponse = tokenClient
@@ -288,106 +289,104 @@ public class PrecompileContractFeature extends AbstractFeature {
         verifyTx(freezeResponse.getTransactionIdStringNoCheckSum());
 
         ContractCallResponse responseAfter = mirrorClient.contractsCall(
-                PrecompileContractFeature.IS_TOKEN_FROZEN_SELECTOR
-                        + TestUtil.to32BytesString(tokenIds.get(1).toSolidityAddress())
-                        + TestUtil.to32BytesString(contractClient.getClientAddress()),
+                IS_TOKEN_FROZEN_SELECTOR
+                        + to32BytesString(tokenIds.get(1).toSolidityAddress())
+                        + to32BytesString(contractClient.getClientAddress()),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
 
-        boolean isFrozenAfter = ContractCallResponse.convertContractCallResponseToBoolean(responseAfter);
+        boolean isFrozenAfter = convertContractCallResponseToBoolean(responseAfter);
         assertFalse(isFrozenAfter);
     }
 
     @Retryable(value = {AssertionError.class, WebClientResponseException.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
-    private MirrorTransactionsResponse verifyTx(String txId) {
+    private void verifyTx(String txId) {
         MirrorTransactionsResponse txResponse = mirrorClient.getTransactions(txId);
         assertNotNull(txResponse);
-
-        return txResponse;
     }
 
     @Then("Check if fungible token is kyc granted")
     public void checkIfFungibleTokenIsKycGranted() {
         ContractCallResponse response = mirrorClient.contractsCall(
-                PrecompileContractFeature.IS_KYC_GRANTED_SELECTOR
-                        + TestUtil.to32BytesString(tokenIds.get(0).toSolidityAddress())
-                        + TestUtil.to32BytesString(contractClient.getClientAddress()),
+                IS_KYC_GRANTED_SELECTOR
+                        + to32BytesString(tokenIds.get(0).toSolidityAddress())
+                        + to32BytesString(contractClient.getClientAddress()),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
 
-        assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(response));
+        assertFalse(convertContractCallResponseToBoolean(response));
     }
 
     @Then("Check if non fungible token is kyc granted")
     public void checkIfNonFungibleTokenIsKycGranted() {
         ContractCallResponse response = mirrorClient.contractsCall(
-                PrecompileContractFeature.IS_KYC_GRANTED_SELECTOR
-                        + TestUtil.to32BytesString(tokenIds.get(1).toSolidityAddress())
-                        + TestUtil.to32BytesString(contractClient.getClientAddress()),
+                IS_KYC_GRANTED_SELECTOR
+                        + to32BytesString(tokenIds.get(1).toSolidityAddress())
+                        + to32BytesString(contractClient.getClientAddress()),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
 
-        assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(response));
+        assertFalse(convertContractCallResponseToBoolean(response));
     }
 
     @Then("Get token default freeze of fungible token")
     public void getDefaultFreezeOfFungibleToken() {
         ContractCallResponse response = mirrorClient.contractsCall(
-                PrecompileContractFeature.GET_TOKEN_DEFAULT_FREEZE_SELECTOR
-                        + TestUtil.to32BytesString(tokenIds.get(0).toSolidityAddress()),
+                GET_TOKEN_DEFAULT_FREEZE_SELECTOR
+                        + to32BytesString(tokenIds.get(0).toSolidityAddress()),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
 
-        assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(response));
+        assertFalse(convertContractCallResponseToBoolean(response));
     }
 
     @Then("Get token default freeze of non fungible token")
     public void getDefaultFreezeOfNonFungibleToken() {
         ContractCallResponse response = mirrorClient.contractsCall(
-                PrecompileContractFeature.GET_TOKEN_DEFAULT_FREEZE_SELECTOR
-                        + TestUtil.to32BytesString(tokenIds.get(1).toSolidityAddress()),
+                GET_TOKEN_DEFAULT_FREEZE_SELECTOR
+                        + to32BytesString(tokenIds.get(1).toSolidityAddress()),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
 
-        assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(response));
+        assertFalse(convertContractCallResponseToBoolean(response));
     }
 
     @Then("Get token default kyc of fungible token")
     public void getDefaultKycOfFungibleToken() {
         ContractCallResponse response = mirrorClient.contractsCall(
-                PrecompileContractFeature.GET_TOKEN_DEFAULT_KYC_SELECTOR
-                        + TestUtil.to32BytesString(tokenIds.get(0).toSolidityAddress()),
+                GET_TOKEN_DEFAULT_KYC_SELECTOR
+                        + to32BytesString(tokenIds.get(0).toSolidityAddress()),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
 
-        assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(response));
+        assertFalse(convertContractCallResponseToBoolean(response));
     }
 
     @Then("Get token default kyc of non fungible token")
     public void getDefaultKycOfNonFungibleToken() {
         ContractCallResponse response = mirrorClient.contractsCall(
-                PrecompileContractFeature.GET_TOKEN_DEFAULT_KYC_SELECTOR
-                        + TestUtil.to32BytesString(tokenIds.get(1).toSolidityAddress()),
+                GET_TOKEN_DEFAULT_KYC_SELECTOR
+                        + to32BytesString(tokenIds.get(1).toSolidityAddress()),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
 
-        assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(response));
+        assertFalse(convertContractCallResponseToBoolean(response));
     }
 
-    private Tuple baseGetInformationForTokenChecks(ContractCallResponse response, TokenId tokenId) throws Exception {
-        Tuple result = this.decodeFunctionResult("getInformationForToken", response);
+    private Tuple baseGetInformationForTokenChecks(ContractCallResponse response) throws Exception {
+        Tuple result = decodeFunctionResult("getInformationForToken", response);
         assertThat(result).isNotEmpty();
 
-        Tuple tokenInfo = ((Tuple) result.get(0));
+        Tuple tokenInfo = result.get(0);
         Tuple token = tokenInfo.get(0);
         boolean deleted = tokenInfo.get(2);
         boolean defaultKycStatus = tokenInfo.get(3);
@@ -412,13 +411,13 @@ public class PrecompileContractFeature extends AbstractFeature {
     @Then("Get information for token of fungible token")
     public void getInformationForTokenOfFungibleToken() throws Exception {
         ContractCallResponse response = mirrorClient.contractsCall(
-                PrecompileContractFeature.GET_INFORMATION_FOR_TOKEN_SELECTOR
-                        + TestUtil.to32BytesString(tokenIds.get(0).toSolidityAddress()),
+                GET_INFORMATION_FOR_TOKEN_SELECTOR
+                        + to32BytesString(tokenIds.get(0).toSolidityAddress()),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
 
-        Tuple tokenInfo = this.baseGetInformationForTokenChecks(response, tokenIds.get(0));
+        Tuple tokenInfo = baseGetInformationForTokenChecks(response);
         Long totalSupply = tokenInfo.get(1);
         assertThat(totalSupply).isEqualTo(1000000);
     }
@@ -429,13 +428,13 @@ public class PrecompileContractFeature extends AbstractFeature {
     @Then("Get information for token of non fungible token")
     public void getInformationForTokenOfNonFungibleToken() throws Exception {
         ContractCallResponse response = mirrorClient.contractsCall(
-                PrecompileContractFeature.GET_INFORMATION_FOR_TOKEN_SELECTOR
-                        + TestUtil.to32BytesString(tokenIds.get(1).toSolidityAddress()),
+                GET_INFORMATION_FOR_TOKEN_SELECTOR
+                        + to32BytesString(tokenIds.get(1).toSolidityAddress()),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
 
-        Tuple tokenInfo = this.baseGetInformationForTokenChecks(response, tokenIds.get(1));
+        Tuple tokenInfo = baseGetInformationForTokenChecks(response);
         Long totalSupply = tokenInfo.get(1);
         assertThat(totalSupply).isEqualTo(1);
     }
@@ -443,16 +442,16 @@ public class PrecompileContractFeature extends AbstractFeature {
     @Then("Get information for fungible token")
     public void getInformationForFungibleToken() throws Exception {
         ContractCallResponse response = mirrorClient.contractsCall(
-                PrecompileContractFeature.GET_INFORMATION_FOR_FUNGIBLE_TOKEN_SELECTOR
-                        + TestUtil.to32BytesString(tokenIds.get(0).toSolidityAddress()),
+                GET_INFORMATION_FOR_FUNGIBLE_TOKEN_SELECTOR
+                        + to32BytesString(tokenIds.get(0).toSolidityAddress()),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
 
-        Tuple result = this.decodeFunctionResult("getInformationForFungibleToken", response);
+        Tuple result = decodeFunctionResult("getInformationForFungibleToken", response);
         assertThat(result).isNotEmpty();
 
-        Tuple tokenInfo = ((Tuple) result.get(0));
+        Tuple tokenInfo = result.get(0);
         Tuple token = tokenInfo.get(0);
         int decimals = tokenInfo.get(1);
 
@@ -463,17 +462,17 @@ public class PrecompileContractFeature extends AbstractFeature {
     @Then("Get information for non fungible token")
     public void getInformationForNonFungibleToken() throws Exception {
         ContractCallResponse response = mirrorClient.contractsCall(
-                PrecompileContractFeature.GET_INFORMATION_FOR_NON_FUNGIBLE_TOKEN_SELECTOR
-                        + TestUtil.to32BytesString(tokenIds.get(1).toSolidityAddress())
-                        + TestUtil.to32BytesString(String.valueOf(firstNftSerialNumber)),
+                GET_INFORMATION_FOR_NON_FUNGIBLE_TOKEN_SELECTOR
+                        + to32BytesString(tokenIds.get(1).toSolidityAddress())
+                        + to32BytesString(String.valueOf(firstNftSerialNumber)),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
 
-        Tuple result = this.decodeFunctionResult("getInformationForNonFungibleToken", response);
+        Tuple result = decodeFunctionResult("getInformationForNonFungibleToken", response);
         assertThat(result).isNotEmpty();
 
-        Tuple tokenInfo = ((Tuple) result.get(0));
+        Tuple tokenInfo = result.get(0);
         Tuple token = tokenInfo.get(0);
         long serialNumber = tokenInfo.get(1);
         String ownerId = tokenInfo.get(2).toString();
@@ -484,84 +483,77 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertThat(token).isNotEmpty();
         assertThat(serialNumber).isEqualTo(firstNftSerialNumber);
         assertThat(ownerId).isNotBlank();
-        assertThat(creationTime).isGreaterThan(0);
+        assertThat(creationTime).isPositive();
         assertThat(metadata).isNotEmpty();
-        assertThat(spenderId).isEqualTo(TestUtil.ZERO_ADDRESS);
+        assertThat(spenderId).isEqualTo(ZERO_ADDRESS);
     }
 
     @Then("Get type for fungible token")
     public void getTypeForFungibleToken() {
         ContractCallResponse response = mirrorClient.contractsCall(
-                PrecompileContractFeature.GET_TYPE_SELECTOR
-                        + TestUtil.to32BytesString(tokenIds.get(0).toSolidityAddress()),
+                GET_TYPE_SELECTOR + to32BytesString(tokenIds.get(0).toSolidityAddress()),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
 
-        assertThat(ContractCallResponse.convertContractCallResponseToNum(response)).isEqualTo(0);
+        assertThat(convertContractCallResponseToNum(response)).isZero();
     }
 
     @Then("Get type for non fungible token")
     public void getTypeForNonFungibleToken() {
         ContractCallResponse response = mirrorClient.contractsCall(
-                PrecompileContractFeature.GET_TYPE_SELECTOR
-                        + TestUtil.to32BytesString(tokenIds.get(1).toSolidityAddress()),
+                GET_TYPE_SELECTOR + to32BytesString(tokenIds.get(1).toSolidityAddress()),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
 
-        assertThat(ContractCallResponse.convertContractCallResponseToNum(response)).isEqualTo(1);
+        assertThat(convertContractCallResponseToNum(response)).isEqualTo(1);
     }
 
-    private Tuple baseExpiryInfoChecks(ContractCallResponse response) throws Exception {
-        Tuple result = this.decodeFunctionResult("getExpiryInfoForToken", response);
+    private void baseExpiryInfoChecks(ContractCallResponse response) throws Exception {
+        Tuple result = decodeFunctionResult("getExpiryInfoForToken", response);
         assertThat(result).isNotEmpty();
 
-        Tuple expiryInfo = ((Tuple) result.get(0));
+        Tuple expiryInfo = result.get(0);
         assertThat(expiryInfo).isNotEmpty();
         assertThat(expiryInfo.size()).isEqualTo(3);
-
-        return expiryInfo;
     }
 
     @Then("Get expiry token info for fungible token")
     public void getExpiryTokenInfoForFungibleToken() throws Exception {
         ContractCallResponse response = mirrorClient.contractsCall(
-                PrecompileContractFeature.GET_EXPIRY_INFO_FOR_TOKEN_SELECTOR
-                        + TestUtil.to32BytesString(tokenIds.get(0).toSolidityAddress()),
+                GET_EXPIRY_INFO_FOR_TOKEN_SELECTOR + to32BytesString(tokenIds.get(0).toSolidityAddress()),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
 
-        this.baseExpiryInfoChecks(response);
+        baseExpiryInfoChecks(response);
     }
 
     @Then("Get expiry token info for non fungible token")
     public void getExpiryTokenInfoForNonFungibleToken() throws Exception {
         ContractCallResponse response = mirrorClient.contractsCall(
-                PrecompileContractFeature.GET_EXPIRY_INFO_FOR_TOKEN_SELECTOR
-                        + TestUtil.to32BytesString(tokenIds.get(1).toSolidityAddress()),
+                GET_EXPIRY_INFO_FOR_TOKEN_SELECTOR + to32BytesString(tokenIds.get(1).toSolidityAddress()),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
 
-        this.baseExpiryInfoChecks(response);
+        baseExpiryInfoChecks(response);
     }
 
     @Then("Get token key for fungible token")
     public void getTokenKeyForFungibleToken() throws Exception {
         ContractCallResponse response = mirrorClient.contractsCall(
-                PrecompileContractFeature.GET_TOKEN_KEY_PUBLIC_SELECTOR
-                        + TestUtil.to32BytesString(tokenIds.get(0).toSolidityAddress())
-                        + TestUtil.to32BytesString("1"),
+                GET_TOKEN_KEY_PUBLIC_SELECTOR + to32BytesString(tokenIds.get(0)
+                        .toSolidityAddress()) + to32BytesString(String.valueOf(firstNftSerialNumber)),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
 
-        Tuple result = this.decodeFunctionResult("getTokenKeyPublic", response);
+        Tuple result = decodeFunctionResult("getTokenKeyPublic", response);
         assertThat(result).isNotEmpty();
 
-        Tuple keyValue = (Tuple) result.get(0);
+        Tuple keyValue = result.get(0);
         boolean inheritAccountKey = keyValue.get(0);
         String contractId = keyValue.get(1).toString();
         byte[] ed25519 = ((Tuple) result.get(0)).get(2);
@@ -570,26 +562,26 @@ public class PrecompileContractFeature extends AbstractFeature {
 
         assertThat(keyValue).isNotEmpty();
         assertFalse(inheritAccountKey);
-        assertThat(contractId).isEqualTo(TestUtil.ZERO_ADDRESS);
+        assertThat(contractId).isEqualTo(ZERO_ADDRESS);
         assertThat(ed25519).isNotEmpty();
         assertThat(ecdsa).isEmpty();
-        assertThat(delegatableContractId).isEqualTo(TestUtil.ZERO_ADDRESS);
+        assertThat(delegatableContractId).isEqualTo(ZERO_ADDRESS);
     }
 
     @Then("Get token key for non fungible token")
     public void getTokenKeyForNonFungibleToken() throws Exception {
         ContractCallResponse response = mirrorClient.contractsCall(
-                PrecompileContractFeature.GET_TOKEN_KEY_PUBLIC_SELECTOR
-                        + TestUtil.to32BytesString(tokenIds.get(1).toSolidityAddress())
-                        + TestUtil.to32BytesString("1"),
+                GET_TOKEN_KEY_PUBLIC_SELECTOR
+                        + to32BytesString(tokenIds.get(1).toSolidityAddress())
+                        + to32BytesString(String.valueOf(firstNftSerialNumber)),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
 
-        Tuple result = this.decodeFunctionResult("getTokenKeyPublic", response);
+        Tuple result = decodeFunctionResult("getTokenKeyPublic", response);
         assertThat(result).isNotEmpty();
 
-        Tuple keyValue = (Tuple) result.get(0);
+        Tuple keyValue = result.get(0);
         boolean inheritAccountKey = keyValue.get(0);
         String contractId = keyValue.get(1).toString();
         byte[] ed25519 = ((Tuple) result.get(0)).get(2);
@@ -598,10 +590,10 @@ public class PrecompileContractFeature extends AbstractFeature {
 
         assertThat(keyValue).isNotEmpty();
         assertFalse(inheritAccountKey);
-        assertThat(contractId).isEqualTo(TestUtil.ZERO_ADDRESS);
+        assertThat(contractId).isEqualTo(ZERO_ADDRESS);
         assertThat(ed25519).isNotEmpty();
         assertThat(ecdsa).isEmpty();
-        assertThat(delegatableContractId).isEqualTo(TestUtil.ZERO_ADDRESS);
+        assertThat(delegatableContractId).isEqualTo(ZERO_ADDRESS);
     }
 
     @Retryable(value = {AssertionError.class},
@@ -617,14 +609,12 @@ public class PrecompileContractFeature extends AbstractFeature {
     @Retryable(value = {AssertionError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
-    private MirrorNftResponse verifyNft(TokenId tokenId, Long serialNumber) {
+    private void verifyNft(TokenId tokenId, Long serialNumber) {
         MirrorNftResponse mirrorNft = mirrorClient.getNftInfo(tokenId.toString(), serialNumber);
 
         assertNotNull(mirrorNft);
         assertThat(mirrorNft.getTokenId()).isEqualTo(tokenId.toString());
         assertThat(mirrorNft.getSerialNumber()).isEqualTo(serialNumber);
-
-        return mirrorNft;
     }
 
     private TokenId createNewToken(
