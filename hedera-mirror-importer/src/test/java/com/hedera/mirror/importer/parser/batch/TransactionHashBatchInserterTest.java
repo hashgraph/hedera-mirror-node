@@ -94,6 +94,7 @@ class TransactionHashBatchInserterTest extends IntegrationTest {
             assertThat(transactionRepository.findAll()).containsExactlyInAnyOrderElementsOf(transactions);
 
             hashBatchInserter.persist(Collections.emptyList());
+            hashBatchInserter.persist(null);
             assertThat(hashBatchInserter.getThreadConnections()).isEmpty();
             return new HashSet<>(); //ignored
         });
