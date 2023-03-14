@@ -29,6 +29,7 @@ import com.esaulpaugh.headlong.util.FastHex;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TokenSupplyType;
 import com.hedera.hashgraph.sdk.TokenType;
@@ -45,6 +46,7 @@ import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
 import com.hedera.mirror.test.e2e.acceptance.util.TestUtil;
 
+import io.cucumber.java.After;
 import io.cucumber.java.Before;
 import io.cucumber.java.en.Given;
 import java.io.IOException;
@@ -104,7 +106,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     private final FileClient fileClient;
     private final MirrorNodeClient mirrorClient;
     private final AccountClient accountClient;
-    private final long firstNftSerialNumber = 1;
+    private final static long firstNftSerialNumber = 1;
 
     @Value("classpath:solidity/artifacts/contracts/PrecompileTestContract.sol/PrecompileTestContract.json")
     private Path precompileTestContract;
@@ -117,6 +119,19 @@ public class PrecompileContractFeature extends AbstractFeature {
         compiledSolidityArtifact = MAPPER.readValue(
                 ResourceUtils.getFile(precompileTestContract.toUri()),
                 CompiledSolidityArtifact.class);
+    }
+
+    @After
+    public void cleanup() {
+        for (TokenId tokenId : tokenIds) {
+            ExpandedAccountId admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
+            try {
+                tokenClient.delete(admin, tokenId);
+            } catch (Exception e) {
+                log.warn("Error cleaning up token {} and associations error: {}", tokenId, e);
+            }
+        }
+        tokenIds.clear();
     }
 
     @Given("I successfully create and verify a precompile contract from contract bytes")
@@ -201,8 +216,8 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(response));
     }
 
-    @Then("Check if fungible token is frozen")
-    public void checkIfFungibleTokenIsFrozen() {
+    @Then("Verify fungible token isn't frozen")
+    public void verifyFungibleTokenIsNotFrozen() {
         ContractCallResponse response = mirrorClient.contractsCall(
                 PrecompileContractFeature.IS_TOKEN_FROZEN_SELECTOR
                         + TestUtil.to32BytesString(tokenIds.get(0).toSolidityAddress())
@@ -214,8 +229,8 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(response));
     }
 
-    @Then("Check if non fungible token is frozen")
-    public void checkIfNonFungibleTokenIsFrozen() {
+    @Then("Verify non fungible token isn't frozen")
+    public void verifyNonFungibleTokenIsNotFrozen() {
         ContractCallResponse response = mirrorClient.contractsCall(
                 PrecompileContractFeature.IS_TOKEN_FROZEN_SELECTOR
                         + TestUtil.to32BytesString(tokenIds.get(1).toSolidityAddress())
@@ -367,21 +382,12 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertFalse(ContractCallResponse.convertContractCallResponseToBoolean(response));
     }
 
-    @Then("Get information for token of fungible token")
-    public void getInformationForTokenOfFungibleToken() throws Exception {
-        ContractCallResponse response = mirrorClient.contractsCall(
-                PrecompileContractFeature.GET_INFORMATION_FOR_TOKEN_SELECTOR
-                        + TestUtil.to32BytesString(tokenIds.get(0).toSolidityAddress()),
-                contractId.toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
-
+    private Tuple baseGetInformationForTokenChecks(ContractCallResponse response, TokenId tokenId) throws Exception {
         Tuple result = this.decodeFunctionResult("getInformationForToken", response);
         assertThat(result).isNotEmpty();
 
         Tuple tokenInfo = ((Tuple) result.get(0));
         Tuple token = tokenInfo.get(0);
-        Long totalSupply = tokenInfo.get(1);
         boolean deleted = tokenInfo.get(2);
         boolean defaultKycStatus = tokenInfo.get(3);
         boolean pauseStatus = tokenInfo.get(4);
@@ -391,7 +397,6 @@ public class PrecompileContractFeature extends AbstractFeature {
         String ledgerId = tokenInfo.get(8);
 
         assertFalse(token.isEmpty());
-        assertThat(totalSupply).isEqualTo(1000000);
         assertFalse(deleted);
         assertFalse(defaultKycStatus);
         assertFalse(pauseStatus);
@@ -399,6 +404,22 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertThat(fractionalFees).isEmpty();
         assertThat(royaltyFees).isEmpty();
         assertThat(ledgerId).isEqualTo("0x01");
+
+        return tokenInfo;
+    }
+
+    @Then("Get information for token of fungible token")
+    public void getInformationForTokenOfFungibleToken() throws Exception {
+        ContractCallResponse response = mirrorClient.contractsCall(
+                PrecompileContractFeature.GET_INFORMATION_FOR_TOKEN_SELECTOR
+                        + TestUtil.to32BytesString(tokenIds.get(0).toSolidityAddress()),
+                contractId.toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+
+        Tuple tokenInfo = this.baseGetInformationForTokenChecks(response, tokenIds.get(0));
+        Long totalSupply = tokenInfo.get(1);
+        assertThat(totalSupply).isEqualTo(1000000);
     }
 
     @Retryable(value = {AssertionError.class},
@@ -413,29 +434,9 @@ public class PrecompileContractFeature extends AbstractFeature {
                 contractClient.getClientAddress()
         );
 
-        Tuple result = this.decodeFunctionResult("getInformationForToken", response);
-        assertThat(result).isNotEmpty();
-
-        Tuple tokenInfo = ((Tuple) result.get(0));
-        Tuple token = tokenInfo.get(0);
-        long totalSupply = tokenInfo.get(1);
-        boolean deleted = tokenInfo.get(2);
-        boolean defaultKycStatus = tokenInfo.get(3);
-        boolean pauseStatus = tokenInfo.get(4);
-        Tuple[] fixedFees = tokenInfo.get(5);
-        Tuple[] fractionalFees = tokenInfo.get(6);
-        Tuple[] royaltyFees = tokenInfo.get(7);
-        String ledgerId = tokenInfo.get(8);
-
-        assertFalse(token.isEmpty());
+        Tuple tokenInfo = this.baseGetInformationForTokenChecks(response, tokenIds.get(1));
+        Long totalSupply = tokenInfo.get(1);
         assertThat(totalSupply).isEqualTo(1);
-        assertFalse(deleted);
-        assertFalse(defaultKycStatus);
-        assertFalse(pauseStatus);
-        assertThat(fixedFees).isEmpty();
-        assertThat(fractionalFees).isEmpty();
-        assertThat(royaltyFees).isEmpty();
-        assertThat(ledgerId).isEqualTo("0x01");
     }
 
     @Then("Get information for fungible token")
@@ -511,6 +512,17 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertThat(ContractCallResponse.convertContractCallResponseToNum(response)).isEqualTo(1);
     }
 
+    private Tuple baseExpiryInfoChecks(ContractCallResponse response) throws Exception {
+        Tuple result = this.decodeFunctionResult("getExpiryInfoForToken", response);
+        assertThat(result).isNotEmpty();
+
+        Tuple expiryInfo = ((Tuple) result.get(0));
+        assertThat(expiryInfo).isNotEmpty();
+        assertThat(expiryInfo.size()).isEqualTo(3);
+
+        return expiryInfo;
+    }
+
     @Then("Get expiry token info for fungible token")
     public void getExpiryTokenInfoForFungibleToken() throws Exception {
         ContractCallResponse response = mirrorClient.contractsCall(
@@ -520,12 +532,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 contractClient.getClientAddress()
         );
 
-        Tuple result = this.decodeFunctionResult("getExpiryInfoForToken", response);
-        assertThat(result).isNotEmpty();
-
-        Tuple expiryInfo = ((Tuple) result.get(0));
-        assertThat(expiryInfo).isNotEmpty();
-        assertThat(expiryInfo.size()).isEqualTo(3);
+        this.baseExpiryInfoChecks(response);
     }
 
     @Then("Get expiry token info for non fungible token")
@@ -537,12 +544,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 contractClient.getClientAddress()
         );
 
-        Tuple result = this.decodeFunctionResult("getExpiryInfoForToken", response);
-        assertThat(result).isNotEmpty();
-
-        Tuple expiryInfo = ((Tuple) result.get(0));
-        assertThat(expiryInfo).isNotEmpty();
-        assertThat(expiryInfo.size()).isEqualTo(3);
+        this.baseExpiryInfoChecks(response);
     }
 
     @Then("Get token key for fungible token")
