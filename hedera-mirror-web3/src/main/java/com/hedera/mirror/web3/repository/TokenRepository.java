@@ -52,9 +52,9 @@ public interface TokenRepository extends CrudRepository<Token, TokenId> {
 
     @Query(value = "select freeze_default from token where token_id = ?1",
             nativeQuery = true)
-    Boolean findFreezeDefault(final Long tokenId);
+    Optional<Boolean> findFreezeDefault(final Long tokenId);
 
     @Query(value = "select kyc_key from token where token_id = ?1",
             nativeQuery = true)
-    Optional<byte[]> findKycDefault(final Long tokenId);
+    Optional<byte[]> findKycKey(final Long tokenId);
 }

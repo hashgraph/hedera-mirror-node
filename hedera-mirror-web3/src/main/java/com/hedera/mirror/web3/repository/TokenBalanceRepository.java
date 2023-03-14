@@ -29,7 +29,7 @@ import com.hedera.mirror.common.domain.balance.TokenBalance.Id;
 
 public interface TokenBalanceRepository extends CrudRepository<TokenBalance, Id> {
 
-    @Query(value = "select balance from token_balance where token_id = ?1 and account_id = ?2",
+    @Query(value = "select balance from token_account where token_id = ?1 and account_id = ?2",
             nativeQuery = true)
     Optional<Long> findBalance(final Long tokenId, final Long accountId);
 }

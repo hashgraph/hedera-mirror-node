@@ -29,7 +29,7 @@ import com.hedera.mirror.common.domain.transaction.CustomFee.Id;
 
 public interface CustomFeeRepository extends CrudRepository<CustomFee, Id> {
 
-    @Query(value = "select * from custom_fee where token_id = ?1",
+    @Query(value = "select * from custom_fee where token_id = ?1 and created_timestamp = (select created_timestamp from custom_fee where token_id = ?1 order by created_timestamp desc limit 1)",
             nativeQuery = true)
     List<CustomFee> findByTokenId(final Long tokenId);
 }

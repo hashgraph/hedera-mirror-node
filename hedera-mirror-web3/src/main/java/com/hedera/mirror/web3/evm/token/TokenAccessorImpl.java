@@ -23,7 +23,6 @@ package com.hedera.mirror.web3.evm.token;
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
-import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdFromEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.evmKey;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
@@ -36,20 +35,19 @@ import java.util.List;
 import java.util.Optional;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
-import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.springframework.util.CollectionUtils;
 
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.web3.evm.exception.ParsingException;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.evm.utils.EvmTokenUtils;
 import com.hedera.mirror.web3.repository.CustomFeeRepository;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.mirror.web3.repository.NftAllowanceRepository;
@@ -125,13 +123,13 @@ public class TokenAccessorImpl implements TokenAccessor {
     public boolean defaultFreezeStatus(final Address token) {
         final var tokenId = entityIdFromEvmAddress(token);
         final var defaultFreezeStatus = tokenRepository.findFreezeDefault(tokenId);
-        return defaultFreezeStatus != null && defaultFreezeStatus;
+        return defaultFreezeStatus.orElse(false);
     }
 
     @Override
     public boolean defaultKycStatus(final Address token) {
         final var tokenId = entityIdFromEvmAddress(token);
-        return tokenRepository.findKycDefault(tokenId).isPresent();
+        return tokenRepository.findKycKey(tokenId).isPresent();
     }
 
     @Override
@@ -158,20 +156,15 @@ public class TokenAccessorImpl implements TokenAccessor {
     public EvmKey keyOf(final Address address, final TokenKeyType tokenKeyType) {
         final var tokenInfoOptional = getTokenInfo(address);
 
-        if (tokenInfoOptional.isPresent()) {
-            final var tokenInfo = tokenInfoOptional.get();
-            return
-                    switch (tokenKeyType) {
-                        case ADMIN_KEY -> tokenInfo.getAdminKey();
-                        case KYC_KEY -> tokenInfo.getKycKey();
-                        case FREEZE_KEY -> tokenInfo.getFreezeKey();
-                        case WIPE_KEY -> tokenInfo.getWipeKey();
-                        case SUPPLY_KEY -> tokenInfo.getSupplyKey();
-                        case FEE_SCHEDULE_KEY -> tokenInfo.getFeeScheduleKey();
-                        case PAUSE_KEY -> tokenInfo.getPauseKey();
-                    };
-        }
-        return new EvmKey();
+        return tokenInfoOptional.map(tokenInfo -> switch (tokenKeyType) {
+            case ADMIN_KEY -> tokenInfo.getAdminKey();
+            case KYC_KEY -> tokenInfo.getKycKey();
+            case FREEZE_KEY -> tokenInfo.getFreezeKey();
+            case WIPE_KEY -> tokenInfo.getWipeKey();
+            case SUPPLY_KEY -> tokenInfo.getSupplyKey();
+            case FEE_SCHEDULE_KEY -> tokenInfo.getFeeScheduleKey();
+            case PAUSE_KEY -> tokenInfo.getPauseKey();
+        }).orElse(new EvmKey());
     }
 
     @Override
@@ -220,19 +213,19 @@ public class TokenAccessorImpl implements TokenAccessor {
         if (spenderNum.isEmpty()) {
             return Address.ZERO;
         }
-        final var spenderEntity = EntityIdEndec.decode(spenderNum.get(), ACCOUNT);
-        return Address.wrap(Bytes.wrap(toEvmAddress(spenderEntity)));
+        final var spenderEntity = EntityId.of(spenderNum.get(), ACCOUNT);
+
+        return EvmTokenUtils.toAddress(spenderEntity);
     }
 
     @Override
-    public boolean staticIsOperator(final Address owner, final Address operator,
-                                    final Address token) {
+    public boolean staticIsOperator(final Address owner, final Address operator, final Address token) {
         final var tokenId = entityIdFromEvmAddress(token);
         final var ownerId = entityIdFromAccountAddress(owner);
         final var spenderId = entityIdFromAccountAddress(operator);
-        final var isSpenderAnOperator = nftAllowanceRepository.isSpenderAnOperator(tokenId, ownerId, spenderId);
+        final var isSpenderAnOperator = nftAllowanceRepository.spenderHasApproveForAll(tokenId, ownerId, spenderId);
 
-        return isSpenderAnOperator != null && isSpenderAnOperator;
+        return isSpenderAnOperator.orElse(false);
     }
 
     @Override
@@ -242,8 +235,8 @@ public class TokenAccessorImpl implements TokenAccessor {
         if (ownerNum.isEmpty()) {
             return Address.ZERO;
         }
-        final var ownerEntity = EntityIdEndec.decode(ownerNum.get(), ACCOUNT);
-        return Address.wrap(Bytes.wrap(toEvmAddress(ownerEntity)));
+        final var ownerEntity =  EntityId.of(ownerNum.get(), ACCOUNT);
+        return EvmTokenUtils.toAddress(ownerEntity);
     }
 
     @Override
@@ -265,7 +258,7 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     private Optional<EvmTokenInfo> getTokenInfo(final Address token) {
         final var tokenEntityOptional = tokenRepository.findById(new TokenId(fromEvmAddress(token.toArray())));
-        final var entityOptional = entityRepository.findById(entityIdFromEvmAddress(token));
+        final var entityOptional = entityRepository.findByIdAndDeletedIsFalse(entityIdFromEvmAddress(token));
 
         if (tokenEntityOptional.isEmpty() || entityOptional.isEmpty()) {
             return Optional.empty();
