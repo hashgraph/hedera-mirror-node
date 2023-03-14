@@ -59,6 +59,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import io.cucumber.java.en.Then;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -79,7 +80,7 @@ import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
-@Log4j2
+@CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class PrecompileContractFeature extends AbstractFeature {
     private final List<TokenId> tokenIds = new ArrayList<>();
