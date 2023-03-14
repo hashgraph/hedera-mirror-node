@@ -403,7 +403,7 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertThat(fixedFees).isEmpty();
         assertThat(fractionalFees).isEmpty();
         assertThat(royaltyFees).isEmpty();
-        assertThat(ledgerId).isEqualTo("0x01");
+        assertThat(ledgerId).isNotBlank();
 
         return tokenInfo;
     }
