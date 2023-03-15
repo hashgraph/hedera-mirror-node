@@ -55,16 +55,6 @@ spec:
       - name: Hedera Mirror Node Team
         email: mirrornode@hedera.com
     notes: |
-      {{- if .Values.graphql.enabled -}}
-      To access the GraphQL API:
-
-        GRAPHQL_IP=$(kubectl get service/{{ .Release.Name }}-graphql -n {{ include "hedera-mirror.namespace" . }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-
-        curl --location --request POST "http://${GRAPHQL_IP}/graphql/alpha" \
-             --header 'Content-Type: application/json' \
-             --data-raw '{"query":"{  account(input: {entityId: {shard: 0, realm: 0, num: 98}}) {alias autoRenewPeriod createdTimestamp declineReward createdTimestamp}}"}'
-
-      {{ end -}}
       {{ if .Values.grpc.enabled -}}
       To access the GRPC API:
 
