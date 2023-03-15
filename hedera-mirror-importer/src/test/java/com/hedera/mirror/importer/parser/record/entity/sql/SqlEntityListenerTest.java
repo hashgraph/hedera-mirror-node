@@ -940,7 +940,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         }
         else {
             expectedTransactionHashes.stream()
-                    .collect(Collectors.groupingBy(item -> Math.abs(item.getHash()[0] % 32)))
+                    .collect(Collectors.groupingBy(TransactionHash::calculateV1Shard))
                     .forEach((key, value) -> assertThat(getShardTransactionHashes(key)).containsExactlyInAnyOrderElementsOf(value));
         }
     }

@@ -55,4 +55,8 @@ public class TransactionHash implements Persistable<byte[]> {
     public boolean isNew() {
         return true; // Since we never update and use a natural ID, avoid Hibernate querying before insert
     }
+
+    public int calculateV1Shard() {
+        return Math.floorMod(hash[0], 32);
+    }
 }

@@ -139,10 +139,10 @@ DECLARE
     shard varchar;
 BEGIN
     shard
-        := concat('transaction_hash_sharded_', to_char(abs(get_byte($1, 0)) % 32, 'fm00'));
+        := concat('transaction_hash_sharded_', to_char(get_byte($1, 0) % 32, 'fm00'));
     RETURN QUERY EXECUTE 'SELECT consensus_timestamp, payer_account_id from transaction_hash where hash = $1 ' ||
-                         'UNION SELECT consensus_timestamp,payer_account_id from ' || shard ||
-                         ' WHERE hash = $1 order by 2'
+                         'UNION ALL SELECT consensus_timestamp,payer_account_id from ' || shard ||
+                         ' WHERE hash = $1'
         USING $1;
 END
 $$ LANGUAGE plpgsql;

@@ -236,6 +236,15 @@ const validateAccNumInArray = function (responseObjects, potentialValues) {
   return true;
 };
 
+const calculateTransactionHashV1Shard = (transactionHash) => {
+  let mod = transactionHash[0] % 32;
+  if ((mod ^ 32) < 0 && mod !== 0) {
+    mod += 32;
+  }
+
+  return mod.toString().padStart(2, '0');
+}
+
 const hexRegex = /^(0x)?[0-9A-Fa-f]+$/;
 
 const valueToBuffer = (value) => {
@@ -270,4 +279,5 @@ export {
   testBadParams,
   validateAccNumInArray,
   valueToBuffer,
+  calculateTransactionHashV1Shard,
 };

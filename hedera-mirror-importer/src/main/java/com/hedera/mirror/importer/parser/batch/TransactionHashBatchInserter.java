@@ -1,9 +1,31 @@
 package com.hedera.mirror.importer.parser.batch;
 
+/*-
+ * ‌
+ * Hedera Mirror Node
+ * ​
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.CaseFormat;
 
 import com.google.common.base.Stopwatch;
+
+import com.google.common.collect.Iterables;
 
 import com.hedera.mirror.common.domain.transaction.TransactionHash;
 
@@ -14,7 +36,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import lombok.CustomLog;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -24,7 +46,6 @@ import reactor.core.scheduler.Schedulers;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -71,7 +92,7 @@ public class TransactionHashBatchInserter implements BatchPersister {
 
             Map<Integer, List<TransactionHash>> shardedItems = items.stream()
                     .map(TransactionHash.class::cast)
-                    .collect(Collectors.groupingBy(item -> Math.abs(item.getHash()[0] % 32)));
+                    .collect(Collectors.groupingBy(TransactionHash::calculateV1Shard));
 
             // After parser transaction completes, process all transactions for shards
             addTransactionSynchronization(items);
@@ -86,6 +107,7 @@ public class TransactionHashBatchInserter implements BatchPersister {
             log.info("Copied {} rows from {} shards to {} table in {}", items.size(), shardedItems.size(),
                     this.shardedTableName, stopwatch);
         } catch (Exception e) {
+            log.error("Got this exception cuttty", e);
             throw new ParserException(String.format("Error copying %d items to table %s", items.size(),
                     this.shardedTableName));
         }
@@ -94,17 +116,7 @@ public class TransactionHashBatchInserter implements BatchPersister {
     private void addTransactionSynchronization(Collection<?> items) {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             final long itemCount = items.size();
-            final long minConsensusTimestamp = items.stream()
-                    .map(TransactionHash.class::cast)
-                    .mapToLong(TransactionHash::getConsensusTimestamp)
-                    .min()
-                    .orElse(0);
-
-            final long maxConsensusTimestamp = items.stream()
-                    .map(TransactionHash.class::cast)
-                    .mapToLong(TransactionHash::getConsensusTimestamp)
-                    .max()
-                    .orElse(0);
+            final long recordTimestamp = ((TransactionHash)items.iterator().next()).getConsensusTimestamp();
 
             @Override
             public void afterCompletion(int status) {
@@ -127,8 +139,8 @@ public class TransactionHashBatchInserter implements BatchPersister {
                             threadState.setStatus(STATUS_UNKNOWN);
                         }
                     } catch (Exception e) {
-                        log.error("Received exception processing connections for shards {} from {} to {}",
-                                threadState.getProcessedShards(), minConsensusTimestamp, maxConsensusTimestamp, e);
+                        log.error("Received exception processing connections for shards {} in file containing timestamp {}",
+                                threadState.getProcessedShards(), recordTimestamp, e);
                         threadState.setStatus(Integer.MAX_VALUE);
                         failedShards.addAll(threadState.getProcessedShards());
                     }
@@ -141,22 +153,20 @@ public class TransactionHashBatchInserter implements BatchPersister {
                 };
 
                 if (failedShards.isEmpty()) {
-                    log.info("Successfully {} {} items in {} shards {} from {} to {}",
+                    log.info("Successfully {} {} items in {} shards {} in file containing timestamp {}",
                             statusString,
                             itemCount,
                             shardedTableName,
                             successfulShards,
-                            minConsensusTimestamp,
-                            maxConsensusTimestamp);
+                            recordTimestamp);
                 } else {
                     log.error("Errors occurred processing sharded table {}. parent status {} successful shards {} " +
-                                    "failed shards {} from={} to={}",
+                                    "failed shards {} in file containing timestamp {}",
                             shardedTableName,
                             statusString,
                             successfulShards,
                             failedShards,
-                            minConsensusTimestamp,
-                            maxConsensusTimestamp);
+                            recordTimestamp);
                 }
             }
         });
@@ -190,24 +200,20 @@ public class TransactionHashBatchInserter implements BatchPersister {
                 });
     }
 
+    @SneakyThrows
     private ThreadState setupThreadTransaction() {
         // Clean thread from previous run
         TransactionSynchronizationManager.clear();
         TransactionSynchronizationManager.unbindResourceIfPossible(dataSource);
 
-        try {
-            // initialize transaction for thread
-            TransactionSynchronizationManager.initSynchronization();
-            TransactionSynchronizationManager.setActualTransactionActive(true);
+        // initialize transaction for thread
+        TransactionSynchronizationManager.initSynchronization();
+        TransactionSynchronizationManager.setActualTransactionActive(true);
 
-            // Subsequent calls to get connection on this thread will use the same connection
-            Connection connection = DataSourceUtils.getConnection(dataSource);
-            connection.setAutoCommit(false);
-            return new ThreadState(connection);
-        } catch (SQLException e) {
-            log.error("Unable to configure autoCommit", e);
-            throw new ParserException(e);
-        }
+        // Subsequent calls to get connection on this thread will use the same connection
+        Connection connection = DataSourceUtils.getConnection(dataSource);
+        connection.setAutoCommit(false);
+        return new ThreadState(connection);
     }
 
     @VisibleForTesting

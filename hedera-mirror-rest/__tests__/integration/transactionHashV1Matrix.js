@@ -18,10 +18,10 @@
  * ‍
  */
 
-import {isV2Schema, valueToBuffer} from '../testutils.js';
+import {calculateTransactionHashV1Shard, isV2Schema, valueToBuffer} from '../testutils.js';
 
 const getShardMap = (transactions) => transactions.reduce((result, transaction) => {
-  const shard = Math.abs(valueToBuffer(transaction.transaction_hash)[0] % 32).toString().padStart(2, '0');
+  const shard = calculateTransactionHashV1Shard(valueToBuffer(transaction.transaction_hash));
   result[shard] = result[shard] || [];
   result[shard].push(transaction);
   return result;

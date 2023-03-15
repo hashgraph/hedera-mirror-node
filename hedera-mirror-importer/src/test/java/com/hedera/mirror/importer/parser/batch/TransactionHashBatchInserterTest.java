@@ -58,7 +58,7 @@ class TransactionHashBatchInserterTest extends IntegrationTest {
     private final Set<TransactionHash> transactionHashes = transactionHash(25);
     private final Set<Transaction> transactions = transactions(10);
     private final Map<Integer, List<TransactionHash>> shardMap = transactionHashes.stream()
-            .collect(Collectors.groupingBy(item -> Math.abs(item.getHash()[0] % 32)));
+    .collect(Collectors.groupingBy(TransactionHash::calculateV1Shard));
 
     @Test
     void persist() {
