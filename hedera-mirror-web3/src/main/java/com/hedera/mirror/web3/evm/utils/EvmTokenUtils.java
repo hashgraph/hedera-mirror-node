@@ -49,7 +49,7 @@ public class EvmTokenUtils {
     }
 
     public static EvmKey evmKey(final byte[] keyBytes) throws InvalidProtocolBufferException {
-        if(keyBytes == null){
+        if (keyBytes == null) {
             return new EvmKey();
         }
         var key = Key.parseFrom(keyBytes);
@@ -68,8 +68,12 @@ public class EvmTokenUtils {
         return new EvmKey(contractId, ed25519, ecdsaSecp256K1, delegatableContractId);
     }
 
-    public static Long entityIdFromEvmAddress(final Address address) {
+    public static Long entityIdNumFromEvmAddress(final Address address) {
         final var id = fromEvmAddress(address.toArrayUnsafe());
-        return id.getId();
+        return id != null ? id.getId() : 0;
+    }
+
+    public static EntityId entityIdFromEvmAddress(final Address address) {
+        return fromEvmAddress(address.toArrayUnsafe());
     }
 }

@@ -20,10 +20,12 @@ package com.hedera.mirror.web3.evm.token;
  * ‍
  */
 
-import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
+import static com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum.FROZEN;
+import static com.hedera.mirror.common.domain.token.TokenKycStatusEnum.GRANTED;
 import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdFromEvmAddress;
+import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.evmKey;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
@@ -39,9 +41,15 @@ import org.hyperledger.besu.datatypes.Address;
 import org.springframework.util.CollectionUtils;
 
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
+import com.hedera.mirror.common.domain.entity.AbstractNftAllowance;
+import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.entity.NftAllowance;
+import com.hedera.mirror.common.domain.entity.TokenAllowance;
+import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
+import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenId;
@@ -54,7 +62,6 @@ import com.hedera.mirror.web3.repository.NftAllowanceRepository;
 import com.hedera.mirror.web3.repository.NftRepository;
 import com.hedera.mirror.web3.repository.TokenAccountRepository;
 import com.hedera.mirror.web3.repository.TokenAllowanceRepository;
-import com.hedera.mirror.web3.repository.TokenBalanceRepository;
 import com.hedera.mirror.web3.repository.TokenRepository;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.CustomFee;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmKey;
@@ -75,7 +82,6 @@ public class TokenAccessorImpl implements TokenAccessor {
     private final TokenRepository tokenRepository;
     private final NftRepository nftRepository;
     private final TokenAccountRepository tokenAccountRepository;
-    private final TokenBalanceRepository tokenBalanceRepository;
     private final TokenAllowanceRepository tokenAllowanceRepository;
     private final NftAllowanceRepository nftAllowanceRepository;
     private final CustomFeeRepository customFeeRepository;
@@ -113,31 +119,34 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public boolean isFrozen(final Address account, final Address token) {
-        final var accountId = entityIdFromAccountAddress(account);
-        final var tokenId = entityIdFromEvmAddress(token);
-        final var status = tokenAccountRepository.findFrozenStatus(accountId, tokenId);
-        return status.filter(e -> e == 1).isPresent();
+        final var tokenAccountId = new AbstractTokenAccount.Id();
+        tokenAccountId.setTokenId(entityIdNumFromEvmAddress(token));
+        tokenAccountId.setAccountId(entityIdFromAccountAddress(account));
+
+        return tokenAccountRepository.findById(tokenAccountId).map(acc -> acc.getFreezeStatus().equals(FROZEN))
+                .orElse(false);
     }
 
     @Override
     public boolean defaultFreezeStatus(final Address token) {
-        final var tokenId = entityIdFromEvmAddress(token);
-        final var defaultFreezeStatus = tokenRepository.findFreezeDefault(tokenId);
-        return defaultFreezeStatus.orElse(false);
+        final var tokenId = new TokenId(entityIdFromEvmAddress(token));
+        return tokenRepository.findById(tokenId).map(Token::getFreezeDefault).orElse(false);
     }
 
     @Override
     public boolean defaultKycStatus(final Address token) {
-        final var tokenId = entityIdFromEvmAddress(token);
-        return tokenRepository.findKycKey(tokenId).isPresent();
+        final var tokenId = new TokenId(entityIdFromEvmAddress(token));
+        return tokenRepository.findById(tokenId).map(Token::getKycKey).isPresent();
     }
 
     @Override
     public boolean isKyc(final Address account, final Address token) {
-        final var accountId = entityIdFromAccountAddress(account);
-        final var tokenId = entityIdFromEvmAddress(token);
-        final var status = tokenAccountRepository.findKycStatus(accountId, tokenId);
-        return status.filter(e -> e == 1).isPresent();
+        final var tokenAccountId = new AbstractTokenAccount.Id();
+        tokenAccountId.setTokenId(entityIdNumFromEvmAddress(token));
+        tokenAccountId.setAccountId(entityIdFromAccountAddress(account));
+
+        return tokenAccountRepository.findById(tokenAccountId).map(acc -> acc.getKycStatus().equals(GRANTED))
+                .orElse(false);
     }
 
     @Override
@@ -147,9 +156,11 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public TokenType typeOf(final Address token) {
-        final var tokenId = entityIdFromEvmAddress(token);
-        final var type = tokenRepository.findType(tokenId);
-        return type.map(tokenTypeEnum -> TokenType.valueOf(tokenTypeEnum.name())).orElse(null);
+        final var tokenId = new TokenId(entityIdFromEvmAddress(token));
+
+        return tokenRepository.findById(tokenId)
+                .map(t -> TokenType.valueOf(t.getType().name()))
+                .orElse(null);
     }
 
     @Override
@@ -169,74 +180,79 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public String nameOf(final Address token) {
-        final var tokenId = entityIdFromEvmAddress(token);
-        return tokenRepository.findName(tokenId).orElse("");
+        final var tokenId = new TokenId(entityIdFromEvmAddress(token));
+        return tokenRepository.findById(tokenId).map(Token::getName).orElse("");
     }
 
     @Override
     public String symbolOf(final Address token) {
-        final var tokenId = entityIdFromEvmAddress(token);
-        return tokenRepository.findSymbol(tokenId).orElse("");
+        final var tokenId = new TokenId(entityIdFromEvmAddress(token));
+        return tokenRepository.findById(tokenId).map(Token::getSymbol).orElse("");
     }
 
     @Override
     public long totalSupplyOf(final Address token) {
-        final var tokenId = entityIdFromEvmAddress(token);
-        return tokenRepository.findTotalSupply(tokenId).orElse(0L);
+        final var tokenId = new TokenId(entityIdFromEvmAddress(token));
+        return tokenRepository.findById(tokenId).map(Token::getTotalSupply).orElse(0L);
     }
 
     @Override
     public int decimalsOf(final Address token) {
-        final var tokenId = entityIdFromEvmAddress(token);
-        return tokenRepository.findDecimals(tokenId).orElse(0);
+        final var tokenId = new TokenId(entityIdFromEvmAddress(token));
+        return tokenRepository.findById(tokenId).map(Token::getDecimals).orElse(0);
     }
 
     @Override
     public long balanceOf(Address account, Address token) {
-        final var tokenId = entityIdFromEvmAddress(token);
-        final var accountId = entityIdFromAccountAddress(account);
-        return tokenBalanceRepository.findBalance(tokenId, accountId).orElse(0L);
+        final var tokenAccountId = new AbstractTokenAccount.Id();
+        tokenAccountId.setAccountId(entityIdFromAccountAddress(account));
+        tokenAccountId.setTokenId(entityIdNumFromEvmAddress(token));
+
+        return tokenAccountRepository.findById(tokenAccountId).map(AbstractTokenAccount::getBalance).orElse(0L);
     }
 
     @Override
     public long staticAllowanceOf(final Address owner, final Address spender, final Address token) {
-        final var tokenId = entityIdFromEvmAddress(token);
-        final var ownerId = entityIdFromAccountAddress(owner);
-        final var spenderId = entityIdFromAccountAddress(spender);
-        return tokenAllowanceRepository.findAllowance(tokenId, ownerId, spenderId).orElse(0L);
+        final var tokenAllowanceId = new AbstractTokenAllowance.Id();
+        tokenAllowanceId.setOwner(entityIdFromAccountAddress(owner));
+        tokenAllowanceId.setSpender(entityIdFromAccountAddress(spender));
+        tokenAllowanceId.setTokenId(entityIdNumFromEvmAddress(token));
+
+        return tokenAllowanceRepository.findById(tokenAllowanceId).map(TokenAllowance::getAmount).orElse(0L);
     }
 
     @Override
     public Address staticApprovedSpenderOf(final Address nft, long serialNo) {
-        final var tokenId = entityIdFromEvmAddress(nft);
-        final var spenderNum = nftRepository.findSpender(tokenId, serialNo);
-        if (spenderNum.isEmpty()) {
+        final var nftId = new NftId(serialNo, entityIdFromEvmAddress(nft));
+        final var spenderEntity = nftRepository.findById(nftId).map(Nft::getSpender);
+
+        if (spenderEntity.isEmpty()) {
             return Address.ZERO;
         }
-        final var spenderEntity = EntityId.of(spenderNum.get(), ACCOUNT);
 
-        return EvmTokenUtils.toAddress(spenderEntity);
+        return EvmTokenUtils.toAddress(spenderEntity.get());
     }
 
     @Override
     public boolean staticIsOperator(final Address owner, final Address operator, final Address token) {
-        final var tokenId = entityIdFromEvmAddress(token);
-        final var ownerId = entityIdFromAccountAddress(owner);
-        final var spenderId = entityIdFromAccountAddress(operator);
-        final var isSpenderAnOperator = nftAllowanceRepository.spenderHasApproveForAll(tokenId, ownerId, spenderId);
+        final var nftAllowanceId = new AbstractNftAllowance.Id();
+        nftAllowanceId.setOwner(entityIdFromAccountAddress(owner));
+        nftAllowanceId.setSpender(entityIdFromAccountAddress(operator));
+        nftAllowanceId.setTokenId(entityIdNumFromEvmAddress(token));
 
-        return isSpenderAnOperator.orElse(false);
+        return nftAllowanceRepository.findById(nftAllowanceId).map(NftAllowance::isApprovedForAll).orElse(false);
     }
 
     @Override
     public Address ownerOf(final Address nft, long serialNo) {
-        final var tokenId = entityIdFromEvmAddress(nft);
-        final var ownerNum = nftRepository.findOwner(tokenId, serialNo);
-        if (ownerNum.isEmpty()) {
+        final var nftId = new NftId(serialNo, entityIdFromEvmAddress(nft));
+        final var ownerEntity = nftRepository.findById(nftId).map(Nft::getAccountId);
+
+        if (ownerEntity.isEmpty()) {
             return Address.ZERO;
         }
-        final var ownerEntity =  EntityId.of(ownerNum.get(), ACCOUNT);
-        return EvmTokenUtils.toAddress(ownerEntity);
+
+        return EvmTokenUtils.toAddress(ownerEntity.get());
     }
 
     @Override
@@ -246,9 +262,9 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     @Override
     public String metadataOf(final Address nft, long serialNo) {
-        final var tokenId = entityIdFromEvmAddress(nft);
-        final var metadata = nftRepository.findMetadata(tokenId, serialNo);
-        return metadata.map(String::new).orElse("");
+        final var nftId = new NftId(serialNo, entityIdFromEvmAddress(nft));
+
+        return nftRepository.findById(nftId).map(n -> new String(n.getMetadata())).orElse("");
     }
 
     @Override
@@ -258,7 +274,7 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     private Optional<EvmTokenInfo> getTokenInfo(final Address token) {
         final var tokenEntityOptional = tokenRepository.findById(new TokenId(fromEvmAddress(token.toArray())));
-        final var entityOptional = entityRepository.findByIdAndDeletedIsFalse(entityIdFromEvmAddress(token));
+        final var entityOptional = entityRepository.findByIdAndDeletedIsFalse(entityIdNumFromEvmAddress(token));
 
         if (tokenEntityOptional.isEmpty() || entityOptional.isEmpty()) {
             return Optional.empty();
@@ -298,7 +314,7 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     private List<CustomFee> getCustomFees(final Address token) {
         final List<CustomFee> customFees = new ArrayList<>();
-        final var customFeesCollection = customFeeRepository.findByTokenId(entityIdFromEvmAddress(token));
+        final var customFeesCollection = customFeeRepository.findByTokenId(entityIdNumFromEvmAddress(token));
 
         if (CollectionUtils.isEmpty(customFeesCollection)) {
             return customFees;
@@ -376,7 +392,6 @@ public class TokenAccessorImpl implements TokenAccessor {
             evmTokenInfo.setWipeKey(wipeKey);
             evmTokenInfo.setPauseKey(pauseKey);
             evmTokenInfo.setFeeScheduleKey(feeScheduleKey);
-
         } catch (final InvalidProtocolBufferException e) {
             throw new ParsingException("Error parsing token keys.");
         }
@@ -389,7 +404,8 @@ public class TokenAccessorImpl implements TokenAccessor {
     private Long entityIdFromAccountAddress(final Address address) {
         final var addressBytes = address.toArrayUnsafe();
         if (isMirror(addressBytes)) {
-            return fromEvmAddress(addressBytes).getId();
+            final var id = fromEvmAddress(addressBytes);
+            return id != null ? id.getId() : 0L;
         }
 
         return entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes)

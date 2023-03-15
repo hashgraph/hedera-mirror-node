@@ -35,7 +35,7 @@ class CustomFeeRepositoryTest extends Web3IntegrationTest {
     @Test
     void findByTokenId() {
         final var customFee = domainBuilder.customFee().persist();
-        final var tokenId = customFee.getId().getTokenId().getId();
+        final var tokenId = customFee.getId() != null ? customFee.getId().getTokenId().getId() : 0L;
         assertThat(customFeeRepository.findByTokenId(tokenId).get(0)).isEqualTo(customFee);
     }
 }

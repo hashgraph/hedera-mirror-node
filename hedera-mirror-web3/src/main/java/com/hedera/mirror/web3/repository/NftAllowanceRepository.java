@@ -20,17 +20,9 @@ package com.hedera.mirror.web3.repository;
  * ‍
  */
 
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.common.domain.entity.AbstractNftAllowance.Id;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 
-import java.util.Optional;
-
-public interface NftAllowanceRepository extends CrudRepository<NftAllowance, Id> {
-
-    @Query(value = "select approved_for_all from nft_allowance where token_id = ?1 and owner = ?2 and spender = ?3",
-            nativeQuery = true)
-    Optional<Boolean> spenderHasApproveForAll(final Long tokenId, final Long ownerId, final Long spenderId);
-}
+public interface NftAllowanceRepository extends CrudRepository<NftAllowance, Id> {}

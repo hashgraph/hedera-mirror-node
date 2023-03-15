@@ -129,6 +129,6 @@ class EvmTokenUtilsTest {
     void entityIdFromAddress(){
         final var contractAddress = Address.fromHexString("0x00000000000000000000000000000000000004c5");
 
-        assertThat(EvmTokenUtils.entityIdFromEvmAddress(contractAddress)).isEqualTo(1221);
+        assertThat(EvmTokenUtils.entityIdNumFromEvmAddress(contractAddress)).isEqualTo(1221);
     }
 }

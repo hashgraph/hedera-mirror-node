@@ -22,6 +22,10 @@ package com.hedera.mirror.web3.repository;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
+import com.hedera.mirror.common.domain.entity.AbstractNftAllowance;
+
+import com.hedera.mirror.common.domain.entity.NftAllowance;
+
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -39,14 +43,14 @@ class NftAllowanceRepositoryTest extends Web3IntegrationTest {
     void spenderHasApproveForAll(boolean isApproveForAll) {
         final var allowance = domainBuilder.nftAllowance()
                 .customize(a -> a.approvedForAll(isApproveForAll)).persist();
-        final var tokenId = allowance.getTokenId();
-        final var ownerId = allowance.getOwner();
-        final var spenderId = allowance.getSpender();
 
-        assertThat(allowanceRepository.spenderHasApproveForAll(tokenId, ownerId, spenderId).orElse(false)).isEqualTo(isApproveForAll);
+        assertThat(allowanceRepository.findById(allowance.getId()).map(NftAllowance::isApprovedForAll)
+                .orElse(false)).isEqualTo(isApproveForAll);
     }
+
     @Test
-    void noMatchingRecord(){
-        assertThat(allowanceRepository.spenderHasApproveForAll(1L,2L,3L).orElse(false)).isFalse();
+    void noMatchingRecord() {
+        assertThat(allowanceRepository.findById(new AbstractNftAllowance.Id()).map(NftAllowance::isApprovedForAll)
+                .orElse(false)).isFalse();
     }
 }
