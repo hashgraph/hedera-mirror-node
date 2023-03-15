@@ -1858,7 +1858,7 @@ describe('Utils formatSlot tests', () => {
   test('Verify valid contract_state_change table format slot', () => {
     const slot = '0x0000000000000000000000000000000000000000000000000000000000000003';
     const formatedSlot = '03';
-    expect(utils.formatSlot(slot, 'contract_state_change')).toEqual(Buffer.from(formatedSlot, 'hex'));
+    expect(utils.formatSlot(slot, true)).toEqual(Buffer.from(formatedSlot, 'hex'));
   });
 
   test('Verify valid slot format if no table is provided', () => {

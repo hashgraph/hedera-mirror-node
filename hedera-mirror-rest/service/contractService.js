@@ -289,7 +289,6 @@ class ContractService extends BaseService {
       );
       
       query = [ContractService.contractStateTimestampQuery, where, orderClause, limitClause].join(' ');
-      console.log(query)
     }
     const rows = await super.getRows(query, params, 'getContractStateByIdAndFilters');
     return rows.map((row) => new ContractState(row));

@@ -900,19 +900,21 @@ class ContractController extends BaseController {
           order = filter.value;
           break;
         case filterKeys.TIMESTAMP:
-          conditions.push(
-            this.getFilterWhereCondition(ContractStateChange.CONSENSUS_TIMESTAMP, {
-              operator: '<=',
-              value: filter.value
-            })
-          )
-          timestamp = true;
+          if (filter.operator === utils.opsMap.eq) {
+            conditions.push(
+              this.getFilterWhereCondition(ContractStateChange.CONSENSUS_TIMESTAMP, {
+                operator: '<=',
+                value: filter.value
+              })
+            )
+            timestamp = true;
+          }
           break;
         case filterKeys.SLOT:
           let slot = utils.formatSlot(filter.value);
           //we need this additional conversion, because there is inconsistency between colums slot in table contract_state and contract_state_change.
           if (timestamp) {
-            slot = utils.formatSlot(filter.value, 'contract_state_change');
+            slot = utils.formatSlot(filter.value, true);
           }
           if (filter.operator === utils.opsMap.eq) {
             slotInValues.push(slot);
