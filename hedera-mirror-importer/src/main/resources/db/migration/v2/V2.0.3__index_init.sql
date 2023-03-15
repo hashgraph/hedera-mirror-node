@@ -67,6 +67,10 @@ alter table if exists contract_state
 alter table if exists contract_state_change
     add constraint contract_state_change__pk primary key (consensus_timestamp, contract_id, slot);
 
+-- contract_state_change__id_slot_timestamp
+create index if not exists contract_state_change__id_slot_timestamp
+    on contract_state_change (contract_id, slot, consensus_timestamp);
+
 -- crypto_allowance
 alter table if exists crypto_allowance
     add constraint crypto_allowance__pk primary key (owner, spender);
@@ -250,7 +254,3 @@ create index if not exists transaction_signature__timestamp_public_key_prefix
 
 -- revert to default
 set local citus.multi_shard_modify_mode to 'parallel';
-
--- contract_state_index
-create index if not exists contract_state_index
-    on contract_state_change (contract_id, slot, consensus_timestamp);
