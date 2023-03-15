@@ -31,10 +31,10 @@ extra.apply {
     set("gson.version", "2.8.9") // Temporary until Apache jclouds supports gson 2.9
     set("mapStructVersion", "1.5.3.Final")
     set("postgresql.version", "42.5.1") // Temporary fix for transient dependency security issue
-    set("protobufVersion", "3.22.0")
+    set("protobufVersion", "3.22.2")
     set("reactorGrpcVersion", "1.2.3")
     set("snakeyaml.version", "1.33") // Temporary fix for transient dependency security issue
-    set("testcontainersSpringBootVersion", "2.3.1")
+    set("testcontainersSpringBootVersion", "2.3.2")
 }
 
 // Creates a platform/BOM with specific versions so subprojects don't need to specify a version when using a dependency
@@ -49,7 +49,7 @@ dependencies {
         api("com.github.meanbeanlib:meanbean:3.0.0-M9")
         api("com.github.vertical-blank:sql-formatter:2.0.3")
         api("com.github.vladimir-bukhtoyarov:bucket4j-core:7.6.0")
-        api("com.google.cloud:spring-cloud-gcp-dependencies:3.4.5")
+        api("com.google.cloud:spring-cloud-gcp-dependencies:3.4.6")
         api("com.google.guava:guava:31.1-jre")
         api("com.google.protobuf:protobuf-java:$protobufVersion")
         api("com.graphql-java-generator:graphql-java-client-dependencies:1.18.10")
@@ -84,10 +84,10 @@ dependencies {
         api("org.mapstruct:mapstruct:$mapStructVersion")
         api("org.mapstruct:mapstruct-processor:$mapStructVersion")
         api("org.msgpack:jackson-dataformat-msgpack:0.9.3")
-        api("org.springdoc:springdoc-openapi-webflux-ui:1.6.14")
+        api("org.springdoc:springdoc-openapi-webflux-ui:1.6.15")
         api("org.springframework.cloud:spring-cloud-dependencies:2021.0.5")
         api("org.testcontainers:junit-jupiter:1.17.6")
-        api("software.amazon.awssdk:bom:2.20.17")
+        api("software.amazon.awssdk:bom:2.20.22")
         api("uk.org.webcompere:system-stubs-jupiter:2.0.2")
     }
 }
