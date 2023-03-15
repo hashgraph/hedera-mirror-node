@@ -76,8 +76,6 @@ public class NetworkServiceImpl implements NetworkService {
                         .jitter(Jitter.random())
                         .withBackoffScheduler(Schedulers.parallel()))
                 .take(filter.getLimit() > 0 ? filter.getLimit() : Long.MAX_VALUE)
-                .name("addressBook")
-                .metrics()
                 .doOnNext(context::onNext)
                 .doOnSubscribe(s -> log.info("Querying for address book: {}", filter))
                 .doOnComplete(() -> log.info("Retrieved {} nodes from the address book", context.getCount()));

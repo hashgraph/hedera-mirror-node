@@ -42,6 +42,9 @@ class NftRepositoryTest extends AbstractRepositoryTest {
     @Resource
     private NftTransferRepository nftTransferRepository;
 
+    @Resource
+    private TokenAccountRepository tokenAccountRepository;
+
     @Test
     void save() {
         Nft savedNft = nftRepository.save(nft("0.0.2", 1, 1));
@@ -85,33 +88,45 @@ class NftRepositoryTest extends AbstractRepositoryTest {
     @Test
     void updateTreasury() {
         long consensusTimestamp = 6L;
-        EntityId newAccountId = EntityId.of("0.0.2", EntityType.ACCOUNT);
+        EntityId newTreasury = EntityId.of("0.0.2", EntityType.ACCOUNT);
         Nft nft1 = nft("0.0.100", 1, 1);
         Nft nft2 = nft("0.0.100", 2, 2);
         Nft nft3 = nft("0.0.100", 3, 3);
         Nft nft4 = nft("0.0.101", 1, 4); // Not updated since wrong token
         Nft nft5 = nft("0.0.100", 4, 5); // Not updated since wrong account
-        nft5.setAccountId(newAccountId);
+        nft5.setAccountId(newTreasury);
         nftRepository.saveAll(List.of(nft1, nft2, nft3, nft4, nft5));
+        long nftTokenId = nft1.getId().getTokenId().getId();
+        var tokenAccountOldTreasury = domainBuilder.tokenAccount()
+                .customize(ta -> ta.accountId(nft1.getAccountId().getId()).balance(3).tokenId(nftTokenId))
+                .persist();
+        var tokenAccountNewTreasury = domainBuilder.tokenAccount()
+                .customize(ta -> ta.accountId(newTreasury.getId()).balance(1).tokenId(nftTokenId))
+                .persist();
 
         EntityId tokenId = nft1.getId().getTokenId();
-        EntityId previousAccountId = nft1.getAccountId();
-        nftRepository.updateTreasury(tokenId.getId(), previousAccountId.getId(), newAccountId.getId(),
+        EntityId previousTreasury = nft1.getAccountId();
+        nftRepository.updateTreasury(tokenId.getId(), previousTreasury.getId(), newTreasury.getId(),
                 consensusTimestamp, EntityId.of("0.0.200", EntityType.ACCOUNT).getId(), false);
 
-        assertAccountUpdated(nft1, newAccountId);
-        assertAccountUpdated(nft2, newAccountId);
-        assertAccountUpdated(nft3, newAccountId);
+        assertAccountUpdated(nft1, newTreasury);
+        assertAccountUpdated(nft2, newTreasury);
+        assertAccountUpdated(nft3, newTreasury);
         assertThat(nftRepository.findById(nft4.getId())).get().isEqualTo(nft4);
         assertThat(nftRepository.findById(nft5.getId())).get().isEqualTo(nft5);
 
         IterableAssert<NftTransfer> nftTransfers = assertThat(nftTransferRepository.findAll()).hasSize(3);
-        nftTransfers.extracting(NftTransfer::getReceiverAccountId).containsOnly(newAccountId);
-        nftTransfers.extracting(NftTransfer::getSenderAccountId).containsOnly(previousAccountId);
+        nftTransfers.extracting(NftTransfer::getReceiverAccountId).containsOnly(newTreasury);
+        nftTransfers.extracting(NftTransfer::getSenderAccountId).containsOnly(previousTreasury);
         nftTransfers.extracting(n -> n.getId().getTokenId()).containsOnly(tokenId);
         nftTransfers.extracting(n -> n.getId().getConsensusTimestamp()).containsOnly(consensusTimestamp);
         nftTransfers.extracting(n -> n.getId().getSerialNumber()).containsExactlyInAnyOrder(1L, 2L, 3L);
         nftTransfers.extracting(NftTransfer::getIsApproval).containsExactlyInAnyOrder(false, false, false);
+
+        tokenAccountOldTreasury.setBalance(0);
+        tokenAccountNewTreasury.setBalance(4);
+        assertThat(tokenAccountRepository.findAll())
+                .containsExactlyInAnyOrder(tokenAccountOldTreasury, tokenAccountNewTreasury);
     }
 
     private void assertAccountUpdated(Nft nft, EntityId accountId) {

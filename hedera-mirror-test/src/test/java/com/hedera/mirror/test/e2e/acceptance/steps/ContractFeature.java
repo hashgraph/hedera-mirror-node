@@ -30,6 +30,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+
+import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
+
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import java.io.IOException;
@@ -76,6 +79,7 @@ public class ContractFeature extends AbstractFeature {
     private final ContractClient contractClient;
     private final FileClient fileClient;
     private final MirrorNodeClient mirrorClient;
+    private final AcceptanceTestProperties acceptanceTestProperties;
 
     @Value("classpath:solidity/artifacts/contracts/Parent.sol/Parent.json")
     private Path parentContract;
@@ -144,6 +148,10 @@ public class ContractFeature extends AbstractFeature {
 
     @Then("I call the contract via the mirror node REST API")
     public void restContractCall() {
+        if(!acceptanceTestProperties.isContractTraceability()) {
+            return;
+        }
+
         var from = contractClient.getClientAddress();
         var to = contractId.toSolidityAddress();
 
