@@ -20,6 +20,7 @@ package com.hedera.mirror.monitor.properties;
  * ‍
  */
 
+import com.google.common.collect.Lists;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -48,7 +49,7 @@ public class ScenarioPropertiesAggregatorImpl implements ScenarioPropertiesAggre
                 String propertyName = matcher.group(1);
                 log.debug("Converting property {} into list {}", entry.getKey(), propertyName);
                 correctedProperties
-                        .merge(propertyName, List.of(entry.getValue()), (e, n) -> {
+                        .merge(propertyName, Lists.newArrayList(entry.getValue()), (e, n) -> {
                             if (e instanceof List<?> existingList && n instanceof Collection newList) {
                                 existingList.addAll(newList);
                             }
