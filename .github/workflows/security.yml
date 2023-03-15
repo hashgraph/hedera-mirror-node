@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [ main, release/** ]
   push:
-    branches: [main, release/**, snyk]
+    branches: [ main, release/** ]
     tags: [ v* ]
 
 jobs:
@@ -92,10 +92,9 @@ jobs:
       - name: Publish Snyk Results
         if: ${{ !cancelled() && always() }}
         run: |
-          snyk-to-html -i snyk-test.json -o snyk-test.html --summary && \
-          html-to-markdown snyk-test.html -o snyk && \
-          cat snyk/snyk-test.html.md >> $GITHUB_STEP_SUMMARY
-        working-directory: build/reports
+          snyk-to-html -i build/reports/snyk-test.json -o build/reports/snyk-test.html && \
+          html-to-markdown build/reports/snyk-test.html -o  build/reports/snyk && \
+          cat build/reports/snyk/snyk-test.html.md >> $GITHUB_STEP_SUMMARY
 
   snyk-code:
     if: github.event_name == 'push' || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
@@ -125,10 +124,9 @@ jobs:
       - name: Publish Snyk Results
         if: ${{ !cancelled() && always() }}
         run: |
-          snyk-to-html -i snyk-test.json -o snyk-test.html && \
-          html-to-markdown snyk-test.html -o snyk && \
-          cat snyk/snyk-test.html.md >> $GITHUB_STEP_SUMMARY
-        working-directory: build/reports
+          snyk-to-html -i build/reports/snyk-test.json -o build/reports/snyk-test.html && \
+          html-to-markdown build/reports/snyk-test.html -o  build/reports/snyk && \
+          cat build/reports/snyk/snyk-test.html.md >> $GITHUB_STEP_SUMMARY
 
   snyk-monitor:
     if: github.event_name == 'push' && github.ref_name == 'main'
