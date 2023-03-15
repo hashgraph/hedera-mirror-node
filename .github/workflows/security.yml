@@ -90,7 +90,7 @@ jobs:
           arguments: snyk-test
 
       - name: Publish Snyk Results
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && always() }}
         run: |
           snyk-to-html -i snyk-test.json -o snyk-test.html --summary && \
           html-to-markdown snyk-test.html -o snyk && \
@@ -123,7 +123,7 @@ jobs:
           arguments: snyk-code
 
       - name: Publish Snyk Results
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && always() }}
         run: |
           snyk-to-html -i snyk-test.json -o snyk-test.html && \
           html-to-markdown snyk-test.html -o snyk && \
