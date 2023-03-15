@@ -74,7 +74,7 @@ class EntityIdServiceImplTest extends IntegrationTest {
         // cache miss
         reset();
         var contractIdProto = getProtoContractId(contract);
-        assertThat(entityIdService.lookup(contractIdProto)).isNull();
+        assertThat(entityIdService.lookup(contractIdProto)).isEqualTo(EntityId.EMPTY);
     }
 
     @Test
@@ -93,14 +93,14 @@ class EntityIdServiceImplTest extends IntegrationTest {
     void lookupAccountAliasNoMatch() {
         Entity account = domainBuilder.entity().get();
         var accountId = getProtoContractId(account);
-        assertThat(entityIdService.lookup(accountId)).isNull();
+        assertThat(entityIdService.lookup(accountId)).isEqualTo(EntityId.EMPTY);
     }
 
     @Test
     void lookupAccountAliasDeleted() {
         Entity account = domainBuilder.entity().customize(e -> e.deleted(true)).persist();
         var accountId = getProtoContractId(account);
-        assertThat(entityIdService.lookup(accountId)).isNull();
+        assertThat(entityIdService.lookup(accountId)).isEqualTo(EntityId.EMPTY);
     }
 
     @Test
@@ -174,14 +174,14 @@ class EntityIdServiceImplTest extends IntegrationTest {
     void lookupContractEvmAddressNoMatch() {
         Entity contract = domainBuilder.entity().customize(e -> e.alias(null).type(CONTRACT)).get();
         var contractId = getProtoContractId(contract);
-        assertThat(entityIdService.lookup(contractId)).isNull();
+        assertThat(entityIdService.lookup(contractId)).isEqualTo(EntityId.EMPTY);
     }
 
     @Test
     void lookupContractEvmAddressDeleted() {
         Entity contract = domainBuilder.entity().customize(e -> e.alias(null).deleted(true).type(CONTRACT)).persist();
         var contractId = getProtoContractId(contract);
-        assertThat(entityIdService.lookup(contractId)).isNull();
+        assertThat(entityIdService.lookup(contractId)).isEqualTo(EntityId.EMPTY);
     }
 
     @Test
@@ -191,7 +191,7 @@ class EntityIdServiceImplTest extends IntegrationTest {
                 .setRealmNum(2)
                 .setEvmAddress(DomainUtils.fromBytes(PARSABLE_EVM_ADDRESS))
                 .build();
-        assertThat(entityIdService.lookup(contractId)).isNull();
+        assertThat(entityIdService.lookup(contractId)).isEqualTo(EntityId.EMPTY);
     }
 
     @Test
@@ -251,7 +251,7 @@ class EntityIdServiceImplTest extends IntegrationTest {
         Entity account = domainBuilder.entity().customize(e -> e.deleted(true)).get();
         entityIdService.notify(account);
         var accountId = getProtoContractId(account);
-        assertThat(entityIdService.lookup(accountId)).isNull();
+        assertThat(entityIdService.lookup(accountId)).isEqualTo(EntityId.EMPTY);
     }
 
     @ParameterizedTest
@@ -267,7 +267,7 @@ class EntityIdServiceImplTest extends IntegrationTest {
         Entity contract = domainBuilder.entity().customize(c -> c.alias(null).deleted(true).type(CONTRACT)).get();
         entityIdService.notify(contract);
         var contractId = getProtoContractId(contract);
-        assertThat(entityIdService.lookup(contractId)).isNull();
+        assertThat(entityIdService.lookup(contractId)).isEqualTo(EntityId.EMPTY);
     }
 
     @Test

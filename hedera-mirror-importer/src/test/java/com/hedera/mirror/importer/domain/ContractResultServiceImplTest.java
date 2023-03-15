@@ -27,11 +27,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hederahashgraph.api.proto.java.ContractID;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -72,25 +70,17 @@ class ContractResultServiceImplTest {
                 sidecarContractMigration, transactionHandlerFactory);
     }
 
-    private static Stream<EntityId> provideEntities() {
-        return Stream.of(null, EntityId.EMPTY);
-    }
-
-    @ParameterizedTest
-    @MethodSource("provideEntities")
-    void invalidContractLogId(EntityId entityId) {
+    @Test
+    void invalidContractLogId() {
         RecordItem recordItem = recordItemBuilder.contractCreate().build();
         var transaction = domainBuilder.transaction()
-                .customize(t -> t.entityId(entityId).type(recordItem.getTransactionType()))
+                .customize(t -> t.entityId(EntityId.EMPTY).type(recordItem.getTransactionType()))
                 .get();
 
-        when(entityIdService.lookup((ContractID) any())).thenReturn(entityId);
+        when(entityIdService.lookup((ContractID) any())).thenReturn(EntityId.EMPTY);
 
         contractResultService.process(recordItem, transaction);
 
-        if (entityId == null) {
-            verify(entityListener, never()).onContractResult(any());
-        }
         verify(entityListener, never()).onContractLog(any());
     }
 }

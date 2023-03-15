@@ -45,8 +45,6 @@ import java.util.List;
 import org.assertj.core.api.ObjectAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 
@@ -61,7 +59,6 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.util.Utility;
 
@@ -72,8 +69,6 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
     @Captor
     private ArgumentCaptor<Contract> contracts;
 
-    private RecordParserProperties recordParserProperties;
-
     @BeforeEach
     void beforeEach() {
         when(entityIdService.lookup(contractId)).thenReturn(EntityId.of(DEFAULT_ENTITY_NUM, CONTRACT));
@@ -81,9 +76,7 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        recordParserProperties = new RecordParserProperties();
-        return new ContractCreateTransactionHandler(entityIdService, entityListener, entityProperties,
-                recordParserProperties);
+        return new ContractCreateTransactionHandler(entityIdService, entityListener, entityProperties);
     }
 
     @Override
@@ -307,9 +300,8 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .returns(Utility.getEpochDay(recordItem.getConsensusTimestamp()), Entity::getStakePeriodStart);
     }
 
-    @ParameterizedTest
-    @MethodSource("provideEntities")
-    void updateTransactionEntityNotFound(EntityId entityId) {
+    @Test
+    void updateTransactionEntityNotFound() {
         var alias = DomainUtils.fromBytes(domainBuilder.key());
         var recordItem = recordItemBuilder.contractCreate()
                 .transactionBody(b -> b.getAutoRenewAccountIdBuilder().setAlias(alias))
@@ -319,12 +311,11 @@ class ContractCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
         var transaction = domainBuilder.transaction().
                 customize(t -> t.consensusTimestamp(timestamp).entityId(contractId)).get();
         var initCode = DomainUtils.toBytes(recordItem.getSidecarRecords().get(2).getBytecode().getInitcode());
-        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build())).thenReturn(entityId);
+        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build())).thenReturn(EntityId.EMPTY);
         transactionHandler.updateTransaction(transaction, recordItem);
 
-        var expectedAutoRenewAccountId = entityId == null ? null : entityId.getId();
         assertEntity(contractId, timestamp)
-                .returns(expectedAutoRenewAccountId, Entity::getAutoRenewAccountId)
+                .returns(0L, Entity::getAutoRenewAccountId)
                 .returns(null, Entity::getEvmAddress);
         assertContract(contractId)
                 .satisfies(c -> assertThat(c.getFileId().getId()).isPositive())

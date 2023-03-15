@@ -157,14 +157,10 @@ public class EntityRecordItemListener implements RecordItemListener {
 
         if (recordItem.isSuccessful()) {
             if (entityProperties.getPersist().getTransactionSignatures().contains(transactionType)) {
-                var validSignatures = insertTransactionSignatures(
+                insertTransactionSignatures(
                         transaction.getEntityId(),
                         recordItem.getConsensusTimestamp(),
                         recordItem.getSignatureMap().getSigPairList());
-
-                if (!validSignatures) {
-                    return;
-                }
             }
 
             // Only add non-fee transfers on success as the data is assured to be valid
@@ -971,8 +967,8 @@ public class EntityRecordItemListener implements RecordItemListener {
         updateToken(token, modifiedTimestamp);
     }
 
-    private boolean insertTransactionSignatures(EntityId entityId, long consensusTimestamp,
-                                                List<SignaturePair> signaturePairList) {
+    private void insertTransactionSignatures(EntityId entityId, long consensusTimestamp,
+                                             List<SignaturePair> signaturePairList) {
         Set<ByteString> publicKeyPrefixes = new HashSet<>();
         for (SignaturePair signaturePair : signaturePairList) {
             ByteString prefix = signaturePair.getPubKeyPrefix();
@@ -1015,13 +1011,13 @@ public class EntityRecordItemListener implements RecordItemListener {
                     if (signature == null) {
                         log.error(RECOVERABLE_ERROR + "Unsupported signature at {}: {}", consensusTimestamp,
                                 unknownFields);
-                        return false;
+                        return;
                     }
                     break;
                 default:
                     log.error(RECOVERABLE_ERROR + "Unsupported signature case at {}: {}", consensusTimestamp,
                             signaturePair.getSignatureCase());
-                    return false;
+                    return;
             }
 
             // Handle potential public key prefix collisions by taking first occurrence only ignoring duplicates
@@ -1035,8 +1031,6 @@ public class EntityRecordItemListener implements RecordItemListener {
                 entityListener.onTransactionSignature(transactionSignature);
             }
         }
-
-        return true;
     }
 
     private void onScheduledTransaction(RecordItem recordItem) {

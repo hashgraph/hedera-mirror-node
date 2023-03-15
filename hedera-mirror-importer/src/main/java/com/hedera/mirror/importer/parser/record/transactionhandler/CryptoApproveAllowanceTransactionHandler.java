@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import static com.hedera.mirror.importer.parser.PartialDataAction.SKIP;
 import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
 
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -43,7 +42,6 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.domain.EntityIdService;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @CustomLog
@@ -54,8 +52,6 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
     private final EntityIdService entityIdService;
 
     private final EntityListener entityListener;
-
-    private final RecordParserProperties recordParserProperties;
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
@@ -126,7 +122,6 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
             EntityId ownerAccountId = getOwnerAccountId(nftApproval.getOwner(), payerAccountId);
             if (EntityId.isEmpty(ownerAccountId)) {
                 // ownerAccountId will be EMPTY only when getOwnerAccountId fails to resolve the owner in the alias form
-                // and the partialDataAction is SKIP
                 continue;
             }
 
@@ -180,7 +175,6 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
             EntityId ownerAccountId = getOwnerAccountId(tokenApproval.getOwner(), payerAccountId);
             if (EntityId.isEmpty(ownerAccountId)) {
                 // ownerAccountId will be EMPTY only when getOwnerAccountId fails to resolve the owner in the alias form
-                // and the partialDataAction is SKIP
                 continue;
             }
 
@@ -208,11 +202,6 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
      */
     private EntityId getOwnerAccountId(AccountID owner, EntityId payerAccountId) {
         var entityId = entityIdService.lookup(owner);
-        if (entityId == null && recordParserProperties.getPartialDataAction() == SKIP) {
-            return EntityId.EMPTY;
-        }
-
-        return !EntityId.isEmpty(entityId) || recordParserProperties.getPartialDataAction() != SKIP ?
-                entityId : payerAccountId;
+        return !EntityId.isEmpty(entityId) ? entityId : payerAccountId;
     }
 }

@@ -86,7 +86,6 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.repository.ContractRepository;
 import com.hedera.mirror.importer.repository.CryptoAllowanceRepository;
 import com.hedera.mirror.importer.repository.NftAllowanceRepository;
@@ -108,7 +107,6 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     private final CryptoAllowanceRepository cryptoAllowanceRepository;
     private final NftAllowanceRepository nftAllowanceRepository;
     private final NftRepository nftRepository;
-    private final RecordParserProperties parserProperties;
     private final TokenAllowanceRepository tokenAllowanceRepository;
     private final TokenTransferRepository tokenTransferRepository;
 

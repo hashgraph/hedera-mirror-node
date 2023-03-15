@@ -20,10 +20,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
-
-import com.hederahashgraph.api.proto.java.AccountID;
-import java.util.Optional;
 import lombok.AccessLevel;
 import lombok.CustomLog;
 import lombok.Getter;
@@ -36,7 +32,6 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.domain.EntityIdService;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @CustomLog
@@ -47,18 +42,8 @@ abstract class AbstractEntityCrudTransactionHandler implements TransactionHandle
 
     protected final EntityListener entityListener;
 
-    protected final RecordParserProperties recordParserProperties;
-
     @Getter
     private final TransactionType type;
-
-    protected Optional<EntityId> getAccountId(AccountID accountId) {
-        return Optional.ofNullable(entityIdService.lookup(accountId))
-                .or(() -> {
-                    log.error(RECOVERABLE_ERROR + "Unable to get account id {}", accountId);
-                    return Optional.empty();
-                });
-    }
 
     @Override
     public final void updateTransaction(Transaction transaction, RecordItem recordItem) {

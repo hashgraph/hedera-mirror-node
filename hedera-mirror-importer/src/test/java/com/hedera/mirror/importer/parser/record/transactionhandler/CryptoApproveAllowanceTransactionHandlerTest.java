@@ -35,8 +35,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -49,10 +47,6 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.parser.PartialDataAction;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
-
-import org.junit.jupiter.params.provider.MethodSource;
 
 class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
@@ -65,8 +59,6 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
     private NftAllowance expectedNftAllowance;
 
     private TokenAllowance expectedTokenAllowance;
-
-    private RecordParserProperties recordParserProperties;
 
     private EntityId payerAccountId;
 
@@ -115,8 +107,7 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        recordParserProperties = new RecordParserProperties();
-        return new CryptoApproveAllowanceTransactionHandler(entityIdService, entityListener, recordParserProperties);
+        return new CryptoApproveAllowanceTransactionHandler(entityIdService, entityListener);
     }
 
     @Override
@@ -172,32 +163,8 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
         assertAllowances(effectiveOwner);
     }
 
-    @ParameterizedTest(name = "{0}")
-    @EnumSource(value = PartialDataAction.class, names = {"DEFAULT", "ERROR"})
-    void updateTransactionReturnsEmptyEntity(PartialDataAction partialDataAction) {
-        // given
-        recordParserProperties.setPartialDataAction(partialDataAction);
-        var alias = DomainUtils.fromBytes(domainBuilder.key());
-        var recordItem = recordItemBuilder.cryptoApproveAllowance()
-                .transactionBody(this::customizeTransactionBody)
-                .transactionBody(b -> {
-                    b.getCryptoAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
-                    b.getNftAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
-                    b.getTokenAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
-                }).build();
-        var transaction = domainBuilder.transaction().get();
-        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build())).thenReturn(EntityId.EMPTY);
-
-        // when
-        transactionHandler.updateTransaction(transaction, recordItem);
-
-        // then
-        verifyNoInteractions(entityListener);
-    }
-
-    @ParameterizedTest
-    @MethodSource("provideEntities")
-    void updateTransactionWithEmptyEntityIdAndPartialDataActionSkip(EntityId entityId) {
+    @Test
+    void updateTransactionWithEmptyEntityId() {
         var alias = DomainUtils.fromBytes(domainBuilder.key());
         var recordItem = recordItemBuilder.cryptoApproveAllowance()
                 .transactionBody(this::customizeTransactionBody)
@@ -210,17 +177,12 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
                 .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(consensusTimestamp)))
                 .build();
         var transaction = domainBuilder.transaction().get();
-        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build())).thenReturn(entityId);
+        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build())).thenReturn(EntityId.EMPTY);
         transactionHandler.updateTransaction(transaction, recordItem);
 
-        if (entityId == null) {
-            // Unable to determine the entity id
-            verifyNoInteractions(entityListener);
-        } else {
-            // The implicit entity id is used
-            var effectiveOwner = recordItem.getPayerAccountId().getId();
-            assertAllowances(effectiveOwner);
-        }
+        // The implicit entity id is used
+        var effectiveOwner = recordItem.getPayerAccountId().getId();
+        assertAllowances(effectiveOwner);
     }
 
     @Test

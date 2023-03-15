@@ -156,7 +156,7 @@ public class RecordFileDownloader extends Downloader<RecordFile, RecordItem> {
                 log.error(RECOVERABLE_ERROR + "Unknown sidecar transaction record type at {}: {}",
                         transactionSidecarRecord.getConsensusTimestamp(),
                         transactionSidecarRecord.getSidecarRecordsCase());
-                yield SidecarType.SIDECAR_TYPE_UNKNOWN.getNumber();
+                yield SidecarType.SIDECAR_TYPE_UNKNOWN_VALUE;
             }
         };
     }

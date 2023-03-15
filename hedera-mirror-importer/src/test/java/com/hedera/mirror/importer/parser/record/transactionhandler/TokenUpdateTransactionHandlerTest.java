@@ -39,8 +39,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -50,19 +48,15 @@ import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 
 @ExtendWith(MockitoExtension.class)
 class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     private final static long DEFAULT_AUTO_RENEW_ACCOUNT_NUM = 2;
 
-    private RecordParserProperties recordParserProperties;
-
     @Override
     protected TransactionHandler getTransactionHandler() {
-        recordParserProperties = new RecordParserProperties();
-        return new TokenUpdateTransactionHandler(entityIdService, entityListener, recordParserProperties);
+        return new TokenUpdateTransactionHandler(entityIdService, entityListener);
     }
 
     @Override
@@ -125,9 +119,8 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         assertTokenUpdate(timestamp, tokenId, id -> assertEquals(10L, id));
     }
 
-    @ParameterizedTest
-    @MethodSource("provideEntities")
-    void updateTransactionWithNullEntity(EntityId entityId) {
+    @Test
+    void updateTransactionWithNullEntity() {
         var alias = DomainUtils.fromBytes(domainBuilder.key());
         var recordItem = recordItemBuilder.tokenUpdate()
                 .transactionBody(b -> b.getAutoRenewAccountBuilder().setAlias(alias))
@@ -136,11 +129,10 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder.transaction().
                 customize(t -> t.consensusTimestamp(timestamp).entityId(tokenId)).get();
-        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build())).thenReturn(entityId);
+        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build())).thenReturn(EntityId.EMPTY);
         transactionHandler.updateTransaction(transaction, recordItem);
 
-        var expectedEntityId = entityId == null ? null : entityId.getId();
-        assertTokenUpdate(timestamp, tokenId, id -> assertEquals(expectedEntityId, id));
+        assertTokenUpdate(timestamp, tokenId, id -> assertEquals(0, id));
     }
 
     @SuppressWarnings("java:S6103")

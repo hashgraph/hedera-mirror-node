@@ -33,7 +33,6 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.EntityIdService;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.util.Utility;
@@ -44,9 +43,8 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
     private final EntityProperties entityProperties;
 
     ContractCreateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
-                                     EntityProperties entityProperties,
-                                     RecordParserProperties recordParserProperties) {
-        super(entityIdService, entityListener, recordParserProperties, TransactionType.CONTRACTCREATEINSTANCE);
+                                     EntityProperties entityProperties) {
+        super(entityIdService, entityListener, TransactionType.CONTRACTCREATEINSTANCE);
         this.entityProperties = entityProperties;
     }
 
@@ -81,9 +79,8 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
         var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
 
         if (transactionBody.hasAutoRenewAccountId()) {
-            getAccountId(transactionBody.getAutoRenewAccountId())
-                    .map(EntityId::getId)
-                    .ifPresent(entity::setAutoRenewAccountId);
+            var autoRenewAccount = entityIdService.lookup(transactionBody.getAutoRenewAccountId());
+            entity.setAutoRenewAccountId(autoRenewAccount.getId());
         }
 
         if (transactionBody.hasAutoRenewPeriod()) {

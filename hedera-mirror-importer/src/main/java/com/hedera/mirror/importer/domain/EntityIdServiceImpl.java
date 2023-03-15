@@ -152,7 +152,7 @@ public class EntityIdServiceImpl implements EntityIdService {
                                 .orElseGet(() -> {
                                     log.error(RECOVERABLE_ERROR + "Unable to find entity for alias {}",
                                             Hex.encodeHexString(alias));
-                                    return null;
+                                    return EntityId.EMPTY;
                                 });
             default:
                 log.error(RECOVERABLE_ERROR + "Invalid Account Case for AccountID {}: {}", accountId,
@@ -183,7 +183,7 @@ public class EntityIdServiceImpl implements EntityIdService {
                 .orElseGet(() -> {
                     log.error(RECOVERABLE_ERROR + "Entity not found for evmAddress {}",
                             Hex.encodeHexString(evmAddress));
-                    return null;
+                    return EntityId.EMPTY;
                 });
     }
 }

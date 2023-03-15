@@ -314,8 +314,10 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
         insertScheduleSign(SIGN_TIMESTAMP, signatureMap, SCHEDULE_ID);
 
         // verify
-        assertThat(transactionRepository.count()).isZero();
+        assertThat(transactionRepository.count()).isOne();
         assertThat(transactionSignatureRepository.count()).isZero();
+        assertThat(scheduleRepository.count()).isZero();
+        assertTransactionInRepository(SIGN_TIMESTAMP, false, SUCCESS);
     }
 
     @Test

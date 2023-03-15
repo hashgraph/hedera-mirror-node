@@ -123,7 +123,7 @@ public class NotifyingEntityListener implements BatchEntityListener {
 
             return json;
         } catch (Exception e) {
-            log.error(RECOVERABLE_ERROR + "Error writing topicMessage: {}", topicMessage, e);
+            log.error(RECOVERABLE_ERROR + "Error serializing topicMessage to json", topicMessage, e);
             return null;
         }
     }

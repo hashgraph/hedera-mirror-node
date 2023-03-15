@@ -32,16 +32,14 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.EntityIdService;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.util.Utility;
 
 @Named
 class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
-    ContractUpdateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
-                                     RecordParserProperties recordParserProperties) {
-        super(entityIdService, entityListener, recordParserProperties, TransactionType.CONTRACTUPDATEINSTANCE);
+    ContractUpdateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener) {
+        super(entityIdService, entityListener, TransactionType.CONTRACTUPDATEINSTANCE);
     }
 
     /**
@@ -71,9 +69,8 @@ class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHand
         }
 
         if (transactionBody.hasAutoRenewAccountId()) {
-            getAccountId(transactionBody.getAutoRenewAccountId())
-                    .map(EntityId::getId)
-                    .ifPresent(entity::setAutoRenewAccountId);
+            var autoRenewAccount = entityIdService.lookup(transactionBody.getAutoRenewAccountId());
+            entity.setAutoRenewAccountId(autoRenewAccount.getId());
         }
 
         if (transactionBody.hasAutoRenewPeriod()) {

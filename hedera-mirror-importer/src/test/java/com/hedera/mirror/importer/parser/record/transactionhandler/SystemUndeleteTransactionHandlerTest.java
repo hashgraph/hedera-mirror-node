@@ -32,7 +32,6 @@ import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 
 class SystemUndeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTransactionHandlerTest {
 
@@ -47,7 +46,7 @@ class SystemUndeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTrans
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new SystemUndeleteTransactionHandler(entityIdService, entityListener, new RecordParserProperties());
+        return new SystemUndeleteTransactionHandler(entityIdService, entityListener);
     }
 
     @Override

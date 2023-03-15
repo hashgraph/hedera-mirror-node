@@ -37,10 +37,6 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
-
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
 
 class ContractDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTransactionHandlerTest {
 
@@ -57,7 +53,7 @@ class ContractDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTrans
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new ContractDeleteTransactionHandler(entityIdService, entityListener, new RecordParserProperties());
+        return new ContractDeleteTransactionHandler(entityIdService, entityListener);
     }
 
     @Override
@@ -121,15 +117,14 @@ class ContractDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTrans
         assertThat(entityId).isEqualTo(expectedEntityId);
     }
 
-    @ParameterizedTest
-    @MethodSource("provideEntities")
-    void testEmptyEntityIdReceipt(EntityId entityId) {
+    @Test
+    void testEmptyEntityIdReceipt() {
         var recordItem = recordItemBuilder.contractDelete().build();
         ContractID contractIdBody = recordItem.getTransactionBody().getContractDeleteInstance().getContractID();
         ContractID contractIdReceipt = recordItem.getTransactionRecord().getReceipt().getContractID();
 
-        when(entityIdService.lookup(contractIdReceipt, contractIdBody)).thenReturn(entityId);
+        when(entityIdService.lookup(contractIdReceipt, contractIdBody)).thenReturn(EntityId.EMPTY);
         EntityId receivedEntityId = transactionHandler.getEntity(recordItem);
-        assertThat(receivedEntityId).isEqualTo(entityId);
+        assertThat(receivedEntityId).isEqualTo(EntityId.EMPTY);
     }
 }

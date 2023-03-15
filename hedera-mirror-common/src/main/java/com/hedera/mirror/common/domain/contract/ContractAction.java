@@ -60,7 +60,7 @@ public class ContractAction implements Persistable<ContractAction.Id> {
 
     private int callOperationType;
 
-    private int callType;
+    private Integer callType;
 
     @javax.persistence.Id
     private long consensusTimestamp;
@@ -111,9 +111,7 @@ public class ContractAction implements Persistable<ContractAction.Id> {
 
     public void setCaller(EntityId caller) {
         this.caller = caller;
-        if (caller != null) {
-            this.callerType = caller.getType();
-        }
+        this.callerType = caller == null ? null : caller.getType();
     }
 
     @Data
