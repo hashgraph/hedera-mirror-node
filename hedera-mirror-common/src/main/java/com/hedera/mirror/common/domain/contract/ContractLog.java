@@ -73,6 +73,10 @@ public class ContractLog implements Persistable<ContractLog.Id> {
 
     private byte[] topic3;
 
+    private byte[] transactionHash;
+
+    private int transactionIndex;
+
     @Override
     @JsonIgnore
     public Id getId() {

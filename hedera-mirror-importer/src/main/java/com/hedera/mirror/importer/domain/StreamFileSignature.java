@@ -58,6 +58,8 @@ public class StreamFileSignature implements Comparable<StreamFileSignature> {
     @EqualsAndHashCode.Include
     private ConsensusNode node;
     private SignatureType signatureType;
+
+    @Builder.Default
     private SignatureStatus status = SignatureStatus.DOWNLOADED;
     private StreamType streamType;
     private byte version;

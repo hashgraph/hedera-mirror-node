@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.inject.Named;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Value;
@@ -42,6 +43,8 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 import org.springframework.transaction.support.TransactionOperations;
 
 import com.hedera.mirror.common.domain.balance.AccountBalanceFile;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.token.TokenTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
@@ -51,6 +54,7 @@ import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityRecordItemListener;
 import com.hedera.mirror.importer.reader.ValidatedDataInputStream;
+import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
 /**
@@ -72,6 +76,7 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
     private final NamedParameterJdbcOperations jdbcOperations;
     private final MirrorProperties mirrorProperties;
     private final RecordStreamFileListener recordStreamFileListener;
+    private final TokenTransferRepository tokenTransferRepository;
     private final TransactionOperations transactionOperations;
     private final TransactionRepository transactionRepository;
     private final Set<Long> timestamps = new HashSet<>();
@@ -84,6 +89,7 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
                            NamedParameterJdbcOperations jdbcOperations,
                            MirrorProperties mirrorProperties,
                            RecordStreamFileListener recordStreamFileListener,
+                           TokenTransferRepository tokenTransferRepository,
                            TransactionOperations transactionOperations,
                            TransactionRepository transactionRepository) {
         super(mirrorProperties.getMigration());
@@ -93,6 +99,7 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
         this.jdbcOperations = jdbcOperations;
         this.mirrorProperties = mirrorProperties;
         this.recordStreamFileListener = recordStreamFileListener;
+        this.tokenTransferRepository = tokenTransferRepository;
         this.transactionOperations = transactionOperations;
         this.transactionRepository = transactionRepository;
     }
@@ -217,13 +224,19 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
                 byte[] transactionBytes = in.readLengthAndBytes(1, MAX_TRANSACTION_LENGTH, false, "transaction");
                 var transactionRecord = TransactionRecord.parseFrom(recordBytes);
                 var transaction = Transaction.parseFrom(transactionBytes);
-                var recordItem = RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build();
+                var recordItem = RecordItem.builder()
+                        .transactionRecord(transactionRecord)
+                        .transaction(transaction)
+                        .build();
                 long timestamp = recordItem.getConsensusTimestamp();
+                boolean inRange = dateRangeFilter.filter(timestamp);
 
-                if (transactionRepository.findById(timestamp).isEmpty() && dateRangeFilter.filter(timestamp)) {
+                if (transactionRepository.findById(timestamp).isEmpty() && inRange) {
                     entityRecordItemListener.onItem(recordItem);
                     consensusTimestamps.add(timestamp);
                     log.info("Processed errata {} successfully", name);
+                } else if (inRange) {
+                    missingTokenTransfers(name, recordItem);
                 } else {
                     log.info("Skipped previously processed errata {}", name);
                 }
@@ -246,6 +259,37 @@ public class ErrataMigration extends RepeatableMigration implements BalanceStrea
         Long min = consensusTimestamps.stream().min(Long::compareTo).orElse(null);
         Long max = consensusTimestamps.stream().max(Long::compareTo).orElse(null);
         log.info("Inserted {} missing transactions between {} and {}", consensusTimestamps.size(), min, max);
+    }
+
+    // We missed inserting the token transfers from the 2023-02 FAIL_INVALID transactions
+    private void missingTokenTransfers(String name, RecordItem recordItem) {
+        var count = new AtomicLong(0L);
+
+        recordItem.getTransactionRecord().getTokenTransferListsList().forEach(t -> {
+            var tokenId = EntityId.of(t.getToken());
+
+            t.getTransfersList().forEach(aa -> {
+                var accountId = EntityId.of(aa.getAccountID());
+                var id = new TokenTransfer.Id(recordItem.getConsensusTimestamp(), tokenId, accountId);
+
+                if (tokenTransferRepository.findById(id).isEmpty()) {
+                    TokenTransfer tokenTransfer = new TokenTransfer();
+                    tokenTransfer.setAmount(aa.getAmount());
+                    tokenTransfer.setId(id);
+                    tokenTransfer.setIsApproval(false);
+                    tokenTransfer.setPayerAccountId(recordItem.getPayerAccountId());
+                    tokenTransfer.setTokenDissociate(false);
+                    tokenTransferRepository.save(tokenTransfer);
+                    count.incrementAndGet();
+                }
+            });
+        });
+
+        if (count.get() > 0) {
+            log.info("Processed errata {} successfully with {} missing token transfers", name, count);
+        } else {
+            log.info("Skipped previously processed errata {}", name);
+        }
     }
 
     private Set<Long> getTimestamps() {

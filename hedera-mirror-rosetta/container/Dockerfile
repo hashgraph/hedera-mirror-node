@@ -5,7 +5,7 @@
 FROM ubuntu:22.04 as builder
 ENV LANG=C.UTF-8
 ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y gcc git openjdk-17-jdk-headless wget
+RUN apt-get update -y --no-install-recommends && apt-get install -y gcc git openjdk-17-jdk-headless wget
 # GIT_REF can be a branch, a tag, or a 40-charater git commit hash
 ARG GIT_REF=main
 ARG REPO_URL=https://github.com/hashgraph/hedera-mirror-node
@@ -38,7 +38,7 @@ RUN apt-get update \
     && apt-get install -y ca-certificates curl gnupg lsb-release \
     && apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8 \
     && echo "deb https://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
-    && apt-get update \
+    && apt-get update -y --no-install-recommends \
     && apt-get install -y postgresql-${PG_VERSION} postgresql-client-${PG_VERSION} supervisor openjdk-17-jre-headless \
     && rm -rf /var/lib/apt/lists/*
 
