@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [ main, release/** ]
   push:
-    branches: [ main, release/** ]
+    branches: [main, release/**, snyk]
     tags: [ v* ]
 
 jobs:
@@ -79,7 +79,7 @@ jobs:
           java-version: 17
 
       - name: Setup Snyk
-        run: npm install -g snyk snyk-to-html @wcj/html-to-markdown-cli
+        run: npm install -g snyk-to-html @wcj/html-to-markdown-cli
 
       - name: Execute Gradle Snyk Test
         uses: gradle/gradle-build-action@v2
@@ -95,7 +95,7 @@ jobs:
           snyk-to-html -i snyk-test.json -o snyk-test.html --summary && \
           html-to-markdown snyk-test.html -o snyk && \
           cat snyk/snyk-test.html.md >> $GITHUB_STEP_SUMMARY
-        working-directory: reports
+        working-directory: build/reports
 
   snyk-code:
     if: github.event_name == 'push' || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
@@ -112,7 +112,7 @@ jobs:
           java-version: 17
 
       - name: Setup Snyk
-        run: npm install -g snyk snyk-to-html @wcj/html-to-markdown-cli
+        run: npm install -g snyk-to-html @wcj/html-to-markdown-cli
 
       - name: Execute Gradle Snyk Code Test
         uses: gradle/gradle-build-action@v2
@@ -128,7 +128,7 @@ jobs:
           snyk-to-html -i snyk-test.json -o snyk-test.html && \
           html-to-markdown snyk-test.html -o snyk && \
           cat snyk/snyk-test.html.md >> $GITHUB_STEP_SUMMARY
-        working-directory: reports
+        working-directory: build/reports
 
   snyk-monitor:
     if: github.event_name == 'push' && github.ref_name == 'main'
@@ -143,9 +143,6 @@ jobs:
         with:
           distribution: "temurin"
           java-version: 17
-
-      - name: Setup Snyk
-        run: npm install -g snyk snyk-to-html @wcj/html-to-markdown-cli
 
       - name: Execute Gradle Snyk Monitor
         uses: gradle/gradle-build-action@v2
