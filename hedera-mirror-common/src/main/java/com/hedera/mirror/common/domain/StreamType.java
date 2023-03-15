@@ -25,6 +25,7 @@ import java.time.Duration;
 import java.util.Comparator;
 import java.util.List;
 import java.util.SortedSet;
+import java.util.function.Supplier;
 import java.util.stream.IntStream;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -37,10 +38,10 @@ import com.hedera.mirror.common.domain.transaction.RecordFile;
 @Getter
 public enum StreamType {
 
-    BALANCE(AccountBalanceFile.class, "accountBalances", "balance", "_Balances", List.of("csv", "pb"),
+    BALANCE(AccountBalanceFile::new, "accountBalances", "balance", "_Balances", List.of("csv", "pb"),
             Duration.ofMinutes(15L)),
-    EVENT(EventFile.class, "eventsStreams", "events_", "", List.of("evts"), Duration.ofSeconds(5L)),
-    RECORD(RecordFile.class, "recordstreams", "record", "", List.of("rcd"), Duration.ofSeconds(2L));
+    EVENT(EventFile::new, "eventsStreams", "events_", "", List.of("evts"), Duration.ofSeconds(5L)),
+    RECORD(RecordFile::new, "recordstreams", "record", "", List.of("rcd"), Duration.ofSeconds(2L));
 
     public static final String SIGNATURE_SUFFIX = "_sig";
 
@@ -51,13 +52,13 @@ public enum StreamType {
     private final String nodePrefix;
     private final String path;
     private final SortedSet<Extension> signatureExtensions;
-    private final Class<? extends StreamFile> streamFileClass;
     private final String suffix;
+    private final Supplier<? extends StreamFile> supplier;
     private final Duration fileCloseInterval;
 
-    StreamType(Class<? extends StreamFile> streamFileClass, String path, String nodePrefix, String suffix,
+    StreamType(Supplier<? extends StreamFile> supplier, String path, String nodePrefix, String suffix,
                List<String> extensions, Duration fileCloseInterval) {
-        this.streamFileClass = streamFileClass;
+        this.supplier = supplier;
         this.path = path;
         this.nodePrefix = nodePrefix;
         this.suffix = suffix;
@@ -82,6 +83,11 @@ public enum StreamType {
 
     public boolean isChained() {
         return this != BALANCE;
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T extends StreamFile> T newStreamFile() {
+        return (T) supplier.get();
     }
 
     @Value(staticConstructor = "of")

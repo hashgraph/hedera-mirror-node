@@ -161,7 +161,7 @@ public class MirrorDateRangePropertiesProcessor {
             }
 
             String filename = StreamFilename.getFilename(streamType, DATA, effectiveStartDate);
-            T effectiveStreamFile = (T) ReflectUtils.newInstance(streamType.getStreamFileClass());
+            T effectiveStreamFile = streamType.newStreamFile();
             effectiveStreamFile.setConsensusStart(DomainUtils.convertToNanosMax(effectiveStartDate));
             effectiveStreamFile.setName(filename);
             effectiveStreamFile.setIndex(streamFile.map(StreamFile::getIndex).orElse(null));
@@ -172,7 +172,7 @@ public class MirrorDateRangePropertiesProcessor {
                 mirrorProperties.getEndDate());
         return streamFile;
     }
-
+    @SuppressWarnings("unchecked")
     private <T extends StreamFile> Optional<T> findLatest(StreamType streamType) {
         return (Optional<T>) getStreamFileRepository(streamType).findLatest();
     }

@@ -67,6 +67,7 @@ dependencies {
 
 tasks.compileJava {
     dependsOn("generateEffectiveLombokConfig")
+    options.compilerArgs.addAll(listOf("-Xlint:unchecked", "-Xlint:deprecation"))
     options.encoding = "UTF-8"
     sourceCompatibility = "17"
     targetCompatibility = "17"

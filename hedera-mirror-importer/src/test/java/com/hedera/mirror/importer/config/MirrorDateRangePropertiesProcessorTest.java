@@ -273,7 +273,7 @@ class MirrorDateRangePropertiesProcessorTest {
     }
 
     private Optional<StreamFile> streamFile(StreamType streamType, Instant instant) {
-        StreamFile streamFile = (StreamFile) ReflectUtils.newInstance(streamType.getStreamFileClass());
+        StreamFile streamFile = streamType.newStreamFile();
         streamFile.setConsensusStart(DomainUtils.convertToNanosMax(instant));
         streamFile.setName(StreamFilename.getFilename(streamType, DATA, instant));
         return Optional.of(streamFile);
