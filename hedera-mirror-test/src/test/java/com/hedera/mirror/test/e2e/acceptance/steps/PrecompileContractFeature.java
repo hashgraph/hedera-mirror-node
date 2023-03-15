@@ -25,6 +25,7 @@ import static com.hedera.mirror.test.e2e.acceptance.response.ContractCallRespons
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.ZERO_ADDRESS;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.esaulpaugh.headlong.abi.Function;
@@ -195,27 +196,28 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertTrue(convertContractCallResponseToBoolean(response));
     }
 
-    @Then("Invalid account is token should return false")
+    @Then("Invalid account is token should return an error")
     public void checkIfInvalidAccountIsToken() {
-        ContractCallResponse response = mirrorClient.contractsCall(
-                IS_TOKEN_SELECTOR + to32BytesString(ZERO_ADDRESS),
+        assertThatThrownBy(() -> mirrorClient.contractsCall(
+                PrecompileContractFeature.IS_TOKEN_SELECTOR + TestUtil
+                        .to32BytesString(ZERO_ADDRESS),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
-        );
-
-        assertFalse(convertContractCallResponseToBoolean(response));
+        ))
+                .isInstanceOf(WebClientResponseException.class)
+                .hasMessageContaining("400 Bad Request from POST");
     }
 
-    @Then("Valid account is token should return false")
+    @Then("Valid account is token should return an error")
     public void checkIfValidAccountIsToken() {
-        ContractCallResponse response = mirrorClient.contractsCall(
-                IS_TOKEN_SELECTOR + to32BytesString(accountClient.getTokenTreasuryAccount().getAccountId()
-                        .toSolidityAddress()),
+        assertThatThrownBy(() -> mirrorClient.contractsCall(
+                PrecompileContractFeature.IS_TOKEN_SELECTOR + TestUtil
+                        .to32BytesString(accountClient.getTokenTreasuryAccount().getAccountId().toSolidityAddress()),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
-        );
-
-        assertFalse(convertContractCallResponseToBoolean(response));
+        ))
+                .isInstanceOf(WebClientResponseException.class)
+                .hasMessageContaining("400 Bad Request from POST");
     }
 
     @Then("Verify fungible token isn't frozen")
