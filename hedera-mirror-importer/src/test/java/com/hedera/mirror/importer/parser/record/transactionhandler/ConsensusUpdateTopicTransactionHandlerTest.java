@@ -103,7 +103,7 @@ class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHand
     }
 
     @Test
-    void updateTransactionEntityIdEmptyNull() {
+    void updateTransactionEntityIdEmpty() {
         // given
         var alias = DomainUtils.fromBytes(domainBuilder.key());
         var recordItem = recordItemBuilder.consensusUpdateTopic()

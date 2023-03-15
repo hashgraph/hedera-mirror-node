@@ -120,7 +120,7 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
     }
 
     @Test
-    void updateTransactionWithNullEntity() {
+    void updateTransactionWithEmptyEntity() {
         var alias = DomainUtils.fromBytes(domainBuilder.key());
         var recordItem = recordItemBuilder.tokenUpdate()
                 .transactionBody(b -> b.getAutoRenewAccountBuilder().setAlias(alias))

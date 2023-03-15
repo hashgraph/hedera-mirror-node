@@ -75,7 +75,6 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
         parseTokenAllowances(transactionBody.getTokenAllowancesList(), recordItem);
     }
 
-    @SuppressWarnings("java:S2259")
     private void parseCryptoAllowances(List<com.hederahashgraph.api.proto.java.CryptoAllowance> cryptoAllowances,
                                        RecordItem recordItem) {
         var consensusTimestamp = recordItem.getConsensusTimestamp();
@@ -105,7 +104,6 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
         }
     }
 
-    @SuppressWarnings("java:S2259")
     private void parseNftAllowances(List<com.hederahashgraph.api.proto.java.NftAllowance> nftAllowances,
                                     RecordItem recordItem) {
         var consensusTimestamp = recordItem.getConsensusTimestamp();
@@ -160,7 +158,6 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
         }
     }
 
-    @SuppressWarnings("java:S2259")
     private void parseTokenAllowances(List<com.hederahashgraph.api.proto.java.TokenAllowance> tokenAllowances,
                                       RecordItem recordItem) {
         var consensusTimestamp = recordItem.getConsensusTimestamp();
