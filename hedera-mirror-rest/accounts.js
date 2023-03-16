@@ -43,7 +43,7 @@ const processRow = (row) => {
   const entityId = EntityId.parse(row.id);
   let evmAddress = row.evm_address && utils.toHexString(row.evm_address, true);
   if (evmAddress === null) {
-    if (alias && row.alias.length == EVM_ADDRESS_LENGTH) {
+    if (alias && row.alias.length == constants.EVM_ADDRESS_LENGTH) {
       evmAddress = utils.toHexString(row.alias, true);
     } else {
       evmAddress = entityId.toEvmAddress();
