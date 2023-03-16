@@ -24,6 +24,7 @@ plugins {
     id("idea")
     id("java-platform")
     id("org.sonarqube")
+    id("snykcode-extension")
 }
 
 // Can't use typed variable syntax due to Dependabot limitations
