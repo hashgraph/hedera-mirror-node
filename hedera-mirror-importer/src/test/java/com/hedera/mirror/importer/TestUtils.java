@@ -22,6 +22,8 @@ package com.hedera.mirror.importer;
 
 import static java.lang.invoke.MethodType.methodType;
 
+import com.hedera.mirror.common.domain.transaction.TransactionHash;
+
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -42,10 +44,15 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import lombok.experimental.UtilityClass;
 import org.apache.commons.beanutils.BeanUtilsBean;
 
 import com.hedera.mirror.importer.util.Utility;
+
+import org.springframework.jdbc.core.DataClassRowMapper;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 @UtilityClass
 public class TestUtils {
@@ -140,6 +147,19 @@ public class TestUtils {
         } catch (IllegalAccessException | InvocationTargetException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public Collection<TransactionHash> getShardTransactionHashes(int shard, JdbcTemplate jdbcTemplate) {
+        var sql = String.format("SELECT * from transaction_hash_sharded_%02d", shard);
+        return jdbcTemplate.query(sql, new DataClassRowMapper<>(TransactionHash.class));
+    }
+
+    public Collection<TransactionHash> getTransactionHashesFromAllShards(JdbcTemplate jdbcTemplate) {
+        var sql = IntStream.range(0, 32)
+                .boxed()
+                .map(shard -> String.format("SELECT * from transaction_hash_sharded_%02d", shard))
+                .collect(Collectors.joining(" UNION ALL "));
+        return jdbcTemplate.query(sql, new DataClassRowMapper<>(TransactionHash.class));
     }
 
     public AccountID toAccountId(String accountId) {

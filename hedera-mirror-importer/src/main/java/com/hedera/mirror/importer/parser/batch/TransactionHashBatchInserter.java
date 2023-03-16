@@ -107,7 +107,6 @@ public class TransactionHashBatchInserter implements BatchPersister {
             log.info("Copied {} rows from {} shards to {} table in {}", items.size(), shardedItems.size(),
                     this.shardedTableName, stopwatch);
         } catch (Exception e) {
-            log.error("Got this exception cuttty", e);
             throw new ParserException(String.format("Error copying %d items to table %s", items.size(),
                     this.shardedTableName));
         }

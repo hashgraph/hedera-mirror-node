@@ -26,13 +26,14 @@ import com.hedera.mirror.common.domain.transaction.TransactionHash;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 
+import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.util.Utility;
 
+import lombok.SneakyThrows;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.jupiter.api.Test;
-import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.ConnectionHolder;
 import org.springframework.transaction.support.TransactionCallback;
@@ -40,14 +41,13 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 import org.springframework.transaction.support.TransactionTemplate;
 import javax.annotation.Resource;
 import javax.sql.DataSource;
-import java.sql.SQLException;
+import java.sql.Connection;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
@@ -90,7 +90,7 @@ class TransactionHashBatchInserterTest extends IntegrationTest {
             batchPersister.persist(transactionHashes);
             // Inside a different transaction so will not be available when queried here
             shardMap.keySet()
-                    .forEach(shard -> assertThat(getShardTransactionHashes(shard)).isEmpty());
+                    .forEach(shard -> assertThat(TestUtils.getShardTransactionHashes(shard, jdbcTemplate)).isEmpty());
 
             assertThat(hashBatchInserter.getThreadConnections()).isNotEmpty();
             hashBatchInserter.getThreadConnections().values()
@@ -103,7 +103,7 @@ class TransactionHashBatchInserterTest extends IntegrationTest {
         assertThreadState(STATUS_COMMITTED);
 
         shardMap.keySet()
-                .forEach(shard -> assertThat(getShardTransactionHashes(shard)).containsExactlyInAnyOrderElementsOf(shardMap.get(shard)));
+                .forEach(shard -> assertThat(TestUtils.getShardTransactionHashes(shard, jdbcTemplate)).containsExactlyInAnyOrderElementsOf(shardMap.get(shard)));
     }
 
     @Test
@@ -132,7 +132,7 @@ class TransactionHashBatchInserterTest extends IntegrationTest {
 
                 batchPersister.persist(transactionHashes);
                 shardMap.keySet()
-                        .forEach(shard -> assertThat(getShardTransactionHashes(shard)).isEmpty());
+                        .forEach(shard -> assertThat(TestUtils.getShardTransactionHashes(shard, jdbcTemplate)).isEmpty());
 
                 assertThat(hashBatchInserter.getThreadConnections()).isNotEmpty();
                 hashBatchInserter.getThreadConnections().values()
@@ -149,7 +149,7 @@ class TransactionHashBatchInserterTest extends IntegrationTest {
         assertThat(transactionRepository.findAll()).isEmpty();
         assertThreadState(STATUS_ROLLED_BACK);
         shardMap.keySet()
-                .forEach(shard -> assertThat(getShardTransactionHashes(shard)).isEmpty());
+                .forEach(shard -> assertThat(TestUtils.getShardTransactionHashes(shard, jdbcTemplate)).isEmpty());
     }
 
     @Test
@@ -162,7 +162,7 @@ class TransactionHashBatchInserterTest extends IntegrationTest {
 
                 batchPersister.persist(transactionHashes);
                 shardMap.keySet()
-                        .forEach(shard -> assertThat(getShardTransactionHashes(shard)).isEmpty());
+                        .forEach(shard -> assertThat(TestUtils.getShardTransactionHashes(shard, jdbcTemplate)).isEmpty());
 
                 assertThat(hashBatchInserter.getThreadConnections()).isNotEmpty();
                 hashBatchInserter.getThreadConnections().values()
@@ -171,11 +171,7 @@ class TransactionHashBatchInserterTest extends IntegrationTest {
                 // Get holder of parent transaction
                 ConnectionHolder connectionHolder =
                         (ConnectionHolder) TransactionSynchronizationManager.getResource(datasource);
-                try {
-                    connectionHolder.getConnection().close();
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
+                markAndCloseConnection(connectionHolder.getConnection());
                 return new HashSet<>(); //ignored
             });
         } catch (Exception e) {
@@ -188,7 +184,7 @@ class TransactionHashBatchInserterTest extends IntegrationTest {
         assertThat(transactionRepository.findAll()).isEmpty();
         assertThreadState(STATUS_ROLLED_BACK);
         shardMap.keySet()
-                .forEach(shard -> assertThat(getShardTransactionHashes(shard)).isEmpty());
+                .forEach(shard -> assertThat(TestUtils.getShardTransactionHashes(shard, jdbcTemplate)).isEmpty());
     }
 
     @Test
@@ -200,7 +196,7 @@ class TransactionHashBatchInserterTest extends IntegrationTest {
 
             batchPersister.persist(transactionHashes);
             shardMap.keySet()
-                    .forEach(shard -> assertThat(getShardTransactionHashes(shard)).isEmpty());
+                    .forEach(shard -> assertThat(TestUtils.getShardTransactionHashes(shard, jdbcTemplate)).isEmpty());
 
             assertThat(hashBatchInserter.getThreadConnections()).isNotEmpty();
             hashBatchInserter.getThreadConnections().values()
@@ -209,20 +205,14 @@ class TransactionHashBatchInserterTest extends IntegrationTest {
             // Get connection of thread transaction
             var key = hashBatchInserter.getThreadConnections().keySet().iterator().next();
             var threadToClose = hashBatchInserter.getThreadConnections().get(key);
-            try {
-                //Mark as dirty
-                threadToClose.getConnection().getMetaData();
-                threadToClose.getConnection().close();
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
+            markAndCloseConnection(threadToClose.getConnection());
             return key;
         });
 
         assertThat(transactionRepository.findAll()).containsExactlyInAnyOrderElementsOf(transactions);
 
         var closedThreadState = hashBatchInserter.getThreadConnections().get(closedThread);
-        closedThreadState.getProcessedShards().forEach(shard -> assertThat(getShardTransactionHashes(shard)).isEmpty());
+        closedThreadState.getProcessedShards().forEach(shard -> assertThat(TestUtils.getShardTransactionHashes(shard, jdbcTemplate)).isEmpty());
         assertThat(closedThreadState.getStatus()).isEqualTo(Integer.MAX_VALUE);
 
         //Remove the dead connection to assert remaining shards
@@ -243,7 +233,7 @@ class TransactionHashBatchInserterTest extends IntegrationTest {
 
                 batchPersister.persist(copy);
                 shardMap.keySet()
-                        .forEach(shard -> assertThat(getShardTransactionHashes(shard)).isEmpty());
+                        .forEach(shard -> assertThat(TestUtils.getShardTransactionHashes(shard, jdbcTemplate)).isEmpty());
 
                 assertThat(hashBatchInserter.getThreadConnections()).isNotEmpty();
                 hashBatchInserter.getThreadConnections().values()
@@ -253,7 +243,7 @@ class TransactionHashBatchInserterTest extends IntegrationTest {
         } catch (ParserException e) {
             assertThat(hashBatchInserter.getThreadConnections()).isEmpty();
             shardMap.keySet()
-                    .forEach(shard -> assertThat(getShardTransactionHashes(shard)).isEmpty());
+                    .forEach(shard -> assertThat(TestUtils.getShardTransactionHashes(shard, jdbcTemplate)).isEmpty());
             assertThat(transactionRepository.findAll()).isEmpty();
             return;
         }
@@ -264,19 +254,19 @@ class TransactionHashBatchInserterTest extends IntegrationTest {
         assertThat(hashBatchInserter.getThreadConnections()).isNotEmpty();
         hashBatchInserter.getThreadConnections()
                 .values()
-                .forEach(threadState -> {
-                    assertThat(threadState.getStatus()).isEqualTo(statusCommitted);
-                    try {
-                        assertThat(threadState.getConnection().isClosed()).isTrue();
-                    } catch (SQLException e) {
-                        throw new RuntimeException(e);
-                    }
-                });
+                .forEach(threadState -> assertThreadState(statusCommitted, threadState));
     }
 
-    private List<TransactionHash> getShardTransactionHashes(int shard) {
-        var sql = String.format("SELECT * from transaction_hash_sharded_%02d", shard);
-        return jdbcTemplate.query(sql, new DataClassRowMapper<>(TransactionHash.class));
+    @SneakyThrows
+    private void assertThreadState(int statusCommitted, TransactionHashBatchInserter.ThreadState threadState) {
+        assertThat(threadState.getStatus()).isEqualTo(statusCommitted);
+        assertThat(threadState.getConnection().isClosed()).isTrue();
+    }
+
+    @SneakyThrows
+    private void markAndCloseConnection(Connection connection) {
+        connection.getMetaData();
+        connection.close();
     }
 
     private Set<TransactionHash> transactionHash(int count) {

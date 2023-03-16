@@ -941,13 +941,8 @@ class SqlEntityListenerTest extends IntegrationTest {
         else {
             expectedTransactionHashes.stream()
                     .collect(Collectors.groupingBy(TransactionHash::calculateV1Shard))
-                    .forEach((key, value) -> assertThat(getShardTransactionHashes(key)).containsExactlyInAnyOrderElementsOf(value));
+                    .forEach((shard, items) -> assertThat(TestUtils.getShardTransactionHashes(shard, jdbcTemplate)).containsExactlyInAnyOrderElementsOf(items));
         }
-    }
-
-    private List<TransactionHash> getShardTransactionHashes(int shard) {
-        var sql = String.format("SELECT * from transaction_hash_sharded_%02d", shard);
-        return jdbcTemplate.query(sql, new DataClassRowMapper<>(TransactionHash.class));
     }
 
     @Test
