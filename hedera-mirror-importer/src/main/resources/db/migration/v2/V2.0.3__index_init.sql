@@ -39,13 +39,13 @@ alter table if exists contract_action
 
 -- contract_log
 alter table if exists contract_log
-    add constraint contract_log__pk primary key (consensus_timestamp, index, payer_account_id);
+    add constraint contract_log__pk primary key (consensus_timestamp, index, contract_id);
 create index if not exists contract_log__contract_id_timestamp_index
     on contract_log (contract_id, consensus_timestamp desc, index);
 
 -- contract_result
 alter table if exists contract_result
-    add constraint contract_result__pk primary key (consensus_timestamp, payer_account_id);
+    add constraint contract_result__pk primary key (consensus_timestamp, contract_id);
 
 create index if not exists contract_result__hash
     on contract_result using hash (transaction_hash);
@@ -65,7 +65,7 @@ alter table if exists contract_state
 
 -- contract_state_change
 alter table if exists contract_state_change
-    add constraint contract_state_change__pk primary key (consensus_timestamp, contract_id, slot, payer_account_id);
+    add constraint contract_state_change__pk primary key (consensus_timestamp, contract_id, slot);
 
 -- crypto_allowance
 alter table if exists crypto_allowance
@@ -111,13 +111,13 @@ alter table if exists entity_stake
 -- ethereum_transaction
 alter table ethereum_transaction
     add constraint ethereum_transaction__pk primary key (consensus_timestamp, payer_account_id);
-create index if not exists ethereum_transaction__hash on ethereum_transaction (hash);
+create index if not exists ethereum_transaction__hash on ethereum_transaction using hash (hash);
 
 -- event_file
 alter table event_file
     add constraint event_file__pk primary key (consensus_end, node_id);
 create index if not exists event_file__hash
-    on event_file (hash);
+    on event_file using hash (hash);
 
 -- file_data
 alter table file_data
@@ -149,8 +149,8 @@ create index if not exists nft_allowance_history__timestamp_range on nft_allowan
 
 -- nft_transfer
 create index if not exists nft_transfer__timestamp on nft_transfer (consensus_timestamp desc);
-create unique index if not exists nft_transfer__token_id_serial_num_timestamp
-    on nft_transfer (token_id desc, serial_number desc, consensus_timestamp desc, payer_account_id);
+create index if not exists nft_transfer__token_id_serial_num_timestamp
+    on nft_transfer (token_id desc, serial_number desc, consensus_timestamp desc);
 
 alter table if exists node_stake
     add constraint node_stake__pk primary key (consensus_timestamp, node_id);
@@ -225,8 +225,8 @@ alter table if exists topic_message
     add constraint topic_message__pk primary key (consensus_timestamp, topic_id);
 create index if not exists topic_message__topic_id_timestamp
     on topic_message (topic_id, consensus_timestamp);
-create unique index if not exists topic_message__topic_id_seqnum
-    on topic_message (topic_id, sequence_number, consensus_timestamp);
+create index if not exists topic_message__topic_id_seqnum
+    on topic_message (topic_id, sequence_number);
 
 -- transaction
 alter table if exists transaction

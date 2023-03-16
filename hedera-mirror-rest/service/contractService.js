@@ -48,7 +48,9 @@ ${ContractLog.getFullName(ContractLog.ROOT_CONTRACT_ID)},
 ${ContractLog.getFullName(ContractLog.TOPIC0)},
 ${ContractLog.getFullName(ContractLog.TOPIC1)},
 ${ContractLog.getFullName(ContractLog.TOPIC2)},
-${ContractLog.getFullName(ContractLog.TOPIC3)}
+${ContractLog.getFullName(ContractLog.TOPIC3)},
+${ContractLog.getFullName(ContractLog.TRANSACTION_HASH)},
+${ContractLog.getFullName(ContractLog.TRANSACTION_INDEX)}
 `;
 
 const contractResultsFields = `${ContractResult.getFullName(ContractResult.AMOUNT)},
@@ -146,19 +148,12 @@ class ContractService extends BaseService {
       from ${Entity.tableName}
     )
     select ${contractLogsFields},
-      ${ContractResult.getFullName(ContractResult.TRANSACTION_HASH)},
-      ${ContractResult.getFullName(ContractResult.TRANSACTION_INDEX)},
       block_number,
       block_hash,
       ${Entity.EVM_ADDRESS}
     from ${ContractLog.tableName} ${ContractLog.tableAlias}
     left join ${Entity.tableName} ${Entity.tableAlias}
       on ${Entity.ID} = ${ContractLog.CONTRACT_ID}
-    left join ${ContractResult.tableName} ${ContractResult.tableAlias}
-      on ${ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP)} =
-        ${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)} and
-        ${ContractLog.getFullName(ContractLog.PAYER_ACCOUNT_ID)} =
-        ${ContractResult.getFullName(ContractResult.PAYER_ACCOUNT_ID)}
     left join lateral (
       select ${RecordFile.INDEX} as block_number, ${RecordFile.HASH} as block_hash
       from ${RecordFile.tableName}

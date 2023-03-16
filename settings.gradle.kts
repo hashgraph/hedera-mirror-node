@@ -36,9 +36,12 @@ include(":hedera-mirror-rosetta")
 include(":hedera-mirror-test")
 include(":hedera-mirror-web3")
 
+shortenProjectName(rootProject)
+
 // Shorten project name to remove verbose "hedera-mirror-" prefix
-rootProject.children.forEach { project ->
+fun shortenProjectName(project: ProjectDescriptor) {
     project.name = project.name.removePrefix("hedera-mirror-")
+    project.children.forEach(this::shortenProjectName)
 }
 
 gradleEnterprise {

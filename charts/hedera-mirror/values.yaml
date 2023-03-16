@@ -65,7 +65,7 @@ citus:
   enabled: false
   image:
     repository: xinatswirlds/citus
-    tag: 11.1.4-pg14
+    tag: 11.2.0-pg14
   nameOverride: citus
   primary:
     args: ["-c", "config_file=/bitnami/postgresql/conf/postgresql.conf"]
@@ -142,6 +142,33 @@ global:
   podAnnotations: {}
   useReleaseForNameLabel: false  # Set the name label to the release name for Marketplace
 
+graphql:
+  db:
+    password: ""  # Randomly generated if left blank
+    username: mirror_graphql
+  enabled: true
+  env:
+    HEDERA_MIRROR_GRAPHQL_DB_HOST:
+      valueFrom:
+        secretKeyRef:
+          name: mirror-passwords
+          key: HEDERA_MIRROR_IMPORTER_DB_HOST
+    HEDERA_MIRROR_GRAPHQL_DB_NAME:
+      valueFrom:
+        secretKeyRef:
+          name: mirror-passwords
+          key: HEDERA_MIRROR_IMPORTER_DB_NAME
+    HEDERA_MIRROR_GRAPHQL_DB_PASSWORD:
+      valueFrom:
+        secretKeyRef:
+          name: mirror-passwords
+          key: HEDERA_MIRROR_GRAPHQL_DB_PASSWORD
+    HEDERA_MIRROR_GRAPHQL_DB_USERNAME:
+      valueFrom:
+        secretKeyRef:
+          name: mirror-passwords
+          key: HEDERA_MIRROR_GRAPHQL_DB_USERNAME
+
 grpc:
   db:
     password: ""  # Randomly generated if left blank
@@ -171,12 +198,12 @@ grpc:
     SPRING_REDIS_HOST:
       valueFrom:
         secretKeyRef:
-          name: mirror-redis
+          name: "{{ .Release.Name }}-redis"
           key: SPRING_REDIS_HOST
     SPRING_REDIS_PASSWORD:
       valueFrom:
         secretKeyRef:
-          name: mirror-redis
+          name: "{{ .Release.Name }}-redis"
           key: SPRING_REDIS_PASSWORD
 
 importer:
@@ -188,7 +215,7 @@ importer:
     - secretRef:
         name: mirror-passwords
     - secretRef:
-        name: mirror-redis
+        name: "{{ .Release.Name }}-redis"
 
 labels: {}
 
@@ -239,16 +266,17 @@ postgresql:
       create: true
     resources:
       limits:
-        cpu: 300m
+        cpu: 600m
         memory: 750Mi
       requests:
-        cpu: 150m
+        cpu: 200m
         memory: 256Mi
   postgresql:
     existingSecret: mirror-passwords
     extraEnvVarsSecret: mirror-passwords
     image:
       debug: true
+      tag: 14.7.0-debian-11-r5
     initdbScriptsCM: "{{ .Release.Name }}-init"
     password: ""  # Randomly generated if left blank
     podAntiAffinityPreset: soft
@@ -267,7 +295,7 @@ postgresql:
 
 redis:
   auth:
-    existingSecret: mirror-redis
+    existingSecret: "{{ .Release.Name }}-redis"
     existingSecretPasswordKey: SPRING_REDIS_PASSWORD
     password: ""  # Randomly generated if left blank
   enabled: true
@@ -304,6 +332,8 @@ redis:
     masterSet: mirror
     persistence:
       enabled: true
+    readinessProbe:
+      timeoutSeconds: 4
     resources:
       limits:
         cpu: 150m

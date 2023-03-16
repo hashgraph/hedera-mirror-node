@@ -24,8 +24,6 @@ hedera:
         username: mirror_api
       log:
         level: info
-      maxRepeatedQueryParameters: 100
-      maxTimestampRange: 7d
       metrics:
         enabled: true
         config:
@@ -60,6 +58,10 @@ hedera:
         specFileName: 'openapi'
         swaggerUIPath: 'docs'
       port: 5551
+      query:
+        maxRepeatedQueryParameters: 100
+        maxTimestampRange: 7d
+        maxTransactionConsensusTimestampRange: 35m
       response:
         compression: true
         headers:

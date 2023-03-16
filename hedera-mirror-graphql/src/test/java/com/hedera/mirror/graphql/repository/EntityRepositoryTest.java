@@ -38,4 +38,16 @@ class EntityRepositoryTest extends GraphqlIntegrationTest {
         var entity = domainBuilder.entity().persist();
         assertThat(entityRepository.findById(entity.getId())).get().isEqualTo(entity);
     }
+
+    @Test
+    void findByAlias() {
+        var entity = domainBuilder.entity().persist();
+        assertThat(entityRepository.findByAlias(entity.getAlias())).get().isEqualTo(entity);
+    }
+
+    @Test
+    void findByEvmAddress() {
+        var entity = domainBuilder.entity().persist();
+        assertThat(entityRepository.findByEvmAddress(entity.getEvmAddress())).get().isEqualTo(entity);
+    }
 }

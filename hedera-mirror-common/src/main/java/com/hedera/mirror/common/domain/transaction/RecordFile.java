@@ -76,6 +76,7 @@ public class RecordFile implements StreamFile<RecordItem> {
     @ToString.Exclude
     private String fileHash;
 
+    @Builder.Default
     private long gasUsed = 0L;
 
     @EqualsAndHashCode.Exclude
@@ -94,6 +95,7 @@ public class RecordFile implements StreamFile<RecordItem> {
 
     private Long index;
 
+    @Builder.Default
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
     @Transient

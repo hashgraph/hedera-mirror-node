@@ -25,7 +25,15 @@ import org.springframework.graphql.data.GraphQlRepository;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 
+import org.springframework.data.jpa.repository.Query;
+
+import java.util.Optional;
+
 @GraphQlRepository
 public interface EntityRepository extends CrudRepository<Entity, Long> {
+    @Query(value = "select * from entity where alias = ?1 and deleted is not true", nativeQuery = true)
+    Optional<Entity> findByAlias(byte[] alias);
 
+    @Query(value = "select * from entity where evm_address = ?1 and deleted is not true", nativeQuery = true)
+    Optional<Entity> findByEvmAddress(byte[] evmAddress);
 }

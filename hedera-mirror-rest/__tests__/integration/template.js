@@ -51,7 +51,51 @@ import S3 from 'aws-sdk/clients/s3';
 
 const groupSpecPath = $$GROUP_SPEC_PATH$$;
 
+const walk = (dir, files = []) => {
+  for (const f of fs.readdirSync(dir)) {
+    const p = path.join(dir, f);
+    const stat = fs.statSync(p);
+
+    if (stat.isDirectory()) {
+      walk(p, files);
+    } else {
+      files.push(p);
+    }
+  }
+
+  return files;
+};
+
+const getSpecs = async () => {
+  const modulePath = getModuleDirname(import.meta);
+  const specPath = path.join(modulePath, '..', 'specs', groupSpecPath);
+  const specMap = {};
+
+  await Promise.all(
+    walk(specPath)
+      .filter((f) => f.endsWith('.json'))
+      .map(async (f) => {
+        const specText = fs.readFileSync(f, 'utf8');
+        const spec = JSONParse(specText);
+        spec.name = path.basename(f);
+        const key = path.dirname(f).replace(specPath, '');
+        const specs = specMap[key] || [];
+        if (spec.matrix) {
+          const apply = (await import(path.join(modulePath, spec.matrix))).default;
+          specs.push(...apply(spec));
+        } else {
+          specs.push(spec);
+        }
+        specMap[key] = specs;
+      })
+  );
+
+  return specMap;
+};
+
 setupIntegrationTest();
+
+const specs = await getSpecs();
 
 describe(`API specification tests - ${groupSpecPath}`, () => {
   const bucketName = 'hedera-demo-streams';
@@ -73,25 +117,6 @@ describe(`API specification tests - ${groupSpecPath}`, () => {
         bucketName,
       },
     };
-  };
-
-  const getSpecs = () => {
-    const specPath = path.join(getModuleDirname(import.meta), '..', 'specs', groupSpecPath);
-    const specMap = {};
-
-    walk(specPath)
-      .filter((f) => f.endsWith('.json'))
-      .forEach((f) => {
-        const specText = fs.readFileSync(f, 'utf8');
-        const spec = JSONParse(specText);
-        spec.file = path.basename(f);
-        const key = path.dirname(f).replace(specPath, '');
-        const specs = specMap[key] || [];
-        specs.push(spec);
-        specMap[key] = specs;
-      });
-
-    return specMap;
   };
 
   const getTests = (spec) => {
@@ -228,23 +253,7 @@ describe(`API specification tests - ${groupSpecPath}`, () => {
     logger.debug(`uploaded ${s3ObjectKeys.length} file objects: ${s3ObjectKeys}`);
   };
 
-  const walk = function (dir, files = []) {
-    for (const f of fs.readdirSync(dir)) {
-      const p = path.join(dir, f);
-      const stat = fs.statSync(p);
-
-      if (stat.isDirectory()) {
-        walk(p, files);
-      } else {
-        files.push(p);
-      }
-    }
-
-    return files;
-  };
-
   jest.setTimeout(60000);
-  const specs = getSpecs();
 
   beforeAll(async () => {
     if (needsS3(specs)) {
@@ -270,10 +279,14 @@ describe(`API specification tests - ${groupSpecPath}`, () => {
   Object.entries(specs).forEach(([dir, specs]) => {
     describe(`${dir}`, () => {
       specs.forEach((spec) => {
-        describe(`${spec.file}`, () => {
+        describe(`${spec.name}`, () => {
           getTests(spec).forEach((tt) => {
             test(`${tt.url}`, async () => {
               await specSetupSteps(spec.setup);
+              if (spec.postSetup) {
+                await spec.postSetup();
+              }
+
               const response = await request(server).get(tt.url);
 
               expect(response.status).toEqual(tt.responseStatus);

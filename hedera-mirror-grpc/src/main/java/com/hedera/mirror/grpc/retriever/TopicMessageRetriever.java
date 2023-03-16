@@ -30,5 +30,8 @@ import com.hedera.mirror.grpc.domain.TopicMessageFilter;
  * current results in the database are returned.
  */
 public interface TopicMessageRetriever {
+
+    String METRIC = "hedera_mirror_grpc_retriever";
+
     Flux<TopicMessage> retrieve(TopicMessageFilter filter, boolean throttled);
 }

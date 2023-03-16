@@ -63,6 +63,7 @@ public class EventFile implements StreamFile<EventItem> {
     @ToString.Exclude
     private String hash;
 
+    @Builder.Default
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
     @Transient

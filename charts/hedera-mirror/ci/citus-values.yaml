@@ -1,10 +1,19 @@
 citus:
   enabled: true
+graphql:
+  test:
+    defaultAccount: 111146
 importer:
   env:
     SPRING_FLYWAY_PLACEHOLDERS_SHARDCOUNT: "2"
     SPRING_FLYWAY_PLACEHOLDERS_PARTITIONSTARTDATE: "'0 days'"
     SPRING_PROFILES_ACTIVE: v2
+  # Ensure importer has time to start stream processing after startup
+  readinessProbe:
+    initialDelaySeconds: 20
+    periodSeconds: 15
+    successThreshold: 2
+
 monitor:
   enabled: false
 postgresql:

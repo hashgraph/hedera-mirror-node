@@ -29,16 +29,24 @@ import com.hedera.mirror.web3.evm.exception.EvmException;
 @SuppressWarnings("java:S110")
 public class InvalidTransactionException extends EvmException {
 
-    public InvalidTransactionException(final ResponseCodeEnum responseCode) {
+    private final String detail;
+
+    public InvalidTransactionException(final ResponseCodeEnum responseCode, final String detail) {
         super(responseCode.name());
+        this.detail = detail;
     }
 
-    public InvalidTransactionException(String message) {
+    public InvalidTransactionException(String message, final String detail) {
         super(message);
+        this.detail = detail;
     }
 
     public Bytes messageBytes() {
-        final var detail = getMessage();
-        return Bytes.of(detail.getBytes(StandardCharsets.UTF_8));
+        final var message = getMessage();
+        return Bytes.of(message.getBytes(StandardCharsets.UTF_8));
+    }
+
+    public String getDetail() {
+        return detail;
     }
 }
