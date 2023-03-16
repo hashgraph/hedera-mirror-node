@@ -13,6 +13,7 @@
         "@nomiclabs/hardhat-ethers": "*",
         "@nomiclabs/hardhat-waffle": "*",
         "chai": "*",
+        "mocha": "*",
         "ethereum-waffle": "*",
         "ethers": "*",
         "hardhat": "*"
