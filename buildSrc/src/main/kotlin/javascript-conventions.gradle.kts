@@ -30,7 +30,7 @@ plugins {
 // Temporary until we move completely off VMs
 tasks.register<NpmTask>("package") {
     dependsOn(tasks.npmInstall)
-    args.set(listOf("pack"))
+    args.set(listOf("pack", "--silent"))
     doLast {
         buildDir.mkdirs()
         fileTree(projectDir).matching { include("*.tgz") }.forEach {

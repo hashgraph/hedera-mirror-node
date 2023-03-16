@@ -614,15 +614,11 @@ class TopicMessageServiceTest extends GrpcIntegrationTest {
                 .thenReturn(
                         Flux.just(retrieved1)
                 );
+        var missing = Flux.just(topicMessage(5), topicMessage(6), topicMessage(7));
         Mockito.when(topicMessageRetriever
                         .retrieve(ArgumentMatchers.isA(TopicMessageFilter.class), ArgumentMatchers.eq(false)))
-                .thenReturn(
-                        Flux.just(retrieved2), // missing historic
-                        Flux.just(
-                                topicMessage(5), // missing incoming
-                                topicMessage(6),
-                                topicMessage(7)
-                        ));
+                .thenReturn(Flux.just(retrieved2))
+                .thenReturn(missing);
 
         StepVerifier.withVirtualTime(() -> topicMessageService.subscribeTopic(retrieverFilter)
                         .map(TopicMessage::getSequenceNumber))

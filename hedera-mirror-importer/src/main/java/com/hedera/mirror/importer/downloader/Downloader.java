@@ -412,7 +412,7 @@ public abstract class Downloader<T extends StreamFile<I>, I extends StreamItem> 
         return false;
     }
 
-    @SuppressWarnings("java:S1172") // Unused Parameter (node) required by subclass implementations
+    @SuppressWarnings({"unchecked", "java:S1172"}) // Unused Parameter (node) required by subclass implementations
     protected void onVerified(StreamFileData streamFileData, T streamFile, ConsensusNode node) {
         setStreamFileIndex(streamFile);
         streamFileNotifier.verified(streamFile);

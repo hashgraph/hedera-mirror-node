@@ -53,10 +53,10 @@ public class RedisTopicListener extends SharedTopicListener {
 
     public RedisTopicListener(ListenerProperties listenerProperties,
                               ReactiveRedisConnectionFactory connectionFactory,
-                              RedisSerializer<?> redisSerializer) {
+                              RedisSerializer<TopicMessage> redisSerializer) {
         super(listenerProperties);
         this.channelSerializer = SerializationPair.fromSerializer(RedisSerializer.string());
-        this.messageSerializer = (SerializationPair<TopicMessage>) SerializationPair.fromSerializer(redisSerializer);
+        this.messageSerializer = SerializationPair.fromSerializer(redisSerializer);
         this.topicMessages = new ConcurrentHashMap<>();
 
         // Workaround Spring DATAREDIS-1208 by lazily starting connection once with retry
