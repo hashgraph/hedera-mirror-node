@@ -23,10 +23,12 @@ package com.hedera.mirror.importer.domain;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.TokenType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -71,16 +73,42 @@ class ContractResultServiceImplTest {
     }
 
     @Test
-    void invalidContractLogId() {
+    void emptyTransactionEntityId() {
         RecordItem recordItem = recordItemBuilder.contractCreate().build();
         var transaction = domainBuilder.transaction()
                 .customize(t -> t.entityId(EntityId.EMPTY).type(recordItem.getTransactionType()))
+                .get();
+
+        contractResultService.process(recordItem, transaction);
+
+        verify(entityListener, times(1)).onContractResult(any());
+    }
+
+    @Test
+    void nullTransactionEntityId() {
+        RecordItem recordItem = recordItemBuilder.contractCreate().build();
+        var transaction = domainBuilder.transaction()
+                .customize(t -> t.entityId(null).type(recordItem.getTransactionType()))
+                .get();
+
+        contractResultService.process(recordItem, transaction);
+
+        verify(entityListener, never()).onContractResult(any());
+    }
+
+    @Test
+    void lookupReturnsEmptyId() {
+        RecordItem recordItem = recordItemBuilder.tokenMint(TokenType.FUNGIBLE_COMMON)
+                .record(x -> x.setContractCallResult(recordItemBuilder.contractFunctionResult()))
+                .build();
+        var transaction = domainBuilder.transaction()
+                .customize(t -> t.entityId(null).type(recordItem.getTransactionType()))
                 .get();
 
         when(entityIdService.lookup((ContractID) any())).thenReturn(EntityId.EMPTY);
 
         contractResultService.process(recordItem, transaction);
 
-        verify(entityListener, never()).onContractLog(any());
+        verify(entityListener, times(1)).onContractResult(any());
     }
 }

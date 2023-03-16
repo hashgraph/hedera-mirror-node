@@ -22,6 +22,7 @@ package com.hedera.mirror.importer.domain;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
+import static com.hedera.mirror.common.domain.entity.EntityType.UNKNOWN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -273,6 +274,15 @@ class EntityIdServiceImplTest extends IntegrationTest {
     @Test
     void storeNull() {
         assertDoesNotThrow(() -> entityIdService.notify(null));
+    }
+
+    @Test
+    void unknownEntityType() {
+        Entity contract = domainBuilder.entity()
+                .customize(c -> c.alias(DomainUtils.fromBytes(PARSABLE_EVM_ADDRESS).toByteArray()).type(UNKNOWN)).get();
+        entityIdService.notify(contract);
+        var contractId = getProtoContractId(contract);
+        assertThat(entityIdService.lookup(contractId)).isEqualTo(EntityId.EMPTY);
     }
 
     @Test

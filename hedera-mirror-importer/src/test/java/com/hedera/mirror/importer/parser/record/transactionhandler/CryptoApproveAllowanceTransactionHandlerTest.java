@@ -186,6 +186,26 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
     }
 
     @Test
+    void updateTransactionWithEmptyOwner() {
+        var alias = DomainUtils.fromBytes(domainBuilder.key());
+        var recordItem = recordItemBuilder.cryptoApproveAllowance()
+                .transactionBody(b -> {
+                    b.getCryptoAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().clear());
+                    b.getNftAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
+                    b.getTokenAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
+                })
+                .transactionBodyWrapper(w -> w.getTransactionIDBuilder()
+                        .setAccountID(AccountID.newBuilder().setAccountNum(0)))
+                .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(consensusTimestamp)))
+                .build();
+        var transaction = domainBuilder.transaction().get();
+        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build())).thenReturn(EntityId.EMPTY);
+        transactionHandler.updateTransaction(transaction, recordItem);
+
+        verifyNoInteractions(entityListener);
+    }
+
+    @Test
     void updateTransactionWithAlias() {
         var alias = DomainUtils.fromBytes(domainBuilder.key());
         var ownerEntityId = EntityId.of(recordItemBuilder.accountId());
