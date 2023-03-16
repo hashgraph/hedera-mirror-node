@@ -117,7 +117,8 @@ const getSelectClauseWithTransfers = (innerQuery, order = 'desc') => {
       timestamp_range as (select min(consensus_timestamp) as min, max(consensus_timestamp) as max from timestampFilter),`;
       timestampFilterJoin = `join timestampFilter tf on ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} =
         tf.consensus_timestamp
-        WHERE t.consensus_timestamp >= tr.min and t.consensus_timestamp <= tr.max`;
+        WHERE ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} >= tr.min
+        AND ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} <= tr.max`;
       limitQuery = '';
     }
 
