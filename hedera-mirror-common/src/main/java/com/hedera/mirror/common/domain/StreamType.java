@@ -53,10 +53,10 @@ public enum StreamType {
     private final String path;
     private final SortedSet<Extension> signatureExtensions;
     private final String suffix;
-    private final Supplier<? extends StreamFile> supplier;
+    private final Supplier<? extends StreamFile<?>> supplier;
     private final Duration fileCloseInterval;
 
-    StreamType(Supplier<? extends StreamFile> supplier, String path, String nodePrefix, String suffix,
+    StreamType(Supplier<? extends StreamFile<?>> supplier, String path, String nodePrefix, String suffix,
                List<String> extensions, Duration fileCloseInterval) {
         this.supplier = supplier;
         this.path = path;
@@ -86,7 +86,7 @@ public enum StreamType {
     }
 
     @SuppressWarnings("unchecked")
-    public <T extends StreamFile> T newStreamFile() {
+    public <T extends StreamFile<?>> T newStreamFile() {
         return (T) supplier.get();
     }
 

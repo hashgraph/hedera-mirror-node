@@ -69,8 +69,8 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                   select
                     token_id,
                     freeze_key,
-                    freeze_default, 
-                    kyc_key 
+                    freeze_default,
+                    kyc_key
                   from token
                 ),
                 existing_history as (
@@ -127,7 +127,7 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                       e_automatic_association,
                       false
                     ),
-                    case when e_created_timestamp is null or e_created_timestamp <> existing.created_timestamp then 
+                    case when e_created_timestamp is null or e_created_timestamp <> existing.created_timestamp then
                       coalesce(existing.balance)
                       else coalesce(e_balance, 0) + coalesce(existing.balance, 0)
                     end,
@@ -178,7 +178,7 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                     e_automatic_association,
                     false
                   ),
-                  case when e_created_timestamp is null or e_created_timestamp <> existing.created_timestamp then 
+                  case when e_created_timestamp is null or e_created_timestamp <> existing.created_timestamp then
                     coalesce(existing.balance)
                     else coalesce(e_balance, 0) + coalesce(existing.balance, 0)
                   end,
@@ -217,7 +217,6 @@ public class TokenAccountUpsertQueryGenerator implements UpsertQueryGenerator {
                   created_timestamp = excluded.created_timestamp,
                   freeze_status = excluded.freeze_status,
                   kyc_status = excluded.kyc_status,
-                  timestamp_range = excluded.timestamp_range
-                """;
+                  timestamp_range = excluded.timestamp_range""";
     }
 }

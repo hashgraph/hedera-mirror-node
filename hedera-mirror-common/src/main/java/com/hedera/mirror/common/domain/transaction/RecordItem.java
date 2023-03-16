@@ -180,7 +180,7 @@ public class RecordItem implements StreamItem {
     private record TransactionBodyAndSignatureMap(TransactionBody transactionBody, SignatureMap signatureMap) {
     }
 
-    public static class RecordItemBuilder<B extends RecordItem.RecordItemBuilder> {
+    public static class RecordItemBuilder {
 
         public RecordItem build() {
             // set parent, parent-child items are assured to exist in sequential order of [Parent, Child1,..., ChildN]

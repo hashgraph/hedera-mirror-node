@@ -50,8 +50,10 @@ public class ScenarioPropertiesAggregatorImpl implements ScenarioPropertiesAggre
                 log.debug("Converting property {} into list {}", entry.getKey(), propertyName);
                 correctedProperties
                         .merge(propertyName, Lists.newArrayList(entry.getValue()), (e, n) -> {
-                            if (e instanceof List<?> existingList && n instanceof Collection newList) {
-                                existingList.addAll(newList);
+                            if (e instanceof List<?> existingList && n instanceof Collection<?> newList) {
+                                ((List<Object>) existingList).addAll(newList);
+                            } else {
+                                log.warn("Unable to merge {} to {}", n, e);
                             }
                             return e;
                         });
