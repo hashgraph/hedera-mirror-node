@@ -32,7 +32,7 @@ import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.importer.exception.HashMismatchException;
 import com.hedera.mirror.importer.repository.StreamFileRepository;
 
-public abstract class AbstractStreamFileParser<T extends StreamFile> implements StreamFileParser<T> {
+public abstract class AbstractStreamFileParser<T extends StreamFile<?>> implements StreamFileParser<T> {
 
     public static final String STREAM_PARSE_DURATION_METRIC_NAME = "hedera.mirror.parse.duration";
 

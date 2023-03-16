@@ -138,6 +138,7 @@ class NetworkControllerTest extends GrpcIntegrationTest {
                 .verify(WAIT);
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void nullFields() {
         AddressBook addressBook = addressBook();

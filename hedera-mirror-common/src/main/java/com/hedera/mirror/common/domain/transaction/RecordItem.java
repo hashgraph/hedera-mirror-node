@@ -180,7 +180,7 @@ public class RecordItem implements StreamItem {
     private record TransactionBodyAndSignatureMap(TransactionBody transactionBody, SignatureMap signatureMap) {
     }
 
-    public static class RecordItemBuilder<B extends RecordItem.RecordItemBuilder> {
+    public static class RecordItemBuilder {
 
         public RecordItem build() {
             // set parent, parent-child items are assured to exist in sequential order of [Parent, Child1,..., ChildN]
@@ -197,38 +197,36 @@ public class RecordItem implements StreamItem {
             return buildInternal();
         }
 
-        public B transactionRecord(TransactionRecord transactionRecord) {
+        public RecordItemBuilder transactionRecord(TransactionRecord transactionRecord) {
             this.transactionRecord = transactionRecord;
             this.recordBytes = transactionRecord.toByteArray();
-            return (B) this;
+            return this;
         }
 
-        public B transactionRecordBytes(byte[] recordBytes) {
+        public RecordItemBuilder transactionRecordBytes(byte[] recordBytes) {
             try {
                 this.recordBytes = recordBytes;
                 this.transactionRecord = TransactionRecord.parseFrom(recordBytes);
             } catch (InvalidProtocolBufferException e) {
                 throw new ProtobufException(BAD_RECORD_BYTES_MESSAGE, e);
             }
-            return (B) this;
+            return this;
         }
 
-        public B transaction(Transaction transaction) {
+        public RecordItemBuilder transaction(Transaction transaction) {
             this.transaction = transaction;
             this.transactionBytes = transaction.toByteArray();
-            return (B) this;
+            return this;
         }
 
-        public B transactionBytes(byte[] transactionBytes) {
+        public RecordItemBuilder transactionBytes(byte[] transactionBytes) {
             try {
                 this.transactionBytes = transactionBytes;
                 this.transaction = Transaction.parseFrom(transactionBytes);
             } catch (InvalidProtocolBufferException e) {
                 throw new ProtobufException(BAD_TRANSACTION_BYTES_MESSAGE, e);
             }
-            return (B) this;
+            return this;
         }
     }
-
-
 }

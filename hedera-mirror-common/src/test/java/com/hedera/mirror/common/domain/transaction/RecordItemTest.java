@@ -43,6 +43,7 @@ import org.springframework.data.util.Version;
 
 import com.hedera.mirror.common.exception.ProtobufException;
 
+@SuppressWarnings("deprecation")
 class RecordItemTest {
 
     private static final Version DEFAULT_HAPI_VERSION = new Version(0, 22, 0);
