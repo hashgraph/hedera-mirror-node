@@ -20,24 +20,44 @@ package com.hedera.mirror.web3.evm.account;
  * ‍
  */
 
+import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
+
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+
+import com.hedera.mirror.web3.exception.InvalidParametersException;
+
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
-import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
 import com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases;
 
 @Named
 @RequiredArgsConstructor
 public class MirrorEvmContractAliases extends HederaEvmContractAliases {
-    private static final byte[] EMPTY_ADDRESS = new byte[0];
     private final MirrorEntityAccess mirrorEntityAccess;
 
     @Override
     public Address resolveForEvm(Address addressOrAlias) {
-        final var entity = mirrorEntityAccess.findEntity(addressOrAlias);
-        return Address.wrap(Bytes.wrap(entity.map(Entity::getEvmAddress).orElse(EMPTY_ADDRESS)));
+        final var entityOptional = mirrorEntityAccess.findEntity(addressOrAlias);
+
+        if (entityOptional.isEmpty()) {
+            throw new InvalidParametersException("No such contract or token");
+        }
+
+        final var entity = entityOptional.get();
+
+        if (entity.getType() == EntityType.TOKEN) {
+            final var entityId = new EntityId(entity.getShard(), entity.getRealm(), entity.getNum(), EntityType.TOKEN);
+            final var bytes = Bytes.wrap(toEvmAddress(entityId));
+            return Address.wrap(bytes);
+        } else if (entity.getType() == EntityType.CONTRACT) {
+            return Address.wrap(Bytes.wrap(entity.getEvmAddress()));
+        } else {
+            throw new InvalidParametersException("No such contract or token");
+        }
     }
 }
