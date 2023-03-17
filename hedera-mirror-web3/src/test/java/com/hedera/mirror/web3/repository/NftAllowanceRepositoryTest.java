@@ -1,9 +1,35 @@
 package com.hedera.mirror.web3.repository;
 
+/*-
+ * ‌
+ * Hedera Mirror Node
+ * ​
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+
+import com.hedera.mirror.common.domain.entity.AbstractNftAllowance;
+
+import com.hedera.mirror.common.domain.entity.NftAllowance;
 
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hedera.mirror.web3.Web3IntegrationTest;
@@ -12,14 +38,19 @@ import com.hedera.mirror.web3.Web3IntegrationTest;
 class NftAllowanceRepositoryTest extends Web3IntegrationTest {
     private final NftAllowanceRepository allowanceRepository;
 
-    @Test
-    void isSpenderAnOperator() {
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void spenderHasApproveForAll(boolean isApproveForAll) {
         final var allowance = domainBuilder.nftAllowance()
-                .customize(a -> a.approvedForAll(true)).persist();
-        final var tokenId = allowance.getTokenId();
-        final var ownerId = allowance.getOwner();
-        final var spenderId = allowance.getSpender();
+                .customize(a -> a.approvedForAll(isApproveForAll)).persist();
 
-        assertThat(allowanceRepository.isSpenderAnOperator(tokenId, ownerId, spenderId)).isTrue();
+        assertThat(allowanceRepository.findById(allowance.getId()).map(NftAllowance::isApprovedForAll)
+                .orElse(false)).isEqualTo(isApproveForAll);
+    }
+
+    @Test
+    void noMatchingRecord() {
+        assertThat(allowanceRepository.findById(new AbstractNftAllowance.Id()).map(NftAllowance::isApprovedForAll)
+                .orElse(false)).isFalse();
     }
 }

@@ -21,6 +21,7 @@ package com.hedera.mirror.web3.evm.utils;
  */
 
 import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
+import static com.hedera.mirror.common.util.DomainUtils.toBytes;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -35,41 +36,44 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmKey;
 
 @UtilityClass
 public class EvmTokenUtils {
-    public static Address toAddress(EntityId contractID) {
+    private static final Address EMPTY_CONTRACT_ADDRESS = Address.wrap(Bytes.wrap(new byte[20]));
+
+    public static Address toAddress(final EntityId entityId) {
+        final var bytes = Bytes.wrap(toEvmAddress(entityId));
+        return Address.wrap(bytes);
+    }
+
+    public static Address toAddress(final ContractID contractID) {
         final var bytes = Bytes.wrap(toEvmAddress(contractID));
         return Address.wrap(bytes);
     }
 
-    public static Address toAddress(ContractID contractID) {
-        final var bytes = Bytes.wrap(toEvmAddress(contractID));
-        return Address.wrap(bytes);
-    }
-
-    public static EvmKey evmKey(byte[] keyBytes) throws InvalidProtocolBufferException {
-        if(keyBytes == null){
+    public static EvmKey evmKey(final byte[] keyBytes) throws InvalidProtocolBufferException {
+        if (keyBytes == null) {
             return new EvmKey();
         }
         var key = Key.parseFrom(keyBytes);
         final var contractId =
-                key.getContractID().getContractNum() > 0
+                key.hasContractID()
                         ? toAddress(key.getContractID())
-                        : emptyContractAddress();
-        final var ed25519 = key.getEd25519().toByteArray();
-        final var ecdsaSecp256K1 = key.getECDSASecp256K1().toByteArray();
+                        : EMPTY_CONTRACT_ADDRESS;
+        final var ed25519 = key.hasEd25519() ? toBytes(key.getEd25519()) : new byte[0];
+        final var ecdsaSecp256K1 = key.hasECDSASecp256K1() ? toBytes(key.getECDSASecp256K1()) : new byte[0];
+
         final var delegatableContractId =
-                key.getDelegatableContractId().getContractNum() > 0
+                key.hasDelegatableContractId()
                         ? toAddress(key.getDelegatableContractId())
-                        : emptyContractAddress();
+                        : EMPTY_CONTRACT_ADDRESS;
 
         return new EvmKey(contractId, ed25519, ecdsaSecp256K1, delegatableContractId);
     }
 
-    private Address emptyContractAddress() {
-        return Address.wrap(Bytes.wrap(new byte[20]));
+    public static Long entityIdNumFromEvmAddress(final Address address) {
+        final var id = fromEvmAddress(address.toArrayUnsafe());
+        return id != null ? id.getId() : 0;
     }
 
-    public static Long entityIdFromEvmAddress(final Address address) {
-        final var id = fromEvmAddress(address.toArrayUnsafe());
-        return id.getId();
+    public static EntityId entityIdFromEvmAddress(final Address address) {
+        return fromEvmAddress(address.toArrayUnsafe());
     }
 }

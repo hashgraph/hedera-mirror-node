@@ -20,19 +20,9 @@ package com.hedera.mirror.web3.repository;
  * ‍
  */
 
-import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_TOKEN;
-
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.common.domain.entity.AbstractNftAllowance.Id;
 import com.hedera.mirror.common.domain.entity.NftAllowance;
 
-public interface NftAllowanceRepository extends CrudRepository<NftAllowance, Id> {
-
-    @Query(value = "select approved_for_all from nft_allowance where token_id = ?1 and owner = ?2 and spender = ?3",
-            nativeQuery = true)
-    @Cacheable(cacheNames = "nft.approved_for_all", cacheManager = CACHE_MANAGER_TOKEN , unless = "#result == null")
-    Boolean isSpenderAnOperator(final Long tokenId, final Long ownerId, final Long spenderId);
-}
+public interface NftAllowanceRepository extends CrudRepository<NftAllowance, Id> {}

@@ -9,30 +9,36 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.hedera.mirror.common.domain.token.AbstractTokenAccount;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class TokenAccountRepositoryTest extends Web3IntegrationTest {
     private final TokenAccountRepository repository;
-    private long tokenId;
-    private long accountId;
+    private AbstractTokenAccount.Id tokenId;
+    private static final long BALANCE = 122321455L;
 
     @BeforeEach
     void persistTokenAccount() {
         final var tokenAccount = domainBuilder.tokenAccount()
-                .customize(a -> a.freezeStatus(FROZEN).kycStatus(GRANTED)).persist();
-        tokenId = tokenAccount.getTokenId();
-        accountId = tokenAccount.getAccountId();
+                .customize(a -> a.freezeStatus(FROZEN).kycStatus(GRANTED).balance(BALANCE)).persist();
+        tokenId = tokenAccount.getId();
     }
 
     @Test
     void findFrozenStatus() {
-        assertThat(repository.findFrozenStatus(accountId, tokenId).orElse(0)).isEqualTo(FROZEN.ordinal());
+        assertThat(repository.findById(tokenId).map(acc -> acc.getFreezeStatus().equals(FROZEN))
+                .orElse(false)).isTrue();
     }
 
     @Test
     void findKycStatus() {
-        assertThat(repository.findKycStatus(accountId, tokenId).orElse(0))
-                .isEqualTo(GRANTED.ordinal());
+        assertThat(repository.findById(tokenId).map(acc -> acc.getKycStatus().equals(GRANTED)).orElse(false))
+                .isTrue();
+    }
+
+    @Test
+    void findBalance() {
+        assertThat(repository.findById(tokenId).map(AbstractTokenAccount::getBalance).orElse(0L)).isEqualTo(BALANCE);
     }
 }
