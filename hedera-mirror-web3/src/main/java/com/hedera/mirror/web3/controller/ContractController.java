@@ -127,12 +127,6 @@ class ContractController {
     }
 
     @ExceptionHandler
-    @ResponseStatus(TOO_MANY_REQUESTS)
-    private Mono<GenericErrorResponse> rateLimitError(final RateLimitException e) {
-        return errorResponse(e.getMessage());
-    }
-
-    @ExceptionHandler
     @ResponseStatus(BAD_REQUEST)
     private Mono<GenericErrorResponse> validationError(final WebExchangeBindException e) {
         final var errors = extractValidationError(e);
