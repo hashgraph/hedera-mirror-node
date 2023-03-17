@@ -6,19 +6,23 @@ EXPORT_DIR="${SCRIPTS_DIR}/export"
 MIGRATIONS_DIR="${SCRIPTS_DIR}/../../migration/v2"
 source "${SCRIPTS_DIR}/migration.config"
 
-if test -f /usr/local/bin/flyway; then
-    sudo rm /usr/local/bin/flyway
+FLYWAY_FILE=/usr/local/bin/flyway
+if [[ -f "$FLYWAY_FILE" ]]; then
+    echo "Deleting $FLYWAY_FILE"
+    sudo unlink "$FLYWAY_FILE"
 fi
 
 echo "Installing flyway"
-wget -qO- https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/9.8.1/${FLYWAY_INSTALLATION} | tar xvz && sudo ln -s `pwd`/flyway-9.8.1/flyway /usr/local/bin
+rm -rf `pwd`/flyway-*
+wget -qO- ${FLYWAY_URL} | tar xvz && mv flyway-* flyway-latest
+sudo ln -s `pwd`/flyway-latest/flyway /usr/local/bin/
 echo "flyway installed"
 echo "Copying the config for flyway"
-cp "${SCRIPTS_DIR}/flyway.conf" "${SCRIPTS_DIR}/flyway-9.8.1/conf/"
+cp "${SCRIPTS_DIR}/flyway.conf" "flyway-latest/conf/"
 echo "Copying the script file for flyway migration"
-cp "${SCRIPTS_DIR}/../../migration/v2/V2.0.0__create_tables.sql" "${SCRIPTS_DIR}/flyway-9.8.1/sql/"
-cp "${SCRIPTS_DIR}/../../migration/v2/V2.0.1__distribution.sql" "${SCRIPTS_DIR}/flyway-9.8.1/sql/"
-cp "${SCRIPTS_DIR}/../../migration/v2/V2.0.2__static_partitioning.sql" "${SCRIPTS_DIR}/flyway-9.8.1/sql/"
+cp "${MIGRATIONS_DIR}/V2.0.0__create_tables.sql" "flyway-latest/sql/"
+cp "${MIGRATIONS_DIR}/V2.0.1__distribution.sql" "flyway-latest/sql/"
+cp "${MIGRATIONS_DIR}/V2.0.2__static_partitioning.sql" "flyway-latest/sql/"
 
 
 if [[ -z "${OLD_DB_HOST}" ]]; then
@@ -97,10 +101,12 @@ echo "1. Generating backup and restore SQL"
 TABLES=$(psql -q -t --csv -h "${OLD_DB_HOST}" -p "${OLD_DB_PORT}" -U "${OLD_DB_USER}" -c "select distinct table_name from information_schema.tables where table_schema = 'public' order by table_name asc;")
 
 for table in ${TABLES}; do
-  COLUMNS=$(psql -q -t -h "${OLD_DB_HOST}" -p "${OLD_DB_PORT}" -U "${OLD_DB_USER}" -c "select string_agg(column_name, ', ' order by ordinal_position) from information_schema.columns where table_schema = 'public' and table_name = '${table}';")
-  COLUMNS="${COLUMNS#"${COLUMNS%%[![:space:]]*}"}" # Trim leading whitespace
-  echo "\copy ${table} ($COLUMNS) from program 'gzip -dc ${table}.csv.gz' DELIMITER ',' CSV HEADER null '';" >> "${SCRIPTS_DIR}/restore.sql"
-  echo "\copy ${table} to program 'gzip -v6> ${table}.csv.gz' delimiter ',' csv header;" >> "${SCRIPTS_DIR}/backup.sql"
+  if [[ "$table" != "$EXCLUDED_TABLES" ]]; then
+      COLUMNS=$(psql -q -t -h "${OLD_DB_HOST}" -p "${OLD_DB_PORT}" -U "${OLD_DB_USER}" -c "select string_agg(column_name, ', ' order by ordinal_position) from information_schema.columns where table_schema = 'public' and table_name = '${table}';")
+      COLUMNS="${COLUMNS#"${COLUMNS%%[![:space:]]*}"}" # Trim leading whitespace
+      echo "\copy ${table} ($COLUMNS) from program 'gzip -dc ${table}.csv.gz' DELIMITER ',' CSV HEADER null '';" >> "${SCRIPTS_DIR}/restore.sql"
+      echo "\copy ${table} to program 'gzip -v6> ${table}.csv.gz' delimiter ',' csv header;" >> "${SCRIPTS_DIR}/backup.sql"
+  fi
 done
 
 echo "2. Backing up tables from source database"
