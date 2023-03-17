@@ -1152,13 +1152,15 @@ const formatFilters = (filters) => {
   }
 };
 
+const zeroPaddingRegex = /^0+(?=\d)0/;
+
 /**
  * Update slot format to be persistence query compatible
  * @param slot
  */
 const formatSlot = (slot, leftPad = false) => {
   if (leftPad) {
-    const formatedSlot = stripHexPrefix(slot).replace(/^0+(?=\d)0/, '0');
+    const formatedSlot = stripHexPrefix(slot).replace(zeroPaddingRegex, '0');
     return Buffer.from(formatedSlot === '0' ? '' : formatedSlot, 'hex');
   }
   return Buffer.from(stripHexPrefix(slot).padStart(64, 0), 'hex');
