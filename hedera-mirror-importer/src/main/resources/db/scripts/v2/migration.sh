@@ -116,6 +116,7 @@ echo "3. Running flyway migrate"
 flyway migrate
 
 echo "4. Restoring database dump to target database"
+export PGPASSWORD="${NEW_DB_PASSWORD}"
 psql -h "${NEW_DB_HOST}" -d "${NEW_DB_NAME}" -p "${NEW_DB_PORT}" -U "${NEW_DB_USER}" -f "${SCRIPTS_DIR}/restore.sql"
 
 echo "Migration completed in $SECONDS seconds"
