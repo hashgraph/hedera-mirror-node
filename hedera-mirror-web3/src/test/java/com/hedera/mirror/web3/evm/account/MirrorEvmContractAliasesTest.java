@@ -24,6 +24,9 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.web3.exception.InvalidParametersException;
+
 import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.BeforeEach;
@@ -60,6 +63,7 @@ class MirrorEvmContractAliasesTest {
     @Test
     void resolveForEvmSuccess() {
         when(mirrorEntityAccess.findEntity(ADDRESS)).thenReturn(Optional.of(entity));
+        when(entity.getType()).thenReturn(EntityType.CONTRACT);
         when(entity.getEvmAddress()).thenReturn(ADDRESS2.toArray());
         final var result = mirrorEvmContractAliases.resolveForEvm(ADDRESS);
         assertThat(result).isEqualTo(ADDRESS2);
@@ -68,7 +72,7 @@ class MirrorEvmContractAliasesTest {
     @Test
     void resolveForEvmFail() {
         assertThatThrownBy(() -> mirrorEvmContractAliases.resolveForEvm(INVALID_ADDRESS))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessage("An account address must be 20 bytes long, got 0");
+                .isInstanceOf(InvalidParametersException.class)
+                .hasMessage("No such contract or token");
     }
 }

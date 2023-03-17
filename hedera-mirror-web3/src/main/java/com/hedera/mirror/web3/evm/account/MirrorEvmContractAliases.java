@@ -51,7 +51,7 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
         final var entity = entityOptional.get();
 
         if (entity.getType() == EntityType.TOKEN) {
-            final var entityId = new EntityId(entity.getShard(), entity.getRealm(), entity.getNum(), EntityType.TOKEN);
+            final var entityId = entity.toEntityId();
             final var bytes = Bytes.wrap(toEvmAddress(entityId));
             return Address.wrap(bytes);
         } else if (entity.getType() == EntityType.CONTRACT) {
