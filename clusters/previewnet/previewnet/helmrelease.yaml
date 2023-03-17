@@ -31,14 +31,6 @@ spec:
       name: mirror
   values:
     importer:
-      config:
-        hedera:
-          mirror:
-            importer:
-              parser:
-                record:
-                  sidecar:
-                    types: [CONTRACT_STATE_CHANGE, CONTRACT_BYTECODE]
       env:
         HEDERA_MIRROR_IMPORTER_NETWORK: "PREVIEWNET"
         HEDERA_MIRROR_IMPORTER_PARSER_RECORD_SIDECAR_ENABLED: "true"
