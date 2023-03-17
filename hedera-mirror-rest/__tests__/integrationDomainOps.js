@@ -26,7 +26,7 @@ import base32 from '../base32';
 import config from '../config';
 import * as constants from '../constants';
 import EntityId from '../entityId';
-import {valueToBuffer} from "./testutils.js";
+import {isV2Schema, valueToBuffer} from "./testutils.js";
 
 const NETWORK_FEE = 1n;
 const NODE_FEE = 2n;
@@ -823,7 +823,12 @@ const addTransaction = async (transaction) => {
 };
 
 const addTransactionHash = async (transactionHash) => {
-  await insertDomainObject('transaction_hash_sharded', Object.keys(transactionHash), transactionHash);
+  transactionHash.hash = valueToBuffer(transactionHash.hash);
+  let table = 'transaction_hash';
+  if (!isV2Schema()) {
+    table = 'transaction_hash_sharded';
+  }
+  await insertDomainObject(table, Object.keys(transactionHash), transactionHash);
 };
 
 const insertTransfers = async (
