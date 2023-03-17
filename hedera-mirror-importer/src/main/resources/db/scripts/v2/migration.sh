@@ -6,18 +6,20 @@ EXPORT_DIR="${SCRIPTS_DIR}/export"
 MIGRATIONS_DIR="${SCRIPTS_DIR}/../../migration/v2"
 source "${SCRIPTS_DIR}/migration.config"
 
-CHECK_FLYWAY_INSTALLED=`flyway -v | grep 'Flyway Community Edition'`
-if [[ "${CHECK_FLYWAY_INSTALLED}" == "" ]]; then
-    echo "Installing flyway"
-    wget -qO- https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/9.8.1/${FLYWAY_INSTALLATION} | tar xvz && sudo ln -s `pwd`/flyway-9.8.1/flyway /usr/local/bin
-    echo "flyway installed"
-    echo "Copying the config for flyway"
-    cp "${SCRIPTS_DIR}/migration.config" "${SCRIPTS_DIR}/flyway-9.8.1/conf/"
-    echo "Copying the script file for flyway migration"
-    cp "${SCRIPTS_DIR}/../../migration/v2/V2.0.0__create_tables.sql" "${SCRIPTS_DIR}/flyway-9.8.1/sql/"
-    cp "${SCRIPTS_DIR}/../../migration/v2/V2.0.1__distribution.sql" "${SCRIPTS_DIR}/flyway-9.8.1/sql/"
-    cp "${SCRIPTS_DIR}/../../migration/v2/V2.0.2__static_partitioning.sql" "${SCRIPTS_DIR}/flyway-9.8.1/sql/"
+if test -f /usr/local/bin/flyway; then
+    sudo rm /usr/local/bin/flyway
 fi
+
+echo "Installing flyway"
+wget -qO- https://repo1.maven.org/maven2/org/flywaydb/flyway-commandline/9.8.1/${FLYWAY_INSTALLATION} | tar xvz && sudo ln -s `pwd`/flyway-9.8.1/flyway /usr/local/bin
+echo "flyway installed"
+echo "Copying the config for flyway"
+cp "${SCRIPTS_DIR}/flyway.conf" "${SCRIPTS_DIR}/flyway-9.8.1/conf/"
+echo "Copying the script file for flyway migration"
+cp "${SCRIPTS_DIR}/../../migration/v2/V2.0.0__create_tables.sql" "${SCRIPTS_DIR}/flyway-9.8.1/sql/"
+cp "${SCRIPTS_DIR}/../../migration/v2/V2.0.1__distribution.sql" "${SCRIPTS_DIR}/flyway-9.8.1/sql/"
+cp "${SCRIPTS_DIR}/../../migration/v2/V2.0.2__static_partitioning.sql" "${SCRIPTS_DIR}/flyway-9.8.1/sql/"
+
 
 if [[ -z "${OLD_DB_HOST}" ]]; then
     echo "Old host name is not set. Please configure OLD_DB_HOST in migration.config file and rerun the migration"
@@ -105,7 +107,6 @@ echo "2. Backing up tables from source database"
 psql -h "${OLD_DB_HOST}" -d "${OLD_DB_NAME}" -p "${OLD_DB_PORT}" -U "${OLD_DB_USER}" -f "${SCRIPTS_DIR}/backup.sql"
 
 echo "3. Running flyway migrate"
-flyway baseline
 flyway migrate
 
 echo "4. Restoring database dump to target database"
