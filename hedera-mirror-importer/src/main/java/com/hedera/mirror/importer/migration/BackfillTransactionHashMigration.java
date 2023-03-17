@@ -24,7 +24,6 @@ import com.google.common.base.Stopwatch;
 import java.io.IOException;
 import javax.inject.Named;
 
-import org.apache.commons.lang3.BooleanUtils;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
@@ -38,32 +37,15 @@ import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 @Named
 public class BackfillTransactionHashMigration extends RepeatableMigration {
 
-    private static final String BACKFILL_TRANSACTION_HASH_SQL_V2 = """
+    private static final String BACKFILL_TRANSACTION_HASH_SQL = """
             begin;
-            truncate transaction_hash;
-            insert into transaction_hash (consensus_timestamp, hash, payer_account_id)
+            truncate %1$s;
+            insert into %1$s (consensus_timestamp, hash, payer_account_id)
             select consensus_timestamp, transaction_hash, payer_account_id
             from transaction
-            where consensus_timestamp >= %d;
+            where consensus_timestamp >= ?;
             commit;
             """;
-    private static final String BACKFILL_TRANSACTION_HASH_SQL_V1 = """
-            begin;
-            do $$
-                begin
-                    truncate transaction_hash;
-                    for shard in 0..31 loop
-                            EXECUTE 'truncate transaction_hash_sharded_' || to_char(shard, 'fm00');
-                            EXECUTE 'insert into transaction_hash_sharded_' || to_char(shard, 'fm00') ||
-                                    ' (consensus_timestamp, hash, payer_account_id) ' ||
-                                    ' select consensus_timestamp, transaction_hash, payer_account_id ' ||
-                                    ' from transaction ' ||
-                                    ' where consensus_timestamp >= %d and get_byte(transaction_hash, 0) %% 32=' || shard;
-                        end loop;
-                end; $$;
-            commit;
-            """;
-
     private static final String START_TIMESTAMP_KEY = "startTimestamp";
 
     private final EntityProperties entityProperties;
@@ -97,10 +79,7 @@ public class BackfillTransactionHashMigration extends RepeatableMigration {
 
         var stopwatch = Stopwatch.createStarted();
 
-        jdbcTemplate.update(String.format(
-                BooleanUtils.isTrue(isV2) ? BACKFILL_TRANSACTION_HASH_SQL_V2 : BACKFILL_TRANSACTION_HASH_SQL_V1,
-                startTimestamp
-        ));
+        jdbcTemplate.update(String.format(BACKFILL_TRANSACTION_HASH_SQL, isV2 ? "transaction_hash" : "transaction_hash_sharded"), startTimestamp);
 
         log.info("Backfilled transaction hash for transactions at or after {} in {}", startTimestamp, stopwatch);
     }

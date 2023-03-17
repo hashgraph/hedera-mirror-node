@@ -18,27 +18,13 @@
  * ‍
  */
 
-import {calculateTransactionHashV1Shard, isV2Schema, valueToBuffer} from '../testutils.js';
+import {isV2Schema} from '../testutils.js';
 
-const getShardMap = (transactions) => transactions.reduce((result, transaction) => {
-  const shard = calculateTransactionHashV1Shard(valueToBuffer(transaction.transaction_hash));
-  result[shard] = result[shard] || [];
-  result[shard].push(transaction);
-  return result;
-}, {});
-
-const nullifyPayerAccountId = (spec) => async () => {
-  return Promise.all(Object.keys(getShardMap(spec.setup.transactions))
-    .map(key => pool.queryQuietly(`update transaction_hash_sharded_${key} set payer_account_id = null`)))
-}
-const putHashInOldTable = (spec) => async () => {
-  return Promise.all(Object.keys(getShardMap(spec.setup.transactions))
-    .map(key => pool.queryQuietly(
-      `with deleted as (DELETE from transaction_hash_sharded_${key} RETURNING *)
-                    INSERT into transaction_hash(consensus_timestamp, hash, payer_account_id)
-                       SELECT consensus_timestamp, hash, payer_account_id from deleted`
-    )))
-}
+const nullifyPayerAccountId = async () => pool.queryQuietly('update transaction_hash_sharded set payer_account_id = null');
+const putHashInOldTable = async () => pool.queryQuietly(
+  `with deleted as (DELETE from transaction_hash_sharded RETURNING *)
+                    INSERT into transaction_hash_old(consensus_timestamp, hash, payer_account_id)
+                       SELECT consensus_timestamp, hash, payer_account_id from deleted`);
 
 const applyMatrix = (spec) => {
   if (isV2Schema()) {
@@ -51,11 +37,11 @@ const applyMatrix = (spec) => {
 
   const nullPayerAccountIdSpec = {...spec};
   nullPayerAccountIdSpec.name = `${nullPayerAccountIdSpec.name} - null transaction_hash.payer_account_id`;
-  nullPayerAccountIdSpec.postSetup = nullifyPayerAccountId(nullPayerAccountIdSpec);
+  nullPayerAccountIdSpec.postSetup = nullifyPayerAccountId;
 
   const transactionHashOldSpec = {...spec};
   transactionHashOldSpec.name = `${transactionHashOldSpec.name} - in old transaction_hash table`
-  transactionHashOldSpec.postSetup = putHashInOldTable(transactionHashOldSpec);
+  transactionHashOldSpec.postSetup = putHashInOldTable;
 
   return [defaultSpec, transactionHashOldSpec, nullPayerAccountIdSpec];
 };
