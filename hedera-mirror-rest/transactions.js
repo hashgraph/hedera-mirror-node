@@ -656,9 +656,17 @@ const isValidTransactionHash = (hash) => transactionHashRegex.test(hash);
 
 const transactionHashShardedQueryEnabled = (() => {
   let result = undefined;
-  return () => result = (result || (async () => pool.queryQuietly(`SELECT count(*) > 0 as enabled
-                                                                   from pg_proc
-                                                                   where proname = 'get_transaction_info_by_hash'`, []))())
+  return () => (async () => {
+    if (result !== undefined) {
+      return result;
+    }
+
+    const {rows} = await pool.queryQuietly(`SELECT count(*) > 0 as enabled
+                       from pg_proc
+                       where proname = 'get_transaction_info_by_hash'`);
+    result = rows[0].enabled;
+    return result;
+  })();
 })();
 
 const transactionHashQuery = `
@@ -725,8 +733,8 @@ const extractSqlFromTransactionsByIdOrHashRequest = async (transactionIdOrHash, 
       transactionIdOrHash = transactionIdOrHash.substring(2);
     }
 
-    const {rows: {0: {enabled}}} = await transactionHashShardedQueryEnabled();
-    const usedTransactionHashQuery = enabled ? transactionHashShardedQuery : transactionHashQuery;
+    const v1ShardQueryEnabled = await transactionHashShardedQueryEnabled();
+    const usedTransactionHashQuery = v1ShardQueryEnabled ? transactionHashShardedQuery : transactionHashQuery;
     const transactionHash = Buffer.from(transactionIdOrHash, encoding);
 
     if (logger.isTraceEnabled()) {
