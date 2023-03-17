@@ -32,6 +32,7 @@ import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
 import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
 
+import com.hedera.mirror.web3.exception.InvalidParametersException;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 
 import io.github.bucket4j.Bucket;
@@ -230,6 +231,24 @@ class ContractControllerTest {
                 .isEqualTo(BAD_REQUEST)
                 .expectBody(GenericErrorResponse.class)
                 .isEqualTo(new GenericErrorResponse(CONTRACT_REVERT_EXECUTED.name(), detailedErrorMessage));
+    }
+
+    @Test
+    void callWithInvalidParameter() {
+        final var ERROR_MESSAGE = "No such contract or token";
+        final var request = request();
+
+        given(service.processCall(any())).willThrow(new InvalidParametersException(ERROR_MESSAGE));
+
+        webClient.post()
+                .uri(CALL_URI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(request))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(BAD_REQUEST)
+                .expectBody(GenericErrorResponse.class)
+                .isEqualTo(new GenericErrorResponse(ERROR_MESSAGE));
     }
 
     @Test
