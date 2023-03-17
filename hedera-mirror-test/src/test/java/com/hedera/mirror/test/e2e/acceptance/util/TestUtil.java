@@ -57,6 +57,6 @@ public class TestUtil {
     }
 
     public static String to32BytesString(String data) {
-        return StringUtils.leftPad(data, 64, '0');
+        return StringUtils.leftPad(data.replace("0x", ""), 64, '0');
     }
 }

@@ -45,6 +45,7 @@ import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
+import com.hedera.mirror.test.e2e.acceptance.response.MirrorAccountResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorNftResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTokenResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
@@ -66,7 +67,6 @@ import java.util.Optional;
 import io.cucumber.java.en.Then;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
 import org.json.JSONObject;
@@ -113,6 +113,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     private final MirrorNodeClient mirrorClient;
     private final AccountClient accountClient;
     private final static long firstNftSerialNumber = 1;
+    private ExpandedAccountId ecdsaEaId;
 
     @Value("classpath:solidity/artifacts/contracts/PrecompileTestContract.sol/PrecompileTestContract.json")
     private Path precompileTestContract;
@@ -161,6 +162,14 @@ public class PrecompileContractFeature extends AbstractFeature {
                 TokenType.NON_FUNGIBLE_UNIQUE,
                 TokenSupplyType.INFINITE
         );
+    }
+
+    @Given("I create an ecdsa account and associate it to the tokens")
+    public void createEcdsaAccountAndAssociateItToTokens() {
+        ecdsaEaId = accountClient.createNewECDSAAccount(1_000_000_000);
+        for (TokenId tokenId : tokenIds) {
+            tokenClient.associate(ecdsaEaId, tokenId);
+        }
     }
 
     @Then("I mint and verify a nft")
@@ -300,6 +309,38 @@ public class PrecompileContractFeature extends AbstractFeature {
 
         boolean isFrozenAfter = convertContractCallResponseToBoolean(responseAfter);
         assertFalse(isFrozenAfter);
+    }
+
+    @Then("Check if account is frozen by evm address")
+    public void checkIfAccountIsFrozenByEvmAddress() {
+        MirrorAccountResponse accountInfo = mirrorClient.getAccountDetailsByAccountId(ecdsaEaId.getAccountId());
+
+        ContractCallResponse responseBefore = mirrorClient.contractsCall(
+                IS_TOKEN_FROZEN_SELECTOR
+                        + to32BytesString(tokenIds.get(0).toSolidityAddress())
+                        + to32BytesString(accountInfo.getEvmAddress()),
+                contractId.toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+        boolean isFrozenBefore = convertContractCallResponseToBoolean(responseBefore);
+        assertFalse(isFrozenBefore);
+
+        NetworkTransactionResponse freezeResponse = tokenClient.freeze(tokenIds.get(0), ecdsaEaId.getAccountId());
+        verifyTx(freezeResponse.getTransactionIdStringNoCheckSum());
+
+        ContractCallResponse responseAfter = mirrorClient.contractsCall(
+                IS_TOKEN_FROZEN_SELECTOR
+                        + to32BytesString(tokenIds.get(0).toSolidityAddress())
+                        + to32BytesString(accountInfo.getEvmAddress()),
+                contractId.toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+
+        boolean isFrozenAfter = convertContractCallResponseToBoolean(responseAfter);
+        assertTrue(isFrozenAfter);
+
+        NetworkTransactionResponse unfreezeResponse = tokenClient.unfreeze(tokenIds.get(0), ecdsaEaId.getAccountId());
+        verifyTx(unfreezeResponse.getTransactionIdStringNoCheckSum());
     }
 
     @Retryable(value = {AssertionError.class, WebClientResponseException.class},

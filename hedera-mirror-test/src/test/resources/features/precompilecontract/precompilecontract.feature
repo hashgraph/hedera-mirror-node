@@ -6,6 +6,7 @@ Feature: Precompile Contract Base Coverage Feature
         Given I successfully create and verify a precompile contract from contract bytes
         Given I successfully create and verify a fungible token for precompile contract tests
         Given I successfully create and verify a non fungible token for precompile contract tests
+        Given I create an ecdsa account and associate it to the tokens
         Then I mint and verify a nft
         Then Check if fungible token is token
         Then Check if non fungible token is token
@@ -15,6 +16,7 @@ Feature: Precompile Contract Base Coverage Feature
         Then Verify non fungible token isn't frozen
         Then Check if can freeze token
         Then Check if can unfreeze token
+        Then Check if account is frozen by evm address
         Then Check if fungible token is kyc granted
         Then Check if non fungible token is kyc granted
         Then Get token default freeze of fungible token
