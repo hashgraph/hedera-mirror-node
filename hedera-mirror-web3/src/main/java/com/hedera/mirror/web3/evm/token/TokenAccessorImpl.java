@@ -53,6 +53,7 @@ import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenId;
+import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.web3.evm.exception.ParsingException;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.utils.EvmTokenUtils;
@@ -302,12 +303,13 @@ public class TokenAccessorImpl implements TokenAccessor {
         evmTokenInfo.setDefaultFreezeStatus(tokenEntity.getFreezeDefault());
         evmTokenInfo.setCustomFees(getCustomFees(token));
         setEvmKeys(entity, tokenEntity, evmTokenInfo);
-        final var isPaused = tokenEntity.getPauseStatus().ordinal() == 1;
+        final var isPaused = tokenEntity.getPauseStatus().equals(TokenPauseStatusEnum.PAUSED);
         evmTokenInfo.setIsPaused(isPaused);
 
-        entityRepository.findById(entity.getAutoRenewAccountId())
-                .ifPresent(a -> evmTokenInfo.setAutoRenewAccount(toAddress(
-                        new EntityId(a.getShard(), a.getRealm(), a.getNum(), EntityType.ACCOUNT))));
+        if (entity.getAutoRenewAccountId() != null) {
+            var autoRenewAddress = toAddress(EntityId.of(entity.getAutoRenewAccountId(), EntityType.ACCOUNT));
+            evmTokenInfo.setAutoRenewAccount(autoRenewAddress);
+        }
 
         return Optional.of(evmTokenInfo);
     }
