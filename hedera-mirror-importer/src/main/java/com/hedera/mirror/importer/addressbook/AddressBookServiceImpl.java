@@ -373,7 +373,7 @@ public class AddressBookServiceImpl implements AddressBookService {
      * @param nodeAddressProto
      * @return Pair of nodeId and nodeAccountId
      */
-    @SuppressWarnings("java:S1874")
+    @SuppressWarnings({"deprecation", "java:S1874"})
     private Pair<Long, EntityId> getNodeIds(NodeAddress nodeAddressProto) {
         var memo = nodeAddressProto.getMemo().toStringUtf8();
         EntityId memoNodeAccountId = StringUtils.isEmpty(memo) ? EntityId.EMPTY : EntityId
@@ -391,7 +391,7 @@ public class AddressBookServiceImpl implements AddressBookService {
         return Pair.of(nodeId, nodeAccountId);
     }
 
-    @SuppressWarnings("java:S1874")
+    @SuppressWarnings({"deprecation", "java:S1874"})
     private AddressBookEntry getAddressBookEntry(NodeAddress nodeAddressProto, long consensusTimestamp,
                                                  Pair<Long, EntityId> nodeIds) {
         AddressBookEntry.AddressBookEntryBuilder builder = AddressBookEntry.builder()

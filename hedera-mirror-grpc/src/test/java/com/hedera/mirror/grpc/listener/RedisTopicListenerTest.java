@@ -25,7 +25,6 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.data.redis.core.ReactiveRedisOperations;
 import reactor.core.publisher.Flux;
 
-import com.hedera.mirror.grpc.domain.StreamMessage;
 import com.hedera.mirror.grpc.domain.TopicMessage;
 
 @Log4j2
@@ -33,7 +32,7 @@ import com.hedera.mirror.grpc.domain.TopicMessage;
 class RedisTopicListenerTest extends AbstractSharedTopicListenerTest {
 
     @Resource
-    private ReactiveRedisOperations<String, StreamMessage> redisOperations;
+    private ReactiveRedisOperations<String, TopicMessage> redisOperations;
 
     @Override
     protected ListenerProperties.ListenerType getType() {

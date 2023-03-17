@@ -40,6 +40,7 @@ dependencies {
     api("org.apache.commons:commons-lang3")
     api("org.apache.tuweni:tuweni-bytes")
     api("org.hibernate:hibernate-jpamodelgen")
+    api("org.jetbrains:annotations")
     api("org.springframework.boot:spring-boot-starter-data-jpa")
     api("org.springframework.boot:spring-boot-starter-log4j2")
     testImplementation("org.hyperledger.besu:evm")

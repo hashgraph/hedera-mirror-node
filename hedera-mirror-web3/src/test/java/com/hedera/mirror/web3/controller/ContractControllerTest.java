@@ -30,6 +30,7 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
 import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
+import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
 
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 
@@ -53,6 +54,9 @@ import com.hedera.mirror.web3.service.ContractCallService;
 import com.hedera.mirror.web3.viewmodel.BlockType;
 import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
 import com.hedera.mirror.web3.viewmodel.GenericErrorResponse;
+
+import org.springframework.web.server.ServerWebInputException;
+import org.springframework.web.server.UnsupportedMediaTypeStatusException;
 
 @ExtendWith(SpringExtension.class)
 @WebFluxTest(controllers = ContractController.class)
@@ -176,7 +180,37 @@ class ContractControllerTest {
                 .exchange()
                 .expectStatus()
                 .isEqualTo(BAD_REQUEST)
-                .expectBody(GenericErrorResponse.class);
+                .expectBody(GenericErrorResponse.class)
+                .isEqualTo(new GenericErrorResponse("value field must be greater than or equal to 0"));
+    }
+
+    @Test
+    void callWithMalformedJsonBody() {
+        webClient.post()
+                .uri(CALL_URI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue("{from: 0x00000000000000000000000000000000000004e2"))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(BAD_REQUEST)
+                .expectBody(GenericErrorResponse.class)
+                .isEqualTo(new GenericErrorResponse("Failed to read HTTP message", "Unexpected character ('f' (code 102)): was expecting double-quote to start field name\n"
+                        + " at [Source: (org.springframework.core.io.buffer.DefaultDataBuffer$DefaultDataBufferInputStream); line: 1, column: 3]"));
+    }
+
+    @Test
+    void callWithUnsupportedMediaTypeBody() {
+        final var request = request();
+
+        webClient.post()
+                .uri(CALL_URI)
+                .contentType(MediaType.TEXT_PLAIN)
+                .body(BodyInserters.fromValue(request.toString()))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(UNSUPPORTED_MEDIA_TYPE)
+                .expectBody(GenericErrorResponse.class)
+                .isEqualTo(new GenericErrorResponse("Unsupported Media Type", "Content type 'text/plain' not supported for bodyType=com.hedera.mirror.web3.viewmodel.ContractCallRequest"));
     }
 
     @Test

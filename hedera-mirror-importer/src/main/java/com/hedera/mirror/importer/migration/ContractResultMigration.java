@@ -90,7 +90,7 @@ public class ContractResultMigration extends MirrorBaseJavaMigration {
         log.info("Updated {} contract results in {}", count, stopwatch);
     }
 
-    @SuppressWarnings("java:S1874")
+    @SuppressWarnings({"deprecation", "java:S1874"})
     private boolean process(MigrationContractResult contractResult) {
         long consensusTimestamp = contractResult.getConsensusTimestamp();
 
