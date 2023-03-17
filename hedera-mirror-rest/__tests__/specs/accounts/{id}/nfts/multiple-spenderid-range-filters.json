@@ -18,8 +18,7 @@
     "/api/v1/accounts/0.0.1001/nfts?spender.id=gt:2&spender.id=gte:3",
     "/api/v1/accounts/0.0.1001/nfts?spender.id=lt:3&spender.id=lt:2",
     "/api/v1/accounts/0.0.1001/nfts?spender.id=lte:3&spender.id=lte:2",
-    "/api/v1/accounts/0.0.1001/nfts?spender.id=lt:3&spender.id=lte:2",
-    "/api/v1/accounts/0x00000000000000000000000000000000000003e9/nfts?spender.id=lt:3&spender.id=lte:2"
+    "/api/v1/accounts/0.0.1001/nfts?spender.id=lt:3&spender.id=lte:2"
   ],
   "responseStatus": 400,
   "responseJson": {

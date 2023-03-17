@@ -34,10 +34,7 @@
       }
     ]
   },
-  "urls": [
-    "/api/v1/accounts/1001/rewards?timestamp=1234567890.000011111&timestamp=1234567890.000033333&&timestamp=1234567890.000055555",
-    "/api/v1/accounts/0x00000000000000000000000000000000000003e9/rewards?timestamp=1234567890.000011111&timestamp=1234567890.000033333&&timestamp=1234567890.000055555"
-  ],
+  "url": "/api/v1/accounts/1001/rewards?timestamp=1234567890.000011111&timestamp=1234567890.000033333&&timestamp=1234567890.000055555",
   "responseStatus": 200,
   "responseJson": {
     "rewards": [

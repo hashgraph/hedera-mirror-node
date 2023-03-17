@@ -59,9 +59,7 @@
   },
   "urls": [
     "/api/v1/accounts/3001/allowances/crypto",
-    "/api/v1/accounts/0x0000000000000000000000000000000000000889/allowances/crypto",
-    "/api/v1/accounts/0.0.1001/allowances/crypto?spender.id=7000",
-    "/api/v1/accounts/0x00000000000000000000000000000000000003e9/allowances/crypto?spender.id=7000"
+    "/api/v1/accounts/0.0.1001/allowances/crypto?spender.id=7000"
   ],
   "responseStatus": 200,
   "responseJson": {

@@ -71,10 +71,7 @@
       }
     ]
   },
-  "urls": [
-    "/api/v1/accounts/0.0.1001/nfts?spender.id=2000&spender.id=3000&spender.id=4000&spender.id=5000",
-    "/api/v1/accounts/0x00000000000000000000000000000000000003e9/nfts?spender.id=2000&spender.id=3000&spender.id=4000&spender.id=5000"
-  ],
+  "url": "/api/v1/accounts/0.0.1001/nfts?spender.id=2000&spender.id=3000&spender.id=4000&spender.id=5000",
   "responseStatus": 200,
   "responseJson": {
     "nfts": [

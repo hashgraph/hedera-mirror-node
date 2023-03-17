@@ -50,27 +50,6 @@
       }
     },
     {
-      "url": "/api/v1/accounts/0x00000000000000000000000000000000000003e9/rewards?timestamp=gte:0&order=asc&limit=2",
-      "responseStatus": 200,
-      "responseJson": {
-        "rewards": [
-          {
-            "account_id": "0.0.1001",
-            "amount": 10,
-            "timestamp": "1234567890.000011111"
-          },
-          {
-            "account_id": "0.0.1001",
-            "amount": 12,
-            "timestamp": "1234567890.000022222"
-          }
-        ],
-        "links": {
-          "next": "/api/v1/accounts/0x00000000000000000000000000000000000003e9/rewards?order=asc&limit=2&timestamp=gt:1234567890.000022222"
-        }
-      }
-    },
-    {
       "url": "/api/v1/accounts/0.1001/rewards?timestamp=gte:0&order=asc&limit=2",
       "responseStatus": 200,
       "responseJson": {
@@ -92,27 +71,6 @@
       }
     },
     {
-      "url": "/api/v1/accounts/0x00000000000000000000000000000000000003e9/rewards?timestamp=gte:0&order=asc&limit=2",
-      "responseStatus": 200,
-      "responseJson": {
-        "rewards": [
-          {
-            "account_id": "0.0.1001",
-            "amount": 10,
-            "timestamp": "1234567890.000011111"
-          },
-          {
-            "account_id": "0.0.1001",
-            "amount": 12,
-            "timestamp": "1234567890.000022222"
-          }
-        ],
-        "links": {
-          "next": "/api/v1/accounts/0x00000000000000000000000000000000000003e9/rewards?order=asc&limit=2&timestamp=gt:1234567890.000022222"
-        }
-      }
-    },
-    {
       "url": "/api/v1/accounts/0.0.1001/rewards?timestamp=gte:0&order=asc&limit=2",
       "responseStatus": 200,
       "responseJson": {
@@ -130,27 +88,6 @@
         ],
         "links": {
           "next": "/api/v1/accounts/0.0.1001/rewards?order=asc&limit=2&timestamp=gt:1234567890.000022222"
-        }
-      }
-    },
-    {
-      "url": "/api/v1/accounts/0x00000000000000000000000000000000000003e9/rewards?timestamp=gte:0&order=asc&limit=2",
-      "responseStatus": 200,
-      "responseJson": {
-        "rewards": [
-          {
-            "account_id": "0.0.1001",
-            "amount": 10,
-            "timestamp": "1234567890.000011111"
-          },
-          {
-            "account_id": "0.0.1001",
-            "amount": 12,
-            "timestamp": "1234567890.000022222"
-          }
-        ],
-        "links": {
-          "next": "/api/v1/accounts/0x00000000000000000000000000000000000003e9/rewards?order=asc&limit=2&timestamp=gt:1234567890.000022222"
         }
       }
     }

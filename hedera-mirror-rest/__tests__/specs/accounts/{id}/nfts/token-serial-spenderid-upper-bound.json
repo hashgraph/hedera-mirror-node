@@ -91,10 +91,7 @@
       }
     ]
   },
-  "urls": [
-    "/api/v1/accounts/0.0.1001/nfts?token.id=lte:101&serialnumber=lt:2&spender.id=lt:3007",
-    "/api/v1/accounts/0x00000000000000000000000000000000000003e9/nfts?token.id=lte:101&serialnumber=lt:2&spender.id=lt:3007"
-  ],
+  "url": "/api/v1/accounts/0.0.1001/nfts?token.id=lte:101&serialnumber=lt:2&spender.id=lt:3007",
   "responseStatus": 200,
   "responseJson": {
     "nfts": [

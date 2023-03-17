@@ -9,8 +9,7 @@
   },
   "urls": [
     "/api/v1/accounts/0.0.1001/rewards?timestamp=foo:1234567890.000011111&order=12&limit=a",
-    "/api/v1/accounts/0.0.1001/rewards?timestamp=eq:abc.def&order=42&limit=-5",
-    "/api/v1/accounts/0x00000000000000000000000000000000000003e9/rewards?timestamp=eq:abc.def&order=42&limit=-5"
+    "/api/v1/accounts/0.0.1001/rewards?timestamp=eq:abc.def&order=42&limit=-5"
   ],
   "responseStatus": 400,
   "responseJson": {

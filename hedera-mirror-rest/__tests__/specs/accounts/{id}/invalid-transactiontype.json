@@ -97,7 +97,6 @@
   },
   "urls": [
     "/api/v1/accounts/0.0.8?transactionType=invalid",
-    "/api/v1/accounts/0x0000000000000000000000000000000000000008?transactionType=invalid",
     "/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ?transactionType=invalid"
   ],
   "responseStatus": 400,

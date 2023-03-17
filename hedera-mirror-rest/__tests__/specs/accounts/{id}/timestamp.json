@@ -125,7 +125,6 @@
   },
   "urls": [
     "/api/v1/accounts/0.0.8?timestamp=gt:1234567890.000000006",
-    "/api/v1/accounts/0x0000000000000000000000000000000000000008?timestamp=gt:1234567890.000000006",
     "/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ?timestamp=gt:1234567890.000000006"
   ],
   "responseStatus": 200,

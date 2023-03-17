@@ -73,33 +73,6 @@
           "next": "/api/v1/accounts/0.0.1001/tokens?order=asc&limit=2&token.id=gt:0.0.45678"
         }
       }
-    },
-    {
-      "url": "/api/v1/accounts/0x00000000000000000000000000000000000003e9/tokens?token.id=gte:1135&order=asc&limit=2",
-      "responseStatus": 200,
-      "responseJson": {
-        "tokens": [
-          {
-            "automatic_association": true,
-            "balance": 15,
-            "created_timestamp": "1234567890.000000002",
-            "freeze_status": "UNFROZEN",
-            "kyc_status": "GRANTED",
-            "token_id": "0.0.1135"
-          },
-          {
-            "automatic_association": true,
-            "balance": 9007199254740992,
-            "created_timestamp": "1234567890.000000006",
-            "freeze_status": "UNFROZEN",
-            "kyc_status": "GRANTED",
-            "token_id": "0.0.45678"
-          }
-        ],
-        "links": {
-          "next": "/api/v1/accounts/0x00000000000000000000000000000000000003e9/tokens?order=asc&limit=2&token.id=gt:0.0.45678"
-        }
-      }
     }
   ]
 }

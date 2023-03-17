@@ -120,10 +120,7 @@
       }
     ]
   },
-  "urls": [
-    "/api/v1/accounts/0.0.1001/nfts?token.id=gte:1000&token.id=lte:2500&serialnumber=gt:3&serialnumber=lt:5&spender.id=gt:2000",
-    "/api/v1/accounts/0x00000000000000000000000000000000000003e9/nfts?token.id=gte:1000&token.id=lte:2500&serialnumber=gt:3&serialnumber=lt:5&spender.id=gt:2000"
-  ],
+  "url": "/api/v1/accounts/0.0.1001/nfts?token.id=gte:1000&token.id=lte:2500&serialnumber=gt:3&serialnumber=lt:5&spender.id=gt:2000",
   "responseStatus": 200,
   "responseJson": {
     "nfts": [

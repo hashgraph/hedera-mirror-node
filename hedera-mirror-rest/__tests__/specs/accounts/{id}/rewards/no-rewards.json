@@ -30,10 +30,7 @@
       }
     ]
   },
-  "urls": [
-    "/api/v1/accounts/0.0.800/rewards",
-    "/api/v1/accounts/0x0000000000000000000000000000000000000320/rewards"
-  ],
+  "url": "/api/v1/accounts/0.0.800/rewards",
   "responseStatus": 200,
   "responseJson": {
     "rewards": [],

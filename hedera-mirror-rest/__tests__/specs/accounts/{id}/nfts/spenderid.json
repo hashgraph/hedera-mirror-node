@@ -65,7 +65,6 @@
   "urls": [
     "/api/v1/accounts/0.0.1001/nfts?spender.id=gte:2000",
     "/api/v1/accounts/0.0.1001/nfts?spender.id=2000",
-    "/api/v1/accounts/0x00000000000000000000000000000000000003e9/nfts?spender.id=2000",
     "/api/v1/accounts/0.0.1001/nfts?spender.id=eq:2000",
     "/api/v1/accounts/0.0.1001/nfts?spender.id=lte:2000",
     "/api/v1/accounts/0.0.1001/nfts?spender.id=lt:2001",

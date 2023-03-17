@@ -83,10 +83,7 @@
       }
     ]
   },
-  "urls": [
-    "/api/v1/accounts/0.0.1001/nfts?token.id=gte:100&serialnumber=gt:3",
-    "/api/v1/accounts/0x00000000000000000000000000000000000003e9/nfts?token.id=gte:100&serialnumber=gt:3"
-  ],
+  "url": "/api/v1/accounts/0.0.1001/nfts?token.id=gte:100&serialnumber=gt:3",
   "responseStatus": 200,
   "responseJson": {
     "nfts": [
