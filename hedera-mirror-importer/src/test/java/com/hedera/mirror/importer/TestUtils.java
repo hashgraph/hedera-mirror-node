@@ -162,6 +162,12 @@ public class TestUtils {
         return jdbcTemplate.query(sql, new DataClassRowMapper<>(TransactionHash.class));
     }
 
+    public TransactionHash getTransactionHashFromSqlFunction(JdbcTemplate jdbcTemplate, byte[] hash) {
+        var sql = "SELECT * from get_transaction_info_by_hash(?)";
+        var results = jdbcTemplate.query(sql, new DataClassRowMapper<>(TransactionHash.class), (Object) hash);
+        return results.iterator().hasNext() ? results.iterator().next() : null;
+    }
+
     public AccountID toAccountId(String accountId) {
         var parts = accountId.split("\\.");
         return AccountID.newBuilder().setShardNum(Long.parseLong(parts[0])).setRealmNum(Long.parseLong(parts[1]))

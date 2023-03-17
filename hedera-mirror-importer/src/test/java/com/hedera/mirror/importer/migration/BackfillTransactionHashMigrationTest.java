@@ -179,15 +179,8 @@ class BackfillTransactionHashMigrationTest extends IntegrationTest {
         if (isV2) {
             assertThat(transactionHashRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
         }
-        else if (expected.isEmpty()) {
-            assertThat(TestUtils.getTransactionHashesFromAllShards(jdbcTemplate)).isEmpty();
-        }
-        else {
-            expected.stream()
-                    .collect(Collectors.groupingBy(TransactionHash::calculateV1Shard))
-                    .forEach((shard, items) ->
-                            assertThat(TestUtils.getShardTransactionHashes(shard, jdbcTemplate))
-                                    .containsExactlyInAnyOrderElementsOf(items));
+        else  {
+            assertThat(TestUtils.getTransactionHashesFromAllShards(jdbcTemplate)).containsExactlyInAnyOrderElementsOf(expected);
         }
     }
 

@@ -939,9 +939,7 @@ class SqlEntityListenerTest extends IntegrationTest {
             assertThat(transactionHashRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedTransactionHashes);
         }
         else {
-            expectedTransactionHashes.stream()
-                    .collect(Collectors.groupingBy(TransactionHash::calculateV1Shard))
-                    .forEach((shard, items) -> assertThat(TestUtils.getShardTransactionHashes(shard, jdbcTemplate)).containsExactlyInAnyOrderElementsOf(items));
+            assertThat(TestUtils.getTransactionHashesFromAllShards(jdbcTemplate)).containsExactlyInAnyOrderElementsOf(expectedTransactionHashes);
         }
     }
 

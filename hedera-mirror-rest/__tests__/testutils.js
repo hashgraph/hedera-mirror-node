@@ -238,10 +238,6 @@ const validateAccNumInArray = function (responseObjects, potentialValues) {
 
 const calculateTransactionHashV1Shard = (transactionHash) => {
   let mod = transactionHash[0] % 32;
-  if ((mod ^ 32) < 0 && mod !== 0) {
-    mod += 32;
-  }
-
   return mod.toString().padStart(2, '0');
 }
 

@@ -131,6 +131,7 @@ CREATE OR REPLACE FUNCTION get_transaction_info_by_hash(bytea)
     returns TABLE
             (
                 consensus_timestamp bigint,
+                hash                bytea,
                 payer_account_id    bigint
             )
 AS
@@ -140,8 +141,8 @@ DECLARE
 BEGIN
     shard
         := concat('transaction_hash_sharded_', to_char(get_byte($1, 0) % 32, 'fm00'));
-    RETURN QUERY EXECUTE 'SELECT consensus_timestamp, payer_account_id from transaction_hash where hash = $1 ' ||
-                         'UNION ALL SELECT consensus_timestamp,payer_account_id from ' || shard ||
+    RETURN QUERY EXECUTE 'SELECT * from transaction_hash where hash = $1 ' ||
+                         'UNION ALL SELECT * from ' || shard ||
                          ' WHERE hash = $1'
         USING $1;
 END
