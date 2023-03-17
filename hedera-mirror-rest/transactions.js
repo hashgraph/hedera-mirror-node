@@ -195,6 +195,7 @@ const getSelectClauseWithTransfers = (innerQuery, order = 'desc') => {
         + transfersListCte_join + '\n' + transfersListCte_where + '\n' + transfersListCte_end;
   }
 
+
   const ctes = [transactionTimeStampCte(innerQuery), cryptoTransferListCte, tokenTransferListCte, transfersListCte];
   const fields = [...transactionFullFields, `t.ctr_list AS crypto_transfer_list`, `t.ttr_list AS token_transfer_list`];
 
@@ -423,6 +424,7 @@ const getTransactionsOuterQuery = (innerQuery, order) => {
     ${getSelectClauseWithTransfers(innerQuery, order)}
     ${fromTables}
     ${whereClause}
+
     ORDER BY ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} ${order}`;
 };
 
