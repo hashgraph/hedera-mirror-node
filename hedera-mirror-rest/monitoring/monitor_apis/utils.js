@@ -66,8 +66,8 @@ const getUrl = (server, path, query = undefined) => {
  * @param {string} xRetryIn value of the x-retry-in header, in string format of "55ms"
  */
 const getBackoff = (retryAfter, xRetryIn) => {
-  const backoffSeconds = Number(retryAfter);
-  let backoffMillis = isNaN(backoffSeconds) ? 0 : backoffSeconds * 1000;
+  const backoffSeconds = Number.parseInt(retryAfter);
+  let backoffMillis = Number.isNaN(backoffSeconds) ? 0 : backoffSeconds * 1000;
   if (backoffMillis === 0) {
     backoffMillis = parseDuration(xRetryIn || '0ms');
     backoffMillis = math.ceil(backoffMillis);

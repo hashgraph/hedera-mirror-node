@@ -69,13 +69,12 @@ class NotifyingEntityListenerTest extends BatchEntityListenerTest {
 
     @Override
     protected Flux<TopicMessage> subscribe(long topicNum) {
-        try {
-            PgConnection connection = dataSource.getConnection().unwrap(PgConnection.class);
+        try (var conn = dataSource.getConnection()) {
+            PgConnection connection = conn.unwrap(PgConnection.class);
             connection.execSQLUpdate("listen topic_message");
             return Flux.defer(() -> getNotifications(connection))
                     .repeat()
-                    .timeout(Duration.ofSeconds(2))
-                    .doAfterTerminate(() -> JdbcUtils.closeConnection(connection));
+                    .timeout(Duration.ofSeconds(2));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

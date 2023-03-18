@@ -235,8 +235,8 @@ public class TopicFeature {
         for (int i = 0; i < numGroups; i++) {
             Thread.sleep(milliSleep, 0);
             publishTopicMessages(messageCount);
-            log.trace("Emitted {} message(s) in batch {} of {} potential batches. Will sleep {} ms until " +
-                    "next batch", messageCount, i + 1, numGroups, milliSleep);
+            log.trace("Emitted {} message(s) in batch {} of {} potential batches. Sleeping {} ms",
+                    messageCount, i + 1, numGroups, milliSleep);
         }
 
         messageSubscribeCount = numGroups * messageCount;

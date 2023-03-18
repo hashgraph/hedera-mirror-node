@@ -73,6 +73,6 @@ const getAPIResponse = async (url) => {
     });
 };
 
-const readJSONFile = (filePath) => JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+const readJSONFile = (filePath) => JSON.parse(fs.readFileSync(filePath, 'utf8'));
 
 export {getAPIResponse, makeStateProofDir, readJSONFile, storeFile};
