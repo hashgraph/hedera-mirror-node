@@ -74,6 +74,10 @@ if [[ "${OLD_DB_HAS_DATA}" != "t" ]]; then
 fi
 
 NEW_DB_HAS_DATA=$(PGPASSWORD="${NEW_DB_PASSWORD}" psql -X -t -h "${NEW_DB_HOST}" -d "${NEW_DB_NAME}" -p "${NEW_DB_PORT}" -U "${NEW_DB_USER}" -c "select exists (select from information_schema.tables where table_name = 'flyway_schema_history');" | xargs)
+if [[ "${NEW_DB_HAS_DATA}" != "f" ]]; then
+  echo "Unable to verify the state of the new database. Either the connection information is wrong, the migration might have already been ran, or the importer might've already initialized it."
+  exit 1
+fi
 
 start_time="$(date -u +%s)"
 
