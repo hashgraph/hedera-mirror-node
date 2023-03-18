@@ -6,23 +6,15 @@ EXPORT_DIR="${SCRIPTS_DIR}/export"
 MIGRATIONS_DIR="${SCRIPTS_DIR}/../../migration/v2"
 source "${SCRIPTS_DIR}/migration.config"
 
-FLYWAY_FILE=/usr/local/bin/flyway
-if [[ -f "$FLYWAY_FILE" ]]; then
-    echo "Deleting $FLYWAY_FILE"
-    sudo unlink "$FLYWAY_FILE"
-fi
-
 echo "Installing flyway"
 rm -rf `pwd`/flyway-*
 wget -qO- ${FLYWAY_URL} | tar xvz && mv flyway-* flyway-latest
-sudo ln -s `pwd`/flyway-latest/flyway /usr/local/bin/
+export PATH="`pwd`/flyway-latest/:$PATH"
 echo "flyway installed"
 echo "Copying the config for flyway"
 cp "${SCRIPTS_DIR}/flyway.conf" "flyway-latest/conf/"
 echo "Copying the script file for flyway migration"
-cp "${MIGRATIONS_DIR}/V2.0.0__create_tables.sql" "flyway-latest/sql/"
-cp "${MIGRATIONS_DIR}/V2.0.1__distribution.sql" "flyway-latest/sql/"
-cp "${MIGRATIONS_DIR}/V2.0.2__static_partitioning.sql" "flyway-latest/sql/"
+cp "${MIGRATIONS_DIR}/V2.0."[0-2]* flyway-latest/sql/
 
 
 if [[ -z "${OLD_DB_HOST}" ]]; then
@@ -82,10 +74,7 @@ if [[ "${OLD_DB_HAS_DATA}" != "t" ]]; then
 fi
 
 NEW_DB_HAS_DATA=$(PGPASSWORD="${NEW_DB_PASSWORD}" psql -X -t -h "${NEW_DB_HOST}" -d "${NEW_DB_NAME}" -p "${NEW_DB_PORT}" -U "${NEW_DB_USER}" -c "select exists (select from information_schema.tables where table_name = 'flyway_schema_history');" | xargs)
-if [[ "${NEW_DB_HAS_DATA}" != "f" ]]; then
-  echo "Unable to verify the state of the new database. Either the connection information is wrong, the migration might have already been ran, or the importer might've already initialized it."
-  exit 1
-fi
+
 start_time="$(date -u +%s)"
 
 export PGPASSWORD="${OLD_DB_PASSWORD}"
@@ -98,15 +87,13 @@ SECONDS=0
 echo "Migrating mirror node data from PostgreSQL ${OLD_DB_HOST}:${OLD_DB_PORT} to CitusDB ${NEW_DB_HOST}:${NEW_DB_PORT}"
 
 echo "1. Generating backup and restore SQL"
-TABLES=$(psql -q -t --csv -h "${OLD_DB_HOST}" -p "${OLD_DB_PORT}" -U "${OLD_DB_USER}" -c "select distinct table_name from information_schema.tables where table_schema = 'public' order by table_name asc;")
+TABLES=$(psql -q -t --csv -h "${OLD_DB_HOST}" -p "${OLD_DB_PORT}" -U "${OLD_DB_USER}" -c "select distinct table_name from information_schema.tables where table_schema = 'public' and table_name not in (${EXCLUDED_TABLES}) order by table_name asc;")
 
 for table in ${TABLES}; do
-  if [[ "$table" != "$EXCLUDED_TABLES" ]]; then
-      COLUMNS=$(psql -q -t -h "${OLD_DB_HOST}" -p "${OLD_DB_PORT}" -U "${OLD_DB_USER}" -c "select string_agg(column_name, ', ' order by ordinal_position) from information_schema.columns where table_schema = 'public' and table_name = '${table}';")
-      COLUMNS="${COLUMNS#"${COLUMNS%%[![:space:]]*}"}" # Trim leading whitespace
-      echo "\copy ${table} ($COLUMNS) from program 'gzip -dc ${table}.csv.gz' DELIMITER ',' CSV HEADER null '';" >> "${SCRIPTS_DIR}/restore.sql"
-      echo "\copy ${table} to program 'gzip -v6> ${table}.csv.gz' delimiter ',' csv header;" >> "${SCRIPTS_DIR}/backup.sql"
-  fi
+    COLUMNS=$(psql -q -t -h "${OLD_DB_HOST}" -p "${OLD_DB_PORT}" -U "${OLD_DB_USER}" -c "select string_agg(column_name, ', ' order by ordinal_position) from information_schema.columns where table_schema = 'public' and table_name = '${table}';")
+    COLUMNS="${COLUMNS#"${COLUMNS%%[![:space:]]*}"}" # Trim leading whitespace
+    echo "\copy ${table} ($COLUMNS) from program 'gzip -dc ${table}.csv.gz' DELIMITER ',' csv header;" >> "${SCRIPTS_DIR}/restore.sql"
+    echo "\copy ${table} to program 'gzip -v6> ${table}.csv.gz' delimiter ',' csv header;" >> "${SCRIPTS_DIR}/backup.sql"
 done
 
 echo "2. Backing up tables from source database"
