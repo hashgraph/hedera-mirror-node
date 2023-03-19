@@ -46,6 +46,10 @@ spec:
           enabled: false
     postgresql:
       enabled: false
+    rest:
+      resources:
+        limit:
+          cpu: 1150m
     test:
       enabled: true
       config:
