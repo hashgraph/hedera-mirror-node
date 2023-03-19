@@ -48,7 +48,7 @@ spec:
       enabled: false
     rest:
       resources:
-        limit:
+        limits:
           cpu: 1150m
     test:
       enabled: true
