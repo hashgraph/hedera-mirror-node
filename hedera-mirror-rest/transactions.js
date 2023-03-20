@@ -129,73 +129,47 @@ const getSelectClauseWithTransfers = (innerQuery, order = 'desc') => {
                     ${limitQuery}`;
     return `${timestampFilter}
       tlist as (${tquery})`;
-    }
+  };
 
-  const cryptoTransferListCte_select = `c_list as (
-      select ${cryptoTransferJsonAgg} as ctr_list, ${CryptoTransfer.getFullName(CryptoTransfer.CONSENSUS_TIMESTAMP)}`;
-  const cryptoTransferListCte_from_default = `from ${CryptoTransfer.tableName} ${CryptoTransfer.tableAlias}`;
-  const cryptoTransferListCte_from_override = `from timestamp_range tr, ${CryptoTransfer.tableName} ${CryptoTransfer.tableAlias}`;
-  const cryptoTransferListCte_join =
-      `join tlist on ${CryptoTransfer.getFullName(CryptoTransfer.CONSENSUS_TIMESTAMP)} = tlist.consensus_timestamp
-      and ${CryptoTransfer.getFullName(CryptoTransfer.PAYER_ACCOUNT_ID)} = tlist.payer_account_id`;
-  const cryptoTransferListCte_where = `WHERE ${CryptoTransfer.getFullName(CryptoTransfer.CONSENSUS_TIMESTAMP)} >= tr.min
+  // aggregate crypto transfers, token transfers, and nft transfers
+  let additionalFromTable = '';
+  let cryptoTransferListCteWhereClause = '';
+  let tokenTransferListCteWhereClause = '';
+  let transfersListCteWhereClause = '';
+  if (!_.isUndefined(innerQuery)) {
+    additionalFromTable = 'timestamp_range tr, ';
+    cryptoTransferListCteWhereClause = `WHERE ${CryptoTransfer.getFullName(CryptoTransfer.CONSENSUS_TIMESTAMP)} >= tr.min
       AND ${CryptoTransfer.getFullName(CryptoTransfer.CONSENSUS_TIMESTAMP)} <= tr.max`;
-  const cryptoTransferListCte_group = `group by ${CryptoTransfer.getFullName(CryptoTransfer.CONSENSUS_TIMESTAMP)}
-  )`;
-
-  let cryptoTransferListCte = ``;
-  if (_.isUndefined(innerQuery)) {
-    cryptoTransferListCte = cryptoTransferListCte_select + '\n' + cryptoTransferListCte_from_default + '\n'
-        + cryptoTransferListCte_join + '\n' + cryptoTransferListCte_group;
-  } else {
-    cryptoTransferListCte = cryptoTransferListCte_select + '\n' + cryptoTransferListCte_from_override + '\n'
-        + cryptoTransferListCte_join + '\n' + cryptoTransferListCte_where + '\n' + cryptoTransferListCte_group;
-  }
-
-  const tokenTransferListCte_select = `t_list as (
-      select ${tokenTransferJsonAgg} as ttr_list, ${TokenTransfer.getFullName(TokenTransfer.CONSENSUS_TIMESTAMP)}`;
-  const tokenTransferListCte_from_default = `from ${TokenTransfer.tableName} ${TokenTransfer.tableAlias}`;
-  const tokenTransferListCte_from_override = `from timestamp_range tr, ${TokenTransfer.tableName} ${TokenTransfer.tableAlias}`;
-  const tokenTransferListCte_join =
-    `join tlist on ${TokenTransfer.getFullName(TokenTransfer.CONSENSUS_TIMESTAMP)} = tlist.consensus_timestamp
-    and ${TokenTransfer.getFullName(TokenTransfer.PAYER_ACCOUNT_ID)} = tlist.payer_account_id`;
-  const tokenTransferListCte_where = `WHERE ${TokenTransfer.getFullName(TokenTransfer.CONSENSUS_TIMESTAMP)} >= tr.min
+    tokenTransferListCteWhereClause = `WHERE ${TokenTransfer.getFullName(TokenTransfer.CONSENSUS_TIMESTAMP)} >= tr.min
       AND ${TokenTransfer.getFullName(TokenTransfer.CONSENSUS_TIMESTAMP)} <= tr.max`;
-  const tokenTransferListCte_group = `group by ${TokenTransfer.getFullName(TokenTransfer.CONSENSUS_TIMESTAMP)}
-  )`;
-
-  let tokenTransferListCte = ``;
-  if (_.isUndefined(innerQuery)) {
-    tokenTransferListCte = tokenTransferListCte_select + '\n' + tokenTransferListCte_from_default + '\n'
-        + tokenTransferListCte_join + '\n' + tokenTransferListCte_group;
-  } else {
-    tokenTransferListCte = tokenTransferListCte_select + '\n' + tokenTransferListCte_from_override + '\n'
-        + tokenTransferListCte_join + '\n' + tokenTransferListCte_where + '\n' + tokenTransferListCte_group;
+    transfersListCteWhereClause = `WHERE t.consensus_timestamp >= tr.min AND t.consensus_timestamp <= tr.max`;
   }
 
-  const transfersListCte_select = `transfer_list as (
+  const cryptoTransferListCte = `c_list as (
+      select ${cryptoTransferJsonAgg} as ctr_list, ${CryptoTransfer.getFullName(CryptoTransfer.CONSENSUS_TIMESTAMP)}
+      from ${additionalFromTable} ${CryptoTransfer.tableName} ${CryptoTransfer.tableAlias}
+      join tlist on ${CryptoTransfer.getFullName(CryptoTransfer.CONSENSUS_TIMESTAMP)} = tlist.consensus_timestamp
+      and ${CryptoTransfer.getFullName(CryptoTransfer.PAYER_ACCOUNT_ID)} = tlist.payer_account_id
+      ${cryptoTransferListCteWhereClause} group by ${CryptoTransfer.getFullName(CryptoTransfer.CONSENSUS_TIMESTAMP)}
+  )`;
+
+  const tokenTransferListCte = `t_list as (
+    select ${tokenTransferJsonAgg} as ttr_list, ${TokenTransfer.getFullName(TokenTransfer.CONSENSUS_TIMESTAMP)}
+    from ${additionalFromTable} ${TokenTransfer.tableName} ${TokenTransfer.tableAlias}
+    join tlist on ${TokenTransfer.getFullName(TokenTransfer.CONSENSUS_TIMESTAMP)} = tlist.consensus_timestamp
+    and ${TokenTransfer.getFullName(TokenTransfer.PAYER_ACCOUNT_ID)} = tlist.payer_account_id
+    ${tokenTransferListCteWhereClause} group by ${TokenTransfer.getFullName(TokenTransfer.CONSENSUS_TIMESTAMP)}
+  )`;
+
+  const transfersListCte = `transfer_list as (
     select coalesce(t.consensus_timestamp, ctrl.consensus_timestamp, ttrl.consensus_timestamp) AS consensus_timestamp,
       ctrl.ctr_list,
       ttrl.ttr_list,
-      ${transferListFullFields}`;
-  const transfersListCte_from_default = `from tlist t`;
-  const transfersListCte_from_override = `from timestamp_range tr, tlist t`;
-  const transfersListCte_join = `full outer join c_list ctrl on t.consensus_timestamp = ctrl.consensus_timestamp
-        full outer join t_list ttrl on t.consensus_timestamp = ttrl.consensus_timestamp`;
-  const transfersListCte_where = `WHERE t.consensus_timestamp >= tr.min AND t.consensus_timestamp <= tr.max`;
-  const transfersListCte_end = `
+      ${transferListFullFields}
+    from ${additionalFromTable} tlist t
+    full outer join c_list ctrl on t.consensus_timestamp = ctrl.consensus_timestamp
+    full outer join t_list ttrl on t.consensus_timestamp = ttrl.consensus_timestamp ${transfersListCteWhereClause}
   )`;
-
-  let transfersListCte = ``;
-  if (_.isUndefined(innerQuery)) {
-    transfersListCte = transfersListCte_select + '\n' + transfersListCte_from_default + '\n'
-        + transfersListCte_join + '\n' + transfersListCte_end;
-  } else {
-    transfersListCte = transfersListCte_select + '\n' + transfersListCte_from_override + '\n'
-        + transfersListCte_join + '\n' + transfersListCte_where + '\n' + transfersListCte_end;
-  }
-
-
   const ctes = [transactionTimeStampCte(innerQuery), cryptoTransferListCte, tokenTransferListCte, transfersListCte];
   const fields = [...transactionFullFields, `t.ctr_list AS crypto_transfer_list`, `t.ttr_list AS token_transfer_list`];
 
