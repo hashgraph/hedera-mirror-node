@@ -22,6 +22,8 @@ package plugin.go
 
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream
 import org.gradle.api.DefaultTask
+import org.gradle.api.file.FileSystemOperations
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
 import org.gradle.kotlin.dsl.getByName
 import java.io.File
@@ -35,12 +37,13 @@ import java.util.zip.GZIPInputStream
 // Downloads and decompresses the Go artifacts
 open class GoSetup : DefaultTask() {
 
+    @Internal
+    val go = project.extensions.getByName<GoExtension>("go")
+
     @TaskAction
     fun prepare() {
-        val go = project.extensions.getByName<GoExtension>("go")
         go.goRoot.mkdirs()
-        val url =
-            URL("https://storage.googleapis.com/golang/go${go.version}.${go.os}-${go.arch}.tar.gz")
+        val url = URL("https://storage.googleapis.com/golang/go${go.version}.${go.os}-${go.arch}.tar.gz")
         val filename = Paths.get(url.path).fileName
         val targetFile = go.cacheDir.toPath().resolve(filename)
 
