@@ -85,7 +85,7 @@ dependencies {
         api("org.gaul:s3proxy:2.0.0")
         api("org.hyperledger.besu:secp256k1:0.6.1")
         api("org.hyperledger.besu:evm:22.7.6")
-        api("org.jetbrains:annotations:17.0.0")
+        api("org.jetbrains:annotations:24.0.1")
         api("org.mapstruct:mapstruct:$mapStructVersion")
         api("org.mapstruct:mapstruct-processor:$mapStructVersion")
         api("org.msgpack:jackson-dataformat-msgpack:0.9.3")
