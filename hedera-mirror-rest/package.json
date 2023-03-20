@@ -42,7 +42,7 @@
     "parse-duration": "^1.0.3",
     "pg": "~8.10.0",
     "pg-range": "^1.1.2",
-    "prom-client": "^13.1.0",
+    "prom-client": "^14.2.0",
     "qs": "^6.11.0",
     "quick-lru": "^6.1.1",
     "rfc4648": "^1.5.2",
