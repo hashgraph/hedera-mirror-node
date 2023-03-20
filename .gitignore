@@ -147,3 +147,4 @@ build
 # hardhat
 hedera-mirror-test/src/test/resources/solidity/artifacts/build-info
 hedera-mirror-test/src/test/resources/solidity/artifacts/contracts/**/*.dbg.json
+hedera-mirror-test/src/test/resources/solidity/package-lock.json

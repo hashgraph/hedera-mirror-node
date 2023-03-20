@@ -40,7 +40,7 @@ public class ContractCallResponse {
         return Bytes.fromHexString(response.getResult()).slice(12).toUnprefixedHexString();
     }
 
-    public static boolean convertContractCallResponseToBoolean(final ContractCallResponse response) {
-        return Long.parseUnsignedLong(response.getResult().replace("0x", ""), 16) > 0;
+    public boolean getResultAsBoolean() {
+        return Long.parseUnsignedLong(result.replace("0x", ""), 16) > 0;
     }
 }

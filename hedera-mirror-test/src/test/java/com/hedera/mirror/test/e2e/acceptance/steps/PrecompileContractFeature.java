@@ -20,7 +20,6 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
  * ‍
  */
 
-import static com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse.convertContractCallResponseToBoolean;
 import static com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse.convertContractCallResponseToNum;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.ZERO_ADDRESS;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
@@ -191,7 +190,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 contractClient.getClientAddress()
         );
 
-        assertTrue(convertContractCallResponseToBoolean(response));
+        assertTrue(response.getResultAsBoolean());
     }
 
     @Then("Check if non fungible token is token")
@@ -202,7 +201,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 contractClient.getClientAddress()
         );
 
-        assertTrue(convertContractCallResponseToBoolean(response));
+        assertTrue(response.getResultAsBoolean());
     }
 
     @Then("Invalid account is token should return an error")
@@ -239,7 +238,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 contractClient.getClientAddress()
         );
 
-        assertFalse(convertContractCallResponseToBoolean(response));
+        assertFalse(response.getResultAsBoolean());
     }
 
     @Then("Verify non fungible token isn't frozen")
@@ -252,7 +251,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 contractClient.getClientAddress()
         );
 
-        assertFalse(convertContractCallResponseToBoolean(response));
+        assertFalse(response.getResultAsBoolean());
     }
 
     @Then("Check if can freeze token")
@@ -264,7 +263,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
-        boolean isFrozenBefore = convertContractCallResponseToBoolean(responseBefore);
+        boolean isFrozenBefore = responseBefore.getResultAsBoolean();
         assertFalse(isFrozenBefore);
 
         NetworkTransactionResponse freezeResponse = tokenClient
@@ -279,7 +278,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 contractClient.getClientAddress()
         );
 
-        boolean isFrozenAfter = convertContractCallResponseToBoolean(responseAfter);
+        boolean isFrozenAfter = responseAfter.getResultAsBoolean();
         assertTrue(isFrozenAfter);
     }
 
@@ -292,7 +291,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
-        boolean isFrozenBefore = convertContractCallResponseToBoolean(responseBefore);
+        boolean isFrozenBefore = responseBefore.getResultAsBoolean();
         assertTrue(isFrozenBefore);
 
         NetworkTransactionResponse freezeResponse = tokenClient
@@ -307,7 +306,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 contractClient.getClientAddress()
         );
 
-        boolean isFrozenAfter = convertContractCallResponseToBoolean(responseAfter);
+        boolean isFrozenAfter = responseAfter.getResultAsBoolean();
         assertFalse(isFrozenAfter);
     }
 
@@ -322,7 +321,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
-        boolean isFrozenBefore = convertContractCallResponseToBoolean(responseBefore);
+        boolean isFrozenBefore = responseBefore.getResultAsBoolean();
         assertFalse(isFrozenBefore);
 
         NetworkTransactionResponse freezeResponse = tokenClient.freeze(tokenIds.get(0), ecdsaEaId.getAccountId());
@@ -336,7 +335,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 contractClient.getClientAddress()
         );
 
-        boolean isFrozenAfter = convertContractCallResponseToBoolean(responseAfter);
+        boolean isFrozenAfter = responseAfter.getResultAsBoolean();
         assertTrue(isFrozenAfter);
 
         NetworkTransactionResponse unfreezeResponse = tokenClient.unfreeze(tokenIds.get(0), ecdsaEaId.getAccountId());
@@ -346,7 +345,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     @Retryable(value = {AssertionError.class, WebClientResponseException.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
-    private void verifyTx(String txId) {
+    public void verifyTx(String txId) {
         MirrorTransactionsResponse txResponse = mirrorClient.getTransactions(txId);
         assertNotNull(txResponse);
     }
@@ -361,7 +360,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 contractClient.getClientAddress()
         );
 
-        assertFalse(convertContractCallResponseToBoolean(response));
+        assertFalse(response.getResultAsBoolean());
     }
 
     @Then("Check if non fungible token is kyc granted")
@@ -374,7 +373,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 contractClient.getClientAddress()
         );
 
-        assertFalse(convertContractCallResponseToBoolean(response));
+        assertFalse(response.getResultAsBoolean());
     }
 
     @Then("Get token default freeze of fungible token")
@@ -386,7 +385,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 contractClient.getClientAddress()
         );
 
-        assertFalse(convertContractCallResponseToBoolean(response));
+        assertFalse(response.getResultAsBoolean());
     }
 
     @Then("Get token default freeze of non fungible token")
@@ -398,7 +397,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 contractClient.getClientAddress()
         );
 
-        assertFalse(convertContractCallResponseToBoolean(response));
+        assertFalse(response.getResultAsBoolean());
     }
 
     @Then("Get token default kyc of fungible token")
@@ -410,7 +409,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 contractClient.getClientAddress()
         );
 
-        assertFalse(convertContractCallResponseToBoolean(response));
+        assertFalse(response.getResultAsBoolean());
     }
 
     @Then("Get token default kyc of non fungible token")
@@ -422,7 +421,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 contractClient.getClientAddress()
         );
 
-        assertFalse(convertContractCallResponseToBoolean(response));
+        assertFalse(response.getResultAsBoolean());
     }
 
     private Tuple baseGetInformationForTokenChecks(ContractCallResponse response) throws Exception {
@@ -642,7 +641,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     @Retryable(value = {AssertionError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
-    private void verifyToken(TokenId tokenId) {
+    public void verifyToken(TokenId tokenId) {
         MirrorTokenResponse mirrorToken = mirrorClient.getTokenInfo(tokenId.toString());
 
         assertNotNull(mirrorToken);
@@ -652,7 +651,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     @Retryable(value = {AssertionError.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
-    private void verifyNft(TokenId tokenId, Long serialNumber) {
+    public void verifyNft(TokenId tokenId, Long serialNumber) {
         MirrorNftResponse mirrorNft = mirrorClient.getNftInfo(tokenId.toString(), serialNumber);
 
         assertNotNull(mirrorNft);
