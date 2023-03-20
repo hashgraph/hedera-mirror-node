@@ -30,7 +30,7 @@ import config from './config';
 const app = express();
 
 const port = process.env.PORT || config.port || 3000;
-if (isNaN(Number(port))) {
+if (Number.isNaN(Number.parseInt(port))) {
   logger.error('Please specify a valid port');
   process.exit(1);
 }
@@ -83,7 +83,7 @@ app.get(`${apiPrefix}/status/:name`, (req, res) => {
   logger.info(
     `${req.ip} ${req.method} ${req.originalUrl} returned ${status.httpCode}: ${passed}/${total} tests passed`
   );
-  res.status(status.httpCode).send(status);
+  res.status(status.httpCode).json(status);
 });
 
 if (process.env.NODE_ENV !== 'test') {
@@ -100,10 +100,12 @@ const servers = [...config.servers].map((server) => {
 });
 
 // Run tests on startup and every interval after that
-runEverything(servers).then(() => {
-  setInterval(async () => {
-    await runEverything(servers);
-  }, config.interval * 1000);
-});
+runEverything(servers)
+  .catch(e => logger.error(`Error starting server: ${JSON.stringify(e)}`))
+  .then(() => {
+    setInterval(async () => {
+      await runEverything(servers);
+    }, config.interval * 1000);
+  });
 
 export default app;

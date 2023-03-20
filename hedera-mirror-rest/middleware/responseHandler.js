@@ -28,7 +28,7 @@ const {
 } = config;
 
 const contentTypeHeader = 'Content-Type';
-const applicationJson = 'application/json';
+const applicationJson = 'application/json; charset=utf-8';
 
 // Response middleware that pulls response data passed through request and sets in response.
 // Next param is required to ensure express maps to this middleware and can also be used to pass onto future middleware

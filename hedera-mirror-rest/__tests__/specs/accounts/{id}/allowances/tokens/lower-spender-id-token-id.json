@@ -80,7 +80,9 @@
   },
   "tests": [
     {
-      "url": "/api/v1/accounts/1001/allowances/tokens?spender.id=gte:2001&token.id=gt:10002",
+      "urls": [
+        "/api/v1/accounts/1001/allowances/tokens?spender.id=gte:2001&token.id=gt:10002"
+      ],
       "responseStatus": 200,
       "responseJson": {
         "allowances": [

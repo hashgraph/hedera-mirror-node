@@ -128,7 +128,7 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .returns(fileId, EthereumTransaction::getCallDataId)
                 .returns(recordItem.getConsensusTimestamp(), EthereumTransaction::getConsensusTimestamp)
                 .returns(DomainUtils.toBytes(body.getEthereumData()), EthereumTransaction::getData)
-                .returns(gasLimit / WEIBARS_TO_TINYBARS, EthereumTransaction::getGasLimit)
+                .returns(gasLimit , EthereumTransaction::getGasLimit)
                 .returns(DomainUtils.toBytes(ETHEREUM_HASH), EthereumTransaction::getHash)
                 .returns(body.getMaxGasAllowance(), EthereumTransaction::getMaxGasAllowance)
                 .returns(recordItem.getPayerAccountId(), EthereumTransaction::getPayerAccountId)

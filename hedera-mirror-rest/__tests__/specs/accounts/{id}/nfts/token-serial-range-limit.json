@@ -207,6 +207,61 @@
           "next": "/api/v1/accounts/0.0.1001/nfts?token.id=lte:2500&token.id=gte:0.0.2000&serialnumber=lt:5&serialnumber=gt:1&limit=5&order=asc"
         }
       }
+    },
+    {
+      "url": "/api/v1/accounts/0.0.1001/nfts?token.id=gte:1000&token.id=lte:2500&serialnumber=gt:3&serialnumber=lt:5&limit=5&order=asc",
+      "responseStatus": 200,
+      "responseJson": {
+        "nfts": [
+          {
+            "account_id": "0.0.1001",
+            "created_timestamp": "1234567890.000000001",
+            "delegating_spender": null,
+            "deleted": false,
+            "metadata": "bTE=",
+            "modified_timestamp": "1234567890.000000001",
+            "serial_number": 1,
+            "spender": null,
+            "token_id": "0.0.1500"
+          },
+          {
+            "account_id": "0.0.1001",
+            "created_timestamp": "1234567890.000000002",
+            "delegating_spender": null,
+            "deleted": false,
+            "metadata": "bTI=",
+            "modified_timestamp": "1234567890.000000002",
+            "serial_number": 2,
+            "spender": null,
+            "token_id": "0.0.1500"
+          },
+          {
+            "account_id": "0.0.1001",
+            "created_timestamp": "1234567890.000000003",
+            "delegating_spender": null,
+            "deleted": false,
+            "metadata": "bTM=",
+            "modified_timestamp": "1234567890.000000003",
+            "serial_number": 3,
+            "spender": null,
+            "token_id": "0.0.1500"
+          },
+          {
+            "account_id": "0.0.1001",
+            "created_timestamp": "1234567890.000000004",
+            "delegating_spender": null,
+            "deleted": false,
+            "metadata": "bzI=",
+            "modified_timestamp": "1234567890.000000004",
+            "serial_number": 1,
+            "spender": null,
+            "token_id": "0.0.2000"
+          }
+        ],
+        "links": {
+          "next": "/api/v1/accounts/0.0.1001/nfts?token.id=lte:2500&token.id=gte:0.0.2000&serialnumber=lt:5&serialnumber=gt:1&limit=5&order=asc"
+        }
+      }
     }
   ]
 }

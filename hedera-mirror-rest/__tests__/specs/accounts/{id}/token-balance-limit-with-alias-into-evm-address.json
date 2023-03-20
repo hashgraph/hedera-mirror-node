@@ -12,14 +12,14 @@
     },
     "accounts": [
       {
+        "alias": "AAAQEAYEAUDAOCAJCAIREEYUCULBOGAZ",
         "balance": 70,
         "num": 7
       },
       {
+        "alias": "AEBAGBAFAYDQQCIQCEJBGFAVCYLRQGJA",
         "balance": 80,
         "num": 8,
-        "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
-        "evm_address": "ac384c53f03855fa1b3616052f8ba32c6c2a2fec",
         "public_key": "519a008fabde4d28d68293c71fcdcdcca38d8fae6102a832b31e802f257fd1d9"
       }
     ],
@@ -64,7 +64,7 @@
   },
   "tests": [
     {
-      "url": "/api/v1/accounts/8",
+      "url": "/api/v1/accounts/8", 
       "responseStatus": 200,
       "responseJson": {
         "transactions": [],
@@ -83,12 +83,12 @@
           ]
         },
         "account": "0.0.8",
-        "alias": "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
+        "alias": "AEBAGBAFAYDQQCIQCEJBGFAVCYLRQGJA",
         "created_timestamp": null,
         "decline_reward": false,
         "deleted": false,
         "ethereum_nonce": null,
-        "evm_address": "0xac384c53f03855fa1b3616052f8ba32c6c2a2fec",
+        "evm_address": "0x0102030405060708091011121314151617181920",
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,
@@ -124,12 +124,12 @@
           ]
         },
         "account": "0.0.7",
-        "alias": null,
+        "alias": "AAAQEAYEAUDAOCAJCAIREEYUCULBOGAZ",
         "created_timestamp": null,
         "decline_reward": false,
         "deleted": false,
         "ethereum_nonce": null,
-        "evm_address": "0x0000000000000000000000000000000000000007",
+        "evm_address": "0x0001020304050607080910111213141516171819",
         "expiry_timestamp": null,
         "auto_renew_period": null,
         "key": null,

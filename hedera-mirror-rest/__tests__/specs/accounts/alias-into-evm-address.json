@@ -1,0 +1,117 @@
+{
+  "description": "Account api calls for all accounts, getting back one where alias gets converted to evm address",
+  "setup": {
+    "accounts": [
+      {
+        "balance": 40,
+        "num": 4,
+        "key": "3a21023673dc1b97f1e2a99041867be087ec040374636b8e7486789112e95f09018401"
+      },
+      {
+        "alias": "AAAQEAYEAUDAOCAJCAIREEYUCULBOGAZ",
+        "balance": 50,
+        "num": 5,
+        "key": "32250a233a21023673dc1b97f1e2a99041867be087ec040374636b8e7486789112e95f09018401"
+      },
+      {
+        "alias": "AEBAGBAFAYDQQCIQCEJBGFAVCYLRQGJA",
+        "balance": 60,
+        "num": 6,
+        "key": "2a29080112250a233a21023673dc1b97f1e2a99041867be087ec040374636b8e7486789112e95f09018401"
+      }
+    ],
+    "contracts": [],
+    "transactions": [],
+    "cryptotransfers": []
+  },
+  "url": "/api/v1/accounts",
+  "responseStatus": 200,
+  "responseJson": {
+    "accounts": [
+      {
+        "balance": {
+          "timestamp": null,
+          "balance": 40,
+          "tokens": []
+        },
+        "account": "0.0.4",
+        "alias": null,
+        "auto_renew_period": null,
+        "created_timestamp": null,
+        "decline_reward": false,
+        "deleted": false,
+        "ethereum_nonce": null,
+        "evm_address": "0x0000000000000000000000000000000000000004",
+        "expiry_timestamp": null,
+        "key": {
+          "_type": "ECDSA_SECP256K1",
+          "key": "023673dc1b97f1e2a99041867be087ec040374636b8e7486789112e95f09018401"
+        },
+        "max_automatic_token_associations": 0,
+        "memo": "entity memo",
+        "pending_reward": 0,
+        "receiver_sig_required": false,
+        "staked_account_id": null,
+        "staked_node_id": null,
+        "stake_period_start": null
+      },
+      {
+        "balance": {
+          "timestamp": null,
+          "balance": 50,
+          "tokens": []
+        },
+        "account": "0.0.5",
+        "alias": "AAAQEAYEAUDAOCAJCAIREEYUCULBOGAZ",
+        "auto_renew_period": null,
+        "created_timestamp": null,
+        "decline_reward": false,
+        "deleted": false,
+        "ethereum_nonce": null,
+        "evm_address": "0x0001020304050607080910111213141516171819",
+        "expiry_timestamp": null,
+        "key": {
+          "_type": "ECDSA_SECP256K1",
+          "key": "023673dc1b97f1e2a99041867be087ec040374636b8e7486789112e95f09018401"
+        },
+        "max_automatic_token_associations": 0,
+        "memo": "entity memo",
+        "pending_reward": 0,
+        "receiver_sig_required": false,
+        "staked_account_id": null,
+        "staked_node_id": null,
+        "stake_period_start": null
+      },
+      {
+        "balance": {
+          "timestamp": null,
+          "balance": 60,
+          "tokens": []
+        },
+        "account": "0.0.6",
+        "alias": "AEBAGBAFAYDQQCIQCEJBGFAVCYLRQGJA",
+        "auto_renew_period": null,
+        "created_timestamp": null,
+        "decline_reward": false,
+        "deleted": false,
+        "ethereum_nonce": null,
+        "evm_address": "0x0102030405060708091011121314151617181920",
+        "expiry_timestamp": null,
+        "key": {
+          "_type": "ECDSA_SECP256K1",
+          "key": "023673dc1b97f1e2a99041867be087ec040374636b8e7486789112e95f09018401"
+        },
+        "max_automatic_token_associations": 0,
+        "memo": "entity memo",
+        "pending_reward": 0,
+        "receiver_sig_required": false,
+        "staked_account_id": null,
+        "staked_node_id": null,
+        "stake_period_start": null
+      }
+    ],
+    "links": {
+      "next": null
+    }
+  }
+}

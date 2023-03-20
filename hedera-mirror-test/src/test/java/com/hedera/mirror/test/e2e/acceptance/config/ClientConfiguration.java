@@ -54,27 +54,21 @@ import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 @Configuration
 @RequiredArgsConstructor
 @EnableRetry
-class ClientConfiguration {
+public class ClientConfiguration {
+
+    public static final String REST_RETRY_TEMPLATE = "rest";
 
     private final AcceptanceTestProperties acceptanceTestProperties;
 
     @Bean
     RetryTemplate retryTemplate() {
-        FixedBackOffPolicy fixedBackOffPolicy = new FixedBackOffPolicy();
-        fixedBackOffPolicy.setBackOffPeriod(acceptanceTestProperties.getBackOffPeriod().toMillis());
+        return retryTemplate(List.of(PrecheckStatusException.class, TimeoutException.class,
+                RuntimeException.class, ReceiptStatusException.class));
+    }
 
-        Map retryableExceptionMap = Map.of(
-                PrecheckStatusException.class, true,
-                TimeoutException.class, true,
-                RuntimeException.class, true,
-                ReceiptStatusException.class, true); // make configurable
-        int maxRetries = acceptanceTestProperties.getMaxRetries();
-        var simpleRetryPolicy = new SimpleRetryPolicy(maxRetries, retryableExceptionMap, true);
-
-        RetryTemplate retryTemplate = new RetryTemplate();
-        retryTemplate.setBackOffPolicy(fixedBackOffPolicy);
-        retryTemplate.setRetryPolicy(simpleRetryPolicy);
-        return retryTemplate;
+    @Bean(name = REST_RETRY_TEMPLATE)
+    RetryTemplate restRetryTemplate() {
+        return retryTemplate(List.of(AssertionError.class));
     }
 
     @Bean
@@ -118,6 +112,15 @@ class ClientConfiguration {
                 .filter((request, next) -> next.exchange(request).doOnNext(response ->
                         logger.info("{} {}: {}", request.method(), request.url(), response.statusCode()))
                 )
+                .build();
+    }
+
+    private RetryTemplate retryTemplate(List<Class<? extends Throwable>> throwables) {
+        return RetryTemplate.builder()
+                .fixedBackoff(acceptanceTestProperties.getBackOffPeriod().toMillis())
+                .maxAttempts(acceptanceTestProperties.getMaxRetries())
+                .retryOn(throwables)
+                .traversingCauses()
                 .build();
     }
 }

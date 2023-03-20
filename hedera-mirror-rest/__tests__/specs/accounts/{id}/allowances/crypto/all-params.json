@@ -57,22 +57,26 @@
       }
     ]
   },
-  "url": "/api/v1/accounts/1001/allowances/crypto?spender.id=5001&limit=1&order=asc",
-  "responseStatus": 200,
-  "responseJson": {
-    "allowances": [
-      {
-        "amount_granted": 77,
-        "owner": "0.0.1001",
-        "spender": "0.0.5001",
-        "timestamp": {
-          "from": "1234567890.000000005",
-          "to": null
+  "tests": [
+    {
+      "url": "/api/v1/accounts/1001/allowances/crypto?spender.id=5001&limit=1&order=asc",
+      "responseStatus": 200,
+      "responseJson": {
+        "allowances": [
+          {
+            "amount_granted": 77,
+            "owner": "0.0.1001",
+            "spender": "0.0.5001",
+            "timestamp": {
+              "from": "1234567890.000000005",
+              "to": null
+            }
+          }
+        ],
+        "links": {
+          "next": "/api/v1/accounts/1001/allowances/crypto?spender.id=5001&limit=1&order=asc"
         }
       }
-    ],
-    "links": {
-      "next": "/api/v1/accounts/1001/allowances/crypto?spender.id=5001&limit=1&order=asc"
     }
-  }
+  ]
 }

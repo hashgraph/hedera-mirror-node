@@ -281,7 +281,8 @@ class ContractCallServiceTest extends Web3IntegrationTest {
             domainBuilder.entity().customize(e ->
                             e.id(receiverEntityId.getId())
                                     .num(receiverEntityId.getEntityNum())
-                                    .evmAddress(receiverEvmAddress))
+                                    .evmAddress(receiverEvmAddress)
+                                    .type(CONTRACT))
                     .persist();
         }
         final var contractEntityId = fromEvmAddress(CONTRACT_ADDRESS.toArrayUnsafe());

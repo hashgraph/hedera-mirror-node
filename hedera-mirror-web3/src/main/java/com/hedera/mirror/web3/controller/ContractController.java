@@ -30,6 +30,8 @@ import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
 import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
 import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
 
+import com.hedera.mirror.web3.exception.InvalidParametersException;
+
 import javax.validation.Valid;
 
 import com.hedera.mirror.web3.exception.RateLimitException;
@@ -132,6 +134,13 @@ class ContractController {
         final var errors = extractValidationError(e);
         log.warn("Validation error: {}", errors);
         return Mono.just(new GenericErrorResponse(errors));
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(BAD_REQUEST)
+    private Mono<GenericErrorResponse> addressValidationError(final InvalidParametersException e) {
+        log.warn("Address validation error");
+        return Mono.just(new GenericErrorResponse(e.getMessage()));
     }
 
     @ExceptionHandler

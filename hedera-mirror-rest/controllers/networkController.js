@@ -48,7 +48,7 @@ const networkNodesDefaultSize = 10;
 const networkNodesMaxSize = 25;
 
 class NetworkController extends BaseController {
-  static contentTypeTextPlain = 'text/plain';
+  static contentTypeTextPlain = 'text/plain; charset=utf-8';
 
   /**
    * Extracts SQL where conditions, params, order, and limit
