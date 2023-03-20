@@ -23,47 +23,26 @@ package com.hedera.mirror.web3.repository;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import lombok.RequiredArgsConstructor;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.Nft;
-import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class NftRepositoryTest extends Web3IntegrationTest {
-    private static final EntityId spender = new EntityId(0L, 0L, 56L, EntityType.TOKEN);
     private final NftRepository nftRepository;
-    private NftId nftId;
-    private EntityId owner;
-    private byte[] metadata;
 
-    @BeforeEach
-    private void persistNft() {
+    @Test
+    void findById() {
+        final var spender = new EntityId(0L, 0L, 56L, EntityType.ACCOUNT);
         final var nft = domainBuilder.nft().customize(n -> n.spender(spender)).persist();
-        nftId = nft.getId();
-        owner = nft.getAccountId();
-        metadata = nft.getMetadata();
-    }
 
-    @Test
-    void findSpender() {
-        assertThat(nftRepository.findById(nftId).map(Nft::getSpender).orElse(null))
-                .isEqualTo(spender);
-    }
-
-    @Test
-    void findOwner() {
-        assertThat(nftRepository.findById(nftId).map(Nft::getAccountId).orElse(null))
-                .isEqualTo(owner);
-    }
-
-    @Test
-    void findMetadata() {
-        assertThat(nftRepository.findById(nftId).map(Nft::getMetadata).orElse(new byte[0]))
-                .isEqualTo(metadata);
+        assertThat(nftRepository.findById(nft.getId()).get())
+                .returns(nft.getSpender(), Nft::getSpender)
+                .returns(nft.getAccountId(), Nft::getAccountId)
+                .returns(nft.getMetadata(), Nft::getMetadata);
     }
 }

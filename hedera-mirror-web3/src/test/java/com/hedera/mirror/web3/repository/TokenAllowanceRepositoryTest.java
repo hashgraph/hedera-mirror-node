@@ -36,9 +36,8 @@ class TokenAllowanceRepositoryTest extends Web3IntegrationTest {
     @Test
     void findAllowance() {
         final var tokenAllowance = domainBuilder.tokenAllowance().persist();
-        final var expectedAllowance = tokenAllowance.getAmount();
 
         assertThat(repository.findById(tokenAllowance.getId()).map(TokenAllowance::getAmount).orElse(0L))
-                .isEqualTo(expectedAllowance);
+                .isEqualTo(tokenAllowance.getAmount());
     }
 }

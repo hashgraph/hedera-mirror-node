@@ -24,63 +24,28 @@ import static com.hedera.mirror.common.domain.token.TokenTypeEnum.NON_FUNGIBLE_U
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import lombok.RequiredArgsConstructor;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hedera.mirror.common.domain.token.Token;
-import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.web3.Web3IntegrationTest;
-import com.hedera.node.app.service.evm.store.tokens.TokenType;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class TokenRepositoryTest extends Web3IntegrationTest {
     private final TokenRepository tokenRepository;
-    private TokenId tokenId;
-    private Token token;
 
-    @BeforeEach
-    void persistToken() {
-        token = domainBuilder.token()
+    @Test
+    void findById() {
+        final var token = domainBuilder.token()
                 .customize(t -> t.type(NON_FUNGIBLE_UNIQUE).freezeDefault(true)).persist();
-        tokenId = new TokenId(token.getTokenId().getTokenId());
-    }
 
-    @Test
-    void findName() {
-        assertThat(tokenRepository.findById(tokenId).map(Token::getName).orElse("")).isEqualTo(token.getName());
-    }
-
-    @Test
-    void findSymbol() {
-        assertThat(tokenRepository.findById(tokenId).map(Token::getSymbol).orElse("")).isEqualTo(token.getSymbol());
-    }
-
-    @Test
-    void findTotalSupply() {
-        assertThat(tokenRepository.findById(tokenId).map(Token::getTotalSupply)
-                .orElse(0L)).isEqualTo(token.getTotalSupply());
-    }
-
-    @Test
-    void findDecimals() {
-        assertThat(tokenRepository.findById(tokenId).map(Token::getDecimals).orElse(0)).isEqualTo(token.getDecimals());
-    }
-
-    @Test
-    void findType() {
-        assertThat(tokenRepository.findById(tokenId).map(t -> TokenType.valueOf(t.getType().name()))
-                .orElse(null)).isEqualTo(TokenType.NON_FUNGIBLE_UNIQUE);
-    }
-
-    @Test
-    void findFreezeDefault() {
-        assertThat(tokenRepository.findById(tokenId).map(Token::getFreezeDefault).orElse(false)).isTrue();
-    }
-
-    @Test
-    void findKycDefault() {
-        assertThat(tokenRepository.findById(tokenId).map(Token::getKycKey)
-                .orElse(new byte[] {})).isEqualTo(token.getKycKey());
+        assertThat(tokenRepository.findById(token.getTokenId()).get())
+                .returns(token.getName(), Token::getName)
+                .returns(token.getSymbol(), Token::getSymbol)
+                .returns(token.getTotalSupply(), Token::getTotalSupply)
+                .returns(token.getDecimals(), Token::getDecimals)
+                .returns(token.getType(), Token::getType)
+                .returns(token.getFreezeDefault(), Token::getFreezeDefault)
+                .returns(token.getKycKey(), Token::getKycKey);
     }
 }

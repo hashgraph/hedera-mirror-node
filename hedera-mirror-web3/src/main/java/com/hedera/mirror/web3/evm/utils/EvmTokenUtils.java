@@ -37,6 +37,7 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmKey;
 @UtilityClass
 public class EvmTokenUtils {
     private static final Address EMPTY_CONTRACT_ADDRESS = Address.wrap(Bytes.wrap(new byte[20]));
+    private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
 
     public static Address toAddress(final EntityId entityId) {
         final var bytes = Bytes.wrap(toEvmAddress(entityId));
@@ -57,8 +58,8 @@ public class EvmTokenUtils {
                 key.hasContractID()
                         ? toAddress(key.getContractID())
                         : EMPTY_CONTRACT_ADDRESS;
-        final var ed25519 = key.hasEd25519() ? toBytes(key.getEd25519()) : new byte[0];
-        final var ecdsaSecp256K1 = key.hasECDSASecp256K1() ? toBytes(key.getECDSASecp256K1()) : new byte[0];
+        final var ed25519 = key.hasEd25519() ? toBytes(key.getEd25519()) : EMPTY_BYTE_ARRAY;
+        final var ecdsaSecp256K1 = key.hasECDSASecp256K1() ? toBytes(key.getECDSASecp256K1()) : EMPTY_BYTE_ARRAY;
 
         final var delegatableContractId =
                 key.hasDelegatableContractId()

@@ -24,17 +24,15 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.ContractID;
+import org.apache.commons.codec.DecoderException;
 import org.apache.tuweni.bytes.Bytes;
-import org.bouncycastle.util.encoders.Hex;
+import org.apache.commons.codec.binary.Hex;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 
-@ExtendWith(MockitoExtension.class)
 class EvmTokenUtilsTest {
     private static final Address EMPTY_ADDRESS = Address.wrap(Bytes.wrap(new byte[20]));
     @Test
@@ -62,9 +60,9 @@ class EvmTokenUtilsTest {
     }
 
     @Test
-    void evmKeyWithEcdsa() throws InvalidProtocolBufferException {
+    void evmKeyWithEcdsa() throws InvalidProtocolBufferException, DecoderException {
         //hexed value of a serialized Key with ecdsa algorithm
-        final var ecdsaBytes = Hex.decode("3a21ccd4f651636406f8a2a9902a2a604be1fb480dba6591ff4d992f8a6bc6abc137c7");
+        final var ecdsaBytes = Hex.decodeHex("3a21ccd4f651636406f8a2a9902a2a604be1fb480dba6591ff4d992f8a6bc6abc137c7");
 
         final var result = EvmTokenUtils.evmKey(ecdsaBytes);
 
@@ -75,9 +73,9 @@ class EvmTokenUtilsTest {
     }
 
     @Test
-    void evmKeyWithEd25519() throws InvalidProtocolBufferException {
+    void evmKeyWithEd25519() throws InvalidProtocolBufferException, DecoderException {
         //hexed value of a serialized Key with ed25519 algorithm
-        final var keyWithEd25519 = Hex.decode("1220000038746a20d630ceb81a24bd43798159108ec144e185c1c60a5e39fb933e2a");
+        final var keyWithEd25519 = Hex.decodeHex("1220000038746a20d630ceb81a24bd43798159108ec144e185c1c60a5e39fb933e2a");
 
         final var result = EvmTokenUtils.evmKey(keyWithEd25519);
 
@@ -88,9 +86,9 @@ class EvmTokenUtilsTest {
     }
 
     @Test
-    void evmKeyWithContractId() throws InvalidProtocolBufferException {
+    void evmKeyWithContractId() throws InvalidProtocolBufferException, DecoderException {
         //hexed value of a serialized Key with contractId
-        final var keyWithContractId = Hex.decode("0a070801100118c409");
+        final var keyWithContractId = Hex.decodeHex("0a070801100118c409");
         final var contractAddress = Address.fromHexString("0x00000001000000000000000100000000000004c4");
 
         final var result = EvmTokenUtils.evmKey(keyWithContractId);
@@ -102,9 +100,9 @@ class EvmTokenUtilsTest {
     }
 
     @Test
-    void evmKeyWithDelegateContractId() throws InvalidProtocolBufferException {
+    void evmKeyWithDelegateContractId() throws InvalidProtocolBufferException, DecoderException {
         //hexed value of a serialized Key with delegate contractId
-        final var keyWithDelegateContractId = Hex.decode("420318c509");
+        final var keyWithDelegateContractId = Hex.decodeHex("420318c509");
         final var delegateContractAddress = Address.fromHexString("0x00000000000000000000000000000000000004c5");
 
         final var result = EvmTokenUtils.evmKey(keyWithDelegateContractId);

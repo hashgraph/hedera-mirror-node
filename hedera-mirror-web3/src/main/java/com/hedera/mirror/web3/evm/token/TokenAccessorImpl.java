@@ -32,11 +32,13 @@ import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.
 import static org.apache.tuweni.bytes.Bytes.EMPTY;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.springframework.util.CollectionUtils;
 
@@ -101,10 +103,10 @@ public class TokenAccessorImpl implements TokenAccessor {
         }
         final var ledgerId = properties.getNetwork().getLedgerId();
         final var nftEntity = nftOptional.get();
-        final var entityAddress = toAddress(nftEntity.getAccountId());
+        final var entityAddress = evmAddressFromId(nftEntity.getAccountId());
         final var creationTime = nftEntity.getCreatedTimestamp();
         final var metadata = nftEntity.getMetadata();
-        final var spender = nftEntity.getSpender() != null ? toAddress(nftEntity.getSpender()) : Address.ZERO;
+        final var spender = nftEntity.getSpender() != null ? evmAddressFromId(nftEntity.getSpender()) : Address.ZERO;
         final var nftInfo = new EvmNftInfo(serialNo, entityAddress, creationTime, metadata, spender, ledgerId);
 
         return Optional.of(nftInfo);
@@ -231,7 +233,7 @@ public class TokenAccessorImpl implements TokenAccessor {
             return Address.ZERO;
         }
 
-        return EvmTokenUtils.toAddress(spenderEntity.get());
+        return evmAddressFromId(spenderEntity.get());
     }
 
     @Override
@@ -253,7 +255,7 @@ public class TokenAccessorImpl implements TokenAccessor {
             return Address.ZERO;
         }
 
-        return EvmTokenUtils.toAddress(ownerEntity.get());
+        return evmAddressFromId(ownerEntity.get());
     }
 
     @Override
@@ -265,7 +267,8 @@ public class TokenAccessorImpl implements TokenAccessor {
     public String metadataOf(final Address nft, long serialNo) {
         final var nftId = new NftId(serialNo, entityIdFromEvmAddress(nft));
 
-        return nftRepository.findById(nftId).map(n -> new String(n.getMetadata())).orElse("");
+        return nftRepository.findById(nftId).map(n ->
+                new String(n.getMetadata(), StandardCharsets.UTF_8)).orElse("");
     }
 
     @Override
@@ -294,7 +297,7 @@ public class TokenAccessorImpl implements TokenAccessor {
                 tokenEntity.getSymbol(),
                 tokenEntity.getName(),
                 entity.getMemo(),
-                toAddress(tokenEntity.getTreasuryAccountId()),
+                evmAddressFromId(tokenEntity.getTreasuryAccountId()),
                 tokenEntity.getTotalSupply(),
                 tokenEntity.getMaxSupply(),
                 tokenEntity.getDecimals(),
@@ -307,7 +310,7 @@ public class TokenAccessorImpl implements TokenAccessor {
         evmTokenInfo.setIsPaused(isPaused);
 
         if (entity.getAutoRenewAccountId() != null) {
-            var autoRenewAddress = toAddress(EntityId.of(entity.getAutoRenewAccountId(), EntityType.ACCOUNT));
+            var autoRenewAddress = evmAddressFromId(EntityId.of(entity.getAutoRenewAccountId(), EntityType.ACCOUNT));
             evmTokenInfo.setAutoRenewAccount(autoRenewAddress);
         }
 
@@ -329,7 +332,7 @@ public class TokenAccessorImpl implements TokenAccessor {
             }
 
             final var amount = customFee.getAmount();
-            final var collector = toAddress(collectorId);
+            final var collector = evmAddressFromId(collectorId);
             final var denominatingTokenId = customFee.getDenominatingTokenId();
             final var denominatingTokenAddress = denominatingTokenId == null ? Address.wrap(EMPTY)
                     : toAddress(denominatingTokenId);
@@ -412,5 +415,24 @@ public class TokenAccessorImpl implements TokenAccessor {
 
         return entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes)
                 .map(AbstractEntity::getId).orElse(0L);
+    }
+
+    private Address evmAddressFromId(EntityId entityId) {
+        Entity entity = entityRepository.findByIdAndDeletedIsFalse(entityId.getId())
+                .orElse(null);
+
+        if (entity == null) {
+            return Address.ZERO;
+        }
+
+        if (entity.getEvmAddress() != null) {
+            return Address.wrap(Bytes.wrap(entity.getEvmAddress()));
+        }
+
+        if (entity.getAlias() != null) {
+            return Address.wrap(Bytes.wrap(entity.getAlias()));
+        }
+
+        return toAddress(entityId);
     }
 }
