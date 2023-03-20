@@ -107,6 +107,7 @@ public class TransactionHashBatchInserter implements BatchPersister {
 
             Map<Integer, List<TransactionHash>> shardedItems = items.stream()
                     .map(TransactionHash.class::cast)
+                    .filter(item -> item.getHash() != null && item.getHash().length > 0)
                     .collect(Collectors.groupingBy(TransactionHash::calculateV1Shard));
 
             Mono.when(shardedItems.entrySet()
