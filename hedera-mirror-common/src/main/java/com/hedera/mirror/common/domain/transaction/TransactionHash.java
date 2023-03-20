@@ -36,7 +36,7 @@ import org.springframework.data.domain.Persistable;
 @Entity
 @NoArgsConstructor
 public class TransactionHash implements Persistable<byte[]> {
-
+    public static final int V1_SHARD_COUNT = 32;
     private long consensusTimestamp;
 
     @Id
@@ -57,6 +57,6 @@ public class TransactionHash implements Persistable<byte[]> {
     }
 
     public int calculateV1Shard() {
-        return Math.floorMod(hash[0], 32);
+        return Math.floorMod(hash[0], V1_SHARD_COUNT);
     }
 }

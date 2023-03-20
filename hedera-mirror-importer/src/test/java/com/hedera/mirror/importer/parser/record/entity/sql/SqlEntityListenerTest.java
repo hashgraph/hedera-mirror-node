@@ -30,13 +30,11 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.token.NftTransferId;
-import com.hederahashgraph.api.proto.java.EntityID;
 import com.hederahashgraph.api.proto.java.Key;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -47,8 +45,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.jdbc.core.DataClassRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -165,9 +161,6 @@ class SqlEntityListenerTest extends IntegrationTest {
     private final TransactionSignatureRepository transactionSignatureRepository;
     private final TransactionTemplate transactionTemplate;
     private final JdbcTemplate jdbcTemplate;
-
-    @Value("#{environment.acceptsProfiles('v2')}")
-    private boolean isV2;
 
     private static Key keyFromString(String key) {
         return Key.newBuilder().setEd25519(ByteString.copyFromUtf8(key)).build();
@@ -935,12 +928,7 @@ class SqlEntityListenerTest extends IntegrationTest {
                 .extracting(Transaction::getIndex)
                 .isEqualTo(2);
 
-        if (isV2) {
-            assertThat(transactionHashRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedTransactionHashes);
-        }
-        else {
-            assertThat(TestUtils.getTransactionHashesFromAllShards(jdbcTemplate)).containsExactlyInAnyOrderElementsOf(expectedTransactionHashes);
-        }
+        assertThat(transactionHashRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedTransactionHashes);
     }
 
     @Test

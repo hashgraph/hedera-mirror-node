@@ -27,16 +27,18 @@ import com.hedera.mirror.importer.IntegrationTest;
 
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.exception.ParserException;
+import com.hedera.mirror.importer.repository.TransactionHashRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.ConnectionHolder;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
-import javax.annotation.Resource;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.time.Instant;
@@ -53,34 +55,25 @@ import static org.springframework.transaction.reactive.TransactionSynchronizatio
 import static org.springframework.transaction.reactive.TransactionSynchronization.STATUS_ROLLED_BACK;
 
 @EnabledIfV1
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class TransactionHashBatchInserterTest extends IntegrationTest {
-    @Resource
-    private JdbcTemplate jdbcTemplate;
-
-    @Resource
-    private BatchPersister batchPersister;
-
-    @Resource
-    private TransactionRepository transactionRepository;
-
-    @Resource
-    private TransactionTemplate transactionTemplate;
-
-    @Resource
-    private TransactionHashBatchInserter hashBatchInserter;
-
-    @Resource
-    private DataSource datasource;
-
-    private Set<TransactionHash> transactionHashes = new HashSet<>();
-    private Set<Transaction> transactions = new HashSet<>();
-    private final Map<Integer, List<TransactionHash>> shardMap = transactionHashes.stream()
-    .collect(Collectors.groupingBy(TransactionHash::calculateV1Shard));
+    private final JdbcTemplate jdbcTemplate;
+    private final BatchPersister batchPersister;
+    private final TransactionRepository transactionRepository;
+    private final TransactionTemplate transactionTemplate;
+    private final TransactionHashBatchInserter hashBatchInserter;
+    private final DataSource datasource;
+    private final TransactionHashRepository transactionHashRepository;
+    private Set<TransactionHash> transactionHashes;
+    private Set<Transaction> transactions;
+    private Map<Integer, List<TransactionHash>> shardMap;
 
     @BeforeEach
     void setup() {
         transactionHashes = transactionHash(64);
         transactions = transactions(10);
+        shardMap = transactionHashes.stream()
+                .collect(Collectors.groupingBy(TransactionHash::calculateV1Shard));
     }
 
     @Test
@@ -94,6 +87,7 @@ class TransactionHashBatchInserterTest extends IntegrationTest {
             // Inside a different transaction so will not be available when queried here
             shardMap.keySet()
                     .forEach(shard -> assertThat(TestUtils.getShardTransactionHashes(shard, jdbcTemplate)).isEmpty());
+            assertThat(transactionHashRepository.findAll()).isEmpty();
 
             assertThat(hashBatchInserter.getThreadConnections()).isNotEmpty();
             hashBatchInserter.getThreadConnections().values()
@@ -106,9 +100,7 @@ class TransactionHashBatchInserterTest extends IntegrationTest {
 
         shardMap.keySet()
                 .forEach(shard -> assertThat(TestUtils.getShardTransactionHashes(shard, jdbcTemplate)).containsExactlyInAnyOrderElementsOf(shardMap.get(shard)));
-        shardMap.values().stream()
-                .flatMap(List::stream)
-                .forEach(hash -> assertThat(TestUtils.getTransactionHashFromSqlFunction(jdbcTemplate, hash.getHash())).isEqualTo(hash));
+        assertThat(transactionHashRepository.findAll()).containsExactlyInAnyOrderElementsOf(transactionHashes);
     }
 
     @Test
@@ -124,13 +116,13 @@ class TransactionHashBatchInserterTest extends IntegrationTest {
         });
         assertThat(transactionRepository.findAll()).containsExactlyInAnyOrderElementsOf(transactions);
         assertThat(hashBatchInserter.getThreadConnections()).isEmpty();
-        assertThat(TestUtils.getTransactionHashesFromAllShards(jdbcTemplate)).isEmpty();
+        assertThat(transactionHashRepository.findAll()).isEmpty();
     }
 
     @Test
     void persistParentFails() {
         //Execute inside a parent transaction
-        assertThatThrownBy(()-> transactionTemplate.executeWithoutResult(status -> {
+        assertThatThrownBy(() -> transactionTemplate.executeWithoutResult(status -> {
             batchPersister.persist(transactions);
             assertThat(transactionRepository.findAll()).containsExactlyInAnyOrderElementsOf(transactions);
 
@@ -202,7 +194,8 @@ class TransactionHashBatchInserterTest extends IntegrationTest {
         assertThat(transactionRepository.findAll()).containsExactlyInAnyOrderElementsOf(transactions);
 
         var closedThreadState = hashBatchInserter.getThreadConnections().get(closedThread);
-        closedThreadState.getProcessedShards().forEach(shard -> assertThat(TestUtils.getShardTransactionHashes(shard, jdbcTemplate)).isEmpty());
+        closedThreadState.getProcessedShards()
+                .forEach(shard -> assertThat(TestUtils.getShardTransactionHashes(shard, jdbcTemplate)).isEmpty());
         assertThat(closedThreadState.getStatus()).isEqualTo(Integer.MAX_VALUE);
 
         //Remove the dead connection to assert remaining shards
@@ -269,7 +262,7 @@ class TransactionHashBatchInserterTest extends IntegrationTest {
     private Set<Transaction> transactions(int count) {
         var returnVal = new HashSet<Transaction>();
         for (int i = 0; i < count; i++) {
-           returnVal.add(domainBuilder.transaction().get());
+            returnVal.add(domainBuilder.transaction().get());
         }
 
         return returnVal;

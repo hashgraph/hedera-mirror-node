@@ -20,8 +20,6 @@ package com.hedera.mirror.importer.config;
  * ‍
  */
 
-import com.hedera.mirror.importer.parser.batch.TransactionHashBatchInserter;
-
 import io.micrometer.core.instrument.MeterRegistry;
 import javax.sql.DataSource;
 import lombok.RequiredArgsConstructor;
@@ -36,7 +34,6 @@ import org.springframework.boot.autoconfigure.flyway.FlywayConfigurationCustomiz
 import org.springframework.boot.cloud.CloudPlatform;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import org.springframework.retry.annotation.EnableRetry;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -59,7 +56,6 @@ import com.hedera.mirror.importer.repository.upsert.TokenDissociateTransferUpser
 public class MirrorImporterConfiguration {
 
     public static final String TOKEN_DISSOCIATE_BATCH_PERSISTER = "tokenDissociateTransferBatchPersister";
-    public static final String TRANSACTION_HASH_BATCH_PERSISTER = "transactionHashBatchPersister";
 
     private final MirrorProperties mirrorProperties;
 
@@ -96,13 +92,6 @@ public class MirrorImporterConfiguration {
                                                          CommonParserProperties parserProperties) {
         return new BatchUpserter(TokenTransfer.class, dataSource, meterRegistry, parserProperties,
                 new TokenDissociateTransferUpsertQueryGenerator());
-    }
-
-    @Bean(name = TRANSACTION_HASH_BATCH_PERSISTER)
-    @Profile("!v2")
-    BatchPersister transactionHashV1BatchPersister(DataSource dataSource, MeterRegistry meterRegistry,
-                                                                 CommonParserProperties parserProperties) {
-        return new TransactionHashBatchInserter(dataSource, meterRegistry, parserProperties);
     }
 
     @Configuration

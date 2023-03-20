@@ -25,7 +25,7 @@ import com.google.common.base.CaseFormat;
 
 import com.google.common.base.Stopwatch;
 
-import com.google.common.collect.Iterables;
+import com.google.common.collect.ImmutableMap;
 
 import com.hedera.mirror.common.domain.transaction.TransactionHash;
 
@@ -37,6 +37,7 @@ import io.micrometer.core.instrument.Timer;
 import lombok.CustomLog;
 import lombok.Data;
 import lombok.SneakyThrows;
+import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.datasource.DataSourceUtils;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -44,6 +45,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
+import javax.inject.Named;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.util.Collection;
@@ -52,31 +54,41 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import static com.hedera.mirror.common.domain.transaction.TransactionHash.V1_SHARD_COUNT;
 
 @CustomLog
+@Named
+@Profile("!v2")
 public class TransactionHashBatchInserter implements BatchPersister {
-    private final Map<Integer, BatchInserter> shardBatchInserters = new ConcurrentHashMap<>();
+    private final Map<Integer, BatchInserter> shardBatchInserters;
     private final DataSource dataSource;
-    private final MeterRegistry meterRegistry;
-    private final CommonParserProperties commonParserProperties;
     private final Timer insertDurationMetric;
     private final String shardedTableName;
-
     private final Scheduler scheduler;
     private final Map<String, ThreadState> threadConnections = new ConcurrentHashMap<>();
 
     public TransactionHashBatchInserter(DataSource dataSource, MeterRegistry meterRegistry,
                                         CommonParserProperties commonParserProperties) {
         this.dataSource = dataSource;
-        this.meterRegistry = meterRegistry;
-        this.commonParserProperties = commonParserProperties;
         this.shardedTableName = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE,
                 TransactionHash.class.getSimpleName() + "_sharded");
         this.insertDurationMetric = Timer.builder("hedera.mirror.importer.parse.insert")
                 .description("Time to insert transactions into sharded table").tag("table", this.shardedTableName)
                 .register(meterRegistry);
         this.scheduler = Schedulers.newParallel(this.shardedTableName + "_shard_inserter", 8);
+
+        this.shardBatchInserters = IntStream.range(0, V1_SHARD_COUNT)
+                .boxed()
+                .collect(ImmutableMap.toImmutableMap(Function.identity(),
+                        shard -> new BatchInserter(TransactionHash.class,
+                                dataSource,
+                                meterRegistry,
+                                commonParserProperties,
+                                String.format("%s_%02d", shardedTableName, shard))));
     }
 
     @Override
@@ -90,16 +102,16 @@ public class TransactionHashBatchInserter implements BatchPersister {
         try {
             Stopwatch stopwatch = Stopwatch.createStarted();
 
+            // After parser transaction completes, process all transactions for shards
+            addTransactionSynchronization(items);
+
             Map<Integer, List<TransactionHash>> shardedItems = items.stream()
                     .map(TransactionHash.class::cast)
                     .collect(Collectors.groupingBy(TransactionHash::calculateV1Shard));
 
-            // After parser transaction completes, process all transactions for shards
-            addTransactionSynchronization(items);
-
             Mono.when(shardedItems.entrySet()
                             .stream()
-                            .map(shard -> this.processShard(shard).subscribeOn(scheduler))
+                            .map(this::processShard)
                             .toList())
                     .block();
 
@@ -115,7 +127,7 @@ public class TransactionHashBatchInserter implements BatchPersister {
     private void addTransactionSynchronization(Collection<?> items) {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             final long itemCount = items.size();
-            final long recordTimestamp = ((TransactionHash)items.iterator().next()).getConsensusTimestamp();
+            final long recordTimestamp = ((TransactionHash) items.iterator().next()).getConsensusTimestamp();
 
             @Override
             public void afterCompletion(int status) {
@@ -138,7 +150,8 @@ public class TransactionHashBatchInserter implements BatchPersister {
                             threadState.setStatus(STATUS_UNKNOWN);
                         }
                     } catch (Exception e) {
-                        log.error("Received exception processing connections for shards {} in file containing timestamp {}",
+                        log.error("Received exception processing connections for shards {} in file containing " +
+                                        "timestamp {}",
                                 threadState.getProcessedShards(), recordTimestamp, e);
                         threadState.setStatus(Integer.MAX_VALUE);
                         failedShards.addAll(threadState.getProcessedShards());
@@ -173,28 +186,28 @@ public class TransactionHashBatchInserter implements BatchPersister {
 
     private Mono<Void> processShard(Map.Entry<Integer, List<TransactionHash>> shardData) {
         return Mono.just(shardData)
-                .doOnNext(data -> {
-                    configureThread(data);
-                    shardBatchInserters.computeIfAbsent(data.getKey(),
-                                    key -> new BatchInserter(TransactionHash.class,
-                                            dataSource,
-                                            meterRegistry,
-                                            commonParserProperties,
-                                            String.format("%s_%02d", shardedTableName, data.getKey())))
-                            .persist(data.getValue());
-                }).then();
+                .doOnNext(this::persist)
+                .subscribeOn(scheduler)
+                .then();
     }
 
-    private void configureThread(Map.Entry<Integer, List<TransactionHash>> data) {
-        threadConnections.compute(Thread.currentThread().getName(),
+    @SneakyThrows
+    private void persist(Map.Entry<Integer, List<TransactionHash>> data) {
+        var threadState = configureThread(data.getKey());
+        shardBatchInserters.get(data.getKey())
+                .persistItems(data.getValue(), threadState.getConnection());
+    }
+
+    private ThreadState configureThread(int shard) {
+        return threadConnections.compute(Thread.currentThread().getName(),
                 (key, value) -> {
                     if (value == null) {
                         ThreadState returnVal = setupThreadTransaction();
-                        returnVal.getProcessedShards().add(data.getKey());
+                        returnVal.getProcessedShards().add(shard);
 
                         return returnVal;
                     }
-                    value.getProcessedShards().add(data.getKey());
+                    value.getProcessedShards().add(shard);
                     return value;
                 });
     }

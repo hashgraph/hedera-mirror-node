@@ -169,19 +169,13 @@ class BackfillTransactionHashMigrationTest extends IntegrationTest {
         }
         else {
             var hash = hashWrapper.get();
-            var insertShard = hash.calculateV1Shard();
-            var sql = String.format("INSERT INTO transaction_hash_sharded_%02d(consensus_timestamp,hash,payer_account_id) VALUES (?,?,?)", insertShard);
+            var sql = "INSERT INTO transaction_hash_sharded(consensus_timestamp,hash,payer_account_id) VALUES (?,?,?)";
             jdbcTemplate.update(sql, hash.getConsensusTimestamp(), hash.getHash(), hash.getPayerAccountId());
         }
     }
 
     private void assertTransactionHashes(Collection<TransactionHash> expected) {
-        if (isV2) {
-            assertThat(transactionHashRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
-        }
-        else  {
-            assertThat(TestUtils.getTransactionHashesFromAllShards(jdbcTemplate)).containsExactlyInAnyOrderElementsOf(expected);
-        }
+        assertThat(transactionHashRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
     }
 
     @SneakyThrows

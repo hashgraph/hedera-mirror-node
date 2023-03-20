@@ -31,7 +31,6 @@ import javax.inject.Named;
 import javax.persistence.Entity;
 import javax.sql.DataSource;
 
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.annotation.AnnotationUtils;
 
@@ -39,8 +38,6 @@ import com.hedera.mirror.common.domain.Upsertable;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.repository.upsert.UpsertQueryGenerator;
 import com.hedera.mirror.importer.repository.upsert.UpsertQueryGeneratorFactory;
-
-import static com.hedera.mirror.importer.config.MirrorImporterConfiguration.TRANSACTION_HASH_BATCH_PERSISTER;
 
 @Named
 @Primary
@@ -55,7 +52,7 @@ public class CompositeBatchPersister implements BatchPersister {
     public CompositeBatchPersister(DataSource dataSource, MeterRegistry meterRegistry,
                                    CommonParserProperties properties,
                                    UpsertQueryGeneratorFactory upsertQueryGeneratorFactory,
-                                   @Qualifier(TRANSACTION_HASH_BATCH_PERSISTER) Optional<BatchPersister> transactionHashV1BatchPersister) {
+                                   Optional<TransactionHashBatchInserter> transactionHashV1BatchPersister) {
         this.dataSource = dataSource;
         this.meterRegistry = meterRegistry;
         this.properties = properties;

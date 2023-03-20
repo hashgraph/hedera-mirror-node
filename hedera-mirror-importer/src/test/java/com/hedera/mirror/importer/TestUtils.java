@@ -154,20 +154,6 @@ public class TestUtils {
         return jdbcTemplate.query(sql, new DataClassRowMapper<>(TransactionHash.class));
     }
 
-    public Collection<TransactionHash> getTransactionHashesFromAllShards(JdbcTemplate jdbcTemplate) {
-        var sql = IntStream.range(0, 32)
-                .boxed()
-                .map(shard -> String.format("SELECT * from transaction_hash_sharded_%02d", shard))
-                .collect(Collectors.joining(" UNION ALL "));
-        return jdbcTemplate.query(sql, new DataClassRowMapper<>(TransactionHash.class));
-    }
-
-    public TransactionHash getTransactionHashFromSqlFunction(JdbcTemplate jdbcTemplate, byte[] hash) {
-        var sql = "SELECT * from get_transaction_info_by_hash(?)";
-        var results = jdbcTemplate.query(sql, new DataClassRowMapper<>(TransactionHash.class), (Object) hash);
-        return results.iterator().hasNext() ? results.iterator().next() : null;
-    }
-
     public AccountID toAccountId(String accountId) {
         var parts = accountId.split("\\.");
         return AccountID.newBuilder().setShardNum(Long.parseLong(parts[0])).setRealmNum(Long.parseLong(parts[1]))
