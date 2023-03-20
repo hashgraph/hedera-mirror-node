@@ -72,16 +72,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-        with:
-          fetch-depth: 2  # retrieve the preceding commit so changed-files action can diff and get the changes
-
-      - name: Get Changed Files
-        id: changed-files-module
-        uses: tj-actions/changed-files@v34
-        with:
-          files: |
-            .github/workflows/rosetta-api.yml
-            hedera-mirror-rosetta
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -165,7 +155,6 @@ jobs:
           exit $code
 
       - name: Run Rosetta BDD Tests
-        if: steps.changed-files-module.outputs.any_changed == 'true'
         working-directory: ./hedera-mirror-rosetta/test/bdd-client
         run: |
           export GOROOT=$GOROOT_1_18_X64

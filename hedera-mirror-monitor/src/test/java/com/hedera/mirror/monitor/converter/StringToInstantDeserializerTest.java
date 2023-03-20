@@ -9,9 +9,9 @@ package com.hedera.mirror.monitor.converter;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,6 +25,8 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.JsonParser;
 import java.time.Instant;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,14 +47,14 @@ class StringToInstantDeserializerTest {
     void deserialize() throws Exception {
         Instant now = Instant.now();
         when(jsonParser.getValueAsString()).thenReturn(now.getEpochSecond() + "." + now.getNano());
-        Instant instant = stringToInstantDeserializer.deserialize(jsonParser, null);
+        Instant instant = stringToInstantDeserializer.deserialize(jsonParser, context());
         assertThat(instant).isNotNull().isEqualTo(now);
     }
 
     @Test
     void deserializeNull() throws Exception {
         when(jsonParser.getValueAsString()).thenReturn(null);
-        Instant instant = stringToInstantDeserializer.deserialize(jsonParser, null);
+        Instant instant = stringToInstantDeserializer.deserialize(jsonParser, context());
         assertThat(instant).isNull();
     }
 
@@ -61,7 +63,11 @@ class StringToInstantDeserializerTest {
     @ValueSource(strings = {"", "foo.bar", "1"})
     void deserializeInvalid(String input) throws Exception {
         when(jsonParser.getValueAsString()).thenReturn(input);
-        Instant instant = stringToInstantDeserializer.deserialize(jsonParser, null);
+        Instant instant = stringToInstantDeserializer.deserialize(jsonParser, context());
         assertThat(instant).isNull();
+    }
+
+    private DeserializationContext context() {
+        return new ObjectMapper().getDeserializationContext();
     }
 }

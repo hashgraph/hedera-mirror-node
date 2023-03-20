@@ -129,6 +129,19 @@ class ContractService extends BaseService {
       on ${Entity.getFullName(Entity.ID)} = ${ContractState.getFullName(ContractState.CONTRACT_ID)}
     `;
 
+    static contractStateTimestampQuery = `
+      with ${ContractService.entityCTE}
+      select DISTINCT on (${ContractStateChange.SLOT}) 
+            ${ContractStateChange.CONTRACT_ID},
+            ${ContractStateChange.SLOT},
+            ${Entity.EVM_ADDRESS},
+            coalesce(${ContractStateChange.VALUE_WRITTEN}, ${ContractStateChange.VALUE_READ}) as ${ContractState.VALUE},
+            ${ContractStateChange.CONSENSUS_TIMESTAMP} as ${ContractState.MODIFIED_TIMESTAMP}
+      from ${ContractStateChange.tableName} ${ContractStateChange.tableAlias}
+      left join ${Entity.tableName} ${Entity.tableAlias}
+        on ${Entity.getFullName(Entity.ID)} = ${ContractStateChange.getFullName(ContractStateChange.CONTRACT_ID)}
+    `;
+
   static contractLogsWithEvmAddressQuery = `
     with ${ContractService.entityCTE}
     select
@@ -262,14 +275,22 @@ class ContractService extends BaseService {
     });
   }
 
-  async getContractStateByIdAndFilters(whereConditions = [], order = orderFilterValues.ASC, limit = defaultLimit) {
-    const orderClause = this.getOrderByQuery(OrderSpec.from(ContractStateChange.SLOT, order));
+  async getContractStateByIdAndFilters(whereConditions = [], order = orderFilterValues.ASC, limit = defaultLimit, timestamp = false) {
+    let orderClause = this.getOrderByQuery(OrderSpec.from(ContractStateChange.SLOT, order));
     const {where, params} = this.buildWhereSqlStatement(whereConditions);
     const limitClause = this.getLimitQuery(params.push(limit));
+    let query = [ContractService.contractStateQuery, where, orderClause, limitClause].join(' ');
 
-    const query = [ContractService.contractStateQuery, where, orderClause, limitClause].join(' ');
+    if (timestamp) {
+      //timestamp order needs to be always desc to get only the latest changes until the provided timestamp
+      orderClause = this.getOrderByQuery(
+        OrderSpec.from(ContractStateChange.SLOT, order),
+        OrderSpec.from(ContractStateChange.CONSENSUS_TIMESTAMP, orderFilterValues.DESC)
+      );
+      
+      query = [ContractService.contractStateTimestampQuery, where, orderClause, limitClause].join(' ');
+    }
     const rows = await super.getRows(query, params, 'getContractStateByIdAndFilters');
-
     return rows.map((row) => new ContractState(row));
   }
 

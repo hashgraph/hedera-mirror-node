@@ -1,7 +1,7 @@
 {
   "description": "Token relationship api call for not found 404 condition",
   "setup": {},
-  "urls": ["/api/v1/accounts/3001/tokens"],
+  "url": "/api/v1/accounts/3001/tokens",
   "responseStatus": 404,
   "responseJson": {
     "_status": {

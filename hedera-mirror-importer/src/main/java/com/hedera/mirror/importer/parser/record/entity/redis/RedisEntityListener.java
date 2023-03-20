@@ -42,7 +42,6 @@ import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.SessionCallback;
 
 import com.hedera.mirror.common.domain.topic.StreamMessage;
-import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.parser.record.entity.BatchEntityListener;
@@ -146,7 +145,7 @@ public class RedisEntityListener implements BatchEntityListener {
     private SessionCallback<Object> callback(List<TopicMessage> messages) {
         return new SessionCallback<>() {
             @Override
-            public Object execute(RedisOperations operations) {
+            public <K, V> Object execute(RedisOperations<K, V> operations) {
                 for (TopicMessage topicMessage : messages) {
                     String channel = channelNames.get(topicMessage.getTopicId().getId());
                     redisOperations.convertAndSend(channel, topicMessage);

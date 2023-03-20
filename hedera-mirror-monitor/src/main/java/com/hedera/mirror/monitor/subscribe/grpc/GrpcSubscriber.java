@@ -42,6 +42,7 @@ import com.hedera.mirror.monitor.subscribe.SubscribeResponse;
 @Log4j2
 @Named
 @RequiredArgsConstructor
+@SuppressWarnings("unchecked")
 class GrpcSubscriber implements MirrorSubscriber {
 
     private final ExpressionConverter expressionConverter;

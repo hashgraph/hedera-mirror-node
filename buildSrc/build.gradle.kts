@@ -29,11 +29,12 @@ repositories {
 
 dependencies {
     implementation("com.bmuschko:gradle-docker-plugin:9.2.1")
-    implementation("com.diffplug.spotless:spotless-plugin-gradle:6.16.0")
+    implementation("com.diffplug.spotless:spotless-plugin-gradle:6.17.0")
     implementation("com.github.node-gradle:gradle-node-plugin:3.5.1")
     implementation("com.google.protobuf:protobuf-gradle-plugin:0.9.2")
     implementation("com.gorylenko.gradle-git-properties:gradle-git-properties:2.4.1")
     implementation("gradle.plugin.com.graphql-java-generator:graphql-gradle-plugin:1.18.10")
+    implementation("gradle.plugin.io.snyk.gradle.plugin:snyk:0.4")
     implementation("io.freefair.gradle:lombok-plugin:6.6.3")
     implementation("io.spring.gradle:dependency-management-plugin:1.1.0")
     implementation("org.apache.commons:commons-compress:1.22")

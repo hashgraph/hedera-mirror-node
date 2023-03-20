@@ -20,10 +20,15 @@ package com.hedera.mirror.web3.evm.exception;
  * ‍
  */
 
+import java.io.Serial;
+
 import com.hedera.mirror.common.exception.MirrorNodeException;
 
 @SuppressWarnings("java:S110")
 public abstract class EvmException extends MirrorNodeException {
+
+    @Serial
+    private static final long serialVersionUID = 4884858477272676840L;
 
     protected EvmException(String message) {
         super(message);

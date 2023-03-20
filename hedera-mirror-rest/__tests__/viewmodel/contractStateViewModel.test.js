@@ -27,6 +27,7 @@ describe('ContractStateViewModel', () => {
     slot: Buffer.from([0x1]),
     value: Buffer.from([0x1]),
   };
+
   const defaultExpected = {
     contract_id: '0.0.1500',
     timestamp: '1651770056.616171000',
