@@ -3,19 +3,9 @@ set -eo pipefail
 
 SCRIPTS_DIR="$(readlink -f "${0%/*}")"
 EXPORT_DIR="${SCRIPTS_DIR}/export"
+FLYWAY_DIR="${EXPORT_DIR}/flyway"
 MIGRATIONS_DIR="${SCRIPTS_DIR}/../../migration/v2"
 source "${SCRIPTS_DIR}/migration.config"
-
-echo "Installing flyway"
-rm -rf `pwd`/flyway-*
-wget -qO- ${FLYWAY_URL} | tar xvz && mv flyway-* flyway-latest
-export PATH="`pwd`/flyway-latest/:$PATH"
-echo "flyway installed"
-echo "Copying the config for flyway"
-cp "${SCRIPTS_DIR}/flyway.conf" "flyway-latest/conf/"
-echo "Copying the script file for flyway migration"
-cp "${MIGRATIONS_DIR}/V2.0."[0-2]* flyway-latest/sql/
-
 
 if [[ -z "${OLD_DB_HOST}" ]]; then
     echo "Old host name is not set. Please configure OLD_DB_HOST in migration.config file and rerun the migration"
@@ -88,6 +78,14 @@ mkdir -p "${EXPORT_DIR}"
 cd "${EXPORT_DIR}"
 SECONDS=0
 
+echo "Installing flyway"
+wget -qO- ${FLYWAY_URL} | tar xvz && mv flyway-* flyway
+export PATH="${FLYWAY_DIR}/:$PATH"
+echo "flyway installed"
+echo "Copying the config for flyway"
+cp "${SCRIPTS_DIR}/flyway.conf" "${FLYWAY_DIR}/conf/"
+echo "Copying the script file for flyway migration"
+cp "${MIGRATIONS_DIR}/V2.0."[0-2]* ${FLYWAY_DIR}/sql/
 echo "Migrating mirror node data from PostgreSQL ${OLD_DB_HOST}:${OLD_DB_PORT} to CitusDB ${NEW_DB_HOST}:${NEW_DB_PORT}"
 
 echo "1. Generating backup and restore SQL"
