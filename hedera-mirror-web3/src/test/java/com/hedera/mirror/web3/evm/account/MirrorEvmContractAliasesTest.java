@@ -83,6 +83,15 @@ class MirrorEvmContractAliasesTest {
     }
 
     @Test
+    void resolveForEvmContratctWithoutEvmAddressSuccess() {
+        when(mirrorEntityAccess.findEntity(ADDRESS)).thenReturn(Optional.of(entity));
+        when(entity.getType()).thenReturn(EntityType.CONTRACT);
+        when(entity.toEntityId()).thenReturn(entityId);
+        final var result = mirrorEvmContractAliases.resolveForEvm(ADDRESS);
+        assertThat(result).isEqualTo(ADDRESS3);
+    }
+
+    @Test
     void resolveForEvmFailDifferentType() {
         when(mirrorEntityAccess.findEntity(ADDRESS)).thenReturn(Optional.of(entity));
         when(entity.getType()).thenReturn(EntityType.TOPIC);

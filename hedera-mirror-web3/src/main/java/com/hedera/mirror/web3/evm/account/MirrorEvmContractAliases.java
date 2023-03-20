@@ -48,13 +48,14 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
         }
 
         final var entity = entityOptional.get();
+        final var entityId = entity.toEntityId();
 
         if (entity.getType() == EntityType.TOKEN) {
-            final var entityId = entity.toEntityId();
             final var bytes = Bytes.wrap(toEvmAddress(entityId));
             return Address.wrap(bytes);
         } else if (entity.getType() == EntityType.CONTRACT) {
-            return Address.wrap(Bytes.wrap(entity.getEvmAddress()));
+            final var bytes = Bytes.wrap(entity.getEvmAddress() != null ? entity.getEvmAddress() : toEvmAddress(entityId));
+            return Address.wrap(bytes);
         } else {
             throw new InvalidParametersException("No such contract or token");
         }
