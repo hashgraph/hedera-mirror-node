@@ -818,7 +818,11 @@ const addTransaction = async (transaction) => {
   const {node_account_id: nodeAccount, payer_account_id: payerAccount} = transaction;
   await insertDomainObject('transaction', transactionFields, transaction);
 
-  await addTransactionHash({consensus_timestamp: transaction.consensus_timestamp, hash: transaction.transaction_hash});
+  await addTransactionHash({
+    consensus_timestamp: transaction.consensus_timestamp,
+    hash: transaction.transaction_hash,
+    payer_account_id: transaction.payer_account_id,
+  });
   await insertTransfers(
     'crypto_transfer',
     transaction.consensus_timestamp,
@@ -1063,6 +1067,8 @@ const contractLogDefaults = {
   topic1: '0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925',
   topic2: '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
   topic3: '0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67',
+  transaction_hash: Buffer.from([...Array(32).keys()]),
+  transaction_index: 0,
 };
 
 const addContractLog = async (contractLogInput) => {
@@ -1071,7 +1077,7 @@ const addContractLog = async (contractLogInput) => {
     ...contractLogInput,
   };
 
-  convertByteaFields(['bloom', 'data', 'topic0', 'topic1', 'topic2', 'topic3'], contractLog);
+  convertByteaFields(['bloom', 'data', 'topic0', 'topic1', 'topic2', 'topic3', 'transaction_hash'], contractLog);
 
   await insertDomainObject('contract_log', Object.keys(contractLog), contractLog);
 };

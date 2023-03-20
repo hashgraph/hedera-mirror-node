@@ -6,6 +6,7 @@
     "the rest api only returns the exact matching transaction hash even though the database also returns the last",
     "transaction since its hash prefix is a match"
   ],
+  "matrix": "transactionHashV1Matrix.js",
   "setup": {
     "accounts": [
       {
@@ -258,7 +259,8 @@
       "urls": [
         "/api/v1/transactions/rovr8cn6DzCTVuSAV_YEevfN5jA30FCdFt3Dsg4IUVi_3xTRU0XBsYsZm3L-1Kxv",
         "/api/v1/transactions/ae8bebf1c9fa0f309356e48057f6047af7cde63037d0509d16ddc3b20e085158bfdf14d15345c1b18b199b72fed4ac6f",
-        "/api/v1/transactions/0xae8bebf1c9fa0f309356e48057f6047af7cde63037d0509d16ddc3b20e085158bfdf14d15345c1b18b199b72fed4ac6f"
+        "/api/v1/transactions/0xae8bebf1c9fa0f309356e48057f6047af7cde63037d0509d16ddc3b20e085158bfdf14d15345c1b18b199b72fed4ac6f",
+        "/api/v1/transactions/0xae8bebf1c9fa0f309356e48057f6047af7cde63037d0509d16ddc3b20e085158bfdf14d15345c1b18b199b72fed4ac6f?scheduled=true&nonce=1"
       ],
       "responseStatus": 200,
       "responseJson": {

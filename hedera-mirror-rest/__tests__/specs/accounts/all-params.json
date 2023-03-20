@@ -121,7 +121,7 @@
         "decline_reward": false,
         "deleted": false,
         "ethereum_nonce": null,
-        "evm_address": null,
+        "evm_address": "0x0000000000000000000000010000000000000013",
         "expiry_timestamp": "43332.123456789",
         "key": {
           "_type": "ProtobufEncoded",

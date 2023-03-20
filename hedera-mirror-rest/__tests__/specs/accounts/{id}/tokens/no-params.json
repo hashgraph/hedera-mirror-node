@@ -58,6 +58,7 @@
     "/api/v1/accounts/1001/tokens",
     "/api/v1/accounts/0.1001/tokens",
     "/api/v1/accounts/0.0.1001/tokens",
+    "/api/v1/accounts/0x00000000000000000000000000000000000003e9/tokens",
     "/api/v1/accounts/KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/tokens",
     "/api/v1/accounts/0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/tokens",
     "/api/v1/accounts/0.0.KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ/tokens",

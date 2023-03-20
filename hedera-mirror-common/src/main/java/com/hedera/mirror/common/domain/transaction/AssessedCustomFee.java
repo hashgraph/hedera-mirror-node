@@ -57,6 +57,7 @@ public class AssessedCustomFee implements Persistable<AssessedCustomFee.Id> {
 
     private long amount;
 
+    @Builder.Default
     @Type(type = "com.vladmihalcea.hibernate.type.array.ListArrayType")
     @JsonSerialize(using = LongListToStringSerializer.class)
     private List<Long> effectivePayerAccountIds = Collections.emptyList();

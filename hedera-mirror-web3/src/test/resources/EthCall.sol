@@ -43,4 +43,8 @@ contract EthCall {
     function getTokenSymbol(address _tokenAddress) external view returns (string memory) {
         return IERC20Metadata(_tokenAddress).symbol();
     }
+
+    function testRevert() external pure {
+        revert('Custom revert message');
+    }
 }

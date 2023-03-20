@@ -1002,7 +1002,7 @@ describe('Utils parseCreditDebitParams tests', () => {
 });
 
 describe('utils isRepeatedQueryParameterValidLength', () => {
-  const {maxRepeatedQueryParameters} = config;
+  const {maxRepeatedQueryParameters} = config.query;
   test(`verify account.id with valid amount ${maxRepeatedQueryParameters - 1}`, () => {
     expect(utils.isRepeatedQueryParameterValidLength(Array(maxRepeatedQueryParameters - 1).fill('0.0.3'))).toBeTrue();
   });
@@ -1020,10 +1020,10 @@ describe('utils validateReq', () => {
       name: 'Too many parameters',
       req: {
         query: {
-          timestamp: Array(config.maxRepeatedQueryParameters + 1).fill('123'),
+          timestamp: Array(config.query.maxRepeatedQueryParameters + 1).fill('123'),
         },
       },
-      acceptedParameters: new Set(['timestamp'])
+      acceptedParameters: new Set(['timestamp']),
     },
     {
       name: 'Invalid account.id',
@@ -1032,7 +1032,7 @@ describe('utils validateReq', () => {
           'account.id': 'x',
         },
       },
-      acceptedParameters: new Set(['account.id'])
+      acceptedParameters: new Set(['account.id']),
     },
     {
       name: 'Invalid account.id and timestamp',
@@ -1042,7 +1042,7 @@ describe('utils validateReq', () => {
           timestamp: 'x',
         },
       },
-      acceptedParameters: new Set(['account.id', 'timestamp'])
+      acceptedParameters: new Set(['account.id', 'timestamp']),
     },
     {
       name: 'Invalid account.id array',
@@ -1051,7 +1051,7 @@ describe('utils validateReq', () => {
           'account.id': ['0.0.3', 'x'],
         },
       },
-      acceptedParameters: new Set(['account.id'])
+      acceptedParameters: new Set(['account.id']),
     },
     {
       name: 'Invalid parameter key',
@@ -1060,7 +1060,7 @@ describe('utils validateReq', () => {
           'account.id': ['0.0.3'],
         },
       },
-      acceptedParameters: new Set(['timestamp'])
+      acceptedParameters: new Set(['timestamp']),
     },
   ];
 
@@ -1851,5 +1851,19 @@ describe('calculateExpiryTimestamp', () => {
       const difference = expiryDate.getTime() - createdDate.getTime();
       expect(difference).toEqual(autoRenewPeriod);
     }
+  });
+});
+
+describe('Utils formatSlot tests', () => {
+  test('Verify valid contract_state_change table format slot', () => {
+    const slot = '0x0000000000000000000000000000000000000000000000000000000000000003';
+    const formatedSlot = '03';
+    expect(utils.formatSlot(slot, true)).toEqual(Buffer.from(formatedSlot, 'hex'));
+  });
+
+  test('Verify valid slot format if no table is provided', () => {
+    const slot = '0x0000000000000000000000000000000000000000000000000000000000000001';
+    const formatedSlot = '0000000000000000000000000000000000000000000000000000000000000001';
+    expect(utils.formatSlot(slot)).toEqual(Buffer.from(formatedSlot, 'hex'));
   });
 });

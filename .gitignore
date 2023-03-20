@@ -143,6 +143,7 @@ release_notes.md
 .gradle
 build
 !gradle/wrapper/gradle-wrapper.jar
+snyk
 
 # hardhat
 hedera-mirror-test/src/test/resources/solidity/artifacts/build-info

@@ -20,6 +20,7 @@ package com.hedera.mirror.graphql.config;
  * ‍
  */
 
+import java.io.Serial;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import javax.inject.Named;
@@ -97,6 +98,9 @@ class LoggingFilter implements WebFilter {
 
     private static class CancelledException extends RuntimeException {
         private static final String MESSAGE = "cancelled";
+
+        @Serial
+        private static final long serialVersionUID = 1253705095667526091L;
 
         CancelledException() {
             super(MESSAGE);

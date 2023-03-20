@@ -20,6 +20,7 @@ package com.hedera.mirror.monitor.config;
  * ‍
  */
 
+import java.io.Serial;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import javax.inject.Named;
@@ -99,6 +100,9 @@ public class LoggingFilter implements WebFilter {
 
     private static class CancelledException extends RuntimeException {
         private static final String MESSAGE = "cancelled";
+
+        @Serial
+        private static final long serialVersionUID = -1065743479862315529L;
 
         CancelledException() {
             super(MESSAGE);

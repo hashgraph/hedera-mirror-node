@@ -52,6 +52,7 @@ public class AcceptanceTestProperties {
     private boolean createOperatorAccount = true;
 
     private boolean emitBackgroundMessages = false;
+    private boolean contractTraceability = false;
 
     @Max(5)
     private int maxRetries = 2;

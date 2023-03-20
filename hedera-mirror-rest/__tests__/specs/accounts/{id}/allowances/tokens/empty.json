@@ -20,7 +20,9 @@
       }
     ]
   },
-  "url": "/api/v1/accounts/1001/allowances/tokens",
+  "urls": [
+    "/api/v1/accounts/1001/allowances/tokens"
+  ],
   "responseStatus": 200,
   "responseJson": {
     "allowances": [],
