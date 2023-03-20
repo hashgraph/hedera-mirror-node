@@ -205,7 +205,7 @@ Following are the prerequisites and steps for migrating V1 data to V2.
 1. Create a citus cluster with enough resources(Disk, CPU and memory).
 2. Populate correct values for OLD_DB config in the [migration.config](/hedera-mirror-importer/src/main/resources/db/scripts/v2/migration.config) to point to the existing database instance.
 3. Populate correct values for NEW_DB config in the migration.config to point to the new citus DB.
-4. Get the correct version of [flyway](https://flywaydb.org/documentation/usage/commandline/) based on your OS and update it in the FLYWAY_INSTALLATION field in the migration.config file. The default is set to the macosx version.
+4. Get the correct version of [flyway](https://flywaydb.org/documentation/usage/commandline/) based on your OS and update it in the FLYWAY_URL field in the migration.config file. The default is set to the macosx version.
 5. Update the flyway.url field in the flyway.conf file to point to the citus db location.
 6. Run the [migration.sh](/hedera-mirror-importer/src/main/resources/db/scripts/v2/migration.sh) script.
 7. Stop the [Importer](/docs/importer/README.md) process.
