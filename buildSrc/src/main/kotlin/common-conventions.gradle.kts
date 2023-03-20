@@ -68,7 +68,7 @@ node {
 }
 
 spotless {
-    val npmExec = when (System.getProperty("os.name").toLowerCase().contains("windows")) {
+    val npmExec = when (System.getProperty("os.name").lowercase().contains("windows")) {
         true -> Paths.get("npm.cmd")
         else -> Paths.get("bin", "npm")
     }
@@ -81,7 +81,7 @@ spotless {
     }
     format("javascript", {
         indentWithSpaces(2)
-        licenseHeader(licenseHeader, "(import|const|//)")
+        licenseHeader(licenseHeader, "$").updateYearWithLatest(true)
         prettier()
             .npmExecutable(npmExecutable)
             .config(
@@ -92,31 +92,33 @@ spotless {
                 )
             )
         target("**/*.js")
-        targetExclude("node_modules/**", ".node-flywaydb/**")
+        targetExclude("**/node_modules/**")
     })
     java {
         addStep(StripOldLicenseFormatterStep.create())
         palantirJavaFormat()
-        licenseHeader(licenseHeader, "package")
+        licenseHeader(licenseHeader, "package").updateYearWithLatest(true)
         target("**/*.java")
         targetExclude("build/**")
         toggleOffOn()
     }
     kotlinGradle({
-        ktfmt()
-        licenseHeader(licenseHeader, "(description|import|plugins)")
+        ktfmt().dropboxStyle()
+        licenseHeader(licenseHeader, "(description|import|plugins)").updateYearWithLatest(true)
     })
     format("miscellaneous", {
         endWithNewline()
         indentWithSpaces(2)
         prettier().npmExecutable(npmExecutable)
         target("**/*.json", "**/*.md", "**/*.yml", "**/*.yaml")
+        targetExclude("**/node_modules/**")
         trimTrailingWhitespace()
     })
     sql {
         endWithNewline()
         indentWithSpaces()
         target("**/*.sql")
+        targetExclude("**/db/migration/v1/*.sql") // Modifying executed SQL will change its checksum
         trimTrailingWhitespace()
     }
     format("xml", {
