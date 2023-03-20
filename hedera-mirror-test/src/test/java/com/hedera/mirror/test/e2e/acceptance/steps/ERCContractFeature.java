@@ -100,7 +100,6 @@ public class ERCContractFeature extends AbstractFeature {
     private final MirrorNodeClient mirrorClient;
     private final TokenClient tokenClient;
     private final ContractFeature contractFeature;
-    private final TokenFeature tokenFeature;
     private final AccountFeature accountFeature;
 
     @Value("classpath:solidity/artifacts/contracts/ERCTestContract.sol/ERCTestContract.json")
@@ -288,16 +287,19 @@ public class ERCContractFeature extends AbstractFeature {
 
     @Then("I create a new token with freeze status 2 and kyc status 1")
     public void createNewFungibleToken() {
-        createNewFungibleToken("TEST", TokenFreezeStatus.FreezeNotApplicable_VALUE, TokenKycStatus.KycNotApplicable_VALUE);
+        createNewToken("TEST", TokenFreezeStatus.FreezeNotApplicable_VALUE, TokenKycStatus.KycNotApplicable_VALUE,
+                TokenType.FUNGIBLE_COMMON, TokenSupplyType.INFINITE, Collections.emptyList());
     }
 
     @Then("I create a new nft with supplyType {string}")
     public void createNewNft(String tokenSupplyType) {
-        TokenId tokenId = tokenFeature.createNewNft(RandomStringUtils.randomAlphabetic(4).toUpperCase(),
+        TokenId tokenId = createNewToken(
+                RandomStringUtils.randomAlphabetic(4).toUpperCase(),
                 TokenFreezeStatus.FreezeNotApplicable_VALUE,
                 TokenKycStatus.KycNotApplicable_VALUE,
-                TokenSupplyType.valueOf(tokenSupplyType));
-        tokenIds.add(tokenId);
+                TokenType.NON_FUNGIBLE_UNIQUE,
+                TokenSupplyType.valueOf(tokenSupplyType),
+                Collections.emptyList());
         tokenSerialNumbers.put(tokenId, new ArrayList<>());
     }
 
@@ -330,13 +332,7 @@ public class ERCContractFeature extends AbstractFeature {
         spenderAccountIdForAllSeerials = accountFeature.setNftAllowanceAllSerials(accountName, tokenIds.get(1));
     }
 
-
-    public void createNewFungibleToken(String symbol, int freezeStatus, int kycStatus) {
-        createNewFungibleToken(symbol, freezeStatus, kycStatus, TokenType.FUNGIBLE_COMMON, TokenSupplyType.INFINITE, Collections
-                .emptyList());
-    }
-
-    private void createNewFungibleToken(String symbol, int freezeStatus, int kycStatus, TokenType tokenType,
+    private TokenId createNewToken(String symbol, int freezeStatus, int kycStatus, TokenType tokenType,
             TokenSupplyType tokenSupplyType, List<CustomFee> customFees) {
         ExpandedAccountId admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
         networkTransactionResponse = tokenClient.createToken(
@@ -355,5 +351,7 @@ public class ERCContractFeature extends AbstractFeature {
         TokenId tokenId = networkTransactionResponse.getReceipt().tokenId;
         assertNotNull(tokenId);
         tokenIds.add(tokenId);
+
+        return tokenId;
     }
 }
