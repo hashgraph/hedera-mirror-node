@@ -26,7 +26,6 @@ import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 
 import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.repository.TransactionHashRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
@@ -34,6 +33,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.ConnectionHolder;
@@ -203,14 +204,15 @@ class TransactionHashBatchInserterTest extends IntegrationTest {
         assertThreadState(STATUS_COMMITTED);
     }
 
-    @Test
-    void persistTransactionHashInvalid() {
+    @ParameterizedTest
+    @NullAndEmptySource
+    void persistTransactionHashInvalid(byte [] bytes) {
         //Execute inside a parent transaction
-        assertThatThrownBy(() -> transactionTemplate.executeWithoutResult(status -> {
+        transactionTemplate.executeWithoutResult(status -> {
             batchPersister.persist(transactions);
             assertThat(transactionRepository.findAll()).containsExactlyInAnyOrderElementsOf(transactions);
 
-            transactionHashes.iterator().next().setHash(null);
+            transactionHashes.iterator().next().setHash(bytes);
             batchPersister.persist(transactionHashes);
             shardMap.keySet()
                     .forEach(shard -> assertThat(TestUtils.getShardTransactionHashes(shard, jdbcTemplate)).isEmpty());
@@ -218,12 +220,18 @@ class TransactionHashBatchInserterTest extends IntegrationTest {
             assertThat(hashBatchInserter.getThreadConnections()).isNotEmpty();
             hashBatchInserter.getThreadConnections().values()
                     .forEach(threadState -> assertThat(threadState.getStatus()).isEqualTo(-1));
-        })).isInstanceOf(ParserException.class);
+        });
 
-        assertThat(hashBatchInserter.getThreadConnections()).isEmpty();
+        assertThreadState(STATUS_COMMITTED);
         shardMap.keySet()
-                .forEach(shard -> assertThat(TestUtils.getShardTransactionHashes(shard, jdbcTemplate)).isEmpty());
-        assertThat(transactionRepository.findAll()).isEmpty();
+                .forEach(shard -> assertThat(TestUtils.getShardTransactionHashes(shard, jdbcTemplate))
+                        .isEqualTo(shardMap.get(shard)
+                                .stream()
+                                .filter(TransactionHash::hashIsValid)
+                                .collect(Collectors.toList())));
+        assertThat(transactionHashRepository.findAll()).containsExactlyInAnyOrderElementsOf(transactionHashes.stream()
+                .filter(TransactionHash::hashIsValid)
+                .collect(Collectors.toList()));
     }
 
     private void assertThreadState(int statusCommitted) {

@@ -59,4 +59,8 @@ public class TransactionHash implements Persistable<byte[]> {
     public int calculateV1Shard() {
         return Math.floorMod(hash[0], V1_SHARD_COUNT);
     }
+
+    public boolean hashIsValid() {
+        return this.hash != null && hash.length > 0;
+    }
 }

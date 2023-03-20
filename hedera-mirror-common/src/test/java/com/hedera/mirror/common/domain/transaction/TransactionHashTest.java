@@ -44,4 +44,20 @@ class TransactionHashTest {
         bytes[0] = 0x25;
         assertThat(builder.build().calculateV1Shard()).isEqualTo(5);
     }
+
+    @Test
+    void testHashIsValid() {
+        var nullHash = TransactionHash.builder().build();
+        assertThat(nullHash.hashIsValid()).isFalse();
+
+        var emptyHash = TransactionHash.builder().hash(new byte[0]).build();
+        assertThat(emptyHash.hashIsValid()).isFalse();
+
+        byte [] bytes = new byte[3];
+        bytes[0] = (byte)0x81;
+        bytes[1] = 0x22;
+        bytes[2] = 0x25;
+        var nonEmptyHash = TransactionHash.builder().hash(bytes).build();
+        assertThat(nonEmptyHash.hashIsValid()).isTrue();
+    }
 }
