@@ -45,7 +45,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
@@ -160,7 +159,6 @@ class SqlEntityListenerTest extends IntegrationTest {
     private final TransactionHashRepository transactionHashRepository;
     private final TransactionSignatureRepository transactionSignatureRepository;
     private final TransactionTemplate transactionTemplate;
-    private final JdbcTemplate jdbcTemplate;
 
     private static Key keyFromString(String key) {
         return Key.newBuilder().setEd25519(ByteString.copyFromUtf8(key)).build();
