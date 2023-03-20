@@ -342,6 +342,39 @@ public class PrecompileContractFeature extends AbstractFeature {
         verifyTx(unfreezeResponse.getTransactionIdStringNoCheckSum());
     }
 
+
+    @Then("Check if account is frozen by alias")
+    public void checkIfAccountIsFrozenByAlias() {
+        MirrorAccountResponse accountInfo = mirrorClient.getAccountDetailsByAccountId(ecdsaEaId.getAccountId());
+
+        ContractCallResponse responseBefore = mirrorClient.contractsCall(
+                IS_TOKEN_FROZEN_SELECTOR
+                        + to32BytesString(tokenIds.get(0).toSolidityAddress())
+                        + to32BytesString(accountInfo.getAlias()),
+                contractId.toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+        boolean isFrozenBefore = responseBefore.getResultAsBoolean();
+        assertFalse(isFrozenBefore);
+
+        NetworkTransactionResponse freezeResponse = tokenClient.freeze(tokenIds.get(0), ecdsaEaId.getAccountId());
+        verifyTx(freezeResponse.getTransactionIdStringNoCheckSum());
+
+        ContractCallResponse responseAfter = mirrorClient.contractsCall(
+                IS_TOKEN_FROZEN_SELECTOR
+                        + to32BytesString(tokenIds.get(0).toSolidityAddress())
+                        + to32BytesString(accountInfo.getAlias()),
+                contractId.toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+
+        boolean isFrozenAfter = responseAfter.getResultAsBoolean();
+        assertTrue(isFrozenAfter);
+
+        NetworkTransactionResponse unfreezeResponse = tokenClient.unfreeze(tokenIds.get(0), ecdsaEaId.getAccountId());
+        verifyTx(unfreezeResponse.getTransactionIdStringNoCheckSum());
+    }
+
     @Retryable(value = {AssertionError.class, WebClientResponseException.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
