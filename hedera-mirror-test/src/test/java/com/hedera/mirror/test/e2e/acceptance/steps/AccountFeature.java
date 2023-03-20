@@ -253,7 +253,6 @@ public class AccountFeature extends AbstractFeature {
     }
 
     private void setTokenAllowance(AccountId accountId, TokenId tokenId, long amount) {
-        ownerAccountId = accountClient.getClient().getOperatorAccountId();
         networkTransactionResponse = accountClient.approveToken(tokenId, accountId, amount);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
@@ -266,7 +265,6 @@ public class AccountFeature extends AbstractFeature {
     }
 
     private void setNftAllowance(AccountId accountId, NftId nftId) {
-        ownerAccountId = accountClient.getClient().getOperatorAccountId();
         networkTransactionResponse = accountClient.approveNft(nftId, accountId);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
@@ -279,7 +277,6 @@ public class AccountFeature extends AbstractFeature {
     }
 
     private void setNftAllowanceAllSerials(AccountId accountId, TokenId tokenId) {
-        ownerAccountId = accountClient.getClient().getOperatorAccountId();
         networkTransactionResponse = accountClient.approveNftAllSerials(tokenId, accountId);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());

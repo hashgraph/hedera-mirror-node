@@ -46,8 +46,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,7 +67,7 @@ import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 
-@Log4j2
+@CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class ERCContractFeature extends AbstractFeature {
 
@@ -260,7 +260,7 @@ public class ERCContractFeature extends AbstractFeature {
                 + to32BytesString(tokenIds.get(0).toSolidityAddress())
                 + to32BytesString(contractClient.getClientAddress()), contractId.toSolidityAddress(), contractClient.getClientAddress());
 
-        assertThat(convertContractCallResponseToNum(getBalanceOfResponse)).isZero();
+        assertThat(convertContractCallResponseToNum(getBalanceOfResponse)).isEqualTo(1000000);
     }
 
     @Then("I call the erc contract via the mirror node REST API for token getApproved with response BOB")

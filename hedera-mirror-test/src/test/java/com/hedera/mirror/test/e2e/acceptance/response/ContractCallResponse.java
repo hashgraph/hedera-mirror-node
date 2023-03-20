@@ -44,8 +44,7 @@ public class ContractCallResponse {
     }
 
     public static String hexToASCII(String str) throws DecoderException {
-        String hex = str.substring(2);
-        byte[] bytes = Hex.decodeHex(hex.toCharArray());
+        byte[] bytes = Hex.decodeHex(str.substring(2));
         return new String(bytes, StandardCharsets.UTF_8).trim();
     }
 
