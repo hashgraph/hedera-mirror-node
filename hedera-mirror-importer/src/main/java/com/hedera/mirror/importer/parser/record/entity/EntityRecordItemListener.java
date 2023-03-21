@@ -135,8 +135,8 @@ public class EntityRecordItemListener implements RecordItemListener {
         try {
             entityId = transactionHandler.getEntity(recordItem);
         } catch (InvalidEntityException e) { // transaction can have invalid topic/contract/file id
-            log.error("Invalid entity encountered for consensusTimestamp {} : {}", consensusTimestamp, e.getMessage());
-            entityId = null;
+            log.warn("Invalid entity encountered for consensusTimestamp {} : {}", consensusTimestamp, e.getMessage());
+            entityId = EntityId.EMPTY;
         }
 
         // to:do - exclude Freeze from Filter transaction type

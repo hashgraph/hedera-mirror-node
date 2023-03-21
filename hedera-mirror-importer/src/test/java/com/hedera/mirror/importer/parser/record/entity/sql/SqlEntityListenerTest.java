@@ -30,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
 import com.hedera.mirror.common.domain.token.NftTransferId;
+import com.hederahashgraph.api.proto.java.EntityID;
 import com.hederahashgraph.api.proto.java.Key;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
