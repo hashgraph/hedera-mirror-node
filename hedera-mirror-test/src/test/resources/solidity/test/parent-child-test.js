@@ -96,9 +96,7 @@ describe("ParentChild", function () {
     const parent = await Parent.deploy();
     await parent.deployed();
 
-    // const childArtifactJson = require('../artifacts/contracts/Parent.sol/Child.json');
     const salt = 42;
-
     const childEvmAddress = await parent.getAddress(childArtifactJson.bytecode, salt);
     expect(ethers.utils.isAddress(childEvmAddress)).to.equal(true);
 
