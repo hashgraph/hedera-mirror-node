@@ -36,6 +36,7 @@ import com.hedera.mirror.web3.exception.InvalidTransactionException;
 
 import io.github.bucket4j.Bucket;
 import javax.annotation.Resource;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -195,7 +196,7 @@ class ContractControllerTest {
                 .isEqualTo(BAD_REQUEST)
                 .expectBody(GenericErrorResponse.class)
                 .isEqualTo(new GenericErrorResponse("Failed to read HTTP message", "Unexpected character ('f' (code 102)): was expecting double-quote to start field name\n"
-                        + " at [Source: (org.springframework.core.io.buffer.DefaultDataBuffer$DefaultDataBufferInputStream); line: 1, column: 3]"));
+                        + " at [Source: (org.springframework.core.io.buffer.DefaultDataBuffer$DefaultDataBufferInputStream); line: 1, column: 3]", StringUtils.EMPTY));
     }
 
     @Test
@@ -210,7 +211,7 @@ class ContractControllerTest {
                 .expectStatus()
                 .isEqualTo(UNSUPPORTED_MEDIA_TYPE)
                 .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse("Unsupported Media Type", "Content type 'text/plain' not supported for bodyType=com.hedera.mirror.web3.viewmodel.ContractCallRequest"));
+                .isEqualTo(new GenericErrorResponse("Unsupported Media Type", "Content type 'text/plain' not supported for bodyType=com.hedera.mirror.web3.viewmodel.ContractCallRequest", StringUtils.EMPTY));
     }
 
     @Test
@@ -219,7 +220,8 @@ class ContractControllerTest {
         final var request = request();
         request.setData("0xa26388bb");
 
-        given(service.processCall(any())).willThrow(new InvalidTransactionException(CONTRACT_REVERT_EXECUTED, detailedErrorMessage));
+        given(service.processCall(any())).willThrow(new InvalidTransactionException(CONTRACT_REVERT_EXECUTED, detailedErrorMessage,
+                StringUtils.EMPTY));
 
         webClient.post()
                 .uri(CALL_URI)
@@ -229,7 +231,7 @@ class ContractControllerTest {
                 .expectStatus()
                 .isEqualTo(BAD_REQUEST)
                 .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse(CONTRACT_REVERT_EXECUTED.name(), detailedErrorMessage));
+                .isEqualTo(new GenericErrorResponse(CONTRACT_REVERT_EXECUTED.name(), detailedErrorMessage, StringUtils.EMPTY));
     }
 
     @Test
