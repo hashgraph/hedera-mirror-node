@@ -236,27 +236,6 @@ const validateAccNumInArray = function (responseObjects, potentialValues) {
   return true;
 };
 
-const hexRegex = /^(0x)?[0-9A-Fa-f]+$/;
-
-const valueToBuffer = (value) => {
-  if (value === null) {
-    return value;
-  }
-
-  if (typeof value === 'string') {
-    if (hexRegex.test(value)) {
-      return Buffer.from(value.replace(/^0x/, '').padStart(2, '0'), 'hex');
-    }
-
-    // base64
-    return Buffer.from(value, 'base64');
-  } else if (Array.isArray(value)) {
-    return Buffer.from(value);
-  }
-
-  return value;
-};
-
 export {
   assertSqlQueryEqual,
   badParamsList,
@@ -269,5 +248,4 @@ export {
   parseSqlQueryAndParams,
   testBadParams,
   validateAccNumInArray,
-  valueToBuffer
 };
