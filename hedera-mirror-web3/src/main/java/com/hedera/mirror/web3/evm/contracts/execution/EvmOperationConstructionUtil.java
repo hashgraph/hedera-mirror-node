@@ -22,12 +22,6 @@ package com.hedera.mirror.web3.evm.contracts.execution;
 
 import static org.hyperledger.besu.evm.MainnetEVMs.registerParisOperations;
 
-import com.hedera.mirror.web3.evm.store.contracts.precompile.MirrorHTSPrecompiledContract;
-import com.hedera.node.app.service.evm.contracts.execution.HederaEvmMessageCallProcessor;
-import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
-import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
-import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
-
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.List;
@@ -49,12 +43,17 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
+import com.hedera.mirror.web3.evm.store.contract.precompile.MirrorHTSPrecompiledContract;
+import com.hedera.node.app.service.evm.contracts.execution.HederaEvmMessageCallProcessor;
 import com.hedera.node.app.service.evm.contracts.operations.HederaBalanceOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaDelegateCallOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaEvmSLoadOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeCopyOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeHashOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeSizeOperation;
+import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
+import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 
 /**
  * This is a temporary utility class for creating all besu evm related fields needed by the
