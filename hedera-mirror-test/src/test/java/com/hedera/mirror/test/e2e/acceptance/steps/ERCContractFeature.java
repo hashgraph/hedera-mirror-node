@@ -33,13 +33,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 
 import com.hedera.hashgraph.sdk.CustomFee;
+import com.hedera.hashgraph.sdk.FileId;
+import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.NftId;
 import com.hedera.hashgraph.sdk.TokenType;
+import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
+import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -96,11 +101,12 @@ public class ERCContractFeature extends AbstractFeature {
     private ExpandedAccountId spenderAccountIdForAllSeerials;
     private ExpandedAccountId allowanceSpenderAccountId;
 
+    private FileId fileId;
     private final ContractClient contractClient;
+    private final AccountClient accountClient;
+    private final FileClient fileClient;
     private final MirrorNodeClient mirrorClient;
     private final TokenClient tokenClient;
-    private final ContractFeature contractFeature;
-    private final AccountFeature accountFeature;
 
     @Value("classpath:solidity/artifacts/contracts/ERCTestContract.sol/ERCTestContract.json")
     private Path ercContract;
@@ -282,7 +288,7 @@ public class ERCContractFeature extends AbstractFeature {
         compiledSolidityArtifact = MAPPER.readValue(
                 ResourceUtils.getFile(ercContract.toUri()),
                 CompiledSolidityArtifact.class);
-        contractId = contractFeature.createContract(compiledSolidityArtifact.getBytecode(), 0);
+        createContract(compiledSolidityArtifact.getBytecode(), 0);
     }
 
     @Then("I create a new token with freeze status 2 and kyc status 1")
@@ -319,17 +325,28 @@ public class ERCContractFeature extends AbstractFeature {
     @Then("I approve {string} for nft")
     public void approveCryptoAllowance(String accountName) {
         var serial = tokenSerialNumbers.get(tokenIds.get(1));
-        spenderAccountId = accountFeature.setNftAllowance(accountName, new NftId(tokenIds.get(1), serial.get(0)));
+        var nftId = new NftId(tokenIds.get(1), serial.get(0));
+
+        spenderAccountId = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
+        networkTransactionResponse = accountClient.approveNft(nftId, spenderAccountId.getAccountId());
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
     }
 
     @Then("I approve {string} with {long}")
     public void approveTokenAllowance(String accountName, long amount) {
-        allowanceSpenderAccountId = accountFeature.setTokenAllowance(accountName, tokenIds.get(0), amount);
+        allowanceSpenderAccountId = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
+        networkTransactionResponse = accountClient.approveToken(tokenIds.get(0), allowanceSpenderAccountId.getAccountId(), amount);
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
     }
 
     @Then("I approve {string} for nft all serials")
     public void approveCryptoAllowanceAllSerials(String accountName) {
-        spenderAccountIdForAllSeerials = accountFeature.setNftAllowanceAllSerials(accountName, tokenIds.get(1));
+        spenderAccountIdForAllSeerials = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
+        networkTransactionResponse = accountClient.approveNftAllSerials(tokenIds.get(1), spenderAccountIdForAllSeerials.getAccountId());
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
     }
 
     private TokenId createNewToken(String symbol, int freezeStatus, int kycStatus, TokenType tokenType,
@@ -353,5 +370,38 @@ public class ERCContractFeature extends AbstractFeature {
         tokenIds.add(tokenId);
 
         return tokenId;
+    }
+
+    private void createContract(String byteCode, int initialBalance) {
+        persistContractBytes(byteCode.replaceFirst("0x", ""));
+        networkTransactionResponse = contractClient.createContract(
+                fileId,
+                contractClient.getSdkClient().getAcceptanceTestProperties().getFeatureProperties()
+                        .getMaxContractFunctionGas(),
+                initialBalance == 0 ? null : Hbar.fromTinybars(initialBalance),
+                null);
+
+        verifyCreateContractNetworkResponse();
+    }
+
+    private void persistContractBytes(String contractContents) {
+        // rely on SDK chunking feature to upload larger files
+        networkTransactionResponse = fileClient.createFile(new byte[] {});
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
+        fileId = networkTransactionResponse.getReceipt().fileId;
+        assertNotNull(fileId);
+        log.info("Created file {} to hold contract init code", fileId);
+
+        networkTransactionResponse = fileClient.appendFile(fileId, contractContents.getBytes(StandardCharsets.UTF_8));
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
+    }
+
+    private void verifyCreateContractNetworkResponse() {
+        assertNotNull(networkTransactionResponse.getTransactionId());
+        assertNotNull(networkTransactionResponse.getReceipt());
+        contractId = networkTransactionResponse.getReceipt().contractId;
+        assertNotNull(contractId);
     }
 }

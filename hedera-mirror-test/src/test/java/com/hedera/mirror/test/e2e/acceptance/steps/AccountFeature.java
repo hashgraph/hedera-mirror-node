@@ -245,40 +245,4 @@ public class AccountFeature extends AbstractFeature {
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
-
-    public ExpandedAccountId setTokenAllowance(String accountName, TokenId tokenId, long amount) {
-        senderAccountId = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
-        setTokenAllowance(senderAccountId.getAccountId(), tokenId, amount);
-        return senderAccountId;
-    }
-
-    private void setTokenAllowance(AccountId accountId, TokenId tokenId, long amount) {
-        networkTransactionResponse = accountClient.approveToken(tokenId, accountId, amount);
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-    }
-
-    public ExpandedAccountId setNftAllowance(String accountName, NftId nftId) {
-        senderAccountId = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
-        setNftAllowance(senderAccountId.getAccountId(), nftId);
-        return senderAccountId;
-    }
-
-    private void setNftAllowance(AccountId accountId, NftId nftId) {
-        networkTransactionResponse = accountClient.approveNft(nftId, accountId);
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-    }
-
-    public ExpandedAccountId setNftAllowanceAllSerials(String accountName, TokenId tokenId) {
-        senderAccountId = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
-        setNftAllowanceAllSerials(senderAccountId.getAccountId(), tokenId);
-        return senderAccountId;
-    }
-
-    private void setNftAllowanceAllSerials(AccountId accountId, TokenId tokenId) {
-        networkTransactionResponse = accountClient.approveNftAllSerials(tokenId, accountId);
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-    }
 }
