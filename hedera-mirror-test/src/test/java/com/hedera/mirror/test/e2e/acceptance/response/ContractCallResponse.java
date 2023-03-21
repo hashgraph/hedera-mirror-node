@@ -22,12 +22,14 @@ package com.hedera.mirror.test.e2e.acceptance.response;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import javax.inject.Named;
 import lombok.Data;
 import org.apache.commons.codec.DecoderException;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.tuweni.bytes.Bytes;
 
 @Data
+@Named
 public class ContractCallResponse {
     private String result;
 
@@ -43,12 +45,12 @@ public class ContractCallResponse {
         return Bytes.fromHexString(response.getResult()).slice(12).toUnprefixedHexString();
     }
 
-    public static String hexToASCII(String str) throws DecoderException {
+    public String getResultAsText(String str) throws DecoderException {
         byte[] bytes = Hex.decodeHex(str.substring(2));
         return new String(bytes, StandardCharsets.UTF_8).trim();
     }
 
-    public static boolean convertContractCallResponseToBoolean(final ContractCallResponse response) {
+    public boolean convertToBoolean(final ContractCallResponse response) {
         return Long.parseUnsignedLong(response.getResult().replace("0x", ""), 16) > 0;
     }
 }

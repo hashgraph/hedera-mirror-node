@@ -21,9 +21,7 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
  */
 
 import static com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse.convertContractCallResponseToAddress;
-import static com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse.convertContractCallResponseToBoolean;
 import static com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse.convertContractCallResponseToNum;
-import static com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse.hexToASCII;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -40,6 +38,8 @@ import com.hedera.hashgraph.sdk.TokenType;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
+
+import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
 
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -98,7 +98,7 @@ public class ERCContractFeature extends AbstractFeature {
     public static final String TOKEN_URI_SELECTOR = "e9dc6375";
 
     private ExpandedAccountId spenderAccountId;
-    private ExpandedAccountId spenderAccountIdForAllSeerials;
+    private ExpandedAccountId spenderAccountIdForAllSerials;
     private ExpandedAccountId allowanceSpenderAccountId;
 
     private FileId fileId;
@@ -107,6 +107,8 @@ public class ERCContractFeature extends AbstractFeature {
     private final FileClient fileClient;
     private final MirrorNodeClient mirrorClient;
     private final TokenClient tokenClient;
+
+    private final ContractCallResponse contractCallResponse;
 
     @Value("classpath:solidity/artifacts/contracts/ERCTestContract.sol/ERCTestContract.json")
     private Path ercContract;
@@ -123,7 +125,7 @@ public class ERCContractFeature extends AbstractFeature {
                 + to32BytesString(tokenIds.get(0).toSolidityAddress()),
                 contractId.toSolidityAddress(), contractClient.getClientAddress());
 
-        assertThat(hexToASCII(getNameResponse.getResult())).isEqualTo("TEST_name");
+        assertThat(contractCallResponse.getResultAsText(getNameResponse.getResult())).isEqualTo("TEST_name");
     }
 
     @Then("I call the erc contract via the mirror node REST API for token symbol")
@@ -135,7 +137,7 @@ public class ERCContractFeature extends AbstractFeature {
                         + to32BytesString(tokenIds.get(0).toSolidityAddress()),
                 contractId.toSolidityAddress(), contractClient.getClientAddress());
 
-        assertThat(hexToASCII(getSymbolResponse.getResult())).isEqualTo("TEST");
+        assertThat(contractCallResponse.getResultAsText(getSymbolResponse.getResult())).isEqualTo("TEST");
     }
 
     @Then("I call the erc contract via the mirror node REST API for token decimals")
@@ -184,7 +186,7 @@ public class ERCContractFeature extends AbstractFeature {
                         + to32BytesString(tokenIds.get(1).toSolidityAddress()) + to32BytesString("1"),
                 contractId.toSolidityAddress(), contractClient.getClientAddress());
 
-        assertThat(hexToASCII(getTokenURIResponse.getResult())).isEqualTo("TEST_metadata");
+        assertThat(contractCallResponse.getResultAsText(getTokenURIResponse.getResult())).isEqualTo("TEST_metadata");
     }
 
     @Then("I call the erc contract via the mirror node REST API for token getApproved")
@@ -239,7 +241,7 @@ public class ERCContractFeature extends AbstractFeature {
                         + to32BytesString(contractClient.getClientAddress()),
                 contractId.toSolidityAddress(), contractClient.getClientAddress());
 
-        assertThat(convertContractCallResponseToBoolean(getIsApproveForAllResponse)).isFalse();
+        assertThat(contractCallResponse.convertToBoolean(getIsApproveForAllResponse)).isFalse();
     }
 
     @Then("I call the erc contract via the mirror node REST API for token isApprovedForAll with response true")
@@ -250,10 +252,10 @@ public class ERCContractFeature extends AbstractFeature {
         var getIsApproveForAllResponse = mirrorClient.contractsCall(IS_APPROVED_FOR_ALL_SELECTOR
                         + to32BytesString(tokenIds.get(1).toSolidityAddress())
                         + to32BytesString(tokenClient.getSdkClient().getExpandedOperatorAccountId().getAccountId().toSolidityAddress())
-                        + to32BytesString(spenderAccountIdForAllSeerials.getAccountId().toSolidityAddress()),
+                        + to32BytesString(spenderAccountIdForAllSerials.getAccountId().toSolidityAddress()),
                 contractId.toSolidityAddress(), contractClient.getClientAddress());
 
-        assertThat(convertContractCallResponseToBoolean(getIsApproveForAllResponse)).isTrue();
+        assertThat(contractCallResponse.convertToBoolean(getIsApproveForAllResponse)).isTrue();
     }
 
     @Then("I call the erc contract via the mirror node REST API for token balance")
@@ -343,8 +345,8 @@ public class ERCContractFeature extends AbstractFeature {
 
     @Then("I approve {string} for nft all serials")
     public void approveCryptoAllowanceAllSerials(String accountName) {
-        spenderAccountIdForAllSeerials = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
-        networkTransactionResponse = accountClient.approveNftAllSerials(tokenIds.get(1), spenderAccountIdForAllSeerials.getAccountId());
+        spenderAccountIdForAllSerials = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
+        networkTransactionResponse = accountClient.approveNftAllSerials(tokenIds.get(1), spenderAccountIdForAllSerials.getAccountId());
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
