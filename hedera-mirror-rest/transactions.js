@@ -135,14 +135,12 @@ const getSelectClauseWithTransfers = (innerQuery, order = 'desc') => {
   let additionalFromTable = '';
   let cryptoTransferListCteWhereClause = '';
   let tokenTransferListCteWhereClause = '';
-  let transfersListCteWhereClause = '';
   if (!_.isUndefined(innerQuery)) {
     additionalFromTable = 'timestamp_range tr, ';
     cryptoTransferListCteWhereClause = `WHERE ${CryptoTransfer.getFullName(CryptoTransfer.CONSENSUS_TIMESTAMP)} >= tr.min
       AND ${CryptoTransfer.getFullName(CryptoTransfer.CONSENSUS_TIMESTAMP)} <= tr.max`;
     tokenTransferListCteWhereClause = `WHERE ${TokenTransfer.getFullName(TokenTransfer.CONSENSUS_TIMESTAMP)} >= tr.min
       AND ${TokenTransfer.getFullName(TokenTransfer.CONSENSUS_TIMESTAMP)} <= tr.max`;
-    transfersListCteWhereClause = `WHERE t.consensus_timestamp >= tr.min AND t.consensus_timestamp <= tr.max`;
   }
 
   const cryptoTransferListCte = `c_list as (
@@ -166,9 +164,9 @@ const getSelectClauseWithTransfers = (innerQuery, order = 'desc') => {
       ctrl.ctr_list,
       ttrl.ttr_list,
       ${transferListFullFields}
-    from ${additionalFromTable} tlist t
+    from tlist t
     full outer join c_list ctrl on t.consensus_timestamp = ctrl.consensus_timestamp
-    full outer join t_list ttrl on t.consensus_timestamp = ttrl.consensus_timestamp ${transfersListCteWhereClause}
+    full outer join t_list ttrl on t.consensus_timestamp = ttrl.consensus_timestamp
   )`;
   const ctes = [transactionTimeStampCte(innerQuery), cryptoTransferListCte, tokenTransferListCte, transfersListCte];
   const fields = [...transactionFullFields, `t.ctr_list AS crypto_transfer_list`, `t.ttr_list AS token_transfer_list`];
@@ -385,20 +383,9 @@ const convertStakingRewardTransfers = (rows) => {
  * @return {String} outerQuery Fully formed SQL query
  */
 const getTransactionsOuterQuery = (innerQuery, order) => {
-  let fromTables = `FROM transfer_list t`;
-  let whereClause = '';
-
-  // add constraints on consensus_timestamp where a timestamp filter is applied
-  if (!_.isUndefined(innerQuery)) {
-    fromTables = `FROM timestamp_range tr, transfer_list t`;
-    whereClause = 'WHERE t.consensus_timestamp >= tr.min and t.consensus_timestamp <= tr.max';
-  }
-
   return `
     ${getSelectClauseWithTransfers(innerQuery, order)}
-    ${fromTables}
-    ${whereClause}
-
+    FROM transfer_list t
     ORDER BY ${Transaction.getFullName(Transaction.CONSENSUS_TIMESTAMP)} ${order}`;
 };
 
