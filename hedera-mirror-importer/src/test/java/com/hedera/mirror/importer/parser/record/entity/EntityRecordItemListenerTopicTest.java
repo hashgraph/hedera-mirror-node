@@ -44,7 +44,6 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
-import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.converter.ConvertWith;
@@ -677,10 +676,8 @@ class EntityRecordItemListenerTopicTest extends AbstractEntityRecordItemListener
             receipt.setTopicRunningHash(ByteString.copyFrom(topicRunningHash));
             receipt.setTopicRunningHashVersion(runningHashVersion);
         }
-        var consensusTimestampProto = TestUtils.toTimestamp(consensusTimestamp);
         var transactionRecord = TransactionRecord.newBuilder().setReceipt(receipt)
-                .setConsensusTimestamp(consensusTimestampProto)
-                .setTransactionHash(ByteString.copyFrom(DigestUtils.sha384(consensusTimestampProto.toByteArray())));
+                .setConsensusTimestamp(TestUtils.toTimestamp(consensusTimestamp));
         return transactionRecord.build();
     }
 
