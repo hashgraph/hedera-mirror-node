@@ -976,6 +976,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         updateToken(token, modifiedTimestamp);
     }
 
+    @SuppressWarnings("java:S135")
     private void insertTransactionSignatures(EntityId entityId, long consensusTimestamp,
                                              List<SignaturePair> signaturePairList) {
         Set<ByteString> publicKeyPrefixes = new HashSet<>();
