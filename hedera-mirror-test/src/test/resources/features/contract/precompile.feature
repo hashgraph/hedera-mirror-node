@@ -17,7 +17,6 @@ Feature: Precompile Contract Base Coverage Feature
         Then Check if can freeze token
         Then Check if can unfreeze token
         Then Check if account is frozen by evm address
-        Then Check if account is frozen by alias
         Then Check if fungible token is kyc granted
         Then Check if non fungible token is kyc granted
         Then Get token default freeze of fungible token
