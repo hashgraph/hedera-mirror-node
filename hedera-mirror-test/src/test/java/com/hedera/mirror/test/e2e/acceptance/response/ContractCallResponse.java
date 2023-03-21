@@ -23,6 +23,7 @@ package com.hedera.mirror.test.e2e.acceptance.response;
 import java.math.BigInteger;
 import lombok.Data;
 import org.apache.tuweni.bytes.Bytes;
+import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.hexToAscii;
 
 @Data
 public class ContractCallResponse {
@@ -42,5 +43,12 @@ public class ContractCallResponse {
 
     public boolean getResultAsBoolean() {
         return Long.parseUnsignedLong(result.replace("0x", ""), 16) > 0;
+    }
+
+    public String getResultAsAsciiString() {
+        // 1st 32 bytes - string info
+        // 2nd 32 bytes - data length in the last 32 bytes
+        // 3rd 32 bytes - actual string suffixed with zeroes
+        return hexToAscii(result.replace("0x", "").substring(128).trim());
     }
 }

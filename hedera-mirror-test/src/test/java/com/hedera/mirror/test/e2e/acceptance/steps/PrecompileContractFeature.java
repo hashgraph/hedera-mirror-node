@@ -68,6 +68,7 @@ import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.RandomUtils;
+import org.apache.tuweni.bytes.Bytes;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -105,6 +106,17 @@ public class PrecompileContractFeature extends AbstractFeature {
     public static final String GET_TYPE_SELECTOR = "f429f19b";
     public static final String GET_EXPIRY_INFO_FOR_TOKEN_SELECTOR = "1de8edad";
     public static final String GET_TOKEN_KEY_PUBLIC_SELECTOR = "1955de0b";
+
+    public static final String NAME_SELECTOR = "06fdde03";
+    public static final String SYMBOL_SELECTOR = "95d89b41";
+    public static final String DECIMALS_SELECTOR = "313ce567";
+    public static final String TOTAL_SUPPLY_SELECTOR = "18160ddd";
+    public static final String BALANCE_OF_SELECTOR = "70a08231";
+    public static final String ALLOWANCE_SELECTOR = "dd62ed3e";
+
+    public static final String OWNER_OF_SELECTOR = "6352211e";
+    public static final String GET_APPROVED_SELECTOR = "081812fc";
+    public static final String IS_APPROVED_FOR_ALL_SELECTOR = "e985e9c5";
 
     private final ContractClient contractClient;
     private final TokenClient tokenClient;
@@ -737,5 +749,130 @@ public class PrecompileContractFeature extends AbstractFeature {
         } catch (Exception e) {
             throw new Exception("Function not found in abi.");
         }
+    }
+
+    @Then("Get fungible token name by direct call")
+    public void getFungibleTokenNameByDirectCall() throws Exception {
+        ContractCallResponse response = mirrorClient.contractsCall(
+                NAME_SELECTOR,
+                tokenIds.get(0).toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+        assertThat(response.getResultAsAsciiString().indexOf("_name")).isNotZero();
+    }
+
+    @Then("Get fungible token symbol by direct call")
+    public void getFungibleTokenSymbolByDirectCall() throws Exception {
+        ContractCallResponse response = mirrorClient.contractsCall(
+                SYMBOL_SELECTOR,
+                tokenIds.get(0).toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+        assertThat(response.getResultAsAsciiString().length()).isNotZero();
+    }
+
+    @Then("Get fungible token decimals by direct call")
+    public void getFungibleTokenDecimalsByDirectCall() throws Exception {
+        ContractCallResponse response = mirrorClient.contractsCall(
+                DECIMALS_SELECTOR,
+                tokenIds.get(0).toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+        assertThat(ContractCallResponse.convertContractCallResponseToNum(response)).isEqualTo(10);
+    }
+
+    @Then("Get fungible token total supply by direct call")
+    public void getFungibleTokenTotalSupplyByDirectCall() throws Exception {
+        ContractCallResponse response = mirrorClient.contractsCall(
+                TOTAL_SUPPLY_SELECTOR,
+                tokenIds.get(0).toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+        assertThat(ContractCallResponse.convertContractCallResponseToNum(response)).isEqualTo(1000000);
+    }
+
+    @Then("Get fungible token balanceOf by direct call")
+    public void getFungibleTokenBalanceOfByDirectCall() throws Exception {
+        ContractCallResponse response = mirrorClient.contractsCall(
+                BALANCE_OF_SELECTOR + to32BytesString(contractClient.getClientAddress()),
+                tokenIds.get(0).toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+        assertThat(ContractCallResponse.convertContractCallResponseToNum(response)).isEqualTo(1000000);
+    }
+
+    @Then("Get fungible token allowance by direct call")
+    public void getFungibleTokenAllowanceByDirectCall() throws Exception {
+        ContractCallResponse response = mirrorClient.contractsCall(
+                ALLOWANCE_SELECTOR
+                        + to32BytesString(contractClient.getClientAddress())
+                        + to32BytesString(ecdsaEaId.getAccountId().toSolidityAddress()),
+                tokenIds.get(0).toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+        assertThat(ContractCallResponse.convertContractCallResponseToNum(response)).isEqualTo(0);
+    }
+
+    @Then("Get non fungible token name by direct call")
+    public void getNonFungibleTokenNameByDirectCall() throws Exception {
+        ContractCallResponse response = mirrorClient.contractsCall(
+                NAME_SELECTOR,
+                tokenIds.get(1).toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+        assertThat(response.getResultAsAsciiString().indexOf("_name")).isNotZero();
+    }
+
+    @Then("Get non fungible token symbol by direct call")
+    public void getNonFungibleTokenSymbolByDirectCall() throws Exception {
+        ContractCallResponse response = mirrorClient.contractsCall(
+                SYMBOL_SELECTOR,
+                tokenIds.get(1).toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+        assertThat(response.getResultAsAsciiString().length()).isNotZero();
+    }
+
+    @Then("Get non fungible token total supply by direct call")
+    public void getNonFungibleTokenTotalSupplyByDirectCall() throws Exception {
+        ContractCallResponse response = mirrorClient.contractsCall(
+                TOTAL_SUPPLY_SELECTOR,
+                tokenIds.get(1).toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+        assertThat(ContractCallResponse.convertContractCallResponseToNum(response)).isEqualTo(1);
+    }
+
+    @Then("Get non fungible token ownerOf by direct call")
+    public void getNonFungibleTokenOwnerOfByDirectCall() throws Exception {
+        ContractCallResponse response = mirrorClient.contractsCall(
+                OWNER_OF_SELECTOR + to32BytesString(String.valueOf(firstNftSerialNumber)),
+                tokenIds.get(1).toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+        assertThat(Bytes.fromHexString(response.getResult()).toBigInteger())
+                .isEqualTo(tokenClient.getSdkClient().getExpandedOperatorAccountId().getAccountId().num);
+    }
+
+    @Then("Get non fungible token getApproved by direct call")
+    public void getNonFungibleTokenGetApprovedByDirectCall() throws Exception {
+        ContractCallResponse response = mirrorClient.contractsCall(
+                GET_APPROVED_SELECTOR + to32BytesString(String.valueOf(firstNftSerialNumber)),
+                tokenIds.get(1).toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+        assertFalse(response.getResultAsBoolean());
+    }
+
+    @Then("Get non fungible token isApprovedForAll by direct call")
+    public void getNonFungibleTokenIsApprovedForAllByDirectCall() throws Exception {
+        ContractCallResponse response = mirrorClient.contractsCall(
+                IS_APPROVED_FOR_ALL_SELECTOR
+                        + to32BytesString(contractClient.getClientAddress())
+                        + to32BytesString(ecdsaEaId.getAccountId().toSolidityAddress()),
+                tokenIds.get(1).toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+        assertFalse(response.getResultAsBoolean());
     }
 }

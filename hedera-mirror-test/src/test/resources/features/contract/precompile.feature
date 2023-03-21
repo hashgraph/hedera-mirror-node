@@ -33,6 +33,18 @@ Feature: Precompile Contract Base Coverage Feature
         Then Get expiry token info for non fungible token
         Then Get token key for fungible token
         Then Get token key for non fungible token
+        Then Get fungible token name by direct call
+        Then Get fungible token symbol by direct call
+        Then Get fungible token decimals by direct call
+        Then Get fungible token total supply by direct call
+        Then Get fungible token balanceOf by direct call
+        Then Get fungible token allowance by direct call
+        Then Get non fungible token name by direct call
+        Then Get non fungible token symbol by direct call
+        Then Get non fungible token total supply by direct call
+        Then Get non fungible token ownerOf by direct call
+        Then Get non fungible token getApproved by direct call
+        Then Get non fungible token isApprovedForAll by direct call
         Examples:
             | httpStatusCode |
             | 200            |
