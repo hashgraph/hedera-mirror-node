@@ -54,7 +54,7 @@ class CryptoCreateTransactionHandler extends AbstractEntityCrudTransactionHandle
     }
 
     @Override
-    @SuppressWarnings("java:S1874")
+    @SuppressWarnings({"deprecation", "java:S1874"})
     protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
         var transactionRecord = recordItem.getTransactionRecord();
         var transactionBody = recordItem.getTransactionBody().getCryptoCreateAccount();

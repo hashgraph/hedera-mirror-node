@@ -22,6 +22,8 @@ package com.hedera.mirror.importer;
 
 import static java.lang.invoke.MethodType.methodType;
 
+import com.hedera.mirror.common.domain.transaction.TransactionHash;
+
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -47,8 +49,13 @@ import org.apache.commons.beanutils.BeanUtilsBean;
 
 import com.hedera.mirror.importer.util.Utility;
 
+import org.springframework.jdbc.core.DataClassRowMapper;
+import org.springframework.jdbc.core.JdbcTemplate;
+
 @UtilityClass
 public class TestUtils {
+
+    private static final SecureRandom RANDOM = new SecureRandom();
 
     // Customize BeanUtilsBean to not copy properties for null since non-nulls represent partial updates in our system.
     private static final BeanUtilsBean BEAN_UTILS = new BeanUtilsBean() {
@@ -142,6 +149,11 @@ public class TestUtils {
         }
     }
 
+    public Collection<TransactionHash> getShardTransactionHashes(int shard, JdbcTemplate jdbcTemplate) {
+        var sql = String.format("SELECT * from transaction_hash_sharded_%02d", shard);
+        return jdbcTemplate.query(sql, new DataClassRowMapper<>(TransactionHash.class));
+    }
+
     public AccountID toAccountId(String accountId) {
         var parts = accountId.split("\\.");
         return AccountID.newBuilder().setShardNum(Long.parseLong(parts[0])).setRealmNum(Long.parseLong(parts[1]))
@@ -171,7 +183,7 @@ public class TestUtils {
 
     public byte[] generateRandomByteArray(int size) {
         byte[] hashBytes = new byte[size];
-        new SecureRandom().nextBytes(hashBytes);
+        RANDOM.nextBytes(hashBytes);
         return hashBytes;
     }
 }

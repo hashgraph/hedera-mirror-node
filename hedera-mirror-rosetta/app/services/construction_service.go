@@ -47,10 +47,11 @@ import (
 const (
 	maxValidDurationSeconds         = 180
 	defaultValidDurationSeconds     = maxValidDurationSeconds
+	maxValidDurationNanos           = maxValidDurationSeconds * 1_000_000_000
 	metadataKeyAccountMap           = "account_map"
 	metadataKeyValidDurationSeconds = "valid_duration"
 	metadataKeyValidStartNanos      = "valid_start_nanos"
-	metadataKeyValidUntil           = "valid_until"
+	metadataKeyValidUntilNanos      = "valid_until_nanos"
 	optionKeyAccountAliases         = "account_aliases"
 	optionKeyOperationType          = "operation_type"
 )
@@ -207,6 +208,10 @@ func (c *constructionAPIService) ConstructionMetadata(
 	response.Metadata[metadataKeyAccountMap] = strings.Join(accountMap, ",")
 	delete(response.Metadata, optionKeyAccountAliases)
 
+	// pass the value as a string to avoid being deserialized into data types like float64
+	validUntilNanos := time.Now().UnixNano() + maxValidDurationNanos
+	response.Metadata[metadataKeyValidUntilNanos] = fmt.Sprintf("%d", validUntilNanos)
+
 	return response, nil
 }
 
@@ -225,10 +230,6 @@ func (c *constructionAPIService) ConstructionParse(
 	if memo != "" {
 		metadata[types.MetadataKeyMemo] = memo
 	}
-
-	validStart := transaction.GetTransactionID().ValidStart
-	validDuration := transaction.GetTransactionValidDuration()
-	metadata[metadataKeyValidUntil] = validStart.Add(validDuration).UnixNano()
 
 	operations, accounts, err := c.transactionHandler.Parse(ctx, transaction)
 	if err != nil {
@@ -254,12 +255,7 @@ func (c *constructionAPIService) ConstructionPayloads(
 	ctx context.Context,
 	request *rTypes.ConstructionPayloadsRequest,
 ) (*rTypes.ConstructionPayloadsResponse, *rTypes.Error) {
-	validDurationSeconds, rErr := c.getIntMetadataValue(request.Metadata, metadataKeyValidDurationSeconds)
-	if rErr != nil || !isValidTransactionValidDuration(validDurationSeconds) {
-		return nil, errors.ErrInvalidArgument
-	}
-
-	validStartNanos, rErr := c.getIntMetadataValue(request.Metadata, metadataKeyValidStartNanos)
+	validDurationSeconds, validStartNanos, rErr := c.getTransactionTimestampProperty(request.Metadata)
 	if rErr != nil {
 		return nil, rErr
 	}
@@ -380,7 +376,7 @@ func (c *constructionAPIService) ConstructionSubmit(
 
 	_, err = transaction.Execute(c.hederaClient)
 	if err != nil {
-		log.Errorf("Failed to execute transaction %s: %s", transaction.GetTransactionID(), err)
+		log.Errorf("Failed to execute transaction %s (hash %s): %s", transaction.GetTransactionID(), hash, err)
 		return nil, errors.AddErrorDetails(
 			errors.ErrTransactionSubmissionFailed,
 			"reason",
@@ -391,6 +387,45 @@ func (c *constructionAPIService) ConstructionSubmit(
 	return &rTypes.TransactionIdentifierResponse{
 		TransactionIdentifier: &rTypes.TransactionIdentifier{Hash: hash},
 	}, nil
+}
+
+func (c *constructionAPIService) getTransactionTimestampProperty(metadata map[string]interface{}) (
+	validDurationSeconds, validStartNanos int64, err *rTypes.Error,
+) {
+	if _, ok := metadata[metadataKeyValidUntilNanos]; ok {
+		// ignore valid duration seconds and valid start nanos in the metadata if valid until is present
+		var validUntil int64
+		validUntil, err = c.getIntMetadataValue(metadata, metadataKeyValidUntilNanos)
+		if err != nil {
+			log.Errorf("Invalid valid until %s", metadata[metadataKeyValidUntilNanos])
+			err = errors.ErrInvalidArgument
+			return
+		}
+
+		validDurationSeconds = maxValidDurationSeconds
+		validStartNanos = validUntil - maxValidDurationNanos
+		if validStartNanos <= 0 {
+			log.Errorf("Valid start nanos determined from valid until %s is not positive",
+				metadata[metadataKeyValidUntilNanos])
+			err = errors.ErrInvalidArgument
+		}
+
+		return
+	}
+
+	validDurationSeconds, err = c.getIntMetadataValue(metadata, metadataKeyValidDurationSeconds)
+	if err != nil || !isValidTransactionValidDuration(validDurationSeconds) {
+		log.Errorf("Invalid valid duration seconds %s", metadata[metadataKeyValidDurationSeconds])
+		err = errors.ErrInvalidArgument
+		return
+	}
+
+	validStartNanos, err = c.getIntMetadataValue(metadata, metadataKeyValidStartNanos)
+	if err != nil {
+		log.Errorf("Invalid valid start nanos %s", metadata[metadataKeyValidStartNanos])
+	}
+
+	return
 }
 
 func (c *constructionAPIService) getOperationSlice(operations []*rTypes.Operation) (

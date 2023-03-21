@@ -35,7 +35,6 @@ import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.math.BigInteger;
 import java.time.Instant;
 import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.Optional;
 import java.util.Set;
 import org.apache.tuweni.bytes.Bytes;
@@ -75,24 +74,34 @@ import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 class MirrorEvmTxProcessorTest {
 
     private static final int MAX_STACK_SIZE = 1024;
-
-    @Mock private PricesAndFeesProvider pricesAndFeesProvider;
-    @Mock private HederaEvmWorldState worldState;
-    @Mock private HederaEvmEntityAccess hederaEvmEntityAccess;
-    @Mock private EvmProperties evmProperties;
-    @Mock private GasCalculator gasCalculator;
-    @Mock private Set<Operation> operations;
-    @Mock private Transaction transaction;
-    @Mock private HederaEvmWorldState.Updater updater;
-    @Mock private HederaEvmWorldUpdater stackedUpdater;
-    @Mock private MirrorEvmContractAliases hederaEvmContractAliases;
-    @Mock private HederaBlockValues hederaBlockValues;
-    @Mock private BlockMetaSource blockMetaSource;
-
     private final HederaEvmAccount sender = new HederaEvmAccount(Address.ALTBN128_ADD);
     private final HederaEvmAccount receiver = new HederaEvmAccount(Address.ALTBN128_MUL);
     private final Address receiverAddress = receiver.canonicalAddress();
     private final Instant consensusTime = Instant.now();
+    @Mock
+    private PricesAndFeesProvider pricesAndFeesProvider;
+    @Mock
+    private HederaEvmWorldState worldState;
+    @Mock
+    private HederaEvmEntityAccess hederaEvmEntityAccess;
+    @Mock
+    private EvmProperties evmProperties;
+    @Mock
+    private GasCalculator gasCalculator;
+    @Mock
+    private Set<Operation> operations;
+    @Mock
+    private Transaction transaction;
+    @Mock
+    private HederaEvmWorldState.Updater updater;
+    @Mock
+    private HederaEvmWorldUpdater stackedUpdater;
+    @Mock
+    private MirrorEvmContractAliases hederaEvmContractAliases;
+    @Mock
+    private HederaBlockValues hederaBlockValues;
+    @Mock
+    private BlockMetaSource blockMetaSource;
     private MirrorEvmTxProcessor mirrorEvmTxProcessor;
 
     @BeforeEach
@@ -154,7 +163,8 @@ class MirrorEvmTxProcessorTest {
                         .apparentValue(Wei.ONE)
                         .blockValues(hederaBlockValues)
                         .depth(1)
-                        .completer(frame -> {})
+                        .completer(frame -> {
+                        })
                         .miningBeneficiary(Address.ZERO)
                         .blockHashLookup(hash -> null);
 
@@ -178,7 +188,7 @@ class MirrorEvmTxProcessorTest {
         long GAS_LIMIT = 300_000L;
         final MessageFrame.Builder commonInitialFrame =
                 MessageFrame.builder()
-                        .messageFrameStack(mock(Deque.class))
+                        .messageFrameStack(new ArrayDeque<>())
                         .maxStackSize(MAX_STACK_SIZE)
                         .worldUpdater(mock(WorldUpdater.class))
                         .initialGas(GAS_LIMIT)
@@ -189,7 +199,8 @@ class MirrorEvmTxProcessorTest {
                         .apparentValue(Wei.of(transaction.getValue().getAsBigInteger()))
                         .blockValues(mock(BlockValues.class))
                         .depth(0)
-                        .completer(__ -> {})
+                        .completer(__ -> {
+                        })
                         .miningBeneficiary(Address.ZERO)
                         .blockHashLookup(h -> null);
         // when:

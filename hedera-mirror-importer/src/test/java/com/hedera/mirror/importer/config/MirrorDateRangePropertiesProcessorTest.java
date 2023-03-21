@@ -20,6 +20,26 @@ package com.hedera.mirror.importer.config;
  * ‍
  */
 
+import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
+import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.STARTUP_TIME;
+import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
+import static org.apache.commons.lang3.ObjectUtils.max;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.doReturn;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.common.util.DomainUtils;
@@ -35,27 +55,6 @@ import com.hedera.mirror.importer.repository.AccountBalanceFileRepository;
 import com.hedera.mirror.importer.repository.EventFileRepository;
 import com.hedera.mirror.importer.repository.RecordFileRepository;
 import com.hedera.mirror.importer.util.Utility;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
-import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.cglib.core.ReflectUtils;
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
-
-import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.DateRangeFilter;
-import static com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor.STARTUP_TIME;
-import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
-import static org.apache.commons.lang3.ObjectUtils.max;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.Mockito.doReturn;
 
 @ExtendWith(MockitoExtension.class)
 class MirrorDateRangePropertiesProcessorTest {
@@ -209,7 +208,7 @@ class MirrorDateRangePropertiesProcessorTest {
         for (var downloaderProperties : downloaderPropertiesList) {
             StreamType streamType = downloaderProperties.getStreamType();
 
-            Optional<StreamFile> streamFile = streamFile(streamType, effectiveStartDate);
+            Optional<StreamFile<?>> streamFile = streamFile(streamType, effectiveStartDate);
             assertThat(mirrorDateRangePropertiesProcessor.getLastStreamFile(streamType)).isEqualTo(streamFile);
 
             assertThat(mirrorDateRangePropertiesProcessor.getDateRangeFilter(downloaderProperties.getStreamType()))
@@ -265,15 +264,15 @@ class MirrorDateRangePropertiesProcessorTest {
         assertThat(filter.filter(timestamp)).isEqualTo(expected);
     }
 
-    private boolean matches(Optional<StreamFile> streamFile, Instant instant) {
+    private boolean matches(Optional<StreamFile<?>> streamFile, Instant instant) {
         return instant.equals(streamFile
                 .map(StreamFile::getConsensusStart)
                 .map(nanos -> Instant.ofEpochSecond(0, nanos))
                 .orElse(null));
     }
 
-    private Optional<StreamFile> streamFile(StreamType streamType, Instant instant) {
-        StreamFile streamFile = (StreamFile) ReflectUtils.newInstance(streamType.getStreamFileClass());
+    private Optional<StreamFile<?>> streamFile(StreamType streamType, Instant instant) {
+        StreamFile<?> streamFile = streamType.newStreamFile();
         streamFile.setConsensusStart(DomainUtils.convertToNanosMax(instant));
         streamFile.setName(StreamFilename.getFilename(streamType, DATA, instant));
         return Optional.of(streamFile);

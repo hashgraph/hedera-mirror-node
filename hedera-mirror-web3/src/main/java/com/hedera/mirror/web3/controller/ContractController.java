@@ -28,6 +28,9 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
 import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
 import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
+import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
+
+import com.hedera.mirror.web3.exception.InvalidParametersException;
 
 import javax.validation.Valid;
 
@@ -36,6 +39,7 @@ import com.hedera.mirror.web3.exception.RateLimitException;
 import io.github.bucket4j.Bucket;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -45,6 +49,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.support.WebExchangeBindException;
+import org.springframework.web.reactive.function.UnsupportedMediaTypeException;
+import org.springframework.web.server.ServerWebInputException;
+import org.springframework.web.server.UnsupportedMediaTypeStatusException;
 import reactor.core.publisher.Mono;
 
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
@@ -112,19 +119,19 @@ class ContractController {
     //This is temporary method till estimate_gas business logic got impl.
     @ExceptionHandler
     @ResponseStatus(NOT_IMPLEMENTED)
-    private Mono<GenericErrorResponse> unsupportedOpResponse(UnsupportedOperationException e) {
+    private Mono<GenericErrorResponse> unsupportedOpResponse(final UnsupportedOperationException e) {
         return errorResponse(e.getMessage());
     }
 
     @ExceptionHandler
     @ResponseStatus(TOO_MANY_REQUESTS)
-    private Mono<GenericErrorResponse> rateLimitError(RateLimitException e) {
+    private Mono<GenericErrorResponse> rateLimitError(final RateLimitException e) {
         return errorResponse(e.getMessage());
     }
 
     @ExceptionHandler
     @ResponseStatus(BAD_REQUEST)
-    private Mono<GenericErrorResponse> validationError(WebExchangeBindException e) {
+    private Mono<GenericErrorResponse> validationError(final WebExchangeBindException e) {
         final var errors = extractValidationError(e);
         log.warn("Validation error: {}", errors);
         return Mono.just(new GenericErrorResponse(errors));
@@ -132,23 +139,44 @@ class ContractController {
 
     @ExceptionHandler
     @ResponseStatus(BAD_REQUEST)
-    private Mono<GenericErrorResponse> invalidTxnError(InvalidTransactionException e) {
+    private Mono<GenericErrorResponse> addressValidationError(final InvalidParametersException e) {
+        log.warn("Address validation error");
+        return Mono.just(new GenericErrorResponse(e.getMessage()));
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(BAD_REQUEST)
+    private Mono<GenericErrorResponse> invalidTxnError(final InvalidTransactionException e) {
         log.warn("Transaction error: {}", e.getMessage());
-        return errorResponse(e.getMessage(), e.getDetail());
+        return errorResponse(e.getMessage(), e.getDetail(), StringUtils.EMPTY);
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(BAD_REQUEST)
+    private Mono<GenericErrorResponse> invalidTxnBodyError(final ServerWebInputException e) {
+        log.warn("Transaction body parsing error: {}", e.getMessage());
+        return errorResponse(e.getReason(), e.getMostSpecificCause().getMessage(), StringUtils.EMPTY);
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(UNSUPPORTED_MEDIA_TYPE)
+    private Mono<GenericErrorResponse> unsupportedMediaTypeError(final UnsupportedMediaTypeStatusException e) {
+        log.warn("Unsupported media type error: {}", e.getMessage());
+        return errorResponse(e.getStatus().getReasonPhrase(), e.getReason(), StringUtils.EMPTY);
     }
 
     @ExceptionHandler()
     @ResponseStatus(INTERNAL_SERVER_ERROR)
-    private Mono<GenericErrorResponse> genericError(Exception e) {
+    private Mono<GenericErrorResponse> genericError(final Exception e) {
         log.error("Generic error: ", e);
         return errorResponse(INTERNAL_SERVER_ERROR.getReasonPhrase());
     }
 
-    private Mono<GenericErrorResponse> errorResponse(String errorMessage) {
+    private Mono<GenericErrorResponse> errorResponse(final String errorMessage) {
         return Mono.just(new GenericErrorResponse(errorMessage));
     }
 
-    private Mono<GenericErrorResponse> errorResponse(String errorMessage, String detailedErrorMessage) {
-        return Mono.just(new GenericErrorResponse(errorMessage, detailedErrorMessage));
+    private Mono<GenericErrorResponse> errorResponse(final String errorMessage, final String detailedErrorMessage, final String hexErrorMessage) {
+        return Mono.just(new GenericErrorResponse(errorMessage, detailedErrorMessage, hexErrorMessage));
     }
 }

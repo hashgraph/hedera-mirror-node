@@ -94,7 +94,7 @@ class HexValidatorTest {
 
             @Override
             public Class<? extends Payload>[] payload() {
-                return new Class[0];
+                return null;
             }
 
             @Override

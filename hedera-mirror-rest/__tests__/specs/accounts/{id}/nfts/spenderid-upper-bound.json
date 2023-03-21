@@ -121,7 +121,10 @@
       }
     ]
   },
-  "urls": ["/api/v1/accounts/0.0.1001/nfts?spender.id=lt:2000", "/api/v1/accounts/0.0.1001/nfts?spender.id=lte:1999"],
+  "urls": [
+    "/api/v1/accounts/0.0.1001/nfts?spender.id=lt:2000",
+    "/api/v1/accounts/0.0.1001/nfts?spender.id=lte:1999"
+  ],
   "responseStatus": 200,
   "responseJson": {
     "nfts": [

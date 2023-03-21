@@ -21,6 +21,7 @@
 import request from 'supertest';
 
 import config from '../config';
+import EntityId from '../entityId';
 import server from '../server';
 import * as testutils from './testutils';
 
@@ -149,7 +150,7 @@ const validateOrder = function (balances, order) {
   let offenderAcc = null;
   let offenderVal = null;
   const direction = order === 'desc' ? -1 : 1;
-  const toAccNum = (acc) => acc.split('.')[2];
+  const toAccNum = (acc) => EntityId.parse(acc).num;
   let val = toAccNum(balances.balances[0].account) - direction;
   for (const bal of balances.balances) {
     if (val * direction > toAccNum(bal.account) * direction) {

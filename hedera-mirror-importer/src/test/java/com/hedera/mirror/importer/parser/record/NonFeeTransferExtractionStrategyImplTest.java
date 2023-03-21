@@ -39,7 +39,7 @@ import com.hederahashgraph.api.proto.java.TransactionID;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -194,7 +194,7 @@ class NonFeeTransferExtractionStrategyImplTest {
      * @return
      */
     private List<AccountAmount> createAccountAmounts(long... accountNumThenAmount) {
-        var result = new LinkedList<AccountAmount>();
+        var result = new ArrayList<AccountAmount>();
         for (int i = 0; i < accountNumThenAmount.length; i += 2) {
             result.add(
                     AccountAmount.newBuilder()

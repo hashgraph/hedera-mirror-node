@@ -29,7 +29,7 @@ dependencies {
     implementation(platform("org.springframework.cloud:spring-cloud-dependencies"))
     implementation("com.fasterxml.jackson.core:jackson-databind")
     implementation("com.google.guava:guava")
-    implementation("com.hedera.hashgraph:sdk:2.18.0") // Workaround hedera-sdk-java#1278
+    implementation("com.hedera.hashgraph:sdk")
     implementation("io.github.mweirauch:micrometer-jvm-extras")
     implementation("io.grpc:grpc-netty")
     implementation("io.grpc:grpc-stub")

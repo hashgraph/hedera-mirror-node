@@ -7,8 +7,8 @@ require (
 	github.com/coinbase/rosetta-sdk-go v0.8.3
 	github.com/coinbase/rosetta-sdk-go/types v1.0.0
 	github.com/cucumber/godog v0.12.6
-	github.com/ethereum/go-ethereum v1.11.2
-	github.com/go-playground/validator/v10 v10.11.2
+	github.com/ethereum/go-ethereum v1.11.4
+	github.com/go-playground/validator/v10 v10.12.0
 	github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20221223083421-851698720852
 	github.com/hashgraph/hedera-sdk-go/v2 v2.17.2
 	github.com/hellofresh/health-go/v4 v4.7.0
@@ -27,8 +27,8 @@ require (
 	github.com/weaveworks/common v0.0.0-20210901124008-1fa3f9fa874c
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/yaml.v2 v2.4.0
-	gorm.io/driver/postgres v1.4.8
-	gorm.io/gorm v1.24.6
+	gorm.io/driver/postgres v1.5.0
+	gorm.io/gorm v1.24.7-0.20230306060331-85eaf9eeda11
 )
 
 require (
@@ -73,7 +73,7 @@ require (
 	github.com/jackc/pgx/v5 v5.3.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
-	github.com/leodido/go-urn v1.2.1 // indirect
+	github.com/leodido/go-urn v1.2.2 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
@@ -106,11 +106,11 @@ require (
 	go.opentelemetry.io/otel v1.10.0 // indirect
 	go.opentelemetry.io/otel/trace v1.10.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
-	golang.org/x/crypto v0.6.0 // indirect
+	golang.org/x/crypto v0.7.0 // indirect
 	golang.org/x/exp v0.0.0-20230206171751-46f607a40771 // indirect
-	golang.org/x/net v0.7.0 // indirect
-	golang.org/x/sys v0.5.0 // indirect
-	golang.org/x/text v0.7.0 // indirect
+	golang.org/x/net v0.8.0 // indirect
+	golang.org/x/sys v0.6.0 // indirect
+	golang.org/x/text v0.8.0 // indirect
 	google.golang.org/genproto v0.0.0-20221227171554-f9683d7f8bef // indirect
 	google.golang.org/grpc v1.52.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect

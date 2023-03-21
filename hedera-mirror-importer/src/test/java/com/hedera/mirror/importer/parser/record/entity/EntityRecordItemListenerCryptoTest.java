@@ -53,9 +53,10 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -121,7 +122,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     void cryptoApproveAllowance() {
         // given
         var consensusTimestamp = recordItemBuilder.timestamp();
-        List<Nft> expectedNfts = new LinkedList<>();
+        var expectedNfts = new ArrayList<Nft>();
         var nftAllowances = customizeNftAllowances(consensusTimestamp, expectedNfts);
         RecordItem recordItem = recordItemBuilder.cryptoApproveAllowance()
                 .transactionBody(b -> b.clearNftAllowances().addAllNftAllowances(nftAllowances))
@@ -1377,7 +1378,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 .modifiedTimestamp(103L)
                 .build();
         var timestamp = DomainUtils.timeStampInNanos(consensusTimestamp);
-        List<NftAllowance> nftAllowances = new LinkedList<>();
+        List<NftAllowance> nftAllowances = new ArrayList<>();
 
         nftAllowances.add(NftAllowance.newBuilder()
                 .setDelegatingSpender(delegatingSpender)

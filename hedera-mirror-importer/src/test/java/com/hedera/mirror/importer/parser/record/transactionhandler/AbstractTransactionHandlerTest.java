@@ -45,8 +45,8 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -277,7 +277,7 @@ abstract class AbstractTransactionHandlerTest {
     protected List<UpdateEntityTestSpec> getUpdateEntityTestSpecsForCreateTransaction(FieldDescriptor memoField) {
         TransactionBody body = getTransactionBodyForUpdateEntityWithoutMemo();
         Message innerBody = getInnerBody(body);
-        List<UpdateEntityTestSpec> testSpecs = new LinkedList<>();
+        List<UpdateEntityTestSpec> testSpecs = new ArrayList<>();
         AbstractEntity expected = getExpectedUpdatedEntity();
         expected.setMemo(""); // Proto defaults to empty string
 
@@ -323,7 +323,7 @@ abstract class AbstractTransactionHandlerTest {
                                                                                     FieldDescriptor receiverSigRequiredWrapperField) {
         TransactionBody body = getTransactionBodyForUpdateEntityWithoutMemo();
         Message innerBody = getInnerBody(body);
-        List<UpdateEntityTestSpec> testSpecs = new LinkedList<>();
+        List<UpdateEntityTestSpec> testSpecs = new ArrayList<>();
 
         if (receiverSigRequiredWrapperField != null) {
             innerBody = innerBody.toBuilder()

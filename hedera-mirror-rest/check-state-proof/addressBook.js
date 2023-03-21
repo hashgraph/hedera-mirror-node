@@ -45,7 +45,7 @@ class AddressBook {
         // For some address books nodeAccountId does not exist, in those cases retrieve id from memo field
         const nodeAccountIdStr = nodeAccountId
           ? [nodeAccountId.shardNum, nodeAccountId.realmNum, nodeAccountId.accountNum].join('.')
-          : memo.toString('utf-8');
+          : memo.toString('utf8');
         return [nodeAccountIdStr, RSA_PubKey];
       })
     );
