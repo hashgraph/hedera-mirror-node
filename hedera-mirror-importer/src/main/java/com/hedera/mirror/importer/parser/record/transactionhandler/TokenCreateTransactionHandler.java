@@ -20,7 +20,10 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
+
 import javax.inject.Named;
+import lombok.CustomLog;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -30,6 +33,7 @@ import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
+@CustomLog
 @Named
 class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
@@ -51,8 +55,14 @@ class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler
         }
 
         if (transactionBody.hasAutoRenewAccount()) {
-            var autoRenewAccount = entityIdService.lookup(transactionBody.getAutoRenewAccount());
-            entity.setAutoRenewAccountId(autoRenewAccount.getId());
+            var autoRenewAccountId = entityIdService.lookup(transactionBody.getAutoRenewAccount())
+                    .orElse(EntityId.EMPTY);
+            if (EntityId.isEmpty(autoRenewAccountId)) {
+                log.error(RECOVERABLE_ERROR + "Invalid autoRenewAccountId at {}",
+                        recordItem.getConsensusTimestamp());
+            } else {
+                entity.setAutoRenewAccountId(autoRenewAccountId.getId());
+            }
         }
 
         if (transactionBody.hasAutoRenewPeriod()) {

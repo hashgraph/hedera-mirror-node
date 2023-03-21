@@ -93,6 +93,7 @@ import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.ContractResultService;
@@ -130,7 +131,13 @@ public class EntityRecordItemListener implements RecordItemListener {
         TransactionHandler transactionHandler = transactionHandlerFactory.get(transactionType);
 
         long consensusTimestamp = DomainUtils.timeStampInNanos(txRecord.getConsensusTimestamp());
-        var entityId = transactionHandler.getEntity(recordItem);
+        EntityId entityId;
+        try {
+            entityId = transactionHandler.getEntity(recordItem);
+        } catch (InvalidEntityException e) { // transaction can have invalid topic/contract/file id
+            log.error("Invalid entity encountered for consensusTimestamp {} : {}", consensusTimestamp, e.getMessage());
+            entityId = null;
+        }
 
         // to:do - exclude Freeze from Filter transaction type
         TransactionFilterFields transactionFilterFields = getTransactionFilterFields(entityId, recordItem);
@@ -287,8 +294,10 @@ public class EntityRecordItemListener implements RecordItemListener {
         var transactionRecord = recordItem.getTransactionRecord();
         for (var aa : nonFeeTransfersExtractor.extractNonFeeTransfers(body, transactionRecord)) {
             if (aa.getAmount() != 0) {
-                var entityId = entityIdService.lookup(aa.getAccountID());
+                var entityId = entityIdService.lookup(aa.getAccountID()).orElse(EntityId.EMPTY);
                 if (EntityId.isEmpty(entityId)) {
+                    log.error(RECOVERABLE_ERROR + "Invalid nonFeeTransfer entity id at {}",
+                            recordItem.getConsensusTimestamp());
                     continue;
                 }
 
@@ -1011,13 +1020,13 @@ public class EntityRecordItemListener implements RecordItemListener {
                     if (signature == null) {
                         log.error(RECOVERABLE_ERROR + "Unsupported signature at {}: {}", consensusTimestamp,
                                 unknownFields);
-                        return;
+                        continue;
                     }
                     break;
                 default:
                     log.error(RECOVERABLE_ERROR + "Unsupported signature case at {}: {}", consensusTimestamp,
                             signaturePair.getSignatureCase());
-                    return;
+                    continue;
             }
 
             // Handle potential public key prefix collisions by taking first occurrence only ignoring duplicates

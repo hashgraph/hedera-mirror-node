@@ -33,6 +33,7 @@ import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -47,6 +48,9 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
+
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
@@ -74,7 +78,7 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
                 .spender(recordItemBuilder.accountId().getAccountNum())
                 .timestampRange(Range.atLeast(consensusTimestamp))
                 .build();
-        when(entityIdService.lookup(cryptoOwner)).thenReturn(EntityId.of(cryptoOwner));
+        when(entityIdService.lookup(cryptoOwner)).thenReturn(Optional.of(EntityId.of(cryptoOwner)));
         var nftOwner = recordItemBuilder.accountId();
         var nftTokenId = recordItemBuilder.tokenId().getTokenNum();
         expectedNft = Nft.builder()
@@ -84,7 +88,7 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
                 .modifiedTimestamp(consensusTimestamp)
                 .spender(EntityId.of(recordItemBuilder.accountId()))
                 .build();
-        when(entityIdService.lookup(nftOwner)).thenReturn(expectedNft.getAccountId());
+        when(entityIdService.lookup(nftOwner)).thenReturn(Optional.of(expectedNft.getAccountId()));
         expectedNftAllowance = NftAllowance.builder()
                 .approvedForAll(true)
                 .owner(expectedNft.getAccountId().getId())
@@ -102,7 +106,7 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
                 .timestampRange(Range.atLeast(consensusTimestamp))
                 .tokenId(recordItemBuilder.tokenId().getTokenNum())
                 .build();
-        when(entityIdService.lookup(tokenOwner)).thenReturn(EntityId.of(tokenOwner));
+        when(entityIdService.lookup(tokenOwner)).thenReturn(Optional.of(EntityId.of(tokenOwner)));
     }
 
     @Override
@@ -177,7 +181,8 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
                 .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(consensusTimestamp)))
                 .build();
         var transaction = domainBuilder.transaction().get();
-        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build())).thenReturn(EntityId.EMPTY);
+        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
+                .thenReturn(Optional.of(EntityId.EMPTY));
         transactionHandler.updateTransaction(transaction, recordItem);
 
         // The implicit entity id is used
@@ -185,8 +190,9 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
         assertAllowances(effectiveOwner);
     }
 
-    @Test
-    void updateTransactionWithEmptyOwner() {
+    @ParameterizedTest
+    @MethodSource("provideEntities")
+    void updateTransactionWithEmptyOwner(EntityId entityId) {
         var alias = DomainUtils.fromBytes(domainBuilder.key());
         var recordItem = recordItemBuilder.cryptoApproveAllowance()
                 .transactionBody(b -> {
@@ -199,7 +205,8 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
                 .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(consensusTimestamp)))
                 .build();
         var transaction = domainBuilder.transaction().get();
-        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build())).thenReturn(EntityId.EMPTY);
+        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
+                .thenReturn(Optional.ofNullable(entityId));
         transactionHandler.updateTransaction(transaction, recordItem);
 
         verifyNoInteractions(entityListener);
@@ -221,7 +228,8 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
                 .build();
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder.transaction().customize(t -> t.consensusTimestamp(timestamp)).get();
-        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build())).thenReturn(ownerEntityId);
+        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
+                .thenReturn(Optional.of(ownerEntityId));
         transactionHandler.updateTransaction(transaction, recordItem);
         assertAllowances(ownerEntityId.getId());
     }

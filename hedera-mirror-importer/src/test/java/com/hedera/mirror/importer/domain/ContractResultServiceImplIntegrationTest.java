@@ -220,18 +220,6 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
     }
 
     @Test
-    void processEmptyContractLogId() {
-        RecordItem recordItem = recordItemBuilder.contractCall()
-                .record(x -> x.getContractCreateResultBuilder().addLogInfo(
-                        ContractLoginfo.newBuilder().setContractID(ContractID.newBuilder().clear())))
-                .build();
-
-        process(recordItem);
-
-        assertThat(contractLogRepository.count()).isZero();
-    }
-
-    @Test
     void processPrecompile() {
         RecordItem recordItem = recordItemBuilder.tokenMint(TokenType.FUNGIBLE_COMMON)
                 .record(x -> x.setContractCallResult(recordItemBuilder.contractFunctionResult()))

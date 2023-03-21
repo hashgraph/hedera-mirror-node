@@ -48,7 +48,7 @@ class CryptoDeleteTransactionHandler extends AbstractEntityCrudTransactionHandle
     @Override
     protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
         var transactionBody = recordItem.getTransactionBody().getCryptoDelete();
-        var obtainerId = entityIdService.lookup(transactionBody.getTransferAccountID());
+        var obtainerId = entityIdService.lookup(transactionBody.getTransferAccountID()).orElse(EntityId.EMPTY);
         if (EntityId.isEmpty(obtainerId)) {
             log.error(RECOVERABLE_ERROR + "Unable to lookup ObtainerId at consensusTimestamp {}",
                     recordItem.getConsensusTimestamp());

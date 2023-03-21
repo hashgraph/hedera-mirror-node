@@ -199,6 +199,11 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
      */
     private EntityId getOwnerAccountId(AccountID owner, EntityId payerAccountId) {
         var entityId = entityIdService.lookup(owner);
-        return !EntityId.isEmpty(entityId) ? entityId : payerAccountId;
+        if (entityId.isPresent()) {
+            var ownerAccountId = entityId.get();
+            return !EntityId.isEmpty(ownerAccountId) ? ownerAccountId : payerAccountId;
+        }
+        
+        return EntityId.EMPTY;
     }
 }

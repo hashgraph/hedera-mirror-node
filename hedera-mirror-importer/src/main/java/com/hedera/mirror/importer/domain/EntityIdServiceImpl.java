@@ -58,23 +58,23 @@ public class EntityIdServiceImpl implements EntityIdService {
     }
 
     @Override
-    public EntityId lookup(AccountID accountId) {
-        return doLookup(accountId, () -> load(accountId));
+    public Optional<EntityId> lookup(AccountID accountId) {
+        return Optional.ofNullable(doLookup(accountId, () -> load(accountId)));
     }
 
     @Override
-    public EntityId lookup(AccountID... accountIds) {
-        return doLookups(accountIds, this::load);
+    public Optional<EntityId> lookup(AccountID... accountIds) {
+        return Optional.ofNullable(doLookups(accountIds, this::load));
     }
 
     @Override
-    public EntityId lookup(ContractID contractId) {
-        return doLookup(contractId, () -> load(contractId));
+    public Optional<EntityId> lookup(ContractID contractId) {
+        return Optional.ofNullable(doLookup(contractId, () -> load(contractId)));
     }
 
     @Override
-    public EntityId lookup(ContractID... contractIds) {
-        return doLookups(contractIds, this::load);
+    public Optional<EntityId> lookup(ContractID... contractIds) {
+        return Optional.ofNullable(doLookups(contractIds, this::load));
     }
 
     private EntityId doLookup(GeneratedMessageV3 entityIdProto, Callable<EntityId> loader) {
@@ -86,7 +86,7 @@ public class EntityIdServiceImpl implements EntityIdService {
             return cache.get(entityIdProto, loader);
         } catch (Cache.ValueRetrievalException e) {
             log.error(RECOVERABLE_ERROR + "Error looking up entity ID {} from cache", entityIdProto, e);
-            return EntityId.EMPTY;
+            return null;
         }
     }
 
@@ -152,12 +152,12 @@ public class EntityIdServiceImpl implements EntityIdService {
                                 .orElseGet(() -> {
                                     log.error(RECOVERABLE_ERROR + "Unable to find entity for alias {}",
                                             Hex.encodeHexString(alias));
-                                    return EntityId.EMPTY;
+                                    return null;
                                 });
             default:
                 log.error(RECOVERABLE_ERROR + "Invalid Account Case for AccountID {}: {}", accountId,
                         accountId.getAccountCase());
-                return EntityId.EMPTY;
+                return null;
         }
     }
 
@@ -171,7 +171,7 @@ public class EntityIdServiceImpl implements EntityIdService {
                 return findByEvmAddress(evmAddress, contractId.getShardNum(), contractId.getRealmNum(), CONTRACT);
             default:
                 log.error(RECOVERABLE_ERROR + "Invalid ContractID: {}", contractId);
-                return EntityId.EMPTY;
+                return null;
         }
     }
 
@@ -183,7 +183,7 @@ public class EntityIdServiceImpl implements EntityIdService {
                 .orElseGet(() -> {
                     log.error(RECOVERABLE_ERROR + "Entity not found for evmAddress {}",
                             Hex.encodeHexString(evmAddress));
-                    return EntityId.EMPTY;
+                    return null;
                 });
     }
 }

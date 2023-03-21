@@ -41,7 +41,7 @@ class SystemUndeleteTransactionHandler extends AbstractEntityCrudTransactionHand
         var systemUndelete = recordItem.getTransactionBody().getSystemUndelete();
 
         if (systemUndelete.hasContractID()) {
-            return entityIdService.lookup(systemUndelete.getContractID());
+            return entityIdService.lookup(systemUndelete.getContractID()).orElse(EntityId.EMPTY);
         } else if (systemUndelete.hasFileID()) {
             return EntityId.of(systemUndelete.getFileID());
         }

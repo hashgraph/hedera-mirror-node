@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
+import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
+
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -64,9 +66,9 @@ public class NonFeeTransferExtractionStrategyImpl implements NonFeeTransferExtra
         } else if (body.hasContractCall()) {
 
             EntityId contractId = entityIdService.lookup(transactionRecord.getReceipt().getContractID(),
-                    body.getContractCall().getContractID());
+                    body.getContractCall().getContractID()).orElse(EntityId.EMPTY);
             if (EntityId.isEmpty(contractId)) {
-                log.error("Contract ID not found at {}", transactionRecord.getConsensusTimestamp());
+                log.error(RECOVERABLE_ERROR + "Contract ID not found at {}", transactionRecord.getConsensusTimestamp());
                 return Collections.emptyList();
             }
 

@@ -93,7 +93,7 @@ public class ContractResultServiceImpl implements ContractResultService {
 
         // in pre-compile case transaction is not a contract type and entityId will be of a different type
         var contractId = isContractCreateOrCall(transactionBody) ? transaction.getEntityId() :
-                entityIdService.lookup(functionResult.getContractID());
+                entityIdService.lookup(functionResult.getContractID()).orElse(null);
         if (contractId == null) {
             log.error(RECOVERABLE_ERROR + "Invalid contract id for contract result at {}", recordItem
                     .getConsensusTimestamp());
@@ -212,17 +212,11 @@ public class ContractResultServiceImpl implements ContractResultService {
                                      byte[] transactionHash, Integer transactionIndex) {
         for (int index = 0; index < functionResult.getLogInfoCount(); ++index) {
             var contractLoginfo = functionResult.getLogInfo(index);
-            var contractLogId = entityIdService.lookup(contractLoginfo.getContractID());
-            if (EntityId.isEmpty(contractLogId)) {
-                log.error(RECOVERABLE_ERROR + "Invalid contractLogId at {}", contractResult.getConsensusTimestamp());
-                continue;
-            }
-
             ContractLog contractLog = new ContractLog();
             EntityId contractId = EntityId.of(contractResult.getContractId(), EntityType.CONTRACT);
             contractLog.setBloom(DomainUtils.toBytes(contractLoginfo.getBloom()));
             contractLog.setConsensusTimestamp(contractResult.getConsensusTimestamp());
-            contractLog.setContractId(contractLogId);
+            contractLog.setContractId(EntityId.of(contractLoginfo.getContractID()));
             contractLog.setData(DomainUtils.toBytes(contractLoginfo.getData()));
             contractLog.setIndex(index);
             contractLog.setRootContractId(contractId);
@@ -266,7 +260,7 @@ public class ContractResultServiceImpl implements ContractResultService {
         List<Long> createdContractIds = new ArrayList<>();
         boolean persist = shouldPersistCreatedContractIDs(recordItem);
         for (ContractID createdContractId : functionResult.getCreatedContractIDsList()) {
-            EntityId contractId = entityIdService.lookup(createdContractId);
+            var contractId = entityIdService.lookup(createdContractId).orElse(EntityId.EMPTY);
             if (!EntityId.isEmpty(contractId)) {
                 createdContractIds.add(contractId.getId());
                 // The parent contract ID can also sometimes appear in the created contract IDs list, so exclude it

@@ -48,6 +48,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -167,8 +168,9 @@ abstract class AbstractTransactionHandlerTest {
     void beforeEach(TestInfo testInfo) {
         log.info("Executing: {}", testInfo.getDisplayName());
         transactionHandler = getTransactionHandler();
-        when(entityIdService.lookup(AccountID.getDefaultInstance())).thenReturn(EntityId.EMPTY);
-        when(entityIdService.lookup(AccountID.newBuilder().setAccountNum(0).build())).thenReturn(EntityId.EMPTY);
+        when(entityIdService.lookup(AccountID.getDefaultInstance())).thenReturn(Optional.of(EntityId.EMPTY));
+        when(entityIdService.lookup(AccountID.newBuilder().setAccountNum(0)
+                .build())).thenReturn(Optional.of(EntityId.EMPTY));
     }
 
     @Test
@@ -546,5 +548,9 @@ abstract class AbstractTransactionHandlerTest {
         String description;
         AbstractEntity expected;
         RecordItem recordItem;
+    }
+
+    protected static Stream<EntityId> provideEntities() {
+        return Stream.of(null, EntityId.EMPTY);
     }
 }

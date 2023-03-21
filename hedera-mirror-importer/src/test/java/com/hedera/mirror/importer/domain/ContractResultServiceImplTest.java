@@ -29,9 +29,12 @@ import static org.mockito.Mockito.when;
 
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TokenType;
+import java.util.Optional;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -72,32 +75,32 @@ class ContractResultServiceImplTest {
                 sidecarContractMigration, transactionHandlerFactory);
     }
 
-    @Test
-    void emptyTransactionEntityId() {
+    private static Stream<EntityId> provideEntities() {
+        return Stream.of(null, EntityId.EMPTY);
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideEntities")
+    void invalidContractLogId(EntityId entityId) {
         RecordItem recordItem = recordItemBuilder.contractCreate().build();
         var transaction = domainBuilder.transaction()
-                .customize(t -> t.entityId(EntityId.EMPTY).type(recordItem.getTransactionType()))
+                .customize(t -> t.entityId(entityId).type(recordItem.getTransactionType()))
                 .get();
+
+        when(entityIdService.lookup((ContractID) any())).thenReturn(Optional.ofNullable(entityId));
 
         contractResultService.process(recordItem, transaction);
 
-        verify(entityListener, times(1)).onContractResult(any());
+        if (entityId == null) {
+            verify(entityListener, never()).onContractResult(any());
+        } else {
+            verify(entityListener, times(1)).onContractResult(any());
+        }
     }
 
-    @Test
-    void nullTransactionEntityId() {
-        RecordItem recordItem = recordItemBuilder.contractCreate().build();
-        var transaction = domainBuilder.transaction()
-                .customize(t -> t.entityId(null).type(recordItem.getTransactionType()))
-                .get();
-
-        contractResultService.process(recordItem, transaction);
-
-        verify(entityListener, never()).onContractResult(any());
-    }
-
-    @Test
-    void lookupReturnsEmptyId() {
+    @ParameterizedTest
+    @MethodSource("provideEntities")
+    void lookupReturnsEmptyId(EntityId entityId) {
         RecordItem recordItem = recordItemBuilder.tokenMint(TokenType.FUNGIBLE_COMMON)
                 .record(x -> x.setContractCallResult(recordItemBuilder.contractFunctionResult()))
                 .build();
@@ -105,10 +108,14 @@ class ContractResultServiceImplTest {
                 .customize(t -> t.entityId(null).type(recordItem.getTransactionType()))
                 .get();
 
-        when(entityIdService.lookup((ContractID) any())).thenReturn(EntityId.EMPTY);
+        when(entityIdService.lookup((ContractID) any())).thenReturn(Optional.ofNullable(entityId));
 
         contractResultService.process(recordItem, transaction);
 
-        verify(entityListener, times(1)).onContractResult(any());
+        if (entityId == null) {
+            verify(entityListener, never()).onContractResult(any());
+        } else {
+            verify(entityListener, times(1)).onContractResult(any());
+        }
     }
 }

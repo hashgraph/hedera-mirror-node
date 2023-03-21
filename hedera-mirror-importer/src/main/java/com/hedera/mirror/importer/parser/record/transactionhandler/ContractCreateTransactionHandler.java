@@ -20,9 +20,11 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
 import static com.hederahashgraph.api.proto.java.ContractCreateTransactionBody.InitcodeSourceCase.INITCODE;
 
 import javax.inject.Named;
+import lombok.CustomLog;
 
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractResult;
@@ -37,6 +39,7 @@ import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.util.Utility;
 
+@CustomLog
 @Named
 class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
@@ -50,7 +53,8 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        return entityIdService.lookup(recordItem.getTransactionRecord().getReceipt().getContractID());
+        return entityIdService.lookup(recordItem.getTransactionRecord().getReceipt().getContractID())
+                .orElse(EntityId.EMPTY);
     }
 
     @Override
@@ -79,8 +83,14 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
         var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
 
         if (transactionBody.hasAutoRenewAccountId()) {
-            var autoRenewAccount = entityIdService.lookup(transactionBody.getAutoRenewAccountId());
-            entity.setAutoRenewAccountId(autoRenewAccount.getId());
+            var autoRenewAccount = entityIdService.lookup(transactionBody.getAutoRenewAccountId())
+                    .orElse(EntityId.EMPTY);
+            if (!EntityId.isEmpty(autoRenewAccount)) {
+                entity.setAutoRenewAccountId(autoRenewAccount.getId());
+            } else {
+                log.error(RECOVERABLE_ERROR + "Invalid autoRenewAccountId at {}",
+                        recordItem.getConsensusTimestamp());
+            }
         }
 
         if (transactionBody.hasAutoRenewPeriod()) {
@@ -211,6 +221,8 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
                 }
                 break;
             default:
+                log.error("Invalid InitcodeSourceCase {} at {}",
+                        transactionBody.getInitcodeSourceCase(), recordItem.getConsensusTimestamp());
                 break;
         }
     }

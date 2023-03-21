@@ -20,10 +20,12 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
 import static com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody.StakedIdCase.STAKEDID_NOT_SET;
 
 import com.hederahashgraph.api.proto.java.ContractID;
 import javax.inject.Named;
+import lombok.CustomLog;
 
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -35,6 +37,7 @@ import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.util.Utility;
 
+@CustomLog
 @Named
 class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
@@ -55,7 +58,7 @@ class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHand
     public EntityId getEntity(RecordItem recordItem) {
         ContractID contractIdBody = recordItem.getTransactionBody().getContractUpdateInstance().getContractID();
         ContractID contractIdReceipt = recordItem.getTransactionRecord().getReceipt().getContractID();
-        return entityIdService.lookup(contractIdReceipt, contractIdBody);
+        return entityIdService.lookup(contractIdReceipt, contractIdBody).orElse(EntityId.EMPTY);
     }
 
     // We explicitly ignore the updated fileID field since hedera nodes do not allow changing the bytecode after create
@@ -69,8 +72,12 @@ class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHand
         }
 
         if (transactionBody.hasAutoRenewAccountId()) {
-            var autoRenewAccount = entityIdService.lookup(transactionBody.getAutoRenewAccountId());
-            entity.setAutoRenewAccountId(autoRenewAccount.getId());
+            // Allow clearing of the autoRenewAccount by allowing it to be set to 0
+            entityIdService.lookup(transactionBody.getAutoRenewAccountId())
+                    .map(EntityId::getId)
+                    .ifPresentOrElse(entity::setAutoRenewAccountId,
+                            () -> log.error(RECOVERABLE_ERROR + "Invalid autoRenewAccountId at {}",
+                                    recordItem.getConsensusTimestamp()));
         }
 
         if (transactionBody.hasAutoRenewPeriod()) {

@@ -36,6 +36,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.exception.ImporterException;
@@ -70,9 +71,11 @@ public class PubSubRecordItemListener implements RecordItemListener {
         log.trace("Storing transaction body: {}", () -> Utility.printProtoMessage(body));
         long consensusTimestamp = DomainUtils.timeStampInNanos(txRecord.getConsensusTimestamp());
 
-        EntityId entityId = transactionHandler.getEntity(recordItem);
-        if (EntityId.isEmpty(entityId)) {
-            log.error("Invalid entity encountered for consensusTimestamp {}", consensusTimestamp);
+        EntityId entityId;
+        try {
+            entityId = transactionHandler.getEntity(recordItem);
+        } catch (InvalidEntityException e) { // transaction can have invalid topic/contract/file id
+            log.error("Invalid entity encountered for consensusTimestamp {} : {}", consensusTimestamp, e.getMessage());
             entityId = null;
         }
 
