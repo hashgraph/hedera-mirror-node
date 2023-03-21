@@ -31,10 +31,12 @@ plugins {
 extra.apply {
     set("gson.version", "2.8.9") // Temporary until Apache jclouds supports gson 2.9
     set("mapStructVersion", "1.5.3.Final")
-    set("postgresql.version", "42.5.1") // Temporary fix for transient dependency security issue
+    set("postgresql.version", "42.6.0") // Temporary fix for transient dependency security issue
     set("protobufVersion", "3.22.2")
     set("reactorGrpcVersion", "1.2.3")
     set("snakeyaml.version", "1.33") // Temporary fix for transient dependency security issue
+    set("spring-data-bom.version", "2021.2.10") // Temporary fix for security issue. Remove after Boot 2.7.10
+    set("spring-framework.version", "5.3.26") // Temporary fix for security issue. Remove after Boot 2.7.10
     set("testcontainersSpringBootVersion", "2.3.2")
     set("vertxVersion", "4.4.0")
 }

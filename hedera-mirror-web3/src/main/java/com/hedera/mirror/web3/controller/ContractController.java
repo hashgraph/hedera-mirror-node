@@ -39,6 +39,7 @@ import com.hedera.mirror.web3.exception.RateLimitException;
 import io.github.bucket4j.Bucket;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -147,21 +148,21 @@ class ContractController {
     @ResponseStatus(BAD_REQUEST)
     private Mono<GenericErrorResponse> invalidTxnError(final InvalidTransactionException e) {
         log.warn("Transaction error: {}", e.getMessage());
-        return errorResponse(e.getMessage(), e.getDetail());
+        return errorResponse(e.getMessage(), e.getDetail(), StringUtils.EMPTY);
     }
 
     @ExceptionHandler
     @ResponseStatus(BAD_REQUEST)
     private Mono<GenericErrorResponse> invalidTxnBodyError(final ServerWebInputException e) {
         log.warn("Transaction body parsing error: {}", e.getMessage());
-        return errorResponse(e.getReason(), e.getMostSpecificCause().getMessage());
+        return errorResponse(e.getReason(), e.getMostSpecificCause().getMessage(), StringUtils.EMPTY);
     }
 
     @ExceptionHandler
     @ResponseStatus(UNSUPPORTED_MEDIA_TYPE)
     private Mono<GenericErrorResponse> unsupportedMediaTypeError(final UnsupportedMediaTypeStatusException e) {
         log.warn("Unsupported media type error: {}", e.getMessage());
-        return errorResponse(e.getStatus().getReasonPhrase(), e.getReason());
+        return errorResponse(e.getStatus().getReasonPhrase(), e.getReason(), StringUtils.EMPTY);
     }
 
     @ExceptionHandler()
@@ -175,7 +176,7 @@ class ContractController {
         return Mono.just(new GenericErrorResponse(errorMessage));
     }
 
-    private Mono<GenericErrorResponse> errorResponse(final String errorMessage, final String detailedErrorMessage) {
-        return Mono.just(new GenericErrorResponse(errorMessage, detailedErrorMessage));
+    private Mono<GenericErrorResponse> errorResponse(final String errorMessage, final String detailedErrorMessage, final String hexErrorMessage) {
+        return Mono.just(new GenericErrorResponse(errorMessage, detailedErrorMessage, hexErrorMessage));
     }
 }

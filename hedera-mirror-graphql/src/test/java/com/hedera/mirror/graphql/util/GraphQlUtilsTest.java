@@ -21,16 +21,18 @@ package com.hedera.mirror.graphql.util;
  */
 
 import static com.hedera.mirror.common.domain.entity.EntityType.UNKNOWN;
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-
 import org.apache.commons.codec.binary.Base32;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.graphql.viewmodel.Account;
@@ -88,12 +90,11 @@ class GraphQlUtilsTest {
         assertThatThrownBy(() -> GraphQlUtils.validateOneOf("a", "b")).isInstanceOf(IllegalArgumentException.class);
     }
 
-    @CsvSource(nullValues = "null", textBlock = """
-             null
-             ''
-             Account1
-             SomeRandomAlias123
-            """)
+    @NullAndEmptySource
+    @ValueSource(strings = {
+            "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ",
+            "KGNABD5L3ZGSRVUCSPDR7TONZSRY3D5OMEBKQMVTD2AC6JL72HMQ="
+    })
     @ParameterizedTest
     void decodeBase32(String alias) {
         Base32 base32 = new Base32();
@@ -116,22 +117,21 @@ class GraphQlUtilsTest {
     void decodeEvmAddress(String evmAddress, int expectedLength, long output) {
         var decodedEvmAddress = GraphQlUtils.decodeEvmAddress(evmAddress);
         assertThat(decodedEvmAddress)
-                .satisfies(e -> assertThat(e.length).isEqualTo(expectedLength))
+                .hasSize(expectedLength)
                 .satisfies(e -> assertThat(output > 0 ? new BigInteger(e).longValue() : output).isEqualTo(output));
     }
 
-    @CsvSource(nullValues = "null", textBlock = """
-            null
-            000000000000000000000000000000000000001
-            f5a56e2d52c817161883f50c441c3228cfe54d9fa
-            xyzabc
-            """)
+    @NullAndEmptySource
+    @ValueSource(strings = {
+            "000000000000000000000000000000000000001",
+            "f5a56e2d52c817161883f50c441c3228cfe54d9fa",
+            "xyzabc"})
     @ParameterizedTest
     void invalidEvmAddress(String evmAddress) {
         assertThat(evmAddress)
                 .satisfiesAnyOf(
                         e -> assertThatThrownBy(() -> GraphQlUtils.decodeEvmAddress(e)).isInstanceOf(IllegalArgumentException.class),
-                        e -> assertThat(GraphQlUtils.decodeEvmAddress(e)).isNull()
+                        e -> assertThat(GraphQlUtils.decodeEvmAddress(e)).isEmpty()
                 );
     }
 }
