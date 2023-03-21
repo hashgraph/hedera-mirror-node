@@ -132,8 +132,8 @@ public class TransactionHashBatchInserter implements BatchPersister {
 
             @Override
             public void afterCompletion(int status) {
-                var failedShards = new HashSet<>();
-                var successfulShards = new HashSet<>();
+                var failedShards = new HashSet<Integer>();
+                var successfulShards = new HashSet<Integer>();
 
                 for (ThreadState threadState : threadConnections.values()) {
                     try (Connection connection = threadState.getConnection()) {
