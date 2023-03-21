@@ -92,7 +92,7 @@ spring:
         #loggerLevel: TRACE
         logUnclosedConnections: true
         reWriteBatchedInserts: true
-      maximumPoolSize: 20
+      maximumPoolSize: 14
   flyway:
     baselineOnMigrate: true
     connectRetries: 20
