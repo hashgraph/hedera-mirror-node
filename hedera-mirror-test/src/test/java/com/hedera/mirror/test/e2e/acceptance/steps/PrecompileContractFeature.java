@@ -758,7 +758,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 tokenIds.get(0).toSolidityAddress(),
                 contractClient.getClientAddress()
         );
-        assertThat(response.getResultAsAsciiString().indexOf("_name")).isNotZero();
+        assertThat(response.getResultAsAsciiString()).endsWith("_name");
     }
 
     @Then("Get fungible token symbol by direct call")
@@ -768,7 +768,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 tokenIds.get(0).toSolidityAddress(),
                 contractClient.getClientAddress()
         );
-        assertThat(response.getResultAsAsciiString().length()).isNotZero();
+        assertThat(response.getResultAsAsciiString()).isNotEmpty();
     }
 
     @Then("Get fungible token decimals by direct call")
@@ -810,7 +810,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 tokenIds.get(0).toSolidityAddress(),
                 contractClient.getClientAddress()
         );
-        assertThat(ContractCallResponse.convertContractCallResponseToNum(response)).isEqualTo(0);
+        assertThat(ContractCallResponse.convertContractCallResponseToNum(response)).isZero();
     }
 
     @Then("Get non fungible token name by direct call")
@@ -820,7 +820,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 tokenIds.get(1).toSolidityAddress(),
                 contractClient.getClientAddress()
         );
-        assertThat(response.getResultAsAsciiString().indexOf("_name")).isNotZero();
+        assertThat(response.getResultAsAsciiString()).endsWith("_name");
     }
 
     @Then("Get non fungible token symbol by direct call")
@@ -830,7 +830,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 tokenIds.get(1).toSolidityAddress(),
                 contractClient.getClientAddress()
         );
-        assertThat(response.getResultAsAsciiString().length()).isNotZero();
+        assertThat(response.getResultAsAsciiString()).isNotEmpty();
     }
 
     @Then("Get non fungible token total supply by direct call")
