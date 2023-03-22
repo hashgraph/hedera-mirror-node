@@ -1,11 +1,6 @@
-package com.hedera.mirror.web3.evm.properties;
-
-/*-
- * ‌
- * Hedera Mirror Node
- * ​
- * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
- * ​
+/*
+ * Copyright (C) 2023 Hedera Hashgraph, LLC
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,11 +12,14 @@ package com.hedera.mirror.web3.evm.properties;
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- * ‍
  */
+
+package com.hedera.mirror.web3.evm.properties;
 
 import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.EVM_VERSION;
 
+import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
+import java.time.Duration;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
@@ -32,10 +30,6 @@ import org.hibernate.validator.constraints.time.DurationMin;
 import org.hyperledger.besu.datatypes.Address;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
-
-import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
-
-import java.time.Duration;
 
 @Setter
 @Validated
@@ -88,5 +82,9 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @Override
     public int maxGasRefundPercentage() {
         return maxGasRefundPercentage;
+    }
+
+    public int cacheRecordsTtl() {
+        return 1;
     }
 }

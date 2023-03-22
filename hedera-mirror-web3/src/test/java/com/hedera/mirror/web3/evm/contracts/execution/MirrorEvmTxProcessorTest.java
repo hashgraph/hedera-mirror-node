@@ -119,8 +119,8 @@ class MirrorEvmTxProcessorTest {
                         pricesAndFeesProvider,
                         evmProperties,
                         gasCalculator,
-                        mcps(),
-                        ccps(),
+                        mcps(gasCalculator),
+                        ccps(gasCalculator),
                         blockMetaSource,
                         hederaEvmContractAliases,
                         new AbstractCodeCache(10, hederaEvmEntityAccess));
