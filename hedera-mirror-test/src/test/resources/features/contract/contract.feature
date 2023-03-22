@@ -22,7 +22,7 @@ Feature: Contract Base Coverage Feature
             | 200            | 10000000       |
 
     @critical @release @acceptance
-    Scenario Outline: Validate EVM address, CREATE2, ContractDelete
+    Scenario Outline: Validate EVM address, CREATE2
 
         Utilizing the parent contract deployed in the scenario above, invoke its functions used to determine
         the EVM address of supplied (child) contract bytecode and salt and then deploy that contract
@@ -32,15 +32,16 @@ Feature: Contract Base Coverage Feature
 
         Then I call the parent contract evm address function with the bytecode of the child contract
         And I create a hollow account using CryptoTransfer of <transferAmount> to the evm address
-        Then the mirror node REST API should verify the account is hollow
-#        And the mirror node REST API should return <httpStatusCodeNotFound> when using evm address to retrieve as a contract
+        Then the mirror node REST API should return status <httpStatusCode> for the account transaction
+        Then the mirror node REST API should verify the account receiving <transferAmount> is hollow
+        And the mirror node REST API should indicate not found when using evm address to retrieve as a contract
 #        Then I deploy a child contract by calling a function on the parent contract to deploy to the evm address using CREATE2
 #        And now the mirror node REST API should return status <httpStatusCode> when using evm address to retrieve the child contract
 #        Then I successfully delete the child contract by calling it and causing it to self destruct
 
         Examples:
-            | httpStatusCode | transferAmount |httpStatusCodeNotFound |
-            | 200            | 1000           | 404                    |
+            | httpStatusCode | transferAmount |
+            | 200            | 1000           |
 
     @critical @release @acceptance
     Scenario Outline: Clean up parent contract, ContractDelete, FileDelete
