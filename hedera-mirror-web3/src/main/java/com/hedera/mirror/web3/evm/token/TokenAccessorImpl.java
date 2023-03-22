@@ -29,6 +29,7 @@ import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmA
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.evmKey;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
+import static java.util.Objects.requireNonNullElse;
 import static org.apache.tuweni.bytes.Bytes.EMPTY;
 
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -58,7 +59,6 @@ import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.web3.evm.exception.ParsingException;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.evm.utils.EvmTokenUtils;
 import com.hedera.mirror.web3.repository.CustomFeeRepository;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.mirror.web3.repository.NftAllowanceRepository;
@@ -331,19 +331,19 @@ public class TokenAccessorImpl implements TokenAccessor {
                 continue;
             }
 
-            final var amount = customFee.getAmount();
             final var collector = evmAddressFromId(collectorId);
+            final long amount = requireNonNullElse(customFee.getAmount(), 0L);
             final var denominatingTokenId = customFee.getDenominatingTokenId();
-            final var denominatingTokenAddress = denominatingTokenId == null ? Address.wrap(EMPTY)
-                    : toAddress(denominatingTokenId);
-            final var amountNumerator = customFee.getRoyaltyNumerator();
-            final var amountDenominator = customFee.getAmountDenominator();
-            final var maximumAmount = customFee.getMaximumAmount();
+            final var denominatingTokenAddress = denominatingTokenId == null ?
+                    Address.wrap(EMPTY) : toAddress(denominatingTokenId);
+            final long amountNumerator = requireNonNullElse(customFee.getRoyaltyNumerator(), 0L);
+            final var amountDenominator = requireNonNullElse(customFee.getAmountDenominator(), 0L);
+            final var maximumAmount = requireNonNullElse(customFee.getMaximumAmount(), 0L);
             final var minimumAmount = customFee.getMinimumAmount();
 
-            final var netOfTransfers = customFee.getNetOfTransfers();
-            final var royaltyDenominator = customFee.getRoyaltyDenominator();
-            final var royaltyNumerator = customFee.getRoyaltyNumerator();
+            final var netOfTransfers = requireNonNullElse(customFee.getNetOfTransfers(), false);
+            final long royaltyDenominator = requireNonNullElse(customFee.getRoyaltyDenominator(), 0L);
+            final var royaltyNumerator = requireNonNullElse(customFee.getRoyaltyNumerator(), 0L);
 
             CustomFee customFeeConstructed = new CustomFee();
 

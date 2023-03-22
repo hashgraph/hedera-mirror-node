@@ -117,6 +117,7 @@ contract PrecompileTestContract is HederaTokenService {
 
     function getTokenKeyPublic(address token, uint keyType) public returns (IHederaTokenService.KeyValue memory) {
         (int responseCode, IHederaTokenService.KeyValue memory  key) = HederaTokenService.getTokenKey(token, keyType);
+        //"(bool,address,bytes,bytes,address)";
 
 
         if(responseCode != HederaResponseCodes.SUCCESS) {
