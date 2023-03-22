@@ -52,6 +52,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.util.ResourceUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -83,6 +84,7 @@ public class ContractFeature extends AbstractFeature {
     private static final String MULTIPLY_SIMPLE_NUMBERS_SELECTOR = "8070450f";
     private static final String IDENTIFIER_SELECTOR = "7998a1c4";
     private static final String WRONG_SELECTOR = "000000";
+    private static final String ACCOUNT_EMPTY_KEYLIST = "3200";
     private static final int EVM_ADDRESS_SALT = 42;
 
     /*
@@ -91,6 +93,7 @@ public class ContractFeature extends AbstractFeature {
     record DeployedContract(FileId fileId, ContractId contractId, CompiledSolidityArtifact compiledSolidityArtifact) {};
     private static DeployedContract deployedParentContract;
 
+    private String childContractEvmAddress;
     private AccountId childContractEvmAddressAccountId;
     private ContractId childContractEvmAddressContractId;
 
@@ -148,10 +151,17 @@ public class ContractFeature extends AbstractFeature {
     }
 
     @Then("the mirror node REST API should return status {int} for the contract transaction")
-    public void verifyMirrorAPIResponses(int status) {
+    public void verifyMirrorAPIContractResponses(int status) {
         log.info("Verify contract transaction");
         MirrorTransaction mirrorTransaction = verifyMirrorTransactionsResponse(mirrorClient, status);
         assertThat(mirrorTransaction.getEntityId()).isEqualTo(deployedParentContract.contractId().toString());
+    }
+
+    @Then("the mirror node REST API should return status {int} for the account transaction")
+    public void verifyMirrorAPIAccountResponses(int status) {
+        log.info("Verify account transaction");
+        MirrorTransaction mirrorTransaction = verifyMirrorTransactionsResponse(mirrorClient, status);
+//        assertThat(mirrorTransaction.getEntityId()).isEqualTo(childContractEvmAddressAccountId);
     }
 
     @Then("the mirror node REST API should verify the deployed contract entity")
@@ -211,7 +221,7 @@ public class ContractFeature extends AbstractFeature {
                 CompiledSolidityArtifact.class);
 
         ExecuteContractResult executeContractResult = executeGetEvmAddressTransaction(EVM_ADDRESS_SALT);
-        var childContractEvmAddress = executeContractResult.contractFunctionResult().getAddress(0);
+        childContractEvmAddress = executeContractResult.contractFunctionResult().getAddress(0);
         childContractEvmAddressAccountId = AccountId.fromString(String.format("0.0.%s", childContractEvmAddress));
     }
 
@@ -223,11 +233,30 @@ public class ContractFeature extends AbstractFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
-    @Then("the mirror node REST API should verify the account is hollow")
-    public void verifyMirrorAPIHollowAccountResponses() {
-        log.info("Verify cryptotransfer account is hollow");
-        MirrorAccountResponse mirrorAccountResponse = mirrorClient.getAccountDetailsUsingEvmAddress(childContractEvmAddressAccountId);
-        List<MirrorTransaction> transactions = mirrorAccountResponse.getTransactions();
+    @Then("the mirror node REST API should verify the account receiving {int} is hollow")
+    public void verifyMirrorAPIHollowAccountResponse(int amount) {
+        log.info("Verify cryptotransfer to evm address account is hollow");
+        var mirrorAccountResponse = mirrorClient.getAccountDetailsUsingEvmAddress(childContractEvmAddressAccountId);
+        var transactions = mirrorClient.getTransactions(networkTransactionResponse.getTransactionIdStringNoCheckSum()).getTransactions();
+        assertNotNull(transactions);
+        assertEquals(2, transactions.size());   // create and transfer
+
+        assertNotNull(mirrorAccountResponse.getAccount());
+        assertEquals(amount, mirrorAccountResponse.getBalanceInfo().getBalance());
+        // Hollow account indicated by not having a public key defined.
+        assertEquals(ACCOUNT_EMPTY_KEYLIST, mirrorAccountResponse.getKey().getKey());
+    }
+
+    @And("the mirror node REST API should indicate not found when using evm address to retrieve as a contract")
+    public void verifyMirrorAPIContractNotFoundResponse() {
+        log.info("Verify contract at the hollow account evm address does not exist");
+        try {
+            MirrorContractResponse mirrorContractResponse = mirrorClient.getContractInfoWithNotFound(childContractEvmAddress);
+            log.error("Expected contract at EVM address {} to not exist, but found: {}", childContractEvmAddress, mirrorContractResponse);
+            fail();
+        } catch (WebClientResponseException wcre) {
+            assertEquals(HttpStatus.NOT_FOUND, wcre.getStatusCode());
+        }
     }
 
     private ContractId verifyCreateContractNetworkResponse() {

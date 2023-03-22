@@ -32,8 +32,10 @@ import lombok.NonNull;
 import lombok.extern.log4j.Log4j2;
 import org.apache.commons.lang3.StringUtils;
 import org.awaitility.Durations;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 import reactor.util.retry.RetryBackoffSpec;
@@ -70,6 +72,7 @@ public class MirrorNodeClient {
     private final WebClient webClient;
     private final WebClient web3Client;
     private final RetryBackoffSpec retrySpec;
+    private final RetryBackoffSpec retrySpecWithNotFound;
 
     public MirrorNodeClient(AcceptanceTestProperties acceptanceTestProperties,
                             WebClient webClient, Web3Properties web3Properties) {
@@ -82,6 +85,12 @@ public class MirrorNodeClient {
         retrySpec = Retry.backoff(properties.getMaxAttempts(), properties.getMinBackoff())
                 .maxBackoff(properties.getMaxBackoff())
                 .filter(properties::shouldRetry);
+        /*
+         * RetryBackoffSpec is immutable. Starting with the configuration of retrySpec, define a new spec
+         * with a different filter that prevents retry of NOT_FOUND in addition to BAD_REQUEST.
+         */
+        retrySpecWithNotFound = retrySpec.filter(t -> !(t instanceof WebClientResponseException wcre &&
+                (wcre.getStatusCode() == HttpStatus.BAD_REQUEST || wcre.getStatusCode() == HttpStatus.NOT_FOUND)));
     }
 
     public SubscriptionResponse subscribeToTopic(SDKClient sdkClient, TopicMessageQuery topicMessageQuery) throws Throwable {
@@ -163,6 +172,11 @@ public class MirrorNodeClient {
     public MirrorContractResponse getContractInfo(String contractId) {
         log.debug("Verify contract '{}' is returned by Mirror Node", contractId);
         return callRestEndpoint("/contracts/{contractId}", MirrorContractResponse.class, contractId);
+    }
+
+    public MirrorContractResponse getContractInfoWithNotFound(String contractId) {
+        log.debug("Retrieve contract '{}' is from Mirror Node, may not be found", contractId);
+        return callRestEndpointWithNotFound("/contracts/{contractId}", MirrorContractResponse.class, contractId);
     }
 
     public MirrorContractResultsResponse getContractResultsById(String contractId) {
@@ -279,6 +293,17 @@ public class MirrorNodeClient {
                 .retrieve()
                 .bodyToMono(classType)
                 .retryWhen(retrySpec)
+                .doOnError(x -> log.error("Endpoint failed, returning: {}", x.getMessage()))
+                .block();
+    }
+
+    private <T> T callRestEndpointWithNotFound(String uri, Class<T> classType, Object... uriVariables) {
+        return webClient.get()
+                .uri(uri.replace("/api/v1", ""), uriVariables)
+                .accept(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .bodyToMono(classType)
+                .retryWhen(retrySpecWithNotFound)
                 .doOnError(x -> log.error("Endpoint failed, returning: {}", x.getMessage()))
                 .block();
     }
