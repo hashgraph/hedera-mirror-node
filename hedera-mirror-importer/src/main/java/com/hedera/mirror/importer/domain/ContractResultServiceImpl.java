@@ -95,7 +95,7 @@ public class ContractResultServiceImpl implements ContractResultService {
         // in pre-compile case transaction is not a contract type and entityId will be of a different type
         var contractId = isContractCreateOrCall(transactionBody) ? transaction.getEntityId() :
                 entityIdService.lookup(functionResult.getContractID()).orElse(EntityId.EMPTY);
-        if (contractId == null) {
+        if (EntityId.isEmpty(contractId)) {
             contractId = EntityId.EMPTY;
             log.error(RECOVERABLE_ERROR + "Invalid contract id for contract result at {}", recordItem
                     .getConsensusTimestamp());
