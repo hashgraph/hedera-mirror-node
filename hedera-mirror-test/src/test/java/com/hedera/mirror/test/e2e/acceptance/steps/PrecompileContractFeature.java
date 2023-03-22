@@ -218,24 +218,32 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     @Then("Invalid account is token should return an error")
     public void checkIfInvalidAccountIsToken() {
+        String selectorWithData = PrecompileContractFeature.IS_TOKEN_SELECTOR + TestUtil
+                .to32BytesString(ZERO_ADDRESS);
+        String contractIdAsSolidityAddress = contractId.toSolidityAddress();
+        String contractClientAddress = contractClient.getClientAddress();
+
         assertThatThrownBy(() -> mirrorClient.contractsCall(
-                PrecompileContractFeature.IS_TOKEN_SELECTOR + TestUtil
-                        .to32BytesString(ZERO_ADDRESS),
-                contractId.toSolidityAddress(),
-                contractClient.getClientAddress()
-        ))
+                selectorWithData,
+                contractIdAsSolidityAddress,
+                contractClientAddress)
+        )
                 .isInstanceOf(WebClientResponseException.class)
                 .hasMessageContaining("400 Bad Request from POST");
     }
 
     @Then("Valid account is token should return an error")
     public void checkIfValidAccountIsToken() {
+        String selectorWithData = PrecompileContractFeature.IS_TOKEN_SELECTOR + TestUtil
+                .to32BytesString(accountClient.getTokenTreasuryAccount().getAccountId().toSolidityAddress());
+        String contractIdAsSolidityAddress = contractId.toSolidityAddress();
+        String contractClientAddress = contractClient.getClientAddress();
+
         assertThatThrownBy(() -> mirrorClient.contractsCall(
-                PrecompileContractFeature.IS_TOKEN_SELECTOR + TestUtil
-                        .to32BytesString(accountClient.getTokenTreasuryAccount().getAccountId().toSolidityAddress()),
-                contractId.toSolidityAddress(),
-                contractClient.getClientAddress()
-        ))
+                selectorWithData,
+                contractIdAsSolidityAddress,
+                contractClientAddress)
+        )
                 .isInstanceOf(WebClientResponseException.class)
                 .hasMessageContaining("400 Bad Request from POST");
     }
