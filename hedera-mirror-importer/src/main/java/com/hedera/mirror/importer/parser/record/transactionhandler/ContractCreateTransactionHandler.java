@@ -221,7 +221,7 @@ class ContractCreateTransactionHandler extends AbstractEntityCrudTransactionHand
                 }
                 break;
             default:
-                log.error("Invalid InitcodeSourceCase {} at {}",
+                log.error(RECOVERABLE_ERROR + "Invalid InitcodeSourceCase {} at {}",
                         transactionBody.getInitcodeSourceCase(), recordItem.getConsensusTimestamp());
                 break;
         }

@@ -70,6 +70,7 @@ public class ContractResultServiceImpl implements ContractResultService {
     private final TransactionHandlerFactory transactionHandlerFactory;
 
     @Override
+    @SuppressWarnings("java:S2259")
     public void process(@NonNull RecordItem recordItem, Transaction transaction) {
         if (!entityProperties.getPersist().isContracts()) {
             return;
@@ -93,11 +94,11 @@ public class ContractResultServiceImpl implements ContractResultService {
 
         // in pre-compile case transaction is not a contract type and entityId will be of a different type
         var contractId = isContractCreateOrCall(transactionBody) ? transaction.getEntityId() :
-                entityIdService.lookup(functionResult.getContractID()).orElse(null);
+                entityIdService.lookup(functionResult.getContractID()).orElse(EntityId.EMPTY);
         if (contractId == null) {
+            contractId = EntityId.EMPTY;
             log.error(RECOVERABLE_ERROR + "Invalid contract id for contract result at {}", recordItem
                     .getConsensusTimestamp());
-            return;
         }
 
         processContractResult(recordItem, contractId, functionResult, transaction, transactionHandler,

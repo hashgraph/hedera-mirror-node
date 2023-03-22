@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.parser.record.pubsub;
  * ‍
  */
 
+import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
+
 import com.google.cloud.spring.pubsub.core.PubSubTemplate;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -75,8 +77,9 @@ public class PubSubRecordItemListener implements RecordItemListener {
         try {
             entityId = transactionHandler.getEntity(recordItem);
         } catch (InvalidEntityException e) { // transaction can have invalid topic/contract/file id
-            log.error("Invalid entity encountered for consensusTimestamp {} : {}", consensusTimestamp, e.getMessage());
-            entityId = null;
+            log.error(RECOVERABLE_ERROR + "Invalid entity encountered for consensusTimestamp {} : {}",
+                    consensusTimestamp, e.getMessage());
+            entityId = EntityId.EMPTY;
         }
 
         PubSubMessage pubSubMessage = buildPubSubMessage(consensusTimestamp, entityId, recordItem);

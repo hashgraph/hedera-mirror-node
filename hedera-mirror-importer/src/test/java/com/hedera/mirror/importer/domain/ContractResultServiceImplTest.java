@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.domain;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -91,11 +90,7 @@ class ContractResultServiceImplTest {
 
         contractResultService.process(recordItem, transaction);
 
-        if (entityId == null) {
-            verify(entityListener, never()).onContractResult(any());
-        } else {
-            verify(entityListener, times(1)).onContractResult(any());
-        }
+        verify(entityListener, times(1)).onContractResult(any());
     }
 
     @ParameterizedTest
@@ -112,10 +107,6 @@ class ContractResultServiceImplTest {
 
         contractResultService.process(recordItem, transaction);
 
-        if (entityId == null) {
-            verify(entityListener, never()).onContractResult(any());
-        } else {
-            verify(entityListener, times(1)).onContractResult(any());
-        }
+        verify(entityListener, times(1)).onContractResult(any());
     }
 }
