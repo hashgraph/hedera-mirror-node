@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.reader.balance;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,7 +23,7 @@ package com.hedera.mirror.importer.reader.balance;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.Test;
@@ -50,7 +50,7 @@ class BalanceFileReaderImplV1Test extends CsvBalanceFileReaderTest {
     @Test
     void readValidFileWithLeadingEmptyLine() throws IOException {
         List<String> lines = FileUtils.readLines(balanceFile, CsvBalanceFileReader.CHARSET);
-        List<String> copy = new LinkedList<>();
+        List<String> copy = new ArrayList<>();
         copy.add("");
         copy.addAll(lines);
         FileUtils.writeLines(testFile, copy);

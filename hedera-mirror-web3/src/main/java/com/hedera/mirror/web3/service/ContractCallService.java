@@ -83,12 +83,12 @@ public class ContractCallService {
                 onComplete(CallType.ERROR, txnResult);
 
                 var revertReason = txnResult.getRevertReason().orElse(Bytes.EMPTY);
-                throw new InvalidTransactionException(getStatusOrDefault(txnResult), decodeEvmRevertReasonBytesToReadableMessage(revertReason));
+                throw new InvalidTransactionException(getStatusOrDefault(txnResult), decodeEvmRevertReasonBytesToReadableMessage(revertReason), revertReason.toHexString());
             } else {
                 onComplete(body.getCallType(), txnResult);
             }
         } catch (IllegalStateException | IllegalArgumentException e) {
-            throw new InvalidTransactionException(e.getMessage(), StringUtils.EMPTY);
+            throw new InvalidTransactionException(e.getMessage(), StringUtils.EMPTY, StringUtils.EMPTY);
         }
         return txnResult;
     }

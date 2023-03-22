@@ -86,6 +86,7 @@ public class SidecarFile implements Persistable<SidecarFile.Id> {
 
     private Integer size;
 
+    @Builder.Default
     @Type(type = "com.vladmihalcea.hibernate.type.array.ListArrayType")
     @JsonSerialize(using = LongListToStringSerializer.class)
     private List<Integer> types = Collections.emptyList();

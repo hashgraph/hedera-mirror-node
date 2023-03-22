@@ -44,10 +44,10 @@ jobs:
       - name: Build images
         uses: gradle/gradle-build-action@v2
         with:
-          arguments: dockerPush -PdockerRegistry=localhost:5001/mirrornode -PdockerTag=test -Dorg.gradle.parallel=false
+          arguments: dockerPush -PdockerRegistry=localhost:5001/mirrornode -PdockerTag=test
 
       - name: Install ct
         uses: helm/chart-testing-action@v2.3.1
 
       - name: Install chart
-        run: ct install --config .github/ct.yaml --charts=charts/hedera-mirror --helm-extra-set-args="--set=global.image.registry=registry:5000 --set=global.image.tag=test"
+        run: ct install --config .github/ct.yaml --charts=charts/hedera-mirror --helm-extra-args="--timeout 10m" --helm-extra-set-args="--set=global.image.registry=registry:5000 --set=global.image.tag=test"

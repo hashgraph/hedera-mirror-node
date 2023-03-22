@@ -1354,6 +1354,42 @@ describe('ContractService.getContractActionsByConsensusTimestamp tests', () => {
 });
 
 describe('ContractService.getContractStateByIdAndFilters tests', () => {
+  const contractState = [
+    {contract_id: 9999, slot: '01', value: 10},
+    {contract_id: 9999, slot: '02', value: 20},
+  ];
+
+  const contractStateChanges = [
+    {
+      consensus_timestamp: 1,
+      contract_id: 4,
+      slot: Buffer.from([0x1]),
+      value_read: '0101',
+      value_written: 'a1a1',
+    },
+    {
+      consensus_timestamp: 4,
+      contract_id: 4,
+      slot: Buffer.from([0x2]),
+      value_read: '0202',
+      value_written: 'a2a2',
+    },
+    {
+      consensus_timestamp: 4,
+      contract_id: 4,
+      slot: Buffer.from([0x3]),
+      value_read: '0202',
+      value_written: 'a2a2',
+    },
+    {
+      consensus_timestamp: 8,
+      contract_id: 4,
+      slot: Buffer.from([0x3]),
+      value_read: 'a2a2',
+      value_written: 'a222',
+    },
+  ];
+
   test('No match', async () => {
     const res = await ContractService.getContractStateByIdAndFilters([{query: 'contract_id =', param: 1000}]);
 
@@ -1361,13 +1397,33 @@ describe('ContractService.getContractStateByIdAndFilters tests', () => {
   });
 
   test('Multiple rows match', async () => {
-    await integrationDomainOps.loadContractStates([
-      {contract_id: 9999, slot: '01', value: 10},
-      {contract_id: 9999, slot: '02', value: 20},
-    ]);
+    await integrationDomainOps.loadContractStates(contractState);
     const res = await ContractService.getContractStateByIdAndFilters([{query: 'contract_id =', param: 9999}]);
 
     expect(res.length).toEqual(2);
+  });
+
+  test('Multiple rows match with timestamp', async () => {
+    await integrationDomainOps.loadContractStateChanges(contractStateChanges);
+    const res = await ContractService.getContractStateByIdAndFilters([{query: 'contract_id =', param: 4},
+      {query: 'consensus_timestamp <= ', param: 5}],
+      orderFilterValues.ASC,
+      100,
+      true);
+
+    expect(res.length).toEqual(3);
+  });
+
+  test('Multiple rows match with timestamp and slot', async () => {
+    await integrationDomainOps.loadContractStateChanges(contractStateChanges);
+    const res = await ContractService.getContractStateByIdAndFilters([{query: 'contract_id =', param: 4},
+      {query: 'consensus_timestamp <= ', param: 5},
+      {query: 'slot =', param: Buffer.from('03','hex')}],
+      orderFilterValues.ASC,
+      100,
+      true);
+
+    expect(res.length).toEqual(1);
   });
 
   test('One row match by contract_id', async () => {
@@ -1381,10 +1437,7 @@ describe('ContractService.getContractStateByIdAndFilters tests', () => {
   });
 
   test('Multiple rows match desc order', async () => {
-    await integrationDomainOps.loadContractStates([
-      {contract_id: 9999, slot: '01', value: 10},
-      {contract_id: 9999, slot: '02', value: 20},
-    ]);
+    await integrationDomainOps.loadContractStates(contractState);
     const res = await ContractService.getContractStateByIdAndFilters([{query: 'contract_id =', param: 9999}]);
 
     expect(res[0].slot.readInt8()).toEqual(1);
@@ -1393,10 +1446,7 @@ describe('ContractService.getContractStateByIdAndFilters tests', () => {
   });
 
   test('One row match (limit=1)', async () => {
-    await integrationDomainOps.loadContractStates([
-      {contract_id: 9999, slot: '01', value: 10},
-      {contract_id: 9999, slot: '02', value: 20},
-    ]);
+    await integrationDomainOps.loadContractStates(contractState);
     const res = await ContractService.getContractStateByIdAndFilters(
       [{query: 'contract_id =', param: 9999}],
       orderFilterValues.ASC,

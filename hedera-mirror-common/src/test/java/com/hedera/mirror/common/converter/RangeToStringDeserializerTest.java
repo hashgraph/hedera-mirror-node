@@ -21,6 +21,8 @@ package com.hedera.mirror.common.converter;
  */
 
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Range;
 import com.vladmihalcea.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import java.io.IOException;
@@ -45,13 +47,17 @@ class RangeToStringDeserializerTest {
     @ValueSource(strings = {"[0,1]", "[0,1)", "(0,1]", "(0,1)", "[0,)", "(,1]", "empty"})
     void serialize(String text) throws IOException {
         Mockito.doReturn(text).when(jsonParser).readValueAs(String.class);
-        Range<?> range = deserializer.deserialize(jsonParser, null);
+        Range<?> range = deserializer.deserialize(jsonParser, context());
         Assertions.assertThat(range).isEqualTo(PostgreSQLGuavaRangeType.longRange(text));
     }
 
     @Test
     void serializeNull() throws IOException {
         Mockito.doReturn(null).when(jsonParser).readValueAs(String.class);
-        Assertions.assertThat(deserializer.deserialize(jsonParser, null)).isNull();
+        Assertions.assertThat(deserializer.deserialize(jsonParser, context())).isNull();
+    }
+
+    private DeserializationContext context() {
+        return new ObjectMapper().getDeserializationContext();
     }
 }

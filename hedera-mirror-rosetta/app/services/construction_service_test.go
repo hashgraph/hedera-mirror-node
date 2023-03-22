@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"math/big"
 	"reflect"
+	"strconv"
 	"testing"
 	"time"
 
@@ -230,16 +231,6 @@ func getNodeAccountIds(network map[string]hedera.AccountID) []hedera.AccountID {
 	}
 
 	return nodeAccountIds
-}
-
-func getUnsignedCryptoTransaction(validStart time.Time, validDuration time.Duration) string {
-	tx, _ := hedera.NewTransferTransaction().
-		SetNodeAccountIDs([]hedera.AccountID{nodeAccountId}).
-		SetTransactionID(hedera.NewTransactionIDWithValidStart(payerId, validStart)).
-		SetTransactionValidDuration(validDuration).
-		Freeze()
-	bytes, _ := tx.ToBytes()
-	return tools.SafeAddHexPrefix(hex.EncodeToString(bytes))
 }
 
 func TestNewConstructionAPIService(t *testing.T) {
@@ -574,6 +565,12 @@ func TestConstructionMetadataOnline(t *testing.T) {
 	// then
 	mockAccountRepo.AssertExpectations(t)
 	mockTransactionConstructor.AssertExpectations(t)
+
+	assert.IsType(t, "", res.Metadata[metadataKeyValidUntilNanos])
+	validUntilNanos, _ := strconv.ParseInt(res.Metadata[metadataKeyValidUntilNanos].(string), 10, 64)
+	assert.InDelta(t, validUntilNanos, time.Now().Add(maxValidDurationNanos).UnixNano(), 3_000_000_000)
+	delete(res.Metadata, metadataKeyValidUntilNanos)
+
 	assert.Equal(t, expectedResponse, res)
 	assert.Nil(t, e)
 }
@@ -794,30 +791,21 @@ func TestConstructionParse(t *testing.T) {
 	}{
 		{
 			name:     "NotSigned",
-			metadata: map[string]interface{}{"valid_until": int64(1620236406997196590)},
+			metadata: map[string]interface{}{},
 			request:  getConstructionParseRequest(validSignedTransaction, false),
 			signers:  []*rTypes.AccountIdentifier{},
 		},
 		{
 			name:     "Signed",
-			metadata: map[string]interface{}{"valid_until": int64(1620236406997196590)},
+			metadata: map[string]interface{}{},
 			request:  getConstructionParseRequest(validSignedTransaction, true),
 			signers:  []*rTypes.AccountIdentifier{defaultCryptoAccountId1.ToRosetta()},
 		},
 		{
 			name:     "memo",
-			metadata: map[string]interface{}{"memo": "transfer", "valid_until": int64(123456969000000123)},
+			metadata: map[string]interface{}{"memo": "transfer"},
 			request:  getConstructionParseRequest(unsignedTransactionWithMemo, false),
 			signers:  []*rTypes.AccountIdentifier{},
-		},
-		{
-			name:     "valid until",
-			metadata: map[string]interface{}{"valid_until": int64(123457000000000333)},
-			request: getConstructionParseRequest(
-				getUnsignedCryptoTransaction(time.Unix(123456789, 333), time.Second*211),
-				false,
-			),
-			signers: []*rTypes.AccountIdentifier{},
 		},
 	}
 
@@ -947,6 +935,26 @@ func TestConstructionPayloads(t *testing.T) {
 					{
 						AccountIdentifier: defaultCryptoAccountId1.ToRosetta(),
 						Bytes:             hexutil.MustDecode("0x0a0f0a0708959aef3a107b120418d8c307120218031880c2d72f220308b40132087472616e7366657272020a00"),
+						SignatureType:     rTypes.Ed25519,
+					},
+				},
+			},
+		},
+		{
+			name: "valid until",
+			metadata: map[string]interface{}{
+				// valid start nanos and valid duration are ignored
+				metadataKeyValidDurationSeconds: "100",
+				metadataKeyValidStartNanos:      "123499999000000123",
+				metadataKeyValidUntilNanos:      "123456609000000123",
+			},
+			payerAccountId: defaultCryptoAccountId1,
+			expected: &rTypes.ConstructionPayloadsResponse{
+				UnsignedTransaction: "0x0a292a270a230a0f0a0708ad97ef3a107b120418d8c307120218031880c2d72f220308b40172020a001200",
+				Payloads: []*rTypes.SigningPayload{
+					{
+						AccountIdentifier: defaultCryptoAccountId1.ToRosetta(),
+						Bytes:             hexutil.MustDecode("0x0a0f0a0708ad97ef3a107b120418d8c307120218031880c2d72f220308b40172020a00"),
 						SignatureType:     rTypes.Ed25519,
 					},
 				},
@@ -1104,6 +1112,22 @@ func TestConstructionPayloadsInvalidRequest(t *testing.T) {
 		{
 			name:      "ValidStartNanosNotNumber",
 			customize: payloadsRequestMetadata(map[string]interface{}{metadataKeyValidStartNanos: "abc"}),
+		},
+		{
+			name:      "ValidUntilNegative",
+			customize: payloadsRequestMetadata(map[string]interface{}{metadataKeyValidUntilNanos: "-100"}),
+		},
+		{
+			name:      "ValidUntilCauseZeroValidStartNanos",
+			customize: payloadsRequestMetadata(map[string]interface{}{metadataKeyValidUntilNanos: "180000000000"}),
+		},
+		{
+			name:      "ValidUntilCauseNegativeValidStartNanos",
+			customize: payloadsRequestMetadata(map[string]interface{}{metadataKeyValidUntilNanos: "179999999999"}),
+		},
+		{
+			name:      "ValidUntilNotNumber",
+			customize: payloadsRequestMetadata(map[string]interface{}{metadataKeyValidUntilNanos: "abc"}),
 		},
 		{
 			name:      "InvalidOperationAccountIdentifier",

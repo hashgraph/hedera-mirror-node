@@ -20,7 +20,12 @@ package com.hedera.mirror.common.exception;
  * ‍
  */
 
+import java.io.Serial;
+
 public abstract class MirrorNodeException extends RuntimeException {
+
+    @Serial
+    private static final long serialVersionUID = 8757494818600695310L;
 
     protected MirrorNodeException(String message) {
         super(message);

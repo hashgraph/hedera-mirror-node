@@ -50,6 +50,8 @@ import com.hedera.mirror.importer.util.Utility;
 @UtilityClass
 public class TestUtils {
 
+    private static final SecureRandom RANDOM = new SecureRandom();
+
     // Customize BeanUtilsBean to not copy properties for null since non-nulls represent partial updates in our system.
     private static final BeanUtilsBean BEAN_UTILS = new BeanUtilsBean() {
         @Override
@@ -171,7 +173,7 @@ public class TestUtils {
 
     public byte[] generateRandomByteArray(int size) {
         byte[] hashBytes = new byte[size];
-        new SecureRandom().nextBytes(hashBytes);
+        RANDOM.nextBytes(hashBytes);
         return hashBytes;
     }
 }

@@ -753,7 +753,7 @@ public abstract class AbstractDownloaderTest {
      * @param instant the instant of the StreamFile
      */
     protected void expectLastStreamFile(String hash, Long index, Instant instant) {
-        StreamFile streamFile = (StreamFile) ReflectUtils.newInstance(streamType.getStreamFileClass());
+        StreamFile streamFile = streamType.newStreamFile();
         streamFile.setName(StreamFilename.getFilename(streamType, DATA, instant));
         streamFile.setConsensusStart(DomainUtils.convertToNanosMax(instant));
         streamFile.setHash(hash);

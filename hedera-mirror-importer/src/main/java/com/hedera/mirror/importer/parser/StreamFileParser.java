@@ -22,7 +22,7 @@ package com.hedera.mirror.importer.parser;
 
 import com.hedera.mirror.common.domain.StreamFile;
 
-public interface StreamFileParser<T extends StreamFile> {
+public interface StreamFileParser<T extends StreamFile<?>> {
 
     void parse(T streamFile);
 

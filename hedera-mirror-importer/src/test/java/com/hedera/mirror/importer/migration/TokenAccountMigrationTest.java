@@ -24,8 +24,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Range;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.function.Consumer;
 import lombok.Builder;
@@ -90,8 +90,8 @@ class TokenAccountMigrationTest extends IntegrationTest {
     @Test
     void migrate() {
         // given
-        List<TokenAccountRange> expected = new LinkedList<>();
-        List<TokenAccountRange> expectedHistory = new LinkedList<>();
+        List<TokenAccountRange> expected = new ArrayList<>();
+        List<TokenAccountRange> expectedHistory = new ArrayList<>();
 
         // token account relationships for account 100 and token 1000
         var last = MigrationTokenAccount.builder()
