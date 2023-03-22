@@ -41,6 +41,7 @@ import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 
 import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
 
+import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import java.io.IOException;
@@ -349,6 +350,25 @@ public class ERCContractFeature extends AbstractFeature {
         networkTransactionResponse = accountClient.approveNftAllSerials(tokenIds.get(1), spenderAccountIdForAllSerials.getAccountId());
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
+    }
+
+    @After
+    public void clean() {
+        contractClient.deleteContract(
+                contractId,
+                contractClient.getSdkClient().getExpandedOperatorAccountId().getAccountId(),
+                null);
+
+        for (TokenId tokenId : tokenIds) {
+            ExpandedAccountId admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
+            try {
+                tokenClient.delete(admin, tokenId);
+            } catch (Exception ex) {
+                log.warn("Error cleaning up token {} error: {}", tokenId, ex);
+            }
+        }
+        tokenIds.clear();
+        tokenSerialNumbers.clear();
     }
 
     private TokenId createNewToken(String symbol, int freezeStatus, int kycStatus, TokenType tokenType,
