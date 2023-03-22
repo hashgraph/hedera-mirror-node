@@ -39,6 +39,7 @@ dependencies {
     implementation("io.micrometer:micrometer-registry-prometheus")
     implementation("io.projectreactor.addons:reactor-extra")
     implementation("io.vertx:vertx-pg-client")
+    implementation("io.vertx:vertx-codegen")
     implementation("javax.inject:javax.inject")
     implementation("net.devh:grpc-spring-boot-starter")
     implementation("org.hibernate.validator:hibernate-validator")

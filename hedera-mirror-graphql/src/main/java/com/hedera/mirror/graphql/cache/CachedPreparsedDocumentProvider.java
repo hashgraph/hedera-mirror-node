@@ -38,6 +38,7 @@ final class CachedPreparsedDocumentProvider implements PreparsedDocumentProvider
     }
 
     @Override
+    @SuppressWarnings("deprecation")
     public PreparsedDocumentEntry getDocument(ExecutionInput executionInput, Function<ExecutionInput,
             PreparsedDocumentEntry> parseCallback) {
         return cache.get(executionInput.getQuery(), key -> parseCallback.apply(executionInput));

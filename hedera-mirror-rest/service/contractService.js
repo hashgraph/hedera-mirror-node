@@ -48,7 +48,9 @@ ${ContractLog.getFullName(ContractLog.ROOT_CONTRACT_ID)},
 ${ContractLog.getFullName(ContractLog.TOPIC0)},
 ${ContractLog.getFullName(ContractLog.TOPIC1)},
 ${ContractLog.getFullName(ContractLog.TOPIC2)},
-${ContractLog.getFullName(ContractLog.TOPIC3)}
+${ContractLog.getFullName(ContractLog.TOPIC3)},
+${ContractLog.getFullName(ContractLog.TRANSACTION_HASH)},
+${ContractLog.getFullName(ContractLog.TRANSACTION_INDEX)}
 `;
 
 const contractResultsFields = `${ContractResult.getFullName(ContractResult.AMOUNT)},
@@ -127,6 +129,19 @@ class ContractService extends BaseService {
       on ${Entity.getFullName(Entity.ID)} = ${ContractState.getFullName(ContractState.CONTRACT_ID)}
     `;
 
+    static contractStateTimestampQuery = `
+      with ${ContractService.entityCTE}
+      select DISTINCT on (${ContractStateChange.SLOT}) 
+            ${ContractStateChange.CONTRACT_ID},
+            ${ContractStateChange.SLOT},
+            ${Entity.EVM_ADDRESS},
+            coalesce(${ContractStateChange.VALUE_WRITTEN}, ${ContractStateChange.VALUE_READ}) as ${ContractState.VALUE},
+            ${ContractStateChange.CONSENSUS_TIMESTAMP} as ${ContractState.MODIFIED_TIMESTAMP}
+      from ${ContractStateChange.tableName} ${ContractStateChange.tableAlias}
+      left join ${Entity.tableName} ${Entity.tableAlias}
+        on ${Entity.getFullName(Entity.ID)} = ${ContractStateChange.getFullName(ContractStateChange.CONTRACT_ID)}
+    `;
+
   static contractLogsWithEvmAddressQuery = `
     with ${ContractService.entityCTE}
     select
@@ -146,19 +161,12 @@ class ContractService extends BaseService {
       from ${Entity.tableName}
     )
     select ${contractLogsFields},
-      ${ContractResult.getFullName(ContractResult.TRANSACTION_HASH)},
-      ${ContractResult.getFullName(ContractResult.TRANSACTION_INDEX)},
       block_number,
       block_hash,
       ${Entity.EVM_ADDRESS}
     from ${ContractLog.tableName} ${ContractLog.tableAlias}
     left join ${Entity.tableName} ${Entity.tableAlias}
       on ${Entity.ID} = ${ContractLog.CONTRACT_ID}
-    left join ${ContractResult.tableName} ${ContractResult.tableAlias}
-      on ${ContractLog.getFullName(ContractLog.CONSENSUS_TIMESTAMP)} =
-        ${ContractResult.getFullName(ContractResult.CONSENSUS_TIMESTAMP)} and
-        ${ContractLog.getFullName(ContractLog.PAYER_ACCOUNT_ID)} =
-        ${ContractResult.getFullName(ContractResult.PAYER_ACCOUNT_ID)}
     left join lateral (
       select ${RecordFile.INDEX} as block_number, ${RecordFile.HASH} as block_hash
       from ${RecordFile.tableName}
@@ -267,14 +275,22 @@ class ContractService extends BaseService {
     });
   }
 
-  async getContractStateByIdAndFilters(whereConditions = [], order = orderFilterValues.ASC, limit = defaultLimit) {
-    const orderClause = this.getOrderByQuery(OrderSpec.from(ContractStateChange.SLOT, order));
+  async getContractStateByIdAndFilters(whereConditions = [], order = orderFilterValues.ASC, limit = defaultLimit, timestamp = false) {
+    let orderClause = this.getOrderByQuery(OrderSpec.from(ContractStateChange.SLOT, order));
     const {where, params} = this.buildWhereSqlStatement(whereConditions);
     const limitClause = this.getLimitQuery(params.push(limit));
+    let query = [ContractService.contractStateQuery, where, orderClause, limitClause].join(' ');
 
-    const query = [ContractService.contractStateQuery, where, orderClause, limitClause].join(' ');
+    if (timestamp) {
+      //timestamp order needs to be always desc to get only the latest changes until the provided timestamp
+      orderClause = this.getOrderByQuery(
+        OrderSpec.from(ContractStateChange.SLOT, order),
+        OrderSpec.from(ContractStateChange.CONSENSUS_TIMESTAMP, orderFilterValues.DESC)
+      );
+      
+      query = [ContractService.contractStateTimestampQuery, where, orderClause, limitClause].join(' ');
+    }
     const rows = await super.getRows(query, params, 'getContractStateByIdAndFilters');
-
     return rows.map((row) => new ContractState(row));
   }
 

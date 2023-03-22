@@ -142,6 +142,37 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         );
     }
 
+    // Issue #5637 caused by an invalid receipt.ContractID sent by consensus nodes in testnet.
+    @Test
+    void contractCreateWithInvalidId() {
+        var invalidId = ContractID.newBuilder()
+                .setShardNum(-382413634L)
+                .setRealmNum(-4713217343126473096L)
+                .setContractNum(-9016639978277801310L)
+                .build();
+        var recordItem = recordItemBuilder.contractCreate()
+                .receipt(r -> r.setContractID(invalidId))
+                .record(r -> r.getContractCreateResultBuilder().setContractID(invalidId))
+                .build();
+
+        parseRecordItemAndCommit(recordItem);
+
+        assertAll(
+                () -> assertEquals(2, contractRepository.count()),
+                () -> assertEquals(1, contractResultRepository.count()),
+                () -> assertEquals(3, cryptoTransferRepository.count()),
+                () -> assertContractStateChanges(recordItem),
+                () -> assertThat(transactionRepository.findAll())
+                        .hasSize(1)
+                        .first()
+                        .returns(null, com.hedera.mirror.common.domain.transaction.Transaction::getEntityId),
+                () -> assertThat(contractResultRepository.findAll())
+                        .hasSize(1)
+                        .first()
+                        .returns(0L, ContractResult::getContractId)
+        );
+    }
+
     @Test
     void contractCreateWithEvmAddress() {
         // no child tx, creates a single contract with evm address set
@@ -617,8 +648,10 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(2, contractResultRepository.count()),
                 () -> assertEquals(6, cryptoTransferRepository.count()),
                 () -> assertEntities(parentId, EntityId.of(childContractId)),
-                () -> assertTransactionAndRecord(parentRecordItem.getTransactionBody(), parentRecordItem.getTransactionRecord()),
-                () -> assertTransactionAndRecord(childRecordItem.getTransactionBody(), childRecordItem.getTransactionRecord()),
+                () -> assertTransactionAndRecord(parentRecordItem.getTransactionBody(),
+                        parentRecordItem.getTransactionRecord()),
+                () -> assertTransactionAndRecord(childRecordItem.getTransactionBody(),
+                        childRecordItem.getTransactionRecord()),
                 () -> assertThat(entityRepository.findAll()).contains(setupResult.entity),
                 () -> assertCreatedContract(childRecordItem),
                 () -> assertContractCallResult(parentTransactionBody, parentRecordItem.getTransactionRecord()),
@@ -758,6 +791,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .record(r -> r.clearContractCallResult())
                 .sidecarRecords(s -> s.clear())
                 .status(ResponseCodeEnum.INVALID_CONTRACT_ID)
+                .receipt(r -> r.clearContractID().setStatus(ResponseCodeEnum.INVALID_CONTRACT_ID))
                 .build();
         var record = recordItem.getTransactionRecord();
         var transactionBody = recordItem.getTransactionBody();
@@ -988,12 +1022,12 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .first()
                 .returns(transactionBody.getInitialBalance(), ContractResult::getAmount)
                 .returns(consensusTimestamp, ContractResult::getConsensusTimestamp)
-                .returns(EntityId.of(receipt.getContractID()), ContractResult::getContractId)
+                .returns(receipt.getContractID().getContractNum(), ContractResult::getContractId)
                 .returns(toBytes(transactionBody.getConstructorParameters()), ContractResult::getFunctionParameters)
                 .returns(transactionBody.getGas(), ContractResult::getGasLimit);
 
         if (receipt.getStatus() == ResponseCodeEnum.SUCCESS) {
-            contractResult.returns(EntityId.of(receipt.getContractID()), ContractResult::getContractId);
+            contractResult.returns(receipt.getContractID().getContractNum(), ContractResult::getContractId);
         }
 
         assertContractResult(consensusTimestamp, result, result.getLogInfoList(), contractResult);
@@ -1012,7 +1046,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .hasSize(1)
                 .first()
                 .returns(transactionBody.getAmount(), ContractResult::getAmount)
-                .returns(contractId, ContractResult::getContractId)
+                .returns(contractId.getId(), ContractResult::getContractId)
                 .returns(consensusTimestamp, ContractResult::getConsensusTimestamp)
                 .returns(toBytes(transactionBody.getFunctionParameters()), ContractResult::getFunctionParameters)
                 .returns(transactionBody.getGas(), ContractResult::getGasLimit);
@@ -1143,7 +1177,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 .first()
                 .returns(transactionBody.getAmount(), ContractResult::getAmount)
                 .returns(consensusTimestamp, ContractResult::getConsensusTimestamp)
-                .returns(EntityId.of(transactionBody.getContractID()), ContractResult::getContractId)
+                .returns(transactionBody.getContractID().getContractNum(), ContractResult::getContractId)
                 .returns(toBytes(transactionBody.getFunctionParameters()), ContractResult::getFunctionParameters)
                 .returns(transactionBody.getGas(), ContractResult::getGasLimit);
 

@@ -26,8 +26,8 @@ import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedList;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 
@@ -63,7 +63,7 @@ public class NonFeeTransferExtractionStrategyImpl implements NonFeeTransferExtra
 
             EntityId contractId = entityIdService.lookup(transactionRecord.getReceipt().getContractID(),
                     body.getContractCall().getContractID());
-            LinkedList<AccountAmount> result = new LinkedList<>();
+            var result = new ArrayList<AccountAmount>();
             var amount = body.getContractCall().getAmount();
 
             var contractAccountId = AccountID.newBuilder()
@@ -89,7 +89,7 @@ public class NonFeeTransferExtractionStrategyImpl implements NonFeeTransferExtra
 
     private Iterable<AccountAmount> extractForCreateEntity(
             long initialBalance, AccountID payerAccountId, AccountID createdEntity, TransactionRecord txRecord) {
-        LinkedList<AccountAmount> result = new LinkedList<>();
+        var result = new ArrayList<AccountAmount>();
         result.add(AccountAmount.newBuilder()
                 .setAccountID(payerAccountId)
                 .setAmount(-initialBalance)

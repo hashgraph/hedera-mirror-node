@@ -23,23 +23,19 @@ package com.hedera.mirror.importer.config;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 import static org.apache.commons.lang3.ObjectUtils.max;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import javax.inject.Named;
-
-import com.hedera.mirror.common.util.DomainUtils;
-
 import lombok.RequiredArgsConstructor;
 import lombok.Value;
 import lombok.extern.log4j.Log4j2;
-import org.springframework.cglib.core.ReflectUtils;
 
 import com.hedera.mirror.common.domain.StreamFile;
 import com.hedera.mirror.common.domain.StreamType;
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
@@ -122,7 +118,7 @@ public class MirrorDateRangePropertiesProcessor {
      * @return The latest stream file from the database or a dummy stream file if it calculated a different effective
      * start date
      */
-    public <T extends StreamFile> Optional<T> getLastStreamFile(StreamType streamType) {
+    public <T extends StreamFile<?>> Optional<T> getLastStreamFile(StreamType streamType) {
         Instant startDate = mirrorProperties.getStartDate();
         Optional<T> streamFile = findLatest(streamType);
         Instant lastFileInstant = streamFile.map(StreamFile::getConsensusStart)
@@ -161,7 +157,7 @@ public class MirrorDateRangePropertiesProcessor {
             }
 
             String filename = StreamFilename.getFilename(streamType, DATA, effectiveStartDate);
-            T effectiveStreamFile = (T) ReflectUtils.newInstance(streamType.getStreamFileClass());
+            T effectiveStreamFile = streamType.newStreamFile();
             effectiveStreamFile.setConsensusStart(DomainUtils.convertToNanosMax(effectiveStartDate));
             effectiveStreamFile.setName(filename);
             effectiveStreamFile.setIndex(streamFile.map(StreamFile::getIndex).orElse(null));
@@ -173,21 +169,17 @@ public class MirrorDateRangePropertiesProcessor {
         return streamFile;
     }
 
-    private <T extends StreamFile> Optional<T> findLatest(StreamType streamType) {
+    @SuppressWarnings("unchecked")
+    private <T extends StreamFile<?>> Optional<T> findLatest(StreamType streamType) {
         return (Optional<T>) getStreamFileRepository(streamType).findLatest();
     }
 
     private StreamFileRepository<?, ?> getStreamFileRepository(StreamType streamType) {
-        switch (streamType) {
-            case BALANCE:
-                return accountBalanceFileRepository;
-            case EVENT:
-                return eventFileRepository;
-            case RECORD:
-                return recordFileRepository;
-            default:
-                throw new UnsupportedOperationException("Unsupported stream type " + streamType);
-        }
+        return switch (streamType) {
+            case BALANCE -> accountBalanceFileRepository;
+            case EVENT -> eventFileRepository;
+            case RECORD -> recordFileRepository;
+        };
     }
 
     private DownloaderProperties getDownloaderProperties(StreamType streamType) {

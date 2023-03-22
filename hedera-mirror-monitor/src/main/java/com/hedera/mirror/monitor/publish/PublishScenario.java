@@ -26,6 +26,7 @@ import org.apache.commons.lang3.StringUtils;
 import com.hedera.mirror.monitor.AbstractScenario;
 import com.hedera.mirror.monitor.ScenarioProtocol;
 
+@SuppressWarnings("java:S2160")
 public class PublishScenario extends AbstractScenario<PublishScenarioProperties, PublishResponse> {
 
     private final String memo;

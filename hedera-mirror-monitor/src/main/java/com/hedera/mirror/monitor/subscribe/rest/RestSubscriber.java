@@ -48,6 +48,7 @@ import com.hedera.mirror.rest.model.TransactionByIdResponse;
 @Log4j2
 @Named
 @RequiredArgsConstructor
+@SuppressWarnings("unchecked")
 class RestSubscriber implements MirrorSubscriber {
 
     private static final SecureRandom RANDOM = new SecureRandom();

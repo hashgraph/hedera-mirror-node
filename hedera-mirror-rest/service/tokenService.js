@@ -78,7 +78,7 @@ class TokenService extends BaseService {
    */
   getInClauseSubQuery(inConditions, params) {
     const tokenIdInParams = [];
-    inConditions.map((condition) => {
+    inConditions.forEach((condition) => {
       tokenIdInParams.push(condition.value);
     });
 

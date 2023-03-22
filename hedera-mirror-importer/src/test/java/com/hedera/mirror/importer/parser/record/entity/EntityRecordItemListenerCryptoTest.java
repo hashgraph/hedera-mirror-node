@@ -30,8 +30,6 @@ import com.google.protobuf.BoolValue;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
-import com.hedera.mirror.common.domain.contract.Contract;
-import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -49,15 +47,16 @@ import com.hederahashgraph.api.proto.java.ShardID;
 import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenTransferList;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -74,9 +73,11 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
@@ -95,6 +96,7 @@ import com.hedera.mirror.importer.repository.CryptoAllowanceRepository;
 import com.hedera.mirror.importer.repository.NftAllowanceRepository;
 import com.hedera.mirror.importer.repository.NftRepository;
 import com.hedera.mirror.importer.repository.TokenAllowanceRepository;
+import com.hedera.mirror.importer.repository.TokenTransferRepository;
 import com.hedera.mirror.importer.util.Utility;
 import com.hedera.mirror.importer.util.UtilityTest;
 
@@ -112,6 +114,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     private final NftRepository nftRepository;
     private final RecordParserProperties parserProperties;
     private final TokenAllowanceRepository tokenAllowanceRepository;
+    private final TokenTransferRepository tokenTransferRepository;
 
     @BeforeEach
     void before() {
@@ -124,7 +127,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
     void cryptoApproveAllowance() {
         // given
         var consensusTimestamp = recordItemBuilder.timestamp();
-        List<Nft> expectedNfts = new LinkedList<>();
+        var expectedNfts = new ArrayList<Nft>();
         var nftAllowances = customizeNftAllowances(consensusTimestamp, expectedNfts);
         RecordItem recordItem = recordItemBuilder.cryptoApproveAllowance()
                 .transactionBody(b -> b.clearNftAllowances().addAllNftAllowances(nftAllowances))
@@ -939,6 +942,9 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
         entityProperties.getPersist().setCryptoTransferAmounts(true);
         Transaction transaction = cryptoTransferTransaction();
         TransactionBody transactionBody = getTransactionBody(transaction);
+        var tokenId = EntityId.of(1020L, EntityType.TOKEN);
+        long amount = 100L;
+
         TransactionRecord record = buildTransactionRecord(r -> {
             r.setConsensusTimestamp(TestUtils.toTimestamp(1577836799000000000L - 1));
             for (int i = 0; i < additionalTransfers.length; i++) {
@@ -946,7 +952,12 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 var accountAmount = accountAmount(additionalTransfers[i], additionalTransferAmounts[i]);
                 r.getTransferListBuilder().addAccountAmounts(accountAmount);
             }
-        }, transactionBody, ResponseCodeEnum.INVALID_ACCOUNT_ID.getNumber());
+            r.addTokenTransferLists(TokenTransferList.newBuilder()
+                    .setToken(TokenID.newBuilder().setTokenNum(tokenId.getEntityNum()))
+                    .addTransfers(AccountAmount.newBuilder()
+                            .setAccountID(accountId1)
+                            .setAmount(amount)));
+        }, transactionBody, ResponseCodeEnum.FAIL_INVALID.getNumber());
 
         var recordItem = RecordItem.builder().transactionRecord(record).transaction(transaction).build();
         parseRecordItemAndCommit(recordItem);
@@ -956,6 +967,12 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 () -> assertEntities(),
                 () -> assertEquals(4, cryptoTransferRepository.count(), "Node, network fee & errata"),
                 () -> assertEquals(0, nonFeeTransferRepository.count()),
+                () -> assertThat(tokenTransferRepository.findAll())
+                        .hasSize(1)
+                        .first()
+                        .returns(tokenId, t -> t.getId().getTokenId())
+                        .returns(amount, t -> t.getAmount())
+                        .returns(EntityId.of(accountId1), t -> t.getId().getAccountId()),
                 () -> assertTransactionAndRecord(transactionBody, record),
                 () -> {
                     for (int i = 0; i < additionalTransfers.length; i++) {
@@ -1405,7 +1422,7 @@ class EntityRecordItemListenerCryptoTest extends AbstractEntityRecordItemListene
                 .modifiedTimestamp(103L)
                 .build();
         var timestamp = DomainUtils.timeStampInNanos(consensusTimestamp);
-        List<NftAllowance> nftAllowances = new LinkedList<>();
+        List<NftAllowance> nftAllowances = new ArrayList<>();
 
         nftAllowances.add(NftAllowance.newBuilder()
                 .setDelegatingSpender(delegatingSpender)

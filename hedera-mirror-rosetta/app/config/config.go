@@ -106,7 +106,7 @@ func LoadConfig() (*Config, error) {
 	}
 
 	var password = rosettaConfig.Db.Password
-	rosettaConfig.Db.Password = "<omitted>"
+	rosettaConfig.Db.Password = "" // Don't print password
 	log.Infof("Using configuration: %+v", rosettaConfig)
 	rosettaConfig.Db.Password = password
 

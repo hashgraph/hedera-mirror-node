@@ -20,21 +20,23 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
  * ‍
  */
 
+import static com.hedera.mirror.test.e2e.acceptance.config.ClientConfiguration.REST_RETRY_TEMPLATE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorScheduleSignature;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import java.util.HashSet;
+
 import java.util.List;
-import java.util.Set;
+import java.util.stream.Collectors;
+
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
 
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.KeyList;
@@ -51,8 +53,9 @@ import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorScheduleResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.MirrorTransactionsResponse;
 import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
+import org.springframework.retry.support.RetryTemplate;
 
-@Log4j2
+@CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class ScheduleFeature {
 
@@ -61,23 +64,21 @@ public class ScheduleFeature {
 
     private final AccountClient accountClient;
     private final MirrorNodeClient mirrorClient;
+    private final @Qualifier(REST_RETRY_TEMPLATE) RetryTemplate retryTemplate;
     private final ScheduleClient scheduleClient;
 
     private int currentSignersCount;
-    private int expectedSignersCount;
     private NetworkTransactionResponse networkTransactionResponse;
     private ScheduleId scheduleId;
     private ScheduleInfo scheduleInfo;
-    private Transaction scheduledTransaction;
     private TransactionId scheduledTransactionId;
 
     @Given("I successfully schedule a treasury HBAR disbursement to {string}")
     public void createNewHBarTransferSchedule(String accountName) {
-        expectedSignersCount = 2;
-        currentSignersCount = 0 + signatoryCountOffset;
-        ExpandedAccountId recipient = accountClient
+        currentSignersCount = signatoryCountOffset;
+        var recipient = accountClient
                 .getAccount(AccountClient.AccountNameEnum.valueOf(accountName)); // receiverSigRequired
-        scheduledTransaction = accountClient
+        var scheduledTransaction = accountClient
                 .getCryptoTransferTransaction(
                         accountClient.getTokenTreasuryAccount().getAccountId(),
                         recipient.getAccountId(),
@@ -119,19 +120,19 @@ public class ScheduleFeature {
     }
 
     @Then("the scheduled transaction is signed by {string}")
-    public void accountSignsSignature(String accountName) throws Exception {
+    public void accountSignsSignature(String accountName) {
         log.debug("{} signs scheduledTransaction", accountName);
         signSignature(accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName)));
     }
 
     @Then("the scheduled transaction is signed by treasuryAccount")
-    public void treasurySignsSignature() throws Exception {
+    public void treasurySignsSignature() {
         log.debug("treasuryAccount signs scheduledTransaction");
         signSignature(accountClient.getTokenTreasuryAccount());
     }
 
     @When("I successfully delete the schedule")
-    public void deleteSchedule() throws Exception {
+    public void deleteSchedule() {
         networkTransactionResponse = scheduleClient.deleteSchedule(scheduleId);
 
         assertNotNull(networkTransactionResponse.getTransactionId());
@@ -139,22 +140,22 @@ public class ScheduleFeature {
     }
 
     @Then("the network confirms schedule presence")
-    public void verifyNetworkScheduleResponse() throws Exception {
+    public void verifyNetworkScheduleResponse() {
         verifyNetworkScheduleStatus(ScheduleStatus.NON_EXECUTED);
     }
 
     @Then("the network confirms the schedule is executed")
-    public void verifyNetworkScheduleExecutedResponse() throws Exception {
+    public void verifyNetworkScheduleExecutedResponse() {
         verifyNetworkScheduleStatus(ScheduleStatus.EXECUTED);
     }
 
     @Then("the network confirms the schedule is deleted")
-    public void verifyNetworkScheduleDeletedResponse() throws Exception {
+    public void verifyNetworkScheduleDeletedResponse() {
         verifyNetworkScheduleStatus(ScheduleStatus.DELETED);
     }
 
     @Then("the network confirms some signers have provided their signatures")
-    public void verifyPartialScheduleFromNetwork() throws Exception {
+    public void verifyPartialScheduleFromNetwork() {
         verifyScheduleInfoFromNetwork(currentSignersCount);
     }
 
@@ -188,36 +189,35 @@ public class ScheduleFeature {
         verifyScheduleFromMirror(ScheduleStatus.DELETED);
     }
 
-    @Retryable(value = {AssertionError.class},
-            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
-            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
-    public void verifyNetworkScheduleStatus(ScheduleStatus scheduleStatus) {
-        scheduleInfo = scheduleClient.getScheduleInfo(scheduleId);
+    private void verifyNetworkScheduleStatus(ScheduleStatus scheduleStatus) {
+        retryTemplate.execute(x -> {
+            scheduleInfo = scheduleClient.getScheduleInfo(scheduleId);
 
-        // verify executed from 3 min record, set scheduled=true on scheduleCreateTransactionId and get receipt
-        validateScheduleInfo(scheduleInfo);
+            // verify executed from 3 min record, set scheduled=true on scheduleCreateTransactionId and get receipt
+            validateScheduleInfo(scheduleInfo);
 
-        switch (scheduleStatus) {
-            case NON_EXECUTED:
-                assertThat(scheduleInfo.executedAt).isNull();
-                assertThat(scheduleInfo.deletedAt).isNull();
-                break;
-            case EXECUTED:
-                assertThat(scheduleInfo.deletedAt).isNull();
-                assertThat(scheduleInfo.executedAt).isNotNull();
-                TransactionReceipt transactionReceipt = scheduleClient.getTransactionReceipt(scheduledTransactionId);
-                assertNotNull(transactionReceipt);
-                log.debug("Executed transaction {} was confirmed", scheduledTransactionId);
-                break;
-            case DELETED:
-                assertThat(scheduleInfo.deletedAt).isNotNull();
-                assertThat(scheduleInfo.executedAt).isNull();
-                break;
-            default:
-                break;
-        }
+            switch (scheduleStatus) {
+                case NON_EXECUTED -> {
+                    assertThat(scheduleInfo.executedAt).isNull();
+                    assertThat(scheduleInfo.deletedAt).isNull();
+                }
+                case EXECUTED -> {
+                    assertThat(scheduleInfo.deletedAt).isNull();
+                    assertThat(scheduleInfo.executedAt).isNotNull();
+                    TransactionReceipt transactionReceipt = scheduleClient.getTransactionReceipt(scheduledTransactionId);
+                    assertNotNull(transactionReceipt);
+                    log.debug("Executed transaction {} was confirmed", scheduledTransactionId);
+                }
+                case DELETED -> {
+                    assertThat(scheduleInfo.deletedAt).isNotNull();
+                    assertThat(scheduleInfo.executedAt).isNull();
+                }
+                default -> {}
+            }
 
-        log.info("Schedule {} status was confirmed by network state", scheduleId);
+            log.info("Schedule {} status was confirmed by network state", scheduleId);
+            return null;
+        });
     }
 
     private void validateScheduleInfo(ScheduleInfo scheduleInfo) {
@@ -238,32 +238,27 @@ public class ScheduleFeature {
     }
 
     private MirrorScheduleResponse verifyScheduleFromMirror(ScheduleStatus scheduleStatus) {
-        MirrorScheduleResponse mirrorSchedule = mirrorClient.getScheduleInfo(scheduleId.toString());
+        return retryTemplate.execute(x -> {
+            var mirrorSchedule = mirrorClient.getScheduleInfo(scheduleId.toString());
 
-        assertNotNull(mirrorSchedule);
-        assertThat(mirrorSchedule.getScheduleId()).isEqualTo(scheduleId.toString());
-        log.info("{} has {} signatories", scheduleId, mirrorSchedule.getSignatures().size());
+            assertNotNull(mirrorSchedule);
+            assertThat(mirrorSchedule.getScheduleId()).isEqualTo(scheduleId.toString());
+            log.info("{} has {} signatories", scheduleId, mirrorSchedule.getSignatures().size());
 
-        Set signatureSet = new HashSet<String>();
-        mirrorSchedule.getSignatures().forEach((k) -> {
             // get unique set of signatures
-            signatureSet.add(k.getPublicKeyPrefix());
+            var signatureSet = mirrorSchedule.getSignatures().stream()
+                    .map(MirrorScheduleSignature::getPublicKeyPrefix)
+                    .collect(Collectors.toSet());
+            assertThat(signatureSet).hasSize(currentSignersCount);
+
+            switch (scheduleStatus) {
+                case DELETED, NON_EXECUTED -> assertThat(mirrorSchedule.getExecutedTimestamp()).isNull();
+                case EXECUTED -> assertThat(mirrorSchedule.getExecutedTimestamp()).isNotNull();
+                default -> {}
+            }
+
+            return mirrorSchedule;
         });
-        assertThat(signatureSet).hasSize(currentSignersCount);
-
-        switch (scheduleStatus) {
-            case DELETED:
-            case NON_EXECUTED:
-                assertThat(mirrorSchedule.getExecutedTimestamp()).isNull();
-                break;
-            case EXECUTED:
-                assertThat(mirrorSchedule.getExecutedTimestamp()).isNotNull();
-                break;
-            default:
-                break;
-        }
-
-        return mirrorSchedule;
     }
 
     private void verifyScheduledTransaction(String timestamp) {

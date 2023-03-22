@@ -145,7 +145,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
         persistEntities(false);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters)).
-                isInstanceOf(InvalidTransactionException.class).hasMessage(CONTRACT_REVERT_EXECUTED.name());
+                isInstanceOf(InvalidTransactionException.class).hasMessage(CONTRACT_REVERT_EXECUTED.name()).hasFieldOrPropertyWithValue("data", "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000015437573746f6d20726576657274206d6573736167650000000000000000000000");
     }
 
     @Test
@@ -158,7 +158,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
         persistEntities(false);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters)).isInstanceOf(InvalidTransactionException.class)
-                .hasMessage("CONTRACT_REVERT_EXECUTED");
+                .hasMessage("CONTRACT_REVERT_EXECUTED").hasFieldOrPropertyWithValue("data", "0x");
 
         assertGasUsedIsPositive(gasUsedBeforeExecution, ERROR);
     }
@@ -196,7 +196,8 @@ class ContractCallServiceTest extends Web3IntegrationTest {
 
         assertThatThrownBy(() -> contractCallService.processCall(params)).
                 isInstanceOf(InvalidTransactionException.class)
-                .hasMessage(LOCAL_CALL_MODIFICATION_EXCEPTION.toString());
+                .hasMessage(LOCAL_CALL_MODIFICATION_EXCEPTION.toString())
+                .hasFieldOrPropertyWithValue("data", "0x");
 
         assertGasUsedIsPositive(gasUsedBeforeExecution, ERROR);
     }
@@ -213,7 +214,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
         persistEntities(false);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters)).
-                isInstanceOf(InvalidTransactionException.class);
+                isInstanceOf(InvalidTransactionException.class).hasFieldOrPropertyWithValue("data", "0x");
 
         assertGasUsedIsPositive(gasUsedBeforeExecution, ERROR);
     }
@@ -280,7 +281,8 @@ class ContractCallServiceTest extends Web3IntegrationTest {
             domainBuilder.entity().customize(e ->
                             e.id(receiverEntityId.getId())
                                     .num(receiverEntityId.getEntityNum())
-                                    .evmAddress(receiverEvmAddress))
+                                    .evmAddress(receiverEvmAddress)
+                                    .type(CONTRACT))
                     .persist();
         }
         final var contractEntityId = fromEvmAddress(CONTRACT_ADDRESS.toArrayUnsafe());

@@ -23,7 +23,7 @@ package com.hedera.mirror.importer.parser.balance;
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
@@ -51,7 +51,7 @@ public class AccountBalanceBuilder {
     public static class Builder {
 
         private final long consensusTimestamp;
-        private final List<TokenBalance> tokenBalances = new LinkedList<>();
+        private final List<TokenBalance> tokenBalances = new ArrayList<>();
 
         private EntityId accountId;
         private long balance;

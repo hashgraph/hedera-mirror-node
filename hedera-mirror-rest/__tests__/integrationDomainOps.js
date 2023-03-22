@@ -436,7 +436,7 @@ const addAddressBook = async (addressBookInput) => {
 
   addressBook.file_data =
     typeof addressBookInput.file_data === 'string'
-      ? Buffer.from(addressBookInput.file_data, 'utf-8')
+      ? Buffer.from(addressBookInput.file_data, 'utf8')
       : Buffer.from(addressBook.file_data);
 
   await insertDomainObject('address_book', insertFields, addressBook);
@@ -617,7 +617,7 @@ const addEthereumTransaction = async (ethereumTransaction) => {
 const hexEncodedFileIds = [111, 112];
 
 const addFileData = async (fileDataInput) => {
-  const encoding = hexEncodedFileIds.includes(fileDataInput.entity_id) ? 'hex' : 'utf-8';
+  const encoding = hexEncodedFileIds.includes(fileDataInput.entity_id) ? 'hex' : 'utf8';
 
   const fileData = {
     transaction_type: 17,
@@ -1067,6 +1067,8 @@ const contractLogDefaults = {
   topic1: '0x8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925',
   topic2: '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef',
   topic3: '0xe8d47b56e8cdfa95f871b19d4f50a857217c44a95502b0811a350fec1500dd67',
+  transaction_hash: Buffer.from([...Array(32).keys()]),
+  transaction_index: 0,
 };
 
 const addContractLog = async (contractLogInput) => {
@@ -1075,7 +1077,7 @@ const addContractLog = async (contractLogInput) => {
     ...contractLogInput,
   };
 
-  convertByteaFields(['bloom', 'data', 'topic0', 'topic1', 'topic2', 'topic3'], contractLog);
+  convertByteaFields(['bloom', 'data', 'topic0', 'topic1', 'topic2', 'topic3', 'transaction_hash'], contractLog);
 
   await insertDomainObject('contract_log', Object.keys(contractLog), contractLog);
 };

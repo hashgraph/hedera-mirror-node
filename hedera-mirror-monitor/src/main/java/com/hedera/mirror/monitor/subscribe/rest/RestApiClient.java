@@ -50,7 +50,7 @@ public class RestApiClient {
         log.info("Connecting to mirror node {}", url);
     }
 
-    public <T> Mono<T> retrieve(Class<T> responseClass, String uri, String... parameters) {
+    public <T> Mono<T> retrieve(Class<T> responseClass, String uri, Object... parameters) {
         return webClient.get()
                 .uri(uri.replace(PREFIX, StringUtils.EMPTY), parameters)
                 .retrieve()

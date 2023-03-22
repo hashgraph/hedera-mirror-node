@@ -276,7 +276,7 @@ postgresql:
     extraEnvVarsSecret: mirror-passwords
     image:
       debug: true
-      tag: 14.7.0-debian-11-r1
+      tag: 14.7.0-debian-11-r12
     initdbScriptsCM: "{{ .Release.Name }}-init"
     password: ""  # Randomly generated if left blank
     podAntiAffinityPreset: soft

@@ -75,7 +75,8 @@ class CompositeBatchPersisterTest extends IntegrationTest {
         var items = spy(Collection.class);
         when(items.isEmpty()).thenReturn(true);
         compositeBatchInserter.persist(items);
-        verify(items, never()).iterator();
+        var it = verify(items, never()).iterator();
+        assertThat(it).isNull();
     }
 
     @Test

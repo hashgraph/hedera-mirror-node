@@ -26,6 +26,11 @@ import java.util.Base64;
 import java.util.List;
 import java.util.function.Function;
 import lombok.experimental.UtilityClass;
+import org.apache.commons.codec.DecoderException;
+import org.apache.commons.codec.binary.Base32;
+import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
@@ -35,6 +40,8 @@ import com.hedera.mirror.graphql.viewmodel.Node;
 @UtilityClass
 public class GraphQlUtils {
 
+    private static final Base32 BASE32 = new Base32();
+    private static final String HEX_PREFIX = "0x";
     private static final Splitter SPLITTER = Splitter.on(':');
 
     public static Long convertCurrency(HbarUnit unit, Long tinybars) {
@@ -92,6 +99,23 @@ public class GraphQlUtils {
         if (nonNull != 1) {
             throw new IllegalArgumentException("Must provide exactly one input value but " + nonNull + " have been " +
                     "provided");
+        }
+    }
+
+    public static byte[] decodeBase32(String base32) {
+        return BASE32.decode(base32);
+    }
+
+    public static byte[] decodeEvmAddress(String evmAddress) {
+        if (evmAddress == null) {
+            return ArrayUtils.EMPTY_BYTE_ARRAY;
+        }
+
+        try {
+            evmAddress = StringUtils.removeStart(evmAddress, HEX_PREFIX);
+            return Hex.decodeHex(evmAddress);
+        } catch (DecoderException e) {
+            throw new IllegalArgumentException("Unable to decode evmAddress: " + evmAddress);
         }
     }
 }

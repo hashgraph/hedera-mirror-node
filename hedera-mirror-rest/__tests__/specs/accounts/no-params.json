@@ -180,7 +180,7 @@
         "decline_reward": true,
         "deleted": false,
         "ethereum_nonce": null,
-        "evm_address": null,
+        "evm_address": "0x0000000000000000000000000000000000000001",
         "expiry_timestamp": "8010000.123456789",
         "key": {
           "_type": "ED25519",
@@ -216,7 +216,7 @@
         "decline_reward": false,
         "deleted": false,
         "ethereum_nonce": null,
-        "evm_address": null,
+        "evm_address": "0x0000000000000000000000000000000000000002",
         "expiry_timestamp": null,
         "key": {
           "_type": "ED25519",
@@ -243,7 +243,7 @@
         "decline_reward": false,
         "deleted": false,
         "ethereum_nonce": null,
-        "evm_address": null,
+        "evm_address": "0x0000000000000000000000000000000000000003",
         "expiry_timestamp": "10000.123456790",
         "key": {
           "_type": "ED25519",
@@ -270,7 +270,7 @@
         "decline_reward": false,
         "deleted": false,
         "ethereum_nonce": null,
-        "evm_address": null,
+        "evm_address": "0x0000000000000000000000000000000000000004",
         "expiry_timestamp": null,
         "key": {
           "_type": "ECDSA_SECP256K1",
@@ -306,7 +306,7 @@
         "decline_reward": false,
         "deleted": false,
         "ethereum_nonce": null,
-        "evm_address": null,
+        "evm_address": "0x0000000000000000000000000000000000000005",
         "expiry_timestamp": null,
         "key": {
           "_type": "ECDSA_SECP256K1",
@@ -333,7 +333,7 @@
         "decline_reward": false,
         "deleted": false,
         "ethereum_nonce": null,
-        "evm_address": null,
+        "evm_address": "0x0000000000000000000000000000000000000006",
         "expiry_timestamp": null,
         "key": {
           "_type": "ECDSA_SECP256K1",
@@ -407,7 +407,7 @@
         "created_timestamp": null,
         "decline_reward": false,
         "ethereum_nonce": null,
-        "evm_address": null,
+        "evm_address": "0x0000000000000000000000000000000000000009",
         "expiry_timestamp": "9223372036.854775806",
         "key": null,
         "deleted": false,

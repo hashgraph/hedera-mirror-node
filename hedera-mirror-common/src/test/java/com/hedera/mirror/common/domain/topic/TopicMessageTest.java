@@ -23,7 +23,7 @@ package com.hedera.mirror.common.domain.topic;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TransactionID;
@@ -57,7 +57,7 @@ class TopicMessageTest {
                 .build();
         topicMessage.setInitialTransactionId(transactionID.toByteArray());
 
-        ObjectMapper objectMapper = new ObjectMapper().setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
+        ObjectMapper objectMapper = new ObjectMapper().setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
         String json = objectMapper.writeValueAsString(topicMessage);
         assertThat(json).isEqualTo("{" +
                 "\"@type\":\"TopicMessage\"," +
