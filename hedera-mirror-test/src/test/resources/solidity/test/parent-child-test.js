@@ -97,11 +97,13 @@ describe("ParentChild", function () {
     await parent.deployed();
 
     const salt = 42;
-    const childEvmAddress = await parent.getAddress(childArtifactJson.bytecode, salt);
+
+    const childBytecode = await parent.getBytecode();
+    const childEvmAddress = await parent.getAddress(childBytecode, salt);
     expect(ethers.utils.isAddress(childEvmAddress)).to.equal(true);
 
     const [account1] = await ethers.getSigners();
-    const submitCreate2DeployTx = await parent.connect(account1).create2Deploy(childArtifactJson.bytecode, salt);
+    const submitCreate2DeployTx = await parent.connect(account1).create2Deploy(childBytecode, salt);
 
     // wait until the transaction is mined
     const contractDeployResult = await submitCreate2DeployTx.wait();
@@ -110,7 +112,7 @@ describe("ParentChild", function () {
     const event0 = contractDeployResult.events[0];
     expect(event0.logIndex).to.equal(0);
     expect(event0.event).to.equal('Create2Deploy');
-    expect(event0.args.addr).to.equal(childEvmAddress);
+    expect(event0.args.addr).to.equal(childEvmAddress);+
 
     // verify balance defaults
     expect(await provider.getBalance(contractDeployResult.to)).to.equal(0); // parent from transaction
