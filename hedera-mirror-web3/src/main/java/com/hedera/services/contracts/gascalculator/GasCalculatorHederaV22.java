@@ -36,10 +36,10 @@ public class GasCalculatorHederaV22 extends GasCalculatorHederaV19 {
     private static final long TX_BASE_COST = 21_000L;
 
     public GasCalculatorHederaV22(
-            final MirrorNodeEvmProperties dynamicProperties,
+            final MirrorNodeEvmProperties mirrorNodeEvmProperties,
             final MirrorBasicFcfsUsagePrices usagePrices,
             final MirrorBasicHbarCentExchange exchange) {
-        super(dynamicProperties, usagePrices, exchange);
+        super(mirrorNodeEvmProperties, usagePrices, exchange);
     }
 
     @Override

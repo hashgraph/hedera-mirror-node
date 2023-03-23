@@ -38,7 +38,7 @@ public final class MirrorBasicHbarCentExchange {
 
     private ExchangeRateSet exchangeRates;
 
-    MirrorBasicHbarCentExchange(final PricesAndFeesRepository pricesAndFeesRepository) {
+    public MirrorBasicHbarCentExchange(final PricesAndFeesRepository pricesAndFeesRepository) {
         this.pricesAndFeesRepository = pricesAndFeesRepository;
     }
 

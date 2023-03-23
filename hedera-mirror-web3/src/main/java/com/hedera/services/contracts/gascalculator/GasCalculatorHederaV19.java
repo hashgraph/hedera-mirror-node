@@ -38,16 +38,16 @@ import org.hyperledger.besu.evm.gascalculator.LondonGasCalculator;
 @SuppressWarnings("java:S110")
 public class GasCalculatorHederaV19 extends LondonGasCalculator {
 
-    private final MirrorNodeEvmProperties dynamicProperties;
+    private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
     private final MirrorBasicFcfsUsagePrices usagePrices;
     private final MirrorBasicHbarCentExchange exchange;
 
     @Inject
     public GasCalculatorHederaV19(
-            final MirrorNodeEvmProperties dynamicProperties,
+            final MirrorNodeEvmProperties mirrorNodeEvmProperties,
             final MirrorBasicFcfsUsagePrices usagePrices,
             final MirrorBasicHbarCentExchange exchange) {
-        this.dynamicProperties = dynamicProperties;
+        this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
         this.usagePrices = usagePrices;
         this.exchange = exchange;
     }
@@ -110,6 +110,6 @@ public class GasCalculatorHederaV19 extends LondonGasCalculator {
     }
 
     long getLogStorageDuration() {
-        return dynamicProperties.cacheRecordsTtl();
+        return mirrorNodeEvmProperties.cacheRecordsTtl();
     }
 }
