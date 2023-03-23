@@ -23,10 +23,13 @@ import com.hedera.mirror.web3.repository.PricesAndFeesRepository;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import javax.inject.Named;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import javax.inject.Named;
 
+/**
+ * Temporary extracted class from services.
+ */
 @Named
 public final class MirrorBasicHbarCentExchange {
     private final PricesAndFeesRepository pricesAndFeesRepository;
@@ -44,12 +47,6 @@ public final class MirrorBasicHbarCentExchange {
         return rateAt(now.getSeconds());
     }
 
-    private ExchangeRate rateAt(final long now) {
-        final var currentRate = exchangeRates.getCurrentRate();
-        final var currentExpiry = currentRate.getExpirationTime().getSeconds();
-        return (now < currentExpiry) ? currentRate : exchangeRates.getNextRate();
-    }
-
     private void updateExchangeRates(final long now) {
         final var ratesFile = pricesAndFeesRepository.getExchangeRate(now);
 
@@ -59,5 +56,11 @@ public final class MirrorBasicHbarCentExchange {
             log.warn("Corrupt rate file at {}, may require remediation!", EXCHANGE_RATE_ENTITY_ID.toString(), e);
             throw new IllegalStateException(String.format("Rates %s are corrupt!", EXCHANGE_RATE_ENTITY_ID));
         }
+    }
+
+    private ExchangeRate rateAt(final long now) {
+        final var currentRate = exchangeRates.getCurrentRate();
+        final var currentExpiry = currentRate.getExpirationTime().getSeconds();
+        return (now < currentExpiry) ? currentRate : exchangeRates.getNextRate();
     }
 }

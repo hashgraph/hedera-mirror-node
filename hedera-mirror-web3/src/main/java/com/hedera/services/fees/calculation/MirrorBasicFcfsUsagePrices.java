@@ -22,6 +22,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.web3.repository.PricesAndFeesRepository;
+import com.hedera.services.fees.pricing.RequiredPriceTypes;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -29,23 +30,27 @@ import com.hederahashgraph.api.proto.java.FeeSchedule;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
 import com.hederahashgraph.api.proto.java.Timestamp;
+import com.hederahashgraph.api.proto.java.TimestampSeconds;
 import com.hederahashgraph.api.proto.java.TransactionFeeSchedule;
 import java.time.Instant;
 import java.util.EnumMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.Set;
 import javax.inject.Inject;
 import javax.inject.Named;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Temporary extracted class from services.
+ * </p>
+ * Loads the required fee schedules from the Hedera "file system".
+ */
 @Named
-public class MirrorBasicUsagePrices {
+public class MirrorBasicFcfsUsagePrices {
     private static final EntityId FEE_SCHEDULE_ENTITY_ID = new EntityId(0L, 0L, 111L, EntityType.FILE);
-    private static final Logger log = LogManager.getLogger(MirrorBasicUsagePrices.class);
+    private static final Logger log = LogManager.getLogger(MirrorBasicFcfsUsagePrices.class);
 
     private static final long DEFAULT_FEE = 100_000L;
 
@@ -79,16 +84,16 @@ public class MirrorBasicUsagePrices {
     private final PricesAndFeesRepository pricesAndFeesRepository;
 
     @Inject
-    public MirrorBasicUsagePrices(PricesAndFeesRepository pricesAndFeesRepository) {
+    public MirrorBasicFcfsUsagePrices(PricesAndFeesRepository pricesAndFeesRepository) {
         this.pricesAndFeesRepository = pricesAndFeesRepository;
     }
 
     public FeeData defaultPricesGiven(final HederaFunctionality function, final Timestamp at) {
-        this.updateFeeSchedules(at.getSeconds());
+        this.setFeeSchedules(at.getSeconds());
         return pricesGiven(function, at).get(DEFAULT);
     }
 
-    public void updateFeeSchedules(final long now) {
+    public void setFeeSchedules(final long now) {
         byte[] feeScheduleFile = new byte[0];
         if (now > 0) {
             feeScheduleFile = pricesAndFeesRepository.getFeeSchedule(now);
@@ -96,7 +101,7 @@ public class MirrorBasicUsagePrices {
 
         try {
             final var schedules = CurrentAndNextFeeSchedule.parseFrom(feeScheduleFile);
-            this.updateFeeSchedules(schedules);
+            this.setFeeSchedules(schedules);
         } catch (InvalidProtocolBufferException e) {
             log.warn(
                     "Corrupt fee schedules file at {}, may require remediation!", FEE_SCHEDULE_ENTITY_ID.toString(), e);
@@ -104,35 +109,60 @@ public class MirrorBasicUsagePrices {
         }
     }
 
-    private void updateFeeSchedules(CurrentAndNextFeeSchedule schedules) {
-        final var currentSchedule = schedules.getCurrentFeeSchedule();
-        this.currFunctionUsagePrices = getUsagePricesEnumMap(currentSchedule);
-        this.currFunctionUsagePricesExpiry = getUsagePricesExpiry(currentSchedule);
+    public void setFeeSchedules(final CurrentAndNextFeeSchedule feeSchedules) {
+        currFunctionUsagePrices = functionUsagePricesFrom(feeSchedules.getCurrentFeeSchedule());
+        currFunctionUsagePricesExpiry =
+                asTimestamp(feeSchedules.getCurrentFeeSchedule().getExpiryTime());
 
-        final var nextSchedule = schedules.getNextFeeSchedule();
-        this.nextFunctionUsagePrices = getUsagePricesEnumMap(nextSchedule);
-        this.nextFunctionUsagePricesExpiry = getUsagePricesExpiry(nextSchedule);
+        nextFunctionUsagePrices = functionUsagePricesFrom(feeSchedules.getNextFeeSchedule());
+        nextFunctionUsagePricesExpiry =
+                asTimestamp(feeSchedules.getNextFeeSchedule().getExpiryTime());
     }
 
-    private EnumMap<HederaFunctionality, Map<SubType, FeeData>> getUsagePricesEnumMap(FeeSchedule feeSchedule) {
-        return feeSchedule.getTransactionFeeScheduleList().stream()
-                .collect(Collectors.toMap(
-                        TransactionFeeSchedule::getHederaFunctionality,
-                        fs -> getFeesMap(fs.getFeesList()),
-                        (l, r) -> {
-                            throw new IllegalArgumentException("Duplicate keys " + l + "and " + r + ".");
-                        },
-                        () -> new EnumMap<>(HederaFunctionality.class)));
+    private EnumMap<HederaFunctionality, Map<SubType, FeeData>> functionUsagePricesFrom(final FeeSchedule feeSchedule) {
+        final EnumMap<HederaFunctionality, Map<SubType, FeeData>> allPrices = new EnumMap<>(HederaFunctionality.class);
+        for (final var pricingData : feeSchedule.getTransactionFeeScheduleList()) {
+            final var function = pricingData.getHederaFunctionality();
+            Map<SubType, FeeData> pricesMap = allPrices.get(function);
+            if (pricesMap == null) {
+                pricesMap = new EnumMap<>(SubType.class);
+            }
+            final Set<SubType> requiredTypes = RequiredPriceTypes.requiredTypesFor(function);
+            ensurePricesMapHasRequiredTypes(pricingData, pricesMap, requiredTypes);
+            allPrices.put(pricingData.getHederaFunctionality(), pricesMap);
+        }
+        return allPrices;
     }
 
-    private Map<SubType, FeeData> getFeesMap(List<FeeData> feeData) {
-        return feeData.stream().collect(Collectors.toMap(FeeData::getSubType, Function.identity()));
+    private void ensurePricesMapHasRequiredTypes(
+            final TransactionFeeSchedule tfs, final Map<SubType, FeeData> pricesMap, final Set<SubType> requiredTypes) {
+        /* The deprecated prices are the final fallback; if even they are not set, the function will be free */
+        final var oldDefaultPrices = tfs.getFeeData();
+        FeeData newDefaultPrices = null;
+        for (final var typedPrices : tfs.getFeesList()) {
+            final var type = typedPrices.getSubType();
+            if (requiredTypes.contains(type)) {
+                pricesMap.put(type, typedPrices);
+            }
+            if (type == DEFAULT) {
+                newDefaultPrices = typedPrices;
+            }
+        }
+        for (final var type : requiredTypes) {
+            if (!pricesMap.containsKey(type)) {
+                if (newDefaultPrices != null) {
+                    pricesMap.put(
+                            type, newDefaultPrices.toBuilder().setSubType(type).build());
+                } else {
+                    pricesMap.put(
+                            type, oldDefaultPrices.toBuilder().setSubType(type).build());
+                }
+            }
+        }
     }
 
-    private Timestamp getUsagePricesExpiry(FeeSchedule feeSchedule) {
-        return Timestamp.newBuilder()
-                .setSeconds(feeSchedule.getExpiryTime().getSeconds())
-                .build();
+    private Timestamp asTimestamp(final TimestampSeconds ts) {
+        return Timestamp.newBuilder().setSeconds(ts.getSeconds()).build();
     }
 
     private Map<SubType, FeeData> pricesGiven(final HederaFunctionality function, final Timestamp at) {
