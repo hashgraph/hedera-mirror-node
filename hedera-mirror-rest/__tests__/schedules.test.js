@@ -18,6 +18,8 @@
  * ‍
  */
 
+import _ from 'lodash';
+
 import {getResponseLimit} from '../config';
 import * as constants from '../constants';
 import schedules from '../schedules';
@@ -221,5 +223,134 @@ describe('schedule extractSqlFromScheduleFilters tests', () => {
     const expectedlimit = 10;
 
     verifyExtractSqlFromScheduleFilters(filters, expectedquery, expectedparams, expectedorder, expectedlimit);
+  });
+});
+
+describe('mergeScheduleEntities', () => {
+  let schedulesInput;
+  let entities;
+  let signatures;
+  let expected;
+
+  beforeEach(() => {
+    schedulesInput = [
+      {
+        consensus_timestamp: 1000,
+        creator_account_id: 5000,
+        executed_timestamp: 1300,
+        expiration_time: 2000,
+        payer_account_id: 5000,
+        schedule_id: 3000,
+        transaction_body: Buffer.from('0x010203040506', 'hex'),
+        wait_for_expiry: false,
+      },
+      {
+        consensus_timestamp: 1100,
+        creator_account_id: 5001,
+        executed_timestamp: 1400,
+        expiration_time: 2100,
+        payer_account_id: 5001,
+        schedule_id: 3001,
+        transaction_body: Buffer.from('0x020304050607', 'hex'),
+        wait_for_expiry: false,
+      },
+      {
+        consensus_timestamp: 1200,
+        creator_account_id: 5002,
+        executed_timestamp: 1500,
+        expiration_time: 2200,
+        payer_account_id: 5002,
+        schedule_id: 3002,
+        transaction_body: Buffer.from('0x030405060708', 'hex'),
+        wait_for_expiry: false,
+      },
+    ];
+    entities = [
+      {
+        deleted: true,
+        id: 3000,
+        key: Buffer.from('010101', 'hex'),
+        memo: 'schedule 5000',
+      },
+      {
+        deleted: false,
+        id: 3001,
+        key: Buffer.from('010101', 'hex'),
+        memo: 'schedule 5000',
+      },
+      {
+        deleted: true,
+        id: 3002,
+        key: Buffer.from('010101', 'hex'),
+        memo: 'schedule 5000',
+      },
+    ];
+    signatures = [
+      {
+        entity_id: 3000,
+        signatures: [
+          {
+            consensus_timestamp: 1290,
+            public_key_prefix: Buffer.from('prefix1', 'utf8').toString('base64'),
+            signature: Buffer.from('signature1', 'utf8').toString('base64'),
+            type: 10,
+          },
+        ],
+      },
+      {
+        entity_id: 3001,
+        signatures: [
+          {
+            consensus_timestamp: 1390,
+            public_key_prefix: Buffer.from('prefix2', 'utf8').toString('base64'),
+            signature: Buffer.from('signature2', 'utf8').toString('base64'),
+            type: 10,
+          },
+        ],
+      },
+      {
+        entity_id: 3002,
+        signatures: [
+          {
+            consensus_timestamp: 1490,
+            public_key_prefix: Buffer.from('prefix3', 'utf8').toString('base64'),
+            signature: Buffer.from('signature3', 'utf8').toString('base64'),
+            type: 10,
+          },
+        ],
+      },
+    ];
+    expected = schedulesInput
+      .map((schedule, index) => ({...schedule, ...entities[index], ...signatures[index]}))
+      .map((schedule) => _.omit(schedule, ['entity_id', 'id']));
+  });
+
+  test('default', () => {
+    expect(schedules.mergeScheduleEntities(schedulesInput, entities, signatures)).toStrictEqual(expected);
+  });
+
+  test('empty', () => {
+    expect(schedules.mergeScheduleEntities([], [], [])).toStrictEqual([]);
+  });
+
+  test('no entities', () => {
+    expected = expected.map((schedule) => _.omit(schedule, ['deleted', 'key', 'memo']));
+    expect(schedules.mergeScheduleEntities(schedulesInput, [], signatures)).toStrictEqual(expected);
+  });
+
+  test('no signatures', () => {
+    expected = expected.map((schedule) => _.omit(schedule, ['signatures']));
+    expect(schedules.mergeScheduleEntities(schedulesInput, entities, [])).toStrictEqual(expected);
+  });
+
+  test('some entities / signatures missing', () => {
+    entities = [entities[0], entities[1]];
+    signatures = [signatures[1]];
+    expected = [
+      _.omit(expected[0], ['signatures']),
+      expected[1],
+      _.omit(expected[2], ['deleted', 'key', 'memo', 'signatures']),
+    ];
+    expect(schedules.mergeScheduleEntities(schedulesInput, entities, signatures)).toStrictEqual(expected);
   });
 });
