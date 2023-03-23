@@ -38,10 +38,12 @@ import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
+import javax.inject.Named;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class MirrorBasicUsagePrices implements UsagePricesProvider {
+@Named
+public class MirrorBasicUsagePrices {
     private static final EntityId FEE_SCHEDULE_ENTITY_ID = new EntityId(0L, 0L, 111L, EntityType.FILE);
     private static final Logger log = LogManager.getLogger(MirrorBasicUsagePrices.class);
 
@@ -81,7 +83,6 @@ public class MirrorBasicUsagePrices implements UsagePricesProvider {
         this.pricesAndFeesRepository = pricesAndFeesRepository;
     }
 
-    @Override
     public FeeData defaultPricesGiven(final HederaFunctionality function, final Timestamp at) {
         this.updateFeeSchedules(at.getSeconds());
         return pricesGiven(function, at).get(DEFAULT);

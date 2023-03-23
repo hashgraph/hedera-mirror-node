@@ -25,8 +25,10 @@ import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import javax.inject.Named;
 
-public final class MirrorBasicHbarCentExchange implements HbarCentExchange {
+@Named
+public final class MirrorBasicHbarCentExchange {
     private final PricesAndFeesRepository pricesAndFeesRepository;
     private static final Logger log = LogManager.getLogger(MirrorBasicHbarCentExchange.class);
     private static final EntityId EXCHANGE_RATE_ENTITY_ID = new EntityId(0L, 0L, 112L, EntityType.FILE);
@@ -37,7 +39,6 @@ public final class MirrorBasicHbarCentExchange implements HbarCentExchange {
         this.pricesAndFeesRepository = pricesAndFeesRepository;
     }
 
-    @Override
     public ExchangeRate rate(final Timestamp now) {
         updateExchangeRates(now.getSeconds());
         return rateAt(now.getSeconds());

@@ -85,6 +85,6 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     }
 
     public int cacheRecordsTtl() {
-        return 1;
+        return 180;
     }
 }
