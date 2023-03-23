@@ -36,7 +36,7 @@ import org.springframework.data.domain.Persistable;
 @Entity
 @NoArgsConstructor
 public class TransactionHash implements Persistable<byte[]> {
-
+    public static final int V1_SHARD_COUNT = 32;
     private long consensusTimestamp;
 
     @Id
@@ -54,5 +54,13 @@ public class TransactionHash implements Persistable<byte[]> {
     @Override
     public boolean isNew() {
         return true; // Since we never update and use a natural ID, avoid Hibernate querying before insert
+    }
+
+    public int calculateV1Shard() {
+        return Math.floorMod(hash[0], V1_SHARD_COUNT);
+    }
+
+    public boolean hashIsValid() {
+        return this.hash != null && hash.length > 0;
     }
 }
