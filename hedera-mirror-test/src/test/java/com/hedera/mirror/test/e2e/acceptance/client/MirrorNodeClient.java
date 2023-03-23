@@ -266,7 +266,7 @@ public class MirrorNodeClient {
     public MirrorAccountResponse getAccountDetailsUsingEvmAddress(@NonNull AccountId accountId) {
         log.debug("Retrieving account details for accountId '{}'", accountId);
         return callRestEndpoint("/accounts/{accountId}", MirrorAccountResponse.class,
-                accountId.aliasEvmAddress);
+                accountId.evmAddress);
     }
 
     public void unSubscribeFromTopic(SubscriptionHandle subscription) {
