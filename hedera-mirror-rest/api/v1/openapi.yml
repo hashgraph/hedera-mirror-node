@@ -296,6 +296,36 @@ paths:
           $ref: '#/components/responses/NotFoundError'
       tags:
         - blocks
+
+  /api/v1/contracts/call:
+      post:
+        summary: eth_call and eth_estimateGas
+        description: Returns a result from execution of eth_call and eth_estimateGas. If `estimate` field set to true eth_estimateGas is executed
+        servers:
+          - url:
+        requestBody:
+          required: true
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  to:
+                    type: string
+                  data:
+                    type: string
+        responses:
+          200:
+            description: OK
+            content:
+              application/json:
+                schema:
+                  type: object
+                  properties:
+                    result:
+                      type: string
+        tags:
+          - contracts
   /api/v1/contracts:
     get:
       summary: List contract entities on network
