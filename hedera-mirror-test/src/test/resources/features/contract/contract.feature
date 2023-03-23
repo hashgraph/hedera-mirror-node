@@ -42,7 +42,7 @@ Feature: Contract Base Coverage Feature
         And the mirror node REST API should return status <httpStatusCode> for the contract transaction
         Then the mirror node REST API should retrieve the child contract when using evm address
         And the mirror node REST API should verify the account is no longer hollow
-#        Then I successfully delete the child contract by calling it and causing it to self destruct
+        Then I successfully delete the child contract by calling it and causing it to self destruct
         Examples:
             | httpStatusCode | transferAmount |
             | 200            | 1000           |
