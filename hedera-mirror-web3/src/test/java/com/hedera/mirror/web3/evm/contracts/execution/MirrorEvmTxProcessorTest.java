@@ -65,9 +65,9 @@ import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionP
 import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider;
 import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultHederaTracer;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
+import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldState;
-import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 
 @ExtendWith(MockitoExtension.class)
@@ -95,7 +95,7 @@ class MirrorEvmTxProcessorTest {
     @Mock
     private HederaEvmWorldState.Updater updater;
     @Mock
-    private HederaEvmWorldUpdater stackedUpdater;
+    private AbstractLedgerEvmWorldUpdater stackedUpdater;
     @Mock
     private MirrorEvmContractAliases hederaEvmContractAliases;
     @Mock
