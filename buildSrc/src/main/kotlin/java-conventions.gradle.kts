@@ -18,6 +18,7 @@
  * ‍
  */
 
+import org.gradle.internal.impldep.org.junit.platform.launcher.TagFilter.excludeTags
 import org.springframework.boot.gradle.plugin.SpringBootPlugin
 
 plugins {
@@ -49,6 +50,16 @@ repositories {
     }
     maven {
         url = uri("https://us-maven.pkg.dev/swirlds-registry/maven-adhoc-commits")
+    }
+    exclusiveContent {
+        forRepository {
+            maven {
+                url = uri("https://oss.sonatype.org/content/groups/staging")
+            }
+        }
+        filter {
+            includeGroup("com.hedera.evm")
+        }
     }
 }
 

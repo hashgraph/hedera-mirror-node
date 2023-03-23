@@ -43,7 +43,7 @@ import java.time.Duration;
 public class MirrorNodeEvmProperties implements EvmProperties {
     private boolean directTokenCall = true;
 
-    private boolean dynamicEvmVersion;
+    private boolean dynamicEvmVersion = true;
 
     @NotBlank
     private String evmVersion = EVM_VERSION;
