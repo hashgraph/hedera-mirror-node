@@ -28,6 +28,7 @@ import org.apache.tuweni.bytes.Bytes;
  * Updates gas costs enabled by gas-per-second throttling.
  */
 @Named
+@SuppressWarnings("java:S110")
 public class GasCalculatorHederaV22 extends GasCalculatorHederaV19 {
 
     private static final long TX_DATA_ZERO_COST = 4L;

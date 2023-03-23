@@ -103,8 +103,7 @@ public class MirrorBasicFcfsUsagePrices {
             final var schedules = CurrentAndNextFeeSchedule.parseFrom(feeScheduleFile);
             this.setFeeSchedules(schedules);
         } catch (InvalidProtocolBufferException e) {
-            log.warn(
-                    "Corrupt fee schedules file at {}, may require remediation!", FEE_SCHEDULE_ENTITY_ID.toString(), e);
+            log.warn("Corrupt fee schedules file at {}, may require remediation!", FEE_SCHEDULE_ENTITY_ID, e);
             throw new IllegalStateException(String.format("Fee schedule %s is corrupt!", FEE_SCHEDULE_ENTITY_ID));
         }
     }

@@ -53,7 +53,7 @@ public final class MirrorBasicHbarCentExchange {
         try {
             exchangeRates = ExchangeRateSet.parseFrom(ratesFile);
         } catch (InvalidProtocolBufferException e) {
-            log.warn("Corrupt rate file at {}, may require remediation!", EXCHANGE_RATE_ENTITY_ID.toString(), e);
+            log.warn("Corrupt rate file at {}, may require remediation!", EXCHANGE_RATE_ENTITY_ID, e);
             throw new IllegalStateException(String.format("Rates %s are corrupt!", EXCHANGE_RATE_ENTITY_ID));
         }
     }

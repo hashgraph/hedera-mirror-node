@@ -66,7 +66,9 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                 (int) evmProperties.getExpirationCacheTime().toSeconds();
 
         this.codeCache = new AbstractCodeCache(expirationCacheTime, entityAccess);
-        this.worldState = new HederaEvmWorldState(entityAccess, evmProperties, codeCache);
+        this.worldState = new HederaEvmWorldState(
+                entityAccess, evmProperties,
+                codeCache, accountAccessor);
     }
 
     @Override
