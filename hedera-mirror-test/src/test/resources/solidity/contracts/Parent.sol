@@ -74,6 +74,13 @@ contract Parent {
     receive() external payable {}
 
     // This function was sourced from hedera-services Create2Factory.sol
+    function getBytecode() public pure returns (bytes memory) {
+        bytes memory bytecode = type(Child).creationCode;
+
+        return abi.encodePacked(bytecode);
+    }
+
+    // This function was sourced from hedera-services Create2Factory.sol
     function getAddress(bytes memory bytecode, uint _salt) public view returns (address)
     {
         bytes32 hash = keccak256(
@@ -84,7 +91,7 @@ contract Parent {
         return address(uint160(uint(hash)));
     }
 
-    // This function is sourced from hedera-services Create2Factory.deploy()
+    // This function was sourced from hedera-services Create2Factory.deploy()
     function create2Deploy(bytes memory bytecode, uint _salt) public payable {
         address addr;
 
