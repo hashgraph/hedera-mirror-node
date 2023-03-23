@@ -35,7 +35,6 @@ extra.apply {
     set("protobufVersion", "3.22.2")
     set("reactorGrpcVersion", "1.2.3")
     set("snakeyaml.version", "1.33") // Temporary fix for transient dependency security issue
-    set("spring-data-bom.version", "2021.2.10") // Temporary fix for security issue. Remove after Boot 2.7.10
     set("testcontainersSpringBootVersion", "2.3.2")
     set("vertxVersion", "4.4.0")
 }
