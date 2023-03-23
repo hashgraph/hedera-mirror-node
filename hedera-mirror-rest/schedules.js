@@ -209,30 +209,18 @@ const extractSqlFromScheduleFilters = (filters) => {
  * @returns {*}
  */
 const mergeScheduleEntities = (schedules, entities, signatures) => {
-  let entityIndex = 0;
-  let signatureIndex = 0;
-  return schedules.map((schedule) => {
-    const {schedule_id: scheduleId} = schedule;
+  const entityMap = entities.reduce((result, entity) => {
+    result[entity.id] = _.omit(entity, ['id']);
+    return result;
+  }, {});
+  const signatureMap = signatures.reduce((result, signature) => {
+    result[signature.entity_id] = _.omit(signature, ['entity_id']);
+    return result;
+  }, {});
 
-    if (entityIndex < entities.length) {
-      const entity = entities[entityIndex];
-      if (scheduleId === entity.id) {
-        schedule.deleted = entity.deleted;
-        schedule.key = entity.key;
-        schedule.memo = entity.memo;
-        entityIndex++;
-      }
-    }
-
-    if (signatureIndex < signatures.length) {
-      const signature = signatures[signatureIndex];
-      if (scheduleId === signature.entity_id) {
-        schedule.signatures = signature.signatures;
-        signatureIndex++;
-      }
-    }
-    return schedule;
-  });
+  return schedules.map((schedule) =>
+    Object.assign(schedule, entityMap[schedule.schedule_id] ?? {}, signatureMap[schedule.schedule_id] ?? {})
+  );
 };
 
 /**

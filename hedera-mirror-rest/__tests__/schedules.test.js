@@ -260,7 +260,7 @@ describe('mergeScheduleEntities', () => {
         executed_timestamp: 1500,
         expiration_time: 2200,
         payer_account_id: 5002,
-        schedule_id: 3002,
+        schedule_id: 9007199254740992n,
         transaction_body: Buffer.from('0x030405060708', 'hex'),
         wait_for_expiry: false,
       },
@@ -280,7 +280,7 @@ describe('mergeScheduleEntities', () => {
       },
       {
         deleted: true,
-        id: 3002,
+        id: 9007199254740992n,
         key: Buffer.from('010101', 'hex'),
         memo: 'schedule 5000',
       },
@@ -309,7 +309,7 @@ describe('mergeScheduleEntities', () => {
         ],
       },
       {
-        entity_id: 3002,
+        entity_id: 9007199254740992n,
         signatures: [
           {
             consensus_timestamp: 1490,
