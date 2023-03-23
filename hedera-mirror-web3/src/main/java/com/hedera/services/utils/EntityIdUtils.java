@@ -27,48 +27,9 @@ import org.hyperledger.besu.datatypes.Address;
 
 public final class EntityIdUtils {
 
-    private static final String CANNOT_PARSE_PREFIX = "Cannot parse '";
 
     private EntityIdUtils() {
         throw new UnsupportedOperationException("Utility Class");
-    }
-
-    public static AccountID parseAccount(final String literal) {
-        try {
-            final var parts = parseLongTriple(literal);
-            return AccountID.newBuilder()
-                    .setShardNum(parts[0])
-                    .setRealmNum(parts[1])
-                    .setAccountNum(parts[2])
-                    .build();
-        } catch (final NumberFormatException | ArrayIndexOutOfBoundsException e) {
-            throw new IllegalArgumentException(String.format("Argument 'literal=%s' is not an account", literal), e);
-        }
-    }
-
-    private static long[] parseLongTriple(final String dotDelimited) {
-        final long[] triple = new long[3];
-        int i = 0;
-        long v = 0;
-        for (final char c : dotDelimited.toCharArray()) {
-            if (c == '.') {
-                triple[i++] = v;
-                v = 0;
-            } else if (c < '0' || c > '9') {
-                throw new NumberFormatException(CANNOT_PARSE_PREFIX + dotDelimited + "' due to character '" + c +
-                        "'");
-            } else {
-                v = 10 * v + (c - '0');
-                if (v < 0) {
-                    throw new IllegalArgumentException(CANNOT_PARSE_PREFIX + dotDelimited + "' due to overflow");
-                }
-            }
-        }
-        if (i < 2) {
-            throw new IllegalArgumentException(CANNOT_PARSE_PREFIX + dotDelimited + "' due to only " + i + " dots");
-        }
-        triple[i] = v;
-        return triple;
     }
 
     public static ContractID asContract(final AccountID id) {

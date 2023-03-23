@@ -13,37 +13,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.hedera.services.store.contracts.precompile.codec;
-
-import com.esaulpaugh.headlong.abi.ABIType;
-import com.esaulpaugh.headlong.abi.Tuple;
-
-import com.hedera.services.hapi.utils.ByteStringUtils;
-import com.hedera.services.store.contracts.precompile.FungibleTokenTransfer;
-import com.hedera.services.store.contracts.precompile.HbarTransfer;
-import com.hedera.services.store.contracts.precompile.NftExchange;
-
-import com.hedera.services.utils.EntityIdUtils;
-
-import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenID;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
-import javax.inject.Singleton;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.function.Predicate;
-import java.util.function.UnaryOperator;
 
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.ARRAY_BRACKETS;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.EXPIRY;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.EXPIRY_V2;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.TOKEN_KEY;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
+
+import com.esaulpaugh.headlong.abi.ABIType;
+import com.esaulpaugh.headlong.abi.Tuple;
+import com.google.protobuf.UnsafeByteOperations;
+import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
+import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.function.Predicate;
+import java.util.function.UnaryOperator;
+import javax.inject.Singleton;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
+
+import com.hedera.services.store.contracts.precompile.FungibleTokenTransfer;
+import com.hedera.services.store.contracts.precompile.HbarTransfer;
+import com.hedera.services.store.contracts.precompile.NftExchange;
+import com.hedera.services.utils.EntityIdUtils;
 
 @Singleton
 public class DecodingFacade {
@@ -149,12 +146,11 @@ public class DecodingFacade {
     }
 
     /**
-     * Existence-aware conversion of Solidity address to AccountID, where if the address converted
-     * into `shard.real.num` format of an AccountID does not exist in the current ledgers, we return
-     * an AccountID with alias == non-existing address, in order to support lazy creations, *NOTE*
-     * that evm addresses that map to an existing AccountID in the `shard.realm.format` *will not*
-     * trigger a lazy creation; Existing addresses are converted in the usual to `shard.real.num`
-     * AccountID format
+     * Existence-aware conversion of Solidity address to AccountID, where if the address converted into `shard.real.num`
+     * format of an AccountID does not exist in the current ledgers, we return an AccountID with alias == non-existing
+     * address, in order to support lazy creations, *NOTE* that evm addresses that map to an existing AccountID in the
+     * `shard.realm.format` *will not* trigger a lazy creation; Existing addresses are converted in the usual to
+     * `shard.real.num` AccountID format
      */
     public static AccountID convertLeftPaddedAddressToAccountId(
             final byte[] leftPaddedAddress,
@@ -219,7 +215,7 @@ public class DecodingFacade {
     @NonNull
     public static AccountID generateAccountIDWithAliasCalculatedFrom(final AccountID accountID) {
         return AccountID.newBuilder()
-                .setAlias(ByteStringUtils.wrapUnsafely(EntityIdUtils.asEvmAddress(accountID)))
+                .setAlias(UnsafeByteOperations.unsafeWrap(EntityIdUtils.asEvmAddress(accountID)))
                 .build();
     }
 

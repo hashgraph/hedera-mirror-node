@@ -16,7 +16,6 @@
 
 package com.hedera.services.utils;
 
-import static com.hedera.services.utils.EntityIdUtils.parseAccount;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -41,10 +40,6 @@ class EntityIdUtilsTest {
         "1.2.three,Argument 'literal=1.2.three' is not an account",
         "1.2.333333333333333333333,Cannot parse '1.2.333333333333333333333' due to overflow"
     })
-    void rejectsInvalidAccountLiterals(final String badLiteral, final String desiredMsg) {
-        final var e = assertThrows(IllegalArgumentException.class, () -> parseAccount(badLiteral));
-        assertEquals(desiredMsg, e.getMessage());
-    }
 
     @Test
     void asSolidityAddressBytesWorksProperly() {
