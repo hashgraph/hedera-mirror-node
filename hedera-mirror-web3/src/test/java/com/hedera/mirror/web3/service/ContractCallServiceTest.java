@@ -138,6 +138,17 @@ class ContractCallServiceTest extends Web3IntegrationTest {
     }
 
     @Test
+    void precompileCallReverts() {
+        final var tokenNameCall = "0x6f0fccab00000000000000000000000000000000000000000000000000000000000004e4";
+        final var serviceParameters = serviceParameters(tokenNameCall, 0, ETH_CALL, false);
+
+        persistEntities(false);
+
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters)).
+                isInstanceOf(UnsupportedOperationException.class).hasMessage("Precompile not supported");
+    }
+
+    @Test
     void testRevertDetailMessage() {
         final var revertFunctionSignature = "0xa26388bb";
         final var serviceParameters = serviceParameters(revertFunctionSignature, 0, ETH_CALL, true);
