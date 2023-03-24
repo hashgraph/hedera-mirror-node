@@ -21,12 +21,10 @@ package com.hedera.mirror.importer.util;
  */
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.common.primitives.Bytes;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.Key;
@@ -41,7 +39,6 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.exception.ParserException;
 
 @SuppressWarnings("java:S5786")
 public class UtilityTest {
@@ -74,8 +71,7 @@ public class UtilityTest {
         assertThat(Utility.aliasToEvmAddress(null)).isNull();
         assertThat(Utility.aliasToEvmAddress(new byte[] {})).isNull();
         assertThat(Utility.aliasToEvmAddress(tooShortBytes)).isNull();
-        assertThatThrownBy(() -> Utility.aliasToEvmAddress(invalidBytes))
-                .isInstanceOf(ParserException.class);
+        assertThat(Utility.aliasToEvmAddress(invalidBytes)).isNull();
     }
 
     @ParameterizedTest
