@@ -157,7 +157,9 @@ class ContractCallServiceTest extends Web3IntegrationTest {
         persistEntities(false);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters)).
-                isInstanceOf(InvalidTransactionException.class).hasMessage(CONTRACT_REVERT_EXECUTED.name()).hasFieldOrPropertyWithValue("data", "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000015437573746f6d20726576657274206d6573736167650000000000000000000000");
+                isInstanceOf(InvalidTransactionException.class).hasMessage(CONTRACT_REVERT_EXECUTED.name())
+                .hasFieldOrPropertyWithValue("detail", "Custom revert message")
+                .hasFieldOrPropertyWithValue("data", "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000015437573746f6d20726576657274206d6573736167650000000000000000000000");
     }
 
     @Test
