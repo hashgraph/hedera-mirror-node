@@ -160,6 +160,11 @@ public class TestUtils {
         return results.iterator().hasNext() ? results.iterator().next() : null;
     }
 
+    public void insertIntoTransactionHashSharded(JdbcTemplate jdbcTemplate, TransactionHash hash) {
+        var sql = "INSERT INTO transaction_hash_sharded(consensus_timestamp,hash,payer_account_id) VALUES (?,?,?)";
+        jdbcTemplate.update(sql, hash.getConsensusTimestamp(), hash.getHash(), hash.getPayerAccountId());
+    }
+
     public AccountID toAccountId(String accountId) {
         var parts = accountId.split("\\.");
         return AccountID.newBuilder().setShardNum(Long.parseLong(parts[0])).setRealmNum(Long.parseLong(parts[1]))

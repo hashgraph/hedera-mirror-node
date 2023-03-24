@@ -169,8 +169,7 @@ class BackfillTransactionHashMigrationTest extends IntegrationTest {
         }
         else {
             var hash = hashWrapper.get();
-            var sql = "INSERT INTO transaction_hash_sharded(consensus_timestamp,hash,payer_account_id) VALUES (?,?,?)";
-            jdbcTemplate.update(sql, hash.getConsensusTimestamp(), hash.getHash(), hash.getPayerAccountId());
+            TestUtils.insertIntoTransactionHashSharded(jdbcTemplate, hash);
         }
     }
 
