@@ -39,9 +39,6 @@ public final class KeyValueWrapper {
     private final ContractID delegatableContractID;
     private final KeyValueType keyValueType;
 
-    /* --- This field is populated only when `shouldInheritAccountKey` is true --- */
-    private Key inheritedKey;
-
     public KeyValueWrapper(
             final boolean shouldInheritAccountKey,
             final ContractID contractID,
@@ -76,10 +73,6 @@ public final class KeyValueWrapper {
 
     private boolean isEcdsaSecp256k1KeySet() {
         return ecdsaSecp256k1.length == ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH;
-    }
-
-    public void setInheritedKey(final Key key) {
-        this.inheritedKey = key;
     }
 
     private boolean keyValidityCheck(
