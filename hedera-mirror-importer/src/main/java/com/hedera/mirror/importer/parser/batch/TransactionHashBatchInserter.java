@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.batch;
  * ‍
  */
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.CaseFormat;
 
 import com.google.common.base.Stopwatch;
@@ -34,26 +35,17 @@ import com.hedera.mirror.importer.parser.CommonParserProperties;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import lombok.CustomLog;
-import lombok.Data;
 import lombok.SneakyThrows;
 import org.springframework.context.annotation.Profile;
-import org.springframework.jdbc.datasource.DataSourceUtils;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
 import javax.inject.Named;
 import javax.sql.DataSource;
-import java.sql.Connection;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -65,15 +57,13 @@ import static com.hedera.mirror.common.domain.transaction.TransactionHash.V1_SHA
 @Profile("!v2")
 public class TransactionHashBatchInserter implements BatchPersister {
     private final Map<Integer, BatchInserter> shardBatchInserters;
-    private final DataSource dataSource;
     private final Timer insertDurationMetric;
     private final String shardedTableName;
     private final Scheduler scheduler;
-    private final Map<String, ThreadState> threadConnections = new ConcurrentHashMap<>();
+    private final TransactionHashTxManager transactionManager;
 
     public TransactionHashBatchInserter(DataSource dataSource, MeterRegistry meterRegistry,
                                         CommonParserProperties commonParserProperties) {
-        this.dataSource = dataSource;
         this.shardedTableName = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE,
                 TransactionHash.class.getSimpleName() + "_sharded");
         this.insertDurationMetric = Timer.builder("hedera.mirror.importer.parse.insert")
@@ -89,6 +79,7 @@ public class TransactionHashBatchInserter implements BatchPersister {
                                 meterRegistry,
                                 commonParserProperties,
                                 String.format("%s_%02d", shardedTableName, shard))));
+        this.transactionManager = new TransactionHashTxManager(dataSource);
     }
 
     @Override
@@ -101,7 +92,7 @@ public class TransactionHashBatchInserter implements BatchPersister {
             Stopwatch stopwatch = Stopwatch.createStarted();
 
             // After parser transaction completes, process all transactions for shards
-            addTransactionSynchronization(items);
+            transactionManager.initialize(items, this.shardedTableName);
 
             Map<Integer, List<TransactionHash>> shardedItems = items.stream()
                     .map(TransactionHash.class::cast)
@@ -123,74 +114,6 @@ public class TransactionHashBatchInserter implements BatchPersister {
         }
     }
 
-    private void addTransactionSynchronization(Collection<?> items) {
-        // This will be non empty when there are multiple calls to persist
-        // in the same parent transaction which is the case if batch limit is reached
-        if (!threadConnections.isEmpty()) {
-            return;
-        }
-
-        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-            final long itemCount = items.size();
-            final long recordTimestamp = ((TransactionHash) items.iterator().next()).getConsensusTimestamp();
-
-            @Override
-            public void afterCompletion(int status) {
-                var failedShards = new TreeSet<Integer>();
-                var successfulShards = new TreeSet<Integer>();
-
-                for (ThreadState threadState : threadConnections.values()) {
-                    try (Connection connection = threadState.getConnection()) {
-                        if (status == STATUS_COMMITTED) {
-                            connection.commit();
-                            successfulShards.addAll(threadState.getProcessedShards());
-                            threadState.setStatus(STATUS_COMMITTED);
-                        } else if (status == STATUS_ROLLED_BACK) {
-                            connection.rollback();
-                            successfulShards.addAll(threadState.getProcessedShards());
-                            threadState.setStatus(STATUS_ROLLED_BACK);
-                        } else {
-                            connection.rollback();
-                            failedShards.addAll(threadState.getProcessedShards());
-                            threadState.setStatus(STATUS_UNKNOWN);
-                        }
-                    } catch (Exception e) {
-                        log.error("Received exception processing connections for shards {} in file containing " +
-                                        "timestamp {}",
-                                threadState.getProcessedShards(), recordTimestamp, e);
-                        threadState.setStatus(Integer.MAX_VALUE);
-                        failedShards.addAll(threadState.getProcessedShards());
-                    }
-                }
-
-                String statusString = switch (status) {
-                    case STATUS_COMMITTED -> "committed";
-                    case STATUS_ROLLED_BACK -> "rolled back";
-                    default -> "unknown";
-                };
-
-                if (failedShards.isEmpty()) {
-                    log.info("Successfully {} {} items in {} shards {} in file containing timestamp {}",
-                            statusString,
-                            itemCount,
-                            shardedTableName,
-                            successfulShards,
-                            recordTimestamp);
-                } else {
-                    log.error("Errors occurred processing sharded table {}. parent status {} successful shards {} " +
-                                    "failed shards {} in file containing timestamp {}",
-                            shardedTableName,
-                            statusString,
-                            successfulShards,
-                            failedShards,
-                            recordTimestamp);
-                }
-
-                threadConnections.clear();
-            }
-        });
-    }
-
     private Mono<Void> processShard(Map.Entry<Integer, List<TransactionHash>> shardData) {
         return Mono.just(shardData)
                 .doOnNext(this::persist)
@@ -200,49 +123,13 @@ public class TransactionHashBatchInserter implements BatchPersister {
 
     @SneakyThrows
     private void persist(Map.Entry<Integer, List<TransactionHash>> data) {
-        var threadState = configureThread(data.getKey());
+        var threadState = transactionManager.updateAndGetThreadState(data.getKey());
         shardBatchInserters.get(data.getKey())
                 .persistItems(data.getValue(), threadState.getConnection());
     }
 
-    private ThreadState configureThread(int shard) {
-        return threadConnections.compute(Thread.currentThread().getName(),
-                (key, value) -> {
-                    if (value == null) {
-                        ThreadState returnVal = setupThreadTransaction();
-                        returnVal.getProcessedShards().add(shard);
-
-                        return returnVal;
-                    }
-                    value.getProcessedShards().add(shard);
-                    return value;
-                });
-    }
-
-    @SneakyThrows
-    private ThreadState setupThreadTransaction() {
-        // Clean thread from previous run
-        TransactionSynchronizationManager.clear();
-        TransactionSynchronizationManager.unbindResourceIfPossible(dataSource);
-
-        // initialize transaction for thread
-        TransactionSynchronizationManager.initSynchronization();
-        TransactionSynchronizationManager.setActualTransactionActive(true);
-
-        // Subsequent calls to get connection on this thread will use the same connection
-        Connection connection = DataSourceUtils.getConnection(dataSource);
-        connection.setAutoCommit(false);
-        return new ThreadState(connection);
-    }
-
-    @Data
-    private static class ThreadState {
-        private final Connection connection;
-        private final Set<Integer> processedShards = new HashSet<>();
-        private int status = -1;
-
-        public ThreadState(Connection connection) {
-            this.connection = connection;
-        }
+    @VisibleForTesting
+    Map<String, TransactionHashTxManager.ThreadState> getThreadConnections() {
+        return transactionManager.getThreadConnections();
     }
 }
