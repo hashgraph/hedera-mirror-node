@@ -63,7 +63,7 @@ class TokenExpiryWrapperTest {
                 wrapper.toString());
     }
 
-    public static TokenExpiryWrapper createTokenExpiryWrapper() {
+    static TokenExpiryWrapper createTokenExpiryWrapper() {
         return new TokenExpiryWrapper(442L, payer, 555L);
     }
 
@@ -77,13 +77,14 @@ class TokenExpiryWrapperTest {
                 .build();
     }
 
+    //copied from IdUtils
     static long[] asDotDelimitedLongArray(String s) {
         String[] parts = s.split("[.]");
         return Stream.of(parts).mapToLong(Long::valueOf).toArray();
     }
 
     //copied from EntityId
-    public AccountID toGrpcAccountId(final int code) {
+    AccountID toGrpcAccountId(final int code) {
         return AccountID.newBuilder()
                 .setShardNum(0L)
                 .setRealmNum(0L)
@@ -91,7 +92,7 @@ class TokenExpiryWrapperTest {
                 .build();
     }
 
-    public static long numFromCode(int code) {
+    static long numFromCode(int code) {
         return code & MASK_INT_AS_UNSIGNED_LONG;
     }
 }

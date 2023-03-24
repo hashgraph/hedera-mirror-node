@@ -75,6 +75,11 @@ public class DecodingFacadeTest {
         assertFalse(decodedInput.get(0).isUsedForWipeKey());
         assertFalse(decodedInput.get(0).isUsedForFeeScheduleKey());
         assertFalse(decodedInput.get(0).isUsedForPauseKey());
+        assertTrue(decodedInput.get(0).key().getEd25519Key().length == 0);
+        assertTrue(decodedInput.get(0).key().getContractID() == null);
+        assertTrue(decodedInput.get(0).key().getDelegatableContractID() == null);
+        assertTrue(decodedInput.get(0).key().getEcdsaSecp256k1() != null);
+
     }
 
     @Test
