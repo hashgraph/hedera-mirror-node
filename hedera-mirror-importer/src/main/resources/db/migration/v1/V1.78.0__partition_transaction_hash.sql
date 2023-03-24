@@ -74,6 +74,8 @@ PARTITION OF public.transaction_hash_sharded FOR VALUES in (31);
 CREATE OR REPLACE VIEW transaction_hash AS
 SELECT * FROM transaction_hash_old UNION ALL SELECT * FROM transaction_hash_sharded;
 
+GRANT SELECT on transaction_hash to readonly;
+
 CREATE OR REPLACE FUNCTION get_transaction_info_by_hash(bytea)
     returns TABLE
             (
