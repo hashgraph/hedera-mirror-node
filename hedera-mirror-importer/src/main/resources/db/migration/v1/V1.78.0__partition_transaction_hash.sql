@@ -1,6 +1,6 @@
 ALTER table transaction_hash RENAME to transaction_hash_old;
 
-CREATE TABLE public.transaction_hash_sharded
+CREATE TABLE IF NOT EXISTS public.transaction_hash_sharded
 (
     LIKE public.transaction_hash_old INCLUDING DEFAULTS INCLUDING CONSTRAINTS INCLUDING STORAGE INCLUDING COMMENTS INCLUDING INDEXES
 )
