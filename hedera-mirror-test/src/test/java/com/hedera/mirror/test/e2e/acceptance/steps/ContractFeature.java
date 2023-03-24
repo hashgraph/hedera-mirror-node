@@ -32,20 +32,21 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 
 import com.hedera.hashgraph.sdk.AccountId;
-import com.hedera.hashgraph.sdk.ContractFunctionResult;
 import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient.ExecuteContractResult;
 import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 
-import com.hedera.mirror.test.e2e.acceptance.response.NetworkTransactionResponse;
-
 import io.cucumber.java.en.And;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
+import io.cucumber.java.ja.且つ;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.Comparator;
+import java.util.HexFormat;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -87,12 +88,13 @@ public class ContractFeature extends AbstractFeature {
     private static final int EVM_ADDRESS_SALT = 42;
 
     /*
-     * Static state to persist across Cucumber scenarios.
+     * Static state to persist across contract Cucumber scenarios.
      */
     record DeployedContract(FileId fileId, ContractId contractId, CompiledSolidityArtifact compiledSolidityArtifact) {};
     private static DeployedContract deployedParentContract;
 
     private String create2ChildContractEvmAddress;
+    private String create2ChildContractEntityId;
     private AccountId create2ChildContractAccountId;
     private ContractId create2ChildContractContractId;
 
@@ -153,11 +155,17 @@ public class ContractFeature extends AbstractFeature {
         assertThat(mirrorTransaction.getEntityId()).isEqualTo(deployedParentContract.contractId().toString());
     }
 
+    @Then("the mirror node REST API should return status {int} for the self destruct transaction")
+    public void verifyMirrorAPIContractChildSelfDestructResponses(int status) {
+        log.info("Verify contract transaction");
+        MirrorTransaction mirrorTransaction = verifyMirrorTransactionsResponse(mirrorClient, status);
+        assertThat(mirrorTransaction.getEntityId()).isEqualTo(create2ChildContractEntityId);
+    }
+
     @And("the mirror node REST API should return status {int} for the account transaction")
     public void verifyMirrorAPIAccountResponses(int status) {
         log.info("Verify account transaction");
-        MirrorTransaction mirrorTransaction = verifyMirrorTransactionsResponse(mirrorClient, status);
-//        assertThat(mirrorTransaction.getEntityId()).isEqualTo(childContractEvmAddressAccountId);
+        verifyMirrorTransactionsResponse(mirrorClient, status);
     }
 
     @Then("the mirror node REST API should verify the deployed contract entity")
@@ -210,31 +218,23 @@ public class ContractFeature extends AbstractFeature {
         verifyContractFromMirror(true);
     }
 
-    @Then("I call the parent contract to retrieve child contract bytecode")
+    @Given("I call the parent contract to retrieve child contract bytecode")
     public void getChildContractBytecode() {
-
         ExecuteContractResult executeContractResult = executeGetChildContractBytecodeTransaction();
-        networkTransactionResponse = executeContractResult.networkTransactionResponse();
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-
         childContractBytecodeFromParent = executeContractResult.contractFunctionResult().getBytes(0);
         assertNotNull(childContractBytecodeFromParent);
     }
 
-    @Then("I call the parent contract evm address function with the bytecode of the child contract")
+    @When("I call the parent contract evm address function with the bytecode of the child contract")
     public void getCreate2ChildContractEvmAddress() throws IOException {
         ExecuteContractResult executeContractResult = executeGetEvmAddressTransaction(EVM_ADDRESS_SALT);
-        networkTransactionResponse = executeContractResult.networkTransactionResponse();
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
 
         create2ChildContractEvmAddress = executeContractResult.contractFunctionResult().getAddress(0);
         create2ChildContractAccountId = AccountId.fromString(String.format("0.0.%s", create2ChildContractEvmAddress));
         create2ChildContractContractId = ContractId.fromString(create2ChildContractAccountId.toString());
     }
 
-    @Then("I create a hollow account using CryptoTransfer of {int} to the evm address")
+    @And("I create a hollow account using CryptoTransfer of {int} to the evm address")
     public void createHollowAccountWithCryptoTransfertoEvmAddress(int amount) {
         networkTransactionResponse = accountClient.sendCryptoTransfer(create2ChildContractAccountId, Hbar.fromTinybars(amount));
 
@@ -242,14 +242,22 @@ public class ContractFeature extends AbstractFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
-    @Then("the mirror node REST API should verify the account receiving {int} is hollow")
+    @And("the mirror node REST API should verify the account receiving {int} is hollow")
     public void verifyMirrorAPIHollowAccountResponse(int amount) {
         log.info("Verify cryptotransfer to evm address account is hollow");
-        var mirrorAccountResponse = mirrorClient.getAccountDetailsUsingEvmAddress(
-                create2ChildContractAccountId);
-        var transactions = mirrorClient.getTransactions(networkTransactionResponse.getTransactionIdStringNoCheckSum()).getTransactions();
+        var mirrorAccountResponse = mirrorClient.getAccountDetailsUsingEvmAddress(create2ChildContractAccountId);
+        create2ChildContractEntityId = mirrorAccountResponse.getAccount();
+
+        var transactions = mirrorClient.getTransactions(networkTransactionResponse.getTransactionIdStringNoCheckSum())
+                .getTransactions()
+                .stream()
+                .sorted(Comparator.comparing(MirrorTransaction::getConsensusTimestamp))
+                .toList();
+
         assertNotNull(transactions);
-        assertEquals(2, transactions.size());   // create and transfer
+        assertEquals(2, transactions.size());
+        assertEquals("CRYPTOCREATEACCOUNT", transactions.get(0).getName());
+        assertEquals("CRYPTOTRANSFER", transactions.get(1).getName());
 
         assertNotNull(mirrorAccountResponse.getAccount());
         assertEquals(amount, mirrorAccountResponse.getBalanceInfo().getBalance());
@@ -261,8 +269,7 @@ public class ContractFeature extends AbstractFeature {
     public void verifyMirrorAPIContractNotFoundResponse() {
         log.info("Verify contract at the hollow account evm address does not exist");
         try {
-            MirrorContractResponse mirrorContractResponse = mirrorClient.getContractInfoWithNotFound(
-                    create2ChildContractEvmAddress);
+            MirrorContractResponse mirrorContractResponse = mirrorClient.getContractInfoWithNotFound(create2ChildContractEvmAddress);
             log.error("Expected contract at EVM address {} to not exist, but found: {}", create2ChildContractEvmAddress, mirrorContractResponse);
             fail();
         } catch (WebClientResponseException wcre) {
@@ -270,43 +277,49 @@ public class ContractFeature extends AbstractFeature {
         }
     }
 
-    @Then("I deploy a child contract by calling parent contract function to deploy to the evm address using CREATE2")
+    @When("I create a child contract by calling parent contract function to deploy using CREATE2")
     public void createChildContractUsingCreate2() {
-        ExecuteContractResult executeContractResult = executeCreate2Transaction(EVM_ADDRESS_SALT);
-        networkTransactionResponse = executeContractResult.networkTransactionResponse();
-        ContractId contractId = verifyCreateContractNetworkResponse();
-        assertNotNull(contractId); // Remove - done already.
+        executeCreate2Transaction(EVM_ADDRESS_SALT);
     }
 
-    @Then("the mirror node REST API should retrieve the child contract when using evm address")
+    @And("the mirror node REST API should retrieve the child contract when using evm address")
     public void verifyMirrorAPIContractFoundResponse() {
         log.info("Verify contract at the now full account evm address does now exist");
         MirrorContractResponse mirrorContractResponse = mirrorClient.getContractInfo(create2ChildContractEvmAddress);
-//        assertEquals(childContractEvmAddressContractId, mirrorContractResponse.getContractId());
+        var transactions = mirrorClient.getTransactions(networkTransactionResponse.getTransactionIdStringNoCheckSum())
+                .getTransactions()
+                .stream()
+                .sorted(Comparator.comparing(MirrorTransaction::getConsensusTimestamp))
+                .toList();
+
+        assertNotNull(transactions);
+        assertEquals(2, transactions.size());
+        assertEquals(deployedParentContract.contractId.toString(), transactions.get(0).getEntityId());
+        assertEquals("CONTRACTCALL", transactions.get(0).getName());
+        assertEquals(create2ChildContractEntityId, transactions.get(1).getEntityId());
+        assertEquals("CONTRACTCREATEINSTANCE", transactions.get(1).getName());
+
+        String childContractBytecodeFromParentHex = HexFormat.of().formatHex(childContractBytecodeFromParent);
+        assertEquals(childContractBytecodeFromParentHex, mirrorContractResponse.getBytecode().replaceFirst("0x", ""));
+        assertEquals(create2ChildContractEvmAddress, mirrorContractResponse.getEvmAddress().replaceFirst("0x", ""));
     }
 
     @And("the mirror node REST API should verify the account is no longer hollow")
     public void verifyMirrorAPIFullAccountResponse() {
-        log.info("Verify cryptotransfer to evm address account is no full");
-        var mirrorAccountResponse = mirrorClient.getAccountDetailsUsingEvmAddress(
-                create2ChildContractAccountId);
+        log.info("Verify cryptotransfer to evm address account is no longer hollow");
+        var mirrorAccountResponse = mirrorClient.getAccountDetailsUsingEvmAddress(create2ChildContractAccountId);
         var transactions = mirrorClient.getTransactions(networkTransactionResponse.getTransactionIdStringNoCheckSum()).getTransactions();
-        assertNotNull(transactions);
 
         assertNotNull(mirrorAccountResponse.getAccount());
-        // Hollow account indicated by not having a public key defined.
         assertNotEquals(ACCOUNT_EMPTY_KEYLIST, mirrorAccountResponse.getKey().getKey());
     }
 
-    @Then("I successfully delete the child contract by calling it and causing it to self destruct")
+    @When("I successfully delete the child contract by calling it and causing it to self destruct")
     public void deleteChildContractUsingSelfDestruct() {
-        ExecuteContractResult executeContractResult = executeSelftDestructTransaction();
-        networkTransactionResponse = executeContractResult.networkTransactionResponse();
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
+        executeSelfDestructTransaction();
     }
 
-    private ContractId verifyCreateContractNetworkResponse() {
+    private ContractId  verifyCreateContractNetworkResponse() {
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
         ContractId contractId = networkTransactionResponse.getReceipt().contractId;
@@ -438,89 +451,54 @@ public class ContractFeature extends AbstractFeature {
     }
 
     private void executeCreateChildTransaction(int transferAmount) {
+        ContractFunctionParameters parameters = new ContractFunctionParameters()
+                .addUint256(BigInteger.valueOf(transferAmount));
+
+        executeContractCallTransaction(deployedParentContract.contractId(), "createChild", parameters, null);
+    }
+
+    private ExecuteContractResult executeGetChildContractBytecodeTransaction() {
+        return executeContractCallTransaction(deployedParentContract.contractId(), "getBytecode", null, null);
+    }
+
+    private ExecuteContractResult executeGetEvmAddressTransaction(int salt) {
+        ContractFunctionParameters parameters = new ContractFunctionParameters()
+                .addBytes(childContractBytecodeFromParent)
+                .addUint256(BigInteger.valueOf(salt));
+
+        return executeContractCallTransaction(deployedParentContract.contractId(), "getAddress", parameters, null);
+    }
+
+    private ExecuteContractResult executeCreate2Transaction(int salt) {
+        ContractFunctionParameters parameters = new ContractFunctionParameters()
+                .addBytes(childContractBytecodeFromParent)
+                .addUint256(BigInteger.valueOf(salt));
+
+        return executeContractCallTransaction(deployedParentContract.contractId(), "create2Deploy", parameters, null);
+    }
+
+    // This is a function call on the CREATE2 created child contract, not the parent.
+    private ExecuteContractResult executeSelfDestructTransaction() {
+        return executeContractCallTransaction(create2ChildContractContractId, "vacateAddress", null, null);
+    }
+
+    private ExecuteContractResult executeContractCallTransaction(
+            ContractId contractId,
+            String functionName,
+            ContractFunctionParameters parameters,
+            Hbar payableAmount) {
+
         ExecuteContractResult executeContractResult = contractClient.executeContract(
-                deployedParentContract.contractId(),
-                contractClient.getSdkClient().getAcceptanceTestProperties().getFeatureProperties()
-                        .getMaxContractFunctionGas(),
-                "createChild",
-                new ContractFunctionParameters()
-                        .addUint256(BigInteger.valueOf(transferAmount)),
-                null);
+                contractId,
+                contractClient.getSdkClient().getAcceptanceTestProperties().getFeatureProperties().getMaxContractFunctionGas(),
+                functionName,
+                parameters,
+                payableAmount);
 
         networkTransactionResponse = executeContractResult.networkTransactionResponse();
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
-
-        ContractFunctionResult contractFunctionResult = executeContractResult.contractFunctionResult();
-        assertNotNull(contractFunctionResult);
-
-    }
-
-    private ExecuteContractResult executeGetChildContractBytecodeTransaction() {
-        ExecuteContractResult executeContractResult = contractClient.executeContract(
-                deployedParentContract.contractId(),
-                contractClient.getSdkClient().getAcceptanceTestProperties().getFeatureProperties()
-                        .getMaxContractFunctionGas(),
-                "getBytecode",
-                null,
-                null);
-
-        NetworkTransactionResponse networkTransactionResponse = executeContractResult.networkTransactionResponse();
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-
-        return executeContractResult;
-    }
-
-    private ExecuteContractResult executeGetEvmAddressTransaction(int salt) {
-        ExecuteContractResult executeContractResult = contractClient.executeContract(
-                deployedParentContract.contractId(),
-                contractClient.getSdkClient().getAcceptanceTestProperties().getFeatureProperties()
-                        .getMaxContractFunctionGas(),
-                "getAddress",
-                new ContractFunctionParameters()
-                        .addBytes(childContractBytecodeFromParent)
-                        .addUint256(BigInteger.valueOf(salt)),
-                null);
-
-        NetworkTransactionResponse networkTransactionResponse = executeContractResult.networkTransactionResponse();
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-
-        return executeContractResult;
-    }
-
-    private ExecuteContractResult executeCreate2Transaction(int salt) {
-        ExecuteContractResult executeContractResult = contractClient.executeContract(
-                deployedParentContract.contractId(),
-                contractClient.getSdkClient().getAcceptanceTestProperties().getFeatureProperties()
-                        .getMaxContractFunctionGas(),
-                "create2Deploy",
-                new ContractFunctionParameters()
-                        .addBytes(childContractBytecodeFromParent)
-                        .addUint256(BigInteger.valueOf(salt)),
-                null);
-
-        NetworkTransactionResponse networkTransactionResponse = executeContractResult.networkTransactionResponse();
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
-
-        return executeContractResult;
-    }
-
-    // This is a function call on the newly created child contract, not the parent.
-    private ExecuteContractResult executeSelftDestructTransaction() {
-        ExecuteContractResult executeContractResult = contractClient.executeContract(
-                create2ChildContractContractId,
-                contractClient.getSdkClient().getAcceptanceTestProperties().getFeatureProperties()
-                        .getMaxContractFunctionGas(),
-                "vacateAddress",
-               null,
-                null);
-
-        NetworkTransactionResponse networkTransactionResponse = executeContractResult.networkTransactionResponse();
-        assertNotNull(networkTransactionResponse.getTransactionId());
-        assertNotNull(networkTransactionResponse.getReceipt());
+        assertNotNull(executeContractResult.contractFunctionResult());
 
         return executeContractResult;
     }

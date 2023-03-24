@@ -30,19 +30,20 @@ Feature: Contract Base Coverage Feature
 
         Clean up the parent contract by deleting it and its bytecode file.
 
-        Then I call the parent contract to retrieve child contract bytecode
-        And the mirror node REST API should return status <httpStatusCode> for the contract transaction
-        Then I call the parent contract evm address function with the bytecode of the child contract
-        And the mirror node REST API should return status <httpStatusCode> for the contract transaction
-        Then I create a hollow account using CryptoTransfer of <transferAmount> to the evm address
-        And the mirror node REST API should return status <httpStatusCode> for the account transaction
-        Then the mirror node REST API should verify the account receiving <transferAmount> is hollow
+        Given I call the parent contract to retrieve child contract bytecode
+        Then the mirror node REST API should return status <httpStatusCode> for the contract transaction
+        When I call the parent contract evm address function with the bytecode of the child contract
+        Then the mirror node REST API should return status <httpStatusCode> for the contract transaction
+        And I create a hollow account using CryptoTransfer of <transferAmount> to the evm address
+        Then the mirror node REST API should return status <httpStatusCode> for the account transaction
+        And the mirror node REST API should verify the account receiving <transferAmount> is hollow
         And the mirror node REST API should indicate not found when using evm address to retrieve as a contract
-        Then I deploy a child contract by calling parent contract function to deploy to the evm address using CREATE2
-        And the mirror node REST API should return status <httpStatusCode> for the contract transaction
-        Then the mirror node REST API should retrieve the child contract when using evm address
+        When I create a child contract by calling parent contract function to deploy using CREATE2
+        Then the mirror node REST API should return status <httpStatusCode> for the contract transaction
+        And the mirror node REST API should retrieve the child contract when using evm address
         And the mirror node REST API should verify the account is no longer hollow
-        Then I successfully delete the child contract by calling it and causing it to self destruct
+        When I successfully delete the child contract by calling it and causing it to self destruct
+        Then the mirror node REST API should return status <httpStatusCode> for the self destruct transaction
         Examples:
             | httpStatusCode | transferAmount |
             | 200            | 1000           |
