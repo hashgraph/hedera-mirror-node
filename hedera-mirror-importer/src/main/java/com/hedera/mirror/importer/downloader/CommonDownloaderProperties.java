@@ -64,6 +64,12 @@ public class CommonDownloaderProperties {
 
     private String gcpProjectId;
 
+    private BucketType pathType = BucketType.ACCOUNT_ID;
+
+    @DurationMin(minutes = 1)
+    @NotNull
+    private Duration pathRefreshInterval = Duration.ofMinutes(1L);
+
     private String region = "us-east-1";
 
     private String secretKey;
@@ -110,6 +116,16 @@ public class CommonDownloaderProperties {
         return allowAnonymousAccess != null
                 ? allowAnonymousAccess
                 : mirrorProperties.getNetwork().isAllowAnonymousAccess();
+    }
+
+    @Getter
+    @RequiredArgsConstructor
+    public enum BucketType {
+        ACCOUNT_ID("ACCOUNT_ID"),
+        AUTO("AUTO"),
+        NODE_ID("NODE_ID");
+
+        private final String pathType;
     }
 
     @Getter

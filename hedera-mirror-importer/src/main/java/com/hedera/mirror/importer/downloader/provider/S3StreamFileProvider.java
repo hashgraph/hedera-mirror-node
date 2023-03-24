@@ -19,6 +19,12 @@ package com.hedera.mirror.importer.downloader.provider;
 import static com.hedera.mirror.importer.domain.StreamFilename.EPOCH;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIDECAR;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIGNATURE;
+import static com.hedera.mirror.importer.downloader.CommonDownloaderProperties.BucketType.ACCOUNT_ID;
+import static com.hedera.mirror.importer.downloader.CommonDownloaderProperties.BucketType.NODE_ID;
+import static com.hedera.mirror.importer.downloader.CommonDownloaderProperties.BucketType.AUTO;
+import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork;
+
+import com.hedera.mirror.importer.MirrorProperties;
 
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import com.hedera.mirror.importer.domain.StreamFileData;
@@ -26,6 +32,7 @@ import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
@@ -45,10 +52,12 @@ public final class S3StreamFileProvider implements StreamFileProvider {
     private static final String SEPARATOR = "/";
 
     private final CommonDownloaderProperties commonDownloaderProperties;
+
+    private static long pathExpirationTimestamp;
     private final S3AsyncClient s3Client;
 
     public Mono<StreamFileData> get(ConsensusNode node, StreamFilename streamFilename) {
-        var prefix = getPrefix(node, streamFilename);
+        var prefix = getBucketPath(node, streamFilename);
         var s3Key = prefix + streamFilename.getFilename();
 
         var request = GetObjectRequest.builder()
@@ -70,7 +79,9 @@ public final class S3StreamFileProvider implements StreamFileProvider {
     public Flux<StreamFileData> list(ConsensusNode node, StreamFilename lastFilename) {
         // Number of items we plan do download in a single batch times 2 for file + sig.
         int batchSize = commonDownloaderProperties.getBatchSize() * 2;
-        var prefix = getPrefix(node, lastFilename);
+        //check if account id , do this else getBucketPath
+        var prefix = getBucketPath(node, lastFilename);
+
         var startAfter = prefix + lastFilename.getFilenameAfter();
 
         var listRequest = ListObjectsV2Request.builder()
@@ -94,6 +105,57 @@ public final class S3StreamFileProvider implements StreamFileProvider {
                         batchSize,
                         commonDownloaderProperties.getBucketName(),
                         startAfter));
+    }
+
+    //Get the bucket path. This should not be called if the pathRefreshInterval has not passed.
+   private String getBucketPath(ConsensusNode consensusNode, StreamFilename streamFilename) {
+        if(commonDownloaderProperties.getPathType().equals(NODE_ID)) {
+            return getNodeIdBasedPrefix(consensusNode, streamFilename);
+        } else if(commonDownloaderProperties.getPathType().equals(AUTO)) {
+            return autoAlgorithm(consensusNode, streamFilename);
+        } else { // This is the ACCOUNT_ID case
+            return getPrefix(consensusNode, streamFilename);
+        }
+    }
+
+    private String autoAlgorithm(ConsensusNode consensusNode, StreamFilename streamFilename) {
+        var currentTime = System.currentTimeMillis();
+        if ( pathExpirationTimestamp < currentTime ) {
+            return getPrefix(consensusNode, streamFilename);
+        }
+        commonDownloaderProperties.setPathType(ACCOUNT_ID);
+        var count = list(consensusNode, streamFilename)
+                                .count()
+                                .block();
+        //Handle exception here if this count fails
+        if (count > 0) {
+            pathExpirationTimestamp = System.currentTimeMillis() + commonDownloaderProperties.getPathRefreshInterval().toMillis();
+            commonDownloaderProperties.setPathType(AUTO);
+            return getPrefix(consensusNode, streamFilename);
+        }
+        commonDownloaderProperties.setPathType(NODE_ID);
+        return getNodeIdBasedPrefix(consensusNode, streamFilename);
+    }
+
+    @NotNull
+    private String getNodeIdBasedPrefix(ConsensusNode consensusNode, StreamFilename streamFilename) {
+        Long nodeId = consensusNode.getNodeId();
+        Long shardNum = commonDownloaderProperties.getMirrorProperties().getShard();
+        String network = getNetworkPrefix(commonDownloaderProperties.getMirrorProperties());
+        var streamType = streamFilename.getStreamType().toString().toLowerCase();
+        var prefix = network + SEPARATOR+ shardNum+ SEPARATOR + nodeId + SEPARATOR + streamType;
+        if (streamFilename.getFileType() == SIDECAR) {
+            prefix += SIDECAR_FOLDER;
+        }
+        return prefix;
+    }
+
+    private String getNetworkPrefix(MirrorProperties mirrorProperties) {
+        if (mirrorProperties.getNetwork().equals(HederaNetwork.OTHER)) {
+            return mirrorProperties.getNetworkPrefix();
+        } else {
+            return mirrorProperties.getNetwork().toString();
+        }
     }
 
     private String getPrefix(ConsensusNode node, StreamFilename streamFilename) {

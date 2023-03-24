@@ -5,5 +5,8 @@
 #        accessKey: {GOOG1E/AWS....}
 #        cloudProvider: "GCP/s3"
 #        gcpProjectId: {projectId} # N/A for AWS
+#        pathRefreshInterval: 1m
+#        pathType: ACCOUNT_ID
 #        secretKey: {GOOG1E/AWS....}
-#      network: PREVIEWNET/TESTNET/MAINNET # Select one network
+#      network: PREVIEWNET
+#      networkPrefix: dev
