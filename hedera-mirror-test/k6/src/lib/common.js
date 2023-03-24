@@ -281,7 +281,7 @@ function markdownReport(data, includeUrlColumn, funcs, scenarios) {
 class TestScenarioBuilder {
   constructor() {
     this._checks = {};
-    this._fallbackChecks = {'is 200': (r) => r.status === 200};
+    this._fallbackChecks = {'fallback is 200': (r) => r.status === 200};
     this._fallbackRequest = null;
     this._name = null;
     this._request = null;
