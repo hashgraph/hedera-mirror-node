@@ -16,10 +16,18 @@
 
 package com.hedera.mirror.web3.evm.store.hedera;
 
+import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Optional;
 
-public interface Accessor<K, V> {
+/** Placeholder for a database accessor to get some domain type V with primary key K from the database */
+public interface GroundTruthAccessor<K, V> {
+    @NonNull
+    Class<K> getKClass();
+
+    @NonNull
+    Class<V> getVClass();
 
     // Given address return an account record from the DB
-    Optional<V> get(final K key);
+    @NonNull
+    Optional<V> get(@NonNull final K key);
 }

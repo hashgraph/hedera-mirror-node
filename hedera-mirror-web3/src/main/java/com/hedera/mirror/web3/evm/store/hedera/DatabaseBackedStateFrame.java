@@ -16,69 +16,64 @@
 
 package com.hedera.mirror.web3.evm.store.hedera;
 
+import static com.hedera.mirror.web3.utils.MiscUtilities.requireAllNonNull;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import org.apache.commons.lang3.tuple.Pair;
-import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.account.Account;
+import java.util.stream.Collectors;
 
+/** A CachingStateFrame that answers reads by getting entities from sone other source - a database! - and
+ * disallows all local updates/deletes. */
 @SuppressWarnings("java:S1192") // "string literals should not be duplicated"
-public class DatabaseBackedStateFrame<Address, Account, Token> extends CachingStateFrame<Address, Account, Token> {
-
-    final Accessor<Address, Account> accountAccessor;
-    final Accessor<Address, Token> tokenAccessor;
-
-    public DatabaseBackedStateFrame(
-            @NonNull final Pair<Accessor<Address, Account>, Accessor<Address, Token>> databaseAccessor,
-            @NonNull final Class<Account> klassAccount,
-            @NonNull final Class<Token> klassToken) {
-        super(Optional.empty(), klassAccount, klassToken);
-        accountAccessor = databaseAccessor.getLeft();
-        tokenAccessor = databaseAccessor.getRight();
-    }
+public class DatabaseBackedStateFrame<Address> extends CachingStateFrame<Address> {
 
     @NonNull
-    @Override
-    public Optional<Account> getAccount(@NonNull final Address address) {
-        Objects.requireNonNull(address, "address");
-        return accountAccessor.get(address);
+    final Map<Class<?>, GroundTruthAccessor<Address, ?>> databaseAccessors;
+
+    public DatabaseBackedStateFrame(
+            @NonNull final List<GroundTruthAccessor<Address, ?>> accessors, @NonNull final Class<?>[] entityClasses) {
+        super(
+                Optional.empty(),
+                entityClasses); // superclass of this frame will create/hold useless UpdatableReferenceCaches
+
+        databaseAccessors = accessors.stream().collect(Collectors.toMap(GroundTruthAccessor::getVClass, a -> a));
     }
 
     @Override
-    public void setAccount(@NonNull final Address address, @NonNull final Account account) {
-        Objects.requireNonNull(address, "address");
-        Objects.requireNonNull(account, "account");
-        throw new UnsupportedOperationException("cannot add/update an account in a database-backed StateFrame");
+    @NonNull
+    public Optional<Object> getEntity(
+            @NonNull final Class<?> klass,
+            @NonNull final UpdatableReferenceCache<Address> cache,
+            @NonNull final Address address) {
+        requireAllNonNull(klass, "klass", cache, "cache", address, "address");
+
+        return databaseAccessors.get(klass).get(address).flatMap(o -> Optional.of(klass.cast(o)));
     }
 
     @Override
-    public void deleteAccount(@NonNull final Address address) {
-        Objects.requireNonNull(address, "address");
-        throw new UnsupportedOperationException("cannot delete account in a database-backed StateFrame");
+    public void setEntity(
+            @NonNull final Class<?> klass,
+            @NonNull final UpdatableReferenceCache<Address> cache,
+            @NonNull final Address address,
+            @NonNull final Object entity) {
+        requireAllNonNull(klass, "klass", cache, "cache", address, "address", entity, "entity");
+        throw new UnsupportedOperationException("cannot add/update an entity in a database-backed StateFrame");
     }
 
     @Override
-    public @NonNull Optional<Token> getToken(@NonNull final Address address) {
-        Objects.requireNonNull(address, "address");
-        return tokenAccessor.get(address);
+    public void deleteEntity(
+            @NonNull final Class<?> klass,
+            @NonNull final UpdatableReferenceCache<Address> cache,
+            @NonNull final Address address) {
+        requireAllNonNull(klass, "klass", cache, "cache", address, "address");
+        throw new UnsupportedOperationException("cannot delete an entity in a database-backed StateFrame");
     }
 
     @Override
-    public void setToken(@NonNull final Address address, @NonNull final Token token) {
-        Objects.requireNonNull(address, "address");
-        Objects.requireNonNull(token, "token");
-        throw new UnsupportedOperationException("cannot add/update a token in a database-backed StateFrame");
-    }
-
-    @Override
-    public void deleteToken(@NonNull final Address address) {
-        Objects.requireNonNull(address);
-        throw new UnsupportedOperationException("cannot delete token in a database-backed StateFrame");
-    }
-
-    @Override
-    public void updatesFromChild(@NonNull final CachingStateFrame<Address, Account, Token> childFrame) {
+    public void updatesFromDownstream(@NonNull final CachingStateFrame<Address> childFrame) {
         Objects.requireNonNull(childFrame, "childFrame");
         throw new UnsupportedOperationException("cannot commit to a database-backed StateFrame (oddly enough)");
     }

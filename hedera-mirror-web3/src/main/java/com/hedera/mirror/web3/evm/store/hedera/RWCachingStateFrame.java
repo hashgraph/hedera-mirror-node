@@ -16,80 +16,51 @@
 
 package com.hedera.mirror.web3.evm.store.hedera;
 
+import static com.hedera.mirror.web3.utils.MiscUtilities.requireAllNonNull;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.Optional;
 
-public class RWCachingStateFrame<Address, Account, Token> extends CachingStateFrame<Address, Account, Token> {
+/** A CachingStateFrame that holds reads (falling through to an upstream cache) and local updates/deletes. */
+public class RWCachingStateFrame<Address> extends ROCachingStateFrame<Address> {
 
     public RWCachingStateFrame(
-            @NonNull final Optional<CachingStateFrame<Address, Account, Token>> parentFrame,
-            @NonNull final Class<Account> klassAccount,
-            @NonNull final Class<Token> klassToken) {
-        super(parentFrame, klassAccount, klassToken);
+            @NonNull final Optional<CachingStateFrame<Address>> upstreamFrame,
+            @NonNull final Class<?>... klassesToCache) {
+        super(upstreamFrame, klassesToCache);
     }
 
     @Override
-    public @NonNull Optional<Account> getAccount(@NonNull final Address address) {
-        Objects.requireNonNull(address, "address");
-        final var account = accountCache.get(address);
-        return switch (account.state()) {
-            case NOT_YET_FETCHED -> parentFrame.flatMap(parent -> {
-                final var upstreamAccount = parent.getAccount(address);
-                accountCache.fill(address, upstreamAccount.orElse(null));
-                return upstreamAccount;
-            });
-            case PRESENT, UPDATED -> Optional.of(account.value());
-            case MISSING, DELETED -> Optional.empty();
-        };
+    public void setEntity(
+            @NonNull final Class<?> klass,
+            @NonNull final UpdatableReferenceCache<Address> cache,
+            @NonNull final Address address,
+            @NonNull final Object entity) {
+        requireAllNonNull(klass, "klass", cache, "cache", address, "address", entity, "entity");
+        cache.update(address, entity);
     }
 
     @Override
-    public void setAccount(@NonNull final Address address, @NonNull final Account account) {
-        Objects.requireNonNull(address, "address");
-        Objects.requireNonNull(account, "account");
-
-        accountCache.update(address, account);
+    public void deleteEntity(
+            @NonNull final Class<?> klass,
+            @NonNull final UpdatableReferenceCache<Address> cache,
+            @NonNull final Address address) {
+        requireAllNonNull(klass, "klass", cache, "cache", address, "address");
+        cache.delete(address);
     }
 
     @Override
-    public void deleteAccount(@NonNull final Address address) {
-        Objects.requireNonNull(address);
-        accountCache.delete(address);
-    }
-
-    @Override
-    public @NonNull Optional<Token> getToken(@NonNull final Address address) {
-        Objects.requireNonNull(address, "address");
-        final var token = tokenCache.get(address);
-        return switch (token.state()) {
-            case NOT_YET_FETCHED -> parentFrame.flatMap(parent -> {
-                final var upstreamToken = parent.getToken(address);
-                tokenCache.fill(address, upstreamToken.orElse(null));
-                return upstreamToken;
-            });
-            case PRESENT, UPDATED -> Optional.of(token.value());
-            case MISSING, DELETED -> Optional.empty();
-        };
-    }
-
-    @Override
-    public void setToken(@NonNull final Address address, @NonNull final Token token) {
-        Objects.requireNonNull(address, "address");
-        Objects.requireNonNull(token, "token");
-        tokenCache.update(address, token);
-    }
-
-    @Override
-    public void deleteToken(@NonNull final Address address) {
-        Objects.requireNonNull(address);
-        tokenCache.delete(address);
-    }
-
-    @Override
-    public void updatesFromChild(@NonNull final CachingStateFrame<Address, Account, Token> childFrame) {
-        Objects.requireNonNull(childFrame, "childFrame");
-        accountCache.coalesceFrom(childFrame.accountCache);
-        tokenCache.coalesceFrom(childFrame.tokenCache);
+    public void updatesFromDownstream(@NonNull final CachingStateFrame<Address> downstreamFrame) {
+        Objects.requireNonNull(downstreamFrame, "downstreamFrame");
+        final var thisCaches = this.getInternalCaches();
+        final var downstreamCaches = downstreamFrame.getInternalCaches();
+        if (thisCaches.size() != downstreamCaches.size())
+            throw new IllegalStateException("this frame and downstream frame have different klasses registered");
+        for (final var kv : thisCaches.entrySet()) {
+            if (!downstreamCaches.containsKey(kv.getKey()))
+                throw new IllegalStateException("this frame and downstream frame have different klasses registered");
+            kv.getValue().coalesceFrom(downstreamCaches.get(kv.getKey()));
+        }
     }
 }

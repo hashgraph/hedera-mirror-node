@@ -35,9 +35,13 @@ note as Title
    creating new account ""an""
 end note
 Title --[hidden]>Frame2
-note left of Frame2 #palegreen : top of\nframe stack
+note right of Frame2 #cyan: most downstream
+note right of Frame2 #palegreen : top of\nframe stack
 note left of Frame2 : inner contract call\n(called by ""Frame1"")
 note left of Frame1 : outer contract call (the one\nfor ""eth_EstimateGas"")
-note left of ROCache #palegreen: empty StateStack starts here with\na R/O cache over the database
+note right of ROCache #palegreen: empty StateStack starts here with\na R/O cache over the database
 note left of DBAccess : R/O access to the\ndatabase for entities
+note right of DBAccess #cyan: most upstream
+
+note "This stack is growing //up//" as N1
 @enduml

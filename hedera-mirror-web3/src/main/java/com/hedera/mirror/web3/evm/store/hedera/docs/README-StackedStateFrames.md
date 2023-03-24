@@ -7,7 +7,7 @@ _Important note:_ These caches cache _references_ to things. They should really,
 - An alternate solution would be to immediately _wrap_ underlying R/W entities in R/O wrappers and then use them exclusively.
 
 <!--
-Once these diagrams are _fixed_ use the method at https://stackoverflow.com/a/32771815/751579 to get nicer SVG images - problem is that with that technique you have to update this document every time the images change - problem with _this_ technique is that you have to update this document _after_ the merge to the main branch, which is arguably worse.
+Once these diagrams are _fixed_ use the method at https://stackoverflow.com/a/32771815/751579 to get nicer SVG images - problem is that with that technique you have to update this document every time the images change - problem with _this_ technique is that you have to update this document _after_  the merge to the main branch, which is arguably worse.
 -->
 
 ## Object diagram for a contract call with an inner call

@@ -16,70 +16,177 @@
 
 package com.hedera.mirror.web3.evm.store.hedera;
 
-import com.google.common.annotations.VisibleForTesting;
+import static com.hedera.mirror.web3.utils.MiscUtilities.requireAllNonNull;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
+import java.io.Serial;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import org.apache.commons.lang3.tuple.Pair;
+import java.util.stream.Collectors;
 
-public abstract class CachingStateFrame<Address, Account, Token> {
+/** One "level" of the stacked cache: cached entries for a particular state that can be thrown away
+ * when you're done, or "committed" to the upstream frame to accumulate the latest values. Entities
+ * of different types can be kept in this cache level, but all types kept must be registered on
+ * creation of the level.
+ *
+ * @param <Address> Key for all entries in the cache
+ */
+public abstract class CachingStateFrame<Address> {
     // ⮕ Nominations for a _better name_ than `StateFrame` are open ...
 
     @NonNull
-    protected final Optional<CachingStateFrame<Address, Account, Token>> parentFrame;
+    protected final Optional<CachingStateFrame<Address>> upstreamFrame;
 
     @NonNull
-    protected final UpdatableReferenceCache<Address, Account> accountCache;
+    protected final Map<Class<?>, AccessorImpl<?>> accessors;
 
-    @NonNull
-    protected final UpdatableReferenceCache<Address, Token> tokenCache;
-
+    /** Create a new stacked cache level
+     *
+     * @param upstreamFrame upstream (fallback) frame to find entities in
+     * @param klassesToCache array of the different types of the entities to manage here
+     */
     protected CachingStateFrame(
-            @NonNull final Optional<CachingStateFrame<Address, Account, Token>> parentFrame,
-            @NonNull final Class<Account> klassAccount,
-            @NonNull final Class<Token> klassToken) {
-        Objects.requireNonNull(parentFrame, "parentFrame");
-        this.parentFrame = parentFrame;
+            @NonNull final Optional<CachingStateFrame<Address>> upstreamFrame,
+            @NonNull final Class<?>... klassesToCache) {
+        requireAllNonNull(upstreamFrame, "upstreamFrame", klassesToCache, "klassesToCache");
 
-        accountCache = new UpdatableReferenceCache<>(klassAccount);
-        tokenCache = new UpdatableReferenceCache<>(klassToken);
+        this.upstreamFrame = upstreamFrame;
+        this.accessors = new HashMap<>(klassesToCache.length);
+        Arrays.stream(klassesToCache).distinct().forEach(klass -> {
+            Objects.requireNonNull(klass, "klassesToCache element");
+            final var cache = new UpdatableReferenceCache<Address>();
+            accessors.put(klass, new AccessorImpl<>(klass, cache));
+        });
     }
 
+    public interface Accessor<Address, Entity> {
+        Optional<Entity> get(@NonNull final Address address);
+
+        void set(@NonNull final Address address, @NonNull Entity entity);
+
+        void delete(@NonNull final Address address);
+    }
+
+    /** Get the accessor for a kind of entity that is managed by this cache. */
+    @SuppressWarnings("unchecked")
     @NonNull
-    public abstract Optional<Account> getAccount(@NonNull final Address address);
+    <Entity> Accessor<Address, Entity> getAccessor(Class<Entity> klass) {
+        try {
+            return (AccessorImpl<Entity>) accessors.get(klass);
+        } catch (final NullPointerException ex) {
+            throw new CacheAccessIncorrectType("%s entities aren't cached here".formatted(klass.getName()), ex);
+        }
+    }
 
-    public abstract void setAccount(@NonNull final Address address, @NonNull final Account account);
+    /** Do the actual commit of entries from a descendant cache level to this one. */
+    public abstract void updatesFromDownstream(@NonNull final CachingStateFrame<Address> childFrame);
 
-    public abstract void deleteAccount(@NonNull final Address address);
-
-    @NonNull
-    public abstract Optional<Token> getToken(@NonNull final Address address);
-
-    public abstract void setToken(@NonNull final Address address, @NonNull final Token token);
-
-    public abstract void deleteToken(@NonNull final Address address);
-
-    public abstract void updatesFromChild(@NonNull final CachingStateFrame<Address, Account, Token> childFrame);
-
+    /** Cause new/updated/deleted entries to be persisted to the upstream level. */
     public void commit() {
-        parentFrame.ifPresent(frame -> frame.updatesFromChild(this));
+        upstreamFrame.ifPresent(frame -> frame.updatesFromDownstream(this));
     }
 
-    public @NonNull Optional<CachingStateFrame<Address, Account, Token>> getParent() {
-        return parentFrame.map(o -> o);
+    public @NonNull Optional<CachingStateFrame<Address>> getUpstream() {
+        return upstreamFrame;
     }
 
     public int height() {
-        return parentFrame.map(pf -> 1 + pf.height()).orElse(1);
+        return upstreamFrame.map(pf -> 1 + pf.height()).orElse(1);
     }
 
-    public @NonNull Optional<CachingStateFrame<Address, Account, Token>> next() {
-        return parentFrame;
+    public @NonNull Optional<CachingStateFrame<Address>> next() {
+        return upstreamFrame;
     }
 
-    @VisibleForTesting
-    public Pair<UpdatableReferenceCache<Address, Account>, UpdatableReferenceCache<Address, Token>>
-            getInternalCaches() {
-        return Pair.of(accountCache, tokenCache);
+    // Following are accessors to internal per-type caches
+
+    @NonNull
+    protected abstract Optional<Object> getEntity(
+            @NonNull final Class<?> klass,
+            @NonNull final UpdatableReferenceCache<Address> cache,
+            @NonNull final Address address);
+
+    protected abstract void setEntity(
+            @NonNull final Class<?> klass,
+            @NonNull final UpdatableReferenceCache<Address> cache,
+            @NonNull final Address address,
+            @NonNull final Object entity);
+
+    protected abstract void deleteEntity(
+            @NonNull final Class<?> klass,
+            @NonNull final UpdatableReferenceCache<Address> cache,
+            @NonNull final Address address);
+
+    @NonNull
+    protected Map<Class<?>, UpdatableReferenceCache<Address>> getInternalCaches() {
+        return accessors.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, kv -> kv.getValue().cache));
+    }
+
+    /** Enables type-safe access to one type of cached entities in this level of the cache.  (Accessor is _tied_
+     * to this frame of the cache.) */
+    @SuppressWarnings("java:S3655") // "Optional value should only be accessed after checking presence"
+    //                              // - doesn't understand`flatMap`
+    public class AccessorImpl<Entity> implements Accessor<Address, Entity> {
+
+        private final Class<Entity> klass;
+
+        private final UpdatableReferenceCache<Address> cache;
+
+        private AccessorImpl(
+                @NonNull final Class<Entity> klass, @NonNull final UpdatableReferenceCache<Address> cache) {
+            this.klass = klass;
+            this.cache = cache;
+        }
+
+        /** Get an entity from this level of the cache */
+        @Override
+        public Optional<Entity> get(@NonNull final Address address) {
+            Objects.requireNonNull(address, "address");
+            final var oe = getEntity(klass, cache, address);
+            try {
+                return oe.flatMap(o -> Optional.of(klass.cast(o)));
+            } catch (final ClassCastException ex) {
+                throw new CacheAccessIncorrectType(
+                        "accessor for class %s fetched object of class %s"
+                                .formatted(
+                                        klass.getTypeName(), oe.get().getClass().getTypeName()),
+                        ex);
+            }
+        }
+
+        /** Set a new value for an entity (in this level of the cache) */
+        @Override
+        public void set(@NonNull final Address address, @NonNull Entity entity) {
+            requireAllNonNull(address, "address", entity, "entity");
+            if (!klass.isInstance(entity))
+                throw new CacheAccessIncorrectType("trying to store %s in accessor for class %s"
+                        .formatted(entity.getClass().getTypeName(), klass.getTypeName()));
+            setEntity(klass, cache, address, entity);
+        }
+
+        /** Delete an entity (from in this level of the cache) */
+        @Override
+        public void delete(@NonNull final Address address) {
+            Objects.requireNonNull(address, "address");
+            // Can't check type of entity matches because we don't have one
+            deleteEntity(klass, cache, address);
+        }
+    }
+
+    public static class CacheAccessIncorrectType extends RuntimeException {
+
+        @Serial
+        private static final long serialVersionUID = 8163169205069277937L;
+
+        public CacheAccessIncorrectType(@NonNull final String message) {
+            super(message);
+        }
+
+        public CacheAccessIncorrectType(@NonNull final String message, @NonNull final Throwable cause) {
+            super(message, cause);
+        }
     }
 }

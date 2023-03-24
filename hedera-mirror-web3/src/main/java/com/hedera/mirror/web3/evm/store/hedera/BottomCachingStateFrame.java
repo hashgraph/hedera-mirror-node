@@ -16,66 +16,56 @@
 
 package com.hedera.mirror.web3.evm.store.hedera;
 
+import static com.hedera.mirror.web3.utils.MiscUtilities.requireAllNonNull;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.Optional;
 import org.hyperledger.besu.datatypes.Address;
-import org.hyperledger.besu.evm.account.Account;
 
-public class BottomCachingStateFrame<Address, Account, Token> extends CachingStateFrame<Address, Account, Token> {
+/** A CachingStateFrame that answers "missing" for all reads and disallows all updates/writes. */
+public class BottomCachingStateFrame<Address> extends CachingStateFrame<Address> {
 
     public BottomCachingStateFrame(
-            @NonNull final Optional<CachingStateFrame<Address, Account, Token>> parentFrame,
-            @NonNull final Class<Account> klassAccount,
-            @NonNull final Class<Token> klassToken) {
-        super(parentFrame, klassAccount, klassToken);
-        Objects.requireNonNull(parentFrame, "parentFrame");
-        parentFrame.ifPresent(dummy -> {
-            throw new UnsupportedOperationException("bottom cache can not have a parent");
+            @NonNull final Optional<CachingStateFrame<Address>> upstreamFrame,
+            @NonNull final Class<?>... klassesToCache) {
+        super(upstreamFrame, klassesToCache);
+        upstreamFrame.ifPresent(dummy -> {
+            throw new UnsupportedOperationException("bottom cache can not have an upstream cache");
         });
     }
 
     @Override
-    public @NonNull Optional<Account> getAccount(@NonNull final Address address) {
-        Objects.requireNonNull(address, "address");
+    public @NonNull Optional<Object> getEntity(
+            @NonNull final Class<?> klass,
+            @NonNull final UpdatableReferenceCache<Address> cache,
+            @NonNull final Address address) {
+        requireAllNonNull(klass, "klass", cache, "cache", address, "address");
         return Optional.empty();
     }
 
     @Override
-    public void setAccount(@NonNull final Address address, @NonNull final Account account) {
-        Objects.requireNonNull(address, "address");
-        Objects.requireNonNull(account, "account");
+    public void setEntity(
+            @NonNull final Class<?> klass,
+            @NonNull final UpdatableReferenceCache<Address> cache,
+            @NonNull final Address address,
+            @NonNull final Object entity) {
+        requireAllNonNull(klass, "klass", cache, "cache", address, "address", entity, "entity");
         throw new UnsupportedOperationException("cannot write to a bottom cache");
     }
 
     @Override
-    public void deleteAccount(@NonNull final Address address) {
-        Objects.requireNonNull(address);
+    public void deleteEntity(
+            @NonNull final Class<?> klass,
+            @NonNull final UpdatableReferenceCache<Address> cache,
+            @NonNull final Address address) {
+        requireAllNonNull(klass, "klass", cache, "cache", address, "address");
         throw new UnsupportedOperationException("cannot delete from a bottom cache");
     }
 
     @Override
-    public @NonNull Optional<Token> getToken(@NonNull final Address address) {
-        Objects.requireNonNull(address, "address");
-        return Optional.empty();
-    }
-
-    @Override
-    public void setToken(@NonNull final Address address, @NonNull final Token token) {
-        Objects.requireNonNull(address, "address");
-        Objects.requireNonNull(token, "token");
-        throw new UnsupportedOperationException("cannot write to a R/O cache");
-    }
-
-    @Override
-    public void deleteToken(@NonNull final Address address) {
-        Objects.requireNonNull(address);
-        throw new UnsupportedOperationException("cannot delete from a R/O cache");
-    }
-
-    @Override
-    public void updatesFromChild(@NonNull final CachingStateFrame<Address, Account, Token> childFrame) {
+    public void updatesFromDownstream(@NonNull final CachingStateFrame<Address> childFrame) {
         Objects.requireNonNull(childFrame, "childFrame");
-        // do nothing or throw unsupported?
+        // ok to commit but does nothing
     }
 }

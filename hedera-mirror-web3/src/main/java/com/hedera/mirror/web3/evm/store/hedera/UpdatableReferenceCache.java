@@ -16,14 +16,15 @@
 
 package com.hedera.mirror.web3.evm.store.hedera;
 
-import com.google.common.annotations.VisibleForTesting;
+import static com.hedera.mirror.web3.utils.MiscUtilities.requireAllNonNull;
+
+import com.hedera.mirror.web3.evm.store.hedera.impl.UpdatableReferenceCacheLineState;
+import com.hedera.mirror.web3.evm.store.hedera.impl.UpdatableReferenceCacheLineState.Entry;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import edu.umd.cs.findbugs.annotations.Nullable;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.function.Consumer;
-import org.checkerframework.checker.units.qual.K;
 
 /**
  * Runs a cache for references but treated as values, for use as part of a
@@ -34,90 +35,50 @@ import org.checkerframework.checker.units.qual.K;
  * actually _updated_ a reference associated with a key you'd _also_ be
  * changing that same reference in a lower-level cache, which would break
  * the intent of being able to commit/rollback.  Checked at runtime.  (But
- * prefer using an immutable type for `V` so this problem simply can't happen.)
+ * prefer using an immutable type for the value so this problem simply
+ * can't happen.)
+ *
+ * Type checking that the value type is consistent is the responsibility of
+ * the caller.
  *
  * @param <K> key type
- * @param <V> value type
  */
-public class UpdatableReferenceCache<K, V> {
+public class UpdatableReferenceCache<K> {
 
     @NonNull
-    protected final Class<V> klassV;
+    protected final Map<K, Object> original = new HashMap<>(); // "missing" denoted by null values here
 
     @NonNull
-    protected final Map<K, V> original = new HashMap<>(); // "missing" denoted by null values here
+    protected final Map<K, Object> current = new HashMap<>(); // "deleted" denoted by null values here
 
     @NonNull
-    protected final Map<K, V> addDel = new HashMap<>(); // "deleted" denoted by null values here
+    protected final UpdatableReferenceCacheLineState<K> cacheLineStateIdentification =
+            new UpdatableReferenceCacheLineState<>();
 
     /**
-     * Create an `UpdateableReferenceCache` for holding the cached value of some type.
-     *
-     * @param klassV - used to provide run-time type safety (due to type-erasure the class needs to be explicitly passed
-     *              in to this cache, otherwise it doesn't know exactly what it's supposed to hold)
-     */
-    UpdatableReferenceCache(@NonNull final Class<V> klassV) {
-        this.klassV = klassV;
-    }
-
-    /** Entities (denoted by their key) can be in one of the following states */
-    public enum EntityState {
-        NOT_YET_FETCHED, // haven't yet tried to read it from upstream cache
-        PRESENT, // read from upstream cache, found
-        MISSING, // read from upstream cache, wasn't present there
-        UPDATED, // has been set (written) in this cache
-        DELETED // has been deleted in this cache
-    }
-
-    public record Entry<V>(EntityState state, V value) {}
-
-    public final Entry<V> valueNotYetFetchedMarker = new Entry<>(EntityState.NOT_YET_FETCHED, null);
-    public final Entry<V> valueMissingMarker = new Entry<>(EntityState.MISSING, null);
-    public final Entry<V> valueDeletedMarker = new Entry<>(EntityState.DELETED, null);
-
-    // Get the current state/value of the key in this cache
-    protected Entry<V> getCurrentState(@NonNull final K key) {
-        Objects.requireNonNull(key, "key");
-
-        Consumer<V> checkValueClass = value -> {
-            if (null != value && value.getClass() != klassV)
-                throw new IllegalStateException("caller is trying to get a %s but this is a %s cache"
-                        .formatted(klassV.getTypeName(), value.getClass().getTypeName()));
-        };
-
-        // Java's `Map` doesn't let you find out in a single call if the value was in the map but `null` or not in the
-        // map. So if the value turns out to be null you've got to do a second call to distinguish that.
-
-        var value = addDel.get(key);
-        checkValueClass.accept(value);
-        if (null != value) return new Entry<>(EntityState.UPDATED, value);
-        if (addDel.containsKey(key)) return valueDeletedMarker;
-
-        value = original.get(key);
-        checkValueClass.accept(value);
-        if (null != value) return new Entry<>(EntityState.PRESENT, value);
-        if (original.containsKey(key)) return valueMissingMarker;
-
-        return valueNotYetFetchedMarker;
-    }
+     * Create an `UpdatableReferenceCache` for holding the cached value of some type. */
+    UpdatableReferenceCache() {}
 
     /**
      * Get from the cache
      */
-    public Entry<V> get(@NonNull final K key) {
+    public Entry get(@NonNull final K key) {
         Objects.requireNonNull(key, "key");
-        return getCurrentState(key);
+
+        return getCacheLineState(key);
     }
 
     /**
      * Fill cache with a read from a lower level - used only in response to NOT_YET_FETCHED.
      */
-    public void fill(@NonNull final K key, final @Nullable V value) {
+    public void fill(@NonNull final K key, final @Nullable Object value) {
         Objects.requireNonNull(key, "key");
-        switch (getCurrentState(key).state()) {
+
+        switch (getCacheLineState(key).state()) {
             case NOT_YET_FETCHED -> original.put(key, value);
             case MISSING, PRESENT -> throw new IllegalArgumentException("trying to override a lower-level entry");
             case UPDATED, DELETED -> throw new IllegalArgumentException("trying to override an updated entry");
+            case INVALID -> throw new IllegalArgumentException("trying to do something in an invalid state");
         }
     }
 
@@ -129,25 +90,24 @@ public class UpdatableReferenceCache<K, V> {
      */
     @SuppressWarnings({"fallthrough", "java:S1301"
     }) // "replace this `switch` by an `if` to improve readability" - no: wrong advice here
-    public void update(@NonNull final K key, @NonNull final V value) {
-        Objects.requireNonNull(key, "key");
-        Objects.requireNonNull(value, "value");
-        if (value.getClass() != klassV)
-            throw new IllegalStateException("trying to update a %s cache with a %s"
-                    .formatted(klassV.getTypeName(), value.getClass().getTypeName()));
-        final var currentState = getCurrentState(key);
+    public void update(@NonNull final K key, @NonNull final Object value) {
+        requireAllNonNull(key, "key", value, "value");
+
+        final var currentState = getCacheLineState(key);
         switch (currentState.state()) {
             case PRESENT:
                 if (currentState.value() == value) {
                     throw new IllegalArgumentException(
                             """
-                            trying to update %s with exact same reference - probably \
-                            indicates an error where the %s was modified"""
-                                    .formatted(klassV.getTypeName(), klassV.getTypeName()));
+                            trying to update an entity with exact same reference - probably \
+                            indicates an error where the entity was modified""");
                 }
                 // fallthrough
             case NOT_YET_FETCHED, MISSING, UPDATED, DELETED:
-                addDel.put(key, value);
+                current.put(key, value);
+                break;
+            case INVALID:
+                throw new IllegalArgumentException("trying to do something in an invalid state");
         }
     }
 
@@ -157,12 +117,15 @@ public class UpdatableReferenceCache<K, V> {
      */
     public void delete(@NonNull final K key) {
         Objects.requireNonNull(key, "key");
-        switch (getCurrentState(key).state()) {
-            case PRESENT, UPDATED -> addDel.put(key, null);
+
+        switch (getCacheLineState(key).state()) {
+            case PRESENT -> current.put(key, null);
+            case UPDATED -> current.remove(key);
             case NOT_YET_FETCHED -> throw new IllegalArgumentException(
-                    "trying to delete a %s that hasn't been fetched".formatted(klassV.getTypeName()));
+                    "trying to delete an entity that hasn't been fetched");
             case MISSING, DELETED -> throw new IllegalArgumentException(
-                    "trying to delete a missing/already deleted %s".formatted(klassV.getTypeName()));
+                    "trying to delete a missing/already deleted entity");
+            case INVALID -> throw new IllegalArgumentException("trying to do something in an invalid state");
         }
     }
 
@@ -172,47 +135,14 @@ public class UpdatableReferenceCache<K, V> {
      * this class is to support a stacked cache and the lower layers of the stack
      * (such as this one, being coalesced _into_) already have those entries.
      */
-    public void coalesceFrom(@NonNull final UpdatableReferenceCache<K, V> source) {
+    public void coalesceFrom(@NonNull final UpdatableReferenceCache<K> source) {
         Objects.requireNonNull(source, "source");
-        addDel.putAll(source.addDel);
+
+        current.putAll(source.current);
     }
 
-    @VisibleForTesting
-    public record Counts(int read, int updated, int deleted) {
-        public static Counts of(int r, int u, int d) {
-            return new Counts(r, u, d);
-        }
-    }
-
-    /**
-     * Returns (for tests) a triple of #original accounts, #added accounts, #deleted accounts
-     */
-    @VisibleForTesting
-    public @NonNull Counts getCounts() {
-        return Counts.of(
-                original.size(),
-                (int) addDel.values().stream().filter(Objects::nonNull).count(),
-                (int) addDel.values().stream().filter(Objects::isNull).count());
-    }
-
-    public enum Type {
-        READ_ONLY,
-        UPDATED,
-        CURRENT_STATE
-    }
-
-    @VisibleForTesting
-    public @NonNull Map<K, V> getAccounts(@NonNull final Type type) {
-        Objects.requireNonNull(type, "type");
-        // n.b.: can't use `Map.copyOf` because immutable maps created by `Map.copyOf` can't have values which are null.
-        return switch (type) {
-            case READ_ONLY -> new HashMap<>(original);
-            case UPDATED -> new HashMap<>(addDel);
-            case CURRENT_STATE -> {
-                final var r = new HashMap<>(original);
-                r.putAll(addDel); // why is `StringBuilder.append` fluid but `Map.putAll` not?
-                yield r;
-            }
-        };
+    @NonNull
+    protected Entry getCacheLineState(@NonNull final K key) {
+        return cacheLineStateIdentification.get(original, current, key);
     }
 }

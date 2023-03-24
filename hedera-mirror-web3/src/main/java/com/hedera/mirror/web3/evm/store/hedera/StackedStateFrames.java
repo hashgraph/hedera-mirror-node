@@ -18,32 +18,43 @@ package com.hedera.mirror.web3.evm.store.hedera;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.EmptyStackException;
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
-import org.apache.commons.lang3.tuple.Pair;
 
-public class StackedStateFrames<Address, Account, Token> {
-
-    @NonNull
-    final CachingStateFrame<Address, Account, Token> stackBase; // fixed "base" of stack: a R/O cache on top of the DB
-
-    CachingStateFrame<Address, Account, Token> stack = null; // current top of stack (which is all linked together)
+public class StackedStateFrames<Address> {
 
     @NonNull
-    final Class<Account> klassAccount;
+    protected CachingStateFrame<Address> stackBase; // fixed "base" of stack: a R/O cache on top of the DB
+
+    protected CachingStateFrame<Address> stack; // current top of stack (which is all linked together)
 
     @NonNull
-    final Class<Token> klassToken;
+    protected final List<GroundTruthAccessor<Address, ?>> accessors;
 
-    public StackedStateFrames(
-            @NonNull final Pair<Accessor<Address, Account>, Accessor<Address, Token>> accessors,
-            @NonNull final Class<Account> klassAccount,
-            @NonNull final Class<Token> klassToken) {
-        this.klassAccount = klassAccount;
-        this.klassToken = klassToken;
+    @SuppressWarnings("rawtypes")
+    @NonNull
+    protected final Class[] entityClasses;
+
+    public StackedStateFrames(@NonNull final List<GroundTruthAccessor<Address, ?>> accessors) {
+        this.accessors = accessors;
+        this.entityClasses = accessors.stream()
+                .map(GroundTruthAccessor::getVClass)
+                .distinct()
+                .toArray(Class[]::new);
+
+        if (entityClasses.length != accessors.size())
+            throw new IllegalArgumentException("accessors must be for distinct types");
+        if (1
+                != accessors.stream()
+                        .map(GroundTruthAccessor::getKClass)
+                        .map(Class::getTypeName)
+                        .distinct()
+                        .count()) throw new IllegalArgumentException("key types for all accessors must be the same");
 
         // TODO: probably takes the database connection thing/abstraction as a parameter and saves it away
-        final var database = new DatabaseBackedStateFrame<Address, Account, Token>(accessors, klassAccount, klassToken);
-        stack = stackBase = new ROCachingStateFrame<>(Optional.of(database), klassAccount, klassToken);
+        final var database = new DatabaseBackedStateFrame<Address>(accessors, entityClasses);
+        stack = stackBase = new ROCachingStateFrame<>(Optional.of(database), entityClasses);
         // Initial state is just the R/O cache on top of the database.  You really need to do a
         // `push()` before you can expect to write anything to this state
     }
@@ -56,17 +67,40 @@ public class StackedStateFrames<Address, Account, Token> {
         return stack.height();
     }
 
-    public @NonNull CachingStateFrame<Address, Account, Token> top() {
+    @NonNull
+    public CachingStateFrame<Address> top() {
         return stack;
     }
 
-    public @NonNull CachingStateFrame<Address, Account, Token> push() {
-        stack = new RWCachingStateFrame<>(Optional.of(stack), klassAccount, klassToken);
+    @NonNull
+    public CachingStateFrame<Address> push() {
+        stack = new RWCachingStateFrame<>(Optional.of(stack), entityClasses);
         return stack;
     }
 
     public void pop() {
         if (stack == stackBase) throw new EmptyStackException();
-        stack = stack.getParent().orElseThrow(EmptyStackException::new);
+        stack = stack.getUpstream().orElseThrow(EmptyStackException::new);
+    }
+
+    @NonNull
+    public Class<?>[] getEntityClasses() {
+        return entityClasses;
+    }
+
+    @NonNull
+    public CachingStateFrame<Address> push(@NonNull final CachingStateFrame<Address> frame) {
+        Objects.requireNonNull(frame, "frame");
+        if (frame.getUpstream() != Optional.ofNullable(stack))
+            throw new IllegalArgumentException("frame argument must have current TOS as its upstream");
+        stack = frame;
+        return stack;
+    }
+
+    @NonNull
+    public CachingStateFrame<Address> replaceEntireStack(@NonNull final CachingStateFrame<Address> frame) {
+        Objects.requireNonNull(frame, "frame");
+        stack = stackBase = frame;
+        return stack;
     }
 }
