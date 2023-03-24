@@ -22,10 +22,10 @@ package com.hedera.mirror.importer.domain;
 
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
+import java.util.Optional;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.importer.exception.AliasNotFoundException;
 
 /**
  * This service is used to centralize the conversion logic from protobuf-based Hedera entities to its internal EntityId
@@ -37,64 +37,35 @@ public interface EntityIdService {
      * Converts a protobuf AccountID to an EntityID, resolving any aliases that may be present.
      *
      * @param accountId The protobuf account ID
-     * @return The converted EntityId
-     * @throws AliasNotFoundException if it fails to resolve the alias
+     * @return An optional of the converted EntityId if it can be resolved, or EntityId.EMPTY if none can be resolved.
      */
-    EntityId lookup(AccountID accountId);
+    Optional<EntityId> lookup(AccountID accountId);
 
     /**
      * Specialized form of lookup(AccountID) that returns the first account ID parameter that resolves to a non-empty
      * EntityId.
      *
      * @param accountIds The protobuf account IDs
-     * @return The converted EntityId or EntityId.EMPTY if none can be resolved
+     * @return An optional of the converted EntityId if it can be resolved, or EntityId.EMPTY if none can be resolved.
      */
-    default EntityId lookup(AccountID... accountIds) {
-        return lookup(AliasNotFoundAction.FALLTHROUGH, accountIds);
-    }
-
-    /**
-     * Specialized form of lookup(AccountID) that returns the first account ID parameter that resolves to a non-empty
-     * EntityId. If the {@code action} is {@link AliasNotFoundAction#ERROR}, the method throws
-     * {@link AliasNotFoundException} as soon as resolving an alias fails.
-     *
-     * @param action     The action when looking up an alias results in {@link AliasNotFoundException}
-     * @param accountIds The protobuf account IDs
-     * @return The converted EntityId or EntityId.EMPTY if none can be resolved
-     * @throws AliasNotFoundException
-     */
-    EntityId lookup(AliasNotFoundAction action, AccountID... accountIds);
+    Optional<EntityId> lookup(AccountID... accountIds);
 
     /**
      * Converts a protobuf ContractID to an EntityID, resolving any EVM addresses that may be present.
      *
      * @param contractId The protobuf contract ID
-     * @return The converted EntityId
-     * @throws com.hedera.mirror.importer.exception.AliasNotFoundException Throws exception if alias not found
+     * @return An optional of the converted EntityId if it can be resolved, or EntityId.EMPTY if none can be resolved.
      */
-    EntityId lookup(ContractID contractId);
+    Optional<EntityId> lookup(ContractID contractId);
 
     /**
      * Specialized form of lookup(ContractID) that returns the first contract ID parameter that resolves to a non-empty
      * EntityId.
      *
      * @param contractIds The protobuf contract IDs
-     * @return The converted EntityId or EntityId.EMPTY if none can be resolved
+     * @return An optional of the converted EntityId if it can be resolved, or EntityId.EMPTY if none can be resolved.
      */
-    default EntityId lookup(ContractID... contractIds) {
-        return lookup(AliasNotFoundAction.FALLTHROUGH, contractIds);
-    }
-
-    /**
-     * Specialized form of lookup(ContractID) that returns the first contract ID parameter that resolves to a non-empty
-     * EntityId. If the {@code action} is {@link AliasNotFoundAction#ERROR}, the method throws
-     * {@link AliasNotFoundException} as soon as resolving an evm address fails.
-     *
-     * @param contractIds The protobuf contract IDs
-     * @return The converted EntityId or EntityId.EMPTY if none can be resolved
-     * @throws AliasNotFoundException
-     */
-    EntityId lookup(AliasNotFoundAction action, ContractID... contractIds);
+    Optional<EntityId> lookup(ContractID... contractIds);
 
     /**
      * Used to notify the system of new aliases for potential use in future lookups.

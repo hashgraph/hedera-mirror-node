@@ -95,9 +95,9 @@ create table if not exists contract_action
 (
     call_depth          integer                        not null,
     call_operation_type integer                        null,
-    call_type           integer                        not null,
-    caller              bigint                         not null,
-    caller_type         entity_type default 'CONTRACT' not null,
+    call_type           integer                        null,
+    caller              bigint                         null,
+    caller_type         entity_type default 'CONTRACT' null,
     consensus_timestamp bigint                         not null,
     gas                 bigint                         not null,
     gas_used            bigint                         not null,

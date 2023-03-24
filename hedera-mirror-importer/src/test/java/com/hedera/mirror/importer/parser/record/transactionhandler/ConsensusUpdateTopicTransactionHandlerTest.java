@@ -36,11 +36,9 @@ import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.Optional;
 import java.util.function.Consumer;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -48,18 +46,15 @@ import com.hedera.mirror.common.domain.entity.EntityIdEndec;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.exception.AliasNotFoundException;
-import com.hedera.mirror.importer.parser.PartialDataAction;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
+
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
-    private RecordParserProperties recordParserProperties;
-
     @Override
     protected TransactionHandler getTransactionHandler() {
-        recordParserProperties = new RecordParserProperties();
-        return new ConsensusUpdateTopicTransactionHandler(entityIdService, entityListener, recordParserProperties);
+        return new ConsensusUpdateTopicTransactionHandler(entityIdService, entityListener);
     }
 
     @Override
@@ -90,7 +85,8 @@ class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHand
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder.transaction().
                 customize(t -> t.consensusTimestamp(timestamp).entityId(topicId)).get();
-        when(entityIdService.lookup(any(AccountID.class))).thenReturn(EntityIdEndec.decode(10L, ACCOUNT));
+        when(entityIdService.lookup(any(AccountID.class)))
+                .thenReturn(Optional.of(EntityIdEndec.decode(10L, ACCOUNT)));
         transactionHandler.updateTransaction(transaction, recordItem);
         assertConsensusTopicUpdate(timestamp, topicId, id -> assertEquals(10L, id));
     }
@@ -106,16 +102,15 @@ class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHand
         var transaction = domainBuilder.transaction().
                 customize(t -> t.consensusTimestamp(timestamp).entityId(topicId)).get();
         when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
-                .thenReturn(EntityIdEndec.decode(10L, ACCOUNT));
+                .thenReturn(Optional.of(EntityIdEndec.decode(10L, ACCOUNT)));
         transactionHandler.updateTransaction(transaction, recordItem);
         assertConsensusTopicUpdate(timestamp, topicId, id -> assertEquals(10L, id));
     }
 
-    @ParameterizedTest(name = "{0}")
-    @EnumSource(value = PartialDataAction.class, names = {"DEFAULT", "ERROR"})
-    void updateTransactionThrowsWithAliasNotFound(PartialDataAction partialDataAction) {
+    @ParameterizedTest
+    @MethodSource("provideEntities")
+    void updateTransactionEntityIdEmpty(EntityId entityId) {
         // given
-        recordParserProperties.setPartialDataAction(partialDataAction);
         var alias = DomainUtils.fromBytes(domainBuilder.key());
         var recordItem = recordItemBuilder.consensusUpdateTopic()
                 .transactionBody(b -> b.getAutoRenewAccountBuilder().setAlias(alias))
@@ -125,27 +120,12 @@ class ConsensusUpdateTopicTransactionHandlerTest extends AbstractTransactionHand
         var transaction = domainBuilder.transaction().
                 customize(t -> t.consensusTimestamp(timestamp).entityId(topicId)).get();
         when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
-                .thenThrow(new AliasNotFoundException("alias", ACCOUNT));
+                .thenReturn(Optional.ofNullable(entityId));
+        var expectedId = entityId == null ? null : entityId.getId();
 
-        // when, then
-        assertThrows(AliasNotFoundException.class, () -> transactionHandler.updateTransaction(transaction, recordItem));
-    }
-
-    @Test
-    void updateTransactionWithAliasNotFoundAndPartialDataActionSkip() {
-        recordParserProperties.setPartialDataAction(PartialDataAction.SKIP);
-        var alias = DomainUtils.fromBytes(domainBuilder.key());
-        var recordItem = recordItemBuilder.consensusUpdateTopic()
-                .transactionBody(b -> b.getAutoRenewAccountBuilder().setAlias(alias))
-                .build();
-        var topicId = EntityId.of(recordItem.getTransactionBody().getConsensusUpdateTopic().getTopicID());
-        var timestamp = recordItem.getConsensusTimestamp();
-        var transaction = domainBuilder.transaction().
-                customize(t -> t.consensusTimestamp(timestamp).entityId(topicId)).get();
-        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
-                .thenThrow(new AliasNotFoundException("alias", ACCOUNT));
         transactionHandler.updateTransaction(transaction, recordItem);
-        assertConsensusTopicUpdate(timestamp, topicId, Assertions::assertNull);
+
+        assertConsensusTopicUpdate(timestamp, topicId, id -> assertEquals(expectedId, id));
     }
 
     @Test

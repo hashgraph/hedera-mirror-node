@@ -139,6 +139,17 @@ class ContractCallServiceTest extends Web3IntegrationTest {
     }
 
     @Test
+    void precompileCallReverts() {
+        final var tokenNameCall = "0x6f0fccab00000000000000000000000000000000000000000000000000000000000004e4";
+        final var serviceParameters = serviceParameters(tokenNameCall, 0, ETH_CALL, false);
+
+        persistEntities(false);
+
+        assertThatThrownBy(() -> contractCallService.processCall(serviceParameters)).
+                isInstanceOf(UnsupportedOperationException.class).hasMessage("Precompile not supported");
+    }
+
+    @Test
     void testRevertDetailMessage() {
         final var revertFunctionSignature = "0xa26388bb";
         final var serviceParameters = serviceParameters(revertFunctionSignature, 0, ETH_CALL, true);
@@ -146,7 +157,9 @@ class ContractCallServiceTest extends Web3IntegrationTest {
         persistEntities(false);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters)).
-                isInstanceOf(InvalidTransactionException.class).hasMessage(CONTRACT_REVERT_EXECUTED.name()).hasFieldOrPropertyWithValue("data", "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000015437573746f6d20726576657274206d6573736167650000000000000000000000");
+                isInstanceOf(InvalidTransactionException.class).hasMessage(CONTRACT_REVERT_EXECUTED.name())
+                .hasFieldOrPropertyWithValue("detail", "Custom revert message")
+                .hasFieldOrPropertyWithValue("data", "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000015437573746f6d20726576657274206d6573736167650000000000000000000000");
     }
 
     @Test
