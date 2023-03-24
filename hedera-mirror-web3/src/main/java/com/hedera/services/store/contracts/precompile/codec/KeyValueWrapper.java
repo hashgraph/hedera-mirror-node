@@ -16,7 +16,6 @@
 package com.hedera.services.store.contracts.precompile.codec;
 
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.Key;
 
 public final class KeyValueWrapper {
     public enum KeyValueType {

@@ -23,22 +23,17 @@ import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 
 import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Tuple;
-import com.google.protobuf.UnsafeByteOperations;
 import com.hederahashgraph.api.proto.java.AccountID;
-import com.hederahashgraph.api.proto.java.TokenID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import javax.inject.Singleton;
 import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
 
 import com.hedera.services.store.contracts.precompile.FungibleTokenTransfer;
-import com.hedera.services.store.contracts.precompile.HbarTransfer;
 import com.hedera.services.store.contracts.precompile.NftExchange;
 import com.hedera.services.utils.EntityIdUtils;
 
@@ -131,139 +126,9 @@ public class DecodingFacade {
         return accountIDs;
     }
 
-    public static List<TokenID> decodeTokenIDsFromBytesArray(@NonNull final byte[][] accountBytesArray) {
-        final List<TokenID> accountIDs = new ArrayList<>();
-        for (final var account : accountBytesArray) {
-            accountIDs.add(convertAddressBytesToTokenID(account));
-        }
-        return accountIDs;
-    }
-
     public static AccountID convertLeftPaddedAddressToAccountId(
             final byte[] leftPaddedAddress, @NonNull final UnaryOperator<byte[]> aliasResolver) {
         final var addressOrAlias = Arrays.copyOfRange(leftPaddedAddress, ADDRESS_SKIP_BYTES_LENGTH, WORD_LENGTH);
         return accountIdFromEvmAddress(aliasResolver.apply(addressOrAlias));
-    }
-
-    /**
-     * Existence-aware conversion of Solidity address to AccountID, where if the address converted into `shard.real.num`
-     * format of an AccountID does not exist in the current ledgers, we return an AccountID with alias == non-existing
-     * address, in order to support lazy creations, *NOTE* that evm addresses that map to an existing AccountID in the
-     * `shard.realm.format` *will not* trigger a lazy creation; Existing addresses are converted in the usual to
-     * `shard.real.num` AccountID format
-     */
-    public static AccountID convertLeftPaddedAddressToAccountId(
-            final byte[] leftPaddedAddress,
-            @NonNull final UnaryOperator<byte[]> aliasResolver,
-            @NonNull final Predicate<AccountID> exists) {
-        var accountID = convertLeftPaddedAddressToAccountId(leftPaddedAddress, aliasResolver);
-        if (!exists.test(accountID)) {
-            accountID = generateAccountIDWithAliasCalculatedFrom(accountID);
-        }
-        return accountID;
-    }
-
-    public static TokenID convertAddressBytesToTokenID(final byte[] addressBytes) {
-        final var address = Address.wrap(getSlicedAddressBytes(addressBytes));
-        return EntityIdUtils.tokenIdFromEvmAddress(address.toArray());
-    }
-
-    public static Bytes getSlicedAddressBytes(byte[] addressBytes) {
-        return Bytes.wrap(addressBytes).slice(ADDRESS_SKIP_BYTES_LENGTH, ADDRESS_BYTES_LENGTH);
-    }
-
-    public static List<NftExchange> bindNftExchangesFrom(
-            final TokenID tokenType,
-            @NonNull final Tuple[] abiExchanges,
-            final UnaryOperator<byte[]> aliasResolver,
-            final Predicate<AccountID> exists) {
-        final List<NftExchange> nftExchanges = new ArrayList<>();
-        for (final var exchange : abiExchanges) {
-            final var sender = convertLeftPaddedAddressToAccountId(exchange.get(0), aliasResolver);
-            final var receiver = convertLeftPaddedAddressToAccountId(exchange.get(1), aliasResolver, exists);
-            final var serialNo = (long) exchange.get(2);
-            // Only set the isApproval flag to true if it was sent in as a tuple parameter as "true"
-            // otherwise default to false in order to preserve the existing behaviour.
-            // The isApproval parameter only exists in the new form of cryptoTransfer
-            final boolean isApproval = (exchange.size() > 3) && (boolean) exchange.get(3);
-            nftExchanges.add(new NftExchange(serialNo, tokenType, sender, receiver, isApproval));
-        }
-        return nftExchanges;
-    }
-
-    public static List<FungibleTokenTransfer> bindFungibleTransfersFrom(
-            final TokenID tokenType,
-            @NonNull final Tuple[] abiTransfers,
-            final UnaryOperator<byte[]> aliasResolver,
-            final Predicate<AccountID> exists) {
-        final List<FungibleTokenTransfer> fungibleTransfers = new ArrayList<>();
-        for (final var transfer : abiTransfers) {
-            var accountID = convertLeftPaddedAddressToAccountId(transfer.get(0), aliasResolver);
-            final long amount = transfer.get(1);
-            if (amount > 0 && !exists.test(accountID)) {
-                accountID = generateAccountIDWithAliasCalculatedFrom(accountID);
-            }
-            // Only set the isApproval flag to true if it was sent in as a tuple parameter as "true"
-            // otherwise default to false in order to preserve the existing behaviour.
-            // The isApproval parameter only exists in the new form of cryptoTransfer
-            final boolean isApproval = (transfer.size() > 2) && (boolean) transfer.get(2);
-            addSignedAdjustment(fungibleTransfers, tokenType, accountID, amount, isApproval);
-        }
-        return fungibleTransfers;
-    }
-
-    @NonNull
-    public static AccountID generateAccountIDWithAliasCalculatedFrom(final AccountID accountID) {
-        return AccountID.newBuilder()
-                .setAlias(UnsafeByteOperations.unsafeWrap(EntityIdUtils.asEvmAddress(accountID)))
-                .build();
-    }
-
-    public static List<HbarTransfer> bindHBarTransfersFrom(
-            @NonNull final Tuple[] abiTransfers,
-            final UnaryOperator<byte[]> aliasResolver,
-            final Predicate<AccountID> exists) {
-        final List<HbarTransfer> hbarTransfers = new ArrayList<>();
-        for (final var transfer : abiTransfers) {
-            final long amount = transfer.get(1);
-            final AccountID accountID = amount > 0
-                    ? convertLeftPaddedAddressToAccountId(transfer.get(0), aliasResolver, exists)
-                    : convertLeftPaddedAddressToAccountId(transfer.get(0), aliasResolver);
-            final boolean isApproval = transfer.get(2);
-            addSignedHBarAdjustment(hbarTransfers, accountID, amount, isApproval);
-        }
-        return hbarTransfers;
-    }
-
-    public static void addSignedAdjustment(
-            final List<FungibleTokenTransfer> fungibleTransfers,
-            final TokenID tokenType,
-            final AccountID accountID,
-            final long amount,
-            final boolean isApproval) {
-        if (amount > 0) {
-            fungibleTransfers.add(
-                    new FungibleTokenTransfer(amount, isApproval, tokenType, null, accountID));
-        } else {
-            fungibleTransfers.add(
-                    new FungibleTokenTransfer(-amount, isApproval, tokenType, accountID, null));
-        }
-    }
-
-    public static void addSignedHBarAdjustment(
-            final List<HbarTransfer> hbarTransfers,
-            final AccountID accountID,
-            final long amount,
-            final boolean isApproval) {
-        if (amount > 0) {
-            hbarTransfers.add(new HbarTransfer(amount, isApproval, null, accountID));
-        } else {
-            hbarTransfers.add(new HbarTransfer(-amount, isApproval, accountID, null));
-        }
-    }
-
-    public static String removeBrackets(final String type) {
-        final var typeWithRemovedOpenBracket = type.replace("(", "");
-        return typeWithRemovedOpenBracket.replace(")", "");
     }
 }
