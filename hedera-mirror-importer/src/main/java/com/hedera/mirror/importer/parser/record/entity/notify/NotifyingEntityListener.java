@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.parser.record.entity.notify;
  */
 
 import static com.fasterxml.jackson.databind.PropertyNamingStrategies.SNAKE_CASE;
+import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Stopwatch;
@@ -40,7 +41,6 @@ import org.springframework.jdbc.core.PreparedStatementCallback;
 
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.importer.exception.ImporterException;
-import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.parser.record.entity.BatchEntityListener;
 import com.hedera.mirror.importer.parser.record.entity.ConditionOnEntityRecordParser;
 import com.hedera.mirror.importer.parser.record.entity.EntityBatchCleanupEvent;
@@ -123,7 +123,8 @@ public class NotifyingEntityListener implements BatchEntityListener {
 
             return json;
         } catch (Exception e) {
-            throw new ParserException(e);
+            log.error(RECOVERABLE_ERROR + "Error serializing topicMessage to json", topicMessage, e);
+            return null;
         }
     }
 }

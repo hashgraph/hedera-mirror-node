@@ -25,13 +25,12 @@ import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 
 class FileUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new FileUpdateTransactionHandler(entityIdService, entityListener, new RecordParserProperties());
+        return new FileUpdateTransactionHandler(entityIdService, entityListener);
     }
 
     @Override

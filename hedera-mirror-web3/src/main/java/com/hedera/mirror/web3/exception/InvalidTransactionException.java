@@ -56,4 +56,8 @@ public class InvalidTransactionException extends EvmException {
     public String getDetail() {
         return detail;
     }
+
+    public String getData() {
+        return data;
+    }
 }
