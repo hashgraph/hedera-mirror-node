@@ -299,10 +299,9 @@ paths:
 
   /api/v1/contracts/call:
       post:
-        summary: eth_call and eth_estimateGas
-        description: Returns a result from execution of eth_call and eth_estimateGas. If `estimate` field set to true eth_estimateGas is executed
-        servers:
-          - url:
+        summary: EVM execution
+        description: Returns a result from EVM execution such as cost-free execution of read-only smart contract queries, gas estimation, and transient simulation of read-write operations. If `estimate` field set to true gas estimation is executed.
+        operationId: executeEVM
         requestBody:
           required: true
           content:
@@ -310,10 +309,53 @@ paths:
               schema:
                 type: object
                 properties:
-                  to:
+                  block:
                     type: string
+                    description: Hexadecimal block number or the string "latest"
+                    example: "latest"
                   data:
                     type: string
+                    description: Hexadecimal method signature and encoded parameters.
+                    format: binary
+                    maxLength: 6144 * 2
+                    example: "0x0198489200000000000000000000000000000000000000000000000000000000000003ee"
+                  estimate:
+                    type: boolean
+                    description: Whether gas estimation is called
+                    example: true
+                  from:
+                    type: string
+                    description: 20 Bytes - The hexed address the transaction is sent from.
+                    format: binary
+                    minLength: 40
+                    maxLength: 40
+                    example: "00000000000000000000000000000000000004e2"
+                  gas:
+                    format: int64
+                    minimum: 0
+                    type: integer
+                    description: Gas provided for the transaction execution.
+                    example: 100000000
+                  gasPrice:
+                    format: int64
+                    minimum: 0
+                    type: integer
+                    description: GasPrice used for each paid gas.
+                    example: 100000000
+                  to:
+                    type: string
+                    description: 20 Bytes - The hexed address the transaction is directed to.
+                    format: binary
+                    minLength: 40
+                    maxLength: 40
+                    required: true
+                    example: "00000000000000000000000000000000000003f4"
+                  value:
+                    format: int64
+                    minimum: 0
+                    type: integer
+                    description: Value sent with this transaction
+                    example: 0
         responses:
           200:
             description: OK
