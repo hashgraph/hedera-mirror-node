@@ -19,7 +19,7 @@ class FungibleTokenTransferTest {
     @Test
     void createsExpectedCryptoTransfer() {
         final var fungibleTransfer = new FungibleTokenTransfer(secondAmount, false, fungible, b, a);
-        assertTrue(fungibleTransfer.getDenomination().equals(fungible));
+        assertEquals(fungible, fungibleTransfer.getDenomination());
     }
 
     static AccountID asAccount(String v) {

@@ -75,10 +75,10 @@ public class DecodingFacadeTest {
         assertFalse(decodedInput.get(0).isUsedForWipeKey());
         assertFalse(decodedInput.get(0).isUsedForFeeScheduleKey());
         assertFalse(decodedInput.get(0).isUsedForPauseKey());
-        assertTrue(decodedInput.get(0).key().getEd25519Key().length == 0);
-        assertTrue(decodedInput.get(0).key().getContractID() == null);
-        assertTrue(decodedInput.get(0).key().getDelegatableContractID() == null);
-        assertTrue(decodedInput.get(0).key().getEcdsaSecp256k1() != null);
+        assertEquals(0, decodedInput.get(0).key().getEd25519Key().length);
+        assertNull(decodedInput.get(0).key().getContractID());
+        assertNull(decodedInput.get(0).key().getDelegatableContractID());
+        assertNotNull(decodedInput.get(0).key().getEcdsaSecp256k1());
 
     }
 
@@ -89,7 +89,7 @@ public class DecodingFacadeTest {
                 TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_DECODER);
         final Tuple tokenCreateStruct = decodedArguments.get(0);
         final var decodedInput = decodeTokenExpiry(tokenCreateStruct.get(8), identity());
-        assertTrue(decodedInput.second() == 0);
+        assertEquals(0, decodedInput.second());
     }
 
     @Test
@@ -97,6 +97,6 @@ public class DecodingFacadeTest {
         final Tuple decodedArguments = decodeFunctionCall(
                 TRANSFER_NFTS_INPUT, TRANSFER_NFTS_SELECTOR, TRANSFER_NFTS_DECODER);
         final var decodedInput = decodeAccountIds(decodedArguments.get(1), identity());
-        assertTrue(decodedInput.get(0).getAccountNum() == 1143);
+        assertEquals(1143, decodedInput.get(0).getAccountNum());
     }
 }

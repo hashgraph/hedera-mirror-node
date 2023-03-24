@@ -13,9 +13,9 @@ class NftExchangeTest {
     void createsExpectedCryptoTransfer() {
         final var nftExchange = new NftExchange(1L, nonFungible, a, b);
         assertFalse(nftExchange.isApproval());
-        assertTrue(nftExchange.getTokenType().equals(nonFungible));
+        assertEquals(nonFungible, nftExchange.getTokenType());
         assertTrue(nftExchange.asGrpc().hasSenderAccountID());
-        assertTrue(nftExchange.getSerialNo() == 1L);
+        assertEquals(1L, nftExchange.getSerialNo());
         assertTrue(NftExchange.fromApproval(1L, nonFungible, a, b).isApproval());
     }
 }
