@@ -90,47 +90,61 @@
       }
     ]
   },
-  "urls": [
-    "/api/v1/schedules?schedule.id=0.0.2000",
-    "/api/v1/schedules?schedule.id=0.2000",
-    "/api/v1/schedules?schedule.id=2000"
-  ],
-  "responseStatus": 200,
-  "responseJson": {
-    "schedules": [
-      {
-        "admin_key": {
-          "_type": "ProtobufEncoded",
-          "key": "010101"
-        },
-        "consensus_timestamp": "1234567890.000010001",
-        "creator_account_id": "0.0.1024",
-        "deleted": false,
-        "expiration_time": null,
-        "executed_timestamp": "1234567890.000001100",
-        "memo": "Created per council decision dated 02/01/21",
-        "payer_account_id": "0.0.1024",
-        "schedule_id": "0.0.2000",
-        "signatures": [
+  "tests": [
+    {
+      "urls": [
+        "/api/v1/schedules?schedule.id=0.0.2000",
+        "/api/v1/schedules?schedule.id=0.2000",
+        "/api/v1/schedules?schedule.id=2000"
+      ],
+      "responseStatus": 200,
+      "responseJson": {
+        "schedules": [
           {
+            "admin_key": {
+              "_type": "ProtobufEncoded",
+              "key": "010101"
+            },
             "consensus_timestamp": "1234567890.000010001",
-            "public_key_prefix": "AQEB",
-            "signature": "AgIC",
-            "type": "ED25519"
-          },
-          {
-            "consensus_timestamp": "1234567890.000010010",
-            "public_key_prefix": "AwMD",
-            "signature": "BAQE",
-            "type": "ED25519"
+            "creator_account_id": "0.0.1024",
+            "deleted": false,
+            "expiration_time": null,
+            "executed_timestamp": "1234567890.000001100",
+            "memo": "Created per council decision dated 02/01/21",
+            "payer_account_id": "0.0.1024",
+            "schedule_id": "0.0.2000",
+            "signatures": [
+              {
+                "consensus_timestamp": "1234567890.000010001",
+                "public_key_prefix": "AQEB",
+                "signature": "AgIC",
+                "type": "ED25519"
+              },
+              {
+                "consensus_timestamp": "1234567890.000010010",
+                "public_key_prefix": "AwMD",
+                "signature": "BAQE",
+                "type": "ED25519"
+              }
+            ],
+            "transaction_body": "AQECAgMD",
+            "wait_for_expiry": false
           }
         ],
-        "transaction_body": "AQECAgMD",
-        "wait_for_expiry": false
+        "links": {
+          "next": null
+        }
       }
-    ],
-    "links": {
-      "next": null
+    },
+    {
+      "url": "/api/v1/schedules?schedule.id=0.0.2001",
+      "responseStatus": 200,
+      "responseJson": {
+        "schedules": [],
+        "links": {
+          "next": null
+        }
+      }
     }
-  }
+  ]
 }
