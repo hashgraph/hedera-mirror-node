@@ -99,7 +99,7 @@ class TransactionHashBatchInserterTest extends IntegrationTest {
         assertThreadState(STATUS_COMMITTED, threadStates);
 
         shardMap.forEach((shard, items) -> {
-            assertThat(TestUtils.getShardTransactionHashes(shard, jdbcTemplate)).containsExactlyInAnyOrderElementsOf(shardMap.get(shard));
+            assertThat(TestUtils.getShardTransactionHashes(shard, jdbcTemplate)).containsExactlyInAnyOrderElementsOf(items);
             items.forEach(hash -> assertThat(TestUtils.getTransactionHashFromSqlFunction(jdbcTemplate, hash.getHash())).isEqualTo(hash));
         });
         assertThat(transactionHashRepository.findAll()).containsExactlyInAnyOrderElementsOf(transactionHashes);
@@ -141,7 +141,7 @@ class TransactionHashBatchInserterTest extends IntegrationTest {
         // Now that parent transaction has committed, the transactions for threads will be committed
         assertThreadState(STATUS_COMMITTED, threadStates);
         shardMap.forEach((shard, items) -> {
-            assertThat(TestUtils.getShardTransactionHashes(shard, jdbcTemplate)).containsExactlyInAnyOrderElementsOf(shardMap.get(shard));
+            assertThat(TestUtils.getShardTransactionHashes(shard, jdbcTemplate)).containsExactlyInAnyOrderElementsOf(items);
             items.forEach(hash -> assertThat(TestUtils.getTransactionHashFromSqlFunction(jdbcTemplate, hash.getHash())).isEqualTo(hash));
         });
         assertThat(transactionHashRepository.findAll()).containsExactlyInAnyOrderElementsOf(combinedHashes);
@@ -181,6 +181,7 @@ class TransactionHashBatchInserterTest extends IntegrationTest {
         assertThat(transactionRepository.findAll()).isEmpty();
         shardMap.keySet()
                 .forEach(shard -> assertThat(TestUtils.getShardTransactionHashes(shard, jdbcTemplate)).isEmpty());
+        assertThat(transactionHashRepository.findAll()).isEmpty();
     }
 
     @Test
@@ -202,6 +203,7 @@ class TransactionHashBatchInserterTest extends IntegrationTest {
         assertThat(transactionRepository.findAll()).isEmpty();
         shardMap.keySet()
                 .forEach(shard -> assertThat(TestUtils.getShardTransactionHashes(shard, jdbcTemplate)).isEmpty());
+        assertThat(transactionHashRepository.findAll()).isEmpty();
     }
 
     @Test
@@ -220,8 +222,7 @@ class TransactionHashBatchInserterTest extends IntegrationTest {
                     .forEach(threadState -> assertThat(threadState.getStatus()).isEqualTo(-1));
 
             // Get connection of thread transaction
-            var key = hashBatchInserter.getThreadConnections().keySet().iterator().next();
-            var threadToClose = hashBatchInserter.getThreadConnections().get(key);
+            var threadToClose = hashBatchInserter.getThreadConnections().values().iterator().next();
             markAndCloseConnection(threadToClose.getConnection());
             return new ConcurrentHashMap<>(hashBatchInserter.getThreadConnections());
         });
@@ -245,7 +246,7 @@ class TransactionHashBatchInserterTest extends IntegrationTest {
 
         assertThreadState(STATUS_COMMITTED, threadStates);
         shardMap.forEach((shard, items) -> {
-            assertThat(TestUtils.getShardTransactionHashes(shard, jdbcTemplate)).containsExactlyInAnyOrderElementsOf(shardMap.get(shard));
+            assertThat(TestUtils.getShardTransactionHashes(shard, jdbcTemplate)).containsExactlyInAnyOrderElementsOf(items);
             items.forEach(hash -> assertThat(TestUtils.getTransactionHashFromSqlFunction(jdbcTemplate, hash.getHash())).isEqualTo(hash));
         });
 
@@ -269,9 +270,8 @@ class TransactionHashBatchInserterTest extends IntegrationTest {
                     .forEach(shard -> assertThat(TestUtils.getShardTransactionHashes(shard, jdbcTemplate)).isEmpty());
         });
 
-        shardMap.keySet()
-                .forEach(shard -> assertThat(TestUtils.getShardTransactionHashes(shard, jdbcTemplate))
-                        .isEqualTo(shardMap.get(shard)
+        shardMap.forEach((shard, items) -> assertThat(TestUtils.getShardTransactionHashes(shard, jdbcTemplate))
+                        .isEqualTo(items
                                 .stream()
                                 .filter(TransactionHash::hashIsValid)
                                 .collect(Collectors.toList())));
