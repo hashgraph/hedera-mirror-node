@@ -26,6 +26,7 @@ import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 
 import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.repository.TransactionHashRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 
@@ -145,6 +146,42 @@ class TransactionHashBatchInserterTest extends IntegrationTest {
             items.forEach(hash -> assertThat(TestUtils.getTransactionHashFromSqlFunction(jdbcTemplate, hash.getHash())).isEqualTo(hash));
         });
         assertThat(transactionHashRepository.findAll()).containsExactlyInAnyOrderElementsOf(combinedHashes);
+    }
+
+    @Test
+    void persistBatchesConnectionClosed() {
+        var batch2Transactions = transactions(10);
+        var batch2Hashes = transactionHash(64);
+        var combinedTransactions = new HashSet<>(transactions);
+        combinedTransactions.addAll(batch2Transactions);
+        var combinedHashes = new HashSet<>(transactionHashes);
+        combinedHashes.addAll(batch2Hashes);
+
+        batch2Hashes.stream()
+                .collect(Collectors.groupingBy(TransactionHash::calculateV1Shard))
+                .forEach((key, value) -> shardMap.computeIfAbsent(key, k -> new ArrayList<>()).addAll(value));
+
+        //Execute inside a parent transaction
+        assertThatThrownBy(() ->
+        transactionTemplate.executeWithoutResult(status -> {
+            batchPersister.persist(transactions);
+            assertThat(transactionRepository.findAll()).containsExactlyInAnyOrderElementsOf(transactions);
+
+            batchPersister.persist(batch2Transactions);
+
+            assertThat(transactionRepository.findAll()).containsExactlyInAnyOrderElementsOf(combinedTransactions);
+            batchPersister.persist(transactionHashes);
+
+            // Close Connections
+            hashBatchInserter.getThreadConnections().values().forEach(state -> markAndCloseConnection(state.getConnection()));
+
+            //throws ParserException trying to persist second batch
+            batchPersister.persist(batch2Hashes);
+        })).isInstanceOf(ParserException.class);
+
+        assertThat(transactionRepository.findAll()).isEmpty();
+        assertThat(transactionHashRepository.findAll()).isEmpty();
+        assertThat(hashBatchInserter.getThreadConnections()).isEmpty();
     }
 
     @Test
