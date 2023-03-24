@@ -217,11 +217,12 @@ class ContractControllerTest {
     @Test
     void callRevertMethodAndExpectDetailMessage() {
         final var detailedErrorMessage = "Custom revert message";
+        final var hexDataErrorMessage = "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000015437573746f6d20726576657274206d6573736167650000000000000000000000";
         final var request = request();
         request.setData("0xa26388bb");
 
         given(service.processCall(any())).willThrow(new InvalidTransactionException(CONTRACT_REVERT_EXECUTED, detailedErrorMessage,
-                StringUtils.EMPTY));
+                hexDataErrorMessage));
 
         webClient.post()
                 .uri(CALL_URI)
@@ -231,7 +232,7 @@ class ContractControllerTest {
                 .expectStatus()
                 .isEqualTo(BAD_REQUEST)
                 .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse(CONTRACT_REVERT_EXECUTED.name(), detailedErrorMessage, StringUtils.EMPTY));
+                .isEqualTo(new GenericErrorResponse(CONTRACT_REVERT_EXECUTED.name(), detailedErrorMessage, hexDataErrorMessage));
     }
 
     @Test
