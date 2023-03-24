@@ -40,6 +40,7 @@ import com.hedera.mirror.importer.util.Utility;
 @Validated
 @ConfigurationProperties("hedera.mirror.importer")
 public class MirrorProperties {
+    private ConsensusMode consensusMode = ConsensusMode.STAKE_IN_ADDRESS_BOOK; // see options at bottom of file
 
     @NotNull
     private Path dataPath = Paths.get(".", "data");
@@ -52,6 +53,9 @@ public class MirrorProperties {
     private Path initialAddressBook;
 
     private boolean leaderElection = false;
+
+    // when true, the only nodeStakes counted towards validation are those nodes that are elements of the address book
+    private boolean limitStakesToNodesInAddressBook = true;
 
     @NotNull
     private Map<String, MigrationProperties> migration = new CaseInsensitiveMap<>();
@@ -70,6 +74,12 @@ public class MirrorProperties {
 
     @NotNull
     private Instant verifyHashAfter = Instant.EPOCH;
+
+    public enum ConsensusMode {
+        EQUAL, // all nodes equally weighted
+        STAKE, // all nodes specify their node stake
+        STAKE_IN_ADDRESS_BOOK; // like STAKE, but only the nodes found in the address book are used in the calculation.
+    }
 
     @Getter
     @RequiredArgsConstructor

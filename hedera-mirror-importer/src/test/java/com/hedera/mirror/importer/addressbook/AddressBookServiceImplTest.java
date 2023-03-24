@@ -64,6 +64,7 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.MirrorProperties.ConsensusMode;
 import com.hedera.mirror.importer.config.CacheConfiguration;
 import com.hedera.mirror.importer.repository.AddressBookEntryRepository;
 import com.hedera.mirror.importer.repository.AddressBookRepository;
@@ -971,6 +972,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
         var nodeStake3 = domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(3)).persist();
         long totalStake = nodeStake0.getStake() + nodeStake1.getStake() + nodeStake2.getStake() + nodeStake3.getStake();
 
+        // consensusMode == ConsensusMode.STAKE_IN_ADDRESS_BOOK (the default)
         assertThat(addressBookService.getNodes())
                 .hasSize(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT)
                 .allSatisfy(c -> assertThat(c).returns(totalStake, ConsensusNode::getTotalStake))
@@ -978,10 +980,28 @@ class AddressBookServiceImplTest extends IntegrationTest {
                 .allMatch(c -> c.getStake() > 1L)
                 .extracting(ConsensusNode::getNodeId)
                 .containsExactly(0L, 1L, 2L, 3L);
+
+        // consensusMode == ConsensusMode.EQUAL (each node gets stake of 1L)
+        MirrorProperties otherMirrorProperties = new MirrorProperties();
+        otherMirrorProperties.setConsensusMode(ConsensusMode.EQUAL);
+        AddressBookService customAddressBookService = new AddressBookServiceImpl(addressBookRepository,
+                fileDataRepository, otherMirrorProperties, nodeStakeRepository, transactionTemplate);
+
+        assertThat(customAddressBookService.getNodes())
+                .hasSize(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT)
+                .allSatisfy(c -> assertThat(c).returns(4L, ConsensusNode::getTotalStake))
+                .allSatisfy(c -> assertThat(c.getPublicKey()).isNotNull())
+                .allMatch(c -> c.getStake() == 1L)
+                .extracting(ConsensusNode::getNodeId)
+                .containsExactly(0L, 1L, 2L, 3L);
     }
 
     @Test
     void getNodesWithNodeStakeCountMoreThanAddressBook() {
+        MirrorProperties otherMirrorProperties = new MirrorProperties();
+        otherMirrorProperties.setConsensusMode(ConsensusMode.STAKE);
+        AddressBookService customAddressBookService = new AddressBookServiceImpl(addressBookRepository,
+                fileDataRepository, otherMirrorProperties, nodeStakeRepository, transactionTemplate);
         long timestamp = domainBuilder.timestamp();
         domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(0).stake(0L)).persist();
         domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(1).stake(0L)).persist();
@@ -989,10 +1009,21 @@ class AddressBookServiceImplTest extends IntegrationTest {
         domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(3).stake(0L)).persist();
         domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(4).stake(0L)).persist();
 
-        assertThat(addressBookService.getNodes())
+        // consensusMode == ConsensusMode.STAKE
+        // here we intentionally include nodes that are not in the address book
+        assertThat(customAddressBookService.getNodes())
                 .hasSize(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT)
                 .allMatch(c -> c.getStake() == 1L)
                 .allMatch(c -> c.getTotalStake() == 5L)
+                .allMatch(c -> c.getNodeAccountId().getEntityNum() - 3 == c.getNodeId())
+                .allSatisfy(c -> assertThat(c.getPublicKey()).isNotNull());
+
+        // consensusMode == ConsensusMode.STAKE_IN_ADDRESS_BOOK (the default)
+        // here we only include nodes that are in the address book (which is of size only 4, hence total stake = 4)
+        assertThat(addressBookService.getNodes())
+                .hasSize(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT)
+                .allMatch(c -> c.getStake() == 1L)
+                .allMatch(c -> c.getTotalStake() == 4L)
                 .allMatch(c -> c.getNodeAccountId().getEntityNum() - 3 == c.getNodeId())
                 .allSatisfy(c -> assertThat(c.getPublicKey()).isNotNull());
     }
