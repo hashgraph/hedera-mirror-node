@@ -348,7 +348,6 @@ paths:
                     format: binary
                     minLength: 40
                     maxLength: 40
-                    required: true
                     example: "00000000000000000000000000000000000003f4"
                   value:
                     format: int64
@@ -356,6 +355,8 @@ paths:
                     type: integer
                     description: Value sent with this transaction
                     example: 0
+                required:
+                  - to
         responses:
           200:
             description: OK
