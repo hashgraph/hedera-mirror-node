@@ -84,9 +84,6 @@ public class TransactionHashTxManager implements TransactionSynchronization {
         threadConnections.clear();
     }
 
-    /**
-     *
-     * */
     public void initialize(Collection<?> items, String shardedTableName) {
         // This will be non-empty when there are multiple calls to persist
         // in the same parent transaction which is the case if batch limit is reached

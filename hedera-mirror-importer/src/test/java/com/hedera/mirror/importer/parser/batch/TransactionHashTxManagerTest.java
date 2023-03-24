@@ -24,7 +24,6 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.springframework.transaction.support.TransactionSynchronization.STATUS_COMMITTED;
 import static org.springframework.transaction.support.TransactionSynchronization.STATUS_ROLLED_BACK;
 import static org.springframework.transaction.support.TransactionSynchronization.STATUS_UNKNOWN;
