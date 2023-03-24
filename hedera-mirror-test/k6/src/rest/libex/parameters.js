@@ -319,7 +319,6 @@ const computeFungibleTokenParameters = wrapComputeParametersFunc(['DEFAULT_TOKEN
 const computeTransactionParameters = wrapComputeParametersFunc(
   ['DEFAULT_TRANSACTION_HASH', 'DEFAULT_TRANSACTION_ID'],
   () => {
-    // console.info(`constants - ${JSON.stringify(constants)}`);
     const extractProperties = (transaction) => ({
       DEFAULT_TRANSACTION_HASH: b64encode(b64decode(transaction.transaction_hash), 'url'),
       DEFAULT_TRANSACTION_ID: transaction.transaction_id,
