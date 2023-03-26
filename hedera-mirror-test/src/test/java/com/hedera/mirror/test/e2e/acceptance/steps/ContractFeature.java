@@ -269,9 +269,8 @@ public class ContractFeature extends AbstractFeature {
     public void verifyMirrorAPIContractNotFoundResponse() {
         log.info("Verify contract at the hollow account evm address does not exist");
         try {
-            MirrorContractResponse mirrorContractResponse = mirrorClient.getContractInfoWithNotFound(create2ChildContractEvmAddress);
-            log.error("Expected contract at EVM address {} to not exist, but found: {}", create2ChildContractEvmAddress, mirrorContractResponse);
-            fail();
+            mirrorClient.getContractInfoWithNotFound(create2ChildContractEvmAddress);
+            fail("Did not expect to find contract at EVM address");
         } catch (WebClientResponseException wcre) {
             assertEquals(HttpStatus.NOT_FOUND, wcre.getStatusCode());
         }
