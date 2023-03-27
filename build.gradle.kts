@@ -35,7 +35,6 @@ extra.apply {
     set("protobufVersion", "3.22.2")
     set("reactorGrpcVersion", "1.2.3")
     set("snakeyaml.version", "1.33") // Temporary fix for transient dependency security issue
-    set("spring-data-bom.version", "2021.2.10") // Temporary fix for security issue. Remove after Boot 2.7.10
     set("testcontainersSpringBootVersion", "2.3.2")
     set("vertxVersion", "4.4.0")
 }
@@ -59,7 +58,7 @@ dependencies {
         api("com.graphql-java-generator:graphql-java-client-dependencies:1.18.10")
         api("com.graphql-java:graphql-java-extended-scalars:20.0")
         api("com.graphql-java:graphql-java-extended-validation:20.0-validator-6.2.0.Final")
-        api("com.hedera.evm:hedera-evm:0.34.0")
+        api("com.hedera.evm:hedera-evm:0.36.0-alpha.3")
         api("com.hedera.hashgraph:hedera-protobuf-java-api:0.35.0")
         api("com.hedera.hashgraph:sdk:2.21.0")
         api("com.ongres.scram:client:2.1")

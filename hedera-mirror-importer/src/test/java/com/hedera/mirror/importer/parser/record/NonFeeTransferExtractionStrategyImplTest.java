@@ -41,15 +41,18 @@ import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.domain.EntityIdService;
@@ -132,7 +135,8 @@ class NonFeeTransferExtractionStrategyImplTest {
         var transactionRecord = getSimpleTransactionRecord().toBuilder()
                 .setContractCallResult(contractCallResult)
                 .build();
-        when(entityIdService.lookup(ContractID.getDefaultInstance(), contractId)).thenReturn(EntityId.of(contractId));
+        when(entityIdService.lookup(ContractID.getDefaultInstance(), contractId))
+                .thenReturn(Optional.of(EntityId.of(contractId)));
         var result = extractionStrategy.extractNonFeeTransfers(transactionBody, transactionRecord);
         assertAll(
                 () -> assertEquals(2, StreamSupport.stream(result.spliterator(), false).count()),
@@ -155,7 +159,8 @@ class NonFeeTransferExtractionStrategyImplTest {
                 .setReceipt(receipt)
                 .setContractCallResult(contractCallResult)
                 .build();
-        when(entityIdService.lookup(contractIdReceipt, contractIdBody)).thenReturn(EntityId.of(contractIdReceipt));
+        when(entityIdService.lookup(contractIdReceipt, contractIdBody))
+                .thenReturn(Optional.of(EntityId.of(contractIdReceipt)));
         var result = extractionStrategy.extractNonFeeTransfers(transactionBody, transactionRecord);
         assertAll(
                 () -> assertEquals(2, StreamSupport.stream(result.spliterator(), false).count()),
@@ -163,15 +168,16 @@ class NonFeeTransferExtractionStrategyImplTest {
         );
     }
 
-    @Test
-    void extractNonFeeTransfersContractCallFailedThrows() {
+    @ParameterizedTest
+    @MethodSource("provideEntities")
+    void extractNonFeeTransfersContractCallEmptyEntityId(EntityId entityId) {
         var amount = 123456L;
         var transactionBody = getContractCallTransactionBody(TestUtils.generateRandomByteArray(20), amount);
         var transactionRecord = getSimpleTransactionRecord();
-        when(entityIdService.lookup(ContractID.getDefaultInstance(), transactionBody.getContractCall().getContractID()
-        )).thenThrow(new InvalidEntityException(""));
-        assertThrows(InvalidEntityException.class,
-                () -> extractionStrategy.extractNonFeeTransfers(transactionBody, transactionRecord));
+        when(entityIdService.lookup(ContractID.getDefaultInstance(), transactionBody.getContractCall()
+                .getContractID())).thenReturn(Optional.ofNullable(entityId));
+        var result = extractionStrategy.extractNonFeeTransfers(transactionBody, transactionRecord);
+        assertEquals(0, StreamSupport.stream(result.spliterator(), false).count());
     }
 
     @Test
@@ -282,5 +288,9 @@ class NonFeeTransferExtractionStrategyImplTest {
 
     private AccountAmount newAccountAmount(AccountID accountId, long amount) {
         return AccountAmount.newBuilder().setAccountID(accountId).setAmount(amount).build();
+    }
+
+    private static Stream<EntityId> provideEntities() {
+        return Stream.of(null, EntityId.EMPTY);
     }
 }

@@ -23,16 +23,20 @@ package com.hedera.mirror.importer.domain;
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
+import static com.hedera.services.stream.proto.ContractAction.CallerCase.CALLING_ACCOUNT;
 import static com.hedera.services.stream.proto.ContractAction.CallerCase.CALLING_CONTRACT;
 import static com.hedera.services.stream.proto.ContractAction.RecipientCase.RECIPIENT_NOT_SET;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.BytesValue;
+
+import com.hedera.mirror.common.domain.entity.EntityType;
+
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenType;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
@@ -68,7 +72,6 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.IntegrationTest;
-import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.parser.domain.RecordItemBuilder;
 import com.hedera.mirror.importer.parser.record.RecordStreamFileListener;
 import com.hedera.mirror.importer.repository.ContractActionRepository;
@@ -190,8 +193,14 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                 .sidecarRecords(s -> s.get(1).getActionsBuilder().getContractActionsBuilder(0).clearCaller())
                 .build();
 
-        assertThatThrownBy(() -> process(recordItem)).isInstanceOf(InvalidDatasetException.class)
-                .hasMessageContaining("Invalid caller");
+        process(recordItem);
+
+        assertContractResult(recordItem);
+        assertContractLogs(recordItem);
+        assertContractActions(recordItem);
+        assertContractStateChanges(recordItem);
+        assertThat(contractRepository.count()).isZero();
+        assertThat(entityRepository.count()).isZero();
     }
 
     @Test
@@ -200,8 +209,14 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                 .sidecarRecords(s -> s.get(1).getActionsBuilder().getContractActionsBuilder(0).clearResultData())
                 .build();
 
-        assertThatThrownBy(() -> process(recordItem)).isInstanceOf(InvalidDatasetException.class)
-                .hasMessageContaining("Invalid result data");
+        process(recordItem);
+
+        assertContractResult(recordItem);
+        assertContractLogs(recordItem);
+        assertContractActions(recordItem);
+        assertContractStateChanges(recordItem);
+        assertThat(contractRepository.count()).isZero();
+        assertThat(entityRepository.count()).isZero();
     }
 
     @Test
@@ -477,9 +492,6 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
         assertThat(contractActionRepository.findAll())
                 .hasSize(expected.size())
                 .allSatisfy(a -> assertAll(
-                                () -> assertThat(a)
-                                        .satisfies(actual -> assertThat(actual.getCaller()).isNotNull())
-                                        .satisfies(actual -> assertThat(actual.getResultData()).isNotEmpty()),
                                 () -> assertThat(expected.get(a.getId()))
                                         .isNotNull()
                                         .returns(a.getCallDepth(), e -> e.getCallDepth())
@@ -488,8 +500,7 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                                         .returns(a.getConsensusTimestamp(), e -> recordItem.getConsensusTimestamp())
                                         .returns(a.getGas(), e -> e.getGas())
                                         .returns(a.getGasUsed(), e -> e.getGasUsed())
-                                        .returns(a.getCallerType(),
-                                                e -> e.getCallerCase() == CALLING_CONTRACT ? CONTRACT : ACCOUNT)
+                                        .returns(a.getCallerType(), e -> getExpectedCallerType(e))
                                         .returns(a.getPayerAccountId(), e -> recordItem.getPayerAccountId())
                                         .returns(a.getResultDataType(), e -> e.getResultDataCase().getNumber())
                                         .returns(a.getValue(), e -> e.getValue())
@@ -499,6 +510,17 @@ class ContractResultServiceImplIntegrationTest extends IntegrationTest {
                                                 e -> assertThat(e.getRecipientCase()).isEqualTo(RECIPIENT_NOT_SET))
                         )
                 );
+    }
+
+    private EntityType getExpectedCallerType(com.hedera.services.stream.proto.ContractAction e) {
+        switch (e.getCallerCase()) {
+            case CALLING_CONTRACT:
+                return CONTRACT;
+            case CALLING_ACCOUNT:
+                return ACCOUNT;
+            default:
+                return null;
+        }
     }
 
     private void assertContractRuntimeBytecode(RecordItem recordItem) {

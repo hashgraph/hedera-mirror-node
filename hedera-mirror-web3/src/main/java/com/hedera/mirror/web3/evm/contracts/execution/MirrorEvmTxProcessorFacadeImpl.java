@@ -70,7 +70,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
         this.worldState =
                 new HederaEvmWorldState(
                         entityAccess, evmProperties,
-                        codeCache, accountAccessor);
+                        codeCache, accountAccessor, null);
     }
 
     @Override
