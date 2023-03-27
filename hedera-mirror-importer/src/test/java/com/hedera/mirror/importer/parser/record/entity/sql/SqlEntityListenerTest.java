@@ -29,21 +29,22 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
-import com.hedera.mirror.common.domain.token.NftTransferId;
-import com.hederahashgraph.api.proto.java.EntityID;
 import com.hederahashgraph.api.proto.java.Key;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.apache.commons.codec.binary.Hex;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -65,6 +66,7 @@ import com.hedera.mirror.common.domain.schedule.Schedule;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
 import com.hedera.mirror.common.domain.token.NftTransfer;
+import com.hedera.mirror.common.domain.token.NftTransferId;
 import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 import com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum;
@@ -80,6 +82,7 @@ import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionHash;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.TestUtils;
@@ -161,15 +164,25 @@ class SqlEntityListenerTest extends IntegrationTest {
     private final TransactionSignatureRepository transactionSignatureRepository;
     private final TransactionTemplate transactionTemplate;
 
+    private Set<TransactionType> defaultTransactionHashTypes;
+
     private static Key keyFromString(String key) {
         return Key.newBuilder().setEd25519(ByteString.copyFromUtf8(key)).build();
     }
 
     @BeforeEach
     void beforeEach() {
+        defaultTransactionHashTypes = entityProperties.getPersist().getTransactionHashTypes();
+
+        entityProperties.getPersist().setTransactionHash(false);
         entityProperties.getPersist().setTrackBalance(true);
         sqlProperties.setBatchSize(20_000);
         sqlEntityListener.onStart();
+    }
+
+    @AfterEach
+    void afterEach() {
+        entityProperties.getPersist().setTransactionHashTypes(defaultTransactionHashTypes);
     }
 
     @Test
@@ -927,6 +940,35 @@ class SqlEntityListenerTest extends IntegrationTest {
                 .extracting(Transaction::getIndex)
                 .isEqualTo(2);
 
+        assertThat(transactionHashRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedTransactionHashes);
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = TransactionType.class, names = {"CRYPTOTRANSFER", "CONSENSUSSUBMITMESSAGE"})
+    void onTransactionHashByTransactionType(TransactionType includedTransactionType) {
+        // given
+        entityProperties.getPersist().setTransactionHash(true);
+        entityProperties.getPersist().setTransactionHashTypes(Set.of(includedTransactionType));
+        var consensusSubmitMessage = domainBuilder.transaction()
+                .customize(t -> t.type(TransactionType.CONSENSUSSUBMITMESSAGE.getProtoId())).get();
+        var cryptoTransfer = domainBuilder.transaction().get();
+        var expectedTransactionHashes = Stream.of(consensusSubmitMessage, cryptoTransfer)
+                .filter(t -> t.getType() == includedTransactionType.getProtoId())
+                .map(transaction -> TransactionHash.builder()
+                        .consensusTimestamp(transaction.getConsensusTimestamp())
+                        .hash(transaction.getTransactionHash())
+                        .payerAccountId(transaction.getPayerAccountId().getId())
+                        .build())
+                .toList();
+
+        // when
+        sqlEntityListener.onTransaction(cryptoTransfer);
+        sqlEntityListener.onTransaction(consensusSubmitMessage);
+        completeFileAndCommit();
+
+        // then
+        assertThat(transactionRepository.findAll())
+                .containsExactlyInAnyOrder(consensusSubmitMessage, cryptoTransfer);
         assertThat(transactionHashRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedTransactionHashes);
     }
 
