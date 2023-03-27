@@ -287,8 +287,7 @@ public class TokenAccessorImpl implements TokenAccessor {
         final var tokenEntity = tokenEntityOptional.get();
         final var entity = entityOptional.get();
         final var ledgerId = ledgerId();
-        final var expirationTimeInSec = entity.getExpirationTimestamp() == null ? 0L :
-                entity.getExpirationTimestamp() / 1000000000;
+        final var expirationTimeInSec = expirationTimeSeconds(entity);
 
         final EvmTokenInfo evmTokenInfo = new EvmTokenInfo(
                 ledgerId,
@@ -316,6 +315,22 @@ public class TokenAccessorImpl implements TokenAccessor {
 
         return Optional.of(evmTokenInfo);
     }
+
+    private Long expirationTimeSeconds(Entity entity) {
+        final long AUTO_RENEW_PERIOD_MULTIPLE = 1_000_000_000L;
+        Long createdTimestamp = entity.getCreatedTimestamp();
+        Long autoRenewPeriod = entity.getAutoRenewPeriod();
+        Long expirationTimestamp = entity.getExpirationTimestamp();
+
+        if (expirationTimestamp != null) {
+            return expirationTimestamp / AUTO_RENEW_PERIOD_MULTIPLE;
+        } else if (createdTimestamp != null && autoRenewPeriod != null) {
+            return createdTimestamp + (autoRenewPeriod * AUTO_RENEW_PERIOD_MULTIPLE);
+        } else {
+            return 0L;
+        }
+    }
+
 
     private List<CustomFee> getCustomFees(final Address token) {
         final List<CustomFee> customFees = new ArrayList<>();
@@ -358,7 +373,7 @@ public class TokenAccessorImpl implements TokenAccessor {
                 customFeeConstructed.setFixedFee(fixedFee);
             } else if (royaltyDenominator == 0) {
                 final var fractionFee = new FractionalFee(
-                        amountNumerator,
+                        amount,
                         amountDenominator,
                         minimumAmount,
                         maximumAmount,

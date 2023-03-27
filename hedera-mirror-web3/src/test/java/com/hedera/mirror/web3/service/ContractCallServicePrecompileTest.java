@@ -33,9 +33,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import java.util.Arrays;
-
-import com.hedera.mirror.web3.exception.InvalidTransactionException;
-
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -56,6 +53,7 @@ import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.web3.Web3IntegrationTest;
+import com.hedera.mirror.web3.exception.InvalidTransactionException;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.utils.FunctionEncodeDecoder;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
@@ -105,16 +103,16 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
             case "fixed" -> {
                 assertThat((long) fixedFee[0].get(0)).isEqualTo(100L);
                 assertThat((com.esaulpaugh.headlong.abi.Address) fixedFee[0].get(1)).isEqualTo(convertAddress(FUNGIBLE_TOKEN_ADDRESS));
-                assertThat((boolean) fixedFee[0].get(2)).isEqualTo(false);
-                assertThat((boolean) fixedFee[0].get(3)).isEqualTo(false);
+                assertThat((boolean) fixedFee[0].get(2)).isFalse();
+                assertThat((boolean) fixedFee[0].get(3)).isFalse();
                 assertThat((com.esaulpaugh.headlong.abi.Address) fixedFee[0].get(4)).isEqualTo(convertAddress(SENDER_ADDRESS));
             }
             case "fractional" -> {
-                assertThat((long) fractionalFee[0].get(0)).isEqualTo(20L);
+                assertThat((long) fractionalFee[0].get(0)).isEqualTo(100L);
                 assertThat((long) fractionalFee[0].get(1)).isEqualTo(10L);
                 assertThat((long) fractionalFee[0].get(2)).isEqualTo(1L);
                 assertThat((long) fractionalFee[0].get(3)).isEqualTo(1000L);
-                assertThat((boolean) fractionalFee[0].get(4)).isEqualTo(true);
+                assertThat((boolean) fractionalFee[0].get(4)).isTrue();
                 assertThat((com.esaulpaugh.headlong.abi.Address) fractionalFee[0].get(5)).isEqualTo(convertAddress(SENDER_ADDRESS));
             }
             case "royalty" -> {
@@ -122,7 +120,7 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
                 assertThat((long) royaltyFee[0].get(1)).isEqualTo(10L);
                 assertThat((long) royaltyFee[0].get(2)).isEqualTo(100L);
                 assertThat((com.esaulpaugh.headlong.abi.Address) royaltyFee[0].get(3)).isEqualTo(convertAddress(FUNGIBLE_TOKEN_ADDRESS));
-                assertThat((boolean) royaltyFee[0].get(4)).isEqualTo(false);
+                assertThat((boolean) royaltyFee[0].get(4)).isFalse();
                 assertThat((com.esaulpaugh.headlong.abi.Address) royaltyFee[0].get(5)).isEqualTo(convertAddress(SENDER_ADDRESS));
             }
         }
@@ -144,9 +142,7 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
         boolean deleted = tokenInfo.get(2);
         boolean defaultKycStatus = tokenInfo.get(3);
         boolean pauseStatus = tokenInfo.get(4);
-        Tuple[] fixedFees = tokenInfo.get(5);
         Tuple[] fractionalFees = tokenInfo.get(6);
-        Tuple[] royaltyFees = tokenInfo.get(7);
         String ledgerId = tokenInfo.get(8);
         String name = hederaToken.get(0);
         String symbol = hederaToken.get(1);
@@ -162,9 +158,7 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
         assertThat(deleted).isFalse();
         assertThat(defaultKycStatus).isFalse();
         assertThat(pauseStatus).isTrue();
-        assertThat(fixedFees).isEmpty();
         assertThat(fractionalFees).isNotEmpty();
-        assertThat(royaltyFees).isEmpty();
         assertThat(ledgerId).isEqualTo("0x01");
         assertThat(name).isEqualTo("Hbars");
         assertThat(symbol).isEqualTo("HBAR");

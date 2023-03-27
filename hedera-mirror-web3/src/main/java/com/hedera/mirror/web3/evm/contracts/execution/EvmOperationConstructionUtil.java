@@ -20,6 +20,7 @@ package com.hedera.mirror.web3.evm.contracts.execution;
  * ‍
  */
 
+import static com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract.EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static org.hyperledger.besu.evm.MainnetEVMs.registerParisOperations;
 
 import java.math.BigInteger;
@@ -43,7 +44,6 @@ import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
-import com.hedera.mirror.web3.evm.store.contract.precompile.MirrorHTSPrecompiledContract;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmMessageCallProcessor;
 import com.hedera.node.app.service.evm.contracts.operations.HederaBalanceOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaDelegateCallOperation;
@@ -91,8 +91,8 @@ public class EvmOperationConstructionUtil {
     private static Map<String, PrecompiledContract> precompiles() {
         final Map<String, PrecompiledContract> hederaPrecompiles = new HashMap<>();
         final var evmFactory = new EvmInfrastructureFactory(new EvmEncodingFacade());
-        hederaPrecompiles.put(EvmHTSPrecompiledContract.EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS,
-                new MirrorHTSPrecompiledContract(evmFactory));
+        hederaPrecompiles.put(EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS,
+                new EvmHTSPrecompiledContract(evmFactory));
 
         return hederaPrecompiles;
     }

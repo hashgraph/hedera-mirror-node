@@ -21,12 +21,13 @@ package com.hedera.mirror.web3.evm.utils;
  */
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hederahashgraph.api.proto.java.ContractID;
 import org.apache.commons.codec.DecoderException;
-import org.apache.tuweni.bytes.Bytes;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 
@@ -114,6 +115,11 @@ class EvmTokenUtilsTest {
     }
 
     @Test
+    void evmKeyWithInvalidBytesLength()  {
+        assertThatThrownBy(()-> EvmTokenUtils.evmKey(new byte[36])).isInstanceOf(InvalidProtocolBufferException.class);
+    }
+
+    @Test
     void emptyEvmKeyForNull() throws InvalidProtocolBufferException {
         final var result = EvmTokenUtils.evmKey(null);
 
@@ -124,9 +130,34 @@ class EvmTokenUtilsTest {
     }
 
     @Test
+    void entityIdNumFromAddress(){
+        final var contractAddress = Address.fromHexString("0x00000000000000000000000000000000000004c5");
+        assertThat(EvmTokenUtils.entityIdNumFromEvmAddress(contractAddress)).isEqualTo(1221);
+    }
+
+    @Test
     void entityIdFromAddress(){
         final var contractAddress = Address.fromHexString("0x00000000000000000000000000000000000004c5");
+        EntityId entityId = EntityId.of(0, 0, 1221, EntityType.CONTRACT);
 
-        assertThat(EvmTokenUtils.entityIdNumFromEvmAddress(contractAddress)).isEqualTo(1221);
+        assertThat(EvmTokenUtils.entityIdFromEvmAddress(contractAddress)).isEqualTo(entityId);
+    }
+
+    @Test
+    void entityIdNumFromEthAddress(){
+        final var ethAddress = Address.fromHexString("0x23f5e49569a835d7bf9aefd30e4f60cdd570f225");
+        assertThat(EvmTokenUtils.entityIdNumFromEvmAddress(ethAddress)).isEqualTo(0);
+    }
+
+    @Test
+    void entityIdFromEthAddress(){
+        final var ethAddress = Address.fromHexString("0x23f5e49569a835d7bf9aefd30e4f60cdd570f225");
+        assertThat(EvmTokenUtils.entityIdFromEvmAddress(ethAddress)).isEqualTo(null);
+    }
+
+    @Test
+    void entityIdFromEmptyAddress(){
+        EntityId entityId = EntityId.of(0, 0, 0, EntityType.CONTRACT);
+        assertThat(EvmTokenUtils.entityIdFromEvmAddress(EMPTY_ADDRESS)).isEqualTo(entityId);
     }
 }
