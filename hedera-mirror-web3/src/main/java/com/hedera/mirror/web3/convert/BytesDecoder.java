@@ -32,26 +32,23 @@ public class BytesDecoder {
 
     //Error(string)
     private static final String ERROR_SIGNATURE = "0x08c379a0";
-    private static final Bytes ERROR_SIGNATURE_BYTES = Bytes.fromHexString(ERROR_SIGNATURE);
     private static final ABIType<Tuple> STRING_DECODER = TypeFactory.create("(string)");
     private static final int SIGNATURE_BYTES_LENGTH = 4;
 
-    public static String decodeEvmRevertReasonBytesToReadableMessage(final Bytes revertReason) {
-        if(revertReason == null || revertReason.isEmpty()) {
+    public static String maybeDecodeSolidityErrorStringToReadableMessage(final Bytes revertReason) {
+        boolean isNullOrEmpty = revertReason == null || revertReason.isEmpty();
+
+        if(isNullOrEmpty || revertReason.size() <= SIGNATURE_BYTES_LENGTH) {
             return StringUtils.EMPTY;
         }
 
-        Bytes encodedMessage = revertReason;
-
-        if(revertReason.size() > SIGNATURE_BYTES_LENGTH && ERROR_SIGNATURE_BYTES.equals(revertReason.slice(0, SIGNATURE_BYTES_LENGTH))) {
-            encodedMessage = revertReason.slice(SIGNATURE_BYTES_LENGTH);
+        if(revertReason.toHexString().startsWith(ERROR_SIGNATURE)) {
+            final var encodedMessage = revertReason.slice(SIGNATURE_BYTES_LENGTH);
+            final var tuple = STRING_DECODER.decode(encodedMessage.toArray());
+            if (tuple.size() > 0) {
+                return tuple.get(0);
+            }
         }
-
-        final var tuple = STRING_DECODER.decode(encodedMessage.toArray());
-        if(tuple.size() > 0) {
-            return STRING_DECODER.decode(encodedMessage.toArray()).get(0);
-        } else {
-            return StringUtils.EMPTY;
-        }
+        return StringUtils.EMPTY;
     }
 }
