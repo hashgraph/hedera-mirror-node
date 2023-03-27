@@ -20,25 +20,24 @@
 
 import {check} from 'k6';
 import {Gauge} from 'k6/metrics';
-import {setDefaultValuesForEnvParameters} from './parameters.js';
-
-setDefaultValuesForEnvParameters();
+import './parameters.js';
 
 const SCENARIO_DURATION_METRIC_NAME = 'scenario_duration';
 
 const options = {
   thresholds: {
-    checks: [`rate>=${__ENV['DEFAULT_PASS_RATE']}`], // at least 95% should pass the checks,
-    http_req_duration: [`p(95)<${__ENV['DEFAULT_MAX_DURATION']}`], // 95% requests should receive response in less than 500ms
+    checks: [`rate>=${__ENV.DEFAULT_PASS_RATE}`], // at least 95% should pass the checks,
+    http_req_duration: [`p(95)<${__ENV.DEFAULT_MAX_DURATION}`], // 95% requests should receive response in less than 500ms
   },
   insecureSkipTLSVerify: true,
   noConnectionReuse: true,
   noVUConnectionReuse: true,
+  setupTimeout: __ENV.DEFAULT_SETUP_TIMEOUT,
 };
 
 const scenarioCommon = {
   exec: 'run',
-  gracefulStop: __ENV.DEFAULT_GRACEFUL_STOP || '5s',
+  gracefulStop: __ENV.DEFAULT_GRACEFUL_STOP,
 };
 
 const scenarioDefaults = Object.assign({}, scenarioCommon, {
@@ -109,6 +108,7 @@ function getSequentialTestScenarios(tests) {
   let gracefulStop = '0s';
 
   const funcs = {};
+  const requiredParameters = new Set();
   const scenarios = {};
   const thresholds = {};
 
@@ -135,7 +135,9 @@ function getSequentialTestScenarios(tests) {
     const testThresholds = testModule.options.thresholds;
     for (const [scenarioName, testScenario] of Object.entries(testScenarios)) {
       const scenario = Object.assign({}, testScenario);
-      funcs[scenarioName] = testModule[scenario.exec];
+      const func = testModule[scenario.exec];
+      funcs[scenarioName] = func;
+      func.requiredParameters.forEach((param) => requiredParameters.add(param));
       scenarios[scenarioName] = scenario;
 
       // update the scenario's startTime, so scenarios run in sequence
@@ -162,7 +164,13 @@ function getSequentialTestScenarios(tests) {
 
   const testOptions = Object.assign({}, options, {scenarios, thresholds});
 
-  return {funcs, options: testOptions, scenarioDurationGauge: new Gauge(SCENARIO_DURATION_METRIC_NAME), scenarios};
+  return {
+    funcs,
+    options: testOptions,
+    requiredParameters: [...requiredParameters.values()],
+    scenarioDurationGauge: new Gauge(SCENARIO_DURATION_METRIC_NAME),
+    scenarios,
+  };
 }
 
 const checksRegex = /^checks{.*scenario:.*}$/;
@@ -205,13 +213,18 @@ function defaultMetrics() {
   };
 }
 
-function markdownReport(data, includeUrlColumn, scenarios) {
+function satisfyParameters(available, required) {
+  return required.length === 0 || required.every((param) => available.hasOwnProperty(param));
+}
+
+function markdownReport(data, includeUrlColumn, funcs, scenarios) {
   const header = `| Scenario ${
     includeUrlColumn && '| URL'
-  } | VUS | Pass% | RPS | Pass RPS | Avg. Req Duration | Comment |
-|----------${includeUrlColumn && '|----------'}|-----|-------|-----|----------|-------------------|---------|`;
+  } | VUS | Pass% | RPS | Pass RPS | Avg. Req Duration | Skipped? | Comment |
+|----------${includeUrlColumn && '|----------'}|-----|-------|-----|----------|-------------------|--------|---------|`;
 
   // collect the metrics
+  const {setup_data: availableParams} = data;
   const {metrics} = data;
   const scenarioMetrics = {};
 
@@ -252,10 +265,11 @@ function markdownReport(data, includeUrlColumn, scenarios) {
       const rps = (((httpReqs * 1.0) / duration) * 1000).toFixed(2);
       const passRps = ((rps * passPercentage) / 100.0).toFixed(2);
       const httpReqDuration = scenarioMetric['http_req_duration'].values.avg.toFixed(2);
+      const skipped = satisfyParameters(availableParams, funcs[scenario].requiredParameters || []) ? 'No' : 'Yes';
 
       markdown += `| ${scenario} ${includeUrlColumn && '| ' + scenarioUrls[scenario]} | ${
         __ENV.DEFAULT_VUS
-      } | ${passPercentage} | ${rps}/s | ${passRps}/s | ${httpReqDuration}ms | |\n`;
+      } | ${passPercentage} | ${rps}/s | ${passRps}/s | ${httpReqDuration}ms | ${skipped} | |\n`;
     } catch (err) {
       console.error(`Unable to render report for scenario ${scenario}`);
     }
@@ -264,50 +278,86 @@ function markdownReport(data, includeUrlColumn, scenarios) {
   return markdown;
 }
 
-function TestScenarioBuilder() {
-  this._checks = {};
-  this._name = null;
-  this._request = null;
-  this._scenario = null;
-  this._tags = {};
+class TestScenarioBuilder {
+  constructor() {
+    this._checks = {};
+    this._fallbackChecks = {'fallback is 200': (r) => r.status === 200};
+    this._fallbackRequest = null;
+    this._name = null;
+    this._request = null;
+    this._requiredParameters = [];
+    this._scenario = null;
+    this._shouldSkip = null;
+    this._tags = {};
 
-  this.build = function () {
+    this.build = this.build.bind(this);
+    this.check = this.check.bind(this);
+    this.fallbackRequest = this.fallbackRequest.bind(this);
+    this.name = this.name.bind(this);
+    this.request = this.request.bind(this);
+    this.requiredParameters = this.requiredParameters.bind(this);
+    this.scenario = this.scenario.bind(this);
+    this.tags = this.tags.bind(this);
+  }
+
+  build() {
     const that = this;
-    return {
-      options: getOptionsWithScenario(that._name, that._scenario, that._tags),
-      run: function (testParameters) {
+    const run = function (testParameters) {
+      if (that._shouldSkip == null) {
+        that._shouldSkip = !satisfyParameters(testParameters, that._requiredParameters);
+      }
+
+      if (!that._shouldSkip) {
         const response = that._request(testParameters);
         check(response, that._checks);
-      },
+      } else {
+        // fallback
+        const response = that._fallbackRequest(testParameters);
+        check(response, that._fallbackChecks);
+      }
     };
-  };
+    run.requiredParameters = this._requiredParameters;
 
-  this.check = function (name, func) {
+    return {
+      options: getOptionsWithScenario(that._name, that._scenario, that._tags),
+      run,
+    };
+  }
+
+  check(name, func) {
     this._checks[name] = func;
     return this;
-  };
+  }
 
-  this.name = function (name) {
+  fallbackRequest(func) {
+    this._fallbackRequest = func;
+    return this;
+  }
+
+  name(name) {
     this._name = name;
     return this;
-  };
+  }
 
-  this.request = function (func) {
+  request(func) {
     this._request = func;
     return this;
-  };
+  }
 
-  this.scenario = function (scenario) {
+  requiredParameters(...requiredParameters) {
+    this._requiredParameters = requiredParameters;
+    return this;
+  }
+
+  scenario(scenario) {
     this._scenario = scenario;
     return this;
-  };
+  }
 
-  this.tags = function (tags) {
+  tags(tags) {
     this._tags = tags;
     return this;
-  };
-
-  return this;
+  }
 }
 
-export {getSequentialTestScenarios, getTestReportFilename, markdownReport, TestScenarioBuilder, getOptionsWithScenario};
+export {getOptionsWithScenario, getSequentialTestScenarios, getTestReportFilename, markdownReport, TestScenarioBuilder};

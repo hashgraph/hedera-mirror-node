@@ -18,25 +18,22 @@
  * ‍
  */
 
-import http from "k6/http";
+import http from 'k6/http';
 
-import {TestScenarioBuilder} from '../../lib/common.js';
-import {messageListName, urlPrefix} from '../../lib/constants.js';
-import {isValidListResponse} from "./common.js";
-import {setupTestParameters} from "./bootstrapEnvParameters.js";
+import {isValidListResponse, RestTestScenarioBuilder} from '../libex/common.js';
+import {messageListName} from '../libex/constants.js';
 
 const urlTag = '/topics/{id}/messages?sequencenumber={sequenceNumber}';
 
-const {options, run} = new TestScenarioBuilder()
+const {options, run, setup} = new RestTestScenarioBuilder()
   .name('topicsIdMessagesSequenceQueryParam') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request((testParameters) => {
-    const url = `${testParameters['BASE_URL']}${urlPrefix}/topics/${testParameters['DEFAULT_TOPIC_ID']}/messages?sequencenumber=${testParameters['DEFAULT_TOPIC_SEQUENCE']}`;
+    const url = `${testParameters['BASE_URL_PREFIX']}/topics/${testParameters['DEFAULT_TOPIC_ID']}/messages?sequencenumber=${testParameters['DEFAULT_TOPIC_SEQUENCE']}`;
     return http.get(url);
   })
+  .requiredParameters('DEFAULT_TOPIC_ID', 'DEFAULT_TOPIC_SEQUENCE')
   .check('Topics id messages sequenceNumber query param OK', (r) => isValidListResponse(r, messageListName))
   .build();
 
-export {options, run};
-
-export const setup = setupTestParameters;
+export {options, run, setup};

@@ -18,22 +18,18 @@
  * ‍
  */
 
-import http from "k6/http";
+import http from 'k6/http';
 
-import {TestScenarioBuilder} from '../../lib/common.js';
-import {accountListName, urlPrefix} from '../../lib/constants.js';
-import {isValidListResponse} from "./common.js";
-import {setupTestParameters} from "./bootstrapEnvParameters.js";
+import {isValidListResponse, RestTestScenarioBuilder} from '../libex/common.js';
+import {accountListName} from '../libex/constants.js';
 
 const urlTag = '/accounts?balance=false';
 
-const {options, run} = new TestScenarioBuilder()
+const {options, run, setup} = new RestTestScenarioBuilder()
   .name('accountsBalanceFalse') // use unique scenario name among all tests
   .tags({url: urlTag})
-  .request((testParameters) => http.get(`${testParameters['BASE_URL']}${urlPrefix}${urlTag}`))
+  .request((testParameters) => http.get(`${testParameters['BASE_URL_PREFIX']}${urlTag}`))
   .check('Accounts balance false OK', (r) => isValidListResponse(r, accountListName))
   .build();
 
-export {options, run};
-
-export const setup = setupTestParameters;
+export {options, run, setup};

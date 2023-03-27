@@ -18,25 +18,21 @@
  * ‍
  */
 
-import http from "k6/http";
+import http from 'k6/http';
 
-import {TestScenarioBuilder} from '../../lib/common.js';
-import {logListName, urlPrefix} from '../../lib/constants.js';
-import {isValidListResponse} from "./common.js";
-import {setupTestParameters} from "./bootstrapEnvParameters.js";
+import {isValidListResponse, RestTestScenarioBuilder} from '../libex/common.js';
+import {logListName} from '../libex/constants.js';
 
 const urlTag = '/contracts/results/logs';
 
-const {options, run} = new TestScenarioBuilder()
+const {options, run, setup} = new RestTestScenarioBuilder()
   .name('contractsResultsLogs') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request((testParameters) => {
-    const url = `${testParameters['BASE_URL']}${urlPrefix}/contracts/results/logs?limit=${testParameters['DEFAULT_LIMIT']}`;
+    const url = `${testParameters['BASE_URL_PREFIX']}/contracts/results/logs?limit=${testParameters['DEFAULT_LIMIT']}`;
     return http.get(url);
   })
   .check('Contracts Results Logs OK', (r) => isValidListResponse(r, logListName))
   .build();
 
-export {options, run};
-
-export const setup = setupTestParameters;
+export {options, run, setup};
