@@ -32,20 +32,15 @@ public class BytesDecoder {
 
     //Error(string)
     private static final String ERROR_SIGNATURE = "0x08c379a0";
-    private static final Bytes ERROR_SIGNATURE_BYTES = Bytes.fromHexString(ERROR_SIGNATURE);
     private static final ABIType<Tuple> STRING_DECODER = TypeFactory.create("(string)");
     private static final int SIGNATURE_BYTES_LENGTH = 4;
 
-    public static String decodeEvmRevertReasonBytesToReadableMessage(final Bytes revertReason) {
-        if(revertReason == null || revertReason.isEmpty()) {
+    public static String maybeDecodeSolidityErrorToReadableMessage(final Bytes revertReason) {
+        if(revertReason == null || revertReason.isEmpty() || !revertReason.toHexString().startsWith(ERROR_SIGNATURE)) {
             return StringUtils.EMPTY;
         }
 
-        Bytes encodedMessage = revertReason;
-
-        if(revertReason.size() > SIGNATURE_BYTES_LENGTH && ERROR_SIGNATURE_BYTES.equals(revertReason.slice(0, SIGNATURE_BYTES_LENGTH))) {
-            encodedMessage = revertReason.slice(SIGNATURE_BYTES_LENGTH);
-        }
+        final Bytes encodedMessage = revertReason.slice(SIGNATURE_BYTES_LENGTH);
 
         final var tuple = STRING_DECODER.decode(encodedMessage.toArray());
         if(tuple.size() > 0) {
