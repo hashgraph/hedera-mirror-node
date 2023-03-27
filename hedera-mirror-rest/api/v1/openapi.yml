@@ -325,6 +325,7 @@ paths:
                     example: true
                   from:
                     type: string
+                    pattern: '^(0x)?[A-Fa-f0-9]{40}$'
                     description: 20 Bytes - The hexed address the transaction is sent from.
                     format: binary
                     minLength: 40
@@ -340,10 +341,11 @@ paths:
                     format: int64
                     minimum: 0
                     type: integer
-                    description: GasPrice used for each paid gas.
+                    description: Gas price used for each paid gas.
                     example: 100000000
                   to:
                     type: string
+                    pattern: '^(0x)?[A-Fa-f0-9]{40}$'
                     description: 20 Bytes - The hexed address the transaction is directed to.
                     format: binary
                     minLength: 40
@@ -367,6 +369,31 @@ paths:
                   properties:
                     result:
                       type: string
+
+          400:
+            description: Validation error
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Web3Error'
+          500:
+            description: Generic error
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Web3Error'
+          415:
+            description: Unsupported media type error
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Web3Error'
+          429:
+            description: Too many requests
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Web3Error'
         tags:
           - contracts
   /api/v1/contracts:
@@ -2298,6 +2325,24 @@ components:
                 properties:
                   message:
                     type: string
+    Web3Error:
+      type: object
+      properties:
+        _status:
+          type: object
+          properties:
+            messages:
+              type: array
+              items:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  detail:
+                    type: string
+                  data:
+                    type: string
+
     HederaHash:
       type: string
       description: A hex encoded hedera transaction hash.
