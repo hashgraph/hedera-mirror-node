@@ -19,10 +19,10 @@ package com.hedera.mirror.importer.downloader.provider;
 import static com.hedera.mirror.importer.domain.StreamFilename.EPOCH;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIDECAR;
 import static com.hedera.mirror.importer.domain.StreamFilename.FileType.SIGNATURE;
-import static com.hedera.mirror.importer.downloader.CommonDownloaderProperties.BucketType.ACCOUNT_ID;
-import static com.hedera.mirror.importer.downloader.CommonDownloaderProperties.BucketType.NODE_ID;
-import static com.hedera.mirror.importer.downloader.CommonDownloaderProperties.BucketType.AUTO;
 import static com.hedera.mirror.importer.MirrorProperties.HederaNetwork;
+import static com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType.ACCOUNT_ID;
+import static com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType.AUTO;
+import static com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType.NODE_ID;
 
 import com.hedera.mirror.importer.MirrorProperties;
 
@@ -120,7 +120,7 @@ public final class S3StreamFileProvider implements StreamFileProvider {
 
     private String autoAlgorithm(ConsensusNode consensusNode, StreamFilename streamFilename) {
         var currentTime = System.currentTimeMillis();
-        if ( pathExpirationTimestamp < currentTime ) {
+        if ( pathExpirationTimestamp > currentTime ) {
             return getPrefix(consensusNode, streamFilename);
         }
         commonDownloaderProperties.setPathType(ACCOUNT_ID);
@@ -143,7 +143,7 @@ public final class S3StreamFileProvider implements StreamFileProvider {
         Long shardNum = commonDownloaderProperties.getMirrorProperties().getShard();
         String network = getNetworkPrefix(commonDownloaderProperties.getMirrorProperties());
         var streamType = streamFilename.getStreamType().toString().toLowerCase();
-        var prefix = network + SEPARATOR+ shardNum+ SEPARATOR + nodeId + SEPARATOR + streamType;
+        var prefix = network + SEPARATOR+ shardNum+ SEPARATOR + nodeId + SEPARATOR + streamType + SEPARATOR;
         if (streamFilename.getFileType() == SIDECAR) {
             prefix += SIDECAR_FOLDER;
         }
@@ -152,9 +152,9 @@ public final class S3StreamFileProvider implements StreamFileProvider {
 
     private String getNetworkPrefix(MirrorProperties mirrorProperties) {
         if (mirrorProperties.getNetwork().equals(HederaNetwork.OTHER)) {
-            return mirrorProperties.getNetworkPrefix();
+            return mirrorProperties.getNetworkPrefix().toLowerCase();
         } else {
-            return mirrorProperties.getNetwork().toString();
+            return mirrorProperties.getNetwork().toString().toLowerCase();
         }
     }
 

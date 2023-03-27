@@ -64,7 +64,8 @@ public class CommonDownloaderProperties {
 
     private String gcpProjectId;
 
-    private BucketType pathType = BucketType.ACCOUNT_ID;
+    @NotNull
+    private PathType pathType = PathType.ACCOUNT_ID;
 
     @DurationMin(minutes = 1)
     @NotNull
@@ -118,14 +119,10 @@ public class CommonDownloaderProperties {
                 : mirrorProperties.getNetwork().isAllowAnonymousAccess();
     }
 
-    @Getter
-    @RequiredArgsConstructor
-    public enum BucketType {
-        ACCOUNT_ID("ACCOUNT_ID"),
-        AUTO("AUTO"),
-        NODE_ID("NODE_ID");
-
-        private final String pathType;
+    public enum PathType {
+        ACCOUNT_ID,
+        AUTO,
+        NODE_ID
     }
 
     @Getter
