@@ -4,6 +4,7 @@ pragma experimental ABIEncoderV2;
 
 contract Reverter {
     error SomeCustomError();
+    error CustomErrorWithParameters(string message, uint256 statusCode);
 
     function revertPayable() public payable {
         revert("RevertReasonPayable");
@@ -29,6 +30,10 @@ contract Reverter {
         revert SomeCustomError();
     }
 
+    function revertWithCustomErrorWithParameters() public {
+        revert CustomErrorWithParameters("Some revert message", 1);
+    }
+
     function revertWithPanic() public {
         uint z = 100;
         uint y = 0;
@@ -45,6 +50,10 @@ contract Reverter {
 
     function revertWithCustomErrorPure() pure public {
         revert SomeCustomError();
+    }
+
+    function revertWithCustomErrorWithParametersPure() pure public {
+        revert CustomErrorWithParameters("Some revert message", 1);
     }
 
     function revertWithPanicPure() pure public {
