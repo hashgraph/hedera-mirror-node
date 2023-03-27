@@ -36,12 +36,19 @@ public class BytesDecoder {
     private static final int SIGNATURE_BYTES_LENGTH = 4;
 
     public static String maybeDecodeSolidityErrorStringToReadableMessage(final Bytes revertReason) {
-        if(revertReason == null || revertReason.isEmpty() || !revertReason.toHexString().startsWith(ERROR_SIGNATURE)
-                || revertReason.size() <= SIGNATURE_BYTES_LENGTH) {
+        boolean isNullOrEmpty = revertReason == null || revertReason.isEmpty();
+
+        if(isNullOrEmpty || revertReason.size() <= SIGNATURE_BYTES_LENGTH) {
             return StringUtils.EMPTY;
         }
 
-        final var encodedMessage = revertReason.slice(SIGNATURE_BYTES_LENGTH);
-        return STRING_DECODER.decode(encodedMessage.toArray()).get(0);
+        if(revertReason.toHexString().startsWith(ERROR_SIGNATURE)) {
+            final var encodedMessage = revertReason.slice(SIGNATURE_BYTES_LENGTH);
+            final var tuple = STRING_DECODER.decode(encodedMessage.toArray());
+            if (tuple.size() > 0) {
+                return tuple.get(0);
+            }
+        }
+        return StringUtils.EMPTY;
     }
 }
