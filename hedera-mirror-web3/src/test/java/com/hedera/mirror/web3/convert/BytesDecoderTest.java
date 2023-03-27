@@ -28,13 +28,14 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 class BytesDecoderTest {
 
-    @CsvSource(nullValues = "null", textBlock = """
+    @CsvSource(textBlock = """
               0x08c379a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000047465737400000000000000000000000000000000000000000000000000000000,                                                                                         test
               0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000015437573746f6d20726576657274206d6573736167650000000000000000000000,                                                                                         Custom revert message
               0x08c379a0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000304d65737361676520776974682073796d626f6c7320616e64206e756d62657273202d2021203120322033202a2026203f00000000000000000000000000000000,                         Message with symbols and numbers - ! 1 2 3 * & ?
+              0x08c379a0,                                                                                                                                                                                                                                                                                         ''
             """)
     @ParameterizedTest
     void convertBytes(String input, String output) {
-        assertThat(BytesDecoder.maybeDecodeSolidityErrorToReadableMessage(Bytes.fromHexString(input))).isEqualTo(output);
+        assertThat(BytesDecoder.maybeDecodeSolidityErrorStringToReadableMessage(Bytes.fromHexString(input))).isEqualTo(output);
     }
 }

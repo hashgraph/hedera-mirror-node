@@ -35,18 +35,13 @@ public class BytesDecoder {
     private static final ABIType<Tuple> STRING_DECODER = TypeFactory.create("(string)");
     private static final int SIGNATURE_BYTES_LENGTH = 4;
 
-    public static String maybeDecodeSolidityErrorToReadableMessage(final Bytes revertReason) {
-        if(revertReason == null || revertReason.isEmpty() || !revertReason.toHexString().startsWith(ERROR_SIGNATURE)) {
+    public static String maybeDecodeSolidityErrorStringToReadableMessage(final Bytes revertReason) {
+        if(revertReason == null || revertReason.isEmpty() || !revertReason.toHexString().startsWith(ERROR_SIGNATURE)
+                || revertReason.size() <= SIGNATURE_BYTES_LENGTH) {
             return StringUtils.EMPTY;
         }
 
-        final Bytes encodedMessage = revertReason.slice(SIGNATURE_BYTES_LENGTH);
-
-        final var tuple = STRING_DECODER.decode(encodedMessage.toArray());
-        if(tuple.size() > 0) {
-            return STRING_DECODER.decode(encodedMessage.toArray()).get(0);
-        } else {
-            return StringUtils.EMPTY;
-        }
+        final var encodedMessage = revertReason.slice(SIGNATURE_BYTES_LENGTH);
+        return STRING_DECODER.decode(encodedMessage.toArray()).get(0);
     }
 }
