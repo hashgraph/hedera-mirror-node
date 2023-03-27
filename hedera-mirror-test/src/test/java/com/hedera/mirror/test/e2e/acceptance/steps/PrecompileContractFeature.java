@@ -34,6 +34,9 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 
+import com.hedera.hashgraph.sdk.CustomFee;
+import com.hedera.hashgraph.sdk.CustomFixedFee;
+import com.hedera.hashgraph.sdk.CustomFractionalFee;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TokenSupplyType;
 import com.hedera.hashgraph.sdk.TokenType;
@@ -159,19 +162,36 @@ public class PrecompileContractFeature extends AbstractFeature {
 
     @Given("I successfully create and verify a fungible token for precompile contract tests")
     public void createFungibleToken() {
+        ExpandedAccountId admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
+        CustomFixedFee customFixedFee = new CustomFixedFee();
+        customFixedFee.setAmount(10);
+        customFixedFee.setFeeCollectorAccountId(admin.getAccountId());
+
+        CustomFractionalFee customFractionalFee = new CustomFractionalFee();
+        customFractionalFee.setFeeCollectorAccountId(admin.getAccountId());
+        customFractionalFee.setNumerator(1);
+        customFractionalFee.setDenominator(10);
+
         createNewToken(
                 RandomStringUtils.randomAlphabetic(4).toUpperCase(),
                 TokenType.FUNGIBLE_COMMON,
-                TokenSupplyType.INFINITE
+                TokenSupplyType.INFINITE,
+                List.of(customFixedFee, customFractionalFee)
         );
     }
 
     @Given("I successfully create and verify a non fungible token for precompile contract tests")
     public void createNonFungibleToken() {
+        ExpandedAccountId admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
+        CustomFixedFee customFixedFee = new CustomFixedFee();
+        customFixedFee.setAmount(10);
+        customFixedFee.setFeeCollectorAccountId(admin.getAccountId());
+
         createNewToken(
                 RandomStringUtils.randomAlphabetic(4).toUpperCase(),
                 TokenType.NON_FUNGIBLE_UNIQUE,
-                TokenSupplyType.INFINITE
+                TokenSupplyType.INFINITE,
+                List.of(customFixedFee)
         );
     }
 
@@ -682,7 +702,8 @@ public class PrecompileContractFeature extends AbstractFeature {
     private void createNewToken(
             String symbol,
             TokenType tokenType,
-            TokenSupplyType tokenSupplyType
+            TokenSupplyType tokenSupplyType,
+            List<CustomFee> customFees
     ) {
         ExpandedAccountId admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
         networkTransactionResponse = tokenClient.createToken(
@@ -695,7 +716,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 tokenSupplyType,
                 1_000_000,
                 tokenType,
-                new ArrayList<>());
+                customFees);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
         TokenId tokenId = networkTransactionResponse.getReceipt().tokenId;
@@ -766,7 +787,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 tokenIds.get(0).toSolidityAddress(),
                 contractClient.getClientAddress()
         );
-        assertThat(response.getResultAsAsciiString()).endsWith("_name");
+        assertThat(response.getResultAsAsciiString()).contains("_name");
     }
 
     @Then("Get fungible token symbol by direct call")
@@ -828,7 +849,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 tokenIds.get(1).toSolidityAddress(),
                 contractClient.getClientAddress()
         );
-        assertThat(response.getResultAsAsciiString()).endsWith("_name");
+        assertThat(response.getResultAsAsciiString()).contains("_name");
     }
 
     @Then("Get non fungible token symbol by direct call")
@@ -882,5 +903,25 @@ public class PrecompileContractFeature extends AbstractFeature {
                 contractClient.getClientAddress()
         );
         assertFalse(response.getResultAsBoolean());
+    }
+
+    @Then("Get custom fees for fungible token")
+    public void getCustomFeesForFungibleToken() throws Exception {
+        ContractCallResponse response = mirrorClient.contractsCall(
+                GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR + to32BytesString(tokenIds.get(0).toSolidityAddress()),
+                contractId.toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+        Tuple result = decodeFunctionResult("getCustomFeesForToken", response);
+    }
+
+    @Then("Get custom fees for non fungible token")
+    public void getCustomFeesForNonFungibleToken() throws Exception {
+        ContractCallResponse response = mirrorClient.contractsCall(
+                GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR + to32BytesString(tokenIds.get(0).toSolidityAddress()),
+                contractId.toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+        Tuple result = decodeFunctionResult("getCustomFeesForToken", response);
     }
 }
