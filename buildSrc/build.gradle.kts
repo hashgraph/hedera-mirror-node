@@ -37,7 +37,7 @@ dependencies {
     implementation("gradle.plugin.io.snyk.gradle.plugin:snyk:0.4")
     implementation("io.freefair.gradle:lombok-plugin:6.6.3")
     implementation("io.spring.gradle:dependency-management-plugin:1.1.0")
-    implementation("org.apache.commons:commons-compress:1.22")
+    implementation("org.apache.commons:commons-compress:1.23.0")
     implementation("org.gradle:test-retry-gradle-plugin:1.5.2")
     implementation("org.openapitools:openapi-generator-gradle-plugin:6.4.0")
     implementation("org.owasp:dependency-check-gradle:8.1.2")

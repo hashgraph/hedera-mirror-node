@@ -78,7 +78,7 @@ dependencies {
         api("javax.inject:javax.inject:1")
         api("net.devh:grpc-spring-boot-starter:2.14.0.RELEASE")
         api("net.java.dev.jna:jna:5.13.0")
-        api("org.apache.commons:commons-compress:1.22")
+        api("org.apache.commons:commons-compress:1.23.0")
         api("org.apache.commons:commons-math3:3.6.1")
         api("org.apache.tuweni:tuweni-bytes:2.3.1")
         api("org.apache.velocity:velocity-engine-core:2.3")
