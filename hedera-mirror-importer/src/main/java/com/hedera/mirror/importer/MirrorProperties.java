@@ -54,9 +54,6 @@ public class MirrorProperties {
 
     private boolean leaderElection = false;
 
-    // when true, the only nodeStakes counted towards validation are those nodes that are elements of the address book
-    private boolean limitStakesToNodesInAddressBook = true;
-
     @NotNull
     private Map<String, MigrationProperties> migration = new CaseInsensitiveMap<>();
 
