@@ -37,6 +37,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -47,10 +48,16 @@ import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.utils.FunctionEncodeDecoder;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 
+import org.springframework.beans.factory.annotation.Value;
+import java.nio.file.Path;
+
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class ContractCallServiceERCTokenTest extends Web3IntegrationTest {
     //The contract source `ERCTestContract.sol` is in test resources
-    private static final String CONTRACT_NAME = "ERCTestContract";
+    @Value("classpath:contracts/ERCTestContract.bin")
+    private Path CONTRACT_BYTES_PATH;
+    @Value("classpath:contracts/ERCTestContract.json")
+    private Path ABI_PATH;
     private static final Address CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1256, CONTRACT));
     private static final Address SENDER_ADDRESS = toAddress(EntityId.of(0, 0, 742, ACCOUNT));
     private static final Address RECEIVER_ADDRESS = toAddress(EntityId.of(0, 0, 741, ACCOUNT));
@@ -63,17 +70,17 @@ class ContractCallServiceERCTokenTest extends Web3IntegrationTest {
     @EnumSource(ContractFunctions.class)
     void ercPrecompileOperationsTest(ContractFunctions ercFunction) {
         final var functionHash =
-                functionEncodeDecoder.functionHashFor(ercFunction.name, CONTRACT_NAME, ercFunction.functionParameters);
+                functionEncodeDecoder.functionHashFor(ercFunction.name, ABI_PATH, ercFunction.functionParameters);
         final var serviceParameters = serviceParameters(functionHash);
         final var successfulResponse =
-                functionEncodeDecoder.encodedResultFor(ercFunction.name, CONTRACT_NAME, ercFunction.expectedResultFields);
+                functionEncodeDecoder.encodedResultFor(ercFunction.name, ABI_PATH, ercFunction.expectedResultFields);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
     }
 
     @Test
     void metadataOf() {
-        final var functionHash = functionEncodeDecoder.functionHashFor("tokenURI", CONTRACT_NAME, NFT_ADDRESS, 1L);
+        final var functionHash = functionEncodeDecoder.functionHashFor("tokenURI", ABI_PATH, NFT_ADDRESS, 1L);
         final var serviceParameters = serviceParameters(functionHash);
 
         assertThat(contractCallService.processCall(serviceParameters)).isNotEqualTo(Address.ZERO.toString());
@@ -115,7 +122,7 @@ class ContractCallServiceERCTokenTest extends Web3IntegrationTest {
     }
 
     private void persistEntities() {
-        final var contractBytes = functionEncodeDecoder.getContractBytes(CONTRACT_NAME);
+        final var contractBytes = functionEncodeDecoder.getContractBytes(CONTRACT_BYTES_PATH);
         final var contractEntityId = fromEvmAddress(CONTRACT_ADDRESS.toArrayUnsafe());
         final var contractEvmAddress = toEvmAddress(contractEntityId);
         final var receiverEntityId = fromEvmAddress(RECEIVER_ADDRESS.toArrayUnsafe());
@@ -145,12 +152,11 @@ class ContractCallServiceERCTokenTest extends Web3IntegrationTest {
         domainBuilder.recordFile().customize(f ->
                 f.bytes(contractBytes)).persist();
 
-        final var senderEvmAddress = toEvmAddress(senderEntityId);
-
         domainBuilder.entity().customize(e ->
                         e.id(senderEntityId.getId())
                                 .num(senderEntityId.getEntityNum())
-                                .evmAddress(senderEvmAddress)
+                                .evmAddress(null)
+                                .alias(toEvmAddress(senderEntityId))
                                 .balance(20000L)
                 )
                 .persist();

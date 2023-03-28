@@ -36,7 +36,6 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.StreamSupport;
@@ -49,7 +48,6 @@ import org.hyperledger.besu.datatypes.Address;
 @NoArgsConstructor
 @Named
 public class FunctionEncodeDecoder {
-    private static final String RESOURCE_PATH = "build/resources/test/contracts/%1$s.%2$s";
     private static final String ADDRESS_DUO = "(address,address)";
     private static final String INT = "(int256)";
     private static final String INT64 = "(int64)";
@@ -61,39 +59,38 @@ public class FunctionEncodeDecoder {
 
     private final Map<String, String> functionsAbi = new HashMap<>();
 
-    public byte[] getContractBytes(final String contractName) {
+    public byte[] getContractBytes(final Path contractPath) {
         try {
-            final var path = getPathFor(contractName, "bin");
-            return Hex.decode(Files.readAllBytes(path));
+            return Hex.decode(Files.readAllBytes(contractPath));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public Bytes functionHashFor(final String functionName, final String contractName, final Object... parameters) {
-        final var jsonFunction = functionsAbi.getOrDefault(functionName, getFunctionAbi(functionName, contractName));
+    public Bytes functionHashFor(final String functionName, final Path contractPath, final Object... parameters) {
+        final var jsonFunction = functionsAbi.getOrDefault(functionName, getFunctionAbi(functionName, contractPath));
         Function function = Function.fromJson(jsonFunction);
         Tuple parametersBytes = encodeTupleParameters(function.getInputs().getCanonicalType(), parameters);
 
         return Bytes.wrap(function.encodeCall(parametersBytes).array());
     }
 
-    public String encodedResultFor(final String functionName, final String contractName, final Object... results) {
-        final var jsonFunction = functionsAbi.getOrDefault(functionName, getFunctionAbi(functionName, contractName));
+    public String encodedResultFor(final String functionName, final Path contractPath, final Object... results) {
+        final var jsonFunction = functionsAbi.getOrDefault(functionName, getFunctionAbi(functionName, contractPath));
         final var func = Function.fromJson(jsonFunction);
         final var tupleType = func.getOutputs();
 
         return Bytes.wrap(tupleType.encode(encodeTupleParameters(tupleType.toString(), results)).array()).toHexString();
     }
 
-    public Tuple decodeResult(final String functionName, String contractName, String response) {
-        final var jsonFunction = functionsAbi.getOrDefault(functionName, getFunctionAbi(functionName, contractName));
+    public Tuple decodeResult(final String functionName, final Path contractPath, final String response) {
+        final var jsonFunction = functionsAbi.getOrDefault(functionName, getFunctionAbi(functionName, contractPath));
 
         Function function = Function.fromJson(jsonFunction);
         return function.decodeReturn(FastHex.decode(response.replace("0x", "")));
     }
 
-    private Tuple encodeTupleParameters(String tupleSig, Object... parameters) {
+    private Tuple encodeTupleParameters(final String tupleSig, final Object... parameters) {
         return
                 switch (tupleSig) {
                     case ADDRESS -> Tuple.of(convertAddress((Address) parameters[0]));
@@ -126,8 +123,7 @@ public class FunctionEncodeDecoder {
                 };
     }
 
-    private String getFunctionAbi(final String functionName, final String contractName) {
-        var contractPath = getPathFor(contractName, "json");
+    private String getFunctionAbi(final String functionName, final Path contractPath) {
 
         try (final var in = new FileInputStream(contractPath.toString())) {
             ObjectMapper mapper = new ObjectMapper();
@@ -146,9 +142,6 @@ public class FunctionEncodeDecoder {
         }
     }
 
-    private Path getPathFor(final String fileName, final String fileExtension) {
-        return Paths.get(String.format(RESOURCE_PATH, fileName, fileExtension));
-    }
 
     public static com.esaulpaugh.headlong.abi.Address convertAddress(final Address address) {
         return com.esaulpaugh.headlong.abi.Address.wrap(

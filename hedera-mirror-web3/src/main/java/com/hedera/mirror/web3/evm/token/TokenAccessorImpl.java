@@ -23,14 +23,16 @@ package com.hedera.mirror.web3.evm.token;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.domain.token.TokenFreezeStatusEnum.FROZEN;
 import static com.hedera.mirror.common.domain.token.TokenKycStatusEnum.GRANTED;
+import static com.hedera.mirror.common.util.DomainUtils.EVM_ADDRESS_LENGTH;
+import static com.hedera.mirror.common.util.DomainUtils.NANOS_PER_SECOND;
 import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
+import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.EMPTY_EVM_ADDRESS;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdFromEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.evmKey;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 import static java.util.Objects.requireNonNullElse;
-import static org.apache.tuweni.bytes.Bytes.EMPTY;
 
 import com.google.protobuf.InvalidProtocolBufferException;
 import java.nio.charset.StandardCharsets;
@@ -317,20 +319,18 @@ public class TokenAccessorImpl implements TokenAccessor {
     }
 
     private Long expirationTimeSeconds(Entity entity) {
-        final long AUTO_RENEW_PERIOD_MULTIPLE = 1_000_000_000L;
         Long createdTimestamp = entity.getCreatedTimestamp();
         Long autoRenewPeriod = entity.getAutoRenewPeriod();
         Long expirationTimestamp = entity.getExpirationTimestamp();
 
         if (expirationTimestamp != null) {
-            return expirationTimestamp / AUTO_RENEW_PERIOD_MULTIPLE;
+            return expirationTimestamp / NANOS_PER_SECOND;
         } else if (createdTimestamp != null && autoRenewPeriod != null) {
-            return createdTimestamp + (autoRenewPeriod * AUTO_RENEW_PERIOD_MULTIPLE);
+            return createdTimestamp / NANOS_PER_SECOND + autoRenewPeriod;
         } else {
             return 0L;
         }
     }
-
 
     private List<CustomFee> getCustomFees(final Address token) {
         final List<CustomFee> customFees = new ArrayList<>();
@@ -350,37 +350,17 @@ public class TokenAccessorImpl implements TokenAccessor {
             final long amount = requireNonNullElse(customFee.getAmount(), 0L);
             final var denominatingTokenId = customFee.getDenominatingTokenId();
             final var denominatingTokenAddress = denominatingTokenId == null ?
-                    Address.wrap(EMPTY) : toAddress(denominatingTokenId);
-            final long amountNumerator = requireNonNullElse(customFee.getRoyaltyNumerator(), 0L);
-            final var amountDenominator = requireNonNullElse(customFee.getAmountDenominator(), 0L);
+                    EMPTY_EVM_ADDRESS : toAddress(denominatingTokenId);
+            final long amountDenominator = requireNonNullElse(customFee.getAmountDenominator(), 0L);
             final var maximumAmount = requireNonNullElse(customFee.getMaximumAmount(), 0L);
             final var minimumAmount = customFee.getMinimumAmount();
-
             final var netOfTransfers = requireNonNullElse(customFee.getNetOfTransfers(), false);
             final long royaltyDenominator = requireNonNullElse(customFee.getRoyaltyDenominator(), 0L);
-            final var royaltyNumerator = requireNonNullElse(customFee.getRoyaltyNumerator(), 0L);
+            final long royaltyNumerator = requireNonNullElse(customFee.getRoyaltyNumerator(), 0L);
 
             CustomFee customFeeConstructed = new CustomFee();
 
-            if (amountNumerator == 0 && royaltyDenominator == 0) {
-                final var fixedFee = new FixedFee(
-                        amount,
-                        denominatingTokenAddress,
-                        denominatingTokenId == null,
-                        false,
-                        collector);
-
-                customFeeConstructed.setFixedFee(fixedFee);
-            } else if (royaltyDenominator == 0) {
-                final var fractionFee = new FractionalFee(
-                        amount,
-                        amountDenominator,
-                        minimumAmount,
-                        maximumAmount,
-                        netOfTransfers,
-                        collector);
-                customFeeConstructed.setFractionalFee(fractionFee);
-            } else {
+            if (royaltyNumerator > 0 && royaltyDenominator > 0) {
                 final var royaltyFee = new RoyaltyFee(
                         royaltyNumerator,
                         royaltyDenominator,
@@ -389,6 +369,26 @@ public class TokenAccessorImpl implements TokenAccessor {
                         denominatingTokenId == null,
                         collector);
                 customFeeConstructed.setRoyaltyFee(royaltyFee);
+
+            } else if (amountDenominator > 0) {
+                final var fractionFee = new FractionalFee(
+                        amount,
+                        amountDenominator,
+                        minimumAmount,
+                        maximumAmount,
+                        netOfTransfers,
+                        collector);
+                customFeeConstructed.setFractionalFee(fractionFee);
+
+            } else {
+                final var fixedFee = new FixedFee(
+                        amount,
+                        denominatingTokenAddress,
+                        denominatingTokenId == null,
+                        false,
+                        collector);
+
+                customFeeConstructed.setFixedFee(fixedFee);
             }
             customFees.add(customFeeConstructed);
         }
@@ -444,7 +444,7 @@ public class TokenAccessorImpl implements TokenAccessor {
             return Address.wrap(Bytes.wrap(entity.getEvmAddress()));
         }
 
-        if (entity.getAlias() != null) {
+        if (entity.getAlias() != null && entity.getAlias().length == EVM_ADDRESS_LENGTH) {
             return Address.wrap(Bytes.wrap(entity.getAlias()));
         }
 

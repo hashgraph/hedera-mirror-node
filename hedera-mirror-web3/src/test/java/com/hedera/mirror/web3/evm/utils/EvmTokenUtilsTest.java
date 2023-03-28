@@ -146,13 +146,13 @@ class EvmTokenUtilsTest {
     @Test
     void entityIdNumFromEthAddress(){
         final var ethAddress = Address.fromHexString("0x23f5e49569a835d7bf9aefd30e4f60cdd570f225");
-        assertThat(EvmTokenUtils.entityIdNumFromEvmAddress(ethAddress)).isEqualTo(0);
+        assertThat(EvmTokenUtils.entityIdNumFromEvmAddress(ethAddress)).isZero();
     }
 
     @Test
     void entityIdFromEthAddress(){
         final var ethAddress = Address.fromHexString("0x23f5e49569a835d7bf9aefd30e4f60cdd570f225");
-        assertThat(EvmTokenUtils.entityIdFromEvmAddress(ethAddress)).isEqualTo(null);
+        assertThat(EvmTokenUtils.entityIdFromEvmAddress(ethAddress)).isNull();
     }
 
     @Test

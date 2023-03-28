@@ -28,11 +28,14 @@ import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.toAddress;
 import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_CALL;
 import static com.hedera.mirror.web3.utils.FunctionEncodeDecoder.convertAddress;
+import static com.hederahashgraph.api.proto.java.CustomFee.FeeCase.FRACTIONAL_FEE;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.esaulpaugh.headlong.abi.Tuple;
+import java.nio.file.Path;
 import java.util.Arrays;
+import com.hederahashgraph.api.proto.java.CustomFee.FeeCase;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
@@ -40,7 +43,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -58,10 +60,15 @@ import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.utils.FunctionEncodeDecoder;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 
+import org.springframework.beans.factory.annotation.Value;
+
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class ContractCallServicePrecompileTest extends Web3IntegrationTest {
     //The contract source `PrecompileTestContract.sol` is in test resources
-    private static final String CONTRACT_NAME = "PrecompileTestContract";
+    @Value("classpath:contracts/PrecompileTestContract.bin")
+    private Path CONTRACT_BYTES_PATH;
+    @Value("classpath:contracts/PrecompileTestContract.json")
+    private Path ABI_PATH;
     private static final Address CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1255, CONTRACT));
     private static final Address SENDER_ADDRESS = toAddress(EntityId.of(0, 0, 1254, ACCOUNT));
     private static final Address FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1252, TOKEN));
@@ -78,36 +85,36 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
     @ParameterizedTest
     @EnumSource(ContractFunctions.class)
     void evmPrecompileTokenFunctionsTest(ContractFunctions contractFunc) {
-        final var functionHash = encodeDecoder.functionHashFor(contractFunc.name, CONTRACT_NAME, contractFunc.functionParameters);
+        final var functionHash = encodeDecoder.functionHashFor(contractFunc.name, ABI_PATH, contractFunc.functionParameters);
         final var serviceParameters = serviceParameters(functionHash);
-        final var successfulResponse = encodeDecoder.encodedResultFor(contractFunc.name, CONTRACT_NAME, contractFunc.expectedResultFields);
+        final var successfulResponse = encodeDecoder.encodedResultFor(contractFunc.name, ABI_PATH, contractFunc.expectedResultFields);
 
         assertThat(contractCallService.processCall(serviceParameters)).isEqualTo(successfulResponse);
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"fixed", "fractional", "royalty", "empty"})
-    void customFees(String feeType) {
+    @EnumSource(FeeCase.class)
+    void customFees(FeeCase feeCase) {
         final var functionName = "getCustomFeesForToken";
-        final var functionHash = encodeDecoder.functionHashFor(functionName, CONTRACT_NAME, FUNGIBLE_TOKEN_ADDRESS);
+        final var functionHash = encodeDecoder.functionHashFor(functionName, ABI_PATH, FUNGIBLE_TOKEN_ADDRESS);
         final var serviceParameters = serviceParameters(functionHash);
-        customFeesPersist(feeType);
+        customFeesPersist(feeCase);
 
         final var callResult = contractCallService.processCall(serviceParameters);
-        final var decodeResult = encodeDecoder.decodeResult(functionName, CONTRACT_NAME, callResult);
+        final var decodeResult = encodeDecoder.decodeResult(functionName, ABI_PATH, callResult);
         final Tuple[] fixedFee = decodeResult.get(0);
         final Tuple[] fractionalFee = decodeResult.get(1);
         final Tuple[] royaltyFee = decodeResult.get(2);
 
-        switch (feeType) {
-            case "fixed" -> {
+        switch (feeCase) {
+            case FIXED_FEE -> {
                 assertThat((long) fixedFee[0].get(0)).isEqualTo(100L);
                 assertThat((com.esaulpaugh.headlong.abi.Address) fixedFee[0].get(1)).isEqualTo(convertAddress(FUNGIBLE_TOKEN_ADDRESS));
                 assertThat((boolean) fixedFee[0].get(2)).isFalse();
                 assertThat((boolean) fixedFee[0].get(3)).isFalse();
                 assertThat((com.esaulpaugh.headlong.abi.Address) fixedFee[0].get(4)).isEqualTo(convertAddress(SENDER_ADDRESS));
             }
-            case "fractional" -> {
+            case FRACTIONAL_FEE -> {
                 assertThat((long) fractionalFee[0].get(0)).isEqualTo(100L);
                 assertThat((long) fractionalFee[0].get(1)).isEqualTo(10L);
                 assertThat((long) fractionalFee[0].get(2)).isEqualTo(1L);
@@ -115,7 +122,7 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
                 assertThat((boolean) fractionalFee[0].get(4)).isTrue();
                 assertThat((com.esaulpaugh.headlong.abi.Address) fractionalFee[0].get(5)).isEqualTo(convertAddress(SENDER_ADDRESS));
             }
-            case "royalty" -> {
+            case ROYALTY_FEE -> {
                 assertThat((long) royaltyFee[0].get(0)).isEqualTo(20L);
                 assertThat((long) royaltyFee[0].get(1)).isEqualTo(10L);
                 assertThat((long) royaltyFee[0].get(2)).isEqualTo(100L);
@@ -130,13 +137,13 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
     @CsvSource({"getInformationForFungibleToken,false" , "getInformationForNonFungibleToken,true"})
     void getTokenInfo(String functionName, boolean isNft){
         final var functionHash = isNft
-            ?    encodeDecoder.functionHashFor(functionName, CONTRACT_NAME, NFT_ADDRESS, 1L)
-            :    encodeDecoder.functionHashFor(functionName, CONTRACT_NAME, FUNGIBLE_TOKEN_ADDRESS);
+            ?    encodeDecoder.functionHashFor(functionName, ABI_PATH, NFT_ADDRESS, 1L)
+            :    encodeDecoder.functionHashFor(functionName, ABI_PATH, FUNGIBLE_TOKEN_ADDRESS);
         final var serviceParameters = serviceParameters(functionHash);
-        customFeesPersist("fractional");
+        customFeesPersist(FRACTIONAL_FEE);
 
         final var callResult = contractCallService.processCall(serviceParameters);
-        final Tuple decodeResult = encodeDecoder.decodeResult(functionName, CONTRACT_NAME, callResult).get(0);
+        final Tuple decodeResult = encodeDecoder.decodeResult(functionName, ABI_PATH, callResult).get(0);
         Tuple tokenInfo = decodeResult.get(0);
         Tuple hederaToken = tokenInfo.get(0);
         boolean deleted = tokenInfo.get(2);
@@ -169,13 +176,13 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
 
 
         if(isNft){
-         long serailNum = decodeResult.get(1);
+         long serialNum = decodeResult.get(1);
          com.esaulpaugh.headlong.abi.Address owner = decodeResult.get(2);
          long creationTime = decodeResult.get(3);
          byte[] metadata = decodeResult.get(4);
          com.esaulpaugh.headlong.abi.Address spender = decodeResult.get(5);
 
-         assertThat(serailNum).isEqualTo(1L);
+         assertThat(serialNum).isEqualTo(1L);
          assertThat(owner).isEqualTo(convertAddress(SENDER_ADDRESS));
          assertThat(creationTime).isEqualTo(1475067194949034022L);
          assertThat(metadata).isNotEmpty();
@@ -197,7 +204,7 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
     @Test
     void nftInfoForInvalidSerialNo(){
         final var functionHash = encodeDecoder.functionHashFor
-                ("getInformationForNonFungibleToken", CONTRACT_NAME, NFT_ADDRESS, 4L);
+                ("getInformationForNonFungibleToken", ABI_PATH, NFT_ADDRESS, 4L);
         final var serviceParameters = serviceParameters(functionHash);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
@@ -206,7 +213,7 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
 
     @Test
     void tokenInfoForNonTokenAccount(){
-        final var functionHash = encodeDecoder.functionHashFor("getInformationForFungibleToken", CONTRACT_NAME, SENDER_ADDRESS);
+        final var functionHash = encodeDecoder.functionHashFor("getInformationForFungibleToken", ABI_PATH, SENDER_ADDRESS);
         final var serviceParameters = serviceParameters(functionHash);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters))
@@ -256,7 +263,7 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
     }
 
     private void persistEntities() {
-        final var contractBytes = encodeDecoder.getContractBytes(CONTRACT_NAME);
+        final var contractBytes = encodeDecoder.getContractBytes(CONTRACT_BYTES_PATH);
         final var contractEntityId = fromEvmAddress(CONTRACT_ADDRESS.toArrayUnsafe());
         final var contractEvmAddress = toEvmAddress(contractEntityId);
 
@@ -283,12 +290,11 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
                 f.bytes(contractBytes)).persist();
 
         final var senderEntityId = fromEvmAddress(SENDER_ADDRESS.toArrayUnsafe());
-        final var senderEvmAddress = toEvmAddress(senderEntityId);
 
         domainBuilder.entity().customize(e ->
                         e.id(senderEntityId.getId())
                                 .num(senderEntityId.getEntityNum())
-                                .evmAddress(senderEvmAddress)
+                                .evmAddress(null)
                                 .balance(20000L))
                 .persist();
 
@@ -393,26 +399,27 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
                 .persist();
     }
 
-    private void customFeesPersist(String feeType){
+    private void customFeesPersist(FeeCase feeCase){
        var collectorAccountId = fromEvmAddress(SENDER_ADDRESS.toArrayUnsafe());
        var tokenEntityId = fromEvmAddress(FUNGIBLE_TOKEN_ADDRESS.toArrayUnsafe());
        var timeStamp = System.currentTimeMillis();
-        switch (feeType) {
-            case "royalty" -> domainBuilder.customFee().customize(f ->
+        switch (feeCase) {
+            case ROYALTY_FEE -> domainBuilder.customFee().customize(f ->
                             f.collectorAccountId(collectorAccountId)
                                     .id(new CustomFee.Id(timeStamp, tokenEntityId))
                                     .denominatingTokenId(tokenEntityId))
                     .persist();
-            case "fractional" -> domainBuilder.customFee().customize(f ->
+            case FRACTIONAL_FEE -> domainBuilder.customFee().customize(f ->
                             f.collectorAccountId(collectorAccountId)
                                     .id(new CustomFee.Id(timeStamp, tokenEntityId))
                                     .royaltyDenominator(0L)
                                     .denominatingTokenId(tokenEntityId))
                     .persist();
-            case "fixed" -> domainBuilder.customFee().customize(f ->
+            case FIXED_FEE -> domainBuilder.customFee().customize(f ->
                             f.collectorAccountId(collectorAccountId)
                                     .id(new CustomFee.Id(timeStamp, tokenEntityId))
                                     .royaltyDenominator(0L)
+                                    .amountDenominator(null)
                                     .royaltyNumerator(0L)
                                     .denominatingTokenId(tokenEntityId))
                     .persist();

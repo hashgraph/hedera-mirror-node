@@ -20,6 +20,7 @@ package com.hedera.mirror.web3.evm.utils;
  * ‍
  */
 
+import static com.hedera.mirror.common.util.DomainUtils.EMPTY_BYTE_ARRAY;
 import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
 import static com.hedera.mirror.common.util.DomainUtils.toBytes;
 import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
@@ -36,8 +37,7 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmKey;
 
 @UtilityClass
 public class EvmTokenUtils {
-    private static final Address EMPTY_CONTRACT_ADDRESS = Address.wrap(Bytes.wrap(new byte[20]));
-    private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
+    public static final Address EMPTY_EVM_ADDRESS = Address.wrap(Bytes.wrap(new byte[20]));
 
     public static Address toAddress(final EntityId entityId) {
         final var bytes = Bytes.wrap(toEvmAddress(entityId));
@@ -57,14 +57,14 @@ public class EvmTokenUtils {
         final var contractId =
                 key.hasContractID()
                         ? toAddress(key.getContractID())
-                        : EMPTY_CONTRACT_ADDRESS;
+                        : EMPTY_EVM_ADDRESS;
         final var ed25519 = key.hasEd25519() ? toBytes(key.getEd25519()) : EMPTY_BYTE_ARRAY;
         final var ecdsaSecp256K1 = key.hasECDSASecp256K1() ? toBytes(key.getECDSASecp256K1()) : EMPTY_BYTE_ARRAY;
 
         final var delegatableContractId =
                 key.hasDelegatableContractId()
                         ? toAddress(key.getDelegatableContractId())
-                        : EMPTY_CONTRACT_ADDRESS;
+                        : EMPTY_EVM_ADDRESS;
 
         return new EvmKey(contractId, ed25519, ecdsaSecp256K1, delegatableContractId);
     }
