@@ -361,9 +361,12 @@ public abstract class AbstractEntityRecordItemListenerTest extends IntegrationTe
         return entityRepository.findById(entityId.getId()).get();
     }
 
+    protected AccountAmount.Builder accountAmount(AccountID account, long amount) {
+        return AccountAmount.newBuilder().setAccountID(account).setAmount(amount);
+    }
+
     protected AccountAmount.Builder accountAmount(long accountNum, long amount) {
-        return AccountAmount.newBuilder().setAccountID(AccountID.newBuilder().setAccountNum(accountNum))
-                .setAmount(amount);
+        return accountAmount(AccountID.newBuilder().setAccountNum(accountNum).build(), amount);
     }
 
     protected AccountAmount.Builder accountAliasAmount(ByteString alias, long amount) {
