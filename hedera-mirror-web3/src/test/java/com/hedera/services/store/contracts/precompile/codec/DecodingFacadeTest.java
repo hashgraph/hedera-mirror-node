@@ -1,15 +1,15 @@
 package com.hedera.services.store.contracts.precompile.codec;
 
-import static com.hedera.services.hapi.utils.contracts.ParsingConstants.ARRAY_BRACKETS;
-import static com.hedera.services.hapi.utils.contracts.ParsingConstants.FIXED_FEE;
-import static com.hedera.services.hapi.utils.contracts.ParsingConstants.INT;
-import static com.hedera.services.hapi.utils.contracts.ParsingConstants.ROYALTY_FEE;
+import static com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmDecodingFacade.decodeFunctionCall;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.ARRAY_BRACKETS;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.FIXED_FEE;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.INT;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.ROYALTY_FEE;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.FIXED_FEE_DECODER;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.HEDERA_TOKEN_STRUCT_DECODER;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.HEDERA_TOKEN_STRUCT_V2;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.ROYALTY_FEE_DECODER;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeAccountIds;
-import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeFunctionCall;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeTokenExpiry;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.decodeTokenKeys;
 import static java.util.function.UnaryOperator.identity;
@@ -79,7 +79,6 @@ public class DecodingFacadeTest {
         assertNull(decodedInput.get(0).key().getContractID());
         assertNull(decodedInput.get(0).key().getDelegatableContractID());
         assertNotNull(decodedInput.get(0).key().getEcdsaSecp256k1());
-
     }
 
     @Test

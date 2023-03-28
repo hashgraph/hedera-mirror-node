@@ -15,12 +15,11 @@
  */
 package com.hedera.services.store.contracts.precompile.codec;
 
-import static com.hedera.services.hapi.utils.contracts.ParsingConstants.ARRAY_BRACKETS;
-import static com.hedera.services.hapi.utils.contracts.ParsingConstants.EXPIRY;
-import static com.hedera.services.hapi.utils.contracts.ParsingConstants.TOKEN_KEY;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.ARRAY_BRACKETS;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.EXPIRY;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.TOKEN_KEY;
 import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 
-import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hederahashgraph.api.proto.java.AccountID;
 import edu.umd.cs.findbugs.annotations.NonNull;
@@ -29,7 +28,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.UnaryOperator;
 import javax.inject.Singleton;
-import org.apache.tuweni.bytes.Bytes;
 
 import com.hedera.services.utils.EntityIdUtils;
 
@@ -38,7 +36,6 @@ public class DecodingFacade {
     private static final int WORD_LENGTH = 32;
     private static final int ADDRESS_SKIP_BYTES_LENGTH = 12;
     private static final int FUNCTION_SELECTOR_BYTES_LENGTH = 4;
-
 
     /* --- Token Create Structs --- */
     private static final String KEY_VALUE_DECODER = "(bool,bytes32,bytes,bytes,bytes32)";
@@ -92,17 +89,6 @@ public class DecodingFacade {
         final var autoRenewPeriod = (long) expiryTuple.get(2);
         return new TokenExpiryWrapper(
                 second, autoRenewAccount.getAccountNum() == 0 ? null : autoRenewAccount, autoRenewPeriod);
-    }
-
-    public static Tuple decodeFunctionCall(
-            @NonNull final Bytes input, final Bytes selector, final ABIType<Tuple> decoder) {
-        if (!selector.equals(input.slice(0, FUNCTION_SELECTOR_BYTES_LENGTH))) {
-            throw new IllegalArgumentException("Selector does not match, expected "
-                    + selector
-                    + " actual "
-                    + input.slice(0, FUNCTION_SELECTOR_BYTES_LENGTH));
-        }
-        return decoder.decode(input.slice(FUNCTION_SELECTOR_BYTES_LENGTH).toArray());
     }
 
     public static List<AccountID> decodeAccountIds(

@@ -81,12 +81,4 @@ public final class EntityIdUtils {
                 .setAccountNum(numFromEvmAddress(bytes))
                 .build();
     }
-
-    public static TokenID tokenIdFromEvmAddress(final byte[] bytes) {
-        return TokenID.newBuilder()
-                .setShardNum(Ints.fromByteArray(Arrays.copyOfRange(bytes, 0, 4)))
-                .setRealmNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 4, 12)))
-                .setTokenNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 12, 20)))
-                .build();
-    }
 }

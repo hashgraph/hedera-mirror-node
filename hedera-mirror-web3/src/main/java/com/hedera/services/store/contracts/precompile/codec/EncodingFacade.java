@@ -15,15 +15,15 @@
  */
 package com.hedera.services.store.contracts.precompile.codec;
 
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.BOOLEAN_TUPLE;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.INT_BOOL_TUPLE;
+import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.NOT_SPECIFIED_TYPE;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.FunctionType.HAPI_MINT;
-import static com.hedera.services.hapi.utils.contracts.ParsingConstants.booleanTuple;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.burnReturnType;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.hapiAllowanceOfType;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.intAddressTuple;
-import static com.hedera.services.hapi.utils.contracts.ParsingConstants.intBoolTuple;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.intTuple;
 import static com.hedera.services.hapi.utils.contracts.ParsingConstants.mintReturnType;
-import static com.hedera.services.hapi.utils.contracts.ParsingConstants.notSpecifiedType;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 
 import com.esaulpaugh.headlong.abi.Tuple;
@@ -182,11 +182,11 @@ public class EncodingFacade {
                 case HAPI_CREATE, HAPI_GET_APPROVED -> intAddressTuple;
                 case HAPI_MINT -> mintReturnType;
                 case HAPI_BURN -> burnReturnType;
-                case ERC_TRANSFER, ERC_APPROVE -> booleanTuple;
+                case ERC_TRANSFER, ERC_APPROVE -> BOOLEAN_TUPLE;
                 case HAPI_ALLOWANCE -> hapiAllowanceOfType;
-                case HAPI_APPROVE, HAPI_IS_APPROVED_FOR_ALL -> intBoolTuple;
+                case HAPI_APPROVE, HAPI_IS_APPROVED_FOR_ALL -> INT_BOOL_TUPLE;
                 case HAPI_APPROVE_NFT -> intTuple;
-                default -> notSpecifiedType;
+                default -> NOT_SPECIFIED_TYPE;
             };
 
             this.functionType = functionType;

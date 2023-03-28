@@ -23,8 +23,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TupleType;
-import com.google.protobuf.ByteString;
-import com.hederahashgraph.api.proto.java.Key;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
@@ -261,14 +259,6 @@ class EncodingFacadeTest {
     @Test
     void createsExpectedBurnFailureResult() {
         assertEquals(BURN_FAILURE_FROM_TREASURY_NOT_OWNER, subject.encodeBurnFailure(TREASURY_MUST_OWN_BURNED_NFT));
-    }
-
-    private Key initializeKey(final byte[] ed25519KeyValue) {
-        return Key.newBuilder().setEd25519(ByteString.copyFrom(ed25519KeyValue)).build();
-    }
-
-    private ByteString fromHexString(final String value) {
-        return ByteString.copyFrom(Bytes.fromHexString(value).toArray());
     }
 
     private com.esaulpaugh.headlong.abi.Address convertBesuAddressToHeadlongAddress(
