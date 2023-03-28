@@ -301,7 +301,7 @@ paths:
       post:
         summary: EVM execution
         description: Returns a result from EVM execution such as cost-free execution of read-only smart contract queries, gas estimation, and transient simulation of read-write operations. If `estimate` field set to true gas estimation is executed.
-        operationId: executeEVM
+        operationId: contractsCall
         requestBody:
           required: true
           content:
@@ -311,51 +311,59 @@ paths:
                 properties:
                   block:
                     type: string
-                    description: Hexadecimal block number or the string "latest"
+                    nullable: true
+                    description: Hexadecimal block number or the string "latest", "pending", "earliest". (Defaults to "latest")
                     example: "latest"
                   data:
                     type: string
+                    nullable: true
                     description: Hexadecimal method signature and encoded parameters.
                     format: binary
                     maxLength: 6144 * 2
                     example: "0x0198489200000000000000000000000000000000000000000000000000000000000003ee"
                   estimate:
                     type: boolean
-                    description: Whether gas estimation is called
+                    nullable: true
+                    description: Whether gas estimation is called (Defaults to false)
                     example: true
                   from:
                     type: string
+                    nullable: true
                     pattern: '^(0x)?[A-Fa-f0-9]{40}$'
-                    description: 20 Bytes - The hexed address the transaction is sent from.
+                    description: The 20 byte hexadecimal EVM address the transaction is sent from.
                     format: binary
                     minLength: 40
-                    maxLength: 40
+                    maxLength: 42
                     example: "00000000000000000000000000000000000004e2"
                   gas:
                     format: int64
                     minimum: 0
                     type: integer
+                    nullable: true
                     description: Gas provided for the transaction execution.
-                    example: 100000000
+                    example: 120000000
                   gasPrice:
                     format: int64
                     minimum: 0
                     type: integer
+                    nullable: true
                     description: Gas price used for each paid gas.
                     example: 100000000
                   to:
                     type: string
+                    nullable: false
                     pattern: '^(0x)?[A-Fa-f0-9]{40}$'
-                    description: 20 Bytes - The hexed address the transaction is directed to.
+                    description: The 20 byte hexadecimal EVM address the transaction is directed to.
                     format: binary
                     minLength: 40
-                    maxLength: 40
+                    maxLength: 42
                     example: "00000000000000000000000000000000000003f4"
                   value:
                     format: int64
                     minimum: 0
                     type: integer
-                    description: Value sent with this transaction
+                    nullable: true
+                    description: Value sent with this transaction (Defaults to 0)
                     example: 0
                 required:
                   - to
@@ -376,12 +384,6 @@ paths:
               application/json:
                 schema:
                   $ref: '#/components/schemas/Web3Error'
-          500:
-            description: Generic error
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/Web3Error'
           415:
             description: Unsupported media type error
             content:
@@ -390,6 +392,18 @@ paths:
                   $ref: '#/components/schemas/Web3Error'
           429:
             description: Too many requests
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Web3Error'
+          500:
+            description: Generic error
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Web3Error'
+          501:
+            description: Not implemented error
             content:
               application/json:
                 schema:
