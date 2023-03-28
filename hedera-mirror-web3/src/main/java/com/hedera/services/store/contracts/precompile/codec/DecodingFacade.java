@@ -35,7 +35,6 @@ import com.hedera.services.utils.EntityIdUtils;
 public class DecodingFacade {
     private static final int WORD_LENGTH = 32;
     private static final int ADDRESS_SKIP_BYTES_LENGTH = 12;
-    private static final int FUNCTION_SELECTOR_BYTES_LENGTH = 4;
 
     /* --- Token Create Structs --- */
     private static final String KEY_VALUE_DECODER = "(bool,bytes32,bytes,bytes,bytes32)";

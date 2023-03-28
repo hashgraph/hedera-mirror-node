@@ -45,7 +45,6 @@ import com.hedera.services.hapi.utils.contracts.ParsingConstants.FunctionType;
 
 @Singleton
 public class EncodingFacade {
-    public static final Bytes SUCCESS_RESULT = resultFrom(SUCCESS);
     private static final long[] NO_MINTED_SERIAL_NUMBERS = new long[0];
 
     @Inject
