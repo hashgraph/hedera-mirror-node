@@ -487,11 +487,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         transactions.add(transaction);
 
         if (entityProperties.getPersist().shouldPersistTransactionHash(TransactionType.of(transaction.getType()))) {
-            transactionHashes.add(TransactionHash.builder()
-                    .consensusTimestamp(transaction.getConsensusTimestamp())
-                    .hash(transaction.getTransactionHash())
-                    .payerAccountId(transaction.getPayerAccountId().getId())
-                    .build());
+            transactionHashes.add(transaction.toTransactionHash());
         }
 
         if (transactions.size() == sqlProperties.getBatchSize()) {

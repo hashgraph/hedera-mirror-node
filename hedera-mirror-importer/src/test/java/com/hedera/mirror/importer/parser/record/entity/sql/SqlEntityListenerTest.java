@@ -906,7 +906,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         var thirdTransaction = domainBuilder.transaction().get();
         var expectedTransactionHashes = Stream.of(firstTransaction, secondTransaction, thirdTransaction)
                 .filter(t -> persistTransactionHash)
-                .map(TestUtils::toTransactionHash)
+                .map(Transaction::toTransactionHash)
                 .toList();
 
         // when
@@ -951,7 +951,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         var cryptoTransfer = domainBuilder.transaction().get();
         var expectedTransactionHashes = Stream.of(consensusSubmitMessage, cryptoTransfer)
                 .filter(t -> t.getType() == includedTransactionType.getProtoId())
-                .map(TestUtils::toTransactionHash)
+                .map(Transaction::toTransactionHash)
                 .toList();
 
         // when
@@ -974,7 +974,7 @@ class SqlEntityListenerTest extends IntegrationTest {
                 .customize(t -> t.type(TransactionType.CONSENSUSSUBMITMESSAGE.getProtoId())).get();
         var cryptoTransfer = domainBuilder.transaction().get();
         var expectedTransactionHashes = Stream.of(consensusSubmitMessage, cryptoTransfer)
-                .map(TestUtils::toTransactionHash)
+                .map(Transaction::toTransactionHash)
                 .toList();
 
         // when

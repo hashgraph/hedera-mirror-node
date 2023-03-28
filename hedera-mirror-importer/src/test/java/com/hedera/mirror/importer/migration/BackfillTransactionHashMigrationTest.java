@@ -37,11 +37,11 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.repository.TransactionHashRepository;
@@ -94,7 +94,7 @@ class BackfillTransactionHashMigrationTest extends IntegrationTest {
                         domainBuilder.transaction().customize(t -> t.consensusTimestamp(DEFAULT_START_TIMESTAMP + 1)).persist()
                 )
                 .filter(t -> persistTransactionHash)
-                .map(TestUtils::toTransactionHash)
+                .map(Transaction::toTransactionHash)
                 .toList();
         entityProperties.getPersist().setTransactionHash(persistTransactionHash);
 
@@ -114,7 +114,7 @@ class BackfillTransactionHashMigrationTest extends IntegrationTest {
                 domainBuilder.transaction().customize(t -> t.consensusTimestamp(DEFAULT_START_TIMESTAMP + 1)
                         .type(TransactionType.CONSENSUSSUBMITMESSAGE.getProtoId())).persist()
                 )
-                .map(TestUtils::toTransactionHash)
+                .map(Transaction::toTransactionHash)
                 .toList();
 
         // when
@@ -132,7 +132,7 @@ class BackfillTransactionHashMigrationTest extends IntegrationTest {
         domainBuilder.transaction().customize(t -> t.consensusTimestamp(DEFAULT_START_TIMESTAMP + 1)
                         .type(TransactionType.CONSENSUSSUBMITMESSAGE.getProtoId()))
                 .persist();
-        var expected = TestUtils.toTransactionHash(cryptoTransfer);
+        var expected = cryptoTransfer.toTransactionHash();
 
         // when
         runMigration();
@@ -151,7 +151,7 @@ class BackfillTransactionHashMigrationTest extends IntegrationTest {
                 .customize(t -> t.consensusTimestamp(DEFAULT_START_TIMESTAMP + 1)
                         .type(TransactionType.CONSENSUSSUBMITMESSAGE.getProtoId()))
                 .persist();
-        var expected = TestUtils.toTransactionHash(consensusSubmitMessage);
+        var expected = consensusSubmitMessage.toTransactionHash();
 
         // when
         runMigration();
@@ -182,7 +182,7 @@ class BackfillTransactionHashMigrationTest extends IntegrationTest {
         var transaction = domainBuilder.transaction()
                 .customize(t -> t.consensusTimestamp(DEFAULT_START_TIMESTAMP))
                 .persist();
-        var expected = TestUtils.toTransactionHash(transaction);
+        var expected = transaction.toTransactionHash();
 
         // when
         runMigration();
@@ -198,7 +198,7 @@ class BackfillTransactionHashMigrationTest extends IntegrationTest {
         var transaction = domainBuilder.transaction()
                 .customize(t -> t.consensusTimestamp(DEFAULT_START_TIMESTAMP))
                 .persist();
-        var expected = TestUtils.toTransactionHash(transaction);
+        var expected = transaction.toTransactionHash();
 
         // when
         runMigration();
