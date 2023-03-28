@@ -70,6 +70,10 @@ public class EntityProperties {
 
         private boolean transactionHash = false;
 
+        /**
+         * A set of transaction types to persist transaction hash for. If empty and transactionHash is true, transaction
+         * hash of all transaction types will be persisted
+         */
         @NotNull
         private Set<TransactionType> transactionHashTypes = EnumSet.complementOf(EnumSet.of(CONSENSUSSUBMITMESSAGE));
 
@@ -82,7 +86,8 @@ public class EntityProperties {
         private Set<TransactionType> transactionSignatures = EnumSet.of(SCHEDULECREATE, SCHEDULESIGN);
 
         public boolean shouldPersistTransactionHash(TransactionType transactionType) {
-            return transactionHash && transactionHashTypes.contains(transactionType);
+            return transactionHash &&
+                    (transactionHashTypes.isEmpty() || transactionHashTypes.contains(transactionType));
         }
     }
 }

@@ -33,6 +33,7 @@ import com.hederahashgraph.api.proto.java.Key;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -905,11 +906,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         var thirdTransaction = domainBuilder.transaction().get();
         var expectedTransactionHashes = Stream.of(firstTransaction, secondTransaction, thirdTransaction)
                 .filter(t -> persistTransactionHash)
-                .map(transaction -> TransactionHash.builder()
-                        .consensusTimestamp(transaction.getConsensusTimestamp())
-                        .hash(transaction.getTransactionHash())
-                        .payerAccountId(transaction.getPayerAccountId().getId())
-                        .build())
+                .map(TestUtils::toTransactionHash)
                 .toList();
 
         // when
@@ -954,11 +951,30 @@ class SqlEntityListenerTest extends IntegrationTest {
         var cryptoTransfer = domainBuilder.transaction().get();
         var expectedTransactionHashes = Stream.of(consensusSubmitMessage, cryptoTransfer)
                 .filter(t -> t.getType() == includedTransactionType.getProtoId())
-                .map(transaction -> TransactionHash.builder()
-                        .consensusTimestamp(transaction.getConsensusTimestamp())
-                        .hash(transaction.getTransactionHash())
-                        .payerAccountId(transaction.getPayerAccountId().getId())
-                        .build())
+                .map(TestUtils::toTransactionHash)
+                .toList();
+
+        // when
+        sqlEntityListener.onTransaction(cryptoTransfer);
+        sqlEntityListener.onTransaction(consensusSubmitMessage);
+        completeFileAndCommit();
+
+        // then
+        assertThat(transactionRepository.findAll())
+                .containsExactlyInAnyOrder(consensusSubmitMessage, cryptoTransfer);
+        assertThat(transactionHashRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedTransactionHashes);
+    }
+
+    @Test
+    void onTransactionHashWhenFilterEmpty() {
+        // given
+        entityProperties.getPersist().setTransactionHash(true);
+        entityProperties.getPersist().setTransactionHashTypes(Collections.emptySet());
+        var consensusSubmitMessage = domainBuilder.transaction()
+                .customize(t -> t.type(TransactionType.CONSENSUSSUBMITMESSAGE.getProtoId())).get();
+        var cryptoTransfer = domainBuilder.transaction().get();
+        var expectedTransactionHashes = Stream.of(consensusSubmitMessage, cryptoTransfer)
+                .map(TestUtils::toTransactionHash)
                 .toList();
 
         // when

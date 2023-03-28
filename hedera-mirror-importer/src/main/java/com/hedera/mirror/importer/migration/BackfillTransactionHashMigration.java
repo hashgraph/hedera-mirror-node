@@ -20,10 +20,11 @@ package com.hedera.mirror.importer.migration;
  * ‍
  */
 
+import static java.util.stream.Collectors.joining;
+
 import com.google.common.base.Stopwatch;
 import java.io.IOException;
 import javax.inject.Named;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -41,7 +42,7 @@ public class BackfillTransactionHashMigration extends RepeatableMigration {
             insert into transaction_hash (consensus_timestamp, hash, payer_account_id)
             select consensus_timestamp, transaction_hash, payer_account_id
             from transaction
-            where consensus_timestamp >= ? and type in (%1$s);
+            where consensus_timestamp >= ? %1$s;
             commit;
             """;
 
@@ -63,7 +64,7 @@ public class BackfillTransactionHashMigration extends RepeatableMigration {
     @Override
     protected void doMigrate() throws IOException {
         var persist = entityProperties.getPersist();
-        if (!persist.isTransactionHash() || persist.getTransactionHashTypes().isEmpty()) {
+        if (!persist.isTransactionHash()) {
             log.info("Skipping migration since transaction hash persistence is disabled");
             return;
         }
@@ -75,10 +76,13 @@ public class BackfillTransactionHashMigration extends RepeatableMigration {
         }
 
         var stopwatch = Stopwatch.createStarted();
-        var transactionTypes = persist.getTransactionHashTypes().stream()
-                .map(TransactionType::getProtoId)
-                .toList();
-        String sql = String.format(BACKFILL_TRANSACTION_HASH_SQL, StringUtils.join(transactionTypes, ","));
+        var transactionHashTypes = persist.getTransactionHashTypes();
+        String transactionTypesCondition = transactionHashTypes.isEmpty() ? "" :
+                String.format("and type in(%s)", transactionHashTypes.stream()
+                        .map(TransactionType::getProtoId)
+                        .map(Object::toString)
+                        .collect(joining(",")));
+        String sql = String.format(BACKFILL_TRANSACTION_HASH_SQL, transactionTypesCondition);
         jdbcTemplate.update(sql, startTimestamp);
         log.info("Backfilled transaction hash for transactions at or after {} in {}", startTimestamp, stopwatch);
     }

@@ -23,9 +23,12 @@ package com.hedera.mirror.importer.parser.record.entity;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Collections;
 import java.util.Set;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 
@@ -44,5 +47,17 @@ class PersistPropertiesTest {
         persistProperties.setTransactionHashTypes(Set.of(transactionType));
         assertThat(persistProperties.shouldPersistTransactionHash(TransactionType.CRYPTOTRANSFER)).isEqualTo(expected);
         assertThat(persistProperties.shouldPersistTransactionHash(TransactionType.CONTRACTCALL)).isFalse();
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void shouldPersistTransactionHashWhenEmptyFilter(boolean transactionHash) {
+        var persistProperties = new EntityProperties.PersistProperties();
+        persistProperties.setTransactionHash(transactionHash);
+        persistProperties.setTransactionHashTypes(Collections.emptySet());
+        assertThat(persistProperties.shouldPersistTransactionHash(TransactionType.CRYPTOTRANSFER))
+                .isEqualTo(transactionHash);
+        assertThat(persistProperties.shouldPersistTransactionHash(TransactionType.CONTRACTCALL))
+                .isEqualTo(transactionHash);
     }
 }

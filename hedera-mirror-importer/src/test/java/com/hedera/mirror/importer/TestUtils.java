@@ -45,6 +45,8 @@ import java.util.function.Supplier;
 import lombok.experimental.UtilityClass;
 import org.apache.commons.beanutils.BeanUtilsBean;
 
+import com.hedera.mirror.common.domain.transaction.Transaction;
+import com.hedera.mirror.common.domain.transaction.TransactionHash;
 import com.hedera.mirror.importer.util.Utility;
 
 @UtilityClass
@@ -150,10 +152,8 @@ public class TestUtils {
                 .setAccountNum(Long.parseLong(parts[2])).build();
     }
 
-    public TransactionID toTransactionId(String transactionId) {
-        var parts = transactionId.split("-");
-        return TransactionID.newBuilder().setAccountID(toAccountId(parts[0]))
-                .setTransactionValidStart(toTimestamp(Long.valueOf(parts[1]))).build();
+    public byte[] toByteArray(Key key) {
+        return (null == key) ? null : key.toByteArray();
     }
 
     public Timestamp toTimestamp(Long nanosecondsSinceEpoch) {
@@ -167,8 +167,18 @@ public class TestUtils {
         return Timestamp.newBuilder().setSeconds(seconds).setNanos((int) nanoseconds).build();
     }
 
-    public byte[] toByteArray(Key key) {
-        return (null == key) ? null : key.toByteArray();
+    public TransactionHash toTransactionHash(Transaction transaction) {
+        return TransactionHash.builder()
+                .consensusTimestamp(transaction.getConsensusTimestamp())
+                .hash(transaction.getTransactionHash())
+                .payerAccountId(transaction.getPayerAccountId().getId())
+                .build();
+    }
+
+    public TransactionID toTransactionId(String transactionId) {
+        var parts = transactionId.split("-");
+        return TransactionID.newBuilder().setAccountID(toAccountId(parts[0]))
+                .setTransactionValidStart(toTimestamp(Long.valueOf(parts[1]))).build();
     }
 
     public byte[] generateRandomByteArray(int size) {

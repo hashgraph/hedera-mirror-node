@@ -37,11 +37,11 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import com.hedera.mirror.common.domain.transaction.TransactionHash;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.repository.TransactionHashRepository;
@@ -94,11 +94,7 @@ class BackfillTransactionHashMigrationTest extends IntegrationTest {
                         domainBuilder.transaction().customize(t -> t.consensusTimestamp(DEFAULT_START_TIMESTAMP + 1)).persist()
                 )
                 .filter(t -> persistTransactionHash)
-                .map(t -> TransactionHash.builder()
-                        .consensusTimestamp(t.getConsensusTimestamp())
-                        .hash(t.getTransactionHash())
-                        .payerAccountId(t.getPayerAccountId().getId())
-                        .build())
+                .map(TestUtils::toTransactionHash)
                 .toList();
         entityProperties.getPersist().setTransactionHash(persistTransactionHash);
 
@@ -110,16 +106,22 @@ class BackfillTransactionHashMigrationTest extends IntegrationTest {
     }
 
     @Test
-    void migrateWhenEmptyTransactionHashTypes() {
+    void migrateWhenTransactionHashTypesEmpty() {
         // given
         entityProperties.getPersist().setTransactionHashTypes(Collections.emptySet());
-        domainBuilder.transaction().customize(t -> t.consensusTimestamp(DEFAULT_START_TIMESTAMP)).persist();
+        var expected = Stream.of(
+                domainBuilder.transaction().customize(t -> t.consensusTimestamp(DEFAULT_START_TIMESTAMP)).persist(),
+                domainBuilder.transaction().customize(t -> t.consensusTimestamp(DEFAULT_START_TIMESTAMP + 1)
+                        .type(TransactionType.CONSENSUSSUBMITMESSAGE.getProtoId())).persist()
+                )
+                .map(TestUtils::toTransactionHash)
+                .toList();
 
         // when
         runMigration();
 
         // then
-        assertThat(transactionHashRepository.findAll()).isEmpty();
+        assertThat(transactionHashRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
     }
 
     @Test
@@ -130,11 +132,7 @@ class BackfillTransactionHashMigrationTest extends IntegrationTest {
         domainBuilder.transaction().customize(t -> t.consensusTimestamp(DEFAULT_START_TIMESTAMP + 1)
                         .type(TransactionType.CONSENSUSSUBMITMESSAGE.getProtoId()))
                 .persist();
-        var expected = TransactionHash.builder()
-                .consensusTimestamp(cryptoTransfer.getConsensusTimestamp())
-                .hash(cryptoTransfer.getTransactionHash())
-                .payerAccountId(cryptoTransfer.getPayerAccountId().getId())
-                .build();
+        var expected = TestUtils.toTransactionHash(cryptoTransfer);
 
         // when
         runMigration();
@@ -153,11 +151,7 @@ class BackfillTransactionHashMigrationTest extends IntegrationTest {
                 .customize(t -> t.consensusTimestamp(DEFAULT_START_TIMESTAMP + 1)
                         .type(TransactionType.CONSENSUSSUBMITMESSAGE.getProtoId()))
                 .persist();
-        var expected = TransactionHash.builder()
-                .consensusTimestamp(consensusSubmitMessage.getConsensusTimestamp())
-                .hash(consensusSubmitMessage.getTransactionHash())
-                .payerAccountId(consensusSubmitMessage.getPayerAccountId().getId())
-                .build();
+        var expected = TestUtils.toTransactionHash(consensusSubmitMessage);
 
         // when
         runMigration();
@@ -188,11 +182,7 @@ class BackfillTransactionHashMigrationTest extends IntegrationTest {
         var transaction = domainBuilder.transaction()
                 .customize(t -> t.consensusTimestamp(DEFAULT_START_TIMESTAMP))
                 .persist();
-        var expected = TransactionHash.builder()
-                .consensusTimestamp(transaction.getConsensusTimestamp())
-                .hash(transaction.getTransactionHash())
-                .payerAccountId(transaction.getPayerAccountId().getId())
-                .build();
+        var expected = TestUtils.toTransactionHash(transaction);
 
         // when
         runMigration();
@@ -208,11 +198,7 @@ class BackfillTransactionHashMigrationTest extends IntegrationTest {
         var transaction = domainBuilder.transaction()
                 .customize(t -> t.consensusTimestamp(DEFAULT_START_TIMESTAMP))
                 .persist();
-        var expected = TransactionHash.builder()
-                .consensusTimestamp(transaction.getConsensusTimestamp())
-                .hash(transaction.getTransactionHash())
-                .payerAccountId(transaction.getPayerAccountId().getId())
-                .build();
+        var expected = TestUtils.toTransactionHash(transaction);
 
         // when
         runMigration();
