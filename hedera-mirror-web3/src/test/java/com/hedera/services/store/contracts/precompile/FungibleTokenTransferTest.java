@@ -15,6 +15,8 @@
  */
 package com.hedera.services.store.contracts.precompile;
 
+import static com.hedera.services.utils.MiscUtils.asAccount;
+import static com.hedera.services.utils.MiscUtils.asToken;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -34,29 +36,5 @@ class FungibleTokenTransferTest {
     void createsExpectedCryptoTransfer() {
         final var fungibleTransfer = new FungibleTokenTransfer(secondAmount, false, fungible, b, a);
         assertEquals(fungible, fungibleTransfer.getDenomination());
-    }
-
-    static AccountID asAccount(String v) {
-        long[] nativeParts = asDotDelimitedLongArray(v);
-        return AccountID.newBuilder()
-                .setShardNum(nativeParts[0])
-                .setRealmNum(nativeParts[1])
-                .setAccountNum(nativeParts[2])
-                .build();
-    }
-
-    static TokenID asToken(String v) {
-        long[] nativeParts = asDotDelimitedLongArray(v);
-        return TokenID.newBuilder()
-                .setShardNum(nativeParts[0])
-                .setRealmNum(nativeParts[1])
-                .setTokenNum(nativeParts[2])
-                .build();
-    }
-
-    //copied from IdUtils
-    static long[] asDotDelimitedLongArray(String s) {
-        String[] parts = s.split("[.]");
-        return Stream.of(parts).mapToLong(Long::valueOf).toArray();
     }
 }

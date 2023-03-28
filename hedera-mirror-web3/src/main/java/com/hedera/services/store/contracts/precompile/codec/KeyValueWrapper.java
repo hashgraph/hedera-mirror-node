@@ -29,8 +29,6 @@ public final class KeyValueWrapper {
 
     public static final int ED25519_BYTE_LENGTH = 32;
     public static final int ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH = 33;
-
-    /* ---  Only 1 of these values should be set when the input is valid. --- */
     private final boolean shouldInheritAccountKey;
     private final ContractID contractID;
     private final byte[] ed25519;

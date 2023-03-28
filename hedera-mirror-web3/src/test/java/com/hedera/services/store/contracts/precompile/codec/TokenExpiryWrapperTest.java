@@ -15,6 +15,8 @@
  */
 package com.hedera.services.store.contracts.precompile.codec;
 
+import static com.hedera.services.utils.MiscUtils.asAccount;
+import static com.hedera.services.utils.MiscUtils.toGrpcAccountId;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -27,7 +29,6 @@ class TokenExpiryWrapperTest {
 
     private TokenExpiryWrapper wrapper;
     private static final AccountID payer = asAccount("0.0.12345");
-    private static final long MASK_INT_AS_UNSIGNED_LONG = (1L << 32) - 1;
 
     @BeforeEach
     void setup() {
@@ -65,34 +66,5 @@ class TokenExpiryWrapperTest {
 
     static TokenExpiryWrapper createTokenExpiryWrapper() {
         return new TokenExpiryWrapper(442L, payer, 555L);
-    }
-
-    //copied from IdUtils
-    static AccountID asAccount(String v) {
-        long[] nativeParts = asDotDelimitedLongArray(v);
-        return AccountID.newBuilder()
-                .setShardNum(nativeParts[0])
-                .setRealmNum(nativeParts[1])
-                .setAccountNum(nativeParts[2])
-                .build();
-    }
-
-    //copied from IdUtils
-    static long[] asDotDelimitedLongArray(String s) {
-        String[] parts = s.split("[.]");
-        return Stream.of(parts).mapToLong(Long::valueOf).toArray();
-    }
-
-    //copied from EntityId
-    AccountID toGrpcAccountId(final int code) {
-        return AccountID.newBuilder()
-                .setShardNum(0L)
-                .setRealmNum(0L)
-                .setAccountNum(numFromCode(code))
-                .build();
-    }
-
-    static long numFromCode(int code) {
-        return code & MASK_INT_AS_UNSIGNED_LONG;
     }
 }

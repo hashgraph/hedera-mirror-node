@@ -15,6 +15,7 @@
  */
 package com.hedera.services.store.contracts.precompile.codec;
 
+import static com.hedera.services.store.contracts.precompile.codec.EncodingFacade.convertBesuAddressToHeadlongAddress;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_EXPIRATION_TIME;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_TOKEN_ID;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
@@ -35,8 +36,8 @@ import org.junit.jupiter.api.Test;
 class EncodingFacadeTest {
     private final EncodingFacade subject = new EncodingFacade();
 
-    public static final Address senderAddress = Address.ALTBN128_PAIRING;
-    public static final Address recipientAddress = Address.ALTBN128_ADD;
+    private static final Address senderAddress = Address.ALTBN128_PAIRING;
+    private static final Address recipientAddress = Address.ALTBN128_ADD;
     private static final Bytes RETURN_FUNGIBLE_MINT_FOR_10_TOKENS =
             Bytes.fromHexString("0x0000000000000000000000000000000000000000000000000000000000000016"
                     + "0000000000000000000000000000000000000000000000000000000000"
@@ -98,7 +99,7 @@ class EncodingFacadeTest {
     void canEncodeEip1014Address() {
         final var literalEip1014 = "0x8ff8eb31713b9ff374d893d21f3b9eb732a307a5";
         final var besuAddress = Address.fromHexString(literalEip1014);
-        final var headlongAddress = EncodingFacade.convertBesuAddressToHeadlongAddress(besuAddress);
+        final var headlongAddress = convertBesuAddressToHeadlongAddress(besuAddress);
         assertEquals(literalEip1014, ("" + headlongAddress).toLowerCase());
     }
 
@@ -259,11 +260,5 @@ class EncodingFacadeTest {
     @Test
     void createsExpectedBurnFailureResult() {
         assertEquals(BURN_FAILURE_FROM_TREASURY_NOT_OWNER, subject.encodeBurnFailure(TREASURY_MUST_OWN_BURNED_NFT));
-    }
-
-    private com.esaulpaugh.headlong.abi.Address convertBesuAddressToHeadlongAddress(
-            final Address addressToBeConverted) {
-        return com.esaulpaugh.headlong.abi.Address.wrap(
-                com.esaulpaugh.headlong.abi.Address.toChecksumAddress(addressToBeConverted.toBigInteger()));
     }
 }

@@ -40,7 +40,7 @@ import org.junit.jupiter.api.Test;
 public class DecodingFacadeTest {
 
     private static final String CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_STRING = "createNonFungibleTokenWithCustomFees(";
-    public static final ABIType<Tuple> TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_DECODER = TypeFactory.create("("
+    private static final ABIType<Tuple> TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_DECODER = TypeFactory.create("("
             + HEDERA_TOKEN_STRUCT_DECODER
             + ","
             + FIXED_FEE_DECODER
@@ -61,7 +61,7 @@ public class DecodingFacadeTest {
                     + ARRAY_BRACKETS
                     + ")");
 
-    public static final Bytes TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_SELECTOR_V2 =
+    private static final Bytes TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_SELECTOR_V2 =
             Bytes.wrap(TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_FUNCTION_V2.selector());
     private static final Function TRANSFER_NFTS_FUNCTION =
             new Function("transferNFTs(address,address[],address[],int64[])", INT);
