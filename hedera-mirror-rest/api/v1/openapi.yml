@@ -298,85 +298,85 @@ paths:
         - blocks
 
   /api/v1/contracts/call:
-      post:
-        summary: EVM execution
-        description: Returns a result from EVM execution such as cost-free execution of read-only smart contract queries, gas estimation, and transient simulation of read-write operations. If `estimate` field set to true gas estimation is executed.
-        operationId: contractsCall
-        requestBody:
-          required: true
+    post:
+      summary: Invoke a smart contract
+      description: Returns a result from EVM execution such as cost-free execution of read-only smart contract queries, gas estimation, and transient simulation of read-write operations. If `estimate` field is set to true gas estimation is executed.
+      operationId: contractsCall
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContractCallRequest'
+      responses:
+        200:
+          description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Web3Request'
-        responses:
-          200:
-            description: OK
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/Web3Response'
-          400:
-            description: Validation error
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/Web3Error'
-                examples:
-                  MissingContract:
-                    value:
-                      message: "No such contract or token"
-                      detail: ""
-                      data: ""
-          415:
-            description: Unsupported media type error
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/Web3Error'
-                examples:
-                  WrongType:
-                    value:
-                      message: "Unsupported Media Type"
-                      detail: "Content type 'text/plain' not supported for bodyType=com.hedera.mirror.web3.viewmodel.ContractCallRequest"
-                      data: ""
-          429:
-            description: Too many requests
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/Web3Error'
-                examples:
-                  RateLimit:
-                    value:
-                      message: "Rate limit exceeded."
-                      detail: ""
-                      data: ""
-          500:
-            description: Generic error
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/Web3Error'
-                examples:
-                  InternalServerError:
-                    value:
-                      message: "Internal Server Error"
-                      detail: ""
-                      data: ""
-          501:
-            description: Not implemented error
-            content:
-              application/json:
-                schema:
-                  $ref: '#/components/schemas/Web3Error'
-                examples:
-                  NotImplemented:
-                    value:
-                      message: "Operation not supported yet!"
-                      detail: ""
-                      data: ""
-        tags:
-          - contracts
+                $ref: '#/components/schemas/ContractCallResponse'
+        400:
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                MissingContract:
+                  value:
+                    message: "No such contract or token"
+                    detail: ""
+                    data: ""
+        415:
+          description: Unsupported media type error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                WrongType:
+                  value:
+                    message: "Unsupported Media Type"
+                    detail: "Content type 'text/plain' not supported"
+                    data: ""
+        429:
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                RateLimit:
+                  value:
+                    message: "Rate limit exceeded."
+                    detail: ""
+                    data: ""
+        500:
+          description: Generic error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                InternalServerError:
+                  value:
+                    message: "Internal Server Error"
+                    detail: ""
+                    data: ""
+        501:
+          description: Not implemented error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                NotImplemented:
+                  value:
+                    message: "Operation not supported yet!"
+                    detail: ""
+                    data: ""
+      tags:
+        - contracts
   /api/v1/contracts:
     get:
       summary: List contract entities on network
@@ -2304,106 +2304,96 @@ components:
               items:
                 type: object
                 properties:
-                  message:
-                    type: string
-    Web3Error:
-      type: object
-      properties:
-        _status:
-          type: object
-          properties:
-            messages:
-              type: array
-              items:
-                type: object
-                properties:
                   data:
-                    type: string
-                    nullable: false
-                    pattern: '0[xX][0-9a-fA-F]+'
-                    format: binary
                     description: Error message in hexadecimal
+                    example: "0x3000"
+                    format: binary
+                    nullable: true
+                    pattern: "^0x[0-9a-fA-F]+$"
+                    type: string
                   detail:
-                    type: string
-                    nullable: false
                     description: Detailed error message
-                  message:
+                    example: Insufficient gas
+                    nullable: true
                     type: string
-                    nullable: false
+                  message:
                     description: Error message
-    Web3Request:
+                    example: Contract reverted
+                    nullable: false
+                    type: string
+    ContractCallRequest:
       type: object
       properties:
         block:
-          type: string
-          nullable: true
-          pattern: '(0[xX][0-9a-fA-F]+|(earliest|pending|latest))'
-          description: Hexadecimal block number or the string "latest", "pending", "earliest". (Defaults to "latest")
+          description: Hexadecimal block number or the string "latest", "pending", "earliest". Defaults to "latest".
           example: "latest"
+          nullable: true
+          pattern: "^((0x)?[0-9a-fA-F]+|(earliest|pending|latest))$"
+          type: string
         data:
-          type: string
-          nullable: true
           description: Hexadecimal method signature and encoded parameters.
-          format: binary
-          pattern: '0[xX]?[0-9a-fA-F]+'
-          maxLength: 6144 * 2
           example: "0x0198489200000000000000000000000000000000000000000000000000000000000003ee"
-        estimate:
-          type: boolean
-          nullable: true
-          description: Whether gas estimation is called (Defaults to false)
-          example: true
-        from:
-          type: string
-          nullable: true
-          pattern: '^(0x)?[A-Fa-f0-9]{40}$'
-          description: The 20 byte hexadecimal EVM address the transaction is sent from.
           format: binary
-          minLength: 40
-          maxLength: 42
+          maxLength: 12288
+          nullable: true
+          pattern: "^(0x)?[0-9a-fA-F]+$"
+          type: string
+        estimate:
+          description: Whether gas estimation is called. Defaults to false.
+          example: true
+          nullable: true
+          type: boolean
+        from:
+          description: The 20-byte hexadecimal EVM address the transaction is sent from.
           example: "00000000000000000000000000000000000004e2"
+          format: binary
+          maxLength: 42
+          minLength: 40
+          nullable: true
+          pattern: "^(0x)?[A-Fa-f0-9]{40}$"
+          type: string
         gas:
-          format: int64
-          minimum: 0
-          type: integer
-          nullable: true
-          description: Gas provided for the transaction execution. (Defaults to 120000000)
+          description: Gas provided for the transaction execution. Defaults to 120000000.
           example: 120000000
-        gasPrice:
           format: int64
           minimum: 0
-          type: integer
           nullable: true
+          type: integer
+        gasPrice:
           description: Gas price used for each paid gas.
           example: 100000000
-        to:
-          type: string
-          nullable: false
-          pattern: '^(0x)?[A-Fa-f0-9]{40}$'
-          description: The 20 byte hexadecimal EVM address the transaction is directed to.
-          format: binary
-          minLength: 40
-          maxLength: 42
-          example: "00000000000000000000000000000000000003f4"
-        value:
           format: int64
           minimum: 0
-          type: integer
           nullable: true
-          description: Value sent with this transaction (Defaults to 0)
+          type: integer
+        to:
+          description: The 20-byte hexadecimal EVM address the transaction is directed to.
+          example: "0x00000000000000000000000000000000000003f4"
+          format: binary
+          maxLength: 42
+          minLength: 40
+          nullable: false
+          pattern: "^(0x)?[A-Fa-f0-9]{40}$"
+          type: string
+        value:
+          description: Value sent with this transaction. Defaults to 0.
           example: 0
+          format: int64
+          minimum: 0
+          nullable: true
+          type: integer
       required:
         - to
-    Web3Response:
+    ContractCallResponse:
       type: object
       properties:
         result:
-          type: string
-          pattern: '0[xX][0-9a-fA-F]+'
+          description: Result in hexadecimal from executed contract call.
+          example: "0x94c4d54535f6e616d6500"
           format: binary
           nullable: false
-          description: Result in hexadecimal from executed contractCall
-          example: "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000094c4d54535f6e616d650000000000000000000000000000000000000000000000"
+          pattern: "^0x[0-9a-fA-F]+$"
+          type: string
     HederaHash:
       type: string
       description: A hex encoded hedera transaction hash.
