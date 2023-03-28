@@ -2317,18 +2317,27 @@ components:
               items:
                 type: object
                 properties:
-                  message:
-                    type: string
-                  detail:
-                    type: string
                   data:
                     type: string
+                    nullable: false
+                    pattern: '0[xX][0-9a-fA-F]+'
+                    format: binary
+                    description: Error message in hexadecimal
+                  detail:
+                    type: string
+                    nullable: false
+                    description: Detailed error message
+                  message:
+                    type: string
+                    nullable: false
+                    description: Error message
     Web3Request:
       type: object
       properties:
         block:
           type: string
           nullable: true
+          pattern: '(0[xX][0-9a-fA-F]+|(earliest|pending|latest))'
           description: Hexadecimal block number or the string "latest", "pending", "earliest". (Defaults to "latest")
           example: "latest"
         data:
@@ -2336,6 +2345,7 @@ components:
           nullable: true
           description: Hexadecimal method signature and encoded parameters.
           format: binary
+          pattern: '0[xX]?[0-9a-fA-F]+'
           maxLength: 6144 * 2
           example: "0x0198489200000000000000000000000000000000000000000000000000000000000003ee"
         estimate:
@@ -2357,7 +2367,7 @@ components:
           minimum: 0
           type: integer
           nullable: true
-          description: Gas provided for the transaction execution.
+          description: Gas provided for the transaction execution. (Defaults to 120000000)
           example: 120000000
         gasPrice:
           format: int64
@@ -2389,6 +2399,11 @@ components:
       properties:
         result:
           type: string
+          pattern: '0[xX][0-9a-fA-F]+'
+          format: binary
+          nullable: false
+          description: Result in hexadecimal from executed contractCall
+          example: "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000094c4d54535f6e616d650000000000000000000000000000000000000000000000"
     HederaHash:
       type: string
       description: A hex encoded hedera transaction hash.
