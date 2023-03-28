@@ -18,14 +18,10 @@
  * ‍
  */
 
-const currencyHbar = {
+export const currencyHbar = {
   symbol: 'HBAR',
   decimals: 8,
   metadata: {
     issuer: 'Hedera',
   },
-};
-
-export {
-  currencyHbar
 };
