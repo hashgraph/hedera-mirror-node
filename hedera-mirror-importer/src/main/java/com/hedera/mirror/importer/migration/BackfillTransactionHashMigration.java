@@ -78,7 +78,7 @@ public class BackfillTransactionHashMigration extends RepeatableMigration {
         var stopwatch = Stopwatch.createStarted();
         var transactionHashTypes = persist.getTransactionHashTypes();
         String transactionTypesCondition = transactionHashTypes.isEmpty() ? "" :
-                String.format("and type in(%s)", transactionHashTypes.stream()
+                String.format("and type in (%s)", transactionHashTypes.stream()
                         .map(TransactionType::getProtoId)
                         .map(Object::toString)
                         .collect(joining(",")));
