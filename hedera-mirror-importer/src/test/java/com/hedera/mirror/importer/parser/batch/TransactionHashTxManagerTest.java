@@ -36,6 +36,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.support.TransactionTemplate;
 import javax.sql.DataSource;
 import java.sql.Connection;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
 
@@ -150,28 +152,25 @@ class TransactionHashTxManagerTest extends IntegrationTest {
         doThrow(new RuntimeException("Error thread")).when(errorThreadState.getConnection()).rollback();
 
         transactionHashTxManager.afterCompletion(status);
-        assertThat(errorThreadState.getStatus()).isEqualTo(Integer.MAX_VALUE);
+        Arrays.asList(threadState, threadState2, threadState3).forEach(state -> assertThreadState(state, status));
+        assertThreadState(errorThreadState, Integer.MAX_VALUE);
+    }
+
+    @SneakyThrows
+    void assertThreadState(TransactionHashTxManager.ThreadState threadState, int status) {
+        assertThat(threadState.getStatus()).isEqualTo(status);
 
         switch (status) {
             case STATUS_COMMITTED -> {
                 verify(threadState.getConnection(), times(1)).commit();
-                verify(threadState2.getConnection(), times(1)).commit();
-                verify(threadState3.getConnection(), times(1)).commit();
-                verify(errorThreadState.getConnection(), times(1)).commit();
                 assertThat(threadState.getStatus()).isEqualTo(STATUS_COMMITTED);
             }
             case STATUS_ROLLED_BACK -> {
                 verify(threadState.getConnection(), times(1)).rollback();
-                verify(threadState2.getConnection(), times(1)).rollback();
-                verify(threadState3.getConnection(), times(1)).rollback();
-                verify(errorThreadState.getConnection(), times(1)).rollback();
                 assertThat(threadState.getStatus()).isEqualTo(STATUS_ROLLED_BACK);
             }
             case STATUS_UNKNOWN -> {
                 verify(threadState.getConnection(), times(1)).rollback();
-                verify(threadState2.getConnection(), times(1)).rollback();
-                verify(threadState3.getConnection(), times(1)).rollback();
-                verify(errorThreadState.getConnection(), times(1)).rollback();
                 assertThat(threadState.getStatus()).isEqualTo(STATUS_UNKNOWN);
             }
         }
