@@ -358,6 +358,7 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
         domainBuilder.entity().customize(e ->
                 e.id(nftEntityId.getId())
                         .autoRenewAccountId(nftEntityId.getId())
+                        .expirationTimestamp(null)
                         .num(nftEntityId.getEntityNum())
                         .evmAddress(nftEvmAddress)
                         .type(TOKEN).balance(1500L)
