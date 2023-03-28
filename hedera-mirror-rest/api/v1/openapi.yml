@@ -321,60 +321,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-              examples:
-                MissingContract:
-                  value:
-                    message: "No such contract or token"
-                    detail: ""
-                    data: ""
         415:
           description: Unsupported media type error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-              examples:
-                WrongType:
-                  value:
-                    message: "Unsupported Media Type"
-                    detail: "Content type 'text/plain' not supported"
-                    data: ""
         429:
           description: Too many requests
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-              examples:
-                RateLimit:
-                  value:
-                    message: "Rate limit exceeded."
-                    detail: ""
-                    data: ""
         500:
           description: Generic error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-              examples:
-                InternalServerError:
-                  value:
-                    message: "Internal Server Error"
-                    detail: ""
-                    data: ""
         501:
           description: Not implemented error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-              examples:
-                NotImplemented:
-                  value:
-                    message: "Operation not supported yet!"
-                    detail: ""
-                    data: ""
       tags:
         - contracts
   /api/v1/contracts:
@@ -2313,12 +2283,12 @@ components:
                     type: string
                   detail:
                     description: Detailed error message
-                    example: Insufficient gas
+                    example: Generic detailed error message
                     nullable: true
                     type: string
                   message:
                     description: Error message
-                    example: Contract reverted
+                    example: Generic error message
                     nullable: false
                     type: string
     ContractCallRequest:
