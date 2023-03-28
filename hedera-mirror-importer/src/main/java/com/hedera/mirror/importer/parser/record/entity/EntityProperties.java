@@ -20,6 +20,7 @@ package com.hedera.mirror.importer.parser.record.entity;
  * ‍
  */
 
+import static com.hedera.mirror.common.domain.transaction.TransactionType.CONSENSUSSUBMITMESSAGE;
 import static com.hedera.mirror.common.domain.transaction.TransactionType.SCHEDULECREATE;
 import static com.hedera.mirror.common.domain.transaction.TransactionType.SCHEDULESIGN;
 
@@ -39,7 +40,7 @@ public class EntityProperties {
     private PersistProperties persist = new PersistProperties();
 
     @Data
-    public class PersistProperties {
+    public static class PersistProperties {
 
         private boolean claims = false;
 
@@ -70,10 +71,23 @@ public class EntityProperties {
         private boolean transactionHash = false;
 
         /**
+         * A set of transaction types to persist transaction hash for. If empty and transactionHash is true, transaction
+         * hash of all transaction types will be persisted
+         */
+        @NotNull
+        private Set<TransactionType> transactionHashTypes = EnumSet.complementOf(EnumSet.of(CONSENSUSSUBMITMESSAGE));
+
+        /**
          * If configured the mirror node will store the raw transaction bytes on the transaction table
          */
         private boolean transactionBytes = false;
 
+        @NotNull
         private Set<TransactionType> transactionSignatures = EnumSet.of(SCHEDULECREATE, SCHEDULESIGN);
+
+        public boolean shouldPersistTransactionHash(TransactionType transactionType) {
+            return transactionHash &&
+                    (transactionHashTypes.isEmpty() || transactionHashTypes.contains(transactionType));
+        }
     }
 }
