@@ -25,13 +25,12 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 
 class ConsensusDeleteTopicTransactionHandlerTest extends AbstractDeleteOrUndeleteTransactionHandlerTest {
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new ConsensusDeleteTopicTransactionHandler(entityIdService, entityListener, new RecordParserProperties());
+        return new ConsensusDeleteTopicTransactionHandler(entityIdService, entityListener);
     }
 
     @Override

@@ -22,7 +22,7 @@ import _ from 'lodash';
 
 import BaseService from './baseService';
 import {filterKeys} from '../constants';
-import {Nft} from '../model';
+import {Nft, Entity} from '../model';
 import {OrderSpec} from '../sql';
 
 /**
@@ -39,15 +39,17 @@ class NftService extends BaseService {
 
   static nftQuery = `select
     ${Nft.ACCOUNT_ID},
-    ${Nft.CREATED_TIMESTAMP},
+    ${Nft.tableAlias}.${Nft.CREATED_TIMESTAMP},
     ${Nft.DELEGATING_SPENDER},
-    ${Nft.DELETED},
+    ${Nft.tableAlias}.${Nft.DELETED} or coalesce(${Entity.tableAlias}.${Entity.DELETED}, false) as ${Nft.DELETED},
     ${Nft.METADATA},
     ${Nft.MODIFIED_TIMESTAMP},
     ${Nft.SERIAL_NUMBER},
     ${Nft.SPENDER},
     ${Nft.TOKEN_ID}
-    from ${Nft.tableName}`;
+    from ${Nft.tableName}
+    left join ${Entity.tableName} ${Entity.tableAlias} on
+    ${Entity.tableAlias}.${Entity.ID} = ${Nft.tableName}.${Nft.TOKEN_ID}`;
 
   static orderByColumns = [Nft.TOKEN_ID, Nft.SERIAL_NUMBER];
 

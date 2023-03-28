@@ -18,6 +18,11 @@
  * ‍
  */
 
+import http from 'k6/http';
+
+import {setupTestParameters} from './parameters.js';
+import {TestScenarioBuilder} from '../../lib/common.js';
+
 const isSuccess = (response) => response.status >= 200 && response.status < 300;
 
 const isValidListResponse = (response, listName) => {
@@ -32,6 +37,20 @@ const isValidListResponse = (response, listName) => {
   }
 
   return list.length > 0;
+};
+
+class RestTestScenarioBuilder extends TestScenarioBuilder {
+  constructor() {
+    super();
+    this.fallbackRequest((testParameters) => {
+      const url = `${testParameters['BASE_URL_PREFIX']}/transactions`;
+      return http.get(url);
+    });
+  }
+
+  build() {
+    return Object.assign(super.build(), {setup: () => setupTestParameters(this._requiredParameters)});
+  }
 }
 
-export {isValidListResponse, isSuccess};
+export {isValidListResponse, isSuccess, RestTestScenarioBuilder};

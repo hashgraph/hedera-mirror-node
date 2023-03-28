@@ -35,7 +35,6 @@ extra.apply {
     set("protobufVersion", "3.22.2")
     set("reactorGrpcVersion", "1.2.3")
     set("snakeyaml.version", "1.33") // Temporary fix for transient dependency security issue
-    set("spring-data-bom.version", "2021.2.10") // Temporary fix for security issue. Remove after Boot 2.7.10
     set("testcontainersSpringBootVersion", "2.3.2")
     set("vertxVersion", "4.4.0")
 }
@@ -53,7 +52,7 @@ dependencies {
         api("com.github.meanbeanlib:meanbean:3.0.0-M9")
         api("com.github.vertical-blank:sql-formatter:2.0.3")
         api("com.github.vladimir-bukhtoyarov:bucket4j-core:7.6.0")
-        api("com.google.cloud:spring-cloud-gcp-dependencies:3.4.6")
+        api("com.google.cloud:spring-cloud-gcp-dependencies:3.4.7")
         api("com.google.guava:guava:31.1-jre")
         api("com.google.protobuf:protobuf-java:$protobufVersion")
         api("com.graphql-java-generator:graphql-java-client-dependencies:1.18.10")
@@ -70,16 +69,16 @@ dependencies {
         api("com.vladmihalcea:hibernate-types-55:2.21.1")
         api("commons-beanutils:commons-beanutils:1.9.4")
         api("commons-io:commons-io:2.11.0")
-        api("io.cucumber:cucumber-bom:7.11.1")
+        api("io.cucumber:cucumber-bom:7.11.2")
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
-        api("io.grpc:grpc-bom:1.53.0")
+        api("io.grpc:grpc-bom:1.54.0")
         api("io.swagger:swagger-annotations:1.6.9")
         api("io.vertx:vertx-pg-client:$vertxVersion")
         api("io.vertx:vertx-codegen:$vertxVersion")
         api("javax.inject:javax.inject:1")
         api("net.devh:grpc-spring-boot-starter:2.14.0.RELEASE")
         api("net.java.dev.jna:jna:5.13.0")
-        api("org.apache.commons:commons-compress:1.22")
+        api("org.apache.commons:commons-compress:1.23.0")
         api("org.apache.commons:commons-math3:3.6.1")
         api("org.apache.tuweni:tuweni-bytes:2.3.1")
         api("org.apache.velocity:velocity-engine-core:2.3")
@@ -93,7 +92,7 @@ dependencies {
         api("org.springdoc:springdoc-openapi-webflux-ui:1.6.15")
         api("org.springframework.cloud:spring-cloud-dependencies:2021.0.5")
         api("org.testcontainers:junit-jupiter:1.17.6")
-        api("software.amazon.awssdk:bom:2.20.27")
+        api("software.amazon.awssdk:bom:2.20.32")
         api("uk.org.webcompere:system-stubs-jupiter:2.0.2")
     }
 }

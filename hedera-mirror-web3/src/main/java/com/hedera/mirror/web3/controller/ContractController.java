@@ -30,13 +30,8 @@ import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
 import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
 import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
 
-import com.hedera.mirror.web3.exception.InvalidParametersException;
-
-import javax.validation.Valid;
-
-import com.hedera.mirror.web3.exception.RateLimitException;
-
 import io.github.bucket4j.Bucket;
+import javax.validation.Valid;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
@@ -49,12 +44,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.support.WebExchangeBindException;
-import org.springframework.web.reactive.function.UnsupportedMediaTypeException;
 import org.springframework.web.server.ServerWebInputException;
 import org.springframework.web.server.UnsupportedMediaTypeStatusException;
 import reactor.core.publisher.Mono;
 
+import com.hedera.mirror.web3.exception.InvalidParametersException;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
+import com.hedera.mirror.web3.exception.RateLimitException;
 import com.hedera.mirror.web3.service.ContractCallService;
 import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.viewmodel.ContractCallRequest;
@@ -148,7 +144,7 @@ class ContractController {
     @ResponseStatus(BAD_REQUEST)
     private Mono<GenericErrorResponse> invalidTxnError(final InvalidTransactionException e) {
         log.warn("Transaction error: {}", e.getMessage());
-        return errorResponse(e.getMessage(), e.getDetail(), StringUtils.EMPTY);
+        return errorResponse(e.getMessage(), e.getDetail(), e.getData());
     }
 
     @ExceptionHandler

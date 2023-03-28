@@ -25,13 +25,12 @@ import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 
 class ScheduleDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTransactionHandlerTest {
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new ScheduleDeleteTransactionHandler(entityIdService, entityListener, new RecordParserProperties());
+        return new ScheduleDeleteTransactionHandler(entityIdService, entityListener);
     }
 
     @Override

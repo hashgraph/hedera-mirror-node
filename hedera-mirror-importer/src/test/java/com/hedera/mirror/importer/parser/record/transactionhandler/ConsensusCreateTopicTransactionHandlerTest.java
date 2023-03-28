@@ -27,13 +27,12 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 
 import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 
 class ConsensusCreateTopicTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new ConsensusCreateTopicTransactionHandler(entityIdService, entityListener, new RecordParserProperties());
+        return new ConsensusCreateTopicTransactionHandler(entityIdService, entityListener);
     }
 
     @Override

@@ -49,7 +49,7 @@ class ContractCallTransactionHandler implements TransactionHandler {
     public EntityId getEntity(RecordItem recordItem) {
         ContractID contractIdBody = recordItem.getTransactionBody().getContractCall().getContractID();
         ContractID contractIdReceipt = recordItem.getTransactionRecord().getReceipt().getContractID();
-        return entityIdService.lookup(contractIdReceipt, contractIdBody);
+        return entityIdService.lookup(contractIdReceipt, contractIdBody).orElse(EntityId.EMPTY);
     }
 
     @Override

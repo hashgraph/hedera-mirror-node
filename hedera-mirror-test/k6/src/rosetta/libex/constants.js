@@ -1,5 +1,3 @@
-package com.hedera.mirror.importer.parser;
-
 /*-
  * ‌
  * Hedera Mirror Node
@@ -20,8 +18,10 @@ package com.hedera.mirror.importer.parser;
  * ‍
  */
 
-public enum PartialDataAction {
-    DEFAULT,
-    ERROR,
-    SKIP,
-}
+export const currencyHbar = {
+  symbol: 'HBAR',
+  decimals: 8,
+  metadata: {
+    issuer: 'Hedera',
+  },
+};

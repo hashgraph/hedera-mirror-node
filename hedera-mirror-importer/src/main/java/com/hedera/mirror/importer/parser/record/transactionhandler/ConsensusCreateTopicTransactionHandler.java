@@ -27,7 +27,6 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.domain.EntityIdService;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @Named
@@ -35,9 +34,8 @@ class ConsensusCreateTopicTransactionHandler extends AbstractEntityCrudTransacti
 
     private static final byte[] EMPTY = new byte[0];
 
-    ConsensusCreateTopicTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
-                                           RecordParserProperties recordParserProperties) {
-        super(entityIdService, entityListener, recordParserProperties, TransactionType.CONSENSUSCREATETOPIC);
+    ConsensusCreateTopicTransactionHandler(EntityIdService entityIdService, EntityListener entityListener) {
+        super(entityIdService, entityListener, TransactionType.CONSENSUSCREATETOPIC);
     }
 
     @Override
