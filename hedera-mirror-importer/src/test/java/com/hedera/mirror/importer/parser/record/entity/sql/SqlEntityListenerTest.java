@@ -81,7 +81,6 @@ import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.common.domain.transaction.NonFeeTransfer;
 import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.Transaction;
-import com.hedera.mirror.common.domain.transaction.TransactionHash;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;

@@ -63,13 +63,14 @@ public class TransactionHashBatchInserter implements BatchPersister {
     private final TransactionHashTxManager transactionManager;
 
     public TransactionHashBatchInserter(DataSource dataSource, MeterRegistry meterRegistry,
-                                        CommonParserProperties commonParserProperties) {
+                                        CommonParserProperties commonParserProperties, TransactionHashTxManager transactionHashTxManager) {
         this.shardedTableName = CaseFormat.UPPER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE,
                 TransactionHash.class.getSimpleName() + "_sharded");
         this.insertDurationMetric = Timer.builder("hedera.mirror.importer.parse.insert")
                 .description("Time to insert transactions into sharded table").tag("table", this.shardedTableName)
                 .register(meterRegistry);
         this.scheduler = Schedulers.newParallel(this.shardedTableName + "_shard_inserter", 8);
+        this.transactionManager = transactionHashTxManager;
 
         this.shardBatchInserters = IntStream.range(0, V1_SHARD_COUNT)
                 .boxed()
@@ -79,7 +80,6 @@ public class TransactionHashBatchInserter implements BatchPersister {
                                 meterRegistry,
                                 commonParserProperties,
                                 String.format("%s_%02d", shardedTableName, shard))));
-        this.transactionManager = new TransactionHashTxManager(dataSource);
     }
 
     @Override

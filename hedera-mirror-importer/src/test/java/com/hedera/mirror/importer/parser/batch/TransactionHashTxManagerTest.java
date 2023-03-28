@@ -27,17 +27,16 @@ import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.repository.TransactionHashRepository;
 
+import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.support.TransactionTemplate;
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.UUID;
 
@@ -47,10 +46,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.springframework.transaction.support.TransactionSynchronization.STATUS_COMMITTED;
-import static org.springframework.transaction.support.TransactionSynchronization.STATUS_ROLLED_BACK;
-import static org.springframework.transaction.support.TransactionSynchronization.STATUS_UNKNOWN;
 
 @EnabledIfV1
+@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class TransactionHashTxManagerTest extends IntegrationTest {
 
     private final JdbcTemplate jdbcTemplate;
@@ -58,17 +56,6 @@ class TransactionHashTxManagerTest extends IntegrationTest {
     private final TransactionHashTxManager transactionHashTxManager;
     private final TransactionHashRepository repository;
     private final DomainBuilder domainBuilder;
-
-    @Autowired
-    public TransactionHashTxManagerTest(DataSource dataSource, TransactionTemplate transactionTemplate,
-                                        TransactionHashRepository repository, DomainBuilder domainBuilder,
-                                        JdbcTemplate jdbcTemplate) {
-        this.transactionHashTxManager = new TransactionHashTxManager(dataSource);
-        this.transactionTemplate = transactionTemplate;
-        this.repository = repository;
-        this.domainBuilder = domainBuilder;
-        this.jdbcTemplate = jdbcTemplate;
-    }
 
     @Test
     @SneakyThrows
@@ -135,7 +122,7 @@ class TransactionHashTxManagerTest extends IntegrationTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"0", "1", "2"})
+    @ValueSource(ints = {0, 1, 2})
     @SneakyThrows
     void testCompletionStatus(int status) {
         var threadState = new TransactionHashTxManager.ThreadState(mock(Connection.class));
@@ -152,27 +139,19 @@ class TransactionHashTxManagerTest extends IntegrationTest {
         doThrow(new RuntimeException("Error thread")).when(errorThreadState.getConnection()).rollback();
 
         transactionHashTxManager.afterCompletion(status);
-        Arrays.asList(threadState, threadState2, threadState3).forEach(state -> assertThreadState(state, status));
-        assertThreadState(errorThreadState, Integer.MAX_VALUE);
+        Arrays.asList(threadState, threadState2, threadState3).forEach(state -> assertThreadState(state, status, state.getStatus()));
+        assertThreadState(errorThreadState, status, Integer.MAX_VALUE);
     }
 
     @SneakyThrows
-    void assertThreadState(TransactionHashTxManager.ThreadState threadState, int status) {
-        assertThat(threadState.getStatus()).isEqualTo(status);
+    void assertThreadState(TransactionHashTxManager.ThreadState threadState, int triedStatus, int outcomeStatus) {
+        assertThat(threadState.getStatus()).isEqualTo(outcomeStatus);
 
-        switch (status) {
-            case STATUS_COMMITTED -> {
-                verify(threadState.getConnection(), times(1)).commit();
-                assertThat(threadState.getStatus()).isEqualTo(STATUS_COMMITTED);
-            }
-            case STATUS_ROLLED_BACK -> {
-                verify(threadState.getConnection(), times(1)).rollback();
-                assertThat(threadState.getStatus()).isEqualTo(STATUS_ROLLED_BACK);
-            }
-            case STATUS_UNKNOWN -> {
-                verify(threadState.getConnection(), times(1)).rollback();
-                assertThat(threadState.getStatus()).isEqualTo(STATUS_UNKNOWN);
-            }
+        if (triedStatus == STATUS_COMMITTED) {
+            verify(threadState.getConnection(), times(1)).commit();
+        }
+        else {
+            verify(threadState.getConnection(), times(1)).rollback();
         }
     }
 }

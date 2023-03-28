@@ -29,8 +29,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.ToString;
 import org.springframework.jdbc.datasource.DataSourceUtils;
+import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
+import javax.inject.Named;
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.util.Collection;
@@ -42,12 +44,12 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @RequiredArgsConstructor
 @CustomLog
-@Getter
+@Named
 public class TransactionHashTxManager implements TransactionSynchronization {
-    private long itemCount;
-    private long recordTimestamp;
     private final Map<String, ThreadState> threadConnections = new ConcurrentHashMap<>();
     private final DataSource dataSource;
+    private long itemCount;
+    private long recordTimestamp;
     private String shardedTableName;
 
     @Override
@@ -150,6 +152,14 @@ public class TransactionHashTxManager implements TransactionSynchronization {
         Connection connection = DataSourceUtils.getConnection(dataSource);
         connection.setAutoCommit(false);
         return new ThreadState(connection);
+    }
+
+    Map<String, ThreadState> getThreadConnections() {
+        return threadConnections;
+    }
+
+    long getItemCount() {
+        return itemCount;
     }
 
     @Data

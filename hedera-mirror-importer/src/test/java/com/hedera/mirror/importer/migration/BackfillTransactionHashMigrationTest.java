@@ -26,7 +26,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.hedera.mirror.importer.TestUtils;
@@ -46,7 +45,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.common.domain.transaction.TransactionHash;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
