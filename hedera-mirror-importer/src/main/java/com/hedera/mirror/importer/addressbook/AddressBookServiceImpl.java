@@ -140,34 +140,30 @@ public class AddressBookServiceImpl implements AddressBookService {
         var nodes = new TreeSet<ConsensusNode>();
         var nodeStakes = new HashMap<Long, NodeStake>();
         ConsensusMode consensusMode = mirrorProperties.getConsensusMode();
+        var nodesInAddressBook = addressBook.getEntries().stream().map(AddressBookEntry::getNodeId)
+            .collect(Collectors.toSet());
 
+        var nodeStakeMaxTimestamp = new AtomicLong(0L);
         nodeStakeRepository.findLatest().forEach(nodeStake -> {
             if (consensusMode == ConsensusMode.EQUAL) {
               nodeStake.setStake(1L);
+            } else if (consensusMode != ConsensusMode.STAKE_IN_ADDRESS_BOOK ||
+                  nodesInAddressBook.contains(nodeStake.getNodeId())) {
+              totalStake.addAndGet(nodeStake.getStake());
             }
-            totalStake.addAndGet(nodeStake.getStake());
             nodeStakes.put(nodeStake.getNodeId(), nodeStake);
+            nodeStakeMaxTimestamp.getAndAccumulate(nodeStake.getConsensusTimestamp(), Math::max);
         });
 
         // For partial mirror nodes, node stake will provide a more accurate count
         long nodeCount = (consensusMode == ConsensusMode.STAKE_IN_ADDRESS_BOOK || nodeStakes.isEmpty()) ?
             addressBook.getNodeCount() : nodeStakes.size();
 
-        // if only including address book nodes in stake count, reset and readd only address book nodes' stakes.
-        if (consensusMode == ConsensusMode.STAKE_IN_ADDRESS_BOOK) {
-          long oldTotalStake = totalStake.get();
-          totalStake.set(0L);
-          addressBook.getEntries().forEach(e -> {
-              var nodeStake = nodeStakes.get(e.getNodeId());
-              if (nodeStake != null) {
-                totalStake.addAndGet(nodeStake.getStake());
-              }
-          });
-          long newTotalStake = totalStake.get();
-          if (oldTotalStake != newTotalStake) {
-            log.warn("Using address book with {}/{} nodes for node staking, total stake of {}/{}",
-                addressBook.getNodeCount(), nodeStakes.size(), newTotalStake, oldTotalStake);
-          }
+        // if only including address book nodes in stake count, warn if any nodes are excluded
+        if (consensusMode == ConsensusMode.STAKE_IN_ADDRESS_BOOK && addressBook.getNodeCount() != nodeStakes.size()) {
+            log.warn("Using address book {} with {} nodes and node stake {} with {} nodes",
+                addressBook.getStartConsensusTimestamp(), addressBook.getNodeCount(), nodeStakeMaxTimestamp.get(),
+                nodeStakes.size());
         }
 
         addressBook.getEntries().forEach(e -> {

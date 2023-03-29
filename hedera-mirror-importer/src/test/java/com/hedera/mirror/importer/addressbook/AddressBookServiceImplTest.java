@@ -39,12 +39,15 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.api.ListAssert;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.platform.commons.util.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -963,88 +966,74 @@ class AddressBookServiceImplTest extends IntegrationTest {
                 .containsExactly(0L, 1L, 2L, 3L);
     }
 
-    @Test
-    void getNodesWithNodeStake() {
+    @CsvSource(textBlock = """
+    STAKE_IN_ADDRESS_BOOK, 10000, 4, 40000
+    EQUAL, 1, 4, 4
+    """)
+    @ParameterizedTest
+    void getNodes(ConsensusMode mode, long stake, int nodeCount, long expectedTotalStake) {
         long timestamp = domainBuilder.timestamp();
-        var nodeStake0 = domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(0)).persist();
-        var nodeStake1 = domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(1)).persist();
-        var nodeStake2 = domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(2)).persist();
-        var nodeStake3 = domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(3)).persist();
-        long totalStake = nodeStake0.getStake() + nodeStake1.getStake() + nodeStake2.getStake() + nodeStake3.getStake();
+        var nodeId = new AtomicInteger(0);
+        for (int i = 0; i < nodeCount; i++) {
+            var nodeStake = domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp)
+                .nodeId(nodeId.getAndIncrement()).stake(stake)).persist();
+        }
+        mirrorProperties.setConsensusMode(mode);
 
-        // consensusMode == ConsensusMode.STAKE_IN_ADDRESS_BOOK (the default)
         assertThat(addressBookService.getNodes())
                 .hasSize(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT)
-                .allSatisfy(c -> assertThat(c).returns(totalStake, ConsensusNode::getTotalStake))
+                .allSatisfy(c -> assertThat(c).returns(expectedTotalStake, ConsensusNode::getTotalStake))
                 .allSatisfy(c -> assertThat(c.getPublicKey()).isNotNull())
-                .allMatch(c -> c.getStake() > 1L)
-                .extracting(ConsensusNode::getNodeId)
-                .containsExactly(0L, 1L, 2L, 3L);
-
-        // consensusMode == ConsensusMode.EQUAL (each node gets stake of 1L)
-        MirrorProperties otherMirrorProperties = new MirrorProperties();
-        otherMirrorProperties.setConsensusMode(ConsensusMode.EQUAL);
-        AddressBookService customAddressBookService = new AddressBookServiceImpl(addressBookRepository,
-                fileDataRepository, otherMirrorProperties, nodeStakeRepository, transactionTemplate);
-
-        assertThat(customAddressBookService.getNodes())
-                .hasSize(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT)
-                .allSatisfy(c -> assertThat(c).returns(4L, ConsensusNode::getTotalStake))
-                .allSatisfy(c -> assertThat(c.getPublicKey()).isNotNull())
-                .allMatch(c -> c.getStake() == 1L)
+                .allMatch(c -> c.getStake() == stake)
                 .extracting(ConsensusNode::getNodeId)
                 .containsExactly(0L, 1L, 2L, 3L);
     }
 
-    @Test
-    void getNodesWithNodeStakeCountMoreThanAddressBook() {
-        MirrorProperties otherMirrorProperties = new MirrorProperties();
-        otherMirrorProperties.setConsensusMode(ConsensusMode.STAKE);
-        AddressBookService customAddressBookService = new AddressBookServiceImpl(addressBookRepository,
-                fileDataRepository, otherMirrorProperties, nodeStakeRepository, transactionTemplate);
+    @CsvSource(textBlock = """
+    STAKE, 0, 5, 5
+    STAKE_IN_ADDRESS_BOOK, 0, 5, 4
+    """)
+    @ParameterizedTest
+    void getNodesWithNodeStateCountMoreThanAddressBook(ConsensusMode mode, long stake, int nodeCount,
+            long expectedTotalStake) {
         long timestamp = domainBuilder.timestamp();
-        domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(0).stake(0L)).persist();
-        domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(1).stake(0L)).persist();
-        domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(2).stake(0L)).persist();
-        domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(3).stake(0L)).persist();
-        domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(4).stake(0L)).persist();
+        var nodeId = new AtomicInteger(0);
+        for (int i = 0; i < nodeCount; i++) {
+          var nodeStake = domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp)
+              .nodeId(nodeId.getAndIncrement()).stake(stake)).persist();
+        }
+        mirrorProperties.setConsensusMode(mode);
 
-        assertThat(customAddressBookService.getNodes())
-                .hasSize(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT)
-                .allSatisfy(c -> assertThat(c).returns(5L, ConsensusNode::getTotalStake))
-                .allSatisfy(c -> assertThat(c.getPublicKey()).isNotNull())
-                .allMatch(c -> c.getStake() == 1L)
-                .extracting(ConsensusNode::getNodeId)
-                .containsExactly(0L, 1L, 2L, 3L);
-
-        // consensusMode == ConsensusMode.STAKE_IN_ADDRESS_BOOK (the default)
-        // here we only include nodes that are in the address book (which is of size only 4, hence total stake = 4)
         assertThat(addressBookService.getNodes())
                 .hasSize(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT)
-                .allSatisfy(c -> assertThat(c).returns(4L, ConsensusNode::getTotalStake))
                 .allSatisfy(c -> assertThat(c.getPublicKey()).isNotNull())
                 .allMatch(c -> c.getStake() == 1L)
-                .allMatch(c -> c.getTotalStake() == 4L)
+                .allMatch(c -> c.getTotalStake() == expectedTotalStake)
                 .allMatch(c -> c.getNodeAccountId().getEntityNum() - 3 == c.getNodeId())
                 .extracting(ConsensusNode::getNodeId)
                 .containsExactly(0L, 1L, 2L, 3L);
     }
 
-    @Test
-    void getNodesWithNodesNotInAddressBook() {
-        // consensusMode == ConsensusMode.STAKE_IN_ADDRESS_BOOK (the default)
+    @CsvSource(textBlock = """
+    STAKE_IN_ADDRESS_BOOK, 10000, 6, 40000, 10000
+    STAKE, 10000, 6, 60000, 10000
+    EQUAL, 10000, 6, 6, 1
+    """)
+    @ParameterizedTest
+    void getNodesWithNodesNotInAddressBook(ConsensusMode mode, long stake, int nodeCount,
+            long expectedTotalStake, long expectedNodeStake) {
         long timestamp = domainBuilder.timestamp();
-        domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(0).stake(10000L)).persist();
-        domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(1).stake(10000L)).persist();
-        domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(2).stake(10000L)).persist();
-        domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(3).stake(10000L)).persist();
-        domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(4).stake(10000L)).persist();
-        domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(5).stake(10000L)).persist();
+        var nodeId = new AtomicInteger(0);
+        for (int i = 0; i < nodeCount; i++) {
+          var nodeStake = domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp)
+              .nodeId(nodeId.getAndIncrement()).stake(stake)).persist();
+        }
+        mirrorProperties.setConsensusMode(mode);
 
         assertThat(addressBookService.getNodes())
                 .hasSize(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT)
-                .allMatch(c -> c.getStake() == 10000L)
-                .allMatch(c -> c.getTotalStake() == 40000L)
+                .allMatch(c -> c.getStake() == expectedNodeStake)
+                .allMatch(c -> c.getTotalStake() == expectedTotalStake)
                 .allMatch(c -> c.getNodeAccountId().getEntityNum() - 3 == c.getNodeId())
                 .allSatisfy(c -> assertThat(c.getPublicKey()).isNotNull())
                 .extracting(ConsensusNode::getNodeId)

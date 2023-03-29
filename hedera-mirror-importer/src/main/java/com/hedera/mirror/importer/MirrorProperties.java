@@ -40,7 +40,8 @@ import com.hedera.mirror.importer.util.Utility;
 @Validated
 @ConfigurationProperties("hedera.mirror.importer")
 public class MirrorProperties {
-    private ConsensusMode consensusMode = ConsensusMode.STAKE_IN_ADDRESS_BOOK; // see options at bottom of file
+    @NotNull
+    private ConsensusMode consensusMode = ConsensusMode.STAKE_IN_ADDRESS_BOOK;
 
     @NotNull
     private Path dataPath = Paths.get(".", "data");
