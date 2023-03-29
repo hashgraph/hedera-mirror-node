@@ -22,7 +22,6 @@ package com.hedera.mirror.importer.parser.record.entity;
 
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.SUCCESS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.from;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -60,7 +59,6 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.repository.ScheduleRepository;
 import com.hedera.mirror.importer.repository.TransactionRepository;
 import com.hedera.mirror.importer.repository.TransactionSignatureRepository;
@@ -313,13 +311,13 @@ class EntityRecordItemListenerScheduleTest extends AbstractEntityRecordItemListe
     @Test
     void unsupportedSignature() {
         SignatureMap signatureMap = SignatureMap.newBuilder().addSigPair(SignaturePair.newBuilder().build()).build();
-        assertThatThrownBy(() -> insertScheduleSign(SIGN_TIMESTAMP, signatureMap, SCHEDULE_ID))
-                .isInstanceOf(InvalidDatasetException.class)
-                .hasMessageContaining("Unsupported signature");
+        insertScheduleSign(SIGN_TIMESTAMP, signatureMap, SCHEDULE_ID);
 
         // verify
-        assertThat(transactionRepository.count()).isZero();
+        assertThat(transactionRepository.count()).isOne();
         assertThat(transactionSignatureRepository.count()).isZero();
+        assertThat(scheduleRepository.count()).isZero();
+        assertTransactionInRepository(SIGN_TIMESTAMP, false, SUCCESS);
     }
 
     @Test

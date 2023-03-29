@@ -18,25 +18,21 @@
  * ‍
  */
 
-import http from "k6/http";
+import http from 'k6/http';
 
-import { TestScenarioBuilder } from '../../lib/common.js';
-import { transactionListName, urlPrefix } from '../../lib/constants.js';
-import { isValidListResponse } from "./common.js";
-import { setupTestParameters } from "./bootstrapEnvParameters.js";
+import {isValidListResponse, RestTestScenarioBuilder} from '../libex/common.js';
+import {transactionListName} from '../libex/constants.js';
 
 const urlTag = '/transactions?transactionType={transactionType}';
 
-const { options, run } = new TestScenarioBuilder()
+const {options, run, setup} = new RestTestScenarioBuilder()
   .name('transactionsByTransactionType') // use unique scenario name among all tests
-  .tags({ url: urlTag })
+  .tags({url: urlTag})
   .request((testParameters) => {
-    const url = `${testParameters['BASE_URL']}${urlPrefix}/transactions?transactionType=CRYPTOTRANSFER&limit=${testParameters['DEFAULT_LIMIT']}&order=asc`;
+    const url = `${testParameters['BASE_URL_PREFIX']}/transactions?transactionType=CRYPTOTRANSFER&limit=${testParameters['DEFAULT_LIMIT']}&order=asc`;
     return http.get(url);
   })
   .check('Transactions by transaction type OK', (r) => isValidListResponse(r, transactionListName))
   .build();
 
-export { options, run };
-
-export const setup = setupTestParameters;
+export {options, run, setup};

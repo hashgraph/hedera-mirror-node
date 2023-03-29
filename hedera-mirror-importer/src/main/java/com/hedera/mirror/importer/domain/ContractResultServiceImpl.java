@@ -20,11 +20,12 @@ package com.hedera.mirror.importer.domain;
  * ‍
  */
 
+import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
+
 import com.google.common.base.Stopwatch;
 import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
-import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,7 +35,6 @@ import javax.inject.Named;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
-import org.apache.commons.codec.binary.Hex;
 
 import com.hedera.mirror.common.domain.contract.Contract;
 import com.hedera.mirror.common.domain.contract.ContractLog;
@@ -47,9 +47,7 @@ import com.hedera.mirror.common.domain.transaction.RecordFile;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hedera.mirror.common.exception.InvalidEntityException;
 import com.hedera.mirror.common.util.DomainUtils;
-import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.migration.SidecarContractMigration;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
@@ -72,6 +70,7 @@ public class ContractResultServiceImpl implements ContractResultService {
     private final TransactionHandlerFactory transactionHandlerFactory;
 
     @Override
+    @SuppressWarnings("java:S2259")
     public void process(@NonNull RecordItem recordItem, Transaction transaction) {
         if (!entityProperties.getPersist().isContracts()) {
             return;
@@ -95,7 +94,13 @@ public class ContractResultServiceImpl implements ContractResultService {
 
         // in pre-compile case transaction is not a contract type and entityId will be of a different type
         var contractId = isContractCreateOrCall(transactionBody) ? transaction.getEntityId() :
-                entityIdService.lookup(functionResult.getContractID());
+                entityIdService.lookup(functionResult.getContractID()).orElse(EntityId.EMPTY);
+        if (EntityId.isEmpty(contractId)) {
+            contractId = EntityId.EMPTY;
+            log.error(RECOVERABLE_ERROR + "Invalid contract id for contract result at {}", recordItem
+                    .getConsensusTimestamp());
+        }
+
         processContractResult(recordItem, contractId, functionResult, transaction, transactionHandler,
                 sidecarFailedInitcode);
     }
@@ -114,8 +119,8 @@ public class ContractResultServiceImpl implements ContractResultService {
         switch (action.getCallerCase()) {
             case CALLING_CONTRACT -> contractAction.setCaller(EntityId.of(action.getCallingContract()));
             case CALLING_ACCOUNT -> contractAction.setCaller(EntityId.of(action.getCallingAccount()));
-            default ->
-                    throw new InvalidDatasetException("Invalid caller for contract action: " + action.getCallerCase());
+            default -> log.error(RECOVERABLE_ERROR + "Invalid caller for contract action at {}: {}", consensusTimestamp,
+                    action.getCallerCase());
         }
 
         switch (action.getRecipientCase()) {
@@ -131,7 +136,8 @@ public class ContractResultServiceImpl implements ContractResultService {
             case ERROR -> contractAction.setResultData(DomainUtils.toBytes(action.getError()));
             case REVERT_REASON -> contractAction.setResultData(DomainUtils.toBytes(action.getRevertReason()));
             case OUTPUT -> contractAction.setResultData(DomainUtils.toBytes(action.getOutput()));
-            default -> throw new InvalidDatasetException("Invalid result data for contract action: " +
+            default -> log.error(RECOVERABLE_ERROR + "Invalid result data for contract action at {}: {}",
+                    consensusTimestamp,
                     action.getResultDataCase());
         }
 
@@ -204,15 +210,14 @@ public class ContractResultServiceImpl implements ContractResultService {
     }
 
     private void processContractLogs(ContractFunctionResult functionResult, ContractResult contractResult,
-            byte[] transactionHash, Integer transactionIndex) {
+                                     byte[] transactionHash, Integer transactionIndex) {
         for (int index = 0; index < functionResult.getLogInfoCount(); ++index) {
-            ContractLoginfo contractLoginfo = functionResult.getLogInfo(index);
-
+            var contractLoginfo = functionResult.getLogInfo(index);
             ContractLog contractLog = new ContractLog();
             EntityId contractId = EntityId.of(contractResult.getContractId(), EntityType.CONTRACT);
             contractLog.setBloom(DomainUtils.toBytes(contractLoginfo.getBloom()));
             contractLog.setConsensusTimestamp(contractResult.getConsensusTimestamp());
-            contractLog.setContractId(lookup(contractId, contractLoginfo.getContractID()));
+            contractLog.setContractId(EntityId.of(contractLoginfo.getContractID()));
             contractLog.setData(DomainUtils.toBytes(contractLoginfo.getData()));
             contractLog.setIndex(index);
             contractLog.setRootContractId(contractId);
@@ -256,7 +261,7 @@ public class ContractResultServiceImpl implements ContractResultService {
         List<Long> createdContractIds = new ArrayList<>();
         boolean persist = shouldPersistCreatedContractIDs(recordItem);
         for (ContractID createdContractId : functionResult.getCreatedContractIDsList()) {
-            EntityId contractId = entityIdService.lookup(createdContractId);
+            var contractId = entityIdService.lookup(createdContractId).orElse(EntityId.EMPTY);
             if (!EntityId.isEmpty(contractId)) {
                 createdContractIds.add(contractId.getId());
                 // The parent contract ID can also sometimes appear in the created contract IDs list, so exclude it
@@ -380,50 +385,4 @@ public class ContractResultServiceImpl implements ContractResultService {
                 recordItem.getHapiVersion().isLessThan(RecordFile.HAPI_VERSION_0_23_0);
     }
 
-    /**
-     * This method works around a services issue that occurs when events emitted by a CREATE2 contract produce an
-     * invalid ContractID. The EVM generated logs contain the 20 byte CREATE2 EVM address and services does not properly
-     * convert this back to the 'shard.realm.num' format that should always be present in the record. A similar issue
-     * occurs for state changes.
-     * <p>
-     * We work around this issue by converting the invalid 'shard.realm.num' format back to an EVM address and look it
-     * up in the database. If the invalid contract ID is produced by a CREATE2 constructor invocation, it won't be
-     * present in the database yet and our only recourse is to fall back to using the root contract ID.
-     * <p>
-     * This issue never made it to mainnet, so this code should be deleted after testnet is reset.
-     *
-     * @param rootContractId The contract create or call that initiated the transaction.
-     * @param contractId     The contract ID that appears somewhere in the ContractFunctionResult.
-     * @return The converted entity ID.
-     */
-    private EntityId lookup(EntityId rootContractId, ContractID contractId) {
-        try {
-            // We won't always get a negative or very large number to cause an InvalidEntityException
-            if (contractId.getShardNum() != 0 || contractId.getRealmNum() != 0) {
-                return fallbackLookup(rootContractId, contractId);
-            }
-            return entityIdService.lookup(contractId);
-        } catch (RuntimeException e) {
-            if (e.getCause() instanceof InvalidEntityException) {
-                return fallbackLookup(rootContractId, contractId);
-            }
-            throw e;
-        }
-    }
-
-    private EntityId fallbackLookup(EntityId rootContractId, ContractID contractId) {
-        byte[] evmAddress = DomainUtils.toEvmAddress(contractId);
-        log.warn("Invalid ContractID {}.{}.{}. Attempting conversion to EVM address: {}",
-                contractId.getShardNum(), contractId.getRealmNum(), contractId.getContractNum(),
-                Hex.encodeHexString(evmAddress));
-
-        var evmAddressId = ContractID.newBuilder()
-                .setShardNum(rootContractId.getShardNum())
-                .setRealmNum(rootContractId.getRealmNum())
-                .setEvmAddress(DomainUtils.fromBytes(evmAddress))
-                .build();
-
-        var entityId = entityIdService.lookup(evmAddressId);
-        return !EntityId.isEmpty(entityId) ? entityId : rootContractId;
-    }
 }

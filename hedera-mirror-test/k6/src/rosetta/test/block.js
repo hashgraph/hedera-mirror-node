@@ -18,10 +18,10 @@
  * ‍
  */
 
-import http from "k6/http";
+import http from 'k6/http';
 
 import {TestScenarioBuilder} from '../../lib/common.js';
-import {setupTestParameters} from "./bootstrapEnvParameters.js";
+import {setupTestParameters} from '../libex/parameters.js';
 
 const urlTag = '/rosetta/block';
 

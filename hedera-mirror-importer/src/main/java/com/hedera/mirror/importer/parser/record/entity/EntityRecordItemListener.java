@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.parser.record.entity;
  * ‍
  */
 
+import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
+
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnknownFieldSet;
@@ -97,13 +99,10 @@ import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.domain.ContractResultService;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.domain.TransactionFilterFields;
-import com.hedera.mirror.importer.exception.AliasNotFoundException;
 import com.hedera.mirror.importer.exception.ImporterException;
-import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy;
 import com.hedera.mirror.importer.parser.record.RecordItemListener;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
 import com.hedera.mirror.importer.repository.FileDataRepository;
@@ -122,7 +121,6 @@ public class EntityRecordItemListener implements RecordItemListener {
     private final EntityProperties entityProperties;
     private final FileDataRepository fileDataRepository;
     private final NonFeeTransferExtractionStrategy nonFeeTransfersExtractor;
-    private final RecordParserProperties parserProperties;
     private final TransactionHandlerFactory transactionHandlerFactory;
 
     @Override
@@ -137,7 +135,8 @@ public class EntityRecordItemListener implements RecordItemListener {
         try {
             entityId = transactionHandler.getEntity(recordItem);
         } catch (InvalidEntityException e) { // transaction can have invalid topic/contract/file id
-            log.warn("Invalid entity encountered for consensusTimestamp {} : {}", consensusTimestamp, e.getMessage());
+            log.error(RECOVERABLE_ERROR + "Invalid entity encountered for consensusTimestamp {} : {}",
+                    consensusTimestamp, e.getMessage());
             entityId = EntityId.EMPTY;
         }
 
@@ -293,27 +292,14 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
 
         var body = recordItem.getTransactionBody();
-        var partialDataAction = parserProperties.getPartialDataAction();
         var transactionRecord = recordItem.getTransactionRecord();
         for (var aa : nonFeeTransfersExtractor.extractNonFeeTransfers(body, transactionRecord)) {
-            var entityId = EntityId.EMPTY;
             if (aa.getAmount() != 0) {
-                try {
-                    entityId = entityIdService.lookup(aa.getAccountID());
-                } catch (AliasNotFoundException ex) {
-                    switch (partialDataAction) {
-                        case DEFAULT:
-                            log.warn("Setting non-fee transfer account to default value due to partial data issue");
-                            break;
-                        case ERROR:
-                            throw ex;
-                        case SKIP:
-                            log.warn("Skipping non-fee transfer due to partial data issue");
-                            continue;
-                        default:
-                            log.warn("Unsupported partial data action");
-                            break;
-                    }
+                var entityId = entityIdService.lookup(aa.getAccountID()).orElse(EntityId.EMPTY);
+                if (EntityId.isEmpty(entityId)) {
+                    log.error(RECOVERABLE_ERROR + "Invalid nonFeeTransfer entity id at {}",
+                            recordItem.getConsensusTimestamp());
+                    continue;
                 }
 
                 NonFeeTransfer nonFeeTransfer = new NonFeeTransfer();
@@ -991,10 +977,11 @@ public class EntityRecordItemListener implements RecordItemListener {
         updateToken(token, modifiedTimestamp);
     }
 
+    @SuppressWarnings("java:S135")
     private void insertTransactionSignatures(EntityId entityId, long consensusTimestamp,
                                              List<SignaturePair> signaturePairList) {
         Set<ByteString> publicKeyPrefixes = new HashSet<>();
-        signaturePairList.forEach(signaturePair -> {
+        for (SignaturePair signaturePair : signaturePairList) {
             ByteString prefix = signaturePair.getPubKeyPrefix();
             ByteString signature = null;
             var signatureCase = signaturePair.getSignatureCase();
@@ -1033,11 +1020,15 @@ public class EntityRecordItemListener implements RecordItemListener {
                     }
 
                     if (signature == null) {
-                        throw new InvalidDatasetException("Unsupported signature: " + unknownFields);
+                        log.error(RECOVERABLE_ERROR + "Unsupported signature at {}: {}", consensusTimestamp,
+                                unknownFields);
+                        continue;
                     }
                     break;
                 default:
-                    throw new InvalidDatasetException("Unsupported signature: " + signaturePair.getSignatureCase());
+                    log.error(RECOVERABLE_ERROR + "Unsupported signature case at {}: {}", consensusTimestamp,
+                            signaturePair.getSignatureCase());
+                    continue;
             }
 
             // Handle potential public key prefix collisions by taking first occurrence only ignoring duplicates
@@ -1050,7 +1041,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                 transactionSignature.setType(type);
                 entityListener.onTransactionSignature(transactionSignature);
             }
-        });
+        }
     }
 
     private void onScheduledTransaction(RecordItem recordItem) {
@@ -1127,8 +1118,9 @@ public class EntityRecordItemListener implements RecordItemListener {
                     chargedInAttachedToken = false;
                     break;
                 default:
-                    log.error("Invalid CustomFee FeeCase {}", feeCase);
-                    throw new InvalidDatasetException(String.format("Invalid CustomFee FeeCase %s", feeCase));
+                    log.error(RECOVERABLE_ERROR + "Invalid CustomFee FeeCase at {}: {}", consensusTimestamp,
+                            feeCase);
+                    continue;
             }
 
             if (isTokenCreate && chargedInAttachedToken) {

@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.parser;
+package com.hedera.mirror.web3.repository;
 
 /*-
  * ‌
@@ -20,8 +20,16 @@ package com.hedera.mirror.importer.parser;
  * ‍
  */
 
-public enum PartialDataAction {
-    DEFAULT,
-    ERROR,
-    SKIP,
+import java.util.List;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.CrudRepository;
+
+import com.hedera.mirror.common.domain.transaction.CustomFee;
+import com.hedera.mirror.common.domain.transaction.CustomFee.Id;
+
+public interface CustomFeeRepository extends CrudRepository<CustomFee, Id> {
+
+    @Query(value = "select * from custom_fee where token_id = ?1 and created_timestamp = (select created_timestamp from custom_fee where token_id = ?1 order by created_timestamp desc limit 1)",
+            nativeQuery = true)
+    List<CustomFee> findByTokenId(final Long tokenId);
 }
