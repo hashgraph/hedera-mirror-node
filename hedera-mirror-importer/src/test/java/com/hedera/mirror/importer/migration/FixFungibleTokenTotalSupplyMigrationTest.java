@@ -76,12 +76,10 @@ class FixFungibleTokenTotalSupplyMigrationTest extends IntegrationTest {
                 .persist();
         var token4EntityId = token4.getTokenId().getTokenId();
 
-
         domainBuilder.recordFile()
                 .customize(r -> r.consensusStart(plus(lastTimestamp, Duration.ofSeconds(-2)))
                         .consensusEnd(lastTimestamp))
                 .persist();
-
         var accountBalanceTimestamp = plus(lastTimestamp, Duration.ofMinutes(-5));
         domainBuilder.accountBalanceFile()
                 .customize(abf -> abf.consensusTimestamp(accountBalanceTimestamp))
