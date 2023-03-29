@@ -15,6 +15,7 @@
  */
 package com.hedera.services.utils;
 
+import static com.hedera.mirror.web3.evm.account.AccountAccessorImpl.EVM_ADDRESS_SIZE;
 import static java.lang.System.arraycopy;
 
 import com.google.common.primitives.Ints;
@@ -23,9 +24,10 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.Arrays;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 
 public final class EntityIdUtils {
-
 
     private EntityIdUtils() {
         throw new UnsupportedOperationException("Utility Class");
@@ -37,6 +39,14 @@ public final class EntityIdUtils {
                 .setShardNum(id.getShardNum())
                 .setContractNum(id.getAccountNum())
                 .build();
+    }
+
+    public static byte[] asEvmAddress(final ContractID id) {
+        if (id.getEvmAddress().size() == EVM_ADDRESS_SIZE) {
+            return id.getEvmAddress().toByteArray();
+        } else {
+            return asEvmAddress((int) id.getShardNum(), id.getRealmNum(), id.getContractNum());
+        }
     }
 
     public static byte[] asEvmAddress(final AccountID id) {
@@ -75,5 +85,33 @@ public final class EntityIdUtils {
                 .setRealmNum(realmFromEvmAddress(bytes))
                 .setAccountNum(numFromEvmAddress(bytes))
                 .build();
+    }
+
+    public static ContractID contractIdFromEvmAddress(final byte[] bytes) {
+        return ContractID.newBuilder()
+                .setShardNum(Ints.fromByteArray(Arrays.copyOfRange(bytes, 0, 4)))
+                .setRealmNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 4, 12)))
+                .setContractNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 12, 20)))
+                .build();
+    }
+
+    public static TokenID tokenIdFromEvmAddress(final byte[] bytes) {
+        return TokenID.newBuilder()
+                .setShardNum(Ints.fromByteArray(Arrays.copyOfRange(bytes, 0, 4)))
+                .setRealmNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 4, 12)))
+                .setTokenNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 12, 20)))
+                .build();
+    }
+
+    public static Address asTypedEvmAddress(final AccountID id) {
+        return Address.wrap(Bytes.wrap(asEvmAddress(id)));
+    }
+
+    public static Address asTypedEvmAddress(final ContractID id) {
+        return Address.wrap(Bytes.wrap(asEvmAddress(id)));
+    }
+
+    public static Address asTypedEvmAddress(final TokenID id) {
+        return Address.wrap(Bytes.wrap(asEvmAddress(id)));
     }
 }

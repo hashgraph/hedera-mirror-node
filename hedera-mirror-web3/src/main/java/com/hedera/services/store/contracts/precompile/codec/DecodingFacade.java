@@ -15,6 +15,7 @@
  */
 package com.hedera.services.store.contracts.precompile.codec;
 
+import static com.hedera.node.app.service.evm.store.contracts.utils.DescriptorUtils.ADDRESS_BYTES_LENGTH;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.ARRAY_BRACKETS;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.EXPIRY;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.TOKEN_KEY;
@@ -22,12 +23,15 @@ import static com.hedera.services.utils.EntityIdUtils.accountIdFromEvmAddress;
 
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.TokenID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.UnaryOperator;
 import javax.inject.Singleton;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 
 import com.hedera.services.utils.EntityIdUtils;
 
@@ -103,5 +107,15 @@ public class DecodingFacade {
             final byte[] leftPaddedAddress, @NonNull final UnaryOperator<byte[]> aliasResolver) {
         final var addressOrAlias = Arrays.copyOfRange(leftPaddedAddress, ADDRESS_SKIP_BYTES_LENGTH, WORD_LENGTH);
         return accountIdFromEvmAddress(aliasResolver.apply(addressOrAlias));
+    }
+
+    public static TokenID convertAddressBytesToTokenID(final byte[] addressBytes) {
+        final var address = Address.wrap(Bytes.wrap(addressBytes)
+                .slice(ADDRESS_SKIP_BYTES_LENGTH, ADDRESS_BYTES_LENGTH));
+        return EntityIdUtils.tokenIdFromEvmAddress(address.toArray());
+    }
+
+    public static Bytes getSlicedAddressBytes(byte[] addressBytes) {
+        return Bytes.wrap(addressBytes).slice(ADDRESS_SKIP_BYTES_LENGTH, ADDRESS_BYTES_LENGTH);
     }
 }

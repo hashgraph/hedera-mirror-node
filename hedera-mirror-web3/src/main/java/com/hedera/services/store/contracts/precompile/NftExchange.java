@@ -22,7 +22,6 @@ import com.hederahashgraph.api.proto.java.TokenID;
 public class NftExchange {
 
     private final long serialNo;
-
     private final TokenID tokenType;
     private final AccountID sender;
     private final AccountID receiver;
