@@ -50,19 +50,19 @@ class TokenKeyWrapperTest {
         assertTrue(tokenKeyWrapper.isUsedForFreezeKey());
 
         tokenKeyWrapper = new TokenKeyWrapper(
-                8, new KeyValueWrapper(false, null, new byte[ED25519_BYTE_LENGTH], new byte[1], null));
+                8, new KeyValueWrapper(false, null, new byte[ED25519_BYTE_LENGTH], new byte[1], contractId));
         assertTrue(tokenKeyWrapper.isUsedForWipeKey());
 
         tokenKeyWrapper = new TokenKeyWrapper(
-                16, new KeyValueWrapper(false, null, new byte[1], new byte[] {},  contractId));
+                16, new KeyValueWrapper(false, null, new byte[] {}, new byte[ECDSA_SECP256K1_COMPRESSED_KEY_LENGTH - 1],  contractId));
         assertTrue(tokenKeyWrapper.isUsedForSupplyKey());
 
         tokenKeyWrapper = new TokenKeyWrapper(
-                32, new KeyValueWrapper(false, null, new byte[ED25519_BYTE_LENGTH], new byte[] {}, null));
+                32, new KeyValueWrapper(false, contractId, new byte[ED25519_BYTE_LENGTH], new byte[] {}, contractId));
         assertTrue(tokenKeyWrapper.isUsedForFeeScheduleKey());
 
         tokenKeyWrapper = new TokenKeyWrapper(
-                64, new KeyValueWrapper(false, null, new byte[ED25519_BYTE_LENGTH], new byte[] {}, null));
+                64, new KeyValueWrapper(false, contractId, new byte[ED25519_BYTE_LENGTH], new byte[] {}, null));
         assertTrue(tokenKeyWrapper.isUsedForPauseKey());
     }
 }
