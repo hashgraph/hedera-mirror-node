@@ -482,7 +482,7 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertFalse(deleted);
         assertFalse(defaultKycStatus);
         assertFalse(pauseStatus);
-        assertThat(fixedFees).isEmpty();
+        baseFixedFeeCheck(fixedFees);
         assertThat(fractionalFees).isEmpty();
         assertThat(royaltyFees).isEmpty();
         assertThat(ledgerId).isNotBlank();
@@ -905,6 +905,16 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertFalse(response.getResultAsBoolean());
     }
 
+    private void baseFixedFeeCheck(Tuple[] fixedFees) {
+        assertThat(fixedFees).isNotEmpty();
+        Tuple fixedFee = fixedFees[0];
+        assertThat((long) fixedFee.get(0)).isEqualTo(10);
+        assertThat(fixedFee.get(1).toString()).isEqualTo(ZERO_ADDRESS);
+        assertTrue((boolean) fixedFee.get(2));
+        assertFalse((boolean) fixedFee.get(3));
+        assertThat(fixedFee.get(4).toString().toLowerCase()).isEqualTo("0x"+contractClient.getClientAddress().toLowerCase());
+    }
+
     @Then("Get custom fees for fungible token")
     public void getCustomFeesForFungibleToken() throws Exception {
         ContractCallResponse response = mirrorClient.contractsCall(
@@ -913,15 +923,27 @@ public class PrecompileContractFeature extends AbstractFeature {
                 contractClient.getClientAddress()
         );
         Tuple result = decodeFunctionResult("getCustomFeesForToken", response);
+        assertThat(result).isNotEmpty();
+        baseFixedFeeCheck(result.get(0));
+        Tuple[] fractionalFees = result.get(1);
+        Tuple[] royaltyFees = result.get(2);
+        assertThat(fractionalFees).isEmpty();
+        assertThat(royaltyFees).isEmpty();
     }
 
     @Then("Get custom fees for non fungible token")
     public void getCustomFeesForNonFungibleToken() throws Exception {
         ContractCallResponse response = mirrorClient.contractsCall(
-                GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR + to32BytesString(tokenIds.get(0).toSolidityAddress()),
+                GET_CUSTOM_FEES_FOR_TOKEN_SELECTOR + to32BytesString(tokenIds.get(1).toSolidityAddress()),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
         Tuple result = decodeFunctionResult("getCustomFeesForToken", response);
+        assertThat(result).isNotEmpty();
+        baseFixedFeeCheck(result.get(0));
+        Tuple[] fractionalFees = result.get(1);
+        Tuple[] royaltyFees = result.get(2);
+        assertThat(fractionalFees).isEmpty();
+        assertThat(royaltyFees).isEmpty();
     }
 }
