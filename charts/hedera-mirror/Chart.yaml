@@ -1,5 +1,5 @@
 apiVersion: v2
-appVersion: 0.77.0-rc3
+appVersion: 0.77.0
 dependencies:
   - alias: citus
     condition: citus.enabled
@@ -75,4 +75,4 @@ maintainers:
 name: hedera-mirror
 sources:
   - https://github.com/hashgraph/hedera-mirror-node
-version: 0.77.0-rc3
+version: 0.77.0
