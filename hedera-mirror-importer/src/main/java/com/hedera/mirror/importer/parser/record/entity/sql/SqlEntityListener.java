@@ -74,6 +74,7 @@ import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionHash;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.ParserException;
@@ -485,12 +486,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     public void onTransaction(Transaction transaction) throws ImporterException {
         transactions.add(transaction);
 
-        if (entityProperties.getPersist().isTransactionHash()) {
-            transactionHashes.add(TransactionHash.builder()
-                    .consensusTimestamp(transaction.getConsensusTimestamp())
-                    .hash(transaction.getTransactionHash())
-                    .payerAccountId(transaction.getPayerAccountId().getId())
-                    .build());
+        if (entityProperties.getPersist().shouldPersistTransactionHash(TransactionType.of(transaction.getType()))) {
+            transactionHashes.add(transaction.toTransactionHash());
         }
 
         if (transactions.size() == sqlProperties.getBatchSize()) {

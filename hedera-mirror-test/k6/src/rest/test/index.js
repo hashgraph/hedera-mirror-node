@@ -74,7 +74,6 @@ import * as transactions from './transactions.js';
 import * as transactionsAccountId from './transactionsAccountId.js';
 import * as transactionsHash from './transactionsHash.js';
 import * as transactionsId from './transactionsId.js';
-import * as transactionsIdStateproof from './transactionsIdStateproof.js';
 import * as transactionsTransactionTypeAscending from './transactionsTransactionTypeAscending.js';
 
 // add test modules here
@@ -132,10 +131,9 @@ const tests = {
   transactionsAccountId,
   transactionsHash,
   transactionsId,
-  transactionsIdStateproof,
   transactionsTransactionTypeAscending,
 };
 
-const {funcs, options, scenarioDurationGauge, scenarios} = getSequentialTestScenarios(tests);
+const {funcs, options, requiredParameters, scenarioDurationGauge, scenarios} = getSequentialTestScenarios(tests);
 
-export {funcs, options, scenarioDurationGauge, scenarios};
+export {funcs, options, requiredParameters, scenarioDurationGauge, scenarios};

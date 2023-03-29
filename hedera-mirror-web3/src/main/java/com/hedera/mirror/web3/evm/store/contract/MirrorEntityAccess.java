@@ -22,7 +22,7 @@ package com.hedera.mirror.web3.evm.store.contract;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hedera.mirror.common.util.DomainUtils.fromBytes;
-import static com.hedera.mirror.common.util.DomainUtils.fromEvmAddress;
+import static com.hedera.mirror.web3.evm.utils.EvmTokenUtils.entityIdNumFromEvmAddress;
 import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.isMirror;
 
 import com.google.protobuf.ByteString;
@@ -121,7 +121,7 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
     public Optional<Entity> findEntity(final Address address) {
         final var addressBytes = address.toArrayUnsafe();
         if (isMirror(addressBytes)) {
-            final var entityId = fromEvmAddress(addressBytes).getId();
+            final var entityId = entityIdNumFromEvmAddress(address);
             return entityRepository.findByIdAndDeletedIsFalse(entityId);
         } else {
             return entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes);
@@ -131,7 +131,7 @@ public class MirrorEntityAccess implements HederaEvmEntityAccess {
     private Long fetchEntityId(final Address address) {
         final var addressBytes = address.toArrayUnsafe();
         if (isMirror(addressBytes)) {
-            return fromEvmAddress(addressBytes).getId();
+            return entityIdNumFromEvmAddress(address);
         }
 
         return entityRepository.findByEvmAddressAndDeletedIsFalse(addressBytes)
