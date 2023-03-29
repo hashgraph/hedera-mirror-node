@@ -22,10 +22,14 @@ package com.hedera.mirror.importer.migration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.stream.Stream;
+
+import com.hedera.mirror.importer.TestUtils;
+
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.AfterEach;
@@ -35,18 +39,19 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
-import com.hedera.mirror.importer.EnabledIfV1;
+import com.hedera.mirror.common.domain.transaction.TransactionHash;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
 import com.hedera.mirror.importer.config.Owner;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.repository.TransactionHashRepository;
 
-@EnabledIfV1
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
 class BackfillTransactionHashMigrationTest extends IntegrationTest {
@@ -58,10 +63,14 @@ class BackfillTransactionHashMigrationTest extends IntegrationTest {
     private final @Owner JdbcTemplate jdbcTemplate;
     private final MirrorProperties mirrorProperties;
     private final TransactionHashRepository transactionHashRepository;
+    private final Environment environment;
 
     private Set<TransactionType> defaultTransactionHashTypes;
     private BackfillTransactionHashMigration migration;
     private MigrationProperties migrationProperties;
+
+    @Value("#{environment.acceptsProfiles('v2')}")
+    private boolean isV2;
 
     @BeforeEach
     void setup() {
@@ -70,7 +79,7 @@ class BackfillTransactionHashMigrationTest extends IntegrationTest {
         migrationProperties = new MigrationProperties();
         migrationProperties.getParams().put("startTimestamp", Long.valueOf(DEFAULT_START_TIMESTAMP).toString());
         mirrorProperties.getMigration().put(MIGRATION_NAME, migrationProperties);
-        migration = new BackfillTransactionHashMigration(entityProperties, jdbcTemplate, mirrorProperties);
+        migration = new BackfillTransactionHashMigration(entityProperties, jdbcTemplate, mirrorProperties, environment);
     }
 
     @AfterEach
@@ -81,7 +90,7 @@ class BackfillTransactionHashMigrationTest extends IntegrationTest {
     @Test
     void empty() {
         runMigration();
-        assertThat(transactionHashRepository.findAll()).isEmpty();
+        assertTransactionHashes(Collections.emptyList());
     }
 
     @ParameterizedTest
@@ -102,7 +111,7 @@ class BackfillTransactionHashMigrationTest extends IntegrationTest {
         runMigration();
 
         // then
-        assertThat(transactionHashRepository.findAll()).containsExactlyInAnyOrderElementsOf(expectedTransactionHashes);
+        assertTransactionHashes(expectedTransactionHashes);
     }
 
     @Test
@@ -176,7 +185,7 @@ class BackfillTransactionHashMigrationTest extends IntegrationTest {
     @Test
     void migrateWithCaseInsensitiveStartTimestamp() {
         // given
-        domainBuilder.transactionHash().persist();
+        persistTransactionHash();
         migrationProperties.getParams().remove("startTimestamp");
         migrationProperties.getParams().put("STARTTIMESTAMP", Long.valueOf(DEFAULT_START_TIMESTAMP).toString());
         var transaction = domainBuilder.transaction()
@@ -188,13 +197,13 @@ class BackfillTransactionHashMigrationTest extends IntegrationTest {
         runMigration();
 
         // then
-        assertThat(transactionHashRepository.findAll()).containsExactly(expected);
+        assertTransactionHashes(Collections.singleton(expected));
     }
 
     @Test
     void migrateWhenTableNotEmpty() {
         // given
-        domainBuilder.transactionHash().persist();
+        persistTransactionHash();
         var transaction = domainBuilder.transaction()
                 .customize(t -> t.consensusTimestamp(DEFAULT_START_TIMESTAMP))
                 .persist();
@@ -204,7 +213,22 @@ class BackfillTransactionHashMigrationTest extends IntegrationTest {
         runMigration();
 
         // then
-        assertThat(transactionHashRepository.findAll()).containsExactly(expected);
+        assertTransactionHashes(Collections.singleton(expected));
+    }
+
+    private void persistTransactionHash() {
+        var hashWrapper = domainBuilder.transactionHash();
+        if (isV2) {
+            hashWrapper.persist();
+        }
+        else {
+            var hash = hashWrapper.get();
+            TestUtils.insertIntoTransactionHashSharded(jdbcTemplate, hash);
+        }
+    }
+
+    private void assertTransactionHashes(Collection<TransactionHash> expected) {
+        assertThat(transactionHashRepository.findAll()).containsExactlyInAnyOrderElementsOf(expected);
     }
 
     @SneakyThrows
