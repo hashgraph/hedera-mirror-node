@@ -32,11 +32,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hedera.mirror.common.domain.balance.TokenBalance;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
-import com.hedera.mirror.importer.EnabledIfV1;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.repository.TokenRepository;
 
-@EnabledIfV1
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Tag("migration")
 class FixFungibleTokenTotalSupplyMigrationTest extends IntegrationTest {

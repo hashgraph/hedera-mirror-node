@@ -39,12 +39,16 @@ public class FixFungibleTokenTotalSupplyMigration extends RepeatableMigration {
               select max(consensus_timestamp) timestamp
               from account_balance_file
               where consensus_timestamp <= (select max(consensus_end) from record_file)
+            ), token_balance_sum as (
+              select token_id, sum(balance) amount
+              from token_balance
+              where consensus_timestamp = (select timestamp from snapshot_timestamp)
+              group by token_id
             ), initial as (
-              select tb.token_id, sum(tb.balance) amount
-              from token_balance tb
+              select tb.*
+              from token_balance_sum tb
               join token tk on tk.token_id = tb.token_id
-              where tb.consensus_timestamp = (select timestamp from snapshot_timestamp) and tk.type = 'FUNGIBLE_COMMON'
-              group by tb.token_id
+              where tk.type = 'FUNGIBLE_COMMON'
             ), change as (
               select token_id, sum(amount) amount
               from token_transfer
