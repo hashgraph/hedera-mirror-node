@@ -20,9 +20,13 @@ package com.hedera.mirror.web3.repository;
  * ‍
  */
 
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_TOKEN;
+
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.common.domain.token.AbstractTokenAccount.Id;
 import com.hedera.mirror.common.domain.token.TokenAccount;
 
+@Cacheable(cacheNames = "token_account", cacheManager = CACHE_MANAGER_TOKEN , unless = "#result == null")
 public interface TokenAccountRepository extends CrudRepository<TokenAccount, Id> {}
