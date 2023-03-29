@@ -23,7 +23,6 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.Arrays;
-import org.hyperledger.besu.datatypes.Address;
 
 public final class EntityIdUtils {
 

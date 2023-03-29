@@ -37,7 +37,7 @@ import com.esaulpaugh.headlong.abi.TypeFactory;
 import org.apache.tuweni.bytes.Bytes;
 import org.junit.jupiter.api.Test;
 
-public class DecodingFacadeTest {
+class DecodingFacadeTest {
 
     private static final String CREATE_NON_FUNGIBLE_TOKEN_WITH_FEES_STRING = "createNonFungibleTokenWithCustomFees(";
     private static final ABIType<Tuple> TOKEN_CREATE_NON_FUNGIBLE_WITH_FEES_DECODER = TypeFactory.create("("
