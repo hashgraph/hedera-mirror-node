@@ -1,7 +1,7 @@
-@contractbase @fullsuite
+@acceptance @contractbase @fullsuite
 Feature: ERC Contract Base Coverage Feature
 
-    @web3
+    @web3 @erc
     Scenario Outline: Validate ERC Contract
         Given I successfully create an erc contract from contract bytes with balance 0
         Then I create a new token with freeze status 2 and kyc status 1

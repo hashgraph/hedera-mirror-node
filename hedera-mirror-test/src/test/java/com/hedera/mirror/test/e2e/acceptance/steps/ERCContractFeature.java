@@ -20,8 +20,6 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
  * ‍
  */
 
-import static com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse.convertContractCallResponseToAddress;
-import static com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse.convertContractCallResponseToNum;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -29,18 +27,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-
-import com.hedera.hashgraph.sdk.CustomFee;
-import com.hedera.hashgraph.sdk.FileId;
-import com.hedera.hashgraph.sdk.Hbar;
-import com.hedera.hashgraph.sdk.NftId;
-import com.hedera.hashgraph.sdk.TokenType;
-import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
-import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
-import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
-
-import com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse;
-
 import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -49,232 +35,234 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.codec.DecoderException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Retryable;
 import org.springframework.util.ResourceUtils;
 
 import com.hedera.hashgraph.sdk.ContractId;
+import com.hedera.hashgraph.sdk.CustomFee;
+import com.hedera.hashgraph.sdk.FileId;
+import com.hedera.hashgraph.sdk.Hbar;
+import com.hedera.hashgraph.sdk.NftId;
 import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TokenSupplyType;
+import com.hedera.hashgraph.sdk.TokenType;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.proto.TokenFreezeStatus;
 import com.hedera.hashgraph.sdk.proto.TokenKycStatus;
+import com.hedera.mirror.test.e2e.acceptance.client.AccountClient;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
+import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
 import com.hedera.mirror.test.e2e.acceptance.client.TokenClient;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
+import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 
 @CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class ERCContractFeature extends AbstractFeature {
 
+    private static final String ALLOWANCE_SELECTOR = "927da105";
+    private static final String BALANCE_OF_SELECTOR = "f7888aec";
+    private static final String DECIMALS_SELECTOR = "d449a832";
+    private static final String GET_APPROVED_SELECTOR = "098f2366";
+    private static final String GET_OWNER_OF_SELECTOR = "d5d03e21";
+    private static final String IS_APPROVED_FOR_ALL_SELECTOR = "f49f40db";
+    private static final String NAME_SELECTOR = "01984892";
+    private static final String SYMBOL_SELECTOR = "a86e3576";
+    private static final String TOKEN_URI_SELECTOR = "e9dc6375";
+    private static final String TOTAL_SUPPLY_SELECTOR = "e4dc2aa4";
     private static final int INITIAL_SUPPLY = 1_000_000;
     private static final int MAX_SUPPLY = 1;
-
-    private final List<TokenId> tokenIds = new ArrayList<>();
-    private final Map<TokenId, List<Long>> tokenSerialNumbers = new HashMap<>();
-
     private static final ObjectMapper MAPPER = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
             .setPropertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE);
 
-    public static final String NAME_SELECTOR = "01984892";
-    public static final String SYMBOL_SELECTOR = "a86e3576";
-    public static final String DECIMALS_SELECTOR = "d449a832";
-    public static final String TOTAL_SUPPLY_SELECTOR = "e4dc2aa4";
-    public static final String BALANCE_OF_SELECTOR = "f7888aec";
-    public static final String ALLOWANCE_SELECTOR = "927da105";
-    public static final String GET_APPROVED_SELECTOR = "098f2366";
-    public static final String IS_APPROVED_FOR_ALL_SELECTOR = "f49f40db";
-    public static final String GET_OWNER_OF_SELECTOR = "d5d03e21";
-    public static final String TOKEN_URI_SELECTOR = "e9dc6375";
-
-    private ExpandedAccountId spenderAccountId;
-    private ExpandedAccountId spenderAccountIdForAllSerials;
-    private ExpandedAccountId allowanceSpenderAccountId;
-
-    private FileId fileId;
-    private final ContractClient contractClient;
     private final AccountClient accountClient;
+    private final ContractClient contractClient;
     private final FileClient fileClient;
+    private final List<TokenId> tokenIds = new CopyOnWriteArrayList<>();
+    private final Map<TokenId, List<Long>> tokenSerialNumbers = new ConcurrentHashMap<>();
     private final MirrorNodeClient mirrorClient;
     private final TokenClient tokenClient;
 
-    private final ContractCallResponse contractCallResponse;
+    private CompiledSolidityArtifact compiledSolidityArtifact;
+    private ContractId contractId;
+    private ExpandedAccountId allowanceSpenderAccountId;
+    private ExpandedAccountId spenderAccountId;
+    private ExpandedAccountId spenderAccountIdForAllSerials;
+    private FileId fileId;
 
     @Value("classpath:solidity/artifacts/contracts/ERCTestContract.sol/ERCTestContract.json")
     private Path ercContract;
 
-    private ContractId contractId;
-    private CompiledSolidityArtifact compiledSolidityArtifact;
+    @After
+    public void clean() {
+        if (contractId != null) {
+            contractClient.deleteContract(
+                    contractId,
+                    contractClient.getSdkClient().getExpandedOperatorAccountId().getAccountId(),
+                    null);
+        }
 
-    @Then("I call the erc contract via the mirror node REST API for token name")
-    @Retryable(value = {AssertionError.class},
-            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
-            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
-    public void nameContractCall() throws DecoderException {
-        var getNameResponse = mirrorClient.contractsCall(NAME_SELECTOR
-                + to32BytesString(tokenIds.get(0).toSolidityAddress()),
-                contractId.toSolidityAddress(), contractClient.getClientAddress());
+        for (TokenId tokenId : tokenIds) {
+            ExpandedAccountId admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
+            try {
+                tokenClient.delete(admin, tokenId);
+            } catch (Exception ex) {
+                log.warn("Error cleaning up token {} error: {}", tokenId, ex);
+            }
+        }
 
-        assertThat(contractCallResponse.getResultAsText(getNameResponse.getResult())).isEqualTo("TEST_name");
+        tokenIds.clear();
+        tokenSerialNumbers.clear();
     }
 
+    @RetryAsserts
+    @Then("I call the erc contract via the mirror node REST API for token name")
+    public void nameContractCall() {
+        var getNameResponse = mirrorClient.contractsCall(NAME_SELECTOR
+                        + to32BytesString(tokenIds.get(0).toSolidityAddress()),
+                contractId.toSolidityAddress(), contractClient.getClientAddress());
+
+        assertThat(getNameResponse.getResultAsText()).isEqualTo("TEST_name");
+    }
+
+    @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token symbol")
-    @Retryable(value = {AssertionError.class},
-            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
-            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
-    public void symbolContractCall() throws DecoderException {
+    public void symbolContractCall() {
         var getSymbolResponse = mirrorClient.contractsCall(SYMBOL_SELECTOR
                         + to32BytesString(tokenIds.get(0).toSolidityAddress()),
                 contractId.toSolidityAddress(), contractClient.getClientAddress());
 
-        assertThat(contractCallResponse.getResultAsText(getSymbolResponse.getResult())).isEqualTo("TEST");
+        assertThat(getSymbolResponse.getResultAsText()).isEqualTo("TEST");
     }
 
+    @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token decimals")
-    @Retryable(value = {AssertionError.class},
-            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
-            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void decimalsContractCall() {
         var getDecimalsResponse = mirrorClient.contractsCall(DECIMALS_SELECTOR
                         + to32BytesString(tokenIds.get(0).toSolidityAddress()),
                 contractId.toSolidityAddress(), contractClient.getClientAddress());
 
-        assertThat(convertContractCallResponseToNum(getDecimalsResponse)).isEqualTo(10L);
+        assertThat(getDecimalsResponse.getResultAsNumber()).isEqualTo(10L);
     }
 
+    @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token totalSupply")
-    @Retryable(value = {AssertionError.class},
-            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
-            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void totalSupplyContractCall() {
         var getTotalSupplyResponse = mirrorClient.contractsCall(TOTAL_SUPPLY_SELECTOR
                         + to32BytesString(tokenIds.get(0).toSolidityAddress()),
                 contractId.toSolidityAddress(), contractClient.getClientAddress());
 
-        assertThat(convertContractCallResponseToNum(getTotalSupplyResponse)).isEqualTo(1_000_000L);
+        assertThat(getTotalSupplyResponse.getResultAsNumber()).isEqualTo(1_000_000L);
     }
 
+    @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token ownerOf")
-    @Retryable(value = {AssertionError.class},
-            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
-            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void ownerOfContractCall() {
         var getOwnerOfResponse = mirrorClient.contractsCall(GET_OWNER_OF_SELECTOR
                         + to32BytesString(tokenIds.get(1).toSolidityAddress()) + to32BytesString("1"),
                 contractId.toSolidityAddress(), contractClient.getClientAddress());
 
-        assertThat(convertContractCallResponseToAddress(getOwnerOfResponse))
-                .isEqualTo(tokenClient.getSdkClient().getExpandedOperatorAccountId().getAccountId().toSolidityAddress());
+        assertThat(getOwnerOfResponse.getResultAsAddress())
+                .isEqualTo(tokenClient.getSdkClient().getExpandedOperatorAccountId().getAccountId()
+                        .toSolidityAddress());
     }
 
+    @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token tokenUri")
-    @Retryable(value = {AssertionError.class},
-            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
-            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
-    public void tokenURIContractCall() throws DecoderException {
+    public void tokenURIContractCall() {
         var getTokenURIResponse = mirrorClient.contractsCall(TOKEN_URI_SELECTOR
                         + to32BytesString(tokenIds.get(1).toSolidityAddress()) + to32BytesString("1"),
                 contractId.toSolidityAddress(), contractClient.getClientAddress());
 
-        assertThat(contractCallResponse.getResultAsText(getTokenURIResponse.getResult())).isEqualTo("TEST_metadata");
+        assertThat(getTokenURIResponse.getResultAsText()).isEqualTo("TEST_metadata");
     }
 
+    @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token getApproved")
-    @Retryable(value = {AssertionError.class},
-            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
-            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void getApprovedContractCall() {
         var getApprovedResponse = mirrorClient.contractsCall(GET_APPROVED_SELECTOR
                         + to32BytesString(tokenIds.get(1).toSolidityAddress()) + to32BytesString("1"),
                 contractId.toSolidityAddress(), contractClient.getClientAddress());
 
-        assertThat(convertContractCallResponseToAddress(getApprovedResponse))
+        assertThat(getApprovedResponse.getResultAsAddress())
                 .isEqualTo("0000000000000000000000000000000000000000");
     }
 
+    @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token allowance")
-    @Retryable(value = {AssertionError.class},
-            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
-            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void allowanceContractCall() {
         var getAllowanceResponse = mirrorClient.contractsCall(ALLOWANCE_SELECTOR
                         + to32BytesString(tokenIds.get(0).toSolidityAddress())
-                        + to32BytesString(tokenClient.getSdkClient().getExpandedOperatorAccountId().getAccountId().toSolidityAddress())
+                        + to32BytesString(tokenClient.getSdkClient().getExpandedOperatorAccountId().getAccountId()
+                        .toSolidityAddress())
                         + to32BytesString(contractClient.getClientAddress()),
                 contractId.toSolidityAddress(), contractClient.getClientAddress());
 
-        assertThat(convertContractCallResponseToNum(getAllowanceResponse)).isZero();
+        assertThat(getAllowanceResponse.getResultAsNumber()).isZero();
     }
 
+    @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token allowance with allowances")
-    @Retryable(value = {AssertionError.class},
-            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
-            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void allowanceSecondContractCall() {
         var getAllowanceResponse = mirrorClient.contractsCall(ALLOWANCE_SELECTOR
                         + to32BytesString(tokenIds.get(0).toSolidityAddress())
-                        + to32BytesString(tokenClient.getSdkClient().getExpandedOperatorAccountId().getAccountId().toSolidityAddress())
+                        + to32BytesString(tokenClient.getSdkClient().getExpandedOperatorAccountId().getAccountId()
+                        .toSolidityAddress())
                         + to32BytesString(allowanceSpenderAccountId.getAccountId().toSolidityAddress()),
                 contractId.toSolidityAddress(), contractClient.getClientAddress());
 
-        assertThat(convertContractCallResponseToNum(getAllowanceResponse)).isEqualTo(2);
+        assertThat(getAllowanceResponse.getResultAsNumber()).isEqualTo(2);
     }
 
+    @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token isApprovedForAll")
-    @Retryable(value = {AssertionError.class},
-            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
-            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void isApprovedForAllContractCall() {
         var getIsApproveForAllResponse = mirrorClient.contractsCall(IS_APPROVED_FOR_ALL_SELECTOR
                         + to32BytesString(tokenIds.get(1).toSolidityAddress())
-                        + to32BytesString(tokenClient.getSdkClient().getExpandedOperatorAccountId().getAccountId().toSolidityAddress())
+                        + to32BytesString(tokenClient.getSdkClient().getExpandedOperatorAccountId().getAccountId()
+                        .toSolidityAddress())
                         + to32BytesString(contractClient.getClientAddress()),
                 contractId.toSolidityAddress(), contractClient.getClientAddress());
 
-        assertThat(contractCallResponse.convertToBoolean(getIsApproveForAllResponse)).isFalse();
+        assertThat(getIsApproveForAllResponse.getResultAsBoolean()).isFalse();
     }
 
+    @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token isApprovedForAll with response true")
-    @Retryable(value = {AssertionError.class},
-            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
-            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void isApprovedForAllSecondContractCall() {
         var getIsApproveForAllResponse = mirrorClient.contractsCall(IS_APPROVED_FOR_ALL_SELECTOR
                         + to32BytesString(tokenIds.get(1).toSolidityAddress())
-                        + to32BytesString(tokenClient.getSdkClient().getExpandedOperatorAccountId().getAccountId().toSolidityAddress())
+                        + to32BytesString(tokenClient.getSdkClient().getExpandedOperatorAccountId().getAccountId()
+                        .toSolidityAddress())
                         + to32BytesString(spenderAccountIdForAllSerials.getAccountId().toSolidityAddress()),
                 contractId.toSolidityAddress(), contractClient.getClientAddress());
 
-        assertThat(contractCallResponse.convertToBoolean(getIsApproveForAllResponse)).isTrue();
+        assertThat(getIsApproveForAllResponse.getResultAsBoolean()).isTrue();
     }
 
+    @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token balance")
-    @Retryable(value = {AssertionError.class},
-            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
-            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void balanceOfContractCall() {
         var getBalanceOfResponse = mirrorClient.contractsCall(BALANCE_OF_SELECTOR
-                + to32BytesString(tokenIds.get(0).toSolidityAddress())
-                + to32BytesString(contractClient.getClientAddress()), contractId.toSolidityAddress(), contractClient.getClientAddress());
+                        + to32BytesString(tokenIds.get(0).toSolidityAddress())
+                        + to32BytesString(contractClient.getClientAddress()), contractId.toSolidityAddress(),
+                contractClient.getClientAddress());
 
-        assertThat(convertContractCallResponseToNum(getBalanceOfResponse)).isEqualTo(1000000);
+        assertThat(getBalanceOfResponse.getResultAsNumber()).isEqualTo(1000000);
     }
 
+    @RetryAsserts
     @Then("I call the erc contract via the mirror node REST API for token getApproved with response BOB")
-    @Retryable(value = {AssertionError.class},
-            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
-            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
     public void verifyNftAllowance() {
         var from = contractClient.getClientAddress();
         var to = contractId.toSolidityAddress();
@@ -282,7 +270,7 @@ public class ERCContractFeature extends AbstractFeature {
 
         var getApprovedResponse = mirrorClient.contractsCall(GET_APPROVED_SELECTOR + nft +
                 to32BytesString("1"), to, from);
-        assertThat(convertContractCallResponseToAddress(getApprovedResponse))
+        assertThat(getApprovedResponse.getResultAsAddress())
                 .isEqualTo(spenderAccountId.getAccountId().toSolidityAddress());
     }
 
@@ -339,7 +327,8 @@ public class ERCContractFeature extends AbstractFeature {
     @Then("I approve {string} with {long}")
     public void approveTokenAllowance(String accountName, long amount) {
         allowanceSpenderAccountId = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
-        networkTransactionResponse = accountClient.approveToken(tokenIds.get(0), allowanceSpenderAccountId.getAccountId(), amount);
+        networkTransactionResponse = accountClient.approveToken(tokenIds.get(0),
+                allowanceSpenderAccountId.getAccountId(), amount);
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
@@ -347,32 +336,14 @@ public class ERCContractFeature extends AbstractFeature {
     @Then("I approve {string} for nft all serials")
     public void approveCryptoAllowanceAllSerials(String accountName) {
         spenderAccountIdForAllSerials = accountClient.getAccount(AccountClient.AccountNameEnum.valueOf(accountName));
-        networkTransactionResponse = accountClient.approveNftAllSerials(tokenIds.get(1), spenderAccountIdForAllSerials.getAccountId());
+        networkTransactionResponse = accountClient.approveNftAllSerials(tokenIds.get(1),
+                spenderAccountIdForAllSerials.getAccountId());
         assertNotNull(networkTransactionResponse.getTransactionId());
         assertNotNull(networkTransactionResponse.getReceipt());
     }
 
-    @After
-    public void clean() {
-        contractClient.deleteContract(
-                contractId,
-                contractClient.getSdkClient().getExpandedOperatorAccountId().getAccountId(),
-                null);
-
-        for (TokenId tokenId : tokenIds) {
-            ExpandedAccountId admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
-            try {
-                tokenClient.delete(admin, tokenId);
-            } catch (Exception ex) {
-                log.warn("Error cleaning up token {} error: {}", tokenId, ex);
-            }
-        }
-        tokenIds.clear();
-        tokenSerialNumbers.clear();
-    }
-
     private TokenId createNewToken(String symbol, int freezeStatus, int kycStatus, TokenType tokenType,
-            TokenSupplyType tokenSupplyType, List<CustomFee> customFees) {
+                                   TokenSupplyType tokenSupplyType, List<CustomFee> customFees) {
         ExpandedAccountId admin = tokenClient.getSdkClient().getExpandedOperatorAccountId();
         networkTransactionResponse = tokenClient.createToken(
                 admin,
