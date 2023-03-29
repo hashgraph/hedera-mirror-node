@@ -24,6 +24,8 @@ import javax.inject.Named;
 
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
+
 import lombok.RequiredArgsConstructor;
 
 import com.hedera.mirror.common.domain.contract.ContractLog;
@@ -36,10 +38,11 @@ import org.apache.tuweni.bytes.Bytes;
 public class SyntheticContractLogServiceImpl implements SyntheticContractLogService {
 
     private final EntityListener entityListener;
-
+    private final EntityProperties entityProperties;
+    private final byte[] EMPTY_BLOOM = Bytes.of(0).toArray();
     @Override
-    public void create(AbstractSyntheticContractLog log) {
-        if (isContract(log.getRecordItem())) {
+    public void create(SyntheticContractLog log) {
+        if (isContract(log.getRecordItem()) && !entityProperties.getPersist().isSyntheticContractLogs()) {
             return;
         }
 
@@ -48,7 +51,7 @@ public class SyntheticContractLogServiceImpl implements SyntheticContractLogServ
 
         ContractLog contractLog = new ContractLog();
 
-        contractLog.setBloom(Bytes.of(0).toArray());
+        contractLog.setBloom(EMPTY_BLOOM);
         contractLog.setConsensusTimestamp(consensusTimestamp);
         contractLog.setContractId(log.getEntityId());
         contractLog.setData(log.getData());
