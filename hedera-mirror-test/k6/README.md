@@ -43,7 +43,7 @@ source parameters.env
 k6 run src/rest/apis.js
 ```
 
-For not domain specific parameters like:
+For non domain specific parameters like:
 
 - DEFAULT_DURATION
 - DEFAULT_VUS
@@ -56,12 +56,20 @@ For domain specific parameters the following rule is used:
 When the value of a parameter is set with an environment variable, the value will be used, but if no value is set for a
 particular parameter, then its value will be found by querying either the rest or rosetta APIs.
 
+The default timeout set to discover the parameters is 5 minutes, increase `DEFAULT_SETUP_TIMEOUT` if needed.
+
 The following parameters can be used to configure a rest test:
 
 - DEFAULT_ACCOUNT_ID
+- DEFAULT_ACCOUNT_ID_NFTS
+- DEFAULT_ACCOUNT_ID_TOKEN
+- DEFAULT_ACCOUNT_ID_TOKEN_ALLOWANCE
 - DEFAULT_ACCOUNT_BALANCE
+- DEFAULT_BLOCK_NUMBER
+- DEFAULT_BLOCK_HASH
 - DEFAULT_CONTRACT_ID
 - DEFAULT_CONTRACT_TIMESTAMP
+- DEFAULT_CONTRACT_RESULT_HASH
 - DEFAULT_NFT_ID
 - DEFAULT_NFT_SERIAL
 - DEFAULT_PUBLIC_KEY
@@ -70,6 +78,8 @@ The following parameters can be used to configure a rest test:
 - DEFAULT_TOKEN_ID
 - DEFAULT_TOPIC_ID
 - DEFAULT_TOPIC_SEQUENCE
+- DEFAULT_TOPIC_TIMESTAMP
+- DEFAULT_TRANSACTION_HASH
 - DEFAULT_TRANSACTION_ID
 
 The following parameters can be used to configure a rosetta test:
@@ -97,9 +107,9 @@ Example for ERC_CONTRACT deployment with js SDK
 
 ```js
 const contractCreate = await new ContractCreateFlow()
-.setBytecode("HERE YOU NEED TO PUT INITCODE FROM web3/reference/ERCTestContract/ERCTestContract.bin")
-.setGas(200_000)
-.execute(client);
+  .setBytecode("HERE YOU NEED TO PUT INITCODE FROM web3/reference/ERCTestContract/ERCTestContract.bin")
+  .setGas(200_000)
+  .execute(client);
 ```
 
 The test suite will run the tests sequentially with a configurable graceful stop time in between, so they don't
@@ -225,19 +235,19 @@ a scenario divided by the run time of the test suite.
 
 With the test suite mode, a simplified markdown format report `report.md` will also be generated.
 
-| URL | VUS | Pass% | RPS | Avg. Req Duration | Comment |
-|----------|-----|-------|-----|-------------------|---------|
-| /account/balance | 500 | 100.00 | 1390.03/s | 351.87ms | |
-| /block | 500 | 100.00 | 1655.40/s | 300.11ms | |
-| /block/transaction | 500 | 100.00 | 2840.99/s | 164.44ms | |
-| /construction/combine | 500 | 100.00 | 4615.40/s | 73.77ms | |
-| /construction/hash | 500 | 100.00 | 5876.76/s | 49.23ms | |
-| /construction/parse | 500 | 100.00 | 5738.85/s | 50.65ms | |
-| /construction/payloads | 500 | 100.00 | 5508.28/s | 56.44ms | |
-| /construction/preprocess | 500 | 100.00 | 5514.76/s | 52.88ms | |
-| /network/list | 500 | 100.00 | 6479.16/s | 44.77ms | |
-| /network/options | 500 | 100.00 | 5763.35/s | 51.97ms | |
-| /network/status | 500 | 100.00 | 3018.25/s | 160.10ms | |
+| URL | VUS | Pass% | RPS | Avg. Req Duration | Skipped? | Comment |
+|----------|-----|-------|-----|-------------------|----------|---------|
+| /account/balance | 500 | 100.00 | 1390.03/s | 351.87ms | No       |         |
+| /block | 500 | 100.00 | 1655.40/s | 300.11ms | No       |         |
+| /block/transaction | 500 | 100.00 | 2840.99/s | 164.44ms | No       |         |
+| /construction/combine | 500 | 100.00 | 4615.40/s | 73.77ms | No       |         |
+| /construction/hash | 500 | 100.00 | 5876.76/s | 49.23ms | No       |         |
+| /construction/parse | 500 | 100.00 | 5738.85/s | 50.65ms | No       |         |
+| /construction/payloads | 500 | 100.00 | 5508.28/s | 56.44ms | No       |         |
+| /construction/preprocess | 500 | 100.00 | 5514.76/s | 52.88ms | No       |         |
+| /network/list | 500 | 100.00 | 6479.16/s | 44.77ms | No       |         |
+| /network/options | 500 | 100.00 | 5763.35/s | 51.97ms | No       |         |
+| /network/status | 500 | 100.00 | 3018.25/s | 160.10ms | No |         |
 
 ### Single Test
 

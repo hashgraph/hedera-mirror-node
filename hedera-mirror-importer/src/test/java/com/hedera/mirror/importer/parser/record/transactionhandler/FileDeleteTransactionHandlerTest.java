@@ -25,13 +25,12 @@ import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 
 class FileDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTransactionHandlerTest {
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new FileDeleteTransactionHandler(entityIdService, entityListener, new RecordParserProperties());
+        return new FileDeleteTransactionHandler(entityIdService, entityListener);
     }
 
     @Override

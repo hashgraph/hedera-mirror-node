@@ -45,9 +45,10 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -167,8 +168,9 @@ abstract class AbstractTransactionHandlerTest {
     void beforeEach(TestInfo testInfo) {
         log.info("Executing: {}", testInfo.getDisplayName());
         transactionHandler = getTransactionHandler();
-        when(entityIdService.lookup(AccountID.getDefaultInstance())).thenReturn(EntityId.EMPTY);
-        when(entityIdService.lookup(AccountID.newBuilder().setAccountNum(0).build())).thenReturn(EntityId.EMPTY);
+        when(entityIdService.lookup(AccountID.getDefaultInstance())).thenReturn(Optional.of(EntityId.EMPTY));
+        when(entityIdService.lookup(AccountID.newBuilder().setAccountNum(0)
+                .build())).thenReturn(Optional.of(EntityId.EMPTY));
     }
 
     @Test
@@ -275,7 +277,7 @@ abstract class AbstractTransactionHandlerTest {
     protected List<UpdateEntityTestSpec> getUpdateEntityTestSpecsForCreateTransaction(FieldDescriptor memoField) {
         TransactionBody body = getTransactionBodyForUpdateEntityWithoutMemo();
         Message innerBody = getInnerBody(body);
-        List<UpdateEntityTestSpec> testSpecs = new LinkedList<>();
+        List<UpdateEntityTestSpec> testSpecs = new ArrayList<>();
         AbstractEntity expected = getExpectedUpdatedEntity();
         expected.setMemo(""); // Proto defaults to empty string
 
@@ -321,7 +323,7 @@ abstract class AbstractTransactionHandlerTest {
                                                                                     FieldDescriptor receiverSigRequiredWrapperField) {
         TransactionBody body = getTransactionBodyForUpdateEntityWithoutMemo();
         Message innerBody = getInnerBody(body);
-        List<UpdateEntityTestSpec> testSpecs = new LinkedList<>();
+        List<UpdateEntityTestSpec> testSpecs = new ArrayList<>();
 
         if (receiverSigRequiredWrapperField != null) {
             innerBody = innerBody.toBuilder()
@@ -546,5 +548,9 @@ abstract class AbstractTransactionHandlerTest {
         String description;
         AbstractEntity expected;
         RecordItem recordItem;
+    }
+
+    protected static Stream<EntityId> provideEntities() {
+        return Stream.of(null, EntityId.EMPTY);
     }
 }

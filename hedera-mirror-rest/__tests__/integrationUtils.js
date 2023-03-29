@@ -36,6 +36,7 @@ const isDockerInstalled = function () {
 };
 
 const setupIntegrationTest = () => {
+  jest.retryTimes(3);
   jest.setTimeout(40000);
 
   beforeAll(async () => {

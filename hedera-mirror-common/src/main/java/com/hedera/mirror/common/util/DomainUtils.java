@@ -49,11 +49,11 @@ import com.hedera.services.stream.proto.HashObject;
 @UtilityClass
 public class DomainUtils {
 
-    private static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
+    public static final byte[] EMPTY_BYTE_ARRAY = new byte[0];
     public static final int EVM_ADDRESS_LENGTH = 20;
     public static final long TINYBARS_IN_ONE_HBAR = 100_000_000L;
 
-    private static final long NANOS_PER_SECOND = 1_000_000_000L;
+    public static final long NANOS_PER_SECOND = 1_000_000_000L;
     private static final char NULL_CHARACTER = (char) 0;
     private static final char NULL_REPLACEMENT = '�'; // Standard replacement character 0xFFFD
 

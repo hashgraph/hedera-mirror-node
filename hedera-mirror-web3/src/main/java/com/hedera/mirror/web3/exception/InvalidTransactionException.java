@@ -34,15 +34,18 @@ public class InvalidTransactionException extends EvmException {
     private static final long serialVersionUID = 2244739157125796266L;
 
     private final String detail;
+    private final String data;
 
-    public InvalidTransactionException(final ResponseCodeEnum responseCode, final String detail) {
+    public InvalidTransactionException(final ResponseCodeEnum responseCode, final String detail, final String hexData) {
         super(responseCode.name());
         this.detail = detail;
+        this.data = hexData;
     }
 
-    public InvalidTransactionException(String message, final String detail) {
+    public InvalidTransactionException(final String message, final String detail, final String hexData) {
         super(message);
         this.detail = detail;
+        this.data = hexData;
     }
 
     public Bytes messageBytes() {
@@ -52,5 +55,9 @@ public class InvalidTransactionException extends EvmException {
 
     public String getDetail() {
         return detail;
+    }
+
+    public String getData() {
+        return data;
     }
 }

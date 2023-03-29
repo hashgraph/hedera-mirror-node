@@ -107,7 +107,7 @@ public class MirrorEvmTxProcessor extends HederaEvmTxProcessor {
         final var code = codeCache.getIfPresent(aliasManager.resolveForEvm(to));
 
         if (code == null) {
-            throw new InvalidTransactionException(ResponseCodeEnum.INVALID_TRANSACTION, StringUtils.EMPTY);
+            throw new InvalidTransactionException(ResponseCodeEnum.INVALID_TRANSACTION, StringUtils.EMPTY, StringUtils.EMPTY);
         }
 
         return baseInitialFrame

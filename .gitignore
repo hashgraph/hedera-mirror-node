@@ -23,11 +23,8 @@
 # Node.js
 .env
 .node-version
-.node-flywaydb/
-coverage/
 env.txt
 junit.xml
-node/
 node_modules/
 cache/
 
@@ -143,6 +140,9 @@ release_notes.md
 .gradle
 build
 !gradle/wrapper/gradle-wrapper.jar
+
+# Security
+.dccache
 snyk
 
 # hardhat

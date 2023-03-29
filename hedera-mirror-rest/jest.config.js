@@ -23,10 +23,9 @@ const config = {
   collectCoverage: true,
   coverageDirectory: 'build/coverage/',
   coveragePathIgnorePatterns: [
-    '<rootDir>/.node-flywaydb/',
+    '<rootDir>/build/',
     '<rootDir>/check-state-proof/',
     '<rootDir>/monitoring/',
-    '<rootDir>/node/',
     '<rootDir>/node_modules/',
     '<rootDir>/__tests__/'
   ],

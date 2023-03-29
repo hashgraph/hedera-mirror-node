@@ -18,10 +18,10 @@
  * ‍
  */
 
-import http from "k6/http";
+import http from 'k6/http';
 
 import {TestScenarioBuilder} from '../../lib/common.js';
-import {setupTestParameters} from "./bootstrapEnvParameters.js";
+import {setupTestParameters} from '../libex/parameters.js';
 
 const urlTag = '/rosetta/construction/hash';
 
@@ -32,7 +32,7 @@ const {options, run} = new TestScenarioBuilder()
     const url = testParameters.baseUrl + urlTag;
     const payload = JSON.stringify({
       network_identifier: testParameters.networkIdentifier,
-      signed_transaction: testParameters.signedTransaction
+      signed_transaction: testParameters.signedTransaction,
     });
     return http.post(url, payload);
   })

@@ -20,9 +20,11 @@ package com.hedera.mirror.web3.evm.contracts.execution;
  * ‍
  */
 
+import static com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract.EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS;
 import static org.hyperledger.besu.evm.MainnetEVMs.registerParisOperations;
 
 import java.math.BigInteger;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -38,15 +40,20 @@ import org.hyperledger.besu.evm.gascalculator.LondonGasCalculator;
 import org.hyperledger.besu.evm.internal.EvmConfiguration;
 import org.hyperledger.besu.evm.operation.OperationRegistry;
 import org.hyperledger.besu.evm.precompile.PrecompileContractRegistry;
+import org.hyperledger.besu.evm.precompile.PrecompiledContract;
 import org.hyperledger.besu.evm.processor.ContractCreationProcessor;
 import org.hyperledger.besu.evm.processor.MessageCallProcessor;
 
+import com.hedera.node.app.service.evm.contracts.execution.HederaEvmMessageCallProcessor;
 import com.hedera.node.app.service.evm.contracts.operations.HederaBalanceOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaDelegateCallOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaEvmSLoadOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeCopyOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeHashOperation;
 import com.hedera.node.app.service.evm.contracts.operations.HederaExtCodeSizeOperation;
+import com.hedera.node.app.service.evm.store.contracts.precompile.EvmHTSPrecompiledContract;
+import com.hedera.node.app.service.evm.store.contracts.precompile.EvmInfrastructureFactory;
+import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 
 /**
  * This is a temporary utility class for creating all besu evm related fields needed by the
@@ -77,8 +84,17 @@ public class EvmOperationConstructionUtil {
                 () -> new MessageCallProcessor(
                         evm, new PrecompileContractRegistry()),
                 EVM_VERSION_0_34,
-                () -> new MessageCallProcessor(
-                        evm, new PrecompileContractRegistry()));
+                () -> new HederaEvmMessageCallProcessor(
+                        evm, new PrecompileContractRegistry(), precompiles()));
+    }
+
+    private static Map<String, PrecompiledContract> precompiles() {
+        final Map<String, PrecompiledContract> hederaPrecompiles = new HashMap<>();
+        final var evmFactory = new EvmInfrastructureFactory(new EvmEncodingFacade());
+        hederaPrecompiles.put(EVM_HTS_PRECOMPILED_CONTRACT_ADDRESS,
+                new EvmHTSPrecompiledContract(evmFactory));
+
+        return hederaPrecompiles;
     }
 
     private static EVM constructEvm() {

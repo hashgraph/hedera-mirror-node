@@ -18,25 +18,22 @@
  * ‍
  */
 
-import http from "k6/http";
+import http from 'k6/http';
 
-import {TestScenarioBuilder} from '../../lib/common.js';
-import {scheduleListName, urlPrefix} from '../../lib/constants.js';
-import {isValidListResponse} from "./common.js";
-import {setupTestParameters} from "./bootstrapEnvParameters.js";
+import {isValidListResponse, RestTestScenarioBuilder} from '../libex/common.js';
+import {scheduleListName} from '../libex/constants.js';
 
 const urlTag = '/schedules?account.id=gte:{accountId}';
 
-const {options, run} = new TestScenarioBuilder()
+const {options, run, setup} = new RestTestScenarioBuilder()
   .name('schedulesAccount') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request((testParameters) => {
-    const url = `${testParameters['BASE_URL']}${urlPrefix}/schedules?account.id=gte:${testParameters['DEFAULT_SCHEDULE_ACCOUNT_ID']}`;
+    const url = `${testParameters['BASE_URL_PREFIX']}/schedules?account.id=gte:${testParameters['DEFAULT_SCHEDULE_ACCOUNT_ID']}`;
     return http.get(url);
   })
+  .requiredParameters('DEFAULT_SCHEDULE_ACCOUNT_ID')
   .check('Schedules account OK', (r) => isValidListResponse(r, scheduleListName))
   .build();
 
-export {options, run};
-
-export const setup = setupTestParameters;
+export {options, run, setup};

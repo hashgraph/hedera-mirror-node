@@ -89,5 +89,5 @@ Using your browser, connect to `http://<host>:<port>/index.html`
 Create a custom `serverlist.json` in the current working directory. Then execute:
 
 ```shell
-docker run -it --rm -e CONFIG_PATH=/config -v "${PWD}/serverlist.json:/config/serverlist.json" -p 8080:8080 -p 3000:3000 gcr.io/mirrornode/hedera-mirror-dashboard
+docker run -it --rm -e CONFIG_PATH=/config -v "${PWD}/serverlist.json:/config/serverlist.json" -p 8080:8080 -p 3000:3000 gcr.io/mirrornode/hedera-mirror-rest-monitor
 ```

@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.exception;
+package com.hedera.mirror.web3.repository;
 
 /*-
  * ‌
@@ -20,18 +20,9 @@ package com.hedera.mirror.importer.exception;
  * ‍
  */
 
-import com.hedera.mirror.common.domain.entity.EntityType;
+import org.springframework.data.repository.CrudRepository;
 
-@SuppressWarnings("java:S110")
-public class AliasNotFoundException extends ImporterException {
+import com.hedera.mirror.common.domain.entity.AbstractTokenAllowance;
+import com.hedera.mirror.common.domain.entity.TokenAllowance;
 
-    private static final long serialVersionUID = 262691996461413516L;
-
-    public AliasNotFoundException(String alias, EntityType type) {
-        super(getMessage(alias, type));
-    }
-
-    private static String getMessage(String alias, EntityType type) {
-        return String.format("%s entity with alias '%s' not found", type, alias);
-    }
-}
+public interface TokenAllowanceRepository extends CrudRepository<TokenAllowance, AbstractTokenAllowance.Id> {}

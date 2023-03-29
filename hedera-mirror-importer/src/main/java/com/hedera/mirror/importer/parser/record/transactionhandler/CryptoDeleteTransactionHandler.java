@@ -20,22 +20,24 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
+
 import javax.inject.Named;
+import lombok.CustomLog;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.domain.EntityIdService;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
+@CustomLog
 @Named
 class CryptoDeleteTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
-    CryptoDeleteTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
-                                   RecordParserProperties recordParserProperties) {
-        super(entityIdService, entityListener, recordParserProperties, TransactionType.CRYPTODELETE);
+    CryptoDeleteTransactionHandler(EntityIdService entityIdService, EntityListener entityListener) {
+        super(entityIdService, entityListener, TransactionType.CRYPTODELETE);
     }
 
     @Override
@@ -46,8 +48,14 @@ class CryptoDeleteTransactionHandler extends AbstractEntityCrudTransactionHandle
     @Override
     protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
         var transactionBody = recordItem.getTransactionBody().getCryptoDelete();
-        var obtainerId = entityIdService.lookup(transactionBody.getTransferAccountID());
-        entity.setObtainerId(obtainerId);
+        var obtainerId = entityIdService.lookup(transactionBody.getTransferAccountID()).orElse(EntityId.EMPTY);
+        if (EntityId.isEmpty(obtainerId)) {
+            log.error(RECOVERABLE_ERROR + "Unable to lookup ObtainerId at consensusTimestamp {}",
+                    recordItem.getConsensusTimestamp());
+        } else {
+            entity.setObtainerId(obtainerId);
+        }
+
         entityListener.onEntity(entity);
     }
 }

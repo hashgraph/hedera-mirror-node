@@ -20,10 +20,14 @@
 package plugin.go
 
 import org.gradle.api.tasks.Exec
+import org.gradle.api.tasks.Internal
 import org.gradle.kotlin.dsl.getByName
 
 // Template task to execute the go CLI
 abstract class Go : Exec() {
+
+    @Internal
+    val go = project.extensions.getByName<GoExtension>("go")
 
     init {
         dependsOn("setup")
@@ -31,7 +35,6 @@ abstract class Go : Exec() {
 
     override fun exec() {
         logger.info("Executing go ${args}")
-        val go = project.extensions.getByName<GoExtension>("go")
         executable(go.goBin.absolutePath)
         super.exec()
     }

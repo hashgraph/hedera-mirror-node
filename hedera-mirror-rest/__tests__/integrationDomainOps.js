@@ -436,7 +436,7 @@ const addAddressBook = async (addressBookInput) => {
 
   addressBook.file_data =
     typeof addressBookInput.file_data === 'string'
-      ? Buffer.from(addressBookInput.file_data, 'utf-8')
+      ? Buffer.from(addressBookInput.file_data, 'utf8')
       : Buffer.from(addressBook.file_data);
 
   await insertDomainObject('address_book', insertFields, addressBook);
@@ -617,7 +617,7 @@ const addEthereumTransaction = async (ethereumTransaction) => {
 const hexEncodedFileIds = [111, 112];
 
 const addFileData = async (fileDataInput) => {
-  const encoding = hexEncodedFileIds.includes(fileDataInput.entity_id) ? 'hex' : 'utf-8';
+  const encoding = hexEncodedFileIds.includes(fileDataInput.entity_id) ? 'hex' : 'utf8';
 
   const fileData = {
     transaction_type: 17,
