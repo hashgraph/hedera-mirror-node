@@ -27,5 +27,5 @@ package com.hedera.mirror.importer.parser.contractlog;
  */
 
 public interface SyntheticContractLogService {
-    void create(AbstractSyntheticContractLog log);
+    void create(SyntheticContractLog log);
 }

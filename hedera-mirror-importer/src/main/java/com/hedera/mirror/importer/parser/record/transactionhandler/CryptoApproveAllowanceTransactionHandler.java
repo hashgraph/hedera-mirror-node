@@ -61,8 +61,6 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
 
     private final SyntheticContractLogService syntheticContractLogService;
 
-    private final RecordParserProperties recordParserProperties;
-
     @Override
     public EntityId getEntity(RecordItem recordItem) {
         return null;
@@ -219,7 +217,7 @@ class CryptoApproveAllowanceTransactionHandler implements TransactionHandler {
             var ownerAccountId = entityId.get();
             return !EntityId.isEmpty(ownerAccountId) ? ownerAccountId : payerAccountId;
         }
-        
+
         return EntityId.EMPTY;
     }
 }

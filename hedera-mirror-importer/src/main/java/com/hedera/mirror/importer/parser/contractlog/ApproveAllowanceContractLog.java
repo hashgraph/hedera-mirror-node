@@ -27,11 +27,6 @@ public class ApproveAllowanceContractLog extends AbstractSyntheticContractLog {
 
     public ApproveAllowanceContractLog(RecordItem recordItem, EntityId ownerId, EntityId spenderId, EntityId tokenId,
                                        long amount) {
-        super(recordItem, tokenId);
-
-        data = longToBytes(amount);
-        topic0 = APPROVE_SIGNATURE;
-        topic1 = entityIdToBytes(ownerId);
-        topic2 = entityIdToBytes(spenderId);
+        super(longToBytes(amount), tokenId, APPROVE_SIGNATURE, entityIdToBytes(ownerId), entityIdToBytes(spenderId), recordItem);
     }
 }

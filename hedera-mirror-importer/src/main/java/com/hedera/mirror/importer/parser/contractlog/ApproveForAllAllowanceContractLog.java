@@ -26,11 +26,6 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 public class ApproveForAllAllowanceContractLog extends AbstractSyntheticContractLog {
     public ApproveForAllAllowanceContractLog(RecordItem recordItem, EntityId ownerId, EntityId spenderId, EntityId tokenId,
                                              boolean approved) {
-        super(recordItem, tokenId);
-
-        data = booleanToBytes(approved);
-        topic0 = APPROVE_FOR_ALL_SIGNATURE;
-        topic1 = entityIdToBytes(ownerId);
-        topic2 = entityIdToBytes(spenderId);
+        super(booleanToBytes(approved), tokenId, APPROVE_FOR_ALL_SIGNATURE, entityIdToBytes(ownerId), entityIdToBytes(spenderId), recordItem);
     }
 }

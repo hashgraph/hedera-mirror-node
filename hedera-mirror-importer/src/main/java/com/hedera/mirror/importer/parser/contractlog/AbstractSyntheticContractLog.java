@@ -23,26 +23,25 @@ package com.hedera.mirror.importer.parser.contractlog;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 
+import lombok.Data;
 import lombok.Getter;
 import org.apache.tuweni.bytes.Bytes;
-public abstract class AbstractSyntheticContractLog {
-    @Getter
-    protected byte[] data;
-    @Getter
-    protected EntityId entityId;
-    @Getter
-    protected byte[] topic0;
-    @Getter
-    protected byte[] topic1;
-    @Getter
-    protected byte[] topic2;
-    @Getter
-    protected RecordItem recordItem;
+@Data
+public abstract class AbstractSyntheticContractLog implements SyntheticContractLog{
+    private final byte[] data;
+    private final EntityId entityId;
+    private final byte[] topic0;
+    private final byte[] topic1;
+    private final byte[] topic2;
+    private final RecordItem recordItem;
 
-    AbstractSyntheticContractLog(RecordItem recordItem, EntityId tokenId) {
+    AbstractSyntheticContractLog(byte[] data, EntityId tokenId, byte[] topic0, byte[] topic1, byte[] topic2, RecordItem recordItem) {
+        this.data = data;
         this.entityId = tokenId;
         this.recordItem = recordItem;
-        topic0 = TRANSFER_SIGNATURE;
+        this.topic0 = topic0;
+        this.topic1 = topic1;
+        this.topic2 = topic2;
     }
     static final byte[] TRANSFER_SIGNATURE = Bytes.fromHexString("ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef").toArray();
     static final byte[] APPROVE_FOR_ALL_SIGNATURE = Bytes.fromHexString("17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31").toArray();
