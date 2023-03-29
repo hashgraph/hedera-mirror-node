@@ -143,7 +143,7 @@ public class AddressBookServiceImpl implements AddressBookService {
         var nodesInAddressBook = addressBook.getEntries().stream().map(AddressBookEntry::getNodeId)
             .collect(Collectors.toSet());
 
-        var nodeStakeMaxTimestamp = new AtomicLong(0L);
+        var nodeStakeTimestamp = new AtomicLong(0L);
         nodeStakeRepository.findLatest().forEach(nodeStake -> {
             if (consensusMode == ConsensusMode.EQUAL) {
               nodeStake.setStake(1L);
@@ -152,17 +152,18 @@ public class AddressBookServiceImpl implements AddressBookService {
               totalStake.addAndGet(nodeStake.getStake());
             }
             nodeStakes.put(nodeStake.getNodeId(), nodeStake);
-            nodeStakeMaxTimestamp.getAndAccumulate(nodeStake.getConsensusTimestamp(), Math::max);
+            // rather than calling getAndUpdate with Math.max, this just sets the variable a single time.
+            nodeStakeTimestamp.compareAndSet(0L, nodeStake.getConsensusTimestamp());
         });
 
-        // For partial mirror nodes, node stake will provide a more accurate count
         long nodeCount = (consensusMode == ConsensusMode.STAKE_IN_ADDRESS_BOOK || nodeStakes.isEmpty()) ?
             addressBook.getNodeCount() : nodeStakes.size();
 
         // if only including address book nodes in stake count, warn if any nodes are excluded
-        if (consensusMode == ConsensusMode.STAKE_IN_ADDRESS_BOOK && addressBook.getNodeCount() != nodeStakes.size()) {
+        if (consensusMode == ConsensusMode.STAKE_IN_ADDRESS_BOOK && addressBook.getNodeCount() != nodeStakes.size() &&
+                !nodeStakes.isEmpty()) {
             log.warn("Using address book {} with {} nodes and node stake {} with {} nodes",
-                addressBook.getStartConsensusTimestamp(), addressBook.getNodeCount(), nodeStakeMaxTimestamp.get(),
+                addressBook.getStartConsensusTimestamp(), addressBook.getNodeCount(), nodeStakeTimestamp.get(),
                 nodeStakes.size());
         }
 

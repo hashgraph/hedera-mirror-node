@@ -967,16 +967,16 @@ class AddressBookServiceImplTest extends IntegrationTest {
     }
 
     @CsvSource(textBlock = """
-    STAKE_IN_ADDRESS_BOOK, 10000, 4, 40000
-    EQUAL, 1, 4, 4
+    STAKE_IN_ADDRESS_BOOK, 10000, 40000
+    EQUAL, 1, 4
     """)
     @ParameterizedTest
-    void getNodes(ConsensusMode mode, long stake, int nodeCount, long expectedTotalStake) {
+    void getNodes(ConsensusMode mode, long expectedNodeStake, long expectedTotalStake) {
         long timestamp = domainBuilder.timestamp();
         var nodeId = new AtomicInteger(0);
-        for (int i = 0; i < nodeCount; i++) {
+        for (int i = 0; i < TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT; i++) {
             var nodeStake = domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp)
-                .nodeId(nodeId.getAndIncrement()).stake(stake)).persist();
+                .nodeId(nodeId.getAndIncrement()).stake(expectedNodeStake)).persist();
         }
         mirrorProperties.setConsensusMode(mode);
 
@@ -984,30 +984,29 @@ class AddressBookServiceImplTest extends IntegrationTest {
                 .hasSize(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT)
                 .allSatisfy(c -> assertThat(c).returns(expectedTotalStake, ConsensusNode::getTotalStake))
                 .allSatisfy(c -> assertThat(c.getPublicKey()).isNotNull())
-                .allMatch(c -> c.getStake() == stake)
+                .allMatch(c -> c.getStake() == expectedNodeStake)
                 .extracting(ConsensusNode::getNodeId)
                 .containsExactly(0L, 1L, 2L, 3L);
     }
 
     @CsvSource(textBlock = """
-    STAKE, 0, 5, 5
-    STAKE_IN_ADDRESS_BOOK, 0, 5, 4
+    STAKE, 5, 10
+    STAKE_IN_ADDRESS_BOOK, 5, 8
     """)
     @ParameterizedTest
-    void getNodesWithNodeStateCountMoreThanAddressBook(ConsensusMode mode, long stake, int nodeCount,
-            long expectedTotalStake) {
+    void getNodesWithNodeStateCountMoreThanAddressBook(ConsensusMode mode, int nodeCount, long expectedTotalStake) {
         long timestamp = domainBuilder.timestamp();
         var nodeId = new AtomicInteger(0);
         for (int i = 0; i < nodeCount; i++) {
           var nodeStake = domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp)
-              .nodeId(nodeId.getAndIncrement()).stake(stake)).persist();
+              .nodeId(nodeId.getAndIncrement()).stake(2L)).persist();
         }
         mirrorProperties.setConsensusMode(mode);
 
         assertThat(addressBookService.getNodes())
                 .hasSize(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT)
                 .allSatisfy(c -> assertThat(c.getPublicKey()).isNotNull())
-                .allMatch(c -> c.getStake() == 1L)
+                .allMatch(c -> c.getStake() == 2L)
                 .allMatch(c -> c.getTotalStake() == expectedTotalStake)
                 .allMatch(c -> c.getNodeAccountId().getEntityNum() - 3 == c.getNodeId())
                 .extracting(ConsensusNode::getNodeId)
@@ -1015,18 +1014,18 @@ class AddressBookServiceImplTest extends IntegrationTest {
     }
 
     @CsvSource(textBlock = """
-    STAKE_IN_ADDRESS_BOOK, 10000, 6, 40000, 10000
-    STAKE, 10000, 6, 60000, 10000
-    EQUAL, 10000, 6, 6, 1
+    STAKE_IN_ADDRESS_BOOK, 40000, 10000
+    STAKE, 60000, 10000
+    EQUAL, 6, 1
     """)
     @ParameterizedTest
-    void getNodesWithNodesNotInAddressBook(ConsensusMode mode, long stake, int nodeCount,
-            long expectedTotalStake, long expectedNodeStake) {
+    void getNodesWithNodesNotInAddressBook(ConsensusMode mode, long expectedTotalStake, long expectedNodeStake) {
         long timestamp = domainBuilder.timestamp();
         var nodeId = new AtomicInteger(0);
+        final int nodeCount = 6; // regardless of mode, always have 4 nodes in address book and 6 nodes in nodeStakes.
         for (int i = 0; i < nodeCount; i++) {
           var nodeStake = domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp)
-              .nodeId(nodeId.getAndIncrement()).stake(stake)).persist();
+              .nodeId(nodeId.getAndIncrement()).stake(10000L)).persist();
         }
         mirrorProperties.setConsensusMode(mode);
 
