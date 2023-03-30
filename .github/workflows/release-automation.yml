@@ -27,15 +27,6 @@ jobs:
           lenient: false
           version: ${{ github.event.inputs.version }}
 
-      - name: Retrieve the Milestone
-        id: milestone
-        if: ${{ steps.version_parser.outputs.prerelease == '' }}
-        uses: julbme/gh-action-manage-milestone@v1
-        with:
-          title: ${{ steps.version_parser.outputs.release }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Set Release Environment Variables
         run: |
           PREMINOR_VERSION=${{ steps.version_parser.outputs.inc-preminor }}
@@ -94,13 +85,22 @@ jobs:
         with:
           arguments: release -Pversion=${{ env.VERSION }}
 
+      - name: Close the Milestone
+        if: ${{ steps.version_parser.outputs.prerelease == '' }}
+        id: milestone
+        uses: Akkjon/close-milestone@v2.1.0
+        with:
+          milestone_name: ${{ steps.version_parser.outputs.release }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Create Release Notes
-        if: ${{ steps.milestone.outputs.number != '' }}
-        uses: xin-hedera/release-notes-generator-action@v3.1.5-rc1
+        if: ${{ steps.milestone.outputs.milestone_id != '' }}
+        uses: Decathlon/release-notes-generator-action@v3.1.6
         env:
           FILENAME: ${{ env.RELEASE_NOTES_FILENAME }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          MILESTONE_NUMBER: ${{ steps.milestone.outputs.number }}
+          MILESTONE_NUMBER: ${{ steps.milestone.outputs.milestone_id }}
 
       - name: Commit and Tag
         uses: stefanzweifel/git-auto-commit-action@v4
@@ -119,19 +119,10 @@ jobs:
           commit: ${{ env.RELEASE_BRANCH }}
           draft: true
           name: ${{ env.RELEASE_TAG }}
-          omitBody: ${{ steps.milestone.outputs.number == '' }}
+          omitBody: ${{ steps.milestone.outputs.milestone_id == '' }}
           prerelease: ${{ steps.version_parser.outputs.prerelease != '' }}
           tag: ${{ env.RELEASE_TAG }}
           token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Close the Milestone
-        if: ${{ steps.milestone.outputs.number != '' }}
-        uses: julbme/gh-action-manage-milestone@v1
-        with:
-          title: ${{ steps.version_parser.outputs.release }}
-          state: closed
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   create_pr:
     name: Create PR
