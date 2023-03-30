@@ -1,0 +1,21 @@
+{{- if .Values.testkube.enabled -}}
+apiVersion: tests.testkube.io/v1
+kind: TestTrigger
+metadata:
+  name: test-trigger-rest
+  namespace: {{ .Values.testkube.namespace }}
+spec:
+  resource: pod
+  resourceSelector:
+    namespace: {{ .Values.testkube.namespace }}
+    labelSelector:
+      matchLabels:
+        test-trigger: rest-trigger
+  event: deleted
+  action: run
+  execution: testsuite
+  delay: 60s
+  testSelector:
+    name: test-suite-rest
+    namespace: {{ .Values.testkube.namespace }}
+{{- end }}
