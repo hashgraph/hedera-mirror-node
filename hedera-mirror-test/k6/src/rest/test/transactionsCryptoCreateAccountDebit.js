@@ -27,25 +27,23 @@
  * An attempt to make this test more generic seems to have low-value while also making variable names confusing.
  */
 
-import http from "k6/http";
+import http from 'k6/http';
 
-import { TestScenarioBuilder } from '../../lib/common.js';
-import { transactionListName, urlPrefix } from '../../lib/constants.js';
-import { isValidListResponse } from "./common.js";
-import { setupTestParameters } from "./bootstrapEnvParameters.js";
+import {isValidListResponse, RestTestScenarioBuilder} from '../libex/common.js';
+import {transactionListName} from '../libex/constants.js';
 
 const urlTag = '/transactions?transactionType=CRYPTOCREATEACCOUNT&type=debit';
 
-const { options, run } = new TestScenarioBuilder()
+const {options, run, setup} = new RestTestScenarioBuilder()
   .name('transactionsCryptoCreateAccountDebit') // use unique scenario name among all tests
-  .tags({ url: urlTag })
+  .tags({url: urlTag})
   .request((testParameters) => {
-    const url = `${testParameters['BASE_URL']}${urlPrefix}/transactions?transactiontype=CRYPTOCREATEACCOUNT&type=debit&order=asc&limit=${testParameters['DEFAULT_LIMIT']}`;
+    const url = `${testParameters['BASE_URL_PREFIX']}/transactions?transactiontype=CRYPTOCREATEACCOUNT&type=debit&order=asc&limit=${testParameters['DEFAULT_LIMIT']}`;
     return http.get(url);
   })
-  .check('Transactions of type CRYPTOCREATEACCOUNT and debit balance modification type OK', (r) => isValidListResponse(r, transactionListName))
+  .check('Transactions of type CRYPTOCREATEACCOUNT and debit balance modification type OK', (r) =>
+    isValidListResponse(r, transactionListName)
+  )
   .build();
 
-export { options, run };
-
-export const setup = setupTestParameters;
+export {options, run, setup};

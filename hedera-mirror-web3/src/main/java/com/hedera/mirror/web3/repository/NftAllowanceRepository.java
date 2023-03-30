@@ -1,3 +1,5 @@
+package com.hedera.mirror.web3.repository;
+
 /*-
  * ‌
  * Hedera Mirror Node
@@ -18,20 +20,9 @@
  * ‍
  */
 
-const isSuccess = (response) => response.status >= 200 && response.status < 300;
+import org.springframework.data.repository.CrudRepository;
 
-const isValidListResponse = (response, listName) => {
-  if (!isSuccess(response)) {
-    return false;
-  }
+import com.hedera.mirror.common.domain.entity.AbstractNftAllowance.Id;
+import com.hedera.mirror.common.domain.entity.NftAllowance;
 
-  const body = JSON.parse(response.body);
-  const list = body[listName];
-  if (!Array.isArray(list)) {
-    return false;
-  }
-
-  return list.length > 0;
-}
-
-export {isValidListResponse, isSuccess};
+public interface NftAllowanceRepository extends CrudRepository<NftAllowance, Id> {}

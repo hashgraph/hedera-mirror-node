@@ -1,3 +1,5 @@
+package com.hedera.mirror.web3.repository;
+
 /*-
  * ‌
  * Hedera Mirror Node
@@ -18,14 +20,9 @@
  * ‍
  */
 
-const currencyHbar = {
-  symbol: 'HBAR',
-  decimals: 8,
-  metadata: {
-    issuer: 'Hedera',
-  },
-};
+import org.springframework.data.repository.CrudRepository;
 
-export {
-  currencyHbar
-};
+import com.hedera.mirror.common.domain.token.AbstractTokenAccount.Id;
+import com.hedera.mirror.common.domain.token.TokenAccount;
+
+public interface TokenAccountRepository extends CrudRepository<TokenAccount, Id> {}

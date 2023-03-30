@@ -18,25 +18,22 @@
  * ‍
  */
 
-import http from "k6/http";
+import http from 'k6/http';
 
-import {TestScenarioBuilder} from '../../lib/common.js';
-import {addressBookListName, urlPrefix} from '../../lib/constants.js';
-import {isValidListResponse} from "./common.js";
-import {setupTestParameters} from "./bootstrapEnvParameters.js";
+import {isValidListResponse, RestTestScenarioBuilder} from '../libex/common.js';
+import {addressBookListName} from '../libex/constants.js';
 
 const urlTag = '/transactions/{id}';
 
-const {options, run} = new TestScenarioBuilder()
+const {options, run, setup} = new RestTestScenarioBuilder()
   .name('transactionsIdStateproof') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request((testParameters) => {
-    const url = `${testParameters['BASE_URL']}${urlPrefix}/transactions/${testParameters['DEFAULT_TRANSACTION_ID']}/stateproof`;
+    const url = `${testParameters['BASE_URL_PREFIX']}/transactions/${testParameters['DEFAULT_TRANSACTION_ID']}/stateproof`;
     return http.get(url);
   })
+  .requiredParameters('DEFAULT_TRANSACTION_ID')
   .check('Transactions id Stateproof OK', (r) => isValidListResponse(r, addressBookListName))
   .build();
 
-export {options, run};
-
-export const setup = setupTestParameters;
+export {options, run, setup};

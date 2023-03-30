@@ -282,9 +282,7 @@ public class TopicFeature {
     }
 
     @Then("I subscribe with a filter to retrieve messages")
-    @Retryable(value = {AssertionError.class},
-            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
-            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
+    @RetryAsserts
     public void retrieveTopicMessages() throws Throwable {
         assertNotNull(consensusTopicId, "consensusTopicId null");
         assertNotNull(topicMessageQuery, "TopicMessageQuery null");
@@ -293,9 +291,7 @@ public class TopicFeature {
     }
 
     @Then("I subscribe with a filter to retrieve these published messages")
-    @Retryable(value = {AssertionError.class},
-            backoff = @Backoff(delayExpression = "#{@acceptanceTestProperties.backOffPeriod.toMillis()}"),
-            maxAttemptsExpression = "#{@acceptanceTestProperties.maxRetries}")
+    @RetryAsserts
     public void retrievePublishedTopicMessages() throws Throwable {
         assertNotNull(consensusTopicId, "consensusTopicId null");
         assertNotNull(topicMessageQuery, "TopicMessageQuery null");
