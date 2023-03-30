@@ -139,7 +139,7 @@ public class AddressBookServiceImpl implements AddressBookService {
         var totalStake = new AtomicLong(0L);
         var nodes = new TreeSet<ConsensusNode>();
         var nodeStakes = new HashMap<Long, NodeStake>();
-        ConsensusMode consensusMode = mirrorProperties.getConsensusMode();
+        var consensusMode = mirrorProperties.getConsensusMode();
         var nodesInAddressBook = addressBook.getEntries().stream().map(AddressBookEntry::getNodeId)
             .collect(Collectors.toSet());
 
@@ -147,12 +147,14 @@ public class AddressBookServiceImpl implements AddressBookService {
         nodeStakeRepository.findLatest().forEach(nodeStake -> {
             if (consensusMode == ConsensusMode.EQUAL) {
               nodeStake.setStake(1L);
-            } else if (consensusMode != ConsensusMode.STAKE_IN_ADDRESS_BOOK ||
+            }
+
+            if (consensusMode != ConsensusMode.STAKE_IN_ADDRESS_BOOK ||
                   nodesInAddressBook.contains(nodeStake.getNodeId())) {
               totalStake.addAndGet(nodeStake.getStake());
             }
             nodeStakes.put(nodeStake.getNodeId(), nodeStake);
-            // rather than calling getAndUpdate with Math.max, this just sets the variable a single time.
+            // all the node stake rows have the same consensus timestamp
             nodeStakeTimestamp.compareAndSet(0L, nodeStake.getConsensusTimestamp());
         });
 
