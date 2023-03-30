@@ -20,7 +20,6 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
  * ‍
  */
 
-import static com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse.convertContractCallResponseToNum;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.ZERO_ADDRESS;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -578,7 +577,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 contractClient.getClientAddress()
         );
 
-        assertThat(convertContractCallResponseToNum(response)).isZero();
+        assertThat(response.getResultAsNumber()).isZero();
     }
 
     @Then("Get type for non fungible token")
@@ -589,7 +588,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 contractClient.getClientAddress()
         );
 
-        assertThat(convertContractCallResponseToNum(response)).isEqualTo(1);
+        assertThat(response.getResultAsNumber()).isEqualTo(1);
     }
 
     private void baseExpiryInfoChecks(ContractCallResponse response) throws Exception {
@@ -807,7 +806,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 tokenIds.get(0).toSolidityAddress(),
                 contractClient.getClientAddress()
         );
-        assertThat(ContractCallResponse.convertContractCallResponseToNum(response)).isEqualTo(10);
+        assertThat(response.getResultAsNumber()).isEqualTo(10);
     }
 
     @Then("Get fungible token total supply by direct call")
@@ -817,7 +816,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 tokenIds.get(0).toSolidityAddress(),
                 contractClient.getClientAddress()
         );
-        assertThat(ContractCallResponse.convertContractCallResponseToNum(response)).isEqualTo(1000000);
+        assertThat(response.getResultAsNumber()).isEqualTo(1000000);
     }
 
     @Then("Get fungible token balanceOf by direct call")
@@ -827,7 +826,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 tokenIds.get(0).toSolidityAddress(),
                 contractClient.getClientAddress()
         );
-        assertThat(ContractCallResponse.convertContractCallResponseToNum(response)).isEqualTo(1000000);
+        assertThat(response.getResultAsNumber()).isEqualTo(1000000);
     }
 
     @Then("Get fungible token allowance by direct call")
@@ -839,7 +838,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 tokenIds.get(0).toSolidityAddress(),
                 contractClient.getClientAddress()
         );
-        assertThat(ContractCallResponse.convertContractCallResponseToNum(response)).isZero();
+        assertThat(response.getResultAsNumber()).isZero();
     }
 
     @Then("Get non fungible token name by direct call")
@@ -869,7 +868,7 @@ public class PrecompileContractFeature extends AbstractFeature {
                 tokenIds.get(1).toSolidityAddress(),
                 contractClient.getClientAddress()
         );
-        assertThat(ContractCallResponse.convertContractCallResponseToNum(response)).isEqualTo(1);
+        assertThat(response.getResultAsNumber()).isEqualTo(1);
     }
 
     @Then("Get non fungible token ownerOf by direct call")

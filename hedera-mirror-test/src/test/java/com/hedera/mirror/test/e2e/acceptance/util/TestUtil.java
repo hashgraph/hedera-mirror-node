@@ -37,10 +37,6 @@ public class TestUtil {
     private static final BaseEncoding BASE32_ENCODER = BaseEncoding.base32().omitPadding();
     public static String ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 
-    public static String to32BytesString(String data) {
-        return StringUtils.leftPad(data, 64, '0');
-    }
-
     public static String getAliasFromPublicKey(@NonNull PublicKey key) {
         if (key.isECDSA()) {
             return BASE32_ENCODER

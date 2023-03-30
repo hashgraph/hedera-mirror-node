@@ -58,10 +58,6 @@ public class ContractCallResponse {
         return new String(bytes, StandardCharsets.UTF_8).trim();
     }
 
-    public boolean getResultAsBoolean() {
-        return Long.parseUnsignedLong(result.replace("0x", ""), 16) > 0;
-    }
-
     public String getResultAsAsciiString() {
         // 1st 32 bytes - string info
         // 2nd 32 bytes - data length in the last 32 bytes
