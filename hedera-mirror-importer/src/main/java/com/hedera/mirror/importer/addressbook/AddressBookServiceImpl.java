@@ -44,7 +44,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
@@ -108,6 +107,8 @@ public class AddressBookServiceImpl implements AddressBookService {
             log.warn("Not an address book File ID. Skipping processing ...");
             return;
         }
+
+        fileDataRepository.save(fileData);
 
         if (fileData.getFileData() == null || fileData.getFileData().length == 0) {
             log.warn("Byte array contents were empty. Skipping processing ...");

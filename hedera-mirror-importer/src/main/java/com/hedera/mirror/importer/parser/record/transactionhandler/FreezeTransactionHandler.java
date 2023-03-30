@@ -25,32 +25,19 @@ import lombok.RequiredArgsConstructor;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
-import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 
 @Named
 @RequiredArgsConstructor
-class FileAppendTransactionHandler implements TransactionHandler {
-
-    private final FileDataHandler fileDataHandler;
+class FreezeTransactionHandler implements TransactionHandler {
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getFileAppend().getFileID());
+        return EntityId.of(recordItem.getTransactionBody().getFreeze().getUpdateFile());
     }
 
     @Override
     public TransactionType getType() {
-        return TransactionType.FILEAPPEND;
-    }
-
-    @Override
-    public void updateTransaction(Transaction transaction, RecordItem recordItem) {
-        if (!recordItem.isSuccessful()) {
-            return;
-        }
-
-        var contents = recordItem.getTransactionBody().getFileAppend().getContents();
-        fileDataHandler.handle(transaction, contents);
+        return TransactionType.FREEZE;
     }
 }

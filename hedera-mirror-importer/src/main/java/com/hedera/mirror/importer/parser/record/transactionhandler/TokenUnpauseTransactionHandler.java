@@ -24,7 +24,8 @@ import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.token.TokenAccount;
+import com.hedera.mirror.common.domain.token.Token;
+import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
@@ -33,19 +34,19 @@ import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 
 @Named
 @RequiredArgsConstructor
-class TokenDissociateTransactionHandler implements TransactionHandler {
+class TokenUnpauseTransactionHandler implements TransactionHandler {
 
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
 
     @Override
     public EntityId getEntity(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getTokenDissociate().getAccount());
+        return EntityId.of(recordItem.getTransactionBody().getTokenUnpause().getToken());
     }
 
     @Override
     public TransactionType getType() {
-        return TransactionType.TOKENDISSOCIATE;
+        return TransactionType.TOKENUNPAUSE;
     }
 
     @Override
@@ -54,17 +55,9 @@ class TokenDissociateTransactionHandler implements TransactionHandler {
             return;
         }
 
-        var tokenDissociateTransactionBody = recordItem.getTransactionBody().getTokenDissociate();
-
-        tokenDissociateTransactionBody.getTokensList().forEach(token -> {
-            EntityId tokenId = EntityId.of(token);
-            TokenAccount tokenAccount = new TokenAccount();
-            tokenAccount.setAccountId(transaction.getEntityId().getId());
-            tokenAccount.setAssociated(false);
-            tokenAccount.setTimestampLower(recordItem.getConsensusTimestamp());
-            tokenAccount.setTokenId(tokenId.getId());
-            entityListener.onTokenAccount(tokenAccount);
-        });
+        Token token = Token.of(transaction.getEntityId());
+        token.setPauseStatus(TokenPauseStatusEnum.UNPAUSED);
+        token.setModifiedTimestamp(recordItem.getConsensusTimestamp());
+        entityListener.onToken(token);
     }
 }
-

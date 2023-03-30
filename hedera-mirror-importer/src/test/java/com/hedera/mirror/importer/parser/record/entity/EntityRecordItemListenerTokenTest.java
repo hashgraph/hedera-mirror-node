@@ -256,7 +256,8 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 List.of(treasury, FEE_COLLECTOR_ACCOUNT_ID_2, FEE_COLLECTOR_ACCOUNT_ID_3) :
                 List.of(treasury, FEE_COLLECTOR_ACCOUNT_ID_2);
 
-        List<Long> autoEnabledAccountBalances = tokenType == FUNGIBLE_COMMON ? List.of(1000000L, 0L, 0L) : List.of(0L, 0L, 0L);
+        List<Long> autoEnabledAccountBalances = tokenType == FUNGIBLE_COMMON ? List.of(1000000L, 0L, 0L) : List.of(0L
+                , 0L, 0L);
         return Stream.of(
                 TokenCreateArguments.builder()
                         .autoEnabledAccounts(List.of(treasury))
@@ -914,8 +915,9 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .transactionBody(b -> b.clearCustomFees().clearFreezeKey().clearKycKey()
                         .setInitialSupply(0L).setTokenType(NON_FUNGIBLE_UNIQUE).setTreasury(protoOldTreasury))
                 .receipt(r -> r.setTokenID(protoTokenId))
-                .record(r -> r.addAutomaticTokenAssociations(TokenAssociation.newBuilder()
-                        .setTokenId(protoTokenId).setAccountId(protoOldTreasury)))
+                .record(r -> r.clearAutomaticTokenAssociations()
+                        .addAutomaticTokenAssociations(TokenAssociation.newBuilder()
+                                .setTokenId(protoTokenId).setAccountId(protoOldTreasury)))
                 .build();
         recordItems.add(tokenCreateRecordItem);
 
@@ -924,16 +926,18 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         var mintSerials = List.of(1L, 2L, 3L);
         var metadata = recordItemBuilder.bytes(16);
         var mintTransfers = mintSerials.stream()
-                .map(serial -> NftTransfer.newBuilder().setSerialNumber(serial).setReceiverAccountID(protoOldTreasury).build())
+                .map(serial -> NftTransfer.newBuilder().setSerialNumber(serial).setReceiverAccountID(protoOldTreasury)
+                        .build())
                 .toList();
         var nftMintTransferList = TokenTransferList.newBuilder()
                 .setToken(protoTokenId)
                 .addAllNftTransfers(mintTransfers)
                 .build();
         var nftMintRecordItem = recordItemBuilder.tokenMint()
-                .transactionBody(b -> b.setToken(protoTokenId).clearMetadata().addAllMetadata(Collections.nCopies(3, metadata)))
+                .transactionBody(b -> b.clearMetadata().setToken(protoTokenId).clearMetadata()
+                        .addAllMetadata(Collections.nCopies(3, metadata)))
                 .record(r -> r.addTokenTransferLists(nftMintTransferList))
-                .receipt(r -> r.addAllSerialNumbers(mintSerials))
+                .receipt(r -> r.clearSerialNumbers().addAllSerialNumbers(mintSerials))
                 .build();
         recordItems.add(nftMintRecordItem);
 
@@ -1022,11 +1026,11 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(nft1, nft2, nft3);
 
         var treasuryUpdateNftTransfers = Stream.of(1L, 3L).map(serial ->
-                com.hedera.mirror.common.domain.token.NftTransfer.builder()
-                        .id(new NftTransferId(nftUpdateRecordItem.getConsensusTimestamp(), serial, tokenId))
-                        .senderAccountId(oldTreasury)
-                        .receiverAccountId(newTreasury)
-                        .build())
+                        com.hedera.mirror.common.domain.token.NftTransfer.builder()
+                                .id(new NftTransferId(nftUpdateRecordItem.getConsensusTimestamp(), serial, tokenId))
+                                .senderAccountId(oldTreasury)
+                                .receiverAccountId(newTreasury)
+                                .build())
                 .toList();
         assertThat(nftTransferRepository.findAll())
                 .filteredOn(t -> t.getId().getConsensusTimestamp() == nftUpdateRecordItem.getConsensusTimestamp())
@@ -2017,7 +2021,8 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     }
 
     private RecordItem getRecordItem(long consensusTimestamp, Transaction transaction) {
-        return getRecordItem(consensusTimestamp, transaction, builder -> {});
+        return getRecordItem(consensusTimestamp, transaction, builder -> {
+        });
     }
 
     private RecordItem getRecordItem(long consensusTimestamp, Transaction transaction,
@@ -2032,7 +2037,8 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     }
 
     private void insertAndParseTransaction(long consensusTimestamp, Transaction transaction) {
-        insertAndParseTransaction(consensusTimestamp, transaction, builder -> {});
+        insertAndParseTransaction(consensusTimestamp, transaction, builder -> {
+        });
     }
 
     private void insertAndParseTransaction(long consensusTimestamp, Transaction transaction,
@@ -2298,7 +2304,8 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         }
     }
 
-    private void assertTokenAccountInRepository(TokenID tokenID, AccountID accountId, long balance, long createdTimestamp,
+    private void assertTokenAccountInRepository(TokenID tokenID, AccountID accountId, long balance,
+                                                long createdTimestamp,
                                                 boolean associated, TokenFreezeStatusEnum freezeStatus,
                                                 TokenKycStatusEnum kycStatus, long timestampLowerBound) {
         var expected = TokenAccount.builder()
@@ -2439,7 +2446,8 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 builder -> builder.setConsensusTimestamp(TestUtils.toTimestamp(consensusTimestamp)),
                 transactionBody, ResponseCodeEnum.SUCCESS.getNumber());
 
-        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction).build());
+        parseRecordItemAndCommit(RecordItem.builder().transactionRecord(transactionRecord).transaction(transaction)
+                .build());
     }
 
     private TokenTransferList tokenTransferList(TokenID tokenId, AccountAmount.Builder ... accountAmounts) {

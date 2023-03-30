@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,16 +20,26 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.token.TokenAccount;
+import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
+
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 class TokenRevokeKycTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new TokenRevokeKycTransactionHandler();
+        return new TokenRevokeKycTransactionHandler(entityListener, entityProperties);
     }
 
     @Override
@@ -43,5 +53,41 @@ class TokenRevokeKycTransactionHandlerTest extends AbstractTransactionHandlerTes
     @Override
     protected EntityType getExpectedEntityIdType() {
         return EntityType.ACCOUNT;
+    }
+
+    @Test
+    void updateTransaction() {
+        // Given
+        var recordItem = recordItemBuilder.tokenRevokeKyc().build();
+        var transaction = domainBuilder.transaction().get();
+        var tokenAccount = ArgumentCaptor.forClass(TokenAccount.class);
+        var transactionBody = recordItem.getTransactionBody().getTokenRevokeKyc();
+
+        // When
+        transactionHandler.updateTransaction(transaction, recordItem);
+
+        // Then
+        verify(entityListener).onTokenAccount(tokenAccount.capture());
+
+        assertThat(tokenAccount.getValue())
+                .returns(transaction.getEntityId().getId(), TokenAccount::getAccountId)
+                .returns(TokenKycStatusEnum.REVOKED, TokenAccount::getKycStatus)
+                .returns(recordItem.getConsensusTimestamp(), TokenAccount::getTimestampLower)
+                .returns(null, TokenAccount::getTimestampUpper)
+                .returns(EntityId.of(transactionBody.getToken()).getId(), TokenAccount::getTokenId);
+    }
+
+    @Test
+    void updateTransactionDisabled() {
+        // Given
+        entityProperties.getPersist().setTokens(false);
+        var recordItem = recordItemBuilder.tokenRevokeKyc().build();
+        var transaction = domainBuilder.transaction().get();
+
+        // When
+        transactionHandler.updateTransaction(transaction, recordItem);
+
+        // Then
+        verifyNoInteractions(entityListener);
     }
 }

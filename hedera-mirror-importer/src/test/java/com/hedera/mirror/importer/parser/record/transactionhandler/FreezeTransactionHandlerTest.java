@@ -20,27 +20,25 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 
 import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.domain.transaction.LiveHash;
 
-class CryptoAddLiveHashTransactionHandlerTest extends AbstractTransactionHandlerTest {
+class FreezeTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new CryptoAddLiveHashTransactionHandler(entityListener, entityProperties);
+        return new FreezeTransactionHandler();
     }
 
     @Override
     protected TransactionBody.Builder getDefaultTransactionBody() {
-        return recordItemBuilder.cryptoAddLiveHash()
-                .transactionBody(b -> b.getLiveHashBuilder().getAccountIdBuilder().setAccountNum(DEFAULT_ENTITY_NUM))
+        var fileId = FileID.newBuilder().setFileNum(DEFAULT_ENTITY_NUM);
+        return recordItemBuilder.freeze()
+                .transactionBody(b -> b.setUpdateFile(fileId))
                 .build()
                 .getTransactionBody()
                 .toBuilder();
@@ -48,33 +46,13 @@ class CryptoAddLiveHashTransactionHandlerTest extends AbstractTransactionHandler
 
     @Override
     protected EntityType getExpectedEntityIdType() {
-        return EntityType.ACCOUNT;
+        return EntityType.FILE;
     }
 
     @Test
     void updateTransaction() {
         // Given
-        entityProperties.getPersist().setClaims(true);
-        var recordItem = recordItemBuilder.cryptoAddLiveHash().build();
-        var transaction = domainBuilder.transaction().get();
-        var liveHash = ArgumentCaptor.forClass(LiveHash.class);
-        var transactionBody = recordItem.getTransactionBody().getCryptoAddLiveHash();
-
-        // When
-        transactionHandler.updateTransaction(transaction, recordItem);
-
-        // Then
-        verify(entityListener).onLiveHash(liveHash.capture());
-        assertThat(liveHash.getValue())
-                .returns(transaction.getConsensusTimestamp(), LiveHash::getConsensusTimestamp)
-                .returns(transactionBody.getLiveHash().getHash().toByteArray(), LiveHash::getLivehash);
-    }
-
-    @Test
-    void updateTransactionDisabled() {
-        // Given
-        entityProperties.getPersist().setClaims(false);
-        var recordItem = recordItemBuilder.cryptoAddLiveHash().build();
+        var recordItem = recordItemBuilder.freeze().build();
         var transaction = domainBuilder.transaction().get();
 
         // When

@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,15 +20,24 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.hedera.mirror.common.domain.entity.EntityType;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.token.TokenAccount;
 
 class TokenAssociateTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new TokenAssociateTransactionHandler();
+        return new TokenAssociateTransactionHandler(entityListener, entityProperties);
     }
 
     @Override
@@ -41,5 +50,45 @@ class TokenAssociateTransactionHandlerTest extends AbstractTransactionHandlerTes
     @Override
     protected EntityType getExpectedEntityIdType() {
         return EntityType.ACCOUNT;
+    }
+
+    @Test
+    void updateTransaction() {
+        // Given
+        var recordItem = recordItemBuilder.tokenAssociate().build();
+        var transaction = domainBuilder.transaction().get();
+        var tokenAccount = ArgumentCaptor.forClass(TokenAccount.class);
+        var transactionBody = recordItem.getTransactionBody().getTokenAssociate();
+
+        // When
+        transactionHandler.updateTransaction(transaction, recordItem);
+
+        // Then
+        verify(entityListener).onTokenAccount(tokenAccount.capture());
+
+        assertThat(tokenAccount.getValue())
+                .returns(transaction.getEntityId().getId(), TokenAccount::getAccountId)
+                .returns(true, TokenAccount::getAssociated)
+                .returns(false, TokenAccount::getAutomaticAssociation)
+                .returns(transaction.getConsensusTimestamp(), TokenAccount::getCreatedTimestamp)
+                .returns(null, TokenAccount::getFreezeStatus)
+                .returns(null, TokenAccount::getKycStatus)
+                .returns(transaction.getConsensusTimestamp(), TokenAccount::getTimestampLower)
+                .returns(null, TokenAccount::getTimestampUpper)
+                .returns(EntityId.of(transactionBody.getTokens(0)).getId(), TokenAccount::getTokenId);
+    }
+
+    @Test
+    void updateTransactionDisabled() {
+        // Given
+        entityProperties.getPersist().setTokens(false);
+        var recordItem = recordItemBuilder.tokenAssociate().build();
+        var transaction = domainBuilder.transaction().get();
+
+        // When
+        transactionHandler.updateTransaction(transaction, recordItem);
+
+        // Then
+        verifyNoInteractions(entityListener);
     }
 }

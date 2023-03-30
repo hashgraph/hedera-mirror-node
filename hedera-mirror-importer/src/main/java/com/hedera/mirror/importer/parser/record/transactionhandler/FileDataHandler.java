@@ -22,44 +22,38 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 
 import static com.hedera.mirror.common.util.DomainUtils.toBytes;
 
+import com.google.protobuf.ByteString;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.transaction.LiveHash;
-import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.transaction.Transaction;
-import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.importer.addressbook.AddressBookService;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 
 @Named
 @RequiredArgsConstructor
-class CryptoAddLiveHashTransactionHandler implements TransactionHandler {
+final class FileDataHandler {
 
+    private final AddressBookService addressBookService;
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
 
-    @Override
-    public EntityId getEntity(RecordItem recordItem) {
-        return EntityId.of(recordItem.getTransactionBody().getCryptoAddLiveHash().getLiveHash().getAccountId());
-    }
+    void handle(Transaction transaction, ByteString contents) {
+        var fileId = transaction.getEntityId();
+        var fileData = new FileData();
+        fileData.setConsensusTimestamp(transaction.getConsensusTimestamp());
+        fileData.setEntityId(fileId);
+        fileData.setFileData(toBytes(contents));
+        fileData.setTransactionType(transaction.getType());
 
-    @Override
-    public TransactionType getType() {
-        return TransactionType.CRYPTOADDLIVEHASH;
-    }
-
-    @Override
-    public void updateTransaction(Transaction transaction, RecordItem recordItem) {
-        if (!entityProperties.getPersist().isClaims() || !recordItem.isSuccessful()) {
-            return;
+        // We always store file data for address books since they're used by the address book service
+        if (addressBookService.isAddressBook(fileId)) {
+            addressBookService.update(fileData);
+        } else if (entityProperties.getPersist().isFiles() ||
+                (entityProperties.getPersist().isSystemFiles() && fileId.getEntityNum() < 1000)) {
+            entityListener.onFileData(fileData);
         }
-
-        var transactionBody = recordItem.getTransactionBody().getCryptoAddLiveHash();
-        var liveHash = new LiveHash();
-        liveHash.setConsensusTimestamp(transaction.getConsensusTimestamp());
-        liveHash.setLivehash(toBytes(transactionBody.getLiveHash().getHash()));
-        entityListener.onLiveHash(liveHash);
     }
 }

@@ -20,7 +20,6 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import static com.hedera.mirror.common.converter.WeiBarTinyBarConverter.WEIBARS_TO_TINYBARS;
 import static com.hedera.mirror.common.converter.WeiBarTinyBarConverter.WEIBARS_TO_TINYBARS_BIGINT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -40,6 +39,7 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.math.BigInteger;
 import org.apache.commons.lang3.RandomUtils;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -52,7 +52,6 @@ import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
-import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 import com.hedera.mirror.importer.parser.record.ethereum.EthereumTransactionParser;
 
 class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
@@ -62,12 +61,9 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Mock(lenient = true)
     protected EthereumTransactionParser ethereumTransactionParser;
 
-    private EntityProperties entityProperties;
-
     @Override
     protected TransactionHandler getTransactionHandler() {
         doReturn(domainBuilder.ethereumTransaction(true).get()).when(ethereumTransactionParser).decode(any());
-        entityProperties = new EntityProperties();
         return new EthereumTransactionHandler(entityProperties, entityListener, ethereumTransactionParser);
     }
 
@@ -128,7 +124,7 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .returns(fileId, EthereumTransaction::getCallDataId)
                 .returns(recordItem.getConsensusTimestamp(), EthereumTransaction::getConsensusTimestamp)
                 .returns(DomainUtils.toBytes(body.getEthereumData()), EthereumTransaction::getData)
-                .returns(gasLimit , EthereumTransaction::getGasLimit)
+                .returns(gasLimit, EthereumTransaction::getGasLimit)
                 .returns(DomainUtils.toBytes(ETHEREUM_HASH), EthereumTransaction::getHash)
                 .returns(body.getMaxGasAllowance(), EthereumTransaction::getMaxGasAllowance)
                 .returns(recordItem.getPayerAccountId(), EthereumTransaction::getPayerAccountId)
@@ -247,6 +243,13 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
         verify(entityListener, never()).onEntity(any());
         verify(entityListener, never()).onEthereumTransaction(any());
         verify(ethereumTransactionParser, never()).decode(any());
+    }
+
+    @Disabled("Since this handler persists data for unsuccessful transactions & has tests for that")
+    @Override
+    @Test
+    void updateTransactionUnsuccessful() {
+        throw new UnsupportedOperationException("Disabled");
     }
 
     private ContractFunctionResult getContractFunctionResult(TransactionRecord record, boolean create) {
