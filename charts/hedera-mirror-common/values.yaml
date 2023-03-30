@@ -375,6 +375,8 @@ testkube:
       namespace: ""
       release: mirror
     vus: 500
+  trigger:
+    enabled: false
 
 traefik:
   affinity:
