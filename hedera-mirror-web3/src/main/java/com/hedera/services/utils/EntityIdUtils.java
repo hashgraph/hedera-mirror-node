@@ -150,6 +150,10 @@ public final class EntityIdUtils {
         return tokenIdFromEvmAddress(address.toArrayUnsafe());
     }
 
+    public static Address asTypedEvmAddress(final ContractID id) {
+        return Address.wrap(Bytes.wrap(asEvmAddress(id)));
+    }
+
     public static long[] asDotDelimitedLongArray(String s) {
         String[] parts = s.split("[.]");
         return Stream.of(parts).mapToLong(Long::valueOf).toArray();
