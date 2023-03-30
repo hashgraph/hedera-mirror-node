@@ -21,22 +21,39 @@ package com.hedera.mirror.test.e2e.acceptance.response;
  */
 
 import java.math.BigInteger;
+import java.nio.charset.StandardCharsets;
+import javax.inject.Named;
 import lombok.Data;
 import org.apache.tuweni.bytes.Bytes;
 
 @Data
+@Named
 public class ContractCallResponse {
+
     private String result;
 
-    public static BigInteger convertContractCallResponseToNum(final ContractCallResponse response) {
-        return Bytes.fromHexString(response.getResult()).toBigInteger();
+    public BigInteger getResultAsNumber() {
+        return getResultAsBytes().toBigInteger();
     }
 
-    public static String convertContractCallResponseToSelector(final ContractCallResponse response) {
-        return Bytes.fromHexString(response.getResult()).trimTrailingZeros().toUnprefixedHexString();
+    public String getResultAsSelector() {
+        return getResultAsBytes().trimTrailingZeros().toUnprefixedHexString();
     }
 
-    public static String convertContractCallResponseToAddress(final ContractCallResponse response) {
-        return Bytes.fromHexString(response.getResult()).slice(12).toUnprefixedHexString();
+    public String getResultAsAddress() {
+        return getResultAsBytes().slice(12).toUnprefixedHexString();
+    }
+
+    public boolean getResultAsBoolean() {
+        return Long.parseUnsignedLong(result.replace("0x", ""), 16) > 0;
+    }
+
+    public Bytes getResultAsBytes() {
+        return Bytes.fromHexString(result);
+    }
+
+    public String getResultAsText() {
+        var bytes = getResultAsBytes().toArrayUnsafe();
+        return new String(bytes, StandardCharsets.UTF_8).trim();
     }
 }
