@@ -22,7 +22,7 @@ package com.hedera.mirror.importer.repository.upsert;
 
 import java.text.MessageFormat;
 
-public class TokenDissociateTransferUpsertQueryGenerator implements UpsertQueryGenerator {
+public class DeletedTokenDissociateTransferUpsertQueryGenerator implements UpsertQueryGenerator {
 
     private static final String FINAL_TABLE_NAME = "token_transfer";
 

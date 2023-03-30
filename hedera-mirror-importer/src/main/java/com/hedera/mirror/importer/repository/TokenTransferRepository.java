@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.repository;
  * ‍
  */
 
+import java.util.List;
+
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
@@ -27,6 +29,9 @@ import org.springframework.data.repository.CrudRepository;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
 
 public interface TokenTransferRepository extends CrudRepository<TokenTransfer, TokenTransfer.Id>, RetentionRepository {
+
+    @Query(nativeQuery = true, value = "select * from token_transfer where consensus_timestamp = ?1")
+    List<TokenTransfer> findByConsensusTimestamp(long consensusTimestamp);
 
     @Modifying
     @Override
