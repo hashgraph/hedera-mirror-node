@@ -46,6 +46,7 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-webflux")
     testImplementation("org.springframework.retry:spring-retry")
     testImplementation("org.apache.tuweni:tuweni-bytes")
+    testImplementation("commons-codec:commons-codec")
 }
 
 // Disable the default test task and only run acceptance tests during the standalone "acceptance" task

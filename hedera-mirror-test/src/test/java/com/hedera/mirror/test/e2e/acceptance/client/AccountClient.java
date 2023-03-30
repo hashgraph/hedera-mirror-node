@@ -25,8 +25,10 @@ import com.hedera.hashgraph.sdk.AccountCreateTransaction;
 import com.hedera.hashgraph.sdk.AccountId;
 import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.hashgraph.sdk.KeyList;
+import com.hedera.hashgraph.sdk.NftId;
 import com.hedera.hashgraph.sdk.PrivateKey;
 import com.hedera.hashgraph.sdk.PublicKey;
+import com.hedera.hashgraph.sdk.TokenId;
 import com.hedera.hashgraph.sdk.TransactionReceipt;
 import com.hedera.hashgraph.sdk.TransferTransaction;
 import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
@@ -213,6 +215,48 @@ public class AccountClient extends AbstractNetworkClient {
                 executeTransactionAndRetrieveReceipt(transaction);
 
         log.debug("Sent Account Allowance Approval");
+
+        return networkTransactionResponse;
+    }
+
+    public NetworkTransactionResponse approveNft(NftId nftId, AccountId spender) {
+        var ownerAccountId = sdkClient.getExpandedOperatorAccountId().getAccountId();
+
+        var transaction = new AccountAllowanceApproveTransaction()
+                .approveTokenNftAllowance(nftId, ownerAccountId, spender);
+
+        NetworkTransactionResponse networkTransactionResponse =
+                executeTransactionAndRetrieveReceipt(transaction);
+
+        log.debug("Sent Account Allowance Approval for Nft with id: {} and serialNumber: {}", nftId.tokenId, nftId.serial);
+
+        return networkTransactionResponse;
+    }
+
+    public NetworkTransactionResponse approveToken(TokenId tokenId, AccountId spender, long amount) {
+        var ownerAccountId = sdkClient.getExpandedOperatorAccountId().getAccountId();
+
+        var transaction = new AccountAllowanceApproveTransaction()
+                .approveTokenAllowance(tokenId, ownerAccountId, spender, amount);
+
+        NetworkTransactionResponse networkTransactionResponse =
+                executeTransactionAndRetrieveReceipt(transaction);
+
+        log.debug("Sent Account Allowance Approval for Token with id: {} and amount: {}", tokenId, amount);
+
+        return networkTransactionResponse;
+    }
+
+    public NetworkTransactionResponse approveNftAllSerials(TokenId tokenId, AccountId spender) {
+        var ownerAccountId = sdkClient.getExpandedOperatorAccountId().getAccountId();
+
+        var transaction = new AccountAllowanceApproveTransaction()
+                .approveTokenNftAllowanceAllSerials(tokenId, ownerAccountId, spender);
+
+        NetworkTransactionResponse networkTransactionResponse =
+                executeTransactionAndRetrieveReceipt(transaction);
+
+        log.debug("Sent Account Allowance Approval for all serial numbers for Nft with id: {}", tokenId);
 
         return networkTransactionResponse;
     }

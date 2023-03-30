@@ -94,7 +94,7 @@ The following parameters can be used to configure a web3 test:
 - ACCOUNT_ADDRESS - 64 character hex encoded account address without `0x` prefix
 - DEFAULT_ACCOUNT_ADDRESS - 64 character hex encoded account address without `0x` prefix
 - DEFAULT_CONTRACT_ADDRESS - 40 character hex encoded contract address without `0x` prefix (Parent contract should be deployed)
-- ERC_CONTRACT_ADDRESS - 40 character hex encoded contract address without `0x` prefix (ErcTestContract contract in web3/reference should be deployed)
+- ERC_CONTRACT_ADDRESS - 40 character hex encoded contract address without `0x` prefix (ErcTestContract contract in hedera-mirror-test/src/test/resources/solidity/contracts/ErcTestContract.sol should be deployed)
 - HTS_CONTRACT_ADDRESS - 40 character hex encoded contract address without `0x` prefix (PrecompileTestContract contract in hedera-mirror-test/src/test/resources/solidity/contracts/PrecompileTestContract.sol should be deployed)
 - KEY_TYPE - 64 character hex encoded key type without `0x` prefix
 - OPERATOR_ADDRESS - 64 character hex encoded account address without `0x` prefix
@@ -107,7 +107,7 @@ Example for ERC_CONTRACT deployment with js SDK
 
 ```js
 const contractCreate = await new ContractCreateFlow()
-  .setBytecode("HERE YOU NEED TO PUT INITCODE FROM web3/reference/ERCTestContract/ERCTestContract.bin")
+  .setBytecode("HERE YOU NEED TO PUT BYTECODE FROM hedera-mirror-test/src/test/resources/solidity/artifacts/contracts/ERCTestContract.sol/ERCTestContract.json")
   .setGas(200_000)
   .execute(client);
 ```
