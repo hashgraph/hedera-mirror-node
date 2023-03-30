@@ -16,6 +16,8 @@
 
 package com.hedera.services.store.contracts.precompile.impl;
 
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
+
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
@@ -24,12 +26,9 @@ import org.apache.tuweni.bytes.Bytes;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenDefaultFreezeStatusWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetTokenDefaultFreezeStatus;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.MirrorState;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
-
-import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 
 public class GetTokenDefaultFreezeStatus extends AbstractReadOnlyPrecompile implements EvmGetTokenDefaultFreezeStatus {
 
@@ -49,7 +48,7 @@ public class GetTokenDefaultFreezeStatus extends AbstractReadOnlyPrecompile impl
     }
 
     @Override
-    public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
+    public Bytes getSuccessResultFor() {
         Objects.requireNonNull(
                 defaultFreezeStatusWrapper, "`body` method should be called before `getSuccessResultsFor`");
 

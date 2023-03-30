@@ -15,22 +15,18 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
+import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
+
+import com.hederahashgraph.api.proto.java.TokenID;
+import java.util.function.UnaryOperator;
+import org.apache.tuweni.bytes.Bytes;
+
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmIsTokenPrecompile;
-
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.MirrorState;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
-
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
-
-import com.hederahashgraph.api.proto.java.TokenID;
-import org.apache.tuweni.bytes.Bytes;
-
-import java.util.function.UnaryOperator;
-
-import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 
 public class IsTokenPrecompile extends AbstractTokenInfoPrecompile implements EvmIsTokenPrecompile {
 
@@ -50,7 +46,7 @@ public class IsTokenPrecompile extends AbstractTokenInfoPrecompile implements Ev
     }
 
     @Override
-    public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
+    public Bytes getSuccessResultFor() {
         final var isToken = ledgers.contains(tokenId);
         return evmEncoder.encodeIsToken(isToken);
     }

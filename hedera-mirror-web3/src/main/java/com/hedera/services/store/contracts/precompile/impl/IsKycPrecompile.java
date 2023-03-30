@@ -26,7 +26,6 @@ import org.apache.tuweni.bytes.Bytes;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GrantRevokeKycWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmIsKycPrecompile;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.MirrorState;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -52,7 +51,7 @@ public class IsKycPrecompile extends AbstractReadOnlyPrecompile implements EvmIs
     }
 
     @Override
-    public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
+    public Bytes getSuccessResultFor() {
         final boolean isKyc = ledgers.isKyc(accountId, tokenId);
         return evmEncoder.encodeIsKyc(isKyc);
     }

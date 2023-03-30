@@ -19,21 +19,17 @@ import static com.hedera.services.store.contracts.precompile.codec.EncodingFacad
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_FEE_SUBMITTED;
 import static org.hyperledger.besu.evm.frame.MessageFrame.State.REVERT;
 
-import com.hedera.mirror.web3.exception.InvalidTransactionException;
-
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
-
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import com.hederahashgraph.api.proto.java.TransactionBody;
-import com.hederahashgraph.api.proto.java.TransactionRecord;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Wei;
 import org.hyperledger.besu.evm.frame.MessageFrame;
+
+import com.hedera.mirror.web3.exception.InvalidTransactionException;
+import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 
 /**
  * Extracted from hedera-services
@@ -54,14 +50,13 @@ public interface Precompile {
     default void handleSentHbars(final MessageFrame frame) {
         if (!Objects.equals(Wei.ZERO, frame.getValue())) {
             final String INVALID_TRANSFER_MSG = "Transfer of Value to Hedera Precompile";
-            final Bytes INVALID_TRANSFER = Bytes.of(INVALID_TRANSFER_MSG.getBytes(StandardCharsets.UTF_8));
-            frame.setRevertReason(INVALID_TRANSFER);
+            frame.setRevertReason(Bytes.of(INVALID_TRANSFER_MSG.getBytes(StandardCharsets.UTF_8)));
             frame.setState(REVERT);
             throw new InvalidTransactionException(INVALID_FEE_SUBMITTED, "", "");
         }
     }
 
-    default Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
+    default Bytes getSuccessResultFor() {
         return SUCCESS_RESULT;
     }
 

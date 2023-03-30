@@ -25,7 +25,6 @@ import org.apache.tuweni.bytes.Bytes;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenDefaultKycStatusWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetTokenDefaultKycStatus;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.MirrorState;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -48,7 +47,7 @@ public class GetTokenDefaultKycStatus extends AbstractReadOnlyPrecompile impleme
     }
 
     @Override
-    public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
+    public Bytes getSuccessResultFor() {
         Objects.requireNonNull(defaultKycStatusWrapper, "`body` method should be called before `getSuccessResultsFor`");
 
         final var defaultKycStatus = ledgers.defaultKycStatus(defaultKycStatusWrapper.token());

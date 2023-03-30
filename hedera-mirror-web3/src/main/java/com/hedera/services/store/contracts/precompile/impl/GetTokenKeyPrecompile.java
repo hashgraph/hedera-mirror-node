@@ -31,7 +31,6 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmKey;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetTokenKeyWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetTokenKeyPrecompile;
 import com.hedera.services.ledger.properties.TokenProperty;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.MirrorState;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -57,7 +56,7 @@ public class GetTokenKeyPrecompile extends AbstractReadOnlyPrecompile implements
     }
 
     @Override
-    public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
+    public Bytes getSuccessResultFor() {
         validateTrue(ledgers.exists(tokenId), ResponseCodeEnum.INVALID_TOKEN_ID);
         Objects.requireNonNull(keyType);
         final var key = ledgers.get(tokenId, keyType);

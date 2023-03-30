@@ -15,7 +15,6 @@
  */
 package com.hedera.services.store.contracts.precompile.impl;
 
-import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -25,7 +24,6 @@ import org.apache.tuweni.bytes.Bytes;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetTokenTypePrecompile;
-import com.hedera.services.state.submerkle.ExpirableTxnRecord;
 import com.hedera.services.store.contracts.MirrorState;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
@@ -48,7 +46,7 @@ public class GetTokenTypePrecompile extends AbstractTokenInfoPrecompile implemen
     }
 
     @Override
-    public Bytes getSuccessResultFor(final ExpirableTxnRecord.Builder childRecord) {
+    public Bytes getSuccessResultFor() {
         //final var token = ledgers.getImmutableRef(tokenId);
         //validateTrue(token != null, ResponseCodeEnum.INVALID_TOKEN_ID);
         final var tokenType = ledgers.tokenType().ordinal();
