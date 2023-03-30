@@ -99,8 +99,7 @@ class MirrorEvmTxProcessorTest {
     private HederaEvmWorldState.Updater updater;
 
     @Mock
-    private HederaEvmWorldUpdater stackedUpdater;
-
+    private AbstractLedgerEvmWorldUpdater stackedUpdater;
     @Mock
     private MirrorEvmContractAliases hederaEvmContractAliases;
 
