@@ -22,12 +22,16 @@ package com.hedera.mirror.web3.repository;
 
 import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_TOKEN;
 
+import java.util.Optional;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.repository.CrudRepository;
 
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
 
+public interface NftRepository extends CrudRepository<Nft, NftId> {
 
-@Cacheable(cacheNames = "nft", cacheManager = CACHE_MANAGER_TOKEN , unless = "#result == null")
-public interface NftRepository extends CrudRepository<Nft, NftId> {}
+    @Override
+    @Cacheable(cacheNames = "nft", cacheManager = CACHE_MANAGER_TOKEN , unless = "#result == null")
+    Optional<Nft> findById(NftId nftId);
+}
