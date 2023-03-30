@@ -27,7 +27,7 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncod
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenFreezeUnfreezeWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmIsFrozenPrecompile;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.contracts.MirrorState;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 
@@ -37,7 +37,7 @@ public class IsFrozenPrecompile extends AbstractReadOnlyPrecompile implements Ev
 
     public IsFrozenPrecompile(
             final TokenID tokenId,
-            final WorldLedgers ledgers,
+            final MirrorState ledgers,
             final EncodingFacade encoder,
             final EvmEncodingFacade evmEncoder,
             final PrecompilePricingUtils pricingUtils) {

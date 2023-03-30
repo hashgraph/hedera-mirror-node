@@ -19,7 +19,7 @@ import com.google.protobuf.ByteString;
 
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
 
-import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.contracts.MirrorState;
 import com.hedera.services.store.contracts.precompile.Precompile;
 
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
@@ -39,7 +39,7 @@ import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
 
 public abstract class AbstractReadOnlyPrecompile implements Precompile {
     protected TokenID tokenId;
-    protected final WorldLedgers ledgers;
+    protected final MirrorState ledgers;
     protected final EncodingFacade encoder;
     protected final EvmEncodingFacade evmEncoder;
     protected final PrecompilePricingUtils pricingUtils;
@@ -50,7 +50,7 @@ public abstract class AbstractReadOnlyPrecompile implements Precompile {
 
     protected AbstractReadOnlyPrecompile(
             final TokenID tokenId,
-            final WorldLedgers ledgers,
+            final MirrorState ledgers,
             final EncodingFacade encoder,
             final EvmEncodingFacade evmEncoder,
             final PrecompilePricingUtils pricingUtils) {

@@ -23,7 +23,7 @@ import com.hedera.services.ledger.properties.TokenProperty;
 
 import com.hederahashgraph.api.proto.java.TokenType;
 
-public interface WorldLedgers {
+public interface MirrorState {
     boolean defaultKycStatus(TokenID token);
 
     boolean defaultFreezeStatus(TokenID token);

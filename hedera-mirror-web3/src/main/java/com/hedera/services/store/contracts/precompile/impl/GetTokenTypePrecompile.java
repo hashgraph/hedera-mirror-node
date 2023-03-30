@@ -18,7 +18,6 @@ package com.hedera.services.store.contracts.precompile.impl;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.function.UnaryOperator;
 import org.apache.tuweni.bytes.Bytes;
@@ -27,7 +26,7 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncod
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.TokenInfoWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetTokenTypePrecompile;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.contracts.MirrorState;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 
@@ -35,7 +34,7 @@ public class GetTokenTypePrecompile extends AbstractTokenInfoPrecompile implemen
 
     public GetTokenTypePrecompile(
             final TokenID tokenId,
-            final WorldLedgers ledgers,
+            final MirrorState ledgers,
             final EncodingFacade encoder,
             final EvmEncodingFacade evmEncoder,
             final PrecompilePricingUtils pricingUtils) {

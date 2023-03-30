@@ -27,7 +27,7 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncod
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GrantRevokeKycWrapper;
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmIsKycPrecompile;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.contracts.MirrorState;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 
@@ -37,7 +37,7 @@ public class IsKycPrecompile extends AbstractReadOnlyPrecompile implements EvmIs
 
     public IsKycPrecompile(
             final TokenID tokenId,
-            final WorldLedgers ledgers,
+            final MirrorState ledgers,
             final EncodingFacade encoder,
             final EvmEncodingFacade evmEncoder,
             final PrecompilePricingUtils pricingUtils) {

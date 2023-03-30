@@ -32,7 +32,7 @@ import com.hedera.node.app.service.evm.store.contracts.precompile.codec.GetToken
 import com.hedera.node.app.service.evm.store.contracts.precompile.impl.EvmGetTokenKeyPrecompile;
 import com.hedera.services.ledger.properties.TokenProperty;
 import com.hedera.services.state.submerkle.ExpirableTxnRecord;
-import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.contracts.MirrorState;
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 import com.hedera.services.store.contracts.precompile.utils.PrecompilePricingUtils;
 import com.hedera.services.utils.EntityIdUtils;
@@ -42,7 +42,7 @@ public class GetTokenKeyPrecompile extends AbstractReadOnlyPrecompile implements
 
     public GetTokenKeyPrecompile(
             final TokenID tokenId,
-            final WorldLedgers ledgers,
+            final MirrorState ledgers,
             final EncodingFacade encoder,
             final EvmEncodingFacade evmEncoder,
             final PrecompilePricingUtils pricingUtils) {

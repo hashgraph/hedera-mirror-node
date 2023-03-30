@@ -17,7 +17,7 @@
 package com.hedera.services.store.contracts.precompile.impl;
 
 import com.hedera.node.app.service.evm.store.contracts.precompile.codec.EvmEncodingFacade;
-import com.hedera.services.store.contracts.WorldLedgers;
+import com.hedera.services.store.contracts.MirrorState;
 
 import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 
@@ -29,7 +29,7 @@ public abstract class AbstractTokenInfoPrecompile extends AbstractReadOnlyPrecom
 
     protected AbstractTokenInfoPrecompile(
             final TokenID tokenId,
-            final WorldLedgers ledgers,
+            final MirrorState ledgers,
             final EncodingFacade encoder,
             final EvmEncodingFacade evmEncoder,
             final PrecompilePricingUtils pricingUtils) {
