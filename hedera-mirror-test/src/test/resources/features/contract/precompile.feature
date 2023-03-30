@@ -14,9 +14,14 @@ Feature: Precompile Contract Base Coverage Feature
         Then Valid account is token should return an error
         Then Verify fungible token isn't frozen
         Then Verify non fungible token isn't frozen
-        Then Check if can freeze token
-        Then Check if can unfreeze token
-        Then Check if account is frozen by evm address
+        Then I freeze a token
+        Then Check if token is frozen
+        Then I unfreeze a token
+        Then Check if token is unfrozen
+        Then I freeze token for evm address
+        Then Check if token is frozen for evm address
+        Then I unfreeze token for evm address
+        Then Check if token is unfrozen for evm address
         Then Check if fungible token is kyc granted
         Then Check if non fungible token is kyc granted
         Then Get token default freeze of fungible token

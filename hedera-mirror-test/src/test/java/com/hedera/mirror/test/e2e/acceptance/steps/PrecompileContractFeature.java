@@ -293,92 +293,95 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertFalse(response.getResultAsBoolean());
     }
 
-    @Then("Check if can freeze token")
-    public void checkIfCanFreezeToken() {
-        ContractCallResponse responseBefore = mirrorClient.contractsCall(
-                IS_TOKEN_FROZEN_SELECTOR
-                        + to32BytesString(tokenIds.get(1).toSolidityAddress())
-                        + to32BytesString(contractClient.getClientAddress()),
-                contractId.toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
-        boolean isFrozenBefore = responseBefore.getResultAsBoolean();
-        assertFalse(isFrozenBefore);
-
+    @Then("I freeze a token")
+    public void freezeToken() {
         NetworkTransactionResponse freezeResponse = tokenClient
                 .freeze(tokenIds.get(1), contractClient.getClient().getOperatorAccountId());
         verifyTx(freezeResponse.getTransactionIdStringNoCheckSum());
-
-        ContractCallResponse responseAfter = mirrorClient.contractsCall(
-                IS_TOKEN_FROZEN_SELECTOR
-                        + to32BytesString(tokenIds.get(1).toSolidityAddress())
-                        + to32BytesString(contractClient.getClientAddress()),
-                contractId.toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
-
-        boolean isFrozenAfter = responseAfter.getResultAsBoolean();
-        assertTrue(isFrozenAfter);
     }
 
-    @Then("Check if can unfreeze token")
-    public void checkIfCanUnfreezeToken() {
-        ContractCallResponse responseBefore = mirrorClient.contractsCall(
+    @Retryable(value = {AssertionError.class, WebClientResponseException.class},
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
+            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
+    @Then("Check if token is frozen")
+    public void checkIfTokenIsFrozen() {
+        ContractCallResponse response = mirrorClient.contractsCall(
                 IS_TOKEN_FROZEN_SELECTOR
                         + to32BytesString(tokenIds.get(1).toSolidityAddress())
                         + to32BytesString(contractClient.getClientAddress()),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
-        boolean isFrozenBefore = responseBefore.getResultAsBoolean();
-        assertTrue(isFrozenBefore);
 
+        assertTrue(response.getResultAsBoolean());
+    }
+
+    @Then("I unfreeze a token")
+    public void unfreezeToken() {
         NetworkTransactionResponse freezeResponse = tokenClient
                 .unfreeze(tokenIds.get(1), contractClient.getClient().getOperatorAccountId());
         verifyTx(freezeResponse.getTransactionIdStringNoCheckSum());
+    }
 
-        ContractCallResponse responseAfter = mirrorClient.contractsCall(
+    @Retryable(value = {AssertionError.class, WebClientResponseException.class},
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
+            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
+    @Then("Check if token is unfrozen")
+    public void checkIfTokenIsUnfrozen() {
+        ContractCallResponse response = mirrorClient.contractsCall(
                 IS_TOKEN_FROZEN_SELECTOR
                         + to32BytesString(tokenIds.get(1).toSolidityAddress())
                         + to32BytesString(contractClient.getClientAddress()),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
-
-        boolean isFrozenAfter = responseAfter.getResultAsBoolean();
-        assertFalse(isFrozenAfter);
+        assertFalse(response.getResultAsBoolean());
     }
 
-    @Then("Check if account is frozen by evm address")
-    public void checkIfAccountIsFrozenByEvmAddress() {
-        MirrorAccountResponse accountInfo = mirrorClient.getAccountDetailsByAccountId(ecdsaEaId.getAccountId());
-
-        ContractCallResponse responseBefore = mirrorClient.contractsCall(
-                IS_TOKEN_FROZEN_SELECTOR
-                        + to32BytesString(tokenIds.get(0).toSolidityAddress())
-                        + to32BytesString(accountInfo.getEvmAddress()),
-                contractId.toSolidityAddress(),
-                contractClient.getClientAddress()
-        );
-        boolean isFrozenBefore = responseBefore.getResultAsBoolean();
-        assertFalse(isFrozenBefore);
-
+    @Then("I freeze token for evm address")
+    public void freezeTokenForEvmAddress() {
         NetworkTransactionResponse freezeResponse = tokenClient.freeze(tokenIds.get(0), ecdsaEaId.getAccountId());
         verifyTx(freezeResponse.getTransactionIdStringNoCheckSum());
+    }
 
-        ContractCallResponse responseAfter = mirrorClient.contractsCall(
+    @Retryable(value = {AssertionError.class, WebClientResponseException.class},
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
+            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
+    @Then("Check if token is frozen for evm address")
+    public void checkIfTokenIsFrozenForEvmAddress() {
+        MirrorAccountResponse accountInfo = mirrorClient.getAccountDetailsByAccountId(ecdsaEaId.getAccountId());
+
+        ContractCallResponse response = mirrorClient.contractsCall(
                 IS_TOKEN_FROZEN_SELECTOR
                         + to32BytesString(tokenIds.get(0).toSolidityAddress())
                         + to32BytesString(accountInfo.getEvmAddress()),
                 contractId.toSolidityAddress(),
                 contractClient.getClientAddress()
         );
+        assertTrue(response.getResultAsBoolean());
+    }
 
-        boolean isFrozenAfter = responseAfter.getResultAsBoolean();
-        assertTrue(isFrozenAfter);
-
+    @Then("I unfreeze token for evm address")
+    public void unfreezeTokenForEvmAddress() {
         NetworkTransactionResponse unfreezeResponse = tokenClient.unfreeze(tokenIds.get(0), ecdsaEaId.getAccountId());
         verifyTx(unfreezeResponse.getTransactionIdStringNoCheckSum());
+    }
+
+    @Retryable(value = {AssertionError.class, WebClientResponseException.class},
+            backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
+            maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
+    @Then("Check if token is unfrozen for evm address")
+    public void checkIfTokenIsUnfrozenForEvmAddress() {
+        MirrorAccountResponse accountInfo = mirrorClient.getAccountDetailsByAccountId(ecdsaEaId.getAccountId());
+
+        ContractCallResponse response = mirrorClient.contractsCall(
+                IS_TOKEN_FROZEN_SELECTOR
+                        + to32BytesString(tokenIds.get(0).toSolidityAddress())
+                        + to32BytesString(accountInfo.getEvmAddress()),
+                contractId.toSolidityAddress(),
+                contractClient.getClientAddress()
+        );
+        assertFalse(response.getResultAsBoolean());
     }
 
     @Retryable(value = {AssertionError.class, WebClientResponseException.class},
@@ -911,7 +914,8 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertThat(fixedFee.get(1).toString()).isEqualTo(ZERO_ADDRESS);
         assertTrue((boolean) fixedFee.get(2));
         assertFalse((boolean) fixedFee.get(3));
-        assertThat(fixedFee.get(4).toString().toLowerCase()).isEqualTo("0x"+contractClient.getClientAddress().toLowerCase());
+        assertThat(fixedFee.get(4).toString().toLowerCase())
+                .isEqualTo("0x" + contractClient.getClientAddress().toLowerCase());
     }
 
     @Then("Get custom fees for fungible token")
