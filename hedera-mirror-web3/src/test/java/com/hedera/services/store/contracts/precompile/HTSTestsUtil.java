@@ -18,8 +18,8 @@ package com.hedera.services.store.contracts.precompile;
 import static com.google.protobuf.UnsafeByteOperations.unsafeWrap;
 import static com.hedera.services.store.contracts.precompile.FungibleTokenTransferTest.fungible;
 import static com.hedera.services.utils.EntityIdUtils.asContract;
-import static com.hedera.services.utils.MiscUtils.asAccount;
-import static com.hedera.services.utils.MiscUtils.asToken;
+import static com.hedera.services.utils.EntityIdUtils.asAccount;
+import static com.hedera.services.utils.EntityIdUtils.asToken;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.INVALID_AUTORENEW_ACCOUNT_VALUE;
 
 import com.google.protobuf.ByteString;

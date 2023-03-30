@@ -15,13 +15,12 @@
  */
 package com.hedera.services.store.contracts.precompile;
 
-import static com.hedera.services.utils.MiscUtils.asAccount;
-import static com.hedera.services.utils.MiscUtils.asToken;
+import static com.hedera.services.utils.EntityIdUtils.asAccount;
+import static com.hedera.services.utils.EntityIdUtils.asToken;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 
 class FungibleTokenTransferTest {
