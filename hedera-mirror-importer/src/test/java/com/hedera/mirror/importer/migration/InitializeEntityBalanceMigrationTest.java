@@ -89,6 +89,7 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
         initializeEntityBalanceMigration.doMigrate();
 
         // then
+        accountDeleted.setBalance(20L);
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(account, accountDeleted, contract, topic);
     }
 
@@ -108,6 +109,7 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
         initializeEntityBalanceMigration.doMigrate();
 
         // then
+        accountDeleted.setBalance(20L);
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(account, accountDeleted, contract, topic);
     }
 

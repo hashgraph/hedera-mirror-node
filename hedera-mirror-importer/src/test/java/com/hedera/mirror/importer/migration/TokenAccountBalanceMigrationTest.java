@@ -94,6 +94,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
         tokenAccountBalanceMigration.doMigrate();
 
         // then
+        deletedEntityTokenAccount4.setBalance(1009875L);
         assertThat(tokenAccountRepository.findAll())
                 .containsExactlyInAnyOrder(tokenAccount, tokenAccount2, tokenAccount3, deletedEntityTokenAccount4,
                         disassociatedTokenAccount5);
@@ -126,6 +127,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
         // then
         tokenAccount.setBalance(balanceUpdatedAfterBalanceFileConsensusTimestamp + secondBalanceUpdate +
                 tokenAccount.getBalance());
+        deletedEntityTokenAccount4.setBalance(1009875L);
         assertThat(tokenAccountRepository.findAll())
                 .containsExactlyInAnyOrder(tokenAccount, tokenAccount2, tokenAccount3, deletedEntityTokenAccount4,
                         disassociatedTokenAccount5);
@@ -198,6 +200,7 @@ class TokenAccountBalanceMigrationTest extends IntegrationTest {
         // then
         tokenAccount.setBalance(100L);
         tokenAccount2.setBalance(33L);
+        deletedEntityTokenAccount4.setBalance(999999L);
         assertThat(tokenAccountRepository.findAll())
                 .containsExactlyInAnyOrder(tokenAccount, tokenAccount2, tokenAccount3, deletedEntityTokenAccount4,
                         disassociatedTokenAccount5);
