@@ -91,7 +91,8 @@ class TokenUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler
         }
 
         var transactionBody = recordItem.getTransactionBody().getTokenUpdate();
-        Token token = Token.of(entity.toEntityId());
+        var token = Token.of(entity.toEntityId());
+        token.setModifiedTimestamp(recordItem.getConsensusTimestamp());
 
         if (transactionBody.hasFeeScheduleKey()) {
             token.setFeeScheduleKey(transactionBody.getFeeScheduleKey().toByteArray());
@@ -129,7 +130,6 @@ class TokenUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler
             token.setWipeKey(transactionBody.getWipeKey().toByteArray());
         }
 
-        token.setModifiedTimestamp(recordItem.getConsensusTimestamp());
         entityListener.onToken(token);
     }
 }

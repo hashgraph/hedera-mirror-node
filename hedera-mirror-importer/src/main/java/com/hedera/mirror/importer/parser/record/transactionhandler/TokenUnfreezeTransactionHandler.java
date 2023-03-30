@@ -58,7 +58,7 @@ class TokenUnfreezeTransactionHandler implements TransactionHandler {
         var tokenUnfreezeAccountTransactionBody = recordItem.getTransactionBody().getTokenUnfreeze();
         var tokenId = EntityId.of(tokenUnfreezeAccountTransactionBody.getToken());
 
-        TokenAccount tokenAccount = new TokenAccount();
+        var tokenAccount = new TokenAccount();
         tokenAccount.setAccountId(transaction.getEntityId().getId());
         tokenAccount.setFreezeStatus(TokenFreezeStatusEnum.UNFROZEN);
         tokenAccount.setTimestampLower(recordItem.getConsensusTimestamp());

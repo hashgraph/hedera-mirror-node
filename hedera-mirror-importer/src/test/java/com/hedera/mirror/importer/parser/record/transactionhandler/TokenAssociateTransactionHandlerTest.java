@@ -71,8 +71,6 @@ class TokenAssociateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .returns(true, TokenAccount::getAssociated)
                 .returns(false, TokenAccount::getAutomaticAssociation)
                 .returns(transaction.getConsensusTimestamp(), TokenAccount::getCreatedTimestamp)
-                .returns(null, TokenAccount::getFreezeStatus)
-                .returns(null, TokenAccount::getKycStatus)
                 .returns(transaction.getConsensusTimestamp(), TokenAccount::getTimestampLower)
                 .returns(null, TokenAccount::getTimestampUpper)
                 .returns(EntityId.of(transactionBody.getTokens(0)).getId(), TokenAccount::getTokenId);

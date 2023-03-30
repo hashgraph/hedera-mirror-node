@@ -458,8 +458,6 @@ public class EntityRecordItemListener implements RecordItemListener {
                 tokenAccount.setAssociated(true);
                 tokenAccount.setAutomaticAssociation(true);
                 tokenAccount.setCreatedTimestamp(consensusTimestamp);
-                tokenAccount.setFreezeStatus(null);
-                tokenAccount.setKycStatus(null);
                 tokenAccount.setTimestampRange(Range.atLeast(consensusTimestamp));
                 tokenAccount.setTokenId(tokenId.getId());
                 entityListener.onTokenAccount(tokenAccount);

@@ -249,7 +249,7 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
     @Test
     void updateTransactionUnsuccessful() {
-        throw new UnsupportedOperationException("Disabled");
+        assertThat(true).isFalse();
     }
 
     private ContractFunctionResult getContractFunctionResult(TransactionRecord record, boolean create) {

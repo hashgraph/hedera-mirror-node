@@ -102,54 +102,54 @@ class TokenCreateTransactionHandler extends AbstractEntityCrudTransactionHandler
             return;
         }
 
-        var tokenCreateTransactionBody = recordItem.getTransactionBody().getTokenCreation();
+        var transactionBody = recordItem.getTransactionBody().getTokenCreation();
         long consensusTimestamp = transaction.getConsensusTimestamp();
         var tokenId = transaction.getEntityId();
-        var treasury = EntityId.of(tokenCreateTransactionBody.getTreasury());
+        var treasury = EntityId.of(transactionBody.getTreasury());
 
         var token = new Token();
         token.setCreatedTimestamp(consensusTimestamp);
-        token.setDecimals(tokenCreateTransactionBody.getDecimals());
-        token.setFreezeDefault(tokenCreateTransactionBody.getFreezeDefault());
-        token.setInitialSupply(tokenCreateTransactionBody.getInitialSupply());
-        token.setMaxSupply(tokenCreateTransactionBody.getMaxSupply());
+        token.setDecimals(transactionBody.getDecimals());
+        token.setFreezeDefault(transactionBody.getFreezeDefault());
+        token.setInitialSupply(transactionBody.getInitialSupply());
+        token.setMaxSupply(transactionBody.getMaxSupply());
         token.setModifiedTimestamp(consensusTimestamp);
-        token.setName(tokenCreateTransactionBody.getName());
-        token.setSupplyType(TokenSupplyTypeEnum.fromId(tokenCreateTransactionBody.getSupplyTypeValue()));
-        token.setSymbol(tokenCreateTransactionBody.getSymbol());
+        token.setName(transactionBody.getName());
+        token.setSupplyType(TokenSupplyTypeEnum.fromId(transactionBody.getSupplyTypeValue()));
+        token.setSymbol(transactionBody.getSymbol());
         token.setTokenId(new TokenId(tokenId));
-        token.setTotalSupply(tokenCreateTransactionBody.getInitialSupply());
+        token.setTotalSupply(transactionBody.getInitialSupply());
         token.setTreasuryAccountId(treasury);
-        token.setType(TokenTypeEnum.fromId(tokenCreateTransactionBody.getTokenTypeValue()));
+        token.setType(TokenTypeEnum.fromId(transactionBody.getTokenTypeValue()));
 
-        if (tokenCreateTransactionBody.hasFeeScheduleKey()) {
-            token.setFeeScheduleKey(tokenCreateTransactionBody.getFeeScheduleKey().toByteArray());
+        if (transactionBody.hasFeeScheduleKey()) {
+            token.setFeeScheduleKey(transactionBody.getFeeScheduleKey().toByteArray());
         }
 
-        if (tokenCreateTransactionBody.hasFreezeKey()) {
-            token.setFreezeKey(tokenCreateTransactionBody.getFreezeKey().toByteArray());
+        if (transactionBody.hasFreezeKey()) {
+            token.setFreezeKey(transactionBody.getFreezeKey().toByteArray());
         }
 
-        if (tokenCreateTransactionBody.hasKycKey()) {
-            token.setKycKey(tokenCreateTransactionBody.getKycKey().toByteArray());
+        if (transactionBody.hasKycKey()) {
+            token.setKycKey(transactionBody.getKycKey().toByteArray());
         }
 
-        if (tokenCreateTransactionBody.hasPauseKey()) {
-            token.setPauseKey(tokenCreateTransactionBody.getPauseKey().toByteArray());
+        if (transactionBody.hasPauseKey()) {
+            token.setPauseKey(transactionBody.getPauseKey().toByteArray());
             token.setPauseStatus(TokenPauseStatusEnum.UNPAUSED);
         } else {
             token.setPauseStatus(TokenPauseStatusEnum.NOT_APPLICABLE);
         }
 
-        if (tokenCreateTransactionBody.hasSupplyKey()) {
-            token.setSupplyKey(tokenCreateTransactionBody.getSupplyKey().toByteArray());
+        if (transactionBody.hasSupplyKey()) {
+            token.setSupplyKey(transactionBody.getSupplyKey().toByteArray());
         }
 
-        if (tokenCreateTransactionBody.hasWipeKey()) {
-            token.setWipeKey(tokenCreateTransactionBody.getWipeKey().toByteArray());
+        if (transactionBody.hasWipeKey()) {
+            token.setWipeKey(transactionBody.getWipeKey().toByteArray());
         }
 
-        var customFees = tokenCreateTransactionBody.getCustomFeesList();
+        var customFees = transactionBody.getCustomFeesList();
         var autoAssociatedAccounts = tokenFeeScheduleUpdateTransactionHandler.updateCustomFees(transaction, customFees);
         autoAssociatedAccounts.add(treasury);
 

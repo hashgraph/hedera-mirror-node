@@ -54,11 +54,11 @@ class TokenDissociateTransactionHandler implements TransactionHandler {
             return;
         }
 
-        var tokenDissociateTransactionBody = recordItem.getTransactionBody().getTokenDissociate();
+        var transactionBody = recordItem.getTransactionBody().getTokenDissociate();
 
-        tokenDissociateTransactionBody.getTokensList().forEach(token -> {
-            EntityId tokenId = EntityId.of(token);
-            TokenAccount tokenAccount = new TokenAccount();
+        transactionBody.getTokensList().forEach(token -> {
+            var tokenId = EntityId.of(token);
+            var tokenAccount = new TokenAccount();
             tokenAccount.setAccountId(transaction.getEntityId().getId());
             tokenAccount.setAssociated(false);
             tokenAccount.setTimestampLower(recordItem.getConsensusTimestamp());

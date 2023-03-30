@@ -141,7 +141,7 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
     }
 
     @Test
-    void updateTransactionEmptyFields() {
+    void updateTransactionMinimal() {
         // Given
         var recordItem = recordItemBuilder.tokenCreate()
                 .transactionBody(b -> b.clearCustomFees()
@@ -153,7 +153,6 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                         .clearWipeKey())
                 .build();
         var transaction = domainBuilder.transaction().get();
-        var customFee = ArgumentCaptor.forClass(CustomFee.class);
         var token = ArgumentCaptor.forClass(Token.class);
         var tokenAccount = ArgumentCaptor.forClass(TokenAccount.class);
 
@@ -162,7 +161,7 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
         // Then
         verify(entityListener).onToken(token.capture());
-        verify(entityListener).onCustomFee(customFee.capture());
+        verify(entityListener).onCustomFee(any());
         verify(entityListener).onTokenAccount(tokenAccount.capture());
 
         assertThat(token.getValue())
@@ -173,20 +172,6 @@ class TokenCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
                 .returns(TokenPauseStatusEnum.NOT_APPLICABLE, Token::getPauseStatus)
                 .returns(null, Token::getSupplyKey)
                 .returns(null, Token::getWipeKey);
-
-        assertThat(customFee.getValue())
-                .returns(false, CustomFee::isAllCollectorsAreExempt)
-                .returns(null, CustomFee::getAmount)
-                .returns(null, CustomFee::getAmountDenominator)
-                .returns(null, CustomFee::getCollectorAccountId)
-                .returns(null, CustomFee::getDenominatingTokenId)
-                .returns(null, CustomFee::getMaximumAmount)
-                .returns(0L, CustomFee::getMinimumAmount)
-                .returns(null, CustomFee::getNetOfTransfers)
-                .returns(null, CustomFee::getRoyaltyDenominator)
-                .returns(null, CustomFee::getRoyaltyNumerator)
-                .returns(transaction.getConsensusTimestamp(), c -> c.getId().getCreatedTimestamp())
-                .returns(transaction.getEntityId(), c -> c.getId().getTokenId());
 
         assertThat(tokenAccount.getValue())
                 .returns(TokenFreezeStatusEnum.NOT_APPLICABLE, TokenAccount::getFreezeStatus)

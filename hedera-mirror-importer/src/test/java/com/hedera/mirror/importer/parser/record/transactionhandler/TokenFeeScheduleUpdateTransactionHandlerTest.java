@@ -161,6 +161,34 @@ class TokenFeeScheduleUpdateTransactionHandlerTest extends AbstractTransactionHa
     }
 
     @Test
+    void updateTransactionEmpty() {
+        // Given
+        var recordItem = recordItemBuilder.tokenFeeScheduleUpdate().transactionBody(b -> b.clearCustomFees()).build();
+        var transaction = domainBuilder.transaction().get();
+        var customFee = ArgumentCaptor.forClass(CustomFee.class);
+
+        // When
+        transactionHandler.updateTransaction(transaction, recordItem);
+
+        // Then
+        verify(entityListener).onCustomFee(customFee.capture());
+
+        assertThat(customFee.getValue())
+                .returns(false, CustomFee::isAllCollectorsAreExempt)
+                .returns(null, CustomFee::getAmount)
+                .returns(null, CustomFee::getAmountDenominator)
+                .returns(null, CustomFee::getCollectorAccountId)
+                .returns(null, CustomFee::getDenominatingTokenId)
+                .returns(null, CustomFee::getMaximumAmount)
+                .returns(0L, CustomFee::getMinimumAmount)
+                .returns(null, CustomFee::getNetOfTransfers)
+                .returns(null, CustomFee::getRoyaltyDenominator)
+                .returns(null, CustomFee::getRoyaltyNumerator)
+                .returns(transaction.getConsensusTimestamp(), c -> c.getId().getCreatedTimestamp())
+                .returns(transaction.getEntityId(), c -> c.getId().getTokenId());
+    }
+
+    @Test
     void updateTransactionUnknownFee() {
         // Given
         var recordItem = recordItemBuilder.tokenFeeScheduleUpdate()

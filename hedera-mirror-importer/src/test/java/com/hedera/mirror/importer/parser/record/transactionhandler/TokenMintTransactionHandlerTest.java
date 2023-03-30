@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -119,7 +120,6 @@ class TokenMintTransactionHandlerTest extends AbstractTransactionHandlerTest {
         var recordItem = recordItemBuilder.tokenMint(NON_FUNGIBLE_UNIQUE).receipt(r -> r.addSerialNumbers(3L)).build();
         var transaction = domainBuilder.transaction().get();
         var nft = ArgumentCaptor.forClass(Nft.class);
-        var token = ArgumentCaptor.forClass(Token.class);
         var transactionBody = recordItem.getTransactionBody().getTokenMint();
         int expectedNfts = transactionBody.getMetadataCount();
 
@@ -127,7 +127,7 @@ class TokenMintTransactionHandlerTest extends AbstractTransactionHandlerTest {
         transactionHandler.updateTransaction(transaction, recordItem);
 
         // Then
-        verify(entityListener).onToken(token.capture());
+        verify(entityListener).onToken(any());
         verify(entityListener, times(expectedNfts)).onNft(nft.capture());
 
         assertThat(nft.getAllValues())

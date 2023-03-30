@@ -117,7 +117,7 @@ class TokenUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
     }
 
     @Test
-    void updateTransactionEmptyFields() {
+    void updateTransactionMinimal() {
         // Given
         var recordItem = recordItemBuilder.tokenUpdate()
                 .transactionBody(b -> b.clearFeeScheduleKey()
