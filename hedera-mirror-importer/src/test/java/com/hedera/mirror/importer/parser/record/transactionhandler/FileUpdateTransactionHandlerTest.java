@@ -20,10 +20,12 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.domain.file.FileData;
-import com.hedera.mirror.importer.addressbook.AddressBookService;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.hederahashgraph.api.proto.java.FileID;
 import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
@@ -32,9 +34,10 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.file.FileData;
+import com.hedera.mirror.importer.addressbook.AddressBookService;
 
 class FileUpdateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 

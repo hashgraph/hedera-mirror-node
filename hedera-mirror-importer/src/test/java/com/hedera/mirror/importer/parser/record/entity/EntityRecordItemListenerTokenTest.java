@@ -720,7 +720,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                         .id(new TokenTransfer.Id(dissociateTimeStamp, EntityId.of(TOKEN_ID), EntityId.of(PAYER)))
                         .isApproval(false)
                         .payerAccountId(EntityId.of(PAYER))).get()
-                );
+        );
         assertThat(tokenTransferRepository.findByConsensusTimestamp(dissociateTimeStamp))
                 .containsExactlyInAnyOrderElementsOf(expectedDissociateTransfers);
 
@@ -934,7 +934,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .addAllNftTransfers(mintTransfers)
                 .build();
         var nftMintRecordItem = recordItemBuilder.tokenMint()
-                .transactionBody(b -> b.clearMetadata().setToken(protoTokenId).clearMetadata()
+                .transactionBody(b -> b.setToken(protoTokenId).clearMetadata()
                         .addAllMetadata(Collections.nCopies(3, metadata)))
                 .record(r -> r.addTokenTransferLists(nftMintTransferList))
                 .receipt(r -> r.clearSerialNumbers().addAllSerialNumbers(mintSerials))
@@ -2450,7 +2450,7 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .build());
     }
 
-    private TokenTransferList tokenTransferList(TokenID tokenId, AccountAmount.Builder ... accountAmounts) {
+    private TokenTransferList tokenTransferList(TokenID tokenId, AccountAmount.Builder... accountAmounts) {
         var builder = TokenTransferList.newBuilder().setToken(tokenId);
         for (var aa : accountAmounts) {
             builder.addTransfers(aa);

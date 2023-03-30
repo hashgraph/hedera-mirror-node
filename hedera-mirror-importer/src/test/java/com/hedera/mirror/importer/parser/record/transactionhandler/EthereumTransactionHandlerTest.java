@@ -245,11 +245,11 @@ class EthereumTransactionHandlerTest extends AbstractTransactionHandlerTest {
         verify(ethereumTransactionParser, never()).decode(any());
     }
 
+    @SuppressWarnings("java:S2699")
     @Disabled("Since this handler persists data for unsuccessful transactions & has tests for that")
     @Override
     @Test
     void updateTransactionUnsuccessful() {
-        assertThat(true).isFalse();
     }
 
     private ContractFunctionResult getContractFunctionResult(TransactionRecord record, boolean create) {

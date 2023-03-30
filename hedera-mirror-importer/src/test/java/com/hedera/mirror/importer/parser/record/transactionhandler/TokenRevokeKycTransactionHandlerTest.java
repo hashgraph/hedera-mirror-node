@@ -20,10 +20,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.domain.token.TokenAccount;
-import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
@@ -32,9 +31,10 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.token.TokenAccount;
+import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 
 class TokenRevokeKycTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
