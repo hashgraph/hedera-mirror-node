@@ -715,15 +715,16 @@ public class EntityRecordItemListener implements RecordItemListener {
     private void insertFungibleTokenTransfers(
             long consensusTimestamp, TransactionBody body, boolean isTokenDissociate,
             TokenID tokenId, EntityId entityTokenId, EntityId payerAccountId, List<AccountAmount> tokenTransfers) {
+        boolean isDeletedTokenDissociate = isTokenDissociate && tokenTransfers.size() == 1;
         for (AccountAmount accountAmount : tokenTransfers) {
             EntityId accountId = EntityId.of(accountAmount.getAccountID());
             long amount = accountAmount.getAmount();
             TokenTransfer tokenTransfer = new TokenTransfer();
             tokenTransfer.setAmount(amount);
+            tokenTransfer.setDeletedTokenDissociate(isDeletedTokenDissociate);
             tokenTransfer.setId(new TokenTransfer.Id(consensusTimestamp, entityTokenId, accountId));
             tokenTransfer.setIsApproval(false);
             tokenTransfer.setPayerAccountId(payerAccountId);
-            tokenTransfer.setTokenDissociate(isTokenDissociate);
 
             // If a record AccountAmount with amount < 0 is not in the body;
             // but an AccountAmount with the same (TokenID, AccountID) combination is in the body with is_approval=true,
@@ -750,9 +751,9 @@ public class EntityRecordItemListener implements RecordItemListener {
             }
             entityListener.onTokenTransfer(tokenTransfer);
 
-            if (isTokenDissociate) {
-                // token transfers in token dissociate are for deleted tokens and the amount is negative to
-                // bring the account's balance of the token to 0. Set the totalSupply of the token object to the
+            if (isDeletedTokenDissociate) {
+                // for the token transfer of a deleted token in a token dissociate transaction, the amount is negative
+                // to bring the account's balance of the token to 0. Set the totalSupply of the token object to the
                 // negative amount, later in the pipeline the token total supply will be reduced accordingly
                 Token token = Token.of(entityTokenId);
                 token.setModifiedTimestamp(consensusTimestamp);
