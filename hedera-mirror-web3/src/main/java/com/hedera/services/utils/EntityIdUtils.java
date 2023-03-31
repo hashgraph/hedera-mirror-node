@@ -158,6 +158,14 @@ public final class EntityIdUtils {
         return tokenIdFromEvmAddress(address.toArrayUnsafe());
     }
 
+    public static ContractID contractIdFromEvmAddress(final Address address) {
+        return contractIdFromEvmAddress(address.toArrayUnsafe());
+    }
+
+    public static TokenID tokenIdFromEvmAddress(final Address address) {
+        return tokenIdFromEvmAddress(address.toArrayUnsafe());
+    }
+
     public static long[] asDotDelimitedLongArray(String s) {
         String[] parts = s.split("[.]");
         return Stream.of(parts).mapToLong(Long::valueOf).toArray();
