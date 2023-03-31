@@ -28,8 +28,10 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
+import java.math.BigInteger;
 import java.util.Collections;
 import java.util.List;
+import org.apache.commons.codec.DecoderException;
 import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 
@@ -54,7 +56,15 @@ class TokenCreateWrapperTest {
         // then
         assertTrue(result.isPresent());
         assertEquals(tokenKeyWrapper, result.get());
+        assertEquals(true, wrapper.isFungible());
+        assertEquals("symbol", wrapper.getSymbol());
+        assertEquals("token", wrapper.getName());
+        assertEquals("memo", wrapper.getMemo());
+        assertEquals(5054L, wrapper.getMaxSupply());
+        assertEquals(false, wrapper.isFreezeDefault());
+        assertEquals(BigInteger.valueOf(Integer.MAX_VALUE), wrapper.getDecimals());
     }
+
 
     @Test
     void getAdminKeyReturnsEmptyOptionalWhenNoAdminkeyIsPresent() {
