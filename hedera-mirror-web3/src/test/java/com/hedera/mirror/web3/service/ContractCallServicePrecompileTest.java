@@ -33,12 +33,16 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.esaulpaugh.headlong.abi.Tuple;
+
+import com.hedera.mirror.web3.evm.config.EvmConfiguration;
+
 import java.nio.file.Path;
 import java.util.Arrays;
 import com.hederahashgraph.api.proto.java.CustomFee.FeeCase;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -60,7 +64,9 @@ import com.hedera.mirror.web3.service.model.CallServiceParameters;
 import com.hedera.mirror.web3.utils.FunctionEncodeDecoder;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.CacheManager;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class ContractCallServicePrecompileTest extends Web3IntegrationTest {
@@ -69,6 +75,9 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
     private Path CONTRACT_BYTES_PATH;
     @Value("classpath:contracts/PrecompileTestContract.json")
     private Path ABI_PATH;
+
+    @Qualifier(EvmConfiguration.CACHE_MANAGER_TOKEN)
+    private final CacheManager cacheManager;
     private static final Address CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1255, CONTRACT));
     private static final Address SENDER_ADDRESS = toAddress(EntityId.of(0, 0, 1254, ACCOUNT));
     private static final Address FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1252, TOKEN));
@@ -80,7 +89,10 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
     private final ContractCallService contractCallService;
     private final FunctionEncodeDecoder encodeDecoder;
 
-
+    @AfterEach
+    void cleanup() {
+        cacheManager.getCache("custom_fee").clear();
+    }
 
     @ParameterizedTest
     @EnumSource(ContractFunctions.class)
@@ -131,6 +143,7 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
                 assertThat((com.esaulpaugh.headlong.abi.Address) royaltyFee[0].get(5)).isEqualTo(convertAddress(SENDER_ADDRESS));
             }
         }
+
     }
 
     @ParameterizedTest
