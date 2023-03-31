@@ -143,7 +143,6 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
                 assertThat((com.esaulpaugh.headlong.abi.Address) royaltyFee[0].get(5)).isEqualTo(convertAddress(SENDER_ADDRESS));
             }
         }
-
     }
 
     @ParameterizedTest
