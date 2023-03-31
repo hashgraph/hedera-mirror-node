@@ -967,7 +967,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
     }
 
     @CsvSource(textBlock = """
-    EQUAL, 1, 1, 4
+    EQUAL, 10000, 1, 4
     EQUAL, 0, 1, 4
     STAKE, 10000, 10000, 40000
     STAKE, 0, 1, 4
@@ -999,7 +999,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
     STAKE_IN_ADDRESS_BOOK, 10000, 40000
     """)
     @ParameterizedTest
-    void getNodesWithNodeStateCountMoreThanAddressBook(ConsensusMode mode, long expectedNodeStake, long expectedTotalStake) {
+    void getNodesWithNodeStakeCountMoreThanAddressBook(ConsensusMode mode, long expectedNodeStake, long expectedTotalStake) {
         long timestamp = domainBuilder.timestamp();
         var nodeId = new AtomicInteger(0);
         final int nodeCount = 6; // regardless of mode, always have 4 nodes in address book and 6 nodes in nodeStakes.
