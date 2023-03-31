@@ -17,6 +17,10 @@
 package com.hedera.services.store.contracts.precompile;
 
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrue;
+import static com.hedera.services.utils.EntityIdUtils.toGrpcAccountId;
+
+import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CustomFee;
@@ -29,10 +33,9 @@ import com.hederahashgraph.api.proto.java.TokenID;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Optional;
+import org.apache.commons.codec.DecoderException;
 
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
-import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
-import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 
 public class TokenCreateWrapper {
     private final boolean isFungible;
@@ -153,7 +156,6 @@ public class TokenCreateWrapper {
         this.royaltyFees = royaltyFees;
     }
 
-
     public Optional<TokenKeyWrapper> getAdminKey() {
         return tokenKeys.stream().filter(TokenKeyWrapper::isUsedForAdminKey).findFirst();
     }
@@ -162,6 +164,9 @@ public class TokenCreateWrapper {
         return expiry.autoRenewAccount() != null && !expiry.autoRenewAccount().equals(AccountID.getDefaultInstance());
     }
 
+    public void inheritAutoRenewAccount(final int code) {
+        expiry.setAutoRenewAccount(toGrpcAccountId(code));
+    }
 
     public static final class FixedFeeWrapper {
         public enum FixedFeePayment {

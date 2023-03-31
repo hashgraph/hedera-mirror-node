@@ -146,6 +146,14 @@ public final class EntityIdUtils {
         return Address.wrap(Bytes.wrap(asEvmAddress(id)));
     }
 
+    public static ContractID contractIdFromEvmAddress(final Address address) {
+        return contractIdFromEvmAddress(address.toArrayUnsafe());
+    }
+
+    public static TokenID tokenIdFromEvmAddress(final Address address) {
+        return tokenIdFromEvmAddress(address.toArrayUnsafe());
+    }
+
     public static long[] asDotDelimitedLongArray(String s) {
         String[] parts = s.split("[.]");
         return Stream.of(parts).mapToLong(Long::valueOf).toArray();
@@ -169,6 +177,14 @@ public final class EntityIdUtils {
                 .setShardNum(0L)
                 .setRealmNum(0L)
                 .setAccountNum(numFromCode(code))
+                .build();
+    }
+
+    public static TokenID asGrpcToken(final int num) {
+        return TokenID.newBuilder()
+                .setShardNum(0L)
+                .setRealmNum(0L)
+                .setTokenNum(num)
                 .build();
     }
 
