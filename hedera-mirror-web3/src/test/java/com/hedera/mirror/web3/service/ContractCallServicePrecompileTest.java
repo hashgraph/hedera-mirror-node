@@ -80,8 +80,6 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
     private final ContractCallService contractCallService;
     private final FunctionEncodeDecoder encodeDecoder;
 
-
-
     @ParameterizedTest
     @EnumSource(ContractFunctions.class)
     void evmPrecompileTokenFunctionsTest(ContractFunctions contractFunc) {

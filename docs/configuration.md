@@ -560,4 +560,5 @@ Name                                                        | Default           
 `hedera.mirror.web3.evm.expirationCacheTime`                | 10m                                        | Maximum time for contract bytecode's caching
 `hedera.mirror.web3.cache.contractState`                    | expireAfterWrite=5s,maximumSize=10000,recordStats | Cache configuration for contract state
 `hedera.mirror.web3.cache.entity `                          | expireAfterWrite=30s,maximumSize=10000,recordStats | Cache configuration for entity
+`hedera.mirror.web3.cache.token`                            | expireAfterWrite=2s,maximumSize=10000,recordStats  | Cache configuration for token related info
 `hedera.mirror.web3.evm.rateLimit`                          | 100s                                       | Maximum RPS limit
