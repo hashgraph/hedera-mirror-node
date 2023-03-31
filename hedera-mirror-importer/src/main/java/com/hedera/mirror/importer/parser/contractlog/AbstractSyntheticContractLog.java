@@ -24,7 +24,6 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 
 import lombok.Data;
-import lombok.Getter;
 import org.apache.tuweni.bytes.Bytes;
 @Data
 public abstract class AbstractSyntheticContractLog implements SyntheticContractLog{

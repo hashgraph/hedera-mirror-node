@@ -27,16 +27,6 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.UnknownFieldSet;
 
 import com.hedera.mirror.importer.parser.contractlog.SyntheticContractLogService;
-
-import com.hedera.mirror.importer.parser.contractlog.FungibleTokenBurnContractLog;
-import com.hedera.mirror.importer.parser.contractlog.FungibleTokenMintContractLog;
-
-import com.hedera.mirror.importer.parser.contractlog.FungibleTokenWipeContractLog;
-import com.hedera.mirror.importer.parser.contractlog.NonFungibleTokenBurnContractLog;
-import com.hedera.mirror.importer.parser.contractlog.NonFungibleTokenMintContractLog;
-
-import com.hedera.mirror.importer.parser.contractlog.NonFungibleTokenWipeContractLog;
-
 import com.hedera.mirror.importer.parser.contractlog.TransferContractLog;
 
 import com.hederahashgraph.api.proto.java.AccountAmount;
@@ -357,18 +347,19 @@ public class EntityRecordItemListener implements RecordItemListener {
     }
 
     private void insertFungibleTokenTransfers(
-            long consensusTimestamp, TransactionBody body, boolean isTokenDissociate,
-            TokenID tokenId, EntityId entityTokenId, EntityId payerAccountId, List<AccountAmount> tokenTransfers) {
             RecordItem recordItem, TokenID tokenId, EntityId entityTokenId,
             EntityId payerAccountId, List<AccountAmount> tokenTransfers) {
-        boolean isDeletedTokenDissociate = isTokenDissociate && tokenTransfers.size() == 1;
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         TransactionBody body = recordItem.getTransactionBody();
         boolean isTokenDissociate = body.hasTokenDissociate();
+        boolean isDeletedTokenDissociate = isTokenDissociate && tokenTransfers.size() == 1;
+        int tokenTransferCount = tokenTransfers.size();
+
         List<AccountAmount> negativeAccountAmounts = tokenTransfers.stream().filter(amount -> amount.getAmount() < 0).toList();
-        boolean shouldLogEvent = tokenTransfers.size() > 1
-                && negativeAccountAmounts.size() == 1
-                && !(body.hasTokenMint() || body.hasTokenWipe() || body.hasTokenBurn());
+        int negativeAccountAmountsCount = negativeAccountAmounts.size();
+
+        boolean isNotMultiTransfer = tokenTransferCount >= 1 && negativeAccountAmountsCount <= 1;
+        boolean isWipeOrBurn = tokenTransferCount == negativeAccountAmountsCount;
 
         for (AccountAmount accountAmount : tokenTransfers) {
             EntityId accountId = EntityId.of(accountAmount.getAccountID());
@@ -402,6 +393,13 @@ public class EntityRecordItemListener implements RecordItemListener {
                 } else {
                     tokenTransfer.setIsApproval(accountAmountInsideTransferList.getIsApproval());
                 }
+
+                // If amount is below 0, we handle burn and wipe
+                if (isWipeOrBurn) {
+                    EntityId receiverId = EntityId.EMPTY;
+                    EntityId tokenEntityId = EntityId.of(tokenId);
+                    syntheticContractLogService.create(new TransferContractLog(recordItem, accountId, receiverId, tokenEntityId, -amount));
+                }
             }
             entityListener.onTokenTransfer(tokenTransfer);
 
@@ -414,11 +412,15 @@ public class EntityRecordItemListener implements RecordItemListener {
                 token.setTotalSupply(accountAmount.getAmount());
                 entityListener.onToken(token);
             }
-            if (shouldLogEvent && amount > 0) {
-                EntityId senderId = EntityId.of(negativeAccountAmounts.get(0).getAccountID());
-                EntityId receiverId = EntityId.of(accountAmount.getAccountID());
+
+            // Check if it's a single transfer
+            // If amount is above 0, we handle transfers and mint
+            if (isNotMultiTransfer && amount > 0) {
+                boolean isTransfer = negativeAccountAmountsCount > 0;
+                EntityId senderId = isTransfer ? EntityId.of(negativeAccountAmounts.get(0)
+                        .getAccountID()) : EntityId.EMPTY;
                 EntityId tokenEntityId = EntityId.of(tokenId);
-                syntheticContractLogService.create(new TransferContractLog(recordItem, senderId, receiverId, tokenEntityId, amount));
+                syntheticContractLogService.create(new TransferContractLog(recordItem, senderId, accountId, tokenEntityId, amount));
             }
         }
     }
@@ -449,7 +451,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             List<com.hederahashgraph.api.proto.java.NftTransfer> nftTransfersList) {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         TransactionBody body = recordItem.getTransactionBody();
-        boolean shouldLogEvent = !(body.hasTokenMint() || body.hasTokenWipe() || body.hasTokenBurn());
+
         for (NftTransfer nftTransfer : nftTransfersList) {
             long serialNumber = nftTransfer.getSerialNumber();
             EntityId receiverId = EntityId.of(nftTransfer.getReceiverAccountID());
@@ -471,10 +473,8 @@ public class EntityRecordItemListener implements RecordItemListener {
             if (!EntityId.isEmpty(receiverId)) {
                 transferNftOwnership(consensusTimestamp, serialNumber, entityTokenId, receiverId);
             }
-            if (shouldLogEvent) {
-                syntheticContractLogService
-                        .create(new TransferContractLog(recordItem, senderId, receiverId, entityTokenId, serialNumber));
-            }
+            syntheticContractLogService
+                    .create(new TransferContractLog(recordItem, senderId, receiverId, entityTokenId, serialNumber));
         }
     }
 
@@ -651,16 +651,5 @@ public class EntityRecordItemListener implements RecordItemListener {
 
         entities.remove(null);
         return new TransactionFilterFields(entities, TransactionType.of(recordItem.getTransactionType()));
-    }
-
-    /**
-     * Checks if transaction is burning, wiping or minting fungible tokens
-     *
-     * @param serialNumberCount the number of nfts in this transaction
-     * @return true if we are burning, wiping or minting fungible tokens
-     */
-    private boolean isFungible(int serialNumberCount) {
-        //if serial number count is zero, that means that we are burning fungible tokens
-        return serialNumberCount <= 0;
     }
 }

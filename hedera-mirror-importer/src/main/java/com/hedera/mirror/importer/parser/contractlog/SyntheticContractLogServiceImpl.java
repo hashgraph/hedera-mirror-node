@@ -42,7 +42,7 @@ public class SyntheticContractLogServiceImpl implements SyntheticContractLogServ
     private final byte[] EMPTY_BLOOM = Bytes.of(0).toArray();
     @Override
     public void create(SyntheticContractLog log) {
-        if (isContract(log.getRecordItem()) && !entityProperties.getPersist().isSyntheticContractLogs()) {
+        if (isContract(log.getRecordItem()) || !entityProperties.getPersist().isSyntheticContractLogs()) {
             return;
         }
 

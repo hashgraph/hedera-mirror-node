@@ -21,6 +21,7 @@ package com.hedera.mirror.importer.parser.record.entity;
  */
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
+import static com.hedera.mirror.common.domain.entity.EntityType.CONTRACT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
@@ -32,6 +33,10 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.StringValue;
+
+import com.hedera.mirror.common.domain.contract.ContractLog;
+import com.hedera.mirror.importer.repository.ContractLogRepository;
+
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractFunctionResult;
@@ -67,6 +72,7 @@ import javax.annotation.Resource;
 import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.tuweni.bytes.Bytes;
 import org.assertj.core.api.ObjectAssert;
 import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.junit.jupiter.api.BeforeEach;
@@ -138,6 +144,11 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
     private static final String TOKEN_UPDATE_MEMO = "TokenUpdate memo";
     private static final long TRANSFER_TIMESTAMP = 15L;
     private static final EntityId PAYER_ACCOUNT_ID = EntityId.of(PAYER);
+    private static final byte[] TRANSFER_SIGNATURE = Bytes.fromHexString("ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef").toArray();
+    private static final byte[] APPROVE_FOR_ALL_SIGNATURE = Bytes.fromHexString("17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31").toArray();
+    private static final byte[] APPROVE_SIGNATURE = Bytes.fromHexString("8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925").toArray();
+    @Resource
+    private ContractLogRepository contractLogRepository;
 
     @Resource
     private TokenRepository tokenRepository;
@@ -1171,6 +1182,17 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertTokenTransferInRepository(TOKEN_ID, PAYER, CREATE_TIMESTAMP, INITIAL_SUPPLY);
         assertTokenTransferInRepository(TOKEN_ID, PAYER, burnTimestamp, amount);
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, burnTimestamp, SYMBOL, INITIAL_SUPPLY - amount);
+
+        var listAssert = assertThat(contractLogRepository.findAll())
+                .hasSize(2);
+
+        listAssert.extracting(ContractLog::getPayerAccountId).containsOnly(PAYER_ACCOUNT_ID);
+        listAssert.extracting(ContractLog::getContractId).containsOnly(EntityId.of(TOKEN_ID));
+        listAssert.extracting(ContractLog::getRootContractId)
+                .containsOnly(EntityId.of(TOKEN_ID));
+        listAssert.extracting(ContractLog::getConsensusTimestamp).containsAnyOf(CREATE_TIMESTAMP, burnTimestamp);
+        listAssert.extracting(ContractLog::getIndex).containsExactlyInAnyOrder(0, 0);
+        listAssert.extracting(ContractLog::getTopic0).containsExactlyInAnyOrder(TRANSFER_SIGNATURE, TRANSFER_SIGNATURE);
     }
 
     @Test
@@ -1242,6 +1264,17 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertNftTransferInRepository(burnTimestamp, SERIAL_NUMBER_1, TOKEN_ID, null, PAYER);
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, burnTimestamp, SYMBOL, 0);
         assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(expectedNft1, expectedNft2);
+
+        var listAssert = assertThat(contractLogRepository.findAll())
+                .hasSize(4);
+
+        listAssert.extracting(ContractLog::getPayerAccountId).containsOnly(PAYER_ACCOUNT_ID);
+        listAssert.extracting(ContractLog::getContractId).containsOnly(EntityId.of(TOKEN_ID));
+        listAssert.extracting(ContractLog::getRootContractId)
+                .containsOnly(EntityId.of(TOKEN_ID));
+        listAssert.extracting(ContractLog::getConsensusTimestamp).containsAnyOf(mintTimestamp, approveAllowanceTimestamp, burnTimestamp);
+        listAssert.extracting(ContractLog::getIndex).containsExactlyInAnyOrder(0, 1, 0, 0);
+        listAssert.extracting(ContractLog::getTopic0).containsExactlyInAnyOrder(TRANSFER_SIGNATURE, TRANSFER_SIGNATURE, APPROVE_SIGNATURE, TRANSFER_SIGNATURE);
     }
 
     @Test
@@ -1300,6 +1333,17 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertTokenTransferInRepository(TOKEN_ID, PAYER, CREATE_TIMESTAMP, INITIAL_SUPPLY);
         assertTokenTransferInRepository(TOKEN_ID, PAYER, mintTimestamp, amount);
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, mintTimestamp, SYMBOL, INITIAL_SUPPLY + amount);
+
+        var listAssert = assertThat(contractLogRepository.findAll())
+                .hasSize(2);
+
+        listAssert.extracting(ContractLog::getPayerAccountId).containsOnly(PAYER_ACCOUNT_ID);
+        listAssert.extracting(ContractLog::getContractId).containsOnly(EntityId.of(TOKEN_ID));
+        listAssert.extracting(ContractLog::getRootContractId)
+                .containsOnly(EntityId.of(TOKEN_ID));
+        listAssert.extracting(ContractLog::getConsensusTimestamp).containsAnyOf(CREATE_TIMESTAMP, mintTimestamp);
+        listAssert.extracting(ContractLog::getIndex).containsExactlyInAnyOrder(0, 0);
+        listAssert.extracting(ContractLog::getTopic0).containsExactlyInAnyOrder(TRANSFER_SIGNATURE, TRANSFER_SIGNATURE);
     }
 
     @Test
@@ -1365,6 +1409,17 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
                 .getBytes(), EntityId.of(PAYER), false);
         assertNftInRepository(TOKEN_ID, SERIAL_NUMBER_2, true, mintTimestamp, mintTimestamp, METADATA
                 .getBytes(), EntityId.of(PAYER), false);
+
+        var listAssert = assertThat(contractLogRepository.findAll())
+                .hasSize(2);
+
+        listAssert.extracting(ContractLog::getPayerAccountId).containsOnly(PAYER_ACCOUNT_ID);
+        listAssert.extracting(ContractLog::getContractId).containsOnly(EntityId.of(TOKEN_ID));
+        listAssert.extracting(ContractLog::getRootContractId)
+                .containsOnly(EntityId.of(TOKEN_ID));
+        listAssert.extracting(ContractLog::getConsensusTimestamp).containsAnyOf(mintTimestamp);
+        listAssert.extracting(ContractLog::getIndex).containsExactlyInAnyOrder(0, 1);
+        listAssert.extracting(ContractLog::getTopic0).containsExactlyInAnyOrder(TRANSFER_SIGNATURE, TRANSFER_SIGNATURE);
     }
 
     @Test
@@ -1567,6 +1622,17 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertNftTransferInRepository(transferTimestamp, 1L, TOKEN_ID, RECEIVER, PAYER);
         assertNftTransferInRepository(transferTimestamp, 2L, TOKEN_ID, RECEIVER, PAYER);
         assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(expectedNft1, expectedNft2);
+
+        var listAssert = assertThat(contractLogRepository.findAll())
+                .hasSize(5);
+
+        listAssert.extracting(ContractLog::getPayerAccountId).containsOnly(PAYER_ACCOUNT_ID);
+        listAssert.extracting(ContractLog::getContractId).containsOnly(EntityId.of(TOKEN_ID));
+        listAssert.extracting(ContractLog::getRootContractId)
+                .containsOnly(EntityId.of(TOKEN_ID));
+        listAssert.extracting(ContractLog::getConsensusTimestamp).containsAnyOf(mintTimestamp1, mintTimestamp2, approveAllowanceTimestamp, transferTimestamp);
+        listAssert.extracting(ContractLog::getIndex).containsExactlyInAnyOrder(0, 0, 0, 0, 1);
+        listAssert.extracting(ContractLog::getTopic0).containsExactlyInAnyOrder(TRANSFER_SIGNATURE, APPROVE_SIGNATURE, TRANSFER_SIGNATURE, TRANSFER_SIGNATURE, TRANSFER_SIGNATURE);
     }
 
     @ParameterizedTest
@@ -1778,6 +1844,17 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertThat(tokenTransferRepository.count()).isEqualTo(2L);
         assertTokenTransferInRepository(TOKEN_ID, PAYER, CREATE_TIMESTAMP, INITIAL_SUPPLY);
         assertTokenTransferInRepository(TOKEN_ID, PAYER, wipeTimestamp, transferAmount);
+
+        var listAssert = assertThat(contractLogRepository.findAll())
+                .hasSize(2);
+
+        listAssert.extracting(ContractLog::getPayerAccountId).containsOnly(PAYER_ACCOUNT_ID);
+        listAssert.extracting(ContractLog::getContractId).containsOnly(EntityId.of(TOKEN_ID));
+        listAssert.extracting(ContractLog::getRootContractId)
+                .containsOnly(EntityId.of(TOKEN_ID));
+        listAssert.extracting(ContractLog::getConsensusTimestamp).containsAnyOf(CREATE_TIMESTAMP, wipeTimestamp);
+        listAssert.extracting(ContractLog::getIndex).containsExactlyInAnyOrder(0, 0);
+        listAssert.extracting(ContractLog::getTopic0).containsExactlyInAnyOrder(TRANSFER_SIGNATURE, TRANSFER_SIGNATURE);
     }
 
     @Test
@@ -1847,6 +1924,17 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertNftTransferInRepository(wipeTimestamp, SERIAL_NUMBER_1, TOKEN_ID, null, PAYER);
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, wipeTimestamp, SYMBOL, 1);
         assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(expectedNft1, expectedNft2);
+
+        var listAssert = assertThat(contractLogRepository.findAll())
+                .hasSize(4);
+
+        listAssert.extracting(ContractLog::getPayerAccountId).containsOnly(PAYER_ACCOUNT_ID);
+        listAssert.extracting(ContractLog::getContractId).containsOnly(EntityId.of(TOKEN_ID));
+        listAssert.extracting(ContractLog::getRootContractId)
+                .containsOnly(EntityId.of(TOKEN_ID));
+        listAssert.extracting(ContractLog::getConsensusTimestamp).containsAnyOf(mintTimestamp, approveAllowanceTimestamp, wipeTimestamp);
+        listAssert.extracting(ContractLog::getIndex).containsExactlyInAnyOrder(0, 1, 0, 0);
+        listAssert.extracting(ContractLog::getTopic0).containsExactlyInAnyOrder(TRANSFER_SIGNATURE, TRANSFER_SIGNATURE, APPROVE_SIGNATURE, TRANSFER_SIGNATURE);
     }
 
     @Test
