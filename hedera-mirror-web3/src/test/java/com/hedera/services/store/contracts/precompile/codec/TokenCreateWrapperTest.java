@@ -62,6 +62,7 @@ class TokenCreateWrapperTest {
         assertEquals("memo", wrapper.getMemo());
         assertEquals(5054L, wrapper.getMaxSupply());
         assertEquals(false, wrapper.isFreezeDefault());
+        assertEquals(false, wrapper.isSupplyTypeFinite());
         assertEquals(BigInteger.valueOf(Integer.MAX_VALUE), wrapper.getDecimals());
     }
 
