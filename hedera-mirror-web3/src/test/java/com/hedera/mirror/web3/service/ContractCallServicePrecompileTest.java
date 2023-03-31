@@ -33,9 +33,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import com.esaulpaugh.headlong.abi.Tuple;
-
-import com.hedera.mirror.web3.evm.config.EvmConfiguration;
-
 import java.nio.file.Path;
 import java.util.Arrays;
 import com.hederahashgraph.api.proto.java.CustomFee.FeeCase;
@@ -72,7 +69,6 @@ class ContractCallServicePrecompileTest extends Web3IntegrationTest {
     private Path CONTRACT_BYTES_PATH;
     @Value("classpath:contracts/PrecompileTestContract.json")
     private Path ABI_PATH;
-
     private static final Address CONTRACT_ADDRESS = toAddress(EntityId.of(0, 0, 1255, CONTRACT));
     private static final Address SENDER_ADDRESS = toAddress(EntityId.of(0, 0, 1254, ACCOUNT));
     private static final Address FUNGIBLE_TOKEN_ADDRESS = toAddress(EntityId.of(0, 0, 1252, TOKEN));
