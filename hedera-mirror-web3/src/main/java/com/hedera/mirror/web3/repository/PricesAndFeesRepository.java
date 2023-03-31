@@ -22,7 +22,9 @@ import com.hedera.mirror.common.domain.entity.Entity;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
+import org.springframework.stereotype.Repository;
 
+@Repository
 public interface PricesAndFeesRepository extends CrudRepository<Entity, Long> {
 
     @Query(

@@ -48,9 +48,9 @@ import org.apache.logging.log4j.Logger;
  * Loads the required fee schedules from the Hedera "file system".
  */
 @Named
-public class MirrorBasicFcfsUsagePrices {
+public class BasicFcfsUsagePrices implements UsagePricesProvider {
     private static final EntityId FEE_SCHEDULE_ENTITY_ID = new EntityId(0L, 0L, 111L, EntityType.FILE);
-    private static final Logger log = LogManager.getLogger(MirrorBasicFcfsUsagePrices.class);
+    private static final Logger log = LogManager.getLogger(BasicFcfsUsagePrices.class);
 
     private static final long DEFAULT_FEE = 100_000L;
 
@@ -84,16 +84,17 @@ public class MirrorBasicFcfsUsagePrices {
     private final PricesAndFeesRepository pricesAndFeesRepository;
 
     @Inject
-    public MirrorBasicFcfsUsagePrices(PricesAndFeesRepository pricesAndFeesRepository) {
+    public BasicFcfsUsagePrices(PricesAndFeesRepository pricesAndFeesRepository) {
         this.pricesAndFeesRepository = pricesAndFeesRepository;
     }
 
+    @Override
     public FeeData defaultPricesGiven(final HederaFunctionality function, final Timestamp at) {
         this.setFeeSchedules(at.getSeconds());
         return pricesGiven(function, at).get(DEFAULT);
     }
 
-    public void setFeeSchedules(final long now) {
+    private void setFeeSchedules(final long now) {
         byte[] feeScheduleFile = new byte[0];
         if (now > 0) {
             feeScheduleFile = pricesAndFeesRepository.getFeeSchedule(now);
@@ -164,7 +165,8 @@ public class MirrorBasicFcfsUsagePrices {
         return Timestamp.newBuilder().setSeconds(ts.getSeconds()).build();
     }
 
-    private Map<SubType, FeeData> pricesGiven(final HederaFunctionality function, final Timestamp at) {
+    @Override
+    public Map<SubType, FeeData> pricesGiven(final HederaFunctionality function, final Timestamp at) {
         try {
             final Map<HederaFunctionality, Map<SubType, FeeData>> functionUsagePrices = applicableUsagePrices(at);
             final Map<SubType, FeeData> usagePrices = functionUsagePrices.get(function);

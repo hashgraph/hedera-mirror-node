@@ -17,8 +17,8 @@
 package com.hedera.services.contracts.gascalculator;
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.services.fees.MirrorBasicHbarCentExchange;
-import com.hedera.services.fees.calculation.MirrorBasicFcfsUsagePrices;
+import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.fees.calculation.UsagePricesProvider;
 import javax.inject.Named;
 import org.apache.tuweni.bytes.Bytes;
 
@@ -37,8 +37,8 @@ public class GasCalculatorHederaV22 extends GasCalculatorHederaV19 {
 
     public GasCalculatorHederaV22(
             final MirrorNodeEvmProperties mirrorNodeEvmProperties,
-            final MirrorBasicFcfsUsagePrices usagePrices,
-            final MirrorBasicHbarCentExchange exchange) {
+            final UsagePricesProvider usagePrices,
+            final HbarCentExchange exchange) {
         super(mirrorNodeEvmProperties, usagePrices, exchange);
     }
 

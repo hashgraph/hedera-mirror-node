@@ -17,8 +17,8 @@
 package com.hedera.services.contracts.gascalculator;
 
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.services.fees.MirrorBasicHbarCentExchange;
-import com.hedera.services.fees.calculation.MirrorBasicFcfsUsagePrices;
+import com.hedera.services.fees.HbarCentExchange;
+import com.hedera.services.fees.calculation.UsagePricesProvider;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -39,14 +39,14 @@ import org.hyperledger.besu.evm.gascalculator.LondonGasCalculator;
 public class GasCalculatorHederaV19 extends LondonGasCalculator {
 
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
-    private final MirrorBasicFcfsUsagePrices usagePrices;
-    private final MirrorBasicHbarCentExchange exchange;
+    private final UsagePricesProvider usagePrices;
+    private final HbarCentExchange exchange;
 
     @Inject
     public GasCalculatorHederaV19(
             final MirrorNodeEvmProperties mirrorNodeEvmProperties,
-            final MirrorBasicFcfsUsagePrices usagePrices,
-            final MirrorBasicHbarCentExchange exchange) {
+            final UsagePricesProvider usagePrices,
+            final HbarCentExchange exchange) {
         this.mirrorNodeEvmProperties = mirrorNodeEvmProperties;
         this.usagePrices = usagePrices;
         this.exchange = exchange;

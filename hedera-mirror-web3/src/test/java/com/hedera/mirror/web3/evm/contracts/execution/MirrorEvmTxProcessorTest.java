@@ -37,8 +37,8 @@ import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider
 import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultHederaTracer;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
+import com.hedera.node.app.service.evm.store.contracts.HederaEvmStackedWorldStateUpdater;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldState;
-import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import java.math.BigInteger;
@@ -99,7 +99,8 @@ class MirrorEvmTxProcessorTest {
     private HederaEvmWorldState.Updater updater;
 
     @Mock
-    private AbstractLedgerEvmWorldUpdater stackedUpdater;
+    private HederaEvmStackedWorldStateUpdater stackedUpdater;
+
     @Mock
     private MirrorEvmContractAliases hederaEvmContractAliases;
 

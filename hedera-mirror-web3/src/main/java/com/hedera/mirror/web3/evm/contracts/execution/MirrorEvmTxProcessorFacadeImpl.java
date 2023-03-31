@@ -19,16 +19,12 @@ package com.hedera.mirror.web3.evm.contracts.execution;
 import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.ccps;
 import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.mcps;
 
-import java.time.Instant;
-import javax.inject.Named;
-import org.apache.tuweni.bytes.Bytes;
-import org.hyperledger.besu.datatypes.Address;
-
 import com.hedera.mirror.web3.evm.account.AccountAccessorImpl;
 import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.properties.StaticBlockMetaSource;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
+import com.hedera.mirror.web3.evm.token.TokenAccessorImpl;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultHederaTracer;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
@@ -50,7 +46,6 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
     private final PricesAndFeesImpl pricesAndFees;
     private final AbstractCodeCache codeCache;
     private final HederaEvmMutableWorldState worldState;
-
     private final GasCalculatorHederaV22 gasCalculator;
 
     public MirrorEvmTxProcessorFacadeImpl(
@@ -60,7 +55,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final MirrorEvmContractAliases aliasManager,
             final PricesAndFeesImpl pricesAndFees,
             final AccountAccessorImpl accountAccessor,
-            final TokenAccessorImpl tokenAccessor) {
+            final TokenAccessorImpl tokenAccessor,
             final GasCalculatorHederaV22 gasCalculator) {
         this.evmProperties = evmProperties;
         this.blockMetaSource = blockMetaSource;
@@ -71,12 +66,9 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
         final int expirationCacheTime =
                 (int) evmProperties.getExpirationCacheTime().toSeconds();
 
-        this.codeCache = new AbstractCodeCache(expirationCacheTime,
-                entityAccess);
+        this.codeCache = new AbstractCodeCache(expirationCacheTime, entityAccess);
         this.worldState =
-                new HederaEvmWorldState(
-                        entityAccess, evmProperties,
-                        codeCache, accountAccessor, tokenAccessor);
+                new HederaEvmWorldState(entityAccess, evmProperties, codeCache, accountAccessor, tokenAccessor);
     }
 
     @Override

@@ -31,17 +31,18 @@ import org.apache.logging.log4j.Logger;
  * Temporary extracted class from services.
  */
 @Named
-public final class MirrorBasicHbarCentExchange {
+public final class BasicHbarCentExchange implements HbarCentExchange {
     private final PricesAndFeesRepository pricesAndFeesRepository;
-    private static final Logger log = LogManager.getLogger(MirrorBasicHbarCentExchange.class);
+    private static final Logger log = LogManager.getLogger(BasicHbarCentExchange.class);
     private static final EntityId EXCHANGE_RATE_ENTITY_ID = new EntityId(0L, 0L, 112L, EntityType.FILE);
 
     private ExchangeRateSet exchangeRates;
 
-    public MirrorBasicHbarCentExchange(final PricesAndFeesRepository pricesAndFeesRepository) {
+    public BasicHbarCentExchange(PricesAndFeesRepository pricesAndFeesRepository) {
         this.pricesAndFeesRepository = pricesAndFeesRepository;
     }
 
+    @Override
     public ExchangeRate rate(final Timestamp now) {
         updateExchangeRates(now.getSeconds());
         return rateAt(now.getSeconds());
