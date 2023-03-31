@@ -23,11 +23,13 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
 import static com.hedera.mirror.test.e2e.acceptance.util.TestUtil.to32BytesString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
-
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 import io.cucumber.java.After;
+import io.cucumber.java.Before;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import java.io.IOException;
@@ -45,7 +47,6 @@ import org.apache.commons.lang3.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.ResourceUtils;
-
 import com.hedera.hashgraph.sdk.ContractId;
 import com.hedera.hashgraph.sdk.CustomFee;
 import com.hedera.hashgraph.sdk.FileId;
@@ -68,6 +69,7 @@ import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 @CustomLog
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class ERCContractFeature extends AbstractFeature {
+    private final AcceptanceTestProperties acceptanceTestProperties;
 
     private static final String ALLOWANCE_SELECTOR = "927da105";
     private static final String BALANCE_OF_SELECTOR = "f7888aec";
@@ -102,6 +104,11 @@ public class ERCContractFeature extends AbstractFeature {
 
     @Value("classpath:solidity/artifacts/contracts/ERCTestContract.sol/ERCTestContract.json")
     private Path ercContract;
+
+    @Before
+    public void initialization() {
+        assumeTrue(acceptanceTestProperties.isContractTraceability());
+    }
 
     @After
     public void clean() {
