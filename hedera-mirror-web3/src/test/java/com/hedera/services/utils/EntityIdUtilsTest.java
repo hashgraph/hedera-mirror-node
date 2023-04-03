@@ -140,4 +140,9 @@ class EntityIdUtilsTest {
     void parsesValidLiteral(final String goodLiteral) {
         assertEquals(asAccount(goodLiteral), parseAccount(goodLiteral));
     }
+    @ParameterizedTest
+    @CsvSource({"asdf", "notANumber"})
+    void parsesNonValidLiteral(final String badLiteral) {
+        assertThrows(IllegalArgumentException.class, () -> parseAccount(badLiteral));
+    }
 }

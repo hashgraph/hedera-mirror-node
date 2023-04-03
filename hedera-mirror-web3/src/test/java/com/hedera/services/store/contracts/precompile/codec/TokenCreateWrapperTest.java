@@ -15,6 +15,7 @@
  */
 package com.hedera.services.store.contracts.precompile.codec;
 
+import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.account;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.contractAddress;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.createTokenCreateWrapperWithKeys;
 import static com.hedera.services.store.contracts.precompile.HTSTestsUtil.receiver;
@@ -61,9 +62,11 @@ class TokenCreateWrapperTest {
         assertEquals("token", wrapper.getName());
         assertEquals("memo", wrapper.getMemo());
         assertEquals(5054L, wrapper.getMaxSupply());
+        assertEquals(BigInteger.valueOf(Long.MAX_VALUE), wrapper.getInitSupply());
         assertEquals(false, wrapper.isFreezeDefault());
         assertEquals(false, wrapper.isSupplyTypeFinite());
         assertEquals(BigInteger.valueOf(Integer.MAX_VALUE), wrapper.getDecimals());
+        assertEquals(account, wrapper.getTreasury());
     }
 
 

@@ -138,10 +138,6 @@ public final class EntityIdUtils {
         return Address.wrap(Bytes.wrap(asEvmAddress(id)));
     }
 
-    public static Address asTypedEvmAddress(final ContractID id) {
-        return Address.wrap(Bytes.wrap(asEvmAddress(id)));
-    }
-
     public static Address asTypedEvmAddress(final TokenID id) {
         return Address.wrap(Bytes.wrap(asEvmAddress(id)));
     }
