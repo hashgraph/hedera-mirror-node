@@ -8,5 +8,5 @@
 #        pathRefreshInterval: 1m
 #        pathType: ACCOUNT_ID
 #        secretKey: {GOOG1E/AWS....}
-#      network: PREVIEWNET
-#      networkPrefix: dev
+#      network: OTHER
+#      networkPrefix: integration
