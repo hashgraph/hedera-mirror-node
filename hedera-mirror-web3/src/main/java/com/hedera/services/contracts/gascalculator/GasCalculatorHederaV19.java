@@ -20,14 +20,14 @@
 
 package com.hedera.services.contracts.gascalculator;
 
+import static com.hedera.services.hapi.utils.fees.FeeBuilder.getTinybarsFromTinyCents;
+
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.services.fees.HbarCentExchange;
 import com.hedera.services.fees.calculation.UsagePricesProvider;
-import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Timestamp;
-import java.math.BigInteger;
 import javax.inject.Inject;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.evm.frame.MessageFrame;
@@ -98,19 +98,6 @@ public class GasCalculatorHederaV19 extends LondonGasCalculator {
         long feeInTinyCents = prices.getServicedata().getRbh() / 1000;
         long feeInTinyBars = getTinybarsFromTinyCents(exchange.rate(timestamp), feeInTinyCents);
         return Math.max(1L, feeInTinyBars);
-    }
-
-    private static long getTinybarsFromTinyCents(final ExchangeRate exchangeRate, final long tinyCentsFee) {
-        return getAFromB(tinyCentsFee, exchangeRate.getHbarEquiv(), exchangeRate.getCentEquiv());
-    }
-
-    private static long getAFromB(final long bAmount, final int aEquiv, final int bEquiv) {
-        final var aMultiplier = BigInteger.valueOf(aEquiv);
-        final var bDivisor = BigInteger.valueOf(bEquiv);
-        return BigInteger.valueOf(bAmount)
-                .multiply(aMultiplier)
-                .divide(bDivisor)
-                .longValueExact();
     }
 
     long getLogStorageDuration() {
