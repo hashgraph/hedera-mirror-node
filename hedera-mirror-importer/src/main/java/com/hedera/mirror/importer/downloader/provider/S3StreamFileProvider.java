@@ -79,7 +79,7 @@ public final class S3StreamFileProvider implements StreamFileProvider {
     public Flux<StreamFileData> list(ConsensusNode node, StreamFilename lastFilename) {
         // Number of items we plan do download in a single batch times 2 for file + sig.
         int batchSize = commonDownloaderProperties.getBatchSize() * 2;
-        //check if account id , do this else getBucketPath
+
         var prefix = getBucketPath(node, lastFilename);
 
         var startAfter = prefix + lastFilename.getFilenameAfter();
@@ -120,14 +120,14 @@ public final class S3StreamFileProvider implements StreamFileProvider {
 
     private String autoAlgorithm(ConsensusNode consensusNode, StreamFilename streamFilename) {
         var currentTime = System.currentTimeMillis();
-        if ( pathExpirationTimestamp > currentTime ) {
+        if (pathExpirationTimestamp > currentTime ) {
             return getPrefix(consensusNode, streamFilename);
         }
         commonDownloaderProperties.setPathType(ACCOUNT_ID);
         var count = list(consensusNode, streamFilename)
                                 .count()
                                 .block();
-        //Handle exception here if this count fails
+        //Handle the exception here if this count fails
         if (count > 0) {
             pathExpirationTimestamp = System.currentTimeMillis() + commonDownloaderProperties.getPathRefreshInterval().toMillis();
             commonDownloaderProperties.setPathType(AUTO);
