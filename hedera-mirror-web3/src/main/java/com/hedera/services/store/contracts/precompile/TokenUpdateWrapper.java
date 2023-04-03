@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.hedera.services.store.contracts.precompile;
 
 import com.hederahashgraph.api.proto.java.AccountID;
@@ -30,4 +29,5 @@ public record TokenUpdateWrapper(
         AccountID treasury,
         String memo,
         List<TokenKeyWrapper> tokenKeys,
-        TokenExpiryWrapper expiry) {}
+        TokenExpiryWrapper expiry) {
+}

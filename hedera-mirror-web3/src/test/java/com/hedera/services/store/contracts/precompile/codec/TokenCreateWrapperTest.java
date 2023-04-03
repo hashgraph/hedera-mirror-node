@@ -67,6 +67,8 @@ class TokenCreateWrapperTest {
         assertEquals(false, wrapper.isSupplyTypeFinite());
         assertEquals(BigInteger.valueOf(Integer.MAX_VALUE), wrapper.getDecimals());
         assertEquals(account, wrapper.getTreasury());
+        assertEquals(List.of(tokenKeyWrapper), wrapper.getTokenKeys());
+        assertEquals(List.of(), wrapper.getFixedFees());
     }
 
 

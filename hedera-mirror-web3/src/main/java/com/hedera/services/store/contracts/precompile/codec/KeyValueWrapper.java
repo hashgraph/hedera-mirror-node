@@ -16,12 +16,11 @@
 package com.hedera.services.store.contracts.precompile.codec;
 
 import com.google.protobuf.ByteString;
-
-import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
-
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.Key;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 
 public final class KeyValueWrapper {
     public enum KeyValueType {
