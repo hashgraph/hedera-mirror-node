@@ -27,7 +27,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.hedera.mirror.web3.repository.PricesAndFeesRepository;
+import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.FeeComponents;
 import com.hederahashgraph.api.proto.java.FeeData;
@@ -83,7 +83,7 @@ class BasicFcfsUsagePricesTest {
     private BasicFcfsUsagePrices subject;
 
     @Mock
-    private PricesAndFeesRepository pricesAndFeesRepository;
+    private RatesAndFeesLoader ratesAndFeesLoader;
 
     private final FeeSchedule nextFeeSchedule = FeeSchedule.newBuilder()
             .setExpiryTime(TimestampSeconds.newBuilder().setSeconds(nextExpiry))
@@ -106,9 +106,9 @@ class BasicFcfsUsagePricesTest {
 
     @BeforeEach
     void setup() {
-        subject = new BasicFcfsUsagePrices(pricesAndFeesRepository);
+        subject = new BasicFcfsUsagePrices(ratesAndFeesLoader);
 
-        when(pricesAndFeesRepository.getFeeSchedule(anyLong())).thenReturn(feeSchedules.toByteArray());
+        when(ratesAndFeesLoader.loadFeeSchedules(anyLong())).thenReturn(feeSchedules);
     }
 
     @Test
@@ -121,7 +121,7 @@ class BasicFcfsUsagePricesTest {
         subject.defaultPricesGiven(ContractCall, at);
 
         // then:
-        verify(pricesAndFeesRepository).getFeeSchedule(at.getSeconds());
+        verify(ratesAndFeesLoader).loadFeeSchedules(at.getSeconds());
     }
 
     @Test

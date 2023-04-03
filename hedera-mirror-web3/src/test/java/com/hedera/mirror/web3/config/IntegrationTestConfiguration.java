@@ -21,8 +21,8 @@
 package com.hedera.mirror.web3.config;
 
 import com.hedera.mirror.common.domain.DomainBuilder;
+import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.repository.PricesAndFeesRepository;
 import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
 import com.hedera.services.fees.BasicHbarCentExchange;
 import com.hedera.services.fees.calculation.BasicFcfsUsagePrices;
@@ -55,12 +55,12 @@ public class IntegrationTestConfiguration {
     }
 
     @Bean
-    BasicFcfsUsagePrices basicFcfsUsagePrices(PricesAndFeesRepository pricesAndFeesRepository) {
-        return new BasicFcfsUsagePrices(pricesAndFeesRepository);
+    BasicFcfsUsagePrices basicFcfsUsagePrices(RatesAndFeesLoader ratesAndFeesLoader) {
+        return new BasicFcfsUsagePrices(ratesAndFeesLoader);
     }
 
     @Bean
-    BasicHbarCentExchange basicHbarCentExchange(PricesAndFeesRepository pricesAndFeesRepository) {
-        return new BasicHbarCentExchange(pricesAndFeesRepository);
+    BasicHbarCentExchange basicHbarCentExchange(RatesAndFeesLoader ratesAndFeesLoader) {
+        return new BasicHbarCentExchange(ratesAndFeesLoader);
     }
 }

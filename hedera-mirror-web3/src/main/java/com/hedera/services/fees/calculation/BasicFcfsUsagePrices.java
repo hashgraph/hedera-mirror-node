@@ -22,10 +22,7 @@ package com.hedera.services.fees.calculation;
 
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.web3.repository.PricesAndFeesRepository;
+import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
 import com.hedera.services.fees.pricing.RequiredPriceTypes;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.FeeComponents;
@@ -41,8 +38,8 @@ import java.util.EnumMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import javax.inject.Inject;
 import javax.inject.Named;
+import lombok.RequiredArgsConstructor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -52,9 +49,9 @@ import org.apache.logging.log4j.Logger;
  * Loads the required fee schedules from the Hedera "file system".
  */
 @Named
+@RequiredArgsConstructor
 @SuppressWarnings("deprecation")
 public class BasicFcfsUsagePrices implements UsagePricesProvider {
-    private static final EntityId FEE_SCHEDULE_ENTITY_ID = new EntityId(0L, 0L, 111L, EntityType.FILE);
     private static final Logger log = LogManager.getLogger(BasicFcfsUsagePrices.class);
 
     private static final long DEFAULT_FEE = 100_000L;
@@ -86,32 +83,13 @@ public class BasicFcfsUsagePrices implements UsagePricesProvider {
     private EnumMap<HederaFunctionality, Map<SubType, FeeData>> currFunctionUsagePrices;
     private EnumMap<HederaFunctionality, Map<SubType, FeeData>> nextFunctionUsagePrices;
 
-    private final PricesAndFeesRepository pricesAndFeesRepository;
-
-    @Inject
-    public BasicFcfsUsagePrices(PricesAndFeesRepository pricesAndFeesRepository) {
-        this.pricesAndFeesRepository = pricesAndFeesRepository;
-    }
+    private final RatesAndFeesLoader ratesAndFeesLoader;
 
     @Override
     public FeeData defaultPricesGiven(final HederaFunctionality function, final Timestamp at) {
-        this.setFeeSchedules(at.getSeconds());
+        final var feeSchedules = ratesAndFeesLoader.loadFeeSchedules(at.getSeconds());
+        this.setFeeSchedules(feeSchedules);
         return pricesGiven(function, at).get(DEFAULT);
-    }
-
-    private void setFeeSchedules(final long now) {
-        byte[] feeScheduleFile = new byte[0];
-        if (now > 0) {
-            feeScheduleFile = pricesAndFeesRepository.getFeeSchedule(now);
-        }
-
-        try {
-            final var schedules = CurrentAndNextFeeSchedule.parseFrom(feeScheduleFile);
-            this.setFeeSchedules(schedules);
-        } catch (InvalidProtocolBufferException e) {
-            log.warn("Corrupt fee schedules file at {}, may require remediation!", FEE_SCHEDULE_ENTITY_ID, e);
-            throw new IllegalStateException(String.format("Fee schedule %s is corrupt!", FEE_SCHEDULE_ENTITY_ID));
-        }
     }
 
     public void setFeeSchedules(final CurrentAndNextFeeSchedule feeSchedules) {

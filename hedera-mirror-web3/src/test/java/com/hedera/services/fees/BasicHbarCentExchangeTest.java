@@ -25,7 +25,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.hedera.mirror.web3.repository.PricesAndFeesRepository;
+import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.Timestamp;
@@ -53,20 +53,20 @@ class BasicHbarCentExchangeTest {
     private BasicHbarCentExchange subject;
 
     @Mock
-    private PricesAndFeesRepository pricesAndFeesRepository;
+    private RatesAndFeesLoader ratesAndFeesLoader;
 
     @BeforeEach
     void setUp() {
-        when(pricesAndFeesRepository.getExchangeRate(anyLong())).thenReturn(rates.toByteArray());
+        when(ratesAndFeesLoader.loadExchangeRates(anyLong())).thenReturn(rates);
 
-        subject = new BasicHbarCentExchange(pricesAndFeesRepository);
+        subject = new BasicHbarCentExchange(ratesAndFeesLoader);
     }
 
     @Test
     void updatesRatesWhenRatesCalled() {
         subject.rate(beforeCrossTime);
 
-        verify(pricesAndFeesRepository).getExchangeRate(beforeCrossTime.getSeconds());
+        verify(ratesAndFeesLoader).loadExchangeRates(beforeCrossTime.getSeconds());
     }
 
     @Test

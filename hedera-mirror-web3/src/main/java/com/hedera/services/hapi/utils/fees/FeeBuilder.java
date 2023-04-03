@@ -25,6 +25,7 @@ import java.math.BigInteger;
 
 /**
  * Temporary extracted class from services.
+ *
  * <p>This is the base class for building Fee Matrices and calculating the Total as well as specific
  * component Fee for a given Transaction or Query. It includes common methods which is used to
  * calculate Fee for Crypto, File and Smart Contracts Transactions and Query

@@ -20,47 +20,27 @@
 
 package com.hedera.services.fees;
 
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.web3.repository.PricesAndFeesRepository;
+import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import javax.inject.Named;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.RequiredArgsConstructor;
 
 /**
  * Temporary extracted class from services.
  */
 @Named
+@RequiredArgsConstructor
 public final class BasicHbarCentExchange implements HbarCentExchange {
-    private final PricesAndFeesRepository pricesAndFeesRepository;
-    private static final Logger log = LogManager.getLogger(BasicHbarCentExchange.class);
-    private static final EntityId EXCHANGE_RATE_ENTITY_ID = new EntityId(0L, 0L, 112L, EntityType.FILE);
-
     private ExchangeRateSet exchangeRates;
 
-    public BasicHbarCentExchange(PricesAndFeesRepository pricesAndFeesRepository) {
-        this.pricesAndFeesRepository = pricesAndFeesRepository;
-    }
+    private final RatesAndFeesLoader ratesAndFeesLoader;
 
     @Override
     public ExchangeRate rate(final Timestamp now) {
-        updateExchangeRates(now.getSeconds());
+        exchangeRates = ratesAndFeesLoader.loadExchangeRates(now.getSeconds());
         return rateAt(now.getSeconds());
-    }
-
-    private void updateExchangeRates(final long now) {
-        final var ratesFile = pricesAndFeesRepository.getExchangeRate(now);
-
-        try {
-            exchangeRates = ExchangeRateSet.parseFrom(ratesFile);
-        } catch (InvalidProtocolBufferException e) {
-            log.warn("Corrupt rate file at {}, may require remediation!", EXCHANGE_RATE_ENTITY_ID, e);
-            throw new IllegalStateException(String.format("Rates %s are corrupt!", EXCHANGE_RATE_ENTITY_ID));
-        }
     }
 
     private ExchangeRate rateAt(final long now) {
