@@ -110,6 +110,8 @@ public class AddressBookServiceImpl implements AddressBookService {
             return;
         }
 
+        fileDataRepository.save(fileData);
+
         if (fileData.getFileData() == null || fileData.getFileData().length == 0) {
             log.warn("Byte array contents were empty. Skipping processing ...");
             return;
@@ -141,17 +143,17 @@ public class AddressBookServiceImpl implements AddressBookService {
         var nodeStakes = new HashMap<Long, NodeStake>();
         var consensusMode = mirrorProperties.getConsensusMode();
         var nodesInAddressBook = addressBook.getEntries().stream().map(AddressBookEntry::getNodeId)
-            .collect(Collectors.toSet());
+                .collect(Collectors.toSet());
 
         var nodeStakeTimestamp = new AtomicLong(0L);
         nodeStakeRepository.findLatest().forEach(nodeStake -> {
             if (consensusMode == ConsensusMode.EQUAL) {
-              nodeStake.setStake(1L);
+                nodeStake.setStake(1L);
             }
 
             if (consensusMode != ConsensusMode.STAKE_IN_ADDRESS_BOOK ||
-                  nodesInAddressBook.contains(nodeStake.getNodeId())) {
-              totalStake.addAndGet(nodeStake.getStake());
+                    nodesInAddressBook.contains(nodeStake.getNodeId())) {
+                totalStake.addAndGet(nodeStake.getStake());
             }
             nodeStakes.put(nodeStake.getNodeId(), nodeStake);
             // all the node stake rows have the same consensus timestamp
@@ -159,14 +161,14 @@ public class AddressBookServiceImpl implements AddressBookService {
         });
 
         long nodeCount = (consensusMode == ConsensusMode.STAKE_IN_ADDRESS_BOOK || nodeStakes.isEmpty()) ?
-            addressBook.getNodeCount() : nodeStakes.size();
+                addressBook.getNodeCount() : nodeStakes.size();
 
         // if only including address book nodes in stake count, warn if any nodes are excluded
         if (consensusMode == ConsensusMode.STAKE_IN_ADDRESS_BOOK && addressBook.getNodeCount() != nodeStakes.size() &&
                 !nodeStakes.isEmpty()) {
             log.warn("Using address book {} with {} nodes and node stake {} with {} nodes",
-                addressBook.getStartConsensusTimestamp(), addressBook.getNodeCount(), nodeStakeTimestamp.get(),
-                nodeStakes.size());
+                    addressBook.getStartConsensusTimestamp(), addressBook.getNodeCount(), nodeStakeTimestamp.get(),
+                    nodeStakes.size());
         }
 
         addressBook.getEntries().forEach(e -> {

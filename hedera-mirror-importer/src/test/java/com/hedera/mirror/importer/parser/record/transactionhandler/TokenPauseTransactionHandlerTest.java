@@ -20,61 +20,62 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
+import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.common.domain.token.Token;
+import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 
+import com.hederahashgraph.api.proto.java.TokenID;
+import com.hederahashgraph.api.proto.java.TokenPauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.domain.transaction.LiveHash;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
-class CryptoAddLiveHashTransactionHandlerTest extends AbstractTransactionHandlerTest {
+class TokenPauseTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new CryptoAddLiveHashTransactionHandler(entityListener, entityProperties);
+        return new TokenPauseTransactionHandler(entityListener, entityProperties);
     }
 
     @Override
     protected TransactionBody.Builder getDefaultTransactionBody() {
-        return recordItemBuilder.cryptoAddLiveHash()
-                .transactionBody(b -> b.getLiveHashBuilder().getAccountIdBuilder().setAccountNum(DEFAULT_ENTITY_NUM))
-                .build()
-                .getTransactionBody()
-                .toBuilder();
+        return TransactionBody.newBuilder()
+                .setTokenPause(TokenPauseTransactionBody.newBuilder()
+                        .setToken(TokenID.newBuilder().setTokenNum(DEFAULT_ENTITY_NUM)));
     }
 
     @Override
     protected EntityType getExpectedEntityIdType() {
-        return EntityType.ACCOUNT;
+        return EntityType.TOKEN;
     }
 
     @Test
     void updateTransaction() {
         // Given
-        entityProperties.getPersist().setClaims(true);
-        var recordItem = recordItemBuilder.cryptoAddLiveHash().build();
+        var recordItem = recordItemBuilder.tokenPause().build();
         var transaction = domainBuilder.transaction().get();
-        var liveHash = ArgumentCaptor.forClass(LiveHash.class);
-        var transactionBody = recordItem.getTransactionBody().getCryptoAddLiveHash();
+        var token = ArgumentCaptor.forClass(Token.class);
 
         // When
         transactionHandler.updateTransaction(transaction, recordItem);
 
         // Then
-        verify(entityListener).onLiveHash(liveHash.capture());
-        assertThat(liveHash.getValue())
-                .returns(transaction.getConsensusTimestamp(), LiveHash::getConsensusTimestamp)
-                .returns(transactionBody.getLiveHash().getHash().toByteArray(), LiveHash::getLivehash);
+        verify(entityListener).onToken(token.capture());
+
+        assertThat(token.getValue())
+                .returns(TokenPauseStatusEnum.PAUSED, Token::getPauseStatus)
+                .returns(recordItem.getConsensusTimestamp(), Token::getModifiedTimestamp)
+                .returns(transaction.getEntityId(), t -> t.getTokenId().getTokenId());
     }
 
     @Test
     void updateTransactionDisabled() {
         // Given
-        entityProperties.getPersist().setClaims(false);
-        var recordItem = recordItemBuilder.cryptoAddLiveHash().build();
+        entityProperties.getPersist().setTokens(false);
+        var recordItem = recordItemBuilder.tokenPause().build();
         var transaction = domainBuilder.transaction().get();
 
         // When
