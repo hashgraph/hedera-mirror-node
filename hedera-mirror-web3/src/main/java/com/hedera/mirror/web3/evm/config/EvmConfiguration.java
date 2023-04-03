@@ -39,6 +39,7 @@ public class EvmConfiguration {
     public static final String CACHE_MANAGER_500MS = "cacheManager500Ms";
     public static final String CACHE_MANAGER_STATE = "cacheManagerState";
     public static final String CACHE_MANAGER_ENTITY = "cacheManagerEntity";
+    public static final String CACHE_MANAGER_TOKEN = "cacheManagerToken";
 
     @Bean(CACHE_MANAGER_STATE)
     CacheManager cacheManagerState() {
@@ -51,6 +52,13 @@ public class EvmConfiguration {
     CacheManager cacheManagerEntity() {
         final CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
         caffeineCacheManager.setCacheSpecification(cacheProperties.getEntity());
+        return caffeineCacheManager;
+    }
+
+    @Bean(CACHE_MANAGER_TOKEN)
+    CacheManager cacheManagerToken() {
+        final CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
+        caffeineCacheManager.setCacheSpecification(cacheProperties.getToken());
         return caffeineCacheManager;
     }
 

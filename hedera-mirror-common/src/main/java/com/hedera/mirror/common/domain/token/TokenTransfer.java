@@ -23,6 +23,7 @@ package com.hedera.mirror.common.domain.token;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.io.Serial;
 import java.io.Serializable;
 import javax.persistence.Convert;
 import javax.persistence.Embeddable;
@@ -54,24 +55,24 @@ public class TokenTransfer implements Persistable<TokenTransfer.Id> {
 
     private long amount;
 
+    @JsonIgnore
+    @Transient
+    private boolean deletedTokenDissociate;
+
     private Boolean isApproval;
 
     @Convert(converter = AccountIdConverter.class)
     private EntityId payerAccountId;
-
-    @JsonIgnore
-    @Transient
-    private boolean tokenDissociate;
 
     public TokenTransfer(long consensusTimestamp, long amount, EntityId tokenId, EntityId accountId) {
         this(consensusTimestamp, amount, tokenId, accountId, false);
     }
 
     public TokenTransfer(long consensusTimestamp, long amount, EntityId tokenId, EntityId accountId,
-                         boolean tokenDissociate) {
+                         boolean deletedTokenDissociate) {
         id = new TokenTransfer.Id(consensusTimestamp, tokenId, accountId);
         this.amount = amount;
-        this.tokenDissociate = tokenDissociate;
+        this.deletedTokenDissociate = deletedTokenDissociate;
     }
 
     @JsonIgnore
@@ -80,12 +81,14 @@ public class TokenTransfer implements Persistable<TokenTransfer.Id> {
         return true; // Since we never update and use a natural ID, avoid Hibernate querying before insert
     }
 
+    @Builder(toBuilder = true)
     @Data
     @Embeddable
     @AllArgsConstructor
     @NoArgsConstructor
     public static class Id implements Serializable {
 
+        @Serial
         private static final long serialVersionUID = 8693129287509470469L;
 
         private long consensusTimestamp;
