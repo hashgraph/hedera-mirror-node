@@ -89,7 +89,6 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
         initializeEntityBalanceMigration.doMigrate();
 
         // then
-        accountDeleted.setBalance(20L);
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(account, accountDeleted, contract, topic);
     }
 
@@ -109,7 +108,6 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
         initializeEntityBalanceMigration.doMigrate();
 
         // then
-        accountDeleted.setBalance(20L);
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(account, accountDeleted, contract, topic);
     }
 
@@ -125,6 +123,7 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
 
         // then
         account.setBalance(0L);
+        accountDeleted.setBalance(0L);
         contract.setBalance(0L);
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(account, accountDeleted, contract, topic);
     }
@@ -141,6 +140,7 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
 
         // then
         account.setBalance(0L);
+        accountDeleted.setBalance(0L);
         contract.setBalance(0L);
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(account, accountDeleted, contract, topic);
     }
@@ -157,6 +157,7 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
 
         // then
         account.setBalance(0L);
+        accountDeleted.setBalance(0L);
         contract.setBalance(0L);
         assertThat(entityRepository.findAll()).containsExactlyInAnyOrder(account, accountDeleted, contract, topic);
     }
@@ -224,8 +225,9 @@ class InitializeEntityBalanceMigrationTest extends IntegrationTest {
         persistAccountBalance(750L, account.toEntityId(), accountBalanceTimestamp2);
         persistAccountBalance(450L, contract.toEntityId(), accountBalanceTimestamp2);
 
-        // Set expected balance
+        // Set expected balances
         account.setBalance(505L);
+        accountDeleted.setBalance(20L);
         contract.setBalance(25L);
     }
 
