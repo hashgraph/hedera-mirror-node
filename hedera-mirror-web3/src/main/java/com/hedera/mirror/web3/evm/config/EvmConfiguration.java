@@ -69,7 +69,7 @@ public class EvmConfiguration {
     @Bean(CACHE_MANAGER_1H)
     CacheManager cacheManager1H() {
         final var caffeine =
-                Caffeine.newBuilder().expireAfterWrite(1, TimeUnit.HOURS).maximumSize(10000);
+                Caffeine.newBuilder().expireAfterWrite(1, TimeUnit.HOURS).maximumSize(1);
         final CaffeineCacheManager caffeineCacheManager = new CaffeineCacheManager();
         caffeineCacheManager.setCaffeine(caffeine);
         return caffeineCacheManager;
