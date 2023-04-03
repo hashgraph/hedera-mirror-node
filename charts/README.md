@@ -146,7 +146,7 @@ test:
 To execute:
 
 ```shell script
-helm test "${RELEASE} " --timeout 10m
+helm test "${RELEASE}" --timeout 10m
 ```
 
 ## Using

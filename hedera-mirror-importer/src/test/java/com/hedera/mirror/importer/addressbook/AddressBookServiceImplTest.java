@@ -39,12 +39,15 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import lombok.RequiredArgsConstructor;
 import org.assertj.core.api.ListAssert;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.platform.commons.util.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -64,6 +67,7 @@ import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.IntegrationTest;
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.MirrorProperties.ConsensusMode;
 import com.hedera.mirror.importer.config.CacheConfiguration;
 import com.hedera.mirror.importer.repository.AddressBookEntryRepository;
 import com.hedera.mirror.importer.repository.AddressBookRepository;
@@ -960,39 +964,57 @@ class AddressBookServiceImplTest extends IntegrationTest {
                 .containsExactly(0L, 1L, 2L, 3L);
     }
 
-    @Test
-    void getNodesWithNodeStake() {
+    @CsvSource(textBlock = """
+    EQUAL, 10000, 1, 4
+    EQUAL, 0, 1, 4
+    STAKE, 10000, 10000, 40000
+    STAKE, 0, 1, 4
+    STAKE_IN_ADDRESS_BOOK, 10000, 10000, 40000
+    STAKE_IN_ADDRESS_BOOK, 0, 1, 4
+    """)
+    @ParameterizedTest
+    void getNodes(ConsensusMode mode, long stake, long expectedNodeStake, long expectedTotalStake) {
         long timestamp = domainBuilder.timestamp();
-        var nodeStake0 = domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(0)).persist();
-        var nodeStake1 = domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(1)).persist();
-        var nodeStake2 = domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(2)).persist();
-        var nodeStake3 = domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(3)).persist();
-        long totalStake = nodeStake0.getStake() + nodeStake1.getStake() + nodeStake2.getStake() + nodeStake3.getStake();
+        var nodeId = new AtomicInteger(0);
+        for (int i = 0; i < TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT; i++) {
+            var nodeStake = domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp)
+                .nodeId(nodeId.getAndIncrement()).stake(stake)).persist();
+        }
+        mirrorProperties.setConsensusMode(mode);
 
         assertThat(addressBookService.getNodes())
                 .hasSize(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT)
-                .allSatisfy(c -> assertThat(c).returns(totalStake, ConsensusNode::getTotalStake))
+                .allSatisfy(c -> assertThat(c).returns(expectedTotalStake, ConsensusNode::getTotalStake))
                 .allSatisfy(c -> assertThat(c.getPublicKey()).isNotNull())
-                .allMatch(c -> c.getStake() > 1L)
+                .allMatch(c -> c.getStake() == expectedNodeStake)
                 .extracting(ConsensusNode::getNodeId)
                 .containsExactly(0L, 1L, 2L, 3L);
     }
 
-    @Test
-    void getNodesWithNodeStakeCountMoreThanAddressBook() {
+    @CsvSource(textBlock = """
+    EQUAL, 1, 6
+    STAKE, 10000, 60000
+    STAKE_IN_ADDRESS_BOOK, 10000, 40000
+    """)
+    @ParameterizedTest
+    void getNodesWithNodeStakeCountMoreThanAddressBook(ConsensusMode mode, long expectedNodeStake, long expectedTotalStake) {
         long timestamp = domainBuilder.timestamp();
-        domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(0).stake(0L)).persist();
-        domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(1).stake(0L)).persist();
-        domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(2).stake(0L)).persist();
-        domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(3).stake(0L)).persist();
-        domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp).nodeId(4).stake(0L)).persist();
+        var nodeId = new AtomicInteger(0);
+        final int nodeCount = 6; // regardless of mode, always have 4 nodes in address book and 6 nodes in nodeStakes.
+        for (int i = 0; i < nodeCount; i++) {
+          var nodeStake = domainBuilder.nodeStake().customize(n -> n.consensusTimestamp(timestamp)
+              .nodeId(nodeId.getAndIncrement()).stake(10000L)).persist();
+        }
+        mirrorProperties.setConsensusMode(mode);
 
         assertThat(addressBookService.getNodes())
                 .hasSize(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT)
-                .allMatch(c -> c.getStake() == 1L)
-                .allMatch(c -> c.getTotalStake() == 5L)
+                .allMatch(c -> c.getStake() == expectedNodeStake)
+                .allMatch(c -> c.getTotalStake() == expectedTotalStake)
                 .allMatch(c -> c.getNodeAccountId().getEntityNum() - 3 == c.getNodeId())
-                .allSatisfy(c -> assertThat(c.getPublicKey()).isNotNull());
+                .allSatisfy(c -> assertThat(c.getPublicKey()).isNotNull())
+                .extracting(ConsensusNode::getNodeId)
+                .containsExactly(0L, 1L, 2L, 3L);
     }
 
     @Test
