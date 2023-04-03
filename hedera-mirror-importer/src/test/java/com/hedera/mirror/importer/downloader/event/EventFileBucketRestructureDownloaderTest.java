@@ -1,0 +1,108 @@
+package com.hedera.mirror.importer.downloader.event;
+
+/*-
+ * ‌
+ * Hedera Mirror Node
+ * ​
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
+ * ​
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * ‍
+ */
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.hedera.mirror.importer.FileCopier;
+import com.hedera.mirror.importer.TestUtils;
+import com.hedera.mirror.importer.downloader.AbstractLinkedStreamDownloaderTest;
+import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
+import com.hedera.mirror.importer.downloader.Downloader;
+import com.hedera.mirror.importer.downloader.DownloaderProperties;
+import com.hedera.mirror.importer.downloader.provider.S3StreamFileProvider;
+import com.hedera.mirror.importer.reader.event.EventFileReaderV3;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
+
+class EventFileBucketRestructureDownloaderTest extends AbstractLinkedStreamDownloaderTest {
+
+    protected String file3;
+    protected String file4;
+    @Override
+    @BeforeEach
+    protected void beforeEach() {
+        super.beforeEach();
+        setTestFilesAndInstants(List.of("2020-04-11T04_51_35.001934Z.evts", "2020-04-11T04_51_40.471976Z.evts"));
+        file3 = "2020-04-11T04_51_45.028997Z.evts";
+        file4 = "2020-04-11T04_51_50.017047Z.evts";
+        fileCopier = FileCopier.create(TestUtils.getResource("data").toPath(), s3Path);
+    }
+
+    @Override
+    protected DownloaderProperties getDownloaderProperties() {
+        var eventDownloaderProperties = new EventDownloaderProperties(mirrorProperties, commonDownloaderProperties);
+        eventDownloaderProperties.setEnabled(true);
+        return eventDownloaderProperties;
+    }
+
+    @Override
+    protected Downloader getDownloader() {
+        var streamFileProvider = new S3StreamFileProvider(commonDownloaderProperties, s3AsyncClient);
+        return new EventFileDownloader(consensusNodeService, (EventDownloaderProperties) downloaderProperties,
+                meterRegistry, dateRangeProcessor, nodeSignatureVerifier, signatureFileReader, streamFileNotifier,
+                streamFileProvider, new EventFileReaderV3());
+    }
+
+    @Override
+    protected Path getTestDataDir() {
+        return Paths.get("eventsStreams", "v3.accountId");
+    }
+
+    @Test
+    @DisplayName("Download and verify files from old bucket")
+    void downloadFiles() {
+        mirrorProperties.setStartBlockNumber(null);
+        fileCopier.from(getTestDataDir())
+                .to(commonDownloaderProperties.getBucketName(), streamType.getPath())
+                .copy();
+        expectLastStreamFile(Instant.EPOCH);
+        downloader.download();
+        verifyForSuccess();
+        assertThat(downloaderProperties.getStreamPath()).doesNotExist();
+
+    }
+
+    @Test
+    @DisplayName("Download and verify files from new bucket")
+    void downloadFilesFromNewPath() {
+            // Changing bucket Path
+            commonDownloaderProperties.setPathType(CommonDownloaderProperties.PathType.NODE_ID);
+            fileCopier.from(Path.of("integration", "0"))
+                    .to(commonDownloaderProperties.getBucketName(), Path.of("testnet","0").toString())
+                    .copy();
+            expectLastStreamFile(Instant.EPOCH);
+            downloader.download();
+            verifyForSuccess(List.of(file3, file4));
+    }
+
+    @Override
+    protected Duration getCloseInterval() {
+        return Duration.ofSeconds(5L);
+    }
+}
