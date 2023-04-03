@@ -52,6 +52,7 @@ import org.apache.logging.log4j.Logger;
  * Loads the required fee schedules from the Hedera "file system".
  */
 @Named
+@SuppressWarnings("deprecation")
 public class BasicFcfsUsagePrices implements UsagePricesProvider {
     private static final EntityId FEE_SCHEDULE_ENTITY_ID = new EntityId(0L, 0L, 111L, EntityType.FILE);
     private static final Logger log = LogManager.getLogger(BasicFcfsUsagePrices.class);
