@@ -21,12 +21,14 @@ package com.hedera.mirror.web3;
  */
 
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.Collection;
 import javax.annotation.Resource;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.jdbc.Sql;
 
@@ -46,10 +48,16 @@ public abstract class Web3IntegrationTest {
 
     @Resource
     protected  MeterRegistry meterRegistry;
+    @Resource
+    private Collection<CacheManager> cacheManagers;
 
+    protected void reset() {
+        cacheManagers.forEach(c -> c.getCacheNames().forEach(name -> c.getCache(name).clear()));
+    }
 
     @BeforeEach
     void logTest(TestInfo testInfo) {
+        reset();
         log.info("Executing: {}", testInfo.getDisplayName());
     }
 }
