@@ -75,7 +75,7 @@ class TokenMintTransactionHandler implements TransactionHandler {
             if (i >= transactionBody.getMetadataCount()) {
                 log.warn(RECOVERABLE_ERROR + "Mismatch between {} metadata and {} serial numbers at {}",
                         transactionBody.getMetadataCount(), serialNumbers, consensusTimestamp);
-                continue;
+                break;
             }
 
             var nft = new Nft(serialNumbers.get(i), tokenId);

@@ -138,6 +138,8 @@ class FileAppendTransactionHandlerTest extends AbstractTransactionHandlerTest {
     @Test
     void updateTransactionAddressBook() {
         // Given
+        entityProperties.getPersist().setFiles(false);
+        entityProperties.getPersist().setSystemFiles(false);
         var systemFileId = EntityId.of(0, 0, 102, EntityType.FILE);
         var recordItem = recordItemBuilder.fileAppend().build();
         var transaction = domainBuilder.transaction().customize(t -> t.entityId(systemFileId)).get();
