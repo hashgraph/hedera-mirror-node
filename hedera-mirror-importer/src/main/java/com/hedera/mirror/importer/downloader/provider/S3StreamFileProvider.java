@@ -53,7 +53,7 @@ public final class S3StreamFileProvider implements StreamFileProvider {
 
     private final CommonDownloaderProperties commonDownloaderProperties;
 
-    private static long pathExpirationTimestamp;
+    private long pathExpirationTimestamp;
     private final S3AsyncClient s3Client;
 
     public Mono<StreamFileData> get(ConsensusNode node, StreamFilename streamFilename) {
