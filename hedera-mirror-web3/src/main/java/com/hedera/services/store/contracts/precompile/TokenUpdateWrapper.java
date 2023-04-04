@@ -15,25 +15,19 @@
  */
 package com.hedera.services.store.contracts.precompile;
 
-import static com.hedera.services.utils.EntityIdUtils.asAccount;
-import static com.hedera.services.utils.EntityIdUtils.asToken;
-import static org.junit.jupiter.api.Assertions.*;
-
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import org.junit.jupiter.api.Test;
+import java.util.List;
 
-class FungibleTokenTransferTest {
+import com.hedera.services.store.contracts.precompile.codec.TokenExpiryWrapper;
+import com.hedera.services.store.contracts.precompile.codec.TokenKeyWrapper;
 
-    static final long secondAmount = 200;
-    static final AccountID a = asAccount("0.0.2");
-    static final AccountID b = asAccount("0.0.3");
-    static final TokenID fungible = asToken("0.0.555");
-    static final TokenID nonFungible = asToken("0.0.666");
-
-    @Test
-    void createsExpectedCryptoTransfer() {
-        final var fungibleTransfer = new FungibleTokenTransfer(secondAmount, false, fungible, b, a);
-        assertEquals(fungible, fungibleTransfer.getDenomination());
-    }
+public record TokenUpdateWrapper(
+        TokenID tokenID,
+        String name,
+        String symbol,
+        AccountID treasury,
+        String memo,
+        List<TokenKeyWrapper> tokenKeys,
+        TokenExpiryWrapper expiry) {
 }

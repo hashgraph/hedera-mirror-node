@@ -15,6 +15,7 @@
  */
 package com.hedera.services.utils;
 
+import static com.hedera.mirror.web3.evm.account.AccountAccessorImpl.EVM_ADDRESS_SIZE;
 import static java.lang.System.arraycopy;
 
 import com.google.common.primitives.Ints;
@@ -23,9 +24,14 @@ import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.Arrays;
+import java.util.stream.Stream;
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 
 public final class EntityIdUtils {
 
+    private static final long MASK_INT_AS_UNSIGNED_LONG = (1L << 32) - 1;
+    private static final String CANNOT_PARSE_PREFIX = "Cannot parse '";
 
     private EntityIdUtils() {
         throw new UnsupportedOperationException("Utility Class");
@@ -37,6 +43,41 @@ public final class EntityIdUtils {
                 .setShardNum(id.getShardNum())
                 .setContractNum(id.getAccountNum())
                 .build();
+    }
+
+    public static AccountID asAccount(String v) {
+        long[] nativeParts = asDotDelimitedLongArray(v);
+        return AccountID.newBuilder()
+                .setShardNum(nativeParts[0])
+                .setRealmNum(nativeParts[1])
+                .setAccountNum(nativeParts[2])
+                .build();
+    }
+
+    public static ContractID asContract(String v) {
+        long[] nativeParts = asDotDelimitedLongArray(v);
+        return ContractID.newBuilder()
+                .setShardNum(nativeParts[0])
+                .setRealmNum(nativeParts[1])
+                .setContractNum(nativeParts[2])
+                .build();
+    }
+
+    public static TokenID asToken(String v) {
+        long[] nativeParts = asDotDelimitedLongArray(v);
+        return TokenID.newBuilder()
+                .setShardNum(nativeParts[0])
+                .setRealmNum(nativeParts[1])
+                .setTokenNum(nativeParts[2])
+                .build();
+    }
+
+    public static byte[] asEvmAddress(final ContractID id) {
+        if (id.getEvmAddress().size() == EVM_ADDRESS_SIZE) {
+            return id.getEvmAddress().toByteArray();
+        } else {
+            return asEvmAddress((int) id.getShardNum(), id.getRealmNum(), id.getContractNum());
+        }
     }
 
     public static byte[] asEvmAddress(final AccountID id) {
@@ -75,5 +116,99 @@ public final class EntityIdUtils {
                 .setRealmNum(realmFromEvmAddress(bytes))
                 .setAccountNum(numFromEvmAddress(bytes))
                 .build();
+    }
+
+    public static ContractID contractIdFromEvmAddress(final byte[] bytes) {
+        return ContractID.newBuilder()
+                .setShardNum(Ints.fromByteArray(Arrays.copyOfRange(bytes, 0, 4)))
+                .setRealmNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 4, 12)))
+                .setContractNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 12, 20)))
+                .build();
+    }
+
+    public static TokenID tokenIdFromEvmAddress(final byte[] bytes) {
+        return TokenID.newBuilder()
+                .setShardNum(Ints.fromByteArray(Arrays.copyOfRange(bytes, 0, 4)))
+                .setRealmNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 4, 12)))
+                .setTokenNum(Longs.fromByteArray(Arrays.copyOfRange(bytes, 12, 20)))
+                .build();
+    }
+
+    public static Address asTypedEvmAddress(final AccountID id) {
+        return Address.wrap(Bytes.wrap(asEvmAddress(id)));
+    }
+
+    public static Address asTypedEvmAddress(final TokenID id) {
+        return Address.wrap(Bytes.wrap(asEvmAddress(id)));
+    }
+
+    public static ContractID contractIdFromEvmAddress(final Address address) {
+        return contractIdFromEvmAddress(address.toArrayUnsafe());
+    }
+
+    public static TokenID tokenIdFromEvmAddress(final Address address) {
+        return tokenIdFromEvmAddress(address.toArrayUnsafe());
+    }
+
+    public static long[] asDotDelimitedLongArray(String s) {
+        String[] parts = s.split("[.]");
+        return Stream.of(parts).mapToLong(Long::valueOf).toArray();
+    }
+
+    public static AccountID parseAccount(final String literal) {
+        try {
+            final var parts = parseLongTriple(literal);
+            return AccountID.newBuilder()
+                    .setShardNum(parts[0])
+                    .setRealmNum(parts[1])
+                    .setAccountNum(parts[2])
+                    .build();
+        } catch (final NumberFormatException | ArrayIndexOutOfBoundsException e) {
+            throw new IllegalArgumentException(String.format("Argument 'literal=%s' is not an account", literal), e);
+        }
+    }
+
+    public static AccountID toGrpcAccountId(final int code) {
+        return AccountID.newBuilder()
+                .setShardNum(0L)
+                .setRealmNum(0L)
+                .setAccountNum(numFromCode(code))
+                .build();
+    }
+
+    public static TokenID asGrpcToken(final int num) {
+        return TokenID.newBuilder()
+                .setShardNum(0L)
+                .setRealmNum(0L)
+                .setTokenNum(num)
+                .build();
+    }
+
+    private static long[] parseLongTriple(final String dotDelimited) {
+        final long[] triple = new long[3];
+        int i = 0;
+        long v = 0;
+        for (final char c : dotDelimited.toCharArray()) {
+            if (c == '.') {
+                triple[i++] = v;
+                v = 0;
+            } else if (c < '0' || c > '9') {
+                throw new NumberFormatException(CANNOT_PARSE_PREFIX + dotDelimited + "' due to character '" + c + "'");
+            } else {
+                v = 10 * v + (c - '0');
+                if (v < 0) {
+                    throw new IllegalArgumentException(CANNOT_PARSE_PREFIX + dotDelimited + "' due to overflow");
+                }
+            }
+        }
+        if (i < 2) {
+            throw new IllegalArgumentException(CANNOT_PARSE_PREFIX + dotDelimited + "' due to only " + i + " dots");
+        }
+        triple[i] = v;
+        return triple;
+    }
+
+    public static long numFromCode(int code) {
+        return code & MASK_INT_AS_UNSIGNED_LONG;
     }
 }

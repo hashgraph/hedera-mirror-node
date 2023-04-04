@@ -15,13 +15,26 @@
  */
 package com.hedera.services.utils;
 
+import static com.hedera.services.utils.EntityIdUtils.asAccount;
+import static com.hedera.services.utils.EntityIdUtils.asContract;
+import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
+import static com.hedera.services.utils.EntityIdUtils.asToken;
+import static com.hedera.services.utils.EntityIdUtils.contractIdFromEvmAddress;
+import static com.hedera.services.utils.EntityIdUtils.parseAccount;
+import static com.hedera.services.utils.EntityIdUtils.tokenIdFromEvmAddress;
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.google.common.primitives.Ints;
+import com.google.common.primitives.Longs;
+import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TokenID;
+import org.bouncycastle.util.encoders.Hex;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -35,7 +48,7 @@ class EntityIdUtilsTest {
                 .setAccountNum(3)
                 .build();
 
-        final var result = EntityIdUtils.asEvmAddress(id);
+        final var result = asEvmAddress(id);
 
         final var expectedBytes = new byte[] {0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 3};
 
@@ -50,7 +63,7 @@ class EntityIdUtilsTest {
                 .setTokenNum(3)
                 .build();
 
-        final var result = EntityIdUtils.asEvmAddress(id);
+        final var result = asEvmAddress(id);
 
         final var expectedBytes = new byte[] {0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 3};
 
@@ -70,8 +83,67 @@ class EntityIdUtilsTest {
                 .setAccountNum(3)
                 .build();
 
-        final var cid = EntityIdUtils.asContract(id);
+        final var cid = asContract(id);
 
         assertEquals(expected, cid);
+    }
+
+    @Test
+    void serializesExpectedSolidityAddress() {
+        final byte[] shardBytes = {
+                (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xAB,
+        };
+        final var shard = Ints.fromByteArray(shardBytes);
+        final byte[] realmBytes = {
+                (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xCD,
+                (byte) 0xFE, (byte) 0x00, (byte) 0x00, (byte) 0xFE,
+        };
+        final var realm = Longs.fromByteArray(realmBytes);
+        final byte[] numBytes = {
+                (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xDE,
+                (byte) 0xBA, (byte) 0x00, (byte) 0x00, (byte) 0xBA
+        };
+        final var num = Longs.fromByteArray(numBytes);
+        final byte[] expected = {
+                (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xAB,
+                (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xCD,
+                (byte) 0xFE, (byte) 0x00, (byte) 0x00, (byte) 0xFE,
+                (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0xDE,
+                (byte) 0xBA, (byte) 0x00, (byte) 0x00, (byte) 0xBA
+        };
+        final var create2AddressBytes = Hex.decode("0102030405060708090a0b0c0d0e0f1011121314");
+        final var equivAccount = asAccount(String.format("%d.%d.%d", shard, realm, num));
+        final var equivContract = asContract(String.format("%d.%d.%d", shard, realm, num));
+        final var equivToken = asToken(String.format("%d.%d.%d", shard, realm, num));
+        final var create2Contract = ContractID.newBuilder()
+                .setEvmAddress(ByteString.copyFrom(create2AddressBytes))
+                .build();
+
+        final var actual = asEvmAddress(shard, realm, num);
+        final var typedActual = EntityIdUtils.asTypedEvmAddress(equivAccount);
+        final var typedToken = EntityIdUtils.asTypedEvmAddress(equivToken);
+        final var anotherActual = asEvmAddress(equivContract);
+        final var create2Actual = asEvmAddress(create2Contract);
+
+        assertArrayEquals(expected, actual);
+        assertArrayEquals(expected, anotherActual);
+        assertArrayEquals(expected, typedActual.toArray());
+        assertArrayEquals(expected, typedToken.toArray());
+        assertArrayEquals(create2AddressBytes, create2Actual);
+        assertEquals(equivAccount, EntityIdUtils.accountIdFromEvmAddress(actual));
+        assertEquals(equivContract, contractIdFromEvmAddress(actual));
+        assertEquals(equivToken, tokenIdFromEvmAddress(actual));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"1.0.0", "0.1.0", "0.0.1", "1.2.3"})
+    void parsesValidLiteral(final String goodLiteral) {
+        assertEquals(asAccount(goodLiteral), parseAccount(goodLiteral));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"asdf", "notANumber"})
+    void parsesNonValidLiteral(final String badLiteral) {
+        assertThrows(IllegalArgumentException.class, () -> parseAccount(badLiteral));
     }
 }
