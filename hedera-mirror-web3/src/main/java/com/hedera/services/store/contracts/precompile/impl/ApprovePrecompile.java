@@ -21,7 +21,6 @@ import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingCo
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.INT;
 import static com.hedera.node.app.service.evm.store.contracts.utils.EvmParsingConstants.INT_BOOL_PAIR;
 import static com.hedera.node.app.service.evm.utils.ValidationUtils.validateTrueOrRevert;
-import static com.hedera.services.state.submerkle.EntityId.MISSING_ENTITY_ID;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertAddressBytesToTokenID;
 import static com.hedera.services.store.contracts.precompile.codec.DecodingFacade.convertLeftPaddedAddressToAccountId;
 import static com.hedera.services.store.contracts.precompile.utils.GasCostType.APPROVE;
@@ -35,6 +34,10 @@ import com.esaulpaugh.headlong.abi.ABIType;
 import com.esaulpaugh.headlong.abi.Function;
 import com.esaulpaugh.headlong.abi.Tuple;
 import com.esaulpaugh.headlong.abi.TypeFactory;
+
+import com.hedera.services.txns.crypto.ApproveAllowanceLogic;
+import com.hedera.services.txns.crypto.DeleteAllowanceLogic;
+
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenID;
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -46,6 +49,7 @@ import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.frame.MessageFrame;
 import org.hyperledger.besu.evm.log.Log;
 
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.node.app.service.evm.store.tokens.TokenType;
 import com.hedera.services.state.submerkle.EntityId;
 import com.hedera.services.store.contracts.MirrorState;
@@ -115,19 +119,6 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
         final var nestedInput = tokenId == null ? input : input.slice(24);
         approveOp = decodeTokenApprove(nestedInput, tokenId, isFungible, aliasResolver, mirrorState);
         operatorId = EntityId.fromAddress(senderAddress);
-        if (approveOp.isFungible()) {
-//            transactionBody = syntheticTxnFactory.createFungibleApproval(approveOp);
-        } else {
-//            final var nftId =
-//                    NftId.fromGrpc(approveOp.tokenId(), approveOp.serialNumber().longValueExact());
-//            ownerId = mirrorState.ownerIfPresent(nftId);
-            if (isNftApprovalRevocation()) {
-                final var nominalOwnerId = ownerId != null ? ownerId : MISSING_ENTITY_ID;
-//                transactionBody = syntheticTxnFactory.createDeleteAllowance(approveOp, nominalOwnerId);
-            } else {
-//                transactionBody = syntheticTxnFactory.createNonfungibleApproval(approveOp, ownerId, operatorId);
-            }
-        }
     }
 
     @Override
@@ -144,11 +135,28 @@ public class ApprovePrecompile extends AbstractWritePrecompile {
             validateTrueOrRevert(isApproved, SENDER_DOES_NOT_OWN_NFT_SERIAL_NO);
         }
 
-        final var tokenAddress = asTypedEvmAddress(approveOp.tokenId());
-        if (approveOp.isFungible()) {
-            frame.addLog(getLogForFungibleAdjustAllowance(tokenAddress));
+        if (isNftApprovalRevocation()) {
+            final var deleteAllowanceLogic = new DeleteAllowanceLogic(accountStore, tokenStore, mirrorState);
+            final var revocationOp = transactionBody.getCryptoDeleteAllowance();
+            final var revocationWrapper = revocationOp.getNftAllowancesList();
+            deleteAllowanceLogic.deleteAllowance(revocationWrapper, grpcOperatorId);
         } else {
-            frame.addLog(getLogForNftAdjustAllowance(tokenAddress));
+            final var approveAllowanceLogic = new ApproveAllowanceLogic(accountStore, tokenStore);
+            try {
+                approveAllowanceLogic.approveAllowance(
+                        transactionBody.getCryptoApproveAllowance().getCryptoAllowancesList(),
+                        transactionBody.getCryptoApproveAllowance().getTokenAllowancesList(),
+                        transactionBody.getCryptoApproveAllowance().getNftAllowancesList(),
+                        grpcOperatorId);
+            } catch (final InvalidTransactionException e) {
+                throw new InvalidTransactionException(e.getResponseCode(), true);
+            }
+            final var tokenAddress = asTypedEvmAddress(approveOp.tokenId());
+            if (approveOp.isFungible()) {
+                frame.addLog(getLogForFungibleAdjustAllowance(tokenAddress));
+            } else {
+                frame.addLog(getLogForNftAdjustAllowance(tokenAddress));
+            }
         }
     }
 

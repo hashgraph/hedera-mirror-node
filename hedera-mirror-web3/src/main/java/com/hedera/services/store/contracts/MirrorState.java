@@ -21,6 +21,7 @@ import com.hedera.services.store.contracts.precompile.codec.EncodingFacade;
 
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 
 import com.hedera.services.ledger.properties.TokenProperty;
@@ -49,4 +50,12 @@ public interface MirrorState {
     Address canonicalAddress(Address senderAddress);
 
     boolean hasApprovedForAll(AccountID toGrpcAccountId, AccountID grpcOperatorId, TokenID tokenId);
+
+    void persistNft(UniqueToken nft);
+
+    void loadAccountOrFailWith(Id spender, ResponseCodeEnum invalidAllowanceSpenderId);
+
+    void loadPossiblyPausedToken(TokenID tokenId);
+
+    void loadUniqueToken(TokenID tokenId, Long serial);
 }
