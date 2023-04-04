@@ -175,7 +175,7 @@ public class MirrorNodeClient {
     }
 
     public MirrorContractResponse getContractInfoWithNotFound(String contractId) {
-        log.debug("Retrieve contract '{}' is from Mirror Node, may not be found", contractId);
+        log.debug("Verify contract '{}' is not found", contractId);
         return callRestEndpointWithNotFound("/contracts/{contractId}", MirrorContractResponse.class, contractId);
     }
 
@@ -285,6 +285,17 @@ public class MirrorNodeClient {
                 .block();
     }
 
+    private <T> T callRestEndpointWithNotFound(String uri, Class<T> classType, Object... uriVariables) {
+        return webClient.get()
+                .uri(uri.replace("/api/v1", ""), uriVariables)
+                .accept(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .bodyToMono(classType)
+                .retryWhen(retrySpecWithNotFound)
+                .doOnError(x -> log.debug("Expected endpoint failure, returning: {}", x.getMessage()))
+                .block();
+    }
+
     private <T> T callPostRestEndpoint(String uri, Class<T> classType, ContractCallRequest contractCallRequest) {
         return web3Client.post()
                 .uri(uri)
@@ -293,17 +304,6 @@ public class MirrorNodeClient {
                 .retrieve()
                 .bodyToMono(classType)
                 .retryWhen(retrySpec)
-                .doOnError(x -> log.error("Endpoint failed, returning: {}", x.getMessage()))
-                .block();
-    }
-
-    private <T> T callRestEndpointWithNotFound(String uri, Class<T> classType, Object... uriVariables) {
-        return webClient.get()
-                .uri(uri.replace("/api/v1", ""), uriVariables)
-                .accept(MediaType.APPLICATION_JSON)
-                .retrieve()
-                .bodyToMono(classType)
-                .retryWhen(retrySpecWithNotFound)
                 .doOnError(x -> log.error("Endpoint failed, returning: {}", x.getMessage()))
                 .block();
     }
