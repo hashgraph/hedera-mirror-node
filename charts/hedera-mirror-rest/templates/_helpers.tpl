@@ -47,6 +47,14 @@ Labels
 {{- end -}}
 
 {{/*
+Rest Test Labels
+*/}}
+{{- define "hedera-mirror-rest-test.labels" -}}
+{{ include "hedera-mirror-rest.labels" . }}
+test-trigger: rest-trigger
+{{- end -}}
+
+{{/*
 Monitor labels
 */}}
 {{- define "hedera-mirror-rest-monitor.labels" -}}

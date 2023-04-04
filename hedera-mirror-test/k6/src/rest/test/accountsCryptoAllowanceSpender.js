@@ -18,25 +18,21 @@
  * ‍
  */
 
-import http from "k6/http";
+import http from 'k6/http';
 
-import {TestScenarioBuilder} from '../../lib/common.js';
-import {urlPrefix} from '../../lib/constants.js';
-import {isSuccess} from "./common.js";
-import {setupTestParameters} from "./bootstrapEnvParameters.js";
+import {isSuccess, RestTestScenarioBuilder} from '../libex/common.js';
 
 const urlTag = '/accounts/{id}/allowances/crypto';
 
-const {options, run} = new TestScenarioBuilder()
+const {options, run, setup} = new RestTestScenarioBuilder()
   .name('accountCryptoAllowancesResultsSpender') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request((testParameters) => {
-    const url = `${testParameters['BASE_URL']}${urlPrefix}/accounts/${testParameters['DEFAULT_ACCOUNT_ID']}/allowances/crypto?spender.id=98`;
+    const url = `${testParameters['BASE_URL_PREFIX']}/accounts/${testParameters['DEFAULT_ACCOUNT_ID']}/allowances/crypto?spender.id=98`;
     return http.get(url);
   })
+  .requiredParameters('DEFAULT_ACCOUNT_ID')
   .check('Account crypto allowances for spender results OK', (r) => isSuccess(r))
   .build();
 
-export {options, run};
-
-export const setup = setupTestParameters;
+export {options, run, setup};

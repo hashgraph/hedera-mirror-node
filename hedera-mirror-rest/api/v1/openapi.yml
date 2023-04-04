@@ -296,6 +296,57 @@ paths:
           $ref: '#/components/responses/NotFoundError'
       tags:
         - blocks
+
+  /api/v1/contracts/call:
+    post:
+      summary: Invoke a smart contract
+      description: Returns a result from EVM execution such as cost-free execution of read-only smart contract queries, gas estimation, and transient simulation of read-write operations. If `estimate` field is set to true gas estimation is executed.
+      operationId: contractsCall
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContractCallRequest'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContractCallResponse'
+        400:
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        415:
+          description: Unsupported media type error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        429:
+          description: Too many requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        500:
+          description: Generic error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        501:
+          description: Not implemented error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      tags:
+        - contracts
   /api/v1/contracts:
     get:
       summary: List contract entities on network
@@ -1180,7 +1231,7 @@ tags:
     description: The tokens object represents the information associated with a token entity and returns a list of token information.
 info:
   title: Hedera Mirror Node REST API
-  version: 0.78.0-SNAPSHOT
+  version: 0.79.0-SNAPSHOT
   license:
     name: Apache-2.0
     url: 'https://www.apache.org/licenses/LICENSE-2.0.html'
@@ -2223,8 +2274,96 @@ components:
               items:
                 type: object
                 properties:
-                  message:
+                  data:
+                    description: Error message in hexadecimal
+                    example: "0x3000"
+                    format: binary
+                    nullable: true
+                    pattern: "^0x[0-9a-fA-F]+$"
                     type: string
+                  detail:
+                    description: Detailed error message
+                    example: Generic detailed error message
+                    nullable: true
+                    type: string
+                  message:
+                    description: Error message
+                    example: Generic error message
+                    nullable: false
+                    type: string
+    ContractCallRequest:
+      type: object
+      properties:
+        block:
+          description: Hexadecimal block number or the string "latest", "pending", "earliest". Defaults to "latest".
+          example: "latest"
+          nullable: true
+          pattern: "^((0x)?[0-9a-fA-F]+|(earliest|pending|latest))$"
+          type: string
+        data:
+          description: Hexadecimal method signature and encoded parameters.
+          example: "0x0198489200000000000000000000000000000000000000000000000000000000000003ee"
+          format: binary
+          maxLength: 12288
+          nullable: true
+          pattern: "^(0x)?[0-9a-fA-F]+$"
+          type: string
+        estimate:
+          description: Whether gas estimation is called. Defaults to false.
+          example: true
+          nullable: true
+          type: boolean
+        from:
+          description: The 20-byte hexadecimal EVM address the transaction is sent from.
+          example: "00000000000000000000000000000000000004e2"
+          format: binary
+          maxLength: 42
+          minLength: 40
+          nullable: true
+          pattern: "^(0x)?[A-Fa-f0-9]{40}$"
+          type: string
+        gas:
+          description: Gas provided for the transaction execution. Defaults to 120000000.
+          example: 120000000
+          format: int64
+          minimum: 0
+          nullable: true
+          type: integer
+        gasPrice:
+          description: Gas price used for each paid gas.
+          example: 100000000
+          format: int64
+          minimum: 0
+          nullable: true
+          type: integer
+        to:
+          description: The 20-byte hexadecimal EVM address the transaction is directed to.
+          example: "0x00000000000000000000000000000000000003f4"
+          format: binary
+          maxLength: 42
+          minLength: 40
+          nullable: false
+          pattern: "^(0x)?[A-Fa-f0-9]{40}$"
+          type: string
+        value:
+          description: Value sent with this transaction. Defaults to 0.
+          example: 0
+          format: int64
+          minimum: 0
+          nullable: true
+          type: integer
+      required:
+        - to
+    ContractCallResponse:
+      type: object
+      properties:
+        result:
+          description: Result in hexadecimal from executed contract call.
+          example: "0x94c4d54535f6e616d6500"
+          format: binary
+          nullable: false
+          pattern: "^0x[0-9a-fA-F]+$"
+          type: string
     HederaHash:
       type: string
       description: A hex encoded hedera transaction hash.

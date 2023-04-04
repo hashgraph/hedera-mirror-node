@@ -41,9 +41,6 @@ public class TokenAccountBalanceMigration extends RepeatableMigration {
                 order by consensus_timestamp desc
                 limit 1
             ),
-            entity as (
-                select id from entity where deleted = false
-            ),
             token_balance as (
                 select *
                 from token_balance
@@ -62,7 +59,6 @@ public class TokenAccountBalanceMigration extends RepeatableMigration {
                 end
             from token_balance
             left join token_transfer tt on tt.token_id = token_balance.token_id and tt.account_id = token_balance.account_id
-            join entity e on e.id = token_balance.account_id
             where t.account_id = token_balance.account_id and t.token_id = token_balance.token_id""";
 
     private final JdbcOperations jdbcOperations;

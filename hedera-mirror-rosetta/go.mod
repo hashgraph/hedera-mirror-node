@@ -7,7 +7,7 @@ require (
 	github.com/coinbase/rosetta-sdk-go v0.8.3
 	github.com/coinbase/rosetta-sdk-go/types v1.0.0
 	github.com/cucumber/godog v0.12.6
-	github.com/ethereum/go-ethereum v1.11.4
+	github.com/ethereum/go-ethereum v1.11.5
 	github.com/go-playground/validator/v10 v10.12.0
 	github.com/hashgraph/hedera-protobufs-go v0.2.1-0.20221223083421-851698720852
 	github.com/hashgraph/hedera-sdk-go/v2 v2.17.2
@@ -23,7 +23,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.15.0
 	github.com/stretchr/testify v1.8.2
-	github.com/thanhpk/randstr v1.0.4
+	github.com/thanhpk/randstr v1.0.5
 	github.com/weaveworks/common v0.0.0-20210901124008-1fa3f9fa874c
 	google.golang.org/protobuf v1.28.1
 	gopkg.in/yaml.v2 v2.4.0
@@ -65,6 +65,7 @@ require (
 	github.com/hashicorp/go-memdb v1.3.2 // indirect
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
+	github.com/holiman/uint256 v1.2.0 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
@@ -81,7 +82,7 @@ require (
 	github.com/moby/term v0.0.0-20201216013528-df9cb8a40635 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2 // indirect
-	github.com/opencontainers/runc v1.1.2 // indirect
+	github.com/opencontainers/runc v1.1.5 // indirect
 	github.com/opentracing-contrib/go-stdlib v0.0.0-20190519235532-cf7a6c988dc9 // indirect
 	github.com/opentracing/opentracing-go v1.1.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.6 // indirect

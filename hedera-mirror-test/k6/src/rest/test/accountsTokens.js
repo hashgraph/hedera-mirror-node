@@ -18,25 +18,22 @@
  * ‍
  */
 
-import http from "k6/http";
+import http from 'k6/http';
 
-import {TestScenarioBuilder} from '../../lib/common.js';
-import {tokenListName, urlPrefix} from '../../lib/constants.js';
-import {isValidListResponse} from "./common.js";
-import {setupTestParameters} from "./bootstrapEnvParameters.js";
+import {isValidListResponse, RestTestScenarioBuilder} from '../libex/common.js';
+import {tokenListName} from '../libex/constants.js';
 
 const urlTag = '/accounts/{id}/tokens';
 
-const {options, run} = new TestScenarioBuilder()
+const {options, run, setup} = new RestTestScenarioBuilder()
   .name('accountTokensResults') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request((testParameters) => {
-    const url = `${testParameters['BASE_URL']}${urlPrefix}/accounts/${testParameters['DEFAULT_ACCOUNT_ID_TOKEN']}/tokens?limit=${testParameters['DEFAULT_LIMIT']}`;
+    const url = `${testParameters['BASE_URL_PREFIX']}/accounts/${testParameters['DEFAULT_ACCOUNT_ID_TOKEN']}/tokens?limit=${testParameters['DEFAULT_LIMIT']}`;
     return http.get(url);
   })
+  .requiredParameters('DEFAULT_ACCOUNT_ID_TOKEN')
   .check('Account tokens results OK', (r) => isValidListResponse(r, tokenListName))
   .build();
 
-export {options, run};
-
-export const setup = setupTestParameters;
+export {options, run, setup};

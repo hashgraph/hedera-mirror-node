@@ -675,6 +675,24 @@ const transactionHashQuery = `
   where ${TransactionHash.HASH} = $1
   order by ${TransactionHash.CONSENSUS_TIMESTAMP}`;
 
+const transactionHashShardedQuery = `select ${TransactionHash.CONSENSUS_TIMESTAMP}, ${TransactionHash.PAYER_ACCOUNT_ID}
+                                     from get_transaction_info_by_hash($1)`;
+
+const transactionHashShardedQueryEnabled = (() => {
+  let result = undefined;
+  return () => (async () => {
+    if (result !== undefined) {
+      return result;
+    }
+
+    const {rows} = await pool.queryQuietly(`SELECT count(*) > 0 as enabled
+                       from pg_proc
+                       where proname = 'get_transaction_info_by_hash'`);
+    result = rows[0].enabled;
+    return result;
+  })();
+})();
+
 /**
  * Get the query for either getting transaction by id or getting transaction by payer account id and a list of
  * consensus timestamps
@@ -730,12 +748,14 @@ const extractSqlFromTransactionsByIdOrHashRequest = async (transactionIdOrHash, 
       transactionIdOrHash = transactionIdOrHash.substring(2);
     }
 
+    const v1ShardQueryEnabled = await transactionHashShardedQueryEnabled();
+    const usedTransactionHashQuery = v1ShardQueryEnabled ? transactionHashShardedQuery : transactionHashQuery;
     const transactionHash = Buffer.from(transactionIdOrHash, encoding);
     if (logger.isTraceEnabled()) {
-      logger.trace(`transactionHashQuery: ${transactionHashQuery}, ${utils.JSONStringify(transactionHash)}`);
+      logger.trace(`transactionHashQuery: ${usedTransactionHashQuery}, ${utils.JSONStringify(transactionHash)}`);
     }
 
-    const {rows} = await pool.queryQuietly(transactionHashQuery, [transactionHash]);
+    const {rows} = await pool.queryQuietly(usedTransactionHashQuery, [transactionHash]);
     if (rows.length === 0) {
       throw new NotFoundError();
     }

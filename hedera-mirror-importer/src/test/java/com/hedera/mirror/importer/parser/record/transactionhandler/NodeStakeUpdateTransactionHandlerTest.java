@@ -25,10 +25,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hederahashgraph.api.proto.java.NodeStakeUpdateTransactionBody;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -39,7 +37,6 @@ import org.mockito.Mock;
 import com.hedera.mirror.common.domain.addressbook.NetworkStake;
 import com.hedera.mirror.common.domain.addressbook.NodeStake;
 import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.addressbook.ConsensusNodeService;
@@ -80,16 +77,6 @@ class NodeStakeUpdateTransactionHandlerTest extends AbstractTransactionHandlerTe
     @Test
     void getType() {
         assertThat(transactionHandler.getType()).isEqualTo(TransactionType.NODESTAKEUPDATE);
-    }
-
-    @Test
-    void updateTransactionUnsuccessful() {
-        var recordItem = recordItemBuilder.nodeStakeUpdate()
-                .receipt(r -> r.setStatus(ResponseCodeEnum.DUPLICATE_TRANSACTION))
-                .build();
-        var transaction = new Transaction();
-        transactionHandler.updateTransaction(transaction, recordItem);
-        verifyNoInteractions(consensusNodeService, entityListener);
     }
 
     @Test

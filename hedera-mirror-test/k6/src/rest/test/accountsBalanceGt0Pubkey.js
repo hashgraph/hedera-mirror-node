@@ -18,25 +18,22 @@
  * ‍
  */
 
-import http from "k6/http";
+import http from 'k6/http';
 
-import {TestScenarioBuilder} from '../../lib/common.js';
-import {accountListName, urlPrefix} from '../../lib/constants.js';
-import {isValidListResponse} from "./common.js";
-import {setupTestParameters} from "./bootstrapEnvParameters.js";
+import {isValidListResponse, RestTestScenarioBuilder} from '../libex/common.js';
+import {accountListName} from '../libex/constants.js';
 
 const urlTag = '/accounts?account.balance=gt:0&account.publickey={publicKey}';
 
-const {options, run} = new TestScenarioBuilder()
+const {options, run, setup} = new RestTestScenarioBuilder()
   .name('accountsBalanceGt0Pubkey') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request((testParameters) => {
-    const url = `${testParameters['BASE_URL']}${urlPrefix}/accounts?account.balance=gt:0&account.publickey=${testParameters['DEFAULT_PUBLIC_KEY']}`;
+    const url = `${testParameters['BASE_URL_PREFIX']}/accounts?account.balance=gt:0&account.publickey=${testParameters['DEFAULT_PUBLIC_KEY']}`;
     return http.get(url);
   })
+  .requiredParameters('DEFAULT_PUBLIC_KEY')
   .check('Accounts balance gt:0 with publickey OK', (r) => isValidListResponse(r, accountListName))
   .build();
 
-export {options, run};
-
-export const setup = setupTestParameters;
+export {options, run, setup};

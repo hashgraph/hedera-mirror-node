@@ -30,12 +30,13 @@ import com.google.common.collect.Range;
 import com.google.protobuf.BoolValue;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -44,13 +45,8 @@ import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
-import com.hedera.mirror.common.domain.transaction.RecordItem;
-import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
-
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
 
 class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
@@ -123,16 +119,6 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
     @Override
     protected EntityType getExpectedEntityIdType() {
         return null;
-    }
-
-    @Test
-    void updateTransactionUnsuccessful() {
-        var transaction = new Transaction();
-        RecordItem recordItem = recordItemBuilder.cryptoApproveAllowance()
-                .receipt(r -> r.setStatus(ResponseCodeEnum.ACCOUNT_DELETED))
-                .build();
-        transactionHandler.updateTransaction(transaction, recordItem);
-        verifyNoInteractions(entityListener);
     }
 
     @Test

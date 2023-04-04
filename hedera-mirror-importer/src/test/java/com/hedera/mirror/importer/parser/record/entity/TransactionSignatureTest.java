@@ -120,9 +120,9 @@ class TransactionSignatureTest {
     void setup() {
         CommonParserProperties commonParserProperties = new CommonParserProperties();
         EntityProperties entityProperties = new EntityProperties();
-        entityRecordItemListener = new EntityRecordItemListener(addressBookService, commonParserProperties,
-                contractResultService, entityIdService, entityListener, entityProperties, fileDataRepository,
-                nonFeeTransferExtractionStrategy, transactionHandlerFactory);
+        entityRecordItemListener = new EntityRecordItemListener(commonParserProperties, contractResultService,
+                entityIdService, entityListener, entityProperties, nonFeeTransferExtractionStrategy,
+                transactionHandlerFactory);
         defaultSignatureMap = getDefaultSignatureMap();
         defaultTransactionSignatures = defaultSignatureMap.getSigPairList()
                 .stream()
