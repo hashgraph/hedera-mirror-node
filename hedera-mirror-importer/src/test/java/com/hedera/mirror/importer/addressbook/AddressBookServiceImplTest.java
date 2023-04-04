@@ -152,12 +152,10 @@ class AddressBookServiceImplTest extends IntegrationTest {
     private void update(byte[] contents, long consensusTimeStamp, boolean is102) {
         FileData fileData = createFileData(contents, consensusTimeStamp, is102, TransactionType.FILEUPDATE);
         addressBookService.update(fileData);
-        fileDataRepository.save(fileData);
     }
 
     private void append(byte[] contents, long consensusTimeStamp, boolean is102) {
         FileData fileData = createFileData(contents, consensusTimeStamp, is102, TransactionType.FILEAPPEND);
-        fileDataRepository.save(fileData);
         addressBookService.update(fileData);
     }
 
@@ -633,7 +631,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
         byte[] addressBookBytes5 = addressBook(addressBook5NodeCount, 0).toByteArray();
         addressBookService.update(createFileData(addressBookBytes5, 6L, true, TransactionType.FILEUPDATE));
 
-        assertEquals(4, fileDataRepository.count());
+        assertEquals(5, fileDataRepository.count());
         assertEquals(6, addressBookRepository.count()); // initial plus 5 files
         assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT + (UPDATED.getNodeAddressCount() * 2L) +
                 (FINAL.getNodeAddressCount() * 2L) + addressBook5NodeCount, addressBookEntryRepository.count());
@@ -948,7 +946,7 @@ class AddressBookServiceImplTest extends IntegrationTest {
         assertThat(newAddressBook.getStartConsensusTimestamp()).isEqualTo(8L);
         assertAddressBook(newAddressBook, FINAL);
 
-        assertEquals(6, fileDataRepository.count());
+        assertEquals(7, fileDataRepository.count());
         assertEquals(5, addressBookRepository.count()); // initial plus 4 files
         assertEquals(TEST_INITIAL_ADDRESS_BOOK_NODE_COUNT + (UPDATED.getNodeAddressCount() * 2L) +
                 (FINAL.getNodeAddressCount() * 2L), addressBookEntryRepository.count());

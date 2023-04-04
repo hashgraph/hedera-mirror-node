@@ -36,7 +36,7 @@ extra.apply {
     set("reactorGrpcVersion", "1.2.3")
     set("snakeyaml.version", "1.33") // Temporary fix for transient dependency security issue
     set("testcontainersSpringBootVersion", "2.3.2")
-    set("vertxVersion", "4.4.0")
+    set("vertxVersion", "4.4.1")
 }
 
 // Creates a platform/BOM with specific versions so subprojects don't need to specify a version when using a dependency
@@ -59,7 +59,7 @@ dependencies {
         api("com.graphql-java:graphql-java-extended-scalars:20.0")
         api("com.graphql-java:graphql-java-extended-validation:20.0-validator-6.2.0.Final")
         api("com.hedera.evm:hedera-evm:0.36.0-alpha.3")
-        api("com.hedera.hashgraph:hedera-protobuf-java-api:0.35.0")
+        api("com.hedera.hashgraph:hedera-protobuf-java-api:0.36.1")
         api("com.hedera.hashgraph:sdk:2.21.0")
         api("com.ongres.scram:client:2.1")
         api("com.playtika.testcontainers:embedded-google-pubsub:$testcontainersSpringBootVersion")
@@ -72,7 +72,7 @@ dependencies {
         api("io.cucumber:cucumber-bom:7.11.2")
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
         api("io.grpc:grpc-bom:1.54.0")
-        api("io.swagger:swagger-annotations:1.6.9")
+        api("io.swagger:swagger-annotations:1.6.10")
         api("io.vertx:vertx-pg-client:$vertxVersion")
         api("io.vertx:vertx-codegen:$vertxVersion")
         api("javax.inject:javax.inject:1")
@@ -89,10 +89,10 @@ dependencies {
         api("org.mapstruct:mapstruct:$mapStructVersion")
         api("org.mapstruct:mapstruct-processor:$mapStructVersion")
         api("org.msgpack:jackson-dataformat-msgpack:0.9.3")
-        api("org.springdoc:springdoc-openapi-webflux-ui:1.6.15")
+        api("org.springdoc:springdoc-openapi-webflux-ui:1.7.0")
         api("org.springframework.cloud:spring-cloud-dependencies:2021.0.5")
         api("org.testcontainers:junit-jupiter:1.17.6")
-        api("software.amazon.awssdk:bom:2.20.32")
+        api("software.amazon.awssdk:bom:2.20.37")
         api("uk.org.webcompere:system-stubs-jupiter:2.0.2")
     }
 }

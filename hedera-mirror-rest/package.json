@@ -1,6 +1,6 @@
 {
   "name": "@hashgraph/mirror-rest",
-  "version": "0.78.0-SNAPSHOT",
+  "version": "0.79.0-SNAPSHOT",
   "description": "Hedera Mirror Node REST API",
   "type": "module",
   "main": "server.js",
@@ -22,7 +22,7 @@
     "@godaddy/terminus": "^4.11.2",
     "@hashgraph/proto": "^2.12.0",
     "asn1js": "^3.0.5",
-    "aws-sdk": "^2.1343.0",
+    "aws-sdk": "^2.1348.0",
     "bigint-buffer": "^1.1.5",
     "body-parser": "^1.20.2",
     "compression": "^1.7.4",
@@ -98,7 +98,7 @@
     "nodemon": "^2.0.22",
     "pg-format": "^1.0.4",
     "rewire": "^6.0.0",
-    "sinon": "^15.0.2",
+    "sinon": "^15.0.3",
     "supertest": "^6.3.3",
     "testcontainers": "^9.3.0"
   },

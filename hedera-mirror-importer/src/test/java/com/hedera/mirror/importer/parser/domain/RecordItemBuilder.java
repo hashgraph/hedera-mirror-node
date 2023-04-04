@@ -23,6 +23,7 @@ package com.hedera.mirror.importer.parser.domain;
 import static com.hedera.mirror.common.domain.DomainBuilder.KEY_LENGTH_ECDSA;
 import static com.hedera.mirror.common.domain.DomainBuilder.KEY_LENGTH_ED25519;
 import static com.hedera.mirror.common.util.DomainUtils.TINYBARS_IN_ONE_HBAR;
+import static com.hederahashgraph.api.proto.java.CustomFee.FeeCase.FIXED_FEE;
 import static com.hederahashgraph.api.proto.java.TokenType.FUNGIBLE_COMMON;
 import static com.hederahashgraph.api.proto.java.TokenType.NON_FUNGIBLE_UNIQUE;
 
@@ -34,6 +35,7 @@ import com.google.protobuf.Int32Value;
 import com.google.protobuf.StringValue;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
+import com.hederahashgraph.api.proto.java.ConsensusMessageChunkInfo;
 import com.hederahashgraph.api.proto.java.ConsensusSubmitMessageTransactionBody;
 import com.hederahashgraph.api.proto.java.ConsensusUpdateTopicTransactionBody;
 import com.hederahashgraph.api.proto.java.ContractCallTransactionBody;
@@ -43,6 +45,7 @@ import com.hederahashgraph.api.proto.java.ContractFunctionResult;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ContractLoginfo;
 import com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.CryptoAddLiveHashTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoAllowance;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
@@ -53,16 +56,25 @@ import com.hederahashgraph.api.proto.java.CryptoUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.CustomFee;
 import com.hederahashgraph.api.proto.java.Duration;
 import com.hederahashgraph.api.proto.java.EthereumTransactionBody;
+import com.hederahashgraph.api.proto.java.FileAppendTransactionBody;
+import com.hederahashgraph.api.proto.java.FileCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.FileID;
+import com.hederahashgraph.api.proto.java.FileUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.FixedFee;
 import com.hederahashgraph.api.proto.java.Fraction;
+import com.hederahashgraph.api.proto.java.FractionalFee;
+import com.hederahashgraph.api.proto.java.FreezeTransactionBody;
+import com.hederahashgraph.api.proto.java.FreezeType;
 import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.KeyList;
+import com.hederahashgraph.api.proto.java.LiveHash;
 import com.hederahashgraph.api.proto.java.NftAllowance;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import com.hederahashgraph.api.proto.java.NodeStake;
 import com.hederahashgraph.api.proto.java.NodeStakeUpdateTransactionBody;
 import com.hederahashgraph.api.proto.java.RealmID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import com.hederahashgraph.api.proto.java.RoyaltyFee;
 import com.hederahashgraph.api.proto.java.SchedulableTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleCreateTransactionBody;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -73,18 +85,29 @@ import com.hederahashgraph.api.proto.java.SignedTransaction;
 import com.hederahashgraph.api.proto.java.Timestamp;
 import com.hederahashgraph.api.proto.java.TokenAllowance;
 import com.hederahashgraph.api.proto.java.TokenAssociateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenAssociation;
+import com.hederahashgraph.api.proto.java.TokenBurnTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenCreateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenDissociateTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenFeeScheduleUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenFreezeAccountTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenGrantKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TokenMintTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenPauseTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenRevokeKycTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenType;
+import com.hederahashgraph.api.proto.java.TokenUnfreezeAccountTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenUnpauseTransactionBody;
 import com.hederahashgraph.api.proto.java.TokenUpdateTransactionBody;
+import com.hederahashgraph.api.proto.java.TokenWipeAccountTransactionBody;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
+import com.hederahashgraph.api.proto.java.UncheckedSubmitBody;
 import com.hederahashgraph.api.proto.java.UtilPrngTransactionBody;
 import java.security.SecureRandom;
 import java.time.Instant;
@@ -160,8 +183,18 @@ public class RecordItemBuilder {
         var transactionBody = ConsensusSubmitMessageTransactionBody.newBuilder()
                 .setMessage(bytes(128))
                 .setTopicID(topicId());
-        return new Builder<>(TransactionType.CONSENSUSSUBMITMESSAGE, transactionBody)
-                .receipt(r -> r.setTopicSequenceNumber(id()));
+
+        var builder = new Builder<>(TransactionType.CONSENSUSSUBMITMESSAGE, transactionBody)
+                .receipt(r -> r.setTopicRunningHash(bytes(48))
+                        .setTopicRunningHashVersion(3)
+                        .setTopicSequenceNumber(id()));
+
+        transactionBody.setChunkInfo(ConsensusMessageChunkInfo.newBuilder()
+                .setInitialTransactionID(builder.transactionBodyWrapper.getTransactionID())
+                .setNumber(1)
+                .setTotal(1));
+
+        return builder;
     }
 
     public Builder<ConsensusUpdateTopicTransactionBody.Builder> consensusUpdateTopic() {
@@ -295,6 +328,16 @@ public class RecordItemBuilder {
                 .receipt(r -> r.setContractID(contractId));
     }
 
+    public Builder<CryptoAddLiveHashTransactionBody.Builder> cryptoAddLiveHash() {
+        var builder = CryptoAddLiveHashTransactionBody.newBuilder()
+                .setLiveHash(LiveHash.newBuilder()
+                        .setAccountId(accountId())
+                        .setDuration(duration(900))
+                        .setHash(bytes(48))
+                        .setKeys(KeyList.newBuilder().addKeys(key())));
+        return new Builder<>(TransactionType.CRYPTOADDLIVEHASH, builder);
+    }
+
     public Builder<CryptoApproveAllowanceTransactionBody.Builder> cryptoApproveAllowance() {
         var builder = CryptoApproveAllowanceTransactionBody.newBuilder()
                 .addCryptoAllowances(CryptoAllowance.newBuilder()
@@ -395,17 +438,37 @@ public class RecordItemBuilder {
                 .receipt(r -> r.setAccountID(accountId));
     }
 
-    private CustomFee.Builder customFee() {
+    public CustomFee.Builder customFee(CustomFee.FeeCase feeCase) {
         var accountId = accountId();
-        return CustomFee.newBuilder()
+        var customFee = CustomFee.newBuilder()
                 .setFeeCollectorAccountId(accountId)
-                .setFixedFee(fixedFee())
                 .setAllCollectorsAreExempt(false);
+        switch (feeCase) {
+            case FIXED_FEE -> customFee.setFixedFee(fixedFee());
+            case ROYALTY_FEE -> customFee.setRoyaltyFee(royaltyFee());
+            case FRACTIONAL_FEE -> customFee.setFractionalFee(fractionalFee());
+        }
+        return customFee;
     }
 
     private FixedFee.Builder fixedFee() {
-        return FixedFee.newBuilder().setAmount(100L)
-                .setDenominatingTokenId(TokenID.getDefaultInstance());
+        return FixedFee.newBuilder()
+                .setAmount(100L)
+                .setDenominatingTokenId(tokenId());
+    }
+
+    private FractionalFee.Builder fractionalFee() {
+        return FractionalFee.newBuilder()
+                .setFractionalAmount(Fraction.newBuilder().setNumerator(1).setDenominator(10))
+                .setMaximumAmount(1000L)
+                .setMinimumAmount(1L)
+                .setNetOfTransfers(false);
+    }
+
+    private RoyaltyFee.Builder royaltyFee() {
+        return RoyaltyFee.newBuilder()
+                .setExchangeValueFraction(Fraction.newBuilder().setNumerator(50).setDenominator(100))
+                .setFallbackFee(fixedFee());
     }
 
     public Builder<EthereumTransactionBody.Builder> ethereumTransaction() {
@@ -434,6 +497,44 @@ public class RecordItemBuilder {
         }
 
         return builder;
+    }
+
+    public Builder<FileAppendTransactionBody.Builder> fileAppend() {
+        var builder = FileAppendTransactionBody.newBuilder()
+                .setContents(bytes(100))
+                .setFileID(fileId());
+        return new Builder<>(TransactionType.FILEAPPEND, builder);
+    }
+
+    public Builder<FileCreateTransactionBody.Builder> fileCreate() {
+        var builder = FileCreateTransactionBody.newBuilder()
+                .setContents(bytes(100))
+                .setExpirationTime(timestamp())
+                .setKeys(KeyList.newBuilder().addKeys(key()))
+                .setRealmID(RealmID.newBuilder().setRealmNum(0L))
+                .setShardID(ShardID.newBuilder().setShardNum(0L))
+                .setMemo(text(10));
+        return new Builder<>(TransactionType.FILECREATE, builder)
+                .receipt(b -> b.setFileID(fileId()));
+    }
+
+    public Builder<FileUpdateTransactionBody.Builder> fileUpdate() {
+        var builder = FileUpdateTransactionBody.newBuilder()
+                .setContents(bytes(100))
+                .setExpirationTime(timestamp())
+                .setFileID(fileId())
+                .setKeys(KeyList.newBuilder().addKeys(key()))
+                .setMemo(StringValue.newBuilder().setValue(text(10)));
+        return new Builder<>(TransactionType.FILEUPDATE, builder);
+    }
+
+    public Builder<FreezeTransactionBody.Builder> freeze() {
+        var builder = FreezeTransactionBody.newBuilder()
+                .setFileHash(bytes(48))
+                .setFreezeType(FreezeType.PREPARE_UPGRADE)
+                .setStartTime(timestamp())
+                .setUpdateFile(fileId());
+        return new Builder<>(TransactionType.FREEZE, builder);
     }
 
     public Builder<NodeStakeUpdateTransactionBody.Builder> nodeStakeUpdate() {
@@ -494,20 +595,76 @@ public class RecordItemBuilder {
         return new Builder<>(TransactionType.TOKENASSOCIATE, transactionBody);
     }
 
+    public Builder<TokenBurnTransactionBody.Builder> tokenBurn() {
+        var transactionBody = TokenBurnTransactionBody.newBuilder()
+                .setAmount(1L)
+                .setToken(tokenId())
+                .addSerialNumbers(1L);
+        return new Builder<>(TransactionType.TOKENBURN, transactionBody)
+                .receipt(b -> b.setNewTotalSupply(2L));
+    }
+
+    public Builder<TokenDissociateTransactionBody.Builder> tokenDissociate() {
+        var transactionBody = TokenDissociateTransactionBody.newBuilder()
+                .setAccount(accountId())
+                .addTokens(tokenId());
+        return new Builder<>(TransactionType.TOKENDISSOCIATE, transactionBody);
+    }
+
+    public Builder<TokenFreezeAccountTransactionBody.Builder> tokenFreeze() {
+        var transactionBody = TokenFreezeAccountTransactionBody.newBuilder()
+                .setAccount(accountId())
+                .setToken(tokenId());
+        return new Builder<>(TransactionType.TOKENFREEZE, transactionBody);
+    }
+
+    public Builder<TokenGrantKycTransactionBody.Builder> tokenGrantKyc() {
+        var transactionBody = TokenGrantKycTransactionBody.newBuilder()
+                .setAccount(accountId())
+                .setToken(tokenId());
+        return new Builder<>(TransactionType.TOKENGRANTKYC, transactionBody);
+    }
+
     public Builder<TokenMintTransactionBody.Builder> tokenMint() {
         return tokenMint(NON_FUNGIBLE_UNIQUE);
     }
 
     public Builder<TokenMintTransactionBody.Builder> tokenMint(TokenType tokenType) {
         var transactionBody = TokenMintTransactionBody.newBuilder().setToken(tokenId());
+        var builder = new Builder<>(TransactionType.TOKENMINT, transactionBody);
 
         if (tokenType == FUNGIBLE_COMMON) {
             transactionBody.setAmount(1000L);
         } else {
             transactionBody.addMetadata(bytes(16)).addMetadata(bytes(16));
+            builder.receipt(b -> b.addSerialNumbers(1L).addSerialNumbers(2L));
         }
 
-        return new Builder<>(TransactionType.TOKENMINT, transactionBody);
+        return builder;
+    }
+
+    public Builder<TokenPauseTransactionBody.Builder> tokenPause() {
+        var transactionBody = TokenPauseTransactionBody.newBuilder().setToken(tokenId());
+        return new Builder<>(TransactionType.TOKENPAUSE, transactionBody);
+    }
+
+    public Builder<TokenRevokeKycTransactionBody.Builder> tokenRevokeKyc() {
+        var transactionBody = TokenRevokeKycTransactionBody.newBuilder()
+                .setAccount(accountId())
+                .setToken(tokenId());
+        return new Builder<>(TransactionType.TOKENREVOKEKYC, transactionBody);
+    }
+
+    public Builder<TokenUnfreezeAccountTransactionBody.Builder> tokenUnfreeze() {
+        var transactionBody = TokenUnfreezeAccountTransactionBody.newBuilder()
+                .setAccount(accountId())
+                .setToken(tokenId());
+        return new Builder<>(TransactionType.TOKENUNFREEZE, transactionBody);
+    }
+
+    public Builder<TokenUnpauseTransactionBody.Builder> tokenUnpause() {
+        var transactionBody = TokenUnpauseTransactionBody.newBuilder().setToken(tokenId());
+        return new Builder<>(TransactionType.TOKENUNPAUSE, transactionBody);
     }
 
     public Builder<TokenUpdateTransactionBody.Builder> tokenUpdate() {
@@ -531,6 +688,7 @@ public class RecordItemBuilder {
     }
 
     public Builder<TokenCreateTransactionBody.Builder> tokenCreate() {
+        var tokenId = tokenId();
         var transactionBody = TokenCreateTransactionBody.newBuilder()
                 .setAdminKey(key())
                 .setAutoRenewAccount(accountId())
@@ -545,17 +703,41 @@ public class RecordItemBuilder {
                 .setSupplyKey(key())
                 .setSymbol(text(4))
                 .setTreasury(accountId())
-                .addCustomFees(customFee())
+                .addCustomFees(customFee(FIXED_FEE))
                 .setWipeKey(key());
         return new Builder<>(TransactionType.TOKENCREATION, transactionBody)
-                .receipt(r -> r.setTokenID(tokenId()));
+                .receipt(r -> r.setTokenID(tokenId))
+                .record(r -> r.addAutomaticTokenAssociations(TokenAssociation.newBuilder()
+                        .setAccountId(accountId())
+                        .setTokenId(tokenId)));
     }
 
     public Builder<TokenFeeScheduleUpdateTransactionBody.Builder> tokenFeeScheduleUpdate() {
         var transactionBody = TokenFeeScheduleUpdateTransactionBody.newBuilder()
                 .setTokenId(tokenId())
-                .addCustomFees(customFee());
+                .addCustomFees(customFee(FIXED_FEE));
         return new Builder<>(TransactionType.TOKENFEESCHEDULEUPDATE, transactionBody);
+    }
+
+    public Builder<TokenWipeAccountTransactionBody.Builder> tokenWipe() {
+        return tokenWipe(NON_FUNGIBLE_UNIQUE);
+    }
+
+    public Builder<TokenWipeAccountTransactionBody.Builder> tokenWipe(TokenType type) {
+        var transactionBody = TokenWipeAccountTransactionBody.newBuilder()
+                .setAccount(accountId())
+                .setToken(tokenId());
+        switch (type) {
+            case FUNGIBLE_COMMON -> transactionBody.setAmount(1000L);
+            case NON_FUNGIBLE_UNIQUE -> transactionBody.addSerialNumbers(1L);
+        }
+        return new Builder<>(TransactionType.TOKENWIPE, transactionBody)
+                .receipt(r -> r.setNewTotalSupply(2L));
+    }
+
+    public Builder<UncheckedSubmitBody.Builder> uncheckedSubmit() {
+        var transactionBody = UncheckedSubmitBody.newBuilder().setTransactionBytes(bytes(32));
+        return new Builder<>(TransactionType.UNCHECKEDSUBMIT, transactionBody);
     }
 
     public AccountID accountId() {
