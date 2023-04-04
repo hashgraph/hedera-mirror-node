@@ -258,8 +258,8 @@ public class EntityRecordItemListener implements RecordItemListener {
         var transferList = transactionRecord.getTransferList();
         EntityId payerAccountId = recordItem.getPayerAccountId();
         var body = recordItem.getTransactionBody();
-        boolean failedTransfer = !recordItem.isSuccessful() && body.hasCryptoTransfer()
-                && consensusTimestamp < 1577836799000000000L;
+        boolean failedTransfer =
+                !recordItem.isSuccessful() && body.hasCryptoTransfer() && consensusTimestamp < 1577836799000000000L;
 
         for (int i = 0; i < transferList.getAccountAmountsCount(); ++i) {
             var aa = transferList.getAccountAmounts(i);
@@ -300,7 +300,7 @@ public class EntityRecordItemListener implements RecordItemListener {
     }
 
     private AccountAmount findAccountAmount(Predicate<AccountAmount> accountAmountPredicate, TokenID tokenId,
-            TransactionBody body) {
+                                            TransactionBody body) {
         if (!body.hasCryptoTransfer()) {
             return null;
         }
@@ -591,10 +591,8 @@ public class EntityRecordItemListener implements RecordItemListener {
             long consensusTimestamp = recordItem.getConsensusTimestamp();
             for (var protoAssessedCustomFee : recordItem.getTransactionRecord().getAssessedCustomFeesList()) {
                 EntityId collectorAccountId = EntityId.of(protoAssessedCustomFee.getFeeCollectorAccountId());
-                // the effective payers must also appear in the *transfer lists of this
-                // transaction and the
-                // corresponding EntityIds should have been added to EntityListener, so skip it
-                // here.
+                // the effective payers must also appear in the *transfer lists of this transaction and the
+                // corresponding EntityIds should have been added to EntityListener, so skip it here.
                 List<EntityId> payerEntityIds = protoAssessedCustomFee.getEffectivePayerAccountIdList().stream()
                         .map(EntityId::of)
                         .toList();

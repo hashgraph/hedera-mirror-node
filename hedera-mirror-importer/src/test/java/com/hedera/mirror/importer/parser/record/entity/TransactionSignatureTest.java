@@ -217,7 +217,7 @@ class TransactionSignatureTest {
     }
 
     private RecordItem getRecordItem(TransactionType transactionType, ResponseCodeEnum responseCode,
-            SignatureMap signatureMap) {
+                                     SignatureMap signatureMap) {
         TransactionBody transactionBody = getTransactionBody(transactionType);
         Transaction transaction = Transaction.newBuilder()
                 .setSignedTransactionBytes(
@@ -225,7 +225,8 @@ class TransactionSignatureTest {
                                 .setBodyBytes(transactionBody.toByteString())
                                 .setSigMap(signatureMap)
                                 .build()
-                                .toByteString())
+                                .toByteString()
+                )
                 .build();
         TransactionRecord transactionRecord = TransactionRecord.newBuilder()
                 .setConsensusTimestamp(Utility.instantToTimestamp(Instant.ofEpochSecond(0, CONSENSUS_TIMESTAMP)))
