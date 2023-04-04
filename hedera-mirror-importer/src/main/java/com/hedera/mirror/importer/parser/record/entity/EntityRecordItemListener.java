@@ -351,8 +351,8 @@ public class EntityRecordItemListener implements RecordItemListener {
         int tokenTransferCount = tokenTransfers.size();
 
         boolean isWipeOrBurn = recordItem.getTransactionType() == TransactionType.TOKENBURN.getProtoId() || recordItem.getTransactionType() == TransactionType.TOKENWIPE.getProtoId();        // If the first accountAmount in the transferList is with amount above zero it's a mint
-        boolean isMint = recordItem.getTransactionType() == TransactionType.TOKENMINT.getProtoId();
-        boolean isSingleSenderTransfer = true;
+        boolean isMint = recordItem.getTransactionType() == TransactionType.TOKENMINT.getProtoId() || recordItem.getTransactionType() == TransactionType.TOKENCREATION.getProtoId();
+        boolean isSingleSenderTransfer = false;
         if (tokenTransferCount > 1 && !isMint && !isWipeOrBurn) {
             // If we have more than one accountAmounts, first one is always a negative amount and the second is positive
             isSingleSenderTransfer = tokenTransfers.get(1).getAmount() > 0;
