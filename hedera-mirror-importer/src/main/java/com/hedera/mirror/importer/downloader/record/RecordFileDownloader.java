@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.downloader.record;
  * ‍
  */
 
+import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
+
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimaps;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -44,7 +46,6 @@ import com.hedera.mirror.importer.downloader.NodeSignatureVerifier;
 import com.hedera.mirror.importer.downloader.StreamFileNotifier;
 import com.hedera.mirror.importer.downloader.provider.StreamFileProvider;
 import com.hedera.mirror.importer.exception.HashMismatchException;
-import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.leader.Leader;
 import com.hedera.mirror.importer.parser.record.sidecar.SidecarProperties;
 import com.hedera.mirror.importer.reader.record.ProtoRecordFileReader;
@@ -151,8 +152,12 @@ public class RecordFileDownloader extends Downloader<RecordFile, RecordItem> {
             case ACTIONS -> SidecarType.CONTRACT_ACTION_VALUE;
             case BYTECODE -> SidecarType.CONTRACT_BYTECODE_VALUE;
             case STATE_CHANGES -> SidecarType.CONTRACT_STATE_CHANGE_VALUE;
-            default -> throw new InvalidDatasetException(
-                    "Unknown sidecar transaction record type " + transactionSidecarRecord.getSidecarRecordsCase());
+            default -> {
+                log.error(RECOVERABLE_ERROR + "Unknown sidecar transaction record type at {}: {}",
+                        transactionSidecarRecord.getConsensusTimestamp(),
+                        transactionSidecarRecord.getSidecarRecordsCase());
+                yield SidecarType.SIDECAR_TYPE_UNKNOWN_VALUE;
+            }
         };
     }
 }

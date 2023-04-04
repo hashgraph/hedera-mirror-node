@@ -1,6 +1,9 @@
-/*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
- *
+/*-
+ * ‌
+ * Hedera Mirror Node
+ * ​
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,6 +15,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
 
 package com.hedera.mirror.web3.evm.contracts.execution;
@@ -24,6 +28,7 @@ import com.hedera.mirror.web3.evm.account.MirrorEvmContractAliases;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
 import com.hedera.mirror.web3.evm.properties.StaticBlockMetaSource;
 import com.hedera.mirror.web3.evm.store.contract.MirrorEntityAccess;
+import com.hedera.mirror.web3.evm.token.TokenAccessorImpl;
 import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionProcessingResult;
 import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultHederaTracer;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
@@ -39,13 +44,12 @@ import org.hyperledger.besu.datatypes.Address;
 @Named
 public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacade {
 
-    private MirrorNodeEvmProperties evmProperties;
-    private StaticBlockMetaSource blockMetaSource;
-    private MirrorEvmContractAliases aliasManager;
-    private PricesAndFeesImpl pricesAndFees;
-    private AbstractCodeCache codeCache;
-    private HederaEvmMutableWorldState worldState;
-
+    private final MirrorNodeEvmProperties evmProperties;
+    private final StaticBlockMetaSource blockMetaSource;
+    private final MirrorEvmContractAliases aliasManager;
+    private final PricesAndFeesImpl pricesAndFees;
+    private final AbstractCodeCache codeCache;
+    private final HederaEvmMutableWorldState worldState;
     private final GasCalculatorHederaV22 gasCalculator;
 
     public MirrorEvmTxProcessorFacadeImpl(
@@ -55,6 +59,7 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
             final MirrorEvmContractAliases aliasManager,
             final PricesAndFeesImpl pricesAndFees,
             final AccountAccessorImpl accountAccessor,
+            final TokenAccessorImpl tokenAccessor,
             final GasCalculatorHederaV22 gasCalculator) {
         this.evmProperties = evmProperties;
         this.blockMetaSource = blockMetaSource;
@@ -66,9 +71,8 @@ public class MirrorEvmTxProcessorFacadeImpl implements MirrorEvmTxProcessorFacad
                 (int) evmProperties.getExpirationCacheTime().toSeconds();
 
         this.codeCache = new AbstractCodeCache(expirationCacheTime, entityAccess);
-        this.worldState = new HederaEvmWorldState(
-                entityAccess, evmProperties,
-                codeCache, accountAccessor);
+        this.worldState =
+                new HederaEvmWorldState(entityAccess, evmProperties, codeCache, accountAccessor, tokenAccessor);
     }
 
     @Override

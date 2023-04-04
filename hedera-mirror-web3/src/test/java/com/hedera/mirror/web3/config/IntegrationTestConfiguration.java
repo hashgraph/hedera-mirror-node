@@ -1,5 +1,3 @@
-package com.hedera.mirror.web3.config;
-
 /*-
  * ‌
  * Hedera Mirror Node
@@ -20,14 +18,20 @@ package com.hedera.mirror.web3.config;
  * ‍
  */
 
+package com.hedera.mirror.web3.config;
+
+import com.hedera.mirror.common.domain.DomainBuilder;
+import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
+import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.services.contracts.gascalculator.GasCalculatorHederaV22;
+import com.hedera.services.fees.BasicHbarCentExchange;
+import com.hedera.services.fees.calculation.BasicFcfsUsagePrices;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import javax.persistence.EntityManager;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.transaction.support.TransactionOperations;
-import org.springframework.boot.test.context.TestConfiguration;
-
-import com.hedera.mirror.common.domain.DomainBuilder;
 
 @TestConfiguration
 public class IntegrationTestConfiguration {
@@ -40,5 +44,23 @@ public class IntegrationTestConfiguration {
     @Bean
     MeterRegistry meterRegistry() {
         return new SimpleMeterRegistry();
+    }
+
+    @Bean
+    GasCalculatorHederaV22 gasCalculatorHederaV22(
+            MirrorNodeEvmProperties mirrorNodeEvmProperties,
+            BasicFcfsUsagePrices usagePricesProvider,
+            BasicHbarCentExchange hbarCentExchange) {
+        return new GasCalculatorHederaV22(mirrorNodeEvmProperties, usagePricesProvider, hbarCentExchange);
+    }
+
+    @Bean
+    BasicFcfsUsagePrices basicFcfsUsagePrices(RatesAndFeesLoader ratesAndFeesLoader) {
+        return new BasicFcfsUsagePrices(ratesAndFeesLoader);
+    }
+
+    @Bean
+    BasicHbarCentExchange basicHbarCentExchange(RatesAndFeesLoader ratesAndFeesLoader) {
+        return new BasicHbarCentExchange(ratesAndFeesLoader);
     }
 }

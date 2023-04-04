@@ -40,6 +40,8 @@ import com.hedera.mirror.importer.util.Utility;
 @Validated
 @ConfigurationProperties("hedera.mirror.importer")
 public class MirrorProperties {
+    @NotNull
+    private ConsensusMode consensusMode = ConsensusMode.STAKE_IN_ADDRESS_BOOK;
 
     @NotNull
     private Path dataPath = Paths.get(".", "data");
@@ -70,6 +72,12 @@ public class MirrorProperties {
 
     @NotNull
     private Instant verifyHashAfter = Instant.EPOCH;
+
+    public enum ConsensusMode {
+        EQUAL, // all nodes equally weighted
+        STAKE, // all nodes specify their node stake
+        STAKE_IN_ADDRESS_BOOK; // like STAKE, but only the nodes found in the address book are used in the calculation.
+    }
 
     @Getter
     @RequiredArgsConstructor

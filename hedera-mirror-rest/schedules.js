@@ -18,6 +18,8 @@
  * ‍
  */
 
+import _ from 'lodash';
+
 import {getResponseLimit} from './config';
 import * as constants from './constants';
 import EntityId from './entityId';
@@ -39,19 +41,17 @@ const filterColumnMap = {
   [constants.filterKeys.SCHEDULE_ID]: sqlQueryColumns.SCHEDULE_ID,
 };
 
-const commonSelectFields = [
-  's.consensus_timestamp',
-  's.creator_account_id',
-  'e.deleted',
-  's.executed_timestamp',
-  's.expiration_time',
-  'e.key',
-  'e.memo',
-  's.payer_account_id',
-  's.schedule_id',
-  's.transaction_body',
-  's.wait_for_expiry',
+const scheduleFields = [
+  'consensus_timestamp',
+  'creator_account_id',
+  'executed_timestamp',
+  'expiration_time',
+  'payer_account_id',
+  'schedule_id',
+  'transaction_body',
+  'wait_for_expiry',
 ].join(',\n');
+const entityFields = ['deleted', 'id', 'key', 'memo'].join(',\n');
 const transactionSignatureJsonAgg = `
   json_agg(json_build_object(
     'consensus_timestamp', ts.consensus_timestamp,
@@ -61,23 +61,24 @@ const transactionSignatureJsonAgg = `
   ) order by ts.consensus_timestamp)`;
 const getScheduleByIdQuery = `
   select
-    ${commonSelectFields},
+    s.consensus_timestamp,
+    s.creator_account_id,
+    e.deleted,
+    s.executed_timestamp,
+    s.expiration_time,
+    e.key,
+    e.memo,
+    s.payer_account_id,
+    s.schedule_id,
+    s.transaction_body,
+    s.wait_for_expiry,
     ${transactionSignatureJsonAgg} as signatures
   from schedule s
   left join entity e on e.id = s.schedule_id
   left join transaction_signature ts on ts.entity_id = s.schedule_id
   where s.schedule_id = $1
   group by s.schedule_id, e.id`;
-const schedulesMainQuery = `
-  select
-    ${commonSelectFields},
-    (
-      select ${transactionSignatureJsonAgg}
-      from transaction_signature ts
-      where ts.entity_id = s.schedule_id
-    ) as signatures
-  from schedule s
-  left join entity e on e.id = s.schedule_id`;
+const schedulesMainQuery = `select ${scheduleFields} from schedule s`;
 
 const scheduleLimitQuery = (paramCount) => `limit $${paramCount}`;
 const scheduleOrderQuery = (order) => `order by s.schedule_id ${order}`;
@@ -201,20 +202,25 @@ const extractSqlFromScheduleFilters = (filters) => {
 };
 
 /**
- * Get formatted schedule entities from db
- * @param pgSqlQuery
- * @param pgSqlParams
- * @returns {Promise<void>}
+ * Merge schedule's entity properties and signatures
+ * @param schedules
+ * @param entities
+ * @param signatures
+ * @returns {*}
  */
-const getScheduleEntities = async (pgSqlQuery, pgSqlParams) => {
-  if (logger.isTraceEnabled()) {
-    logger.trace(`getScheduleById query: ${pgSqlQuery}, params: ${pgSqlParams}`);
-  }
+const mergeScheduleEntities = (schedules, entities, signatures) => {
+  const entityMap = entities.reduce((result, entity) => {
+    result[entity.id] = _.omit(entity, ['id']);
+    return result;
+  }, {});
+  const signatureMap = signatures.reduce((result, signature) => {
+    result[signature.entity_id] = _.omit(signature, ['entity_id']);
+    return result;
+  }, {});
 
-  const {rows} = await pool.queryQuietly(pgSqlQuery, pgSqlParams);
-  logger.debug(`getScheduleEntities returning ${rows.length} entries`);
-
-  return rows.map((m) => formatScheduleRow(m));
+  return schedules.map((schedule) =>
+    Object.assign(schedule, entityMap[schedule.schedule_id] ?? {}, signatureMap[schedule.schedule_id] ?? {})
+  );
 };
 
 /**
@@ -230,15 +236,40 @@ const getSchedules = async (req, res) => {
   // get sql filter query, params, order and limit from query filters
   const {filterQuery, params, order, limit} = extractSqlFromScheduleFilters(filters);
   const schedulesQuery = getSchedulesQuery(filterQuery, order, params.length);
+  if (logger.isTraceEnabled()) {
+    logger.trace(`getSchedules query: ${schedulesQuery}, params: ${params}`);
+  }
+  const {rows: schedules} = await pool.queryQuietly(schedulesQuery, params);
 
-  const schedulesResponse = {
-    schedules: [],
-    links: {
-      next: null,
-    },
-  };
+  const schedulesResponse = {schedules: [], links: {next: null}};
+  res.locals[constants.responseDataLabel] = schedulesResponse;
 
-  schedulesResponse.schedules = await getScheduleEntities(schedulesQuery, params);
+  if (schedules.length === 0) {
+    return;
+  }
+
+  const entityIds = schedules.map((s) => s.schedule_id);
+  const positions = _.range(1, entityIds.length + 1)
+    .map((i) => `$${i}`)
+    .join(',');
+  const entityQuery = `select ${entityFields} from entity where id in (${positions}) order by id ${order}`;
+  const signatureQuery = `select entity_id, ${transactionSignatureJsonAgg} as signatures
+    from transaction_signature ts
+    where entity_id in (${positions})
+    group by entity_id
+    order by entity_id ${order}`;
+
+  if (logger.isTraceEnabled()) {
+    logger.trace(`getSchedulesEntity query: ${entityQuery}, params: ${entityIds}`);
+    logger.trace(`getSchedulesSignature query: ${signatureQuery}, params: ${entityIds}`);
+  }
+
+  const [{rows: entities}, {rows: signatures}] = await Promise.all([
+    pool.queryQuietly(entityQuery, entityIds),
+    pool.queryQuietly(signatureQuery, entityIds),
+  ]);
+
+  schedulesResponse.schedules = mergeScheduleEntities(schedules, entities, signatures).map(formatScheduleRow);
 
   // populate next link
   const lastScheduleId =
@@ -254,8 +285,6 @@ const getSchedules = async (req, res) => {
     },
     order
   );
-
-  res.locals[constants.responseDataLabel] = schedulesResponse;
 };
 
 const schedules = {
@@ -274,6 +303,7 @@ if (utils.isTestEnv()) {
   Object.assign(schedules, {
     extractSqlFromScheduleFilters,
     formatScheduleRow,
+    mergeScheduleEntities,
   });
 }
 

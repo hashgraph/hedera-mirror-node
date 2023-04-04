@@ -20,9 +20,6 @@ package com.hedera.mirror.test.e2e.acceptance.steps;
  * ‍
  */
 
-import static com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse.convertContractCallResponseToAddress;
-import static com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse.convertContractCallResponseToNum;
-import static com.hedera.mirror.test.e2e.acceptance.response.ContractCallResponse.convertContractCallResponseToSelector;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
@@ -30,9 +27,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
-
-import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
-
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import java.io.IOException;
@@ -55,6 +49,7 @@ import com.hedera.hashgraph.sdk.Hbar;
 import com.hedera.mirror.test.e2e.acceptance.client.ContractClient;
 import com.hedera.mirror.test.e2e.acceptance.client.FileClient;
 import com.hedera.mirror.test.e2e.acceptance.client.MirrorNodeClient;
+import com.hedera.mirror.test.e2e.acceptance.config.AcceptanceTestProperties;
 import com.hedera.mirror.test.e2e.acceptance.props.CompiledSolidityArtifact;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorContractResult;
 import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
@@ -148,7 +143,7 @@ public class ContractFeature extends AbstractFeature {
 
     @Then("I call the contract via the mirror node REST API")
     public void restContractCall() {
-        if(!acceptanceTestProperties.isContractTraceability()) {
+        if (!acceptanceTestProperties.isContractTraceability()) {
             return;
         }
 
@@ -156,16 +151,16 @@ public class ContractFeature extends AbstractFeature {
         var to = contractId.toSolidityAddress();
 
         var getAccountBalanceResponse = mirrorClient.contractsCall(GET_ACCOUNT_BALANCE_SELECTOR, to, from);
-        assertThat(convertContractCallResponseToNum(getAccountBalanceResponse)).isEqualTo(BigInteger.valueOf(1000L));
+        assertThat(getAccountBalanceResponse.getResultAsNumber()).isEqualTo(1000L);
 
         var getSenderResponse = mirrorClient.contractsCall(GET_SENDER_SELECTOR, to, from);
-        assertThat(convertContractCallResponseToAddress(getSenderResponse)).isEqualTo(from);
+        assertThat(getSenderResponse.getResultAsAddress()).isEqualTo(from);
 
         var multiplySimpleNumbersResponse = mirrorClient.contractsCall(MULTIPLY_SIMPLE_NUMBERS_SELECTOR, to, from);
-        assertThat(convertContractCallResponseToNum(multiplySimpleNumbersResponse)).isEqualTo(BigInteger.valueOf(4L));
+        assertThat(multiplySimpleNumbersResponse.getResultAsNumber()).isEqualTo(4L);
 
         var identifierResponse = mirrorClient.contractsCall(IDENTIFIER_SELECTOR, to, from);
-        assertThat(convertContractCallResponseToSelector(identifierResponse)).isEqualTo(IDENTIFIER_SELECTOR);
+        assertThat(identifierResponse.getResultAsSelector()).isEqualTo(IDENTIFIER_SELECTOR);
 
         assertThatThrownBy(() -> mirrorClient.contractsCall(WRONG_SELECTOR, to, from))
                 .isInstanceOf(WebClientResponseException.class)

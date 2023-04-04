@@ -1,6 +1,9 @@
-/*
- * Copyright (C) 2023 Hedera Hashgraph, LLC
- *
+/*-
+ * ‌
+ * Hedera Mirror Node
+ * ​
+ * Copyright (C) 2019 - 2023 Hedera Hashgraph, LLC
+ * ​
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -12,11 +15,13 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
+ * ‍
  */
 
 package com.hedera.mirror.web3.evm.properties;
 
 import static com.hedera.mirror.web3.evm.contracts.execution.EvmOperationConstructionUtil.EVM_VERSION;
+import static com.swirlds.common.utility.CommonUtils.unhex;
 
 import com.hedera.node.app.service.evm.contracts.execution.EvmProperties;
 import java.time.Duration;
@@ -25,6 +30,7 @@ import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import org.hibernate.validator.constraints.time.DurationMin;
 import org.hyperledger.besu.datatypes.Address;
@@ -37,7 +43,7 @@ import org.springframework.validation.annotation.Validated;
 public class MirrorNodeEvmProperties implements EvmProperties {
     private boolean directTokenCall = true;
 
-    private boolean dynamicEvmVersion;
+    private boolean dynamicEvmVersion = true;
 
     @NotBlank
     private String evmVersion = EVM_VERSION;
@@ -58,6 +64,10 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     @NotNull
     @DurationMin(seconds = 100)
     private Duration rateLimit = Duration.ofSeconds(100L);
+
+    @Getter
+    @NotNull
+    private HederaNetwork network = HederaNetwork.TESTNET;
 
     @Override
     public boolean isRedirectTokenCallsEnabled() {
@@ -86,5 +96,16 @@ public class MirrorNodeEvmProperties implements EvmProperties {
 
     public int cacheRecordsTtl() {
         return 180;
+    }
+
+    @Getter
+    @RequiredArgsConstructor
+    public enum HederaNetwork {
+        MAINNET(unhex("00")),
+        TESTNET(unhex("01")),
+        PREVIEWNET(unhex("02")),
+        OTHER(unhex("03"));
+
+        private final byte[] ledgerId;
     }
 }
