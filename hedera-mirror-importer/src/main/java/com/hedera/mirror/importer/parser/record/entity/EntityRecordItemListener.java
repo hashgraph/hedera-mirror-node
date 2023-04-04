@@ -393,7 +393,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                 if (isWipeOrBurn) {
                     EntityId receiverId = EntityId.EMPTY;
                     EntityId tokenEntityId = EntityId.of(tokenId);
-                    syntheticContractLogService.create(new TransferContractLog(recordItem, accountId, receiverId, tokenEntityId, -amount));
+                    syntheticContractLogService.create(new TransferContractLog(recordItem, tokenEntityId, accountId, receiverId, -amount));
                 }
             }
             entityListener.onTokenTransfer(tokenTransfer);
@@ -415,7 +415,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                 EntityId senderId = isTransfer ? EntityId.of(negativeAccountAmounts.get(0)
                         .getAccountID()) : EntityId.EMPTY;
                 EntityId tokenEntityId = EntityId.of(tokenId);
-                syntheticContractLogService.create(new TransferContractLog(recordItem, senderId, accountId, tokenEntityId, amount));
+                syntheticContractLogService.create(new TransferContractLog(recordItem, tokenEntityId, senderId, accountId, amount));
             }
         }
     }
@@ -469,7 +469,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                 transferNftOwnership(consensusTimestamp, serialNumber, entityTokenId, receiverId);
             }
             syntheticContractLogService
-                    .create(new TransferContractLog(recordItem, senderId, receiverId, entityTokenId, serialNumber));
+                    .create(new TransferContractLog(recordItem, entityTokenId, senderId, receiverId, serialNumber));
         }
     }
 

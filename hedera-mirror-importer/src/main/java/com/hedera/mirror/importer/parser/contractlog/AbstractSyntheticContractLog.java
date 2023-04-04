@@ -28,7 +28,6 @@ import org.apache.tuweni.bytes.Bytes;
 @Data
 public abstract class AbstractSyntheticContractLog implements SyntheticContractLog{
     private final RecordItem recordItem;
-
     private final EntityId entityId;
     private final byte[] topic0;
     private final byte[] topic1;

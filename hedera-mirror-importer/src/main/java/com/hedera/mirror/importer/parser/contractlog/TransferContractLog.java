@@ -24,7 +24,7 @@ import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 
 public class TransferContractLog extends AbstractSyntheticContractLog {
-    public TransferContractLog(RecordItem recordItem,EntityId tokenId, EntityId senderId, EntityId receiverId, long amount) {
+    public TransferContractLog(RecordItem recordItem, EntityId tokenId, EntityId senderId, EntityId receiverId, long amount) {
         super(recordItem ,tokenId, TRANSFER_SIGNATURE, entityIdToBytes(senderId), entityIdToBytes(receiverId), longToBytes(amount));
     }
 }
