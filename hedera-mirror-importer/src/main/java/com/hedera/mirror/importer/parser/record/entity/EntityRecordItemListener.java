@@ -144,8 +144,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
         var status = recordItem.getTransactionRecord().getReceipt().getStatus();
 
-        // Errata records can fail with FAIL_INVALID but still have items in the record
-        // committed to state.
+        // Errata records can fail with FAIL_INVALID but still have items in the record committed to state.
         if (recordItem.isSuccessful() || status == ResponseCodeEnum.FAIL_INVALID) {
             insertAutomaticTokenAssociations(recordItem);
             // Record token transfers can be populated for multiple transaction types
@@ -163,8 +162,8 @@ public class EntityRecordItemListener implements RecordItemListener {
         TransactionBody body = recordItem.getTransactionBody();
         TransactionRecord txRecord = recordItem.getTransactionRecord();
 
-        Long validDurationSeconds = body.hasTransactionValidDuration() ? body.getTransactionValidDuration().getSeconds()
-                : null;
+        Long validDurationSeconds = body.hasTransactionValidDuration() ?
+                body.getTransactionValidDuration().getSeconds() : null;
         // transactions in stream always have valid node account id.
         var nodeAccount = EntityId.of(body.getNodeAccountID());
         var transactionId = body.getTransactionID();
@@ -182,8 +181,8 @@ public class EntityRecordItemListener implements RecordItemListener {
         transaction.setPayerAccountId(recordItem.getPayerAccountId());
         transaction.setResult(txRecord.getReceipt().getStatusValue());
         transaction.setScheduled(txRecord.hasScheduleRef());
-        transaction.setTransactionBytes(
-                entityProperties.getPersist().isTransactionBytes() ? recordItem.getTransactionBytes() : null);
+        transaction.setTransactionBytes(entityProperties.getPersist().isTransactionBytes() ?
+                recordItem.getTransactionBytes() : null);
         transaction.setTransactionHash(DomainUtils.toBytes(txRecord.getTransactionHash()));
         transaction.setType(recordItem.getTransactionType());
         transaction.setValidDurationSeconds(validDurationSeconds);
@@ -198,10 +197,8 @@ public class EntityRecordItemListener implements RecordItemListener {
     }
 
     /**
-     * Additionally store rows in the non_fee_transactions table if applicable. This
-     * will allow the rest-api to create
-     * an itemized set of transfers that reflects non-fees (explicit transfers),
-     * threshold records, node fee, and
+     * Additionally store rows in the non_fee_transactions table if applicable. This will allow the rest-api to create
+     * an itemized set of transfers that reflects non-fees (explicit transfers), threshold records, node fee, and
      * network+service fee (paid to treasury).
      */
     private void processNonFeeTransfers(long consensusTimestamp, RecordItem recordItem) {
@@ -247,10 +244,8 @@ public class EntityRecordItemListener implements RecordItemListener {
     }
 
     /*
-     * Extracts crypto transfers from the record. The extra logic around
-     * 'failedTransfer' is to detect and remove
-     * spurious non-fee transfers that occurred due to a services bug in the past as
-     * documented in
+     * Extracts crypto transfers from the record. The extra logic around 'failedTransfer' is to detect and remove
+     * spurious non-fee transfers that occurred due to a services bug in the past as documented in
      * ErrataMigration.spuriousTransfers().
      */
     private void insertTransferList(RecordItem recordItem) {
@@ -481,15 +476,13 @@ public class EntityRecordItemListener implements RecordItemListener {
     private void insertAutomaticTokenAssociations(RecordItem recordItem) {
         if (entityProperties.getPersist().isTokens()) {
             if (recordItem.getTransactionBody().hasTokenCreation()) {
-                // Automatic token associations for token create transactions are handled by its
-                // transaction handler.
+                // Automatic token associations for token create transactions are handled by its transaction handler.
                 return;
             }
 
             long consensusTimestamp = recordItem.getConsensusTimestamp();
             recordItem.getTransactionRecord().getAutomaticTokenAssociationsList().forEach(tokenAssociation -> {
-                // The accounts and tokens in the associations should have been added to
-                // EntityListener when inserting
+                // The accounts and tokens in the associations should have been added to EntityListener when inserting
                 // the corresponding token transfers, so no need to duplicate the logic here
                 EntityId accountId = EntityId.of(tokenAssociation.getAccountId());
                 EntityId tokenId = EntityId.of(tokenAssociation.getTokenId());
@@ -506,7 +499,7 @@ public class EntityRecordItemListener implements RecordItemListener {
     }
 
     private void transferNftOwnership(long modifiedTimeStamp, long serialNumber, EntityId tokenId,
-            EntityId receiverId) {
+                                      EntityId receiverId) {
         Nft nft = new Nft(serialNumber, tokenId);
         nft.setAccountId(receiverId);
         nft.setModifiedTimestamp(modifiedTimeStamp);
@@ -515,7 +508,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
     @SuppressWarnings("java:S135")
     private void insertTransactionSignatures(EntityId entityId, long consensusTimestamp,
-            List<SignaturePair> signaturePairList) {
+                                             List<SignaturePair> signaturePairList) {
         Set<ByteString> publicKeyPrefixes = new HashSet<>();
         for (SignaturePair signaturePair : signaturePairList) {
             ByteString prefix = signaturePair.getPubKeyPrefix();
@@ -542,14 +535,10 @@ public class EntityRecordItemListener implements RecordItemListener {
                 case SIGNATURE_NOT_SET:
                     Map<Integer, UnknownFieldSet.Field> unknownFields = signaturePair.getUnknownFields().asMap();
 
-                    // If we encounter a signature that our version of the protobuf does not yet
-                    // support, it will
-                    // return SIGNATURE_NOT_SET. Hence we should look in the unknown fields for the
-                    // new signature.
-                    // ByteStrings are stored as length-delimited on the wire, so we search the
-                    // unknown fields for a
-                    // field that has exactly one length-delimited value and assume it's our new
-                    // signature bytes.
+                    // If we encounter a signature that our version of the protobuf does not yet support, it will
+                    // return SIGNATURE_NOT_SET. Hence we should look in the unknown fields for the new signature.
+                    // ByteStrings are stored as length-delimited on the wire, so we search the unknown fields for a
+                    // field that has exactly one length-delimited value and assume it's our new signature bytes.
                     for (Map.Entry<Integer, UnknownFieldSet.Field> entry : unknownFields.entrySet()) {
                         UnknownFieldSet.Field field = entry.getValue();
                         if (field.getLengthDelimitedList().size() == 1) {
@@ -571,8 +560,7 @@ public class EntityRecordItemListener implements RecordItemListener {
                     continue;
             }
 
-            // Handle potential public key prefix collisions by taking first occurrence only
-            // ignoring duplicates
+            // Handle potential public key prefix collisions by taking first occurrence only ignoring duplicates
             if (publicKeyPrefixes.add(prefix)) {
                 TransactionSignature transactionSignature = new TransactionSignature();
                 transactionSignature.setConsensusTimestamp(consensusTimestamp);
@@ -621,8 +609,7 @@ public class EntityRecordItemListener implements RecordItemListener {
         }
     }
 
-    // regardless of transaction type, filter on entityId and payer account and
-    // transfer tokens/receivers/senders
+    // regardless of transaction type, filter on entityId and payer account and transfer tokens/receivers/senders
     private TransactionFilterFields getTransactionFilterFields(EntityId entityId, RecordItem recordItem) {
         if (!commonParserProperties.hasFilter()) {
             return TransactionFilterFields.EMPTY;
