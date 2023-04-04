@@ -1,5 +1,6 @@
-package com.hedera.mirror.web3.evm.store.contract.precompile.utils;
+package com.hedera.services.store.contracts.precompile.utils;
 
+import static com.hedera.services.fees.pricing.FeeSchedules.USD_TO_TINYCENTS;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.ContractCall;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoApproveAllowance;
 import static com.hederahashgraph.api.proto.java.HederaFunctionality.CryptoCreate;
@@ -27,6 +28,12 @@ import static com.hederahashgraph.api.proto.java.SubType.TOKEN_FUNGIBLE_COMMON_W
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE;
 import static com.hederahashgraph.api.proto.java.SubType.TOKEN_NON_FUNGIBLE_UNIQUE_WITH_CUSTOM_FEES;
 
+import com.hedera.services.fees.MirrorBasicHbarCentExchange;
+
+import com.hedera.services.fees.calculation.MirrorBasicFcfsUsagePrices;
+
+import com.hedera.services.fees.pricing.AssetsLoader;
+
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.Query;
 import com.hederahashgraph.api.proto.java.SignatureMap;
@@ -37,11 +44,13 @@ import com.hederahashgraph.api.proto.java.Transaction;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionGetRecordQuery;
 import com.hederahashgraph.api.proto.java.TransactionID;
+import com.sun.xml.bind.AccessorFactory;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.EnumMap;
 import java.util.Map;
+import javax.inject.Inject;
 
 public class PrecompilePricingUtils {
     static class CanonicalOperationsUnloadableException extends RuntimeException {
@@ -59,9 +68,9 @@ public class PrecompilePricingUtils {
     private static final Query SYNTHETIC_REDIRECT_QUERY = Query.newBuilder()
             .setTransactionGetRecord(TransactionGetRecordQuery.newBuilder().build())
             .build();
-    private final HbarCentExchange exchange;
+    private final MirrorBasicHbarCentExchange exchange;
     private final Provider<FeeCalculator> feeCalculator;
-    private final UsagePricesProvider resourceCosts;
+    private final MirrorBasicFcfsUsagePrices resourceCosts;
     private final StateView currentView;
     private final AccessorFactory accessorFactory;
     Map<GasCostType, Long> canonicalOperationCostsInTinyCents;
@@ -69,9 +78,9 @@ public class PrecompilePricingUtils {
     @Inject
     public PrecompilePricingUtils(
             final AssetsLoader assetsLoader,
-            final HbarCentExchange exchange,
+            final MirrorBasicHbarCentExchange exchange,
             final Provider<FeeCalculator> feeCalculator,
-            final UsagePricesProvider resourceCosts,
+            final MirrorBasicFcfsUsagePrices resourceCosts,
             final StateView currentView,
             final AccessorFactory accessorFactory) {
         this.exchange = exchange;
