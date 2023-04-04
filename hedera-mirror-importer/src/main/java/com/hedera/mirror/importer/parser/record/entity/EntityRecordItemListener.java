@@ -349,12 +349,16 @@ public class EntityRecordItemListener implements RecordItemListener {
         boolean isTokenDissociate = body.hasTokenDissociate();
         boolean isDeletedTokenDissociate = isTokenDissociate && tokenTransfers.size() == 1;
         int tokenTransferCount = tokenTransfers.size();
-
-        List<AccountAmount> negativeAccountAmounts = tokenTransfers.stream().filter(amount -> amount.getAmount() < 0).toList();
-        int negativeAccountAmountsCount = negativeAccountAmounts.size();
-
-        boolean isNotMultiTransfer = tokenTransferCount >= 1 && negativeAccountAmountsCount <= 1;
-        boolean isWipeOrBurn = tokenTransferCount == negativeAccountAmountsCount;
+        
+        // If the last accountAmount in the transferList is with amount below zero it's a burn or wipe
+        boolean isWipeOrBurn = tokenTransfers.get(0).getAmount() < 0 && tokenTransfers.get(tokenTransferCount-1).getAmount() < 0;
+        // If the first accountAmount in the transferList is with amount above zero it's a mint
+        boolean isMint = tokenTransfers.get(0).getAmount() > 0 && tokenTransfers.get(tokenTransferCount-1).getAmount() > 0;
+        boolean isNotMultiTransfer = true;
+        if (tokenTransferCount > 1 && !isMint && !isWipeOrBurn) {
+            // If we have more than one accountAmounts, first one is always a negative amount and the second is positive
+            isNotMultiTransfer = tokenTransfers.get(0).getAmount() < 0 && tokenTransfers.get(1).getAmount() > 0;
+        }
 
         for (AccountAmount accountAmount : tokenTransfers) {
             EntityId accountId = EntityId.of(accountAmount.getAccountID());
@@ -389,7 +393,6 @@ public class EntityRecordItemListener implements RecordItemListener {
                     tokenTransfer.setIsApproval(accountAmountInsideTransferList.getIsApproval());
                 }
 
-                // If amount is below 0, we handle burn and wipe
                 if (isWipeOrBurn) {
                     EntityId receiverId = EntityId.EMPTY;
                     EntityId tokenEntityId = EntityId.of(tokenId);
@@ -411,9 +414,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             // Check if it's a single transfer
             // If amount is above 0, we handle transfers and mint
             if (isNotMultiTransfer && amount > 0) {
-                boolean isTransfer = negativeAccountAmountsCount > 0;
-                EntityId senderId = isTransfer ? EntityId.of(negativeAccountAmounts.get(0)
-                        .getAccountID()) : EntityId.EMPTY;
+                EntityId senderId = isMint ? EntityId.EMPTY : EntityId.of(tokenTransfers.get(0).getAccountID());
                 EntityId tokenEntityId = EntityId.of(tokenId);
                 syntheticContractLogService.create(new TransferContractLog(recordItem, tokenEntityId, senderId, accountId, amount));
             }
@@ -430,14 +431,18 @@ public class EntityRecordItemListener implements RecordItemListener {
             EntityId entityTokenId = EntityId.of(tokenId);
             EntityId payerAccountId = recordItem.getPayerAccountId();
 
-            insertFungibleTokenTransfers(
-                    recordItem,
-                    tokenId, entityTokenId, payerAccountId,
-                    tokenTransferList.getTransfersList());
+            if (tokenTransferList.getTransfersCount() > 0) {
+                insertFungibleTokenTransfers(
+                        recordItem,
+                        tokenId, entityTokenId, payerAccountId,
+                        tokenTransferList.getTransfersList());
+            }
 
-            insertNonFungibleTokenTransfers(
-                    recordItem, tokenId, entityTokenId,
-                    payerAccountId, tokenTransferList.getNftTransfersList());
+            if (tokenTransferList.getNftTransfersCount() > 0) {
+                insertNonFungibleTokenTransfers(
+                        recordItem, tokenId, entityTokenId,
+                        payerAccountId, tokenTransferList.getNftTransfersList());
+            }
         }
     }
 
