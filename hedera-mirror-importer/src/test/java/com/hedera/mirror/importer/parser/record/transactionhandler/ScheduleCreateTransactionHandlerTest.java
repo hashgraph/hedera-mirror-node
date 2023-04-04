@@ -25,7 +25,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoCreateTransactionBody;
@@ -40,18 +39,12 @@ import org.junit.jupiter.api.Test;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.schedule.Schedule;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
-import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 
 class ScheduleCreateTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
-    private EntityProperties entityProperties;
-
     @Override
     protected TransactionHandler getTransactionHandler() {
-        entityProperties = new EntityProperties();
-        return new ScheduleCreateTransactionHandler(entityIdService, entityListener, entityProperties,
-                new RecordParserProperties());
+        return new ScheduleCreateTransactionHandler(entityIdService, entityListener, entityProperties);
     }
 
     @Override
@@ -168,20 +161,5 @@ class ScheduleCreateTransactionHandlerTest extends AbstractTransactionHandlerTes
                 .satisfies(s -> assertThat(s.getTransactionBody()).isNotEmpty())
                 .returns(false, Schedule::isWaitForExpiry)
         ));
-    }
-
-    @Test
-    void updateTransactionUnsuccessful() {
-        // given
-        var recordItem = recordItemBuilder.scheduleCreate()
-                .receipt(r -> r.setStatus(ResponseCodeEnum.INSUFFICIENT_TX_FEE)).build();
-        var timestamp = recordItem.getConsensusTimestamp();
-        var transaction = domainBuilder.transaction().customize(t -> t.consensusTimestamp(timestamp)).get();
-
-        // when
-        transactionHandler.updateTransaction(transaction, recordItem);
-
-        // then
-        verifyNoInteractions(entityListener);
     }
 }

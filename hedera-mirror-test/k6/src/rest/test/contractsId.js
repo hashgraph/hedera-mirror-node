@@ -18,25 +18,21 @@
  * ‍
  */
 
-import http from "k6/http";
+import http from 'k6/http';
 
-import {TestScenarioBuilder} from '../../lib/common.js';
-import {urlPrefix} from '../../lib/constants.js';
-import {isSuccess} from "./common.js";
-import {setupTestParameters} from "./bootstrapEnvParameters.js";
+import {isSuccess, RestTestScenarioBuilder} from '../libex/common.js';
 
 const urlTag = '/contracts/{id}';
 
-const {options, run} = new TestScenarioBuilder()
+const {options, run, setup} = new RestTestScenarioBuilder()
   .name('contractsId') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request((testParameters) => {
-    const url = `${testParameters['BASE_URL']}${urlPrefix}/contracts/${testParameters['DEFAULT_CONTRACT_ID']}`;
+    const url = `${testParameters['BASE_URL_PREFIX']}/contracts/${testParameters['DEFAULT_CONTRACT_ID']}`;
     return http.get(url);
   })
+  .requiredParameters('DEFAULT_CONTRACT_ID')
   .check('Contracts Id  OK', isSuccess)
   .build();
 
-export {options, run};
-
-export const setup = setupTestParameters;
+export {options, run, setup};

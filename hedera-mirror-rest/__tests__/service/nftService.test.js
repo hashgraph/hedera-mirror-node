@@ -38,7 +38,7 @@ describe('getQuery', () => {
     limit: 20,
   };
 
-  const selectColumnsStatement = `select account_id,created_timestamp,delegating_spender,deleted,metadata,modified_timestamp,
+  const selectColumnsStatement = `select account_id,nft.created_timestamp,delegating_spender,nft.deleted or coalesce(e.deleted, false) as deleted,metadata,modified_timestamp,
             serial_number,spender,token_id`;
 
   const specs = [
@@ -47,7 +47,9 @@ describe('getQuery', () => {
       query: defaultQuery,
       expected: {
         sqlQuery: `${selectColumnsStatement}
-            from nft where account_id = $1
+            from nft
+            left join entity e on e.id = nft.token_id
+            where account_id = $1
             order by token_id desc,serial_number desc
             limit $2`,
         params: [1, 20],
@@ -58,7 +60,9 @@ describe('getQuery', () => {
       query: {...defaultQuery, order: 'asc'},
       expected: {
         sqlQuery: `${selectColumnsStatement}
-            from nft where account_id = $1
+            from nft
+            left join entity e on e.id = nft.token_id
+            where account_id = $1
             order by token_id asc,serial_number asc
             limit $2`,
         params: [1, 20],
@@ -72,8 +76,9 @@ describe('getQuery', () => {
       },
       expected: {
         sqlQuery: `${selectColumnsStatement}
-            from nft where account_id = $1
-            and token_id = $3
+            from nft
+            left join entity e on e.id = nft.token_id
+            where account_id = $1 and token_id = $3
             order by token_id desc,serial_number desc
             limit $2`,
         params: [1, 20, 2],
@@ -90,7 +95,9 @@ describe('getQuery', () => {
       },
       expected: {
         sqlQuery: `${selectColumnsStatement}
-            from nft where account_id = $1
+            from nft
+            left join entity e on e.id = nft.token_id
+            where account_id = $1
             and token_id = $3
             and serial_number = $4
             order by token_id desc,serial_number desc
@@ -107,13 +114,17 @@ describe('getQuery', () => {
       },
       expected: {
         sqlQuery: `(${selectColumnsStatement}
-              from nft where account_id = $1
+              from nft
+              left join entity e on e.id = nft.token_id
+              where account_id = $1
               and serial_number > $3
               order by token_id desc,serial_number desc
               limit $2
             ) union all (
               ${selectColumnsStatement}
-              from nft where account_id = $1
+              from nft
+              left join entity e on e.id = nft.token_id
+              where account_id = $1
               and token_id > $4
               order by token_id desc,serial_number desc
               limit $2
@@ -134,12 +145,16 @@ describe('getQuery', () => {
       },
       expected: {
         sqlQuery: `(${selectColumnsStatement}
-              from nft where account_id = $1
+              from nft
+              left join entity e on e.id = nft.token_id
+              where account_id = $1
               and token_id < $3
               order by token_id desc,serial_number desc limit $2
             ) union all (
               ${selectColumnsStatement}
-              from nft where account_id = $1
+              from nft
+              left join entity e on e.id = nft.token_id
+              where account_id = $1
               and token_id = $4
               and serial_number < $5
               order by token_id desc,serial_number desc limit $2
@@ -161,7 +176,9 @@ describe('getQuery', () => {
       },
       expected: {
         sqlQuery: `${selectColumnsStatement}
-            from nft where account_id = $1
+            from nft
+            left join entity e on e.id = nft.token_id
+            where account_id = $1
             and token_id > $3
             and token_id < $4
             and serial_number = $5
@@ -185,13 +202,17 @@ describe('getQuery', () => {
       },
       expected: {
         sqlQuery: `(${selectColumnsStatement}
-              from nft where account_id = $1
+              from nft
+              left join entity e on e.id = nft.token_id
+              where account_id = $1
               and token_id = $3
               and serial_number > $4
               order by token_id desc,serial_number desc limit $2
             ) union all (
               ${selectColumnsStatement}
-              from nft where account_id = $1
+              from nft
+              left join entity e on e.id = nft.token_id
+              where account_id = $1
               and token_id >= $5
               and token_id < $6
               order by token_id desc,serial_number desc limit $2
@@ -216,13 +237,17 @@ describe('getQuery', () => {
       },
       expected: {
         sqlQuery: `(${selectColumnsStatement}
-              from nft where account_id = $1
+              from nft
+              left join entity e on e.id = nft.token_id
+              where account_id = $1
               and token_id >= $3
               and token_id < $4
               order by token_id desc,serial_number desc limit $2
             ) union all (
               ${selectColumnsStatement}
-              from nft where account_id = $1
+              from nft
+              left join entity e on e.id = nft.token_id
+              where account_id = $1
               and token_id = $5
               and serial_number < $6
               order by token_id desc,serial_number desc limit $2
@@ -251,19 +276,25 @@ describe('getQuery', () => {
       },
       expected: {
         sqlQuery: `(${selectColumnsStatement}
-              from nft where account_id = $1
+              from nft
+              left join entity e on e.id = nft.token_id
+              where account_id = $1
               and token_id = $3
               and serial_number >= $4
               order by token_id desc,serial_number desc limit $2
             ) union all (
               ${selectColumnsStatement}
-              from nft where account_id = $1
+              from nft
+              left join entity e on e.id = nft.token_id
+              where account_id = $1
               and token_id > $5
               and token_id < $6
               order by token_id desc,serial_number desc limit $2
             ) union all (
               ${selectColumnsStatement}
-              from nft where account_id = $1
+              from nft
+              left join entity e on e.id = nft.token_id
+              where account_id = $1
               and token_id = $7
               and serial_number <= $8
               order by token_id desc,serial_number desc limit $2
@@ -289,7 +320,9 @@ describe('getQuery', () => {
       },
       expected: {
         sqlQuery: `${selectColumnsStatement}
-            from nft where account_id = $1
+            from nft
+            left join entity e on e.id = nft.token_id
+            where account_id = $1
             and spender <= $3
             and spender >= $4
             and spender in ($5,$6,$7)
@@ -307,7 +340,9 @@ describe('getQuery', () => {
       },
       expected: {
         sqlQuery: `${selectColumnsStatement}
-            from nft where account_id = $1
+            from nft
+            left join entity e on e.id = nft.token_id
+            where account_id = $1
             and spender <= $3
             and spender in ($4)
             order by token_id desc,serial_number desc

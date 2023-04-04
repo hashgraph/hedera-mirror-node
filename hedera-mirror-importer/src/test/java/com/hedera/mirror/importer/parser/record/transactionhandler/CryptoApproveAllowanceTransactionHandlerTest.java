@@ -30,13 +30,13 @@ import com.google.common.collect.Range;
 import com.google.protobuf.BoolValue;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.CryptoApproveAllowanceTransactionBody;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TransactionBody;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import com.hedera.mirror.common.domain.entity.CryptoAllowance;
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -45,13 +45,8 @@ import com.hedera.mirror.common.domain.entity.NftAllowance;
 import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.common.domain.token.Nft;
 import com.hedera.mirror.common.domain.token.NftId;
-import com.hedera.mirror.common.domain.transaction.RecordItem;
-import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.exception.AliasNotFoundException;
-import com.hedera.mirror.importer.parser.PartialDataAction;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 
 class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
@@ -64,8 +59,6 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
     private NftAllowance expectedNftAllowance;
 
     private TokenAllowance expectedTokenAllowance;
-
-    private RecordParserProperties recordParserProperties;
 
     private EntityId payerAccountId;
 
@@ -81,7 +74,7 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
                 .spender(recordItemBuilder.accountId().getAccountNum())
                 .timestampRange(Range.atLeast(consensusTimestamp))
                 .build();
-        when(entityIdService.lookup(cryptoOwner)).thenReturn(EntityId.of(cryptoOwner));
+        when(entityIdService.lookup(cryptoOwner)).thenReturn(Optional.of(EntityId.of(cryptoOwner)));
         var nftOwner = recordItemBuilder.accountId();
         var nftTokenId = recordItemBuilder.tokenId().getTokenNum();
         expectedNft = Nft.builder()
@@ -91,7 +84,7 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
                 .modifiedTimestamp(consensusTimestamp)
                 .spender(EntityId.of(recordItemBuilder.accountId()))
                 .build();
-        when(entityIdService.lookup(nftOwner)).thenReturn(expectedNft.getAccountId());
+        when(entityIdService.lookup(nftOwner)).thenReturn(Optional.of(expectedNft.getAccountId()));
         expectedNftAllowance = NftAllowance.builder()
                 .approvedForAll(true)
                 .owner(expectedNft.getAccountId().getId())
@@ -109,13 +102,12 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
                 .timestampRange(Range.atLeast(consensusTimestamp))
                 .tokenId(recordItemBuilder.tokenId().getTokenNum())
                 .build();
-        when(entityIdService.lookup(tokenOwner)).thenReturn(EntityId.of(tokenOwner));
+        when(entityIdService.lookup(tokenOwner)).thenReturn(Optional.of(EntityId.of(tokenOwner)));
     }
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        recordParserProperties = new RecordParserProperties();
-        return new CryptoApproveAllowanceTransactionHandler(entityIdService, entityListener, recordParserProperties);
+        return new CryptoApproveAllowanceTransactionHandler(entityIdService, entityListener);
     }
 
     @Override
@@ -127,16 +119,6 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
     @Override
     protected EntityType getExpectedEntityIdType() {
         return null;
-    }
-
-    @Test
-    void updateTransactionUnsuccessful() {
-        var transaction = new Transaction();
-        RecordItem recordItem = recordItemBuilder.cryptoApproveAllowance()
-                .receipt(r -> r.setStatus(ResponseCodeEnum.ACCOUNT_DELETED))
-                .build();
-        transactionHandler.updateTransaction(transaction, recordItem);
-        verifyNoInteractions(entityListener);
     }
 
     @Test
@@ -171,38 +153,48 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
         assertAllowances(effectiveOwner);
     }
 
-    @ParameterizedTest(name = "{0}")
-    @EnumSource(value = PartialDataAction.class, names = {"DEFAULT", "ERROR"})
-    void updateTransactionThrowsWithAliasNotFound(PartialDataAction partialDataAction) {
-        // given
-        recordParserProperties.setPartialDataAction(partialDataAction);
+    @Test
+    void updateTransactionWithEmptyEntityId() {
         var alias = DomainUtils.fromBytes(domainBuilder.key());
-        var recordItem = recordItemBuilder.cryptoApproveAllowance().transactionBody(b -> {
-            b.getCryptoAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
-            b.getNftAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
-            b.getTokenAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
-        }).build();
+        var recordItem = recordItemBuilder.cryptoApproveAllowance()
+                .transactionBody(this::customizeTransactionBody)
+                .transactionBody(b -> {
+                    b.getCryptoAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
+                    b.getNftAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
+                    b.getTokenAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
+                })
+                .transactionBodyWrapper(this::setTransactionPayer)
+                .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(consensusTimestamp)))
+                .build();
         var transaction = domainBuilder.transaction().get();
         when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
-                .thenThrow(new AliasNotFoundException("alias", EntityType.ACCOUNT));
+                .thenReturn(Optional.of(EntityId.EMPTY));
+        transactionHandler.updateTransaction(transaction, recordItem);
 
-        // when, then
-        assertThrows(AliasNotFoundException.class, () -> transactionHandler.updateTransaction(transaction, recordItem));
+        // The implicit entity id is used
+        var effectiveOwner = recordItem.getPayerAccountId().getId();
+        assertAllowances(effectiveOwner);
     }
 
-    @Test
-    void updateTransactionWithAliasNotFoundAndPartialDataActionSkip() {
-        recordParserProperties.setPartialDataAction(PartialDataAction.SKIP);
+    @ParameterizedTest
+    @MethodSource("provideEntities")
+    void updateTransactionWithEmptyOwner(EntityId entityId) {
         var alias = DomainUtils.fromBytes(domainBuilder.key());
-        var recordItem = recordItemBuilder.cryptoApproveAllowance().transactionBody(b -> {
-            b.getCryptoAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
-            b.getNftAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
-            b.getTokenAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
-        }).build();
+        var recordItem = recordItemBuilder.cryptoApproveAllowance()
+                .transactionBody(b -> {
+                    b.getCryptoAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().clear());
+                    b.getNftAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
+                    b.getTokenAllowancesBuilderList().forEach(builder -> builder.getOwnerBuilder().setAlias(alias));
+                })
+                .transactionBodyWrapper(w -> w.getTransactionIDBuilder()
+                        .setAccountID(AccountID.newBuilder().setAccountNum(0)))
+                .record(r -> r.setConsensusTimestamp(TestUtils.toTimestamp(consensusTimestamp)))
+                .build();
         var transaction = domainBuilder.transaction().get();
         when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
-                .thenThrow(new AliasNotFoundException("alias", EntityType.ACCOUNT));
+                .thenReturn(Optional.ofNullable(entityId));
         transactionHandler.updateTransaction(transaction, recordItem);
+
         verifyNoInteractions(entityListener);
     }
 
@@ -222,7 +214,8 @@ class CryptoApproveAllowanceTransactionHandlerTest extends AbstractTransactionHa
                 .build();
         var timestamp = recordItem.getConsensusTimestamp();
         var transaction = domainBuilder.transaction().customize(t -> t.consensusTimestamp(timestamp)).get();
-        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build())).thenReturn(ownerEntityId);
+        when(entityIdService.lookup(AccountID.newBuilder().setAlias(alias).build()))
+                .thenReturn(Optional.of(ownerEntityId));
         transactionHandler.updateTransaction(transaction, recordItem);
         assertAllowances(ownerEntityId.getId());
     }

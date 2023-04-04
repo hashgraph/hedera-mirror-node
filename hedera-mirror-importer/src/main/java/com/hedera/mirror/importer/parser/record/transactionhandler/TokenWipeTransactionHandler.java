@@ -9,9 +9,9 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,13 +21,24 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  */
 
 import javax.inject.Named;
+import lombok.RequiredArgsConstructor;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.common.domain.token.Nft;
+import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.Transaction;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
+import com.hedera.mirror.importer.parser.record.entity.EntityListener;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 
 @Named
+@RequiredArgsConstructor
 class TokenWipeTransactionHandler implements TransactionHandler {
+
+    private final EntityListener entityListener;
+    private final EntityProperties entityProperties;
+
     @Override
     public EntityId getEntity(RecordItem recordItem) {
         return EntityId.of(recordItem.getTransactionBody().getTokenWipe().getToken());
@@ -36,5 +47,29 @@ class TokenWipeTransactionHandler implements TransactionHandler {
     @Override
     public TransactionType getType() {
         return TransactionType.TOKENWIPE;
+    }
+
+    @Override
+    public void updateTransaction(Transaction transaction, RecordItem recordItem) {
+        if (!entityProperties.getPersist().isTokens() || !recordItem.isSuccessful()) {
+            return;
+        }
+
+        var transactionBody = recordItem.getTransactionBody().getTokenWipe();
+        var tokenId = transaction.getEntityId();
+        long consensusTimestamp = recordItem.getConsensusTimestamp();
+        long newTotalSupply = recordItem.getTransactionRecord().getReceipt().getNewTotalSupply();
+
+        var token = Token.of(tokenId);
+        token.setTotalSupply(newTotalSupply);
+        token.setModifiedTimestamp(consensusTimestamp);
+        entityListener.onToken(token);
+
+        transactionBody.getSerialNumbersList().forEach(serialNumber -> {
+            var nft = new Nft(serialNumber, tokenId);
+            nft.setDeleted(true);
+            nft.setModifiedTimestamp(consensusTimestamp);
+            entityListener.onNft(nft);
+        });
     }
 }

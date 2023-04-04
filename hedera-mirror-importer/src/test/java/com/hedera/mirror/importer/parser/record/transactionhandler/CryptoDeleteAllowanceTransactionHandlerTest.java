@@ -23,18 +23,14 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.hederahashgraph.api.proto.java.CryptoDeleteAllowanceTransactionBody;
 import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
-import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.mirror.common.domain.entity.EntityType;
 import com.hedera.mirror.common.domain.token.Nft;
-import com.hedera.mirror.common.domain.transaction.RecordItem;
-import com.hedera.mirror.common.domain.transaction.Transaction;
 
 class CryptoDeleteAllowanceTransactionHandlerTest extends AbstractTransactionHandlerTest {
 
@@ -52,16 +48,6 @@ class CryptoDeleteAllowanceTransactionHandlerTest extends AbstractTransactionHan
     @Override
     protected EntityType getExpectedEntityIdType() {
         return null;
-    }
-
-    @Test
-    void updateTransactionUnsuccessful() {
-        var transaction = new Transaction();
-        RecordItem recordItem = recordItemBuilder.cryptoDeleteAllowance()
-                .receipt(r -> r.setStatus(ResponseCodeEnum.ACCOUNT_DELETED))
-                .build();
-        transactionHandler.updateTransaction(transaction, recordItem);
-        verifyNoInteractions(entityListener);
     }
 
     @Test

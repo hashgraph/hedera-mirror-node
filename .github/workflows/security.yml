@@ -90,11 +90,15 @@ jobs:
           arguments: snyk-test
 
       - name: Publish Snyk Results
+        continue-on-error: true
         if: ${{ !cancelled() && always() }}
         run: |
-          snyk-to-html -i build/reports/snyk-test.json -o build/reports/snyk-test.html && \
-          html-to-markdown build/reports/snyk-test.html -o  build/reports/snyk && \
-          cat build/reports/snyk/snyk-test.html.md >> $GITHUB_STEP_SUMMARY
+          report="build/reports/snyk-test"
+          if [[ -f ${report}.json ]]; then
+            snyk-to-html -i ${report}.json -o ${report}.html && \
+            html-to-markdown ${report}.html -o build/reports && \
+            cat ${report}.html.md >> $GITHUB_STEP_SUMMARY
+          fi
 
   snyk-code:
     if: github.event_name == 'push' || (github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]')
@@ -122,11 +126,15 @@ jobs:
           arguments: snyk-code
 
       - name: Publish Snyk Results
+        continue-on-error: true
         if: ${{ !cancelled() && always() }}
         run: |
-          snyk-to-html -i build/reports/snyk-test.json -o build/reports/snyk-test.html && \
-          html-to-markdown build/reports/snyk-test.html -o  build/reports/snyk && \
-          cat build/reports/snyk/snyk-test.html.md >> $GITHUB_STEP_SUMMARY
+          report="build/reports/snyk-code"
+          if [[ -f ${report}.json ]]; then
+            snyk-to-html -i ${report}.json -o ${report}.html && \
+            html-to-markdown ${report}.html -o build/reports && \
+            cat ${report}.html.md >> $GITHUB_STEP_SUMMARY
+          fi
 
   snyk-monitor:
     if: github.event_name == 'push' && github.ref_name == 'main'

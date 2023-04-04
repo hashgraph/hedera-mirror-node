@@ -77,10 +77,8 @@ public class SubscriptionResponse {
             long receiptSeconds = mirrorHCSResponseResponse.getReceivedInstant().getEpochSecond();
             long e2eSeconds = receiptSeconds - publishSeconds;
             long consensusToDelivery = receiptSeconds - consensusSeconds;
-            log.trace("Observed message, e2eSeconds: {}s, consensusToDelivery: {}s, publish timestamp: {}, " +
-                            "consensus timestamp: {}, receipt time: {}, topic sequence number: {}",
-                    e2eSeconds, consensusToDelivery, publishInstant, topicMessage.consensusTimestamp,
-                    mirrorHCSResponseResponse.getReceivedInstant(), topicMessage.sequenceNumber);
+            log.trace("Observed message {} with e2e {}s and consensusToDelivery {}s",
+                    topicMessage.consensusTimestamp, e2eSeconds, consensusToDelivery);
 
             if (!validateResponse(lastTopicMessage, topicMessage)) {
                 invalidMessages++;

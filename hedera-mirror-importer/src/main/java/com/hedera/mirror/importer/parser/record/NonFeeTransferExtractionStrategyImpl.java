@@ -20,15 +20,18 @@ package com.hedera.mirror.importer.parser.record;
  * ‍
  */
 
+import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
+
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedList;
 import javax.inject.Named;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -38,6 +41,7 @@ import com.hedera.mirror.importer.domain.EntityIdService;
  * Non-fee transfers are explicitly requested transfers. This implementation extracts non_fee_transfer requested by a
  * transaction into an iterable of transfers.
  */
+@CustomLog
 @Named
 @RequiredArgsConstructor
 public class NonFeeTransferExtractionStrategyImpl implements NonFeeTransferExtractionStrategy {
@@ -62,8 +66,13 @@ public class NonFeeTransferExtractionStrategyImpl implements NonFeeTransferExtra
         } else if (body.hasContractCall()) {
 
             EntityId contractId = entityIdService.lookup(transactionRecord.getReceipt().getContractID(),
-                    body.getContractCall().getContractID());
-            LinkedList<AccountAmount> result = new LinkedList<>();
+                    body.getContractCall().getContractID()).orElse(EntityId.EMPTY);
+            if (EntityId.isEmpty(contractId)) {
+                log.error(RECOVERABLE_ERROR + "Contract ID not found at {}", transactionRecord.getConsensusTimestamp());
+                return Collections.emptyList();
+            }
+
+            var result = new ArrayList<AccountAmount>();
             var amount = body.getContractCall().getAmount();
 
             var contractAccountId = AccountID.newBuilder()
@@ -89,7 +98,7 @@ public class NonFeeTransferExtractionStrategyImpl implements NonFeeTransferExtra
 
     private Iterable<AccountAmount> extractForCreateEntity(
             long initialBalance, AccountID payerAccountId, AccountID createdEntity, TransactionRecord txRecord) {
-        LinkedList<AccountAmount> result = new LinkedList<>();
+        var result = new ArrayList<AccountAmount>();
         result.add(AccountAmount.newBuilder()
                 .setAccountID(payerAccountId)
                 .setAmount(-initialBalance)

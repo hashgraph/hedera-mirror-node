@@ -18,25 +18,21 @@
  * ‍
  */
 
-import http from "k6/http";
+import http from 'k6/http';
 
-import {TestScenarioBuilder} from '../../lib/common.js';
-import {blockListName, urlPrefix} from '../../lib/constants.js';
-import {isSuccess} from "./common.js";
-import {setupTestParameters} from "./bootstrapEnvParameters.js";
+import {isSuccess, RestTestScenarioBuilder} from '../libex/common.js';
 
 const urlTag = '/blocks/{number}';
 
-const {options, run} = new TestScenarioBuilder()
+const {options, run, setup} = new RestTestScenarioBuilder()
   .name('blockNumber') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request((testParameters) => {
-    const url = `${testParameters['BASE_URL']}${urlPrefix}/blocks/${testParameters['DEFAULT_BLOCK_NUMBER']}`;
+    const url = `${testParameters['BASE_URL_PREFIX']}/blocks/${testParameters['DEFAULT_BLOCK_NUMBER']}`;
     return http.get(url);
   })
+  .requiredParameters('DEFAULT_BLOCK_NUMBER')
   .check('Blocks number OK', isSuccess)
   .build();
 
-export {options, run};
-
-export const setup = setupTestParameters;
+export {options, run, setup};

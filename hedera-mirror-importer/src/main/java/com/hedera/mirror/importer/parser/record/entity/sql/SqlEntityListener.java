@@ -20,7 +20,7 @@ package com.hedera.mirror.importer.parser.record.entity.sql;
  * ‍
  */
 
-import static com.hedera.mirror.importer.config.MirrorImporterConfiguration.TOKEN_DISSOCIATE_BATCH_PERSISTER;
+import static com.hedera.mirror.importer.config.MirrorImporterConfiguration.DELETED_TOKEN_DISSOCIATE_BATCH_PERSISTER;
 
 import com.google.common.base.Stopwatch;
 import java.util.ArrayList;
@@ -74,6 +74,7 @@ import com.hedera.mirror.common.domain.transaction.StakingRewardTransfer;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionHash;
 import com.hedera.mirror.common.domain.transaction.TransactionSignature;
+import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.domain.EntityIdService;
 import com.hedera.mirror.importer.exception.ImporterException;
 import com.hedera.mirror.importer.exception.ParserException;
@@ -115,6 +116,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<CryptoAllowance> cryptoAllowances;
     private final Collection<CryptoTransfer> cryptoTransfers;
     private final Collection<CustomFee> customFees;
+    private final Collection<TokenTransfer> deletedTokenDissociateTransfers;
     private final Collection<Entity> entities;
     private final Collection<EthereumTransaction> ethereumTransactions;
     private final Collection<FileData> fileData;
@@ -127,7 +129,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     private final Collection<StakingRewardTransfer> stakingRewardTransfers;
     private final Collection<TokenAccount> tokenAccounts;
     private final Collection<TokenAllowance> tokenAllowances;
-    private final Collection<TokenTransfer> tokenDissociateTransfers;
     private final Collection<TokenTransfer> tokenTransfers;
     private final Collection<TopicMessage> topicMessages;
     private final Collection<Transaction> transactions;
@@ -160,7 +161,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
                              RecordFileRepository recordFileRepository,
                              SidecarFileRepository sidecarFileRepository,
                              SqlProperties sqlProperties,
-                             @Qualifier(TOKEN_DISSOCIATE_BATCH_PERSISTER) BatchPersister tokenDissociateTransferBatchPersister) {
+                             @Qualifier(DELETED_TOKEN_DISSOCIATE_BATCH_PERSISTER) BatchPersister tokenDissociateTransferBatchPersister) {
         this.batchPersister = batchPersister;
         this.entityIdService = entityIdService;
         this.entityProperties = entityProperties;
@@ -180,6 +181,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         cryptoAllowances = new ArrayList<>();
         cryptoTransfers = new ArrayList<>();
         customFees = new ArrayList<>();
+        deletedTokenDissociateTransfers = new ArrayList<>();
         entities = new ArrayList<>();
         ethereumTransactions = new ArrayList<>();
         fileData = new ArrayList<>();
@@ -192,7 +194,6 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
         stakingRewardTransfers = new ArrayList<>();
         tokenAccounts = new ArrayList<>();
         tokenAllowances = new ArrayList<>();
-        tokenDissociateTransfers = new ArrayList<>();
         tokenTransfers = new ArrayList<>();
         topicMessages = new ArrayList<>();
         transactions = new ArrayList<>();
@@ -468,8 +469,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             onTokenAccount(tokenAccount);
         }
 
-        if (tokenTransfer.isTokenDissociate()) {
-            tokenDissociateTransfers.add(tokenTransfer);
+        if (tokenTransfer.isDeletedTokenDissociate()) {
+            deletedTokenDissociateTransfers.add(tokenTransfer);
             return;
         }
 
@@ -485,12 +486,8 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
     public void onTransaction(Transaction transaction) throws ImporterException {
         transactions.add(transaction);
 
-        if (entityProperties.getPersist().isTransactionHash()) {
-            transactionHashes.add(TransactionHash.builder()
-                    .consensusTimestamp(transaction.getConsensusTimestamp())
-                    .hash(transaction.getTransactionHash())
-                    .payerAccountId(transaction.getPayerAccountId().getId())
-                    .build());
+        if (entityProperties.getPersist().shouldPersistTransactionHash(TransactionType.of(transaction.getType()))) {
+            transactionHashes.add(transaction.toTransactionHash());
         }
 
         if (transactions.size() == sqlProperties.getBatchSize()) {
@@ -537,7 +534,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             tokenAllowances.clear();
             tokenAllowanceState.clear();
             tokens.clear();
-            tokenDissociateTransfers.clear();
+            deletedTokenDissociateTransfers.clear();
             tokenTransfers.clear();
             transactions.clear();
             transactionHashes.clear();
@@ -594,7 +591,7 @@ public class SqlEntityListener implements EntityListener, RecordStreamFileListen
             batchPersister.persist(tokenTransfers);
 
             // handle the transfers from token dissociate transactions after nft is processed
-            tokenDissociateTransferBatchPersister.persist(tokenDissociateTransfers);
+            tokenDissociateTransferBatchPersister.persist(deletedTokenDissociateTransfers);
 
             log.info("Completed batch inserts in {}", stopwatch);
         } catch (ParserException e) {

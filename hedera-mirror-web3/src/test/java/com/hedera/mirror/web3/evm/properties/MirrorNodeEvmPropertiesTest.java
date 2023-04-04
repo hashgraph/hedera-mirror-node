@@ -41,7 +41,7 @@ class MirrorNodeEvmPropertiesTest extends Web3IntegrationTest {
     @Test
     void correctPropertiesEvaluation() {
         assertThat(properties.evmVersion()).isEqualTo(EVM_VERSION);
-        assertThat(properties.dynamicEvmVersion()).isFalse();
+        assertThat(properties.dynamicEvmVersion()).isTrue();
         assertThat(properties.maxGasRefundPercentage()).isEqualTo(MAX_REFUND_PERCENT);
         assertThat(properties.fundingAccountAddress()).isEqualTo(FUNDING_ADDRESS);
         assertThat(properties.isRedirectTokenCallsEnabled()).isTrue();

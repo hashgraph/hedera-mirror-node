@@ -103,7 +103,7 @@ const flywayMigrate = async () => {
   const apiUsername = `${defaultDbConfig.username}_${workerId}`;
   const dbName = getDatabaseName();
   const exePath = path.join('.', 'node_modules', 'node-flywaydb', 'bin', 'flyway');
-  const flywayDataPath = '.node-flywaydb';
+  const flywayDataPath = path.join('.', 'build', 'flyway');
   const flywayConfigPath = path.join(os.tmpdir(), `config_worker_${workerId}.json`); // store configs in temp dir
   const locations = getMigrationScriptLocation(schemaConfigs.locations);
 

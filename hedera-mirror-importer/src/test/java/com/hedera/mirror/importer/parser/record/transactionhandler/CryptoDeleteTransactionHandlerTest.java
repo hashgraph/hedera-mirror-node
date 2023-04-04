@@ -25,13 +25,12 @@ import com.hederahashgraph.api.proto.java.CryptoDeleteTransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionBody;
 
 import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 
 class CryptoDeleteTransactionHandlerTest extends AbstractDeleteOrUndeleteTransactionHandlerTest {
 
     @Override
     protected TransactionHandler getTransactionHandler() {
-        return new CryptoDeleteTransactionHandler(entityIdService, entityListener, new RecordParserProperties());
+        return new CryptoDeleteTransactionHandler(entityIdService, entityListener);
     }
 
     @Override

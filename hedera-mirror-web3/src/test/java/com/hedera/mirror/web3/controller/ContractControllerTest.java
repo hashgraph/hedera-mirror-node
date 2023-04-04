@@ -25,17 +25,18 @@ import static com.hedera.mirror.web3.validation.HexValidator.MESSAGE;
 import static org.mockito.BDDMockito.given;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.BDDMockito.given;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
 import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
 import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
 
+import com.hedera.mirror.web3.exception.InvalidParametersException;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 
 import io.github.bucket4j.Bucket;
 import javax.annotation.Resource;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -195,7 +196,7 @@ class ContractControllerTest {
                 .isEqualTo(BAD_REQUEST)
                 .expectBody(GenericErrorResponse.class)
                 .isEqualTo(new GenericErrorResponse("Failed to read HTTP message", "Unexpected character ('f' (code 102)): was expecting double-quote to start field name\n"
-                        + " at [Source: (org.springframework.core.io.buffer.DefaultDataBuffer$DefaultDataBufferInputStream); line: 1, column: 3]"));
+                        + " at [Source: (org.springframework.core.io.buffer.DefaultDataBuffer$DefaultDataBufferInputStream); line: 1, column: 3]", StringUtils.EMPTY));
     }
 
     @Test
@@ -210,16 +211,18 @@ class ContractControllerTest {
                 .expectStatus()
                 .isEqualTo(UNSUPPORTED_MEDIA_TYPE)
                 .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse("Unsupported Media Type", "Content type 'text/plain' not supported for bodyType=com.hedera.mirror.web3.viewmodel.ContractCallRequest"));
+                .isEqualTo(new GenericErrorResponse("Unsupported Media Type", "Content type 'text/plain' not supported for bodyType=com.hedera.mirror.web3.viewmodel.ContractCallRequest", StringUtils.EMPTY));
     }
 
     @Test
     void callRevertMethodAndExpectDetailMessage() {
         final var detailedErrorMessage = "Custom revert message";
+        final var hexDataErrorMessage = "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000015437573746f6d20726576657274206d6573736167650000000000000000000000";
         final var request = request();
         request.setData("0xa26388bb");
 
-        given(service.processCall(any())).willThrow(new InvalidTransactionException(CONTRACT_REVERT_EXECUTED, detailedErrorMessage));
+        given(service.processCall(any())).willThrow(new InvalidTransactionException(CONTRACT_REVERT_EXECUTED, detailedErrorMessage,
+                hexDataErrorMessage));
 
         webClient.post()
                 .uri(CALL_URI)
@@ -229,7 +232,25 @@ class ContractControllerTest {
                 .expectStatus()
                 .isEqualTo(BAD_REQUEST)
                 .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse(CONTRACT_REVERT_EXECUTED.name(), detailedErrorMessage));
+                .isEqualTo(new GenericErrorResponse(CONTRACT_REVERT_EXECUTED.name(), detailedErrorMessage, hexDataErrorMessage));
+    }
+
+    @Test
+    void callWithInvalidParameter() {
+        final var ERROR_MESSAGE = "No such contract or token";
+        final var request = request();
+
+        given(service.processCall(any())).willThrow(new InvalidParametersException(ERROR_MESSAGE));
+
+        webClient.post()
+                .uri(CALL_URI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(request))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(BAD_REQUEST)
+                .expectBody(GenericErrorResponse.class)
+                .isEqualTo(new GenericErrorResponse(ERROR_MESSAGE));
     }
 
     @Test

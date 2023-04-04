@@ -45,7 +45,7 @@ import com.hedera.mirror.importer.leader.LeaderService;
 import com.hedera.mirror.importer.parser.CommonParserProperties;
 import com.hedera.mirror.importer.parser.batch.BatchPersister;
 import com.hedera.mirror.importer.parser.batch.BatchUpserter;
-import com.hedera.mirror.importer.repository.upsert.TokenDissociateTransferUpsertQueryGenerator;
+import com.hedera.mirror.importer.repository.upsert.DeletedTokenDissociateTransferUpsertQueryGenerator;
 
 @Configuration
 @EnableAsync
@@ -55,7 +55,7 @@ import com.hedera.mirror.importer.repository.upsert.TokenDissociateTransferUpser
 @AutoConfigureBefore(FlywayAutoConfiguration.class) // Since this configuration creates FlywayConfigurationCustomizer
 public class MirrorImporterConfiguration {
 
-    public static final String TOKEN_DISSOCIATE_BATCH_PERSISTER = "tokenDissociateTransferBatchPersister";
+    public static final String DELETED_TOKEN_DISSOCIATE_BATCH_PERSISTER = "deletedTokenDissociateTransferBatchPersister";
 
     private final MirrorProperties mirrorProperties;
 
@@ -87,11 +87,11 @@ public class MirrorImporterConfiguration {
         };
     }
 
-    @Bean(name = TOKEN_DISSOCIATE_BATCH_PERSISTER)
-    BatchPersister tokenDissociateTransferBatchPersister(DataSource dataSource, MeterRegistry meterRegistry,
-                                                         CommonParserProperties parserProperties) {
+    @Bean(name = DELETED_TOKEN_DISSOCIATE_BATCH_PERSISTER)
+    BatchPersister deletedTokenDissociateTransferBatchPersister(DataSource dataSource, MeterRegistry meterRegistry,
+                                                                CommonParserProperties parserProperties) {
         return new BatchUpserter(TokenTransfer.class, dataSource, meterRegistry, parserProperties,
-                new TokenDissociateTransferUpsertQueryGenerator());
+                new DeletedTokenDissociateTransferUpsertQueryGenerator());
     }
 
     @Configuration
