@@ -299,14 +299,14 @@ public class EntityRecordItemListener implements RecordItemListener {
         return null;
     }
 
-    private AccountAmount findAccountAmount(Predicate<AccountAmount> accountAmountPredicate, TokenID tokenId,
+    private AccountAmount findAccountAmount(Predicate<AccountAmount> accountAmountPredicate, EntityId tokenId,
                                             TransactionBody body) {
         if (!body.hasCryptoTransfer()) {
             return null;
         }
         List<TokenTransferList> tokenTransfersLists = body.getCryptoTransfer().getTokenTransfersList();
         for (TokenTransferList transferList : tokenTransfersLists) {
-            if (!transferList.getToken().equals(tokenId)) {
+            if (!EntityId.of(transferList.getToken()).equals(tokenId)) {
                 continue;
             }
             for (AccountAmount aa : transferList.getTransfersList()) {
@@ -342,22 +342,20 @@ public class EntityRecordItemListener implements RecordItemListener {
     }
 
     private void insertFungibleTokenTransfers(
-            RecordItem recordItem, TokenID tokenId, EntityId entityTokenId,
+            RecordItem recordItem, EntityId tokenId,
             EntityId payerAccountId, List<AccountAmount> tokenTransfers) {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         TransactionBody body = recordItem.getTransactionBody();
         boolean isTokenDissociate = body.hasTokenDissociate();
         boolean isDeletedTokenDissociate = isTokenDissociate && tokenTransfers.size() == 1;
         int tokenTransferCount = tokenTransfers.size();
-        
-        // If the last accountAmount in the transferList is with amount below zero it's a burn or wipe
-        boolean isWipeOrBurn = tokenTransfers.get(0).getAmount() < 0 && tokenTransfers.get(tokenTransferCount-1).getAmount() < 0;
-        // If the first accountAmount in the transferList is with amount above zero it's a mint
-        boolean isMint = tokenTransfers.get(0).getAmount() > 0 && tokenTransfers.get(tokenTransferCount-1).getAmount() > 0;
-        boolean isNotMultiTransfer = true;
+
+        boolean isWipeOrBurn = recordItem.getTransactionType() == TransactionType.TOKENBURN.getProtoId() || recordItem.getTransactionType() == TransactionType.TOKENWIPE.getProtoId();        // If the first accountAmount in the transferList is with amount above zero it's a mint
+        boolean isMint = recordItem.getTransactionType() == TransactionType.TOKENMINT.getProtoId();
+        boolean isSingleSenderTransfer = true;
         if (tokenTransferCount > 1 && !isMint && !isWipeOrBurn) {
             // If we have more than one accountAmounts, first one is always a negative amount and the second is positive
-            isNotMultiTransfer = tokenTransfers.get(0).getAmount() < 0 && tokenTransfers.get(1).getAmount() > 0;
+            isSingleSenderTransfer = tokenTransfers.get(1).getAmount() > 0;
         }
 
         for (AccountAmount accountAmount : tokenTransfers) {
@@ -366,7 +364,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             TokenTransfer tokenTransfer = new TokenTransfer();
             tokenTransfer.setAmount(amount);
             tokenTransfer.setDeletedTokenDissociate(isDeletedTokenDissociate);
-            tokenTransfer.setId(new TokenTransfer.Id(consensusTimestamp, entityTokenId, accountId));
+            tokenTransfer.setId(new TokenTransfer.Id(consensusTimestamp, tokenId, accountId));
             tokenTransfer.setIsApproval(false);
             tokenTransfer.setPayerAccountId(payerAccountId);
 
@@ -395,8 +393,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
                 if (isWipeOrBurn) {
                     EntityId receiverId = EntityId.EMPTY;
-                    EntityId tokenEntityId = EntityId.of(tokenId);
-                    syntheticContractLogService.create(new TransferContractLog(recordItem, tokenEntityId, accountId, receiverId, -amount));
+                    syntheticContractLogService.create(new TransferContractLog(recordItem, tokenId, accountId, receiverId, -amount));
                 }
             }
             entityListener.onTokenTransfer(tokenTransfer);
@@ -405,18 +402,20 @@ public class EntityRecordItemListener implements RecordItemListener {
                 // for the token transfer of a deleted token in a token dissociate transaction, the amount is negative
                 // to bring the account's balance of the token to 0. Set the totalSupply of the token object to the
                 // negative amount, later in the pipeline the token total supply will be reduced accordingly
-                Token token = Token.of(entityTokenId);
+                Token token = Token.of(tokenId);
                 token.setModifiedTimestamp(consensusTimestamp);
                 token.setTotalSupply(accountAmount.getAmount());
                 entityListener.onToken(token);
             }
 
-            // Check if it's a single transfer
-            // If amount is above 0, we handle transfers and mint
-            if (isNotMultiTransfer && amount > 0) {
-                EntityId senderId = isMint ? EntityId.EMPTY : EntityId.of(tokenTransfers.get(0).getAccountID());
-                EntityId tokenEntityId = EntityId.of(tokenId);
-                syntheticContractLogService.create(new TransferContractLog(recordItem, tokenEntityId, senderId, accountId, amount));
+            if (isMint) {
+                EntityId senderId = EntityId.EMPTY;
+                syntheticContractLogService.create(new TransferContractLog(recordItem, tokenId, senderId, accountId, amount));
+            }
+
+            if (isSingleSenderTransfer && amount > 0) {
+                EntityId senderId = EntityId.of(tokenTransfers.get(0).getAccountID());
+                syntheticContractLogService.create(new TransferContractLog(recordItem, tokenId, senderId, accountId, amount));
             }
         }
     }
@@ -433,8 +432,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
             if (tokenTransferList.getTransfersCount() > 0) {
                 insertFungibleTokenTransfers(
-                        recordItem,
-                        tokenId, entityTokenId, payerAccountId,
+                        recordItem, entityTokenId, payerAccountId,
                         tokenTransferList.getTransfersList());
             }
 
