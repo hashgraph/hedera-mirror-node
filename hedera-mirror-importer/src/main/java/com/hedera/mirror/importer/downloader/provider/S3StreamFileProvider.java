@@ -30,8 +30,11 @@ import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
+import com.hedera.mirror.importer.exception.InvalidConfigurationException;
+
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -151,9 +154,13 @@ public final class S3StreamFileProvider implements StreamFileProvider {
     }
 
     private String getNetworkPrefix(MirrorProperties mirrorProperties) {
-        if (mirrorProperties.getNetwork().equals(HederaNetwork.OTHER)) {
+        if (!StringUtils.isBlank(mirrorProperties.getNetworkPrefix())) {
             return mirrorProperties.getNetworkPrefix().toLowerCase();
         } else {
+            if (mirrorProperties.getNetwork().equals(HederaNetwork.OTHER)) {
+                throw new InvalidConfigurationException("Unable to retrieve the network prefix for network type " + mirrorProperties.getNetwork().toString());
+            }
+            // Here we need to add logic to get the complete network prefix for resettable environments.
             return mirrorProperties.getNetwork().toString().toLowerCase();
         }
     }

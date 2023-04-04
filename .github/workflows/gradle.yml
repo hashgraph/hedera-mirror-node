@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [ main, release/** ]
   push:
-    branches: [ main, release/** ]
+    branches: [ 04388-Support-downloading-by-nodeId ]
     tags: [ v* ]
 
 # Workaround https://github.com/spring-cloud/spring-cloud-kubernetes/issues/1089 until 3.x is released

@@ -40,13 +40,6 @@ public class StreamSourceProperties {
     @Min(0)
     private int maxConcurrency = 1000; // aws sdk default = 50
 
-    @NotNull
-    private CommonDownloaderProperties.PathType pathType = CommonDownloaderProperties.PathType.NODE_ID;
-
-    @DurationMin(minutes = 1)
-    @NotNull
-    private Duration pathRefreshInterval = Duration.ofMinutes(1L);
-
     private String projectId;
 
     @NotNull
