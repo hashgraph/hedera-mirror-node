@@ -30,10 +30,10 @@ plugins {
 // Can't use typed variable syntax due to Dependabot limitations
 extra.apply {
     set("gson.version", "2.8.9") // Temporary until Apache jclouds supports gson 2.9
-    set("mapStructVersion", "1.5.4.Final")
+    set("mapStructVersion", "1.5.3.Final")
     set("postgresql.version", "42.6.0") // Temporary fix for transient dependency security issue
-    set("protobufVersion", "3.22.3")
-    set("reactorGrpcVersion", "1.2.4")
+    set("protobufVersion", "3.22.2")
+    set("reactorGrpcVersion", "1.2.3")
     set("snakeyaml.version", "1.33") // Temporary fix for transient dependency security issue
     set("testcontainersSpringBootVersion", "2.3.2")
     set("vertxVersion", "4.4.1")
@@ -52,15 +52,15 @@ dependencies {
         api("com.github.meanbeanlib:meanbean:3.0.0-M9")
         api("com.github.vertical-blank:sql-formatter:2.0.3")
         api("com.github.vladimir-bukhtoyarov:bucket4j-core:7.6.0")
-        api("com.google.cloud:spring-cloud-gcp-dependencies:3.4.8")
+        api("com.google.cloud:spring-cloud-gcp-dependencies:3.4.7")
         api("com.google.guava:guava:31.1-jre")
         api("com.google.protobuf:protobuf-java:$protobufVersion")
-        api("com.graphql-java-generator:graphql-java-client-dependencies:1.18.11")
-        api("com.graphql-java:graphql-java-extended-scalars:20.2")
+        api("com.graphql-java-generator:graphql-java-client-dependencies:1.18.10")
+        api("com.graphql-java:graphql-java-extended-scalars:20.0")
         api("com.graphql-java:graphql-java-extended-validation:20.0-validator-6.2.0.Final")
-        api("com.hedera.evm:hedera-evm:0.36.2")
+        api("com.hedera.evm:hedera-evm:0.37.0-SNAPSHOT")
         api("com.hedera.hashgraph:hedera-protobuf-java-api:0.36.1")
-        api("com.hedera.hashgraph:sdk:2.22.0")
+        api("com.hedera.hashgraph:sdk:2.21.0")
         api("com.ongres.scram:client:2.1")
         api("com.playtika.testcontainers:embedded-google-pubsub:$testcontainersSpringBootVersion")
         api("com.playtika.testcontainers:embedded-postgresql:$testcontainersSpringBootVersion")
@@ -71,7 +71,7 @@ dependencies {
         api("commons-io:commons-io:2.11.0")
         api("io.cucumber:cucumber-bom:7.11.2")
         api("io.github.mweirauch:micrometer-jvm-extras:0.2.2")
-        api("io.grpc:grpc-bom:1.54.1")
+        api("io.grpc:grpc-bom:1.54.0")
         api("io.swagger:swagger-annotations:1.6.10")
         api("io.vertx:vertx-pg-client:$vertxVersion")
         api("io.vertx:vertx-codegen:$vertxVersion")
@@ -91,9 +91,8 @@ dependencies {
         api("org.msgpack:jackson-dataformat-msgpack:0.9.3")
         api("org.springdoc:springdoc-openapi-webflux-ui:1.7.0")
         api("org.springframework.cloud:spring-cloud-dependencies:2021.0.5")
-        api("org.testcontainers:junit-jupiter:1.18.0")
-        api("org.mockito:mockito-inline:5.2.0")
-        api("software.amazon.awssdk:bom:2.20.47")
+        api("org.testcontainers:junit-jupiter:1.17.6")
+        api("software.amazon.awssdk:bom:2.20.37")
         api("uk.org.webcompere:system-stubs-jupiter:2.0.2")
     }
 }
@@ -106,7 +105,7 @@ allprojects {
         properties {
             property("sonar.host.url", "https://sonarcloud.io")
             property("sonar.organization", "hashgraph")
-            property("sonar.projectKey", "hedera-mirror-node")
+            property("sonar.projectKey", rootProject.name)
             property("sonar.issue.ignore.multicriteria", "e1,e2,e3,e4,e5")
             property("sonar.issue.ignore.multicriteria.e1.resourceKey", "**/*.java")
             property("sonar.issue.ignore.multicriteria.e1.ruleKey", "java:S6212")

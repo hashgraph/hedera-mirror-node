@@ -32,6 +32,7 @@ import javax.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
+import org.apache.tuweni.bytes.Bytes32;
 import org.hibernate.validator.constraints.time.DurationMin;
 import org.hyperledger.besu.datatypes.Address;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -81,8 +82,23 @@ public class MirrorNodeEvmProperties implements EvmProperties {
     }
 
     @Override
+    public boolean isLazyCreationEnabled() {
+        return true;
+    }
+
+    @Override
+    public boolean isCreate2Enabled() {
+        return true;
+    }
+
+    @Override
     public boolean dynamicEvmVersion() {
         return dynamicEvmVersion;
+    }
+
+    @Override
+    public Bytes32 chainIdBytes32() {
+        return null;
     }
 
     @Override
