@@ -23,26 +23,29 @@ package com.hedera.services;
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
-import com.hedera.node.app.service.evm.store.models.UpdatedHederaEvmAccount;
+import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
+
+import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
+
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.account.Account;
 import org.hyperledger.besu.evm.worldstate.WorldView;
 
 public class AbstractEvmStackedLedgerUpdater<W extends WorldView, A extends Account>
-        extends AbstractLedgerEvmWorldUpdater<AbstractLedgerEvmWorldUpdater<W, A>, UpdatedHederaEvmAccount<A>> {
+        extends AbstractLedgerEvmWorldUpdater<AbstractLedgerEvmWorldUpdater<W, A>, UpdateTrackingAccount<A>> {
 
     protected AbstractEvmStackedLedgerUpdater(
             final AbstractLedgerEvmWorldUpdater<W, A> world,
             final AccountAccessor accountAccessor,
+            final TokenAccessor tokenAccessor,
             final HederaEvmEntityAccess entityAccess) {
-        super(world, accountAccessor, entityAccess);
+        super(world, accountAccessor, tokenAccessor, entityAccess);
     }
 
     @Override
-    public UpdatedHederaEvmAccount<A> getForMutation(Address address) {
+    public UpdateTrackingAccount<A> getForMutation(Address address) {
         final var wrapped = wrappedWorldView();
         final A account = wrapped.getForMutation(address);
-
-        return account == null ? null : new UpdatedHederaEvmAccount<>(account);
+        return account == null ? null : new UpdateTrackingAccount<>(account, null);
     }
 }

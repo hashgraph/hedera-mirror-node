@@ -58,7 +58,7 @@ dependencies {
         api("com.graphql-java-generator:graphql-java-client-dependencies:1.18.10")
         api("com.graphql-java:graphql-java-extended-scalars:20.0")
         api("com.graphql-java:graphql-java-extended-validation:20.0-validator-6.2.0.Final")
-        api("com.hedera.evm:hedera-evm:0.36.0-alpha.3")
+        api("com.hedera.evm:hedera-evm:0.37.0-SNAPSHOT")
         api("com.hedera.hashgraph:hedera-protobuf-java-api:0.36.1")
         api("com.hedera.hashgraph:sdk:2.21.0")
         api("com.ongres.scram:client:2.1")
