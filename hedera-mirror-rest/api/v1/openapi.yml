@@ -197,7 +197,7 @@ paths:
         ## Filtering
         When filtering there are some restrictions enforced to ensure correctness and scalability.
 
-        **The table below defines the restrictions and support for the token allowances endpoint**
+        **The table below defines the restrictions and support for the endpoint**
 
         | Query Param   | Comparison Operator | Support | Description           | Example |
         | ------------- | ------------------- | ------- | --------------------- | ------- |
@@ -557,7 +557,7 @@ paths:
         ## Filtering
         When filtering there are some restrictions enforced to ensure correctness and scalability.
 
-        **The table below defines the restrictions and support for the token allowances endpoint**
+        **The table below defines the restrictions and support for the endpoint**
 
         | Query Param   | Comparison Operator | Support | Description           | Example |
         | ------------- | ------------------- | ------- | --------------------- | ------- |
@@ -612,7 +612,7 @@ paths:
         ## Filtering
         When filtering there are some restrictions enforced to ensure correctness and scalability.
 
-        **The table below defines the restrictions and support for the token allowances endpoint**
+        **The table below defines the restrictions and support for the endpoint**
 
         | Query Param   | Comparison Operator | Support | Description           | Example |
         | ------------- | ------------------- | ------- | --------------------- | ------- |
