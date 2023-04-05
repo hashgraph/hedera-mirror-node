@@ -349,16 +349,16 @@ public class TokenAccessorImpl implements TokenAccessor {
         }
 
         for (final var customFee : customFeesCollection) {
-            final var collectorId = customFee.get("collector_account_id");
+            final var collectorId = (EntityId) customFee.get("collector_account_id");
             if (collectorId == null) {
                 continue;
             }
 
-            final var collector = evmAddressFromId((EntityId) collectorId);
+            final var collector = evmAddressFromId(collectorId);
             final long amount = (long) requireNonNullElse(customFee.get("amount"), 0L);
-            final var denominatingTokenId = customFee.get("denominating_token_id");
+            final var denominatingTokenId = (EntityId) customFee.get("denominating_token_id");
             final var denominatingTokenAddress = denominatingTokenId == null ?
-                    EMPTY_EVM_ADDRESS : toAddress((EntityId) denominatingTokenId);
+                    EMPTY_EVM_ADDRESS : toAddress(denominatingTokenId);
             final long amountDenominator = (long) requireNonNullElse(customFee.get("amount_denominator"), 0L);
             final var maximumAmount = (long) requireNonNullElse(customFee.get("maximum_amount"), 0L);
             final var minimumAmount = (long) customFee.get("minimum_amount");
