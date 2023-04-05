@@ -1,5 +1,3 @@
-package com.hedera.mirror.web3.evm.contracts.execution;
-
 /*-
  * ‌
  * Hedera Mirror Node
@@ -42,8 +40,8 @@ import com.hedera.node.app.service.evm.contracts.execution.HederaEvmTransactionP
 import com.hedera.node.app.service.evm.contracts.execution.PricesAndFeesProvider;
 import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultHederaTracer;
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
+import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
-import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldUpdater;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 import com.hedera.services.HederaEvmWorldState;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
@@ -70,8 +68,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
 
 @ExtendWith(MockitoExtension.class)
 class MirrorEvmTxProcessorTest {
@@ -108,6 +104,7 @@ class MirrorEvmTxProcessorTest {
 
     @Mock
     private AbstractLedgerEvmWorldUpdater stackedUpdater;
+
     @Mock
     private MirrorEvmContractAliases hederaEvmContractAliases;
 
