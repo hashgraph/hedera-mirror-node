@@ -132,12 +132,12 @@ hedera:
 type ContractLogEvent {
   address: String
   blockHash: String
-  blockNumber: Long
+  blockNumber: String
   data: String
-  logIndex: Long
+  logIndex: String
   topics: [String]
   transactionHash: String
-  transactionIndex: Long
+  transactionIndex: String
 }
 
 type ContractLogSubscriptionInput {
@@ -173,14 +173,14 @@ Address is required and topics is an optional filter
 {
   "address": "0x8320fe7702b96808f7bbc0d4a888ed1468216cfd",
   "blockHash": "0x61cdb2a09ab99abf791d474f20c2ea89bf8de2923a2d42bb49944c8c993cbf04",
-  "blockNumber": 171655,
+  "blockNumber": "0x29e87",
   "data": "0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000003",
-  "logIndex": 0,
+  "logIndex": "0x0",
   "topics": [
     "0xd78a0cb8bb633d06981248b816e7bd33c2a35a6089241d099fa519e361cab902"
   ],
   "transactionHash": "0xe044554a0a55067caafd07f8020ab9f2af60bdfe337e395ecd84b4877a3d1ab4",
-  "transactionIndex": 0
+  "transactionIndex": "0x0"
 }
 ```
 
