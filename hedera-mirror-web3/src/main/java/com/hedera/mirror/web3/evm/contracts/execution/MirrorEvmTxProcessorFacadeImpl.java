@@ -35,7 +35,7 @@ import com.hedera.node.app.service.evm.contracts.execution.traceability.DefaultH
 import com.hedera.node.app.service.evm.store.contracts.AbstractCodeCache;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
-import com.hedera.services.HederaEvmWorldState;
+import com.hedera.mirror.web3.evm.store.contract.HederaEvmWorldState;
 import java.time.Instant;
 import javax.inject.Named;
 import org.apache.tuweni.bytes.Bytes;

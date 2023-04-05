@@ -18,7 +18,7 @@
  * ‍
  */
 
-package com.hedera.services;
+package com.hedera.mirror.web3.evm.store.contract;
 
 import com.hedera.node.app.service.evm.accounts.AccountAccessor;
 import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpdater;
