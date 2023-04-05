@@ -353,11 +353,7 @@ public class EntityRecordItemListener implements RecordItemListener {
 
         boolean isWipeOrBurn = (recordItem.getTransactionType() == TransactionType.TOKENBURN.getProtoId() || recordItem.getTransactionType() == TransactionType.TOKENWIPE.getProtoId()) && !isDeletedTokenDissociate;
         boolean isMint = recordItem.getTransactionType() == TransactionType.TOKENMINT.getProtoId() && !isDeletedTokenDissociate;
-        boolean isSingleSenderTransfer = false;
-        if (tokenTransferCount > 1 && !isMint && !isWipeOrBurn) {
-            // If we have more than one accountAmounts, first one is always a negative amount and the second is positive
-            isSingleSenderTransfer = tokenTransfers.get(1).getAmount() > 0;
-        }
+        boolean isSingleTransfer = tokenTransferCount == 2;
 
         for (AccountAmount accountAmount : tokenTransfers) {
             EntityId accountId = EntityId.of(accountAmount.getAccountID());
@@ -391,11 +387,6 @@ public class EntityRecordItemListener implements RecordItemListener {
                 } else {
                     tokenTransfer.setIsApproval(accountAmountInsideTransferList.getIsApproval());
                 }
-
-                if (isWipeOrBurn) {
-                    EntityId receiverId = EntityId.EMPTY;
-                    syntheticContractLogService.create(new TransferContractLog(recordItem, tokenId, accountId, receiverId, -amount));
-                }
             }
             entityListener.onTokenTransfer(tokenTransfer);
 
@@ -409,12 +400,13 @@ public class EntityRecordItemListener implements RecordItemListener {
                 entityListener.onToken(token);
             }
 
-            if (isMint) {
-                EntityId senderId = EntityId.EMPTY;
-                syntheticContractLogService.create(new TransferContractLog(recordItem, tokenId, senderId, accountId, amount));
+            if (isMint || isWipeOrBurn) {
+                EntityId senderId = amount < 0 ? accountId : EntityId.EMPTY;
+                EntityId receiverId = amount > 0 ? accountId : EntityId.EMPTY;
+                syntheticContractLogService.create(new TransferContractLog(recordItem, tokenId, senderId, receiverId, Math.abs(amount)));
             }
 
-            if (isSingleSenderTransfer && amount > 0) {
+            if (isSingleTransfer && amount > 0) {
                 EntityId senderId = EntityId.of(tokenTransfers.get(0).getAccountID());
                 syntheticContractLogService.create(new TransferContractLog(recordItem, tokenId, senderId, accountId, amount));
             }
