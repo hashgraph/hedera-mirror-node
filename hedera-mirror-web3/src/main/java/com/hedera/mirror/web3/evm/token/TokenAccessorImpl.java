@@ -43,6 +43,8 @@ import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.util.CollectionUtils;
 
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
@@ -82,6 +84,9 @@ import com.hedera.node.app.service.evm.store.tokens.TokenType;
 @Named
 @RequiredArgsConstructor
 public class TokenAccessorImpl implements TokenAccessor {
+
+    public static final String SELECT_QUERY ="select * from custom_fee  where token_id = :tokenId and created_timestamp = (select created_timestamp from custom_fee  where token_id = :tokenId order by created_timestamp desc limit 1)";
+    private final NamedParameterJdbcTemplate jdbcTemplate;
 
     private final EntityRepository entityRepository;
     private final TokenRepository tokenRepository;
@@ -334,29 +339,32 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     private List<CustomFee> getCustomFees(final Address token) {
         final List<CustomFee> customFees = new ArrayList<>();
-        final var customFeesCollection = customFeeRepository.findByTokenId(entityIdNumFromEvmAddress(token));
+
+        final var customFeesCollection = jdbcTemplate.queryForList(SELECT_QUERY,
+                new MapSqlParameterSource()
+                        .addValue("tokenId", entityIdNumFromEvmAddress(token)));
 
         if (CollectionUtils.isEmpty(customFeesCollection)) {
             return customFees;
         }
 
         for (final var customFee : customFeesCollection) {
-            final var collectorId = customFee.getCollectorAccountId();
+            final var collectorId = customFee.get("collector_account_id");
             if (collectorId == null) {
                 continue;
             }
 
-            final var collector = evmAddressFromId(collectorId);
-            final long amount = requireNonNullElse(customFee.getAmount(), 0L);
-            final var denominatingTokenId = customFee.getDenominatingTokenId();
+            final var collector = evmAddressFromId((EntityId) collectorId);
+            final long amount = (long) requireNonNullElse(customFee.get("amount"), 0L);
+            final var denominatingTokenId = customFee.get("denominating_token_id");
             final var denominatingTokenAddress = denominatingTokenId == null ?
-                    EMPTY_EVM_ADDRESS : toAddress(denominatingTokenId);
-            final long amountDenominator = requireNonNullElse(customFee.getAmountDenominator(), 0L);
-            final var maximumAmount = requireNonNullElse(customFee.getMaximumAmount(), 0L);
-            final var minimumAmount = customFee.getMinimumAmount();
-            final var netOfTransfers = requireNonNullElse(customFee.getNetOfTransfers(), false);
-            final long royaltyDenominator = requireNonNullElse(customFee.getRoyaltyDenominator(), 0L);
-            final long royaltyNumerator = requireNonNullElse(customFee.getRoyaltyNumerator(), 0L);
+                    EMPTY_EVM_ADDRESS : toAddress((EntityId) denominatingTokenId);
+            final long amountDenominator = (long) requireNonNullElse(customFee.get("amount_denominator"), 0L);
+            final var maximumAmount = (long) requireNonNullElse(customFee.get("maximum_amount"), 0L);
+            final var minimumAmount = (long) customFee.get("minimum_amount");
+            final var netOfTransfers = (boolean) requireNonNullElse(customFee.get("net_of_transfers"), false);
+            final long royaltyDenominator = (long) requireNonNullElse(customFee.get("royalty_denominator"), 0L);
+            final long royaltyNumerator = (long) requireNonNullElse(customFee.get("royalty_numerator"), 0L);
 
             CustomFee customFeeConstructed = new CustomFee();
 
