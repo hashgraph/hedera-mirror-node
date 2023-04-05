@@ -30,11 +30,11 @@ in order to provide contract log notifications in almost real time.
 #### Contract Log to ContractLogEvent Query
 
 ```sql
-SELECT e.evm_address as                                      address,
+SELECT e.evm_address                                      as address,
        block_number,
        block_hash,
        cl.data,
-       cl.index as                                           log_index,
+       cl.index                                           as log_index,
        ARRAY [cl.topic0, cl.topic1, cl.topic2, cl.topic3] as topics,
        cl.transaction_hash,
        cl.transaction_index
@@ -51,7 +51,9 @@ from contract_log cl
 where cl.consensus_timestamp = ?
   and cl.index = ?;
 ```
+
 #### Class Defs
+
 ```java
 public class ContractLogController {
   /**
@@ -68,6 +70,7 @@ public class ContractLogTopicListener {
   /**
    * Verifies can subscribe and returns error response if not
    * Uses cached flux if exists, otherwise creates entry and starts listening.
+   * On backpressure overflow, drop messages
    * Filter result via filter param
    * calls unsubscribe on termination.
    * */
@@ -118,6 +121,7 @@ hedera:
       listener:
         contractLog:
           maxActiveSubscriptions: 1000
+          maxBufferSize: 16384
 
 ```
 
@@ -169,29 +173,28 @@ Address is required and topics is an optional filter
 {
   "address": "0x8320fe7702b96808f7bbc0d4a888ed1468216cfd",
   "blockHash": "0x61cdb2a09ab99abf791d474f20c2ea89bf8de2923a2d42bb49944c8c993cbf04",
-  "blockNumber": "0x29e87",
+  "blockNumber": 171655,
   "data": "0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000003",
-  "logIndex": "0x0",
+  "logIndex": 0,
   "topics": [
     "0xd78a0cb8bb633d06981248b816e7bd33c2a35a6089241d099fa519e361cab902"
   ],
   "transactionHash": "0xe044554a0a55067caafd07f8020ab9f2af60bdfe337e395ecd84b4877a3d1ab4",
-  "transactionIndex": "0x0"
+  "transactionIndex": 0
 }
 ```
 
 #### Event Response DB Mapping
 
-| Response Field          | Source Field                                                                                              |
-|-------------------------|-----------------------------------------------------------------------------------------------------------|
-| subscription            | N/A (ID in hex format)                                                                                    |
-| result.address          | entity.evm_address                                                                                        |
-| result.blockHash        | record_file.hash                                                                                          |
-| result.blockNumber      | record_file.index                                                                                         |
-| result.data             | contract_log.data                                                                                         |
-| result.logIndex         | contract_log.index                                                                                        |
-| result.topics           | [contract_log.topic0, contract_log.topic1, contract_log.topic2, contract_log.topic3, contract_log.topic4] |
-| result.transactionHash  | contract_log.transaction_hash                                                                             |
-| result.transactionIndex | contract_log.transaction_index                                                                            |
+| Response Field   | Source Field                                                                                              |
+|------------------|-----------------------------------------------------------------------------------------------------------|
+| address          | entity.evm_address                                                                                        |
+| blockHash        | record_file.hash                                                                                          |
+| blockNumber      | record_file.index                                                                                         |
+| data             | contract_log.data                                                                                         |
+| logIndex         | contract_log.index                                                                                        |
+| topics           | [contract_log.topic0, contract_log.topic1, contract_log.topic2, contract_log.topic3, contract_log.topic4] |
+| transactionHash  | contract_log.transaction_hash                                                                             |
+| transactionIndex | contract_log.transaction_index                                                                            |
 
 
