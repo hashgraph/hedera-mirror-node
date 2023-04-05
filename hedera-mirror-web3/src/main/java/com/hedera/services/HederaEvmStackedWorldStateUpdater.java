@@ -26,7 +26,7 @@ import com.hedera.node.app.service.evm.store.contracts.AbstractLedgerEvmWorldUpd
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmEntityAccess;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmMutableWorldState;
 import com.hedera.node.app.service.evm.store.contracts.HederaEvmWorldStateTokenAccount;
-import com.hedera.node.app.service.evm.store.models.UpdatedHederaEvmAccount;
+import com.hedera.node.app.service.evm.store.models.UpdateTrackingAccount;
 import com.hedera.node.app.service.evm.store.tokens.TokenAccessor;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.account.Account;
@@ -37,7 +37,6 @@ public class HederaEvmStackedWorldStateUpdater
         extends AbstractEvmStackedLedgerUpdater<HederaEvmMutableWorldState, Account> {
 
     protected final HederaEvmEntityAccess hederaEvmEntityAccess;
-    protected final TokenAccessor tokenAccessor;
     private final EvmProperties evmProperties;
 
     public HederaEvmStackedWorldStateUpdater(
@@ -46,16 +45,10 @@ public class HederaEvmStackedWorldStateUpdater
             final HederaEvmEntityAccess hederaEvmEntityAccess,
             final TokenAccessor tokenAccessor,
             final EvmProperties evmProperties) {
-        super(updater, accountAccessor, hederaEvmEntityAccess);
+        super(updater, accountAccessor, tokenAccessor, hederaEvmEntityAccess);
         this.hederaEvmEntityAccess = hederaEvmEntityAccess;
-        this.tokenAccessor = tokenAccessor;
         this.evmProperties = evmProperties;
     }
-
-    public TokenAccessor tokenAccessor() {
-        return tokenAccessor;
-    }
-
     @Override
     public Account get(final Address address) {
         if (isTokenRedirect(address)) {
@@ -68,8 +61,7 @@ public class HederaEvmStackedWorldStateUpdater
     public EvmAccount getAccount(final Address address) {
         if (isTokenRedirect(address)) {
             final var proxyAccount = new HederaEvmWorldStateTokenAccount(address);
-            final var newMutable = new UpdatedHederaEvmAccount<>(proxyAccount);
-            newMutable.setEvmEntityAccess(hederaEvmEntityAccess);
+            final var newMutable = new UpdateTrackingAccount<>(proxyAccount, null);
             return new WrappedEvmAccount(newMutable);
         }
 
