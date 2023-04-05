@@ -347,11 +347,12 @@ public class EntityRecordItemListener implements RecordItemListener {
         long consensusTimestamp = recordItem.getConsensusTimestamp();
         TransactionBody body = recordItem.getTransactionBody();
         boolean isTokenDissociate = body.hasTokenDissociate();
-        boolean isDeletedTokenDissociate = isTokenDissociate && tokenTransfers.size() == 1;
         int tokenTransferCount = tokenTransfers.size();
 
-        boolean isWipeOrBurn = recordItem.getTransactionType() == TransactionType.TOKENBURN.getProtoId() || recordItem.getTransactionType() == TransactionType.TOKENWIPE.getProtoId();        // If the first accountAmount in the transferList is with amount above zero it's a mint
-        boolean isMint = recordItem.getTransactionType() == TransactionType.TOKENMINT.getProtoId() || recordItem.getTransactionType() == TransactionType.TOKENCREATION.getProtoId();
+        boolean isDeletedTokenDissociate = isTokenDissociate && tokenTransferCount == 1;
+
+        boolean isWipeOrBurn = (recordItem.getTransactionType() == TransactionType.TOKENBURN.getProtoId() || recordItem.getTransactionType() == TransactionType.TOKENWIPE.getProtoId()) && !isDeletedTokenDissociate;
+        boolean isMint = recordItem.getTransactionType() == TransactionType.TOKENMINT.getProtoId() && !isDeletedTokenDissociate;
         boolean isSingleSenderTransfer = false;
         if (tokenTransferCount > 1 && !isMint && !isWipeOrBurn) {
             // If we have more than one accountAmounts, first one is always a negative amount and the second is positive

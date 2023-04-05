@@ -1183,16 +1183,15 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertTokenTransferInRepository(TOKEN_ID, PAYER, burnTimestamp, amount);
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, burnTimestamp, SYMBOL, INITIAL_SUPPLY - amount);
 
-        var listAssert = assertThat(contractLogRepository.findAll())
-                .hasSize(2);
-
-        listAssert.extracting(ContractLog::getPayerAccountId).containsOnly(PAYER_ACCOUNT_ID);
-        listAssert.extracting(ContractLog::getContractId).containsOnly(EntityId.of(TOKEN_ID));
-        listAssert.extracting(ContractLog::getRootContractId)
-                .containsOnly(EntityId.of(TOKEN_ID));
-        listAssert.extracting(ContractLog::getConsensusTimestamp).containsAnyOf(CREATE_TIMESTAMP, burnTimestamp);
-        listAssert.extracting(ContractLog::getIndex).containsExactlyInAnyOrder(0, 0);
-        listAssert.extracting(ContractLog::getTopic0).containsExactlyInAnyOrder(TRANSFER_SIGNATURE, TRANSFER_SIGNATURE);
+        assertThat(contractLogRepository.findById(new ContractLog.Id(burnTimestamp, 0))).get()
+                .returns(burnTimestamp, from(ContractLog::getConsensusTimestamp))
+                .returns(PAYER_ACCOUNT_ID, from(ContractLog::getPayerAccountId))
+                .returns(EntityId.of(TOKEN_ID), from(ContractLog::getContractId))
+                .returns(EntityId.of(TOKEN_ID), from(ContractLog::getRootContractId))
+                .returns(TRANSFER_SIGNATURE, from(ContractLog::getTopic0))
+                .returns(Bytes.ofUnsignedLong(PAYER.getAccountNum()).toArray(), from(ContractLog::getTopic1))
+                .returns(Bytes.ofUnsignedLong(0).toArray(), from(ContractLog::getTopic2))
+                .returns(Bytes.ofUnsignedLong(-amount).toArray(), from(ContractLog::getData));
     }
 
     @Test
@@ -1265,16 +1264,15 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, burnTimestamp, SYMBOL, 0);
         assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(expectedNft1, expectedNft2);
 
-        var listAssert = assertThat(contractLogRepository.findAll())
-                .hasSize(4);
-
-        listAssert.extracting(ContractLog::getPayerAccountId).containsOnly(PAYER_ACCOUNT_ID);
-        listAssert.extracting(ContractLog::getContractId).containsOnly(EntityId.of(TOKEN_ID));
-        listAssert.extracting(ContractLog::getRootContractId)
-                .containsOnly(EntityId.of(TOKEN_ID));
-        listAssert.extracting(ContractLog::getConsensusTimestamp).containsAnyOf(mintTimestamp, approveAllowanceTimestamp, burnTimestamp);
-        listAssert.extracting(ContractLog::getIndex).containsExactlyInAnyOrder(0, 1, 0, 0);
-        listAssert.extracting(ContractLog::getTopic0).containsExactlyInAnyOrder(TRANSFER_SIGNATURE, TRANSFER_SIGNATURE, APPROVE_SIGNATURE, TRANSFER_SIGNATURE);
+        assertThat(contractLogRepository.findById(new ContractLog.Id(burnTimestamp, 0))).get()
+                .returns(burnTimestamp, from(ContractLog::getConsensusTimestamp))
+                .returns(PAYER_ACCOUNT_ID, from(ContractLog::getPayerAccountId))
+                .returns(EntityId.of(TOKEN_ID), from(ContractLog::getContractId))
+                .returns(EntityId.of(TOKEN_ID), from(ContractLog::getRootContractId))
+                .returns(TRANSFER_SIGNATURE, from(ContractLog::getTopic0))
+                .returns(Bytes.ofUnsignedLong(PAYER.getAccountNum()).toArray(), from(ContractLog::getTopic1))
+                .returns(Bytes.ofUnsignedLong(0).toArray(), from(ContractLog::getTopic2))
+                .returns(Bytes.ofUnsignedLong(SERIAL_NUMBER_1).toArray(), from(ContractLog::getData));
     }
 
     @Test
@@ -1334,16 +1332,15 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertTokenTransferInRepository(TOKEN_ID, PAYER, mintTimestamp, amount);
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, mintTimestamp, SYMBOL, INITIAL_SUPPLY + amount);
 
-        var listAssert = assertThat(contractLogRepository.findAll())
-                .hasSize(2);
-
-        listAssert.extracting(ContractLog::getPayerAccountId).containsOnly(PAYER_ACCOUNT_ID);
-        listAssert.extracting(ContractLog::getContractId).containsOnly(EntityId.of(TOKEN_ID));
-        listAssert.extracting(ContractLog::getRootContractId)
-                .containsOnly(EntityId.of(TOKEN_ID));
-        listAssert.extracting(ContractLog::getConsensusTimestamp).containsAnyOf(CREATE_TIMESTAMP, mintTimestamp);
-        listAssert.extracting(ContractLog::getIndex).containsExactlyInAnyOrder(0, 0);
-        listAssert.extracting(ContractLog::getTopic0).containsExactlyInAnyOrder(TRANSFER_SIGNATURE, TRANSFER_SIGNATURE);
+        assertThat(contractLogRepository.findById(new ContractLog.Id(mintTimestamp, 0))).get()
+                .returns(mintTimestamp, from(ContractLog::getConsensusTimestamp))
+                .returns(PAYER_ACCOUNT_ID, from(ContractLog::getPayerAccountId))
+                .returns(EntityId.of(TOKEN_ID), from(ContractLog::getContractId))
+                .returns(EntityId.of(TOKEN_ID), from(ContractLog::getRootContractId))
+                .returns(TRANSFER_SIGNATURE, from(ContractLog::getTopic0))
+                .returns(Bytes.ofUnsignedLong(0).toArray(), from(ContractLog::getTopic1))
+                .returns(Bytes.ofUnsignedLong(PAYER.getAccountNum()).toArray(), from(ContractLog::getTopic2))
+                .returns(Bytes.ofUnsignedLong(amount).toArray(), from(ContractLog::getData));
     }
 
     @Test
@@ -1410,16 +1407,15 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertNftInRepository(TOKEN_ID, SERIAL_NUMBER_2, true, mintTimestamp, mintTimestamp, METADATA
                 .getBytes(), EntityId.of(PAYER), false);
 
-        var listAssert = assertThat(contractLogRepository.findAll())
-                .hasSize(2);
-
-        listAssert.extracting(ContractLog::getPayerAccountId).containsOnly(PAYER_ACCOUNT_ID);
-        listAssert.extracting(ContractLog::getContractId).containsOnly(EntityId.of(TOKEN_ID));
-        listAssert.extracting(ContractLog::getRootContractId)
-                .containsOnly(EntityId.of(TOKEN_ID));
-        listAssert.extracting(ContractLog::getConsensusTimestamp).containsAnyOf(mintTimestamp);
-        listAssert.extracting(ContractLog::getIndex).containsExactlyInAnyOrder(0, 1);
-        listAssert.extracting(ContractLog::getTopic0).containsExactlyInAnyOrder(TRANSFER_SIGNATURE, TRANSFER_SIGNATURE);
+        assertThat(contractLogRepository.findById(new ContractLog.Id(mintTimestamp, 0))).get()
+                .returns(mintTimestamp, from(ContractLog::getConsensusTimestamp))
+                .returns(PAYER_ACCOUNT_ID, from(ContractLog::getPayerAccountId))
+                .returns(EntityId.of(TOKEN_ID), from(ContractLog::getContractId))
+                .returns(EntityId.of(TOKEN_ID), from(ContractLog::getRootContractId))
+                .returns(TRANSFER_SIGNATURE, from(ContractLog::getTopic0))
+                .returns(Bytes.ofUnsignedLong(0).toArray(), from(ContractLog::getTopic1))
+                .returns(Bytes.ofUnsignedLong(PAYER.getAccountNum()).toArray(), from(ContractLog::getTopic2))
+                .returns(Bytes.ofUnsignedLong(SERIAL_NUMBER_1).toArray(), from(ContractLog::getData));
     }
 
     @Test
@@ -1623,16 +1619,15 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertNftTransferInRepository(transferTimestamp, 2L, TOKEN_ID, RECEIVER, PAYER);
         assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(expectedNft1, expectedNft2);
 
-        var listAssert = assertThat(contractLogRepository.findAll())
-                .hasSize(5);
-
-        listAssert.extracting(ContractLog::getPayerAccountId).containsOnly(PAYER_ACCOUNT_ID);
-        listAssert.extracting(ContractLog::getContractId).containsOnly(EntityId.of(TOKEN_ID));
-        listAssert.extracting(ContractLog::getRootContractId)
-                .containsOnly(EntityId.of(TOKEN_ID));
-        listAssert.extracting(ContractLog::getConsensusTimestamp).containsAnyOf(mintTimestamp1, mintTimestamp2, approveAllowanceTimestamp, transferTimestamp);
-        listAssert.extracting(ContractLog::getIndex).containsExactlyInAnyOrder(0, 0, 0, 0, 1);
-        listAssert.extracting(ContractLog::getTopic0).containsExactlyInAnyOrder(TRANSFER_SIGNATURE, APPROVE_SIGNATURE, TRANSFER_SIGNATURE, TRANSFER_SIGNATURE, TRANSFER_SIGNATURE);
+        assertThat(contractLogRepository.findById(new ContractLog.Id(mintTimestamp1, 0))).get()
+                .returns(mintTimestamp1, from(ContractLog::getConsensusTimestamp))
+                .returns(PAYER_ACCOUNT_ID, from(ContractLog::getPayerAccountId))
+                .returns(EntityId.of(TOKEN_ID), from(ContractLog::getContractId))
+                .returns(EntityId.of(TOKEN_ID), from(ContractLog::getRootContractId))
+                .returns(TRANSFER_SIGNATURE, from(ContractLog::getTopic0))
+                .returns(Bytes.ofUnsignedLong(0).toArray(), from(ContractLog::getTopic1))
+                .returns(Bytes.ofUnsignedLong(RECEIVER.getAccountNum()).toArray(), from(ContractLog::getTopic2))
+                .returns(Bytes.ofUnsignedLong(SERIAL_NUMBER_1).toArray(), from(ContractLog::getData));
     }
 
     @ParameterizedTest
@@ -1845,16 +1840,15 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertTokenTransferInRepository(TOKEN_ID, PAYER, CREATE_TIMESTAMP, INITIAL_SUPPLY);
         assertTokenTransferInRepository(TOKEN_ID, PAYER, wipeTimestamp, transferAmount);
 
-        var listAssert = assertThat(contractLogRepository.findAll())
-                .hasSize(2);
-
-        listAssert.extracting(ContractLog::getPayerAccountId).containsOnly(PAYER_ACCOUNT_ID);
-        listAssert.extracting(ContractLog::getContractId).containsOnly(EntityId.of(TOKEN_ID));
-        listAssert.extracting(ContractLog::getRootContractId)
-                .containsOnly(EntityId.of(TOKEN_ID));
-        listAssert.extracting(ContractLog::getConsensusTimestamp).containsAnyOf(CREATE_TIMESTAMP, wipeTimestamp);
-        listAssert.extracting(ContractLog::getIndex).containsExactlyInAnyOrder(0, 0);
-        listAssert.extracting(ContractLog::getTopic0).containsExactlyInAnyOrder(TRANSFER_SIGNATURE, TRANSFER_SIGNATURE);
+        assertThat(contractLogRepository.findById(new ContractLog.Id(wipeTimestamp, 0))).get()
+                .returns(wipeTimestamp, from(ContractLog::getConsensusTimestamp))
+                .returns(PAYER_ACCOUNT_ID, from(ContractLog::getPayerAccountId))
+                .returns(EntityId.of(TOKEN_ID), from(ContractLog::getContractId))
+                .returns(EntityId.of(TOKEN_ID), from(ContractLog::getRootContractId))
+                .returns(TRANSFER_SIGNATURE, from(ContractLog::getTopic0))
+                .returns(Bytes.ofUnsignedLong(PAYER.getAccountNum()).toArray(), from(ContractLog::getTopic1))
+                .returns(Bytes.ofUnsignedLong(0).toArray(), from(ContractLog::getTopic2))
+                .returns(Bytes.ofUnsignedLong(-transferAmount).toArray(), from(ContractLog::getData));
     }
 
     @Test
@@ -1925,16 +1919,15 @@ class EntityRecordItemListenerTokenTest extends AbstractEntityRecordItemListener
         assertTokenInRepository(TOKEN_ID, true, CREATE_TIMESTAMP, wipeTimestamp, SYMBOL, 1);
         assertThat(nftRepository.findAll()).containsExactlyInAnyOrder(expectedNft1, expectedNft2);
 
-        var listAssert = assertThat(contractLogRepository.findAll())
-                .hasSize(4);
-
-        listAssert.extracting(ContractLog::getPayerAccountId).containsOnly(PAYER_ACCOUNT_ID);
-        listAssert.extracting(ContractLog::getContractId).containsOnly(EntityId.of(TOKEN_ID));
-        listAssert.extracting(ContractLog::getRootContractId)
-                .containsOnly(EntityId.of(TOKEN_ID));
-        listAssert.extracting(ContractLog::getConsensusTimestamp).containsAnyOf(mintTimestamp, approveAllowanceTimestamp, wipeTimestamp);
-        listAssert.extracting(ContractLog::getIndex).containsExactlyInAnyOrder(0, 1, 0, 0);
-        listAssert.extracting(ContractLog::getTopic0).containsExactlyInAnyOrder(TRANSFER_SIGNATURE, TRANSFER_SIGNATURE, APPROVE_SIGNATURE, TRANSFER_SIGNATURE);
+        assertThat(contractLogRepository.findById(new ContractLog.Id(mintTimestamp, 0))).get()
+                .returns(mintTimestamp, from(ContractLog::getConsensusTimestamp))
+                .returns(PAYER_ACCOUNT_ID, from(ContractLog::getPayerAccountId))
+                .returns(EntityId.of(TOKEN_ID), from(ContractLog::getContractId))
+                .returns(EntityId.of(TOKEN_ID), from(ContractLog::getRootContractId))
+                .returns(TRANSFER_SIGNATURE, from(ContractLog::getTopic0))
+                .returns(Bytes.ofUnsignedLong(0).toArray(), from(ContractLog::getTopic1))
+                .returns(Bytes.ofUnsignedLong(PAYER.getAccountNum()).toArray(), from(ContractLog::getTopic2))
+                .returns(Bytes.ofUnsignedLong(SERIAL_NUMBER_1).toArray(), from(ContractLog::getData));
     }
 
     @Test

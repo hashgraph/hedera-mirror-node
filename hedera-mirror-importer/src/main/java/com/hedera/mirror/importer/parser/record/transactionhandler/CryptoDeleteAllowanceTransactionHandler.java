@@ -65,8 +65,10 @@ class CryptoDeleteAllowanceTransactionHandler implements TransactionHandler {
         List<NftRemoveAllowance> nftAllowances = recordItem.getTransactionBody().getCryptoDeleteAllowance().getNftAllowancesList();
         for (int i = 0; i < recordItem.getTransactionBody().getCryptoDeleteAllowance().getNftAllowancesCount(); i++) {
             NftRemoveAllowance nftRemoveAllowance = nftAllowances.get(i);
-            var tokenId = EntityId.of(nftRemoveAllowance.getTokenId());
-            var ownerId = EntityId.of(nftRemoveAllowance.getOwner());
+            EntityId ownerId = EntityId.of(nftRemoveAllowance.getOwner());
+            EntityId tokenId = EntityId.of(nftRemoveAllowance.getTokenId());
+
+            ownerId = EntityId.isEmpty(ownerId) ? recordItem.getPayerAccountId() : ownerId;
             for (var serialNumber : nftRemoveAllowance.getSerialNumbersList()) {
                 var nft = new Nft(serialNumber, tokenId);
                 nft.setModifiedTimestamp(recordItem.getConsensusTimestamp());

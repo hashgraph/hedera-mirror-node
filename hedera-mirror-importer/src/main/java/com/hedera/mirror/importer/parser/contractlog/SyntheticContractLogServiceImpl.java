@@ -39,7 +39,7 @@ public class SyntheticContractLogServiceImpl implements SyntheticContractLogServ
 
     private final EntityListener entityListener;
     private final EntityProperties entityProperties;
-    private final byte[] EMPTY_BLOOM = Bytes.of(0).toArray();
+    private final byte[] emptyBloom = Bytes.of(0).toArray();
     @Override
     public void create(SyntheticContractLog log) {
         if (isContract(log.getRecordItem()) || !entityProperties.getPersist().isSyntheticContractLogs()) {
@@ -47,11 +47,11 @@ public class SyntheticContractLogServiceImpl implements SyntheticContractLogServ
         }
 
         long consensusTimestamp = log.getRecordItem().getConsensusTimestamp();
-        int logIndex = log.getRecordItem().incrementLogIndex();
+        int logIndex = log.getRecordItem().getAndIncrementLogIndex();
 
         ContractLog contractLog = new ContractLog();
 
-        contractLog.setBloom(EMPTY_BLOOM);
+        contractLog.setBloom(emptyBloom);
         contractLog.setConsensusTimestamp(consensusTimestamp);
         contractLog.setContractId(log.getEntityId());
         contractLog.setData(log.getData());

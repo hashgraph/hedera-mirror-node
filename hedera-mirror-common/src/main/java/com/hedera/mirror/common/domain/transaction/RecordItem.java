@@ -92,10 +92,8 @@ public class RecordItem implements StreamItem {
     @Getter(PRIVATE)
     private final AtomicInteger logIndex = new AtomicInteger(0);
 
-    public int incrementLogIndex() {
-        int currentValue = logIndex.intValue();
-        logIndex.incrementAndGet();
-        return currentValue;
+    public int getAndIncrementLogIndex() {
+        return logIndex.getAndIncrement();
     }
 
     @NonFinal
