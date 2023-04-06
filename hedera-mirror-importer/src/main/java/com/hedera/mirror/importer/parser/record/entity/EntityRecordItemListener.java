@@ -379,19 +379,24 @@ public class EntityRecordItemListener implements RecordItemListener {
                 entityListener.onToken(token);
             }
 
-            logTokenEvents(recordItem, tokenId, tokenTransfers, isWipeOrBurn, isMint, isSingleTransfer, i, accountId,
-                    amount);
+            logTokenEvents(recordItem, tokenId, isWipeOrBurn, isMint, accountId, amount);
+
+            logTokenTransfers(recordItem, tokenId, tokenTransfers, isSingleTransfer, i, accountId, amount);
         }
     }
 
-    private void logTokenEvents(RecordItem recordItem, EntityId tokenId, List<AccountAmount> tokenTransfers,
-                           boolean isWipeOrBurn, boolean isMint, boolean isSingleTransfer, int i, EntityId accountId, long amount) {
+    private void logTokenEvents(RecordItem recordItem, EntityId tokenId, boolean isWipeOrBurn, boolean isMint,
+                           EntityId accountId, long amount) {
         if (isMint || isWipeOrBurn) {
             EntityId senderId = amount < 0 ? accountId : EntityId.EMPTY;
             EntityId receiverId = amount > 0 ? accountId : EntityId.EMPTY;
-            syntheticContractLogService.create(new TransferContractLog(recordItem, tokenId, senderId, receiverId, Math.abs(amount)));
+            syntheticContractLogService.create(new TransferContractLog(recordItem, tokenId, senderId, receiverId,
+                    Math.abs(amount)));
         }
+    }
 
+    private void logTokenTransfers(RecordItem recordItem, EntityId tokenId, List<AccountAmount> tokenTransfers,
+                                   boolean isSingleTransfer, int i, EntityId accountId, long amount) {
         if (isSingleTransfer && amount > 0) {
             EntityId senderId = i == 0 ? EntityId.of(tokenTransfers.get(1).getAccountID()) : EntityId.of(tokenTransfers.get(0).getAccountID());
             syntheticContractLogService.create(new TransferContractLog(recordItem, tokenId, senderId, accountId, amount));
