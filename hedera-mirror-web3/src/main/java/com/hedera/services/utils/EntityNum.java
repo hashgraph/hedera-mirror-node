@@ -26,8 +26,6 @@ import static com.hedera.services.utils.BitPackUtils.numFromCode;
 import static com.hedera.services.utils.BitPackUtils.perm64;
 import static com.hedera.services.utils.EntityIdUtils.numFromEvmAddress;
 
-import com.hedera.services.store.models.Id;
-
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.ScheduleID;
@@ -36,10 +34,11 @@ import com.hederahashgraph.api.proto.java.TopicID;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import org.hyperledger.besu.datatypes.Address;
 
+import com.hedera.services.store.models.Id;
 
 /**
- * An integer whose {@code hashCode()} implementation vastly reduces the risk of hash collisions in
- * structured data using this type, when compared to the {@code java.lang.Integer} boxed type.
+ * An integer whose {@code hashCode()} implementation vastly reduces the risk of hash collisions in structured data
+ * using this type, when compared to the {@code java.lang.Integer} boxed type.
  */
 public class EntityNum implements Comparable<EntityNum> {
     public static final EntityNum MISSING_NUM = new EntityNum(0);
@@ -177,10 +176,8 @@ public class EntityNum implements Comparable<EntityNum> {
     }
 
     static boolean areValidNums(final long shard, final long realm) {
-        return isValidNum(shard) && isValidNum(realm);
+        return shard == 0 && realm == 0;
     }
-
-
 
     @Override
     public String toString() {
