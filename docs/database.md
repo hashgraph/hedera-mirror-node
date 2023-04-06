@@ -201,6 +201,16 @@ transactions in the balance and record streams. These issues should only appear 
   
 ## Database migration from V1 to V2
 
+[Citus](https://github.com/citusdata/citus) is the database engine to use with the V2 schema.
+
+The following table is the recommended configuration for a production Citus cluster. Note the storage size is an
+estimation for all mainnet data since OA till 04/2023.
+
+| Node Type   | Count | vCPU | Memory | Disk Storage |
+|-------------|-------|------|--------|--------------|
+| Coordinator | 3     | 4    | 26 GB  | 256 GB       |
+| Worker      | 3     | 4    | 26 GB  | 5 TB         |
+
 Following are the prerequisites and steps for migrating V1 data to V2.
 
 1. Create a Citus cluster with enough resources (Disk, CPU and memory).
@@ -214,11 +224,3 @@ Following are the prerequisites and steps for migrating V1 data to V2.
 6. Run the [migration.sh](/hedera-mirror-importer/src/main/resources/db/scripts/v2/migration.sh) script.
 7. Stop the [Importer](/docs/importer/README.md) process.
 8. Update the Importer to point to the new Citus DB and start it.
-
-The recommended configuration for a production Citus cluster. Note the storage size depends on the amount of data to
-ingest and keep.
-
-| Node Type   | Count | vCPU | Memory | Disk Storage |
-|-------------|-------|------|--------|--------------|
-| Coordinator | 1     | 4    | 26 GB  | 64 GB        |
-| Worker      | 3     | 4    | 26 GB  | 512 GB       |
