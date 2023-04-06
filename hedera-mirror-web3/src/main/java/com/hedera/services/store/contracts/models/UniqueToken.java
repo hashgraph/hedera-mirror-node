@@ -16,6 +16,9 @@
 package com.hedera.services.store.contracts.models;
 
 import com.google.common.base.MoreObjects;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
 
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.services.state.submerkle.RichInstant;
@@ -26,6 +29,9 @@ import com.hedera.services.state.submerkle.RichInstant;
  * <p>Operations are validated, and throw a {@link InvalidTransactionException} with response code
  * capturing the failure when one occurs.
  */
+@Getter
+@AllArgsConstructor
+@Builder(toBuilder = true)
 public class UniqueToken {
     private Id tokenId;
     private long serialNumber;
@@ -35,19 +41,6 @@ public class UniqueToken {
     private byte[] metadata;
     private NftId nftId;
 
-    public UniqueToken(Id tokenId, long serialNumber) {
-        this.tokenId = tokenId;
-        this.serialNumber = serialNumber;
-        this.nftId = new NftId(tokenId.shard(), tokenId.realm(), tokenId.num(), serialNumber);
-    }
-
-    public UniqueToken(Id tokenId, long serialNumber, Id owner) {
-        this.tokenId = tokenId;
-        this.serialNumber = serialNumber;
-        this.owner = owner;
-        this.nftId = new NftId(tokenId.shard(), tokenId.realm(), tokenId.num(), serialNumber);
-    }
-
     public UniqueToken(Id tokenId, long serialNumber, RichInstant creationTime, Id owner, byte[] metadata) {
         this.tokenId = tokenId;
         this.serialNumber = serialNumber;
@@ -55,64 +48,6 @@ public class UniqueToken {
         this.owner = owner;
         this.metadata = metadata;
         this.nftId = new NftId(tokenId.shard(), tokenId.realm(), tokenId.num(), serialNumber);
-    }
-
-    public NftId getNftId() {
-        return nftId;
-    }
-
-    public Id getTokenId() {
-        return tokenId;
-    }
-
-    // only used in unit tests
-    public void setTokenId(Id tokenId) {
-        this.tokenId = tokenId;
-    }
-
-    public long getSerialNumber() {
-        return serialNumber;
-    }
-
-    // only used in unit tests
-    public void setSerialNumber(long serialNumber) {
-        this.serialNumber = serialNumber;
-    }
-
-    public RichInstant getCreationTime() {
-        return creationTime;
-    }
-
-    public void setCreationTime(RichInstant creationTime) {
-        this.creationTime = creationTime;
-    }
-
-    public Id getOwner() {
-        return owner;
-    }
-
-    public void setOwner(Id owner) {
-        this.owner = owner;
-    }
-
-    public Id getSpender() {
-        return spender;
-    }
-
-    public void setSpender(Id spender) {
-        this.spender = spender;
-    }
-
-    public byte[] getMetadata() {
-        return metadata;
-    }
-
-    public void setMetadata(byte[] metadata) {
-        this.metadata = metadata;
-    }
-
-    public void clearSpender() {
-        this.spender = Id.DEFAULT;
     }
 
     @Override

@@ -26,7 +26,7 @@ import com.hedera.services.state.submerkle.RichInstant;
 class UniqueTokenTest {
     @Test
     void objectContractWorks() {
-        var subj = new UniqueToken(Id.DEFAULT, 1);
+        var subj = UniqueToken.builder().tokenId(Id.DEFAULT).serialNumber(1).build();
         assertEquals(1, subj.getSerialNumber());
         assertEquals(Id.DEFAULT, subj.getTokenId());
 
@@ -34,15 +34,15 @@ class UniqueTokenTest {
         subj = new UniqueToken(Id.DEFAULT, 1, RichInstant.MISSING_INSTANT, new Id(1, 2, 3), new byte[] {111, 23, 85});
         assertEquals(RichInstant.MISSING_INSTANT, subj.getCreationTime());
         assertEquals(new Id(1, 2, 3), subj.getOwner());
-        subj.setSerialNumber(2);
+        subj = subj.toBuilder().serialNumber(2).build();
         assertEquals(2, subj.getSerialNumber());
 
         metadata = new byte[] {1, 2, 3};
-        subj.setMetadata(metadata);
+        subj = subj.toBuilder().metadata(metadata).build();
         assertEquals(metadata, subj.getMetadata());
-        subj.setTokenId(Id.DEFAULT);
+        subj = subj.toBuilder().tokenId(Id.DEFAULT).build();
         assertEquals(Id.DEFAULT, subj.getTokenId());
-        subj.setCreationTime(RichInstant.MISSING_INSTANT);
+        subj = subj.toBuilder().creationTime(RichInstant.MISSING_INSTANT).build();
         assertEquals(RichInstant.MISSING_INSTANT, subj.getCreationTime());
     }
 
@@ -52,11 +52,8 @@ class UniqueTokenTest {
         final var owner1 = asModelId("0.0.12346");
         final var spender1 = asModelId("0.0.12347");
         final var meta1 = "aa".getBytes(StandardCharsets.UTF_8);
-        final var subject = new UniqueToken(token1, 1L);
-        subject.setOwner(owner1);
-        subject.setSpender(spender1);
-        subject.setMetadata(meta1);
-        subject.setCreationTime(RichInstant.MISSING_INSTANT);
+        final var subject = UniqueToken.builder().tokenId(token1).serialNumber(1L).owner(owner1).spender(spender1)
+                .metadata(meta1).creationTime(RichInstant.MISSING_INSTANT).build();
 
         final var expected = "UniqueToken{tokenID=0.0.12345, serialNum=1, metadata=[97, 97],"
                 + " creationTime=RichInstant{seconds=0, nanos=0}, owner=0.0.12346,"
