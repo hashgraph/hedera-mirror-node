@@ -49,6 +49,7 @@ public class CustomFeeRepositoryImpl implements CustomFeeRepositoryExtra{
        rowMapper = new DataClassRowMapper<>(CustomFee.class);
        rowMapper.setConversionService(defaultConversionService);
    }
+
     @Override
     public List<CustomFee> findByTokenId(Long tokenId) {
         final var parameters = new MapSqlParameterSource("tokenId", tokenId);
