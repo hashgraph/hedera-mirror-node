@@ -25,6 +25,10 @@ import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
 import com.google.common.collect.Range;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.UnknownFieldSet;
+
+import com.hedera.mirror.importer.parser.contractlog.SyntheticContractLogService;
+import com.hedera.mirror.importer.parser.contractlog.TransferContractLog;
+
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.NftTransfer;
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
@@ -84,6 +88,7 @@ public class EntityRecordItemListener implements RecordItemListener {
     private final EntityProperties entityProperties;
     private final NonFeeTransferExtractionStrategy nonFeeTransfersExtractor;
     private final TransactionHandlerFactory transactionHandlerFactory;
+    private final SyntheticContractLogService syntheticContractLogService;
 
     @Override
     public void onItem(RecordItem recordItem) throws ImporterException {
@@ -294,14 +299,14 @@ public class EntityRecordItemListener implements RecordItemListener {
         return null;
     }
 
-    private AccountAmount findAccountAmount(Predicate<AccountAmount> accountAmountPredicate, TokenID tokenId,
+    private AccountAmount findAccountAmount(Predicate<AccountAmount> accountAmountPredicate, EntityId tokenId,
                                             TransactionBody body) {
         if (!body.hasCryptoTransfer()) {
             return null;
         }
         List<TokenTransferList> tokenTransfersLists = body.getCryptoTransfer().getTokenTransfersList();
         for (TokenTransferList transferList : tokenTransfersLists) {
-            if (!transferList.getToken().equals(tokenId)) {
+            if (!EntityId.of(transferList.getToken()).equals(tokenId)) {
                 continue;
             }
             for (AccountAmount aa : transferList.getTransfersList()) {
@@ -337,52 +342,90 @@ public class EntityRecordItemListener implements RecordItemListener {
     }
 
     private void insertFungibleTokenTransfers(
-            long consensusTimestamp, TransactionBody body, boolean isTokenDissociate,
-            TokenID tokenId, EntityId entityTokenId, EntityId payerAccountId, List<AccountAmount> tokenTransfers) {
-        boolean isDeletedTokenDissociate = isTokenDissociate && tokenTransfers.size() == 1;
-        for (AccountAmount accountAmount : tokenTransfers) {
+            RecordItem recordItem, EntityId tokenId,
+            EntityId payerAccountId, List<AccountAmount> tokenTransfers) {
+        long consensusTimestamp = recordItem.getConsensusTimestamp();
+        TransactionBody body = recordItem.getTransactionBody();
+        boolean isTokenDissociate = body.hasTokenDissociate();
+        int tokenTransferCount = tokenTransfers.size();
+
+        boolean isDeletedTokenDissociate = isTokenDissociate && tokenTransferCount == 1;
+
+        boolean isWipeOrBurn = recordItem.getTransactionType() == TransactionType.TOKENBURN.getProtoId() || recordItem.getTransactionType() == TransactionType.TOKENWIPE.getProtoId();
+        boolean isMint = recordItem.getTransactionType() == TransactionType.TOKENMINT.getProtoId();
+        boolean isSingleTransfer = tokenTransferCount == 2;
+
+        for (int i = 0; i < tokenTransferCount; i++) {
+            AccountAmount accountAmount = tokenTransfers.get(i);
             EntityId accountId = EntityId.of(accountAmount.getAccountID());
             long amount = accountAmount.getAmount();
             TokenTransfer tokenTransfer = new TokenTransfer();
             tokenTransfer.setAmount(amount);
             tokenTransfer.setDeletedTokenDissociate(isDeletedTokenDissociate);
-            tokenTransfer.setId(new TokenTransfer.Id(consensusTimestamp, entityTokenId, accountId));
+            tokenTransfer.setId(new TokenTransfer.Id(consensusTimestamp, tokenId, accountId));
             tokenTransfer.setIsApproval(false);
             tokenTransfer.setPayerAccountId(payerAccountId);
 
-            // If a record AccountAmount with amount < 0 is not in the body;
-            // but an AccountAmount with the same (TokenID, AccountID) combination is in the body with is_approval=true,
-            // then again set is_approval=true
-            if (amount < 0) {
-
-                // Is the accountAmount from the record also inside a body's transfer list for the given tokenId?
-                AccountAmount accountAmountInsideTransferList =
-                        findAccountAmount(
-                                accountAmount::equals, tokenId, body);
-                if (accountAmountInsideTransferList == null) {
-
-                    // Is there any account amount inside the body's transfer list for the given tokenId
-                    // with the same accountId as the accountAmount from the record?
-                    AccountAmount accountAmountWithSameIdInsideBody = findAccountAmount(
-                            aa -> aa.getAccountID().equals(accountAmount.getAccountID()) && aa.getIsApproval(),
-                            tokenId, body);
-                    if (accountAmountWithSameIdInsideBody != null) {
-                        tokenTransfer.setIsApproval(true);
-                    }
-                } else {
-                    tokenTransfer.setIsApproval(accountAmountInsideTransferList.getIsApproval());
-                }
-            }
+            handleNegativeAccountAmounts(tokenId, body, accountAmount, amount, tokenTransfer);
             entityListener.onTokenTransfer(tokenTransfer);
 
             if (isDeletedTokenDissociate) {
                 // for the token transfer of a deleted token in a token dissociate transaction, the amount is negative
                 // to bring the account's balance of the token to 0. Set the totalSupply of the token object to the
                 // negative amount, later in the pipeline the token total supply will be reduced accordingly
-                Token token = Token.of(entityTokenId);
+                Token token = Token.of(tokenId);
                 token.setModifiedTimestamp(consensusTimestamp);
                 token.setTotalSupply(accountAmount.getAmount());
                 entityListener.onToken(token);
+            }
+
+            logTokenEvents(recordItem, tokenId, isWipeOrBurn, isMint, accountId, amount);
+
+            logTokenTransfers(recordItem, tokenId, tokenTransfers, isSingleTransfer, i, accountId, amount);
+        }
+    }
+
+    private void logTokenEvents(RecordItem recordItem, EntityId tokenId, boolean isWipeOrBurn, boolean isMint,
+                           EntityId accountId, long amount) {
+        if (isMint || isWipeOrBurn) {
+            EntityId senderId = amount < 0 ? accountId : EntityId.EMPTY;
+            EntityId receiverId = amount > 0 ? accountId : EntityId.EMPTY;
+            syntheticContractLogService.create(new TransferContractLog(recordItem, tokenId, senderId, receiverId,
+                    Math.abs(amount)));
+        }
+    }
+
+    private void logTokenTransfers(RecordItem recordItem, EntityId tokenId, List<AccountAmount> tokenTransfers,
+                                   boolean isSingleTransfer, int i, EntityId accountId, long amount) {
+        if (isSingleTransfer && amount > 0) {
+            EntityId senderId = i == 0 ? EntityId.of(tokenTransfers.get(1).getAccountID()) : EntityId.of(tokenTransfers.get(0).getAccountID());
+            syntheticContractLogService.create(new TransferContractLog(recordItem, tokenId, senderId, accountId, amount));
+        }
+    }
+
+    private void handleNegativeAccountAmounts(EntityId tokenId, TransactionBody body, AccountAmount accountAmount, long amount,
+                           TokenTransfer tokenTransfer) {
+        // If a record AccountAmount with amount < 0 is not in the body;
+        // but an AccountAmount with the same (TokenID, AccountID) combination is in the body with is_approval=true,
+        // then again set is_approval=true
+        if (amount < 0) {
+
+            // Is the accountAmount from the record also inside a body's transfer list for the given tokenId?
+            AccountAmount accountAmountInsideTransferList =
+                    findAccountAmount(
+                            accountAmount::equals, tokenId, body);
+            if (accountAmountInsideTransferList == null) {
+
+                // Is there any account amount inside the body's transfer list for the given tokenId
+                // with the same accountId as the accountAmount from the record?
+                AccountAmount accountAmountWithSameIdInsideBody = findAccountAmount(
+                        aa -> aa.getAccountID().equals(accountAmount.getAccountID()) && aa.getIsApproval(),
+                        tokenId, body);
+                if (accountAmountWithSameIdInsideBody != null) {
+                    tokenTransfer.setIsApproval(true);
+                }
+            } else {
+                tokenTransfer.setIsApproval(accountAmountInsideTransferList.getIsApproval());
             }
         }
     }
@@ -391,31 +434,32 @@ public class EntityRecordItemListener implements RecordItemListener {
         if (!entityProperties.getPersist().isTokens()) {
             return;
         }
-
-        long consensusTimestamp = recordItem.getConsensusTimestamp();
-        TransactionBody body = recordItem.getTransactionBody();
-        boolean isTokenDissociate = body.hasTokenDissociate();
-
-        recordItem.getTransactionRecord().getTokenTransferListsList().forEach(tokenTransferList -> {
+        for (int i = 0; i < recordItem.getTransactionRecord().getTokenTransferListsCount(); i++) {
+            TokenTransferList tokenTransferList = recordItem.getTransactionRecord().getTokenTransferLists(i);
             TokenID tokenId = tokenTransferList.getToken();
             EntityId entityTokenId = EntityId.of(tokenId);
             EntityId payerAccountId = recordItem.getPayerAccountId();
 
-            insertFungibleTokenTransfers(
-                    consensusTimestamp, body, isTokenDissociate,
-                    tokenId, entityTokenId, payerAccountId,
-                    tokenTransferList.getTransfersList());
+            if (tokenTransferList.getTransfersCount() > 0) {
+                insertFungibleTokenTransfers(
+                        recordItem, entityTokenId, payerAccountId,
+                        tokenTransferList.getTransfersList());
+            }
 
-            insertNonFungibleTokenTransfers(
-                    consensusTimestamp, body, tokenId, entityTokenId,
-                    payerAccountId, tokenTransferList.getNftTransfersList());
-        });
+            if (tokenTransferList.getNftTransfersCount() > 0) {
+                insertNonFungibleTokenTransfers(
+                        recordItem, tokenId, entityTokenId,
+                        payerAccountId, tokenTransferList.getNftTransfersList());
+            }
+        }
     }
 
     private void insertNonFungibleTokenTransfers(
-            long consensusTimestamp, TransactionBody body, TokenID tokenId,
-            EntityId entityTokenId, EntityId payerAccountId,
+            RecordItem recordItem, TokenID tokenId, EntityId entityTokenId, EntityId payerAccountId,
             List<com.hederahashgraph.api.proto.java.NftTransfer> nftTransfersList) {
+        long consensusTimestamp = recordItem.getConsensusTimestamp();
+        TransactionBody body = recordItem.getTransactionBody();
+
         for (NftTransfer nftTransfer : nftTransfersList) {
             long serialNumber = nftTransfer.getSerialNumber();
             EntityId receiverId = EntityId.of(nftTransfer.getReceiverAccountID());
@@ -437,6 +481,8 @@ public class EntityRecordItemListener implements RecordItemListener {
             if (!EntityId.isEmpty(receiverId)) {
                 transferNftOwnership(consensusTimestamp, serialNumber, entityTokenId, receiverId);
             }
+            syntheticContractLogService
+                    .create(new TransferContractLog(recordItem, entityTokenId, senderId, receiverId, serialNumber));
         }
     }
 
