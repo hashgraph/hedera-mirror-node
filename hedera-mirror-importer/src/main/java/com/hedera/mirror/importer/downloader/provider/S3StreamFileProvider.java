@@ -112,12 +112,15 @@ public final class S3StreamFileProvider implements StreamFileProvider {
 
     //Get the bucket path. This should not be called if the pathRefreshInterval has not passed.
    private String getBucketPath(ConsensusNode consensusNode, StreamFilename streamFilename) {
-        if(commonDownloaderProperties.getPathType().equals(NODE_ID)) {
-            return getNodeIdBasedPrefix(consensusNode, streamFilename);
-        } else if(commonDownloaderProperties.getPathType().equals(AUTO)) {
-            return autoAlgorithm(consensusNode, streamFilename);
-        } else { // This is the ACCOUNT_ID case
-            return getPrefix(consensusNode, streamFilename);
+        var pathType = commonDownloaderProperties.getPathType();
+        log.info("PATH type is:{}", pathType);
+        switch(pathType) {
+            case NODE_ID:
+                return getNodeIdBasedPrefix(consensusNode, streamFilename);
+            case AUTO:
+                return autoAlgorithm(consensusNode, streamFilename);
+            default: // This is the ACCOUNT_ID case
+                return getPrefix(consensusNode, streamFilename);
         }
     }
 
@@ -127,10 +130,14 @@ public final class S3StreamFileProvider implements StreamFileProvider {
             return getPrefix(consensusNode, streamFilename);
         }
         commonDownloaderProperties.setPathType(ACCOUNT_ID);
-        var count = list(consensusNode, streamFilename)
-                                .count()
-                                .block();
-        //Handle the exception here if this count fails
+        long count = 0;
+        try {
+            count = list(consensusNode, streamFilename)
+                    .count()
+                    .block();
+        } catch (Exception e) {
+            log.warn("Unable to list from account based bucket path {}", e);
+        }
         if (count > 0) {
             pathExpirationTimestamp = System.currentTimeMillis() + commonDownloaderProperties.getPathRefreshInterval().toMillis();
             commonDownloaderProperties.setPathType(AUTO);

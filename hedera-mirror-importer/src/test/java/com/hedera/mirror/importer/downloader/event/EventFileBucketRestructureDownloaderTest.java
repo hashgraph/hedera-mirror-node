@@ -20,11 +20,9 @@ package com.hedera.mirror.importer.downloader.event;
  * ‍
  */
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.TestUtils;
-import com.hedera.mirror.importer.downloader.AbstractLinkedStreamDownloaderTest;
+import com.hedera.mirror.importer.downloader.AbstractBucketRestructureDownloaderTest;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
@@ -40,10 +38,12 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 
-class EventFileBucketRestructureDownloaderTest extends AbstractLinkedStreamDownloaderTest {
+class EventFileBucketRestructureDownloaderTest extends AbstractBucketRestructureDownloaderTest {
 
     protected String file3;
     protected String file4;
+
+    protected Path testnet = Path.of("testnet", "0");
     @Override
     @BeforeEach
     protected void beforeEach() {
@@ -51,7 +51,6 @@ class EventFileBucketRestructureDownloaderTest extends AbstractLinkedStreamDownl
         setTestFilesAndInstants(List.of("2020-04-11T04_51_35.001934Z.evts", "2020-04-11T04_51_40.471976Z.evts"));
         file3 = "2020-04-11T04_51_45.028997Z.evts";
         file4 = "2020-04-11T04_51_50.017047Z.evts";
-        fileCopier = FileCopier.create(TestUtils.getResource("data").toPath(), s3Path);
     }
 
     @Override
@@ -75,31 +74,39 @@ class EventFileBucketRestructureDownloaderTest extends AbstractLinkedStreamDownl
     }
 
     @Test
-    @DisplayName("Download and verify files from old bucket")
-    void downloadFiles() {
-        mirrorProperties.setStartBlockNumber(null);
-        fileCopier.from(getTestDataDir())
-                .to(commonDownloaderProperties.getBucketName(), streamType.getPath())
-                .copy();
-        expectLastStreamFile(Instant.EPOCH);
-        downloader.download();
-        verifyForSuccess();
-        assertThat(downloaderProperties.getStreamPath()).doesNotExist();
-
-    }
-
-    @Test
     @DisplayName("Download and verify files from new bucket")
     void downloadFilesFromNewPath() {
             // Changing bucket Path
-            commonDownloaderProperties.setPathType(CommonDownloaderProperties.PathType.NODE_ID);
-            fileCopier.from(Path.of("integration", "0"))
-                    .to(commonDownloaderProperties.getBucketName(), Path.of("testnet","0").toString())
-                    .copy();
-            expectLastStreamFile(Instant.EPOCH);
-            downloader.download();
-            verifyForSuccess(List.of(file3, file4));
+        commonDownloaderProperties.setPathType(CommonDownloaderProperties.PathType.NODE_ID);
+        fileCopier.from(testnet)
+                .to(commonDownloaderProperties.getBucketName(), testnet.toString())
+                .copy();
+        expectLastStreamFile(file2Instant);
+        downloader.download();
+        verifyStreamFiles(List.of(file3, file4));
     }
+
+    @Test
+    @DisplayName("Download and verify files from new bucket in Auto Mode")
+    void downloadFilesFromNewPathAutoMode() {
+        // Changing bucket Path
+        commonDownloaderProperties.setPathType(CommonDownloaderProperties.PathType.AUTO);
+        //Reducing the pathRefresh interval to realistically test the node_id based path
+        commonDownloaderProperties.setPathRefreshInterval(Duration.ofMillis(100));
+        fileCopier.from(getTestDataDir())
+                .to(commonDownloaderProperties.getBucketName(), streamType.getPath())
+                .copy();
+        fileCopier.from(testnet)
+                .to(commonDownloaderProperties.getBucketName(), testnet.toString())
+                .copy();
+        expectLastStreamFile(Instant.EPOCH);
+        downloader.download();
+        verifyStreamFiles(List.of(file1, file2));
+        expectLastStreamFile(file2Instant);
+        downloader.download();
+        verifyStreamFiles(List.of(file3, file4));
+    }
+
 
     @Override
     protected Duration getCloseInterval() {
