@@ -25,6 +25,8 @@ import static com.hedera.services.utils.BitPackUtils.isValidNum;
 import static com.hedera.services.utils.BitPackUtils.numFromCode;
 import static com.hedera.services.utils.BitPackUtils.perm64;
 import static com.hedera.services.utils.EntityIdUtils.numFromEvmAddress;
+import static com.hedera.services.utils.EntityIdUtils.realmFromEvmAddress;
+import static com.hedera.services.utils.EntityIdUtils.shardFromEvmAddress;
 
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
@@ -77,6 +79,11 @@ public class EntityNum implements Comparable<EntityNum> {
 
     public static EntityNum fromEvmAddress(final Address address) {
         final var bytes = address.toArrayUnsafe();
+        final var shard = shardFromEvmAddress(bytes);
+        final var realm = realmFromEvmAddress(bytes);
+        if (!areValidNums(shard, realm)) {
+            return MISSING_NUM;
+        }
         return fromLong(numFromEvmAddress(bytes));
     }
 
@@ -120,42 +127,6 @@ public class EntityNum implements Comparable<EntityNum> {
         return numFromCode(value);
     }
 
-//    public AccountID toGrpcAccountId() {
-//        return STATIC_PROPERTIES.scopedAccountWith(numFromCode(value));
-//    }
-//
-//    public EntityId toEntityId() {
-//        return STATIC_PROPERTIES.scopedEntityIdWith(numFromCode(value));
-//    }
-//
-//    public Id toId() {
-//        return STATIC_PROPERTIES.scopedIdWith(numFromCode(value));
-//    }
-//
-//    public ContractID toGrpcContractID() {
-//        return STATIC_PROPERTIES.scopedContractIdWith(numFromCode(value));
-//    }
-//
-//    public TokenID toGrpcTokenId() {
-//        return STATIC_PROPERTIES.scopedTokenWith(numFromCode(value));
-//    }
-//
-//    public ScheduleID toGrpcScheduleId() {
-//        return STATIC_PROPERTIES.scopedScheduleWith(numFromCode(value));
-//    }
-//
-//    public String toIdString() {
-//        return STATIC_PROPERTIES.scopedIdLiteralWith(numFromCode(value));
-//    }
-//
-//    public Address toEvmAddress() {
-//        return Address.wrap(Bytes.wrap(toRawEvmAddress()));
-//    }
-//
-//    public byte[] toRawEvmAddress() {
-//        return asEvmAddress(numFromCode(value));
-//    }
-
     @Override
     public int hashCode() {
         return (int) perm64(value);
@@ -176,6 +147,7 @@ public class EntityNum implements Comparable<EntityNum> {
     }
 
     static boolean areValidNums(final long shard, final long realm) {
+        // TODO this validation should use the WorldState which is not available yet
         return shard == 0 && realm == 0;
     }
 

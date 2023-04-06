@@ -29,21 +29,18 @@ class UniqueTokenTest {
         var subj = UniqueToken.builder().tokenId(Id.DEFAULT).serialNumber(1).build();
         assertEquals(1, subj.getSerialNumber());
         assertEquals(Id.DEFAULT, subj.getTokenId());
-
-        var metadata = new byte[] {107, 117, 114};
-        subj = new UniqueToken(Id.DEFAULT, 1, RichInstant.MISSING_INSTANT, new Id(1, 2, 3), new byte[] {111, 23, 85});
+        var metadata = new byte[] {111, 23, 85};
+        var id = new Id(1, 2, 3);
+        subj = UniqueToken.builder().tokenId(Id.DEFAULT).serialNumber(1).creationTime(RichInstant.MISSING_INSTANT)
+                .owner(id)
+                .metadata(metadata).build();
         assertEquals(RichInstant.MISSING_INSTANT, subj.getCreationTime());
-        assertEquals(new Id(1, 2, 3), subj.getOwner());
-        subj = subj.toBuilder().serialNumber(2).build();
-        assertEquals(2, subj.getSerialNumber());
-
-        metadata = new byte[] {1, 2, 3};
-        subj = subj.toBuilder().metadata(metadata).build();
-        assertEquals(metadata, subj.getMetadata());
-        subj = subj.toBuilder().tokenId(Id.DEFAULT).build();
+        assertEquals(id, subj.getOwner());
+        assertEquals(1, subj.getSerialNumber());
         assertEquals(Id.DEFAULT, subj.getTokenId());
-        subj = subj.toBuilder().creationTime(RichInstant.MISSING_INSTANT).build();
         assertEquals(RichInstant.MISSING_INSTANT, subj.getCreationTime());
+        subj = new UniqueToken(Id.DEFAULT, 1, RichInstant.MISSING_INSTANT, id, metadata);
+        assertEquals(Id.DEFAULT.asEvmAddress(), subj.getAddress());
     }
 
     @Test

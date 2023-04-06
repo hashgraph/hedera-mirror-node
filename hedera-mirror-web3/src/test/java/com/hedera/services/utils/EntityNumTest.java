@@ -17,11 +17,15 @@ package com.hedera.services.utils;
 
 import static com.hedera.services.utils.EntityIdUtils.asAccount;
 import static com.hedera.services.utils.EntityIdUtils.asContract;
+import static com.hedera.services.utils.EntityIdUtils.asEvmAddress;
+import static com.hedera.services.utils.EntityIdUtils.asSchedule;
 import static com.hedera.services.utils.EntityIdUtils.asToken;
 import static com.hedera.services.utils.EntityIdUtils.asTopic;
 import static com.hedera.services.utils.EntityNum.MISSING_NUM;
 import static org.junit.jupiter.api.Assertions.*;
 
+import org.apache.tuweni.bytes.Bytes;
+import org.hyperledger.besu.datatypes.Address;
 import org.junit.jupiter.api.Test;
 
 import com.hedera.services.store.models.Id;
@@ -53,6 +57,7 @@ class EntityNumTest {
         assertEquals(MISSING_NUM, EntityNum.fromLong(Long.MAX_VALUE));
     }
 
+
     @Test
     void factoriesWorkForValidShardRealm() {
         final var expected = EntityNum.fromInt(123);
@@ -60,27 +65,38 @@ class EntityNumTest {
         assertEquals(expected, EntityNum.fromLong(123L));
         assertEquals(expected, EntityNum.fromAccountId(asAccount("0.0.123")));
         assertEquals(expected, EntityNum.fromTokenId(asToken("0.0.123")));
+        assertEquals(expected, EntityNum.fromScheduleId(asSchedule("0.0.123")));
         assertEquals(expected, EntityNum.fromTopicId(asTopic("0.0.123")));
+        assertEquals(expected, EntityNum.fromContractId(asContract("0.0.123")));
         assertEquals(expected, EntityNum.fromModel(new Id(0, 0, 123)));
+        assertEquals(
+                expected, EntityNum.fromEvmAddress(Address.wrap(Bytes.wrap(asEvmAddress(0, 0, 123)))));
     }
 
     @Test
     void factoriesWorkForInvalidShard() {
         assertEquals(MISSING_NUM, EntityNum.fromAccountId(asAccount("1.0.123")));
         assertEquals(MISSING_NUM, EntityNum.fromTokenId(asToken("1.0.123")));
+        assertEquals(MISSING_NUM, EntityNum.fromScheduleId(asSchedule("1.0.123")));
         assertEquals(MISSING_NUM, EntityNum.fromTopicId(asTopic("1.0.123")));
         assertEquals(MISSING_NUM, EntityNum.fromContractId(asContract("1.0.123")));
         assertEquals(MISSING_NUM, EntityNum.fromModel(new Id(1, 0, 123)));
+        assertEquals(
+                MISSING_NUM, EntityNum.fromEvmAddress(Address.wrap(Bytes.wrap(asEvmAddress(1, 0, 123)))));
     }
 
     @Test
     void factoriesWorkForInvalidRealm() {
         assertEquals(MISSING_NUM, EntityNum.fromAccountId(asAccount("0.1.123")));
         assertEquals(MISSING_NUM, EntityNum.fromTokenId(asToken("0.1.123")));
+        assertEquals(MISSING_NUM, EntityNum.fromScheduleId(asSchedule("0.1.123")));
         assertEquals(MISSING_NUM, EntityNum.fromTopicId(asTopic("0.1.123")));
         assertEquals(MISSING_NUM, EntityNum.fromContractId(asContract("0.1.123")));
         assertEquals(MISSING_NUM, EntityNum.fromModel(new Id(0, 1, 123)));
+        assertEquals(
+                MISSING_NUM, EntityNum.fromEvmAddress(Address.wrap(Bytes.wrap(asEvmAddress(0, 1, 123)))));
     }
+
 
     @Test
     void canGetLongValue() {

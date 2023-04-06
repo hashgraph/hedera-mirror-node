@@ -23,6 +23,7 @@ import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.ScheduleID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import com.hederahashgraph.api.proto.java.TopicID;
 import com.swirlds.common.utility.CommonUtils;
@@ -84,6 +85,17 @@ public final class EntityIdUtils {
                 .setShardNum(nativeParts[0])
                 .setRealmNum(nativeParts[1])
                 .setTopicNum(nativeParts[2])
+                .build();
+    }
+
+
+    // copied from IdUtils
+    public static ScheduleID asSchedule(String v) {
+        long[] nativeParts = asDotDelimitedLongArray(v);
+        return ScheduleID.newBuilder()
+                .setShardNum(nativeParts[0])
+                .setRealmNum(nativeParts[1])
+                .setScheduleNum(nativeParts[2])
                 .build();
     }
 

@@ -18,7 +18,8 @@ package com.hedera.services.store.models;
 import com.google.common.base.MoreObjects;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Value;
+import org.hyperledger.besu.datatypes.Address;
 
 import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 import com.hedera.services.state.submerkle.RichInstant;
@@ -27,13 +28,15 @@ import com.hedera.services.state.submerkle.RichInstant;
  * Encapsulates the state and operations of a Hedera Unique token.
  *
  * <p>Operations are validated, and throw a {@link InvalidTransactionException} with response code
- * capturing the failure when one occurs.
+ * capturing the failure when one occurs. This model is used as Value in State, which is used as speculative rights
+ * operations.
  */
-@Getter
+@Value
 @AllArgsConstructor
-@Builder(toBuilder = true)
+@Builder
 public class UniqueToken {
     private Id tokenId;
+    private Address address;
     private long serialNumber;
     private RichInstant creationTime;
     private Id owner;
@@ -43,9 +46,11 @@ public class UniqueToken {
 
     public UniqueToken(Id tokenId, long serialNumber, RichInstant creationTime, Id owner, byte[] metadata) {
         this.tokenId = tokenId;
+        this.address = tokenId.asEvmAddress();
         this.serialNumber = serialNumber;
         this.creationTime = creationTime;
         this.owner = owner;
+        this.spender = null;
         this.metadata = metadata;
         this.nftId = new NftId(tokenId.shard(), tokenId.realm(), tokenId.num(), serialNumber);
     }
