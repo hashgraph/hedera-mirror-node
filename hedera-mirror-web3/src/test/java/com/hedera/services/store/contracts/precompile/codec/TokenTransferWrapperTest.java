@@ -25,7 +25,7 @@ import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-import com.hedera.services.store.contracts.models.Id;
+import com.hedera.services.store.models.Id;
 import com.hedera.services.store.contracts.precompile.FungibleTokenTransfer;
 import com.hedera.services.store.contracts.precompile.NftExchange;
 import com.hedera.services.store.contracts.precompile.TokenTransferWrapper;

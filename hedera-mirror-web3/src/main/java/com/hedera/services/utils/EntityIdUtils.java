@@ -16,24 +16,24 @@
 package com.hedera.services.utils;
 
 import static com.hedera.mirror.web3.evm.account.AccountAccessorImpl.EVM_ADDRESS_SIZE;
+import static com.hedera.services.utils.BitPackUtils.numFromCode;
 import static java.lang.System.arraycopy;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
+
+import com.hedera.services.store.models.Id;
+
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TokenID;
-import com.swirlds.common.utility.CommonUtils;
 import java.util.Arrays;
 import java.util.stream.Stream;
+import com.swirlds.common.utility.CommonUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
-import com.hedera.services.store.contracts.models.Id;
-
 public final class EntityIdUtils {
-
-    private static final long MASK_INT_AS_UNSIGNED_LONG = (1L << 32) - 1;
     private static final String CANNOT_PARSE_PREFIX = "Cannot parse '";
 
     private EntityIdUtils() {
@@ -48,9 +48,6 @@ public final class EntityIdUtils {
                 .build();
     }
 
-    /**
-     * Copied from TokenId
-     */
     public static AccountID asAccount(String v) {
         long[] nativeParts = asDotDelimitedLongArray(v);
         return AccountID.newBuilder()
@@ -60,9 +57,6 @@ public final class EntityIdUtils {
                 .build();
     }
 
-    /**
-     * Copied from TokenId
-     */
     public static ContractID asContract(String v) {
         long[] nativeParts = asDotDelimitedLongArray(v);
         return ContractID.newBuilder()
@@ -72,9 +66,6 @@ public final class EntityIdUtils {
                 .build();
     }
 
-    /**
-     * Copied from TokenId
-     */
     public static TokenID asToken(String v) {
         long[] nativeParts = asDotDelimitedLongArray(v);
         return TokenID.newBuilder()
@@ -82,6 +73,12 @@ public final class EntityIdUtils {
                 .setRealmNum(nativeParts[1])
                 .setTokenNum(nativeParts[2])
                 .build();
+    }
+
+
+    public static Id asModelId(String v) {
+        long[] nativeParts = asDotDelimitedLongArray(v);
+        return new Id(nativeParts[0], nativeParts[1], nativeParts[2]);
     }
 
     public static byte[] asEvmAddress(final ContractID id) {
@@ -162,26 +159,11 @@ public final class EntityIdUtils {
         return tokenIdFromEvmAddress(address.toArrayUnsafe());
     }
 
-    /**
-     * Copied from IdUtils
-     */
     public static long[] asDotDelimitedLongArray(String s) {
         String[] parts = s.split("[.]");
         return Stream.of(parts).mapToLong(Long::valueOf).toArray();
     }
 
-    public static String asHexedEvmAddress(final Id id) {
-        return CommonUtils.hex(asEvmAddress((int) id.shard(), id.realm(), id.num()));
-    }
-
-    /**
-     * Returns the {@code AccountID} represented by a literal of the form {@code
-     * <shard>.<realm>.<num>}.
-     *
-     * @param literal the account literal
-     * @return the corresponding id
-     * @throws IllegalArgumentException if the literal is not formatted correctly
-     */
     public static AccountID parseAccount(final String literal) {
         try {
             final var parts = parseLongTriple(literal);
@@ -195,9 +177,6 @@ public final class EntityIdUtils {
         }
     }
 
-    /**
-     * Copied from EntityId
-     */
     public static AccountID toGrpcAccountId(final int code) {
         return AccountID.newBuilder()
                 .setShardNum(0L)
@@ -206,36 +185,12 @@ public final class EntityIdUtils {
                 .build();
     }
 
-    /**
-     * Copied from IdUtils
-     */
-    public static Id asModelId(String v) {
-        long[] nativeParts = asDotDelimitedLongArray(v);
-        return new Id(nativeParts[0], nativeParts[1], nativeParts[2]);
-    }
-
-    /**
-     * copied from MiscUtils
-     * A permutation (invertible function) on 64 bits. The constants were found by automated search, to optimize
-     * avalanche. Avalanche means that for a random number x, flipping bit i of x has about a 50 percent chance of
-     * flipping bit j of perm64(x). For each possible pair (i,j), this function achieves a probability between 49.8 and
-     * 50.2 percent.
-     *
-     * @param x the value to permute
-     * @return the avalanche-optimized permutation
-     */
-    public static long perm64(long x) {
-        // Shifts: {30, 27, 16, 20, 5, 18, 10, 24, 30}
-        x += x << 30;
-        x ^= x >>> 27;
-        x += x << 16;
-        x ^= x >>> 20;
-        x += x << 5;
-        x ^= x >>> 18;
-        x += x << 10;
-        x ^= x >>> 24;
-        x += x << 30;
-        return x;
+    public static TokenID asGrpcToken(final int num) {
+        return TokenID.newBuilder()
+                .setShardNum(0L)
+                .setRealmNum(0L)
+                .setTokenNum(num)
+                .build();
     }
 
     private static long[] parseLongTriple(final String dotDelimited) {
@@ -262,10 +217,7 @@ public final class EntityIdUtils {
         return triple;
     }
 
-    /**
-     * Copied from BitPackUtils
-     */
-    public static long numFromCode(int code) {
-        return code & MASK_INT_AS_UNSIGNED_LONG;
+    public static String asHexedEvmAddress(final Id id) {
+        return CommonUtils.hex(asEvmAddress((int) id.shard(), id.realm(), id.num()));
     }
 }
