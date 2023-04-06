@@ -47,6 +47,7 @@ dependencies {
     testImplementation(project(path = ":common", configuration = "testClasses"))
     testImplementation("com.playtika.testcontainers:embedded-postgresql")
     testImplementation("io.projectreactor:reactor-test")
+    testImplementation("org.mockito:mockito-inline:2.7.21")
     testImplementation("org.flywaydb:flyway-core")
     testImplementation(project(path = ":common", configuration = "testClasses"))
 }
