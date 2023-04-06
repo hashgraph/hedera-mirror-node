@@ -336,7 +336,6 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     private List<CustomFee> getCustomFees(final Address token) {
         final List<CustomFee> customFees = new ArrayList<>();
-
         final var customFeesCollection = customFeeRepositoryimpl.findByTokenId(entityIdNumFromEvmAddress(token));
 
         if (CollectionUtils.isEmpty(customFeesCollection)) {
@@ -358,8 +357,8 @@ public class TokenAccessorImpl implements TokenAccessor {
             final var maximumAmount = requireNonNullElse(customFee.getMaximumAmount(), 0L);
             final var minimumAmount = customFee.getMinimumAmount();
             final var netOfTransfers = requireNonNullElse(customFee.getNetOfTransfers(), false);
-            final long royaltyDenominator =  requireNonNullElse(customFee.getRoyaltyDenominator(), 0L);
-            final long royaltyNumerator =  requireNonNullElse(customFee.getRoyaltyNumerator(), 0L);
+            final long royaltyDenominator = requireNonNullElse(customFee.getRoyaltyDenominator(), 0L);
+            final long royaltyNumerator = requireNonNullElse(customFee.getRoyaltyNumerator(), 0L);
 
             CustomFee customFeeConstructed = new CustomFee();
 
