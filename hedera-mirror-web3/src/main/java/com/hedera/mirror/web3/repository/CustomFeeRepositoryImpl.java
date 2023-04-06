@@ -54,7 +54,6 @@ public class CustomFeeRepositoryImpl implements CustomFeeRepositoryExtra{
     public List<CustomFee> findByTokenId(Long tokenId) {
         final var parameters = new MapSqlParameterSource("tokenId", tokenId);
 
-        return jdbcTemplate.query(SELECT_QUERY,
-                parameters, rowMapper);
+        return jdbcTemplate.query(SELECT_QUERY, parameters, rowMapper);
     }
 }
