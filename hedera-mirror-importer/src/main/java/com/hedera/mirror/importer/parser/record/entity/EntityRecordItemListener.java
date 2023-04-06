@@ -366,29 +366,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             tokenTransfer.setIsApproval(false);
             tokenTransfer.setPayerAccountId(payerAccountId);
 
-            // If a record AccountAmount with amount < 0 is not in the body;
-            // but an AccountAmount with the same (TokenID, AccountID) combination is in the body with is_approval=true,
-            // then again set is_approval=true
-            if (amount < 0) {
-
-                // Is the accountAmount from the record also inside a body's transfer list for the given tokenId?
-                AccountAmount accountAmountInsideTransferList =
-                        findAccountAmount(
-                                accountAmount::equals, tokenId, body);
-                if (accountAmountInsideTransferList == null) {
-
-                    // Is there any account amount inside the body's transfer list for the given tokenId
-                    // with the same accountId as the accountAmount from the record?
-                    AccountAmount accountAmountWithSameIdInsideBody = findAccountAmount(
-                            aa -> aa.getAccountID().equals(accountAmount.getAccountID()) && aa.getIsApproval(),
-                            tokenId, body);
-                    if (accountAmountWithSameIdInsideBody != null) {
-                        tokenTransfer.setIsApproval(true);
-                    }
-                } else {
-                    tokenTransfer.setIsApproval(accountAmountInsideTransferList.getIsApproval());
-                }
-            }
+            handleNegativeAccountAmounts(tokenId, body, accountAmount, amount, tokenTransfer);
             entityListener.onTokenTransfer(tokenTransfer);
 
             if (isDeletedTokenDissociate) {
@@ -410,6 +388,33 @@ public class EntityRecordItemListener implements RecordItemListener {
             if (isSingleTransfer && amount > 0) {
                 EntityId senderId = i == 0 ? EntityId.of(tokenTransfers.get(1).getAccountID()) : EntityId.of(tokenTransfers.get(0).getAccountID());
                 syntheticContractLogService.create(new TransferContractLog(recordItem, tokenId, senderId, accountId, amount));
+            }
+        }
+    }
+
+    private void handleNegativeAccountAmounts(EntityId tokenId, TransactionBody body, AccountAmount accountAmount, long amount,
+                           TokenTransfer tokenTransfer) {
+        // If a record AccountAmount with amount < 0 is not in the body;
+        // but an AccountAmount with the same (TokenID, AccountID) combination is in the body with is_approval=true,
+        // then again set is_approval=true
+        if (amount < 0) {
+
+            // Is the accountAmount from the record also inside a body's transfer list for the given tokenId?
+            AccountAmount accountAmountInsideTransferList =
+                    findAccountAmount(
+                            accountAmount::equals, tokenId, body);
+            if (accountAmountInsideTransferList == null) {
+
+                // Is there any account amount inside the body's transfer list for the given tokenId
+                // with the same accountId as the accountAmount from the record?
+                AccountAmount accountAmountWithSameIdInsideBody = findAccountAmount(
+                        aa -> aa.getAccountID().equals(accountAmount.getAccountID()) && aa.getIsApproval(),
+                        tokenId, body);
+                if (accountAmountWithSameIdInsideBody != null) {
+                    tokenTransfer.setIsApproval(true);
+                }
+            } else {
+                tokenTransfer.setIsApproval(accountAmountInsideTransferList.getIsApproval());
             }
         }
     }
