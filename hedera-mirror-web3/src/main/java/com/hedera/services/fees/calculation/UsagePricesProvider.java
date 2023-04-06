@@ -32,8 +32,9 @@ public interface UsagePricesProvider {
      * Returns the prices in tinyCents that are likely to be required to consume various resources while processing the
      * given operation at the given time. (In principle, the price schedules could change in the interim.)
      *
-     * @param function the operation of interest
-     * @param at       the expected consensus time for the operation
+     * @param function          the operation of interest
+     * @param at                the expected consensus time for the operation
+     * @param feeSchedules      current and next fee schedules
      * @return the estimated prices
      */
     Map<SubType, FeeData> pricesGiven(
