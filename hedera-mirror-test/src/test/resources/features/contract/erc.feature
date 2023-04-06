@@ -1,4 +1,4 @@
-@acceptance @contractbase @fullsuite
+@contractbase @fullsuite
 Feature: ERC Contract Base Coverage Feature
 
     @web3 @erc
