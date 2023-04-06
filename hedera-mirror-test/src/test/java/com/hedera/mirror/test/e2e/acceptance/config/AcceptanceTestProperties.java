@@ -53,7 +53,6 @@ public class AcceptanceTestProperties {
 
     private boolean emitBackgroundMessages = false;
     private boolean contractTraceability = false;
-    private boolean disableTests = false;
 
     @Max(5)
     private int maxRetries = 2;
