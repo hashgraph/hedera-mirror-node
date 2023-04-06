@@ -74,8 +74,6 @@ import com.hedera.mirror.test.e2e.acceptance.props.ExpandedAccountId;
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 public class ERCContractFeature extends AbstractFeature {
 
-    private final AcceptanceTestProperties acceptanceTestProperties;
-
     private static final String ALLOWANCE_SELECTOR = "927da105";
     private static final String BALANCE_OF_SELECTOR = "f7888aec";
     private static final String DECIMALS_SELECTOR = "d449a832";
@@ -109,11 +107,6 @@ public class ERCContractFeature extends AbstractFeature {
 
     @Value("classpath:solidity/artifacts/contracts/ERCTestContract.sol/ERCTestContract.json")
     private Path ercContract;
-
-    @Before
-    public void initialization() {
-        assumeTrue(!acceptanceTestProperties.isDisableTests());
-    }
 
     @After
     public void clean() {
