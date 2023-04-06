@@ -115,7 +115,7 @@ class ContractCallServiceERCTokenTest extends Web3IntegrationTest {
                 .value(0L)
                 .receiver(CONTRACT_ADDRESS)
                 .callData(callData)
-                .providedGasLimit(120000000L)
+                .gas(120000000L)
                 .isStatic(true)
                 .callType(ETH_CALL)
                 .build();
