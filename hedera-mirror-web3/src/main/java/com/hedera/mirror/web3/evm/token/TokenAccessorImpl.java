@@ -35,6 +35,9 @@ import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.
 import static java.util.Objects.requireNonNullElse;
 
 import com.google.protobuf.InvalidProtocolBufferException;
+
+import com.hedera.mirror.web3.repository.CustomFeeRepositoryImpl;
+
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,8 +46,6 @@ import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
-import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.util.CollectionUtils;
 
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
@@ -63,7 +64,6 @@ import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.web3.evm.exception.ParsingException;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
-import com.hedera.mirror.web3.repository.CustomFeeRepository;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.mirror.web3.repository.NftAllowanceRepository;
 import com.hedera.mirror.web3.repository.NftRepository;
@@ -85,16 +85,13 @@ import com.hedera.node.app.service.evm.store.tokens.TokenType;
 @RequiredArgsConstructor
 public class TokenAccessorImpl implements TokenAccessor {
 
-    public static final String SELECT_QUERY ="select * from custom_fee  where token_id = :tokenId and created_timestamp = (select created_timestamp from custom_fee  where token_id = :tokenId order by created_timestamp desc limit 1)";
-    private final NamedParameterJdbcTemplate jdbcTemplate;
-
     private final EntityRepository entityRepository;
     private final TokenRepository tokenRepository;
     private final NftRepository nftRepository;
     private final TokenAccountRepository tokenAccountRepository;
     private final TokenAllowanceRepository tokenAllowanceRepository;
     private final NftAllowanceRepository nftAllowanceRepository;
-    private final CustomFeeRepository customFeeRepository;
+    private final CustomFeeRepositoryImpl customFeeRepositoryimpl;
     private final MirrorNodeEvmProperties properties;
 
     @Override
@@ -340,31 +337,29 @@ public class TokenAccessorImpl implements TokenAccessor {
     private List<CustomFee> getCustomFees(final Address token) {
         final List<CustomFee> customFees = new ArrayList<>();
 
-        final var customFeesCollection = jdbcTemplate.queryForList(SELECT_QUERY,
-                new MapSqlParameterSource()
-                        .addValue("tokenId", entityIdNumFromEvmAddress(token)));
+        final var customFeesCollection = customFeeRepositoryimpl.findByTokenId(entityIdNumFromEvmAddress(token));
 
         if (CollectionUtils.isEmpty(customFeesCollection)) {
             return customFees;
         }
 
         for (final var customFee : customFeesCollection) {
-            final var collectorId = customFee.get("collector_account_id") == null ? null :  EntityId.of((long) customFee.get("collector_account_id"), EntityType.ACCOUNT);
+            final var collectorId = customFee.getCollectorAccountId();
             if (collectorId == null) {
                 continue;
             }
 
             final var collector = evmAddressFromId(collectorId);
-            final long amount = (long) requireNonNullElse(customFee.get("amount"), 0L);
-            final var denominatingTokenId = customFee.get("denominating_token_id") == null ? null : EntityId.of((long) customFee.get("denominating_token_id"), TOKEN);
+            final long amount = requireNonNullElse(customFee.getAmount(), 0L);
+            final var denominatingTokenId = customFee.getDenominatingTokenId();
             final var denominatingTokenAddress = denominatingTokenId == null ?
                     EMPTY_EVM_ADDRESS : toAddress(denominatingTokenId);
-            final long amountDenominator = (long) requireNonNullElse(customFee.get("amount_denominator"), 0L);
-            final var maximumAmount = (long) requireNonNullElse(customFee.get("maximum_amount"), 0L);
-            final var minimumAmount = (long) customFee.get("minimum_amount");
-            final var netOfTransfers = (boolean) requireNonNullElse(customFee.get("net_of_transfers"), false);
-            final long royaltyDenominator = (long) requireNonNullElse(customFee.get("royalty_denominator"), 0L);
-            final long royaltyNumerator = (long) requireNonNullElse(customFee.get("royalty_numerator"), 0L);
+            final long amountDenominator = requireNonNullElse(customFee.getAmountDenominator(), 0L);
+            final var maximumAmount = requireNonNullElse(customFee.getMaximumAmount(), 0L);
+            final var minimumAmount = customFee.getMinimumAmount();
+            final var netOfTransfers = requireNonNullElse(customFee.getNetOfTransfers(), false);
+            final long royaltyDenominator =  requireNonNullElse(customFee.getRoyaltyDenominator(), 0L);
+            final long royaltyNumerator =  requireNonNullElse(customFee.getRoyaltyNumerator(), 0L);
 
             CustomFee customFeeConstructed = new CustomFee();
 
