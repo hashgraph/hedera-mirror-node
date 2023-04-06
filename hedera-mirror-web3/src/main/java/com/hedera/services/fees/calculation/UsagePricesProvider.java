@@ -20,6 +20,7 @@
 
 package com.hedera.services.fees.calculation;
 
+import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.FeeData;
 import com.hederahashgraph.api.proto.java.HederaFunctionality;
 import com.hederahashgraph.api.proto.java.SubType;
@@ -35,7 +36,8 @@ public interface UsagePricesProvider {
      * @param at       the expected consensus time for the operation
      * @return the estimated prices
      */
-    Map<SubType, FeeData> pricesGiven(HederaFunctionality function, Timestamp at);
+    Map<SubType, FeeData> pricesGiven(
+            HederaFunctionality function, Timestamp at, CurrentAndNextFeeSchedule feeSchedules);
 
     /**
      * Returns the prices in tinyCents that are likely to be required to consume various resources while processing the

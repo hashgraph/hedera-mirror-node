@@ -33,17 +33,15 @@ import lombok.RequiredArgsConstructor;
 @Named
 @RequiredArgsConstructor
 public final class BasicHbarCentExchange implements HbarCentExchange {
-    private ExchangeRateSet exchangeRates;
-
     private final RatesAndFeesLoader ratesAndFeesLoader;
 
     @Override
     public ExchangeRate rate(final Timestamp now) {
-        exchangeRates = ratesAndFeesLoader.loadExchangeRates(now.getSeconds());
-        return rateAt(now.getSeconds());
+        final var exchangeRates = ratesAndFeesLoader.loadExchangeRates(now.getSeconds());
+        return rateAt(now.getSeconds(), exchangeRates);
     }
 
-    private ExchangeRate rateAt(final long now) {
+    private ExchangeRate rateAt(final long now, final ExchangeRateSet exchangeRates) {
         final var currentRate = exchangeRates.getCurrentRate();
         final var currentExpiry = currentRate.getExpirationTime().getSeconds();
         return (now < currentExpiry) ? currentRate : exchangeRates.getNextRate();
