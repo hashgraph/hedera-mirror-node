@@ -32,6 +32,7 @@ import {
   ContractLog,
   ContractResult,
   ContractState,
+  ContractStateChange,
   Entity,
   RecordFile,
   Transaction,
@@ -430,7 +431,6 @@ const getAndValidateContractIdAndConsensusTimestampPathParams = async (req) => {
 const extractContractIdAndFiltersFromValidatedRequest = (req, acceptedParameters) => {
   // extract filters from query param
   const contractId = getAndValidateContractIdRequestPathParam(req);
-
   const filters = utils.buildAndValidateFilters(req.query, acceptedParameters, contractResultsFilterValidityChecks);
 
   return {
@@ -887,6 +887,7 @@ class ContractController extends BaseController {
   async extractContractStateByIdQuery(filters, contractId) {
     let limit = defaultLimit;
     let order = orderFilterValues.ASC;
+    let timestamp = false;
     const conditions = [this.getFilterWhereCondition(ContractState.CONTRACT_ID, {operator: '=', value: contractId})];
     const slotInValues = [];
 
@@ -898,8 +899,23 @@ class ContractController extends BaseController {
         case filterKeys.ORDER:
           order = filter.value;
           break;
+        case filterKeys.TIMESTAMP:
+          if (filter.operator === utils.opsMap.eq) {
+            conditions.push(
+              this.getFilterWhereCondition(ContractStateChange.CONSENSUS_TIMESTAMP, {
+                operator: '<=',
+                value: filter.value
+              })
+            )
+            timestamp = true;
+          }
+          break;
         case filterKeys.SLOT:
-          const slot = Buffer.from(utils.stripHexPrefix(filter.value).padStart(64, 0), 'hex');
+          let slot = utils.formatSlot(filter.value);
+          //we need this additional conversion, because there is inconsistency between colums slot in table contract_state and contract_state_change.
+          if (timestamp) {
+            slot = utils.formatSlot(filter.value, true);
+          }
           if (filter.operator === utils.opsMap.eq) {
             slotInValues.push(slot);
           } else {
@@ -924,6 +940,7 @@ class ContractController extends BaseController {
       conditions,
       order,
       limit,
+      timestamp
     };
   }
 
@@ -935,10 +952,9 @@ class ContractController extends BaseController {
    */
   getContractStateById = async (req, res) => {
     const {contractId: contractIdParam, filters} = extractContractIdAndFiltersFromValidatedRequest(req, acceptedContractStateParameters);
-
     const contractId = await ContractService.computeContractIdFromString(contractIdParam);
-    const {conditions, order, limit} = await this.extractContractStateByIdQuery(filters, contractId);
-    const rows = await ContractService.getContractStateByIdAndFilters(conditions, order, limit);
+    const {conditions, order, limit, timestamp} = await this.extractContractStateByIdQuery(filters, contractId);
+    const rows = await ContractService.getContractStateByIdAndFilters(conditions, order, limit, timestamp);
     const state = rows.map((row) => new ContractStateViewModel(row));
 
     let nextLink = null;
@@ -1295,7 +1311,8 @@ const acceptedSingleContractResultsParameters = new Set([
 const acceptedContractStateParameters = new Set([
   filterKeys.LIMIT,
   filterKeys.ORDER,
-  filterKeys.SLOT
+  filterKeys.SLOT,
+  filterKeys.TIMESTAMP
 ]);
 
 /**

@@ -86,6 +86,7 @@ public class ReleaseHealthIndicator implements ReactiveHealthIndicator {
         return Objects.requireNonNull(labels.get(INSTANCE_LABEL), "No " + INSTANCE_LABEL + " label");
     }
 
+    @SuppressWarnings("unchecked")
     private Mono<Health> getHelmReleaseReadyStatus(String release) {
         var resource = client.genericKubernetesResources(RESOURCE_DEFINITION_CONTEXT).withName(release).get();
         var status = (Map<String, Object>) resource.getAdditionalProperties().get("status");

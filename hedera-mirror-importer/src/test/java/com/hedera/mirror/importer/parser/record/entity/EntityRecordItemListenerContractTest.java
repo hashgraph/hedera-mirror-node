@@ -142,6 +142,37 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         );
     }
 
+    // Issue #5637 caused by an invalid receipt.ContractID sent by consensus nodes in testnet.
+    @Test
+    void contractCreateWithInvalidId() {
+        var invalidId = ContractID.newBuilder()
+                .setShardNum(-382413634L)
+                .setRealmNum(-4713217343126473096L)
+                .setContractNum(-9016639978277801310L)
+                .build();
+        var recordItem = recordItemBuilder.contractCreate()
+                .receipt(r -> r.setContractID(invalidId))
+                .record(r -> r.getContractCreateResultBuilder().setContractID(invalidId))
+                .build();
+
+        parseRecordItemAndCommit(recordItem);
+
+        assertAll(
+                () -> assertEquals(2, contractRepository.count()),
+                () -> assertEquals(1, contractResultRepository.count()),
+                () -> assertEquals(3, cryptoTransferRepository.count()),
+                () -> assertContractStateChanges(recordItem),
+                () -> assertThat(transactionRepository.findAll())
+                        .hasSize(1)
+                        .first()
+                        .returns(null, com.hedera.mirror.common.domain.transaction.Transaction::getEntityId),
+                () -> assertThat(contractResultRepository.findAll())
+                        .hasSize(1)
+                        .first()
+                        .returns(0L, ContractResult::getContractId)
+        );
+    }
+
     @Test
     void contractCreateWithEvmAddress() {
         // no child tx, creates a single contract with evm address set
@@ -617,8 +648,10 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertEquals(2, contractResultRepository.count()),
                 () -> assertEquals(6, cryptoTransferRepository.count()),
                 () -> assertEntities(parentId, EntityId.of(childContractId)),
-                () -> assertTransactionAndRecord(parentRecordItem.getTransactionBody(), parentRecordItem.getTransactionRecord()),
-                () -> assertTransactionAndRecord(childRecordItem.getTransactionBody(), childRecordItem.getTransactionRecord()),
+                () -> assertTransactionAndRecord(parentRecordItem.getTransactionBody(),
+                        parentRecordItem.getTransactionRecord()),
+                () -> assertTransactionAndRecord(childRecordItem.getTransactionBody(),
+                        childRecordItem.getTransactionRecord()),
                 () -> assertThat(entityRepository.findAll()).contains(setupResult.entity),
                 () -> assertCreatedContract(childRecordItem),
                 () -> assertContractCallResult(parentTransactionBody, parentRecordItem.getTransactionRecord()),

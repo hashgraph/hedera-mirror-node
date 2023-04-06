@@ -1,5 +1,7 @@
 package com.hedera.mirror.web3.evm.exception;
 
+import java.io.Serial;
+
 /*-
  * ‌
  * Hedera Mirror Node
@@ -21,6 +23,9 @@ package com.hedera.mirror.web3.evm.exception;
  */
 @SuppressWarnings("java:S110")
 public class MissingResultException extends EvmException {
+
+    @Serial
+    private static final long serialVersionUID = -3598980296959473266L;
 
     public MissingResultException(String message) {
         super(message);

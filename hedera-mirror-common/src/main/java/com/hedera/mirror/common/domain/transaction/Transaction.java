@@ -115,4 +115,12 @@ public class Transaction implements Persistable<Long> {
     public boolean isNew() {
         return true; // Since we never update and use a natural ID, avoid Hibernate querying before insert
     }
+
+    public TransactionHash toTransactionHash() {
+        return TransactionHash.builder()
+                .consensusTimestamp(consensusTimestamp)
+                .hash(transactionHash)
+                .payerAccountId(payerAccountId.getId())
+                .build();
+    }
 }

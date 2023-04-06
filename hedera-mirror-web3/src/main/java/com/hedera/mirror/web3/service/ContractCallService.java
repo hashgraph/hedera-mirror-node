@@ -20,7 +20,7 @@ package com.hedera.mirror.web3.service;
  * ‍
  */
 
-import static com.hedera.mirror.web3.convert.BytesDecoder.decodeEvmRevertReasonBytesToReadableMessage;
+import static com.hedera.mirror.web3.convert.BytesDecoder.maybeDecodeSolidityErrorStringToReadableMessage;
 import static com.hedera.mirror.web3.evm.exception.ResponseCodeUtil.getStatusOrDefault;
 
 import io.micrometer.core.instrument.Counter;
@@ -132,7 +132,7 @@ public class ContractCallService {
 
             var revertReason = txnResult.getRevertReason().orElse(Bytes.EMPTY);
             throw new InvalidTransactionException(getStatusOrDefault(txnResult),
-                    decodeEvmRevertReasonBytesToReadableMessage(revertReason));
+                    maybeDecodeSolidityErrorStringToReadableMessage(revertReason), revertReason.toHexString());
         } else {
             onComplete(type, txnResult);
         }

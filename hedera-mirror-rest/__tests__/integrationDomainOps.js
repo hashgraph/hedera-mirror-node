@@ -26,6 +26,7 @@ import base32 from '../base32';
 import config from '../config';
 import * as constants from '../constants';
 import EntityId from '../entityId';
+import {isV2Schema, valueToBuffer} from "./testutils.js";
 
 const NETWORK_FEE = 1n;
 const NODE_FEE = 2n;
@@ -399,27 +400,6 @@ const loadTopicMessages = async (messages) => {
   }
 };
 
-const hexRegex = /^(0x)?[0-9A-Fa-f]+$/;
-
-const valueToBuffer = (value) => {
-  if (value === null) {
-    return value;
-  }
-
-  if (typeof value === 'string') {
-    if (hexRegex.test(value)) {
-      return Buffer.from(value.replace(/^0x/, '').padStart(2, '0'), 'hex');
-    }
-
-    // base64
-    return Buffer.from(value, 'base64');
-  } else if (Array.isArray(value)) {
-    return Buffer.from(value);
-  }
-
-  return value;
-};
-
 const convertByteaFields = (fields, object) => fields.forEach((field) => _.update(object, field, valueToBuffer));
 
 const addAddressBook = async (addressBookInput) => {
@@ -436,7 +416,7 @@ const addAddressBook = async (addressBookInput) => {
 
   addressBook.file_data =
     typeof addressBookInput.file_data === 'string'
-      ? Buffer.from(addressBookInput.file_data, 'utf-8')
+      ? Buffer.from(addressBookInput.file_data, 'utf8')
       : Buffer.from(addressBook.file_data);
 
   await insertDomainObject('address_book', insertFields, addressBook);
@@ -617,7 +597,7 @@ const addEthereumTransaction = async (ethereumTransaction) => {
 const hexEncodedFileIds = [111, 112];
 
 const addFileData = async (fileDataInput) => {
-  const encoding = hexEncodedFileIds.includes(fileDataInput.entity_id) ? 'hex' : 'utf-8';
+  const encoding = hexEncodedFileIds.includes(fileDataInput.entity_id) ? 'hex' : 'utf8';
 
   const fileData = {
     transaction_type: 17,
@@ -844,7 +824,11 @@ const addTransaction = async (transaction) => {
 
 const addTransactionHash = async (transactionHash) => {
   transactionHash.hash = valueToBuffer(transactionHash.hash);
-  await insertDomainObject('transaction_hash', Object.keys(transactionHash), transactionHash);
+  let table = 'transaction_hash';
+  if (!isV2Schema()) {
+    table = 'transaction_hash_sharded';
+  }
+  await insertDomainObject(table, Object.keys(transactionHash), transactionHash);
 };
 
 const insertTransfers = async (

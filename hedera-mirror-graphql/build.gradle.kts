@@ -87,7 +87,8 @@ tasks.withType<JavaCompile> {
         listOf(
             "-Amapstruct.defaultComponentModel=jsr330",
             "-Amapstruct.defaultInjectionStrategy=constructor",
-            "-Amapstruct.disableBuilders=true"
+            "-Amapstruct.disableBuilders=true",
+            "-Amapstruct.unmappedTargetPolicy=IGNORE", // Remove once all Account fields have been mapped
         )
     )
 }

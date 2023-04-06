@@ -31,6 +31,7 @@ const {tokenBalance: tokenBalanceResponseLimit} = getResponseLimit();
  * @return {Object} Processed account record
  */
 const processRow = (row) => {
+  const alias = base32.encode(row.alias);
   const balance =
     row.balance === undefined
       ? null
@@ -41,14 +42,18 @@ const processRow = (row) => {
       };
   const entityId = EntityId.parse(row.id);
   let evmAddress = row.evm_address && utils.toHexString(row.evm_address, true);
-  if (evmAddress === null && row.type === constants.entityTypes.CONTRACT) {
-    evmAddress = entityId.toEvmAddress();
+  if (evmAddress === null) {
+    if (alias && row.alias.length == constants.EVM_ADDRESS_LENGTH) {
+      evmAddress = utils.toHexString(row.alias, true);
+    } else {
+      evmAddress = entityId.toEvmAddress();
+    }
   }
 
   const stakedToNode = row.staked_node_id !== null && row.staked_node_id !== -1;
   return {
     account: entityId.toString(),
-    alias: base32.encode(row.alias),
+    alias,
     auto_renew_period: row.auto_renew_period,
     balance,
     created_timestamp: utils.nsToSecNs(row.created_timestamp),

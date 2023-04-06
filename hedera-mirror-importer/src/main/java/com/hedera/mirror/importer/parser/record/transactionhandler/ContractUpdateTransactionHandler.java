@@ -20,10 +20,12 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
 import static com.hederahashgraph.api.proto.java.ContractUpdateTransactionBody.StakedIdCase.STAKEDID_NOT_SET;
 
 import com.hederahashgraph.api.proto.java.ContractID;
 import javax.inject.Named;
+import lombok.CustomLog;
 
 import com.hedera.mirror.common.domain.entity.AbstractEntity;
 import com.hedera.mirror.common.domain.entity.Entity;
@@ -32,16 +34,15 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.EntityIdService;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 import com.hedera.mirror.importer.util.Utility;
 
+@CustomLog
 @Named
 class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
-    ContractUpdateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
-                                     RecordParserProperties recordParserProperties) {
-        super(entityIdService, entityListener, recordParserProperties, TransactionType.CONTRACTUPDATEINSTANCE);
+    ContractUpdateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener) {
+        super(entityIdService, entityListener, TransactionType.CONTRACTUPDATEINSTANCE);
     }
 
     /**
@@ -57,12 +58,12 @@ class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHand
     public EntityId getEntity(RecordItem recordItem) {
         ContractID contractIdBody = recordItem.getTransactionBody().getContractUpdateInstance().getContractID();
         ContractID contractIdReceipt = recordItem.getTransactionRecord().getReceipt().getContractID();
-        return entityIdService.lookup(contractIdReceipt, contractIdBody);
+        return entityIdService.lookup(contractIdReceipt, contractIdBody).orElse(EntityId.EMPTY);
     }
 
     // We explicitly ignore the updated fileID field since hedera nodes do not allow changing the bytecode after create
-    @SuppressWarnings("java:S1874")
     @Override
+    @SuppressWarnings({"deprecation", "java:S1874"})
     protected void doUpdateEntity(Entity entity, RecordItem recordItem) {
         var transactionBody = recordItem.getTransactionBody().getContractUpdateInstance();
 
@@ -71,9 +72,12 @@ class ContractUpdateTransactionHandler extends AbstractEntityCrudTransactionHand
         }
 
         if (transactionBody.hasAutoRenewAccountId()) {
-            getAccountId(transactionBody.getAutoRenewAccountId())
+            // Allow clearing of the autoRenewAccount by allowing it to be set to 0
+            entityIdService.lookup(transactionBody.getAutoRenewAccountId())
                     .map(EntityId::getId)
-                    .ifPresent(entity::setAutoRenewAccountId);
+                    .ifPresentOrElse(entity::setAutoRenewAccountId,
+                            () -> log.error(RECOVERABLE_ERROR + "Invalid autoRenewAccountId at {}",
+                                    recordItem.getConsensusTimestamp()));
         }
 
         if (transactionBody.hasAutoRenewPeriod()) {

@@ -493,6 +493,7 @@ public class TokenClient extends AbstractNetworkClient {
         return response;
     }
 
+    @SuppressWarnings("deprecation")
     public long getTokenBalance(AccountId accountId, TokenId tokenId) {
         // AccountBalanceQuery is free
         var query = new AccountBalanceQuery().setAccountId(accountId);

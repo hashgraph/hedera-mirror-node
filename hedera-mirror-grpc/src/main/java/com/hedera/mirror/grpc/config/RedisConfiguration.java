@@ -41,7 +41,7 @@ import org.springframework.data.redis.serializer.RedisSerializationContext;
 import org.springframework.data.redis.serializer.RedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
-import com.hedera.mirror.grpc.domain.StreamMessage;
+import com.hedera.mirror.grpc.domain.TopicMessage;
 
 @AutoConfigureBefore(RedisAutoConfiguration.class)
 @AutoConfigureAfter({MetricsAutoConfiguration.class, CompositeMeterRegistryAutoConfiguration.class})
@@ -56,18 +56,17 @@ class RedisConfiguration {
     }
 
     @Bean
-    RedisSerializer<StreamMessage> redisSerializer() {
-        ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
-        Jackson2JsonRedisSerializer<StreamMessage> jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer<>(StreamMessage.class);
+    RedisSerializer<TopicMessage> redisSerializer() {
+        var objectMapper = new ObjectMapper(new MessagePackFactory());
+        var jackson2JsonRedisSerializer = new Jackson2JsonRedisSerializer<>(TopicMessage.class);
         jackson2JsonRedisSerializer.setObjectMapper(objectMapper);
         return jackson2JsonRedisSerializer;
     }
 
     @Bean
-    ReactiveRedisOperations<String, StreamMessage> reactiveRedisOperations(ReactiveRedisConnectionFactory connectionFactory) {
-        RedisSerializationContext<String, StreamMessage> serializationContext = RedisSerializationContext
-                .newSerializationContext()
-                .key((RedisSerializer) StringRedisSerializer.UTF_8)
+    ReactiveRedisOperations<String, TopicMessage> reactiveRedisOperations(ReactiveRedisConnectionFactory connectionFactory) {
+        var serializationContext = RedisSerializationContext.<String, TopicMessage>newSerializationContext()
+                .key(StringRedisSerializer.UTF_8)
                 .value(redisSerializer())
                 .hashKey(StringRedisSerializer.UTF_8)
                 .hashValue(redisSerializer())

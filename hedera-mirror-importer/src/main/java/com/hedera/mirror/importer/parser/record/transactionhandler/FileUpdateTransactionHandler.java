@@ -25,18 +25,21 @@ import javax.inject.Named;
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
+import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.EntityIdService;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
 
 @Named
 class FileUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
+    private final FileDataHandler fileDataHandler;
+
     FileUpdateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
-                                 RecordParserProperties recordParserProperties) {
-        super(entityIdService, entityListener, recordParserProperties, TransactionType.FILEUPDATE);
+                                 FileDataHandler fileDataHandler) {
+        super(entityIdService, entityListener, TransactionType.FILEUPDATE);
+        this.fileDataHandler = fileDataHandler;
     }
 
     @Override
@@ -61,5 +64,15 @@ class FileUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler 
         }
 
         entityListener.onEntity(entity);
+    }
+
+    @Override
+    protected void doUpdateTransaction(Transaction transaction, RecordItem recordItem) {
+        if (!recordItem.isSuccessful()) {
+            return;
+        }
+
+        var contents = recordItem.getTransactionBody().getFileUpdate().getContents();
+        fileDataHandler.handle(transaction, contents);
     }
 }

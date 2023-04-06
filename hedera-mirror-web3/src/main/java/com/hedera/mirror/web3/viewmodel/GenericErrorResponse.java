@@ -37,21 +37,22 @@ public class GenericErrorResponse {
     List<ErrorMessage> messages = new ArrayList<>();
 
     public GenericErrorResponse(String message) {
-        messages.add(new ErrorMessage(message, StringUtils.EMPTY));
+        messages.add(new ErrorMessage(message, StringUtils.EMPTY, StringUtils.EMPTY));
     }
 
-    public GenericErrorResponse(String message, String detailedMessage) {
-        final var errorMessage = new ErrorMessage(message, detailedMessage);
+    public GenericErrorResponse(String message, String detailedMessage, String data) {
+        final var errorMessage = new ErrorMessage(message, detailedMessage, data);
         messages.add(errorMessage);
     }
 
     public GenericErrorResponse(List<String> errorMessages) {
-        errorMessages.forEach(m -> messages.add(new ErrorMessage(m, StringUtils.EMPTY)));
+        errorMessages.forEach(m -> messages.add(new ErrorMessage(m, StringUtils.EMPTY, StringUtils.EMPTY)));
     }
 
     @Value
     public static class ErrorMessage {
         private String message;
         private String detail;
+        private String data;
     }
 }

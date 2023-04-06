@@ -34,8 +34,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -117,7 +117,7 @@ abstract class CsvBalanceFileReaderTest {
     void readInvalidWhenFileHasInvalidVersion() throws IOException {
         List<String> lines = FileUtils.readLines(balanceFile, CsvBalanceFileReader.CHARSET);
         lines.remove(0);
-        List<String> copy = new LinkedList<>();
+        List<String> copy = new ArrayList<>();
         copy.add("# 0.1.0");
         copy.addAll(lines);
         FileUtils.writeLines(testFile, copy);

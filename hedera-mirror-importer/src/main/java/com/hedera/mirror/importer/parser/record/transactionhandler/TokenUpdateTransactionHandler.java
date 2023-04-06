@@ -20,23 +20,31 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
  * ‍
  */
 
+import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
+
 import javax.inject.Named;
+import lombok.CustomLog;
 
 import com.hedera.mirror.common.domain.entity.Entity;
 import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.token.Token;
 import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.EntityIdService;
-import com.hedera.mirror.importer.parser.record.RecordParserProperties;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
+import com.hedera.mirror.importer.parser.record.entity.EntityProperties;
 
+@CustomLog
 @Named
 class TokenUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler {
 
+    private final EntityProperties entityProperties;
+
     TokenUpdateTransactionHandler(EntityIdService entityIdService, EntityListener entityListener,
-                                  RecordParserProperties recordParserProperties) {
-        super(entityIdService, entityListener, recordParserProperties, TransactionType.TOKENUPDATE);
+                                  EntityProperties entityProperties) {
+        super(entityIdService, entityListener, TransactionType.TOKENUPDATE);
+        this.entityProperties = entityProperties;
     }
 
     @Override
@@ -53,8 +61,12 @@ class TokenUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler
         }
 
         if (transactionBody.hasAutoRenewAccount()) {
-            getAccountId(transactionBody.getAutoRenewAccount())
-                    .map(EntityId::getId).ifPresent(entity::setAutoRenewAccountId);
+            // Allow clearing of the autoRenewAccount by allowing it to be set to 0
+            entityIdService.lookup(transactionBody.getAutoRenewAccount())
+                    .map(EntityId::getId)
+                    .ifPresentOrElse(entity::setAutoRenewAccountId,
+                            () -> log.error(RECOVERABLE_ERROR + "Invalid autoRenewAccountId at {}",
+                                    recordItem.getConsensusTimestamp()));
         }
 
         if (transactionBody.hasAutoRenewPeriod()) {
@@ -70,6 +82,54 @@ class TokenUpdateTransactionHandler extends AbstractEntityCrudTransactionHandler
         }
 
         entityListener.onEntity(entity);
+        updateToken(entity, recordItem);
     }
 
+    private void updateToken(Entity entity, RecordItem recordItem) {
+        if (!entityProperties.getPersist().isTokens()) {
+            return;
+        }
+
+        var transactionBody = recordItem.getTransactionBody().getTokenUpdate();
+        var token = Token.of(entity.toEntityId());
+        token.setModifiedTimestamp(recordItem.getConsensusTimestamp());
+
+        if (transactionBody.hasFeeScheduleKey()) {
+            token.setFeeScheduleKey(transactionBody.getFeeScheduleKey().toByteArray());
+        }
+
+        if (transactionBody.hasFreezeKey()) {
+            token.setFreezeKey(transactionBody.getFreezeKey().toByteArray());
+        }
+
+        if (transactionBody.hasKycKey()) {
+            token.setKycKey(transactionBody.getKycKey().toByteArray());
+        }
+
+        if (!transactionBody.getName().isEmpty()) {
+            token.setName(transactionBody.getName());
+        }
+
+        if (transactionBody.hasPauseKey()) {
+            token.setPauseKey(transactionBody.getPauseKey().toByteArray());
+        }
+
+        if (transactionBody.hasSupplyKey()) {
+            token.setSupplyKey(transactionBody.getSupplyKey().toByteArray());
+        }
+
+        if (!transactionBody.getSymbol().isEmpty()) {
+            token.setSymbol(transactionBody.getSymbol());
+        }
+
+        if (transactionBody.hasTreasury()) {
+            token.setTreasuryAccountId(EntityId.of(transactionBody.getTreasury()));
+        }
+
+        if (transactionBody.hasWipeKey()) {
+            token.setWipeKey(transactionBody.getWipeKey().toByteArray());
+        }
+
+        entityListener.onToken(token);
+    }
 }

@@ -336,6 +336,21 @@ public abstract class AbstractDownloaderTest {
     }
 
     @Test
+    @DisplayName("Less than 1/3 consensus")
+    void lessThanOneThirdConsensus() {
+        nodes.forEach(c -> ((ConsensusNodeStub) c).setTotalStake(4));
+        nodes.remove(Iterables.getLast(nodes));
+        mirrorProperties.setStartBlockNumber(null);
+        var nodeAccountId = nodes.iterator().next().getNodeAccountId();
+
+        var nodePath = downloaderProperties.getStreamType().getNodePrefix() + nodeAccountId;
+        fileCopier.from(nodePath).to(nodePath).copy();
+        expectLastStreamFile(Instant.EPOCH);
+        downloader.download();
+        verifyUnsuccessful();
+    }
+
+    @Test
     @DisplayName("Missing signatures")
     void missingSignatures() {
         fileCopier.filterFiles(file -> !isSigFile(file.toPath())).copy();  // only copy data files
@@ -753,7 +768,7 @@ public abstract class AbstractDownloaderTest {
      * @param instant the instant of the StreamFile
      */
     protected void expectLastStreamFile(String hash, Long index, Instant instant) {
-        StreamFile streamFile = (StreamFile) ReflectUtils.newInstance(streamType.getStreamFileClass());
+        StreamFile streamFile = streamType.newStreamFile();
         streamFile.setName(StreamFilename.getFilename(streamType, DATA, instant));
         streamFile.setConsensusStart(DomainUtils.convertToNanosMax(instant));
         streamFile.setHash(hash);

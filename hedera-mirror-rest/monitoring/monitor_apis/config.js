@@ -49,7 +49,7 @@ const load = (configFile) => {
       return {};
     }
 
-    const data = JSON.parse(fs.readFileSync(configFile).toString('utf-8'));
+    const data = JSON.parse(fs.readFileSync(configFile).toString('utf8'));
     logger.info(`Loaded configuration source: ${configFile}`);
     return data;
   } catch (err) {

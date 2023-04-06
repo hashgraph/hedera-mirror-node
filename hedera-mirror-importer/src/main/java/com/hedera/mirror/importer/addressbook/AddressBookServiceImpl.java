@@ -68,6 +68,7 @@ import com.hedera.mirror.common.domain.file.FileData;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.MirrorProperties;
+import com.hedera.mirror.importer.MirrorProperties.ConsensusMode;
 import com.hedera.mirror.importer.exception.InvalidDatasetException;
 import com.hedera.mirror.importer.repository.AddressBookRepository;
 import com.hedera.mirror.importer.repository.FileDataRepository;
@@ -109,6 +110,8 @@ public class AddressBookServiceImpl implements AddressBookService {
             return;
         }
 
+        fileDataRepository.save(fileData);
+
         if (fileData.getFileData() == null || fileData.getFileData().length == 0) {
             log.warn("Byte array contents were empty. Skipping processing ...");
             return;
@@ -138,14 +141,35 @@ public class AddressBookServiceImpl implements AddressBookService {
         var totalStake = new AtomicLong(0L);
         var nodes = new TreeSet<ConsensusNode>();
         var nodeStakes = new HashMap<Long, NodeStake>();
+        var consensusMode = mirrorProperties.getConsensusMode();
+        var nodesInAddressBook = addressBook.getEntries().stream().map(AddressBookEntry::getNodeId)
+                .collect(Collectors.toSet());
 
+        var nodeStakeTimestamp = new AtomicLong(0L);
         nodeStakeRepository.findLatest().forEach(nodeStake -> {
-            totalStake.addAndGet(nodeStake.getStake());
+            if (consensusMode == ConsensusMode.EQUAL) {
+                nodeStake.setStake(1L);
+            }
+
+            if (consensusMode != ConsensusMode.STAKE_IN_ADDRESS_BOOK ||
+                    nodesInAddressBook.contains(nodeStake.getNodeId())) {
+                totalStake.addAndGet(nodeStake.getStake());
+            }
             nodeStakes.put(nodeStake.getNodeId(), nodeStake);
+            // all the node stake rows have the same consensus timestamp
+            nodeStakeTimestamp.compareAndSet(0L, nodeStake.getConsensusTimestamp());
         });
 
-        // For partial mirror nodes, node stake will provide a more accurate count
-        long nodeCount = !nodeStakes.isEmpty() ? nodeStakes.size() : addressBook.getNodeCount();
+        long nodeCount = (consensusMode == ConsensusMode.STAKE_IN_ADDRESS_BOOK || nodeStakes.isEmpty()) ?
+                addressBook.getNodeCount() : nodeStakes.size();
+
+        // if only including address book nodes in stake count, warn if any nodes are excluded
+        if (consensusMode == ConsensusMode.STAKE_IN_ADDRESS_BOOK && addressBook.getNodeCount() != nodeStakes.size() &&
+                !nodeStakes.isEmpty()) {
+            log.warn("Using address book {} with {} nodes and node stake {} with {} nodes",
+                    addressBook.getStartConsensusTimestamp(), addressBook.getNodeCount(), nodeStakeTimestamp.get(),
+                    nodeStakes.size());
+        }
 
         addressBook.getEntries().forEach(e -> {
             var nodeStake = nodeStakes.get(e.getNodeId());
@@ -373,7 +397,7 @@ public class AddressBookServiceImpl implements AddressBookService {
      * @param nodeAddressProto
      * @return Pair of nodeId and nodeAccountId
      */
-    @SuppressWarnings("java:S1874")
+    @SuppressWarnings({"deprecation", "java:S1874"})
     private Pair<Long, EntityId> getNodeIds(NodeAddress nodeAddressProto) {
         var memo = nodeAddressProto.getMemo().toStringUtf8();
         EntityId memoNodeAccountId = StringUtils.isEmpty(memo) ? EntityId.EMPTY : EntityId
@@ -391,7 +415,7 @@ public class AddressBookServiceImpl implements AddressBookService {
         return Pair.of(nodeId, nodeAccountId);
     }
 
-    @SuppressWarnings("java:S1874")
+    @SuppressWarnings({"deprecation", "java:S1874"})
     private AddressBookEntry getAddressBookEntry(NodeAddress nodeAddressProto, long consensusTimestamp,
                                                  Pair<Long, EntityId> nodeIds) {
         AddressBookEntry.AddressBookEntryBuilder builder = AddressBookEntry.builder()

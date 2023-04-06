@@ -55,7 +55,7 @@ class CompactRecordFile extends RecordFile {
 
   static _support(bufferOrObj) {
     const buffer = Buffer.isBuffer(bufferOrObj) ? bufferOrObj : bufferOrObj.head;
-    return this._readVersion(buffer) === this.version;
+    return RecordFile._readVersion(buffer) === this.version;
   }
 
   static canCompact(buffer) {

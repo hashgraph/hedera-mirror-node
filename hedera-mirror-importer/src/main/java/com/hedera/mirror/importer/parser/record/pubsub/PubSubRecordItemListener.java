@@ -20,6 +20,8 @@ package com.hedera.mirror.importer.parser.record.pubsub;
  * ‍
  */
 
+import static com.hedera.mirror.importer.util.Utility.RECOVERABLE_ERROR;
+
 import com.google.cloud.spring.pubsub.core.PubSubTemplate;
 import com.hederahashgraph.api.proto.java.AccountAmount;
 import com.hederahashgraph.api.proto.java.FileID;
@@ -46,7 +48,6 @@ import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy
 import com.hedera.mirror.importer.parser.record.RecordItemListener;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
-import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @Log4j2
@@ -58,7 +59,6 @@ public class PubSubRecordItemListener implements RecordItemListener {
     private final PubSubProperties pubSubProperties;
     private final PubSubTemplate pubSubTemplate;
     private final AddressBookService addressBookService;
-    private final FileDataRepository fileDataRepository;
     private final NonFeeTransferExtractionStrategy nonFeeTransfersExtractor;
     private final TransactionHandlerFactory transactionHandlerFactory;
 
@@ -75,8 +75,9 @@ public class PubSubRecordItemListener implements RecordItemListener {
         try {
             entityId = transactionHandler.getEntity(recordItem);
         } catch (InvalidEntityException e) { // transaction can have invalid topic/contract/file id
-            log.warn("Invalid entity encountered for consensusTimestamp {} : {}", consensusTimestamp, e.getMessage());
-            entityId = null;
+            log.error(RECOVERABLE_ERROR + "Invalid entity encountered for consensusTimestamp {} : {}",
+                    consensusTimestamp, e.getMessage());
+            entityId = EntityId.EMPTY;
         }
 
         PubSubMessage pubSubMessage = buildPubSubMessage(consensusTimestamp, entityId, recordItem);
@@ -107,7 +108,6 @@ public class PubSubRecordItemListener implements RecordItemListener {
 
             FileData fileData = new FileData(consensusTimestamp, fileBytes, EntityId.of(fileID), recordItem
                     .getTransactionType());
-            fileDataRepository.save(fileData);
             addressBookService.update(fileData);
         }
     }

@@ -21,6 +21,7 @@ package com.hedera.mirror.monitor.properties;
  */
 
 import com.google.common.collect.Lists;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,7 @@ public class ScenarioPropertiesAggregatorImpl implements ScenarioPropertiesAggre
             .compile("(\\w+)\\.\\d+");
 
     @Override
+    @SuppressWarnings("unchecked")
     public Map<String, Object> aggregateProperties(Map<String, String> properties) {
         //List properties are loaded in as property.0, property.1, etc.  This puts them into a list for deserialization.
         Map<String, Object> correctedProperties = new HashMap<>();
@@ -47,9 +49,13 @@ public class ScenarioPropertiesAggregatorImpl implements ScenarioPropertiesAggre
                 String propertyName = matcher.group(1);
                 log.debug("Converting property {} into list {}", entry.getKey(), propertyName);
                 correctedProperties
-                        .merge(propertyName, Lists.newArrayList(entry.getValue()), (existingList, newList) -> {
-                            ((List) existingList).addAll((List) newList);
-                            return existingList;
+                        .merge(propertyName, Lists.newArrayList(entry.getValue()), (e, n) -> {
+                            if (e instanceof List<?> existingList && n instanceof Collection<?> newList) {
+                                ((List<Object>) existingList).addAll(newList);
+                            } else {
+                                log.warn("Unable to merge {} to {}", n, e);
+                            }
+                            return e;
                         });
             } else {
                 correctedProperties.put(entry.getKey(), entry.getValue());

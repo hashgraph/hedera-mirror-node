@@ -39,6 +39,8 @@ import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 import org.hyperledger.besu.evm.operation.CallOperation;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.hedera.mirror.common.domain.token.TokenId;
@@ -177,7 +179,9 @@ class ContractCallServiceTest extends Web3IntegrationTest {
         persistEntities(false);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters)).
-                isInstanceOf(InvalidTransactionException.class).hasMessage(CONTRACT_REVERT_EXECUTED.name());
+                isInstanceOf(InvalidTransactionException.class).hasMessage(CONTRACT_REVERT_EXECUTED.name())
+                .hasFieldOrPropertyWithValue("detail", revertFunctions.errorDetail)
+                .hasFieldOrPropertyWithValue("data", revertFunctions.errorData);
     }
 
     @Test
@@ -190,7 +194,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
         persistEntities(false);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters)).isInstanceOf(InvalidTransactionException.class)
-                .hasMessage("CONTRACT_REVERT_EXECUTED");
+                .hasMessage("CONTRACT_REVERT_EXECUTED").hasFieldOrPropertyWithValue("data", "0x");
 
         assertGasUsedIsPositive(gasUsedBeforeExecution, ERROR);
     }
@@ -227,7 +231,8 @@ class ContractCallServiceTest extends Web3IntegrationTest {
 
         assertThatThrownBy(() -> contractCallService.processCall(params)).
                 isInstanceOf(InvalidTransactionException.class)
-                .hasMessage(LOCAL_CALL_MODIFICATION_EXCEPTION.toString());
+                .hasMessage(LOCAL_CALL_MODIFICATION_EXCEPTION.toString())
+                .hasFieldOrPropertyWithValue("data", "0x");
 
         assertGasUsedIsPositive(gasUsedBeforeExecution, ERROR);
     }
@@ -240,7 +245,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
         persistEntities(false);
 
         assertThatThrownBy(() -> contractCallService.processCall(serviceParameters)).
-                isInstanceOf(InvalidTransactionException.class);
+                isInstanceOf(InvalidTransactionException.class).hasFieldOrPropertyWithValue("data", "0x");
 
         assertGasUsedIsPositive(gasUsedBeforeExecution, ERROR);
     }
@@ -276,7 +281,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
                                                     boolean isStatic, boolean isEstimate) {
         final var sender = new HederaEvmAccount(SENDER_ADDRESS);
         final var data = Bytes.fromHexString(callData);
-        final var receiver = callData.equals("0x") ? RECEIVER_ADDRESS : CONTRACT_ADDRESS;
+        final var receiver = callData.equals("0x") ? RECEIVER_ADDRESS : contract;
 
         return CallServiceParameters.builder()
                 .sender(sender)
@@ -319,10 +324,11 @@ class ContractCallServiceTest extends Web3IntegrationTest {
             domainBuilder.entity().customize(e ->
                             e.id(receiverEntityId.getId())
                                     .num(receiverEntityId.getEntityNum())
-                                    .evmAddress(receiverEvmAddress))
+                                    .evmAddress(receiverEvmAddress)
+                                    .type(CONTRACT))
                     .persist();
         }
-        final var contractEntityId = fromEvmAddress(CONTRACT_ADDRESS.toArrayUnsafe());
+        final var contractEntityId = fromEvmAddress(ETH_CALL_CONTRACT_ADDRESS.toArrayUnsafe());
         final var contractEvmAddress = toEvmAddress(contractEntityId);
 
         domainBuilder.entity().customize(e ->
@@ -333,7 +339,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
 
         domainBuilder.contract().customize(c ->
                         c.id(contractEntityId.getId())
-                                .runtimeBytecode(CONTRACT_BYTES.toArrayUnsafe()))
+                                .runtimeBytecode(ETH_CALL_CONTRACT_BYTES.toArrayUnsafe()))
                 .persist();
 
         domainBuilder.contractState().customize(c ->
@@ -345,7 +351,21 @@ class ContractCallServiceTest extends Web3IntegrationTest {
                 .persist();
 
         domainBuilder.recordFile().customize(f ->
-                f.bytes(CONTRACT_BYTES.toArrayUnsafe())).persist();
+                f.bytes(ETH_CALL_CONTRACT_BYTES.toArrayUnsafe())).persist();
+
+        final var revertContractEntityId = fromEvmAddress(REVERTER_CONTRACT_ADDRESS.toArrayUnsafe());
+        final var revertContractEvmAddress = toEvmAddress(revertContractEntityId);
+
+        domainBuilder.entity().customize(e ->
+                e.id(revertContractEntityId.getId())
+                        .num(revertContractEntityId.getEntityNum())
+                        .evmAddress(revertContractEvmAddress)
+                        .type(CONTRACT).balance(1500L)).persist();
+
+        domainBuilder.contract().customize(c ->
+                        c.id(revertContractEntityId.getId())
+                                .runtimeBytecode(REVERTER_CONTRACT_BYTES.toArrayUnsafe()))
+                .persist();
 
         final var senderEntityId = fromEvmAddress(SENDER_ADDRESS.toArrayUnsafe());
         final var senderEvmAddress = toEvmAddress(senderEntityId);
@@ -370,5 +390,27 @@ class ContractCallServiceTest extends Web3IntegrationTest {
                         t.tokenId(new TokenId(tokenEntityId))
                                 .type(TokenTypeEnum.FUNGIBLE_COMMON))
                 .persist();
+    }
+
+    @RequiredArgsConstructor
+    private enum RevertFunctions {
+        REVERT_WITH_CUSTOM_ERROR_PURE                       ("revertWithCustomErrorPure", "35314694", "", "0x0bd3d39c"),
+        REVERT_WITH_PANIC_PURE           ("revertWithPanicPure", "83889056", "", "0x4e487b710000000000000000000000000000000000000000000000000000000000000012"),
+        REVERT_PAYABLE                          ("revertPayable", "d0efd7ef", "RevertReasonPayable", "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000013526576657274526561736f6e50617961626c6500000000000000000000000000"),
+        REVERT_PURE                  ("revertPure", "b2e0100c", "RevertReasonPure", "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000010526576657274526561736f6e5075726500000000000000000000000000000000"),
+        REVERT_VIEW             ("revertView", "90e9b875", "RevertReasonView", "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000010526576657274526561736f6e5669657700000000000000000000000000000000"),
+        REVERT_WITH_CUSTOM_ERROR         ("revertWithCustomError", "46fc4bb1", "", "0x0bd3d39c"),
+        REVERT_WITH_NOTHING           ("revertWithNothing", "fe0a3dd7", "", "0x"),
+        REVERT_WITH_NOTHING_PURE       ("revertWithNothingPure", "2dac842f", "", "0x"),
+        REVERT_WITH_PANIC                  ("revertWithPanic", "33fe3fbd", "", "0x4e487b710000000000000000000000000000000000000000000000000000000000000012"),
+        REVERT_WITH_STRING          ("revertWithString", "0323d234", "Some revert message", "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000013536f6d6520726576657274206d65737361676500000000000000000000000000"),
+        REVERT_WITH_STRING_PURE        ("revertWithStringPure", "8b153371", "Some revert message", "0x08c379a000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000013536f6d6520726576657274206d65737361676500000000000000000000000000"),
+        REVERT_WITH_CUSTOM_ERROR_WITH_PARAMETERS        ("revertWithCustomErrorWithParameters", "86451c2b", "", "0xcc4263a0000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000013536f6d6520726576657274206d65737361676500000000000000000000000000"),
+        REVERT_WITH_CUSTOM_ERROR_WITH_PARAMETERS_PURE        ("revertWithCustomErrorWithParameters", "b1c5ae51", "", "0xcc4263a0000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000013536f6d6520726576657274206d65737361676500000000000000000000000000");
+
+        private final String name;
+        private final String functionSignature;
+        private final String errorDetail;
+        private final String errorData;
     }
 }

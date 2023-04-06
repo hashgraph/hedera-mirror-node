@@ -99,6 +99,19 @@ loki:
           for: 1m
           labels:
             severity: critical
+        - alert: ImporterRecoverableErrors
+          annotations:
+            description: "Recoverable Error Logs for {{ $labels.namespace }}/{{ $labels.pod }} have reached {{ $value }} error messages/s in a 1m period"
+            summary: Recoverable Error found in logs
+          expr: >
+            sum(rate({component="importer"}
+              | regexp `(?P<timestamp>\S+) (?P<level>\S+) (?P<thread>\S+) (?P<class>\S+) (?P<message>.+)`
+              | level = "ERROR"
+              | message =~ ".*Recoverable error.*"
+            [1m])) by (namespace, pod) > 0
+          for: 1m
+          labels:
+            severity: critical
     - name: hedera-mirror-rest
       rules:
         - alert: RestLogErrors
@@ -362,6 +375,8 @@ testkube:
       namespace: ""
       release: mirror
     vus: 500
+  trigger:
+    enabled: false
 
 traefik:
   affinity:

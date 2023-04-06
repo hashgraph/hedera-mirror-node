@@ -21,6 +21,7 @@ package com.hedera.mirror.web3.exception;
  */
 
 import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+import java.io.Serial;
 import java.nio.charset.StandardCharsets;
 import org.apache.tuweni.bytes.Bytes;
 
@@ -29,16 +30,22 @@ import com.hedera.mirror.web3.evm.exception.EvmException;
 @SuppressWarnings("java:S110")
 public class InvalidTransactionException extends EvmException {
 
-    private final String detail;
+    @Serial
+    private static final long serialVersionUID = 2244739157125796266L;
 
-    public InvalidTransactionException(final ResponseCodeEnum responseCode, final String detail) {
+    private final String detail;
+    private final String data;
+
+    public InvalidTransactionException(final ResponseCodeEnum responseCode, final String detail, final String hexData) {
         super(responseCode.name());
         this.detail = detail;
+        this.data = hexData;
     }
 
-    public InvalidTransactionException(String message, final String detail) {
+    public InvalidTransactionException(final String message, final String detail, final String hexData) {
         super(message);
         this.detail = detail;
+        this.data = hexData;
     }
 
     public Bytes messageBytes() {
@@ -48,5 +55,9 @@ public class InvalidTransactionException extends EvmException {
 
     public String getDetail() {
         return detail;
+    }
+
+    public String getData() {
+        return data;
     }
 }

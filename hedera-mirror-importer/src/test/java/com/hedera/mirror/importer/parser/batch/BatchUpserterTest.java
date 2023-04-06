@@ -22,7 +22,7 @@ package com.hedera.mirror.importer.parser.batch;
 
 import static com.hedera.mirror.common.domain.entity.EntityType.ACCOUNT;
 import static com.hedera.mirror.common.domain.entity.EntityType.TOKEN;
-import static com.hedera.mirror.importer.config.MirrorImporterConfiguration.TOKEN_DISSOCIATE_BATCH_PERSISTER;
+import static com.hedera.mirror.importer.config.MirrorImporterConfiguration.DELETED_TOKEN_DISSOCIATE_BATCH_PERSISTER;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.common.collect.Range;
@@ -96,7 +96,7 @@ class BatchUpserterTest extends IntegrationTest {
     private final TokenTransferRepository tokenTransferRepository;
     private final TransactionOperations transactionOperations;
 
-    @Qualifier(TOKEN_DISSOCIATE_BATCH_PERSISTER)
+    @Qualifier(DELETED_TOKEN_DISSOCIATE_BATCH_PERSISTER)
     private final BatchPersister tokenDissociateTransferBatchUpserter;
 
     @Test
@@ -658,13 +658,13 @@ class BatchUpserterTest extends IntegrationTest {
                 .id(new TokenTransfer.Id(consensusTimestamp, ftId, accountId))
                 .isApproval(false)
                 .payerAccountId(payerId)
-                .tokenDissociate(true)).get();
+                .deletedTokenDissociate(true)).get();
         TokenTransfer nonFungibleTokenTransfer = domainBuilder.tokenTransfer().customize(t -> t
                 .amount(-2)
                 .id(new TokenTransfer.Id(consensusTimestamp, tokenId1, accountId))
                 .isApproval(false)
                 .payerAccountId(payerId)
-                .tokenDissociate(true)).get();
+                .deletedTokenDissociate(true)).get();
         List<TokenTransfer> tokenTransfers = List.of(fungibleTokenTransfer, nonFungibleTokenTransfer);
 
         // when
@@ -686,7 +686,7 @@ class BatchUpserterTest extends IntegrationTest {
         assertThat(nftTransferRepository.findAll()).containsExactlyInAnyOrder(serial2Transfer, serial3Transfer);
 
         assertThat(tokenTransferRepository.findAll())
-                .usingElementComparatorIgnoringFields("tokenDissociate")
+                .usingElementComparatorIgnoringFields("deletedTokenDissociate")
                 .containsOnly(fungibleTokenTransfer);
     }
 
@@ -748,13 +748,13 @@ class BatchUpserterTest extends IntegrationTest {
     }
 
     private TokenAccount getTokenAccount(String tokenId, String accountId, Long createdTimestamp, Boolean associated,
-                                         Range timestampRange) {
+                                         Range<Long> timestampRange) {
         return getTokenAccount(tokenId, accountId, createdTimestamp, associated, null, null, timestampRange);
     }
 
     private TokenAccount getTokenAccount(String tokenId, String accountId, Long createdTimestamp, Boolean associated,
                                          TokenFreezeStatusEnum freezeStatus, TokenKycStatusEnum kycStatus,
-                                         Range timestampRange) {
+                                         Range<Long> timestampRange) {
         return domainBuilder.tokenAccount().customize(t -> t
                 .accountId(EntityId.of(accountId, ACCOUNT).getId())
                 .automaticAssociation(false)

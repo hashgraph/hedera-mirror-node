@@ -18,25 +18,22 @@
  * ‍
  */
 
-import http from "k6/http";
+import http from 'k6/http';
 
-import {TestScenarioBuilder} from '../../lib/common.js';
-import {nftListName, urlPrefix} from '../../lib/constants.js';
-import {isValidListResponse} from "./common.js";
-import {setupTestParameters} from "./bootstrapEnvParameters.js";
+import {isValidListResponse, RestTestScenarioBuilder} from '../libex/common.js';
+import {nftListName} from '../libex/constants.js';
 
 const urlTag = '/tokens/{id}/nfts';
 
-const {options, run} = new TestScenarioBuilder()
+const {options, run, setup} = new RestTestScenarioBuilder()
   .name('tokensNfts') // use unique scenario name among all tests
   .tags({url: urlTag})
   .request((testParameters) => {
-    const url = `${testParameters['BASE_URL']}${urlPrefix}/tokens/${testParameters['DEFAULT_NFT_ID']}/nfts`;
+    const url = `${testParameters['BASE_URL_PREFIX']}/tokens/${testParameters['DEFAULT_NFT_ID']}/nfts`;
     return http.get(url);
   })
+  .requiredParameters('DEFAULT_NFT_ID')
   .check('Tokens nfts OK', (r) => isValidListResponse(r, nftListName))
   .build();
 
-export {options, run};
-
-export const setup = setupTestParameters;
+export {options, run, setup};

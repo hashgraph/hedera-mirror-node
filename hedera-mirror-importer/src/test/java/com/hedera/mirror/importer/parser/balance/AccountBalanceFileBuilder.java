@@ -24,7 +24,7 @@ import static com.hedera.mirror.importer.domain.StreamFilename.FileType.DATA;
 
 import com.github.dockerjava.zerodep.shaded.org.apache.commons.codec.binary.Hex;
 import java.time.Instant;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Named;
 import lombok.RequiredArgsConstructor;
@@ -53,7 +53,7 @@ public class AccountBalanceFileBuilder {
 
     public class Builder {
 
-        private final List<AccountBalance> accountBalanceList = new LinkedList<>();
+        private final List<AccountBalance> accountBalanceList = new ArrayList<>();
         private final long consensusTimestamp;
 
         private Builder(long consensusTimestamp) {

@@ -105,6 +105,7 @@ import com.hedera.mirror.common.domain.token.TokenKycStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.common.domain.token.TokenSupplyTypeEnum;
 import com.hedera.mirror.common.domain.token.TokenTransfer;
+import com.hedera.mirror.common.domain.token.TokenTypeEnum;
 import com.hedera.mirror.common.domain.topic.TopicMessage;
 import com.hedera.mirror.common.domain.transaction.AssessedCustomFee;
 import com.hedera.mirror.common.domain.transaction.CryptoTransfer;
@@ -728,6 +729,7 @@ public class DomainBuilder {
                 .tokenId(new TokenId(entityId(TOKEN)))
                 .totalSupply(1_000_000_000L)
                 .treasuryAccountId(entityId(ACCOUNT))
+                .type(TokenTypeEnum.FUNGIBLE_COMMON)
                 .wipeKey(key());
         return new DomainWrapperImpl<>(builder, builder::build);
     }
@@ -792,9 +794,9 @@ public class DomainBuilder {
     public DomainWrapper<TokenTransfer, TokenTransfer.TokenTransferBuilder> tokenTransfer() {
         var builder = TokenTransfer.builder()
                 .amount(100L)
+                .deletedTokenDissociate(false)
                 .id(new TokenTransfer.Id(timestamp(), entityId(TOKEN), entityId(ACCOUNT)))
-                .payerAccountId(entityId(ACCOUNT))
-                .tokenDissociate(false);
+                .payerAccountId(entityId(ACCOUNT));
 
         return new DomainWrapperImpl<>(builder, builder::build);
     }

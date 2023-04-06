@@ -39,9 +39,9 @@ import com.hederahashgraph.api.proto.java.TransactionBody;
 import com.hederahashgraph.api.proto.java.TransactionReceipt;
 import com.hederahashgraph.api.proto.java.TransactionRecord;
 import com.hederahashgraph.api.proto.java.TransferList;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.StreamSupport;
@@ -88,7 +88,7 @@ class EntityRecordItemListenerNonFeeTransferTest extends AbstractEntityRecordIte
     private static final String MEMO = "crypto non fee transfer tests";
 
     private final Set<Long> expectedEntityNum = new HashSet<>();
-    private final List<TransactionContext> expectedTransactions = new LinkedList<>();
+    private final List<TransactionContext> expectedTransactions = new ArrayList<>();
     private int expectedNonFeeTransfersCount;
 
     @BeforeEach

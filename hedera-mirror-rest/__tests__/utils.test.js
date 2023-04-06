@@ -1689,12 +1689,12 @@ describe('Utils addHexPrefix tests', () => {
     },
     {
       name: 'Buffer from string',
-      args: [Buffer.from('4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f', 'utf-8')],
+      args: [Buffer.from('4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f', 'utf8')],
       expected: '0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
     },
     {
       name: 'Buffer from string with prefix',
-      args: [Buffer.from('0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f', 'utf-8')],
+      args: [Buffer.from('0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f', 'utf8')],
       expected: '0x4a5ad514f0957fa170a676210c9bdbddf3bc9519702cf915fa6767a40463b96f',
     },
     {
@@ -1851,5 +1851,19 @@ describe('calculateExpiryTimestamp', () => {
       const difference = expiryDate.getTime() - createdDate.getTime();
       expect(difference).toEqual(autoRenewPeriod);
     }
+  });
+});
+
+describe('Utils formatSlot tests', () => {
+  test('Verify valid contract_state_change table format slot', () => {
+    const slot = '0x0000000000000000000000000000000000000000000000000000000000000003';
+    const formatedSlot = '03';
+    expect(utils.formatSlot(slot, true)).toEqual(Buffer.from(formatedSlot, 'hex'));
+  });
+
+  test('Verify valid slot format if no table is provided', () => {
+    const slot = '0x0000000000000000000000000000000000000000000000000000000000000001';
+    const formatedSlot = '0000000000000000000000000000000000000000000000000000000000000001';
+    expect(utils.formatSlot(slot)).toEqual(Buffer.from(formatedSlot, 'hex'));
   });
 });

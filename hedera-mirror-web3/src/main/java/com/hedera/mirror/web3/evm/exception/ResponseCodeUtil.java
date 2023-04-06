@@ -56,7 +56,7 @@ public class ResponseCodeUtil {
                             toMap(
                                     status ->
                                             new BytesKey(
-                                                    new InvalidTransactionException(status, StringUtils.EMPTY)
+                                                    new InvalidTransactionException(status, StringUtils.EMPTY, StringUtils.EMPTY)
                                                             .messageBytes()
                                                             .toArrayUnsafe()),
                                     status -> status));
