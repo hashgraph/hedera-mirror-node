@@ -16,21 +16,24 @@
 package com.hedera.services.utils;
 
 import static com.hedera.mirror.web3.evm.account.AccountAccessorImpl.EVM_ADDRESS_SIZE;
+import static com.hedera.services.utils.BitPackUtils.numFromCode;
 import static java.lang.System.arraycopy;
 
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
+
+import com.hedera.services.store.models.Id;
+
 import com.hederahashgraph.api.proto.java.AccountID;
 import com.hederahashgraph.api.proto.java.ContractID;
 import com.hederahashgraph.api.proto.java.TokenID;
 import java.util.Arrays;
 import java.util.stream.Stream;
+import com.swirlds.common.utility.CommonUtils;
 import org.apache.tuweni.bytes.Bytes;
 import org.hyperledger.besu.datatypes.Address;
 
 public final class EntityIdUtils {
-
-    private static final long MASK_INT_AS_UNSIGNED_LONG = (1L << 32) - 1;
     private static final String CANNOT_PARSE_PREFIX = "Cannot parse '";
 
     private EntityIdUtils() {
@@ -208,7 +211,7 @@ public final class EntityIdUtils {
         return triple;
     }
 
-    public static long numFromCode(int code) {
-        return code & MASK_INT_AS_UNSIGNED_LONG;
+    public static String asHexedEvmAddress(final Id id) {
+        return CommonUtils.hex(asEvmAddress((int) id.shard(), id.realm(), id.num()));
     }
 }
