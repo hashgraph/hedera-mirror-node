@@ -351,11 +351,12 @@ public class EntityRecordItemListener implements RecordItemListener {
 
         boolean isDeletedTokenDissociate = isTokenDissociate && tokenTransferCount == 1;
 
-        boolean isWipeOrBurn = (recordItem.getTransactionType() == TransactionType.TOKENBURN.getProtoId() || recordItem.getTransactionType() == TransactionType.TOKENWIPE.getProtoId()) && !isDeletedTokenDissociate;
-        boolean isMint = recordItem.getTransactionType() == TransactionType.TOKENMINT.getProtoId() && !isDeletedTokenDissociate;
+        boolean isWipeOrBurn = recordItem.getTransactionType() == TransactionType.TOKENBURN.getProtoId() || recordItem.getTransactionType() == TransactionType.TOKENWIPE.getProtoId();
+        boolean isMint = recordItem.getTransactionType() == TransactionType.TOKENMINT.getProtoId();
         boolean isSingleTransfer = tokenTransferCount == 2;
 
-        for (AccountAmount accountAmount : tokenTransfers) {
+        for (int i = 0; i < tokenTransferCount; i++) {
+            AccountAmount accountAmount = tokenTransfers.get(i);
             EntityId accountId = EntityId.of(accountAmount.getAccountID());
             long amount = accountAmount.getAmount();
             TokenTransfer tokenTransfer = new TokenTransfer();
@@ -407,7 +408,7 @@ public class EntityRecordItemListener implements RecordItemListener {
             }
 
             if (isSingleTransfer && amount > 0) {
-                EntityId senderId = EntityId.of(tokenTransfers.get(0).getAccountID());
+                EntityId senderId = i == 0 ? EntityId.of(tokenTransfers.get(1).getAccountID()) : EntityId.of(tokenTransfers.get(0).getAccountID());
                 syntheticContractLogService.create(new TransferContractLog(recordItem, tokenId, senderId, accountId, amount));
             }
         }

@@ -23,10 +23,8 @@ package com.hedera.mirror.importer.parser.record.transactionhandler;
 import javax.inject.Named;
 
 import com.hedera.mirror.importer.parser.contractlog.SyntheticContractLogService;
-
 import com.hedera.mirror.importer.parser.contractlog.ApproveAllowanceContractLog;
 
-import com.hederahashgraph.api.proto.java.NftRemoveAllowance;
 import lombok.RequiredArgsConstructor;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
@@ -35,8 +33,6 @@ import com.hedera.mirror.common.domain.transaction.RecordItem;
 import com.hedera.mirror.common.domain.transaction.Transaction;
 import com.hedera.mirror.common.domain.transaction.TransactionType;
 import com.hedera.mirror.importer.parser.record.entity.EntityListener;
-
-import java.util.List;
 
 @Named
 @RequiredArgsConstructor
