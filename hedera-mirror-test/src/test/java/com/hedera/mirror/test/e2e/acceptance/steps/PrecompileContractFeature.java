@@ -908,7 +908,7 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertThat(fixedFees).isNotEmpty();
         Tuple fixedFee = fixedFees[0];
         assertThat((long) fixedFee.get(0)).isEqualTo(10);
-        assertThat(fixedFee.get(1).toString()).isEqualTo(ZERO_ADDRESS);
+        assertThat(fixedFee.get(1).toString()).hasToString(ZERO_ADDRESS);
         assertTrue((boolean) fixedFee.get(2));
         assertFalse((boolean) fixedFee.get(3));
         assertThat(fixedFee.get(4).toString().toLowerCase())
