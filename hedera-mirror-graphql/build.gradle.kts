@@ -81,8 +81,13 @@ generatePojoConf {
     )
 }
 
-tasks.withType<JavaCompile> {
+tasks.compileJava {
     dependsOn(tasks.generatePojo)
+    dependsOn("generateEffectiveLombokConfig")
+    options.compilerArgs.addAll(listOf("-Werror", "-Xlint:all", "-Xlint:-cast"))
+    options.encoding = "UTF-8"
+    sourceCompatibility = "17"
+    targetCompatibility = "17"
     options.compilerArgs.addAll(
         listOf(
             "-Amapstruct.defaultComponentModel=jsr330",
@@ -91,6 +96,16 @@ tasks.withType<JavaCompile> {
             "-Amapstruct.unmappedTargetPolicy=IGNORE", // Remove once all Account fields have been mapped
         )
     )
+}
+
+tasks.compileTestJava {
+    dependsOn(tasks.generatePojo)
+    dependsOn("generateEffectiveLombokConfig")
+    // Can remove -Xlint:-cast after https://github.com/graphql-java-generator/graphql-gradle-plugin-project/issues/15
+    options.compilerArgs.addAll(listOf("-Werror", "-Xlint:all", "-Xlint:-cast"))
+    options.encoding = "UTF-8"
+    sourceCompatibility = "17"
+    targetCompatibility = "17"
 }
 
 java.sourceSets["main"].java {
