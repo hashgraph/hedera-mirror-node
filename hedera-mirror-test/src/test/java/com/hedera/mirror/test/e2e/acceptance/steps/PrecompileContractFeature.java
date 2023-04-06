@@ -477,8 +477,6 @@ public class PrecompileContractFeature extends AbstractFeature {
         boolean defaultKycStatus = tokenInfo.get(3);
         boolean pauseStatus = tokenInfo.get(4);
         Tuple[] fixedFees = tokenInfo.get(5);
-        Tuple[] fractionalFees = tokenInfo.get(6);
-        Tuple[] royaltyFees = tokenInfo.get(7);
         String ledgerId = tokenInfo.get(8);
 
         assertFalse(token.isEmpty());
@@ -486,8 +484,6 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertFalse(defaultKycStatus);
         assertFalse(pauseStatus);
         baseFixedFeeCheck(fixedFees);
-        assertThat(fractionalFees).isEmpty();
-        assertThat(royaltyFees).isEmpty();
         assertThat(ledgerId).isNotBlank();
 
         return tokenInfo;
@@ -930,8 +926,16 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertThat(result).isNotEmpty();
         baseFixedFeeCheck(result.get(0));
         Tuple[] fractionalFees = result.get(1);
+        Tuple fractionalFee = fractionalFees[0];
         Tuple[] royaltyFees = result.get(2);
-        assertThat(fractionalFees).isEmpty();
+        assertThat(fractionalFees).isNotEmpty();
+        assertThat((long) fractionalFee.get(0)).isOne();
+        assertThat((long) fractionalFee.get(1)).isEqualTo(10);
+        assertThat((long) fractionalFee.get(2)).isZero();
+        assertThat((long) fractionalFee.get(3)).isZero();
+        assertFalse((boolean) fractionalFee.get(4));
+        assertThat(fractionalFee.get(5).toString().toLowerCase())
+                .isEqualTo("0x" + contractClient.getClientAddress().toLowerCase());
         assertThat(royaltyFees).isEmpty();
     }
 
