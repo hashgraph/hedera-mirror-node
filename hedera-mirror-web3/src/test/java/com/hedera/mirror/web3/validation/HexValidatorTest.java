@@ -89,7 +89,7 @@ class HexValidatorTest {
 
             @Override
             public Class<?>[] groups() {
-                return new Class[0];
+                return new Class<?>[0];
             }
 
             @Override

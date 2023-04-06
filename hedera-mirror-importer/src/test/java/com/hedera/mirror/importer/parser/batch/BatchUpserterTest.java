@@ -631,6 +631,7 @@ class BatchUpserterTest extends IntegrationTest {
         assertThat(tokenAllowanceRepository.findAll()).containsExactlyInAnyOrderElementsOf(tokenAllowance);
     }
 
+    @SuppressWarnings({"deprecation", "unchecked"})
     @Test
     void tokenDissociateTransfer() {
         // given
@@ -692,7 +693,7 @@ class BatchUpserterTest extends IntegrationTest {
 
     private void persist(BatchPersister batchPersister, Collection<?>... items) {
         transactionOperations.executeWithoutResult(t -> {
-            for (Collection batch : items) {
+            for (Collection<?> batch : items) {
                 batchPersister.persist(batch);
             }
         });

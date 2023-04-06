@@ -342,6 +342,7 @@ class RemoveInvalidEntityMigrationTest extends IntegrationTest {
         return jdbcOperations.queryForObject("select count(*) from t_entities", Integer.class);
     }
 
+    @SuppressWarnings("deprecation")
     private Entity findEntityById(long id) {
         return jdbcOperations.queryForObject(
                 "select * from t_entities where id = ?",

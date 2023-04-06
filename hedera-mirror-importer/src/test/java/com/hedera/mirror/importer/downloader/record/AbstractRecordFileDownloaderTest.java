@@ -74,10 +74,12 @@ abstract class AbstractRecordFileDownloaderTest extends AbstractLinkedStreamDown
     }
 
     @Override
+    @SuppressWarnings("rawtypes")
     protected Downloader getDownloader() {
         return getDownloader(s3AsyncClient);
     }
 
+    @SuppressWarnings("rawtypes")
     private Downloader getDownloader(S3AsyncClient s3AsyncClient) {
 
         var recordFileReader = new CompositeRecordFileReader(new RecordFileReaderImplV1(),
@@ -96,6 +98,7 @@ abstract class AbstractRecordFileDownloaderTest extends AbstractLinkedStreamDown
     }
 
     @Override
+    @SuppressWarnings({"rawtypes", "unchecked"})
     protected void verifyStreamFiles(List<String> files, Consumer<StreamFile>... extraAsserts) {
         extraAsserts = ArrayUtils.add(extraAsserts, s -> {
             var recordFile = (RecordFile) s;

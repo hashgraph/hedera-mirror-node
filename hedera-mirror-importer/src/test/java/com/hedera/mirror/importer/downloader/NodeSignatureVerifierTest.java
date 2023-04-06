@@ -75,6 +75,7 @@ class NodeSignatureVerifierTest {
         publicKey = nodeKeyPair.getPublic();
     }
 
+    @SuppressWarnings("unchecked")
     @BeforeEach
     @SneakyThrows
     void setup() {

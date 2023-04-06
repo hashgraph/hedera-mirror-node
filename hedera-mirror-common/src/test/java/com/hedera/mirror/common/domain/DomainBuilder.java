@@ -239,7 +239,7 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<Contract, Contract.ContractBuilder> contract() {
+    public DomainWrapper<Contract, Contract.ContractBuilder<?,?>> contract() {
         var builder = Contract.builder()
                 .fileId(entityId(FILE))
                 .id(id())
@@ -285,7 +285,7 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<ContractResult, ContractResult.ContractResultBuilder> contractResult() {
+    public DomainWrapper<ContractResult, ContractResult.ContractResultBuilder<?,?>> contractResult() {
         var builder = ContractResult.builder()
                 .amount(1000L)
                 .bloom(bytes(256))
@@ -328,7 +328,7 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<CryptoAllowance, CryptoAllowance.CryptoAllowanceBuilder> cryptoAllowance() {
+    public DomainWrapper<CryptoAllowance, CryptoAllowance.CryptoAllowanceBuilder<?,?>> cryptoAllowance() {
         var builder = CryptoAllowance.builder()
                 .amount(10)
                 .owner(entityId(ACCOUNT).getId())
@@ -338,7 +338,7 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<CryptoAllowanceHistory, CryptoAllowanceHistory.CryptoAllowanceHistoryBuilder> cryptoAllowanceHistory() {
+    public DomainWrapper<CryptoAllowanceHistory, CryptoAllowanceHistory.CryptoAllowanceHistoryBuilder<?,?>> cryptoAllowanceHistory() {
         var builder = CryptoAllowanceHistory.builder()
                 .amount(10)
                 .owner(entityId(ACCOUNT).getId())
@@ -377,7 +377,7 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<Entity, Entity.EntityBuilder> entity() {
+    public DomainWrapper<Entity, Entity.EntityBuilder<?,?>> entity() {
         long id = id();
         long timestamp = timestamp();
 
@@ -412,7 +412,7 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<EntityHistory, EntityHistory.EntityHistoryBuilder> entityHistory() {
+    public DomainWrapper<EntityHistory, EntityHistory.EntityHistoryBuilder<?,?>> entityHistory() {
         long id = id();
         long timestamp = timestamp();
 
@@ -557,7 +557,7 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<NftAllowance, NftAllowance.NftAllowanceBuilder> nftAllowance() {
+    public DomainWrapper<NftAllowance, NftAllowance.NftAllowanceBuilder<?,?>> nftAllowance() {
         var builder = NftAllowance.builder()
                 .approvedForAll(false)
                 .owner(entityId(ACCOUNT).getId())
@@ -568,7 +568,7 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<NftAllowanceHistory, NftAllowanceHistory.NftAllowanceHistoryBuilder> nftAllowanceHistory() {
+    public DomainWrapper<NftAllowanceHistory, NftAllowanceHistory.NftAllowanceHistoryBuilder<?,?>> nftAllowanceHistory() {
         var builder = NftAllowanceHistory.builder()
                 .approvedForAll(false)
                 .owner(entityId(ACCOUNT).getId())
@@ -734,7 +734,7 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<TokenAccount, TokenAccount.TokenAccountBuilder> tokenAccount() {
+    public DomainWrapper<TokenAccount, TokenAccount.TokenAccountBuilder<?,?>> tokenAccount() {
         long timestamp = timestamp();
         var builder = TokenAccount.builder()
                 .accountId(id())
@@ -748,7 +748,7 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<TokenAccountHistory, TokenAccountHistory.TokenAccountHistoryBuilder> tokenAccountHistory() {
+    public DomainWrapper<TokenAccountHistory, TokenAccountHistory.TokenAccountHistoryBuilder<?,?>> tokenAccountHistory() {
         long timestamp = timestamp();
         var builder = TokenAccountHistory.builder()
                 .accountId(id())
@@ -762,7 +762,7 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<TokenAllowance, TokenAllowance.TokenAllowanceBuilder> tokenAllowance() {
+    public DomainWrapper<TokenAllowance, TokenAllowance.TokenAllowanceBuilder<?,?>> tokenAllowance() {
         var builder = TokenAllowance.builder()
                 .amount(10L)
                 .owner(entityId(ACCOUNT).getId())
@@ -773,7 +773,7 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<TokenAllowanceHistory, TokenAllowanceHistory.TokenAllowanceHistoryBuilder> tokenAllowanceHistory() {
+    public DomainWrapper<TokenAllowanceHistory, TokenAllowanceHistory.TokenAllowanceHistoryBuilder<?,?>> tokenAllowanceHistory() {
         var builder = TokenAllowanceHistory.builder()
                 .amount(10L)
                 .owner(entityId(ACCOUNT).getId())
@@ -801,7 +801,7 @@ public class DomainBuilder {
         return new DomainWrapperImpl<>(builder, builder::build);
     }
 
-    public DomainWrapper<Entity, Entity.EntityBuilder> topic() {
+    public DomainWrapper<Entity, Entity.EntityBuilder<?,?>> topic() {
         return entity().customize(e -> e.alias(null)
                 .receiverSigRequired(null)
                 .ethereumNonce(null)

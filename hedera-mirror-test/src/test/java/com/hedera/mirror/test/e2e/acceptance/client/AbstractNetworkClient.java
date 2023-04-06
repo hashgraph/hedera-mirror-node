@@ -70,7 +70,7 @@ public abstract class AbstractNetworkClient {
     }
 
     @SneakyThrows
-    public TransactionId executeTransaction(Transaction transaction, KeyList keyList, ExpandedAccountId payer) {
+    public TransactionId executeTransaction(Transaction<?> transaction, KeyList keyList, ExpandedAccountId payer) {
         int numSignatures = 0;
 
         if (payer != null) {
@@ -102,11 +102,11 @@ public abstract class AbstractNetworkClient {
         return transactionId;
     }
 
-    public TransactionId executeTransaction(Transaction transaction, KeyList keyList) {
+    public TransactionId executeTransaction(Transaction<?> transaction, KeyList keyList) {
         return executeTransaction(transaction, keyList, null);
     }
 
-    public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction transaction, KeyList keyList,
+    public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction<?> transaction, KeyList keyList,
                                                                            ExpandedAccountId payer) {
         long startBalance = log.isTraceEnabled() ? getBalance() : 0L;
         var transactionId = executeTransaction(transaction, keyList, payer);
@@ -119,16 +119,16 @@ public abstract class AbstractNetworkClient {
         return new NetworkTransactionResponse(transactionId, transactionReceipt);
     }
 
-    public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction transaction, KeyList keyList) {
+    public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction<?> transaction, KeyList keyList) {
         return executeTransactionAndRetrieveReceipt(transaction, keyList, null);
     }
 
-    public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction transaction,
+    public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction<?> transaction,
                                                                            ExpandedAccountId payer) {
         return executeTransactionAndRetrieveReceipt(transaction, null, payer);
     }
 
-    public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction transaction) {
+    public NetworkTransactionResponse executeTransactionAndRetrieveReceipt(Transaction<?> transaction) {
         return executeTransactionAndRetrieveReceipt(transaction, null, null);
     }
 

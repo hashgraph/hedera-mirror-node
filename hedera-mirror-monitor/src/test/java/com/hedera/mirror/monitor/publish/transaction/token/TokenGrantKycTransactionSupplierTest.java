@@ -57,7 +57,7 @@ class TokenGrantKycTransactionSupplierTest extends AbstractTransactionSupplierTe
     }
 
     @Override
-    protected Class getSupplierClass() {
+    protected Class<?> getSupplierClass() {
         return TokenGrantKycTransactionSupplier.class;
     }
 }

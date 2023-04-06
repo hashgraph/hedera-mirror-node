@@ -78,6 +78,7 @@ class EntityTimestampMigrationV1_46_0Test extends IntegrationTest {
         assertThat(transactionRepository.count()).isZero();
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void verifyEntityTimestampMigration() throws Exception {
         // given

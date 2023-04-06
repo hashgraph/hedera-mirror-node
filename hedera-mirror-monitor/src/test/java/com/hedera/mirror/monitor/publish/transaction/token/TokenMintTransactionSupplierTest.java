@@ -105,7 +105,7 @@ class TokenMintTransactionSupplierTest extends AbstractTransactionSupplierTest {
     }
 
     @Override
-    protected Class getSupplierClass() {
+    protected Class<?> getSupplierClass() {
         return TokenMintTransactionSupplier.class;
     }
 }

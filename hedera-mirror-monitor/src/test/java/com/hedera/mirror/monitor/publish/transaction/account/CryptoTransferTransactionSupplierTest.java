@@ -167,7 +167,7 @@ class CryptoTransferTransactionSupplierTest extends AbstractTransactionSupplierT
     }
 
     @Override
-    protected Class getSupplierClass() {
+    protected Class<?> getSupplierClass() {
         return CryptoTransferTransactionSupplier.class;
     }
 }

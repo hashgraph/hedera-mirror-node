@@ -49,7 +49,7 @@ class ScheduleCreateTransactionSupplierTest extends AbstractTransactionSupplierT
 
     @Test
     void createWithCustomData() {
-        PublicKey adminKey = PrivateKey.generate().getPublicKey();
+        PublicKey adminKey = PrivateKey.generateED25519().getPublicKey();
 
         ScheduleCreateTransactionSupplier scheduleCreateTransactionSupplier = new ScheduleCreateTransactionSupplier();
         scheduleCreateTransactionSupplier.setAdminKey(adminKey.toString());
@@ -67,7 +67,7 @@ class ScheduleCreateTransactionSupplierTest extends AbstractTransactionSupplierT
     }
 
     @Override
-    protected Class getSupplierClass() {
+    protected Class<?> getSupplierClass() {
         return ScheduleCreateTransactionSupplier.class;
     }
 }

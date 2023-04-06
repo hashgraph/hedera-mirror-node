@@ -64,7 +64,7 @@ class TokenCreateTransactionSupplierTest extends AbstractTransactionSupplierTest
 
     @Test
     void createWithCustomFungibleData() {
-        PublicKey key = PrivateKey.generate().getPublicKey();
+        PublicKey key = PrivateKey.generateED25519().getPublicKey();
 
         TokenCreateTransactionSupplier tokenCreateTransactionSupplier = new TokenCreateTransactionSupplier();
         tokenCreateTransactionSupplier.setAdminKey(key.toString());
@@ -101,7 +101,7 @@ class TokenCreateTransactionSupplierTest extends AbstractTransactionSupplierTest
 
     @Test
     void createWithNonFungibleData() {
-        PublicKey key = PrivateKey.generate().getPublicKey();
+        PublicKey key = PrivateKey.generateED25519().getPublicKey();
 
         TokenCreateTransactionSupplier tokenCreateTransactionSupplier = new TokenCreateTransactionSupplier();
         tokenCreateTransactionSupplier.setTreasuryAccountId(ACCOUNT_ID.toString());
@@ -129,7 +129,7 @@ class TokenCreateTransactionSupplierTest extends AbstractTransactionSupplierTest
     }
 
     @Override
-    protected Class getSupplierClass() {
+    protected Class<?> getSupplierClass() {
         return TokenCreateTransactionSupplier.class;
     }
 }

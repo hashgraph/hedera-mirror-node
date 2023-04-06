@@ -31,6 +31,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.cglib.core.ReflectUtils;
 
 import com.hedera.mirror.common.domain.StreamFile;
+import com.hedera.mirror.common.domain.StreamItem;
 import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.importer.domain.StreamFilename;
 
@@ -58,6 +59,7 @@ public abstract class AbstractLinkedStreamDownloaderTest extends AbstractDownloa
         verifyStreamFiles(List.of(file2));
     }
 
+    @SuppressWarnings("rawtypes")
     @ParameterizedTest(name = "verifyHashChain {5}")
     @CsvSource({
             // @formatter:off
@@ -75,7 +77,7 @@ public abstract class AbstractLinkedStreamDownloaderTest extends AbstractDownloa
                          Instant verifyHashAfter, Instant fileInstant,
                          Boolean expectedResult, String testName) {
         downloaderProperties.getMirrorProperties().setVerifyHashAfter(verifyHashAfter);
-        StreamFile streamFile = streamType.newStreamFile();
+        StreamFile<?> streamFile = streamType.newStreamFile();
         streamFile.setConsensusStart(DomainUtils.convertToNanosMax(fileInstant));
         streamFile.setName(StreamFilename.getFilename(streamType, StreamFilename.FileType.DATA, fileInstant));
         streamFile.setPreviousHash(actualPrevFileHash);

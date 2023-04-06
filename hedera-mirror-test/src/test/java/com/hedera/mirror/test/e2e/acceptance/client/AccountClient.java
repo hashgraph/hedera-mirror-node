@@ -86,6 +86,7 @@ public class AccountClient extends AbstractNetworkClient {
         return accountId;
     }
 
+    @SuppressWarnings("deprecation")
     public TransferTransaction getCryptoTransferTransaction(AccountId sender, AccountId recipient, Hbar hbarAmount,
                                                             boolean isApproval) {
         TransferTransaction transferTransaction = new TransferTransaction()

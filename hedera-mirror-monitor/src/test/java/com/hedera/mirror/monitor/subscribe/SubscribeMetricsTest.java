@@ -164,7 +164,7 @@ class SubscribeMetricsTest {
                 .contains("No subscribers");
     }
 
-    private SubscribeResponse response(Scenario scenario) {
+    private SubscribeResponse response(Scenario<?,?> scenario) {
         Instant timestamp = Instant.now().minusSeconds(5L);
         return SubscribeResponse.builder()
                 .publishedTimestamp(timestamp)

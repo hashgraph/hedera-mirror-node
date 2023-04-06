@@ -80,6 +80,7 @@ class SupportDeletedTokenDissociateMigrationTest extends IntegrationTest {
     @Value("classpath:db/migration/v1/V1.45.0__support_deleted_token_dissociate.sql")
     private File migrationSql;
 
+    @SuppressWarnings("deprecation")
     @Test
     void verify() {
         // given

@@ -126,7 +126,7 @@ public abstract class AbstractDownloaderTest {
     protected MirrorProperties mirrorProperties;
     protected S3AsyncClient s3AsyncClient;
     protected DownloaderProperties downloaderProperties;
-    protected Downloader downloader;
+    protected Downloader<?,?> downloader;
     protected MeterRegistry meterRegistry = new SimpleMeterRegistry();
     protected String file1;
     protected String file2;
@@ -182,6 +182,7 @@ public abstract class AbstractDownloaderTest {
                     .stream()
                     .map(e -> {
                         var entry = AddressBookEntry.builder().publicKey(e.getRSAPubKey()).build();
+                        @SuppressWarnings("deprecation")
                         var id = e.hasNodeAccountId() ? EntityId.of(e.getNodeAccountId()) :
                                 EntityId.of(e.getMemo().toStringUtf8(), FILE);
                         return ConsensusNodeStub.builder()
@@ -206,7 +207,7 @@ public abstract class AbstractDownloaderTest {
         return Collections.emptyMap();
     }
 
-    protected abstract Downloader getDownloader();
+    protected abstract Downloader<?,?> getDownloader();
 
     protected abstract Path getTestDataDir();
 
@@ -698,12 +699,13 @@ public abstract class AbstractDownloaderTest {
         assertThat(downloaderProperties.isEnabled()).isEqualTo(expectEnabled);
     }
 
+    @SuppressWarnings("unchecked")
     protected void verifyStreamFiles(List<String> files) {
         verifyStreamFiles(files, s -> {
         });
     }
 
-    @SuppressWarnings("java:S6103")
+    @SuppressWarnings({"java:S6103", "rawtypes", "unchecked"})
     protected void verifyStreamFiles(List<String> files, Consumer<StreamFile>... extraAsserts) {
         var captor = ArgumentCaptor.forClass(StreamFile.class);
         var expectedFileIndexMap = getExpectedFileIndexMap();
@@ -768,6 +770,7 @@ public abstract class AbstractDownloaderTest {
      * @param instant the instant of the StreamFile
      */
     protected void expectLastStreamFile(String hash, Long index, Instant instant) {
+        @SuppressWarnings("rawtypes")
         StreamFile streamFile = streamType.newStreamFile();
         streamFile.setName(StreamFilename.getFilename(streamType, DATA, instant));
         streamFile.setConsensusStart(DomainUtils.convertToNanosMax(instant));

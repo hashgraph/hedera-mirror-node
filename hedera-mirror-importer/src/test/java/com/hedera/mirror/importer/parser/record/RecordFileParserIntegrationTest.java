@@ -110,6 +110,7 @@ class RecordFileParserIntegrationTest extends IntegrationTest {
         assertThat(retryRecorder.getRetries(ParserException.class)).isEqualTo(2);
     }
 
+    @SuppressWarnings("deprecation")
     void verifyFinalDatabaseState(RecordFileDescriptor... recordFileDescriptors) {
         int cryptoTransferCount = 0;
         int entityCount = 0;

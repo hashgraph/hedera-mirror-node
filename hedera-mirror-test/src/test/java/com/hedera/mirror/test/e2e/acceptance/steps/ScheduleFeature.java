@@ -88,7 +88,7 @@ public class ScheduleFeature {
         createNewSchedule(scheduledTransaction, null);
     }
 
-    private void createNewSchedule(Transaction transaction, KeyList innerSignatureKeyList) {
+    private void createNewSchedule(Transaction<?> transaction, KeyList innerSignatureKeyList) {
         log.debug("Schedule creation ");
 
         // create signatures list

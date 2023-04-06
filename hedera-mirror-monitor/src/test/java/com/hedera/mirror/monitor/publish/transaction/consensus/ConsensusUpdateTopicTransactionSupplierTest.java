@@ -54,7 +54,7 @@ class ConsensusUpdateTopicTransactionSupplierTest extends AbstractTransactionSup
 
     @Test
     void createWithCustomData() {
-        PublicKey key = PrivateKey.generate().getPublicKey();
+        PublicKey key = PrivateKey.generateED25519().getPublicKey();
         Duration autoRenewPeriod = Duration.ofSeconds(1);
 
         ConsensusUpdateTopicTransactionSupplier consensusUpdateTopicTransactionSupplier =
@@ -78,7 +78,7 @@ class ConsensusUpdateTopicTransactionSupplierTest extends AbstractTransactionSup
     }
 
     @Override
-    protected Class getSupplierClass() {
+    protected Class<?> getSupplierClass() {
         return ConsensusUpdateTopicTransactionSupplier.class;
     }
 }

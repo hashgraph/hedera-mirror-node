@@ -68,6 +68,7 @@ class CompositeBatchPersisterTest extends IntegrationTest {
         assertThat(contractResultRepository.findAll()).containsExactly(contractResult);
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void persistEmpty() {
         compositeBatchInserter.persist(null);

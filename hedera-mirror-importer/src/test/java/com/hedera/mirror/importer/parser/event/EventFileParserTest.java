@@ -55,11 +55,13 @@ class EventFileParserTest extends AbstractStreamFileParserTest<EventFileParser> 
     }
 
     @Override
+    @SuppressWarnings("rawtypes")
     protected StreamFileRepository getStreamFileRepository() {
         return eventFileRepository;
     }
 
     @Override
+    @SuppressWarnings("rawtypes")
     protected void assertParsed(StreamFile streamFile, boolean parsed, boolean dbError) {
         super.assertParsed(streamFile, parsed, dbError);
 
@@ -74,6 +76,7 @@ class EventFileParserTest extends AbstractStreamFileParserTest<EventFileParser> 
     }
 
     @Override
+    @SuppressWarnings("rawtypes")
     protected StreamFile getStreamFile() {
         long id = ++count;
         Instant instant = Instant.ofEpochSecond(0L, id);

@@ -43,7 +43,7 @@ public class ScheduleClient extends AbstractNetworkClient {
         super(sdkClient, retryTemplate);
     }
 
-    public NetworkTransactionResponse createSchedule(ExpandedAccountId payerAccountId, Transaction transaction,
+    public NetworkTransactionResponse createSchedule(ExpandedAccountId payerAccountId, Transaction<?> transaction,
                                                      KeyList signatureKeyList) {
         String memo = getMemo("Create schedule");
         ScheduleCreateTransaction scheduleCreateTransaction = new ScheduleCreateTransaction()

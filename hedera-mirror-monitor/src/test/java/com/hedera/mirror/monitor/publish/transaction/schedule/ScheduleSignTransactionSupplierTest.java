@@ -53,7 +53,7 @@ class ScheduleSignTransactionSupplierTest extends AbstractTransactionSupplierTes
     }
 
     @Override
-    protected Class getSupplierClass() {
+    protected Class<?> getSupplierClass() {
         return ScheduleSignTransactionSupplier.class;
     }
 }

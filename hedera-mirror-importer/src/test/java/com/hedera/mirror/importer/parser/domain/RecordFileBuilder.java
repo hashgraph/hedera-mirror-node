@@ -191,6 +191,7 @@ public class RecordFileBuilder {
             return builders;
         }
 
+        @SuppressWarnings("rawtypes")
         private Supplier<RecordItemBuilder.Builder> recordItem(TransactionType transactionType) {
             var supplier = recordItemBuilder.lookup(transactionType);
             if (supplier == null) {

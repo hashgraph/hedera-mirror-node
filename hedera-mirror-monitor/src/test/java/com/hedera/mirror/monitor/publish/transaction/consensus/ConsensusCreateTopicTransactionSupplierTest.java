@@ -49,7 +49,7 @@ class ConsensusCreateTopicTransactionSupplierTest extends AbstractTransactionSup
 
     @Test
     void createWithCustomData() {
-        PublicKey key = PrivateKey.generate().getPublicKey();
+        PublicKey key = PrivateKey.generateED25519().getPublicKey();
 
         ConsensusCreateTopicTransactionSupplier consensusCreateTopicTransactionSupplier =
                 new ConsensusCreateTopicTransactionSupplier();
@@ -68,7 +68,7 @@ class ConsensusCreateTopicTransactionSupplierTest extends AbstractTransactionSup
     }
 
     @Override
-    protected Class getSupplierClass() {
+    protected Class<?> getSupplierClass() {
         return ConsensusCreateTopicTransactionSupplier.class;
     }
 }

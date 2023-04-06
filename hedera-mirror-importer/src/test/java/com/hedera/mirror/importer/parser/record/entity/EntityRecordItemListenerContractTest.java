@@ -173,6 +173,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         );
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void contractCreateWithEvmAddress() {
         // no child tx, creates a single contract with evm address set
@@ -203,6 +204,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         );
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     void contractCreateWithEvmAddressAndChildCreate() {
         // given contractCreate with child contractCreate
@@ -605,6 +607,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         );
     }
 
+    @SuppressWarnings("deprecation")
     @ParameterizedTest
     @EnumSource(ContractIdType.class)
     void contractCallToExistingWithChildContractCreate(ContractIdType contractIdType) {
@@ -832,6 +835,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
                 () -> assertPartialContractCallResult(contractCallBody, record));
     }
 
+    @SuppressWarnings("deprecation")
     private void assertContractEntity(RecordItem recordItem) {
         long createdTimestamp = recordItem.getConsensusTimestamp();
         var transactionBody = recordItem.getTransactionBody().getContractCreateInstance();
@@ -971,6 +975,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         repositoryActions.hasSize(count);
     }
 
+    @SuppressWarnings("deprecation")
     private ObjectAssert<Entity> assertContractEntity(ContractUpdateTransactionBody expected,
                                                       Timestamp consensusTimestamp) {
         Entity entity = getTransactionEntity(consensusTimestamp);
@@ -1054,6 +1059,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         assertContractResult(consensusTimestamp, result, result.getLogInfoList(), contractResult);
     }
 
+    @SuppressWarnings("deprecation")
     private void assertContractResult(long consensusTimestamp, ContractFunctionResult result,
                                       List<ContractLoginfo> logInfoList,
                                       ObjectAssert<ContractResult> contractResult) {
@@ -1199,6 +1205,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         return getContractTransactionRecord(transactionBody, ResponseCodeEnum.SUCCESS, contractTransactionType);
     }
 
+    @SuppressWarnings("deprecation")
     private TransactionRecord getContractTransactionRecord(TransactionBody transactionBody, ResponseCodeEnum status,
                                                            ContractTransactionType contractTransactionType) {
         return buildTransactionRecord(recordBuilder -> {
@@ -1228,6 +1235,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         });
     }
 
+    @SuppressWarnings("deprecation")
     private Transaction contractUpdateAllTransaction(ContractID contractId, boolean setMemoWrapperOrMemo,
                                                      Consumer<ContractUpdateTransactionBody.Builder> customizer) {
         return buildTransaction(builder -> {
@@ -1277,6 +1285,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
         return contractResultRepository.findById(DomainUtils.timeStampInNanos(consensusTimestamp));
     }
 
+    @SuppressWarnings("deprecation")
     private String getMemoFromContractUpdateTransactionBody(ContractUpdateTransactionBody body) {
         switch (body.getMemoFieldCase()) {
             case MEMOWRAPPER:
@@ -1333,7 +1342,7 @@ class EntityRecordItemListenerContractTest extends AbstractEntityRecordItemListe
     }
 
     private SetupResult setupContract(ContractID contractId, ContractIdType contractIdType, boolean persist,
-                                      boolean cache, Consumer<Entity.EntityBuilder> customizer) {
+                                      boolean cache, Consumer<Entity.EntityBuilder<?, ?>> customizer) {
         EntityId entityId = EntityId.of(contractId);
         byte[] evmAddress = getEvmAddress(contractIdType, entityId);
         ContractID protoContractId = getContractId(CONTRACT_ID, evmAddress);

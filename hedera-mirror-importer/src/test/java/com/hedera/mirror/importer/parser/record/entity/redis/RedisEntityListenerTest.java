@@ -105,6 +105,7 @@ class RedisEntityListenerTest {
                 .executePipelined(any(SessionCallback.class));
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void onDuplicateTopicMessages() throws InterruptedException {
         TopicMessage topicMessage1 = topicMessage();

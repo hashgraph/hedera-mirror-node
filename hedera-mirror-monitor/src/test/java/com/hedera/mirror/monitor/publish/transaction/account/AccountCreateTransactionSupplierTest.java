@@ -49,7 +49,7 @@ class AccountCreateTransactionSupplierTest extends AbstractTransactionSupplierTe
 
     @Test
     void createWithCustomData() {
-        PublicKey key = PrivateKey.generate().getPublicKey();
+        PublicKey key = PrivateKey.generateED25519().getPublicKey();
 
         AccountCreateTransactionSupplier accountCreateTransactionSupplier = new AccountCreateTransactionSupplier();
         accountCreateTransactionSupplier.setInitialBalance(1);
@@ -68,7 +68,7 @@ class AccountCreateTransactionSupplierTest extends AbstractTransactionSupplierTe
     }
 
     @Override
-    protected Class getSupplierClass() {
+    protected Class<?> getSupplierClass() {
         return AccountCreateTransactionSupplier.class;
     }
 }

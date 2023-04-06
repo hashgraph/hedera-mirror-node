@@ -137,6 +137,7 @@ class PubSubRecordItemListenerTest {
                 transactionRecord, null);
     }
 
+    @SuppressWarnings("deprecation")
     private static NodeAddressBook addressBook(int size) {
         NodeAddressBook.Builder builder = NodeAddressBook.newBuilder();
         for (int i = 0; i < size; ++i) {
@@ -159,6 +160,7 @@ class PubSubRecordItemListenerTest {
                 nonFeeTransferExtractionStrategy, transactionHandlerFactory);
     }
 
+    @SuppressWarnings({"rawtypes", "unchecked"})
     @Test
     void testPubSubMessage() throws Exception {
         // given
@@ -260,6 +262,7 @@ class PubSubRecordItemListenerTest {
         verify(pubSubTemplate, times(1)).publish(any(), any(), any());
     }
 
+    @SuppressWarnings({"rawtypes", "unchecked"})
     @Test
     void testSendRetries() throws Exception {
         CryptoTransferTransactionBody cryptoTransfer = CryptoTransferTransactionBody.newBuilder()
@@ -331,6 +334,7 @@ class PubSubRecordItemListenerTest {
         verify(addressBookService).update(fileData);
     }
 
+    @SuppressWarnings({"rawtypes", "unchecked"})
     private PubSubMessage assertPubSubMessage(PubSubMessage pubSubMessage, int numSendTries) {
         Map<String, String> header = Map.of("consensusTimestamp", CONSENSUS_TIMESTAMP.toString());
         ArgumentCaptor<String> topicCaptor = ArgumentCaptor.forClass(String.class);

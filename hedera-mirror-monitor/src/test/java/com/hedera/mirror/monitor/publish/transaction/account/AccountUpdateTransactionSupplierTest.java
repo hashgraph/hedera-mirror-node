@@ -54,7 +54,7 @@ class AccountUpdateTransactionSupplierTest extends AbstractTransactionSupplierTe
     @Test
     void createWithCustomData() {
         Instant expirationTime = Instant.now().plus(1, ChronoUnit.DAYS);
-        PublicKey key = PrivateKey.generate().getPublicKey();
+        PublicKey key = PrivateKey.generateED25519().getPublicKey();
 
         AccountUpdateTransactionSupplier accountUpdateTransactionSupplier = new AccountUpdateTransactionSupplier();
         accountUpdateTransactionSupplier.setAccountId(ACCOUNT_ID.toString());
@@ -77,7 +77,7 @@ class AccountUpdateTransactionSupplierTest extends AbstractTransactionSupplierTe
     }
 
     @Override
-    protected Class getSupplierClass() {
+    protected Class<?> getSupplierClass() {
         return AccountUpdateTransactionSupplier.class;
     }
 }

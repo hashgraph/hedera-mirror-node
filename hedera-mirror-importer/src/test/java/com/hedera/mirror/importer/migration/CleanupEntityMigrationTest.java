@@ -130,6 +130,7 @@ class CleanupEntityMigrationTest extends IntegrationTest {
         }
     }
 
+    @SuppressWarnings("deprecation")
     private Optional<Entity> retrieveEntity(Long id) {
         return Optional.of(jdbcOperations.queryForObject(
                 "select * from entity where id = ?",

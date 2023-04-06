@@ -80,7 +80,7 @@ class TokenBurnTransactionSupplierTest extends AbstractTransactionSupplierTest {
     }
 
     @Override
-    protected Class getSupplierClass() {
+    protected Class<?> getSupplierClass() {
         return TokenBurnTransactionSupplier.class;
     }
 }

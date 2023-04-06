@@ -49,7 +49,7 @@ class AccountBalancesDownloaderTest extends AbstractDownloaderTest {
     }
 
     @Override
-    protected Downloader getDownloader() {
+    protected Downloader<?, ?> getDownloader() {
         BalanceFileReader balanceFileReader = new BalanceFileReaderImplV1(new BalanceParserProperties(),
                 new AccountBalanceLineParserV1(mirrorProperties));
         var streamFileProvider = new S3StreamFileProvider(commonDownloaderProperties, s3AsyncClient);

@@ -57,7 +57,7 @@ class TokenRevokeKycTransactionSupplierTest extends AbstractTransactionSupplierT
     }
 
     @Override
-    protected Class getSupplierClass() {
+    protected Class<?> getSupplierClass() {
         return TokenRevokeKycTransactionSupplier.class;
     }
 }

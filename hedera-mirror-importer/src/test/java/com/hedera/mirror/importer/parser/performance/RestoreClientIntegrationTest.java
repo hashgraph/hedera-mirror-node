@@ -36,7 +36,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 class RestoreClientIntegrationTest extends PerformanceIntegrationTest {
 
     @Container
-    private GenericContainer customContainer;
+    private GenericContainer<?> customContainer;
 
     @BeforeAll
     void warmUp() {

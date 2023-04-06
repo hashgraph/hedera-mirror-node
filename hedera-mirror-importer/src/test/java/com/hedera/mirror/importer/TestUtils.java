@@ -68,6 +68,7 @@ public class TestUtils {
         }
     };
 
+    @SuppressWarnings("unchecked")
     public static <T> T clone(T object) {
         try {
             return (T) BEAN_UTILS.cloneBean(object);

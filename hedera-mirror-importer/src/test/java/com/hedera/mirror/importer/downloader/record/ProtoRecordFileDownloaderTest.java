@@ -63,6 +63,7 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
         loadAddressBook("test-v6-sidecar-4n.bin");
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void sidecarDisabled() {
         sidecarProperties.setEnabled(false);
@@ -83,6 +84,7 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
         assertThat(downloaderProperties.getStreamPath()).doesNotExist();
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void sidecarTypesFilter() {
         // The test sidecar file has CONTRACT_BYTECODE and CONTRACT_STATE_CHANGE
@@ -110,6 +112,7 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
         assertThat(downloaderProperties.getStreamPath()).doesNotExist();
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void sidecarTypesFilterSome() {
         sidecarProperties.setPersistBytes(true);
@@ -193,6 +196,7 @@ class ProtoRecordFileDownloaderTest extends AbstractRecordFileDownloaderTest {
                 .collect(Collectors.toMap(RecordFile::getName, RecordFile::getIndex));
     }
 
+    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
     protected void verifyStreamFiles(List<String> files, Consumer<StreamFile>... extraAsserts) {
         extraAsserts = ArrayUtils.add(extraAsserts, s -> {

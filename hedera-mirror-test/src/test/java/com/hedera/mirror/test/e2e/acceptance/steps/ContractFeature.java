@@ -258,7 +258,7 @@ public class ContractFeature extends AbstractFeature {
     }
 
     private boolean isEmptyHex(String hexString) {
-        return StringUtils.isEmpty(hexString) || hexString.equals("0x");
+        return !StringUtils.hasLength(hexString) || hexString.equals("0x");
     }
 
     private void verifyContractExecutionResults(MirrorContractResult contractResult) {

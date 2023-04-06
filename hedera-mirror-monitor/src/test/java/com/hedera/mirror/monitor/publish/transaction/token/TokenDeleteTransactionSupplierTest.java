@@ -53,7 +53,7 @@ class TokenDeleteTransactionSupplierTest extends AbstractTransactionSupplierTest
     }
 
     @Override
-    protected Class getSupplierClass() {
+    protected Class<?> getSupplierClass() {
         return TokenDeleteTransactionSupplier.class;
     }
 }

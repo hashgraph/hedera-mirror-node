@@ -37,6 +37,7 @@ import com.hedera.mirror.importer.exception.ParserException;
 import com.hedera.mirror.importer.repository.StreamFileRepository;
 
 @ExtendWith(MockitoExtension.class)
+@SuppressWarnings("rawtypes")
 public abstract class AbstractStreamFileParserTest<T extends StreamFileParser> {
 
     protected T parser;
@@ -58,6 +59,7 @@ public abstract class AbstractStreamFileParserTest<T extends StreamFileParser> {
         parserProperties.setEnabled(true);
     }
 
+    @SuppressWarnings("unchecked")
     @ValueSource(booleans = {true, false})
     @ParameterizedTest
     void parse(boolean startAndEndSame) {
@@ -74,6 +76,7 @@ public abstract class AbstractStreamFileParserTest<T extends StreamFileParser> {
         assertParsed(streamFile, true, false);
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void disabled() {
         // given
@@ -87,6 +90,7 @@ public abstract class AbstractStreamFileParserTest<T extends StreamFileParser> {
         assertParsed(streamFile, false, false);
     }
 
+    @SuppressWarnings("unchecked")
     @ValueSource(booleans = {true, false})
     @ParameterizedTest
     void alreadyExists(boolean startAndEndSame) {
@@ -104,6 +108,7 @@ public abstract class AbstractStreamFileParserTest<T extends StreamFileParser> {
         assertParsed(streamFile, false, false);
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void failureShouldRollback() {
         // given

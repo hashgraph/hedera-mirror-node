@@ -2293,6 +2293,7 @@ class SqlEntityListenerTest extends IntegrationTest {
         return nft;
     }
 
+    @SuppressWarnings({"rawtypes", "unchecked"})
     private TokenAccount getTokenAccount(EntityId tokenId, EntityId accountId, Long createdTimestamp,
                                          Boolean associated, Boolean autoAssociated, long balance,
                                          TokenFreezeStatusEnum freezeStatus, TokenKycStatusEnum kycStatus,
