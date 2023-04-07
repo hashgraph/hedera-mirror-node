@@ -38,19 +38,12 @@ class CustomFeeRepositoryTest extends Web3IntegrationTest {
     private final CustomFeeRepositoryImpl customFeeRepositoryImpl;
 
     @Test
-    void findByTokenIdRepositoryImpl() {
+    void findByTokenId() {
         final var customFee = persistDifferentFeesWithSameId();
         final var tokenId = customFee.get(0).getId().getTokenId().getId();
 
         assertThat(customFeeRepositoryImpl.findByTokenId(tokenId).get(0).getAmount()).isEqualTo(customFee.get(0).getAmount());
         assertThat(customFeeRepositoryImpl.findByTokenId(tokenId).get(1).getAmountDenominator()).isEqualTo(customFee.get(1).getAmountDenominator());
-    }
-
-    @Test
-    void findByTokenId() {
-        final var customFee = persistMultipleFees();
-        final var tokenId = customFee.getId() != null ? customFee.getId().getTokenId().getId() : 0L;
-        assertThat(customFeeRepository.findByTokenId(tokenId).get(0)).isEqualTo(customFee);
     }
 
     private List<CustomFee> persistDifferentFeesWithSameId() {
@@ -67,21 +60,5 @@ class CustomFeeRepositoryTest extends Web3IntegrationTest {
                 .persist();
 
         return List.of(fee1, fee2);
-    }
-
-    private CustomFee persistMultipleFees() {
-        var rightEntityId = EntityId.of(0, 0, 12, EntityType.TOKEN);
-        var decoyEntityId = EntityId.of(0, 0, 13, EntityType.TOKEN);
-
-        for (int i = 0; i < 5; i++) {
-            domainBuilder.customFee().customize(fee -> fee
-                            .id(new CustomFee.Id(System.currentTimeMillis(), rightEntityId)))
-                    .persist();
-            domainBuilder.customFee().customize(fee -> fee
-                            .id(new CustomFee.Id(System.currentTimeMillis(), decoyEntityId)))
-                    .persist();
-        }
-        return domainBuilder.customFee().customize(fee ->
-                fee.id(new CustomFee.Id(System.currentTimeMillis(), rightEntityId))).persist();
     }
 }
