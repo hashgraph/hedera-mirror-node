@@ -22,43 +22,25 @@ package com.hedera.mirror.web3.repository;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.common.domain.transaction.CustomFee;
 import com.hedera.mirror.web3.Web3IntegrationTest;
 
 @RequiredArgsConstructor(onConstructor = @__(@Autowired))
 class CustomFeeRepositoryTest extends Web3IntegrationTest {
     private final CustomFeeRepository customFeeRepository;
-    private final CustomFeeRepositoryImpl customFeeRepositoryImpl;
 
     @Test
     void findByTokenId() {
-        final var customFee = persistDifferentFeesWithSameId();
-        final var tokenId = customFee.get(0).getId().getTokenId().getId();
+        var customFee1 = domainBuilder.customFee().persist();
+        var customFee2 = domainBuilder.customFee().customize(c -> c.id(customFee1.getId()).amountDenominator(12L)).persist();
+        final var tokenId = customFee1.getId().getTokenId().getId();
 
-        assertThat(customFeeRepositoryImpl.findByTokenId(tokenId).get(0).getAmount()).isEqualTo(customFee.get(0).getAmount());
-        assertThat(customFeeRepositoryImpl.findByTokenId(tokenId).get(1).getAmountDenominator()).isEqualTo(customFee.get(1).getAmountDenominator());
-    }
+        var customFees = customFeeRepository.findByTokenId(tokenId);
 
-    private List<CustomFee> persistDifferentFeesWithSameId() {
-        var rightEntityId = EntityId.of(0, 0, 12, EntityType.TOKEN);
-        var timestamp = System.currentTimeMillis();
-
-        var fee1 = domainBuilder.customFee().customize(fee -> fee
-                        .id(new CustomFee.Id(timestamp, rightEntityId))
-                        .amount((long) 1).amountDenominator(100L))
-                .persist();
-        var fee2 = domainBuilder.customFee().customize(fee -> fee
-                        .id(new CustomFee.Id(timestamp, rightEntityId))
-                        .amount((long) 2).amountDenominator(200L))
-                .persist();
-
-        return List.of(fee1, fee2);
+        assertThat(customFees.get(0).getAmount()).isEqualTo(customFee1.getAmount());
+        assertThat(customFees.get(1).getAmountDenominator()).isEqualTo(customFee2.getAmountDenominator());
     }
 }
