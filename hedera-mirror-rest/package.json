@@ -1,6 +1,6 @@
 {
   "name": "@hashgraph/mirror-rest",
-  "version": "0.78.0-beta1",
+  "version": "0.78.0-rc1",
   "description": "Hedera Mirror Node REST API",
   "type": "module",
   "main": "server.js",
