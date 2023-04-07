@@ -20,7 +20,9 @@ package com.hedera.mirror.web3.repository;
  * ‍
  */
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import com.hedera.mirror.common.domain.transaction.CustomFee;
 
 import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.Test;
@@ -35,12 +37,12 @@ class CustomFeeRepositoryTest extends Web3IntegrationTest {
     @Test
     void findByTokenId() {
         var customFee1 = domainBuilder.customFee().persist();
-        var customFee2 = domainBuilder.customFee().customize(c -> c.id(customFee1.getId()).amountDenominator(12L)).persist();
+        var customFee2 = domainBuilder.customFee().customize(c -> c.id(customFee1.getId()).amount(12L)).persist();
         final var tokenId = customFee1.getId().getTokenId().getId();
 
-        var customFees = customFeeRepository.findByTokenId(tokenId);
-
-        assertThat(customFees.get(0).getAmount()).isEqualTo(customFee1.getAmount());
-        assertThat(customFees.get(1).getAmountDenominator()).isEqualTo(customFee2.getAmountDenominator());
+        assertThat(customFeeRepository.findByTokenId(tokenId))
+                .hasSize(2)
+                .extracting(CustomFee::getAmount)
+                .containsExactlyInAnyOrder(customFee1.getAmount(), customFee2.getAmount());
     }
 }
