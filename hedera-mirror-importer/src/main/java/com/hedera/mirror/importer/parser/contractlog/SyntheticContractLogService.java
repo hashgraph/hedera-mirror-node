@@ -1,3 +1,5 @@
+package com.hedera.mirror.importer.parser.contractlog;
+
 /*-
  * ‌
  * Hedera Mirror Node
@@ -18,14 +20,12 @@
  * ‍
  */
 
-description = "Hedera Mirror Node Rosetta API"
+/**
+ * This service is used to centralize the conversion logic from record stream
+ * items to separate
+ * synthetic events for HAPI token transactions
+ */
 
-plugins {
-    id("docker-conventions")
-    id("go-conventions")
-}
-
-go {
-    pkg = "./app/..."
-    version = "1.20"
+public interface SyntheticContractLogService {
+    void create(SyntheticContractLog log);
 }

@@ -105,7 +105,7 @@ allprojects {
         properties {
             property("sonar.host.url", "https://sonarcloud.io")
             property("sonar.organization", "hashgraph")
-            property("sonar.projectKey", rootProject.name)
+            property("sonar.projectKey", "hedera-mirror-node")
             property("sonar.issue.ignore.multicriteria", "e1,e2,e3,e4,e5")
             property("sonar.issue.ignore.multicriteria.e1.resourceKey", "**/*.java")
             property("sonar.issue.ignore.multicriteria.e1.ruleKey", "java:S6212")
