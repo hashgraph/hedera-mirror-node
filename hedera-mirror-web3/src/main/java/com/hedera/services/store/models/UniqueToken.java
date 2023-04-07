@@ -16,7 +16,6 @@
 package com.hedera.services.store.models;
 
 import com.google.common.base.MoreObjects;
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Value;
 import org.hyperledger.besu.datatypes.Address;
@@ -28,7 +27,7 @@ import com.hedera.services.state.submerkle.RichInstant;
  * Encapsulates the state and operations of a Hedera Unique token.
  *
  * <p>Operations are validated, and throw a {@link InvalidTransactionException} with response code
- * capturing the failure when one occurs. This model is used as Value in State, which is used as speculative rights
+ * capturing the failure when one occurs. This model is used as a value in a special state, used for speculative write
  * operations.
  */
 @Value
