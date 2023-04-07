@@ -32,8 +32,7 @@ import com.hedera.services.state.submerkle.RichInstant;
  * operations.
  */
 @Value
-@AllArgsConstructor
-@Builder
+@Builder(toBuilder = true)
 public class UniqueToken {
     private Id tokenId;
     private Address address;
@@ -43,17 +42,6 @@ public class UniqueToken {
     private Id spender;
     private byte[] metadata;
     private NftId nftId;
-
-    public UniqueToken(Id tokenId, long serialNumber, RichInstant creationTime, Id owner, byte[] metadata) {
-        this.tokenId = tokenId;
-        this.address = tokenId.asEvmAddress();
-        this.serialNumber = serialNumber;
-        this.creationTime = creationTime;
-        this.owner = owner;
-        this.spender = null;
-        this.metadata = metadata;
-        this.nftId = new NftId(tokenId.shard(), tokenId.realm(), tokenId.num(), serialNumber);
-    }
 
     @Override
     public String toString() {
