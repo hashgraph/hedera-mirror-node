@@ -75,6 +75,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
             "0x00000000000000000000000000000000000003e4");
 
     private static final String GAS_METRICS = "hedera.mirror.web3.call.gas";
+    private long gas = 120000L;
 
     private final MeterRegistry meterRegistry;
     private final ContractCallService contractCallService;
@@ -188,6 +189,19 @@ class ContractCallServiceTest extends Web3IntegrationTest {
         assertThat(isSuccessful).isEqualTo(expectedGasUsed);
 
         assertGasUsedIsPositive(gasUsedBeforeExecution, ETH_ESTIMATE_GAS);
+    }
+
+    @Test
+    void estimateGasWithInsufficientGas () {
+        final var balanceCall = "0x93423e9c00000000000000000000000000000000000000000000000000000000000003e6";
+        gas = 12L;
+        final var params = serviceParameters(balanceCall, 0, ETH_ESTIMATE_GAS, true, ETH_CALL_CONTRACT_ADDRESS);
+
+        persistEntities(false);
+
+        assertThatThrownBy(() ->
+                contractCallService.processCall(params))
+                .isInstanceOf(InvalidTransactionException.class).hasMessage("INSUFFICIENT_GAS");
     }
 
     @Test
@@ -310,7 +324,7 @@ class ContractCallServiceTest extends Web3IntegrationTest {
                 .value(value)
                 .receiver(receiver)
                 .callData(data)
-                .gas(120000L)
+                .gas(gas)
                 .isEstimate(callType == ETH_ESTIMATE_GAS)
                 .isStatic(isStatic)
                 .callType(callType)
