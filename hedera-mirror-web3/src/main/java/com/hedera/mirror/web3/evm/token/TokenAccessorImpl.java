@@ -35,9 +35,6 @@ import static com.hedera.node.app.service.evm.accounts.HederaEvmContractAliases.
 import static java.util.Objects.requireNonNullElse;
 
 import com.google.protobuf.InvalidProtocolBufferException;
-
-import com.hedera.mirror.web3.repository.CustomFeeRepositoryImpl;
-
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -64,6 +61,7 @@ import com.hedera.mirror.common.domain.token.TokenId;
 import com.hedera.mirror.common.domain.token.TokenPauseStatusEnum;
 import com.hedera.mirror.web3.evm.exception.ParsingException;
 import com.hedera.mirror.web3.evm.properties.MirrorNodeEvmProperties;
+import com.hedera.mirror.web3.repository.CustomFeeRepository;
 import com.hedera.mirror.web3.repository.EntityRepository;
 import com.hedera.mirror.web3.repository.NftAllowanceRepository;
 import com.hedera.mirror.web3.repository.NftRepository;
@@ -91,7 +89,7 @@ public class TokenAccessorImpl implements TokenAccessor {
     private final TokenAccountRepository tokenAccountRepository;
     private final TokenAllowanceRepository tokenAllowanceRepository;
     private final NftAllowanceRepository nftAllowanceRepository;
-    private final CustomFeeRepositoryImpl customFeeRepositoryimpl;
+    private final CustomFeeRepository customFeeRepository;
     private final MirrorNodeEvmProperties properties;
 
     @Override
@@ -336,7 +334,7 @@ public class TokenAccessorImpl implements TokenAccessor {
 
     private List<CustomFee> getCustomFees(final Address token) {
         final List<CustomFee> customFees = new ArrayList<>();
-        final var customFeesCollection = customFeeRepositoryimpl.findByTokenId(entityIdNumFromEvmAddress(token));
+        final var customFeesCollection = customFeeRepository.findByTokenId(entityIdNumFromEvmAddress(token));
 
         if (CollectionUtils.isEmpty(customFeesCollection)) {
             return customFees;
