@@ -20,11 +20,13 @@ package com.hedera.mirror.web3.repository;
  * ‍
  */
 
-import org.springframework.data.repository.CrudRepository;
-
 import com.hedera.mirror.common.domain.transaction.CustomFee;
-import com.hedera.mirror.common.domain.transaction.CustomFee.Id;
 
-public interface CustomFeeRepository extends CrudRepository<CustomFee, Id>, CustomFeeRepositoryExtra {
+import java.util.List;
+import org.springframework.transaction.annotation.Transactional;
 
+public interface CustomFeeRepositoryExtra {
+
+    @Transactional(readOnly = true)
+    List<CustomFee> findByTokenId(final Long tokenId);
 }
