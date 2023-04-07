@@ -39,6 +39,8 @@ class UniqueTokenTest {
         assertEquals(1, subj.getSerialNumber());
         assertEquals(Id.DEFAULT, subj.getTokenId());
         assertEquals(RichInstant.MISSING_INSTANT, subj.getCreationTime());
+        subj = subj.toBuilder().address(Id.DEFAULT.asEvmAddress()).build();
+        assertEquals(Id.DEFAULT.asEvmAddress(), subj.getAddress());
     }
 
     @Test
