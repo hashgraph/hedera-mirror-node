@@ -1,3 +1,5 @@
+package com.hedera.mirror.importer.parser.contractlog;
+
 /*-
  * ‌
  * Hedera Mirror Node
@@ -18,14 +20,12 @@
  * ‍
  */
 
-description = "Hedera Mirror Node Rosetta API"
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 
-plugins {
-    id("docker-conventions")
-    id("go-conventions")
-}
+public class ApproveAllowanceContractLog extends AbstractSyntheticContractLog {
 
-go {
-    pkg = "./app/..."
-    version = "1.20"
+    public ApproveAllowanceContractLog(RecordItem recordItem, EntityId tokenId, EntityId ownerId, EntityId spenderId, long amount) {
+        super(recordItem, tokenId, APPROVE_SIGNATURE, entityIdToBytes(ownerId), entityIdToBytes(spenderId), longToBytes(amount));
+    }
 }

@@ -1,4 +1,4 @@
-FROM golang:1.19.4-bullseye as build
+FROM golang:1.20.2-bullseye as build
 ARG VERSION=development
 WORKDIR /app
 COPY go.* ./

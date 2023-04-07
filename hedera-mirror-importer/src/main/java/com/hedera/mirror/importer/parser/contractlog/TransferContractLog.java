@@ -1,3 +1,5 @@
+package com.hedera.mirror.importer.parser.contractlog;
+
 /*-
  * ‌
  * Hedera Mirror Node
@@ -18,14 +20,11 @@
  * ‍
  */
 
-description = "Hedera Mirror Node Rosetta API"
+import com.hedera.mirror.common.domain.entity.EntityId;
+import com.hedera.mirror.common.domain.transaction.RecordItem;
 
-plugins {
-    id("docker-conventions")
-    id("go-conventions")
-}
-
-go {
-    pkg = "./app/..."
-    version = "1.20"
+public class TransferContractLog extends AbstractSyntheticContractLog {
+    public TransferContractLog(RecordItem recordItem, EntityId tokenId, EntityId senderId, EntityId receiverId, long amount) {
+        super(recordItem ,tokenId, TRANSFER_SIGNATURE, entityIdToBytes(senderId), entityIdToBytes(receiverId), longToBytes(amount));
+    }
 }
