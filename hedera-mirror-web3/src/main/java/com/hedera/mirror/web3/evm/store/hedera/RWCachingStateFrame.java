@@ -23,35 +23,35 @@ import java.util.Objects;
 import java.util.Optional;
 
 /** A CachingStateFrame that holds reads (falling through to an upstream cache) and local updates/deletes. */
-public class RWCachingStateFrame<Address> extends ROCachingStateFrame<Address> {
+@SuppressWarnings(
+        "java:S1192") // "define a constant instead of duplicating this literal" - worse readability if applied to small
+// literals
+public class RWCachingStateFrame<K> extends ROCachingStateFrame<K> {
 
     public RWCachingStateFrame(
-            @NonNull final Optional<CachingStateFrame<Address>> upstreamFrame,
-            @NonNull final Class<?>... klassesToCache) {
+            @NonNull final Optional<CachingStateFrame<K>> upstreamFrame, @NonNull final Class<?>... klassesToCache) {
         super(upstreamFrame, klassesToCache);
     }
 
     @Override
-    public void setEntity(
+    public void setValue(
             @NonNull final Class<?> klass,
-            @NonNull final UpdatableReferenceCache<Address> cache,
-            @NonNull final Address address,
-            @NonNull final Object entity) {
-        requireAllNonNull(klass, "klass", cache, "cache", address, "address", entity, "entity");
-        cache.update(address, entity);
+            @NonNull final UpdatableReferenceCache<K> cache,
+            @NonNull final K key,
+            @NonNull final Object value) {
+        requireAllNonNull(klass, "klass", cache, "cache", key, "key", value, "value");
+        cache.update(key, value);
     }
 
     @Override
-    public void deleteEntity(
-            @NonNull final Class<?> klass,
-            @NonNull final UpdatableReferenceCache<Address> cache,
-            @NonNull final Address address) {
-        requireAllNonNull(klass, "klass", cache, "cache", address, "address");
-        cache.delete(address);
+    public void deleteValue(
+            @NonNull final Class<?> klass, @NonNull final UpdatableReferenceCache<K> cache, @NonNull final K key) {
+        requireAllNonNull(klass, "klass", cache, "cache", key, "key");
+        cache.delete(key);
     }
 
     @Override
-    public void updatesFromDownstream(@NonNull final CachingStateFrame<Address> downstreamFrame) {
+    public void updatesFromDownstream(@NonNull final CachingStateFrame<K> downstreamFrame) {
         Objects.requireNonNull(downstreamFrame, "downstreamFrame");
         final var thisCaches = this.getInternalCaches();
         final var downstreamCaches = downstreamFrame.getInternalCaches();

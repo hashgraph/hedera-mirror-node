@@ -26,7 +26,7 @@ import java.util.function.BinaryOperator;
 /** Utility class to compute the state of a cache line.
  *
  * Determines, from the two maps held by an UpdatableReferenceCache - original and current - the state of the
- * cache line.  The state is enumerated by EntityState.
+ * cache line.  The state is enumerated by ValueState.
  *
  * Not a true Java "utility" class because it can't hold only static methods.  Because it is generic in the type
  * of the cache key and one method uses that type parameter in its signature.
@@ -36,7 +36,7 @@ import java.util.function.BinaryOperator;
 public class UpdatableReferenceCacheLineState<K> {
 
     /** Entities (denoted by their key) can be in one of the following states */
-    public enum EntityState {
+    public enum ValueState {
         INVALID, // invalid state
         NOT_YET_FETCHED, // haven't yet tried to read it from upstream cache
         PRESENT, // read from upstream cache, found
@@ -45,12 +45,12 @@ public class UpdatableReferenceCacheLineState<K> {
         DELETED // has been deleted in this cache
     }
 
-    public record Entry(EntityState state, Object value) {}
+    public record Entry(ValueState state, Object value) {}
 
-    private static final Entry invalidStateMarker = new Entry(EntityState.INVALID, null);
-    private static final Entry valueNotYetFetchedMarker = new Entry(EntityState.NOT_YET_FETCHED, null);
-    private static final Entry valueMissingMarker = new Entry(EntityState.MISSING, null);
-    private static final Entry valueDeletedMarker = new Entry(EntityState.DELETED, null);
+    private static final Entry invalidStateMarker = new Entry(ValueState.INVALID, null);
+    private static final Entry valueNotYetFetchedMarker = new Entry(ValueState.NOT_YET_FETCHED, null);
+    private static final Entry valueMissingMarker = new Entry(ValueState.MISSING, null);
+    private static final Entry valueDeletedMarker = new Entry(ValueState.DELETED, null);
 
     /** Get the current state/value of the key in this cache - N.B.: This is _not an accurate state!_ It checks
      * adddel first and if it's there it does not go ahead and check original! Disambiguation is to be handled by
@@ -64,7 +64,7 @@ public class UpdatableReferenceCacheLineState<K> {
         final var valueC = current.get(key);
         final var kindC = determineKind(current, key, valueC).rank();
 
-        final var state = toEntity[kindO][kindC];
+        final var state = toValueState[kindO][kindC];
         final var actualValue = toValue.get(kindO).get(kindC).apply(valueO, valueC);
 
         return switch (state) {
@@ -100,10 +100,10 @@ public class UpdatableReferenceCacheLineState<K> {
         return Kind.MISSING;
     }
 
-    private static final EntityState[ /*original*/][ /*adddel*/] toEntity = {
-        /*MISSING*/ {EntityState.NOT_YET_FETCHED, EntityState.INVALID, EntityState.UPDATED},
-        /*NULL*/ {EntityState.MISSING, EntityState.INVALID, EntityState.UPDATED},
-        /*NON_NULL*/ {EntityState.PRESENT, EntityState.DELETED, EntityState.UPDATED}
+    private static final ValueState[ /*original*/][ /*adddel*/] toValueState = {
+        /*MISSING*/ {ValueState.NOT_YET_FETCHED, ValueState.INVALID, ValueState.UPDATED},
+        /*NULL*/ {ValueState.MISSING, ValueState.INVALID, ValueState.UPDATED},
+        /*NON_NULL*/ {ValueState.PRESENT, ValueState.DELETED, ValueState.UPDATED}
     };
 
     private static final BinaryOperator<Object> fromNull = (o, c) -> null;

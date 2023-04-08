@@ -27,53 +27,51 @@ import java.util.stream.Collectors;
 
 /** A CachingStateFrame that answers reads by getting entities from sone other source - a database! - and
  * disallows all local updates/deletes. */
-@SuppressWarnings("java:S1192") // "string literals should not be duplicated"
-public class DatabaseBackedStateFrame<Address> extends CachingStateFrame<Address> {
+@SuppressWarnings(
+        "java:S1192") // "define a constant instead of duplicating this literal" - worse readability if applied to small
+// literals
+public class DatabaseBackedStateFrame<K> extends CachingStateFrame<K> {
 
     @NonNull
-    final Map<Class<?>, GroundTruthAccessor<Address, ?>> databaseAccessors;
+    final Map<Class<?>, GroundTruthAccessor<K, ?>> databaseAccessors;
 
     public DatabaseBackedStateFrame(
-            @NonNull final List<GroundTruthAccessor<Address, ?>> accessors, @NonNull final Class<?>[] entityClasses) {
+            @NonNull final List<GroundTruthAccessor<K, ?>> accessors, @NonNull final Class<?>[] valueClasses) {
         super(
                 Optional.empty(),
-                entityClasses); // superclass of this frame will create/hold useless UpdatableReferenceCaches
+                valueClasses); // superclass of this frame will create/hold useless UpdatableReferenceCaches
 
         databaseAccessors = accessors.stream().collect(Collectors.toMap(GroundTruthAccessor::getVClass, a -> a));
     }
 
     @Override
     @NonNull
-    public Optional<Object> getEntity(
-            @NonNull final Class<?> klass,
-            @NonNull final UpdatableReferenceCache<Address> cache,
-            @NonNull final Address address) {
-        requireAllNonNull(klass, "klass", cache, "cache", address, "address");
+    public Optional<Object> getValue(
+            @NonNull final Class<?> klass, @NonNull final UpdatableReferenceCache<K> cache, @NonNull final K key) {
+        requireAllNonNull(klass, "klass", cache, "cache", key, "key");
 
-        return databaseAccessors.get(klass).get(address).flatMap(o -> Optional.of(klass.cast(o)));
+        return databaseAccessors.get(klass).get(key).flatMap(o -> Optional.of(klass.cast(o)));
     }
 
     @Override
-    public void setEntity(
+    public void setValue(
             @NonNull final Class<?> klass,
-            @NonNull final UpdatableReferenceCache<Address> cache,
-            @NonNull final Address address,
-            @NonNull final Object entity) {
-        requireAllNonNull(klass, "klass", cache, "cache", address, "address", entity, "entity");
-        throw new UnsupportedOperationException("cannot add/update an entity in a database-backed StateFrame");
+            @NonNull final UpdatableReferenceCache<K> cache,
+            @NonNull final K key,
+            @NonNull final Object value) {
+        requireAllNonNull(klass, "klass", cache, "cache", key, "key", value, "value");
+        throw new UnsupportedOperationException("cannot add/update an value in a database-backed StateFrame");
     }
 
     @Override
-    public void deleteEntity(
-            @NonNull final Class<?> klass,
-            @NonNull final UpdatableReferenceCache<Address> cache,
-            @NonNull final Address address) {
-        requireAllNonNull(klass, "klass", cache, "cache", address, "address");
-        throw new UnsupportedOperationException("cannot delete an entity in a database-backed StateFrame");
+    public void deleteValue(
+            @NonNull final Class<?> klass, @NonNull final UpdatableReferenceCache<K> cache, @NonNull final K key) {
+        requireAllNonNull(klass, "klass", cache, "cache", key, "key");
+        throw new UnsupportedOperationException("cannot delete an value in a database-backed StateFrame");
     }
 
     @Override
-    public void updatesFromDownstream(@NonNull final CachingStateFrame<Address> childFrame) {
+    public void updatesFromDownstream(@NonNull final CachingStateFrame<K> childFrame) {
         Objects.requireNonNull(childFrame, "childFrame");
         throw new UnsupportedOperationException("cannot commit to a database-backed StateFrame (oddly enough)");
     }

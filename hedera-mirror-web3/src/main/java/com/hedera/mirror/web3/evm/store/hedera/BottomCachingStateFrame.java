@@ -21,14 +21,15 @@ import static com.hedera.mirror.web3.utils.MiscUtilities.requireAllNonNull;
 import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.Optional;
-import org.hyperledger.besu.datatypes.Address;
 
 /** A CachingStateFrame that answers "missing" for all reads and disallows all updates/writes. */
-public class BottomCachingStateFrame<Address> extends CachingStateFrame<Address> {
+@SuppressWarnings(
+        "java:S1192") // "define a constant instead of duplicating this literal" - worse readability if applied to small
+// literals
+public class BottomCachingStateFrame<K> extends CachingStateFrame<K> {
 
     public BottomCachingStateFrame(
-            @NonNull final Optional<CachingStateFrame<Address>> upstreamFrame,
-            @NonNull final Class<?>... klassesToCache) {
+            @NonNull final Optional<CachingStateFrame<K>> upstreamFrame, @NonNull final Class<?>... klassesToCache) {
         super(upstreamFrame, klassesToCache);
         upstreamFrame.ifPresent(dummy -> {
             throw new UnsupportedOperationException("bottom cache can not have an upstream cache");
@@ -36,35 +37,31 @@ public class BottomCachingStateFrame<Address> extends CachingStateFrame<Address>
     }
 
     @Override
-    public @NonNull Optional<Object> getEntity(
-            @NonNull final Class<?> klass,
-            @NonNull final UpdatableReferenceCache<Address> cache,
-            @NonNull final Address address) {
-        requireAllNonNull(klass, "klass", cache, "cache", address, "address");
+    public @NonNull Optional<Object> getValue(
+            @NonNull final Class<?> klass, @NonNull final UpdatableReferenceCache<K> cache, @NonNull final K key) {
+        requireAllNonNull(klass, "klass", cache, "cache", key, "key");
         return Optional.empty();
     }
 
     @Override
-    public void setEntity(
+    public void setValue(
             @NonNull final Class<?> klass,
-            @NonNull final UpdatableReferenceCache<Address> cache,
-            @NonNull final Address address,
-            @NonNull final Object entity) {
-        requireAllNonNull(klass, "klass", cache, "cache", address, "address", entity, "entity");
+            @NonNull final UpdatableReferenceCache<K> cache,
+            @NonNull final K key,
+            @NonNull final Object value) {
+        requireAllNonNull(klass, "klass", cache, "cache", key, "key", value, "value");
         throw new UnsupportedOperationException("cannot write to a bottom cache");
     }
 
     @Override
-    public void deleteEntity(
-            @NonNull final Class<?> klass,
-            @NonNull final UpdatableReferenceCache<Address> cache,
-            @NonNull final Address address) {
-        requireAllNonNull(klass, "klass", cache, "cache", address, "address");
+    public void deleteValue(
+            @NonNull final Class<?> klass, @NonNull final UpdatableReferenceCache<K> cache, @NonNull final K key) {
+        requireAllNonNull(klass, "klass", cache, "cache", key, "key");
         throw new UnsupportedOperationException("cannot delete from a bottom cache");
     }
 
     @Override
-    public void updatesFromDownstream(@NonNull final CachingStateFrame<Address> childFrame) {
+    public void updatesFromDownstream(@NonNull final CachingStateFrame<K> childFrame) {
         Objects.requireNonNull(childFrame, "childFrame");
         // ok to commit but does nothing
     }

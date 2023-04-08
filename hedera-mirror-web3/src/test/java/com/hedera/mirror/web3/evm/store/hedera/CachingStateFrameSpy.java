@@ -22,48 +22,43 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.Objects;
 import java.util.Optional;
 
-public class CachingStateFrameSpy<Address> extends CachingStateFrame<Address> {
+public class CachingStateFrameSpy<K> extends CachingStateFrame<K> {
 
     protected CachingStateFrameSpy(
-            @NonNull final Optional<CachingStateFrame<Address>> upstreamFrame,
-            @NonNull final Class<?>... klassesToCache) {
+            @NonNull final Optional<CachingStateFrame<K>> upstreamFrame, @NonNull final Class<?>... klassesToCache) {
         super(upstreamFrame, klassesToCache);
         if (upstreamFrame.isEmpty())
             throw new IllegalArgumentException("upstream frame of SpyingStateFrame must not be null");
     }
 
     @Override
-    public void updatesFromDownstream(@NonNull final CachingStateFrame<Address> downstreamFrame) {
+    public void updatesFromDownstream(@NonNull final CachingStateFrame<K> downstreamFrame) {
         Objects.requireNonNull(downstreamFrame, "downstreamFrame");
         upstreamFrame.orElseThrow().updatesFromDownstream(downstreamFrame);
     }
 
     @NonNull
     @Override
-    protected Optional<Object> getEntity(
-            @NonNull final Class<?> klass,
-            @NonNull final UpdatableReferenceCache<Address> cache,
-            @NonNull final Address address) {
-        requireAllNonNull(klass, "klass", cache, "cache", address, "address");
-        return upstreamFrame.orElseThrow().getEntity(klass, cache, address);
+    protected Optional<Object> getValue(
+            @NonNull final Class<?> klass, @NonNull final UpdatableReferenceCache<K> cache, @NonNull final K key) {
+        requireAllNonNull(klass, "klass", cache, "cache", key, "key");
+        return upstreamFrame.orElseThrow().getValue(klass, cache, key);
     }
 
     @Override
-    protected void setEntity(
+    protected void setValue(
             @NonNull final Class<?> klass,
-            @NonNull final UpdatableReferenceCache<Address> cache,
-            @NonNull final Address address,
-            @NonNull final Object entity) {
-        requireAllNonNull(klass, "klass", cache, "cache", address, "address", entity, "entity");
-        upstreamFrame.orElseThrow().setEntity(klass, cache, address, entity);
+            @NonNull final UpdatableReferenceCache<K> cache,
+            @NonNull final K key,
+            @NonNull final Object value) {
+        requireAllNonNull(klass, "klass", cache, "cache", key, "key", value, "value");
+        upstreamFrame.orElseThrow().setValue(klass, cache, key, value);
     }
 
     @Override
-    protected void deleteEntity(
-            @NonNull final Class<?> klass,
-            @NonNull final UpdatableReferenceCache<Address> cache,
-            @NonNull final Address address) {
-        requireAllNonNull(klass, "klass", cache, "cache", address, "address");
-        upstreamFrame.orElseThrow().deleteEntity(klass, cache, address);
+    protected void deleteValue(
+            @NonNull final Class<?> klass, @NonNull final UpdatableReferenceCache<K> cache, @NonNull final K key) {
+        requireAllNonNull(klass, "klass", cache, "cache", key, "key");
+        upstreamFrame.orElseThrow().deleteValue(klass, cache, key);
     }
 }

@@ -23,56 +23,54 @@ import java.util.Objects;
 import java.util.Optional;
 
 /** A CachingStateFrame that holds reads (falling through to an upstream cache) and disallows updates/deletes. */
-public class ROCachingStateFrame<Address> extends CachingStateFrame<Address> {
+@SuppressWarnings(
+        "java:S1192") // "define a constant instead of duplicating this literal" - worse readability if applied to small
+// literals
+public class ROCachingStateFrame<K> extends CachingStateFrame<K> {
 
     public ROCachingStateFrame(
-            @NonNull final Optional<CachingStateFrame<Address>> upstreamFrame,
-            @NonNull final Class<?>... klassesToCache) {
+            @NonNull final Optional<CachingStateFrame<K>> upstreamFrame, @NonNull final Class<?>... klassesToCache) {
         super(upstreamFrame, klassesToCache);
     }
 
     @Override
     @NonNull
-    public Optional<Object> getEntity(
-            @NonNull final Class<?> klass,
-            @NonNull final UpdatableReferenceCache<Address> cache,
-            @NonNull final Address address) {
-        requireAllNonNull(klass, "klass", cache, "cache", address, "address");
+    public Optional<Object> getValue(
+            @NonNull final Class<?> klass, @NonNull final UpdatableReferenceCache<K> cache, @NonNull final K key) {
+        requireAllNonNull(klass, "klass", cache, "cache", key, "key");
 
-        final var entry = cache.get(address);
+        final var entry = cache.get(key);
         return switch (entry.state()) {
             case NOT_YET_FETCHED -> upstreamFrame.flatMap(upstreamFrame -> {
-                final var upstream = upstreamFrame.getEntity(klass, cache, address);
-                cache.fill(address, upstream.orElse(null));
+                final var upstream = upstreamFrame.getValue(klass, cache, key);
+                cache.fill(key, upstream.orElse(null));
                 return upstream;
             });
             case PRESENT, UPDATED -> Optional.of(entry.value());
             case MISSING, DELETED -> Optional.empty();
-            case INVALID -> throw new IllegalArgumentException("trying to get entity when state is invalid");
+            case INVALID -> throw new IllegalArgumentException("trying to get value when state is invalid");
         };
     }
 
     @Override
-    public void setEntity(
+    public void setValue(
             @NonNull final Class<?> klass,
-            @NonNull final UpdatableReferenceCache<Address> cache,
-            @NonNull final Address address,
-            @NonNull final Object entity) {
-        requireAllNonNull(klass, "klass", cache, "cache", address, "address", entity, "entity");
-        throw new UnsupportedOperationException("cannot write entity to a R/O cache");
+            @NonNull final UpdatableReferenceCache<K> cache,
+            @NonNull final K key,
+            @NonNull final Object value) {
+        requireAllNonNull(klass, "klass", cache, "cache", key, "key", value, "value");
+        throw new UnsupportedOperationException("cannot write value to a R/O cache");
     }
 
     @Override
-    public void deleteEntity(
-            @NonNull final Class<?> klass,
-            @NonNull final UpdatableReferenceCache<Address> cache,
-            @NonNull final Address address) {
-        requireAllNonNull(klass, "klass", cache, "cache", address, "address");
-        throw new UnsupportedOperationException("cannot delete entity from a R/O cache");
+    public void deleteValue(
+            @NonNull final Class<?> klass, @NonNull final UpdatableReferenceCache<K> cache, @NonNull final K key) {
+        requireAllNonNull(klass, "klass", cache, "cache", key, "key");
+        throw new UnsupportedOperationException("cannot delete value from a R/O cache");
     }
 
     @Override
-    public void updatesFromDownstream(@NonNull final CachingStateFrame<Address> childFrame) {
+    public void updatesFromDownstream(@NonNull final CachingStateFrame<K> childFrame) {
         Objects.requireNonNull(childFrame, "childFrame");
         throw new UnsupportedOperationException("cannot commit to a R/O cache");
     }

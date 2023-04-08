@@ -16,7 +16,7 @@
 
 package com.hedera.mirror.web3.evm.store.hedera;
 
-import static com.hedera.mirror.web3.evm.store.hedera.impl.UpdatableReferenceCacheLineState.EntityState;
+import static com.hedera.mirror.web3.evm.store.hedera.impl.UpdatableReferenceCacheLineState.ValueState;
 import static com.hedera.mirror.web3.utils.MiscUtilities.requireAllNonNull;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
@@ -50,8 +50,8 @@ class UpdatableReferenceCacheTest {
     enum ValueFrom {
         NOWHERE,
         ORIGINAL,
-    CURRENT
-  }
+        CURRENT
+    }
 
     static final String THIS_KEY = "THIS KEY";
     static final Long ORIGINAL_VALUE = 10L;
@@ -66,9 +66,9 @@ class UpdatableReferenceCacheTest {
         }
         switch (currentValueIs) {
             case MISSING -> {}
-      case NULL -> sut.addNullToCurrent(THIS_KEY);
-      case NON_NULL -> sut.addToCurrent(THIS_KEY, UPDATED_VALUE);
-    }
+            case NULL -> sut.addNullToCurrent(THIS_KEY);
+            case NON_NULL -> sut.addToCurrent(THIS_KEY, UPDATED_VALUE);
+        }
     }
 
     ///// Per-test setup starts here:
@@ -101,19 +101,18 @@ class UpdatableReferenceCacheTest {
     void getCurrentStateTestExhaustive(
             @NonNull final ValueIs originalValueIs,
             @NonNull final ValueIs currentValueIs,
-            @NonNull final EntityState expectedState,
+            @NonNull final ValueState expectedState,
             @NonNull final ValueFrom expectedValueFrom) {
 
         setInitialCacheLineState(originalValueIs, currentValueIs);
 
-    final var expected =
-        new UpdatableReferenceCacheLineState.Entry(
-            expectedState,
-            switch (expectedValueFrom) {
-              case NOWHERE -> null;
-              case ORIGINAL -> ORIGINAL_VALUE;
-              case CURRENT -> UPDATED_VALUE;
-            });
+        final var expected = new UpdatableReferenceCacheLineState.Entry(
+                expectedState,
+                switch (expectedValueFrom) {
+                    case NOWHERE -> null;
+                    case ORIGINAL -> ORIGINAL_VALUE;
+                    case CURRENT -> UPDATED_VALUE;
+                });
 
         final var actual = sut.getCacheLineState(THIS_KEY);
         softly.assertThat(actual).isEqualTo(expected);
@@ -130,7 +129,7 @@ class UpdatableReferenceCacheTest {
     void fillWhileNotYetFetchedIsOkTest() {
         sut.fill(THIS_KEY, ORIGINAL_VALUE);
         assertThat(sut.getOriginal()).containsOnlyKeys(THIS_KEY).containsEntry(THIS_KEY, ORIGINAL_VALUE);
-    assertThat(sut.getCurrent()).isEmpty();
+        assertThat(sut.getCurrent()).isEmpty();
     }
 
     @ParameterizedTest(name = "state {0} (original {1} x current {2})")
@@ -143,7 +142,7 @@ class UpdatableReferenceCacheTest {
         "INVALID, MISSING,  NULL"
     })
     void fillWhileInBadStateTest(
-            @NonNull final EntityState state,
+            @NonNull final ValueState state,
             @NonNull final ValueIs originalValueIs,
             @NonNull final ValueIs currentValueIs) {
 
@@ -173,7 +172,7 @@ class UpdatableReferenceCacheTest {
         "DELETED,         NON_NULL, NULL"
     })
     void updateInAllowableScenariosTest(
-            @NonNull final EntityState state,
+            @NonNull final ValueState state,
             @NonNull final ValueIs originalValueIs,
             @NonNull final ValueIs currentValueIs) {
 
@@ -181,27 +180,24 @@ class UpdatableReferenceCacheTest {
 
         sut.update(THIS_KEY, NEW_VALUE);
         softly.assertThat(sut.get(THIS_KEY))
-                .isEqualTo(new UpdatableReferenceCacheLineState.Entry(EntityState.UPDATED, NEW_VALUE));
-    softly
-        .assertThat(sut.getCurrent())
-        .containsOnlyKeys(THIS_KEY)
-        .containsEntry(THIS_KEY, NEW_VALUE);
+                .isEqualTo(new UpdatableReferenceCacheLineState.Entry(ValueState.UPDATED, NEW_VALUE));
+        softly.assertThat(sut.getCurrent()).containsOnlyKeys(THIS_KEY).containsEntry(THIS_KEY, NEW_VALUE);
     }
 
     @Test
     void updateDisallowsCertainScenariosTest() {
 
-    // invalid state is rejected
-    sut.clearOriginal().clearCurrent().addNullToCurrent(THIS_KEY);
+        // invalid state is rejected
+        sut.clearOriginal().clearCurrent().addNullToCurrent(THIS_KEY);
         softly.assertThatThrownBy(() -> sut.update(THIS_KEY, 10L))
                 .as("INVALID state")
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("invalid");
 
-    // present with same value is rejected (that's not an update at all, it's probably a user error
-    // where the value
-    // - a reference type - was modified)
-    sut.clearOriginal().clearCurrent().addToOriginal(THIS_KEY, ORIGINAL_VALUE);
+        // present with same value is rejected (that's not an update at all, it's probably a user error
+        // where the value
+        // - a reference type - was modified)
+        sut.clearOriginal().clearCurrent().addToOriginal(THIS_KEY, ORIGINAL_VALUE);
         softly.assertThatThrownBy(() -> sut.update(THIS_KEY, ORIGINAL_VALUE))
                 .as("PRESENT, overwriting with same value")
                 .isInstanceOf(IllegalArgumentException.class)
@@ -224,50 +220,50 @@ class UpdatableReferenceCacheTest {
         "  UPDATED,   NULL,    NON_NULL,MISSING,false"
     })
     void deleteInAllowableScenariosTest(
-            @NonNull final EntityState state,
+            @NonNull final ValueState state,
             @NonNull final ValueIs originalValueIs,
             @NonNull final ValueIs currentValueIs,
-            @NonNull final EntityState endState,
+            @NonNull final ValueState endState,
             final boolean keyInCurrentAtEnd) {
 
         setInitialCacheLineState(originalValueIs, currentValueIs);
 
         sut.delete(THIS_KEY);
         softly.assertThat(sut.get(THIS_KEY)).isEqualTo(new Entry(endState, null));
-    if (keyInCurrentAtEnd)
-      softly.assertThat(sut.getCurrent()).containsOnlyKeys(THIS_KEY).containsEntry(THIS_KEY, null);
-    else softly.assertThat(sut.getCurrent()).isEmpty();
+        if (keyInCurrentAtEnd)
+            softly.assertThat(sut.getCurrent()).containsOnlyKeys(THIS_KEY).containsEntry(THIS_KEY, null);
+        else softly.assertThat(sut.getCurrent()).isEmpty();
     }
 
     @Test
     void deleteDisallowsCertainScenariosTest() {
 
-    // invalid state is rejected
-    sut.clearOriginal().clearCurrent().addNullToCurrent(THIS_KEY);
+        // invalid state is rejected
+        sut.clearOriginal().clearCurrent().addNullToCurrent(THIS_KEY);
         softly.assertThatThrownBy(() -> sut.delete(THIS_KEY))
                 .as("INVALID state")
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("invalid");
 
-    // not-yet-fetched state is rejected
-    sut.clearOriginal().clearCurrent();
+        // not-yet-fetched state is rejected
+        sut.clearOriginal().clearCurrent();
         softly.assertThatThrownBy(() -> sut.delete(THIS_KEY))
                 .as("NOT_YET_FETCHED")
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("fetched");
 
-    // missing state is rejected
-    sut.clearOriginal().clearCurrent().addNullToOriginal(THIS_KEY);
+        // missing state is rejected
+        sut.clearOriginal().clearCurrent().addNullToOriginal(THIS_KEY);
         softly.assertThatThrownBy(() -> sut.delete(THIS_KEY))
                 .as("MISSING")
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("missing");
 
-    // deleted state is rejected
-    sut.clearOriginal()
-        .clearCurrent()
-        .addToOriginal(THIS_KEY, ORIGINAL_VALUE)
-        .addNullToOriginal(THIS_KEY);
+        // deleted state is rejected
+        sut.clearOriginal()
+                .clearCurrent()
+                .addToOriginal(THIS_KEY, ORIGINAL_VALUE)
+                .addNullToOriginal(THIS_KEY);
         softly.assertThatThrownBy(() -> sut.delete(THIS_KEY))
                 .as("DELETED")
                 .isInstanceOf(IllegalArgumentException.class)
@@ -279,23 +275,23 @@ class UpdatableReferenceCacheTest {
 
         final var src = new UpdatableReferenceCacheSpy(); // maps String->Long
 
-    src.addToOriginal("SRC NOT NULL VALUE O", 10L)
-        .addToOriginal("BOTH NOT NULL VALUE O", 20L)
-        .addNullToOriginal("SRC NULL VALUE O")
-        .addNullToOriginal("BOTH NULL VALUE O")
-        .addToCurrent("SRC NOT NULL VALUE AD", 30L)
-        .addToCurrent("BOTH NOT NULL VALUE AD", 40L)
-        .addNullToCurrent("SRC NULL VALUE AD")
-        .addNullToCurrent("BOTH NULL VALUE AD");
+        src.addToOriginal("SRC NOT NULL VALUE O", 10L)
+                .addToOriginal("BOTH NOT NULL VALUE O", 20L)
+                .addNullToOriginal("SRC NULL VALUE O")
+                .addNullToOriginal("BOTH NULL VALUE O")
+                .addToCurrent("SRC NOT NULL VALUE AD", 30L)
+                .addToCurrent("BOTH NOT NULL VALUE AD", 40L)
+                .addNullToCurrent("SRC NULL VALUE AD")
+                .addNullToCurrent("BOTH NULL VALUE AD");
 
-    sut.addToOriginal("SUT NOT NULL VALUE O", -10L)
-        .addToOriginal("BOTH NOT NULL VALUE O", -20L)
-        .addNullToOriginal("SUT NULL VALUE O")
-        .addNullToOriginal("BOTH NULL VALUE O")
-        .addToCurrent("SUT NOT NULL VALUE AD", -30L)
-        .addToCurrent("BOTH NOT NULL VALUE AD", -40L)
-        .addNullToCurrent("SUT NULL VALUE AD")
-        .addNullToCurrent("BOTH NULL VALUE AD");
+        sut.addToOriginal("SUT NOT NULL VALUE O", -10L)
+                .addToOriginal("BOTH NOT NULL VALUE O", -20L)
+                .addNullToOriginal("SUT NULL VALUE O")
+                .addNullToOriginal("BOTH NULL VALUE O")
+                .addToCurrent("SUT NOT NULL VALUE AD", -30L)
+                .addToCurrent("BOTH NOT NULL VALUE AD", -40L)
+                .addNullToCurrent("SUT NULL VALUE AD")
+                .addNullToCurrent("BOTH NULL VALUE AD");
 
         final var expectedOriginal = new HashMap<>(sut.getOriginal());
         final var expectedCurrent = makeMapOf(
@@ -320,10 +316,9 @@ class UpdatableReferenceCacheTest {
                 .as("original map is not touched by coalesce")
                 .isEqualTo(expectedOriginal);
 
-    softly
-        .assertThat(sut.getCurrent())
-        .as("current map is merged by coalesce")
-        .isEqualTo(expectedCurrent);
+        softly.assertThat(sut.getCurrent())
+                .as("current map is merged by coalesce")
+                .isEqualTo(expectedCurrent);
     }
 
     ///// Utility methods beyond this point:

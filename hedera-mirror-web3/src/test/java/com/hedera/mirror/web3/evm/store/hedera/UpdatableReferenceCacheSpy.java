@@ -57,26 +57,26 @@ public class UpdatableReferenceCacheSpy extends UpdatableReferenceCache<String> 
         return original;
     }
 
-  @NonNull
-  public UpdatableReferenceCacheSpy addToCurrent(@NonNull final String k, final long v) {
+    @NonNull
+    public UpdatableReferenceCacheSpy addToCurrent(@NonNull final String k, final long v) {
         current.put(k, v);
         return this;
     }
 
-  @NonNull
-  public UpdatableReferenceCacheSpy addNullToCurrent(@NonNull final String k) {
+    @NonNull
+    public UpdatableReferenceCacheSpy addNullToCurrent(@NonNull final String k) {
         current.put(k, null);
         return this;
     }
 
-  @NonNull
-  public UpdatableReferenceCacheSpy clearCurrent() {
+    @NonNull
+    public UpdatableReferenceCacheSpy clearCurrent() {
         current.clear();
         return this;
     }
 
-  @NonNull
-  public Map<String, Object> getCurrent() {
+    @NonNull
+    public Map<String, Object> getCurrent() {
         return current;
     }
 

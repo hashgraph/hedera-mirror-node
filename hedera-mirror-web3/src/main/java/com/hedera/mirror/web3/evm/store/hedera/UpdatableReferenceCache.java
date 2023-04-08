@@ -43,6 +43,9 @@ import java.util.Objects;
  *
  * @param <K> key type
  */
+@SuppressWarnings(
+        "java:S1192") // "define a constant instead of duplicating this literal" - worse readability if applied to small
+// literals
 public class UpdatableReferenceCache<K> {
 
     @NonNull
@@ -99,8 +102,8 @@ public class UpdatableReferenceCache<K> {
                 if (currentState.value() == value) {
                     throw new IllegalArgumentException(
                             """
-                            trying to update an entity with exact same reference - probably \
-                            indicates an error where the entity was modified""");
+                            trying to update a value with exact same reference - probably \
+                            indicates an error where the value was modified""");
                 }
                 // fallthrough
             case NOT_YET_FETCHED, MISSING, UPDATED, DELETED:
@@ -122,9 +125,9 @@ public class UpdatableReferenceCache<K> {
             case PRESENT -> current.put(key, null);
             case UPDATED -> current.remove(key);
             case NOT_YET_FETCHED -> throw new IllegalArgumentException(
-                    "trying to delete an entity that hasn't been fetched");
+                    "trying to delete a value that hasn't been fetched");
             case MISSING, DELETED -> throw new IllegalArgumentException(
-                    "trying to delete a missing/already deleted entity");
+                    "trying to delete a missing/already deleted value");
             case INVALID -> throw new IllegalArgumentException("trying to do something in an invalid state");
         }
     }

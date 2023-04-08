@@ -35,10 +35,10 @@ class StackedStateFramesTest {
     @NonNull
     final Set<Integer> issuedAddresses = new HashSet<>();
 
-    int lastEntity = 0;
+    int lastValue = 0;
 
     @NonNull
-    final Set<Integer> addressesOfIssuedEntities = new HashSet<>();
+    final Set<Integer> addressesOfIssuedValues = new HashSet<>();
 
     static class NonCachedReadOfAddressException extends RuntimeException {
         @Serial
@@ -63,13 +63,13 @@ class StackedStateFramesTest {
     //    class AccountAccessor implements GroundTruthAccessor<Address, Account> {
     //        @NonNull@Override
     //        public Optional<Account> get(@NonNull final Address key) {
-    //            if (addressesOfIssuedEntities.contains(key.n)) {
+    //            if (addressesOfIssuedValues.contains(key.n)) {
     //                // Error: Should never be asking for the same address twice because of caching!
     //                throw new NonCachedReadOfAddressException("trying to get new Account for address
     // %d".formatted(key.n));
     //            }
-    //            final var account = ++lastEntity;
-    //            addressesOfIssuedEntities.add(key.n);
+    //            final var account = ++lastValue;
+    //            addressesOfIssuedValues.add(key.n);
     //            return key.n >= 0 ? Optional.of(new Account(key.n, account)) : Optional.empty();
     //        }
     //    }
@@ -78,13 +78,13 @@ class StackedStateFramesTest {
     //    @NonNull
     //    @Override
     //    public Optional<Token> get(@NonNull final Address key) {
-    //            if (addressesOfIssuedEntities.contains(key.n)) {
+    //            if (addressesOfIssuedValues.contains(key.n)) {
     //                // Error: Should never be asking for the same address twice because of caching!
     //                throw new NonCachedReadOfAddressException("trying to get new Token for address
     // %d".formatted(key.n));
     //            }
-    //            final var account = ++lastEntity;
-    //            addressesOfIssuedEntities.add(key.n);
+    //            final var account = ++lastValue;
+    //            addressesOfIssuedValues.add(key.n);
     //            return key.n >= 0 ? Optional.of(new Token(key.n, account)) : Optional.empty();
     //        }
     //    }
@@ -116,7 +116,7 @@ class StackedStateFramesTest {
     //        // TOS-1 is the DB layer, "mocked" here
     //        final var stack1 = stack0.next().orElse(null);
     //        assertThat(stack1).isNotNull().isInstanceOf(DatabaseBackedStateFrame.class);
-    //        assertThat(Triple.of(lastValidAddress, lastInvalidAddress, lastEntity)).isEqualTo(Triple.of(0, 0, 0));
+    //        assertThat(Triple.of(lastValidAddress, lastInvalidAddress, lastValue)).isEqualTo(Triple.of(0, 0, 0));
     //    }
     //
     //    @Test

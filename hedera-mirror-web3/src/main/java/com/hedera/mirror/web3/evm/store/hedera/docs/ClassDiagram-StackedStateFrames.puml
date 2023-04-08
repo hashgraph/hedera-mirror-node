@@ -2,7 +2,7 @@
 title Stacked State for eth_estimateGas (class diagram)
 hide empty members
 
-enum EntityState {
+enum ValueState {
   INVALID
   NOT_YET_FETCHED
   PRESENT
@@ -15,7 +15,7 @@ class Entry {
    +state
    +value
 }
-note top of Entry: Entity ("cache line") state + value
+note top of Entry: Value ("cache line") state + value
 
 class UpdatableReferenceCache<K> {
   +Entry get(K)
@@ -44,12 +44,12 @@ class Accessor<K,V> {
   +Optional<V> get(key)
 }
 
-class StackedStateFrames<Address> {
+class StackedStateFrames<K> {
   -stack
   +StackedStateFrames(Accessors...)
 }
 
-Entry::state o-left- EntityState
+Entry::state o-left- ValueState
 UpdatableReferenceCache::get *-up- Entry
 
 StackedStateFrames::stack *-- CachingStateFrame : owns list of
@@ -59,7 +59,7 @@ CachingStateFrame::tokenCache *- UpdatableReferenceCache : tokens
 ROCachingStateFrame <|-- RWCachingStateFrame
 CachingStateFrame <|-- ROCachingStateFrame
 CachingStateFrame <|-- DatabaseBackedStateFrame
-StackedStateFrames::StackedStateFrames o-left- Accessor : holds entities for
+StackedStateFrames::StackedStateFrames o-left- Accessor : holds values for
 
 skinparam groupInheritance 2
 @enduml
