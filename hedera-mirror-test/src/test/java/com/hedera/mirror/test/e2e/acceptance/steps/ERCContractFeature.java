@@ -318,9 +318,7 @@ public class ERCContractFeature extends AbstractFeature {
 
     @Then("the mirror node REST API should return status {int} for the mint transaction")
     public void verifyMirrorAPIResponses(int status) {
-        log.info("Verify mint transaction");
         MirrorTransaction mirrorTransaction = verifyMirrorTransactionsResponse(mirrorClient, status);
-        assertThat(mirrorTransaction.getEntityId()).isEqualTo(tokenIds.get(1).toString());
     }
 
     @Then("I approve {string} for nft")

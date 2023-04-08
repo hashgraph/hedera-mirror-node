@@ -21,10 +21,11 @@ package com.hedera.mirror.web3.exception;
  */
 
 import com.hedera.mirror.common.exception.MirrorNodeException;
+import com.hedera.mirror.web3.evm.exception.EvmException;
 
 import java.io.Serial;
 
-public class EntityNotFoundException extends MirrorNodeException {
+public class EntityNotFoundException extends EvmException {
 
     @Serial
     private static final long serialVersionUID = -3067964948484169965L;
