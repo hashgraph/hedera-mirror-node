@@ -146,9 +146,10 @@ class ContractControllerTest {
 
     @Test
     void callMissingTo() {
+        final var exceptionMessage = "No such contract or token";
         final var request = request();
 
-        given(service.processCall(any())).willThrow(new EntityNotFoundException("No such contract or token"));
+        given(service.processCall(any())).willThrow(new EntityNotFoundException(exceptionMessage));
 
         webClient.post()
                 .uri(CALL_URI)
@@ -158,7 +159,7 @@ class ContractControllerTest {
                 .expectStatus()
                 .isEqualTo(NOT_FOUND)
                 .expectBody(GenericErrorResponse.class)
-                .isEqualTo(new GenericErrorResponse("No such contract or token"));
+                .isEqualTo(new GenericErrorResponse(exceptionMessage));
     }
 
     @EmptySource

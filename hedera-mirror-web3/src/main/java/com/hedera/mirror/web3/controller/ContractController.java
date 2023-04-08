@@ -159,8 +159,8 @@ class ContractController {
 
     @ExceptionHandler
     @ResponseStatus(NOT_FOUND)
-    private Mono<GenericErrorResponse> tokeOrContractMissingError(final EntityNotFoundException e) {
-        log.warn("Missing entity error: {}", e.getMessage());
+    private Mono<GenericErrorResponse> notFound(final EntityNotFoundException e) {
+        log.warn("Not found: {}", e.getMessage());
         return errorResponse(e.getMessage());
     }
 

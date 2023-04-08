@@ -45,7 +45,7 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
         final var entityOptional = mirrorEntityAccess.findEntity(addressOrAlias);
 
         if (entityOptional.isEmpty()) {
-            throw new EntityNotFoundException("No such contract or token");
+            throw new EntityNotFoundException("No such contract or token: " + addressOrAlias);
         }
 
         final var entity = entityOptional.get();
@@ -58,7 +58,7 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
             final var bytes = Bytes.wrap(entity.getEvmAddress() != null ? entity.getEvmAddress() : toEvmAddress(entityId));
             return Address.wrap(bytes);
         } else {
-            throw new InvalidParametersException("No such contract or token");
+            throw new InvalidParametersException("Not a contract or token: " + addressOrAlias);
         }
     }
 }
