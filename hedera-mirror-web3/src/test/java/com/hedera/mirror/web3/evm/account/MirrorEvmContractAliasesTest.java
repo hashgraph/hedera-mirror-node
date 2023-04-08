@@ -26,6 +26,7 @@ import static org.mockito.Mockito.when;
 
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
+import com.hedera.mirror.web3.exception.EntityNotFoundException;
 import com.hedera.mirror.web3.exception.InvalidParametersException;
 
 import java.util.Optional;
@@ -97,13 +98,13 @@ class MirrorEvmContractAliasesTest {
         when(entity.getType()).thenReturn(EntityType.TOPIC);
         assertThatThrownBy(() -> mirrorEvmContractAliases.resolveForEvm(ADDRESS))
                 .isInstanceOf(InvalidParametersException.class)
-                .hasMessage("No such contract or token");
+                .hasMessage("Not a contract or token: 0x00000000000000000000000000000000000004e4");
     }
 
     @Test
     void resolveForEvmFail() {
         assertThatThrownBy(() -> mirrorEvmContractAliases.resolveForEvm(INVALID_ADDRESS))
-                .isInstanceOf(InvalidParametersException.class)
-                .hasMessage("No such contract or token");
+                .isInstanceOf(EntityNotFoundException.class)
+                .hasMessage("No such contract or token: 0x00000000000000000000000000000000000004e5");
     }
 }
