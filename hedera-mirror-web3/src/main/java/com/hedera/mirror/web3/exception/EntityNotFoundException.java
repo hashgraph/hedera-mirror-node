@@ -24,6 +24,7 @@ import com.hedera.mirror.web3.evm.exception.EvmException;
 
 import java.io.Serial;
 
+@SuppressWarnings("java:S110")
 public class EntityNotFoundException extends EvmException {
 
     @Serial
