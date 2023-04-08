@@ -24,6 +24,7 @@ import static com.hedera.mirror.common.util.DomainUtils.toEvmAddress;
 
 import com.hedera.mirror.common.domain.entity.EntityType;
 
+import com.hedera.mirror.web3.exception.EntityNotFoundException;
 import com.hedera.mirror.web3.exception.InvalidParametersException;
 
 import javax.inject.Named;
@@ -44,7 +45,7 @@ public class MirrorEvmContractAliases extends HederaEvmContractAliases {
         final var entityOptional = mirrorEntityAccess.findEntity(addressOrAlias);
 
         if (entityOptional.isEmpty()) {
-            throw new InvalidParametersException("No such contract or token");
+            throw new EntityNotFoundException("No such contract or token");
         }
 
         final var entity = entityOptional.get();

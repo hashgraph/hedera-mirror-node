@@ -27,6 +27,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+
+import com.hedera.mirror.test.e2e.acceptance.props.MirrorTransaction;
+
 import io.cucumber.java.After;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -311,6 +314,13 @@ public class ERCContractFeature extends AbstractFeature {
         long serialNumber = receipt.serials.get(0);
         assertThat(serialNumber).isPositive();
         tokenSerialNumbers.get(tokenId).add(serialNumber);
+    }
+
+    @Then("the mirror node REST API should return status {int} for the mint transaction")
+    public void verifyMirrorAPIResponses(int status) {
+        log.info("Verify mint transaction");
+        MirrorTransaction mirrorTransaction = verifyMirrorTransactionsResponse(mirrorClient, status);
+        assertThat(mirrorTransaction.getEntityId()).isEqualTo(tokenIds.get(1).toString());
     }
 
     @Then("I approve {string} for nft")

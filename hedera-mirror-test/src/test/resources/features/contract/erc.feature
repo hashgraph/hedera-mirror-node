@@ -7,6 +7,7 @@ Feature: ERC Contract Base Coverage Feature
         Then I create a new token with freeze status 2 and kyc status 1
         Then I create a new nft with supplyType <supplyType>
         Then I mint a serial number
+        Then the mirror node REST API should return status <httpStatusCode> for the mint transaction
         And I call the erc contract via the mirror node REST API for token name
         And I call the erc contract via the mirror node REST API for token symbol
         And I call the erc contract via the mirror node REST API for token decimals
@@ -24,5 +25,5 @@ Feature: ERC Contract Base Coverage Feature
         Then I approve <tokenAllowanceSpender> with <allowances>
         And I call the erc contract via the mirror node REST API for token allowance with allowances
         Examples:
-            | supplyType | spenderName | approvedForAllSpenderName | tokenAllowanceSpender | allowances |
-            | "INFINITE" | "BOB"       | "ALICE"                   | "ALICE"               | 2          |
+            | supplyType | httpStatusCode | spenderName | approvedForAllSpenderName | tokenAllowanceSpender | allowances |
+            | "INFINITE" | 200            | "BOB"       | "ALICE"                   | "ALICE"               | 2          |
