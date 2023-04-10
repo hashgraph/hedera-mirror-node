@@ -25,7 +25,7 @@
     "http-errors": "^2.0.0",
     "lodash": "^4.17.21",
     "log4js": "^6.9.1",
-    "mathjs": "^11.7.0",
+    "mathjs": "^11.8.0",
     "node-fetch": "^3.3.1",
     "parse-duration": "^1.0.3",
     "pretty-ms": "^8.0.0"
