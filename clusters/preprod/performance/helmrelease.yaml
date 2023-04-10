@@ -47,9 +47,19 @@ spec:
     postgresql:
       enabled: false
     rest:
+      hpa:
+        metrics:
+          - type: Resource
+            resource:
+              name: cpu
+              target:
+                type: Utilization
+                averageUtilization: 80
       resources:
         limits:
           cpu: 1150m
+        requests:
+          cpu: 700m
     test:
       enabled: true
       config:
