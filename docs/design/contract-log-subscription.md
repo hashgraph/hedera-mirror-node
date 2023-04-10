@@ -25,55 +25,25 @@ in order to provide contract log notifications in almost real time.
 ### Importer
 
 1. Update RedisEntityListener (or create new listener) to send contract logs to contract_logs topic
-- On each batch save, should query the data needed to populate the ContractLogEvent for topic message submission if data
-  not available in memory
-- Messages will be serialized via a RedisSerializer using msgpack
-
-```sql
-SELECT e.evm_address as address,
-       block_number,
-       block_hash,
-       cl.data,
-       cl.index      as log_index,
-       ARRAY[cl.topic0,
-       cl.topic1,
-       cl.topic2,
-       cl.topic3] as topics,
-       cl.transaction_hash,
-       cl.transaction_index
-
-from contract_log cl
-  join entity e
-on e.id = cl.contract_id
-  join lateral (
-  select index as block_number, hash as block_hash
-  from record_file
-  where consensus_end >= cl.consensus_timestamp
-  order by consensus_end asc
-  limit 1
-  ) block on true
-where cl.consensus_timestamp in (?)
-```
+- Populate the ContractLogEvent for topic message submission
+- Messages will be serialized via RedisSerializer using msgpack
 
 ### GraphQL
 
 - Use reactive websockets
 - We should implement rate limiting in the load balancer
-- Use bucket4j to enforce a global max subscription rate
+- Use bucket4j to enforce global max subscriptions
 - Uses msgpack for topic message serialization
 
 1. Create GraphQL schema for Input / Output
 2. Create ContractLogEvent Mapper
 3. Create Controller with @SubscriptionMapping
-4. Create a Redis Subscriber to listen for messages on contract_logs topic
-5. No modifications needed to the topic payload. Can receive directly from the topic and transfer to client
-6. Create RedisConfiguration to configure msgpack serializer
-7. Capture metrics
+4. Create RedisConfiguration to configure msgpack serializer
+5. Create a Redis Subscriber to listen for messages on contract_logs topic
+6. Capture metrics
 - subscriber consumption rate
 - Active subscriptions counter
 - Messages received (From redis topic) rate
-
-#### Contract Log to ContractLogEvent Query
 
 #### Class Defs
 
@@ -200,10 +170,6 @@ type Subscription {
 }
 ```
 
-#### Testing with RSocket
-
-See [RSC Client](https://github.com/making/rsc) for a grpcurl equivalent
-
 #### Example Request Body
 
 Addresses and topics are both optional filters
@@ -211,7 +177,7 @@ Addresses and topics are both optional filters
 ```graphql
 {
   contractLogs(subscription: {
-    addresses: ["CONTRACT_ENTITY_EVM_ADDRESS"],
+    addresses: ["EVM_ADDRESS_ALIAS OR ACCOUNT_NUM_ALIAS"],
     topics: [
       "ARRAY_OF_CONTRACT_TOPIC_IDS"
     ]
@@ -233,7 +199,7 @@ Addresses and topics are both optional filters
 ```json
 {
   "data": {
-    "address": "0x8320fe7702b96808f7bbc0d4a888ed1468216cfd",
+    "address": "0x000000000000000000000000000000000000000f",
     "blockHash": "0x61cdb2a09ab99abf791d474f20c2ea89bf8de2923a2d42bb49944c8c993cbf04",
     "blockNumber": "0x29e87",
     "data": "0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000003",
