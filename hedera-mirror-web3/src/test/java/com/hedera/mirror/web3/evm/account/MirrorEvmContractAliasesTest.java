@@ -98,13 +98,13 @@ class MirrorEvmContractAliasesTest {
         when(entity.getType()).thenReturn(EntityType.TOPIC);
         assertThatThrownBy(() -> mirrorEvmContractAliases.resolveForEvm(ADDRESS))
                 .isInstanceOf(InvalidParametersException.class)
-                .hasMessage("Not a contract or token: 0x00000000000000000000000000000000000004e4");
+                .hasMessage("Not a contract or token: " + HEX);
     }
 
     @Test
     void resolveForEvmFail() {
         assertThatThrownBy(() -> mirrorEvmContractAliases.resolveForEvm(INVALID_ADDRESS))
                 .isInstanceOf(EntityNotFoundException.class)
-                .hasMessage("No such contract or token: 0x00000000000000000000000000000000000004e5");
+                .hasMessage("No such contract or token: " + HEX2);
     }
 }
