@@ -26,9 +26,12 @@ import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallTyp
 import static org.apache.tuweni.bytes.Bytes.EMPTY;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
 import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
 import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
+
+import com.hedera.mirror.web3.exception.EntityNotFoundException;
 
 import io.github.bucket4j.Bucket;
 import javax.validation.Valid;
@@ -152,6 +155,13 @@ class ContractController {
     private Mono<GenericErrorResponse> invalidTxnBodyError(final ServerWebInputException e) {
         log.warn("Transaction body parsing error: {}", e.getMessage());
         return errorResponse(e.getReason(), e.getMostSpecificCause().getMessage(), StringUtils.EMPTY);
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(NOT_FOUND)
+    private Mono<GenericErrorResponse> notFound(final EntityNotFoundException e) {
+        log.warn("Not found: {}", e.getMessage());
+        return errorResponse(e.getMessage());
     }
 
     @ExceptionHandler
