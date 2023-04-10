@@ -71,15 +71,9 @@ public class ContractLogTopicListener {
   }
 
   /**
-   * Takes contract log and performs query to obtain additional fields to populate ContractLogEvent
-   * */
-  private ContractLogEvent toContractLogEvent(ContractLog contractLog) {
-  }
-
-  /**
    * Filters messages by addresses and topics
    * */
-  private boolean filterMessage(ContractLogEvent contractLogEvent, ContractLogFilter filter) {
+  private boolean filterMessage(ContractLogEvent contractLogEvent, ContractLogSubscription subscription) {
   }
 
   /**
@@ -88,7 +82,7 @@ public class ContractLogTopicListener {
    * we detect if this address input is account-num alias or evm address
    * alias and query the entity table for the latter to map it to its account-num alias.
    * */
-  private boolean canSubscribe(ContractLogFilter filter) {
+  private boolean canSubscribe(ContractLogSubscription subscription) {
   }
 
   /**
