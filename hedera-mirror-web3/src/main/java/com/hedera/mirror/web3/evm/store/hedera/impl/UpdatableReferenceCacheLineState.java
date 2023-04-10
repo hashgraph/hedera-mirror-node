@@ -76,10 +76,11 @@ public class UpdatableReferenceCacheLineState<K> {
         };
     }
 
+    /** Describes the state of a cache line. Converts two tests of a map entry into a single state description. */
     private enum Kind {
-        MISSING(0),
-        NULL(1),
-        NON_NULL(2);
+        MISSING(0), // missing from this cache
+        NULL(1), // has the actual value `null`
+        NON_NULL(2); // is some instance of some type, _not_ `null`
 
         private final int rank;
 
@@ -92,6 +93,7 @@ public class UpdatableReferenceCacheLineState<K> {
         }
     }
 
+    /** For a given key return the state, as `Kind` enum, of that entry in this cache */
     private Kind determineKind(@NonNull final Map<K, Object> map, @NonNull final K key, @Nullable final Object value) {
         // Java's `Map` doesn't let you find out in a single call if the value was in the map but `null` or not in the
         // map. So if the value turns out to be null you've got to do a second call to distinguish that.
@@ -100,6 +102,7 @@ public class UpdatableReferenceCacheLineState<K> {
         return Kind.MISSING;
     }
 
+    /** 2D array to map `(original state x current state)` to full cache line state w.r.t. this cache and upstream caches */
     private static final ValueState[ /*original*/][ /*adddel*/] toValueState = {
         /*MISSING*/ {ValueState.NOT_YET_FETCHED, ValueState.INVALID, ValueState.UPDATED},
         /*NULL*/ {ValueState.MISSING, ValueState.INVALID, ValueState.UPDATED},
@@ -110,6 +113,7 @@ public class UpdatableReferenceCacheLineState<K> {
     private static final BinaryOperator<Object> fromO = (o, d) -> o;
     private static final BinaryOperator<Object> fromAD = (o, c) -> c;
 
+    /** 2D array to map `(original value x current value)` to returned value for this cache line */
     private static final List<List<BinaryOperator<Object>>> toValue = List.of(
             /*MISSING*/ List.of(fromNull, fromNull, fromAD),
             /*NULL*/ List.of(fromNull, fromNull, fromAD),

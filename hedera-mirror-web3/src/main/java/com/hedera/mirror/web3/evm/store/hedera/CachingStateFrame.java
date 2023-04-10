@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import org.checkerframework.checker.units.qual.K;
 
 /** One "level" of the stacked cache: cached entries for a particular state that can be thrown away
  * when you're done, or "committed" to the upstream frame to accumulate the latest values. Entities
@@ -108,29 +107,35 @@ public abstract class CachingStateFrame<K> {
         upstreamFrame.ifPresent(frame -> frame.updatesFromDownstream(this));
     }
 
+    /** Get the upstream frame (if there is one) */
     public @NonNull Optional<CachingStateFrame<K>> getUpstream() {
         return upstreamFrame;
     }
 
+    /** Get the (visible) height of the stack (does _not_ include the stack base frames that are always there). */
     public int height() {
         return upstreamFrame.map(pf -> 1 + pf.height()).orElse(1);
     }
 
     // Following are accessors to internal per-type caches - implemented by specific subclasses of `CachingStateFrame`.
 
+    /** Get a value (of given type) from the given cache, given the key */
     @NonNull
     protected abstract Optional<Object> getValue(
             @NonNull final Class<?> klass, @NonNull final UpdatableReferenceCache<K> cache, @NonNull final K key);
 
+    /** Set a value (of given type) to the given cache, given the key and value */
     protected abstract void setValue(
             @NonNull final Class<?> klass,
             @NonNull final UpdatableReferenceCache<K> cache,
             @NonNull final K key,
             @NonNull final Object value);
 
+    /** Delete a value (of given type) from the given cache, given the key */
     protected abstract void deleteValue(
             @NonNull final Class<?> klass, @NonNull final UpdatableReferenceCache<K> cache, @NonNull final K key);
 
+    /** Return all the internal caches of this frame, holding all the different types of values */
     @NonNull
     protected Map<Class<?>, UpdatableReferenceCache<K>> getInternalCaches() {
         return accessors.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, kv -> kv.getValue().cache));
@@ -155,7 +160,7 @@ public abstract class CachingStateFrame<K> {
             this.cache = cache;
         }
 
-        /** Get an value from this level of the cache */
+        /** Get a value from this level of the cache */
         @Override
         public Optional<V> get(@NonNull final K key) {
             Objects.requireNonNull(key, "key");
@@ -171,7 +176,7 @@ public abstract class CachingStateFrame<K> {
             }
         }
 
-        /** Set a new value for an value (in this level of the cache) */
+        /** Set a new value for a value (in this level of the cache) */
         @Override
         public void set(@NonNull final K key, @NonNull V value) {
             requireAllNonNull(key, "key", value, "value");
@@ -181,7 +186,7 @@ public abstract class CachingStateFrame<K> {
             setValue(klass, cache, key, value);
         }
 
-        /** Delete an value (from in this level of the cache) */
+        /** Delete a value (from in this level of the cache) */
         @Override
         public void delete(@NonNull final K key) {
             Objects.requireNonNull(key, "key");
@@ -190,6 +195,7 @@ public abstract class CachingStateFrame<K> {
         }
     }
 
+    /** Signals that a type error occurred with the _value_ type */
     public static class CacheAccessIncorrectType extends RuntimeException {
 
         @Serial

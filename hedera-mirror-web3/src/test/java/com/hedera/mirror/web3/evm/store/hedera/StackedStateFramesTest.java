@@ -16,131 +16,167 @@
 
 package com.hedera.mirror.web3.evm.store.hedera;
 
+import static com.hedera.mirror.web3.utils.MiscUtilities.requireAllNonNull;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+
 import edu.umd.cs.findbugs.annotations.NonNull;
-import java.io.Serial;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.EmptyStackException;
+import java.util.List;
+import java.util.Optional;
+import org.assertj.core.api.SoftAssertions;
+import org.junit.jupiter.api.Test;
 
 class StackedStateFramesTest {
 
-    record Address(int n) {}
+    static class BareGroundTruthAccessor<K, V> implements GroundTruthAccessor<K, V> {
 
-    record Account(int a, int n) {}
+        final Class<K> klassK;
+        final Class<V> klassV;
 
-    record Token(int a, int n) {}
+        public BareGroundTruthAccessor(@NonNull Class<K> klassK, @NonNull Class<V> klassV) {
+            requireAllNonNull(klassK, "klassK", klassV, "klassV");
+            this.klassK = klassK;
+            this.klassV = klassV;
+        }
 
-    int lastValidAddress = 0;
-    int lastInvalidAddress = 0;
+        @NonNull
+        @Override
+        public Class<K> getKClass() {
+            return klassK;
+        }
 
-    @NonNull
-    final Set<Integer> issuedAddresses = new HashSet<>();
+        @NonNull
+        @Override
+        public Class<V> getVClass() {
+            return klassV;
+        }
 
-    int lastValue = 0;
-
-    @NonNull
-    final Set<Integer> addressesOfIssuedValues = new HashSet<>();
-
-    static class NonCachedReadOfAddressException extends RuntimeException {
-        @Serial
-        private static final long serialVersionUID = 5238699810998765007L;
-
-        public NonCachedReadOfAddressException(final String message) {
-            super(message);
+        @NonNull
+        @Override
+        public Optional<V> get(@NonNull final K key) {
+            throw new UnsupportedOperationException("BareGroundTruthAccessor.get");
         }
     }
 
-    enum AddressType {
-        INVALID,
-        VALID
+    @Test
+    void constructionHappyPath() {
+
+        final var accessors = List.<GroundTruthAccessor<Integer, ?>>of(
+                new BareGroundTruthAccessor<>(Integer.class, Character.class),
+                new BareGroundTruthAccessor<>(Integer.class, String.class));
+
+        final var sut = new StackedStateFrames<Integer>(accessors);
+
+        final var softly = new SoftAssertions();
+        softly.assertThat(sut.height()).as("visible height").isZero();
+        softly.assertThat(sut.cachedFramesDepth()).as("true height").isEqualTo(2);
+        softly.assertThat(sut.top()).as("RO on top").isInstanceOf(ROCachingStateFrame.class);
+        softly.assertThat(sut.top().getUpstream())
+                .as("DB at very bottom")
+                .containsInstanceOf(DatabaseBackedStateFrame.class);
+        softly.assertThat(sut.getValueClasses())
+                .as("value classes correct")
+                .containsExactlyInAnyOrder(Character.class, String.class);
+        softly.assertAll();
+        assertThatExceptionOfType(EmptyStackException.class)
+                .as("cannot pop bare stack")
+                .isThrownBy(sut::pop);
     }
 
-    Address createAddress(final AddressType type) {
-        final var address = type == AddressType.VALID ? ++lastValidAddress : --lastInvalidAddress;
-        issuedAddresses.add(address);
-        return new Address(address);
+    @Test
+    void constructWithDuplicatedValueTypesFails() {
+        final var accessors = List.<GroundTruthAccessor<Integer, ?>>of(
+                new BareGroundTruthAccessor<>(Integer.class, Character.class),
+                new BareGroundTruthAccessor<>(Integer.class, String.class),
+                new BareGroundTruthAccessor<>(Integer.class, List.class),
+                new BareGroundTruthAccessor<>(Integer.class, String.class));
+
+        assertThatIllegalArgumentException().isThrownBy(() -> new StackedStateFrames<Integer>(accessors));
     }
 
-    //    class AccountAccessor implements GroundTruthAccessor<Address, Account> {
-    //        @NonNull@Override
-    //        public Optional<Account> get(@NonNull final Address key) {
-    //            if (addressesOfIssuedValues.contains(key.n)) {
-    //                // Error: Should never be asking for the same address twice because of caching!
-    //                throw new NonCachedReadOfAddressException("trying to get new Account for address
-    // %d".formatted(key.n));
-    //            }
-    //            final var account = ++lastValue;
-    //            addressesOfIssuedValues.add(key.n);
-    //            return key.n >= 0 ? Optional.of(new Account(key.n, account)) : Optional.empty();
-    //        }
-    //    }
-    //
-    //    class TokenAccessor implements GroundTruthAccessor<Address, Token> {
-    //    @NonNull
-    //    @Override
-    //    public Optional<Token> get(@NonNull final Address key) {
-    //            if (addressesOfIssuedValues.contains(key.n)) {
-    //                // Error: Should never be asking for the same address twice because of caching!
-    //                throw new NonCachedReadOfAddressException("trying to get new Token for address
-    // %d".formatted(key.n));
-    //            }
-    //            final var account = ++lastValue;
-    //            addressesOfIssuedValues.add(key.n);
-    //            return key.n >= 0 ? Optional.of(new Token(key.n, account)) : Optional.empty();
-    //        }
-    //    }
-    //
-    //    Pair<GroundTruthAccessor<Address, Account>, GroundTruthAccessor<Address, Token>> getFakeDBAccessors() {
-    //        return Pair.of(new AccountAccessor(), new TokenAccessor());
-    //    }
-    //
-    //    @Test
-    //    void constructorTest() {
-    //        // On construction there should be no accounts and no tokens present, updated, or deleted.  There should
-    // be
-    //        // two layers - the R/O layer on top of the DB layer.
-    //
-    //        final var sut = new StackedStateFrames<>(getFakeDBAccessors(), Account.class, Token.class);
-    //        assertThat(sut.cachedFramesDepth()).isEqualTo(2);
-    //        assertThat(sut.height()).isZero();
-    //
-    //        // TOS is the RO layer
-    //        assertThat(sut.top()).isNotNull().isInstanceOf(ROCachingStateFrame.class);
-    //        final var stack0 = sut.top();
-    //        final var stack0AccountCache = stack0.accountCache;
-    //        assertThat(stack0AccountCache).isNotNull();
-    //        assertThat(stack0AccountCache.getCounts()).isEqualTo(Counts.of(0, 0, 0));
-    //        final var stack0TokenCache = stack0.tokenCache;
-    //        assertThat(stack0TokenCache).isNotNull();
-    //        assertThat(stack0TokenCache.getCounts()).isEqualTo(Counts.of(0, 0, 0));
-    //
-    //        // TOS-1 is the DB layer, "mocked" here
-    //        final var stack1 = stack0.next().orElse(null);
-    //        assertThat(stack1).isNotNull().isInstanceOf(DatabaseBackedStateFrame.class);
-    //        assertThat(Triple.of(lastValidAddress, lastInvalidAddress, lastValue)).isEqualTo(Triple.of(0, 0, 0));
-    //    }
-    //
-    //    @Test
-    //    void singleRWLayerTest() {
-    //        // With a single RW layer there should be caching and updating (and deleting) going on.
-    //
-    //        final var sut = new StackedStateFrames<>(getFakeDBAccessors(), Account.class, Token.class);
-    //        sut.push();
-    //        assertThat(sut.cachedFramesDepth()).isEqualTo(3);
-    //        assertThat(sut.height()).isEqualTo(1);
-    //
-    //        // TOS is the RW layer and currently has nothing in it
-    //        assertThat(sut.top()).isNotNull().isInstanceOf(RWCachingStateFrame.class);
-    //        final var stack0 = sut.top();
-    //        final var stack0AccountCache = stack0.accountCache;
-    //        assertThat(stack0AccountCache).isNotNull();
-    //        assertThat(stack0AccountCache.getCounts()).isEqualTo(Counts.of(0, 0, 0));
-    //        final var stack0TokenCache = stack0.tokenCache;
-    //        assertThat(stack0TokenCache).isNotNull();
-    //        assertThat(stack0TokenCache.getCounts()).isEqualTo(Counts.of(0, 0, 0));
-    //    }
-    //
-    //    void verifyAccountAndTokenCacheCounts(
-    //            final CachingStateFrame<Address, Account, Token> sut,
-    //            final UpdatableReferenceCache.Counts accounts,
-    //            final UpdatableReferenceCache.Counts tokens) {}
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    @Test
+    void constructWithDifferingKeyTypesFails() {
+        final var accessors = List.<GroundTruthAccessor<Integer, ?>>of(
+                new BareGroundTruthAccessor<>(Integer.class, Character.class),
+                (BareGroundTruthAccessor<Integer, ?>)
+                        (BareGroundTruthAccessor) new BareGroundTruthAccessor<>(Long.class, String.class),
+                new BareGroundTruthAccessor<>(Integer.class, List.class),
+                new BareGroundTruthAccessor<>(Integer.class, String.class));
+
+        assertThatIllegalArgumentException().isThrownBy(() -> new StackedStateFrames<Integer>(accessors));
+    }
+
+    @Test
+    void pushAndPopDoSo() {
+        final var accessors =
+                List.<GroundTruthAccessor<Integer, ?>>of(new BareGroundTruthAccessor<>(Integer.class, Character.class));
+        final var sut = new StackedStateFrames<Integer>(accessors);
+        final var roOnTopOfBase = sut.top();
+
+        assertThat(sut.height()).isZero();
+        sut.push();
+        assertThat(sut.height()).isEqualTo(1);
+        assertThat(sut.cachedFramesDepth()).isEqualTo(3);
+        assertThat(sut.top()).isInstanceOf(RWCachingStateFrame.class);
+        assertThat(sut.top().getUpstream()).contains(roOnTopOfBase);
+        sut.pop();
+        assertThat(sut.height()).isZero();
+        assertThat(sut.cachedFramesDepth()).isEqualTo(2);
+        assertThat(sut.top()).isEqualTo(roOnTopOfBase);
+    }
+
+    @Test
+    void resetToBaseDoes() {
+        final var accessors =
+                List.<GroundTruthAccessor<Integer, ?>>of(new BareGroundTruthAccessor<>(Integer.class, Character.class));
+        final var sut = new StackedStateFrames<Integer>(accessors);
+        final var roOnTopOfBase = sut.top();
+
+        sut.push();
+        sut.push();
+        sut.push();
+        assertThat(sut.height()).isEqualTo(3);
+        assertThat(sut.top()).isInstanceOf(RWCachingStateFrame.class);
+
+        sut.resetToBase();
+        assertThat(sut.height()).isZero();
+        assertThat(sut.cachedFramesDepth()).isEqualTo(2);
+        assertThat(sut.top()).isEqualTo(roOnTopOfBase);
+    }
+
+    @Test
+    void forcePushOfSpecificFrameWithProperUpstream() {
+        final var accessors =
+                List.<GroundTruthAccessor<Integer, ?>>of(new BareGroundTruthAccessor<>(Integer.class, Character.class));
+        final var sut = new StackedStateFrames<Integer>(accessors);
+        final var newTos = new RWCachingStateFrame<Integer>(Optional.of(sut.top()), Character.class);
+        final var actual = sut.push(newTos);
+        assertThat(sut.height()).isEqualTo(1);
+        assertThat(actual).isEqualTo(newTos);
+    }
+
+    @Test
+    void forcePushOfSpecificFrameWithBadUpstream() {
+        final var accessors =
+                List.<GroundTruthAccessor<Integer, ?>>of(new BareGroundTruthAccessor<>(Integer.class, Character.class));
+        final var sut = new StackedStateFrames<Integer>(accessors);
+        final var newTos = new RWCachingStateFrame<Integer>(
+                Optional.of(new RWCachingStateFrame<Integer>(Optional.empty(), Character.class)), Character.class);
+        assertThatIllegalArgumentException().isThrownBy(() -> sut.push(newTos));
+    }
+
+    @Test
+    void replaceEntireStack() {
+        final var accessors =
+                List.<GroundTruthAccessor<Integer, ?>>of(new BareGroundTruthAccessor<>(Integer.class, Character.class));
+        final var sut = new StackedStateFrames<Integer>(accessors);
+        final var newStack = new RWCachingStateFrame<Integer>(Optional.empty(), Character.class);
+        sut.replaceEntireStack(newStack);
+        assertThat(sut.height()).isZero();
+        assertThat(sut.cachedFramesDepth()).isEqualTo(1);
+        assertThat(sut.top()).isEqualTo(newStack);
+    }
 }
