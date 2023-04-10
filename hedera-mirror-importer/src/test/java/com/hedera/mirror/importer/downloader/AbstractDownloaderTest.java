@@ -126,7 +126,8 @@ public abstract class AbstractDownloaderTest {
     protected MirrorProperties mirrorProperties;
     protected S3AsyncClient s3AsyncClient;
     protected DownloaderProperties downloaderProperties;
-    protected Downloader<?,?> downloader;
+    @SuppressWarnings("rawtypes")
+    protected Downloader downloader;
     protected MeterRegistry meterRegistry = new SimpleMeterRegistry();
     protected String file1;
     protected String file2;
@@ -207,7 +208,8 @@ public abstract class AbstractDownloaderTest {
         return Collections.emptyMap();
     }
 
-    protected abstract Downloader<?,?> getDownloader();
+    @SuppressWarnings("rawtypes")
+    protected abstract Downloader getDownloader();
 
     protected abstract Path getTestDataDir();
 

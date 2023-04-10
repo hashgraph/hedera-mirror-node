@@ -75,7 +75,7 @@ abstract class AbstractRecordFileDownloaderTest extends AbstractLinkedStreamDown
 
     @Override
     @SuppressWarnings("rawtypes")
-    protected Downloader getDownloader() {
+    protected Downloader<?, ?> getDownloader() {
         return getDownloader(s3AsyncClient);
     }
 

@@ -59,7 +59,7 @@ public abstract class AbstractLinkedStreamDownloaderTest extends AbstractDownloa
         verifyStreamFiles(List.of(file2));
     }
 
-    @SuppressWarnings("rawtypes")
+    @SuppressWarnings({"rawtypes", "unchecked"})
     @ParameterizedTest(name = "verifyHashChain {5}")
     @CsvSource({
             // @formatter:off
@@ -77,7 +77,7 @@ public abstract class AbstractLinkedStreamDownloaderTest extends AbstractDownloa
                          Instant verifyHashAfter, Instant fileInstant,
                          Boolean expectedResult, String testName) {
         downloaderProperties.getMirrorProperties().setVerifyHashAfter(verifyHashAfter);
-        StreamFile<?> streamFile = streamType.newStreamFile();
+        var streamFile = streamType.newStreamFile();
         streamFile.setConsensusStart(DomainUtils.convertToNanosMax(fileInstant));
         streamFile.setName(StreamFilename.getFilename(streamType, StreamFilename.FileType.DATA, fileInstant));
         streamFile.setPreviousHash(actualPrevFileHash);
