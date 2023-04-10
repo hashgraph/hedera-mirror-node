@@ -24,12 +24,14 @@ import static com.hedera.mirror.importer.downloader.CommonDownloaderProperties.P
 import static com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType.AUTO;
 import static com.hedera.mirror.importer.downloader.CommonDownloaderProperties.PathType.NODE_ID;
 
+import com.hedera.mirror.common.domain.StreamType;
 import com.hedera.mirror.importer.MirrorProperties;
 
 import com.hedera.mirror.importer.addressbook.ConsensusNode;
 import com.hedera.mirror.importer.domain.StreamFileData;
 import com.hedera.mirror.importer.domain.StreamFilename;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
+import com.hedera.mirror.importer.config.MirrorDateRangePropertiesProcessor;
 import com.hedera.mirror.importer.exception.InvalidConfigurationException;
 
 import lombok.CustomLog;
@@ -47,6 +49,9 @@ import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.RequestPayer;
 import software.amazon.awssdk.services.s3.model.S3Object;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 @CustomLog
 @RequiredArgsConstructor
 public final class S3StreamFileProvider implements StreamFileProvider {
@@ -56,7 +61,8 @@ public final class S3StreamFileProvider implements StreamFileProvider {
 
     private final CommonDownloaderProperties commonDownloaderProperties;
 
-    private long pathExpirationTimestamp;
+    private final Map<Long, Long> pathExpirationTimestampMap = new ConcurrentHashMap<>();
+
     private final S3AsyncClient s3Client;
 
     public Mono<StreamFileData> get(ConsensusNode node, StreamFilename streamFilename) {
@@ -85,6 +91,7 @@ public final class S3StreamFileProvider implements StreamFileProvider {
 
         var prefix = getBucketPath(node, lastFilename);
 
+        log.info("Bucket path is:{}", prefix);
         var startAfter = prefix + lastFilename.getFilenameAfter();
 
         var listRequest = ListObjectsV2Request.builder()
@@ -113,7 +120,7 @@ public final class S3StreamFileProvider implements StreamFileProvider {
     //Get the bucket path. This should not be called if the pathRefreshInterval has not passed.
    private String getBucketPath(ConsensusNode consensusNode, StreamFilename streamFilename) {
         var pathType = commonDownloaderProperties.getPathType();
-        log.info("PATH type is:{}", pathType);
+        //log.info("PATH type is:{}", pathType);
         switch(pathType) {
             case NODE_ID:
                 return getNodeIdBasedPrefix(consensusNode, streamFilename);
@@ -126,22 +133,25 @@ public final class S3StreamFileProvider implements StreamFileProvider {
 
     private String autoAlgorithm(ConsensusNode consensusNode, StreamFilename streamFilename) {
         var currentTime = System.currentTimeMillis();
-        if (pathExpirationTimestamp > currentTime ) {
+        if (pathExpirationTimestampMap.getOrDefault(consensusNode.getNodeId(),0L) > currentTime ) {
             return getPrefix(consensusNode, streamFilename);
         }
-        commonDownloaderProperties.setPathType(ACCOUNT_ID);
         long count = 0;
         try {
+            // Listing files from accountNodeId path
+            commonDownloaderProperties.setPathType(ACCOUNT_ID);
             count = list(consensusNode, streamFilename)
                     .count()
                     .block();
+            // If files are available at the old bucket path continue using AUTO
+            if (count > 0) {
+                pathExpirationTimestampMap.put(consensusNode.getNodeId(),
+                        System.currentTimeMillis() + commonDownloaderProperties.getPathRefreshInterval().toMillis());
+                commonDownloaderProperties.setPathType(AUTO);
+                return getPrefix(consensusNode, streamFilename);
+            }
         } catch (Exception e) {
             log.warn("Unable to list from account based bucket path {}", e);
-        }
-        if (count > 0) {
-            pathExpirationTimestamp = System.currentTimeMillis() + commonDownloaderProperties.getPathRefreshInterval().toMillis();
-            commonDownloaderProperties.setPathType(AUTO);
-            return getPrefix(consensusNode, streamFilename);
         }
         commonDownloaderProperties.setPathType(NODE_ID);
         return getNodeIdBasedPrefix(consensusNode, streamFilename);

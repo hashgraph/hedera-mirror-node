@@ -1,4 +1,4 @@
-package com.hedera.mirror.importer.downloader.event;
+package com.hedera.mirror.importer.downloader.balance;
 
 /*-
  * ‌
@@ -23,50 +23,64 @@ package com.hedera.mirror.importer.downloader.event;
 import com.hedera.mirror.importer.FileCopier;
 import com.hedera.mirror.importer.TestUtils;
 import com.hedera.mirror.importer.downloader.AbstractBucketRestructureDownloaderTest;
+import com.hedera.mirror.importer.downloader.AbstractDownloaderTest;
 import com.hedera.mirror.importer.downloader.CommonDownloaderProperties;
 import com.hedera.mirror.importer.downloader.Downloader;
 import com.hedera.mirror.importer.downloader.DownloaderProperties;
 import com.hedera.mirror.importer.downloader.provider.S3StreamFileProvider;
-import com.hedera.mirror.importer.reader.event.EventFileReaderV3;
+import com.hedera.mirror.importer.parser.balance.BalanceParserProperties;
+import com.hedera.mirror.importer.reader.balance.BalanceFileReader;
+import com.hedera.mirror.importer.reader.balance.BalanceFileReaderImplV1;
+import com.hedera.mirror.importer.reader.balance.ProtoBalanceFileReader;
+import com.hedera.mirror.importer.reader.balance.line.AccountBalanceLineParserV1;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 
-class EventFileBucketRestructureDownloaderTest extends AbstractBucketRestructureDownloaderTest {
+import static org.assertj.core.api.Assertions.assertThat;
+
+class AccountBalancesBucketRestructureDownloaderTest extends AbstractBucketRestructureDownloaderTest {
+
+    @Override
+    protected DownloaderProperties getDownloaderProperties() {
+        return new BalanceDownloaderProperties(mirrorProperties, commonDownloaderProperties);
+    }
+
+    @Override
+    protected Downloader getDownloader() {
+        ProtoBalanceFileReader protoBalanceFileReader = new ProtoBalanceFileReader();
+        var streamFileProvider = new S3StreamFileProvider(commonDownloaderProperties, s3AsyncClient);
+        return  new AccountBalancesDownloader(consensusNodeService,
+                (BalanceDownloaderProperties) downloaderProperties, meterRegistry, dateRangeProcessor,
+                nodeSignatureVerifier, signatureFileReader, streamFileNotifier, streamFileProvider,
+                protoBalanceFileReader);
+    }
+
+    @Override
+    protected Path getTestDataDir() {
+        return Path.of("accountBalances", "old");
+    }
+
+    @Override
+    protected Duration getCloseInterval() {
+        return Duration.ofMinutes(15L);
+    }
 
     @Override
     @BeforeEach
     protected void beforeEach() {
         super.beforeEach();
-        setTestFilesAndInstants(List.of("2020-04-11T04_51_35.001934Z.evts", "2020-04-11T04_51_40.471976Z.evts"));
-        file3 = "2020-04-11T04_51_45.028997Z.evts";
-        file4 = "2020-04-11T04_51_50.017047Z.evts";
-    }
-
-    @Override
-    protected DownloaderProperties getDownloaderProperties() {
-        var eventDownloaderProperties = new EventDownloaderProperties(mirrorProperties, commonDownloaderProperties);
-        eventDownloaderProperties.setEnabled(true);
-        return eventDownloaderProperties;
-    }
-
-    @Override
-    protected Downloader getDownloader() {
-        var streamFileProvider = new S3StreamFileProvider(commonDownloaderProperties, s3AsyncClient);
-        return new EventFileDownloader(consensusNodeService, (EventDownloaderProperties) downloaderProperties,
-                meterRegistry, dateRangeProcessor, nodeSignatureVerifier, signatureFileReader, streamFileNotifier,
-                streamFileProvider, new EventFileReaderV3());
-    }
-
-    @Override
-    protected Path getTestDataDir() {
-        return Paths.get("eventsStreams", "v3.accountId");
+        setTestFilesAndInstants(List.of(
+                "2023-04-06T21_45_00.000494Z_Balances.pb.gz",
+                "2023-04-06T22_00_00.067585Z_Balances.pb.gz",
+                "2023-04-06T22_15_00.134616Z_Balances.pb.gz",
+                "2023-04-06T22_30_00.104554Z_Balances.pb.gz"
+        ));
     }
 
     @Test
@@ -88,11 +102,5 @@ class EventFileBucketRestructureDownloaderTest extends AbstractBucketRestructure
         expectLastStreamFile(file2Instant);
         downloader.download();
         verifyStreamFiles(List.of(file3, file4));
-    }
-
-
-    @Override
-    protected Duration getCloseInterval() {
-        return Duration.ofSeconds(5L);
     }
 }

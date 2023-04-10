@@ -116,8 +116,7 @@ public abstract class AbstractBucketRestructureDownloaderTest {
     protected DownloaderProperties downloaderProperties;
     protected Downloader downloader;
     protected MeterRegistry meterRegistry = new SimpleMeterRegistry();
-    protected String file1;
-    protected String file2;
+    protected String file1, file2, file3, file4;
     protected Instant file1Instant;
     protected Instant file2Instant;
     protected List<Pair<Instant, String>> instantFilenamePairs;
@@ -126,6 +125,8 @@ public abstract class AbstractBucketRestructureDownloaderTest {
     protected Collection<ConsensusNode> nodes;
     protected SignatureFileReader signatureFileReader;
     protected StreamType streamType;
+
+    protected Path testnet = Path.of("testnet", "0");
     protected long firstIndex = 0L;
 
     protected Map<String, RecordFile> recordFileMap;
@@ -139,6 +140,8 @@ public abstract class AbstractBucketRestructureDownloaderTest {
     protected void setTestFilesAndInstants(List<String> files) {
         file1 = files.get(0);
         file2 = files.get(1);
+        file3 = files.get(2);
+        file4 = files.get(3);
 
         file1Instant = new StreamFilename(file1).getInstant();
         file2Instant = new StreamFilename(file2).getInstant();
@@ -262,6 +265,18 @@ public abstract class AbstractBucketRestructureDownloaderTest {
 
         verifyStreamFiles(List.of(file1, file2));
         assertThat(downloaderProperties.getStreamPath()).doesNotExist();
+    }
+
+    @Test
+    @DisplayName("Download and verify files from new bucket")
+    void downloadFilesFromNewPath()  {
+        commonDownloaderProperties.setPathType(CommonDownloaderProperties.PathType.NODE_ID);
+        fileCopier.from(testnet)
+                .to(commonDownloaderProperties.getBucketName(), testnet.toString())
+                .copy();
+        expectLastStreamFile(file2Instant);
+        downloader.download();
+        verifyStreamFiles(List.of(file3, file4));
     }
 
     @SuppressWarnings("java:S6103")
