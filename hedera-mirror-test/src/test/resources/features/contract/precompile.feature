@@ -1,57 +1,54 @@
 @contractbase @fullsuite
 Feature: Precompile Contract Base Coverage Feature
 
-    @release @acceptance
+    @contractbase @fullsuite @acceptance @precompile @web3
     Scenario Outline: Validate Precompile Contract
         Given I successfully create and verify a precompile contract from contract bytes
         Given I successfully create and verify a fungible token for precompile contract tests
-        Given I successfully create and verify a non fungible token for precompile contract tests
         Given I create an ecdsa account and associate it to the tokens
-        Then I mint and verify a nft
-        Then Check if fungible token is token
-        Then Check if non fungible token is token
-        Then Invalid account is token should return an error
-        Then Valid account is token should return an error
-        Then Verify fungible token isn't frozen
-        Then Verify non fungible token isn't frozen
-        Then I freeze a token
-        Then Check if token is frozen
-        Then I unfreeze a token
-        Then Check if token is unfrozen
-        Then I freeze token for evm address
-        Then Check if token is frozen for evm address
-        Then I unfreeze token for evm address
-        Then Check if token is unfrozen for evm address
-        Then Check if fungible token is kyc granted
-        Then Check if non fungible token is kyc granted
-        Then Get token default freeze of fungible token
-        Then Get token default freeze of non fungible token
-        Then Get token default kyc of fungible token
-        Then Get token default kyc of non fungible token
-        Then Get information for token of fungible token
-        Then Get information for token of non fungible token
-        Then Get information for fungible token
-        Then Get information for non fungible token
-        Then Get type for fungible token
-        Then Get type for non fungible token
-        Then Get expiry token info for fungible token
-        Then Get expiry token info for non fungible token
-        Then Get token key for fungible token
-        Then Get token key for non fungible token
-        Then Get fungible token name by direct call
-        Then Get fungible token symbol by direct call
-        Then Get fungible token decimals by direct call
-        Then Get fungible token total supply by direct call
-        Then Get fungible token balanceOf by direct call
-        Then Get fungible token allowance by direct call
-        Then Get non fungible token name by direct call
-        Then Get non fungible token symbol by direct call
-        Then Get non fungible token total supply by direct call
-        Then Get non fungible token ownerOf by direct call
-        Then Get non fungible token getApproved by direct call
-        Then Get non fungible token isApprovedForAll by direct call
-        Then Get custom fees for fungible token
-        Then Get custom fees for non fungible token
-        Examples:
-            | httpStatusCode |
-            | 200            |
+        Then check if fungible token is token
+        And verify fungible token isn't frozen
+        And the contract call REST API to is token with invalid account id should return an error
+        And the contract call REST API to is token with valid account id should return an error
+        And check if fungible token is kyc granted
+        Given I freeze fungible token for evm address
+        Then check if fungible token is frozen for evm address
+        Given I unfreeze fungible token for evm address
+        Then check if fungible token is unfrozen for evm address
+        And the contract call REST API should return the default freeze for a fungible token
+        And the contract call REST API should return the default kyc for a fungible token
+        And the contract call REST API should return the information for token for a fungible token
+        And the contract call REST API should return the information for a fungible token
+        And the contract call REST API should return the type for a fungible token
+        And the contract call REST API should return the expiry token info for a fungible token
+        And the contract call REST API should return the token key for a fungible token
+        And the contract call REST API should return the name by direct call for a fungible token
+        And the contract call REST API should return the symbol by direct call for a fungible token
+        And the contract call REST API should return the decimals by direct call for a  fungible token
+        And the contract call REST API should return the total supply by direct call for a  fungible token
+        And the contract call REST API should return the balanceOf by direct call for a fungible token
+        And the contract call REST API should return the allowance by direct call for a fungible token
+        And the contract call REST API should return the custom fees for a fungible token
+        Given I successfully create and verify a non fungible token for precompile contract tests
+        Given I mint and verify a nft
+        Then check if non fungible token is token
+        And verify non fungible token isn't frozen
+        Given I freeze a non fungible token
+        Then check if non fungible token is frozen
+        Given I unfreeze a non fungible token
+        Then check if non fungible token is unfrozen
+        And check if non fungible token is kyc granted
+        And the contract call REST API should return the default freeze for a non fungible token
+        And the contract call REST API should return the default kyc for a non fungible token
+        And the contract call REST API should return the information for token for a non fungible token
+        And the contract call REST API should return the information for a non fungible token
+        And the contract call REST API should return the type for a non fungible token
+        And the contract call REST API should return the expiry token info for a non fungible token
+        And the contract call REST API should return the token key for a non fungible token
+        And the contract call REST API should return the name by direct call for a non fungible token
+        And the contract call REST API should return the symbol by direct call for a non fungible token
+        And the contract call REST API should return the total supply by direct call for a non fungible token
+        And the contract call REST API should return the ownerOf by direct call for a non fungible token
+        And the contract call REST API should return the getApproved by direct call for a non fungible token
+        And the contract call REST API should return the isApprovedForAll by direct call for a non fungible token
+        And the contract call REST API should return the custom fees for a non fungible token
