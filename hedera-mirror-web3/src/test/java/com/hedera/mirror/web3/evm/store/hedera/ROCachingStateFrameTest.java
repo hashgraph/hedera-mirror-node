@@ -109,7 +109,7 @@ class ROCachingStateFrameTest {
 
     @Test
     void getValidOfNotYetFetchedGoesUpstreamAndItIsMissing() {
-        Integer k = 555;
+        final Integer k = 555;
 
         final var upstreamFrame = new CannedCachingStateFrame(Optional.empty());
         when(mockCache.get(k)).thenReturn(new Entry(NOT_YET_FETCHED, null));
@@ -122,8 +122,8 @@ class ROCachingStateFrameTest {
 
     @Test
     void getValidOfNotYetFetchedGoesUpstreamAndItIsPresent() {
-        Integer k = 555;
-        Character v = 'C';
+        final Integer k = 555;
+        final Character v = 'C';
 
         final var upstreamFrame = new CannedCachingStateFrame(Optional.of(v));
         when(mockCache.get(k)).thenReturn(new Entry(NOT_YET_FETCHED, null));
@@ -139,8 +139,8 @@ class ROCachingStateFrameTest {
             value = ValueState.class,
             names = {"PRESENT", "UPDATED"})
     void getValidOfPresentOrUpdatedEntryReturnsValue(ValueState state) {
-        Integer k = 555;
-        Character v = 'C';
+        final Integer k = 555;
+        final Character v = 'C';
         when(mockCache.get(k)).thenReturn(new Entry(state, v));
         final var sut = new ROCachingStateFrame<Integer>(Optional.empty(), Character.class);
         final var actual = sut.getValue(Character.class, mockCache, k);
@@ -152,7 +152,7 @@ class ROCachingStateFrameTest {
             value = ValueState.class,
             names = {"MISSING", "DELETED"})
     void getValidOfMissingOrDeletedEntryReturnsEmpty(ValueState state) {
-        Integer k = 555;
+        final Integer k = 555;
         when(mockCache.get(k)).thenReturn(new Entry(state, null));
         final var sut = new ROCachingStateFrame<Integer>(Optional.empty(), Character.class);
         final var actual = sut.getValue(Character.class, mockCache, k);
@@ -161,7 +161,7 @@ class ROCachingStateFrameTest {
 
     @Test
     void getValueOfInvalidEntryThrows() {
-        Integer k = 555;
+        final Integer k = 555;
         when(mockCache.get(k)).thenReturn(new Entry(INVALID, null));
         final var sut = new ROCachingStateFrame<Integer>(Optional.empty(), Character.class);
         assertThatIllegalArgumentException().isThrownBy(() -> sut.getValue(Character.class, mockCache, k));
