@@ -339,12 +339,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-        501:
-          description: Not implemented error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
       tags:
         - contracts
   /api/v1/contracts:

@@ -62,8 +62,6 @@ import com.hedera.node.app.service.evm.store.models.HederaEvmAccount;
 @RequiredArgsConstructor
 @RestController
 class ContractController {
-
-    static final String NOT_IMPLEMENTED_ERROR = "Operation not supported yet!";
     private final ContractCallService contractCallService;
     private final Bucket bucket;
 

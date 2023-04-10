@@ -22,6 +22,8 @@ package com.hedera.mirror.web3.service;
 
 import static com.hedera.mirror.web3.convert.BytesDecoder.maybeDecodeSolidityErrorStringToReadableMessage;
 import static com.hedera.mirror.web3.evm.exception.ResponseCodeUtil.getStatusOrDefault;
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ERROR;
+import static com.hedera.mirror.web3.service.model.CallServiceParameters.CallType.ETH_ESTIMATE_GAS;
 import static org.apache.logging.log4j.util.Strings.EMPTY;
 
 import io.micrometer.core.instrument.Counter;
@@ -86,6 +88,7 @@ public class ContractCallService {
             txnResult = processEthTxn(params);
 
             boolean err = !txnResult.isSuccessful() || txnResult.getGasUsed() < 0;
+            updateGasMetric(err ? ERROR : ETH_ESTIMATE_GAS, txnResult);
             long gasUsed = err ? providedGasLimit : txnResult.getGasUsed();
 
             if (err || gasUsed == 0) {
@@ -127,17 +130,17 @@ public class ContractCallService {
     private void validateTxnResult(final HederaEvmTransactionProcessingResult txnResult,
                                    final CallType type) {
         if (!txnResult.isSuccessful()) {
-            onComplete(CallType.ERROR, txnResult);
+            updateGasMetric(ERROR, txnResult);
 
             var revertReason = txnResult.getRevertReason().orElse(Bytes.EMPTY);
             throw new InvalidTransactionException(getStatusOrDefault(txnResult),
                     maybeDecodeSolidityErrorStringToReadableMessage(revertReason), revertReason.toHexString());
         } else {
-            onComplete(type, txnResult);
+            updateGasMetric(type, txnResult);
         }
     }
 
-    private void onComplete(final CallType callType, final HederaEvmTransactionProcessingResult result) {
+    private void updateGasMetric(final CallType callType, final HederaEvmTransactionProcessingResult result) {
         final var counter = gasPerSecondMetricMap.get(callType);
         counter.increment(result.getGasUsed());
     }
