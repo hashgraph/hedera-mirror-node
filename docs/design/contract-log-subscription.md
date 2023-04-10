@@ -2,79 +2,102 @@
 
 ## Purpose
 
-Provide a mechanism equivalent of the Ethereum
+Provide a GraphQL equivalent of the Ethereum
 JSON-RPC [eth_subscribe](https://docs.infura.io/infura/networks/ethereum/json-rpc-methods/subscription-methods/eth_subscribe)
 in order to provide contract log notifications in almost real time.
 
 ## Goals
 
 - Stream contract log notifications via a GraphQL subscription
+- Ensure at most once delivery. Will drop messages on backpressure overflow
+
+## Non-Goals
+
+- Will not query historical logs
+
+## Non-Functional Requirements
+
+- Need to ensure resource consumption is within reasonable bounds (reasonable bounds TBD via experimentation)
+- Ensure performance is within reasonable bounds (reasonable bounds TBD via experimentation)
 
 ## Architecture
 
 ### Importer
 
-1. Update RedisEntityListener to send contract logs to contract_logs.{CONTRACT_ID} topic
-
-### GraphQL
-
-- Use RSocket for transport layer (This provides additional functionality over traditional websockets and is recommended
-  for reactive applications)
-- Use Bucket4J for rate limiting
-
-1. Create GraphQL schema for Input / Output
-2. Create ContractLogEvent Mapper
-3. Create Controller with @SubscriptionMapping
-4. Create a Redis Subscriber to listen for contract_logs.{CONTRACT_ID}
-
-#### Contract Log to ContractLogEvent Query
+1. Update RedisEntityListener (or create new listener) to send contract logs to contract_logs topic
+- On each batch save, should query the data needed to populate the ContractLogEvent for topic message submission if data
+  not available in memory
+- Messages will be serialized via a RedisSerializer using msgpack
 
 ```sql
-SELECT e.evm_address                                      as address,
+SELECT e.evm_address as address,
        block_number,
        block_hash,
        cl.data,
-       cl.index                                           as log_index,
-       ARRAY [cl.topic0, cl.topic1, cl.topic2, cl.topic3] as topics,
+       cl.index      as log_index,
+       ARRAY[cl.topic0,
+       cl.topic1,
+       cl.topic2,
+       cl.topic3] as topics,
        cl.transaction_hash,
        cl.transaction_index
 
 from contract_log cl
-       join entity e on e.id = cl.contract_id
-       join lateral (
+  join entity e
+on e.id = cl.contract_id
+  join lateral (
   select index as block_number, hash as block_hash
   from record_file
   where consensus_end >= cl.consensus_timestamp
   order by consensus_end asc
   limit 1
   ) block on true
-where cl.consensus_timestamp = ?
-  and cl.index = ?;
+where cl.consensus_timestamp in (?)
 ```
+
+### GraphQL
+
+- Use reactive websockets
+- We should implement rate limiting in the load balancer
+- Use bucket4j to enforce a global max subscription rate
+- Uses msgpack for topic message serialization
+
+1. Create GraphQL schema for Input / Output
+2. Create ContractLogEvent Mapper
+3. Create Controller with @SubscriptionMapping
+4. Create a Redis Subscriber to listen for messages on contract_logs topic
+5. No modifications needed to the topic payload. Can receive directly from the topic and transfer to client
+6. Create RedisConfiguration to configure msgpack serializer
+7. Capture metrics
+- subscriber consumption rate
+- Active subscriptions counter
+- Messages received (From redis topic) rate
+
+#### Contract Log to ContractLogEvent Query
 
 #### Class Defs
 
 ```java
-public class ContractLogController {
+public class ContractController {
   /**
    * Use ContractLogTopicListener to begin streaming data to client
    * */
-  @SubscriptionMapping("contractLog")
-  public Publisher<ContractLogEvent> subscribe(@Argument @Valid ContractLogFilter filter);
+  @SubscriptionMapping
+  public Publisher<ContractLogEvent> contractLogs(@Argument @Valid ContractLogSubscription subscription);
 }
 
 @Service
 public class ContractLogTopicListener {
-  Map<String, Flux<ContractLogEvent>> subscribedTopics;
+  private final Flux<ContractLogEvent> contractLogs;
 
   /**
    * Verifies can subscribe and returns error response if not
-   * Uses cached flux if exists, otherwise creates entry and starts listening.
+   * Uses shared lazy subscription to contractLogs
    * On backpressure overflow, drop messages
-   * Filter result via filter param
+   * Filter events via addresses and/or topics param
    * calls unsubscribe on termination.
    * */
-  public Flux<ContractLogEvent> listen(ContractLogFilter filter) {
+  public Flux<ContractLogEvent> listen(ContractLogSubscription subscription) {
   }
 
   /**
@@ -84,7 +107,7 @@ public class ContractLogTopicListener {
   }
 
   /**
-   * Filters messages by contractLog topic fields
+   * Filters messages by addresses and topics
    * */
   private boolean filterMessage(ContractLogEvent contractLogEvent, ContractLogFilter filter) {
   }
@@ -92,6 +115,8 @@ public class ContractLogTopicListener {
   /**
    * Can get token from rate limiter
    * contract with evm address in filter exists
+   * we detect if this address input is account-num alias or evm address
+   * alias and query the entity table for the latter to map it to its account-num alias.
    * */
   private boolean canSubscribe(ContractLogFilter filter) {
   }
@@ -106,7 +131,7 @@ public class ContractLogTopicListener {
 }
 ```
 
-### application.yml
+#### application.yml
 
 ```yaml
 spring:
@@ -120,8 +145,9 @@ hedera:
     graphql:
       listener:
         contractLog:
-          maxActiveSubscriptions: 1000
+          maxActiveSubscriptions: 10
           maxBufferSize: 16384
+          keepAlive: 1m
 
 ```
 
@@ -130,23 +156,47 @@ hedera:
 ```graphql
 
 type ContractLogEvent {
-  address: String
-  blockHash: String
-  blockNumber: String
-  data: String
-  logIndex: String
-  topics: [String]
-  transactionHash: String
-  transactionIndex: String
+  "The contract entity id"
+  contractId: EntityId!
+  "The address from which this log originated in the account-num alias format"
+  address: String!
+  "The hash of the block in which the transaction was included"
+  blockHash: String!
+  "The number of the block in which the transaction was included"
+  blockNumber: Int64!
+  "Contains one or more 32 Bytes non-indexed arguments of the log"
+  data: String!
+  "The index or position of the log entry within the block"
+  logIndex: Int64!
+  """
+  An array of 0 to 4 32 bytes topic hashes of indexed log arguments.
+  We should preserve null values in their correct index (i.e contract_log.[topic0...topic3])
+  """
+  topics: [String]!
+  "The hash of the transaction"
+  transactionHash: String!
+  "The index or position of the transaction within the block"
+  transactionIndex: Int64!
 }
 
-type ContractLogSubscriptionInput {
-  address: String @Pattern(regexp: "^(0x)?[a-fA-F0-9]{40}$")
-  topics: [String]
+type ContractLogSubscription {
+  "The addresses we want to stream logs for (Pattern may not work this way)"
+  addresses: [String!] @Pattern(regexp: "^(0x)?[a-fA-F0-9]{40}$")
+  """
+  An array of topic specifiers.
+  Each topic specifier is either null, or an array of strings.
+  For every non null topic, a log will be emitted when activity associated with that topic occurs.
+  []: Any topics allowed.
+  [[A]]: A in first position (and anything after).
+  [null, [B]]: Anything in first position and B in second position (and anything after).
+  [[A], [B]]: A in first position and B in second position (and anything after).
+  [[A, B], [A, B]]: (A or B) in first position and (A or B) in second position (and anything after).
+  """
+  topics: [[String]] @Pattern(regexp: "^(0x)?[a-fA-F0-9]{64}$")
 }
 
 type Subscription {
-  contractLog(input: ContractLogSubscriptionInput): ContractLogEvent
+  contractLogs(subscription: ContractLogSubscription!): ContractLogEvent
 }
 ```
 
@@ -156,14 +206,25 @@ See [RSC Client](https://github.com/making/rsc) for a grpcurl equivalent
 
 #### Example Request Body
 
-Address is required and topics is an optional filter
+Addresses and topics are both optional filters
 
-```json
+```graphql
 {
-  "address": "CONTRACT_ENTITY_EVM_ADDRESS",
-  "topics": [
-    "ARRAY_OF_CONTRACT_TOPIC_IDS"
-  ]
+  contractLogs(subscription: {
+    addresses: ["CONTRACT_ENTITY_EVM_ADDRESS"],
+    topics: [
+      "ARRAY_OF_CONTRACT_TOPIC_IDS"
+    ]
+  }) {
+    address
+    blockHash
+    blockNumber
+    data
+    logIndex
+    topics
+    transactionHash
+    transactionIndex
+  }
 }
 ```
 
@@ -171,16 +232,18 @@ Address is required and topics is an optional filter
 
 ```json
 {
-  "address": "0x8320fe7702b96808f7bbc0d4a888ed1468216cfd",
-  "blockHash": "0x61cdb2a09ab99abf791d474f20c2ea89bf8de2923a2d42bb49944c8c993cbf04",
-  "blockNumber": "0x29e87",
-  "data": "0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000003",
-  "logIndex": "0x0",
-  "topics": [
-    "0xd78a0cb8bb633d06981248b816e7bd33c2a35a6089241d099fa519e361cab902"
-  ],
-  "transactionHash": "0xe044554a0a55067caafd07f8020ab9f2af60bdfe337e395ecd84b4877a3d1ab4",
-  "transactionIndex": "0x0"
+  "data": {
+    "address": "0x8320fe7702b96808f7bbc0d4a888ed1468216cfd",
+    "blockHash": "0x61cdb2a09ab99abf791d474f20c2ea89bf8de2923a2d42bb49944c8c993cbf04",
+    "blockNumber": "0x29e87",
+    "data": "0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000003",
+    "logIndex": "0x0",
+    "topics": [
+      "0xd78a0cb8bb633d06981248b816e7bd33c2a35a6089241d099fa519e361cab902"
+    ],
+    "transactionHash": "0xe044554a0a55067caafd07f8020ab9f2af60bdfe337e395ecd84b4877a3d1ab4",
+    "transactionIndex": "0x0"
+  }
 }
 ```
 
@@ -188,7 +251,7 @@ Address is required and topics is an optional filter
 
 | Response Field   | Source Field                                                                                              |
 |------------------|-----------------------------------------------------------------------------------------------------------|
-| address          | entity.evm_address                                                                                        |
+| address          | account_num alias for contract entity                                                                     |
 | blockHash        | record_file.hash                                                                                          |
 | blockNumber      | record_file.index                                                                                         |
 | data             | contract_log.data                                                                                         |
