@@ -92,7 +92,7 @@ dependencies {
         api("org.springdoc:springdoc-openapi-webflux-ui:1.7.0")
         api("org.springframework.cloud:spring-cloud-dependencies:2021.0.5")
         api("org.testcontainers:junit-jupiter:1.18.0")
-        api("software.amazon.awssdk:bom:2.20.37")
+        api("software.amazon.awssdk:bom:2.20.42")
         api("uk.org.webcompere:system-stubs-jupiter:2.0.2")
     }
 }
