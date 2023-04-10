@@ -20,20 +20,6 @@ package com.hedera.mirror.importer.parser.batch;
  * ‍
  */
 
-import com.hedera.mirror.common.domain.transaction.TransactionHash;
-
-import lombok.CustomLog;
-import lombok.Data;
-import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
-import lombok.ToString;
-import org.springframework.jdbc.datasource.DataSourceUtils;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
-import javax.inject.Named;
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.util.Collection;
 import java.util.HashSet;
@@ -41,6 +27,18 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
+import javax.inject.Named;
+import javax.sql.DataSource;
+import lombok.CustomLog;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import lombok.SneakyThrows;
+import lombok.ToString;
+import org.springframework.jdbc.datasource.DataSourceUtils;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+
+import com.hedera.mirror.common.domain.transaction.TransactionHash;
 
 @RequiredArgsConstructor
 @CustomLog
@@ -88,7 +86,7 @@ public class TransactionHashTxManager implements TransactionSynchronization {
         };
 
         if (failedShards.isEmpty()) {
-            log.info("Successfully {} {} items in {} shards {} in file containing timestamp {}",
+            log.debug("Successfully {} {} items in {} shards {} in file containing timestamp {}",
                     statusString,
                     itemCount,
                     shardedTableName,
@@ -116,14 +114,15 @@ public class TransactionHashTxManager implements TransactionSynchronization {
 
         this.shardedTableName = shardedTableName;
         this.itemCount = items.size();
-        this.recordTimestamp = ((TransactionHash)items.iterator().next()).getConsensusTimestamp();
+        this.recordTimestamp = ((TransactionHash) items.iterator().next()).getConsensusTimestamp();
         TransactionSynchronizationManager.registerSynchronization(this);
     }
 
     /**
      * Start new transaction or update state of existing transaction
+     *
      * @return state of the thread
-     * */
+     */
     public ThreadState updateAndGetThreadState(int shard) {
         return threadConnections.compute(Thread.currentThread().getName(),
                 (key, value) -> {

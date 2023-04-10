@@ -7,9 +7,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,6 +23,9 @@ chai.use(require('chai-as-promised'))
 const expect = chai.expect;
 const { ethers, waffle } = require("hardhat");
 const provider = waffle.provider;
+
+const childArtifactJson = require("../artifacts/contracts/Parent.sol/Child.json");
+
 
 describe("ParentChild", function () {
   it("Should contain zero balances on deployment", async function () {
@@ -82,9 +85,49 @@ describe("ParentChild", function () {
     const event1 = contractFunctionResult.events[1];
     expect(event1.logIndex).to.equal(1);
     expect(event1.data).to.equal('0x0000000000000000000000000000000000000000000000000000000000000005');
-    
+
     var childAddress = event1.address;
     expect(ethers.utils.isAddress(childAddress)).to.equal(true);
     expect(await provider.getBalance(childAddress)).to.equal(5); // child from transaction
+  });
+
+  it("Should contain zero balances on create2Deploy to known EVM address", async function () {
+    const Parent = await ethers.getContractFactory("contracts/Parent.sol:Parent");
+    const parent = await Parent.deploy();
+    await parent.deployed();
+
+    const salt = 42;
+
+    const childBytecode = await parent.getBytecode();
+    const childEvmAddress = await parent.getAddress(childBytecode, salt);
+    expect(ethers.utils.isAddress(childEvmAddress)).to.equal(true);
+
+    const [account1] = await ethers.getSigners();
+    const submitCreate2DeployTx = await parent.connect(account1).create2Deploy(childBytecode, salt);
+
+    // wait until the transaction is mined
+    const contractDeployResult = await submitCreate2DeployTx.wait();
+
+    // Verify child contract was deployed to the expected EVM address
+    const event0 = contractDeployResult.events[0];
+    expect(event0.logIndex).to.equal(0);
+    expect(event0.event).to.equal('Create2Deploy');
+    expect(event0.args.addr).to.equal(childEvmAddress);+
+
+    // verify balance defaults
+    expect(await provider.getBalance(contractDeployResult.to)).to.equal(0); // parent from transaction
+    expect(await provider.getBalance(childEvmAddress)).to.equal(0);
+
+    // Vacate/self-destruct the child contract so its EVM address can be used for something else in the future.
+    const childContract = new ethers.Contract(childEvmAddress, childArtifactJson.abi, account1);
+    const submitDeleteChildTx = await childContract.vacateAddress();
+
+    // wait until the transaction is mined
+    const contractDeleteResult = await submitDeleteChildTx.wait();
+
+    const vacateEvent = contractDeleteResult.events[0];
+    expect(vacateEvent.logIndex).to.equal(0);
+    expect(vacateEvent.event).to.equal('Create2Vacate');
+    expect(vacateEvent.args.addr).to.equal(childEvmAddress);
   });
 });

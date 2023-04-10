@@ -15,7 +15,12 @@
  */
 package com.hedera.services.store.contracts.precompile.codec;
 
+import com.google.protobuf.ByteString;
 import com.hederahashgraph.api.proto.java.ContractID;
+import com.hederahashgraph.api.proto.java.Key;
+import com.hederahashgraph.api.proto.java.ResponseCodeEnum;
+
+import com.hedera.node.app.service.evm.exceptions.InvalidTransactionException;
 
 public final class KeyValueWrapper {
     public enum KeyValueType {
@@ -35,6 +40,9 @@ public final class KeyValueWrapper {
     private final byte[] ecdsaSecp256k1;
     private final ContractID delegatableContractID;
     private final KeyValueType keyValueType;
+
+    /* --- This field is populated only when `shouldInheritAccountKey` is true --- */
+    private Key inheritedKey;
 
     public KeyValueWrapper(
             final boolean shouldInheritAccountKey,
@@ -138,5 +146,22 @@ public final class KeyValueWrapper {
 
     public byte[] getEcdsaSecp256k1() {
         return this.ecdsaSecp256k1;
+    }
+
+    public Key asGrpc() {
+        return switch (keyValueType) {
+            case INHERIT_ACCOUNT_KEY -> this.inheritedKey;
+            case CONTRACT_ID -> Key.newBuilder().setContractID(contractID).build();
+            case ED25519 -> Key.newBuilder()
+                    .setEd25519(ByteString.copyFrom(ed25519))
+                    .build();
+            case ECDSA_SECPK256K1 -> Key.newBuilder()
+                    .setECDSASecp256K1(ByteString.copyFrom(ecdsaSecp256k1))
+                    .build();
+            case DELEGATABLE_CONTRACT_ID -> Key.newBuilder()
+                    .setDelegatableContractId(delegatableContractID)
+                    .build();
+            default -> throw new InvalidTransactionException("INVALID_KEY", ResponseCodeEnum.INVALID_TRANSACTION_BODY);
+        };
     }
 }

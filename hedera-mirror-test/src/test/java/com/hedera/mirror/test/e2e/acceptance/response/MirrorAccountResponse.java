@@ -39,4 +39,12 @@ public class MirrorAccountResponse {
     private String memo;
     private String evmAddress;
     private String alias;
+    private MirrorAccountKeyResponse key;
+
+    @Data
+    public class MirrorAccountKeyResponse {
+        @JsonProperty("_type")
+        private String type;
+        private String key;
+    }
 }

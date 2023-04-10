@@ -76,7 +76,6 @@ import com.hedera.mirror.importer.parser.domain.PubSubMessage;
 import com.hedera.mirror.importer.parser.record.NonFeeTransferExtractionStrategy;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandler;
 import com.hedera.mirror.importer.parser.record.transactionhandler.TransactionHandlerFactory;
-import com.hedera.mirror.importer.repository.FileDataRepository;
 import com.hedera.mirror.importer.util.Utility;
 
 @ExtendWith(MockitoExtension.class)
@@ -94,9 +93,6 @@ class PubSubRecordItemListenerTest {
 
     @Mock(lenient = true)
     private AddressBookService addressBookService;
-
-    @Mock
-    private FileDataRepository fileDataRepository;
 
     @Mock
     private NonFeeTransferExtractionStrategy nonFeeTransferExtractionStrategy;
@@ -160,7 +156,7 @@ class PubSubRecordItemListenerTest {
         var responseFuture = mock(ListenableFuture.class);
         doReturn(responseFuture).when(pubSubTemplate).publish(any(), any(), any());
         pubSubRecordItemListener = new PubSubRecordItemListener(pubSubProperties, pubSubTemplate, addressBookService,
-                fileDataRepository, nonFeeTransferExtractionStrategy, transactionHandlerFactory);
+                nonFeeTransferExtractionStrategy, transactionHandlerFactory);
     }
 
     @Test
@@ -304,7 +300,8 @@ class PubSubRecordItemListenerTest {
         // when
         EntityId entityId = EntityId.of(ADDRESS_BOOK_FILE_ID);
         doReturn(entityId).when(transactionHandler).getEntity(any());
-        pubSubRecordItemListener.onItem(RecordItem.builder().transactionRecord(DEFAULT_RECORD).transaction(transaction).build());
+        pubSubRecordItemListener.onItem(RecordItem.builder().transactionRecord(DEFAULT_RECORD).transaction(transaction)
+                .build());
 
         // then
         FileData fileData = new FileData(100L, fileContents, entityId, TransactionType.FILEAPPEND
