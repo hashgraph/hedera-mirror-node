@@ -318,7 +318,7 @@ public class ERCContractFeature extends AbstractFeature {
 
     @Then("the mirror node REST API should return status {int} for the mint transaction")
     public void verifyMirrorAPIResponses(int status) {
-        MirrorTransaction mirrorTransaction = verifyMirrorTransactionsResponse(mirrorClient, status);
+        verifyMirrorTransactionsResponse(mirrorClient, status);
     }
 
     @Then("I approve {string} for nft")
