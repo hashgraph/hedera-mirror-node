@@ -26,11 +26,13 @@ import static org.mockito.BDDMockito.given;
 import static com.hederahashgraph.api.proto.java.ResponseCodeEnum.CONTRACT_REVERT_EXECUTED;
 import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.NOT_IMPLEMENTED;
 import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.HttpStatus.TOO_MANY_REQUESTS;
 import static org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE;
 
+import com.hedera.mirror.web3.exception.EntityNotFoundException;
 import com.hedera.mirror.web3.exception.InvalidParametersException;
 import com.hedera.mirror.web3.exception.InvalidTransactionException;
 
@@ -140,6 +142,24 @@ class ContractControllerTest {
                 .expectStatus()
                 .isEqualTo(BAD_REQUEST)
                 .expectBody(GenericErrorResponse.class);
+    }
+
+    @Test
+    void callMissingTo() {
+        final var exceptionMessage = "No such contract or token";
+        final var request = request();
+
+        given(service.processCall(any())).willThrow(new EntityNotFoundException(exceptionMessage));
+
+        webClient.post()
+                .uri(CALL_URI)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromValue(request))
+                .exchange()
+                .expectStatus()
+                .isEqualTo(NOT_FOUND)
+                .expectBody(GenericErrorResponse.class)
+                .isEqualTo(new GenericErrorResponse(exceptionMessage));
     }
 
     @EmptySource
