@@ -26,7 +26,6 @@ import edu.umd.cs.findbugs.annotations.NonNull;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import org.checkerframework.checker.units.qual.K;
 import org.junit.jupiter.api.Test;
 
 @SuppressWarnings(
@@ -34,7 +33,7 @@ import org.junit.jupiter.api.Test;
 // literals
 class CachingStateFrameTest {
 
-    // Test contruction produces a correct instance
+    // Test construction produces a correct instance
 
     /** A no-additional-behavior-at-all subclass of the abstract `CachingStateFrame`, suitable for constructor tests. */
     static class BareCachingStateFrame<K> extends CachingStateFrame<K> {

@@ -42,9 +42,10 @@ public class ROCachingStateFrame<K> extends CachingStateFrame<K> {
         final var entry = cache.get(key);
         return switch (entry.state()) {
             case NOT_YET_FETCHED -> upstreamFrame.flatMap(upstreamFrame -> {
-                final var upstream = upstreamFrame.getValue(klass, cache, key);
-                cache.fill(key, upstream.orElse(null));
-                return upstream;
+                final var upstreamAccessor = upstreamFrame.getAccessor(klass);
+                final var upstreamValue = upstreamAccessor.get(key);
+                cache.fill(key, upstreamValue.orElse(null));
+                return upstreamValue;
             });
             case PRESENT, UPDATED -> Optional.of(entry.value());
             case MISSING, DELETED -> Optional.empty();
