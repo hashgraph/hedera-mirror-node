@@ -94,8 +94,8 @@ public class SyntheticTokenAllowanceOwnerMigration extends RepeatableMigration {
 
     @Override
     protected MigrationVersion getMinimumVersion() {
-        // The version where token_allowance and token_allowance_history were added
-        return MigrationVersion.fromVersion("1.54.3");
+        // The version where contract_result sender_id was added
+        return MigrationVersion.fromVersion("1.58.4");
     }
 
     @Override
