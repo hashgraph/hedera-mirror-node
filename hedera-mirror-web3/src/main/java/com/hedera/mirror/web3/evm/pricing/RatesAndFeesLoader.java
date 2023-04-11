@@ -27,20 +27,19 @@ import com.hedera.mirror.web3.repository.PricesAndFeesRepository;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import javax.inject.Named;
+import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 @Named
 @RequiredArgsConstructor
+@CustomLog
 public class RatesAndFeesLoader {
     private final PricesAndFeesRepository pricesAndFeesRepository;
-    private static final Logger log = LogManager.getLogger(RatesAndFeesLoader.class);
     private static final EntityId EXCHANGE_RATE_ENTITY_ID = new EntityId(0L, 0L, 112L, EntityType.FILE);
     private static final EntityId FEE_SCHEDULE_ENTITY_ID = new EntityId(0L, 0L, 111L, EntityType.FILE);
 
-    public ExchangeRateSet loadExchangeRates(final long now) {
-        final var ratesFile = pricesAndFeesRepository.getExchangeRate(now);
+    public ExchangeRateSet loadExchangeRates(final long nanoSeconds) {
+        final var ratesFile = pricesAndFeesRepository.getExchangeRate(nanoSeconds);
 
         try {
             return ExchangeRateSet.parseFrom(ratesFile);
@@ -50,10 +49,10 @@ public class RatesAndFeesLoader {
         }
     }
 
-    public CurrentAndNextFeeSchedule loadFeeSchedules(final long now) {
+    public CurrentAndNextFeeSchedule loadFeeSchedules(final long nanoSeconds) {
         byte[] feeScheduleFile = new byte[0];
-        if (now > 0) {
-            feeScheduleFile = pricesAndFeesRepository.getFeeSchedule(now);
+        if (nanoSeconds > 0) {
+            feeScheduleFile = pricesAndFeesRepository.getFeeSchedule(nanoSeconds);
         }
 
         try {
