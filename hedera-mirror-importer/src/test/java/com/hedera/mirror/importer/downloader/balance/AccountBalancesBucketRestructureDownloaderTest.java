@@ -63,7 +63,7 @@ class AccountBalancesBucketRestructureDownloaderTest extends AbstractBucketRestr
 
     @Override
     protected Path getTestDataDir() {
-        return Path.of("accountBalances", "old");
+        return Path.of("accountBalances", "proto.accountId");
     }
 
     @Override

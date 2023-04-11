@@ -44,9 +44,10 @@ class EventFileBucketRestructureDownloaderTest extends AbstractBucketRestructure
     @BeforeEach
     protected void beforeEach() {
         super.beforeEach();
-        setTestFilesAndInstants(List.of("2020-04-11T04_51_35.001934Z.evts", "2020-04-11T04_51_40.471976Z.evts"));
-        file3 = "2020-04-11T04_51_45.028997Z.evts";
-        file4 = "2020-04-11T04_51_50.017047Z.evts";
+        setTestFilesAndInstants(List.of("2020-04-11T04_51_35.001934Z.evts",
+                "2020-04-11T04_51_40.471976Z.evts",
+                "2020-04-11T04_51_45.028997Z.evts",
+                "2020-04-11T04_51_50.017047Z.evts"));
     }
 
     @Override
