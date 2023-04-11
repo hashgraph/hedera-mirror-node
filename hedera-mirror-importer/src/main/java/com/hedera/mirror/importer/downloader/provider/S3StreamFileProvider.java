@@ -76,7 +76,6 @@ public final class S3StreamFileProvider implements StreamFileProvider {
 
         var prefix = getBucketPath(node, lastFilename);
 
-        log.info("Bucket path is:{}", prefix);
         var startAfter = prefix + lastFilename.getFilenameAfter();
 
         var listRequest = ListObjectsV2Request.builder()
@@ -102,10 +101,16 @@ public final class S3StreamFileProvider implements StreamFileProvider {
                         startAfter));
     }
 
+    /**
+     * List from the given prefix and just check if they exist.
+     * This method does not actually download the files.
+     *
+     * @param lastFilename last downloaded file name
+     * @param prefix path to download files from
+     */
     private Mono<ListObjectsV2Response> listAuto(StreamFilename lastFilename, String prefix) {
         int batchSize = commonDownloaderProperties.getBatchSize() * 2;
 
-        log.info("AUTO: Bucket path is:{}", prefix);
         var startAfter = prefix + lastFilename.getFilenameAfter();
 
         var listRequest = ListObjectsV2Request.builder()
@@ -122,6 +127,13 @@ public final class S3StreamFileProvider implements StreamFileProvider {
                 .doOnNext(l -> l.contents());
     }
 
+    /**
+     * Get a file from the given prefix.
+     * This method actually downloads the files.
+     *
+     * @param lastFilename last downloaded file name
+     * @param prefix path to download files from
+     */
     private Mono<StreamFileData> getAuto(StreamFilename streamFilename, String prefix) {
         var s3Key = prefix + streamFilename.getFilename();
 
@@ -139,7 +151,6 @@ public final class S3StreamFileProvider implements StreamFileProvider {
                 .doOnSuccess(s -> log.debug("Finished downloading {}", s3Key));
     }
 
-    //Get the bucket path. This should not be called if the pathRefreshInterval has not passed.
    private String getBucketPath(ConsensusNode consensusNode, StreamFilename streamFilename) {
         var pathParam = nodePathParamsMap.get(consensusNode.getNodeId());
         CommonDownloaderProperties.PathType pathType;
@@ -167,13 +178,12 @@ public final class S3StreamFileProvider implements StreamFileProvider {
         if ((pathParam!=null ? pathParam.getPathExpirationTimestampMap() : 0L) > currentTime ) {
            return accountIdPrefix;
         }
-        ListObjectsV2Response listResponse = null ;
         try {
             // Listing files from accountNodeId path
-            listResponse = listAuto(streamFilename, accountIdPrefix)
+            var listResponse = listAuto(streamFilename, accountIdPrefix)
                     .block();
             // If files are available at the old bucket path continue using AUTO
-            if (listResponse.contents().size() > 0) {
+            if (listResponse!=null && listResponse.contents().size() > 0) {
                 nodePathParamsMap.put(consensusNode.getNodeId(),
                         new PathParameterProperties((System.currentTimeMillis() + commonDownloaderProperties.getPathRefreshInterval().toMillis()), AUTO));
                 return accountIdPrefix;
@@ -187,7 +197,7 @@ public final class S3StreamFileProvider implements StreamFileProvider {
         // List from the node id as well.Stay as auto and retry
         var countNodeId = listAuto(streamFilename, nodeIdPrefix)
                 .block();
-        if (countNodeId.contents().size() > 0) {
+        if (countNodeId!=null && countNodeId.contents().size() > 0) {
             //At this point we are setting Node_Id as the path type so refresh interval becomes irrelevant
             nodePathParamsMap.put(consensusNode.getNodeId(),
                     new PathParameterProperties(0L, NODE_ID));
@@ -198,9 +208,9 @@ public final class S3StreamFileProvider implements StreamFileProvider {
 
     @NotNull
     private String getNodeIdBasedPrefix(ConsensusNode consensusNode, StreamFilename streamFilename) {
-        Long nodeId = consensusNode.getNodeId();
-        Long shardNum = commonDownloaderProperties.getMirrorProperties().getShard();
-        String network = getNetworkPrefix(commonDownloaderProperties.getMirrorProperties());
+        var nodeId = consensusNode.getNodeId();
+        var shardNum = commonDownloaderProperties.getMirrorProperties().getShard();
+        var network = getNetworkPrefix(commonDownloaderProperties.getMirrorProperties());
         var streamType = streamFilename.getStreamType().toString().toLowerCase();
         var prefix = network + SEPARATOR+ shardNum+ SEPARATOR + nodeId + SEPARATOR + streamType + SEPARATOR;
         if (streamFilename.getFileType() == SIDECAR) {
