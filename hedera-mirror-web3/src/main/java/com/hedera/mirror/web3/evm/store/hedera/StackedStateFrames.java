@@ -57,13 +57,13 @@ public class StackedStateFrames<K> {
                 .toArray(Class[]::new);
 
         if (valueClasses.length != accessors.size())
-            throw new IllegalArgumentException("accessors must be for distinct types");
+            throw new IllegalArgumentException("Accessors must be for distinct types");
         if (1
                 != accessors.stream()
                         .map(GroundTruthAccessor::getKClass)
                         .map(Class::getTypeName)
                         .distinct()
-                        .count()) throw new IllegalArgumentException("key types for all accessors must be the same");
+                        .count()) throw new IllegalArgumentException("Key types for all accessors must be the same");
 
         // TODO: probably takes the database connection thing/abstraction as a parameter and saves it away;
         // alternatively, maybe that's hidden inside the GroundTruthAccessors.
@@ -134,7 +134,7 @@ public class StackedStateFrames<K> {
     public CachingStateFrame<K> push(@NonNull final CachingStateFrame<K> frame) {
         Objects.requireNonNull(frame, "frame");
         if (!frame.getUpstream().equals(Optional.of(stack)))
-            throw new IllegalArgumentException("frame argument must have current TOS as its upstream");
+            throw new IllegalArgumentException("Frame argument must have current TOS as its upstream");
         stack = frame;
         return stack;
     }

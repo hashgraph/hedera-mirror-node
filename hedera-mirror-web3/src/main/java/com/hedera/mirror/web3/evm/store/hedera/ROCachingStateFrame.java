@@ -49,7 +49,7 @@ public class ROCachingStateFrame<K> extends CachingStateFrame<K> {
             });
             case PRESENT, UPDATED -> Optional.of(entry.value());
             case MISSING, DELETED -> Optional.empty();
-            case INVALID -> throw new IllegalArgumentException("trying to get value when state is invalid");
+            case INVALID -> throw new IllegalArgumentException("Trying to get value when state is invalid");
         };
     }
 
@@ -60,19 +60,19 @@ public class ROCachingStateFrame<K> extends CachingStateFrame<K> {
             @NonNull final K key,
             @NonNull final Object value) {
         requireAllNonNull(klass, "klass", cache, "cache", key, "key", value, "value");
-        throw new UnsupportedOperationException("cannot write value to a R/O cache");
+        throw new UnsupportedOperationException("Cannot write value to a R/O cache");
     }
 
     @Override
     public void deleteValue(
             @NonNull final Class<?> klass, @NonNull final UpdatableReferenceCache<K> cache, @NonNull final K key) {
         requireAllNonNull(klass, "klass", cache, "cache", key, "key");
-        throw new UnsupportedOperationException("cannot delete value from a R/O cache");
+        throw new UnsupportedOperationException("Cannot delete value from a R/O cache");
     }
 
     @Override
     public void updatesFromDownstream(@NonNull final CachingStateFrame<K> childFrame) {
         Objects.requireNonNull(childFrame, "childFrame");
-        throw new UnsupportedOperationException("cannot commit to a R/O cache");
+        throw new UnsupportedOperationException("Cannot commit to a R/O cache");
     }
 }

@@ -201,7 +201,7 @@ class UpdatableReferenceCacheTest {
         softly.assertThatThrownBy(() -> sut.update(THIS_KEY, ORIGINAL_VALUE))
                 .as("PRESENT, overwriting with same value")
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("trying to update");
+                .hasMessageContaining("Trying to update");
         softly.assertThat(sut.getOriginal())
                 .as("PRESENT, overwriting with same value didn't change k/v")
                 .containsOnlyKeys(THIS_KEY)
@@ -279,35 +279,35 @@ class UpdatableReferenceCacheTest {
                 .addToOriginal("BOTH NOT NULL VALUE O", 20L)
                 .addNullToOriginal("SRC NULL VALUE O")
                 .addNullToOriginal("BOTH NULL VALUE O")
-                .addToCurrent("SRC NOT NULL VALUE AD", 30L)
-                .addToCurrent("BOTH NOT NULL VALUE AD", 40L)
-                .addNullToCurrent("SRC NULL VALUE AD")
-                .addNullToCurrent("BOTH NULL VALUE AD");
+                .addToCurrent("SRC NOT NULL VALUE C", 30L)
+                .addToCurrent("BOTH NOT NULL VALUE C", 40L)
+                .addNullToCurrent("SRC NULL VALUE C")
+                .addNullToCurrent("BOTH NULL VALUE C");
 
         sut.addToOriginal("SUT NOT NULL VALUE O", -10L)
                 .addToOriginal("BOTH NOT NULL VALUE O", -20L)
                 .addNullToOriginal("SUT NULL VALUE O")
                 .addNullToOriginal("BOTH NULL VALUE O")
-                .addToCurrent("SUT NOT NULL VALUE AD", -30L)
-                .addToCurrent("BOTH NOT NULL VALUE AD", -40L)
-                .addNullToCurrent("SUT NULL VALUE AD")
-                .addNullToCurrent("BOTH NULL VALUE AD");
+                .addToCurrent("SUT NOT NULL VALUE C", -30L)
+                .addToCurrent("BOTH NOT NULL VALUE C", -40L)
+                .addNullToCurrent("SUT NULL VALUE C")
+                .addNullToCurrent("BOTH NULL VALUE C");
 
         final var expectedOriginal = new HashMap<>(sut.getOriginal());
         final var expectedCurrent = makeMapOf(
                 String.class,
                 Object.class,
-                "SUT NOT NULL VALUE AD",
+                "SUT NOT NULL VALUE C",
                 -30L,
-                "BOTH NOT NULL VALUE AD",
+                "BOTH NOT NULL VALUE C",
                 40L,
-                "SUT NULL VALUE AD",
+                "SUT NULL VALUE C",
                 null,
-                "BOTH NULL VALUE AD",
+                "BOTH NULL VALUE C",
                 null,
-                "SRC NOT NULL VALUE AD",
+                "SRC NOT NULL VALUE C",
                 30L,
-                "SRC NULL VALUE AD",
+                "SRC NULL VALUE C",
                 null);
 
         sut.coalesceFrom(src);
@@ -330,12 +330,12 @@ class UpdatableReferenceCacheTest {
             @NonNull final Class<K> klassK, @NonNull final Class<V> klassV, final Object... kvPairs) {
         requireAllNonNull(klassK, "klassK", klassV, "klassV");
 
-        if (0 != kvPairs.length % 2) throw new IllegalArgumentException("must have even #arguments");
+        if (0 != kvPairs.length % 2) throw new IllegalArgumentException("Must have even #arguments");
         final var r = new HashMap<K, V>(kvPairs.length / 2);
         for (int i = 0; i < kvPairs.length; i += 2) {
 
-            K key = verifyIsCorrectTypeOrNull(klassK, kvPairs[i], "key argument at index %d".formatted(i));
-            V value = verifyIsCorrectTypeOrNull(klassV, kvPairs[i + 1], "value argument at index %d".formatted(i + 1));
+            K key = verifyIsCorrectTypeOrNull(klassK, kvPairs[i], "Key argument at index %d".formatted(i));
+            V value = verifyIsCorrectTypeOrNull(klassV, kvPairs[i + 1], "Value argument at index %d".formatted(i + 1));
 
             r.put(key, value);
         }

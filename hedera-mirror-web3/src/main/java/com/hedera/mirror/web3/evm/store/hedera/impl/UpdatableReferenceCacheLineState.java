@@ -53,7 +53,7 @@ public class UpdatableReferenceCacheLineState<K> {
     private static final Entry valueDeletedMarker = new Entry(ValueState.DELETED, null);
 
     /** Get the current state/value of the key in this cache - N.B.: This is _not an accurate state!_ It checks
-     * adddel first and if it's there it does not go ahead and check original! Disambiguation is to be handled by
+     * current first and if it's there it does not go ahead and check original! Disambiguation is to be handled by
      * the caller! */
     public Entry get(
             @NonNull final Map<K, Object> original, @NonNull final Map<K, Object> current, @NonNull final K key) {
@@ -103,7 +103,7 @@ public class UpdatableReferenceCacheLineState<K> {
     }
 
     /** 2D array to map `(original state x current state)` to full cache line state w.r.t. this cache and upstream caches */
-    private static final ValueState[ /*original*/][ /*adddel*/] toValueState = {
+    private static final ValueState[ /*original*/][ /*current*/] toValueState = {
         /*MISSING*/ {ValueState.NOT_YET_FETCHED, ValueState.INVALID, ValueState.UPDATED},
         /*NULL*/ {ValueState.MISSING, ValueState.INVALID, ValueState.UPDATED},
         /*NON_NULL*/ {ValueState.PRESENT, ValueState.DELETED, ValueState.UPDATED}
@@ -111,11 +111,11 @@ public class UpdatableReferenceCacheLineState<K> {
 
     private static final BinaryOperator<Object> fromNull = (o, c) -> null;
     private static final BinaryOperator<Object> fromO = (o, d) -> o;
-    private static final BinaryOperator<Object> fromAD = (o, c) -> c;
+    private static final BinaryOperator<Object> fromC = (o, c) -> c;
 
     /** 2D array to map `(original value x current value)` to returned value for this cache line */
     private static final List<List<BinaryOperator<Object>>> toValue = List.of(
-            /*MISSING*/ List.of(fromNull, fromNull, fromAD),
-            /*NULL*/ List.of(fromNull, fromNull, fromAD),
-            /*NON_NULL*/ List.of(fromO, fromNull, fromAD));
+            /*MISSING*/ List.of(fromNull, fromNull, fromC),
+            /*NULL*/ List.of(fromNull, fromNull, fromC),
+            /*NON_NULL*/ List.of(fromO, fromNull, fromC));
 }

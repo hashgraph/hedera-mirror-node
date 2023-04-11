@@ -79,9 +79,9 @@ public class UpdatableReferenceCache<K> {
 
         switch (getCacheLineState(key).state()) {
             case NOT_YET_FETCHED -> original.put(key, value);
-            case MISSING, PRESENT -> throw new IllegalArgumentException("trying to override a lower-level entry");
-            case UPDATED, DELETED -> throw new IllegalArgumentException("trying to override an updated entry");
-            case INVALID -> throw new IllegalArgumentException("trying to do something in an invalid state");
+            case MISSING, PRESENT -> throw new IllegalArgumentException("Trying to override a lower-level entry");
+            case UPDATED, DELETED -> throw new IllegalArgumentException("Trying to override an updated entry");
+            case INVALID -> throw new IllegalArgumentException("Trying to do something in an invalid state");
         }
     }
 
@@ -100,17 +100,15 @@ public class UpdatableReferenceCache<K> {
         switch (currentState.state()) {
             case PRESENT:
                 if (currentState.value() == value) {
-                    throw new IllegalArgumentException(
-                            """
-                            trying to update a value with exact same reference - probably \
-                            indicates an error where the value was modified""");
+                    throw new IllegalArgumentException("Trying to update a value with exact same reference - probably "
+                            + "indicates an error where the value was modified");
                 }
                 // fallthrough
             case NOT_YET_FETCHED, MISSING, UPDATED, DELETED:
                 current.put(key, value);
                 break;
             case INVALID:
-                throw new IllegalArgumentException("trying to do something in an invalid state");
+                throw new IllegalArgumentException("Trying to do something in an invalid state");
         }
     }
 
@@ -125,10 +123,10 @@ public class UpdatableReferenceCache<K> {
             case PRESENT -> current.put(key, null);
             case UPDATED -> current.remove(key);
             case NOT_YET_FETCHED -> throw new IllegalArgumentException(
-                    "trying to delete a value that hasn't been fetched");
+                    "Trying to delete a value that hasn't been fetched");
             case MISSING, DELETED -> throw new IllegalArgumentException(
-                    "trying to delete a missing/already deleted value");
-            case INVALID -> throw new IllegalArgumentException("trying to do something in an invalid state");
+                    "Trying to delete a missing/already deleted value");
+            case INVALID -> throw new IllegalArgumentException("Trying to do something in an invalid state");
         }
     }
 

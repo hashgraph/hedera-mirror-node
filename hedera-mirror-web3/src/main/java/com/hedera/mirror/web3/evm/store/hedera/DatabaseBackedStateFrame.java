@@ -25,7 +25,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-/** A CachingStateFrame that answers reads by getting entities from sone other source - a database! - and
+/** A CachingStateFrame that answers reads by getting entities from some other source - a database! - and
  * disallows all local updates/deletes. */
 @SuppressWarnings(
         "java:S1192") // "define a constant instead of duplicating this literal" - worse readability if applied to small
@@ -60,24 +60,24 @@ public class DatabaseBackedStateFrame<K> extends CachingStateFrame<K> {
             @NonNull final K key,
             @NonNull final Object value) {
         requireAllNonNull(klass, "klass", cache, "cache", key, "key", value, "value");
-        throw new UnsupportedOperationException("cannot add/update an value in a database-backed StateFrame");
+        throw new UnsupportedOperationException("Cannot add/update a value in a database-backed StateFrame");
     }
 
     @Override
     public void deleteValue(
             @NonNull final Class<?> klass, @NonNull final UpdatableReferenceCache<K> cache, @NonNull final K key) {
         requireAllNonNull(klass, "klass", cache, "cache", key, "key");
-        throw new UnsupportedOperationException("cannot delete an value in a database-backed StateFrame");
+        throw new UnsupportedOperationException("Cannot delete a value in a database-backed StateFrame");
     }
 
     @Override
     public void updatesFromDownstream(@NonNull final CachingStateFrame<K> childFrame) {
         Objects.requireNonNull(childFrame, "childFrame");
-        throw new UnsupportedOperationException("cannot commit to a database-backed StateFrame (oddly enough)");
+        throw new UnsupportedOperationException("Cannot commit to a database-backed StateFrame (oddly enough)");
     }
 
     @Override
     public void commit() {
-        throw new UnsupportedOperationException("cannot commit to a database-backed StateFrame (oddly enough)");
+        throw new UnsupportedOperationException("Cannot commit to a database-backed StateFrame (oddly enough)");
     }
 }

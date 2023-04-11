@@ -54,7 +54,7 @@ public abstract class CachingStateFrame<K> {
             @NonNull final Optional<CachingStateFrame<K>> upstreamFrame, @NonNull final Class<?>... klassesToCache) {
         requireAllNonNull(upstreamFrame, "upstreamFrame", klassesToCache, "klassesToCache");
         if (klassesToCache.length < 1)
-            throw new IllegalArgumentException("must be caching for at least one value class");
+            throw new IllegalArgumentException("Must be caching for at least one value class");
 
         this.upstreamFrame = upstreamFrame;
         this.accessors = new HashMap<>(klassesToCache.length);
@@ -169,7 +169,7 @@ public abstract class CachingStateFrame<K> {
                 return oe.flatMap(o -> Optional.of(klass.cast(o)));
             } catch (final ClassCastException ex) {
                 throw new CacheAccessIncorrectType(
-                        "accessor for class %s fetched object of class %s"
+                        "Accessor for class %s fetched object of class %s"
                                 .formatted(
                                         klass.getTypeName(), oe.get().getClass().getTypeName()),
                         ex);
@@ -181,7 +181,7 @@ public abstract class CachingStateFrame<K> {
         public void set(@NonNull final K key, @NonNull V value) {
             requireAllNonNull(key, "key", value, "value");
             if (!klass.isInstance(value))
-                throw new CacheAccessIncorrectType("trying to store %s in accessor for class %s"
+                throw new CacheAccessIncorrectType("Trying to store %s in accessor for class %s"
                         .formatted(value.getClass().getTypeName(), klass.getTypeName()));
             setValue(klass, cache, key, value);
         }
