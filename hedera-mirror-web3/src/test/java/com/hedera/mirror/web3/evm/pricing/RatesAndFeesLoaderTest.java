@@ -49,7 +49,7 @@ class RatesAndFeesLoaderTest {
     @Test
     void loadExchangeRates() {
         final var exchangeRates = ExchangeRateSet.newBuilder().build();
-        when(fileDataRepository.getFileAtTimestamp(eq(112L) ,anyLong())).thenReturn(exchangeRates.toByteArray());
+        when(fileDataRepository.getFileAtTimestamp(eq(112L), anyLong())).thenReturn(exchangeRates.toByteArray());
 
         final var actual = subject.loadExchangeRates(1L);
 
