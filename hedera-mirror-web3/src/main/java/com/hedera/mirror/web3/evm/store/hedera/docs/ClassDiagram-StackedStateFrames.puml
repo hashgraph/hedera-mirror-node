@@ -1,4 +1,5 @@
 @startuml
+!pragma layout smetana
 title Stacked State for eth_estimateGas (class diagram)
 hide empty members
 
@@ -25,7 +26,7 @@ class UpdatableReferenceCache<K> {
   +fill(K,Object)
 }
 
-abstract CachingStateFrame<Address> <<(A,salmon)>> {
+abstract CachingStateFrame<K> <<(A,salmon)>> {
   #parentFrame
   #accountCache
   #tokenCache
@@ -40,16 +41,22 @@ abstract CachingStateFrame<Address> <<(A,salmon)>> {
   +getUpstream()
 }
 
-class Accessor<K,V> {
+interface Accessor<K,V> {
+  +Optional<V> get(key)
+  +set(key,value)
+  +delete(key)
+}
+
+interface GroundTruthAccessor<K,V> {
   +Optional<V> get(key)
 }
 
 class StackedStateFrames<K> {
   -stack
-  +StackedStateFrames(Accessors...)
+  +StackedStateFrames(GroundTruthAccessor...)
 }
 
-Entry::state o-left- ValueState
+Entry::state o-right- ValueState
 UpdatableReferenceCache::get *-up- Entry
 
 StackedStateFrames::stack *-- CachingStateFrame : owns list of
@@ -59,7 +66,8 @@ CachingStateFrame::tokenCache *- UpdatableReferenceCache : tokens
 ROCachingStateFrame <|-- RWCachingStateFrame
 CachingStateFrame <|-- ROCachingStateFrame
 CachingStateFrame <|-- DatabaseBackedStateFrame
-StackedStateFrames::StackedStateFrames o-left- Accessor : holds values for
+CachingStateFrame o-left- Accessor : gets //strongly-typed//\nvalues for
+StackedStateFrames::StackedStateFrames o-left- GroundTruthAccessor : gets database\nvalues for
 
 skinparam groupInheritance 2
 @enduml

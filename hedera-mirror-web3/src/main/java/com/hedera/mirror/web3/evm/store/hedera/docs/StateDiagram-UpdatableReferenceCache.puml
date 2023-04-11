@@ -1,4 +1,5 @@
 @startuml
+!pragma layout smetana
 title ""UpdatableReferenceCache"" State Diagram
 caption "Given an account see which (of the 5) states it is in, start there.\n~"Not yet fetched~" is the state iff none of the other states apply."
 hide empty description

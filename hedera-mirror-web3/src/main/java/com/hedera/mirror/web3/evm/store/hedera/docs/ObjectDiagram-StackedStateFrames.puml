@@ -1,4 +1,5 @@
 @startuml
+!pragma layout smetana
 title Stacked State for a contract call making an inner contract call
 
 object "Frame2 : RWCachingStackFrame" as Frame2 {
