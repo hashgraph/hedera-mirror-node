@@ -163,17 +163,20 @@ public class RecordItemBuilder {
     private static final AccountID TREASURY = AccountID.newBuilder().setAccountNum(98).build();
 
     @SuppressWarnings("rawtypes")
-    private final Map<TransactionType, Supplier<Builder>> builders = new HashMap<>();
+    private final Map<TransactionType, Supplier<Builder>> builders = createBuilders();
     private final AtomicLong id = new AtomicLong(INITIAL_ID);
     private final SecureRandom random = new SecureRandom();
 
     private Instant now = Instant.now();
 
-    {
-        // Dynamically lookup method references for every transaction body builder in this class
+    // Dynamically lookup method references for every transaction body builder in this class
+    @SuppressWarnings("rawtypes")
+    private Map<TransactionType, Supplier<Builder>> createBuilders() {
+        Map<TransactionType, Supplier<Builder>> builders = new HashMap<>();
         TestUtils.gettersByType(this, Builder.class).forEach(s -> {
             builders.put(s.get().type, s);
         });
+        return builders;
     }
 
     @SuppressWarnings("rawtypes")
@@ -894,7 +897,6 @@ public class RecordItemBuilder {
 
     @SuppressWarnings("rawtypes")
     public class Builder<T extends GeneratedMessageV3.Builder> {
-
         private final TransactionType type;
         private final T transactionBody;
         private final SignatureMap.Builder signatureMap;

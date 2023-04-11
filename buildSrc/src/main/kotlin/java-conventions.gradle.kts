@@ -87,9 +87,7 @@ tasks.compileJava {
 
 tasks.compileTestJava {
     dependsOn("generateEffectiveLombokConfig")
-    options.compilerArgs.addAll(listOf("-Xlint:all"))
-    // Can add "-Werror" after one last remaining warning in Record{File,Item}Builder.java is eliminated
-    // options.compilerArgs.addAll(listOf("-Werror", "-Xlint:all"))
+    options.compilerArgs.addAll(listOf("-Werror", "-Xlint:all"))
     options.encoding = "UTF-8"
     sourceCompatibility = "17"
     targetCompatibility = "17"
