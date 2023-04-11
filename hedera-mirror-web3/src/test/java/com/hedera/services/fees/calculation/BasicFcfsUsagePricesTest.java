@@ -27,6 +27,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.FeeComponents;
@@ -121,7 +122,7 @@ class BasicFcfsUsagePricesTest {
         subject.defaultPricesGiven(ContractCall, at);
 
         // then:
-        verify(ratesAndFeesLoader).loadFeeSchedules(at.getSeconds());
+        verify(ratesAndFeesLoader).loadFeeSchedules(DomainUtils.timestampInNanosMax(at));
     }
 
     @Test

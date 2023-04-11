@@ -20,6 +20,7 @@
 
 package com.hedera.services.fees;
 
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
 import com.hederahashgraph.api.proto.java.ExchangeRate;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
@@ -37,7 +38,7 @@ public final class BasicHbarCentExchange implements HbarCentExchange {
 
     @Override
     public ExchangeRate rate(final Timestamp now) {
-        final var exchangeRates = ratesAndFeesLoader.loadExchangeRates(now.getSeconds());
+        final var exchangeRates = ratesAndFeesLoader.loadExchangeRates(DomainUtils.timestampInNanosMax(now));
         return rateAt(now.getSeconds(), exchangeRates);
     }
 

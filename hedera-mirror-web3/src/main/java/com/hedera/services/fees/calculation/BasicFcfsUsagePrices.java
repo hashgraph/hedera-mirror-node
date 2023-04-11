@@ -22,6 +22,7 @@ package com.hedera.services.fees.calculation;
 
 import static com.hederahashgraph.api.proto.java.SubType.DEFAULT;
 
+import com.hedera.mirror.common.util.DomainUtils;
 import com.hedera.mirror.web3.evm.pricing.RatesAndFeesLoader;
 import com.hedera.services.fees.pricing.RequiredPriceTypes;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
@@ -81,7 +82,7 @@ public class BasicFcfsUsagePrices implements UsagePricesProvider {
 
     @Override
     public FeeData defaultPricesGiven(final HederaFunctionality function, final Timestamp at) {
-        final var feeSchedules = ratesAndFeesLoader.loadFeeSchedules(at.getSeconds());
+        final var feeSchedules = ratesAndFeesLoader.loadFeeSchedules(DomainUtils.timestampInNanosMax(at));
         return pricesGiven(function, at, feeSchedules).get(DEFAULT);
     }
 
