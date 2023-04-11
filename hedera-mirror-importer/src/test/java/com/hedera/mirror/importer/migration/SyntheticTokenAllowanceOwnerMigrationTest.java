@@ -77,6 +77,10 @@ class SyntheticTokenAllowanceOwnerMigrationTest extends IntegrationTest {
 
         // A token allowance that has no history and the correct owner, it should not be affected by the migration.
         var newTokenAllowance = domainBuilder.tokenAllowance().persist();
+        domainBuilder.contractResult().customize(c -> c
+                .senderId(new EntityId(0L, 0L, newTokenAllowance.getOwner(), CONTRACT))
+                .consensusTimestamp(newTokenAllowance.getTimestampLower())
+        ).persist();
 
         // when
         migration.doMigrate();
@@ -108,7 +112,11 @@ class SyntheticTokenAllowanceOwnerMigrationTest extends IntegrationTest {
         generateTokenAllowance(null, null);
         var correctContractResultSenderId = EntityId.of("0.0.3001", CONTRACT);
         generateTokenAllowance(correctContractResultSenderId, correctContractResultSenderId.getId());
-        domainBuilder.tokenAllowance().persist();
+        var newTokenAllowance = domainBuilder.tokenAllowance().persist();
+        domainBuilder.contractResult().customize(c -> c
+                .senderId(new EntityId(0L, 0L, newTokenAllowance.getOwner(), CONTRACT))
+                .consensusTimestamp(newTokenAllowance.getTimestampLower())
+        ).persist();
 
         migration.doMigrate();
         var firstPassTokenAllowances = tokenAllowanceRepository.findAll();
