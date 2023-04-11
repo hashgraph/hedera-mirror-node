@@ -209,6 +209,11 @@ public class PrecompileContractFeature extends AbstractFeature {
         verifyNft(tokenIds.get(1), firstNftSerialNumber);
     }
 
+    @Then("the mirror node REST API should return status {int} for the latest transaction")
+    public void verifyMirrorAPIResponses(int status) {
+        verifyMirrorTransactionsResponse(mirrorClient, status);
+    }
+
     @Then("check if fungible token is token")
     public void checkIfFungibleTokenIsToken() {
         ContractCallResponse response = mirrorClient.contractsCall(
@@ -220,7 +225,7 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertTrue(response.getResultAsBoolean());
     }
 
-    @Then("check if non fungible token is token")
+    @And("check if non fungible token is token")
     public void checkIfNonFungibleTokenIsToken() {
         ContractCallResponse response = mirrorClient.contractsCall(
                 IS_TOKEN_SELECTOR + to32BytesString(tokenIds.get(1).toSolidityAddress()),
@@ -299,7 +304,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     @Retryable(value = {AssertionError.class, WebClientResponseException.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
-    @Then("check if non fungible token is frozen")
+    @And("check if non fungible token is frozen")
     public void checkIfTokenIsFrozen() {
         ContractCallResponse response = mirrorClient.contractsCall(
                 IS_TOKEN_FROZEN_SELECTOR
@@ -322,7 +327,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     @Retryable(value = {AssertionError.class, WebClientResponseException.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
-    @Then("check if non fungible token is unfrozen")
+    @And("check if non fungible token is unfrozen")
     public void checkIfTokenIsUnfrozen() {
         ContractCallResponse response = mirrorClient.contractsCall(
                 IS_TOKEN_FROZEN_SELECTOR
@@ -343,7 +348,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     @Retryable(value = {AssertionError.class, WebClientResponseException.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
-    @Then("check if fungible token is frozen for evm address")
+    @And("check if fungible token is frozen for evm address")
     public void checkIfTokenIsFrozenForEvmAddress() {
         MirrorAccountResponse accountInfo = mirrorClient.getAccountDetailsByAccountId(ecdsaEaId.getAccountId());
 
@@ -366,7 +371,7 @@ public class PrecompileContractFeature extends AbstractFeature {
     @Retryable(value = {AssertionError.class, WebClientResponseException.class},
             backoff = @Backoff(delayExpression = "#{@restPollingProperties.minBackoff.toMillis()}"),
             maxAttemptsExpression = "#{@restPollingProperties.maxAttempts}")
-    @Then("check if fungible token is unfrozen for evm address")
+    @And("check if fungible token is unfrozen for evm address")
     public void checkIfTokenIsUnfrozenForEvmAddress() {
         MirrorAccountResponse accountInfo = mirrorClient.getAccountDetailsByAccountId(ecdsaEaId.getAccountId());
 
@@ -919,7 +924,6 @@ public class PrecompileContractFeature extends AbstractFeature {
         assertNotNull(networkTransactionResponse.getReceipt());
         fileId = networkTransactionResponse.getReceipt().fileId;
         assertNotNull(fileId);
-        log.info("Created file {} to hold contract init code", fileId);
 
         if (contractContents.length() > MAX_CREATE_FILE_SIZE) {
             networkTransactionResponse = fileClient

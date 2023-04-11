@@ -1,7 +1,7 @@
 @contractbase @fullsuite
 Feature: Precompile Contract Base Coverage Feature
 
-    @contractbase @fullsuite @acceptance @precompile @web3
+    @precompile @web3
     Scenario Outline: Validate Precompile Contract
         Given I successfully create and verify a precompile contract from contract bytes
         Given I successfully create and verify a fungible token for precompile contract tests
@@ -12,9 +12,11 @@ Feature: Precompile Contract Base Coverage Feature
         And the contract call REST API to is token with valid account id should return an error
         And check if fungible token is kyc granted
         Given I freeze fungible token for evm address
-        Then check if fungible token is frozen for evm address
+        Then the mirror node REST API should return status 200 for the latest transaction
+        And check if fungible token is frozen for evm address
         Given I unfreeze fungible token for evm address
-        Then check if fungible token is unfrozen for evm address
+        Then the mirror node REST API should return status 200 for the latest transaction
+        And check if fungible token is unfrozen for evm address
         And the contract call REST API should return the default freeze for a fungible token
         And the contract call REST API should return the default kyc for a fungible token
         And the contract call REST API should return the information for token for a fungible token
@@ -31,12 +33,15 @@ Feature: Precompile Contract Base Coverage Feature
         And the contract call REST API should return the custom fees for a fungible token
         Given I successfully create and verify a non fungible token for precompile contract tests
         Given I mint and verify a nft
-        Then check if non fungible token is token
+        Then the mirror node REST API should return status 200 for the latest transaction
+        And check if non fungible token is token
         And verify non fungible token isn't frozen
         Given I freeze a non fungible token
-        Then check if non fungible token is frozen
+        Then the mirror node REST API should return status 200 for the latest transaction
+        And check if non fungible token is frozen
         Given I unfreeze a non fungible token
-        Then check if non fungible token is unfrozen
+        Then the mirror node REST API should return status 200 for the latest transaction
+        And check if non fungible token is unfrozen
         And check if non fungible token is kyc granted
         And the contract call REST API should return the default freeze for a non fungible token
         And the contract call REST API should return the default kyc for a non fungible token
