@@ -20,17 +20,17 @@
 
 package com.hedera.mirror.web3.repository;
 
-import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_1H;
+import static com.hedera.mirror.web3.evm.config.EvmConfiguration.CACHE_MANAGER_FEE;
 
-import com.hedera.mirror.common.domain.entity.Entity;
+import com.hedera.mirror.common.domain.file.FileData;
+
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface PricesAndFeesRepository extends CrudRepository<Entity, Long> {
-
+public interface FileDataRepository extends CrudRepository<FileData, Long> {
     @Query(
             value =
                     """
@@ -51,7 +51,7 @@ public interface PricesAndFeesRepository extends CrudRepository<Entity, Long> {
             nativeQuery = true)
     @Cacheable(
             cacheNames = "price_and_fee.exchange_rate",
-            cacheManager = CACHE_MANAGER_1H,
+            cacheManager = CACHE_MANAGER_FEE,
             key = "'now'",
             unless = "#result == null")
     byte[] getExchangeRate(final long now);
@@ -76,7 +76,7 @@ public interface PricesAndFeesRepository extends CrudRepository<Entity, Long> {
             nativeQuery = true)
     @Cacheable(
             cacheNames = "price_and_fee.fee_schedule",
-            cacheManager = CACHE_MANAGER_1H,
+            cacheManager = CACHE_MANAGER_FEE,
             key = "'now'",
             unless = "#result == null")
     byte[] getFeeSchedule(final long now);

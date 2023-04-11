@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.when;
 
-import com.hedera.mirror.web3.repository.PricesAndFeesRepository;
+import com.hedera.mirror.web3.repository.FileDataRepository;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,19 +36,19 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class RatesAndFeesLoaderTest {
     @Mock
-    private PricesAndFeesRepository pricesAndFeesRepository;
+    private FileDataRepository fileDataRepository;
 
     private RatesAndFeesLoader subject;
 
     @BeforeEach
     void setup() {
-        subject = new RatesAndFeesLoader(pricesAndFeesRepository);
+        subject = new RatesAndFeesLoader(fileDataRepository);
     }
 
     @Test
     void loadExchangeRates() {
         final var exchangeRates = ExchangeRateSet.newBuilder().build();
-        when(pricesAndFeesRepository.getExchangeRate(anyLong())).thenReturn(exchangeRates.toByteArray());
+        when(fileDataRepository.getExchangeRate(anyLong())).thenReturn(exchangeRates.toByteArray());
 
         final var actual = subject.loadExchangeRates(1L);
 
@@ -58,7 +58,7 @@ class RatesAndFeesLoaderTest {
     @Test
     void loadFeeSchedules() {
         final var feeSchedules = CurrentAndNextFeeSchedule.newBuilder().build();
-        when(pricesAndFeesRepository.getFeeSchedule(anyLong())).thenReturn(feeSchedules.toByteArray());
+        when(fileDataRepository.getFeeSchedule(anyLong())).thenReturn(feeSchedules.toByteArray());
 
         final var actual = subject.loadFeeSchedules(1L);
 

@@ -23,7 +23,7 @@ package com.hedera.mirror.web3.evm.pricing;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.hedera.mirror.common.domain.entity.EntityId;
 import com.hedera.mirror.common.domain.entity.EntityType;
-import com.hedera.mirror.web3.repository.PricesAndFeesRepository;
+import com.hedera.mirror.web3.repository.FileDataRepository;
 import com.hederahashgraph.api.proto.java.CurrentAndNextFeeSchedule;
 import com.hederahashgraph.api.proto.java.ExchangeRateSet;
 import javax.inject.Named;
@@ -34,12 +34,12 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @CustomLog
 public class RatesAndFeesLoader {
-    private final PricesAndFeesRepository pricesAndFeesRepository;
+    private final FileDataRepository fileDataRepository;
     private static final EntityId EXCHANGE_RATE_ENTITY_ID = new EntityId(0L, 0L, 112L, EntityType.FILE);
     private static final EntityId FEE_SCHEDULE_ENTITY_ID = new EntityId(0L, 0L, 111L, EntityType.FILE);
 
     public ExchangeRateSet loadExchangeRates(final long nanoSeconds) {
-        final var ratesFile = pricesAndFeesRepository.getExchangeRate(nanoSeconds);
+        final var ratesFile = fileDataRepository.getExchangeRate(nanoSeconds);
 
         try {
             return ExchangeRateSet.parseFrom(ratesFile);
@@ -52,7 +52,7 @@ public class RatesAndFeesLoader {
     public CurrentAndNextFeeSchedule loadFeeSchedules(final long nanoSeconds) {
         byte[] feeScheduleFile = new byte[0];
         if (nanoSeconds > 0) {
-            feeScheduleFile = pricesAndFeesRepository.getFeeSchedule(nanoSeconds);
+            feeScheduleFile = fileDataRepository.getFeeSchedule(nanoSeconds);
         }
 
         try {
