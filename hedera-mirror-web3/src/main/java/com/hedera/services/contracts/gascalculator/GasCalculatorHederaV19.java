@@ -41,6 +41,7 @@ import org.hyperledger.besu.evm.gascalculator.LondonGasCalculator;
  */
 @SuppressWarnings("java:S110")
 public class GasCalculatorHederaV19 extends LondonGasCalculator {
+    private static final long LOG_STORAGE_DURATION_SEC = 180L;
 
     private final MirrorNodeEvmProperties mirrorNodeEvmProperties;
     private final UsagePricesProvider usagePrices;
@@ -101,6 +102,6 @@ public class GasCalculatorHederaV19 extends LondonGasCalculator {
     }
 
     long getLogStorageDuration() {
-        return mirrorNodeEvmProperties.cacheRecordsTtl();
+        return LOG_STORAGE_DURATION_SEC;
     }
 }
