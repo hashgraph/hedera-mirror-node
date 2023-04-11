@@ -21,27 +21,30 @@ package com.hedera.mirror.importer.migration;
  */
 
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.Range;
-import com.vladmihalcea.hibernate.type.range.guava.PostgreSQLGuavaRangeType;
 import javax.inject.Named;
 import org.flywaydb.core.api.MigrationVersion;
-import org.postgresql.util.PGobject;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.core.convert.support.DefaultConversionService;
-import org.springframework.jdbc.core.DataClassRowMapper;
-import org.springframework.jdbc.core.JdbcOperations;
-import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.jdbc.core.JdbcTemplate;
 
-import com.hedera.mirror.common.converter.AccountIdConverter;
-import com.hedera.mirror.common.domain.entity.EntityId;
-import com.hedera.mirror.common.domain.entity.TokenAllowance;
 import com.hedera.mirror.importer.MirrorProperties;
-import com.hedera.mirror.importer.parser.record.entity.sql.SqlEntityListener;
+import com.hedera.mirror.importer.config.Owner;
 
 @Named
 public class SyntheticTokenAllowanceOwnerMigration extends RepeatableMigration {
 
     private static final String UPDATE_TOKEN_ALLOWANCE_OWNER_SQL = """
+            begin;
+
+            create temp table token_allowance_temp (
+              amount            bigint not null,
+              created_timestamp bigint not null,
+              owner             bigint not null,
+              payer_account_id  bigint not null,
+              spender           bigint not null,
+              token_id          bigint not null,
+              primary key (owner, spender, token_id, created_timestamp)
+            ) on commit drop;
+
             with affected as (
               select ta.*, cr.consensus_timestamp, cr.sender_id
               from (
@@ -59,32 +62,42 @@ public class SyntheticTokenAllowanceOwnerMigration extends RepeatableMigration {
               using affected a
               where ta.owner = a.owner and ta.spender = a.spender and ta.token_id = a.token_id and ta.timestamp_range = a.timestamp_range
             )
-            select amount, sender_id as owner, payer_account_id, spender, int8range(consensus_timestamp, null) timestamp_range, token_id
-            from affected
-            order by consensus_timestamp;
+            insert into token_allowance_temp (amount, created_timestamp, owner, payer_account_id, spender, token_id)
+            select amount, consensus_timestamp, sender_id, payer_account_id, spender, token_id
+            from affected;
+
+            with correct_timestamp_range as (
+              select
+                amount,
+                owner,
+                payer_account_id,
+                spender,
+                int8range(created_timestamp, (
+                  select c.created_timestamp
+                  from token_allowance_temp c
+                  where c.owner = p.owner and c.spender = p.spender and c.token_id = p.token_id
+                    and c.created_timestamp > p.created_timestamp
+                  order by c.created_timestamp
+                  limit 1)) as timestamp_range,
+                token_id
+              from token_allowance_temp p
+            ), history as (
+              insert into token_allowance_history (amount, owner, payer_account_id, spender, timestamp_range, token_id)
+              select * from correct_timestamp_range where upper(timestamp_range) is not null
+            )
+            insert into token_allowance (amount, owner, payer_account_id, spender, timestamp_range, token_id)
+            select * from correct_timestamp_range where upper(timestamp_range) is null;
+
+            commit;
             """;
 
-    private static DataClassRowMapper<TokenAllowance> resultRowMapper = new DataClassRowMapper<>(TokenAllowance.class);
-    private final JdbcOperations jdbcOperations;
-    private final SqlEntityListener sqlEntityListener;
-    private final TransactionTemplate transactionTemplate;
+    private final JdbcTemplate jdbcTemplate;
 
     @Lazy
-    public SyntheticTokenAllowanceOwnerMigration(JdbcOperations jdbcOperations,
-                                                 MirrorProperties mirrorProperties,
-                                                 SqlEntityListener sqlEntityListener,
-                                                 TransactionTemplate transactionTemplate) {
+    public SyntheticTokenAllowanceOwnerMigration(@Owner JdbcTemplate jdbcTemplate,
+                                                 MirrorProperties mirrorProperties) {
         super(mirrorProperties.getMigration());
-        this.jdbcOperations = jdbcOperations;
-        this.sqlEntityListener = sqlEntityListener;
-        this.transactionTemplate = transactionTemplate;
-
-        var defaultConversionService = new DefaultConversionService();
-        defaultConversionService.addConverter(PGobject.class, Range.class,
-                source -> PostgreSQLGuavaRangeType.longRange(source.getValue()));
-        defaultConversionService.addConverter(Long.class, EntityId.class,
-                AccountIdConverter.INSTANCE::convertToEntityAttribute);
-        resultRowMapper.setConversionService(defaultConversionService);
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     @Override
@@ -101,15 +114,7 @@ public class SyntheticTokenAllowanceOwnerMigration extends RepeatableMigration {
     @Override
     protected void doMigrate() {
         var stopwatch = Stopwatch.createStarted();
-        var tokenAllowances = jdbcOperations.query(UPDATE_TOKEN_ALLOWANCE_OWNER_SQL, resultRowMapper);
-        if (!tokenAllowances.isEmpty()) {
-            sqlEntityListener.onStart();
-            for (var tokenAllowance : tokenAllowances) {
-                sqlEntityListener.onTokenAllowance(tokenAllowance);
-            }
-            transactionTemplate.executeWithoutResult(status -> sqlEntityListener.onEnd(null));
-        }
-
-        log.info("Updated {} crypto approve allowance owners in {}", tokenAllowances.size(), stopwatch);
+        jdbcTemplate.execute(UPDATE_TOKEN_ALLOWANCE_OWNER_SQL);
+        log.info("Updated token allowance owners in {}", stopwatch);
     }
 }
