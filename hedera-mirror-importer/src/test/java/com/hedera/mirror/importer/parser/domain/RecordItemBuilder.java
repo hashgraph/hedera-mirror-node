@@ -114,6 +114,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalUnit;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -162,25 +163,18 @@ public class RecordItemBuilder {
     private static final ShardID SHARD_ID = ShardID.getDefaultInstance();
     private static final AccountID TREASURY = AccountID.newBuilder().setAccountNum(98).build();
 
-    @SuppressWarnings("rawtypes")
-    private final Map<TransactionType, Supplier<Builder>> builders = createBuilders();
+    private final Map<TransactionType, Supplier<Builder<?>>> builders = new HashMap<>();
     private final AtomicLong id = new AtomicLong(INITIAL_ID);
     private final SecureRandom random = new SecureRandom();
 
     private Instant now = Instant.now();
-
-    // Dynamically lookup method references for every transaction body builder in this class
-    @SuppressWarnings("rawtypes")
-    private Map<TransactionType, Supplier<Builder>> createBuilders() {
-        Map<TransactionType, Supplier<Builder>> builders = new HashMap<>();
-        TestUtils.gettersByType(this, Builder.class).forEach(s -> {
-            builders.put(s.get().type, s);
-        });
-        return builders;
+    {
+        // Dynamically lookup method references for every transaction body builder in this class
+        Collection<Supplier<Builder<?>>> suppliers = TestUtils.gettersByType(this, Builder.class);
+        suppliers.forEach(s -> builders.put(s.get().type, s));
     }
 
-    @SuppressWarnings("rawtypes")
-    public Supplier<Builder> lookup(TransactionType type) {
+    public Supplier<Builder<?>> lookup(TransactionType type) {
         return builders.get(type);
     }
 
@@ -895,8 +889,8 @@ public class RecordItemBuilder {
         return TopicID.newBuilder().setTopicNum(id()).build();
     }
 
-    @SuppressWarnings("rawtypes")
-    public class Builder<T extends GeneratedMessageV3.Builder> {
+    public class Builder<T extends GeneratedMessageV3.Builder<T>> {
+
         private final TransactionType type;
         private final T transactionBody;
         private final SignatureMap.Builder signatureMap;

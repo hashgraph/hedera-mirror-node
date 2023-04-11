@@ -84,7 +84,7 @@ public class TestUtils {
     /**
      * Dynamically lookup method references for every getter in object with the given return type
      */
-    public static <O, R> Collection<Supplier<R>> gettersByType(O object, Class<R> returnType) {
+    public static <O, R> Collection<Supplier<R>> gettersByType(O object, Class<?> returnType) {
         MethodHandles.Lookup lookup = MethodHandles.lookup();
         Class<?> objectClass = object.getClass();
         Collection<Supplier<R>> getters = new ArrayList<>();
